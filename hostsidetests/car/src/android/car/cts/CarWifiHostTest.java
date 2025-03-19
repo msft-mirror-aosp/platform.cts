@@ -22,8 +22,6 @@ import static org.junit.Assert.assertThrows;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
-import android.car.feature.Flags;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.host.HostFlagsValueProvider;
 
@@ -46,15 +44,11 @@ import java.util.concurrent.TimeUnit;
 public final class CarWifiHostTest extends CarHostJUnit4TestCase {
     private static final long TIMEOUT_MS = TimeUnit.SECONDS.toMillis(25);
 
-    private static final String GET_PERSISTENT_TETHERING =
-            "settings get global android.car.ENABLE_PERSISTENT_TETHERING";
     private static final String ENABLE_PERSISTENT_TETHERING =
             "settings put global android.car.ENABLE_PERSISTENT_TETHERING true";
     private static final String DISABLE_PERSISTENT_TETHERING =
             "settings put global android.car.ENABLE_PERSISTENT_TETHERING false";
     private static final String CMD_DUMPSYS_WIFI =
-            "dumpsys car_service --services CarWifiService";
-    private static final String CMD_DUMPSYS_WIFI_PROTO =
             "dumpsys car_service --services CarWifiService --proto";
     private static final String WIFI_HOTSPOT_ON = "cmd wifi start-softap CarWifiService open";
     private static final String WIFI_HOTSPOT_OFF = "cmd wifi stop-softap";
@@ -73,11 +67,11 @@ public final class CarWifiHostTest extends CarHostJUnit4TestCase {
      */
     @BeforeClassWithInfo
     public static void beforeClassWithDevice(TestInformation testInfo) throws Exception {
-        // TODO: b/324961709 - Re-factor to use proto dump
-        sTetheringStatusBefore = testInfo.getDevice().executeShellCommand(CMD_DUMPSYS_WIFI)
-                .contains("Tethering enabled: true");
-        sTetheringPersistingBefore = testInfo.getDevice().executeShellCommand(
-                GET_PERSISTENT_TETHERING).contains("true");
+        CarWifiDumpProto carWifiDump =
+                ProtoUtils.getProto(
+                        testInfo.getDevice(), CarWifiDumpProto.parser(), CMD_DUMPSYS_WIFI);
+        sTetheringStatusBefore = carWifiDump.getTetheringEnabled();
+        sTetheringPersistingBefore = carWifiDump.getPersistTetheringSettingEnabled();
     }
 
     /**
@@ -98,7 +92,6 @@ public final class CarWifiHostTest extends CarHostJUnit4TestCase {
     }
 
     @Test
-    @RequiresFlagsEnabled({Flags.FLAG_PERSIST_AP_SETTINGS, Flags.FLAG_CAR_DUMP_TO_PROTO})
     @ApiTest(apis = {"android.car.settings.CarSettings#ENABLE_PERSISTENT_TETHERING"})
     public void testPersistTetheringCarSetting_enablingWithCapability_autoShutdownDisabled()
             throws Exception {
@@ -109,7 +102,6 @@ public final class CarWifiHostTest extends CarHostJUnit4TestCase {
     }
 
     @Test
-    @RequiresFlagsEnabled({Flags.FLAG_PERSIST_AP_SETTINGS, Flags.FLAG_CAR_DUMP_TO_PROTO})
     @ApiTest(apis = {"android.car.settings.CarSettings#ENABLE_PERSISTENT_TETHERING"})
     public void testPersistTetheringCarSetting_disablingWithCapability_autoShutdownEnabled()
             throws Exception {
@@ -120,7 +112,6 @@ public final class CarWifiHostTest extends CarHostJUnit4TestCase {
     }
 
     @Test
-    @RequiresFlagsEnabled({Flags.FLAG_PERSIST_AP_SETTINGS, Flags.FLAG_CAR_DUMP_TO_PROTO})
     @ApiTest(apis = {"android.car.settings.CarSettings#ENABLE_PERSISTENT_TETHERING"})
     public void testPersistTetheringCarSetting_enablingNoCapability_autoShutdownUnchanged()
             throws Exception {
@@ -132,7 +123,6 @@ public final class CarWifiHostTest extends CarHostJUnit4TestCase {
     }
 
     @Test
-    @RequiresFlagsEnabled({Flags.FLAG_PERSIST_AP_SETTINGS, Flags.FLAG_CAR_DUMP_TO_PROTO})
     @ApiTest(apis = {"android.car.settings.CarSettings#ENABLE_PERSISTENT_TETHERING"})
     public void testPersistTetheringCarSetting_disablingNoCapability_autoShutdownUnchanged()
             throws Exception {
@@ -144,7 +134,6 @@ public final class CarWifiHostTest extends CarHostJUnit4TestCase {
     }
 
     @Test
-    @RequiresFlagsEnabled({Flags.FLAG_PERSIST_AP_SETTINGS, Flags.FLAG_CAR_DUMP_TO_PROTO})
     @ApiTest(apis = {"android.car.settings.CarSettings#ENABLE_PERSISTENT_TETHERING"})
     public void testPersistTetheringCarSetting_withCapabilityTetheringEnabled_tetheringOnReboot()
             throws Exception {
@@ -158,7 +147,6 @@ public final class CarWifiHostTest extends CarHostJUnit4TestCase {
     }
 
     @Test
-    @RequiresFlagsEnabled({Flags.FLAG_PERSIST_AP_SETTINGS, Flags.FLAG_CAR_DUMP_TO_PROTO})
     @ApiTest(apis = {"android.car.settings.CarSettings#ENABLE_PERSISTENT_TETHERING"})
     public void testPersistTetheringCarSetting_withCapabilityTetheringDisabled_noTetheringOnReboot()
             throws Exception {
@@ -173,7 +161,6 @@ public final class CarWifiHostTest extends CarHostJUnit4TestCase {
     }
 
     @Test
-    @RequiresFlagsEnabled({Flags.FLAG_PERSIST_AP_SETTINGS, Flags.FLAG_CAR_DUMP_TO_PROTO})
     @ApiTest(apis = {"android.car.settings.CarSettings#ENABLE_PERSISTENT_TETHERING"})
     public void testPersistTetheringCarSetting_noCapabilityTetheringEnabled_noTetheringOnReboot()
             throws Exception {
@@ -188,20 +175,20 @@ public final class CarWifiHostTest extends CarHostJUnit4TestCase {
     }
 
     private boolean isTetheringEnabled() throws Exception {
-        CarWifiDumpProto carWifiDump = ProtoUtils.getProto(getDevice(),
-                CarWifiDumpProto.parser(), CMD_DUMPSYS_WIFI_PROTO);
+        CarWifiDumpProto carWifiDump =
+                ProtoUtils.getProto(getDevice(), CarWifiDumpProto.parser(), CMD_DUMPSYS_WIFI);
         return carWifiDump.getTetheringEnabled();
     }
 
     private boolean isAutoShutdownEnabled() throws Exception {
-        CarWifiDumpProto carWifiDump = ProtoUtils.getProto(getDevice(),
-                CarWifiDumpProto.parser(), CMD_DUMPSYS_WIFI_PROTO);
+        CarWifiDumpProto carWifiDump =
+                ProtoUtils.getProto(getDevice(), CarWifiDumpProto.parser(), CMD_DUMPSYS_WIFI);
         return carWifiDump.getAutoShutdownEnabled();
     }
 
     private boolean isPersistTetheringCapabilityEnabled() throws Exception {
-        CarWifiDumpProto carWifiDump = ProtoUtils.getProto(getDevice(),
-                CarWifiDumpProto.parser(), CMD_DUMPSYS_WIFI_PROTO);
+        CarWifiDumpProto carWifiDump =
+                ProtoUtils.getProto(getDevice(), CarWifiDumpProto.parser(), CMD_DUMPSYS_WIFI);
         return carWifiDump.getPersistTetheringCapabilitiesEnabled();
     }
 
