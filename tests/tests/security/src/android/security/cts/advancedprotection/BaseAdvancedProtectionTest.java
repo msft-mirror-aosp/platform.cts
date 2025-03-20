@@ -32,6 +32,7 @@ import android.security.Flags;
 
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.compatibility.common.util.SystemUtil;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -114,7 +115,8 @@ public abstract class BaseAdvancedProtectionTest {
         if (!onRegister.await(TIMEOUT_S, TimeUnit.SECONDS)) {
             fail("Callback not called on register");
         }
-        mManager.setAdvancedProtectionEnabled(enabled);
+        // So it can be called by any user
+        SystemUtil.runShellCommand("cmd advanced_protection set-protection-enabled " + enabled);
         if (!onSet.await(TIMEOUT_S, TimeUnit.SECONDS)) {
             fail("Callback not called on set");
         }
