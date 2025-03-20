@@ -16,9 +16,9 @@
 
 package android.appsecurity.cts;
 
-import static org.junit.Assert.fail;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 
 import android.platform.test.annotations.AsbSecurityTest;
@@ -31,6 +31,8 @@ import com.android.compatibility.common.util.CddTest;
 import com.android.tradefed.device.DeviceNotAvailableException;
 import com.android.tradefed.testtype.junit4.DeviceParameterizedRunner;
 import com.android.tradefed.util.FileUtil;
+
+import junitparams.Parameters;
 
 import org.junit.After;
 import org.junit.Before;
@@ -47,8 +49,6 @@ import java.io.OutputStream;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.stream.Stream;
-
-import junitparams.Parameters;
 
 /**
  * Tests for APK signature verification during installation.
@@ -1827,12 +1827,10 @@ public class PkgInstallSignatureVerificationTest extends BaseAppSecurityTest {
         // methods while avoid recording the parameter manually.
         mUseIncrementalForInstallWithIdsig = onIncremental;
 
+        // v4 is used in both incremental and classic install, but for incremental it expects the
+        // feature to be enabled.
         if (onIncremental) {
-            // V4 is only enabled on devices with Incremental feature
             assumeTrue(hasIncrementalFeature());
-        } else {
-            // Install V4 in classic install session
-            assumeTrue(android.security.Flags.extendVbChainToUpdatedApk());
         }
     }
 
