@@ -265,6 +265,4 @@
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.TelephonyManagerTest#testSetAllowedNetworkTypesForReason"/>
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.TelephonyManagerTest#testSetSignalStrengthUpdateRequest_noPermission"/>
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.gba.cts.GbaServiceTest#testGbaNotSupported"/>
-    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.ims.cts.ImsCallingTestOnMockModem#testSrvccActiveCall"/>
-    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.ims.cts.ImsCallingTestOnMockModem#testSrvccPreAlertingIncomingCall"/>
 </configuration>
