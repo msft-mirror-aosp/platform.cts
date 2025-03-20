@@ -88,6 +88,7 @@ class ModifierKeyGestureTest {
             activity.assertNoEvents()
 
             keyboardDevice.injectKeyDown(KEY_Q)
+            keyboardDevice.injectKeyUp(KEY_Q)
             verifier.assertReceivedKey(
                 Matchers.allOf(
                     withKeyCode(KeyEvent.KEYCODE_Q),
@@ -95,8 +96,6 @@ class ModifierKeyGestureTest {
                     withModifierState(KeyEvent.META_CAPS_LOCK_ON)
                 )
             )
-
-            keyboardDevice.injectKeyUp(KEY_Q)
             verifier.assertReceivedKey(
                 Matchers.allOf(
                     withKeyCode(KeyEvent.KEYCODE_Q),
@@ -114,6 +113,7 @@ class ModifierKeyGestureTest {
             activity.assertNoEvents()
 
             keyboardDevice.injectKeyDown(KEY_Q)
+            keyboardDevice.injectKeyUp(KEY_Q)
             verifier.assertReceivedKey(
                 Matchers.allOf(
                     withKeyCode(KeyEvent.KEYCODE_Q),
@@ -121,8 +121,6 @@ class ModifierKeyGestureTest {
                     withModifierState(0)
                 )
             )
-
-            keyboardDevice.injectKeyUp(KEY_Q)
             verifier.assertReceivedKey(
                 Matchers.allOf(
                     withKeyCode(KeyEvent.KEYCODE_Q),
