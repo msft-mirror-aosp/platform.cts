@@ -870,6 +870,8 @@ public class WindowInsetsControllerTests extends WindowManagerTestBase {
      */
     @Test
     public void testImeInsetsFinalSizeIsMaximumSize() throws Exception {
+        assumeFalse("Automotive is to skip this test until showing and hiding certain insets "
+                + "simultaneously in a single request is supported", isAutomotive(mContext));
         final Instrumentation instrumentation = getInstrumentation();
         assumeThat(MockImeSession.getUnavailabilityReason(instrumentation.getContext()),
                 nullValue());
