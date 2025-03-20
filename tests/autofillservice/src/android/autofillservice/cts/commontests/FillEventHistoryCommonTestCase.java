@@ -36,7 +36,6 @@ import static android.autofillservice.cts.testcore.Helper.assertNoDeprecatedClie
 import static android.autofillservice.cts.testcore.Helper.assertShownAndSelectedHaveDifferentFocusedId;
 import static android.autofillservice.cts.testcore.Helper.assertShownAndSelectedHaveSameFocusedId;
 import static android.autofillservice.cts.testcore.Helper.assertShownAndViewEnteredHaveSameFocusedId;
-import static android.autofillservice.cts.testcore.Helper.setMultipleSessionFillEventHistoryFeature;
 import static android.autofillservice.cts.testcore.InstrumentedAutoFillService.waitUntilConnected;
 import static android.autofillservice.cts.testcore.InstrumentedAutoFillService.waitUntilDisconnected;
 import static android.service.autofill.FillEventHistory.Event.NO_SAVE_UI_REASON_DATASET_MATCH;
@@ -243,7 +242,6 @@ public abstract class FillEventHistoryCommonTestCase extends AbstractLoginActivi
     })
     public void test_multipleEventHistoryFlagEnabled_oneSessionSave() throws Exception {
         mUiBot.assumeMinimumResolution(500);
-        setMultipleSessionFillEventHistoryFeature(mContext, true);
         enableService();
 
         // Launch activity A
@@ -306,7 +304,6 @@ public abstract class FillEventHistoryCommonTestCase extends AbstractLoginActivi
     })
     public void test_multipleEventHistory_batchKillSessions() throws Exception {
         mUiBot.assumeMinimumResolution(500);
-        setMultipleSessionFillEventHistoryFeature(mContext, true);
         enableService();
 
         // Response for Activity A
@@ -384,7 +381,6 @@ public abstract class FillEventHistoryCommonTestCase extends AbstractLoginActivi
     })
     public void test_multipleEventHistory_switchTwoSessions() throws Exception {
         mUiBot.assumeMinimumResolution(500);
-        setMultipleSessionFillEventHistoryFeature(mContext, true);
         enableService();
 
         // Launch activity A
@@ -513,7 +509,6 @@ public abstract class FillEventHistoryCommonTestCase extends AbstractLoginActivi
         "android.service.autofill.autofill_session_destroyed"
     })
     public void test_multipleEventHistory_oneSession() throws Exception {
-        setMultipleSessionFillEventHistoryFeature(mContext, true);
         enableService();
 
         // Set up first partition with an anonymous dataset
@@ -1221,7 +1216,6 @@ public abstract class FillEventHistoryCommonTestCase extends AbstractLoginActivi
             testContextCommitted_multipleFillEventHistory_noSaveUi_whileEmptyValueForRequiredIds()
                     throws Exception {
         mUiBot.assumeMinimumResolution(500);
-        setMultipleSessionFillEventHistoryFeature(mContext, true);
         enableService();
 
         // Set expectations.
