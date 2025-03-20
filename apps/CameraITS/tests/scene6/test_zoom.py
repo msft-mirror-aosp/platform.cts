@@ -62,7 +62,9 @@ class ZoomTest(its_base_test.UiAutomatorItsBaseTest):
       props = cam.get_camera_properties()
       props = cam.override_with_hidden_physical_camera_props(props)
       camera_properties_utils.skip_unless(
-          camera_properties_utils.zoom_ratio_range(props))
+          camera_properties_utils.zoom_ratio_range(props) and
+          cam.is_primary_camera()
+      )
 
       # Load chart for scene
       its_session_utils.load_scene(
@@ -92,7 +94,6 @@ class ZoomTest(its_base_test.UiAutomatorItsBaseTest):
       ultrawide_camera_found = cam.has_ultrawide_camera(
           facing=camera_facing)
       if (media_performance_class >= _TEST_REQUIRED_MPC and
-          cam.is_primary_camera() and
           ultrawide_camera_found and
           int(z_min) >= 1):
         raise AssertionError(

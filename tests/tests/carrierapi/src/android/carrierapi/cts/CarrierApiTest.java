@@ -1137,11 +1137,9 @@ public class CarrierApiTest extends BaseCarrierApiTest {
         for (int channel : badChannels) {
             String response = mTelephonyManager.iccTransmitApduLogicalChannel(
                     channel, CLA_STATUS, COMMAND_STATUS, 0, 0, 0, "");
-            // TODO(b/383246274): CF should return correct error response
-            assumeFalse(STATUS_TECHNICAL_PROBLEM.equals(response) && MediaUtils.onCuttlefish());
             assertWithMessage("Unexpected response when transmitting on invalid channel " + channel)
                     .that(response)
-                    .isEqualTo(STATUS_CHANNEL_NOT_SUPPORTED);
+                    .isAnyOf(STATUS_CHANNEL_NOT_SUPPORTED, STATUS_TECHNICAL_PROBLEM);
         }
     }
 

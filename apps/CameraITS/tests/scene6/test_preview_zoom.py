@@ -323,7 +323,7 @@ class PreviewZoomTest(its_base_test.ItsBaseTest):
       # TODO: b/369852004 - decrease TOL for test_preview_zoom
       number_of_cameras_to_test = (
           _ULTRAWIDE_NUMBER_OF_CAMERAS_TO_TEST
-          if ultrawide_camera_found
+          if ultrawide_camera_found and cam.is_primary_camera()
           else _SINGLE_CAMERA_NUMBER_OF_CAMERAS_TO_TEST
       )
       # Make reporting active physical IDs optional

@@ -328,8 +328,10 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         assumeTrue(shouldTestSatelliteWithMockService());
         assumeTrue(sMockSatelliteServiceManager != null);
 
-        sMockSatelliteServiceManager.setSatelliteIgnoreCellularServiceState(true);
-        sMockSatelliteServiceManager.setSatelliteTnScanningSupport(false, false, true);
+        assertTrue(sMockSatelliteServiceManager.setSatelliteIgnoreCellularServiceState(true));
+        assertTrue(sMockSatelliteServiceManager.setSatelliteTnScanningSupport(false, false, true));
+        assertTrue(sMockSatelliteServiceManager.setSupportDisableSatelliteWhileEnableInProgress(
+                false, true));
 
         sMockSatelliteServiceManager.setErrorCode(SatelliteResult.SATELLITE_RESULT_SUCCESS);
         sMockSatelliteServiceManager.setWaitToSend(false);
@@ -411,8 +413,10 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         sMockSatelliteServiceManager.setShouldRespondEnableRequest(true);
         sMockSatelliteServiceManager.clearSatelliteEnableRequestQueues();
 
-        sMockSatelliteServiceManager.setSatelliteIgnoreCellularServiceState(false);
-        sMockSatelliteServiceManager.setSatelliteTnScanningSupport(true, false, false);
+        assertTrue(sMockSatelliteServiceManager.setSatelliteIgnoreCellularServiceState(false));
+        assertTrue(sMockSatelliteServiceManager.setSatelliteTnScanningSupport(true, false, false));
+        assertTrue(sMockSatelliteServiceManager.setSupportDisableSatelliteWhileEnableInProgress(
+                true, false));
 
         grantSatellitePermission();
         if (isSatelliteEnabled()) {

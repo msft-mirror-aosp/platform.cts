@@ -16,11 +16,10 @@
 
 package android.mediapc.cts;
 
-import static org.junit.Assert.assertTrue;
-
 import android.mediapc.cts.common.PerformanceClassEvaluator;
 import android.mediapc.cts.common.Requirements;
 import android.mediapc.cts.common.Requirements.ExtYuvTargetRequirement;
+import android.mediapc.cts.common.Utils;
 import android.opengl.EGL14;
 import android.opengl.EGLConfig;
 import android.opengl.EGLContext;
@@ -71,19 +70,17 @@ public class ExtYuvTargetSupportTest {
         return params;
     }
 
-    /**
-     * Prepares EGL.
-     */
-    private void eglSetup(boolean useHighBitDepth) {
+    /** Prepares EGL. */
+    private boolean eglSetup(boolean useHighBitDepth) {
         mEGLDisplay = EGL14.eglGetDisplay(EGL14.EGL_DEFAULT_DISPLAY);
         if (mEGLDisplay == EGL14.EGL_NO_DISPLAY) {
-            throw new RuntimeException("unable to get EGL14 display");
+            return false;
         }
 
         int[] version = new int[2];
         if (!EGL14.eglInitialize(mEGLDisplay, version, 0, version, 1)) {
             mEGLDisplay = null;
-            throw new RuntimeException("unable to initialize EGL14");
+            return false;
         }
 
         int eglColorSize = useHighBitDepth ? 10 : 8;
@@ -101,10 +98,7 @@ public class ExtYuvTargetSupportTest {
         int[] numConfigs = new int[1];
         if (!EGL14.eglChooseConfig(mEGLDisplay, attribList, 0, configs, 0, configs.length,
                 numConfigs, 0) || numConfigs[0] == 0) {
-            throw new RuntimeException(String.format(
-                    "unable to find EGL config supporting renderable-type:ES2 "
-                            + "surface-type:pbuffer r:%d g:%d b:%d a:%d",
-                    eglColorSize, eglColorSize, eglColorSize, eglAlphaSize));
+            return false;
         }
 
         int[] attrib_list = {
@@ -116,9 +110,11 @@ public class ExtYuvTargetSupportTest {
 
         Assert.assertNotEquals("failed to configure context", mEGLContext, EGL14.EGL_NO_CONTEXT);
 
-        checkEglError("eglCreateContext");
+        if (!checkEglError()) {
+            return false;
+        }
         if (mEGLContext == null) {
-            throw new RuntimeException("null context");
+            return false;
         }
 
         int[] surfaceAttribs = {
@@ -130,53 +126,53 @@ public class ExtYuvTargetSupportTest {
         // Create a pbuffer surface.  By using this for output, we can use glReadPixels
         // to test values in the output.
         mEGLSurface = EGL14.eglCreatePbufferSurface(mEGLDisplay, configs[0], surfaceAttribs, 0);
-        checkEglError("eglCreatePbufferSurface");
+        if (!checkEglError()) {
+            return false;
+        }
         if (mEGLSurface == null) {
-            throw new RuntimeException("surface was null");
+            return false;
         }
+        return true;
     }
 
-    /**
-     * Makes our EGL context and surface current.
-     */
-    private void makeCurrent() {
+    /** Makes our EGL context and surface current. */
+    private boolean makeCurrent() {
         if (!EGL14.eglMakeCurrent(mEGLDisplay, mEGLSurface, mEGLSurface, mEGLContext)) {
-            throw new RuntimeException("eglMakeCurrent failed");
+            return false;
         }
+        return true;
     }
 
-    /**
-     * Checks for EGL errors.
-     */
-    private void checkEglError(String msg) {
+    /** Checks for EGL errors. */
+    private boolean checkEglError() {
         int error = EGL14.eglGetError();
         if (error != EGL14.EGL_SUCCESS) {
-            throw new RuntimeException(msg + ": EGL error: 0x" + Integer.toHexString(error));
+            return false;
         }
+        return true;
     }
 
     @SmallTest
     @Test(timeout = CodecTestBase.PER_TEST_TIMEOUT_SMALL_TEST_MS)
     @CddTest(requirements = {"5.12/H-1-3"})
     public void testYuvTextureSampling() {
-
-        eglSetup(mUseHighBitDepth);
-        makeCurrent();
-
-        String extensionList = GLES20.glGetString(GLES20.GL_EXTENSIONS);
-        boolean mEXTYuvTargetSupported = extensionList.contains("GL_EXT_YUV_target");
-
-        assertTrue("GL_EXT_YUV_target extension is not present", mEXTYuvTargetSupported);
-
-        EGL14.eglMakeCurrent(mEGLDisplay, EGL14.EGL_NO_SURFACE, EGL14.EGL_NO_SURFACE,
-                EGL14.EGL_NO_CONTEXT);
-        EGL14.eglDestroySurface(mEGLDisplay, mEGLSurface);
-        EGL14.eglDestroyContext(mEGLDisplay, mEGLContext);
-        EGL14.eglTerminate(mEGLDisplay);
+        Utils.assumeDeviceMeetsPerformanceClassPreconditions();
+        boolean isEXTYuvTargetSupported = false;
+        if (eglSetup(mUseHighBitDepth)) {
+            if (makeCurrent()) {
+                String extensionList = GLES20.glGetString(GLES20.GL_EXTENSIONS);
+                isEXTYuvTargetSupported = extensionList.contains("GL_EXT_YUV_target");
+                EGL14.eglMakeCurrent(mEGLDisplay, EGL14.EGL_NO_SURFACE, EGL14.EGL_NO_SURFACE,
+                        EGL14.EGL_NO_CONTEXT);
+                EGL14.eglDestroySurface(mEGLDisplay, mEGLSurface);
+                EGL14.eglDestroyContext(mEGLDisplay, mEGLContext);
+                EGL14.eglTerminate(mEGLDisplay);
+            }
+        }
 
         PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
         ExtYuvTargetRequirement rExtensionSupported = Requirements.addR5_12__H_1_3().to(pce);
-        rExtensionSupported.setExtYuvTargetSupported(mEXTYuvTargetSupported);
+        rExtensionSupported.setExtYuvTargetSupported(isEXTYuvTargetSupported);
 
         pce.submitAndCheck();
     }
