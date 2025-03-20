@@ -34,9 +34,12 @@ import android.companion.virtual.VirtualDeviceManager.VirtualDevice;
 import android.companion.virtual.VirtualDeviceParams;
 import android.companion.virtual.camera.VirtualCameraCallback;
 import android.companion.virtual.camera.VirtualCameraConfig;
+import android.companion.virtualdevice.flags.Flags;
 import android.os.Parcel;
 import android.os.ServiceSpecificException;
 import android.platform.test.annotations.AppModeFull;
+import android.platform.test.annotations.RequiresFlagsDisabled;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.virtualdevice.cts.common.VirtualDeviceRule;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -55,12 +58,15 @@ import java.util.concurrent.Executor;
 public class VirtualCameraConfigTest {
 
     private static final String CAMERA_NAME = "Virtual Camera";
+    private static final String CAMERA_NAME_EXTERNAL_1 = "First Virtual External Camera";
+    private static final String CAMERA_NAME_EXTERNAL_2 = "Second Virtual External Camera";
     private static final int CAMERA_WIDTH = 640;
     private static final int CAMERA_HEIGHT = 480;
     private static final int CAMERA_FORMAT = YUV_420_888;
     private static final int CAMERA_MAX_FPS = 30;
     private static final int CAMERA_SENSOR_ORIENTATION = SENSOR_ORIENTATION_0;
     private static final int CAMERA_LENS_FACING = LENS_FACING_FRONT;
+    private static final int CAMERA_INVALID_LENS_FACING = 5;
 
     @Rule public VirtualDeviceRule mRule = VirtualDeviceRule.createDefault();
 
@@ -238,6 +244,7 @@ public class VirtualCameraConfigTest {
     }
 
     @Test
+    @RequiresFlagsDisabled(Flags.FLAG_EXTERNAL_VIRTUAL_CAMERAS)
     public void virtualCameraConfigBuilder_unsupportedLensFacing_throwsException() {
         assertThrows(IllegalArgumentException.class,
                 () -> new VirtualCameraConfig.Builder(CAMERA_NAME)
@@ -246,6 +253,43 @@ public class VirtualCameraConfigTest {
                         .setLensFacing(LENS_FACING_EXTERNAL)
                         .setVirtualCameraCallback(mExecutor, mCallback)
                         .build());
+    }
+
+    @Test
+    public void virtualCameraConfigBuilder_invalidLensFacing_throwsException() {
+        assertThrows(IllegalArgumentException.class,
+                () -> new VirtualCameraConfig.Builder(CAMERA_NAME)
+                        .addStreamConfig(CAMERA_WIDTH, CAMERA_HEIGHT, CAMERA_FORMAT,
+                                CAMERA_MAX_FPS)
+                        .setLensFacing(CAMERA_INVALID_LENS_FACING)
+                        .setVirtualCameraCallback(mExecutor, mCallback)
+                        .build());
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_EXTERNAL_VIRTUAL_CAMERAS)
+    public void virtualCameraConfigBuilder_multipleExternalCamera_succeeds() {
+        VirtualCameraConfig config1 = new VirtualCameraConfig.Builder(CAMERA_NAME_EXTERNAL_1)
+                .addStreamConfig(CAMERA_WIDTH, CAMERA_HEIGHT, CAMERA_FORMAT, CAMERA_MAX_FPS)
+                .setVirtualCameraCallback(mExecutor, mCallback)
+                .setSensorOrientation(CAMERA_SENSOR_ORIENTATION)
+                .setLensFacing(LENS_FACING_EXTERNAL)
+                .build();
+
+        assertVirtualCameraConfig(config1, CAMERA_WIDTH, CAMERA_HEIGHT, CAMERA_FORMAT,
+                CAMERA_MAX_FPS, CAMERA_SENSOR_ORIENTATION, LENS_FACING_EXTERNAL,
+                CAMERA_NAME_EXTERNAL_1);
+
+        VirtualCameraConfig config2 = new VirtualCameraConfig.Builder(CAMERA_NAME_EXTERNAL_2)
+                .addStreamConfig(CAMERA_WIDTH, CAMERA_HEIGHT, CAMERA_FORMAT, CAMERA_MAX_FPS)
+                .setVirtualCameraCallback(mExecutor, mCallback)
+                .setSensorOrientation(CAMERA_SENSOR_ORIENTATION)
+                .setLensFacing(LENS_FACING_EXTERNAL)
+                .build();
+
+        assertVirtualCameraConfig(config2, CAMERA_WIDTH, CAMERA_HEIGHT, CAMERA_FORMAT,
+                CAMERA_MAX_FPS, CAMERA_SENSOR_ORIENTATION, LENS_FACING_EXTERNAL,
+                CAMERA_NAME_EXTERNAL_2);
     }
 
     @Test

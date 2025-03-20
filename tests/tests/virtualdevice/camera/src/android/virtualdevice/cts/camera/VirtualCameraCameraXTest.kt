@@ -22,6 +22,7 @@ import android.companion.virtual.VirtualDeviceParams
 import android.companion.virtual.camera.VirtualCamera
 import android.companion.virtual.camera.VirtualCameraCallback
 import android.companion.virtual.camera.VirtualCameraConfig
+import android.companion.virtualdevice.flags.Flags
 import android.content.Context
 import android.graphics.BitmapFactory
 import android.graphics.Canvas
@@ -31,6 +32,7 @@ import android.hardware.camera2.CameraMetadata
 import android.view.Surface
 import android.virtualdevice.cts.camera.util.VirtualCameraUtils
 import android.virtualdevice.cts.camera.util.VirtualCameraUtils.BACK_CAMERA_ID
+import android.virtualdevice.cts.camera.util.VirtualCameraUtils.FRONT_CAMERA_ID
 import android.virtualdevice.cts.camera.util.VirtualCameraUtils.INFO_DEVICE_ID
 import android.virtualdevice.cts.camera.util.VirtualCameraUtils.assertImagesSimilar
 import android.virtualdevice.cts.camera.util.VirtualCameraUtils.loadBitmapFromRaw
@@ -48,13 +50,14 @@ import androidx.camera.core.RetryPolicy
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.concurrent.futures.await
 import androidx.core.content.ContextCompat
-import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.google.common.truth.Truth.assertThat
 import java.io.File
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
 import junit.framework.Assert.fail
+import junitparams.JUnitParamsRunner
+import junitparams.Parameters
 import kotlin.coroutines.suspendCoroutine
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -71,7 +74,7 @@ import org.junit.runner.RunWith
 private const val VIRTUAL_CAMERA_WIDTH = 460
 private const val VIRTUAL_CAMERA_HEIGHT = 260
 
-@RunWith(AndroidJUnit4::class)
+@RunWith(JUnitParamsRunner::class)
 class VirtualCameraCameraXTest {
 
     private var activity: AppCompatActivity? = null
@@ -114,10 +117,10 @@ class VirtualCameraCameraXTest {
         this.vdContext = vdContext
     }
 
-    private fun initCameraXProvider(context: Context) {
+    private fun initCameraXProvider(context: Context, cameraSelector: CameraSelector) {
         val cameraXConfig = CameraXConfig.Builder.fromConfig(Camera2Config.defaultConfig())
             .setCameraProviderInitRetryPolicy(RetryPolicy.NEVER)
-            .setAvailableCamerasLimiter(CameraSelector.DEFAULT_BACK_CAMERA)
+            .setAvailableCamerasLimiter(cameraSelector)
             .build()
         ProcessCameraProvider.configureInstance(cameraXConfig)
         cameraProvider = ProcessCameraProvider.getInstance(context).get(10, TimeUnit.SECONDS)!!
@@ -138,24 +141,25 @@ class VirtualCameraCameraXTest {
     }
 
     @Test
-    fun virtualDeviceContext_takePicture() {
+    @Parameters(method = "getAllLensFacingDirections")
+    fun virtualDeviceContext_takePicture(lensFacing: Int) {
         val golden = loadBitmapFromRaw(R.raw.golden_camerax_virtual_camera)
 
         createVirtualCamera(
-            lensFacing = CameraMetadata.LENS_FACING_BACK
+            lensFacing = lensFacing
         ) { surface ->
             val canvas: Canvas = surface.lockCanvas(null)
             canvas.drawBitmap(golden, 0f, 0f, null)
             surface.unlockCanvasAndPost(canvas)
         }
 
-        initCameraXProvider(vdContext!!)
+        val cameraSelector = CameraSelector.Builder().requireLensFacing(lensFacing).build()
+
+        initCameraXProvider(vdContext!!, cameraSelector)
 
         val imageCapture = ImageCapture.Builder()
             .setFlashMode(FLASH_MODE_OFF)
             .build()
-
-        val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
 
         val imageFile = takeAndSavePicture(cameraSelector, imageCapture)
         assertThat(imageFile.exists()).isTrue()
@@ -170,16 +174,20 @@ class VirtualCameraCameraXTest {
     }
 
     @Test
-    fun virtualDeviceContext_availableCameraInfos_returnsVirtualCameras() {
-        createVirtualCamera(
-            lensFacing = CameraMetadata.LENS_FACING_BACK
-        )
-        initCameraXProvider(vdContext!!)
+    @Parameters(method = "getAllLensFacingDirections")
+    fun virtualDeviceContext_availableCameraInfos_returnsVirtualCameras(lensFacing: Int) {
+        createVirtualCamera(lensFacing = lensFacing)
+
+        val cameraSelector = CameraSelector.Builder()
+            .requireLensFacing(lensFacing)
+            .build()
+
+        initCameraXProvider(vdContext!!, cameraSelector)
         runBlockingWithTimeout {
             withContext(Dispatchers.Main) {
                 cameraProvider!!.bindToLifecycle(
                     activity!!,
-                    CameraSelector.DEFAULT_BACK_CAMERA
+                    cameraSelector
                 )
             }
         }
@@ -191,14 +199,19 @@ class VirtualCameraCameraXTest {
             .map { it.cameraId }
 
         val cameraManager = vdContext!!.getSystemService(CameraManager::class.java)
-        val cameraIdList: Array<String> =
-            cameraManager!!.cameraIdList
+        val cameraIdList: Array<String> = cameraManager!!.cameraIdList
+
+        val expectedCameraId = when (lensFacing) {
+            CameraMetadata.LENS_FACING_BACK -> BACK_CAMERA_ID
+            CameraMetadata.LENS_FACING_FRONT -> FRONT_CAMERA_ID
+            CameraMetadata.LENS_FACING_EXTERNAL -> ids.first()
+            else -> throw RuntimeException("Unexpected lens facing value!")
+        }
+
         assertThat(ids).containsExactlyElementsIn(cameraIdList.asList())
-        assertThat(ids).containsExactly(BACK_CAMERA_ID)
-        assertThat(
-            cameraManager.getCameraCharacteristics(BACK_CAMERA_ID)
-                .get(INFO_DEVICE_ID)
-        ).isEqualTo(virtualDevice!!.deviceId)
+        assertThat(ids).containsExactly(expectedCameraId)
+        assertThat(cameraManager.getCameraCharacteristics(expectedCameraId).get(INFO_DEVICE_ID))
+            .isEqualTo(virtualDevice!!.deviceId)
         assertThat(camera2Infos[0].getCameraCharacteristic(INFO_DEVICE_ID))
             .isEqualTo(virtualDevice!!.deviceId)
     }
@@ -277,6 +290,13 @@ class VirtualCameraCameraXTest {
             return null
         }
     }
+
+    @Suppress("unused") // Parameter for parametrized tests
+    private fun getAllLensFacingDirections() = listOfNotNull(
+        CameraMetadata.LENS_FACING_BACK,
+        CameraMetadata.LENS_FACING_FRONT,
+        CameraMetadata.LENS_FACING_EXTERNAL.takeIf { Flags.externalVirtualCameras() },
+    )
 }
 
 private fun <T> runBlockingWithTimeout(block: suspend CoroutineScope.() -> T) {
