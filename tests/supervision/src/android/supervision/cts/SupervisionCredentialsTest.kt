@@ -26,6 +26,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.android.bedstead.flags.annotations.RequireFlagsEnabled
 import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.harrier.DeviceState
+import com.android.bedstead.multiuser.annotations.RequireMultiUserSupport
 import com.android.bedstead.nene.TestApis
 import com.android.bedstead.permissions.annotations.EnsureDoesNotHavePermission
 import com.android.bedstead.permissions.annotations.EnsureHasPermission
@@ -51,6 +52,7 @@ class SupervisionCredentialsTest {
             ["android.app.supervision.SupervisionManager#createConfirmSupervisionCredentialsIntent"]
     )
     @EnsureHasPermission(MANAGE_USERS)
+    @RequireMultiUserSupport
     @RequireRootInstrumentation(reason = "Use of MANAGE_USERS")
     fun createConfirmSupervisionCredentialsIntent_hasManageUsersPermission_returnsValidIntent() {
         supervisionManager.setSupervisionEnabled(true)
@@ -79,6 +81,7 @@ class SupervisionCredentialsTest {
         apis =
             ["android.app.supervision.SupervisionManager#createConfirmSupervisionCredentialsIntent"]
     )
+    @RequireMultiUserSupport
     @EnsureHasPermission(QUERY_USERS, CREATE_USERS)
     fun createConfirmSupervisionCredentialsIntent_hasQueryUsersPermission_returnsValidIntent() {
         supervisionManager.setSupervisionEnabled(true)
@@ -119,6 +122,7 @@ class SupervisionCredentialsTest {
         apis =
             ["android.app.supervision.SupervisionManager#createConfirmSupervisionCredentialsIntent"]
     )
+    @RequireMultiUserSupport
     @EnsureHasPermission(QUERY_USERS, CREATE_USERS)
     fun createConfirmSupervisionCredentialsIntent_supervisionNotEnabled_returnsNull() {
         supervisionManager.setSupervisionEnabled(false)
@@ -153,6 +157,7 @@ class SupervisionCredentialsTest {
         apis =
             ["android.app.supervision.SupervisionManager#createConfirmSupervisionCredentialsIntent"]
     )
+    @RequireMultiUserSupport
     @EnsureHasPermission(QUERY_USERS, CREATE_USERS)
     fun createConfirmSupervisionCredentialsIntent_supervisingUserMissingSecureLock_returnsNull() {
         supervisionManager.isSupervisionEnabled = true
