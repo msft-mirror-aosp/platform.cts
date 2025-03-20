@@ -76,7 +76,7 @@ public class SELinuxNeverallowRulesParserTest extends BaseHostJUnit4Test {
                 + "};\n";
         List<SELinuxNeverallowRule> rules = SELinuxNeverallowRule.parsePolicy(policy);
         assertEquals(1, rules.size());
-        assertEquals(rules.get(0).mText, "neverallow d1 {   d2   d3 }:file {   p1   p2 };");
+        assertEquals("neverallow d1 {   d2   d3 }:file {   p1   p2 };", rules.get(0).mText);
     }
 
     @Test
