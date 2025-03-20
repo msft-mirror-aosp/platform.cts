@@ -744,7 +744,7 @@ def main():
     auto_scene_switch = True
   else:
     auto_scene_switch = False
-    logging.info('Manual, checkerboard scenes, or scene5 testing.')
+    logging.info('Manual, checkerboard scenes, scene5 or scene_ip testing.')
 
   folded_prompted = False
   opened_prompted = False
