@@ -207,7 +207,7 @@ public class VehiclePropertyVerifier<T> {
     private static final int VENDOR_ERROR_CODE_MINIMUM_VALUE = 0x0;
     private static final int VENDOR_ERROR_CODE_MAXIMUM_VALUE = 0xffff;
     private static final int SET_PROPERTY_CALLBACK_TIMEOUT_SEC = 5;
-    private static final long CPM_ACTION_DELAY_MS = 300;
+    private static final long CPM_ACTION_DELAY_MS = 20;
     private static final Object sLock = new Object();
     private static final ImmutableSet<Integer> WHEEL_AREAS =
             ImmutableSet.of(
