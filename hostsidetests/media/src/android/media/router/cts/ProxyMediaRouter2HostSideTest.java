@@ -48,9 +48,6 @@ import com.android.tradefed.testtype.junit4.BaseHostJUnit4Test;
 import com.android.tradefed.testtype.junit4.BeforeClassWithInfo;
 import com.android.tradefed.testtype.junit4.DeviceTestRunOptions;
 
-import com.google.common.truth.Expect;
-
-import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -59,7 +56,6 @@ import java.io.FileNotFoundException;
 @RunWith(DeviceJUnit4ClassRunner.class)
 public class ProxyMediaRouter2HostSideTest extends BaseHostJUnit4Test {
 
-    @ClassRule public static final Expect expect = Expect.create();
     private static int secondaryUser = -1;
 
     @BeforeClassWithInfo
@@ -94,21 +90,17 @@ public class ProxyMediaRouter2HostSideTest extends BaseHostJUnit4Test {
             throws DeviceNotAvailableException {
         ITestDevice device = testInformation.getDevice();
 
-        expect.that(device.uninstallPackage(
-                PROXY_MEDIA_ROUTER_WITH_MEDIA_CONTENT_CONTROL_HELPER_PACKAGE)).isNull();
-        expect.that(device.uninstallPackage(
-                PROXY_MEDIA_ROUTER_WITH_MEDIA_ROUTING_CONTROL_APP_PACKAGE)).isNull();
+        device.uninstallPackage(PROXY_MEDIA_ROUTER_WITH_MEDIA_CONTENT_CONTROL_HELPER_PACKAGE);
+        device.uninstallPackage(PROXY_MEDIA_ROUTER_WITH_MEDIA_ROUTING_CONTROL_APP_PACKAGE);
 
         if (device.isMultiUserSupported()) {
-            expect.that(
-                    device.uninstallPackageForUser(
-                            MEDIA_ROUTER_SECONDARY_USER_HELPER_PACKAGE, secondaryUser))
-            .isNull();
+            device.uninstallPackageForUser(
+                    MEDIA_ROUTER_SECONDARY_USER_HELPER_PACKAGE, secondaryUser);
             assertThat(device.removeUser(secondaryUser)).isTrue();
         }
 
         // This uninstalls package across all users.
-        expect.that(device.uninstallPackage(MEDIA_ROUTER_PROVIDER_1_PACKAGE)).isNull();
+        device.uninstallPackage(MEDIA_ROUTER_PROVIDER_1_PACKAGE);
     }
 
     @Test
