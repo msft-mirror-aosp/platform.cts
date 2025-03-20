@@ -58,7 +58,7 @@ class ZoomTestTELE(its_base_test.ItsBaseTest):
       first_api_level = its_session_utils.get_first_api_level(self.dut.serial)
       physical_props = cam.get_camera_properties_by_id(self.hidden_physical_id)
       is_tele = cam.get_camera_type(physical_props) == (
-          its_session_utils._CAMERA_TYPE_TELE)
+          its_session_utils.CAMERA_TYPE_TELE)
       logging.debug('is_tele: %s', is_tele)
       camera_properties_utils.skip_unless(
           camera_properties_utils.zoom_ratio_range(props) and is_tele)
