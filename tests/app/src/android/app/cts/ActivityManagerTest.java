@@ -34,6 +34,7 @@ import static android.content.pm.PackageManager.COMPONENT_ENABLED_STATE_DISABLED
 import static android.content.pm.PackageManager.COMPONENT_ENABLED_STATE_ENABLED;
 import static android.content.pm.PackageManager.DONT_KILL_APP;
 import static android.content.pm.PackageManager.MATCH_DEFAULT_ONLY;
+import static android.server.wm.WindowManagerState.STATE_RESUMED;
 
 import static com.android.compatibility.common.util.SystemUtil.callWithShellPermissionIdentity;
 import static com.android.compatibility.common.util.SystemUtil.runShellCommand;
@@ -123,6 +124,7 @@ import androidx.test.uiautomator.UiDevice;
 import com.android.compatibility.common.util.AmMonitor;
 import com.android.compatibility.common.util.AmUtils;
 import com.android.compatibility.common.util.AppStandbyUtils;
+import com.android.compatibility.common.util.FeatureUtil;
 import com.android.compatibility.common.util.PropertyUtil;
 import com.android.compatibility.common.util.ShellIdentityUtils;
 import com.android.compatibility.common.util.UserHelper;
@@ -159,6 +161,7 @@ public final class ActivityManagerTest {
     // A secondary test activity from another APK.
     static final String SIMPLE_PACKAGE_NAME = "com.android.cts.launcherapps.simpleapp";
     static final String SIMPLE_ACTIVITY = ".SimpleActivity";
+    static final String SIMPLE_ACTIVITY_COMPONENT = STUB_PACKAGE_NAME + SIMPLE_ACTIVITY;
     static final String SIMPLE_ACTIVITY_IMMEDIATE_EXIT = ".SimpleActivityImmediateExit";
     static final String SIMPLE_ACTIVITY_CHAIN_EXIT = ".SimpleActivityChainExit";
     static final String SIMPLE_RECEIVER = ".SimpleReceiver";
@@ -207,6 +210,7 @@ public final class ActivityManagerTest {
     private boolean mAppStandbyEnabled;
     private boolean mAutomotiveDevice;
     private boolean mLeanbackOnly;
+    private WindowManagerStateHelper mWmState;
 
     private final UserHelper mUserHelper = new UserHelper();
 
@@ -233,6 +237,7 @@ public final class ActivityManagerTest {
         mAppStandbyEnabled = AppStandbyUtils.isAppStandbyEnabled();
         mAutomotiveDevice = mPackageManager.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE);
         mLeanbackOnly = mPackageManager.hasSystemFeature(PackageManager.FEATURE_LEANBACK_ONLY);
+        mWmState = new WindowManagerStateHelper();
         startSubActivity(ScreenOnActivity.class);
         AmUtils.waitForBroadcastBarrier();
     }
@@ -251,6 +256,10 @@ public final class ActivityManagerTest {
         if (mErrorProcessID != -1) {
             android.os.Process.killProcess(mErrorProcessID);
         }
+
+        // Ensure that there are no remaining component records of the test app package.
+        runWithShellPermissionIdentity(
+                () -> mActivityManager.forceStopPackage(SIMPLE_PACKAGE_NAME));
     }
 
     @Test
@@ -1716,9 +1725,21 @@ public final class ActivityManagerTest {
             CommandReceiver.sendCommand(mTargetContext, CommandReceiver.COMMAND_START_ACTIVITY,
                     PACKAGE_NAME_APP1, PACKAGE_NAME_APP2, 0, null);
             watcher2.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_TOP, null);
-            watcher1.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_SERVICE, null);
-            assertTrue("Failed to wait for the trim memory event",
-                    latchHolder[0].await(waitForSec, TimeUnit.MILLISECONDS));
+            ComponentName app1 = new ComponentName(PACKAGE_NAME_APP1, SIMPLE_ACTIVITY_COMPONENT);
+            mWmState.waitForValidState(app1);
+            boolean resumed = mWmState.waitForActivityState(app1, STATE_RESUMED);
+            if (!resumed) {
+                watcher1.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_SERVICE, null);
+                assertTrue("Failed to wait for the trim memory event",
+                        latchHolder[0].await(waitForSec, TimeUnit.MILLISECONDS));
+            } else {
+                // On some form factors, like XR, multiple activities can be in the resumed state,
+                // so PACKAGE_NAME_APP1 doesn't go into the background or the service state.
+                // Therefore, there should not be any changes in the process state
+                // or the memory trim level.
+                assertFalse("The memory trim level shouldn't change",
+                        latchHolder[0].await(waitForSec, TimeUnit.MILLISECONDS));
+            }
 
             // Start the heavy weight activity
             final Intent intent = new Intent();
@@ -2208,6 +2229,12 @@ public final class ActivityManagerTest {
         try {
             launchHome();
 
+            // While XR does not have a HOME ACTIVITY, we can still background apps by using
+            // the home screen intent, so for the purposes of this test, this is sufficient.
+            if (FeatureUtil.isXrHeadset()) {
+                launchHomeScreenUsingIntent();
+            }
+
             // Since we're running instrumentation, our proc state will stay above FGS.
             uid1Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE,
                     WatchUidRunner.STATE_FG_SERVICE, null);
@@ -2223,7 +2250,11 @@ public final class ActivityManagerTest {
 
             // Launch home again so our activity will be backgrounded.
             launchHome();
-
+            // While XR does not have a HOME ACTIVITY, we can still background apps by using
+            // the home screen intent, so for the purposes of this test, this is sufficient.
+            if (FeatureUtil.isXrHeadset()) {
+                launchHomeScreenUsingIntent();
+            }
             // The uid goes back to FGS state,
             // but the process with the remote activity should have been in the background.
             uid1Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE,
