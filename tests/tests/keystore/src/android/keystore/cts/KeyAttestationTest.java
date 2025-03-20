@@ -53,9 +53,10 @@ import static com.google.common.truth.Truth.assertThat;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.either;
-import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.everyItem;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.hasItems;
+import static org.hamcrest.Matchers.isIn;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -1165,7 +1166,7 @@ public class KeyAttestationTest {
             Attestation attestation = Attestation.loadFromCertificate(attestationCert);
 
             checkEcKeyDetails(attestationCert, attestation, "CURVE_25519", 256);
-            checkKeyUsage(attestationCert, purpose);
+            checkKeyUsage(attestationCert, purpose, /* isStrongBox= */ false);
             checkKeyIndependentAttestationInfo(challenge, purpose,
                     ImmutableSet.of(KM_DIGEST_NONE), startTime, false,
                     devicePropertiesAttestation, attestation);
@@ -1224,7 +1225,7 @@ public class KeyAttestationTest {
             checkRsaKeyDetails(attestationCert, attestation, keySize,
                     (paddingModes == null)
                             ? new HashSet<String>() : ImmutableSet.copyOf(paddingModes));
-            checkKeyUsage(attestationCert, purposes);
+            checkKeyUsage(attestationCert, purposes, isStrongBox);
             checkKeyIndependentAttestationInfo(challenge, purposes, startTime,
                     includeValidityDates, devicePropertiesAttestation, attestation);
         } finally {
@@ -1232,33 +1233,76 @@ public class KeyAttestationTest {
         }
     }
 
-    private void checkKeyUsage(X509Certificate attestationCert,
-            @KeyProperties.PurposeEnum int purposes) {
+    private void checkKeyUsage(
+            X509Certificate attestationCert,
+            @KeyProperties.PurposeEnum int purposes,
+            boolean isStrongBox) {
+        boolean[] actualKeyUsage = attestationCert.getKeyUsage();
+        if (purposes == PURPOSE_VERIFY && actualKeyUsage == null) {
+            // A key with *just* verify purpose might have no `KeyUsage` extension,
+            // because the private key can't be used by KeyMint.
+            return;
+        }
 
-        boolean[] expectedKeyUsage = new boolean[KEY_USAGE_BITSTRING_LENGTH];
-        boolean[] certKeyUsage = attestationCert.getKeyUsage();
+        // Key attestation tests for StrongBox were only enabled from Android 15,
+        // so allow more lax `KeyUsage` bits for earlier StrongBox implementations.
+        boolean laxChecks = (isStrongBox && TestUtils.getVendorApiLevel() <= 34);
 
+        boolean[] requiredKeyUsage = new boolean[KEY_USAGE_BITSTRING_LENGTH];
+        boolean[] allowedKeyUsage = new boolean[KEY_USAGE_BITSTRING_LENGTH];
         if (isVerifyPurpose(purposes)) {
-            // Some implementations may set the signature key usage
-            // bit when PURPOSE_VERIFY is used, but some do not.  Allow
-            // for either possibility by updating the expected value of
-            // the bit to match what's actually present.
-            expectedKeyUsage[KEY_USAGE_DIGITAL_SIGNATURE_BIT_OFFSET] =
-                certKeyUsage[KEY_USAGE_DIGITAL_SIGNATURE_BIT_OFFSET];
+            // A PURPOSE_VERIFY key might have the digital signature bit set.
+            allowedKeyUsage[KEY_USAGE_DIGITAL_SIGNATURE_BIT_OFFSET] = true;
         }
         if (isSignaturePurpose(purposes)) {
-            // A PURPOSE_SIGN key should definitely have the bit set.
-            expectedKeyUsage[KEY_USAGE_DIGITAL_SIGNATURE_BIT_OFFSET] = true;
+            // A PURPOSE_SIGN key must have the digital signature bit set.
+            requiredKeyUsage[KEY_USAGE_DIGITAL_SIGNATURE_BIT_OFFSET] = true;
         }
         if (isEncryptionPurpose(purposes)) {
-            expectedKeyUsage[KEY_USAGE_KEY_ENCIPHERMENT_BIT_OFFSET] = true;
-            expectedKeyUsage[KEY_USAGE_DATA_ENCIPHERMENT_BIT_OFFSET] = true;
+            requiredKeyUsage[KEY_USAGE_DATA_ENCIPHERMENT_BIT_OFFSET] = true;
+            if (laxChecks) {
+                // Allow the key encipherment bit to be missing on older StrongBox impls.
+                allowedKeyUsage[KEY_USAGE_KEY_ENCIPHERMENT_BIT_OFFSET] = true;
+            } else {
+                requiredKeyUsage[KEY_USAGE_KEY_ENCIPHERMENT_BIT_OFFSET] = true;
+            }
         }
         if (isAgreeKeyPurpose(purposes)) {
-            expectedKeyUsage[KEY_USAGE_KEY_AGREE_BIT_OFFSET] = true;
+            requiredKeyUsage[KEY_USAGE_KEY_AGREE_BIT_OFFSET] = true;
         }
-        assertThat("Attested certificate has unexpected key usage.",
-            certKeyUsage, is(expectedKeyUsage));
+
+        // Any bit that's required is also allowed.
+        for (int bit = 0; bit < KEY_USAGE_BITSTRING_LENGTH; bit++) {
+            if (requiredKeyUsage[bit]) {
+                allowedKeyUsage[bit] = true;
+            }
+        }
+
+        assertTrue(
+                "Attested certificate missing a required key usage bit.\n Required : "
+                        + Arrays.toString(requiredKeyUsage)
+                        + "\n Actual : "
+                        + Arrays.toString(actualKeyUsage),
+                checkSubset(requiredKeyUsage, actualKeyUsage));
+        assertTrue(
+                "Attested certificate has an unexpected key usage bit set.\n Actual : "
+                        + Arrays.toString(actualKeyUsage)
+                        + "\n Allowed : "
+                        + Arrays.toString(allowedKeyUsage),
+                checkSubset(actualKeyUsage, allowedKeyUsage));
+    }
+
+    // Indicate whether the first argument is a subset of the second.
+    // Both arguments must be the same length.
+    private boolean checkSubset(boolean[] subset, boolean[] superset) {
+        assertThat(superset.length).isEqualTo(subset.length);
+        for (int i = 0; i < subset.length; i++) {
+            if (subset[i] && !superset[i]) {
+                // Value i is set in `subset` but not in the putative superset
+                return false;
+            }
+        }
+        return true;
     }
 
     @SuppressWarnings("deprecation")
@@ -1301,7 +1345,7 @@ public class KeyAttestationTest {
             Attestation attestation = Attestation.loadFromCertificate(attestationCert);
 
             checkEcKeyDetails(attestationCert, attestation, ecCurve, keySize);
-            checkKeyUsage(attestationCert, purposes);
+            checkKeyUsage(attestationCert, purposes, isStrongBox);
             checkKeyIndependentAttestationInfo(challenge, purposes, startTime,
                     includeValidityDates, devicePropertiesAttestation, attestation);
         } finally {
@@ -1426,8 +1470,25 @@ public class KeyAttestationTest {
     }
 
     private void checkUnexpectedOids(Attestation attestation) {
-        assertThat("Attestations must not contain any extra data",
-                attestation.getUnexpectedExtensionOids(), is(empty()));
+        // Key attestation tests for StrongBox were only enabled from Android 15,
+        // so allow more lax checks for earlier StrongBox implementations.
+        boolean laxChecks =
+                (attestation.getAttestationSecurityLevel() == KM_SECURITY_LEVEL_STRONG_BOX
+                        && TestUtils.getVendorApiLevel() <= 34);
+
+        // Retrieve the extension OIDs that are not expected. This includes OIDs whose critical
+        // bit is incorrect.
+        Set<String> unexpectedOids = attestation.getUnexpectedExtensionOids();
+
+        ImmutableSet.Builder<String> allowedOids = new ImmutableSet.Builder<String>();
+        if (laxChecks) {
+            // Allow for a KeyUsage extension that is incorrectly marked as non-critical
+            allowedOids.add(Attestation.KEY_USAGE_OID);
+        }
+        assertThat(
+                "Attestations must not contain additional extensions",
+                unexpectedOids,
+                everyItem(isIn(allowedOids.build())));
     }
 
     private int getSystemPatchLevel() {
