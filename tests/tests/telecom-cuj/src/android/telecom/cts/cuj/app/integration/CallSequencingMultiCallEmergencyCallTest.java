@@ -139,6 +139,9 @@ public class CallSequencingMultiCallEmergencyCallTest extends BaseAppVerifier {
         {
             ManagedConnectionServiceApp, ManagedConnectionServiceApp, ManagedConnectionServiceApp
         }, // 20
+        {
+            ManagedConnectionServiceApp, ManagedConnectionServiceApp, ManagedConnectionServiceApp
+        }, // 21
     };
 
     private static boolean[][] sCallsHoldableAndSecondCallOutgoing = {
@@ -167,7 +170,8 @@ public class CallSequencingMultiCallEmergencyCallTest extends BaseAppVerifier {
         {true, false, true}, // 17
         {false, true, false}, // 18
         {false, true, false}, // 19
-        {false, true, false}, // 20
+        {false, false, false}, // 20
+        {false, false, true}, // 21
     };
     private static int[][] sExpectedCallStatesAndNumCallsDisconnected = {
         /* expected1stCallStateAfter2nd,
@@ -191,11 +195,12 @@ public class CallSequencingMultiCallEmergencyCallTest extends BaseAppVerifier {
         //        {STATE_ACTIVE, STATE_RINGING, STATE_HOLDING, STATE_DISCONNECTED, 1}, // 13
         {STATE_HOLDING, STATE_ACTIVE, STATE_HOLDING, STATE_DISCONNECTED, 1}, // 14
         {STATE_HOLDING, STATE_ACTIVE, STATE_HOLDING, STATE_DISCONNECTED, 1}, // 15
-        {STATE_HOLDING, STATE_ACTIVE, STATE_DISCONNECTED, STATE_DISCONNECTED, 2}, // 16
-        {STATE_HOLDING, STATE_ACTIVE, STATE_DISCONNECTED, STATE_DISCONNECTED, 2}, // 17
-        {STATE_ACTIVE, STATE_RINGING, STATE_DISCONNECTED, STATE_DISCONNECTED, 2}, // 18
-        {STATE_ACTIVE, STATE_RINGING, STATE_DISCONNECTED, STATE_DISCONNECTED, 2}, // 19
-        {STATE_ACTIVE, STATE_RINGING, STATE_DISCONNECTED, STATE_DISCONNECTED, 2}, // 20
+        {STATE_HOLDING, STATE_ACTIVE, STATE_DISCONNECTED, STATE_HOLDING, 1}, // 16
+        {STATE_HOLDING, STATE_ACTIVE, STATE_DISCONNECTED, STATE_HOLDING, 1}, // 17
+        {STATE_ACTIVE, STATE_RINGING, STATE_HOLDING, STATE_DISCONNECTED, 1}, // 18
+        {STATE_ACTIVE, STATE_RINGING, STATE_HOLDING, STATE_DISCONNECTED, 1}, // 19
+        {STATE_ACTIVE, STATE_RINGING, STATE_HOLDING, STATE_DISCONNECTED, 1}, // 20
+        {STATE_HOLDING, STATE_ACTIVE, STATE_HOLDING, STATE_DISCONNECTED, 1}, // 21
     };
 
     private static class CallParameters {
@@ -341,6 +346,7 @@ public class CallSequencingMultiCallEmergencyCallTest extends BaseAppVerifier {
                             controlWrapperApp1,
                             getRandomAttributes(app1, true /* isOutgoing */, is1stCallHoldable),
                             c1Validator);
+            verifyCallIsInState(call1, STATE_DIALING);
             verifyCallStateTransition(c1Validator, call1, controlWrapperApp1, STATE_ACTIVE);
 
             // Place another managed call and verify the existing call is either held or active (in
@@ -372,6 +378,7 @@ public class CallSequencingMultiCallEmergencyCallTest extends BaseAppVerifier {
                 verifyCallStateTransition(
                         c2Validator, call2, controlWrapperApp2, expected2ndCallStateAfterEcc);
             }
+            verifyCallIsInState(emergencyCall, STATE_DIALING);
             setCallStateAndVerify(controlWrapperApp3, emergencyCall, STATE_ACTIVE);
 
             // Clean up calls
@@ -398,6 +405,7 @@ public class CallSequencingMultiCallEmergencyCallTest extends BaseAppVerifier {
             int expectedCallState)
             throws Exception {
         if (expectedCallState == STATE_ACTIVE) {
+            verifyCallIsInState(call, STATE_DIALING);
             setCallStateAndVerify(app, call, STATE_ACTIVE);
             return;
         } else if (expectedCallState == STATE_RINGING || expectedCallState == STATE_DIALING) {
