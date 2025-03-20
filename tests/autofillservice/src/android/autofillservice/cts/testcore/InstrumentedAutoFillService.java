@@ -25,7 +25,6 @@ import static android.autofillservice.cts.testcore.Timeouts.CONNECTION_TIMEOUT;
 import static android.autofillservice.cts.testcore.Timeouts.FILL_EVENTS_TIMEOUT;
 import static android.autofillservice.cts.testcore.Timeouts.FILL_TIMEOUT;
 import static android.autofillservice.cts.testcore.Timeouts.IDLE_UNBIND_TIMEOUT;
-import static android.autofillservice.cts.testcore.Timeouts.RESPONSE_DELAY_MS;
 import static android.autofillservice.cts.testcore.Timeouts.SAVE_TIMEOUT;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -519,6 +518,10 @@ public class InstrumentedAutoFillService extends AutofillService {
         private @Nullable FillEventHistory mFillEventHistory = null;
         private int mSessionDestroyedCount = 0;
 
+        private @Nullable FillCallback mDelayedCallback = null;
+        private @Nullable FillResponse mDelayedResponse = null;
+        private @Nullable FillRequest mDelayedRequest = null;
+
         private Replier() {
         }
 
@@ -602,6 +605,25 @@ public class InstrumentedAutoFillService extends AutofillService {
                 throw new RetryableException(FILL_TIMEOUT, "onFillRequest() not called");
             }
             return request;
+        }
+
+        /** Continue to process the delayed fill request based on the stored values. */
+        public void processDelayedResponse() {
+            if (mDelayedCallback != null && mDelayedResponse != null && mDelayedRequest != null) {
+                mDelayedCallback.onSuccess(mDelayedResponse);
+                Log.v(
+                        TAG,
+                        "onFillRequest("
+                                + mDelayedRequest.requestId
+                                + "): fillResponse = "
+                                + mDelayedResponse);
+                Helper.offer(mFillRequests, mDelayedRequest, CONNECTION_TIMEOUT.ms());
+            }
+            // and then reset all parameters.
+            mDelayedCallback = null;
+            mDelayedResponse = null;
+            mDelayedRequest = null;
+            Log.v(TAG, "processDelayedResponse: all stored values are resetted");
         }
 
         /**
@@ -825,16 +847,19 @@ public class InstrumentedAutoFillService extends AutofillService {
                 }
 
                 if (response.getResponseType() == ResponseType.DELAY) {
-                    mHandler.postDelayed(() -> {
-                        Log.v(TAG,
-                                "onFillRequest(" + requestId + "): fillResponse = " + fillResponse);
-                        callback.onSuccess(fillResponse);
-                        // Add a fill request to let test case know response was sent.
-                        Helper.offer(mFillRequests,
-                                new FillRequest(contexts, hints, data, cancellationSignal, callback,
-                                        flags, inlineRequest, delayFillIntentSender, requestId),
-                                CONNECTION_TIMEOUT.ms());
-                    }, RESPONSE_DELAY_MS);
+                    mDelayedCallback = callback;
+                    mDelayedResponse = fillResponse;
+                    mDelayedRequest =
+                            new FillRequest(
+                                    contexts,
+                                    hints,
+                                    data,
+                                    cancellationSignal,
+                                    callback,
+                                    flags,
+                                    inlineRequest,
+                                    delayFillIntentSender,
+                                    requestId);
                 } else {
                     Log.v(TAG, "onFillRequest(" + requestId + "): fillResponse = " + fillResponse);
                     callback.onSuccess(fillResponse);
