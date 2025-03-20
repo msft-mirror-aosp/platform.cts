@@ -38,7 +38,7 @@ _IMG_INCREASING_ATOL = 2  # Require images get at least 2x black level
 _IMG_SAT_RTOL = 0.01  # 1%
 _IMG_STATS_GRID = 9  # Used to find the center 11.11%
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
-_STEADY_BRIGHTNESS_TOLERANCE = 0.05 # Relative tolerance for steady brightness
+_STEADY_BRIGHTNESS_TOLERANCE = 0.05  # RTOL for steady brightness
 _NS_TO_MS_FACTOR = 1.0E-6
 _CONTROL_AE_PRIORITY_MODE_EXPOSURE_TIME_PRIORITY = 2  # Cam Metadata enum value
 
@@ -135,33 +135,39 @@ def assert_increasing_means(means, exps, black_levels, white_level):
   if not image_increasing:
     raise AssertionError('Image does not increase with exposure!')
 
+
 def assert_steady_means(means, exps):
-    """Assert that image brightness is steady as the exposure time increases (within tolerance).
+  """Assert that image brightness is steady as the exposure time increases (within tolerance).
 
-    Args:
-        means: BAYER COLORS means for set of images
-        exps: exposure times in ms
-    Returns:
-        None
-    """
-    for i in range(1, len(means)):
-        prev_mean = means[i-1]
-        mean = means[i]
+  Args:
+    means: BAYER COLORS means for set of images
+    exps: exposure times in ms
+  Returns:
+    None
+  """
+  for i in range(1, len(means)):
+    prev_mean = means[i-1]
+    mean = means[i]
 
-        logging.debug('exp: %.3fms, prev_means: %s, current_means: %s', exps[i-1], prev_mean, mean)
-        for ch, color in enumerate(_BAYER_COLORS):
-            # Check if the current mean is within the steady tolerance of the previous mean
-            lower_bound = prev_mean[ch] * (1 - _STEADY_BRIGHTNESS_TOLERANCE)
-            upper_bound = prev_mean[ch] * (1 + _STEADY_BRIGHTNESS_TOLERANCE)
+    logging.debug(
+        'exp: %.3fms, prev_means: %s, current_means: %s',
+        exps[i-1], prev_mean, mean
+    )
+    for ch, color in enumerate(_BAYER_COLORS):
+      # Check current mean is within the steady tolerance of previous mean
+      lower_bound = prev_mean[ch] * (1 - _STEADY_BRIGHTNESS_TOLERANCE)
+      upper_bound = prev_mean[ch] * (1 + _STEADY_BRIGHTNESS_TOLERANCE)
 
-            if not (lower_bound <= mean[ch] <= upper_bound):
-                e_msg = (f'{color} not steady!')
-                e_msg += (f'Previous Mean: {prev_mean[ch]:.2f}, ')
-                e_msg += (f'Current Mean: {mean[ch]:.2f}, ')
-                e_msg += (f'Lower Bound: {lower_bound:.2f}, ')
-                e_msg += (f'Upper Bound: {upper_bound:.2f}, ')
-                e_msg += (f'Tolerance: {_STEADY_BRIGHTNESS_TOLERANCE}')
-                raise AssertionError(e_msg)
+      if not (lower_bound <= mean[ch] <= upper_bound):
+        e_msg = (
+            f'{color} not steady! '
+            f'Previous Mean: {prev_mean[ch]:.2f}, '
+            f'Current Mean: {mean[ch]:.2f}, '
+            f'Lower Bound: {lower_bound:.2f}, '
+            f'Upper Bound: {upper_bound:.2f}, '
+            f'Tolerance: {_STEADY_BRIGHTNESS_TOLERANCE}'
+        )
+        raise AssertionError(e_msg)
 
 
 def ae_exposure_time_priority_capture_request(exp_time):
@@ -267,24 +273,26 @@ class ExposureTimePriorityTest(its_base_test.ItsBaseTest):
         sens_sensitivity = metadata['android.sensor.sensitivity']
 
         if sens_min < sens_sensitivity < sens_max:
-            # We assume a 'steady brightness' scenario, as the ISO is able to
-            # adjust to maintain consistent exposure.
-            means_steady.append(mean)
-            e_test_ms_steady.append(e_test[i] * _NS_TO_MS_FACTOR)
+          # We assume a 'steady brightness' scenario, as the ISO is able to
+          # adjust to maintain consistent exposure.
+          means_steady.append(mean)
+          e_test_ms_steady.append(e_test[i] * _NS_TO_MS_FACTOR)
         else:
-            # We assume an 'increasing brightness' scenario, as the exposure
-            # time is increasing without available ISO adjustment to help
-            # maintain steady brightness, resulting in brighter images.
-            means_increasing.append(mean)
-            e_test_ms_increasing.append(e_test[i] * _NS_TO_MS_FACTOR)
+          # We assume an 'increasing brightness' scenario, as the exposure
+          # time is increasing without available ISO adjustment to help
+          # maintain steady brightness, resulting in brighter images.
+          means_increasing.append(mean)
+          e_test_ms_increasing.append(e_test[i] * _NS_TO_MS_FACTOR)
 
       # Create plot
       create_plot(e_test_ms_total, means_total, log_path)
 
-      # Each shot mean not able to use ISO-based compensation should be increasing in brightness
-      assert_increasing_means(means_increasing, e_test_ms_increasing, black_levels, white_level)
+      # Each shot not using ISO-based compensation should increase in brightness
+      assert_increasing_means(
+          means_increasing, e_test_ms_increasing, black_levels, white_level
+      )
 
-      # Each shot mean able to use ISO-based compensation should be steady in brightness
+      # Each shot using ISO-based compensation should be steady in brightness
       assert_steady_means(means_steady, e_test_ms_steady)
 
 if __name__ == '__main__':
