@@ -294,7 +294,11 @@
                   android:turnScreenOn="true"
                   android:showWhenLocked="true"/>
         <activity android:name="android.server.wm.activity.ConfigurationCallbacksTest$TestActivity"
-                  android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|colorMode|density|touchscreen"/>
+                  android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|colorMode|density|touchscreen">
+            <property
+                android:name="android.window.PROPERTY_COMPAT_ALLOW_SAFE_REGION_LETTERBOXING"
+                android:value="false" />
+        </activity>
 
         <activity android:name="android.server.wm.insets.RoundedCornerTests$TestActivity"
                   android:configChanges="orientation|screenSize"
