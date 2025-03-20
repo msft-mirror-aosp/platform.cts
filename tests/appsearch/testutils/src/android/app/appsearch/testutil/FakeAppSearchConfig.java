@@ -241,6 +241,12 @@ public final class FakeAppSearchConfig implements ServiceAppSearchConfig {
     }
 
     @Override
+    public long getCachedPersistDelayMillis() {
+        throwIfClosed();
+        return DEFAULT_PERSIST_DELAY;
+    }
+
+    @Override
     public int getIntegerIndexBucketSplitThreshold() {
         throwIfClosed();
         return DEFAULT_INTEGER_INDEX_BUCKET_SPLIT_THRESHOLD;
