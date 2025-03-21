@@ -71,20 +71,21 @@ import androidx.test.core.app.ApplicationProvider;
 
 import com.google.common.collect.Range;
 
-import junitparams.JUnitParamsRunner;
-import junitparams.Parameters;
-import junitparams.naming.TestCaseName;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+
+import junitparams.JUnitParamsRunner;
+import junitparams.Parameters;
+import junitparams.naming.TestCaseName;
 
 @AppModeFull(reason = "VirtualDeviceManager cannot be accessed by instant apps")
 @RunWith(JUnitParamsRunner.class)
@@ -448,8 +449,15 @@ public class VirtualCameraCaptureTest {
                 .setHeight(height)
                 .setImageCount(imageCount)
                 .setVerifyCaptureComplete(true)
-                .setRequestBuilderModifier((request) -> request.set(
-                        CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE, requestFPSRange))
+                .setRequestBuilderModifier((request) -> {
+                    request.set(
+                            CaptureRequest.CONTROL_CAPTURE_INTENT,
+                            CaptureRequest.CONTROL_CAPTURE_INTENT_PREVIEW);
+                    request.set(
+                            CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE, requestFPSRange);
+                })
+                .setCapturePeriod(Duration.ofNanos(
+                        SECOND_TO_NANOS / VirtualCameraCaptureHelper.CAMERA_MAX_FPS))
                 .setInputSurfaceConsumer(fixedRateImageWriter);
         mCaptureHelper.captureImages(config).close();
         List<TotalCaptureResult> captureResults = mCaptureHelper.getCaptureResults();
@@ -521,6 +529,94 @@ public class VirtualCameraCaptureTest {
                     .get(CaptureResult.SENSOR_TIMESTAMP)).isIn(timestampRange);
             assertThat(image.getTimestamp()).isIn(timestampRange);
         }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_CAMERA_NO_FRAME_DUPLICATION)
+    public void captureMultipleImages_motionCapture_noDuplication() {
+        int width = 460;
+        int height = 260;
+        long renderedTimestampNanos = 1_000_000;
+        int imageCount = 10;
+        int virtualCameraDeclaredFPS = 5;
+        int imageWriterFPS = 5;
+
+        mCaptureHelper.createVirtualCamera(width, height, YUV_420_888,
+                virtualCameraDeclaredFPS /* fps */);
+        FixedRateImageWriter fixedRateImageWriter =
+                new FixedRateImageWriter(renderedTimestampNanos, imageWriterFPS);
+        CaptureConfiguration config = new CaptureConfiguration()
+                .setOutputFormat(YUV_420_888)
+                .setWidth(width)
+                .setHeight(height)
+                .setImageCount(imageCount)
+                .setInputSurfaceConsumer(fixedRateImageWriter)
+                .setRequestBuilderModifier(request -> {
+                    request.set(CaptureRequest.CONTROL_CAPTURE_INTENT,
+                            CaptureRequest.CONTROL_CAPTURE_INTENT_MOTION_TRACKING);
+                    request.set(
+                            CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE,
+                            android.util.Range.create(30, 30));
+                });
+
+        mCaptureHelper.captureImages(config);
+
+        List<TotalCaptureResult> captureResults = mCaptureHelper.getCaptureResults();
+
+        List<Long> expectedTimestamps = fixedRateImageWriter.getWrittenTimestamps();
+        List<Long> receivedTimestamps = captureResults.stream()
+                .map(result -> result.get(CaptureResult.SENSOR_TIMESTAMP))
+                .toList();
+
+        // We check that the virtual camera HAL did not create a duplicate frame by checking that
+        // all the timestamps we received are the ones the image writer wrote
+        assertThat(receivedTimestamps).containsExactlyElementsIn(expectedTimestamps);
+        assertThat(captureResults).hasSize(imageCount);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_CAMERA_NO_FRAME_DUPLICATION)
+    public void captureMultipleImages_preview_FrameDuplication() {
+        int width = 460;
+        int height = 260;
+        long renderedTimestampNanos = 1_000_000;
+        int imageCount = 10;
+        int virtualCameraDeclaredFPS = 30;
+        int imageWriterFPS = 5;
+
+        mCaptureHelper.createVirtualCamera(width, height, YUV_420_888, virtualCameraDeclaredFPS);
+
+        FixedRateImageWriter fixedRateImageWriter =
+                new FixedRateImageWriter(renderedTimestampNanos, imageWriterFPS);
+        CaptureConfiguration config = new CaptureConfiguration()
+                .setOutputFormat(YUV_420_888)
+                .setWidth(width)
+                .setHeight(height)
+                .setImageCount(imageCount)
+                .setInputSurfaceConsumer(fixedRateImageWriter)
+                .setRequestBuilderModifier(request -> {
+                    request.set(CaptureRequest.CONTROL_CAPTURE_INTENT,
+                            CaptureRequest.CONTROL_CAPTURE_INTENT_PREVIEW);
+                    request.set(
+                            CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE,
+                            android.util.Range.create(30, 30));
+                });
+
+        mCaptureHelper.captureImages(config);
+
+        List<TotalCaptureResult> captureResults = mCaptureHelper.getCaptureResults();
+
+        List<Long> writtenTimestamps = fixedRateImageWriter.getWrittenTimestamps();
+        List<Long> receivedTimestamps = captureResults.stream()
+                .map(result -> result.get(CaptureResult.SENSOR_TIMESTAMP))
+                .toList();
+
+        // We check that the virtual camera HAL created duplicated frames by checking that
+        // all the timestamps we received are the one we wrote and that we have more timestamp
+        // than the ones the image writer actually wrote.
+        assertThat(receivedTimestamps).containsAtLeastElementsIn(writtenTimestamps);
+        assertThat(receivedTimestamps.size()).isGreaterThan(writtenTimestamps.size());
+        assertThat(captureResults).hasSize(imageCount);
     }
 
     @SuppressWarnings("unused") // Parameter for parametrized tests

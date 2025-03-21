@@ -62,9 +62,12 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
@@ -240,9 +243,34 @@ public class VirtualCameraCaptureHelper {
                 imageReaderLatch.countDown();
             }, mImageReaderHandler);
 
-            for (int i = 0; i < config.mImageCount; i++) {
-                cameraCaptureSession.captureSingleRequest(request.build(), mCameraExecutor,
-                        mCaptureCallback);
+            Duration capturePeriod = config.mCapturePeriod;
+            if (capturePeriod != null) {
+                Timer cameraCaptureTimer = new Timer("Camera Capture Timer");
+                cameraCaptureTimer.scheduleAtFixedRate(new TimerTask() {
+
+                    int mRemainingCapture = config.mImageCount;
+
+                    @Override
+                    public void run() {
+                        try {
+                            if (mRemainingCapture <= 0) {
+                                cancel();
+                                return;
+                            }
+                            mRemainingCapture--;
+                            cameraCaptureSession.captureSingleRequest(request.build(),
+                                    mCameraExecutor,
+                                    mCaptureCallback);
+                        } catch (CameraAccessException e) {
+                            throw new RuntimeException(e);
+                        }
+                    }
+                }, 0, capturePeriod.toMillis());
+            } else {
+                for (int i = 0; i < config.mImageCount; i++) {
+                    cameraCaptureSession.captureSingleRequest(request.build(), mCameraExecutor,
+                            mCaptureCallback);
+                }
             }
 
             if (!config.mVerifyCaptureComplete) {
@@ -399,6 +427,7 @@ public class VirtualCameraCaptureHelper {
         private int mWidth = CAMERA_WIDTH;
         private int mHeight = CAMERA_HEIGHT;
         private int mOutputFormat = YUV_420_888;
+        private Duration mCapturePeriod = null;
 
         /**
          * Set the number of image to capture
@@ -407,6 +436,11 @@ public class VirtualCameraCaptureHelper {
          */
         public CaptureConfiguration setImageCount(int imageCount) {
             mImageCount = imageCount;
+            return this;
+        }
+
+        public CaptureConfiguration setCapturePeriod(Duration period) {
+            mCapturePeriod = period;
             return this;
         }
 
