@@ -428,6 +428,26 @@ public class CompilationTest extends BaseHostJUnit4Test {
         File sdmFile = mUtils.createSdm(artifacts.odexFile(), artifacts.artFile(), "testkey");
 
         mUtils.installFromResourcesWithSdm(getAbi(), STATUS_CHECKER_APK_RES, dmFile, sdmFile);
+
+        String dump = mUtils.assertCommandSucceeds("pm art dump " + STATUS_CHECKER_PKG);
+        checkDexoptStatus(dump, Pattern.quote("base.apk"), "speed-profile", "cloud");
+
+        var checkStatusOptions = new DeviceTestRunOptions(STATUS_CHECKER_PKG)
+                                         .setTestClassName(STATUS_CHECKER_CLASS)
+                                         .setTestMethodName("checkStatus")
+                                         .setDisableHiddenApiCheck(true)
+                                         .addInstrumentationArg("compiler-filter", "speed-profile")
+                                         .addInstrumentationArg("compilation-reason", "cloud");
+        assertThat(runDeviceTests(checkStatusOptions)).isTrue();
+
+        // Further make sure that the native code is from the SDM file.
+        var checkExecutableMethodFileOffsetsOptions =
+                new DeviceTestRunOptions(STATUS_CHECKER_PKG)
+                        .setTestClassName(STATUS_CHECKER_CLASS)
+                        .setTestMethodName("checkExecutableMethodFileOffsets")
+                        .setDisableHiddenApiCheck(true)
+                        .addInstrumentationArg("container-path-pattern", "\\.sdm!/primary\\.odex$");
+        assertThat(runDeviceTests(checkExecutableMethodFileOffsetsOptions)).isTrue();
     }
 
     @Test
@@ -458,14 +478,19 @@ public class CompilationTest extends BaseHostJUnit4Test {
     }
 
     private void checkDexoptStatus(String dump, String dexfilePattern, String statusPattern) {
+        checkDexoptStatus(dump, dexfilePattern, statusPattern, "[-a-z]*");
+    }
+
+    private void checkDexoptStatus(
+            String dump, String dexfilePattern, String statusPattern, String reasonPattern) {
         // Matches the dump output typically being:
         //     /data/user/0/android.compilation.cts.statuscheckerapp/secondary.jar
         //       x86_64: [status=speed] [reason=cmdline] [primary-abi]
         // The pattern is intentionally minimized to be as forward compatible as possible.
         // TODO(b/283447251): Use a machine-readable format.
-        assertThat(dump).containsMatch(
-                Pattern.compile(String.format("[\\s/](%s)(\\s[^\\n]*)?\\n[^\\n]*\\[status=(%s)\\]",
-                        dexfilePattern, statusPattern)));
+        assertThat(dump).containsMatch(Pattern.compile(String.format(
+                "[\\s/](%s)(\\s[^\\n]*)?\\n[^\\n]*\\[status=(%s)\\][^\\n]*\\[reason=(%s)\\]",
+                dexfilePattern, statusPattern, reasonPattern)));
     }
 
     private CompilationArtifacts generateStatusCheckerCompilationArtifacts() throws Exception {
