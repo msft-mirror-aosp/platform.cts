@@ -121,7 +121,7 @@ class ItsBaseTest(base_test.BaseTestClass):
 
     self._setup_devices(num_devices)
 
-    if self.rotator_cntl != 'gen2_rotator':
+    if self.scene != 'scene_ip':
       arduino_serial_port = lighting_control_utils.lighting_control(
           self.lighting_cntl, self.lighting_ch)
       if arduino_serial_port and self.scene != 'scene0':
