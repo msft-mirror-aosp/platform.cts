@@ -33,7 +33,6 @@ import android.content.pm.PackageManager;
 import android.net.wifi.WifiManager;
 import android.os.PersistableBundle;
 import android.telephony.CarrierConfigManager;
-import android.telephony.Rlog;
 import android.telephony.ServiceState;
 import android.telephony.SmsManager;
 import android.telephony.SubscriptionManager;
@@ -49,6 +48,7 @@ import android.telephony.ims.feature.MmTelFeature;
 import android.telephony.ims.stub.ImsFeatureConfiguration;
 import android.telephony.mockmodem.MockModemConfigBase;
 import android.telephony.mockmodem.MockModemManager;
+import android.util.Log;
 
 import androidx.test.InstrumentationRegistry;
 
@@ -575,11 +575,11 @@ public class CarrierRoamingSatelliteTestBase {
     }
 
     protected static void logd(@NonNull String tag, @NonNull String log) {
-        Rlog.d(tag, log);
+        Log.d(tag, log);
     }
 
     protected static void loge(@NonNull String tag, @NonNull String log) {
-        Rlog.e(tag, log);
+        Log.e(tag, log);
     }
 
     protected static class WifiStateReceiver extends BroadcastReceiver {

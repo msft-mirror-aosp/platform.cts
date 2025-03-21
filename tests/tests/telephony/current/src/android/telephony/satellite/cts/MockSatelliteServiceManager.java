@@ -33,7 +33,6 @@ import android.content.pm.PackageManager;
 import android.content.res.Resources;
 import android.os.IBinder;
 import android.os.RemoteException;
-import android.telephony.Rlog;
 import android.telephony.cts.externalpointingui.ExternalMockPointingUi;
 import android.telephony.cts.externalsatellitegatewayservice.ExternalMockSatelliteGatewayService;
 import android.telephony.cts.externalsatellitegatewayservice.IExternalMockSatelliteGatewayService;
@@ -50,6 +49,7 @@ import android.telephony.satellite.stub.PointingInfo;
 import android.telephony.satellite.stub.SatelliteDatagram;
 import android.text.TextUtils;
 import android.util.IntArray;
+import android.util.Log;
 
 import com.android.internal.R;
 
@@ -1688,11 +1688,11 @@ class MockSatelliteServiceManager {
     }
 
     private static void logd(@NonNull String log) {
-        Rlog.d(TAG, log);
+        Log.d(TAG, log);
     }
 
     private static void loge(@NonNull String log) {
-        Rlog.e(TAG, log);
+        Log.e(TAG, log);
     }
 
     private static class MockPointingUiActivityStatusReceiver extends BroadcastReceiver {
