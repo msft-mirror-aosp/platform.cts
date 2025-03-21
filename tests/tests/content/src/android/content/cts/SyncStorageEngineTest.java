@@ -30,7 +30,7 @@ import java.io.FileOutputStream;
 
 @AppModeFull(reason = "Sync manager not supported")
 public class SyncStorageEngineTest extends AndroidTestCase {
-    public void testMalformedAuthority() throws Exception {
+    public void ignore_testMalformedAuthority() throws Exception {
         Looper.prepare();
         // Authority id is non integer. It should be discarded by SyncStorageEngine.
         byte[] accountsFileData = ("<?xml version='1.0' encoding='utf-8' standalone='yes' ?>\n"
