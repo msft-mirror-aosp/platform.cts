@@ -251,7 +251,6 @@
     <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.VideoCallTest#testUpgradeToVideo"/>
     <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.VideoCallTest#testVideoCallDelayProvider"/>
     <!-- CtsTelephonyTestCases -->
-    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.SimultaneousCallingRestrictionsTest#testImsRegisteredWLAN"/>
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.SubscriptionManagerTest#testAddSubscriptionIntoNewGroupWithPermission"/>
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.SubscriptionManagerTest#testCountryIso"/>
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.SubscriptionManagerTest#testGetActiveSubscriptionInfoForIcc"/>
