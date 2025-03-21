@@ -23,6 +23,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
+import android.app.admin.DevicePolicyManager;
 import android.os.SystemProperties;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.security.Flags;
@@ -99,9 +100,14 @@ public class MemoryTaggingExtensionTest extends BaseAdvancedProtectionTest {
     public void testEnableProtection() throws InterruptedException {
         assumeTrue(isAvailable());
         setAdvancedProtectionEnabled(true);
-        assertEquals("The MTE system is not enabled",
+        assertEquals(
+                "The MTE system is not enabled",
                 "memtag",
                 SystemProperties.get(MTE_CONTROL_PROPERTY));
+        assertEquals(
+                "The DevicePolicyManager did not return correct value",
+                DevicePolicyManager.MTE_ENABLED,
+                getMtePolicyFromDpm());
     }
 
     @ApiTest(
@@ -120,5 +126,16 @@ public class MemoryTaggingExtensionTest extends BaseAdvancedProtectionTest {
                 mtePropertyValue.equals("default") || mtePropertyValue.equals("none");
         assertTrue(
                 "The MTE system is not in default state: " + mtePropertyValue, mteIsDefaultOrNone);
+        assertEquals(
+                "The DevicePolicyManager did not return correct value",
+                DevicePolicyManager.MTE_NOT_CONTROLLED_BY_POLICY,
+                getMtePolicyFromDpm());
+    }
+
+    private int getMtePolicyFromDpm() {
+        return mInstrumentation
+                .getContext()
+                .getSystemService(DevicePolicyManager.class)
+                .getMtePolicy();
     }
 }
