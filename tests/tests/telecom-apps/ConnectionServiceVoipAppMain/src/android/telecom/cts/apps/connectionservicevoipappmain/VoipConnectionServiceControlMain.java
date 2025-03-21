@@ -359,6 +359,21 @@ public class VoipConnectionServiceControlMain extends Service {
                 }
 
                 @Override
+                public NoDataTransaction sendConnectionEvent(String id, String event) {
+                    Log.i(
+                            mTag,
+                            String.format("sendConnectionEvent: id=[%s], event=[%s]", id, event));
+                    // No-op for self-managed app
+                    return new NoDataTransaction(
+                            TestAppTransaction.Failure,
+                            new TestAppException(
+                                    mPackageName,
+                                    createStackTraceList(mClassName + "sendConnectionEvent"),
+                                    "VoipConnectionService* does not implement "
+                                            + "sendConnectionEvent"));
+                }
+
+                @Override
                 public CallEndpointTransaction getCurrentCallEndpoint(String id) {
                     Log.i(mTag, String.format("getCurrentCallEndpoint: id=[%s]", id));
 

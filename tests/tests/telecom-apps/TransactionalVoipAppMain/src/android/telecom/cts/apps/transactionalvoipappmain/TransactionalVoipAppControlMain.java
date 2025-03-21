@@ -356,6 +356,21 @@ public class TransactionalVoipAppControlMain extends Service {
                 }
 
                 @Override
+                public NoDataTransaction sendConnectionEvent(String id, String event) {
+                    Log.i(
+                            mTag,
+                            String.format("sendConnectionEvent: id=[%s], event=[%s]", id, event));
+                    // No-op for transactional app
+                    return new NoDataTransaction(
+                            TestAppTransaction.Failure,
+                            new TestAppException(
+                                    mPackageName,
+                                    createStackTraceList(mClassName + "sendConnectionEvent"),
+                                    "TransactionalVoipApp* does not implement "
+                                            + "sendConnectionEvent"));
+                }
+
+                @Override
                 public CallEndpointTransaction getCurrentCallEndpoint(String id)
                         throws RemoteException {
                     Log.i(mTag, String.format("getCurrentCallEndpoint: id=[%s]", id));

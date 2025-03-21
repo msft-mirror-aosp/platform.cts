@@ -322,6 +322,17 @@ public class AppControlWrapper {
         }
     }
 
+    /** Sends the specified connection event on the associated identifier for the call. */
+    public void sendConnectionEvent(String id, String event) throws RemoteException {
+        Log.i(TAG, "sendConnectionEvent");
+        try {
+            NoDataTransaction transactionResult = mBinder.sendConnectionEvent(id, event);
+            maybeFailTest(transactionResult);
+        } catch (RemoteException e) {
+            handleRemoteException(e, "sendConnectionEvent");
+        }
+    }
+
     /**
      * Registers the default account that is defined in the application.info class that corresponds
      * to the implementation class
