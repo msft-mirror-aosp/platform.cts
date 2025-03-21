@@ -147,24 +147,21 @@ public class CodecInfoTest {
     @ApiTest(apis = "android.media.MediaCodecInfo.CodecCapabilities#profileLevels")
     @Test
     public void testCodecProfileSupport() {
-        Assume.assumeTrue("Test is applicable for video codecs and aac",
-                mMediaType.startsWith("video/") || mMediaType.equals(
-                        MediaFormat.MIMETYPE_AUDIO_AAC));
         MediaCodecInfo.CodecCapabilities caps = mCodecInfo.getCapabilitiesForType(mMediaType);
         assertNotNull(mCodecName + " did not provide capabilities \n", caps);
+        Assume.assumeTrue("Test is not applicable for media types with no profile list",
+                PROFILE_MAP.get(mMediaType) != null);
         assertTrue(mCodecName + " did not advertise any profile", caps.profileLevels.length > 0);
         int[] profileArray = PROFILE_MAP.get(mMediaType);
-        if (profileArray != null) {
-            boolean hasStandardProfile = false;
-            for (CodecProfileLevel pl : caps.profileLevels) {
-                if (IntStream.of(profileArray).anyMatch(x -> x == pl.profile)) {
-                    hasStandardProfile = true;
-                    break;
-                }
+        boolean hasStandardProfile = false;
+        for (CodecProfileLevel pl : caps.profileLevels) {
+            if (IntStream.of(profileArray).anyMatch(x -> x == pl.profile)) {
+                hasStandardProfile = true;
+                break;
             }
-            assertTrue(mCodecName + " does not contain at least one standard profile",
-                    hasStandardProfile);
         }
+        assertTrue(mCodecName + " does not contain at least one standard profile",
+                hasStandardProfile);
     }
 
     /**
