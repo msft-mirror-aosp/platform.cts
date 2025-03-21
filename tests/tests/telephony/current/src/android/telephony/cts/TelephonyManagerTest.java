@@ -211,8 +211,6 @@ public class TelephonyManagerTest {
     private boolean mHasRadioPowerOff = false;
     private Boolean mWasLocationEnabled;
     private ServiceState mServiceState;
-    private PhoneCapability mPhoneCapability;
-    private boolean mOnPhoneCapabilityChanged = false;
     private final Object mLock = new Object();
 
     private CarrierConfigManager mCarrierConfigManager;
@@ -224,7 +222,6 @@ public class TelephonyManagerTest {
     private static final int TIMEOUT_FOR_NETWORK_OPS = TOLERANCE * 180;
     private static final int LOCATION_SETTING_CHANGE_WAIT_MS = 1000;
 
-    private static final int TIMEOUT_FOR_CARRIER_STATUS_FILE_CHECK = TOLERANCE * 180;
     private static final long TIMEOUT = TimeUnit.SECONDS.toMillis(5);
     private PhoneStateListener mListener;
     private static ConnectivityManager mCm;
@@ -685,11 +682,12 @@ public class TelephonyManagerTest {
             return;
         }
         for (Integer key : mAllowedNetworkTypesList.keySet()) {
-            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
-                    mTelephonyManager,
-                    (tm) -> tm.setAllowedNetworkTypesForReason(
-                            key,
-                            mAllowedNetworkTypesList.get(key)));
+            synchronized (mLock) {
+                ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                        mTelephonyManager,
+                        (tm) -> tm.setAllowedNetworkTypesForReason(
+                                key, mAllowedNetworkTypesList.get(key)));
+            }
         }
     }
 
@@ -1977,20 +1975,6 @@ public class TelephonyManagerTest {
                                 nri.getAccessNetworkTechnology());
                     }
                 }
-            }
-        }
-    }
-
-    private MockPhoneCapabilityListener mMockPhoneCapabilityListener;
-
-    private class MockPhoneCapabilityListener extends TelephonyCallback
-            implements TelephonyCallback.PhoneCapabilityListener {
-        @Override
-        public void onPhoneCapabilityChanged(PhoneCapability capability) {
-            synchronized (mLock) {
-                mPhoneCapability = capability;
-                mOnPhoneCapabilityChanged = true;
-                mLock.notify();
             }
         }
     }
@@ -3628,7 +3612,16 @@ public class TelephonyManagerTest {
         @Override
         public void onAllowedNetworkTypesChanged(int reason, long allowedNetworkType) {
             try {
-                Log.d(TAG, "onAllowedNetworkTypesChanged");
+                Log.d(
+                        TAG,
+                        "onAllowedNetworkTypesChanged mExpectedReason="
+                                + mExpectedReason
+                                + ", reason="
+                                + reason
+                                + ", mExpectedAllowedNetworkType="
+                                + mExpectedAllowedNetworkType
+                                + ", allowedNetworkType="
+                                + allowedNetworkType);
                 if (mExpectedReason == reason
                         && mExpectedAllowedNetworkType == allowedNetworkType) {
                     verifyExpectedGetAllowedNetworkType(reason);
@@ -3651,36 +3644,51 @@ public class TelephonyManagerTest {
         }
 
         public void verifyExpectedGetAllowedNetworkType(int reason) {
-            long allowedNetworkType = ShellIdentityUtils.invokeMethodWithShellPermissions(
-                    mTelephonyManager,
-                    (tm) -> {
-                        return tm.getAllowedNetworkTypesForReason(reason);
-                    },
-                    "android.permission.READ_PRIVILEGED_PHONE_STATE"
-            );
-            if (mExpectedAllowedNetworkType == allowedNetworkType) {
-                mLatch.countDown();
+            synchronized (mLock) {
+                long allowedNetworkType =
+                        ShellIdentityUtils.invokeMethodWithShellPermissions(
+                                mTelephonyManager,
+                                (tm) -> tm.getAllowedNetworkTypesForReason(reason),
+                                "android.permission.READ_PRIVILEGED_PHONE_STATE");
+                if (mExpectedAllowedNetworkType == allowedNetworkType) {
+                    mLatch.countDown();
+                }
             }
         }
     }
 
-    private void verifySetAndGetAllowedNetworkTypesForReason(AllowedNetworkTypesListener listener,
-            int reason, long allowedNetworkTypes) throws Exception {
+    private void verifySetAndGetAllowedNetworkTypesForReason(
+            AllowedNetworkTypesListener listener, int reason, long targetNetworkTypes)
+            throws Exception {
 
         // Try the test three times, and stop test when get success once during the test.
         int retries = 3;
-        listener.setExpectedAllowedNetworkType(reason, allowedNetworkTypes, 1);
+        listener.setExpectedAllowedNetworkType(reason, targetNetworkTypes, 1);
         for (int count = 0; count < retries; count++) {
-            // setAllowedNetworkTypesForReason
-            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
-                    mTelephonyManager,
-                    (tm) -> tm.setAllowedNetworkTypesForReason(reason, allowedNetworkTypes),
-                    "android.permission.MODIFY_PHONE_STATE");
-
-            // test getAllowedNetworkTypesForReason.
-            // Since this is testing the getAllowedNetworkTypesForReason it helps to speed up the
-            // test by doing the get here first rather than waiting for the event change.
-            listener.verifyExpectedGetAllowedNetworkType(reason);
+            synchronized (mLock) {
+                // setAllowedNetworkTypesForReason
+                long allowedNetworkType =
+                        ShellIdentityUtils.invokeMethodWithShellPermissions(
+                                mTelephonyManager,
+                                (tm) -> {
+                                    tm.setAllowedNetworkTypesForReason(reason, targetNetworkTypes);
+                                    // test getAllowedNetworkTypesForReason with same permission
+                                    // thread to avoid adopt/drop race.
+                                    // Since this is testing the getAllowedNetworkTypesForReason it
+                                    // helps to speed up the test by doing the get here first rather
+                                    // than waiting for the event change.
+                                    return tm.getAllowedNetworkTypesForReason(reason);
+                                },
+                                "android.permission.MODIFY_PHONE_STATE",
+                                "android.permission.READ_PRIVILEGED_PHONE_STATE");
+                Log.d(TAG,"verifySetAndGetAllowedNetworkTypesForReason allowedNetworkType="
+                                + allowedNetworkType
+                                + " targetNetworkTypes="
+                                + targetNetworkTypes);
+                if (targetNetworkTypes == allowedNetworkType) {
+                    listener.mLatch.countDown();
+                }
+            }
 
             // if getAllowedNetworkTypesForReason return not-expected value, then wait for a while
             // by listening onAllowedNetworkTypesChanged
