@@ -423,15 +423,38 @@ public class CompilationTest extends BaseHostJUnit4Test {
     @RequiresFlagsEnabled({android.content.pm.Flags.FLAG_CLOUD_COMPILATION_PM,
             com.android.art.flags.Flags.FLAG_ART_SERVICE_V3})
     public void testSdmOk() throws Exception {
-        // Keep the class loader context in sync with `libs` of `StatusCheckerApp` in
-        // `cts/hostsidetests/compilation/status_checker_app/Android.bp`.
-        String classLoaderContext = "PCL[]{PCL[/system/framework/android.test.base.jar]}";
-        CompilationArtifacts artifacts = mUtils.generateCompilationArtifacts(
-                STATUS_CHECKER_APK_RES, STATUS_CHECKER_PROF_RES, getAbi(), classLoaderContext);
+        CompilationArtifacts artifacts = generateStatusCheckerCompilationArtifacts();
         File dmFile = mUtils.createDm(STATUS_CHECKER_PROF_RES, artifacts.vdexFile());
-        File sdmFile = mUtils.createSdm(artifacts.odexFile(), artifacts.artFile());
+        File sdmFile = mUtils.createSdm(artifacts.odexFile(), artifacts.artFile(), "testkey");
 
         mUtils.installFromResourcesWithSdm(getAbi(), STATUS_CHECKER_APK_RES, dmFile, sdmFile);
+    }
+
+    @Test
+    @RequiresFlagsEnabled({android.content.pm.Flags.FLAG_CLOUD_COMPILATION_VERIFICATION})
+    public void testSdmInvalidSignature() throws Exception {
+        CompilationArtifacts artifacts = generateStatusCheckerCompilationArtifacts();
+        File dmFile = mUtils.createDm(STATUS_CHECKER_PROF_RES, artifacts.vdexFile());
+        File sdmFile = mUtils.createSdm(artifacts.odexFile(), artifacts.artFile(), "testkey2");
+
+        Throwable throwable = assertThrows(Throwable.class, () -> {
+            mUtils.installFromResourcesWithSdm(getAbi(), STATUS_CHECKER_APK_RES, dmFile, sdmFile);
+        });
+        assertThat(throwable).hasMessageThat().contains("SDM signatures are inconsistent with APK");
+    }
+
+    @Test
+    @RequiresFlagsEnabled({android.content.pm.Flags.FLAG_CLOUD_COMPILATION_VERIFICATION})
+    public void testSdmNoSignature() throws Exception {
+        CompilationArtifacts artifacts = generateStatusCheckerCompilationArtifacts();
+        File dmFile = mUtils.createDm(STATUS_CHECKER_PROF_RES, artifacts.vdexFile());
+        File sdmFile =
+                mUtils.createSdm(artifacts.odexFile(), artifacts.artFile(), null /* keyName */);
+
+        Throwable throwable = assertThrows(Throwable.class, () -> {
+            mUtils.installFromResourcesWithSdm(getAbi(), STATUS_CHECKER_APK_RES, dmFile, sdmFile);
+        });
+        assertThat(throwable).hasMessageThat().contains("Failed to verify SDM signatures");
     }
 
     private void checkDexoptStatus(String dump, String dexfilePattern, String statusPattern) {
@@ -443,5 +466,13 @@ public class CompilationTest extends BaseHostJUnit4Test {
         assertThat(dump).containsMatch(
                 Pattern.compile(String.format("[\\s/](%s)(\\s[^\\n]*)?\\n[^\\n]*\\[status=(%s)\\]",
                         dexfilePattern, statusPattern)));
+    }
+
+    private CompilationArtifacts generateStatusCheckerCompilationArtifacts() throws Exception {
+        // Keep the class loader context in sync with `libs` of `StatusCheckerApp` in
+        // `cts/hostsidetests/compilation/status_checker_app/Android.bp`.
+        String classLoaderContext = "PCL[]{PCL[/system/framework/android.test.base.jar]}";
+        return mUtils.generateCompilationArtifacts(
+                STATUS_CHECKER_APK_RES, STATUS_CHECKER_PROF_RES, getAbi(), classLoaderContext);
     }
 }
