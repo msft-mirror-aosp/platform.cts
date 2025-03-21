@@ -35,6 +35,7 @@
         <option name="device-listeners" value="android.tools.collectors.DefaultUITraceListener"/>
         <!-- DefaultUITraceListener args -->
         <option name="instrumentation-arg" key="skip_test_success_metrics" value="true"/>
+        <option name="instrumentation-arg" key="per_class" value="true"/>
     </test>
     <target_preparer class="com.android.tradefed.targetprep.RunCommandTargetPreparer">
         <!-- TODO(b/285554134): Remove once underlying issue is fixed-->
@@ -59,5 +60,6 @@
         <!-- Pull files created by tests, like the output of screenshot tests -->
         <option name="directory-keys" value="/sdcard/Download/CtsInputTestCases" />
         <option name="collect-on-run-ended-only" value="false" />
+        <option name="clean-up" value="true" />
     </metrics_collector>
 </configuration>
