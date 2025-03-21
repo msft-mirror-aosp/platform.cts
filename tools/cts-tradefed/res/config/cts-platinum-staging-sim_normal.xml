@@ -796,7 +796,6 @@
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.PhoneStateListenerTest#testOnUserMobileDataStateChanged"/>
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.SimultaneousCallingRestrictionsTest#testCellularDSDASupported_IMSNotRegistered"/>
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.SimultaneousCallingRestrictionsTest#testCellularDSDASupported_ImsRegisteredWWAN"/>
-    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.SimultaneousCallingRestrictionsTest#testImsRegisteredWLAN"/>
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.SmsManagerTest#testGetSmscIdentity"/>
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.SmsManagerTest#testSmsRetriever"/>
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.SmsUsageMonitorShortCodeTest#testSmsShortCodeDestination"/>
