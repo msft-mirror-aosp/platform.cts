@@ -19,6 +19,7 @@ package android.security.cts;
 import static org.junit.Assert.assertTrue;
 
 import com.android.compatibility.common.util.PropertyUtil;
+import com.android.tradefed.device.DeviceNotAvailableException;
 import com.android.tradefed.device.ITestDevice;
 
 import java.io.BufferedReader;
@@ -41,12 +42,14 @@ class SELinuxNeverallowRule {
         "LAUNCHING_WITH_R_ONLY",
         "LAUNCHING_WITH_S_ONLY",
     };
+    private static String sUserOnlyMarker = "SUPPRESSED_BY_USERDEBUG_OR_ENG";
 
     public String mText;
     public boolean fullTrebleOnly;
     public boolean launchingWithROnly;
     public boolean launchingWithSOnly;
     public boolean compatiblePropertyOnly;
+    public boolean userOnly;
 
     private SELinuxNeverallowRule(String text, Map<String, Integer> conditions) {
         mText = text;
@@ -62,6 +65,9 @@ class SELinuxNeverallowRule {
         if (conditions.getOrDefault("LAUNCHING_WITH_S_ONLY", 0) > 0) {
             launchingWithSOnly = true;
         }
+        if (conditions.getOrDefault("USER_ONLY", 0) > 0) {
+            userOnly = true;
+        }
     }
 
     public String toString() {
@@ -70,6 +76,7 @@ class SELinuxNeverallowRule {
                 + ", compatiblePropertyOnly=" + compatiblePropertyOnly
                 + ", launchingWithROnly=" + launchingWithROnly
                 + ", launchingWithSOnly=" + launchingWithSOnly
+                + ", userOnly=" + userOnly
                 + "]";
     }
 
@@ -87,6 +94,10 @@ class SELinuxNeverallowRule {
 
     private boolean isCompatiblePropertyEnforcedDevice(ITestDevice device) throws Exception {
         return SELinuxHostTest.isCompatiblePropertyEnforcedDevice(device);
+    }
+
+    private boolean isUserBuild(ITestDevice device) throws DeviceNotAvailableException {
+        return PropertyUtil.isUserBuild(device);
     }
 
     public boolean isCompatible(ITestDevice device) throws Exception {
@@ -107,6 +118,10 @@ class SELinuxNeverallowRule {
             // device isn't one
             return false;
         }
+        if (userOnly && !isUserBuild(device)) {
+            // This test applies to -user builds only. Skip on -userdebug or -eng.
+            return false;
+        }
         return true;
     }
 
@@ -116,7 +131,8 @@ class SELinuxNeverallowRule {
                 .collect(Collectors.joining("|"));
 
         /* Uncomment conditions delimiter lines. */
-        Pattern uncommentConditions = Pattern.compile("^\\s*#\\s*(" + patternConditions + ").*$",
+        Pattern uncommentConditions = Pattern.compile("^\\s*#\\s*("
+                + patternConditions + "|" + sUserOnlyMarker + ").*$",
                 Pattern.MULTILINE);
         Matcher matcher = uncommentConditions.matcher(policy);
         policy = matcher.replaceAll("$1");
@@ -146,7 +162,12 @@ class SELinuxNeverallowRule {
                 assertTrue("Condition " + rule + " found without BEGIN", v > 0);
                 conditions.put(section, v - 1);
             } else if (rule.startsWith("neverallow")) {
+                if (rule.contains(sUserOnlyMarker)) {
+                    rule = rule.replaceAll(sUserOnlyMarker, "");
+                    conditions.put("USER_ONLY", 1);
+                }
                 rules.add(new SELinuxNeverallowRule(rule, conditions));
+                conditions.put("USER_ONLY", 0);
             } else {
                 throw new Exception("Unknown rule: " + rule);
             }
