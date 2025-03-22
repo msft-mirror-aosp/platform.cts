@@ -72,7 +72,6 @@ import androidx.test.filters.LargeTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.FrameworkSpecificTest;
-import com.android.compatibility.common.util.PollingCheck;
 import com.android.media.flags.Flags;
 
 import com.google.common.truth.Correspondence;
@@ -110,6 +109,10 @@ public class SystemMediaRouter2Test {
             DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Rule public final ResourceReleaser mResourceReleaser = new ResourceReleaser();
+
+    @Rule
+    public final StubMediaRoute2ProviderService.Setup mProviderSetup =
+            new StubMediaRoute2ProviderService.Setup();
 
     UiAutomation mUiAutomation;
     Context mContext;
@@ -177,29 +180,13 @@ public class SystemMediaRouter2Test {
         mSystemRouter2ForCts.startScan();
 
         mAppRouter2 = MediaRouter2.getInstance(mContext);
-        // In order to make the system bind to the test service,
-        // set a non-empty discovery preference.
-        List<String> features = new ArrayList<>();
-        features.add("A test feature");
-        RouteDiscoveryPreference preference =
-                new RouteDiscoveryPreference.Builder(features, false).build();
-        mRouteCallbacks.add(mAppRouterPlaceHolderCallback);
-        mAppRouter2.registerRouteCallback(mExecutor, mAppRouterPlaceHolderCallback, preference);
 
-        new PollingCheck(TIMEOUT_MS) {
-            @Override
-            protected boolean check() {
-                StubMediaRoute2ProviderService service =
-                        StubMediaRoute2ProviderService.getInstance();
-                if (service != null) {
-                    mService = service;
-                    return true;
-                }
-                return false;
-            }
-        }.run();
-        mService.initializeRoutes();
-        mService.publishRoutes();
+        // Several tests register mAppRouterPlaceHolderCallback as a route callback, so we put it
+        // into mRouteCallbacks here (instead of having to do it in each test) so it gets cleaned up
+        // properly in clearCallbacks().
+        mRouteCallbacks.add(mAppRouterPlaceHolderCallback);
+
+        mService = mProviderSetup.setupAndGetService(mContext);
     }
 
     @After

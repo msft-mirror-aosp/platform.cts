@@ -16,20 +16,30 @@
 
 package android.media.router.cts;
 
+import static android.app.ActivityManager.RunningAppProcessInfo.IMPORTANCE_VISIBLE;
 import static android.media.MediaRoute2Info.FEATURE_LIVE_AUDIO;
 import static android.media.MediaRoute2Info.PLAYBACK_VOLUME_FIXED;
 import static android.media.MediaRoute2Info.PLAYBACK_VOLUME_VARIABLE;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import android.annotation.NonNull;
 import android.annotation.Nullable;
+import android.app.ActivityManager;
+import android.content.Context;
 import android.content.Intent;
 import android.media.MediaRoute2Info;
 import android.media.MediaRoute2ProviderService;
+import android.media.MediaRouter2;
 import android.media.RouteDiscoveryPreference;
 import android.media.RoutingSessionInfo;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.text.TextUtils;
+
+import com.android.compatibility.common.util.PollingCheck;
+
+import org.junit.rules.ExternalResource;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -38,6 +48,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.Executors;
 
 import javax.annotation.concurrent.GuardedBy;
 
@@ -525,5 +536,67 @@ public class StubMediaRoute2ProviderService extends MediaRoute2ProviderService {
             }
         }
         return false;
+    }
+
+    // This class can be used as a JUnit @Rule to initialize and get a reference to a running
+    // StubMediaRoute2ProviderService instance that will remain valid until the end of the test, and
+    // be cleaned up afterwards.
+    public static class Setup extends ExternalResource {
+        private static final long TIMEOUT_MS = 5000;
+        private MediaRouter2 mRouter2;
+        private MediaRouter2.RouteCallback mEmptyCallback;
+        private StubMediaRoute2ProviderService mService;
+
+        /**
+         * This should be called once per test invocation, to setup and get a reference to a
+         * StubMediaRoute2ProviderService.
+         */
+        public StubMediaRoute2ProviderService setupAndGetService(Context context) {
+            assertThat(mService).isNull();
+
+            // In order to make the system bind to the test service, we need to set a non-empty
+            // discovery preference while the app is in the foreground.
+            ActivityManager.RunningAppProcessInfo appInfo =
+                    new ActivityManager.RunningAppProcessInfo();
+            ActivityManager.getMyMemoryState(appInfo);
+            assertThat(appInfo.importance).isAtMost(IMPORTANCE_VISIBLE);
+
+            RouteDiscoveryPreference preference =
+                    new RouteDiscoveryPreference.Builder(List.of("unimportant_value"), false)
+                            .build();
+
+            mRouter2 = MediaRouter2.getInstance(context);
+
+            // This callback needs to stay registered until the end of the test, to prevent the
+            // provider service from being torn down prematurely.
+            mEmptyCallback = new MediaRouter2.RouteCallback() {};
+            mRouter2.registerRouteCallback(
+                    Executors.newSingleThreadExecutor(), mEmptyCallback, preference);
+
+            new PollingCheck(TIMEOUT_MS) {
+                @Override
+                protected boolean check() {
+                    mService = StubMediaRoute2ProviderService.getInstance();
+                    if (mService != null) {
+                        return true;
+                    }
+                    return false;
+                }
+            }.run();
+            assertThat(mService).isNotNull();
+            mService.initializeRoutes();
+            mService.publishRoutes();
+            return mService;
+        }
+
+        @Override
+        protected void after() {
+            if (mEmptyCallback != null) {
+                mRouter2.unregisterRouteCallback(mEmptyCallback);
+            }
+            if (mService != null) {
+                mService.clear();
+            }
+        }
     }
 }
