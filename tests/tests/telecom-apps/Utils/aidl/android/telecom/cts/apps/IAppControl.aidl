@@ -61,6 +61,7 @@ interface IAppControl {
     NoDataTransaction addCallWithConsumer(in CallAttributes callAttributes, in IRemoteOperationConsumer consumer);
     NoDataTransaction verifyCallWithConsumer(in CallAttributes callAttributes, in IRemoteOperationConsumer consumer);
     NoDataTransaction setMuteState(String id, boolean isMuted);
+    NoDataTransaction sendConnectionEvent(String id, String event);
     BooleanTransaction isMuted(String id);
     CallExceptionTransaction transitionCallStateTo(String id, int state, boolean expectSuccess, in Bundle extras);
     NoDataTransaction requestCallEndpointChange(String id, in CallEndpoint callEndpoint);

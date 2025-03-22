@@ -515,8 +515,7 @@ public class InstrumentedAutoFillService extends AutofillService {
         private boolean mReportUnhandledFillRequest = true;
         private boolean mReportUnhandledSaveRequest = true;
 
-        private @Nullable FillEventHistory mFillEventHistory = null;
-        private int mSessionDestroyedCount = 0;
+        private List<FillEventHistory> mFillEventHistory = new ArrayList<>();
 
         private @Nullable FillCallback mDelayedCallback = null;
         private @Nullable FillResponse mDelayedResponse = null;
@@ -631,7 +630,18 @@ public class InstrumentedAutoFillService extends AutofillService {
          * assertion
          */
         public @Nullable FillEventHistory getLastFillEventHistory() {
-            return mFillEventHistory;
+            return getLastFillEventHistory(0);
+        }
+
+        /**
+         * Gets the last FillEventHistory that was return as part of onSessionDestroyed(), in the
+         * order that it was added.
+         *
+         * @param numFromLast 0 for the most recent, getSessionDestroyedCount() - 1 for the first
+         */
+        public @Nullable FillEventHistory getLastFillEventHistory(int numFromLast) {
+            int index = mFillEventHistory.size() - numFromLast - 1;
+            return mFillEventHistory.get(index);
         }
 
         /**
@@ -639,16 +649,14 @@ public class InstrumentedAutoFillService extends AutofillService {
          * onSessionDestroyed()
          */
         public void addLastFillEventHistory(@Nullable FillEventHistory history) {
-            mFillEventHistory = history;
-            mSessionDestroyedCount += 1;
+            mFillEventHistory.add(history);
         }
 
         /**
-         *
          * @return the amount of onSessionDestroyed() calls the service has received.
          */
         public int getSessionDestroyedCount() {
-            return mSessionDestroyedCount;
+            return mFillEventHistory.size();
         }
 
         /**
@@ -748,8 +756,7 @@ public class InstrumentedAutoFillService extends AutofillService {
             mAcceptedPackageName = null;
             mReportUnhandledFillRequest = true;
             mReportUnhandledSaveRequest = true;
-            mFillEventHistory = null;
-            mSessionDestroyedCount = 0;
+            mFillEventHistory = new ArrayList<FillEventHistory>();
         }
 
         private void onFillRequest(List<FillContext> contexts, List<String> hints, Bundle data,

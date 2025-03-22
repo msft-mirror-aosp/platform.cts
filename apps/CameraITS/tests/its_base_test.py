@@ -114,16 +114,20 @@ class ItsBaseTest(base_test.BaseTestClass):
         self.rotator_ch = str(self.user_params['rotator_ch'])
       except KeyError:
         self.tablet = None
-        logging.debug('Not all arguments set. Manual run.')
+        if self.scene == 'scene_ip':
+          logging.debug('Gen2 rig scene test run.')
+        else:
+          logging.debug('Not all arguments set. Manual run.')
 
     self._setup_devices(num_devices)
 
-    arduino_serial_port = lighting_control_utils.lighting_control(
-        self.lighting_cntl, self.lighting_ch)
-    if arduino_serial_port and self.scene != 'scene0':
-      lighting_control_utils.set_light_brightness(
-          self.lighting_ch, 255, arduino_serial_port)
-      logging.debug('Light is turned ON.')
+    if self.scene != 'scene_ip':
+      arduino_serial_port = lighting_control_utils.lighting_control(
+          self.lighting_cntl, self.lighting_ch)
+      if arduino_serial_port and self.scene != 'scene0':
+        lighting_control_utils.set_light_brightness(
+            self.lighting_ch, 255, arduino_serial_port)
+        logging.debug('Light is turned ON.')
 
     # Check if current foldable state matches scene, if applicable
     if self.user_params.get('foldable_device', 'False') == 'True':

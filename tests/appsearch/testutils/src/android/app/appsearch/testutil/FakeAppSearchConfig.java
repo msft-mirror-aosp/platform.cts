@@ -104,6 +104,12 @@ public final class FakeAppSearchConfig implements ServiceAppSearchConfig {
     }
 
     @Override
+    public int getMaxByteLimitForBatchPut() {
+        throwIfClosed();
+        return DEFAULT_LIMIT_CONFIG_MAX_DOCUMENT_SIZE_BYTES;
+    }
+
+    @Override
     public int getPerPackageDocumentCountLimit() {
         throwIfClosed();
         return DEFAULT_LIMIT_CONFIG_PER_PACKAGE_DOCUMENT_COUNT_LIMIT;

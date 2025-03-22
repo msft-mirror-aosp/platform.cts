@@ -32,6 +32,7 @@ import com.android.os.AtomsProto;
 import com.android.os.telecom.TelecomApiStats;
 import com.android.os.telecom.TelecomExtensionAtom;
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
+import com.android.tradefed.testtype.junit4.DeviceTestRunOptions;
 import com.android.tradefed.util.RunUtil;
 
 import com.google.protobuf.ExtensionRegistry;
@@ -74,7 +75,12 @@ public class TelecomApiStatsTests extends BaseTelecomMetricsTest {
         HashSet<ApiNameEnum> apiSet = new HashSet<>();
         Collections.addAll(apiSet, TELECOM_MANAGER_TEST_CASES_API);
         for (String[] tc : TELECOM_MANAGER_TEST_CASES) {
-            DeviceUtils.runDeviceTests(getDevice(), PKG_CTS_TELECOM_TEST, tc[0], tc[1]);
+            runDeviceTests(
+                    new DeviceTestRunOptions(PKG_CTS_TELECOM_TEST)
+                            .setDevice(getDevice())
+                            .setDisableHiddenApiCheck(true)
+                            .setTestClassName(tc[0])
+                            .setTestMethodName(tc[1]));
         }
         AtomTestUtils.sendAppBreadcrumbReportedAtom(getDevice());
         RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);

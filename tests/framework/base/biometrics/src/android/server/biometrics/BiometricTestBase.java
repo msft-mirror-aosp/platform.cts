@@ -102,6 +102,7 @@ abstract class BiometricTestBase implements TestSessionList.Idler {
             DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private static final String TAG = "BiometricTestBase";
+    private static final float SCROLL_DOWN_PERCENT = 0.4f;
     private static final String DUMPSYS_BIOMETRIC = Utils.DUMPSYS_BIOMETRIC;
     private static final String FLAG_CLEAR_SCHEDULER_LOG = " --clear-scheduler-buffer";
     private static final String LOCK_CREDENTIAL = "1234";
@@ -191,7 +192,8 @@ abstract class BiometricTestBase implements TestSessionList.Idler {
                 // Re-find the scrollable parent view to avoid StaleObjectException (b/381001383)
                 parentView = mDevice.findObject(By.scrollable(true));
                 canScrollAgain =
-                        parentView != null && parentView.scroll(Direction.DOWN, 1.0f, 1000);
+                        parentView != null
+                                && parentView.scroll(Direction.DOWN, SCROLL_DOWN_PERCENT, 1000);
                 view = findViewByIdInternal(id);
             } while (view == null && canScrollAgain);
         }
@@ -213,7 +215,8 @@ abstract class BiometricTestBase implements TestSessionList.Idler {
                 // Re-find the scrollable parent view to avoid StaleObjectException (b/381001383)
                 parentView = mDevice.findObject(By.scrollable(true));
                 canScrollAgain =
-                        parentView != null && parentView.scroll(Direction.DOWN, 1.0f, 1000);
+                        parentView != null
+                                && parentView.scroll(Direction.DOWN, SCROLL_DOWN_PERCENT, 1000);
                 view = findViewByTextInternal(text);
             } while (view == null && canScrollAgain);
         }

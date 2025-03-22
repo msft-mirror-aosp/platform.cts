@@ -19,6 +19,7 @@ package android.telecom.cts.cuj.app.integration;
 import static android.telecom.Call.STATE_ACTIVE;
 import static android.telecom.Call.STATE_DIALING;
 import static android.telecom.Call.STATE_DISCONNECTED;
+import static android.telecom.Call.STATE_HOLDING;
 import static android.telecom.Call.STATE_RINGING;
 import static android.telecom.cts.apps.TelecomTestApp.ConnectionServiceVoipAppClone;
 import static android.telecom.cts.apps.TelecomTestApp.ConnectionServiceVoipAppMain;
@@ -135,6 +136,46 @@ public class CallSequencingBasicCallTest extends BaseAppVerifier {
                 ManagedConnectionServiceApp,
                 ConnectionServiceVoipAppMain,
                 false /* verifyExtraPresent */);
+    }
+
+    /**
+     * Verify that when two calls are swapped that if a call resume fails for the bg call, that we
+     * unhold the fg call.
+     */
+    @Test
+    public void testHandleCallResumeFailed() throws Exception {
+        if (!mShouldTestTelecom) {
+            return;
+        }
+        AppControlWrapper firstApp = null;
+        AppControlWrapper secondApp = null;
+        try {
+            // Create an unholdable self-managed active call and then try receiving an incoming
+            // managed call and verify that the answering drops fg call extra is present on that
+            // call.
+            firstApp = bindToApp(ManagedConnectionServiceApp);
+            secondApp = bindToApp(ManagedConnectionServiceAppClone);
+            String call1 = addOutgoingCallAndVerify(firstApp);
+            verifyCallIsInState(call1, STATE_DIALING);
+            // Put the first call on hold
+            setCallStateAndVerify(firstApp, call1, STATE_HOLDING);
+            String call2 = addOutgoingCallAndVerify(secondApp);
+            verifyCallIsInState(call2, STATE_DIALING);
+            // Put the second call on hold too to emulate a call resume failure.
+            setCallStateAndVerify(secondApp, call2, STATE_HOLDING);
+            // Send call resume failure for second call and verify that first call is unheld
+            sendConnectionEvent(secondApp, call2, Connection.EVENT_CALL_RESUME_FAILED);
+            verifyCallIsInState(call1, STATE_ACTIVE);
+            // Clean up calls
+            setCallStateAndVerify(firstApp, call1, STATE_DISCONNECTED);
+            setCallStateAndVerify(secondApp, call2, STATE_DISCONNECTED);
+
+        } finally {
+            List<AppControlWrapper> controls = new ArrayList<>();
+            controls.add(firstApp);
+            controls.add(secondApp);
+            tearDownApps(controls);
+        }
     }
 
     private void verifyAnswerIncomingDropsFg(

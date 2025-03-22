@@ -33,7 +33,7 @@ android_test_helper_app {
         "androidx.test.rules",
         "ctstestrunner-axt",
     ],
-    // Keep in sync with `classLoaderContext` in `testSdmOk` in
+    // Keep in sync with `classLoaderContext` in `generateStatusCheckerCompilationArtifacts` in
     // `cts/hostsidetests/compilation/src/android/compilation/cts/CompilationTest.java`.
     libs: [
         "android.test.base.stubs.system",

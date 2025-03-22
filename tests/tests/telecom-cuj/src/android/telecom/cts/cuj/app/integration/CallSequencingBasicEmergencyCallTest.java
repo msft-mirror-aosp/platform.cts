@@ -75,12 +75,13 @@ public class CallSequencingBasicEmergencyCallTest extends BaseAppVerifier {
 
     /**
      * Adds a managed normal (non-holdable) call and then tries to place an emergency call. The
-     * normal call should be disconnected before the ECC is placed (which should go active).
+     * normal call should be held before the ECC is placed (which should go active). This simulates
+     * the VZW case where we just "swap" the calls.
      */
     @Test
     public void testAddEmergencyCallWithManagedNonHoldableCall() throws Exception {
         verifyAddEccWithSingleCall(
-                ManagedConnectionServiceApp, STATE_DISCONNECTED, false /* isNormalCallHoldable */);
+                ManagedConnectionServiceApp, STATE_HOLDING, false /* isNormalCallHoldable */);
     }
 
     /**

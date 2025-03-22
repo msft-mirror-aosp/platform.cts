@@ -33,6 +33,7 @@ import dalvik.system.ApplicationRuntime;
 import dalvik.system.BaseDexClassLoader;
 import dalvik.system.DexFile;
 import dalvik.system.PathClassLoader;
+import dalvik.system.VMDebug;
 import dalvik.system.VMRuntime;
 
 import com.google.common.io.ByteStreams;
@@ -45,9 +46,11 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.lang.reflect.Method;
 import java.nio.file.Paths;
 import java.util.Map;
 import java.util.function.BiFunction;
+import java.util.regex.Pattern;
 
 /**
  * An instrumentation test that checks optimization status.
@@ -64,10 +67,17 @@ public class StatusCheckerAppTest {
         OptimizationInfo info = ApplicationRuntime.getBaseApkOptimizationInfo();
         assertThat(info.getStatus()).isEqualTo(bundle.getString("compiler-filter"));
         assertThat(info.getReason()).isEqualTo(bundle.getString("compilation-reason"));
-        assertThat(info.isVerified()).isEqualTo(bundle.getString("is-verified").equals("true"));
-        assertThat(info.isOptimized()).isEqualTo(bundle.getString("is-optimized").equals("true"));
-        assertThat(info.isFullyCompiled())
-                .isEqualTo(bundle.getString("is-fully-compiled").equals("true"));
+        if (bundle.containsKey("is-verified")) {
+            assertThat(info.isVerified()).isEqualTo(bundle.getString("is-verified").equals("true"));
+        }
+        if (bundle.containsKey("is-optimized")) {
+            assertThat(info.isOptimized())
+                    .isEqualTo(bundle.getString("is-optimized").equals("true"));
+        }
+        if (bundle.containsKey("is-fully-compiled")) {
+            assertThat(info.isFullyCompiled())
+                    .isEqualTo(bundle.getString("is-fully-compiled").equals("true"));
+        }
     }
 
     @Test
@@ -140,6 +150,18 @@ public class StatusCheckerAppTest {
                 .asList()
                 .comparingElementsUsing(Correspondence.from(String::endsWith, "ends with"))
                 .containsAtLeast(".odex", ".vdex");
+    }
+
+    @Test
+    public void checkExecutableMethodFileOffsets() throws Exception {
+        Bundle bundle = InstrumentationRegistry.getArguments();
+        // Check a method in `cts/hostsidetests/compilation/assets/status_checker_app.prof.txt`.
+        Method method = getClass().getMethod("checkStatus");
+        VMDebug.ExecutableMethodFileOffsets fileOffsets =
+                VMDebug.getExecutableMethodFileOffsets(method);
+        assertThat(fileOffsets.getContainerPath())
+                .containsMatch(Pattern.compile(bundle.getString("container-path-pattern")));
+        assertThat(fileOffsets.getMethodOffset()).isGreaterThan(0);
     }
 
     public File copyResourceToFile(String resourceName, File file) throws Exception {

@@ -4,9 +4,9 @@ import android.app.Activity
 import android.companion.AssociationInfo
 import android.companion.AssociationRequest.DEVICE_PROFILE_APP_STREAMING
 import android.companion.AssociationRequest.DEVICE_PROFILE_AUTOMOTIVE_PROJECTION
-import android.companion.AssociationRequest.DEVICE_PROFILE_NEARBY_DEVICE_STREAMING
-import android.companion.AssociationRequest.DEVICE_PROFILE_SENSOR_DEVICE_STREAMING
 import android.companion.AssociationRequest.DEVICE_PROFILE_GLASSES
+import android.companion.AssociationRequest.DEVICE_PROFILE_NEARBY_DEVICE_STREAMING
+import android.companion.AssociationRequest.DEVICE_PROFILE_VIRTUAL_DEVICE
 import android.companion.AssociationRequest.DEVICE_PROFILE_WATCH
 import android.companion.CompanionDeviceManager
 import android.companion.Flags
@@ -51,13 +51,13 @@ class AssociationEndToEndSelfManagedTest(
         // the UI.
         assumeFalse(profile == DEVICE_PROFILE_AUTOMOTIVE_PROJECTION)
 
-        // Skip the VirtualDeviceManager roles. They do not allow for bypassing role qualifications,
-        // so the CTS package is not eligible to create such associations.
-        assumeFalse(profile == DEVICE_PROFILE_APP_STREAMING);
-        assumeFalse(profile == DEVICE_PROFILE_NEARBY_DEVICE_STREAMING);
-        if (android.companion.virtualdevice.flags.Flags.enableLimitedVdmRole()) {
-            assumeFalse(profile == DEVICE_PROFILE_SENSOR_DEVICE_STREAMING);
-        }
+        // Skip the self-managed VirtualDeviceManager roles. They do not allow for bypassing role
+        // qualifications, so the CTS package is not eligible to create such associations.
+        assumeFalse(profile == DEVICE_PROFILE_APP_STREAMING)
+        assumeFalse(profile == DEVICE_PROFILE_NEARBY_DEVICE_STREAMING)
+
+        // Skip the non-self-managed VirtualDeviceManager role.
+        assumeFalse(profile == DEVICE_PROFILE_VIRTUAL_DEVICE)
     }
 
     @Test

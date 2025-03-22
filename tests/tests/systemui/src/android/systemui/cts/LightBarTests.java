@@ -19,13 +19,12 @@ package android.systemui.cts;
 import static android.Manifest.permission.POST_NOTIFICATIONS;
 import static android.Manifest.permission.REVOKE_POST_NOTIFICATIONS_WITHOUT_KILL;
 import static android.Manifest.permission.REVOKE_RUNTIME_PERMISSIONS;
+import static android.app.Flags.FLAG_UI_RICH_ONGOING;
 import static android.server.wm.ActivityManagerTestBase.isTablet;
 import static android.server.wm.BarTestUtils.assumeHasColoredNavigationBar;
 import static android.server.wm.BarTestUtils.assumeHasColoredStatusBar;
 
 import static androidx.test.InstrumentationRegistry.getInstrumentation;
-
-import static com.android.systemui.Flags.FLAG_STATUS_BAR_NOTIFICATION_CHIPS;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -88,7 +87,7 @@ import org.junit.runner.RunWith;
             "android.view.View#SYSTEM_UI_FLAG_LIGHT_STATUS_BAR"
         })
 @RunWith(AndroidJUnit4.class)
-@RequiresFlagsDisabled(FLAG_STATUS_BAR_NOTIFICATION_CHIPS)
+@RequiresFlagsDisabled(FLAG_UI_RICH_ONGOING)
 public class LightBarTests extends LightBarTestBase {
 
     @Rule
