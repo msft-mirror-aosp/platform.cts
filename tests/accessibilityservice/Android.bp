@@ -73,6 +73,7 @@ java_library_static {
     name: "CtsAccessibilityServiceUtils",
     sdk_version: "test_current",
     static_libs: [
+        "androidx.core_core",
         "compatibility-device-util-axt",
         "CtsAccessibilityCommon",
     ],

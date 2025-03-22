@@ -48,7 +48,6 @@ import static org.junit.Assume.assumeTrue;
 import android.accessibility.cts.common.AccessibilityDumpOnFailureRule;
 import android.accessibility.cts.common.InstrumentedAccessibilityService;
 import android.accessibility.cts.common.InstrumentedAccessibilityServiceTestRule;
-import android.accessibility.cts.common.ShellCommandBuilder;
 import android.accessibilityservice.AccessibilityService;
 import android.accessibilityservice.GestureDescription;
 import android.accessibilityservice.GestureDescription.StrokeDescription;
@@ -79,6 +78,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.GestureNavSwitchHelper;
+import com.android.compatibility.common.util.SettingsStateChangerRule;
 
 import org.junit.After;
 import org.junit.Before;
@@ -122,27 +122,53 @@ public class FullScreenMagnificationGestureHandlerTest {
     PointF mTapLocation;
     PointF mTapLocation2;
     float mPan;
-    private boolean mOriginalIsMagnificationEnabled;
-    private int mOriginalIsMagnificationCapabilities;
-    private int mOriginalIsMagnificationMode;
 
     private final Object mZoomLock = new Object();
 
-    private ActivityScenarioRule<GestureDispatchActivity> mActivityRule =
+    private final ActivityScenarioRule<GestureDispatchActivity> mActivityRule =
             new ActivityScenarioRule<>(GestureDispatchActivity.class);
 
-    private InstrumentedAccessibilityServiceTestRule<StubMagnificationAccessibilityService>
-            mServiceRule = new InstrumentedAccessibilityServiceTestRule<>(
-            StubMagnificationAccessibilityService.class, false);
+    // Disable Single Finger Panning to test the original behavior
+    // TODO(b/342089257): add test cases for single finger panning scenario
+    private final SettingsStateChangerRule mSingleFingerPanningSettingRule =
+            new SettingsStateChangerRule(
+                    InstrumentationRegistry.getInstrumentation().getTargetContext(),
+                    ACCESSIBILITY_SINGLE_FINGER_PANNING_ENABLED,
+                    "0");
 
-    private AccessibilityDumpOnFailureRule mDumpOnFailureRule =
+    private final SettingsStateChangerRule mMagnificationCapabilitySettingRule =
+            new SettingsStateChangerRule(
+                    InstrumentationRegistry.getInstrumentation().getTargetContext(),
+                    Settings.Secure.ACCESSIBILITY_MAGNIFICATION_CAPABILITY,
+                    Integer.toString(Settings.Secure.ACCESSIBILITY_MAGNIFICATION_MODE_FULLSCREEN));
+    private final SettingsStateChangerRule mMagnificationModeSettingRule =
+            new SettingsStateChangerRule(
+                    InstrumentationRegistry.getInstrumentation().getTargetContext(),
+                    Settings.Secure.ACCESSIBILITY_MAGNIFICATION_MODE,
+                    Integer.toString(Settings.Secure.ACCESSIBILITY_MAGNIFICATION_MODE_FULLSCREEN));
+    private final SettingsStateChangerRule mMagnificationEnabledSettingRule =
+            new SettingsStateChangerRule(
+                    InstrumentationRegistry.getInstrumentation().getTargetContext(),
+                    Settings.Secure.ACCESSIBILITY_DISPLAY_MAGNIFICATION_ENABLED,
+                    "1");
+
+    private final InstrumentedAccessibilityServiceTestRule<StubMagnificationAccessibilityService>
+            mServiceRule =
+                    new InstrumentedAccessibilityServiceTestRule<>(
+                            StubMagnificationAccessibilityService.class, false);
+
+    private final AccessibilityDumpOnFailureRule mDumpOnFailureRule =
             new AccessibilityDumpOnFailureRule();
 
     @Rule
-    public final RuleChain mRuleChain = RuleChain
-            .outerRule(mActivityRule)
-            .around(mServiceRule)
-            .around(mDumpOnFailureRule);
+    public final RuleChain mRuleChain =
+            RuleChain.outerRule(mActivityRule)
+                    .around(mSingleFingerPanningSettingRule)
+                    .around(mMagnificationCapabilitySettingRule)
+                    .around(mMagnificationModeSettingRule)
+                    .around(mMagnificationEnabledSettingRule)
+                    .around(mServiceRule)
+                    .around(mDumpOnFailureRule);
 
     @BeforeClass
     public static void oneTimeSetUp() {
@@ -161,25 +187,6 @@ public class FullScreenMagnificationGestureHandlerTest {
         assumeTrue(hasTouchscreen);
         assumeFalse("Magnification is not supported on Automotive.",
                 isAutomotive(mInstrumentation.getTargetContext()));
-
-        // Disable Singer Finger Panning to test the original behavior
-        // TODO: add test cases for single finger panning scenario (b/342089257)
-        ShellCommandBuilder.create(sUiAutomation)
-                .putSecureSetting(ACCESSIBILITY_SINGLE_FINGER_PANNING_ENABLED, "0")
-                .run();
-
-        // Backup and reset magnification settings.
-        mOriginalIsMagnificationCapabilities = getSecureSettingInt(
-                Settings.Secure.ACCESSIBILITY_MAGNIFICATION_CAPABILITY,
-                Settings.Secure.ACCESSIBILITY_MAGNIFICATION_MODE_FULLSCREEN);
-        setMagnificationCapabilities(Settings.Secure.ACCESSIBILITY_MAGNIFICATION_MODE_FULLSCREEN);
-        mOriginalIsMagnificationMode = getSecureSettingInt(
-                Settings.Secure.ACCESSIBILITY_MAGNIFICATION_MODE,
-                Settings.Secure.ACCESSIBILITY_MAGNIFICATION_MODE_FULLSCREEN);
-        setMagnificationMode(Settings.Secure.ACCESSIBILITY_MAGNIFICATION_MODE_FULLSCREEN);
-        mOriginalIsMagnificationEnabled = getSecureSettingInt(
-                Settings.Secure.ACCESSIBILITY_DISPLAY_MAGNIFICATION_ENABLED, 0) == 1;
-        setMagnificationEnabled(true);
 
         mService = mServiceRule.enableService();
         mService.getMagnificationController().addListener(
@@ -246,11 +253,6 @@ public class FullScreenMagnificationGestureHandlerTest {
             SystemClock.sleep(CONTIGUOUS_TAPS_DETECT_TIMEOUT);
             setZoomByTripleTapping(false);
         }
-
-        // Restore magnification settings.
-        setMagnificationEnabled(mOriginalIsMagnificationEnabled);
-        setMagnificationCapabilities(mOriginalIsMagnificationCapabilities);
-        setMagnificationMode(mOriginalIsMagnificationMode);
     }
 
     @Test
@@ -413,32 +415,6 @@ public class FullScreenMagnificationGestureHandlerTest {
                 mTapLocation,
                 add(mTapLocation, 0, y)));
         mTouchListener.assertPropagated(ACTION_DOWN, ACTION_MOVE, ACTION_UP);
-    }
-
-    private int getSecureSettingInt(String key, int defaultValue) {
-        return Settings.Secure.getInt(mInstrumentation.getContext().getContentResolver(),
-                key,
-                defaultValue);
-    }
-
-    private void putSecureSettingInt(String key, int value) {
-        Settings.Secure.putInt(mInstrumentation.getContext().getContentResolver(),
-                key, value);
-    }
-
-    private void setMagnificationEnabled(boolean enabled) {
-        putSecureSettingInt(Settings.Secure.ACCESSIBILITY_DISPLAY_MAGNIFICATION_ENABLED,
-                enabled ? 1 : 0);
-    }
-
-    private void setMagnificationCapabilities(int capabilities) {
-        putSecureSettingInt(Settings.Secure.ACCESSIBILITY_MAGNIFICATION_CAPABILITY,
-                capabilities);
-    }
-
-    private void setMagnificationMode(int mode) {
-        putSecureSettingInt(Settings.Secure.ACCESSIBILITY_MAGNIFICATION_MODE,
-                mode);
     }
 
     private boolean isActivated() {

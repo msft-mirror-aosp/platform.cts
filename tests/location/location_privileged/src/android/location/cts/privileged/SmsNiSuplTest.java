@@ -71,10 +71,10 @@ public class SmsNiSuplTest {
      */
     @Test
     public void testNiSuplMessage() {
-        if (isSimCardPresent()) {
-            sendSmsWithPdu(MOCK_WAP_PUSH_SUPL_INIT_PDU);
-            sendSmsWithPdu(MOCK_MT_SMS_SUPL_INIT_PDU);
-        }
+        assumeTrue(mTelephonyManager.isDeviceSmsCapable());
+        assumeTrue(isSimCardPresent());
+        sendSmsWithPdu(MOCK_WAP_PUSH_SUPL_INIT_PDU);
+        sendSmsWithPdu(MOCK_MT_SMS_SUPL_INIT_PDU);
     }
 
     private void sendSmsWithPdu(String pdu) {

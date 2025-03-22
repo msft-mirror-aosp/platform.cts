@@ -820,6 +820,16 @@ public class BluetoothAdapterTest {
                 .isEqualTo(BluetoothStatusCodes.ERROR_BLUETOOTH_NOT_ALLOWED);
     }
 
+    @Test
+    public void getAdapterProxy() {
+        assumeTrue(mHasBluetooth);
+        BluetoothProfile.ServiceListener listener = mock(BluetoothProfile.ServiceListener.class);
+
+        assertThat(mAdapter.getProfileProxy(null, listener, BluetoothProfile.A2DP)).isFalse();
+        assertThat(mAdapter.getProfileProxy(mContext, null, BluetoothProfile.A2DP)).isFalse();
+        assertThat(mAdapter.getProfileProxy(mContext, listener, 99)).isFalse();
+    }
+
     private void verifyIntentReceived(
             BroadcastReceiver receiver, Duration timeout, Matcher<Intent>... matchers) {
         verify(receiver, timeout(timeout.toMillis()))

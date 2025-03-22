@@ -61,6 +61,7 @@ import android.telecom.Call;
 import android.telecom.CallAttributes;
 import android.telecom.CallEndpoint;
 import android.telecom.CallException;
+import android.telecom.Connection;
 import android.telecom.PhoneAccount;
 import android.telecom.PhoneAccountHandle;
 import android.telecom.TelecomManager;
@@ -167,6 +168,7 @@ public class BaseAppVerifierImpl {
         ShellCommandExecutor.setDefaultDialer(mInstrumentation, mCallingPackageName);
         // In order to isolate cascading test failures, cleanup the telecom or cts test process
         maybeCleanupTelecom();
+        HoldableTracker.clearTrackedConnections();
     }
 
     public void tearDown() throws Exception {
@@ -176,6 +178,7 @@ public class BaseAppVerifierImpl {
         }
         clearUserDefaultPhoneAccountOverride();
         ShellIdentityUtils.dropShellPermissionIdentity();
+        HoldableTracker.clearTrackedConnections();
     }
 
     public void maybeCleanupTelecom() {
@@ -486,6 +489,11 @@ public class BaseAppVerifierImpl {
         call.disconnect();
     }
 
+    public boolean isCallHoldable(String id) {
+        Call call = findTargetCall(id);
+        return (call.getDetails().getCallCapabilities() & Connection.CAPABILITY_HOLD) != 0;
+    }
+
     // -- audio state
     public CallEndpoint getAnotherCallEndpoint(AppControlWrapper appControl, String id)
             throws Exception {
@@ -532,6 +540,11 @@ public class BaseAppVerifierImpl {
     public void setMuteState(AppControlWrapper appControl, String id, boolean isMuted)
             throws RemoteException {
         appControl.setMuteState(id, isMuted);
+    }
+
+    public void sendConnectionEvent(AppControlWrapper appControl, String id, String event)
+            throws RemoteException {
+        appControl.sendConnectionEvent(id, event);
     }
 
     // -- phone accounts

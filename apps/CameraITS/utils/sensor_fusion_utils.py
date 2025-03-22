@@ -114,6 +114,9 @@ _RADS_TO_DEGS = 180/math.pi
 
 _NUM_GYRO_PTS_TO_AVG = 20
 
+_PRE_MASKING = 'pre'
+_POST_MASKING = 'post'
+
 
 def polynomial_from_coefficients(coefficients):
   """Return a polynomial function from a coefficient list, highest power first.
@@ -475,16 +478,186 @@ def procrustes_rotation(x, y):
   return np.dot(vt.T, u.T)
 
 
-def get_cam_rotations(frames, facing, h, file_name_stem,
-                      start_frame, stabilized_video=False):
+def read_frame_from_file(file, file_path):
+  """Read an image from file to memory.
+
+  Args:
+    file: File name string
+    file_path: The path of the file
+
+  Returns:
+    The cv2 RGB frame, normalized.
+  """
+  img_bgr = cv2.imread(os.path.join(file_path, file))
+  img_rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB) / 255
+  return img_rgb
+
+
+def derive_rotation(
+    masking, pre_mask, frame0, gframe0, gframe1, idx,
+    start_frame, ymin, ymax, facing, file_name_stem):
+  """Derive scene rotation based on 2 frames.
+
+  Derive angular displacement corresponding to the rotation
+  between a pair of frames, in radians. Only takes feature points from
+  center so that rotation measured has less rolling shutter effect.
+  Requires FEATURE_PTS_MIN to have enough data points for accurate measurements.
+  Uses FEATURE_PARAMS for cv2 to identify features in checkerboard images.
+
+  Args:
+    masking: Either "pre" or "post"
+    pre_mask: Mask before any features are detected
+    frame0: Frame 0 represented as normalized rgb
+    gframe0: Frame 0 represented as a cv2 greyscale
+    gframe1: Frame 1 represented as a cv2 greyscale
+    idx: Index of frame0 in the video clip
+    start_frame: The index of the starting frame of the video
+    ymin: Min y coordinate of the area to find features from
+    ymax: Max y coordinate of the area to find features from
+    facing: Camera facing
+    file_name_stem: File name stem including location for data
+  Returns:
+    Rotation of the scene from frame0 to frame1 in rad
+  """
+  j = idx - 1
+  if masking == _POST_MASKING:
+    p0 = cv2.goodFeaturesToTrack(
+        gframe0, mask=None, **_CV2_FEATURE_PARAMS_POSTMASK)
+    post_mask = (p0[:, 0, 1] >= ymin) & (p0[:, 0, 1] <= ymax)
+    p0_filtered = p0[post_mask]
+  else:
+    p0_filtered = cv2.goodFeaturesToTrack(
+        gframe0, mask=pre_mask, **_CV2_FEATURE_PARAMS_PREMASK)
+  num_features = len(p0_filtered)
+  if num_features < _FEATURE_PTS_MIN:
+    for pt in np.rint(p0_filtered).astype(int):
+      x, y = pt[0][0], pt[0][1]
+      cv2.circle(frame0, (x, y), 3, (100, 255, 255), -1)
+    image_processing_utils.write_image(
+        frame0, f'{file_name_stem}_features{j+start_frame:03d}.png')
+    msg = (f'Not enough features in frame {j+start_frame}. Need at least '
+           f'{_FEATURE_PTS_MIN} features, got {num_features}.')
+    if masking == _PRE_MASKING:
+      raise AssertionError(msg)
+    else:
+      logging.debug(msg)
+      return None
+
+  logging.debug('Number of features in frame %s is %d',
+                str(j+start_frame).zfill(3), num_features)
+  p1, st, _ = cv2.calcOpticalFlowPyrLK(gframe0, gframe1, p0_filtered, None,
+                                       **_CV2_LK_PARAMS)
+  tform = procrustes_rotation(p0_filtered[st == 1], p1[st == 1])
+  if facing == camera_properties_utils.LENS_FACING['BACK']:
+    rotation = -math.atan2(tform[0, 1], tform[0, 0])
+  elif facing == camera_properties_utils.LENS_FACING['FRONT']:
+    rotation = math.atan2(tform[0, 1], tform[0, 0])
+  else:
+    raise AssertionError(f'Unknown lens facing: {facing}.')
+  if idx == 1:
+    # Save debug visualization of features that are being
+    # tracked in the first frame.
+    for x, y in np.rint(p0_filtered[st == 1]).astype(int):
+      cv2.circle(frame0, (x, y), 3, (100, 255, 255), -1)
+    image_processing_utils.write_image(
+        frame0, f'{file_name_stem}_features{j+start_frame:03d}.png')
+
+  return rotation
+
+
+def rotations_in_numpy(rotations, stabilized_video):
+  """Return rotations in numpy and verify them.
+
+  Args:
+    rotations: Array of scene rotations in rad
+    stabilized_video: Whether video is stabilized
+
+  Returns:
+    Numpy array of N-1 camera rotation measurements (rad).
+  """
+  rotations = np.array(rotations)
+  rot_per_frame_max = max(abs(rotations))
+  logging.debug('Max rotation in frame: %.2f degrees',
+                rot_per_frame_max*_RADS_TO_DEGS)
+  if stabilized_video:
+    logging.debug('Skipped camera rotation check due to stabilized video.')
+  else:
+    if rot_per_frame_max < _ROTATION_PER_FRAME_MIN:
+      raise AssertionError(f'Device not moved enough: {rot_per_frame_max:.3f} '
+                           f'movement. THRESH: {_ROTATION_PER_FRAME_MIN} rads.')
+    else:
+      logging.debug('Device movement exceeds %.2f degrees',
+                    _ROTATION_PER_FRAME_MIN*_RADS_TO_DEGS)
+  return rotations
+
+
+def get_cam_rotations_from_files(
+    files, facing, file_name_stem, file_path,
+    start_frame, stabilized_video=False):
+  """Get the rotations of the camera between each pair of frames.
+
+  Takes N image files and returns N-1 angular displacements corresponding
+  to the rotations between adjacent pairs of frames, in radians.
+  Ensures camera rotates enough if not calling with stabilized video.
+
+  Args:
+    files: List of N images saved in file
+    facing: Direction camera is facing
+    file_name_stem: File name stem including location for data
+    file_path: Path where image files are saved
+    start_frame: int; index to start at
+    stabilized_video: Boolean; if called with stabilized video
+  Returns:
+    numpy array of N-1 camera rotation measurements (rad).
+  """
+  num_frames = len(files)
+  logging.debug('num_frames: %d', num_frames)
+
+  # Do post-masking (original) method 1st
+  for masking in [_POST_MASKING, _PRE_MASKING]:
+    logging.debug('Using %s masking method', masking)
+    rotations = []
+
+    frame1 = read_frame_from_file(files[0], file_path)
+    gframe1 = cv2.cvtColor((frame1 * 255).astype(np.uint8), cv2.COLOR_RGB2GRAY)
+    frame_h, frame_w, _ = frame1.shape
+    logging.debug('Frame size %d x %d', frame_w, frame_h)
+    pre_mask = np.zeros_like(gframe1)
+
+    # create mask
+    ymin = int(frame_h * (1 - _FEATURE_MARGIN) / 2)
+    ymax = int(frame_h * (1 + _FEATURE_MARGIN) / 2)
+
+    pre_mask[ymin:ymax, :] = 255
+    for i in range(1, num_frames):
+      frame0 = frame1
+      gframe0 = gframe1
+      frame1 = read_frame_from_file(files[i], file_path)
+      gframe1 = cv2.cvtColor(
+          (frame1 * 255.0).astype(np.uint8), cv2.COLOR_RGB2GRAY)
+
+      rotation = derive_rotation(
+          masking, pre_mask, frame0, gframe0, gframe1, i,
+          start_frame, ymin, ymax, facing, file_name_stem)
+      if rotation is None:
+        break
+      rotations.append(rotation)
+    if i == num_frames-1:
+      logging.debug('Correct num of frames found: %d', i)
+      break  # exit if enough features in all frames
+  if i != num_frames-1:
+    raise AssertionError('Neither method found enough features in all frames')
+
+  return rotations_in_numpy(rotations, stabilized_video)
+
+
+def get_cam_rotations_from_frames(
+    frames, facing, h, file_name_stem,
+    start_frame, stabilized_video=False):
   """Get the rotations of the camera between each pair of frames.
 
   Takes N frames and returns N-1 angular displacements corresponding to the
   rotations between adjacent pairs of frames, in radians.
-  Only takes feature points from center so that rotation measured has less
-  rolling shutter effect.
-  Requires FEATURE_PTS_MIN to have enough data points for accurate measurements.
-  Uses FEATURE_PARAMS for cv2 to identify features in checkerboard images.
   Ensures camera rotates enough if not calling with stabilized video.
 
   Args:
@@ -510,76 +683,24 @@ def get_cam_rotations(frames, facing, h, file_name_stem,
   pre_mask = np.zeros_like(gframes[0])
   pre_mask[ymin:ymax, :] = 255
 
-  for masking in ['post', 'pre']:  # Do post-masking (original) method 1st
+  # Do post-masking (original) method 1st
+  for masking in [_POST_MASKING, _PRE_MASKING]:
     logging.debug('Using %s masking method', masking)
     rotations = []
     for i in range(1, num_frames):
-      j = i - 1
-      gframe0 = gframes[j]
-      gframe1 = gframes[i]
-      if masking == 'post':
-        p0 = cv2.goodFeaturesToTrack(
-            gframe0, mask=None, **_CV2_FEATURE_PARAMS_POSTMASK)
-        post_mask = (p0[:, 0, 1] >= ymin) & (p0[:, 0, 1] <= ymax)
-        p0_filtered = p0[post_mask]
-      else:
-        p0_filtered = cv2.goodFeaturesToTrack(
-            gframe0, mask=pre_mask, **_CV2_FEATURE_PARAMS_PREMASK)
-      num_features = len(p0_filtered)
-      if num_features < _FEATURE_PTS_MIN:
-        for pt in np.rint(p0_filtered).astype(int):
-          x, y = pt[0][0], pt[0][1]
-          cv2.circle(frames[j], (x, y), 3, (100, 255, 255), -1)
-        image_processing_utils.write_image(
-            frames[j], f'{file_name_stem}_features{j+start_frame:03d}.png')
-        msg = (f'Not enough features in frame {j+start_frame}. Need at least '
-               f'{_FEATURE_PTS_MIN} features, got {num_features}.')
-        if masking == 'pre':
-          raise AssertionError(msg)
-        else:
-          logging.debug(msg)
-          break
-      else:
-        logging.debug('Number of features in frame %s is %d',
-                      str(j+start_frame).zfill(3), num_features)
-      p1, st, _ = cv2.calcOpticalFlowPyrLK(gframe0, gframe1, p0_filtered, None,
-                                           **_CV2_LK_PARAMS)
-      tform = procrustes_rotation(p0_filtered[st == 1], p1[st == 1])
-      if facing == camera_properties_utils.LENS_FACING['BACK']:
-        rotation = -math.atan2(tform[0, 1], tform[0, 0])
-      elif facing == camera_properties_utils.LENS_FACING['FRONT']:
-        rotation = math.atan2(tform[0, 1], tform[0, 0])
-      else:
-        raise AssertionError(f'Unknown lens facing: {facing}.')
+      rotation = derive_rotation(
+          masking, pre_mask, frames[i-1], gframes[i-1], gframes[i],
+          i, start_frame, ymin, ymax, facing, file_name_stem)
+      if rotation is None:
+        break
       rotations.append(rotation)
-      if i == 1:
-        # Save debug visualization of features that are being
-        # tracked in the first frame.
-        frame = frames[j]
-        for x, y in np.rint(p0_filtered[st == 1]).astype(int):
-          cv2.circle(frame, (x, y), 3, (100, 255, 255), -1)
-        image_processing_utils.write_image(
-            frame, f'{file_name_stem}_features{j+start_frame:03d}.png')
     if i == num_frames-1:
       logging.debug('Correct num of frames found: %d', i)
       break  # exit if enough features in all frames
   if i != num_frames-1:
     raise AssertionError('Neither method found enough features in all frames')
 
-  rotations = np.array(rotations)
-  rot_per_frame_max = max(abs(rotations))
-  logging.debug('Max rotation in frame: %.2f degrees',
-                rot_per_frame_max*_RADS_TO_DEGS)
-  if stabilized_video:
-    logging.debug('Skipped camera rotation check due to stabilized video.')
-  else:
-    if rot_per_frame_max < _ROTATION_PER_FRAME_MIN:
-      raise AssertionError(f'Device not moved enough: {rot_per_frame_max:.3f} '
-                           f'movement. THRESH: {_ROTATION_PER_FRAME_MIN} rads.')
-    else:
-      logging.debug('Device movement exceeds %.2f degrees',
-                    _ROTATION_PER_FRAME_MIN*_RADS_TO_DEGS)
-  return rotations
+  return rotations_in_numpy(rotations, stabilized_video)
 
 
 def get_best_alignment_offset(cam_times, cam_rots, gyro_events, degree=2):

@@ -132,13 +132,16 @@ public class LayoutTests extends WindowManagerTestBase {
         // Wait for the global layout triggered by adding window.
         activity.waitForGlobalLayout();
 
+        // Wait for the activity to lose the focus before removing the window.
+        activity.waitAndAssertWindowFocusState(false);
+
         // Remove the window we added previously.
         getInstrumentation().runOnMainSync(activity::removeAllWindows);
 
         // Wait for the global layout triggered by removing window.
         activity.waitForGlobalLayout();
 
-        // Wait for the activity has focus before get the visible frame
+        // Wait for the activity to get the focus before getting the visible frame.
         activity.waitAndAssertWindowFocusState(true);
 
         // Get the visible frame of the main activity after removing the window we added.

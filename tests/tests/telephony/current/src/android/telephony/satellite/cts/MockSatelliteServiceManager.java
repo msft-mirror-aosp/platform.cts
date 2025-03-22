@@ -105,6 +105,8 @@ class MockSatelliteServiceManager {
             "cmd phone set-satellite-access-allowed-for-subscriptions";
     private static final String SET_SATELLITE_TN_SCANNING_SUPPORT_CMD =
             "cmd phone set-satellite-tn-scanning-support ";
+    private static final String SET_SUPPORT_DISABLE_SATELLITE_WHILE_ENABLE_IN_PROGRESS_CMD =
+            "cmd phone set-support-disable-satellite-while-enable-in-progress ";
     private static final String OVERRIDE_CONFIG_DATA_VERSION =
             "cmd phone override-config-data-version";
     private static final String UPDATE_TELEPHONY_CONFIG_INTENT =
@@ -1616,6 +1618,28 @@ class MockSatelliteServiceManager {
             return true;
         } catch (Exception e) {
             loge("setSatelliteTnScanningSupport: e=" + e);
+            return false;
+        }
+    }
+
+    boolean setSupportDisableSatelliteWhileEnableInProgress(boolean reset, boolean supported) {
+        StringBuilder command = new StringBuilder();
+        command.append(SET_SUPPORT_DISABLE_SATELLITE_WHILE_ENABLE_IN_PROGRESS_CMD);
+        if (reset) {
+            command.append(" -r");
+        } else {
+            command.append(" -s ");
+            command.append(supported);
+        }
+
+        try {
+            String result = TelephonyUtils.executeShellCommand(mInstrumentation,
+                    command.toString());
+            logd("setSupportDisableSatelliteWhileEnableInProgress(" + command.toString()
+                    + "): result = " + result);
+            return true;
+        } catch (Exception e) {
+            loge("setSupportDisableSatelliteWhileEnableInProgress: e=" + e);
             return false;
         }
     }

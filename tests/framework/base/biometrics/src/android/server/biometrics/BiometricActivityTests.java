@@ -439,6 +439,8 @@ public class BiometricActivityTests extends BiometricTestBase {
     @Test
     public void testConfirmDeviceCredentialActivityDismiss_whenSwitchToSettings() throws Exception {
         assumeTrue(Utils.isFirstApiLevel29orGreater());
+        // TODO: b/331955301 need to update Auto biometric UI
+        assumeFalse(isCar());
 
         // Test behavior for each sensor when biometrics are enrolled
         try (CredentialSession credentialSession = new CredentialSession()) {

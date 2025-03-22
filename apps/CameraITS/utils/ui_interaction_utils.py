@@ -771,6 +771,8 @@ def _watch_start(device_id, pkg_name):
       (
           'android.control.captureIntent,android.jpeg.quality,'
           'android.control.zoomRatio,'
+          'android.scaler.cropRegion,'
+          'android.control.zoomMethod,'
           '3a'
       ),
       '-c',

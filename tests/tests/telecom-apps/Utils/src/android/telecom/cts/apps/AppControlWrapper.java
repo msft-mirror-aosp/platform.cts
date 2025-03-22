@@ -16,6 +16,8 @@
 
 package android.telecom.cts.apps;
 
+import static android.telecom.cts.apps.TelecomTestApp.ConnectionServiceVoipAppClone;
+import static android.telecom.cts.apps.TelecomTestApp.ConnectionServiceVoipAppMain;
 import static android.telecom.cts.apps.TelecomTestApp.TransactionalVoipAppClone;
 import static android.telecom.cts.apps.TelecomTestApp.TransactionalVoipAppMain;
 
@@ -57,9 +59,19 @@ public class AppControlWrapper {
         return mIsManagedAppControlClone;
     }
 
+    public boolean isManagedControl() {
+        return isManagedAppControl() || isManagedAppControlClone();
+    }
+
     public boolean isTransactionalControl() {
         return mTelecomApps.equals(TransactionalVoipAppClone)
                 || mTelecomApps.equals(TransactionalVoipAppMain);
+    }
+
+    public boolean isVoipControl() {
+        return mTelecomApps.equals(ConnectionServiceVoipAppMain)
+                || mTelecomApps.equals(ConnectionServiceVoipAppClone)
+                || isTransactionalControl();
     }
 
     public AppControlWrapper(IAppControl binder, TelecomTestApp name) {
@@ -307,6 +319,17 @@ public class AppControlWrapper {
             maybeFailTest(transactionResult);
         } catch (RemoteException e) {
             handleRemoteException(e, "setMuteState");
+        }
+    }
+
+    /** Sends the specified connection event on the associated identifier for the call. */
+    public void sendConnectionEvent(String id, String event) throws RemoteException {
+        Log.i(TAG, "sendConnectionEvent");
+        try {
+            NoDataTransaction transactionResult = mBinder.sendConnectionEvent(id, event);
+            maybeFailTest(transactionResult);
+        } catch (RemoteException e) {
+            handleRemoteException(e, "sendConnectionEvent");
         }
     }
 

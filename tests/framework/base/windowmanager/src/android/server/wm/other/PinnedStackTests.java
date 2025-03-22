@@ -1454,15 +1454,10 @@ public class PinnedStackTests extends ActivityManagerTestBase {
     }
 
     @Test
-    @RequiresFlagsDisabled(Flags.FLAG_ENABLE_PIP2)
     public void testStopBeforeMultiWindowCallbacksOnDismiss() {
         // Launch a PiP activity
         launchActivity(PIP_ACTIVITY);
         int windowingMode = mWmState.getTaskByActivity(PIP_ACTIVITY).getWindowingMode();
-
-        // Skip the test if it's freeform, since freeform <-> PIP does not trigger any multi-window
-        // calbacks.
-        assumeFalse(windowingMode == WINDOWING_MODE_FREEFORM);
 
         mBroadcastActionTrigger.doAction(ACTION_ENTER_PIP);
         // Wait for animation complete so that system has reported pip mode change event to
@@ -1482,88 +1477,11 @@ public class PinnedStackTests extends ActivityManagerTestBase {
         assertEquals("onStop", 1, lifecycles.getCount(ActivityCallback.ON_STOP));
         assertEquals("onPictureInPictureModeChanged", 1,
                 lifecycles.getCount(ActivityCallback.ON_PICTURE_IN_PICTURE_MODE_CHANGED));
-        assertEquals("onMultiWindowModeChanged", 1,
-                lifecycles.getCount(ActivityCallback.ON_MULTI_WINDOW_MODE_CHANGED));
         final int lastStopIndex = lifecycles.getLastIndex(ActivityCallback.ON_STOP);
         final int lastPipIndex = lifecycles.getLastIndex(
                 ActivityCallback.ON_PICTURE_IN_PICTURE_MODE_CHANGED);
-        final int lastMwIndex = lifecycles.getLastIndex(
-                ActivityCallback.ON_MULTI_WINDOW_MODE_CHANGED);
         assertThat("onStop should be before onPictureInPictureModeChanged",
                 lastStopIndex, lessThan(lastPipIndex));
-        assertThat("onPictureInPictureModeChanged should be before onMultiWindowModeChanged",
-                lastPipIndex, lessThan(lastMwIndex));
-    }
-
-    @Test
-    @FlakyTest(bugId = 389009792)
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_PIP2)
-    public void testStopWithoutMultiWindowCallbacksOnDismiss() {
-        // Launch a PiP activity
-        launchActivity(PIP_ACTIVITY);
-        int windowingMode = mWmState.getTaskByActivity(PIP_ACTIVITY).getWindowingMode();
-
-        // Skip the test if it's freeform, since freeform <-> PIP does not trigger any multi-window
-        // callbacks.
-        assumeFalse(windowingMode == WINDOWING_MODE_FREEFORM);
-
-        mBroadcastActionTrigger.doAction(ACTION_ENTER_PIP);
-        // Wait for animation complete so that system has reported pip mode change event to
-        // client and the last reported pip mode has updated.
-        waitForEnterPipAnimationComplete(PIP_ACTIVITY);
-        assertPinnedStackExists();
-
-        // Dismiss it
-        separateTestJournal();
-        removeRootTasksInPinnedWindowingModes();
-        waitForExitPipToFullscreen(PIP_ACTIVITY);
-        waitForValidPictureInPictureCallbacks(PIP_ACTIVITY);
-
-        // Confirm that we get stop without any onPictureInPictureModeChanged()
-        // or multi-window config changes.
-        final ActivityLifecycleCounts lifecycles = new ActivityLifecycleCounts(PIP_ACTIVITY);
-        assertEquals("onStop", 1, lifecycles.getCount(ActivityCallback.ON_STOP));
-        assertEquals("onPictureInPictureModeChanged", 0,
-                lifecycles.getCount(ActivityCallback.ON_PICTURE_IN_PICTURE_MODE_CHANGED));
-        assertEquals("onMultiWindowModeChanged", 0,
-                lifecycles.getCount(ActivityCallback.ON_MULTI_WINDOW_MODE_CHANGED));
-    }
-
-    @Test
-    @FlakyTest(bugId = 388657870)
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_PIP2)
-    public void testDismissThenReopenMultiWindowCallbacks() {
-        // Launch a PiP activity
-        launchActivity(PIP_ACTIVITY);
-        int windowingMode = mWmState.getTaskByActivity(PIP_ACTIVITY).getWindowingMode();
-
-        // Skip the test if it's freeform, since freeform <-> PIP does not trigger any multi-window
-        // callbacks.
-        assumeFalse(windowingMode == WINDOWING_MODE_FREEFORM);
-
-        mBroadcastActionTrigger.doAction(ACTION_ENTER_PIP);
-        // Wait for animation complete so that system has reported pip mode change event to
-        // client and the last reported pip mode has updated.
-        waitForEnterPipAnimationComplete(PIP_ACTIVITY);
-        assertPinnedStackExists();
-
-        // Dismiss it
-        separateTestJournal();
-        removeRootTasksInPinnedWindowingModes();
-        waitForExitPipToFullscreen(PIP_ACTIVITY);
-
-        // Relaunch the PiP activity in fullscreen
-        launchActivity(PIP_ACTIVITY);
-
-        // Confirm that we get onPictureInPictureModeChanged() and multi-window config changes.
-        final ActivityLifecycleCounts lifecycles = new ActivityLifecycleCounts(PIP_ACTIVITY);
-        assertEquals("onPictureInPictureModeChanged", 1,
-                lifecycles.getCount(ActivityCallback.ON_PICTURE_IN_PICTURE_MODE_CHANGED));
-        assertEquals("onMultiWindowModeChanged", 1,
-                lifecycles.getCount(ActivityCallback.ON_MULTI_WINDOW_MODE_CHANGED));
-        // Confirm that onDestroy wasn't called.
-        assertEquals("onDestroy", 0,
-                lifecycles.getCount(ActivityCallback.ON_DESTROY));
     }
 
     @Test

@@ -317,3 +317,45 @@ test_module_config {
     test_suites: ["general-tests"],
     include_filters: ["android.security.cts.advancedprotection."],
 }
+
+android_test {
+    name: "CtsSecurityTestCases_multiuser",
+    defaults: ["cts_defaults"],
+
+    static_libs: [
+        "androidx.test.ext.junit",
+        "androidx.test.rules",
+        "androidx.test.runner",
+        "androidx.test.uiautomator_uiautomator",
+        "android.security.flags-aconfig-java",
+        "wifi_aconfig_flags_lib",
+        "ctstestserver",
+        "ctstestrunner-axt",
+        "compatibility-device-util-axt",
+        "compatibility-common-util-devicesidelib",
+        "flag-junit",
+        "guava",
+        "platform-test-annotations",
+        "hamcrest-library",
+        "NeneInternal",
+        "Harrier",
+    ],
+    libs: [
+        "android.test.runner.stubs.system",
+        "org.apache.http.legacy.stubs.system",
+        "android.test.base.stubs.system",
+    ],
+    sdk_version: "test_current",
+    // Tag this module as a cts test artifact
+    test_suites: [
+        "cts",
+        "general-tests",
+    ],
+    per_testcase_directory: true,
+    srcs: [
+        "src/android/security/cts/advancedprotection/AdvancedProtectionManagerTest.java",
+        "src/android/security/cts/advancedprotection/BaseAdvancedProtectionTest.java",
+    ],
+    test_config: "AndroidMultiUserTest.xml",
+    manifest: "AndroidMultiUserManifest.xml"
+}

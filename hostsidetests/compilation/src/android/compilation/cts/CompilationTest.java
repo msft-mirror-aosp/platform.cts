@@ -423,25 +423,81 @@ public class CompilationTest extends BaseHostJUnit4Test {
     @RequiresFlagsEnabled({android.content.pm.Flags.FLAG_CLOUD_COMPILATION_PM,
             com.android.art.flags.Flags.FLAG_ART_SERVICE_V3})
     public void testSdmOk() throws Exception {
-        // Keep the class loader context in sync with `libs` of `StatusCheckerApp` in
-        // `cts/hostsidetests/compilation/status_checker_app/Android.bp`.
-        String classLoaderContext = "PCL[]{PCL[/system/framework/android.test.base.jar]}";
-        CompilationArtifacts artifacts = mUtils.generateCompilationArtifacts(
-                STATUS_CHECKER_APK_RES, STATUS_CHECKER_PROF_RES, getAbi(), classLoaderContext);
+        CompilationArtifacts artifacts = generateStatusCheckerCompilationArtifacts();
         File dmFile = mUtils.createDm(STATUS_CHECKER_PROF_RES, artifacts.vdexFile());
-        File sdmFile = mUtils.createSdm(artifacts.odexFile(), artifacts.artFile());
+        File sdmFile = mUtils.createSdm(artifacts.odexFile(), artifacts.artFile(), "testkey");
 
         mUtils.installFromResourcesWithSdm(getAbi(), STATUS_CHECKER_APK_RES, dmFile, sdmFile);
+
+        String dump = mUtils.assertCommandSucceeds("pm art dump " + STATUS_CHECKER_PKG);
+        checkDexoptStatus(dump, Pattern.quote("base.apk"), "speed-profile", "cloud");
+
+        var checkStatusOptions = new DeviceTestRunOptions(STATUS_CHECKER_PKG)
+                                         .setTestClassName(STATUS_CHECKER_CLASS)
+                                         .setTestMethodName("checkStatus")
+                                         .setDisableHiddenApiCheck(true)
+                                         .addInstrumentationArg("compiler-filter", "speed-profile")
+                                         .addInstrumentationArg("compilation-reason", "cloud");
+        assertThat(runDeviceTests(checkStatusOptions)).isTrue();
+
+        // Further make sure that the native code is from the SDM file.
+        var checkExecutableMethodFileOffsetsOptions =
+                new DeviceTestRunOptions(STATUS_CHECKER_PKG)
+                        .setTestClassName(STATUS_CHECKER_CLASS)
+                        .setTestMethodName("checkExecutableMethodFileOffsets")
+                        .setDisableHiddenApiCheck(true)
+                        .addInstrumentationArg("container-path-pattern", "\\.sdm!/primary\\.odex$");
+        assertThat(runDeviceTests(checkExecutableMethodFileOffsetsOptions)).isTrue();
+    }
+
+    @Test
+    @RequiresFlagsEnabled({android.content.pm.Flags.FLAG_CLOUD_COMPILATION_VERIFICATION})
+    public void testSdmInvalidSignature() throws Exception {
+        CompilationArtifacts artifacts = generateStatusCheckerCompilationArtifacts();
+        File dmFile = mUtils.createDm(STATUS_CHECKER_PROF_RES, artifacts.vdexFile());
+        File sdmFile = mUtils.createSdm(artifacts.odexFile(), artifacts.artFile(), "testkey2");
+
+        Throwable throwable = assertThrows(Throwable.class, () -> {
+            mUtils.installFromResourcesWithSdm(getAbi(), STATUS_CHECKER_APK_RES, dmFile, sdmFile);
+        });
+        assertThat(throwable).hasMessageThat().contains("SDM signatures are inconsistent with APK");
+    }
+
+    @Test
+    @RequiresFlagsEnabled({android.content.pm.Flags.FLAG_CLOUD_COMPILATION_VERIFICATION})
+    public void testSdmNoSignature() throws Exception {
+        CompilationArtifacts artifacts = generateStatusCheckerCompilationArtifacts();
+        File dmFile = mUtils.createDm(STATUS_CHECKER_PROF_RES, artifacts.vdexFile());
+        File sdmFile =
+                mUtils.createSdm(artifacts.odexFile(), artifacts.artFile(), null /* keyName */);
+
+        Throwable throwable = assertThrows(Throwable.class, () -> {
+            mUtils.installFromResourcesWithSdm(getAbi(), STATUS_CHECKER_APK_RES, dmFile, sdmFile);
+        });
+        assertThat(throwable).hasMessageThat().contains("Failed to verify SDM signatures");
     }
 
     private void checkDexoptStatus(String dump, String dexfilePattern, String statusPattern) {
+        checkDexoptStatus(dump, dexfilePattern, statusPattern, "[-a-z]*");
+    }
+
+    private void checkDexoptStatus(
+            String dump, String dexfilePattern, String statusPattern, String reasonPattern) {
         // Matches the dump output typically being:
         //     /data/user/0/android.compilation.cts.statuscheckerapp/secondary.jar
         //       x86_64: [status=speed] [reason=cmdline] [primary-abi]
         // The pattern is intentionally minimized to be as forward compatible as possible.
         // TODO(b/283447251): Use a machine-readable format.
-        assertThat(dump).containsMatch(
-                Pattern.compile(String.format("[\\s/](%s)(\\s[^\\n]*)?\\n[^\\n]*\\[status=(%s)\\]",
-                        dexfilePattern, statusPattern)));
+        assertThat(dump).containsMatch(Pattern.compile(String.format(
+                "[\\s/](%s)(\\s[^\\n]*)?\\n[^\\n]*\\[status=(%s)\\][^\\n]*\\[reason=(%s)\\]",
+                dexfilePattern, statusPattern, reasonPattern)));
+    }
+
+    private CompilationArtifacts generateStatusCheckerCompilationArtifacts() throws Exception {
+        // Keep the class loader context in sync with `libs` of `StatusCheckerApp` in
+        // `cts/hostsidetests/compilation/status_checker_app/Android.bp`.
+        String classLoaderContext = "PCL[]{PCL[/system/framework/android.test.base.jar]}";
+        return mUtils.generateCompilationArtifacts(
+                STATUS_CHECKER_APK_RES, STATUS_CHECKER_PROF_RES, getAbi(), classLoaderContext);
     }
 }

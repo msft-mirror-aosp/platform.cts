@@ -39,6 +39,8 @@ import android.platform.test.annotations.AppModeSdkSandbox;
 import android.platform.test.annotations.AsbSecurityTest;
 import android.platform.test.annotations.DisabledOnRavenwood;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.platform.test.ravenwood.RavenwoodRule;
 import android.util.Log;
 import android.util.SparseArray;
@@ -64,6 +66,9 @@ import java.util.Set;
 public class ParcelTest {
     @Rule
     public RavenwoodRule mRavenwood = new RavenwoodRule.Builder().build();
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private static final float DELTA_FLOAT = 0.0f;
     private static final double DELTA_DOUBLE = 0.0d;

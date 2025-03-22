@@ -69,7 +69,7 @@ public class BroadcastStatsHostTest extends BaseHostJUnit4Test implements IBuild
         ReportUtils.clearReports(getDevice());
 
         final int userId = getDevice().getCurrentUser();
-        for (String pkg : new String[] { TEST_PKG, RECEIVER_PKG }) {
+        for (String pkg : new String[] {TEST_PKG, RECEIVER_PKG}) {
             runCommand(String.format("cmd package unstop --user %d %s", userId, pkg));
         }
     }
@@ -119,7 +119,7 @@ public class BroadcastStatsHostTest extends BaseHostJUnit4Test implements IBuild
         final ExtensionRegistry registry = ExtensionRegistry.newInstance();
         BroadcastsExtensionAtoms.registerAllExtensions(registry);
 
-        DeviceUtils.runDeviceTests(getDevice(), TEST_PKG, TEST_CLASS, "testBroadcastSent");
+        DeviceUtils.runDeviceTests(getDevice(), TEST_PKG, TEST_CLASS, "testBroadcastProcessed");
 
         final List<StatsLog.EventMetricData> data =
                 ReportUtils.getEventMetricDataList(getDevice(), registry);

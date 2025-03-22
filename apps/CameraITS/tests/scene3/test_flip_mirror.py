@@ -34,6 +34,7 @@ _PATCH_H = 0.5  # center 50%
 _PATCH_W = 0.5
 _PATCH_X = 0.5 - _PATCH_W/2
 _PATCH_Y = 0.5 - _PATCH_H/2
+_TELE_CHART_HEIGHT_31CM = 6.5  # cm height of chart for 31cm distance
 _VGA_W, _VGA_H = 640, 480
 
 
@@ -149,8 +150,17 @@ class FlipMirrorTest(its_base_test.ItsBaseTest):
           cam, props, self.scene, self.tablet, self.chart_distance)
 
       # initialize chart class and locate chart in scene
-      chart = opencv_processing_utils.Chart(
-          cam, props, self.log_path, distance=self.chart_distance)
+      is_tele = cam.get_camera_type(props) == (
+          its_session_utils.CAMERA_TYPE_TELE)
+      if is_tele and self.chart_distance == (
+          opencv_processing_utils.CHART_DISTANCE_31CM):
+        logging.debug('Initializing TELE camera chart at 31cm.')
+        chart = opencv_processing_utils.Chart(
+            cam, props, self.log_path, height=_TELE_CHART_HEIGHT_31CM,
+            distance=self.chart_distance)
+      else:
+        chart = opencv_processing_utils.Chart(
+            cam, props, self.log_path, distance=self.chart_distance)
       fmt = {'format': 'yuv', 'width': _VGA_W, 'height': _VGA_H}
 
       # test that image is not flipped, mirrored, or rotated

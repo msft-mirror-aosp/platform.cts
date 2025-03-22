@@ -27,6 +27,7 @@ import android.app.UiAutomation;
 import android.app.admin.DevicePolicyManager;
 import android.content.ComponentName;
 import android.content.pm.PackageManager;
+import android.net.TetheringManager;
 import android.net.wifi.WifiConfiguration;
 import android.net.wifi.WifiManager;
 import android.os.UserHandle;
@@ -60,6 +61,7 @@ public abstract class BaseDeviceOwnerTest extends AndroidTestCase {
     protected WifiManager mCurrentUserWifiManager;
     @Nullable
     protected WifiConfigCreator mWifiConfigCreator;
+    @Nullable protected TetheringManager mTetheringManager;
     protected Instrumentation mInstrumentation;
     protected UiDevice mDevice;
     protected boolean mHasSecureLockScreen;
@@ -83,6 +85,8 @@ public abstract class BaseDeviceOwnerTest extends AndroidTestCase {
                 BasicAdminReceiver.class, /* forDeviceOwner= */ true);
         mWifiManager = TestAppSystemServiceFactory.getWifiManager(mContext,
                 BasicAdminReceiver.class);
+        mTetheringManager =
+                TestAppSystemServiceFactory.getTetheringManager(mContext, BasicAdminReceiver.class);
         mCurrentUserWifiManager = mContext.getSystemService(WifiManager.class);
         mWifiConfigCreator = mWifiManager == null ? null : new WifiConfigCreator(mContext,
                 mWifiManager);

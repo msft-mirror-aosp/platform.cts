@@ -16,6 +16,7 @@
 
 package android.telephony.satellite.cts;
 
+import static android.telephony.mockmodem.MockSimService.MOCK_SIM_PROFILE_ID_TWN_CHT;
 import static android.telephony.satellite.SatelliteManager.SATELLITE_COMMUNICATION_RESTRICTION_REASON_ENTITLEMENT;
 import static android.telephony.satellite.SatelliteManager.SATELLITE_COMMUNICATION_RESTRICTION_REASON_GEOLOCATION;
 import static android.telephony.satellite.SatelliteManager.SATELLITE_DISALLOWED_REASON_UNSUPPORTED_DEFAULT_MSG_APP;
@@ -327,8 +328,10 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         assumeTrue(shouldTestSatelliteWithMockService());
         assumeTrue(sMockSatelliteServiceManager != null);
 
-        sMockSatelliteServiceManager.setSatelliteIgnoreCellularServiceState(true);
-        sMockSatelliteServiceManager.setSatelliteTnScanningSupport(false, false, true);
+        assertTrue(sMockSatelliteServiceManager.setSatelliteIgnoreCellularServiceState(true));
+        assertTrue(sMockSatelliteServiceManager.setSatelliteTnScanningSupport(false, false, true));
+        assertTrue(sMockSatelliteServiceManager.setSupportDisableSatelliteWhileEnableInProgress(
+                false, true));
 
         sMockSatelliteServiceManager.setErrorCode(SatelliteResult.SATELLITE_RESULT_SUCCESS);
         sMockSatelliteServiceManager.setWaitToSend(false);
@@ -410,8 +413,10 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         sMockSatelliteServiceManager.setShouldRespondEnableRequest(true);
         sMockSatelliteServiceManager.clearSatelliteEnableRequestQueues();
 
-        sMockSatelliteServiceManager.setSatelliteIgnoreCellularServiceState(false);
-        sMockSatelliteServiceManager.setSatelliteTnScanningSupport(true, false, false);
+        assertTrue(sMockSatelliteServiceManager.setSatelliteIgnoreCellularServiceState(false));
+        assertTrue(sMockSatelliteServiceManager.setSatelliteTnScanningSupport(true, false, false));
+        assertTrue(sMockSatelliteServiceManager.setSupportDisableSatelliteWhileEnableInProgress(
+                true, false));
 
         grantSatellitePermission();
         if (isSatelliteEnabled()) {
@@ -3447,9 +3452,8 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         assertEquals(true, pair.first.booleanValue());
         assertNull(pair.second);
 
-
         /* Test when satellite is supported in the carrier config */
-        setSatelliteError(expectedSuccess);
+        setSatelliteErrorBasedOnHalVersion(expectedSuccess);
         bundle = new PersistableBundle();
         bundle.putBoolean(
                 CarrierConfigManager.KEY_SATELLITE_ATTACH_SUPPORTED_BOOL, true);
@@ -3466,15 +3470,16 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         ArrayList<String> expectedCarrierPlmnList = new ArrayList<>();
         expectedCarrierPlmnList.add("123411");
         expectedCarrierPlmnList.add("123412");
-        assertTrue(sMockSatelliteServiceManager.waitForEventOnSetSatellitePlmn(1));
-        List<String> carrierPlmnList = sMockSatelliteServiceManager.getCarrierPlmnList();
+        assertTrue(waitForEventOnSetSatellitePlmn(1));
+
+        List<String> carrierPlmnList = getCarrierPlmnList();
         assertNotNull(carrierPlmnList);
         assertEquals(expectedCarrierPlmnList, carrierPlmnList);
         List<String> satellitePlmnListFromOverlayConfig =
                 sMockSatelliteServiceManager.getPlmnListFromOverlayConfig();
         List<String> expectedAllSatellitePlmnList = SatelliteServiceUtils.mergeStrLists(
                 carrierPlmnList, satellitePlmnListFromOverlayConfig);
-        List<String> allSatellitePlmnList = sMockSatelliteServiceManager.getAllSatellitePlmnList();
+        List<String> allSatellitePlmnList = getAllSatellitePlmnList();
         assertNotNull(allSatellitePlmnList);
         assertEquals(expectedAllSatellitePlmnList, allSatellitePlmnList);
         requestSatelliteAttachEnabledForCarrier(true, expectedSuccess);
@@ -3492,7 +3497,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
 
         /* Test when satellite is supported, but modem returns INVALID_MODEM_STATE */
         expectedError = SatelliteManager.SATELLITE_RESULT_INVALID_MODEM_STATE;
-        setSatelliteError(expectedError);
+        setSatelliteErrorBasedOnHalVersion(expectedError);
         requestSatelliteAttachEnabledForCarrier(true, expectedError);
 
         pair = requestIsSatelliteAttachEnabledForCarrier();
@@ -3509,7 +3514,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
 
         /* Test when satellite is supported, but modem returns RADIO_NOT_AVAILABLE */
         expectedError = SatelliteManager.SATELLITE_RESULT_RADIO_NOT_AVAILABLE;
-        setSatelliteError(expectedError);
+        setSatelliteErrorBasedOnHalVersion(expectedError);
         requestSatelliteAttachEnabledForCarrier(true, expectedError);
 
         pair = requestIsSatelliteAttachEnabledForCarrier();
@@ -3531,7 +3536,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
                 SatelliteManager.SATELLITE_RESULT_SUCCESS;
 
         /* Test when satellite is supported but there is a restriction reason */
-        setSatelliteError(expectedSuccess);
+        setSatelliteErrorBasedOnHalVersion(expectedSuccess);
         PersistableBundle bundle = new PersistableBundle();
         bundle.putBoolean(
                 CarrierConfigManager.KEY_SATELLITE_ATTACH_SUPPORTED_BOOL, true);
@@ -4693,7 +4698,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
                 SatelliteManager.SATELLITE_RESULT_SUCCESS;
 
         /* Test when satellite is supported in the carrier config */
-        setSatelliteError(expectedSuccess);
+        setSatelliteErrorBasedOnHalVersion(expectedSuccess);
         PersistableBundle bundle = new PersistableBundle();
         bundle.putBoolean(
                 CarrierConfigManager.KEY_SATELLITE_ATTACH_SUPPORTED_BOOL, true);
@@ -4710,22 +4715,22 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         ArrayList<String> expectedCarrierPlmnList = new ArrayList<>();
         expectedCarrierPlmnList.add("123411");
         expectedCarrierPlmnList.add("123412");
-        assertTrue(sMockSatelliteServiceManager.waitForEventOnSetSatellitePlmn(1));
-        List<String> carrierPlmnList = sMockSatelliteServiceManager.getCarrierPlmnList();
+        assertTrue(waitForEventOnSetSatellitePlmn(1));
+        List<String> carrierPlmnList = getCarrierPlmnList();
         assertNotNull(carrierPlmnList);
         assertEquals(expectedCarrierPlmnList, carrierPlmnList);
 
-        /* Aggregated satellite plmn should be same with allSatellitePlmnList */
         List<String> aggregatedPlmnList = sSatelliteManager.getSatellitePlmnsForCarrier(
                 sTestSubIDForCarrierSatellite);
+        assertEquals(expectedCarrierPlmnList, aggregatedPlmnList);
+
         List<String> satellitePlmnListFromOverlayConfig =
                 sMockSatelliteServiceManager.getPlmnListFromOverlayConfig();
         List<String> expectedAllSatellitePlmnList = SatelliteServiceUtils.mergeStrLists(
                 carrierPlmnList, satellitePlmnListFromOverlayConfig);
-        List<String> allSatellitePlmnList = sMockSatelliteServiceManager.getAllSatellitePlmnList();
+        List<String> allSatellitePlmnList = getAllSatellitePlmnList();
         assertNotNull(allSatellitePlmnList);
         assertEquals(expectedAllSatellitePlmnList, allSatellitePlmnList);
-        assertEquals(expectedAllSatellitePlmnList, aggregatedPlmnList);
 
         afterSatelliteForCarrierTest();
         revokeSatellitePermission();
@@ -7248,6 +7253,51 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         afterSubscriberIdTest(callback);
     }
 
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_SATELLITE_25Q4_APIS)
+    public void testGetSatelliteDataSupportMode() {
+        logd("testGetSatelliteDataSupportMode");
+
+        if (!shouldTestSatellite()) return;
+        grantSatellitePermission();
+
+        if (Flags.carrierRoamingNbIotNtn()) {
+            sTestSubIDForCarrierSatellite = getActiveSubIDForCarrierSatelliteTest();
+            logd("sub_id:" + sTestSubIDForCarrierSatellite);
+            if (sTestSubIDForCarrierSatellite == SubscriptionManager.INVALID_SUBSCRIPTION_ID) {
+                return;
+            }
+
+            // Update available services with data for the carrier sub id
+            PersistableBundle bundle = new PersistableBundle();
+            int[] defaultSupportedServices = {2, 3, 6};
+            bundle.putIntArray(
+                    CarrierConfigManager.KEY_CARRIER_ROAMING_SATELLITE_DEFAULT_SERVICES_INT_ARRAY,
+                    defaultSupportedServices);
+            // With data mode: restricted
+            bundle.putInt(CarrierConfigManager.KEY_SATELLITE_DATA_SUPPORT_MODE_INT,
+                    SatelliteManager.SATELLITE_DATA_SUPPORT_RESTRICTED);
+            overrideCarrierConfig(sTestSubIDForCarrierSatellite, bundle);
+
+            assertEquals(SatelliteManager.SATELLITE_DATA_SUPPORT_RESTRICTED,
+                    sSatelliteManager.getSatelliteDataSupportMode(sTestSubIDForCarrierSatellite));
+
+            // With data mode: constrained
+            bundle.putInt(CarrierConfigManager.KEY_SATELLITE_DATA_SUPPORT_MODE_INT,
+                    SatelliteManager.SATELLITE_DATA_SUPPORT_CONSTRAINED);
+            overrideCarrierConfig(sTestSubIDForCarrierSatellite, bundle);
+            assertEquals(SatelliteManager.SATELLITE_DATA_SUPPORT_CONSTRAINED,
+                    sSatelliteManager.getSatelliteDataSupportMode(sTestSubIDForCarrierSatellite));
+
+            // With data mode: UnConstrained
+            bundle.putInt(CarrierConfigManager.KEY_SATELLITE_DATA_SUPPORT_MODE_INT,
+                    SatelliteManager.SATELLITE_DATA_SUPPORT_UNCONSTRAINED);
+            overrideCarrierConfig(sTestSubIDForCarrierSatellite, bundle);
+            assertEquals(SatelliteManager.SATELLITE_DATA_SUPPORT_UNCONSTRAINED,
+                    sSatelliteManager.getSatelliteDataSupportMode(sTestSubIDForCarrierSatellite));
+        }
+    }
+
     /*
      * Before calling this function, caller need to make sure the modem is in LISTENING or IDLE
      * state.
@@ -8201,6 +8251,39 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         sMockSatelliteServiceManager.setErrorCode(satelliteError);
     }
 
+    private void setSatelliteErrorBasedOnHalVersion(@SatelliteResult int error) {
+        if (getHalVersion(TelephonyManager.HAL_SERVICE_NETWORK) < RADIO_HAL_VERSION_2_3) {
+            setSatelliteError(error);
+            return;
+        }
+
+        @RadioError int satelliteError;
+        switch (error) {
+            case SatelliteManager.SATELLITE_RESULT_SUCCESS:
+                satelliteError = RadioError.NONE;
+                break;
+            case SatelliteManager.SATELLITE_RESULT_INVALID_MODEM_STATE:
+                satelliteError = RadioError.INVALID_MODEM_STATE;
+                break;
+            case SATELLITE_RESULT_MODEM_ERROR:
+                satelliteError = RadioError.MODEM_ERR;
+                break;
+            case SatelliteManager.SATELLITE_RESULT_RADIO_NOT_AVAILABLE:
+                satelliteError = RadioError.RADIO_NOT_AVAILABLE;
+                break;
+            case SATELLITE_RESULT_REQUEST_NOT_SUPPORTED:
+                satelliteError = RadioError.REQUEST_NOT_SUPPORTED;
+                break;
+            default:
+                satelliteError = RadioError.GENERIC_FAILURE;
+                break;
+        }
+
+        if (sMockModemManager != null) {
+            sMockModemManager.setSatelliteErrorCode(SLOT_ID_0, satelliteError);
+        }
+    }
+
     private void setNtnSignalStrength(
             @NtnSignalStrength.NtnSignalStrengthLevel int ntnSignalStrengthLevel) {
         sMockSatelliteServiceManager.setNtnSignalStrength(toHAL(ntnSignalStrengthLevel));
@@ -8256,8 +8339,12 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
     }
 
     private boolean getIsSatelliteEnabledForCarrierFromMockService() {
-        Boolean receivedResult = sMockSatelliteServiceManager.getIsSatelliteEnabledForCarrier();
-        return receivedResult != null ? receivedResult : false;
+        if (getHalVersion(TelephonyManager.HAL_SERVICE_NETWORK) < RADIO_HAL_VERSION_2_3) {
+            Boolean receivedResult = sMockSatelliteServiceManager.getIsSatelliteEnabledForCarrier();
+            return receivedResult != null ? receivedResult : false;
+        }
+
+        return sMockModemManager.getIsSatelliteEnabledForCarrier(SLOT_ID_0);
     }
 
     private boolean getIsEmergency() {
@@ -8266,7 +8353,11 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
     }
 
     private void clearSatelliteEnabledForCarrier() {
-        sMockSatelliteServiceManager.clearSatelliteEnabledForCarrier();
+        if (getHalVersion(TelephonyManager.HAL_SERVICE_NETWORK) < RADIO_HAL_VERSION_2_3) {
+            sMockSatelliteServiceManager.clearSatelliteEnabledForCarrier();
+            return;
+        }
+        sMockModemManager.clearSatelliteEnabledForCarrier(SLOT_ID_0);
     }
 
 
@@ -8280,7 +8371,24 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
     static boolean sPreviousESOSSupportedOfNtnOnlySub;
     static String[] sPreviousSupportedMsgApps;
 
+    static final int SLOT_ID_0 = 0;
+    static final int SLOT_ID_1 = 1;
+    static MockModemManager sMockModemManager;
+
     private void beforeSatelliteForCarrierTest() {
+        try {
+            MockModemManager.enforceMockModemDeveloperSetting();
+            sMockModemManager = new MockModemManager();
+            assertNotNull(sMockModemManager);
+            assertTrue(sMockModemManager.connectMockModemService());
+
+            assertTrue(sMockModemManager.insertSimCard(SLOT_ID_0, MOCK_SIM_PROFILE_ID_TWN_CHT));
+            TimeUnit.MILLISECONDS.sleep(TIMEOUT);
+            sMockModemManager.changeNetworkService(SLOT_ID_0, MOCK_SIM_PROFILE_ID_TWN_CHT, true);
+        } catch (Exception e) {
+            loge("beforeSatelliteForCarrierTest: exception=" + e);
+        }
+
         sTestSubIDForCarrierSatellite = getActiveSubIDForCarrierSatelliteTest();
         sSubscriptionManager = InstrumentationRegistry.getInstrumentation()
                 .getContext().getSystemService(SubscriptionManager.class);
@@ -8350,6 +8458,17 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
             sSubscriptionManager.setSubscriptionProperty(sTestSubIDForCarrierSatellite,
                     SubscriptionManager.SATELLITE_ATTACH_ENABLED_FOR_CARRIER,
                     sPreviousSatelliteAttachEnabled ? "1" : "0");
+
+            // Leave service
+            sMockModemManager.changeNetworkService(SLOT_ID_0, MOCK_SIM_PROFILE_ID_TWN_CHT, false);
+            // Remove the SIM
+            sMockModemManager.removeSimCard(SLOT_ID_0);
+            if (sMockModemManager != null) {
+                assertTrue(sMockModemManager.disconnectMockModemService());
+                sMockModemManager = null;
+            }
+        } catch (Exception e) {
+            loge("afterSatelliteForCarrierTest: exception=" + e);
         } finally {
             ui.dropShellPermissionIdentity();
             sTestSubIDForCarrierSatellite = SubscriptionManager.INVALID_SUBSCRIPTION_ID;
@@ -8802,5 +8921,31 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
             Thread.currentThread().interrupt();
             throw new AssertionError("InterruptedException while waiting for state change.");
         }
+    }
+
+    private boolean waitForEventOnSetSatellitePlmn(int expectedNumOfEvents) {
+        if (getHalVersion(TelephonyManager.HAL_SERVICE_NETWORK) < RADIO_HAL_VERSION_2_3) {
+            return sMockSatelliteServiceManager.waitForEventOnSetSatellitePlmn(expectedNumOfEvents);
+        }
+
+        return sMockModemManager.waitForEventOnSetSatellitePlmn(expectedNumOfEvents);
+    }
+
+    @Nullable
+    List<String> getCarrierPlmnList() {
+        if (getHalVersion(TelephonyManager.HAL_SERVICE_NETWORK) < RADIO_HAL_VERSION_2_3) {
+            return sMockSatelliteServiceManager.getCarrierPlmnList();
+        }
+
+        return sMockModemManager.getCarrierPlmnList(SLOT_ID_0);
+    }
+
+    @Nullable
+    List<String> getAllSatellitePlmnList() {
+        if (getHalVersion(TelephonyManager.HAL_SERVICE_NETWORK) < RADIO_HAL_VERSION_2_3) {
+            return sMockSatelliteServiceManager.getAllSatellitePlmnList();
+        }
+
+        return sMockModemManager.getAllSatellitePlmnList(SLOT_ID_0);
     }
 }

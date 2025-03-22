@@ -98,6 +98,7 @@ public class SatelliteManagerTestBase {
 
     protected static final String TOKEN = "TEST_TOKEN";
     protected static final long TIMEOUT = TimeUnit.SECONDS.toMillis(5);
+    public static final int RADIO_HAL_VERSION_2_3 = makeRadioVersion(2, 3);
 
     /**
      * Since SST sets waiting time up to 10 seconds for the power off radio, the timer waiting for
@@ -2177,5 +2178,16 @@ public class SatelliteManagerTestBase {
         assertEquals(expectedEarfcnList, actualEarfcnList);
         assertArrayEquals(expectedSatelliteInfoArray, actualSatelliteInfoArray);
         assertEquals(expectedTagIdList, actualTagIdList);
+    }
+
+    /** Get HAL version for the given HAL service. */
+    public int getHalVersion(int halService) {
+        Pair<Integer, Integer> halVersion = sTelephonyManager.getHalVersion(halService);
+        return makeRadioVersion(halVersion.first, halVersion.second);
+    }
+
+    private static int makeRadioVersion(int major, int minor) {
+        if (major < 0 || minor < 0) return 0;
+        return major * 100 + minor;
     }
 }

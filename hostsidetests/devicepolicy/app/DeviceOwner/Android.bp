@@ -36,9 +36,11 @@ android_test_helper_app {
     ],
     static_libs: [
         "ctstestrunner-axt",
+        "com.android.net.flags-aconfig-java",
         "compatibility-device-util-axt",
         "androidx.test.rules",
         "cts-security-test-support-library",
+        "cts-net-utils",
         "truth",
         "androidx.legacy_legacy-support-v4",
         "devicepolicy-deviceside-common",
@@ -53,5 +55,6 @@ android_test_helper_app {
         "general-tests",
         "mts-permission",
         "sts",
+        "mcts-permission",
     ],
 }

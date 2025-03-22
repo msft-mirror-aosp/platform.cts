@@ -36,6 +36,7 @@ _PATCH_H = 0.25  # center 25%
 _PATCH_W = 0.25
 _PATCH_X = 0.5 - _PATCH_W/2
 _PATCH_Y = 0.5 - _PATCH_H/2
+_SAVE_IMAGE_DELAY = 10  # empirically determined
 _TEST_NAME = os.path.splitext(os.path.basename(__file__))[0]
 
 
@@ -119,7 +120,8 @@ class AutoFlashTest(its_base_test.UiAutomatorItsBaseTest):
               self.dut,
               self.log_path,
               flash_mode_desc=ui_interaction_utils.FLASH_MODE_AUTO_CONTENT_DESC,
-              lens_facing=props['android.lens.facing']
+              lens_facing=props['android.lens.facing'],
+              save_image_delay=_SAVE_IMAGE_DELAY,
           ).capture_path
       )
       auto_flash_capture_path = path.with_name(

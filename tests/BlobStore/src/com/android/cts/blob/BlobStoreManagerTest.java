@@ -111,16 +111,18 @@ public class BlobStoreManagerTest {
     private static final String KEY_MAX_LEASED_BLOBS = "max_leased_blobs";
     private static final String KEY_MAX_BLOB_ACCESS_PERMITTED_PACKAGES = "max_permitted_pks";
 
-    private static final String HELPER_PKG = "com.android.cts.blob.helper";
-    private static final String HELPER_PKG2 = "com.android.cts.blob.helper2";
-    private static final String HELPER_PKG3 = "com.android.cts.blob.helper3";
+    static final String HELPER_PKG = "com.android.cts.blob.helper";
+    static final String HELPER_PKG2 = "com.android.cts.blob.helper2";
+    static final String HELPER_PKG3 = "com.android.cts.blob.helper3";
 
     private static final String HELPER_SERVICE = HELPER_PKG + ".BlobStoreTestService";
 
-    private static final byte[] HELPER_PKG2_CERT_SHA256 = BaseEncoding.base16().decode(
-            "187E3D3172F2177D6FEC2EA53785BF1E25DFF7B2E5F6E59807E365A7A837E6C3");
-    private static final byte[] HELPER_PKG3_CERT_SHA256 = BaseEncoding.base16().decode(
-            "D760873D812FE1CFC02C15ED416AB774B2D4C2E936DF6D8B6707277479D4812F");
+    static final byte[] HELPER_PKG2_CERT_SHA256 =
+            BaseEncoding.base16()
+                    .decode("187E3D3172F2177D6FEC2EA53785BF1E25DFF7B2E5F6E59807E365A7A837E6C3");
+    static final byte[] HELPER_PKG3_CERT_SHA256 =
+            BaseEncoding.base16()
+                    .decode("D760873D812FE1CFC02C15ED416AB774B2D4C2E936DF6D8B6707277479D4812F");
 
     private Context mContext;
     int mUserId;

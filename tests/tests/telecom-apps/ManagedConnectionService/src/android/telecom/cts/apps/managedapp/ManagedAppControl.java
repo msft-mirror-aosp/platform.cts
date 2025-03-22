@@ -369,6 +369,29 @@ public class ManagedAppControl extends Service {
                 }
 
                 @Override
+                public NoDataTransaction sendConnectionEvent(String id, String event) {
+                    Log.i(
+                            TAG,
+                            String.format("sendConnectionEvent: id=[%s], event=[%s]", id, event));
+                    try {
+                        ManagedConnection connection =
+                                getConnectionOrThrow(
+                                        id,
+                                        createStackTraceList(
+                                                CLASS_NAME
+                                                        + ".sendConnectionEvent("
+                                                        + (id)
+                                                        + ", "
+                                                        + (event)
+                                                        + ")"));
+                        connection.sendConnectionEvent(event, null);
+                        return new NoDataTransaction(TestAppTransaction.Success);
+                    } catch (TestAppException e) {
+                        return new NoDataTransaction(TestAppTransaction.Failure, e);
+                    }
+                }
+
+                @Override
                 public CallEndpointTransaction getCurrentCallEndpoint(String id) {
                     Log.i(TAG, String.format("getCurrentCallEndpoint: id=[%s]", id));
                     try {
