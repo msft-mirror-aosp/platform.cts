@@ -291,6 +291,15 @@ public class FabricatedOverlayTest {
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_DIMENSION_FRRO)
+    public void setResourceValue_forFloatType_shouldSucceed() {
+        final FabricatedOverlay overlay =
+                new FabricatedOverlay(mTestName.getMethodName(), mContext.getPackageName());
+
+        overlay.setResourceValue("dimen/demoFloat", 5.6f /* value */, null /* configuration */);
+    }
+
+    @Test
     public void setResourceValue_multipleEntries_shouldSucceed() {
         final FabricatedOverlay overlay =
                 new FabricatedOverlay(mTestName.getMethodName(), mContext.getPackageName());
