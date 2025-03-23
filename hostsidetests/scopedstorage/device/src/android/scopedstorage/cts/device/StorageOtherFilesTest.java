@@ -307,6 +307,7 @@ public class StorageOtherFilesTest {
     }
 
     @Test
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA, codeName = "Baklava")
     @EnableCompatChanges({LIMIT_CREATE_REQUEST_URIS})
     public void testCreateRequestLimitUris_throwsIllegalArgumentException() throws Exception {
         assumeTrue(sContext.getApplicationInfo().targetSdkVersion >= Build.VERSION_CODES.BAKLAVA);
@@ -347,6 +348,7 @@ public class StorageOtherFilesTest {
     }
 
     @Test
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA, codeName = "Baklava")
     @EnableCompatChanges({LIMIT_CREATE_REQUEST_URIS})
     public void testCreateRequestLimitUris_success() throws Exception {
         final int numFiles = 2000;

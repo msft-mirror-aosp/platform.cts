@@ -50,6 +50,7 @@ class DefaultJcaImageParityClassTest(its_base_test.ItsBaseTest):
   """Test for default camera and JCA image parity."""
 
   def _setup_gen2rig(self):
+    logging.debug('Setting up gen2 rig')
     # Configure and setup gen2 rig
     motor_channel = int(self.rotator_ch)
     lights_channel = int(self.lighting_ch)
@@ -126,7 +127,10 @@ class DefaultJcaImageParityClassTest(its_base_test.ItsBaseTest):
       device_id = self.dut.serial
 
       # Set up gen2 rig controllers
-      self._setup_gen2rig()
+      if self.rotator_cntl == 'None' or self.lighting_cntl == 'None':
+        logging.debug('Gen2 rig is not available.')
+      else:
+        self._setup_gen2rig()
 
       # Get default camera app pkg name
       pkg_name = cam.get_default_camera_pkg()

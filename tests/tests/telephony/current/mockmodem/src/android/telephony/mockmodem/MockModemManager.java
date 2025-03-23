@@ -20,7 +20,9 @@ import static android.telephony.mockmodem.MockSimService.MOCK_SIM_PROFILE_ID_DEF
 
 import static com.android.internal.telephony.RILConstants.RIL_REQUEST_RADIO_POWER;
 
+import android.annotation.Nullable;
 import android.content.Context;
+import android.hardware.radio.RadioError;
 import android.hardware.radio.sim.Carrier;
 import android.hardware.radio.sim.CarrierRestrictions;
 import android.hardware.radio.voice.CdmaSignalInfoRecord;
@@ -45,6 +47,7 @@ import androidx.test.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.TestThread;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -1193,5 +1196,74 @@ public class MockModemManager {
             Log.e(TAG, "triggerIncomingSms e=" + e);
         }
         return result;
+    }
+
+    /** Set error code to be returned by mock modem. */
+    public void setSatelliteErrorCode(int slotId, @RadioError int errorCode) {
+        Log.d(TAG, "setSatelliteErrorCode: slotId=" + slotId + "errorCode=" + errorCode);
+        if (mMockModemService == null) {
+            Log.e(TAG, "setSatelliteErrorCode: mMockModemService is null");
+            return;
+        }
+        mMockModemService.getIRadioNetwork((byte) slotId).setSatelliteErrorCode(errorCode);
+    }
+
+    /** Wait until setSatellitePlmn() is called. */
+    public boolean waitForEventOnSetSatellitePlmn(int expectedNumberOfEvents) {
+        Log.d(TAG, "waitForEventOnSetSatellitePlmn");
+        if (mMockModemService == null) {
+            Log.e(TAG, "waitForEventOnSetSatellitePlmn: mMockModemService is null");
+            return false;
+        }
+
+        return mMockModemService.waitForEventOnSetSatellitePlmn(expectedNumberOfEvents);
+    }
+
+    /** Get whether satellite is enabled for carrier. */
+    public boolean getIsSatelliteEnabledForCarrier(int slotId) {
+        Log.d(TAG, "getIsSatelliteEnabledForCarrier: slotId=" + slotId);
+        if (mMockModemService == null) {
+            Log.e(TAG, "getIsSatelliteEnabledForCarrier: mMockModemService is null");
+            return false;
+        }
+        return mMockModemService.getIRadioNetwork((byte) slotId).getIsSatelliteEnabledForCarrier();
+    }
+
+    /** Return carrier PLMN list. */
+    @Nullable
+    public List<String> getCarrierPlmnList(int slotId) {
+        Log.d(TAG, "getCarrierPlmnList: slotId=" + slotId);
+        if (mMockModemService == null) {
+            Log.e(TAG, "getIsSatelliteEnabledForCarrier: mMockModemService is null");
+            return null;
+        }
+
+        String[] carrierPlmnArray =
+                mMockModemService.getIRadioNetwork((byte) slotId).getCarrierPlmnArray();
+        return Arrays.asList(carrierPlmnArray);
+    }
+
+    /** Return all satellite PLMN list. */
+    @Nullable
+    public List<String> getAllSatellitePlmnList(int slotId) {
+        Log.d(TAG, "getAllSatellitePlmnList: slotId=" + slotId);
+        if (mMockModemService == null) {
+            Log.e(TAG, "getAllSatellitePlmnList: mMockModemService is null");
+            return null;
+        }
+
+        String[] allSatellitePlmnArray =
+                mMockModemService.getIRadioNetwork((byte) slotId).getAllSatellitePlmnArray();
+        return Arrays.asList(allSatellitePlmnArray);
+    }
+
+    /** Clear satellite enabled for carrier. */
+    public void clearSatelliteEnabledForCarrier(int slotId) {
+        Log.d(TAG, "clearSatelliteEnabledForCarrier: slotId=" + slotId);
+        if (mMockModemService == null) {
+            Log.e(TAG, "clearSatelliteEnabledForCarrier: mMockModemService is null");
+        }
+
+        mMockModemService.getIRadioNetwork((byte) slotId).clearSatelliteEnabledForCarrier();
     }
 }

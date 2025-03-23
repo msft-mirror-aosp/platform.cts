@@ -1034,7 +1034,7 @@ def execute_shell_command(stage, args, command, print_output=False, **extra_args
         if "no devices/emulators found" in stderr or "device offline" in stderr:
             print("\nDevice not connected to ADB. Waiting for reconnection...")
             wait_for_adb_reconnection()
-            return execute_shell_command(stage, args, command, rolling_output, **extra_args)
+            return execute_shell_command(stage, args, command, print_output, **extra_args)
 
     return output, stderr
 

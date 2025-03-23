@@ -368,6 +368,10 @@ public class BaseAppVerifier {
         mBaseAppVerifierImpl.disconnectCallViaInCallService(id);
     }
 
+    public boolean isCallHoldable(String id) {
+        return mBaseAppVerifierImpl.isCallHoldable(id);
+    }
+
     public CallException setCallStateButExpectOnError(AppControlWrapper appControl,
                                                       String id,
                                                       int targetCallState)
@@ -410,6 +414,11 @@ public class BaseAppVerifier {
     public void setMuteState(AppControlWrapper appControl, String id, boolean isMuted)
             throws RemoteException {
         mBaseAppVerifierImpl.setMuteState(appControl, id, isMuted);
+    }
+
+    public void sendConnectionEvent(AppControlWrapper appControl, String id, String event)
+            throws RemoteException {
+        mBaseAppVerifierImpl.sendConnectionEvent(appControl, id, event);
     }
 
     public CallEndpoint getCurrentCallEndpoint(AppControlWrapper appControl, String id)

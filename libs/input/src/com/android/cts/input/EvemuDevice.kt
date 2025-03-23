@@ -116,12 +116,6 @@ private fun parseEvemuFile(
             events.appendLine(line)
             line = reader.readLine()
         }
-
-        // TODO(b/367419268): Remove extra event injection when uinput parsing is fixed.
-        // The uinput command will not process the last event until either the next event is
-        // parsed, or fd is closed. Injecting this no-op event allows us complete injection
-        // of the evemu recording.
-        events.appendLine("E: 0.00 0 0 0")
     }
     return EvemuFileParseResult(registerCommand.toString(), events.toString())
 }

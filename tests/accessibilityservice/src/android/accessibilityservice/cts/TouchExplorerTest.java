@@ -54,7 +54,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import android.accessibility.cts.common.AccessibilityDumpOnFailureRule;
 import android.accessibility.cts.common.InstrumentedAccessibilityService;
 import android.accessibility.cts.common.InstrumentedAccessibilityServiceTestRule;
-import android.accessibility.cts.common.ShellCommandBuilder;
 import android.accessibilityservice.GestureDescription;
 import android.accessibilityservice.GestureDescription.StrokeDescription;
 import android.accessibilityservice.cts.AccessibilityGestureDispatchTest.GestureDispatchActivity;
@@ -85,12 +84,14 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.uiautomator.Configurator;
 
 import com.android.compatibility.common.util.CddTest;
+import com.android.compatibility.common.util.SettingsStateChangerRule;
 
 import com.google.common.truth.Truth;
 
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -112,9 +113,15 @@ public class TouchExplorerTest {
     private static final float GESTURE_LENGTH_MMS = 15.0f;
     private static final float MIN_SCREEN_WIDTH_MM = 40.0f;
 
-    private static String sEnabledServices;
     private static Instrumentation sInstrumentation;
     private static UiAutomation sUiAutomation;
+
+    @ClassRule
+    public static final SettingsStateChangerRule sEnabledAccessibilityServicesSettingRule =
+            new SettingsStateChangerRule(
+                    InstrumentationRegistry.getInstrumentation().getTargetContext(),
+                    Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES,
+                    null);
 
     private TouchExplorationStubAccessibilityService mService;
     private boolean mHasTouchscreen;
@@ -156,12 +163,6 @@ public class TouchExplorerTest {
         Configurator.getInstance()
                 .setUiAutomationFlags(UiAutomation.FLAG_DONT_SUPPRESS_ACCESSIBILITY_SERVICES);
         sInstrumentation = InstrumentationRegistry.getInstrumentation();
-        // Save enabled accessibility services before disabling them so they can be re-enabled after
-        // the test.
-        sEnabledServices =
-                Settings.Secure.getString(
-                        sInstrumentation.getContext().getContentResolver(),
-                        Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES);
         // Disable all services before enabling Accessibility service to prevent flakiness
         // that depends on which services are enabled.
         InstrumentedAccessibilityService.disableAllServices();
@@ -173,9 +174,6 @@ public class TouchExplorerTest {
 
     @AfterClass
     public static void postTestTearDown() {
-        ShellCommandBuilder.create(sUiAutomation)
-                .putSecureSetting(Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES, sEnabledServices)
-                .run();
         sUiAutomation.destroy();
     }
 

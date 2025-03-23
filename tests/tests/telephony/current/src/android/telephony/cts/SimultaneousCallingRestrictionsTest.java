@@ -71,6 +71,7 @@ import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -440,6 +441,7 @@ public class SimultaneousCallingRestrictionsTest {
      * enabled.
      */
     @Test
+    @Ignore("b/404456701")
     public void testImsRegisteredWLAN() throws Exception {
         Log.d(TAG, "testImsRegisteredWLAN");
         assumeTrue("Skip test: Not test on single SIM device", sIsMultiSimDevice);

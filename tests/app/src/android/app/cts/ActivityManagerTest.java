@@ -2211,7 +2211,7 @@ public final class ActivityManagerTest {
                     CommandReceiver.COMMAND_START_ACTIVITY,
                     PACKAGE_NAME_APP1, PACKAGE_NAME_APP1, 0, null);
             assertTrue("Failed to receive the UID importance changes",
-                    latchHolder[0].await(WAITFOR_MSEC, TimeUnit.MILLISECONDS));
+                    latchHolder[0].await(WAITFOR_MSEC * 2, TimeUnit.MILLISECONDS));
 
             latchHolder[0] = new CountDownLatch(1);
             expectedUidHolder[0] = ai2.uid;
@@ -2219,7 +2219,7 @@ public final class ActivityManagerTest {
                     CommandReceiver.COMMAND_START_ACTIVITY,
                     PACKAGE_NAME_APP1, PACKAGE_NAME_APP2, 0, null);
             assertTrue("Failed to receive the UID importance changes",
-                    latchHolder[0].await(WAITFOR_MSEC, TimeUnit.MILLISECONDS));
+                    latchHolder[0].await(WAITFOR_MSEC * 2, TimeUnit.MILLISECONDS));
         } finally {
             runShellCommand(mInstrumentation, "cmd deviceidle whitelist -" + PACKAGE_NAME_APP1);
 

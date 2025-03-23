@@ -103,7 +103,7 @@ public final class CarBluetoothTest extends AbstractCarTestCase {
                     Log.d(TAG, "Bluetooth adapter state changed: " + newState);
                 }
 
-                // Signal if the state is set to the one we're waiting on. If its not and we got a
+                // Signal if the state is set to the one we're waiting on. If it's not and we got a
                 // STATE_OFF event then handle the unexpected off event. Note that we could
                 // proactively turn the adapter back on to continue testing. For now we'll just
                 // log it

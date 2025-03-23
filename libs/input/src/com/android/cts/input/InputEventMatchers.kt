@@ -231,6 +231,16 @@ fun withKeyCode(keyCode: Int): Matcher<KeyEvent> = object : TypeSafeMatcher<KeyE
     }
 }
 
+fun withKeyFlags(flags: Int): Matcher<KeyEvent> = object : TypeSafeMatcher<KeyEvent>() {
+    override fun describeTo(description: Description) {
+        description.appendText("With flags = $flags")
+    }
+
+    override fun matchesSafely(event: KeyEvent): Boolean {
+        return event.flags == flags
+    }
+}
+
 fun withModifierState(modifierState: Int): Matcher<KeyEvent> =
     object : TypeSafeMatcher<KeyEvent>() {
     override fun describeTo(description: Description) {

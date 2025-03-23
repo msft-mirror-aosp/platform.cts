@@ -36,7 +36,6 @@ import static android.autofillservice.cts.testcore.Helper.assertNoDeprecatedClie
 import static android.autofillservice.cts.testcore.Helper.assertShownAndSelectedHaveDifferentFocusedId;
 import static android.autofillservice.cts.testcore.Helper.assertShownAndSelectedHaveSameFocusedId;
 import static android.autofillservice.cts.testcore.Helper.assertShownAndViewEnteredHaveSameFocusedId;
-import static android.autofillservice.cts.testcore.Helper.setMultipleSessionFillEventHistoryFeature;
 import static android.autofillservice.cts.testcore.InstrumentedAutoFillService.waitUntilConnected;
 import static android.autofillservice.cts.testcore.InstrumentedAutoFillService.waitUntilDisconnected;
 import static android.service.autofill.FillEventHistory.Event.NO_SAVE_UI_REASON_DATASET_MATCH;
@@ -242,7 +241,7 @@ public abstract class FillEventHistoryCommonTestCase extends AbstractLoginActivi
         "android.service.autofill.autofill_w_metrics"
     })
     public void test_multipleEventHistoryFlagEnabled_oneSessionSave() throws Exception {
-        setMultipleSessionFillEventHistoryFeature(mContext, true);
+        mUiBot.assumeMinimumResolution(500);
         enableService();
 
         // Launch activity A
@@ -250,6 +249,7 @@ public abstract class FillEventHistoryCommonTestCase extends AbstractLoginActivi
                 new CannedFillResponse.Builder()
                         .setExtras(getBundle("activity", "A"))
                         .setRequiredSavableIds(SAVE_DATA_TYPE_PASSWORD, ID_USERNAME, ID_PASSWORD)
+                        .setFillResponseFlags(FillResponse.FLAG_TRACK_CONTEXT_COMMITED)
                         .build());
 
         // Trigger autofill and IME on activity A.
@@ -287,6 +287,90 @@ public abstract class FillEventHistoryCommonTestCase extends AbstractLoginActivi
                         assertThat(event.getShownDatasetIds()).isEmpty();
                     },
                     events);
+            assertHasEventMatchingTypeAndFilter(
+                    Event.TYPE_CONTEXT_COMMITTED,
+                    event -> {
+                        assertThat(event.getSelectedDatasetIds()).isEmpty();
+                        assertThat(event.getIgnoredDatasetIds()).isEmpty();
+                    },
+                    events);
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled({
+        "android.service.autofill.multiple_fill_history",
+        "android.service.autofill.autofill_session_destroyed"
+    })
+    public void test_multipleEventHistory_batchKillSessions() throws Exception {
+        mUiBot.assumeMinimumResolution(500);
+        enableService();
+
+        // Response for Activity A
+        sReplier.addResponse(
+                new CannedFillResponse.Builder()
+                        .setExtras(getBundle("activity", "A"))
+                        .setRequiredSavableIds(SAVE_DATA_TYPE_PASSWORD, ID_USERNAME, ID_PASSWORD)
+                        .setFillResponseFlags(FillResponse.FLAG_TRACK_CONTEXT_COMMITED)
+                                        .build());
+
+        // Trigger autofill on activity A and trigger Autofill
+        mUiBot.focusByRelativeId(ID_USERNAME);
+        waitUntilConnected();
+        sReplier.getNextFillRequest();
+
+        // Response for Activity B
+        sReplier.addResponse(
+                new CannedFillResponse.Builder()
+                        .setExtras(getBundle("activity", "B"))
+                        .addDataset(
+                                new CannedDataset.Builder()
+                                        .setField(ID_CC_NUMBER, "4815162342")
+                                        .setPresentation("datasetB", isInlineMode())
+                                        .build())
+                        .setFillResponseFlags(FillResponse.FLAG_TRACK_CONTEXT_COMMITED)
+                        .build());
+
+        // Launch activity B and trigger Autofill
+        mActivity.startActivity(new Intent(mActivity, CheckoutActivity.class));
+        mUiBot.assertShownByRelativeId(ID_CC_NUMBER);
+        mUiBot.focusByRelativeId(ID_CC_NUMBER);
+        sReplier.getNextFillRequest();
+
+        // No onSessionDestroyed() called yet
+        assertThat(sReplier.getSessionDestroyedCount()).isEqualTo(0);
+
+        // Close both activities
+        mActivity.finishAndRemoveTask();
+        mUiBot.pressHome();
+        mUiBot.waitForIdleSync();
+
+        {
+            assertThat(sReplier.getSessionDestroyedCount()).isEqualTo(2);
+
+            // Verify events for Activity B
+            final FillEventHistory historyB = sReplier.getLastFillEventHistory();
+
+            final List<Event> eventsB = historyB.getEvents();
+            assertHasEventMatchingTypeAndFilter(
+                    Event.TYPE_CONTEXT_COMMITTED,
+                    event -> {
+                        assertThat(event.getSelectedDatasetIds()).isEmpty();
+                        assertThat(event.getIgnoredDatasetIds()).isEmpty();
+                    },
+                    eventsB);
+
+            // Verify events for Activity A
+            final FillEventHistory historyA = sReplier.getLastFillEventHistory(1);
+
+            final List<Event> eventsA = historyA.getEvents();
+            assertHasEventMatchingTypeAndFilter(
+                    Event.TYPE_CONTEXT_COMMITTED,
+                    event -> {
+                        assertThat(event.getSelectedDatasetIds()).isEmpty();
+                        assertThat(event.getIgnoredDatasetIds()).isEmpty();
+                    },
+                    eventsA);
         }
     }
 
@@ -296,7 +380,7 @@ public abstract class FillEventHistoryCommonTestCase extends AbstractLoginActivi
         "android.service.autofill.autofill_session_destroyed"
     })
     public void test_multipleEventHistory_switchTwoSessions() throws Exception {
-        setMultipleSessionFillEventHistoryFeature(mContext, true);
+        mUiBot.assumeMinimumResolution(500);
         enableService();
 
         // Launch activity A
@@ -304,6 +388,7 @@ public abstract class FillEventHistoryCommonTestCase extends AbstractLoginActivi
                 new CannedFillResponse.Builder()
                         .setExtras(getBundle("activity", "A"))
                         .setRequiredSavableIds(SAVE_DATA_TYPE_PASSWORD, ID_USERNAME, ID_PASSWORD)
+                        .setFillResponseFlags(FillResponse.FLAG_TRACK_CONTEXT_COMMITED)
                         .build());
 
         // Trigger autofill and IME on activity A.
@@ -327,6 +412,7 @@ public abstract class FillEventHistoryCommonTestCase extends AbstractLoginActivi
                                         .setField(ID_CC_NUMBER, "4815162342")
                                         .setPresentation("datasetB", isInlineMode())
                                         .build())
+                        .setFillResponseFlags(FillResponse.FLAG_TRACK_CONTEXT_COMMITED)
                         .build());
         mUiBot.focusByRelativeId(ID_CC_NUMBER);
         sReplier.getNextFillRequest();
@@ -362,6 +448,13 @@ public abstract class FillEventHistoryCommonTestCase extends AbstractLoginActivi
                         assertFillEventForDatasetShown(event, "activity", "B", presentationType);
                     },
                     events);
+            assertHasEventMatchingTypeAndFilter(
+                    Event.TYPE_CONTEXT_COMMITTED,
+                    event -> {
+                        assertThat(event.getSelectedDatasetIds()).isEmpty();
+                        assertThat(event.getIgnoredDatasetIds()).isEmpty();
+                    },
+                    events);
         }
 
         // Set response for back to activity A
@@ -385,8 +478,6 @@ public abstract class FillEventHistoryCommonTestCase extends AbstractLoginActivi
         // Closes everything, makes sure that the Session is destroyed
         mUiBot.pressHome();
         mUiBot.waitForIdleSync();
-
-        assertThat(sReplier.getSessionDestroyedCount()).isEqualTo(2);
 
         // // Finally, make sure history is right for activity A
         {
@@ -418,7 +509,6 @@ public abstract class FillEventHistoryCommonTestCase extends AbstractLoginActivi
         "android.service.autofill.autofill_session_destroyed"
     })
     public void test_multipleEventHistory_oneSession() throws Exception {
-        setMultipleSessionFillEventHistoryFeature(mContext, true);
         enableService();
 
         // Set up first partition with an anonymous dataset
@@ -433,6 +523,7 @@ public abstract class FillEventHistoryCommonTestCase extends AbstractLoginActivi
                                         .setPresentation("dataset1", isInlineMode())
                                         .build())
                         .setExtras(clientState1)
+                        .setFillResponseFlags(FillResponse.FLAG_TRACK_CONTEXT_COMMITED)
                         .build());
         mActivity.expectAutoFill("username");
 
@@ -1112,7 +1203,70 @@ public abstract class FillEventHistoryCommonTestCase extends AbstractLoginActivi
             verifyEvents);
     }
 
+    /**
+     * Tests scenario where the context was committed, the save dialog was not shown because there
+     * was empty value for required ids.
+     */
+    @Test
+    @RequiresFlagsEnabled({
+        "android.service.autofill.multiple_fill_history",
+        "android.service.autofill.autofill_session_destroyed"
+    })
+    public void
+            testContextCommitted_multipleFillEventHistory_noSaveUi_whileEmptyValueForRequiredIds()
+                    throws Exception {
+        mUiBot.assumeMinimumResolution(500);
+        enableService();
 
+        // Set expectations.
+        CannedFillResponse.Builder builder = createTestResponseBuilder(/* withDataSet= */ true);
+        builder.setRequiredSavableIds(SAVE_DATA_TYPE_PASSWORD, ID_USERNAME, ID_PASSWORD);
+        sReplier.addResponse(builder.build());
+
+        // Trigger autofill and set the save UI not show reason with
+        // NO_SAVE_UI_REASON_HAS_EMPTY_REQUIRED.
+        mUiBot.focusByRelativeId(ID_USERNAME);
+        mUiBot.waitForIdle();
+        sReplier.getNextFillRequest();
+        mUiBot.assertDatasets("dataset1");
+
+        mActivity.onUsername((v) -> v.setText(BACKDOOR_USERNAME));
+        // To reduce flaky, first focus on password, then set text
+        mUiBot.focusByRelativeId(ID_PASSWORD);
+        mUiBot.waitForIdleSync();
+        mActivity.onPassword((v) -> v.setText(""));
+        mUiBot.waitForIdleSync();
+
+        // Finish the context by login in and it will trigger to check if the save UI should be
+        // shown.
+        tapLogin();
+
+        // Verify that the save UI should not be shown and the history should include the reason.
+        mUiBot.assertSaveNotShowing(SAVE_DATA_TYPE_PASSWORD);
+
+        // Closes everything, makes sure that the Session is destroyed
+        mUiBot.pressHome();
+        mUiBot.waitForIdleSync();
+
+        // // Finally, make sure history is right for activity A
+        {
+            assertThat(sReplier.getSessionDestroyedCount()).isEqualTo(1);
+
+            // Verify events for Activity A
+            final FillEventHistory historyA = sReplier.getLastFillEventHistory();
+
+            final List<Event> events = historyA.getEvents();
+            assertHasEventMatchingTypeAndFilter(
+                    Event.TYPE_CONTEXT_COMMITTED,
+                    event -> {
+                        assertThat(event.getNoSaveUiReason())
+                                .isEqualTo(NO_SAVE_UI_REASON_HAS_EMPTY_REQUIRED);
+                        assertThat(event.getIgnoredDatasetIds()).contains("id1");
+                        assertThat(event.getSelectedDatasetIds()).isEmpty();
+                    },
+                    events);
+        }
+    }
 
     @Test
     public void testContextCommitted_noSaveUi_whileEmptyValueForRequiredIds_noDataset()

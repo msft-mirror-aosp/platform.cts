@@ -27,6 +27,7 @@ android_test {
         "guava",
         "truth",
         "testng",
+        "sts-device-util",
         "BlobStoreTestUtils",
     ],
     srcs: [
@@ -35,6 +36,7 @@ android_test {
     ],
     test_suites: [
         "cts",
+        "sts",
         "general-tests",
     ],
     sdk_version: "test_current",

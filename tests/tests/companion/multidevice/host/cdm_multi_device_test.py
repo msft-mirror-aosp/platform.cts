@@ -10,7 +10,6 @@ import cdm_base_test
 
 from android.platform.test.annotations import ApiTest, CddTest
 from mobly import asserts
-from mobly import base_test
 from mobly import test_runner
 from test_utils import wait
 from time import sleep
@@ -18,7 +17,6 @@ from time import sleep
 @CddTest(requirements = ["3.16/C-1-1", "3.16/C-1-2"])
 class CompanionDeviceManagerTestClass(cdm_base_test.BaseTestClass):
 
-    @base_test.retry(cdm_base_test.RETRY_ITERATIONS)
     @ApiTest(apis=[
             'android.companion.CompanionDeviceManager#associate(android.companion.AssociationRequest, android.companion.CompanionDeviceManager.Callback, android.os.Handler)',
             'android.companion.CompanionDeviceManager#getMyAssociations()'
@@ -38,7 +36,6 @@ class CompanionDeviceManagerTestClass(cdm_base_test.BaseTestClass):
         asserts.assert_true(secondary_id in associations, 'Association not found.')
 
 
-    @base_test.retry(cdm_base_test.RETRY_ITERATIONS)
     @ApiTest(apis=[
             'android.companion.CompanionDeviceManager#buildPermissionTransferUserConsentIntent(int)',
             'android.companion.CompanionDeviceManager#attachSystemDataTransport(int, java.io.InputStream, java.io.OutputStream)',
@@ -81,7 +78,6 @@ class CompanionDeviceManagerTestClass(cdm_base_test.BaseTestClass):
         self.primary.cdm.startPermissionsSync(secondary_id)
 
 
-    @base_test.retry(cdm_base_test.RETRY_ITERATIONS)
     @ApiTest(apis=[
             'android.companion.CompanionDeviceManager#removeBond(int)'
     ])
@@ -107,7 +103,6 @@ class CompanionDeviceManagerTestClass(cdm_base_test.BaseTestClass):
         asserts.assert_false(self.secondary.address in self.primary.paired_devices(), 'Devices should not be paired.')
 
 
-    @base_test.retry(cdm_base_test.RETRY_ITERATIONS)
     @ApiTest(apis=[
             'android.companion.CompanionDeviceManager#associate(android.companion.AssociationRequest, android.companion.CompanionDeviceManager.Callback, android.os.Handler)',
     ])
@@ -130,7 +125,6 @@ class CompanionDeviceManagerTestClass(cdm_base_test.BaseTestClass):
         asserts.assert_true(secondary_id in associations, 'Association not found.')
 
 
-    @base_test.retry(cdm_base_test.RETRY_ITERATIONS)
     @ApiTest(apis=[
             'android.companion.CompanionDeviceManager#startObservingDevicePresence(android.companion.ObservingDevicePresenceRequest)',
             'android.companion.CompanionDeviceManager#stopObservingDevicePresence(android.companion.ObservingDevicePresenceRequest)'

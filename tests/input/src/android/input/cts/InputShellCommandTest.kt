@@ -15,6 +15,7 @@
  */
 package android.input.cts
 
+import android.server.wm.WindowManagerStateHelper
 import android.view.InputDevice
 import android.view.MotionEvent
 import android.view.View
@@ -58,7 +59,12 @@ class InputShellCommandTest {
             activity = it
         }
         PollingCheck.waitFor { activity.hasWindowFocus() }
-        instrumentation.uiAutomation.syncInputTransactions()
+        WindowManagerStateHelper().waitUntilActivityReadyForInputInjection(
+            activity,
+            instrumentation,
+            "InputShellCommandTest",
+            "Waiting for activity"
+        )
     }
 
     /**

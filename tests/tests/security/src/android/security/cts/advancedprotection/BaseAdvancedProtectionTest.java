@@ -16,22 +16,22 @@
 
 package android.security.cts.advancedprotection;
 
-import static org.junit.Assume.assumeTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeTrue;
 
 import android.Manifest;
 import android.app.Instrumentation;
 import android.content.Context;
 import android.content.pm.PackageManager;
-import android.platform.test.annotations.DisableFlags;
 import android.platform.test.flag.junit.CheckFlagsRule;
-import android.platform.test.flag.junit.SetFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
-import android.security.advancedprotection.AdvancedProtectionManager;
+import android.platform.test.flag.junit.SetFlagsRule;
 import android.security.Flags;
+import android.security.advancedprotection.AdvancedProtectionManager;
 
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.compatibility.common.util.SystemUtil;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -58,9 +58,12 @@ public abstract class BaseAdvancedProtectionTest {
         mManager = (AdvancedProtectionManager) mInstrumentation
                 .getContext().getSystemService(Context.ADVANCED_PROTECTION_SERVICE);
 
-        mInstrumentation.getUiAutomation().adoptShellPermissionIdentity(
-                Manifest.permission.QUERY_ADVANCED_PROTECTION_MODE,
-                Manifest.permission.MANAGE_ADVANCED_PROTECTION_MODE);
+        mInstrumentation
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(
+                        Manifest.permission.QUERY_ADVANCED_PROTECTION_MODE,
+                        Manifest.permission.MANAGE_ADVANCED_PROTECTION_MODE,
+                        Manifest.permission.MANAGE_DEVICE_POLICY_MTE);
 
         mInitialApmState = mManager.isAdvancedProtectionEnabled();
         /* Disabling USB AAPM feature to avoid interference with non-related test as this
@@ -114,7 +117,8 @@ public abstract class BaseAdvancedProtectionTest {
         if (!onRegister.await(TIMEOUT_S, TimeUnit.SECONDS)) {
             fail("Callback not called on register");
         }
-        mManager.setAdvancedProtectionEnabled(enabled);
+        // So it can be called by any user
+        SystemUtil.runShellCommand("cmd advanced_protection set-protection-enabled " + enabled);
         if (!onSet.await(TIMEOUT_S, TimeUnit.SECONDS)) {
             fail("Callback not called on set");
         }

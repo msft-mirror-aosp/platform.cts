@@ -25,7 +25,6 @@ import static android.autofillservice.cts.testcore.Timeouts.CONNECTION_TIMEOUT;
 import static android.autofillservice.cts.testcore.Timeouts.FILL_EVENTS_TIMEOUT;
 import static android.autofillservice.cts.testcore.Timeouts.FILL_TIMEOUT;
 import static android.autofillservice.cts.testcore.Timeouts.IDLE_UNBIND_TIMEOUT;
-import static android.autofillservice.cts.testcore.Timeouts.RESPONSE_DELAY_MS;
 import static android.autofillservice.cts.testcore.Timeouts.SAVE_TIMEOUT;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -516,8 +515,11 @@ public class InstrumentedAutoFillService extends AutofillService {
         private boolean mReportUnhandledFillRequest = true;
         private boolean mReportUnhandledSaveRequest = true;
 
-        private @Nullable FillEventHistory mFillEventHistory = null;
-        private int mSessionDestroyedCount = 0;
+        private List<FillEventHistory> mFillEventHistory = new ArrayList<>();
+
+        private @Nullable FillCallback mDelayedCallback = null;
+        private @Nullable FillResponse mDelayedResponse = null;
+        private @Nullable FillRequest mDelayedRequest = null;
 
         private Replier() {
         }
@@ -604,12 +606,42 @@ public class InstrumentedAutoFillService extends AutofillService {
             return request;
         }
 
+        /** Continue to process the delayed fill request based on the stored values. */
+        public void processDelayedResponse() {
+            if (mDelayedCallback != null && mDelayedResponse != null && mDelayedRequest != null) {
+                mDelayedCallback.onSuccess(mDelayedResponse);
+                Log.v(
+                        TAG,
+                        "onFillRequest("
+                                + mDelayedRequest.requestId
+                                + "): fillResponse = "
+                                + mDelayedResponse);
+                Helper.offer(mFillRequests, mDelayedRequest, CONNECTION_TIMEOUT.ms());
+            }
+            // and then reset all parameters.
+            mDelayedCallback = null;
+            mDelayedResponse = null;
+            mDelayedRequest = null;
+            Log.v(TAG, "processDelayedResponse: all stored values are resetted");
+        }
+
         /**
          * Gets the last FillEventHistory that was return as part of onSessionDestroyed(), for easy
          * assertion
          */
         public @Nullable FillEventHistory getLastFillEventHistory() {
-            return mFillEventHistory;
+            return getLastFillEventHistory(0);
+        }
+
+        /**
+         * Gets the last FillEventHistory that was return as part of onSessionDestroyed(), in the
+         * order that it was added.
+         *
+         * @param numFromLast 0 for the most recent, getSessionDestroyedCount() - 1 for the first
+         */
+        public @Nullable FillEventHistory getLastFillEventHistory(int numFromLast) {
+            int index = mFillEventHistory.size() - numFromLast - 1;
+            return mFillEventHistory.get(index);
         }
 
         /**
@@ -617,16 +649,14 @@ public class InstrumentedAutoFillService extends AutofillService {
          * onSessionDestroyed()
          */
         public void addLastFillEventHistory(@Nullable FillEventHistory history) {
-            mFillEventHistory = history;
-            mSessionDestroyedCount += 1;
+            mFillEventHistory.add(history);
         }
 
         /**
-         *
          * @return the amount of onSessionDestroyed() calls the service has received.
          */
         public int getSessionDestroyedCount() {
-            return mSessionDestroyedCount;
+            return mFillEventHistory.size();
         }
 
         /**
@@ -726,8 +756,7 @@ public class InstrumentedAutoFillService extends AutofillService {
             mAcceptedPackageName = null;
             mReportUnhandledFillRequest = true;
             mReportUnhandledSaveRequest = true;
-            mFillEventHistory = null;
-            mSessionDestroyedCount = 0;
+            mFillEventHistory = new ArrayList<FillEventHistory>();
         }
 
         private void onFillRequest(List<FillContext> contexts, List<String> hints, Bundle data,
@@ -825,16 +854,19 @@ public class InstrumentedAutoFillService extends AutofillService {
                 }
 
                 if (response.getResponseType() == ResponseType.DELAY) {
-                    mHandler.postDelayed(() -> {
-                        Log.v(TAG,
-                                "onFillRequest(" + requestId + "): fillResponse = " + fillResponse);
-                        callback.onSuccess(fillResponse);
-                        // Add a fill request to let test case know response was sent.
-                        Helper.offer(mFillRequests,
-                                new FillRequest(contexts, hints, data, cancellationSignal, callback,
-                                        flags, inlineRequest, delayFillIntentSender, requestId),
-                                CONNECTION_TIMEOUT.ms());
-                    }, RESPONSE_DELAY_MS);
+                    mDelayedCallback = callback;
+                    mDelayedResponse = fillResponse;
+                    mDelayedRequest =
+                            new FillRequest(
+                                    contexts,
+                                    hints,
+                                    data,
+                                    cancellationSignal,
+                                    callback,
+                                    flags,
+                                    inlineRequest,
+                                    delayFillIntentSender,
+                                    requestId);
                 } else {
                     Log.v(TAG, "onFillRequest(" + requestId + "): fillResponse = " + fillResponse);
                     callback.onSuccess(fillResponse);

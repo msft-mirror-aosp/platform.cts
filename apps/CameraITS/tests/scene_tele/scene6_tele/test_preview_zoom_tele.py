@@ -103,7 +103,7 @@ class PreviewZoomTestTELE(its_base_test.ItsBaseTest):
       props = cam.get_camera_properties()
       physical_props = cam.get_camera_properties_by_id(self.hidden_physical_id)
       is_tele = cam.get_camera_type(physical_props) == (
-          its_session_utils._CAMERA_TYPE_TELE)
+          its_session_utils.CAMERA_TYPE_TELE)
       camera_properties_utils.skip_unless(
           camera_properties_utils.zoom_ratio_range(props) and is_tele)
 
