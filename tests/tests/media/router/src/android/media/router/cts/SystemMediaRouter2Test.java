@@ -67,6 +67,7 @@ import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.text.TextUtils;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.LargeTest;
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -589,7 +590,7 @@ public class SystemMediaRouter2Test {
         mAppRouter2.registerRouteCallback(mExecutor, mAppRouterPlaceHolderCallback,
                 new RouteDiscoveryPreference.Builder(FEATURES_ALL, true).build());
 
-        waitAndGetRoutes(FEATURE_SAMPLE);
+        waitAndGetRoutesIncludingRouteId(FEATURE_SAMPLE, ROUTE_ID_VARIABLE_VOLUME);
 
         MediaRoute2Info routeToChangeVolume = null;
         for (MediaRoute2Info route : mSystemRouter2ForCts.getAllRoutes()) {
@@ -1595,6 +1596,18 @@ public class SystemMediaRouter2Test {
     }
 
     private Map<String, MediaRoute2Info> waitAndGetRoutes(String feature) throws Exception {
+        return waitAndGetRoutesIncludingRouteId(feature, /* routeId= */ null);
+    }
+
+    /**
+     * Waits for a route to be discovered matching the specified feature and, if provided, the route
+     * ID.
+     *
+     * @param feature The feature to match.
+     * @param routeId The route ID to match (optional). If null, only the feature is considered.
+     */
+    private Map<String, MediaRoute2Info> waitAndGetRoutesIncludingRouteId(
+            String feature, @Nullable String routeId) throws Exception {
         List<String> features = new ArrayList<>();
         features.add(feature);
 
@@ -1602,17 +1615,20 @@ public class SystemMediaRouter2Test {
                 new RouteDiscoveryPreference.Builder(features, true).build());
 
         CountDownLatch latch = new CountDownLatch(1);
-        RouteCallback routeCallback = new RouteCallback() {
-            @Override
-            public void onRoutesAdded(List<MediaRoute2Info> routes) {
-                for (MediaRoute2Info route : routes) {
-                    if (route.getFeatures().contains(feature)) {
-                        latch.countDown();
-                        break;
+        RouteCallback routeCallback =
+                new RouteCallback() {
+                    @Override
+                    public void onRoutesAdded(List<MediaRoute2Info> routes) {
+                        for (MediaRoute2Info route : routes) {
+                            if (route.getFeatures().contains(feature)
+                                    && (routeId == null
+                                            || TextUtils.equals(route.getId(), routeId))) {
+                                latch.countDown();
+                                break;
+                            }
+                        }
                     }
-                }
-            }
-        };
+                };
 
         mSystemRouter2ForCts.registerRouteCallback(mExecutor, routeCallback,
                 RouteDiscoveryPreference.EMPTY);
