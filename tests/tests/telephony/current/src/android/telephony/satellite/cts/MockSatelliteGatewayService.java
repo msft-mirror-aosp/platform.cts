@@ -27,7 +27,6 @@ import android.telephony.satellite.stub.SatelliteGatewayService;
 import android.util.Log;
 
 import com.android.internal.util.FunctionalUtils;
-import com.android.telephony.Rlog;
 
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -143,7 +142,7 @@ public class MockSatelliteGatewayService extends Service {
      * @param log The message to log.
      */
     private static void logd(@NonNull String log) {
-        Rlog.d(TAG, log);
+        Log.d(TAG, log);
     }
 
     /**

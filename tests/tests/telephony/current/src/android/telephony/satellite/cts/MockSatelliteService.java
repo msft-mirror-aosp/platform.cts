@@ -43,7 +43,6 @@ import android.telephony.satellite.stub.SystemSelectionSpecifier;
 import android.util.Log;
 
 import com.android.internal.util.FunctionalUtils;
-import com.android.telephony.Rlog;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -870,7 +869,7 @@ public class MockSatelliteService extends SatelliteImplBase {
      * @param log The message to log.
      */
     private static void logd(@NonNull String log) {
-        Rlog.d(TAG, log);
+        Log.d(TAG, log);
     }
 
     /**
