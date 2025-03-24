@@ -1119,7 +1119,7 @@ public class PdfRendererTest {
                     .isEqualTo(PdfAnnotationType.HIGHLIGHT);
             HighlightAnnotation addedHighlightAnnotation =
                     (HighlightAnnotation) annotations.get(0).second;
-            assertThat(addedHighlightAnnotation.getBounds()).isEqualTo(bounds);
+            assertThat(addedHighlightAnnotation.getBoundsList()).isEqualTo(bounds);
             assertThat(highlightAnnotation.getColor()).isEqualTo(Color.GREEN);
         }
     }
