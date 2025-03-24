@@ -33,7 +33,6 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.media.MediaRouter2;
 import android.media.RouteDiscoveryPreference;
-import android.media.cts.ResourceReleaser;
 import android.os.Bundle;
 import android.platform.test.annotations.AppModeFull;
 
@@ -46,7 +45,6 @@ import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.RequireDoesNotHaveFeature;
 import com.android.compatibility.common.util.FrameworkSpecificTest;
-import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.UiAutomatorUtils2;
 
 import org.junit.After;
@@ -74,11 +72,12 @@ public class OutputSwitcherTest {
     private static final String SYSTEM_UI_PACKAGE = "com.android.systemui";
     private static final int TIMEOUT_MS = 5000;
 
-    @Rule
-    public final ResourceReleaser mResourceReleaser = new ResourceReleaser(/* useStack= */ true);
-
     // Required by Bedstead.
     @ClassRule @Rule public static final DeviceState sDeviceState = new DeviceState();
+
+    @Rule
+    public StubMediaRoute2ProviderService.Setup mProviderSetup =
+            new StubMediaRoute2ProviderService.Setup();
 
     private Context mContext;
     private Executor mExecutor;
@@ -91,16 +90,12 @@ public class OutputSwitcherTest {
         mExecutor = Executors.newSingleThreadExecutor();
         mRouter2 = MediaRouter2.getInstance(mContext);
         MediaRouter2TestActivity.startActivity(mContext);
-        setUpStubProvider();
+        mService = mProviderSetup.setupAndGetService(mContext);
     }
 
     @After
     public void tearDown() {
         MediaRouter2TestActivity.finishActivity();
-        if (mService != null) {
-            mService.clear();
-            mService = null;
-        }
         // Dismiss any system output switcher dialogs.
         InstrumentationRegistry.getInstrumentation()
                 .getContext()
@@ -162,35 +157,5 @@ public class OutputSwitcherTest {
         assertThat(onCreateSessionRouteId[0]).isEqualTo(ROUTE_ID1);
 
         mRouter2.unregisterRouteCallback(routeCallback);
-    }
-
-    // TODO - this is mostly copied from MediaRouter2Test - we should refactor to share this
-    //  functionality.
-    private void setUpStubProvider() {
-        // In order to make the system bind to the test service,
-        // set a non-empty discovery preference while app is in foreground.
-        RouteDiscoveryPreference preference =
-                new RouteDiscoveryPreference.Builder(List.of("test feature"), false).build();
-
-        MediaRouter2.RouteCallback emptyCallback = new MediaRouter2.RouteCallback() {};
-        mRouter2.registerRouteCallback(mExecutor, emptyCallback, preference);
-        // We need to leave the callback registered until the end of the test, to prevent the
-        // provider service from being torn down prematurely.
-        mResourceReleaser.add(() -> mRouter2.unregisterRouteCallback(emptyCallback));
-
-        new PollingCheck(TIMEOUT_MS) {
-            @Override
-            protected boolean check() {
-                StubMediaRoute2ProviderService service =
-                        StubMediaRoute2ProviderService.getInstance();
-                if (service != null) {
-                    mService = service;
-                    return true;
-                }
-                return false;
-            }
-        }.run();
-        mService.initializeRoutes();
-        mService.publishRoutes();
     }
 }

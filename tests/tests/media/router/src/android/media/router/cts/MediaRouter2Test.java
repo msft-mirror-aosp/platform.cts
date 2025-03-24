@@ -90,7 +90,6 @@ import com.android.bedstead.harrier.UserType;
 import com.android.bedstead.harrier.annotations.UserTest;
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.FrameworkSpecificTest;
-import com.android.compatibility.common.util.PollingCheck;
 
 import com.google.common.truth.Correspondence;
 
@@ -134,6 +133,10 @@ public class MediaRouter2Test {
     public final ActivityScenarioRule<MediaRouter2TestActivity> activityScenarioRule =
             new ActivityScenarioRule<>(MediaRouter2TestActivity.class);
 
+    @Rule(order = 2)
+    public StubMediaRoute2ProviderService.Setup mStubProviderSetup =
+            new StubMediaRoute2ProviderService.Setup();
+
     // Required by Bedstead.
     @ClassRule @Rule public static final DeviceState sDeviceState = new DeviceState();
 
@@ -175,28 +178,7 @@ public class MediaRouter2Test {
     }
 
     private void setUpStubProvider() {
-        // In order to make the system bind to the test service,
-        // set a non-empty discovery preference while app is in foreground.
-        List<String> features = new ArrayList<>();
-        features.add("A test feature");
-        RouteDiscoveryPreference preference =
-                new RouteDiscoveryPreference.Builder(features, false).build();
-        mRouter2.registerRouteCallback(mExecutor, mRouterDummyCallback, preference);
-
-        new PollingCheck(TIMEOUT_MS) {
-            @Override
-            protected boolean check() {
-                StubMediaRoute2ProviderService service =
-                        StubMediaRoute2ProviderService.getInstance();
-                if (service != null) {
-                    mService = service;
-                    return true;
-                }
-                return false;
-            }
-        }.run();
-        mService.initializeRoutes();
-        mService.publishRoutes();
+        mService = mStubProviderSetup.setupAndGetService(mContext);
     }
 
     @After
@@ -204,10 +186,6 @@ public class MediaRouter2Test {
         mRouter2.unregisterRouteCallback(mRouterDummyCallback);
         // Clearing RouteListingPreference.
         mRouter2.setRouteListingPreference(null);
-        if (mService != null) {
-            mService.clear();
-            mService = null;
-        }
     }
 
     @Test
