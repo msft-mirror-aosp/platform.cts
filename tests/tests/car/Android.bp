@@ -39,6 +39,7 @@ android_test {
         "platform-test-annotations",
         "flag-junit",
         "Harrier",
+        "Nene",
     ],
     libs: [
         "android.test.base",
