@@ -594,10 +594,14 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
     }
 
     @Test
-    @Ignore
-    public void testSatelliteRequestEnabled() {
+    public void testSatelliteRequestEnabled() throws Exception {
+        logd("testSatelliteRequestEnabled");
         assumeTrue(sMockSatelliteServiceManager != null);
         grantSatellitePermission();
+
+        LocationSettingBroadcastReceiver locationSettingReceiver =
+                registerLocationSettingReceiver(getContext());
+        logd("testSatelliteRequestEnabled: locationSettingReceiver registered");
 
         /*
          * When the LocationManager is disabled :
@@ -605,17 +609,24 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
          * 2) Check both requestSatelliteEnabled and requestIsCommunicationAllowedForCurrentLocation
          *  - result is SATELLITE_RESULT_LOCATION_DISABLED
          */
-        // LocationManager is disabled
-        sLocationManager.setLocationEnabledForUser(false, Process.myUserHandle());
+        if (sLocationManager.isLocationEnabled()) {
+            logd("testSatelliteRequestEnabled: Disable location settings");
+            sLocationManager.setLocationEnabledForUser(false, Process.myUserHandle());
+            verifyLocationDisabledEventReceived(locationSettingReceiver, TIMEOUT);
+        }
 
-        // Set current location inside of the geofence data (San Diego office)
+        logd(
+                "testSatelliteRequestEnabled: "
+                        + "Set a location inside of the geofence data (San Diego office)");
         setTestProviderLocation(32.909808231041644, -117.18185788819781);
         verifySatelliteNotAllowedErrorReason(SATELLITE_RESULT_LOCATION_DISABLED);
 
         int result = requestSatelliteEnabledWithResult(true, TIMEOUT);
         assertEquals(SatelliteManager.SATELLITE_RESULT_LOCATION_DISABLED, result);
 
-        // Set current location outside of the geofence data (Bangalore office)
+        logd(
+                "testSatelliteRequestEnabled: "
+                        + "Set current location outside of the geofence data (Bangalore office)");
         setTestProviderLocation(12.997138153769894, 77.66099948612018);
         verifySatelliteNotAllowedErrorReason(SATELLITE_RESULT_LOCATION_DISABLED);
 
@@ -625,24 +636,36 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         /*
          * When the LocationManager is enabled and cache is valid :
          * 1) Set location outside of geofence
-         * - The result of requestIsCommunicationAllowedForCurrentLocation is true due to cache
          * - The result of requestSatelliteEnabled is SATELLITE_RESULT_ACCESS_BARRED
          * 2) Check the result of requestIsCommunicationAllowedForCurrentLocation once more
-         * - Since the cache is updated as false in
          */
-        // LocationManager is disabled and cache is valid
+        logd("testSatelliteRequestEnabled: Enable location settings and wait for processing");
+
         sLocationManager.setLocationEnabledForUser(true, Process.myUserHandle());
-        assertTrue(sMockSatelliteServiceManager
-                .setIsSatelliteCommunicationAllowedForCurrentLocationCache("cache_allowed"));
 
-        // Set current location outside of the geofence data (Bangalore office)
+        verifyLocationEnabledEventReceived(locationSettingReceiver, TIMEOUT);
+        unregisterLocationSettingReceiver(getContext(), locationSettingReceiver);
+
+        logd(
+                "testSatelliteRequestEnabled: Set current location outside of the geofence data"
+                        + " (Bangalore office), again");
         setTestProviderLocation(12.997138153769894, 77.66099948612018);
-        verifyIsSatelliteAllowed(true);
 
+        grantSatellitePermission();
         result = requestSatelliteEnabledWithResult(true, TIMEOUT);
         assertEquals(SATELLITE_RESULT_ACCESS_BARRED, result);
-
         verifyIsSatelliteAllowed(false);
+
+        logd(
+                "testSatelliteRequestEnabled: "
+                        + "Set a location inside of the geofence data (San Diego office)");
+        setTestProviderLocation(32.909808231041644, -117.18185788819781);
+        grantSatellitePermission();
+        result = requestSatelliteEnabledWithResult(true, TIMEOUT);
+        assertEquals(SATELLITE_RESULT_SUCCESS, result);
+        verifyIsSatelliteAllowed(true);
+
+        locationSettingReceiver.drainAllPermits();
         revokeSatellitePermission();
     }
 
