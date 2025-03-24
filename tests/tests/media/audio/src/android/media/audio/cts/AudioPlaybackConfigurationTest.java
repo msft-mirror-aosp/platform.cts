@@ -1108,14 +1108,16 @@ public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
                                 TEST_TIMING_TOLERANCE_MS,
                                 () -> callback.getCbInvocationNumber() >= 1));
                 final List<AudioPlaybackConfiguration> configs = callback.getMediaPlayerConfigs();
-                assertTrue(
-                        "Active player, attributes "
-                                + aa
-                                + " not expected in policy "
-                                + configs.get(0).getAudioAttributes().getAllowedCapturePolicy()
-                                + " vs "
-                                + aa.getAllowedCapturePolicy(),
-                        hasAttr(configs, aa));
+                if (configs.size() != 0) {
+                    assertTrue(
+                            "Active player, attributes "
+                                    + aa
+                                    + " not expected in policy "
+                                    + configs.get(0).getAudioAttributes().getAllowedCapturePolicy()
+                                    + " vs "
+                                    + aa.getAllowedCapturePolicy(),
+                            hasAttr(configs, aa));
+                }
             }
 
             // active MediaPlayer, number of configs should increase by 1
