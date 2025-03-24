@@ -1868,52 +1868,59 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
 
     private boolean standardCruiseControlChecker(boolean requireStandard) {
         VehiclePropertyVerifier<Integer> verifier = getCruiseControlTypeVerifier();
-        verifier.enableAdasFeatureIfAdasStateProperty();
-        AtomicBoolean isMetStandardConditionCheck = new AtomicBoolean(false);
-        runWithShellPermissionIdentity(
-                () -> {
-                    try {
-                        boolean ccEnabledValue = mCarPropertyManager
-                                .getBooleanProperty(VehiclePropertyIds.CRUISE_CONTROL_ENABLED,
-                                        /* areaId */ 0);
-                        if (!ccEnabledValue) {
-                            Log.w(TAG, "Expected CRUISE_CONTROL_ENABLED to be set to true but got "
-                                    + "false instead.");
-                            return;
-                        }
-                    } catch (Exception e) {
-                        Log.e(TAG, "Failed to assert that CRUISE_CONTROL_ENABLED is true. Caught "
-                                + "the following exception: " + e);
-                        return;
-                    }
-                    try {
-                        int ccTypeValue = mCarPropertyManager.getIntProperty(
-                                VehiclePropertyIds.CRUISE_CONTROL_TYPE, /* areaId */ 0);
-                        boolean ccTypeCondition =
-                                ((ccTypeValue == CruiseControlType.STANDARD) == requireStandard);
-                        if (!ccTypeCondition) {
-                            if (requireStandard) {
-                                Log.w(TAG, "Expected CRUISE_CONTROL_TYPE to be set to STANDARD but "
-                                        + "got the following value instead: " + ccTypeValue);
-                            } else {
-                                Log.w(TAG, "Expected CRUISE_CONTROL_TYPE to be set to not "
-                                        + "STANDARD but got the following value instead: "
-                                        + ccTypeValue);
+        try {
+            verifier.enableAdasFeatureIfAdasStateProperty();
+            AtomicBoolean isMetStandardConditionCheck = new AtomicBoolean(false);
+            runWithShellPermissionIdentity(
+                    () -> {
+                        try {
+                            boolean ccEnabledValue = mCarPropertyManager
+                                    .getBooleanProperty(VehiclePropertyIds.CRUISE_CONTROL_ENABLED,
+                                            /* areaId */ 0);
+                            if (!ccEnabledValue) {
+                                Log.w(TAG, "Expected CRUISE_CONTROL_ENABLED to be set to true but "
+                                        + "got false instead.");
+                                return;
                             }
+                        } catch (Exception e) {
+                            Log.e(TAG, "Failed to assert that CRUISE_CONTROL_ENABLED is true. "
+                                    + "Caught the following exception: " + e);
                             return;
                         }
-                    } catch (Exception e) {
-                        Log.e(TAG, "Failed to assert that CRUISE_CONTROL_TYPE value. Caught the "
-                                + "following exception: " + e);
-                        return;
-                    }
-                    isMetStandardConditionCheck.set(true);
-                },
-                Car.PERMISSION_READ_ADAS_SETTINGS,
-                Car.PERMISSION_READ_ADAS_STATES
-        );
-        verifier.disableAdasFeatureIfAdasStateProperty();
-        return isMetStandardConditionCheck.get();
+                        try {
+                            int ccTypeValue = mCarPropertyManager.getIntProperty(
+                                    VehiclePropertyIds.CRUISE_CONTROL_TYPE, /* areaId */ 0);
+                            boolean ccTypeCondition =
+                                    ((ccTypeValue == CruiseControlType.STANDARD)
+                                            == requireStandard);
+                            if (!ccTypeCondition) {
+                                if (requireStandard) {
+                                    Log.w(TAG, "Expected CRUISE_CONTROL_TYPE to be set to STANDARD "
+                                            + "but got the following value instead: "
+                                            + ccTypeValue);
+                                } else {
+                                    Log.w(TAG, "Expected CRUISE_CONTROL_TYPE to be set to not "
+                                            + "STANDARD but got the following value instead: "
+                                            + ccTypeValue);
+                                }
+                                return;
+                            }
+                        } catch (Exception e) {
+                            Log.e(TAG, "Failed to assert that CRUISE_CONTROL_TYPE value. Caught "
+                                    + "the following exception: " + e);
+                            return;
+                        }
+                        isMetStandardConditionCheck.set(true);
+                    },
+                    Car.PERMISSION_READ_ADAS_SETTINGS,
+                    Car.PERMISSION_READ_ADAS_STATES
+            );
+            return isMetStandardConditionCheck.get();
+        } finally {
+            runWithShellPermissionIdentity(() -> {
+                verifier.restoreInitialValues();
+            }, Car.PERMISSION_READ_ADAS_SETTINGS, Car.PERMISSION_CONTROL_ADAS_SETTINGS);
+        }
     }
 
     private VehiclePropertyVerifier<Integer>
