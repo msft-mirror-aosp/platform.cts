@@ -16,8 +16,6 @@
 
 package android.deviceconfig.cts;
 
-import static com.android.aconfig.flags.Flags.FLAG_ENABLE_ONLY_NEW_STORAGE;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -46,7 +44,7 @@ public final class AconfigApiTest {
     public final CheckFlagsRule checkFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Test
-    @RequiresFlagsEnabled({Flags.FLAG_NEW_STORAGE_PUBLIC_API, FLAG_ENABLE_ONLY_NEW_STORAGE})
+    @RequiresFlagsEnabled({Flags.FLAG_NEW_STORAGE_PUBLIC_API})
     public void testStorageReaderEnableInstance() {
         if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
             return;
@@ -57,7 +55,7 @@ public final class AconfigApiTest {
     }
 
     @Test
-    @RequiresFlagsEnabled({Flags.FLAG_NEW_STORAGE_PUBLIC_API, FLAG_ENABLE_ONLY_NEW_STORAGE})
+    @RequiresFlagsEnabled({Flags.FLAG_NEW_STORAGE_PUBLIC_API})
     public void testStorageReaderDisableInstance() {
         if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
             return;
@@ -68,7 +66,7 @@ public final class AconfigApiTest {
     }
 
     @Test
-    @RequiresFlagsEnabled({Flags.FLAG_NEW_STORAGE_PUBLIC_API, FLAG_ENABLE_ONLY_NEW_STORAGE})
+    @RequiresFlagsEnabled({Flags.FLAG_NEW_STORAGE_PUBLIC_API})
     public void testAconfigPackageLoadWithError() {
         if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
             return;
@@ -83,7 +81,7 @@ public final class AconfigApiTest {
     }
 
     @Test
-    @RequiresFlagsEnabled({Flags.FLAG_NEW_STORAGE_PUBLIC_API, FLAG_ENABLE_ONLY_NEW_STORAGE})
+    @RequiresFlagsEnabled({Flags.FLAG_NEW_STORAGE_PUBLIC_API})
     public void testAconfigStorageReadException() {
         AconfigStorageReadException ae =
                 new AconfigStorageReadException(
