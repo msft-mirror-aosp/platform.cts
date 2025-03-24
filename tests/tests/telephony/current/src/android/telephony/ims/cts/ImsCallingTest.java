@@ -43,6 +43,7 @@ import android.media.AudioManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.PersistableBundle;
+import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -343,6 +344,85 @@ public class ImsCallingTest extends ImsCallingBase {
         isCallActive(call, callSession);
         callSession.terminateIncomingCall();
 
+        isCallDisconnected(call, callSession);
+        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
+        waitForUnboundService();
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_REUSE_ORIGINAL_CONN_REMOTE_CONF_BEHAVIOR)
+    @Test
+    public void testIncomingCallBecomesRemotelyHostedConference() throws Exception {
+        if (!ImsUtils.shouldTestImsCall()) {
+            return;
+        }
+        bindImsService();
+        mServiceCallBack = new ServiceCallBack();
+        InCallServiceStateValidator.setCallbacks(mServiceCallBack);
+
+        Bundle extras = new Bundle();
+        sServiceConnector.getCarrierService().getMmTelFeature().onIncomingCallReceived(extras);
+        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
+
+        Call call = getCall(mCurrentCallId);
+        if (call.getDetails().getState() == Call.STATE_RINGING) {
+            call.answer(0);
+        }
+
+        waitForCallSessionToNotBe(null);
+        TestImsCallSessionImpl callSession =
+                sServiceConnector.getCarrierService().getMmTelFeature().getImsCallsession();
+
+        isCallActive(call, callSession);
+
+        // Initiate this call becoming a remotely hosted conference call:
+        callSession.changeMultipartyState(true);
+
+        // Ensure that the original call is converted into a conference:
+        waitForCallProperties(call, Call.Details.PROPERTY_CONFERENCE);
+
+        // Ensure the original call was reused for the conference and thus is still ACTIVE:
+        isCallActive(call, callSession);
+
+        // End the conference call and ensure it is cleaned up correctly:
+        callSession.terminateIncomingCall();
+        isCallDisconnected(call, callSession);
+        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
+        waitForUnboundService();
+    }
+
+    @RequiresFlagsDisabled(Flags.FLAG_REUSE_ORIGINAL_CONN_REMOTE_CONF_BEHAVIOR)
+    @Test
+    public void testIncomingCallBecomesRemotelyHostedConferenceLegacy() throws Exception {
+        if (!ImsUtils.shouldTestImsCall()) {
+            return;
+        }
+        bindImsService();
+        mServiceCallBack = new ServiceCallBack();
+        InCallServiceStateValidator.setCallbacks(mServiceCallBack);
+
+        Bundle extras = new Bundle();
+        sServiceConnector.getCarrierService().getMmTelFeature().onIncomingCallReceived(extras);
+        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
+
+        Call call = getCall(mCurrentCallId);
+        if (call.getDetails().getState() == Call.STATE_RINGING) {
+            call.answer(0);
+        }
+
+        waitForCallSessionToNotBe(null);
+        TestImsCallSessionImpl callSession =
+                sServiceConnector.getCarrierService().getMmTelFeature().getImsCallsession();
+
+        isCallActive(call, callSession);
+
+        // Initiate this call becoming a remotely hosted conference call:
+        callSession.changeMultipartyState(true);
+
+        // Ensure that the original call is disconnected when the new conference call is created:
+        waitForCallState(call, Call.STATE_DISCONNECTED);
+
+        // End the conference call and ensure it is cleaned up correctly:
+        callSession.terminateIncomingCall();
         isCallDisconnected(call, callSession);
         assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
         waitForUnboundService();
@@ -2154,6 +2234,55 @@ public class ImsCallingTest extends ImsCallingBase {
         isCallActive(mCall3, mCallSession3);
         assertTrue("Call is not in Active State", (mCall3.getDetails().getState()
                 == Call.STATE_ACTIVE));
+    }
+
+    /**
+     * Asserts that a call's properties are as expected.
+     *
+     * @param call The call.
+     * @param properties The expected properties.
+     */
+    public void waitForCallProperties(final Call call, final int properties) {
+        waitUntilConditionIsTrueOrTimeout(
+                new Condition() {
+                    @Override
+                    public Object expected() {
+                        return true;
+                    }
+
+                    @Override
+                    public Object actual() {
+                        return call.getDetails().hasProperty(properties);
+                    }
+                },
+                WAIT_FOR_CONDITION,
+                "Call should have properties " + properties
+        );
+    }
+
+    /**
+     * Asserts that a call's state is as expected.
+     *
+     * @param call The call.
+     * @param state The expected state.
+     */
+    public void waitForCallState(final Call call, final int state) {
+        waitUntilConditionIsTrueOrTimeout(
+                new Condition() {
+                    @Override
+                    public Object expected() {
+                        return state;
+                    }
+
+                    @Override
+                    public Object actual() {
+                        return call.getDetails().getState();
+                    }
+                },
+                WAIT_FOR_CONDITION,
+                "Call should be in state " + state + "; but was in state "
+                        + call.getDetails().getState()
+        );
     }
 
     private void waitForCallSessionToNotBe(TestImsCallSessionImpl previousCallSession) {

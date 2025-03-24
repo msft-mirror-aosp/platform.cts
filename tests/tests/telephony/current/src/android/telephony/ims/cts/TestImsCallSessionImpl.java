@@ -335,6 +335,27 @@ public class TestImsCallSessionImpl extends ImsCallSessionImplBase {
         setState(ImsCallSessionImplBase.State.TERMINATED);
     }
 
+    public void changeMultipartyState(boolean isMultiParty) {
+        postAndRunTask(() -> {
+            ImsUtils.waitInCurrentState(WAIT_IN_CURRENT_STATE);
+            mCallProfile.setCallExtraBoolean(ImsCallProfile.EXTRA_CONFERENCE, true);
+            try {
+                if (mListener == null) {
+                    return;
+                }
+                Log.d(LOG_TAG, "changeMultipartyState: isMultiParty = " + isMultiParty + "mCallId = "
+                        + mCallId);
+                mListener.callSessionMultipartyStateChanged(isMultiParty);
+            } catch (Throwable t) {
+                Throwable cause = t.getCause();
+                if (t instanceof DeadObjectException
+                        || (cause != null && cause instanceof DeadObjectException)) {
+                    fail("starting cause Throwable to be thrown: " + t);
+                }
+            }
+        });
+    }
+
     @Override
     public void transfer(ImsCallSessionImplBase otherSession) {
         if (isTestType(TEST_TYPE_TRANSFER_FAILED)) {
