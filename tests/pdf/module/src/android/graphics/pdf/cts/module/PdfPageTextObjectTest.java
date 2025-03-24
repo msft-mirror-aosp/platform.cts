@@ -22,7 +22,6 @@ import android.graphics.Color;
 import android.graphics.pdf.component.PdfPageObjectRenderMode;
 import android.graphics.pdf.component.PdfPageTextObject;
 import android.graphics.pdf.component.PdfPageTextObjectFont;
-import android.graphics.pdf.component.PdfPageTextObjectFontFamily;
 import android.graphics.pdf.flags.Flags;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
@@ -55,21 +54,22 @@ public class PdfPageTextObjectTest {
         PdfPageTextObject pageTextObject =
                 new PdfPageTextObject(
                         TEXT,
-                        new PdfPageTextObjectFont(PdfPageTextObjectFontFamily.COURIER, true, false),
+                        new PdfPageTextObjectFont(
+                                PdfPageTextObjectFont.FONT_FAMILY_COURIER, true, false),
                         FONT_SIZE);
         assertThat(pageTextObject.getText()).isEqualTo(TEXT);
         assertThat(pageTextObject.getFontSize()).isEqualTo(FONT_SIZE);
         assertThat(pageTextObject.getRenderMode()).isEqualTo(PdfPageObjectRenderMode.FILL);
 
         PdfPageTextObjectFont font = pageTextObject.getFont();
-        assertThat(font.getFontFamily()).isEqualTo(PdfPageTextObjectFontFamily.COURIER);
+        assertThat(font.getFontFamily()).isEqualTo(PdfPageTextObjectFont.FONT_FAMILY_COURIER);
         assertThat(font.isBold()).isTrue();
         assertThat(font.isItalic()).isFalse();
 
-        font.setFontFamily(PdfPageTextObjectFontFamily.HELVETICA);
+        font.setFontFamily(PdfPageTextObjectFont.FONT_FAMILY_HELVETICA);
         font.setBold(false);
         font.setItalic(true);
-        assertThat(font.getFontFamily()).isEqualTo(PdfPageTextObjectFontFamily.HELVETICA);
+        assertThat(font.getFontFamily()).isEqualTo(PdfPageTextObjectFont.FONT_FAMILY_HELVETICA);
         assertThat(font.isBold()).isFalse();
         assertThat(font.isItalic()).isTrue();
 

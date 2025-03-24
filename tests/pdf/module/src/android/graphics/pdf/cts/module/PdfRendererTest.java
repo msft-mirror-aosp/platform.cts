@@ -71,7 +71,6 @@ import android.graphics.pdf.component.PdfPageObjectType;
 import android.graphics.pdf.component.PdfPagePathObject;
 import android.graphics.pdf.component.PdfPageTextObject;
 import android.graphics.pdf.component.PdfPageTextObjectFont;
-import android.graphics.pdf.component.PdfPageTextObjectFontFamily;
 import android.graphics.pdf.component.StampAnnotation;
 import android.graphics.pdf.content.PdfPageGotoLinkContent;
 import android.graphics.pdf.flags.Flags;
@@ -1504,7 +1503,7 @@ public class PdfRendererTest {
                     (PdfPageTextObject) firstPage.getPageObjects().get(0).second;
             assertThat(pdfPageTextObject.getText()).isEqualTo("Text Page Object");
             assertThat(pdfPageTextObject.getFont().getFontFamily())
-                    .isEqualTo(PdfPageTextObjectFontFamily.COURIER);
+                    .isEqualTo(PdfPageTextObjectFont.FONT_FAMILY_COURIER);
             assertTrue(pdfPageTextObject.getFont().isBold());
             assertTrue(pdfPageTextObject.getFont().isItalic());
             assertThat(pdfPageTextObject.getFontSize()).isEqualTo(10.0f);
@@ -1870,7 +1869,7 @@ public class PdfRendererTest {
     private PdfPageTextObject createSamplePdfPageTextObject() {
         String text = "Text Page Object";
         PdfPageTextObjectFont font =
-                new PdfPageTextObjectFont(PdfPageTextObjectFontFamily.COURIER, true, true);
+                new PdfPageTextObjectFont(PdfPageTextObjectFont.FONT_FAMILY_COURIER, true, true);
         float fontSize = 10.0f;
 
         PdfPageTextObject textObject = new PdfPageTextObject(text, font, fontSize);
