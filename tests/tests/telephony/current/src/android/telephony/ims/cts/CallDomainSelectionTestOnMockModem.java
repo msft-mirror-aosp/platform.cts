@@ -27,7 +27,6 @@ import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.content.Context;
-import android.content.pm.PackageManager;
 import android.hardware.radio.network.Domain;
 import android.net.Uri;
 import android.os.Bundle;
@@ -96,7 +95,7 @@ public class CallDomainSelectionTestOnMockModem extends ImsCallingBase {
     @BeforeClass
     public static void beforeAllTests() throws Exception {
         Log.d(TAG, "ims.cts beforeAllTests");
-        if (!ImsUtils.shouldTestImsService()) {
+        if (!ImsUtils.shouldTestImsCall()) {
             Log.d(TAG, "ims.cts shouldTestImsService returned false");
             return;
         }
@@ -161,7 +160,7 @@ public class CallDomainSelectionTestOnMockModem extends ImsCallingBase {
     @AfterClass
     public static void afterAllTests() throws Exception {
         Log.d(TAG, "after class");
-        if (!hasFeature(PackageManager.FEATURE_TELEPHONY)) {
+        if (!ImsUtils.shouldTestImsCall()) {
             return;
         }
 
@@ -196,7 +195,7 @@ public class CallDomainSelectionTestOnMockModem extends ImsCallingBase {
             sMockModemManager.changeNetworkService(
                     sTestSlot, MOCK_SIM_PROFILE_ID_TWN_CHT, false, Domain.CS | Domain.PS);
         }
-        if (!ImsUtils.shouldTestImsService()) {
+        if (!ImsUtils.shouldTestImsCall()) {
             return;
         }
 
