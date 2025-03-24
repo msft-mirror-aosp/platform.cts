@@ -25,6 +25,7 @@ import android.media.ImageWriter;
 import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
 import android.media.MediaFormat;
+import android.util.Log;
 import android.view.Surface;
 
 import androidx.annotation.NonNull;
@@ -45,7 +46,9 @@ public class SteadyTimestampCodec implements AutoCloseable {
     private static final int FRAME_RATE = 30;
     private static final int I_FRAME_INTERVAL = 1;
     private static final String MIMETYPE = MediaFormat.MIMETYPE_VIDEO_AVC;
-    private static final int TIMEOUT_MILLIS = 10000;
+    private static final int TIMEOUT_MILLIS = 100;
+    private static final String TAG = "SteadyTimestampCodec";
+    private static final boolean DEBUG = false;
     private final AtomicReference<MediaCodec> mDecoderRef;
     private final AtomicReference<MediaCodec> mEncoderRef;
 
@@ -96,6 +99,12 @@ public class SteadyTimestampCodec implements AutoCloseable {
         MediaCodec.Callback encoderCallback = new MediaCodecCallback() {
             @Override
             public void onInputBufferAvailable(@NonNull MediaCodec encoder, int i) {
+                if (DEBUG) {
+                    Log.d(TAG,
+                            "encoder onInputBufferAvailable() called with: codec = [" + encoder
+                                    + "], i = ["
+                                    + i + "] mCodecRunning = " + mCodecRunning.get());
+                }
                 if (!mCodecRunning.get()) {
                     return;
                 }
@@ -106,8 +115,12 @@ public class SteadyTimestampCodec implements AutoCloseable {
                         inputBuffer.clear();
                         byte[] blackFrameData = generateBlackFrameData(mWidth, mHeight);
                         inputBuffer.put(blackFrameData);
-                        encoder.queueInputBuffer(i, 0, blackFrameData.length,
-                                mRenderTimestampNs, 0); // Custom PTS
+                        if (DEBUG) {
+                            Log.d(TAG, "encoder queueInputBuffer() called with: codec = ["
+                                    + encoder + "], i = [" + i + "]");
+                        }
+                        encoder.queueInputBuffer(i, 0, blackFrameData.length, 0,
+                                0); // Custom PTS
                     }
                 } catch (IllegalStateException exception) {
                     mCodecRunning.set(false);
@@ -117,6 +130,13 @@ public class SteadyTimestampCodec implements AutoCloseable {
             @Override
             public void onOutputBufferAvailable(@NonNull MediaCodec mediaCodec, int i,
                     @NonNull MediaCodec.BufferInfo bufferInfo) {
+                if (DEBUG) {
+                    Log.d(TAG,
+                            "encoder onOutputBufferAvailable() called with: codec = ["
+                                    + mediaCodec
+                                    + "], i = ["
+                                    + i + "] mCodecRunning = " + mCodecRunning.get());
+                }
                 if (!mCodecRunning.get()) {
                     return;
                 }
@@ -125,7 +145,7 @@ public class SteadyTimestampCodec implements AutoCloseable {
                 byte[] bytes = new byte[outputBuffer.remaining()];
                 outputBuffer.get(bytes);
                 mBufferQueue.offer(bytes);
-                mediaCodec.releaseOutputBuffer(i, mRenderTimestampNs);
+                mediaCodec.releaseOutputBuffer(i, false);
             }
         };
 
@@ -150,18 +170,30 @@ public class SteadyTimestampCodec implements AutoCloseable {
         MediaCodec.Callback decoderCallback = new MediaCodecCallback() {
             @Override
             public void onInputBufferAvailable(@NonNull MediaCodec mediaCodec, int i) {
+                if (DEBUG) {
+                    Log.d(TAG,
+                            "decoder onInputBufferAvailable() called with: codec = ["
+                                    + mediaCodec
+                                    + "], i = ["
+                                    + i + "] mCodecRunning = " + mCodecRunning.get());
+                }
                 if (!mCodecRunning.get()) {
                     return;
                 }
                 try {
-                    byte[] bytes = mBufferQueue.poll(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
+                    byte[] bytes = mBufferQueue.poll(TIMEOUT_MILLIS,
+                            TimeUnit.MILLISECONDS);
                     if (!mCodecRunning.get()) {
+                        return;
+                    }
+                    if (bytes == null) {
+                        Log.w(TAG, "decoder: onInputBufferAvailable() no data queued");
                         return;
                     }
                     ByteBuffer inputBuffer = mediaCodec.getInputBuffer(i);
                     assertThat(inputBuffer).isNotNull();
                     inputBuffer.put(bytes);
-                    mediaCodec.queueInputBuffer(i, 0, bytes.length, mRenderTimestampNs++ / 2, 0);
+                    mediaCodec.queueInputBuffer(i, 0, bytes.length, 0, 0);
                 } catch (InterruptedException e) {
                     throw new RuntimeException("Timeout polling for encoded buffer", e);
                 } catch (IllegalStateException e) {
@@ -172,8 +204,18 @@ public class SteadyTimestampCodec implements AutoCloseable {
             @Override
             public void onOutputBufferAvailable(@NonNull MediaCodec mediaCodec, int i,
                     @NonNull MediaCodec.BufferInfo bufferInfo) {
+                if (DEBUG) {
+                    Log.d(TAG,
+                            "decoder onOutputBufferAvailable() called with: codec = [" + mediaCodec
+                                    + "], i = [" + i
+                                    + "] mCodecRunning = \" + mCodecRunning.get());");
+                }
                 if (!mCodecRunning.get()) {
                     return;
+                }
+                if (DEBUG) {
+                    Log.d(TAG, "decoder onOutputBufferAvailable() mRenderTimestampNs:"
+                            + mRenderTimestampNs + 1);
                 }
                 mediaCodec.releaseOutputBuffer(i, mRenderTimestampNs++);
             }
@@ -214,8 +256,8 @@ public class SteadyTimestampCodec implements AutoCloseable {
         MediaCodec decoder = createDecoder(surface);
         mDecoderRef.set(decoder);
         mCodecRunning.set(true);
-        decoder.start();
         mEncoderRef.get().start();
+        decoder.start();
     }
 
 
