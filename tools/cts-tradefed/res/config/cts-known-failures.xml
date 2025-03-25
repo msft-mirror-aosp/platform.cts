@@ -435,6 +435,9 @@
     <!-- b/378989105 -->
     <option name="compatibility:exclude-filter" value="CtsSliceTestCases" />
 
+    <!-- b/404545229 -->
+    <option name="compatibility:exclude-filter" value="CtsPackageWatchdogTestCases" />
+
    <!-- b/381409777-->
    <option name="compatibility:exclude-filter" value="CtsHealthConnectHostTestCases android.healthconnect.cts.dailyjob.DailyDeleteAccessLogTest#testAccessLogsAreDeleted" />
     <!-- b/383123499 -->
