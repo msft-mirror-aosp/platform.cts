@@ -21,12 +21,13 @@ import android.media.MediaCodec.CodecException;
 import android.media.MediaCrypto;
 import android.media.MediaExtractor;
 import android.media.MediaFormat;
+import android.mediav2.common.cts.OutputManager;
 import android.os.Build;
 import android.platform.test.annotations.AppModeFull;
 import android.test.AndroidTestCase;
 import android.util.Log;
 import android.view.Surface;
-import android.media.cts.MediaCodecAsyncHelper;
+
 import androidx.test.filters.SdkSuppress;
 
 import com.android.compatibility.common.util.MediaUtils;
@@ -219,7 +220,7 @@ public class MediaCodecBlockModelHelper extends AndroidTestCase {
             }
             request.queue();
             input.offset += written;
-            if (mTimestampList != null) {
+            if (mTimestampList != null && written > 0) {
                 mTimestampList.add(timestampUs);
             }
         }
@@ -249,15 +250,21 @@ public class MediaCodecBlockModelHelper extends AndroidTestCase {
         public boolean onOutputSlot(MediaCodec codec, int index) throws Exception {
             MediaCodec.OutputFrame frame = codec.getOutputFrame(index);
             boolean eos = (frame.getFlags() & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0;
+            boolean isCodecConfig = (frame.getFlags() & MediaCodec.BUFFER_FLAG_CODEC_CONFIG) != 0;
+            boolean hasData = false;
 
             if (mGraphic && frame.getHardwareBuffer() != null) {
                 frame.getHardwareBuffer().close();
+                hasData = true;
             }
             if (!mGraphic && frame.getLinearBlock() != null) {
                 frame.getLinearBlock().recycle();
+                hasData = true;
             }
 
-            mTimestampList.remove(frame.getPresentationTimeUs());
+            if (hasData && !isCodecConfig) {
+                mTimestampList.add(frame.getPresentationTimeUs());
+            }
 
             codec.releaseOutputBuffer(index, false);
 
@@ -289,7 +296,9 @@ public class MediaCodecBlockModelHelper extends AndroidTestCase {
                 render = true;
             }
 
-            mTimestampList.remove(frame.getPresentationTimeUs());
+            if (render) {
+                mTimestampList.add(frame.getPresentationTimeUs());
+            }
 
             if (!frame.getChangedKeys().isEmpty()) {
                 mEvents.add(new FormatChangeEvent(
@@ -378,7 +387,8 @@ public class MediaCodecBlockModelHelper extends AndroidTestCase {
                 crypto = new MediaCrypto(CLEARKEY_SCHEME_UUID, new byte[0] /* initData */);
                 crypto.setMediaDrmSession(sessionId);
             }
-            List<Long> timestampList = Collections.synchronizedList(new ArrayList<>());
+            List<Long> inputTimestampList = Collections.synchronizedList(new ArrayList<>());
+            List<Long> outputTimestampList = Collections.synchronizedList(new ArrayList<>());
             Result result = runComponentWithLinearInput(
                     mediaCodec,
                     crypto,
@@ -390,13 +400,16 @@ public class MediaCodecBlockModelHelper extends AndroidTestCase {
                             .setExtractor(mediaExtractor)
                             .setLastBufferTimestampUs(lastBufferTimestampUs)
                             .setObtainBlockForEachBuffer(obtainBlockForEachBuffer)
-                            .setTimestampQueue(timestampList)
+                            .setTimestampQueue(inputTimestampList)
                             .setContentEncrypted(sessionId != null)
                             .build(),
-                    new SurfaceOutputSlotListener(outputSurface, timestampList, events));
+                    new SurfaceOutputSlotListener(outputSurface, outputTimestampList, events));
             if (result == Result.SUCCESS) {
-                assertTrue("Timestamp should match between input / output: " + timestampList,
-                        timestampList.isEmpty());
+                StringBuilder msg = new StringBuilder();
+                boolean isEqual = OutputManager.arePtsListsIdentical(
+                        new ArrayList<Long>(inputTimestampList),
+                        new ArrayList<Long>(outputTimestampList), msg);
+                assertTrue(msg.toString(), isEqual);
             }
             return result;
         } catch (IOException e) {

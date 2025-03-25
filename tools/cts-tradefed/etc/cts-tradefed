@@ -136,6 +136,7 @@ if [ "$USE_ATS" == "true" ]; then
       --public_dir=/tmp \
       --simplified_log_format=true \
       --tmp_dir_root=/tmp \
+      --check_device_interval=90d \
       ${FASTBOOT_FLAGS} \
     "
 

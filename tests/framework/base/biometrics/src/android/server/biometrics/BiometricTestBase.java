@@ -191,7 +191,8 @@ abstract class BiometricTestBase implements TestSessionList.Idler {
                 // Re-find the scrollable parent view to avoid StaleObjectException (b/381001383)
                 parentView = mDevice.findObject(By.scrollable(true));
                 canScrollAgain =
-                        parentView != null && parentView.scroll(Direction.DOWN, 1.0f, 1000);
+                        parentView != null
+                                && parentView.scroll(Direction.DOWN, 0.4f, 1000);
                 view = findViewByIdInternal(id);
             } while (view == null && canScrollAgain);
         }
@@ -213,7 +214,8 @@ abstract class BiometricTestBase implements TestSessionList.Idler {
                 // Re-find the scrollable parent view to avoid StaleObjectException (b/381001383)
                 parentView = mDevice.findObject(By.scrollable(true));
                 canScrollAgain =
-                        parentView != null && parentView.scroll(Direction.DOWN, 1.0f, 1000);
+                        parentView != null
+                                && parentView.scroll(Direction.DOWN, 0.4f, 1000);
                 view = findViewByTextInternal(text);
             } while (view == null && canScrollAgain);
         }

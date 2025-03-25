@@ -110,4 +110,19 @@ public class SELinuxNeverallowRulesParserTest extends BaseHostJUnit4Test {
                 + "neverallow d1 d2:c1 p;\n";
         assertThrows(Exception.class, () -> SELinuxNeverallowRule.parsePolicy(policy));
     }
+
+    @Test
+    public void testParsingWithUserOnlyMarker() throws Exception {
+        String policy = "neverallow d1 d2:c1 p;\n"
+                + "neverallow { d2 \n"
+                + "# SUPPRESSED_BY_USERDEBUG_OR_ENG -- this marker is used by CTS\n"
+                + "d5 }\n"
+                + "d3:c2 p2;\n"
+                + "neverallow d6 d7:c3 p3;\n";
+        List<SELinuxNeverallowRule> rules = SELinuxNeverallowRule.parsePolicy(policy);
+        assertEquals(3, rules.size());
+        assertEquals(false, rules.get(0).userOnly);
+        assertEquals(true, rules.get(1).userOnly);
+        assertEquals(false, rules.get(2).userOnly);
+    }
 }

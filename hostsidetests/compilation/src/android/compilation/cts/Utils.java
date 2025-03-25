@@ -301,21 +301,23 @@ public class Utils {
 
     // We cannot generate an SDM file in the build system because the contents have to come from the
     // device.
-    public File createSdm(File odexFile, File artFile) throws Exception {
+    public File createSdm(File odexFile, File artFile, String keyName) throws Exception {
         File sdmFile = File.createTempFile("test", ".sdm");
         sdmFile.deleteOnExit();
         try (ZipWriter zipWriter = new ZipWriter(sdmFile)) {
             zipWriter.addUncompressedAlignedEntry("primary.odex", new FileInputStream(odexFile));
             zipWriter.addUncompressedAlignedEntry("primary.art", new FileInputStream(artFile));
         }
-        signApk(sdmFile);
+        if (keyName != null) {
+            signApk(sdmFile, keyName);
+        }
         return sdmFile;
     }
 
-    private void signApk(File file) throws Exception {
+    private void signApk(File file, String keyName) throws Exception {
         File apksigner = mTestInfo.getDependencyFile("apksigner.jar", false /* targetFirst */);
-        File key = mTestInfo.getDependencyFile("testkey.pk8", false /* targetFirst */);
-        File cert = mTestInfo.getDependencyFile("testkey.x509.pem", false /* targetFirst */);
+        File key = mTestInfo.getDependencyFile(keyName + ".pk8", false /* targetFirst */);
+        File cert = mTestInfo.getDependencyFile(keyName + ".x509.pem", false /* targetFirst */);
         assertHostCommandSucceeds("java", "-jar", apksigner.getAbsolutePath(), "sign", "--key",
                 key.getAbsolutePath(), "--cert", cert.getAbsolutePath(), "--min-sdk-version=35",
                 "--alignment-preserved", file.getAbsolutePath());
