@@ -460,7 +460,7 @@
 
         <activity android:name="android.server.wm.WindowUntrustedTouchTest$TestActivity"
                   android:exported="true"
-                  android:configChanges="screenSize|screenLayout|orientation"
+                  android:configChanges="screenSize|screenLayout|orientation|touchscreen|smallestScreenSize|colorMode|density"
                   android:screenOrientation="nosensor" />
 
         <activity android:name="android.server.wm.DisplayHashManagerTest$TestActivity"
