@@ -3190,10 +3190,10 @@ public class ItsService extends Service implements SensorEventListener {
 
     private void doDynamicMeteringRegionPreviewRecording(JSONObject cmdObj)
             throws JSONException, ItsException {
-        JSONArray aeAwbRegionOne = cmdObj.getJSONArray("aeAwbRegionOne");
-        JSONArray aeAwbRegionTwo = cmdObj.getJSONArray("aeAwbRegionTwo");
-        JSONArray aeAwbRegionThree = cmdObj.getJSONArray("aeAwbRegionThree");
-        JSONArray aeAwbRegionFour = cmdObj.getJSONArray("aeAwbRegionFour");
+        JSONArray aeAwbRegionOne = cmdObj.getJSONArray("regionBlue");
+        JSONArray aeAwbRegionTwo = cmdObj.getJSONArray("regionLight");
+        JSONArray aeAwbRegionThree = cmdObj.getJSONArray("regionDark");
+        JSONArray aeAwbRegionFour = cmdObj.getJSONArray("regionYellow");
         long aeAwbRegionDuration = cmdObj.getLong("aeAwbRegionDuration");
         RecordingResultListener recordingResultListener = new RecordingResultListener();
         mPreviewAction = new PreviewDynamicMeteringAction(
