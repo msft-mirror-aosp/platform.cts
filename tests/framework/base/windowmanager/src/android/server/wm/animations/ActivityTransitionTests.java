@@ -475,6 +475,9 @@ public class ActivityTransitionTests extends ActivityManagerTestBase {
 
         mWmState.waitForAppTransitionIdleOnDisplay(getMainDisplayId());
 
+        final Rect transitionBounds = testBounds.transitionBounds;
+        final int xIndex =
+                transitionBounds.left + (transitionBounds.right - transitionBounds.left) / 4;
         // Extending default transition animation duration, to ensure here can be more reliably to
         // capture the transition state.
         mObjectTracker.manage(new SettingsSession<>(
@@ -487,7 +490,14 @@ public class ActivityTransitionTests extends ActivityManagerTestBase {
         mContext.sendBroadcast(update);
         mContext.sendBroadcast(new Intent(ACTION_FINISH));
         runAndAssertActivityTransition(
-                createAssertAppRegionOfScreenIsColor(Color.CYAN, testBounds));
+                (screen) ->
+                        assertColorChangeXIndex(
+                                screen,
+                                xIndex,
+                                testBounds,
+                                Color.BLUE,
+                                Color.RED,
+                                false /* expectEqual */));
     }
 
     /**
@@ -749,12 +759,18 @@ public class ActivityTransitionTests extends ActivityManagerTestBase {
     // followed by an extended red section.
     private Function<Bitmap, AssertionResult> createAssertColorChangeXIndex(int xIndex,
                                                                             TestBounds testBounds) {
-        return (screen) -> assertColorChangeXIndex(
-                screen, xIndex, testBounds, Color.BLUE, Color.RED);
+        return (screen) ->
+                assertColorChangeXIndex(
+                        screen, xIndex, testBounds, Color.BLUE, Color.RED, true /* expectEqual */);
     }
 
-    private AssertionResult assertColorChangeXIndex(Bitmap screen, int splitX,
-            TestBounds testBounds, int lessXColor, int largeXColor) {
+    private AssertionResult assertColorChangeXIndex(
+            Bitmap screen,
+            int splitX,
+            TestBounds testBounds,
+            int lessXColor,
+            int largeXColor,
+            boolean expectEqual) {
         final int[] xSample = {
                 (splitX - testBounds.testableBounds.left) / 2 + testBounds.testableBounds.left,
                 splitX - 10,
@@ -790,9 +806,13 @@ public class ActivityTransitionTests extends ActivityManagerTestBase {
                 } else {
                     sRgbColor = rawColor;
                 }
-                if (arrayEquals(new float[]{
-                                expectedColor.red(), expectedColor.green(), expectedColor.blue()},
-                        new float[]{sRgbColor.red(), sRgbColor.green(), sRgbColor.blue()})) {
+                boolean colorMatch =
+                        !arrayEquals(
+                                new float[] {
+                                    expectedColor.red(), expectedColor.green(), expectedColor.blue()
+                                },
+                                new float[] {sRgbColor.red(), sRgbColor.green(), sRgbColor.blue()});
+                if (expectEqual != colorMatch) {
                     return new ColorCheckResult(new Point(sampleX, sampleY), expectedColor,
                             sRgbColor);
                 }
