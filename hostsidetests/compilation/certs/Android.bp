@@ -29,3 +29,16 @@ filegroup {
         "testkey.x509.pem",
     ],
 }
+
+android_app_certificate {
+    name: "cts-compilation-testkey2",
+    certificate: "testkey2",
+}
+
+filegroup {
+    name: "cts-compilation-testkey2-files",
+    srcs: [
+        "testkey2.pk8",
+        "testkey2.x509.pem",
+    ],
+}

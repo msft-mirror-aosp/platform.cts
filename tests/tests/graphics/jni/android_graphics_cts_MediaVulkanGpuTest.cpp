@@ -28,7 +28,7 @@ namespace {
 
 static constexpr uint32_t kTestImageWidth = 1920;
 static constexpr uint32_t kTestImageHeight = 1080;
-static constexpr uint32_t kTestImageFormat = AIMAGE_FORMAT_YUV_420_888;
+static constexpr uint32_t kTestImageFormat = AIMAGE_FORMAT_PRIVATE;
 static constexpr uint64_t kTestImageUsage =
     AHARDWAREBUFFER_USAGE_GPU_SAMPLED_IMAGE;
 static constexpr uint32_t kTestImageCount = 3;

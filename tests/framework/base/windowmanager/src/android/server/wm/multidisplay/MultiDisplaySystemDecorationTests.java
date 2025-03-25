@@ -83,6 +83,7 @@ public class MultiDisplaySystemDecorationTests extends MultiDisplayTestBase {
      */
     @Test
     public void testWallpaperGetDisplayContext() throws Exception {
+        assumeTrue(supportsWallpaper());
         assumeTrue(supportsLiveWallpaper());
 
         final ChangeWallpaperSession wallpaperSession = createManagedChangeWallpaperSession();

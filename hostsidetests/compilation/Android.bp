@@ -23,6 +23,7 @@ java_defaults {
     data: [
         ":apksigner",
         ":cts-compilation-testkey-files",
+        ":cts-compilation-testkey2-files",
     ],
     java_resource_dirs: ["assets/"],
     device_common_java_resources: [
