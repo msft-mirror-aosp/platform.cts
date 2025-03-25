@@ -35,8 +35,10 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
 import android.app.ActivityOptions;
+import android.app.Flags;
 import android.content.ComponentName;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.platform.test.annotations.Presubmit;
@@ -46,6 +48,7 @@ import android.server.wm.TestJournalProvider.TestJournalContainer;
 import android.server.wm.WindowManagerState;
 import android.server.wm.WindowManagerState.DisplayContent;
 import android.server.wm.WindowManagerState.WindowState;
+import android.util.Log;
 
 import com.android.compatibility.common.util.TestUtils;
 
@@ -67,6 +70,7 @@ import java.util.stream.Collectors;
 @Presubmit
 @android.server.wm.annotation.Group3
 public class MultiDisplaySystemDecorationTests extends MultiDisplayTestBase {
+    private static final String TAG = "MultiDisplaySystemDecorationTests";
 
     @Before
     @Override
@@ -362,5 +366,33 @@ public class MultiDisplaySystemDecorationTests extends MultiDisplayTestBase {
         touchAndCancelOnDisplayCenterSync(displayId);
         assertEquals("Top activity must be home type", ACTIVITY_TYPE_HOME,
                 mWmState.getFrontRootTaskActivityType(displayId));
+    }
+
+    /** Checks if the device supports live wallpaper for multi-display. */
+    private boolean supportsLiveWallpaper() {
+        if (!hasDeviceFeature(PackageManager.FEATURE_LIVE_WALLPAPER)) {
+            return false;
+        }
+
+        if (!Flags.enableConnectedDisplaysWallpaper()) {
+            return true;
+        }
+
+        Resources resources = mTargetContext.getResources();
+        int resId =
+                mTargetContext
+                        .getResources()
+                        .getIdentifier(
+                                /* name= */ "config_isLiveWallpaperSupportedInDesktopExperience",
+                                /* defType= */ "bool",
+                                /* defPackage= */ "android");
+        boolean isLiveWallpaperSupportedInMultiDisplay = false;
+        try {
+            isLiveWallpaperSupportedInMultiDisplay = resources.getBoolean(resId);
+        } catch (Resources.NotFoundException e) {
+            Log.w(TAG, "config_isLiveWallpaperSupportedInDesktopExperience not found", e);
+        }
+
+        return isLiveWallpaperSupportedInMultiDisplay;
     }
 }
