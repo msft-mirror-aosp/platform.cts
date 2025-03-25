@@ -59,7 +59,7 @@ class RuntimeMessageCollectionTest {
     @Test
     fun collectAsyncStackTrace() {
         installApk("CtsAppToCollect.apk")
-        for (attempt in 0..48) {
+        for (attempt in 0..25) {
             val start = System.currentTimeMillis()
 
             while (System.currentTimeMillis() - start < TIMEOUT_MILLIS) {
@@ -67,7 +67,7 @@ class RuntimeMessageCollectionTest {
                     appOpsManager.noteOp(AppOpsManager.OPSTR_READ_CONTACTS, appUid, APP_PKG,
                         TEST_ATTRIBUTION_TAG, null)
 
-                    sleep(50)
+                    sleep(200)
 
                     val message = appOpsManager.collectRuntimeAppOpAccessMessage()
                     if (message != null && message.packageName.equals(APP_PKG)) {

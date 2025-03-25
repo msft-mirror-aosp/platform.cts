@@ -35,8 +35,6 @@ import static com.google.common.truth.Truth.assertWithMessage;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.after;
-import static org.mockito.Mockito.timeout;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import android.companion.virtual.VirtualDeviceManager;
@@ -163,7 +161,8 @@ public class VirtualCameraCaptureTest {
         CaptureConfiguration config =
                 new CaptureConfiguration()
                         .setOutputFormat(outputPixelFormat)
-                        .setVerifyCaptureComplete(false);
+                        .setVerifyCaptureComplete(false)
+                        .setFailOnCaptureError(false);
 
         Image image = mCaptureHelper.captureImages(config);
         mCaptureHelper.verifyCaptureFailed();
@@ -182,10 +181,12 @@ public class VirtualCameraCaptureTest {
                         ApplicationProvider.getApplicationContext().getMainExecutor(),
                         new CameraCaptureSession.StateCallback() {
                             @Override
-                            public void onConfigured(@NonNull CameraCaptureSession session) {}
+                            public void onConfigured(@NonNull CameraCaptureSession session) {
+                            }
 
                             @Override
-                            public void onConfigureFailed(@NonNull CameraCaptureSession session) {}
+                            public void onConfigureFailed(@NonNull CameraCaptureSession session) {
+                            }
                         }));
 
         verify(mCaptureHelper.getVirtualCameraCallback(), after(2000L).never())
@@ -201,28 +202,24 @@ public class VirtualCameraCaptureTest {
         // Take a fist image, but don't write anything on the input surface.
         // We should have a failed capture after the time expires.
         CaptureConfiguration config = new CaptureConfiguration()
-                .setVerifyCaptureComplete(false);
+                .setVerifyCaptureComplete(false)
+                .setFailOnCaptureError(false);
+
 
         mCaptureHelper.captureImages(config);
         mCaptureHelper.verifyCaptureFailed();
 
         // Now capture again, but write something on the surface. The capture must be
         // successful.
-        config.setVerifyCaptureComplete(true);
-        config.setInputSurfaceConsumer((surface) -> {
-            Canvas canvas = surface.lockCanvas(null);
-            canvas.drawColor(Color.RED);
-            surface.unlockCanvasAndPost(canvas);
-        });
+        config
+                .setVerifyCaptureComplete(true)
+                .setFailOnCaptureError(true)
+                .setInputSurfaceConsumer((surface) -> {
+                    Canvas canvas = surface.lockCanvas(null);
+                    canvas.drawColor(Color.RED);
+                    surface.unlockCanvasAndPost(canvas);
+                });
         Image image = mCaptureHelper.captureImages(config);
-
-        verify(mCaptureHelper.getCaptureCallback(), times(1))
-                .onCaptureFailed(any(), any(), any());
-        verify(mCaptureHelper.getCaptureCallback(),
-                timeout(VirtualCameraCaptureHelper.TIMEOUT_MILLIS).times(1)).onCaptureCompleted(
-                any(), any(),
-                mCaptureHelper.getTotalCaptureResultCaptor().capture()
-        );
 
         assertThat(image).isNotNull();
     }
@@ -324,7 +321,7 @@ public class VirtualCameraCaptureTest {
                 });
 
         Image imageFromCamera = mCaptureHelper.captureImages(captureConfiguration);
-        Long captureTimestamp = mCaptureHelper.getTotalCaptureResultCaptor().getValue().get(
+        Long captureTimestamp = mCaptureHelper.getLastResult().get(
                 TotalCaptureResult.SENSOR_TIMESTAMP);
 
         // Check that the provided timestamp was not written to the image
@@ -356,7 +353,7 @@ public class VirtualCameraCaptureTest {
                     imageWriter.close();
                 });
         Image imageFromCamera = mCaptureHelper.captureImages(captureConfiguration);
-        Long captureTimestamp = mCaptureHelper.getTotalCaptureResultCaptor().getValue().get(
+        Long captureTimestamp = mCaptureHelper.getLastResult().get(
                 TotalCaptureResult.SENSOR_TIMESTAMP);
         assertThat(imageFromCamera.getTimestamp()).isEqualTo(renderedTimestamp);
         assertThat(captureTimestamp).isEqualTo(renderedTimestamp);
@@ -385,11 +382,12 @@ public class VirtualCameraCaptureTest {
                             YUV_420_888);
                     Image image = imageWriter.dequeueInputImage();
                     image.setTimestamp(renderedTimestampNanos);
+                    image.getPlanes()[0].getBuffer().putInt(1);
                     imageWriter.queueInputImage(image);
                     imageWriter.close();
                 });
         Image imageFromCamera = mCaptureHelper.captureImages(captureConfiguration);
-        Long captureTimestamp = mCaptureHelper.getTotalCaptureResultCaptor().getValue().get(
+        Long captureTimestamp = mCaptureHelper.getLastResult().get(
                 TotalCaptureResult.SENSOR_TIMESTAMP);
         assertThat(imageFromCamera.getTimestamp()).isWithin(toleranceNanos).of(
                 expectedTimeNanos);
@@ -408,7 +406,7 @@ public class VirtualCameraCaptureTest {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_CAMERA_TIMESTAMP_FROM_SURFACE)
     public void inputRate_HigherThanMaxFps_allFulfilled() {
-        // We faster than the max fps to be sure that no input frame will be skipped
+        // We render faster than the max fps to be sure that no input frame will be skipped
         android.util.Range<Integer> requestFPSRange = android.util.Range.create(1,
                 VirtualCameraCaptureHelper.CAMERA_MAX_FPS);
         testRenderingRate(requestFPSRange, VirtualCameraCaptureHelper.CAMERA_MAX_FPS + 10);
@@ -444,8 +442,7 @@ public class VirtualCameraCaptureTest {
                         CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE, requestFPSRange))
                 .setInputSurfaceConsumer(fixedRateImageWriter);
         mCaptureHelper.captureImages(config).close();
-        List<TotalCaptureResult> captureResults =
-                mCaptureHelper.getTotalCaptureResultCaptor().getAllValues();
+        List<TotalCaptureResult> captureResults = mCaptureHelper.getCaptureResults();
         assertThat(captureResults).hasSize(imageCount);
 
         double averageCaptureTime = captureResults.stream().mapToLong(
@@ -459,7 +456,7 @@ public class VirtualCameraCaptureTest {
                 averageCaptureTime).isGreaterThan(
                 1.0 * SECOND_TO_NANOS / requestFPSRange.getUpper());
 
-        Long lastCaptureTimestamp = mCaptureHelper.getTotalCaptureResultCaptor().getValue().get(
+        Long lastCaptureTimestamp = mCaptureHelper.getLastResult().get(
                 TotalCaptureResult.SENSOR_TIMESTAMP);
 
         assertThat(lastCaptureTimestamp).isWithin(toleranceNanos).of(
@@ -487,7 +484,7 @@ public class VirtualCameraCaptureTest {
             Image image = mCaptureHelper.captureImages(captureConfiguration);
             long endTimestamp = renderTimestamp + (SystemClock.uptimeMillis() - startTime);
             Range<Long> timestampRange = Range.closed(renderTimestamp, endTimestamp);
-            assertThat(mCaptureHelper.getTotalCaptureResultCaptor().getValue()
+            assertThat(mCaptureHelper.getLastResult()
                     .get(CaptureResult.SENSOR_TIMESTAMP)).isIn(timestampRange);
             assertThat(image.getTimestamp()).isIn(timestampRange);
         }

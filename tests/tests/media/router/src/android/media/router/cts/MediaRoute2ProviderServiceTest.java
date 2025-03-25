@@ -50,10 +50,10 @@ import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.FrameworkSpecificTest;
-import com.android.compatibility.common.util.PollingCheck;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -73,6 +73,11 @@ import java.util.concurrent.TimeUnit;
 @FrameworkSpecificTest
 public class MediaRoute2ProviderServiceTest {
     private static final String TAG = "MR2ProviderServiceTest";
+
+    @Rule
+    public StubMediaRoute2ProviderService.Setup mProviderSetup =
+            new StubMediaRoute2ProviderService.Setup();
+
     Context mContext;
     private MediaRouter2 mRouter2;
     private Executor mExecutor;
@@ -96,36 +101,12 @@ public class MediaRoute2ProviderServiceTest {
 
         MediaRouter2TestActivity.startActivity(mContext);
 
-        // In order to make the system bind to the test service,
-        // set a non-empty discovery preference while app is in foreground.
-        List<String> features = new ArrayList<>();
-        features.add("A test feature");
-        RouteDiscoveryPreference preference =
-                new RouteDiscoveryPreference.Builder(features, false).build();
-        mRouter2.registerRouteCallback(mExecutor, mRouterDummyCallback, preference);
-
-        new PollingCheck(TIMEOUT_MS) {
-            @Override
-            protected boolean check() {
-                StubMediaRoute2ProviderService service =
-                        StubMediaRoute2ProviderService.getInstance();
-                if (service != null) {
-                    mService = service;
-                    return true;
-                }
-                return false;
-            }
-        }.run();
+        mService = mProviderSetup.setupAndGetService(mContext);
     }
 
     @After
     public void tearDown() throws Exception {
-        mRouter2.unregisterRouteCallback(mRouterDummyCallback);
         MediaRouter2TestActivity.finishActivity();
-        if (mService != null) {
-            mService.clear();
-            mService = null;
-        }
     }
 
     @Test

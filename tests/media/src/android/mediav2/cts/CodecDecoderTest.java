@@ -21,6 +21,8 @@ import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420P
 import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Planar;
 import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420SemiPlanar;
 import static android.media.codec.Flags.apvSupport;
+import static android.media.tv.flags.Flags.FLAG_APPLY_PICTURE_PROFILES;
+import static android.media.tv.flags.Flags.FLAG_MEDIA_QUALITY_FW;
 import static android.mediav2.common.cts.CodecTestBase.SupportClass.CODEC_ALL;
 import static android.mediav2.common.cts.CodecTestBase.SupportClass.CODEC_OPTIONAL;
 
@@ -35,10 +37,14 @@ import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
 import android.media.MediaExtractor;
 import android.media.MediaFormat;
+import android.media.quality.PictureProfile;
+import android.media.quality.PictureProfileHandle;
 import android.mediav2.common.cts.CodecDecoderBlockModelTestBase;
 import android.mediav2.common.cts.CodecDecoderTestBase;
 import android.mediav2.common.cts.OutputManager;
 import android.os.Build;
+import android.os.Bundle;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.util.Log;
 import android.view.Surface;
 
@@ -784,5 +790,38 @@ public class CodecDecoderTest extends CodecDecoderTestBase {
         assertTrue(String.format("Unexpected output color format %x \n", outputColorFormat)
                         + mTestConfig + mTestEnv,
                 IntStream.of(defaultOutputColorFormatList).anyMatch(x -> x == outputColorFormat));
+    }
+
+    /**
+     * Test setting PictureProfile instance as a parameter using MediaCodec.setParameter().
+     */
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA, codeName = "Baklava")
+    @RequiresFlagsEnabled({FLAG_APPLY_PICTURE_PROFILES, FLAG_MEDIA_QUALITY_FW})
+    @ApiTest(apis = {"android.media.MediaFormat#KEY_PICTURE_PROFILE_INSTANCE"})
+    @Test
+    public void testSetPictureProfileInstanceAsParameter()
+            throws IOException, InterruptedException {
+        MediaFormat format = setUpSource(mTestFile);
+        mOutputBuff = new OutputManager();
+        mCodec = MediaCodec.createByCodecName(mCodecName);
+        mExtractor.seekTo(0, MediaExtractor.SEEK_TO_CLOSEST_SYNC);
+        PictureProfile testPictureProfile =
+                new PictureProfile.Builder("test")
+                        .setHandle(new PictureProfileHandle(1))
+                        .build();
+        configureCodec(format, true, true, false);
+        mCodec.start();
+        Bundle bundle = new Bundle();
+        bundle.putObject(MediaFormat.KEY_PICTURE_PROFILE_INSTANCE, testPictureProfile);
+        mCodec.setParameters(bundle);
+        doWork(Integer.MAX_VALUE);
+        queueEOS();
+        waitForAllOutputs();
+
+        // TODO: verify picture profile handle value by
+        // checking output format using mCodec.getOutputFormat()
+
+        endCodecSession(mCodec);
+        mCodec.release();
     }
 }

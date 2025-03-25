@@ -828,6 +828,10 @@ public class SatelliteManagerTestBase {
             }
             return true;
         }
+
+        public void drainPermits() {
+            mSemaphore.drainPermits();
+        }
     }
 
     protected static class SatelliteSupportedStateCallbackTest implements Consumer<Boolean> {
@@ -1207,7 +1211,7 @@ public class SatelliteManagerTestBase {
                     }
                 };
 
-        logd("isSatelliteEnabled: requesting satellite to be enabled");
+        logd("isSatelliteEnabled: querying satellite enable state");
         sSatelliteManager.requestIsEnabled(
                 getContext().getMainExecutor(), receiver);
         try {
@@ -1899,7 +1903,7 @@ public class SatelliteManagerTestBase {
     protected static Pair<Integer, Integer> requestSelectedNbIotSatelliteSubscriptionId() {
         final AtomicReference<Integer> selectedSatelliteSubscriptionId =
                 new AtomicReference<>();
-        final AtomicReference<Integer> callback = new AtomicReference<>();
+        final AtomicReference<Integer> errorCode = new AtomicReference<>();
         CountDownLatch latch = new CountDownLatch(1);
         OutcomeReceiver<Integer, SatelliteManager.SatelliteException> receiver =
                 new OutcomeReceiver<>() {
@@ -1915,7 +1919,7 @@ public class SatelliteManagerTestBase {
                     public void onError(SatelliteManager.SatelliteException exception) {
                         logd("requestSelectedNbIotSatelliteSubscriptionId.onError: onError="
                                 + exception.getErrorCode());
-                        callback.set(exception.getErrorCode());
+                        errorCode.set(exception.getErrorCode());
                         latch.countDown();
                     }
                 };
@@ -1927,7 +1931,7 @@ public class SatelliteManagerTestBase {
         } catch (InterruptedException e) {
             fail(e.toString());
         }
-        return new Pair<>(selectedSatelliteSubscriptionId.get(), callback.get());
+        return new Pair<>(selectedSatelliteSubscriptionId.get(), errorCode.get());
     }
 
     protected static Pair<CharSequence, Integer> requestSatelliteDisplayName() {
