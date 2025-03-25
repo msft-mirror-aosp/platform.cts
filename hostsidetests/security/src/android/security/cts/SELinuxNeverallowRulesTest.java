@@ -21,7 +21,6 @@ import static org.junit.Assume.assumeTrue;
 
 import android.cts.host.utils.DeviceJUnit4ClassRunnerWithParameters;
 import android.cts.host.utils.DeviceJUnit4Parameterized;
-import android.platform.test.annotations.RestrictedBuildTest;
 
 import com.android.tradefed.build.IBuildInfo;
 import com.android.tradefed.device.ITestDevice;
@@ -125,7 +124,6 @@ public class SELinuxNeverallowRulesTest extends BaseHostJUnit4Test {
     }
 
     @Test
-    @RestrictedBuildTest
     public void testNeverallowRules() throws Exception {
         // If sepolicy is split and vendor sepolicy version is behind platform's,
         // only test against platform policy.

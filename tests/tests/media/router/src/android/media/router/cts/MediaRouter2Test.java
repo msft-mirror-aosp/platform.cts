@@ -90,7 +90,6 @@ import com.android.bedstead.harrier.UserType;
 import com.android.bedstead.harrier.annotations.UserTest;
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.FrameworkSpecificTest;
-import com.android.compatibility.common.util.PollingCheck;
 
 import com.google.common.truth.Correspondence;
 
@@ -109,9 +108,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
@@ -133,6 +134,10 @@ public class MediaRouter2Test {
     @Rule(order = 1)
     public final ActivityScenarioRule<MediaRouter2TestActivity> activityScenarioRule =
             new ActivityScenarioRule<>(MediaRouter2TestActivity.class);
+
+    @Rule(order = 2)
+    public StubMediaRoute2ProviderService.Setup mStubProviderSetup =
+            new StubMediaRoute2ProviderService.Setup();
 
     // Required by Bedstead.
     @ClassRule @Rule public static final DeviceState sDeviceState = new DeviceState();
@@ -175,28 +180,7 @@ public class MediaRouter2Test {
     }
 
     private void setUpStubProvider() {
-        // In order to make the system bind to the test service,
-        // set a non-empty discovery preference while app is in foreground.
-        List<String> features = new ArrayList<>();
-        features.add("A test feature");
-        RouteDiscoveryPreference preference =
-                new RouteDiscoveryPreference.Builder(features, false).build();
-        mRouter2.registerRouteCallback(mExecutor, mRouterDummyCallback, preference);
-
-        new PollingCheck(TIMEOUT_MS) {
-            @Override
-            protected boolean check() {
-                StubMediaRoute2ProviderService service =
-                        StubMediaRoute2ProviderService.getInstance();
-                if (service != null) {
-                    mService = service;
-                    return true;
-                }
-                return false;
-            }
-        }.run();
-        mService.initializeRoutes();
-        mService.publishRoutes();
+        mService = mStubProviderSetup.setupAndGetService(mContext);
     }
 
     @After
@@ -204,10 +188,6 @@ public class MediaRouter2Test {
         mRouter2.unregisterRouteCallback(mRouterDummyCallback);
         // Clearing RouteListingPreference.
         mRouter2.setRouteListingPreference(null);
-        if (mService != null) {
-            mService.clear();
-            mService = null;
-        }
     }
 
     @Test
@@ -1260,7 +1240,6 @@ public class MediaRouter2Test {
         assertThat(routeTransferFrom).isNotNull();
 
         final CountDownLatch onTransferLatch = new CountDownLatch(1);
-        final CountDownLatch onControllerUpdatedLatch = new CountDownLatch(1);
         final CountDownLatch onStopLatch = new CountDownLatch(1);
         final List<RoutingController> controllers = new ArrayList<>();
 
@@ -1285,41 +1264,50 @@ public class MediaRouter2Test {
             }
         };
 
-        ControllerCallback controllerCallback = new ControllerCallback() {
-            @Override
-            public void onControllerUpdated(RoutingController controller) {
-                if (onTransferLatch.getCount() != 0
-                        || !TextUtils.equals(controllers.get(0).getId(), controller.getId())) {
-                    return;
-                }
-                onControllerUpdatedLatch.countDown();
-            }
-        };
+        // We want to verify that our ControllerCallback only fires once, for the call to transferTo
+        // for ROUTE_ID1. This queue stores the selected routes for any invocations of the
+        // callback for our stub controller.
+        BlockingQueue<List<String>> controllerUpdatedCalls = new LinkedBlockingQueue<>();
+
+        ControllerCallback controllerCallback =
+                new ControllerCallback() {
+                    @Override
+                    public void onControllerUpdated(RoutingController controller) {
+                        if (TextUtils.equals(controllers.get(0).getId(), controller.getId())) {
+                            controllerUpdatedCalls.add(
+                                    controller.getSelectedRoutes().stream()
+                                            .map(i -> i.getOriginalId())
+                                            .toList());
+                        }
+                    }
+                };
 
         // TODO: Remove this once the MediaRouter2 becomes always connected to the service.
         RouteCallback routeCallback = new RouteCallback() {};
         mRouter2.registerRouteCallback(mExecutor, routeCallback, EMPTY_DISCOVERY_PREFERENCE);
 
         try {
+            mRouter2.registerControllerCallback(mExecutor, controllerCallback);
+
             mRouter2.registerTransferCallback(mExecutor, transferCallback);
             mRouter2.transferTo(routeTransferFrom);
             assertThat(onTransferLatch.await(TIMEOUT_MS, TimeUnit.MILLISECONDS)).isTrue();
+            assertThat(controllerUpdatedCalls.poll(TIMEOUT_MS, TimeUnit.MILLISECONDS))
+                    .containsExactlyElementsIn(List.of(ROUTE_ID1));
 
             assertThat(controllers).hasSize(1);
             RoutingController controller = controllers.get(0);
 
-            // Registering the callback here to avoid unrelated calls related to the transfer above.
-            mRouter2.registerControllerCallback(mExecutor, controllerCallback);
             mRouter2.stop();
 
             // Select ROUTE_ID5_TO_TRANSFER_TO
             MediaRoute2Info routeToSelect = routes.get(ROUTE_ID4_TO_SELECT_AND_DESELECT);
             assertThat(routeToSelect).isNotNull();
 
-            // This call should be ignored.
-            // The onSessionInfoChanged() shouldn't be called.
+            // The selectRoute call should be ignored, and onControllerUpdated() shouldn't be
+            // called a second time.
             controller.selectRoute(routeToSelect);
-            assertThat(onControllerUpdatedLatch.await(WAIT_MS, TimeUnit.MILLISECONDS)).isFalse();
+            assertThat(controllerUpdatedCalls.poll(WAIT_MS, TimeUnit.MILLISECONDS)).isNull();
 
             // onStop should be called.
             assertThat(onStopLatch.await(TIMEOUT_MS, TimeUnit.MILLISECONDS)).isTrue();
@@ -1331,7 +1319,6 @@ public class MediaRouter2Test {
         }
     }
 
-    @Ignore // TODO(b/291800179): Diagnose flakiness and re-enable.
     @Test
     public void testRoutingControllerRelease() throws Exception {
         setUpStubProvider();
@@ -1344,7 +1331,6 @@ public class MediaRouter2Test {
         assertThat(routeTransferFrom).isNotNull();
 
         final CountDownLatch onTransferLatch = new CountDownLatch(1);
-        final CountDownLatch onControllerUpdatedLatch = new CountDownLatch(1);
         final CountDownLatch onStopLatch = new CountDownLatch(1);
         final List<RoutingController> controllers = new ArrayList<>();
 
@@ -1369,16 +1355,23 @@ public class MediaRouter2Test {
             }
         };
 
-        ControllerCallback controllerCallback = new ControllerCallback() {
-            @Override
-            public void onControllerUpdated(RoutingController controller) {
-                if (onTransferLatch.getCount() != 0
-                        || !TextUtils.equals(controllers.get(0).getId(), controller.getId())) {
-                    return;
-                }
-                onControllerUpdatedLatch.countDown();
-            }
-        };
+        // We want to verify that our ControllerCallback only fires once, for the call to transferTo
+        // for ROUTE_ID1. This queue stores the selected routes for any invocations of the
+        // callback for our stub controller.
+        BlockingQueue<List<String>> controllerUpdatedCalls = new LinkedBlockingQueue<>();
+
+        ControllerCallback controllerCallback =
+                new ControllerCallback() {
+                    @Override
+                    public void onControllerUpdated(RoutingController controller) {
+                        if (TextUtils.equals(controllers.get(0).getId(), controller.getId())) {
+                            controllerUpdatedCalls.add(
+                                    controller.getSelectedRoutes().stream()
+                                            .map(i -> i.getOriginalId())
+                                            .toList());
+                        }
+                    }
+                };
 
        // TODO: Remove this once the MediaRouter2 becomes always connected to the service.
         RouteCallback routeCallback = new RouteCallback() {};
@@ -1389,6 +1382,8 @@ public class MediaRouter2Test {
             mRouter2.registerControllerCallback(mExecutor, controllerCallback);
             mRouter2.transferTo(routeTransferFrom);
             assertThat(onTransferLatch.await(TIMEOUT_MS, TimeUnit.MILLISECONDS)).isTrue();
+            assertThat(controllerUpdatedCalls.poll(TIMEOUT_MS, TimeUnit.MILLISECONDS))
+                    .containsExactlyElementsIn(List.of(ROUTE_ID1));
 
             assertThat(controllers).hasSize(1);
             RoutingController controller = controllers.get(0);
@@ -1400,10 +1395,10 @@ public class MediaRouter2Test {
             MediaRoute2Info routeToSelect = routes.get(ROUTE_ID4_TO_SELECT_AND_DESELECT);
             assertThat(routeToSelect).isNotNull();
 
-            // This call should be ignored.
-            // The onSessionInfoChanged() shouldn't be called.
+            // The selectRoute call should be ignored, and onControllerUpdated() shouldn't be
+            // called a second time.
             controller.selectRoute(routeToSelect);
-            assertThat(onControllerUpdatedLatch.await(WAIT_MS, TimeUnit.MILLISECONDS)).isFalse();
+            assertThat(controllerUpdatedCalls.poll(WAIT_MS, TimeUnit.MILLISECONDS)).isNull();
 
             // onStop should be called.
             assertThat(onStopLatch.await(TIMEOUT_MS, TimeUnit.MILLISECONDS)).isTrue();

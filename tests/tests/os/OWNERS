@@ -14,7 +14,7 @@ per-file *HeadroomTest* = file:/platform/frameworks/base:/ADPF_OWNERS
 
 per-file *BatteryChangedBroadcastTest* = sudheersai@google.com, mayankkk@google.com
 
-per-file *minijail* = file:/platform/external/minijail:/OWNERS
+per-file *minijail* = file:platform/external/minijail:/OWNERS
 
 # Bug component: 25692
 include platform/frameworks/base:/OWNERS

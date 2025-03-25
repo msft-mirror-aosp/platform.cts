@@ -1270,6 +1270,8 @@
 
     <string name="nfc_hce_f">Host-based Felica card emulation</string>
     <string name="nfc_hce_f_reader_tests">HCE Felica reader tests</string>
+    <string name="nfc_hce_f_emulator_observe_mode_tests">NFC-F observe mode emulator tests</string>
+    <string name="nfc_hce_f_reader_observe_mode_tests">NFC-F observe mode  reader tests</string>
     <string name="nfc_hce_f_emulator_tests">HCE Felica emulator tests</string>
     <string name="nfc_hce_f_emulator">HCE Felica emulator</string>
     <string name="nfc_hce_f_reader">HCE Felica reader</string>
@@ -1289,6 +1291,7 @@
         and makes sure the device-under-test implements card emulation correctly.
     </string>
 
+    <string name="pollingloopservice">Polling Loop HCE Service</string>
     <string name="felicaservice">Felica Service</string>
     <string name="UiccTransactionEventService">Uicc Transaction Event Service</string>
 
