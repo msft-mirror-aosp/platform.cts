@@ -4865,8 +4865,11 @@ public class TelephonyManagerTest {
             return;
         }
 
+        boolean isVoiceCapable = mTelephonyManager.isDeviceVoiceCapable();
+        boolean isDataCapable = mTelephonyManager.isDataCapable();
+
         List<CellInfo> allCellInfo = mTelephonyManager.getAllCellInfo();
-        assertTrue(!allCellInfo.isEmpty());
+        assertFalse("Empty cell list", allCellInfo.isEmpty());
         for (CellInfo cellInfo : allCellInfo) {
             CellIdentity cellIdentity = cellInfo.getCellIdentity();
             int[] bands;
@@ -4874,17 +4877,21 @@ public class TelephonyManagerTest {
                 bands = ((CellIdentityLte) cellIdentity).getBands();
                 if (cellInfo.isRegistered()) assertTrue(bands.length > 0);
                 for (int band : bands) {
-                    assertTrue(band >= AccessNetworkConstants.EutranBand.BAND_1
-                            && band <= AccessNetworkConstants.EutranBand.BAND_88);
+                    assertTrue(
+                            "CellIdentityLte has invalid bands. " + cellIdentity,
+                            band >= AccessNetworkConstants.EutranBand.BAND_1
+                                    && band <= AccessNetworkConstants.EutranBand.BAND_88);
                 }
             } else if (cellIdentity instanceof CellIdentityNr) {
                 bands = ((CellIdentityNr) cellIdentity).getBands();
                 if (cellInfo.isRegistered()) assertTrue(bands.length > 0);
                 for (int band : bands) {
-                    assertTrue((band >= AccessNetworkConstants.NgranBands.BAND_1
-                            && band <= AccessNetworkConstants.NgranBands.BAND_95)
-                            || (band >= AccessNetworkConstants.NgranBands.BAND_257
-                            && band <= AccessNetworkConstants.NgranBands.BAND_261));
+                    assertTrue(
+                            "CellIdentityNr has invalid bands. " + cellIdentity,
+                            (band >= AccessNetworkConstants.NgranBands.BAND_1
+                                            && band <= AccessNetworkConstants.NgranBands.BAND_95)
+                                    || (band >= AccessNetworkConstants.NgranBands.BAND_257
+                                            && band <= AccessNetworkConstants.NgranBands.BAND_261));
                 }
             }
 
@@ -4898,16 +4905,35 @@ public class TelephonyManagerTest {
                 for (CellIdentity cid : getRegisteredCellIdentities()) {
                     if (cellIdentity.isSameCell(cid)) isSameCell = true;
                 }
-                assertTrue(sNetworkTypes.get(cellIdentity.getClass()).contains(
-                            mTelephonyManager.getDataNetworkType())
-                                    || sNetworkTypes.get(cellIdentity.getClass()).contains(
-                                            mTelephonyManager.getVoiceNetworkType()));
+
+                boolean isDataNetworkTypeMatched = false;
+                boolean isVoiceNetworkTypeMatched = false;
+                int voiceNetworkType = TelephonyManager.NETWORK_TYPE_UNKNOWN;
+                int dataNetworkType = TelephonyManager.NETWORK_TYPE_UNKNOWN;
+                if (isVoiceCapable) {
+                    voiceNetworkType = mTelephonyManager.getVoiceNetworkType();
+                    isVoiceNetworkTypeMatched =
+                            sNetworkTypes.get(cellIdentity.getClass()).contains(voiceNetworkType);
+                }
+                if (isDataCapable) {
+                    dataNetworkType = mTelephonyManager.getDataNetworkType();
+                    isDataNetworkTypeMatched =
+                            sNetworkTypes.get(cellIdentity.getClass()).contains(dataNetworkType);
+                }
+
+                assertTrue(
+                        "cell identity's network type does not match either voice network "
+                                + "type "
+                                + TelephonyManager.getNetworkTypeName(voiceNetworkType)
+                                + " or data network type "
+                                + TelephonyManager.getNetworkTypeName(dataNetworkType)
+                                + cellIdentity,
+                        (isVoiceNetworkTypeMatched || isDataNetworkTypeMatched));
                 assertTrue(
                         "Registered CellInfo#CellIdentity not found in ServiceState",
                         isSameCell);
             }
         }
-
     }
 
     @Test
