@@ -18,6 +18,7 @@ package android.media.projection.cts;
 
 import static android.media.projection.MediaProjectionConfig.DEFAULT_PROJECTION_SOURCES;
 import static android.media.projection.MediaProjectionConfig.PROJECTION_SOURCE_APP;
+import static android.media.projection.MediaProjectionConfig.PROJECTION_SOURCE_APP_CONTENT;
 import static android.media.projection.MediaProjectionConfig.PROJECTION_SOURCE_DISPLAY;
 import static android.media.projection.MediaProjectionConfig.PROJECTION_SOURCE_DISPLAY_REGION;
 import static android.view.Display.DEFAULT_DISPLAY;
@@ -69,6 +70,7 @@ public class MediaProjectionConfigTest {
         assertThat(config.isSourceEnabled(PROJECTION_SOURCE_DISPLAY)).isTrue();
         assertThat(config.isSourceEnabled(PROJECTION_SOURCE_DISPLAY_REGION)).isFalse();
         assertThat(config.isSourceEnabled(PROJECTION_SOURCE_APP)).isTrue();
+        assertThat(config.isSourceEnabled(PROJECTION_SOURCE_APP_CONTENT)).isFalse();
         assertThat(config.getDisplayToCapture()).isEqualTo(DEFAULT_DISPLAY);
         assertThat(config.getRequesterHint()).isNull();
         assertThat(config.getProjectionSources()).isEqualTo(DEFAULT_PROJECTION_SOURCES);
@@ -101,12 +103,14 @@ public class MediaProjectionConfigTest {
                         .setSourceEnabled(PROJECTION_SOURCE_APP, true)
                         .setSourceEnabled(PROJECTION_SOURCE_DISPLAY, true)
                         .setSourceEnabled(PROJECTION_SOURCE_DISPLAY_REGION, true)
+                        .setSourceEnabled(PROJECTION_SOURCE_APP_CONTENT, true)
                         .setRequesterHint("requesterHint")
                         .setInitiallySelectedSource(PROJECTION_SOURCE_APP)
                         .build();
         assertThat(config.isSourceEnabled(PROJECTION_SOURCE_DISPLAY)).isTrue();
         assertThat(config.isSourceEnabled(PROJECTION_SOURCE_DISPLAY_REGION)).isTrue();
         assertThat(config.isSourceEnabled(PROJECTION_SOURCE_APP)).isTrue();
+        assertThat(config.isSourceEnabled(PROJECTION_SOURCE_APP_CONTENT)).isTrue();
         assertThat(config.getRequesterHint()).isEqualTo("requesterHint");
         assertThat(config.getInitiallySelectedSource()).isEqualTo(PROJECTION_SOURCE_APP);
     }
