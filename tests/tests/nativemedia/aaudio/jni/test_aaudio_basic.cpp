@@ -16,11 +16,13 @@
 
 // Tests basic AAudio input and output.
 
-#include <stdio.h>
-#include <unistd.h>
+#define LOG_TAG "AAudioTest"
 
 #include <aaudio/AAudio.h>
+#include <android/log.h>
 #include <gtest/gtest.h>
+#include <stdio.h>
+#include <unistd.h>
 
 #include "utils.h"
 
@@ -42,6 +44,19 @@ protected:
         } else {
             if (!deviceSupportsFeature(FEATURE_PLAYBACK)) return;
         }
+
+        if (perfMode == AAUDIO_PERFORMANCE_MODE_POWER_SAVING_OFFLOADED ||
+            perfMode == AAUDIO_PERFORMANCE_MODE_POWER_SAVING) {
+            const int sdkFullVersion = getSdkVersionFull();
+            if (sdkFullVersion <= getVersionCodeFullBaklava()) {
+                __android_log_print(ANDROID_LOG_INFO, LOG_TAG,
+                                    "Skip test mode %d as the sdk version is not greater than "
+                                    "baklava",
+                                    perfMode);
+                return;
+            }
+        }
+
         float buffer[kNumFrames * kChannelCount] = {};
 
         AAudioStreamBuilder *aaudioBuilder = nullptr;
@@ -53,12 +68,17 @@ protected:
         // Request stream properties.
         AAudioStreamBuilder_setPerformanceMode(aaudioBuilder, perfMode);
         AAudioStreamBuilder_setDirection(aaudioBuilder, direction);
-        AAudioStreamBuilder_setChannelCount(aaudioBuilder, kChannelCount);
-        AAudioStreamBuilder_setFormat(aaudioBuilder, AAUDIO_FORMAT_PCM_FLOAT);
+        AAudioStreamBuilder_setChannelMask(aaudioBuilder, kChannelMask);
+        AAudioStreamBuilder_setFormat(aaudioBuilder, kFormat);
+        AAudioStreamBuilder_setSampleRate(aaudioBuilder, kSampleRate);
 
         // Create an AAudioStream using the Builder.
-        ASSERT_EQ(AAUDIO_OK, AAudioStreamBuilder_openStream(aaudioBuilder, &aaudioStream));
+        aaudio_result_t expectedResult = getExpectedResult(direction, perfMode);
+        EXPECT_EQ(expectedResult, AAudioStreamBuilder_openStream(aaudioBuilder, &aaudioStream));
         AAudioStreamBuilder_delete(aaudioBuilder);
+        if (expectedResult != AAUDIO_OK) {
+            return;
+        }
 
         EXPECT_EQ(AAUDIO_OK, AAudioStream_requestStart(aaudioStream));
 
@@ -74,9 +94,24 @@ protected:
 
         EXPECT_EQ(AAUDIO_OK, AAudioStream_close(aaudioStream));
     }
+
+    static aaudio_result_t getExpectedResult(aaudio_direction_t direction,
+                                             aaudio_performance_mode_t performanceMode) {
+        if (performanceMode == AAUDIO_PERFORMANCE_MODE_POWER_SAVING_OFFLOADED) {
+            if (direction == AAUDIO_DIRECTION_INPUT ||
+                !isOffloadSupported(kFormat, kChannelMask, kSampleRate)) {
+                return AAUDIO_ERROR_ILLEGAL_ARGUMENT;
+            }
+        }
+        return AAUDIO_OK;
+    }
+
     static constexpr int64_t kNanosPerSecond = 1000000000;
     static constexpr int kNumFrames = 256;
     static constexpr int kChannelCount = 2;
+    static constexpr int kChannelMask = AAUDIO_CHANNEL_STEREO;
+    static constexpr int kSampleRate = 48000;
+    static constexpr int kFormat = AAUDIO_FORMAT_PCM_FLOAT;
 };
 
 const char* directionToString(aaudio_sharing_mode_t direction) {
@@ -99,14 +134,10 @@ TEST_P(TestAAudioBasic, TestBasic) {
 }
 
 INSTANTIATE_TEST_SUITE_P(
-        AAudioBasic,
-        TestAAudioBasic,
-        ::testing::Values(
-                TestAAudioBasicParams({AAUDIO_PERFORMANCE_MODE_NONE, AAUDIO_DIRECTION_OUTPUT}),
-                TestAAudioBasicParams({AAUDIO_PERFORMANCE_MODE_NONE, AAUDIO_DIRECTION_INPUT}),
-                TestAAudioBasicParams({AAUDIO_PERFORMANCE_MODE_LOW_LATENCY,
-                                       AAUDIO_DIRECTION_OUTPUT}),
-                TestAAudioBasicParams({AAUDIO_PERFORMANCE_MODE_LOW_LATENCY,
-                                       AAUDIO_DIRECTION_INPUT})),
-        &getTestName
-);
+        AAudioBasic, TestAAudioBasic,
+        ::testing::Combine(::testing::Values(AAUDIO_PERFORMANCE_MODE_NONE,
+                                             AAUDIO_PERFORMANCE_MODE_POWER_SAVING,
+                                             AAUDIO_PERFORMANCE_MODE_LOW_LATENCY,
+                                             AAUDIO_PERFORMANCE_MODE_POWER_SAVING_OFFLOADED),
+                           ::testing::Values(AAUDIO_DIRECTION_INPUT, AAUDIO_DIRECTION_OUTPUT)),
+        &getTestName);

@@ -284,4 +284,10 @@ bool isCompressedFormat(aaudio_format_t format);
 
 int getDeviceTypeFromId(int32_t deviceId);
 
+bool isOffloadSupported(aaudio_format_t format, aaudio_channel_mask_t channelMask, int sampleRate);
+
+int getSdkVersionFull();
+
+int getVersionCodeFullBaklava();
+
 #endif  // CTS_MEDIA_TEST_AAUDIO_UTILS_H

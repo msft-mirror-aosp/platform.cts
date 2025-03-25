@@ -49,6 +49,8 @@ const char* performanceModeToString(aaudio_performance_mode_t mode) {
         case AAUDIO_PERFORMANCE_MODE_NONE: return "DEFAULT";
         case AAUDIO_PERFORMANCE_MODE_POWER_SAVING: return "POWER_SAVING";
         case AAUDIO_PERFORMANCE_MODE_LOW_LATENCY: return "LOW_LATENCY";
+        case AAUDIO_PERFORMANCE_MODE_POWER_SAVING_OFFLOADED:
+            return "POWER_SAVING_OFFLOAD";
     }
     return "UNKNOWN";
 }
@@ -448,4 +450,92 @@ int getOutChannelCountMax() {
             (int)callJavaStaticIntFunction(nullptr, "android/nativemedia/aaudio/AAudioTests",
                                            "getOutChannelCountMax", "()I");
     return outChannelCountMax;
+}
+
+namespace {
+
+// The encoding values defined below must match the values in AudioFormat.java
+static constexpr int ENCODING_INVALID = 0;
+static constexpr int ENCODING_PCM_16BIT = 2;
+static constexpr int ENCODING_PCM_FLOAT = 4;
+static constexpr int ENCODING_PCM_24BIT_PACKED = 21;
+static constexpr int ENCODING_PCM_32BIT = 22;
+static constexpr int ENCODING_IEC61937 = 13;
+static constexpr int ENCODING_MP3 = 9;
+static constexpr int ENCODING_AAC_LC = 10;
+static constexpr int ENCODING_AAC_HE_V1 = 11;
+static constexpr int ENCODING_AAC_HE_V2 = 12;
+static constexpr int ENCODING_AAC_ELD = 15;
+static constexpr int ENCODING_AAC_XHE = 16;
+static constexpr int ENCODING_OPUS = 20;
+int getJavaEncoding(aaudio_format_t format) {
+    switch (format) {
+        case AAUDIO_FORMAT_PCM_I16:
+            return ENCODING_PCM_16BIT;
+        case AAUDIO_FORMAT_PCM_FLOAT:
+            return ENCODING_PCM_FLOAT;
+        case AAUDIO_FORMAT_PCM_I24_PACKED:
+            return ENCODING_PCM_24BIT_PACKED;
+        case AAUDIO_FORMAT_PCM_I32:
+
+        case AAUDIO_FORMAT_IEC61937:
+        case AAUDIO_FORMAT_MP3:
+        case AAUDIO_FORMAT_AAC_LC:
+        case AAUDIO_FORMAT_AAC_HE_V1:
+        case AAUDIO_FORMAT_AAC_HE_V2:
+        case AAUDIO_FORMAT_AAC_ELD:
+        case AAUDIO_FORMAT_AAC_XHE:
+        case AAUDIO_FORMAT_OPUS:
+        default:
+            return ENCODING_INVALID;
+    }
+}
+
+// The channel values defined below must match the values in AudioFormat.java
+static constexpr int CHANNEL_INVALID = 0;
+static constexpr int CHANNEL_IN_STEREO = (0x4 | 0x8);
+static constexpr int CHANNEL_OUT_STEREO = (0x4 | 0x8);
+// Currently, this function only support STEREO, add new channel mask mapping if needed.
+// The returned value must match the value defined in JAVA AudioFormat.java
+int getJavaChannelMask(aaudio_channel_mask_t channelMask, bool isInput = false) {
+    switch (channelMask) {
+        case AAUDIO_CHANNEL_STEREO:
+            return isInput ? CHANNEL_IN_STEREO : CHANNEL_OUT_STEREO;
+        default:
+            return CHANNEL_INVALID;
+    }
+}
+
+} // namespace
+
+bool isOffloadSupported(aaudio_format_t format, aaudio_channel_mask_t channelMask, int sampleRate) {
+    return (bool)callJavaStaticBooleanFunction(nullptr /*env*/,
+                                               "android/nativemedia/aaudio/AAudioTests",
+                                               "isOffloadSupported", "(III)Z",
+                                               (jint)getJavaEncoding(format),
+                                               (jint)getJavaChannelMask(channelMask),
+                                               (jint)sampleRate);
+}
+
+namespace {
+
+static constexpr int SDK = 0;
+static constexpr int BAKLAVA = 36;
+
+} // namespace
+
+int getSdkVersionFull() {
+    static int kSdkVersionFull =
+            (int)callJavaStaticIntFunction(nullptr /*env*/,
+                                           "android/nativemedia/aaudio/AAudioTests",
+                                           "getVersionFull", "(I)I", SDK);
+    return kSdkVersionFull;
+}
+
+int getVersionCodeFullBaklava() {
+    static int kVersionCodeFullBaklava =
+            (int)callJavaStaticIntFunction(nullptr /*env*/,
+                                           "android/nativemedia/aaudio/AAudioTests",
+                                           "getVersionFull", "(I)I", BAKLAVA);
+    return kVersionCodeFullBaklava;
 }

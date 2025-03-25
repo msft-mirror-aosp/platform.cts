@@ -20,10 +20,12 @@ import static android.Manifest.permission.CAPTURE_AUDIO_HOTWORD;
 import static android.Manifest.permission.CAPTURE_AUDIO_OUTPUT;
 
 import android.app.UiAutomation;
+import android.media.AudioAttributes;
 import android.media.AudioDeviceInfo;
 import android.media.AudioFormat;
 import android.media.AudioManager;
 import android.media.AudioSystem;
+import android.os.Build;
 import android.os.IBinder;
 import android.os.ServiceManager;
 
@@ -97,6 +99,34 @@ public class AAudioTests {
             }
         }
         return AudioDeviceInfo.TYPE_UNKNOWN;
+    }
+
+    static boolean isOffloadSupported(int encoding, int channelMask, int sampleRate) {
+        return (AudioManager.getDirectPlaybackSupport(
+                                new AudioFormat.Builder()
+                                        .setEncoding(encoding)
+                                        .setChannelMask(channelMask)
+                                        .setSampleRate(sampleRate)
+                                        .build(),
+                                new AudioAttributes.Builder()
+                                        .setUsage(AudioAttributes.USAGE_MEDIA)
+                                        .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                                        .build())
+                        & AudioManager.DIRECT_PLAYBACK_OFFLOAD_SUPPORTED)
+                != AudioManager.DIRECT_PLAYBACK_NOT_SUPPORTED;
+    }
+
+    private static final int CURRENT = 0;
+    private static final int BAKLAVA = 36;
+
+    static int getVersionFull(int version) {
+        switch (version) {
+            case BAKLAVA:
+                return Build.VERSION_CODES_FULL.BAKLAVA;
+            case CURRENT:
+            default:
+                return Build.VERSION.SDK_INT_FULL;
+        }
     }
 
     private static void permissionBarrier() {
