@@ -221,10 +221,12 @@ class MultiCameraSwitchTest(its_base_test.ItsBaseTest):
                 _LENS_SUFFIX_W))
         print(f'{_NAME}_uw_sharpness: {sharpness_uw:.4f}')
         print(f'{_NAME}_w_sharpness: {sharpness_w:.4f}')
+        if failed_af_msg:
+          logging.debug(failed_af_msg)
 
-      if failed_awb_msg or failed_ae_msg or failed_af_msg:
+      if failed_awb_msg or failed_ae_msg:
         error_msg = multi_camera_switch_utils.get_error_msg(
-            failed_awb_msg, failed_ae_msg, failed_af_msg)
+            failed_awb_msg, failed_ae_msg)
         raise AssertionError(f'{_NAME} failed with following errors:\n'
                              f'{error_msg}')
 

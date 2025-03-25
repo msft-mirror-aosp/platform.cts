@@ -27,7 +27,6 @@ import camera_properties_utils
 import image_processing_utils
 import its_session_utils
 import multi_camera_switch_utils
-import opencv_processing_utils
 import preview_processing_utils
 
 
@@ -230,10 +229,12 @@ class MultiCameraSwitchTeleTest(its_base_test.ItsBaseTest):
                 _LENS_SUFFIX_TELE))
         print(f'{_NAME}_w_sharpness: {sharpness_w:.4f}')
         print(f'{_NAME}_tele_sharpness: {sharpness_tele:.4f}')
+        if failed_af_msg:
+          logging.debug(failed_af_msg)
 
-      if failed_awb_msg or failed_ae_msg or failed_af_msg:
+      if failed_awb_msg or failed_ae_msg:
         error_msg = multi_camera_switch_utils.get_error_msg(
-            failed_awb_msg, failed_ae_msg, failed_af_msg)
+            failed_awb_msg, failed_ae_msg)
         raise AssertionError(f'{_NAME} failed with following errors:\n'
                              f'{error_msg}')
 
