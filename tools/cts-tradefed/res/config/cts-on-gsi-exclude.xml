@@ -134,6 +134,10 @@
     <!-- b/335351293 Remove ApfIntegrationTest running against broken vendor images on GSI -->
     <option name="compatibility:exclude-filter" value="CtsNetTestCases android.net.cts.ApfIntegrationTest" />
 
+    <!-- b/402667362 Remove ApfV4Test and ApfV6Test in CtsConnectivityMultiDevicesTestCases since ApfIntegrationTest is skipped on GSI -->
+    <option name="compatibility:exclude-filter" value="CtsConnectivityMultiDevicesTestCases ApfV4Test" />
+    <option name="compatibility:exclude-filter" value="CtsConnectivityMultiDevicesTestCases ApfV6Test" />
+
     <!-- b/285247534 Remove WM Extension tests on GSI -->
     <option name="compatibility:exclude-filter" value="CtsWindowManagerJetpackTestCases android.server.wm.jetpack.SdkAvailabilityTest" />
 
