@@ -185,7 +185,7 @@ public class KeyguardLockedTests extends KeyguardTestBase {
             mWmState.assertKeyguardShowingAndNotOccluded();
             verify(listener, times(1)).onDeviceLockedStateChanged(true);
 
-            lockScreenSession.enterAndConfirmLockCredential();
+            lockScreenSession.unlockDevice().enterAndConfirmLockCredential();
 
             mWmState.waitAndAssertKeyguardGone();
             assertFalse(mKeyguardManager.isKeyguardLocked());
