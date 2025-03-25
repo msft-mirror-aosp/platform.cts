@@ -503,7 +503,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         } finally {
             // Clean up
             sSatelliteManager.unregisterStateChangeListener(listener);
-            requestSatelliteEnabled(true);
             revokeSatellitePermission();
         }
     }
