@@ -2427,7 +2427,7 @@
          \n\u2022 The left 60% of the progress bar should be filled and the rest is unfilled.
          \n\u2022 The start icon should have S.
          \n\u2022 The start icon should be displayed at the beginning of the progress bar, with a margin between the icon and the progress bar itself.
-         \n\u2022 The start icon should have E.
+         \n\u2022 The end icon should have E.
          \n\u2022 The end icon should be displayed at the end of the progress bar, with a margin between the icon and the progress bar.
     </string>
     <string name="progress_style_progress_tracker_icon" formatted="false">A progress style notification with progress tracker icon was posted. Expand it (if it\'s not already expanded), and verify that:
