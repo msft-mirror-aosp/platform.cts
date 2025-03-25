@@ -657,12 +657,8 @@ public class ActivityManagerNotifyMediaFGSTypeTest {
         assertTrue(
                 "Failed to start media foreground service with notification", notificationId > 0);
 
-        // Set the service inactive for test case.
-        runShellCommand(
-                mInstrumentation,
-                String.format(
-                        "am set-media-foreground-service inactive --user %d %s %d",
-                        mContext.getUserId(), PACKAGE_NAME_APP1, notificationId));
+        // Let the media session move from USER_TEMPORARY_DISENGAGED to USER_DISENGAGED state.
+        sleep(USER_ENGAGED_TIMEOUT_MSEC);
         uid1Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_SERVICE);
         // Get the controller and press play.
         MediaController controller = getMediaControllerForActiveSession();
