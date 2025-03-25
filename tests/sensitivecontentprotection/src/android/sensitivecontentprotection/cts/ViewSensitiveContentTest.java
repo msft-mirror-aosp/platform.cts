@@ -43,6 +43,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.CddTest;
+import com.android.compatibility.common.util.SystemUtil;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -78,6 +79,10 @@ public class ViewSensitiveContentTest {
                 isHeadlessSystemUser(mContext));
 
         startMediaProjection();
+        // make sure no toast when a test starts
+        SystemUtil.eventually(() -> {
+            assertThat(ToastVerifier.Companion.waitForNoToast()).isTrue();
+        });
     }
 
     @Test
