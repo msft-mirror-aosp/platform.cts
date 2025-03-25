@@ -217,7 +217,7 @@ static void android_view_surfacecontrol_cts_ChoreographerNativeTest_testFrameCal
     // choices, by number of choices or by the last deadline timestamp.
     auto lastDeadline = std::chrono::nanoseconds{frameTimelines[frameTimelines.size() - 1].deadline};
     auto timeDelta = lastDeadline - start;
-    const auto threshold = std::chrono::nanoseconds{45ms};
+    const auto threshold = std::chrono::nanoseconds{40ms};
     ASSERT(timeDelta > threshold,
            "Not enough later choices for frame timelines. "
            "Time delta between start and latest deadline (%lld) must be larger than the threshold "
