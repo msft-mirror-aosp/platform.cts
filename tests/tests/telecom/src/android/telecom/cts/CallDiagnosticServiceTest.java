@@ -191,9 +191,21 @@ public class CallDiagnosticServiceTest extends BaseTelecomTestWithMockServices {
         mInCallCallbacks.getService().setAudioRoute(CallAudioState.ROUTE_SPEAKER);
         assertAudioRoute(mInCallCallbacks.getService(), CallAudioState.ROUTE_SPEAKER);
 
-        mService.getCallAudioStateLatch().await(TestUtils.WAIT_FOR_STATE_CHANGE_TIMEOUT_MS,
-                TimeUnit.MILLISECONDS);
-        assertEquals(CallAudioState.ROUTE_SPEAKER, mService.getCallAudioState().getRoute());
+        // Disconnect the call.
+        mConnection.onDisconnect();
+        mConnection.destroy();
+        mConnection = null;
+
+        mService.getCallChangeLatch()
+                .await(TestUtils.WAIT_FOR_STATE_CHANGE_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+        assertEquals(0, mService.getCalls().size());
+
+        // Now that the call is disconnected, make sure that the audio state history we tracked
+        // contains a transition to speaker.
+        assertTrue(
+                "Expected to see audio go to speaker.",
+                mService.getCallAudioStates().stream()
+                        .anyMatch(s -> s.getRoute() == CallAudioState.ROUTE_SPEAKER));
     }
 
     /**
