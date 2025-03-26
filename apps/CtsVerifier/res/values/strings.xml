@@ -6899,6 +6899,11 @@ You should be prompted to select credentials; choose the ones you just installed
         The Presence tests check whether or not a device is properly calibrated for BLE, NAN and UWB based on Presence requirements.
         \nAll tests are required to pass on every device, if the radio technology is supported
     </string>
+    <string name="presence_test_legacy_info">
+        The Presence tests check whether or not a device is properly calibrated for BLE, NAN and UWB based on Presence requirements.
+        \nAll tests are required to pass on all Android Q+ launched devices, if the radio technology is supported.
+        \nIf the device is launched on Android P or older, BLE Rssi and RxTxOffset tests will be disabled. Press Pass to pass this case.
+    </string>
     <string name="presence_test_tv_info">
         The Presence tests check whether or not a device is properly calibrated for BLE, NAN and UWB based on Presence requirements.
         \nAll tests are required to pass on all Android T+ launched TV devices, if the radio technology is supported.
