@@ -92,8 +92,6 @@ public abstract class BackgroundActivityTestBase extends ActivityManagerTestBase
     static final String SHELL_PACKAGE = "com.android.shell";
     // This can be long as the activity should start
     static final Duration ACTIVITY_FOCUS_TIMEOUT = Duration.ofSeconds(10);
-    // Here we don't expect the activity to start, so we always have to wait. Keep this short.
-    static final Duration ACTIVITY_NOT_FOCUS_TIMEOUT = Duration.ofSeconds(3);
 
     // TODO(b/258792202): Cleanup with feature flag
     static final String NAMESPACE_WINDOW_MANAGER = "window_manager";
@@ -419,7 +417,7 @@ public abstract class BackgroundActivityTestBase extends ActivityManagerTestBase
                 .isEqualTo(activityName);    }
 
     protected void assertActivityNotFocused(ComponentName componentName) {
-        assertActivityNotFocused(ACTIVITY_NOT_FOCUS_TIMEOUT, componentName);
+        assertActivityNotFocused(ACTIVITY_FOCUS_TIMEOUT, componentName);
     }
 
     /** Asserts the activity is focused before timeout. */
