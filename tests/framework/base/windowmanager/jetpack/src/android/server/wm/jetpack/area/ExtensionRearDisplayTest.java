@@ -43,6 +43,7 @@ import android.hardware.devicestate.DeviceStateRequest;
 import android.os.PowerManager;
 import android.platform.test.annotations.Presubmit;
 import android.server.wm.DeviceStateUtils;
+import android.server.wm.jetpack.extensions.util.ExtensionsUtil;
 import android.server.wm.jetpack.utils.TestRearDisplayActivity;
 import android.server.wm.jetpack.utils.WindowExtensionTestRule;
 import android.server.wm.jetpack.utils.WindowManagerJetpackTestBase;
@@ -418,12 +419,20 @@ public class ExtensionRearDisplayTest extends WindowManagerJetpackTestBase imple
     }
 
     private boolean hasRearDisplayState(@NonNull List<DeviceState> supportedStates) {
-        for (DeviceState state : supportedStates) {
-            if (isRearDisplayState(state)) {
-                return true;
+        if (ExtensionsUtil.isExtensionVersionAtLeast(7)) {
+            for (DeviceState state : supportedStates) {
+                if (isRearDisplayState(state)) {
+                    return true;
+                }
             }
+            return false;
+        } else {
+            int rearDisplayState =
+                    getInstrumentation().getTargetContext().getResources().getInteger(
+                            Resources.getSystem().getIdentifier("config_deviceStateRearDisplay",
+                                    "integer", "android"));
+            return rearDisplayState != INVALID_DEVICE_STATE;
         }
-        return false;
     }
 
     private void resetActivityConfigurationChangeValues(@NonNull TestRearDisplayActivity activity) {
