@@ -410,4 +410,7 @@
     <option name="compatibility:exclude-filter" value="CtsHealthConnectControllerTestCases android.healthconnect.cts.ui.phr.AllMedicalDataFragmentTest"/>
     <option name="compatibility:exclude-filter" value="CtsHealthConnectControllerTestCases android.healthconnect.cts.ui.phr.AllMedicalEntriesFragmentTest"/>
     <option name="compatibility:exclude-filter" value="CtsHealthConnectControllerTestCases android.healthconnect.cts.ui.phr.MedicalAppDataFragmentTest"/>
+
+    <!-- b/404299890 -->
+    <option name="compatibility:exclude-filter" value="CtsWindowManagerDeviceOther android.server.wm.other.AnrTests#embeddedWindowTriggersAnr" />
 </configuration>
