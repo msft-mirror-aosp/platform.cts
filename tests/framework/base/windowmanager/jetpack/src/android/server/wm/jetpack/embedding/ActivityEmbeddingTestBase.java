@@ -18,11 +18,17 @@ package android.server.wm.jetpack.embedding;
 
 import static android.server.wm.jetpack.extensions.util.ExtensionsUtil.getWindowExtensions;
 import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.assumeActivityEmbeddingSupportedDevice;
+import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.waitAndGetTaskBounds;
 
+import android.app.Activity;
+import android.graphics.Rect;
 import android.server.wm.UiDeviceUtils;
+import android.server.wm.WindowManagerStateHelper;
 import android.server.wm.jetpack.extensions.util.TestValueCountConsumer;
+import android.server.wm.jetpack.utils.TestActivity;
 import android.server.wm.jetpack.utils.WindowManagerJetpackTestBase;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.window.extensions.WindowExtensions;
 import androidx.window.extensions.embedding.ActivityEmbeddingComponent;
@@ -98,5 +104,21 @@ public class ActivityEmbeddingTestBase extends WindowManagerJetpackTestBase {
     @Nullable
     public Integer getLaunchingDisplayId() {
         return null;
+    }
+
+    @NonNull
+    protected Rect getTaskBounds() {
+        return getTaskBounds(getLaunchingDisplayId());
+    }
+
+    @NonNull
+    protected Rect getTaskBounds(@Nullable Integer displayId) {
+        final Activity activity = startActivityNewTaskInMultiWindowWithBounds(TestActivity.class,
+                null /* activityId */, displayId, null /* bounds */);
+        final Rect taskBounds = waitAndGetTaskBounds(activity, true /* shouldWaitForResume */);
+        activity.finish();
+        new WindowManagerStateHelper().waitAndAssertActivityRemoved(activity.getComponentName());
+
+        return taskBounds;
     }
 }
