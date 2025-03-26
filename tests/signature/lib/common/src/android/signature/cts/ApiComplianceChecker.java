@@ -22,7 +22,9 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.Formatter;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
@@ -30,6 +32,33 @@ import java.util.Set;
  * Checks that the runtime representation of a class matches the API representation of a class.
  */
 public class ApiComplianceChecker extends ApiPresenceChecker {
+
+    /**
+     * A set of field values signatures whose value modifier should be ignored.
+     *
+     * <p>If a field value is intended to be changed to correct its value, that change should be
+     * allowed. The field name is the key of the ignoring map, and a FieldValuePair which is a pair
+     * of the old value and the new value is the value of the ignoring map.
+     * WARNING: Entries should only be added after consulting API council.
+     */
+    private static class FieldValuePair {
+        private String oldValue;
+        private String newValue;
+
+        private FieldValuePair(String oldValue, String newValue) {
+            this.oldValue = oldValue;
+            this.newValue = newValue;
+        }
+    };
+    private static final Map<String, FieldValuePair> IGNORE_FIELD_VALUES_MODIFIER_ALLOWED_LIST =
+            new HashMap<String, FieldValuePair>();
+    static {
+        // Allow for change in toString() conversion for Float.MIN_NORMAL (b/401100422).
+        IGNORE_FIELD_VALUES_MODIFIER_ALLOWED_LIST.put(
+                "java.lang.Float#MIN_NORMAL(float)",
+                new FieldValuePair("1.17549435E-38", "1.1754944E-38"));
+
+    }
 
     /**
      * A set of method signatures whose abstract modifier should be ignored.
@@ -311,7 +340,7 @@ public class ApiComplianceChecker extends ApiPresenceChecker {
                             expectedFieldType, actualFieldType));
         }
 
-        String message = checkFieldValueCompliance(fieldDescription, field);
+        String message = checkFieldValueCompliance(classDescription, fieldDescription, field);
         if (message != null) {
             resultObserver.notifyFailure(FailureType.MISMATCH_FIELD,
                     fieldDescription.toReadableString(classDescription.getAbsoluteClassName()),
@@ -363,7 +392,8 @@ public class ApiComplianceChecker extends ApiPresenceChecker {
      * @param apiField The field as defined by the platform API.
      * @param deviceField The field as defined by the device under test.
      */
-    private static String checkFieldValueCompliance(JDiffField apiField, Field deviceField) {
+    private static String checkFieldValueCompliance(JDiffClassDescription classDescription,
+            JDiffField apiField, Field deviceField) {
         if ((apiField.mModifier & Modifier.FINAL) == 0 ||
                 (apiField.mModifier & Modifier.STATIC) == 0) {
             // Only final static fields can have fixed values.
@@ -383,6 +413,14 @@ public class ApiComplianceChecker extends ApiPresenceChecker {
 
         String deviceFieldValue = getFieldValueAsString(deviceField);
         if (!Objects.equals(apiFieldValue, deviceFieldValue)) {
+            String fieldName = apiField.toReadableString(classDescription.getAbsoluteClassName());
+            if (IGNORE_FIELD_VALUES_MODIFIER_ALLOWED_LIST.containsKey(fieldName)
+                    && IGNORE_FIELD_VALUES_MODIFIER_ALLOWED_LIST.get(fieldName).oldValue.equals(
+                            apiFieldValue)
+                    && IGNORE_FIELD_VALUES_MODIFIER_ALLOWED_LIST.get(fieldName).newValue.equals(
+                            deviceFieldValue)) {
+                return null;
+            }
             return String.format("Incorrect field value, expected <%s>, found <%s>",
                     apiFieldValue, deviceFieldValue);
 
