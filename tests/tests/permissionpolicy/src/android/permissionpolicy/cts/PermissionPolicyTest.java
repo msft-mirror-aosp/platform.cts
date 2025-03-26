@@ -101,7 +101,21 @@ public class PermissionPolicyTest {
             InstrumentationRegistry.getInstrumentation().getTargetContext();
 
     private static final Set<String> sBackportedPermissions =
-        Set.of("android.permission.THREAD_NETWORK_PRIVILEGED");
+            Set.of(
+                "android.permission.THREAD_NETWORK_PRIVILEGED",
+                // Android XR specific permissions.
+                "android.permission.EYE_TRACKING_COARSE",
+                "android.permission.EYE_TRACKING_FINE",
+                "android.permission.FACE_TRACKING",
+                "android.permission.HAND_TRACKING",
+                "android.permission.HEAD_TRACKING",
+                "android.permission.SCENE_UNDERSTANDING_COARSE",
+                "android.permission.SCENE_UNDERSTANDING_FINE",
+                "android.permission.IMPORT_XR_ANCHOR",
+                "android.permission.XR_TRACKING_IN_BACKGROUND",
+                "android.permission.EYE_CALIBRATION",
+                "android.permission.FACE_TRACKING_CALIBRATION"
+            );
 
     @Test
     public void shellIsOnlySystemAppThatRequestsRevokePostNotificationsWithoutKill() {
