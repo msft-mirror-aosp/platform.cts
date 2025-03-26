@@ -18,6 +18,7 @@ package android.media.router.cts;
 
 import static android.content.Intent.ACTION_CLOSE_SYSTEM_DIALOGS;
 import static android.content.Intent.FLAG_RECEIVER_FOREGROUND;
+import static android.media.MediaRoute2Info.FEATURE_LIVE_AUDIO;
 import static android.media.router.cts.StubMediaRoute2ProviderService.FEATURE_SAMPLE;
 import static android.media.router.cts.StubMediaRoute2ProviderService.FEATURE_SPECIAL;
 import static android.media.router.cts.StubMediaRoute2ProviderService.ROUTE_ID1;
@@ -34,7 +35,9 @@ import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assume.assumeFalse;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
@@ -46,6 +49,9 @@ import android.media.MediaRouter2;
 import android.media.MediaRouter2.RoutingController;
 import android.media.RouteDiscoveryPreference;
 import android.platform.test.annotations.AppModeFull;
+import android.platform.test.annotations.RequiresFlagsDisabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
 import androidx.test.filters.LargeTest;
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -67,6 +73,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnit;
 import org.mockito.junit.MockitoRule;
@@ -92,6 +99,10 @@ public class OutputSwitcherTest {
     // (frameworks/base/packages/SystemUI/res/values/strings.xml)
     private static final String CONNECTED_STRING_FORMAT = "Connected to %s";
 
+    // This comes from the value of com.android.settingslib.R.string.media_transfer_this_device_name
+    // (frameworks/base/packages/SettingsLib/res/values/strings.xml)
+    public static final String THIS_DEVICE_PREFIX = "This ";
+
     // Required by Bedstead.
     @ClassRule @Rule public static final DeviceState sDeviceState = new DeviceState();
 
@@ -100,6 +111,9 @@ public class OutputSwitcherTest {
             new StubMediaRoute2ProviderService.Setup();
 
     @Rule public MockitoRule mMockitoRule = MockitoJUnit.rule();
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Mock private StubMediaRoute2ProviderService.Proxy mProviderProxy;
 
@@ -169,6 +183,7 @@ public class OutputSwitcherTest {
     }
 
     @Test
+    @RequiresFlagsDisabled(Flags.FLAG_ENABLE_OUTPUT_SWITCHER_REDESIGN)
     public void selectOneRoute_closeAndOpenDialog_routeStillSelected() throws Exception {
         mService.removeAllRoutesExcept(List.of(ROUTE_ID1, ROUTE_ID2));
         registerRouteCallback(List.of(FEATURE_SAMPLE));
@@ -188,6 +203,7 @@ public class OutputSwitcherTest {
     }
 
     @Test
+    @RequiresFlagsDisabled(Flags.FLAG_ENABLE_OUTPUT_SWITCHER_REDESIGN)
     public void selectOneRoute_thenTransferToAnother_sessionTransferred() throws Exception {
         mService.removeAllRoutesExcept(List.of(ROUTE_ID1, ROUTE_ID5_TO_TRANSFER_TO));
         registerRouteCallback(List.of(FEATURE_SAMPLE));
@@ -203,6 +219,55 @@ public class OutputSwitcherTest {
         verify(mProviderProxy, timeout(TIMEOUT_MS))
                 .onTransferToRoute(anyLong(), any(), eq(ROUTE_ID5_TO_TRANSFER_TO));
         assertDialogShowsConnectionTo(ROUTE_NAME5);
+    }
+
+    @Test
+    @RequiresFlagsDisabled(Flags.FLAG_ENABLE_OUTPUT_SWITCHER_REDESIGN)
+    public void selectOneRoute_thenTransferToThisDevice_sessionTransferred() throws Exception {
+        mService.removeAllRoutesExcept(List.of(ROUTE_ID1, ROUTE_ID2));
+        registerRouteCallback(List.of(FEATURE_SAMPLE, FEATURE_LIVE_AUDIO));
+        mRouter2.registerTransferCallback(mExecutor, mTransferCallback);
+
+        RoutingController systemController = mRouter2.getSystemController();
+        List<MediaRoute2Info> systemRoutes = systemController.getSelectedRoutes();
+        assertThat(systemRoutes).hasSize(1);
+
+        assertThat(mRouter2.showSystemOutputSwitcher()).isTrue();
+        assertDialogShowsConnectionToThisDevice();
+
+        clickRouteInDialog(ROUTE_NAME1);
+        verify(mProviderProxy, timeout(TIMEOUT_MS))
+                .onCreateSession(anyLong(), any(), eq(ROUTE_ID1), any());
+        assertDialogShowsConnectionTo(ROUTE_NAME1);
+
+        InOrder onTransferCalls = inOrder(mTransferCallback);
+        ArgumentCaptor<RoutingController> controllerCaptor =
+                ArgumentCaptor.forClass(RoutingController.class);
+
+        // On the first call to onTransfer, the old controller should be the system controller and
+        // the new controller should be the one for newly selected route1.
+        onTransferCalls
+                .verify(mTransferCallback, timeout(TIMEOUT_MS))
+                .onTransfer(eq(systemController), controllerCaptor.capture());
+        RoutingController route1Controller = controllerCaptor.getValue();
+
+        clickThisDeviceRoute();
+        assertDialogShowsConnectionToThisDevice();
+
+        // Now that the user clicked back to "this device", we should get a second call to
+        // onTransfer, and the order of the old and new controller arguments should be reversed (as
+        // compared to the first call).
+        onTransferCalls
+                .verify(mTransferCallback, timeout(TIMEOUT_MS))
+                .onTransfer(
+                        argThat(
+                                oldController ->
+                                        route1Controller.getId().equals(oldController.getId())),
+                        eq(systemController));
+
+        route1Controller.release();
+        verify(mProviderProxy, timeout(TIMEOUT_MS))
+                .onReleaseSession(anyLong(), eq(route1Controller.getOriginalId()));
     }
 
     @Test
@@ -264,6 +329,13 @@ public class OutputSwitcherTest {
         route.click();
     }
 
+    private static void clickThisDeviceRoute() throws UiObjectNotFoundException {
+        UiObject2 route =
+                UiAutomatorUtils2.waitFindObject(
+                        By.textStartsWith(THIS_DEVICE_PREFIX).pkg(SYSTEM_UI_PACKAGE), TIMEOUT_MS);
+        route.click();
+    }
+
     private static void assertDialogShowsConnectionTo(String routeName) throws Exception {
         // The redesigned OutputSwitcher is missing the accessibility text we rely on for this to
         // function properly. b/408304744
@@ -272,6 +344,18 @@ public class OutputSwitcherTest {
         assertThat(
                         UiAutomatorUtils2.waitFindObject(
                                 By.descContains(String.format(CONNECTED_STRING_FORMAT, routeName))))
+                .isNotNull();
+    }
+
+    private static void assertDialogShowsConnectionToThisDevice() throws Exception {
+        // The OutputSwitcher redesign is missing some accessibility text needed for this to work
+        // properly. b/408304744
+        assumeFalse(Flags.enableOutputSwitcherRedesign());
+        assertThat(
+                        UiAutomatorUtils2.waitFindObject(
+                                By.descStartsWith(
+                                        String.format(
+                                                CONNECTED_STRING_FORMAT, THIS_DEVICE_PREFIX))))
                 .isNotNull();
     }
 }
