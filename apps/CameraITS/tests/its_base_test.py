@@ -69,8 +69,8 @@ class ItsBaseTest(base_test.BaseTestClass):
       self.lighting_cntl = 'None'
       self.lighting_ch = '1'
     if (self.user_params.get('rotator_cntl') and
-        self.user_params.get('rotator_ch')):
-      self.rotator_cntl = self.user_params['rotator_cntl']
+        str(self.user_params.get('rotator_ch'))):
+      self.rotator_cntl = str(self.user_params['rotator_cntl'])
       self.rotator_ch = str(self.user_params['rotator_ch'])
     if self.user_params.get('tablet_device'):
       self.tablet_device = self.user_params['tablet_device'] == 'True'
@@ -110,7 +110,7 @@ class ItsBaseTest(base_test.BaseTestClass):
         self.img_w = int(img_size[0])
         self.img_h = int(img_size[1])
         self.test_length = float(self.user_params['test_length'])
-        self.rotator_cntl = self.user_params['rotator_cntl']
+        self.rotator_cntl = str(self.user_params['rotator_cntl'])
         self.rotator_ch = str(self.user_params['rotator_ch'])
       except KeyError:
         self.tablet = None
