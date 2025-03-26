@@ -78,6 +78,9 @@ public class NativeAMediaCodecStoreTest {
             if (codecInfo.isAlias()) continue;
             String[] types = codecInfo.getSupportedTypes();
             for (String type : types) {
+                MediaCodecInfo.CodecCapabilities codecCapabilities =
+                        codecInfo.getCapabilitiesForType(type);
+                if (codecCapabilities.isFeatureSupported(SPECIAL_CODEC)) continue;
                 Integer val;
                 if (mediaTypeModes.containsKey(type)) {
                     val = mediaTypeModes.get(type);
