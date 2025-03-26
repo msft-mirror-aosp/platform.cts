@@ -70,6 +70,7 @@ public abstract class BackgroundActivityTestBase extends ActivityManagerTestBase
     static final String APP_A_PACKAGE = "android.server.wm.backgroundactivity.appa";
     static final Components APP_A = Components.get(APP_A_PACKAGE);
     static final Components APP_A_33 = Components.get(APP_A_PACKAGE + "33");
+    static final Components APP_A_36 = Components.get(APP_A_PACKAGE + "36");
 
     static final String APP_B_PACKAGE = "android.server.wm.backgroundactivity.appb";
     static final Components APP_B = Components.get(APP_B_PACKAGE);
@@ -86,7 +87,7 @@ public abstract class BackgroundActivityTestBase extends ActivityManagerTestBase
     static final Components APP_ASM_OPT_OUT = Components.get(APP_ASM_OPT_OUT_PACKAGE);
 
     static final List<Components> ALL_APPS =
-            List.of(APP_A, APP_A_33, APP_B, APP_B_33, APP_C, APP_C_33, APP_ASM_OPT_OUT);
+            List.of(APP_A, APP_A_33, APP_A_36, APP_B, APP_B_33, APP_C, APP_C_33, APP_ASM_OPT_OUT);
 
     static final String SHELL_PACKAGE = "com.android.shell";
     // This can be long as the activity should start
@@ -98,7 +99,7 @@ public abstract class BackgroundActivityTestBase extends ActivityManagerTestBase
     static final String NAMESPACE_WINDOW_MANAGER = "window_manager";
     static final String ASM_RESTRICTIONS_ENABLED =
             "ActivitySecurity__asm_restrictions_enabled";
-    private static final int TEST_SERVICE_SETUP_TIMEOUT_MS = 2000;
+    private static final int TEST_SERVICE_SETUP_TIMEOUT_MS = 5_000;
     public static final int FOCUS_LOSS_TIMEOUT_MS = 10_000;
     final DeviceConfigStateHelper mDeviceConfig =
             new DeviceConfigStateHelper(NAMESPACE_WINDOW_MANAGER);
