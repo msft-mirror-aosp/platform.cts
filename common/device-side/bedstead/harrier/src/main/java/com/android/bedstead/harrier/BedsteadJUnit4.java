@@ -64,8 +64,8 @@ import com.android.queryable.annotations.Query;
 
 import com.google.auto.value.AutoAnnotation;
 import com.google.common.collect.ImmutableMap;
-
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
+
 import org.junit.Test;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
@@ -87,7 +87,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
@@ -233,6 +232,7 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
         sIgnoredAnnotationPackages.add("com.android.bedstead.harrier.annotations.meta");
         sIgnoredAnnotationPackages.add("kotlin.*");
         sIgnoredAnnotationPackages.add("org.junit");
+        sIgnoredAnnotationPackages.add("com.android.networkstack.kotlin.*");
     }
 
     /**
