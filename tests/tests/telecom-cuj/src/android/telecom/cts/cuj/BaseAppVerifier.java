@@ -29,6 +29,8 @@ import static android.telecom.cts.apps.TelecomTestApp.MANAGED_CLONE_APP_ID;
 
 import static junit.framework.Assert.assertNotNull;
 
+import static org.junit.Assume.assumeTrue;
+
 import android.content.Context;
 import android.graphics.Color;
 import android.net.Uri;
@@ -147,9 +149,7 @@ public class BaseAppVerifier {
         mShouldTestTelecom = BaseAppVerifierImpl.shouldTestTelecom(mContext);
         mSupportsManagedCalls = TestUtils.hasDialerRole(mContext)
                 && TestUtils.hasTelephonyFeature(mContext);
-        if (!mShouldTestTelecom) {
-            return;
-        }
+        assumeTrue(mShouldTestTelecom);
         mBaseAppVerifierImpl = new BaseAppVerifierImpl(
                 InstrumentationRegistry.getInstrumentation(),
                 Arrays.asList(MANAGED_DEFAULT_ACCOUNT_1, MANAGED_DEFAULT_ACCOUNT_2),
