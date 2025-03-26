@@ -113,6 +113,8 @@ public final class CarAudioManagerTest extends AbstractCarTestCase {
     private static final int LEGACY_ZONE_ID = 0;
     private static final int LEGACY_VOLUME_GROUP_ID = 0;
     private static final int LEGACY_GROUP_VOLUME_COUNT = 3;
+    private static final float TEST_FADE_LEVEL = 0.123f;
+    private static final float TEST_BALANCE_LEVEL = 0.456f;
 
     @Rule
     public final PermissionsCheckerRule mPermissionsCheckerRule = new PermissionsCheckerRule();
@@ -1900,6 +1902,65 @@ public final class CarAudioManagerTest extends AbstractCarTestCase {
         } finally {
             mCarAudioManager.setVolumeGroupMute(mZoneId, mVolumeGroupId, isMuted, /* flags= */ 0);
         }
+    }
+
+    @Test
+    @EnsureHasPermission(Car.PERMISSION_CAR_CONTROL_AUDIO_VOLUME)
+    @ApiTest(
+            apis = {
+                "android.car.media.CarAudioManager#getFadeTowardFront",
+                "android.car.media.CarAudioManager#setFadeTowardFront(float)"
+            })
+    @RequiresFlagsEnabled(Flags.FLAG_AUDIO_FADE_BALANCE_GETTER_APIS)
+    public void getFadeTowardFront() {
+        assumeDynamicRoutingIsEnabled();
+        mCarAudioManager.setFadeTowardFront(TEST_FADE_LEVEL);
+
+        assertWithMessage("Fade level").that(mCarAudioManager.getFadeTowardFront())
+                .isEqualTo(TEST_FADE_LEVEL);
+    }
+
+    @Test
+    @ApiTest(apis = {"android.car.media.CarAudioManager#getFadeTowardFront"})
+    @RequiresFlagsEnabled(Flags.FLAG_AUDIO_FADE_BALANCE_GETTER_APIS)
+    public void getFadeTowardFront_withoutPermission_throws() {
+        assumeDynamicRoutingIsEnabled();
+
+        Exception thrown =
+                assertThrows(SecurityException.class, () -> mCarAudioManager.getFadeTowardFront());
+
+        assertWithMessage("Get fade toward front with permission exception")
+                .that(thrown).hasMessageThat().contains(Car.PERMISSION_CAR_CONTROL_AUDIO_VOLUME);
+    }
+
+    @Test
+    @EnsureHasPermission(Car.PERMISSION_CAR_CONTROL_AUDIO_VOLUME)
+    @ApiTest(
+            apis = {
+                "android.car.media.CarAudioManager#getBalanceTowardRight",
+                "android.car.media.CarAudioManager#setBalanceTowardRight(float)"
+            })
+    @RequiresFlagsEnabled(Flags.FLAG_AUDIO_FADE_BALANCE_GETTER_APIS)
+    public void getBalanceTowardRight() {
+        assumeDynamicRoutingIsEnabled();
+        mCarAudioManager.setBalanceTowardRight(TEST_BALANCE_LEVEL);
+
+        assertWithMessage("Balance level").that(mCarAudioManager.getBalanceTowardRight())
+                .isEqualTo(TEST_BALANCE_LEVEL);
+    }
+
+    @Test
+    @ApiTest(apis = {"android.car.media.CarAudioManager#getBalanceTowardRight"})
+    @RequiresFlagsEnabled(Flags.FLAG_AUDIO_FADE_BALANCE_GETTER_APIS)
+    public void getBalanceTowardRight_withoutPermission_throws() {
+        assumeDynamicRoutingIsEnabled();
+
+        Exception thrown =
+                assertThrows(
+                        SecurityException.class, () -> mCarAudioManager.getBalanceTowardRight());
+
+        assertWithMessage("Get balance toward right with permission exception")
+                .that(thrown).hasMessageThat().contains(Car.PERMISSION_CAR_CONTROL_AUDIO_VOLUME);
     }
 
     private int getNumberOfPrimaryZoneAudioMediaCallbacks() {
