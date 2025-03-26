@@ -56,6 +56,7 @@ import android.os.SystemClock;
 import android.platform.test.annotations.Presubmit;
 import android.provider.Settings;
 import android.server.wm.ActivityManagerTestBase;
+import android.server.wm.BuildUtils;
 import android.server.wm.Condition;
 import android.server.wm.DumpOnFailure;
 import android.server.wm.WindowManagerState;
@@ -77,6 +78,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -113,6 +115,11 @@ public class ActivityTransitionTests extends ActivityManagerTestBase {
 
     // We need to allow for some variation stemming from color conversions
     private static final float COLOR_VALUE_VARIANCE_TOLERANCE = 0.05f;
+
+    private static final float ANIMATION_MULTIPLIER =
+            BuildUtils.HW_TIMEOUT_MULTIPLIER < 1
+                    ? 1f
+                    : Math.min(BuildUtils.HW_TIMEOUT_MULTIPLIER, 10.f);
 
     @ClassRule
     public static DisableImmersiveModeConfirmationRule mDisableImmersiveModeConfirmationRule =
@@ -159,6 +166,20 @@ public class ActivityTransitionTests extends ActivityManagerTestBase {
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         final Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
         return (LauncherActivity) instrumentation.startActivitySync(intent);
+    }
+
+    private void extendingAnimationScaleIfNeeded() {
+        if (ANIMATION_MULTIPLIER == 1) {
+            return;
+        }
+        mObjectTracker
+                .manage(
+                        new SettingsSession<>(
+                                Settings.Global.getUriFor(
+                                        Settings.Global.TRANSITION_ANIMATION_SCALE),
+                                Settings.Global::getFloat,
+                                Settings.Global::putFloat))
+                .set(ANIMATION_MULTIPLIER);
     }
 
     @Test
@@ -272,6 +293,7 @@ public class ActivityTransitionTests extends ActivityManagerTestBase {
         // transition. But since in auto split screen UI, the launcher activity is always
         // shown, no screenshot of the test would return the red background color.
         assumeFalse(hasAutomotiveSplitscreenMultitaskingFeature());
+        extendingAnimationScaleIfNeeded();
         final int backgroundColor = Color.RED;
         final ActivityOptions activityOptions = ActivityOptions.makeCustomAnimation(mContext,
                 R.anim.alpha_0_with_red_backdrop, R.anim.alpha_0_with_red_backdrop);
@@ -294,6 +316,7 @@ public class ActivityTransitionTests extends ActivityManagerTestBase {
         // transition. But since in auto split screen UI, the launcher activity is always
         // shown, no screenshot of the test would return the green background color.
         assumeFalse(hasAutomotiveSplitscreenMultitaskingFeature());
+        extendingAnimationScaleIfNeeded();
         final int backgroundColor = Color.GREEN;
         final ActivityOptions activityOptions = ActivityOptions.makeCustomAnimation(mContext,
                 R.anim.alpha_0_with_backdrop, R.anim.alpha_0_with_backdrop, backgroundColor
@@ -317,6 +340,7 @@ public class ActivityTransitionTests extends ActivityManagerTestBase {
         // transition. But since in auto split screen UI, the launcher activity is always
         // shown, no screenshot of the test would return the green background color.
         assumeFalse(hasAutomotiveSplitscreenMultitaskingFeature());
+        extendingAnimationScaleIfNeeded();
         final int backgroundColor = Color.GREEN;
 
         final Bundle extras = new Bundle();
@@ -338,6 +362,7 @@ public class ActivityTransitionTests extends ActivityManagerTestBase {
         // transition. But since in auto split screen UI, the launcher activity is always
         // shown, no screenshot of the test would return the green background color.
         assumeFalse(hasAutomotiveSplitscreenMultitaskingFeature());
+        extendingAnimationScaleIfNeeded();
         final int backgroundColor = Color.GREEN;
 
         final Bundle extras = new Bundle();
@@ -372,6 +397,7 @@ public class ActivityTransitionTests extends ActivityManagerTestBase {
      */
     @Test
     public void testLeftEdgeExtensionWorksDuringActivityTransition() {
+        extendingAnimationScaleIfNeeded();
         final Bundle extras = new Bundle();
         extras.putInt(DIRECTION_KEY, LEFT);
         addTestMethodToExtras(TEST_METHOD_OVERRIDE_PENDING_TRANSITION, 0, extras);
@@ -399,6 +425,7 @@ public class ActivityTransitionTests extends ActivityManagerTestBase {
      */
     @Test
     public void testTopEdgeExtensionWorksDuringActivityTransition() {
+        extendingAnimationScaleIfNeeded();
         final Bundle extras = new Bundle();
         extras.putInt(DIRECTION_KEY, TOP);
         addTestMethodToExtras(TEST_METHOD_OVERRIDE_PENDING_TRANSITION, 0, extras);
@@ -424,6 +451,7 @@ public class ActivityTransitionTests extends ActivityManagerTestBase {
      */
     @Test
     public void testRightEdgeExtensionWorksDuringActivityTransition() {
+        extendingAnimationScaleIfNeeded();
         final Bundle extras = new Bundle();
         extras.putInt(DIRECTION_KEY, RIGHT);
         addTestMethodToExtras(TEST_METHOD_OVERRIDE_PENDING_TRANSITION, 0, extras);
@@ -442,14 +470,15 @@ public class ActivityTransitionTests extends ActivityManagerTestBase {
      */
     @Test
     public void testOverrideActivityTransition() {
+        extendingAnimationScaleIfNeeded();
         final Bundle extras = new Bundle();
         extras.putInt(DIRECTION_KEY, RIGHT);
         addTestMethodToExtras(TEST_METHOD_OVERRIDE_ACTIVITY_TRANSITION,
                 TRANSITION_TYPE_OPEN | TRANSITION_TYPE_CLOSE, extras);
         final TestBounds testBounds = getTestBounds();
         final Rect transitionBounds = testBounds.transitionBounds;
-        final int xIndex = transitionBounds.left
-                + (transitionBounds.right - transitionBounds.left) / 4;
+        final int xIndex =
+                transitionBounds.left + (transitionBounds.right - transitionBounds.left) / 4;
         getTestBuilder().setClass(EdgeExtensionActivity.class).setExtras(extras)
                 .setTestFunction(createAssertColorChangeXIndex(xIndex, testBounds))
                 .run();
@@ -460,15 +489,17 @@ public class ActivityTransitionTests extends ActivityManagerTestBase {
     }
 
     /**
-     * Borrow the test from testRightEdgeExtensionWorksDuringActivityTransition, mainly test for
-     * API Activity#clearOverrideActivityTransition.
+     * Borrow the test from testRightEdgeExtensionWorksDuringActivityTransition, mainly test for API
+     * Activity#clearOverrideActivityTransition.
      */
     @Test
     public void testClearOverrideActivityTransition() {
         final Bundle extras = new Bundle();
         extras.putInt(DIRECTION_KEY, RIGHT);
-        addTestMethodToExtras(TEST_METHOD_OVERRIDE_ACTIVITY_TRANSITION,
-                TRANSITION_TYPE_OPEN | TRANSITION_TYPE_CLOSE, extras);
+        addTestMethodToExtras(
+                TEST_METHOD_OVERRIDE_ACTIVITY_TRANSITION,
+                TRANSITION_TYPE_OPEN | TRANSITION_TYPE_CLOSE,
+                extras);
         final TestBounds testBounds = getTestBounds();
         final LauncherActivity launcherActivity = startLauncherActivity();
         launcherActivity.startActivity(null, EdgeExtensionActivity.class, extras);
@@ -516,6 +547,7 @@ public class ActivityTransitionTests extends ActivityManagerTestBase {
      */
     @Test
     public void testBottomEdgeExtensionWorksDuringActivityTransition() {
+        extendingAnimationScaleIfNeeded();
         final Bundle extras = new Bundle();
         extras.putInt(DIRECTION_KEY, BOTTOM);
         addTestMethodToExtras(TEST_METHOD_OVERRIDE_PENDING_TRANSITION, 0, extras);
@@ -654,10 +686,16 @@ public class ActivityTransitionTests extends ActivityManagerTestBase {
         @Override
         public String toString() {
             return "ColorCheckResult{"
-                    + "isFailure=" + isFailure
-                    + ", firstWrongPixel=" + firstWrongPixel
-                    + ", expectedColor=" + expectedColor
-                    + ", actualColor=" + actualColor
+                    + "isFailure="
+                    + isFailure
+                    + ", firstWrongPixel="
+                    + firstWrongPixel
+                    + ", expectedColor="
+                    + expectedColor
+                    + ", actualColor="
+                    + actualColor
+                    + ", time="
+                    + testTime
                     + '}';
         }
     }
@@ -723,18 +761,23 @@ public class ActivityTransitionTests extends ActivityManagerTestBase {
 
     private Rect getTransitionAppBounds() {
         getWmState().computeState();
-        final WindowManagerState.Activity activity = getWmState().getActivity(
-                ComponentName.unflattenFromString(getWmState().getFocusedActivity()));
+        final WindowManagerState.Activity activity =
+                getWmState()
+                        .getActivity(
+                                ComponentName.unflattenFromString(
+                                        getWmState().getFocusedActivity()));
         return activity.getBounds();
     }
 
     private static class AssertionResult {
         public final boolean isFailure;
         public final String message;
+        public final Instant testTime;
 
         private AssertionResult(boolean isFailure, String message) {
             this.isFailure = isFailure;
             this.message = message;
+            testTime = Instant.now();
         }
 
         private AssertionResult(boolean isFailure) {
@@ -744,8 +787,13 @@ public class ActivityTransitionTests extends ActivityManagerTestBase {
         @Override
         public String toString() {
             return "AssertionResult{"
-                    + "isFailure=" + isFailure
-                    + ", message='" + message + '\''
+                    + "isFailure="
+                    + isFailure
+                    + ", message='"
+                    + message
+                    + '\''
+                    + ", time="
+                    + testTime
                     + '}';
         }
 
@@ -757,8 +805,8 @@ public class ActivityTransitionTests extends ActivityManagerTestBase {
     // We are scaling the activity in the animation so if the extension doesn't work we should
     // have a blue, then red, then black section, and if it does work we should see on a blue,
     // followed by an extended red section.
-    private Function<Bitmap, AssertionResult> createAssertColorChangeXIndex(int xIndex,
-                                                                            TestBounds testBounds) {
+    private Function<Bitmap, AssertionResult> createAssertColorChangeXIndex(
+            int xIndex, TestBounds testBounds) {
         return (screen) ->
                 assertColorChangeXIndex(
                         screen, xIndex, testBounds, Color.BLUE, Color.RED, true /* expectEqual */);
