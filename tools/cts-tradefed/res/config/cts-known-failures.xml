@@ -339,6 +339,9 @@
     <option name="compatibility:exclude-filter" value="CtsJvmtiRunTest913HostTestCases" />
     <option name="compatibility:exclude-filter" value="CtsJvmtiRunTest988HostTestCases" />
 
+    <!-- b/401130479 -->
+    <option name="compatibility:exclude-filter" value="CtsJvmtiRunTest906HostTestCases" />
+
      <!--- b/295798316 -->
     <option name="compatibility:exclude-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.SupportMessageTest#setShortSupportMessage_tooLongText_isTruncated[IncludeRunOnProfileOwnerPrimaryUser]" />
 
