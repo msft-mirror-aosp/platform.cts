@@ -168,7 +168,7 @@ public class VirtualCameraCaptureHelper {
     }
 
     /**
-     * Create a virtual camera with the provided configuration
+     * Create a virtual camera with the provided configuration and lens facing LENS_FACING_FRONT
      *
      * @param inputWidth  width of the input of this virtual camera
      * @param inputHeight height of the input of this virtual camera
@@ -177,10 +177,25 @@ public class VirtualCameraCaptureHelper {
      */
     public void createVirtualCamera(int inputWidth, int inputHeight, int inputFormat,
             int fps) {
+        createVirtualCamera(inputWidth, inputHeight, inputFormat,
+                fps, LENS_FACING_FRONT);
+    }
+
+    /**
+     * Create a virtual camera with the provided configuration
+     *
+     * @param inputWidth  width of the input of this virtual camera
+     * @param inputHeight height of the input of this virtual camera
+     * @param inputFormat format of the input of this virtual camera
+     * @param fps         fps of the input of this virtual camera
+     * @param lensFacing  lens facing of this virtual camera
+     */
+    public void createVirtualCamera(int inputWidth, int inputHeight, int inputFormat,
+            int fps, int lensFacing) {
         Objects.requireNonNull(mVirtualDevice,
                 "mVirtualDevice must not be null when calling #createVirtualCamera()");
         VirtualCameraConfig config = createVirtualCameraConfig(inputWidth, inputHeight,
-                inputFormat, fps, SENSOR_ORIENTATION_0, LENS_FACING_FRONT,
+                inputFormat, fps, SENSOR_ORIENTATION_0, lensFacing,
                 VirtualCameraCaptureHelper.CAMERA_NAME, mCameraExecutor,
                 mVirtualCameraCallback);
         try {

@@ -75,6 +75,8 @@ class Utils {
             android.graphics.pdf.cts.module.R.raw.one_path_page_object;
     static final int ONE_PATH_ONE_IMAGE_PAGE_OBJECT =
             android.graphics.pdf.cts.module.R.raw.one_path_one_image_pageObject;
+    static final int ONE_TEXT_PAGE_OBJECT =
+            android.graphics.pdf.cts.module.R.raw.one_text_page_object;
 
     static final int EMPTY_PDF = android.graphics.pdf.cts.module.R.raw.empty;
     static final LoadParams LOAD_PARAMS = new LoadParams.Builder().setPassword("qwerty").build();
@@ -457,6 +459,29 @@ class Utils {
             }
         }
         return area;
+    }
+
+    /**
+     * Checks if the maximum error between two float arrays is within an acceptable range.
+     *
+     * @param a The first float array.
+     * @param b The second float array.
+     * @param acceptableError The maximum acceptable error value.
+     * @return true if the maximum error is less than the acceptable error, false otherwise. Returns
+     *     false if the arrays are null or have different lengths.
+     */
+    static boolean isAcceptableError(float[] a, float[] b, float acceptableError) {
+        if (a == null || b == null || a.length != b.length) {
+            return false;
+        }
+
+        for (int i = 0; i < a.length; i++) {
+            float error = Math.abs(a[i] - b[i]);
+            if (error > acceptableError) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /**

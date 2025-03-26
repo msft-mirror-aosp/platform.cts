@@ -21,6 +21,9 @@ import static android.companion.virtual.VirtualDeviceParams.DEVICE_POLICY_CUSTOM
 import static android.companion.virtual.VirtualDeviceParams.POLICY_TYPE_CAMERA;
 import static android.graphics.ImageFormat.JPEG;
 import static android.graphics.ImageFormat.YUV_420_888;
+import static android.hardware.camera2.CameraMetadata.LENS_FACING_BACK;
+import static android.hardware.camera2.CameraMetadata.LENS_FACING_EXTERNAL;
+import static android.hardware.camera2.CameraMetadata.LENS_FACING_FRONT;
 import static android.virtualdevice.cts.camera.util.ImageSubject.assertThat;
 import static android.virtualdevice.cts.camera.util.VirtualCameraUtils.jpegImageToBitmap;
 import static android.virtualdevice.cts.camera.util.VirtualCameraUtils.loadBitmapFromRaw;
@@ -78,6 +81,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -277,18 +281,25 @@ public class VirtualCameraCaptureTest {
      * Test that when the input of virtual camera comes from an ImageReader, the output of virtual
      * camera is similar to a golden file generated on a real device.
      */
+    @Parameters(method = "getAllLensFacingDirections")
     @Test
-    public void captureImage_withMediaCodec_hasOutputSimilarToGolden() throws Exception {
+    public void captureImage_withMediaCodec_hasOutputSimilarToGolden(int lensFacing)
+            throws Exception {
         int width = 460;
         int height = 260;
         double maxImageDiff = 20;
-        mCaptureHelper.createVirtualCamera(width, height, YUV_420_888);
+        mCaptureHelper.createVirtualCamera(width, height, YUV_420_888,
+                VirtualCameraCaptureHelper.CAMERA_MAX_FPS, lensFacing);
+        testSimilarOutputToGolden(width, height, maxImageDiff);
+    }
+
+    private void testSimilarOutputToGolden(int width, int height, double maxImageDiff)
+            throws Exception {
         CaptureConfiguration captureConfiguration = new CaptureConfiguration()
                 .setOutputFormat(JPEG)
                 .setWidth(width)
                 .setHeight(height)
-                .setInputSurfaceConsumer(new VirtualCameraUtils.VideoRenderer(
-                        R.raw.test_video));
+                .setInputSurfaceConsumer(new VirtualCameraUtils.VideoRenderer(R.raw.test_video));
         Image imageFromCamera = mCaptureHelper.captureImages(captureConfiguration);
         Bitmap bitmapFromCamera = jpegImageToBitmap(imageFromCamera);
         Bitmap golden = loadBitmapFromRaw(R.raw.golden_test_video);
@@ -493,5 +504,15 @@ public class VirtualCameraCaptureTest {
     @SuppressWarnings("unused") // Parameter for parametrized tests
     private static String[] getOutputPixelFormats() {
         return new String[]{"YUV_420_888", "JPEG"};
+    }
+
+    @SuppressWarnings("unused") // Parameter for parametrized tests
+    private static List<Integer> getAllLensFacingDirections() {
+        List<Integer> lensFacingDirections = new ArrayList<>(
+                List.of(LENS_FACING_BACK, LENS_FACING_FRONT));
+        if (Flags.externalVirtualCameras()) {
+            lensFacingDirections.add(LENS_FACING_EXTERNAL);
+        }
+        return lensFacingDirections;
     }
 }

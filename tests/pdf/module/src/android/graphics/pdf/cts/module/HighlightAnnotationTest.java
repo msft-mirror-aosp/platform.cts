@@ -52,16 +52,16 @@ public class HighlightAnnotationTest {
         HighlightAnnotation pdfPageHighlightAnnotationContent = new HighlightAnnotation(BOUNDS);
         assertThat(pdfPageHighlightAnnotationContent.getPdfAnnotationType())
                 .isEqualTo(PdfAnnotationType.HIGHLIGHT);
-        assertThat(pdfPageHighlightAnnotationContent.getBounds()).isEqualTo(BOUNDS);
+        assertThat(pdfPageHighlightAnnotationContent.getBoundsList()).isEqualTo(BOUNDS);
         assertThat(pdfPageHighlightAnnotationContent.getColor()).isEqualTo(DEFAULT_TEXT_COLOR);
     }
 
     @Test
     public void pageFreeHighlightAnnotationContent_setTest() {
         HighlightAnnotation pdfPageHighlightAnnotationContent = new HighlightAnnotation(BOUNDS);
-        pdfPageHighlightAnnotationContent.setBounds(NEW_BOUNDS);
+        pdfPageHighlightAnnotationContent.setBoundsList(NEW_BOUNDS);
         pdfPageHighlightAnnotationContent.setColor(NEW_TEXT_COLOR);
-        assertThat(pdfPageHighlightAnnotationContent.getBounds()).isEqualTo(NEW_BOUNDS);
+        assertThat(pdfPageHighlightAnnotationContent.getBoundsList()).isEqualTo(NEW_BOUNDS);
         assertThat(pdfPageHighlightAnnotationContent.getColor()).isEqualTo(NEW_TEXT_COLOR);
     }
 }

@@ -376,7 +376,13 @@ public class ProxyMediaRouter2HostSideTest extends BaseHostJUnit4Test {
                                 /* reinstall= */ true,
                                 /* grantPermissions= */ true,
                                 userId,
-                                /*allow test apps*/ "-t");
+                                /*allow test apps*/ "-t",
+                                "--abi",
+                                testInformation
+                                        .getContext()
+                                        .getConfigurationDescriptor()
+                                        .getAbi()
+                                        .getName());
         assertWithMessage("Failed to install " + apkName + ": " + result).that(result).isNull();
     }
 }

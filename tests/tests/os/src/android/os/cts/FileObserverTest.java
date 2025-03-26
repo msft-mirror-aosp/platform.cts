@@ -160,7 +160,7 @@ public class FileObserverTest extends AndroidTestCase {
             testFile.delete(); // delete
 
             // should not get any event
-            expected = new int[] {UNDEFINED};
+            expected = new int[] {};
             moveEvents = waitForEvent(fileObserver);
             assertEventsContains(testFile, expected, moveEvents);
         } finally {

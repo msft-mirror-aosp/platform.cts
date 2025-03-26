@@ -29,6 +29,7 @@ import static android.graphics.pdf.cts.module.Utils.ONE_IMAGE_PAGE_OBJECT;
 import static android.graphics.pdf.cts.module.Utils.ONE_PATH_ONE_IMAGE_PAGE_OBJECT;
 import static android.graphics.pdf.cts.module.Utils.ONE_PATH_PAGE_OBJECT;
 import static android.graphics.pdf.cts.module.Utils.ONE_STAMP_ANNOTATION;
+import static android.graphics.pdf.cts.module.Utils.ONE_TEXT_PAGE_OBJECT;
 import static android.graphics.pdf.cts.module.Utils.PROTECTED_PDF;
 import static android.graphics.pdf.cts.module.Utils.SAMPLE_IMAGE;
 import static android.graphics.pdf.cts.module.Utils.SAMPLE_LOAD_PARAMS_FOR_TESTING_NEW_CONSTRUCTOR;
@@ -39,6 +40,7 @@ import static android.graphics.pdf.cts.module.Utils.createRenderer;
 import static android.graphics.pdf.cts.module.Utils.createRendererUsingNewConstructor;
 import static android.graphics.pdf.cts.module.Utils.getFile;
 import static android.graphics.pdf.cts.module.Utils.getParcelFileDescriptorFromResourceId;
+import static android.graphics.pdf.cts.module.Utils.isAcceptableError;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -64,8 +66,12 @@ import android.graphics.pdf.component.PdfAnnotation;
 import android.graphics.pdf.component.PdfAnnotationType;
 import android.graphics.pdf.component.PdfPageImageObject;
 import android.graphics.pdf.component.PdfPageObject;
+import android.graphics.pdf.component.PdfPageObjectRenderMode;
 import android.graphics.pdf.component.PdfPageObjectType;
 import android.graphics.pdf.component.PdfPagePathObject;
+import android.graphics.pdf.component.PdfPageTextObject;
+import android.graphics.pdf.component.PdfPageTextObjectFont;
+import android.graphics.pdf.component.PdfPageTextObjectFontFamily;
 import android.graphics.pdf.component.StampAnnotation;
 import android.graphics.pdf.content.PdfPageGotoLinkContent;
 import android.graphics.pdf.flags.Flags;
@@ -75,6 +81,8 @@ import android.graphics.pdf.models.selection.SelectionBoundary;
 import android.os.Build;
 import android.os.ParcelFileDescriptor;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Pair;
 
 import androidx.test.InstrumentationRegistry;
@@ -85,6 +93,7 @@ import androidx.test.runner.AndroidJUnit4;
 import com.android.modules.utils.build.SdkLevel;
 
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -100,6 +109,9 @@ import java.util.List;
 @SmallTest
 @RunWith(AndroidJUnit4.class)
 public class PdfRendererTest {
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
     private static final int A5_PORTRAIT_PRINTSCALING_DEFAULT =
             R.raw.a5_portrait_rgbb_1_6_printscaling_default;
     private static final int A5_PORTRAIT_PRINTSCALING_NONE =
@@ -1119,7 +1131,7 @@ public class PdfRendererTest {
                     .isEqualTo(PdfAnnotationType.HIGHLIGHT);
             HighlightAnnotation addedHighlightAnnotation =
                     (HighlightAnnotation) annotations.get(0).second;
-            assertThat(addedHighlightAnnotation.getBounds()).isEqualTo(bounds);
+            assertThat(addedHighlightAnnotation.getBoundsList()).isEqualTo(bounds);
             assertThat(highlightAnnotation.getColor()).isEqualTo(Color.GREEN);
         }
     }
@@ -1474,6 +1486,39 @@ public class PdfRendererTest {
             minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM,
             codeName = "VanillaIceCream")
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_EDIT_PDF_TEXT_OBJECTS)
+    public void testAddTextPageObject() throws IOException {
+        try (PdfRenderer renderer = createRenderer(EMPTY_PDF, mContext);
+                PdfRenderer.Page firstPage = renderer.openPage(0)) {
+            assertThat(firstPage.getPageObjects().size()).isEqualTo(0);
+
+            int id1 = firstPage.addPageObject(createSamplePdfPageTextObject());
+            assertThat(id1).isEqualTo(0);
+
+            int id2 = firstPage.addPageObject(createSamplePdfPageTextObject());
+            assertThat(id2).isEqualTo(1);
+
+            assertThat(firstPage.getPageObjects().size()).isEqualTo(2);
+
+            PdfPageTextObject pdfPageTextObject =
+                    (PdfPageTextObject) firstPage.getPageObjects().get(0).second;
+            assertThat(pdfPageTextObject.getText()).isEqualTo("Text Page Object");
+            assertThat(pdfPageTextObject.getFont().getFontFamily())
+                    .isEqualTo(PdfPageTextObjectFontFamily.COURIER);
+            assertTrue(pdfPageTextObject.getFont().isBold());
+            assertTrue(pdfPageTextObject.getFont().isItalic());
+            assertThat(pdfPageTextObject.getFontSize()).isEqualTo(10.0f);
+            assertThat(pdfPageTextObject.getFillColor()).isEqualTo(Color.YELLOW);
+            assertThat(pdfPageTextObject.getStrokeColor()).isEqualTo(Color.GREEN);
+            assertThat(pdfPageTextObject.getRenderMode())
+                    .isEqualTo(PdfPageObjectRenderMode.FILL_STROKE);
+        }
+    }
+
+    @SdkSuppress(
+            minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM,
+            codeName = "VanillaIceCream")
+    @Test
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_EDIT_PDF_PAGE_OBJECTS)
     public void testAddPathPageObject() throws IOException {
         try (PdfRenderer renderer = createRenderer(ONE_PATH_PAGE_OBJECT, mContext);
@@ -1526,8 +1571,26 @@ public class PdfRendererTest {
             minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM,
             codeName = "VanillaIceCream")
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_EDIT_PDF_TEXT_OBJECTS)
+    public void testRemovePdfPageTextObject() throws IOException {
+        try (PdfRenderer renderer = createRenderer(ONE_TEXT_PAGE_OBJECT, mContext);
+                PdfRenderer.Page firstPage = renderer.openPage(0)) {
+
+            List<Pair<Integer, PdfPageObject>> pageObjects = firstPage.getPageObjects();
+            assertThat(pageObjects.size()).isEqualTo(1);
+
+            firstPage.removePageObject(pageObjects.get(0).first);
+
+            assertThat(firstPage.getPageObjects().size()).isEqualTo(0);
+        }
+    }
+
+    @SdkSuppress(
+            minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM,
+            codeName = "VanillaIceCream")
+    @Test
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_EDIT_PDF_PAGE_OBJECTS)
-    public void testRemovePdfPathObject() throws IOException {
+    public void testRemovePdfPagePathObject() throws IOException {
         try (PdfRenderer renderer = createRenderer(ONE_PATH_PAGE_OBJECT, mContext);
                 PdfRenderer.Page firstPage = renderer.openPage(0)) {
 
@@ -1545,7 +1608,7 @@ public class PdfRendererTest {
             codeName = "VanillaIceCream")
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_EDIT_PDF_PAGE_OBJECTS)
-    public void testRemoveImagePageObject() throws IOException {
+    public void testRemovePdfPageImageObject() throws IOException {
         try (PdfRenderer renderer = createRenderer(ONE_PATH_ONE_IMAGE_PAGE_OBJECT, mContext);
                 PdfRenderer.Page firstPage = renderer.openPage(0)) {
 
@@ -1573,25 +1636,70 @@ public class PdfRendererTest {
             minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM,
             codeName = "VanillaIceCream")
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_EDIT_PDF_PAGE_OBJECTS)
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_EDIT_PDF_TEXT_OBJECTS)
     public void testGetAndRemovePageObjectInPdfWithUnsupportedPageObjects() throws IOException {
         try (PdfRenderer renderer = createRenderer(R.raw.text_path_image_page_objects, mContext);
                 PdfRenderer.Page firstPage = renderer.openPage(0)) {
-            /*
-             * The Pdf contains one each of Text, Path and Image PageObject. TextPathObject is
-             * currently unsupported so get() call should return a list of size 2.
-             */
+
             List<Pair<Integer, PdfPageObject>> pdfPageObjects = firstPage.getPageObjects();
+            assertThat(pdfPageObjects).hasSize(3);
+            assertThat(pdfPageObjects.get(0).second.getPdfObjectType())
+                    .isEqualTo(PdfPageObjectType.TEXT);
+            // Remove TextPageObject
+            firstPage.removePageObject(pdfPageObjects.get(0).first);
+            // The updated size should be 2 and the remaining PageObjects should be Image and Path.
+            pdfPageObjects = firstPage.getPageObjects();
             assertThat(pdfPageObjects).hasSize(2);
             assertThat(pdfPageObjects.get(0).second.getPdfObjectType())
                     .isEqualTo(PdfPageObjectType.IMAGE);
-            // Remove ImagePageObject
-            firstPage.removePageObject(pdfPageObjects.get(0).first);
-            // The updated size should be 1 and the remaining PageObject should be of type Path.
-            pdfPageObjects = firstPage.getPageObjects();
-            assertThat(pdfPageObjects).hasSize(1);
-            assertThat(pdfPageObjects.get(0).second.getPdfObjectType())
+            assertThat(pdfPageObjects.get(1).second.getPdfObjectType())
                     .isEqualTo(PdfPageObjectType.PATH);
+        }
+    }
+
+    @SdkSuppress(
+            minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM,
+            codeName = "VanillaIceCream")
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_EDIT_PDF_TEXT_OBJECTS)
+    public void testUpdateTextPageObject() throws IOException {
+        try (PdfRenderer renderer = createRenderer(ONE_TEXT_PAGE_OBJECT, mContext);
+                PdfRenderer.Page firstPage = renderer.openPage(0)) {
+
+            List<Pair<Integer, PdfPageObject>> pdfPageObjects = firstPage.getPageObjects();
+            assertThat(firstPage.getPageObjects().size()).isEqualTo(1);
+            assertThat(pdfPageObjects.get(0).first).isEqualTo(0); // check id
+
+            assertThat(pdfPageObjects.get(0).second.getPdfObjectType())
+                    .isEqualTo(PdfPageObjectType.TEXT);
+            PdfPageTextObject pdfPageTextObject = (PdfPageTextObject) pdfPageObjects.get(0).second;
+            /*
+             * The original matrix values were obtained from the script used to generate the PDF
+             * used in this test.
+             */
+            float[] originalMatrixValues = {1.0f, 0f, 0f, 0f, 1.0f, 789.425f, 0f, 0f, 1.0f};
+            assertTrue(
+                    isAcceptableError(pdfPageTextObject.getMatrix(), originalMatrixValues, 0.01f));
+            assertThat(pdfPageTextObject.getFillColor()).isEqualTo(Color.GREEN);
+            float[] newMatrixValues = {2, 1, 4, 7, 3, 5, 0, 0, 1};
+            Matrix newMatrix = new Matrix();
+            newMatrix.setValues(newMatrixValues);
+            assertThat(newMatrix.isAffine()).isTrue();
+            pdfPageTextObject.setMatrix(newMatrix);
+
+            pdfPageTextObject.setFillColor(Color.RED);
+
+            boolean result = firstPage.updatePageObject(0, pdfPageTextObject);
+            assertThat(result).isTrue();
+            PdfPageTextObject pdfUpdatedPageTextObject =
+                    (PdfPageTextObject) firstPage.getPageObjects().get(0).second;
+            float[] posUpdateMatrixValues = pdfUpdatedPageTextObject.getMatrix();
+            /*
+             *  Conversion from PdfPage Matrix to Android Matrix show a little fluctuation
+             *  We should tolerate the difference which does not make any visible difference.
+             */
+            assertTrue(isAcceptableError(posUpdateMatrixValues, newMatrixValues, 0.01f));
+            assertThat(pdfUpdatedPageTextObject.getFillColor()).isEqualTo(Color.RED);
         }
     }
 
@@ -1757,6 +1865,20 @@ public class PdfRendererTest {
         pathObject.setFillColor(Color.RED);
         pathObject.setStrokeColor(Color.BLUE);
         return pathObject;
+    }
+
+    private PdfPageTextObject createSamplePdfPageTextObject() {
+        String text = "Text Page Object";
+        PdfPageTextObjectFont font =
+                new PdfPageTextObjectFont(PdfPageTextObjectFontFamily.COURIER, true, true);
+        float fontSize = 10.0f;
+
+        PdfPageTextObject textObject = new PdfPageTextObject(text, font, fontSize);
+        textObject.setFillColor(Color.YELLOW);
+        textObject.setStrokeColor(Color.GREEN);
+        textObject.setRenderMode(PdfPageObjectRenderMode.FILL_STROKE);
+
+        return textObject;
     }
 
     private void assertPageGotoLinks_pageWithGotoLink(PdfRenderer renderer) {
