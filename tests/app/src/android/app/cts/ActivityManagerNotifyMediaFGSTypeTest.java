@@ -72,6 +72,18 @@ public class ActivityManagerNotifyMediaFGSTypeTest {
     private static final int USER_ENGAGED_TIMEOUT_MSEC = 2000;
     private static final String USER_ENGAGED_TIMEOUT_KEY =
             "media_session_temp_user_engaged_duration_ms";
+    private static final int MEDIA_SESSION_CALLBACK_FGS_ALLOWLIST_DURATION_MS = 2000;
+
+    private static final String MEDIA_SESSION_CALLBACK_FGS_ALLOWLIST_DURATION_MS_KEY =
+            "media_session_calback_fgs_allowlist_duration_ms";
+    private static final int MEDIA_SESSION_CALLBACK_WIU_TEMP_ALLOW_DURATION_MS = 2000;
+
+    private static final String MEDIA_SESSION_CALLBACK_WIU_TEMP_ALLOW_DURATION_MS_KEY =
+            "media_session_callback_fgs_while_in_use_temp_allow_duration_ms";
+
+    private static final int FG_TO_BG_FGS_GRACE_DURATION_MSEC = 1;
+    private static final String FG_TO_BG_FGS_GRACE_DURATION_KEY = "fg_to_bg_fgs_grace_duration";
+
     private static final long PLAY_TIMEOUT_MS = 1000;
 
     @Rule
@@ -84,7 +96,10 @@ public class ActivityManagerNotifyMediaFGSTypeTest {
 
     private final DeviceConfigStateHelper mMediaDeviceConfig =
             new DeviceConfigStateHelper(DeviceConfig.NAMESPACE_MEDIA);
-     @Before
+    private final DeviceConfigStateHelper mActivityManagerDeviceConfig =
+            new DeviceConfigStateHelper(DeviceConfig.NAMESPACE_ACTIVITY_MANAGER);
+
+    @Before
     public void setUp() throws Exception {
         mInstrumentation = InstrumentationRegistry.getInstrumentation();
         mContext = mInstrumentation.getContext();
@@ -97,7 +112,16 @@ public class ActivityManagerNotifyMediaFGSTypeTest {
         // Configure short timeout for test execution and verify it's set.
         mMediaDeviceConfig.set(
                 USER_ENGAGED_TIMEOUT_KEY, Integer.toString(USER_ENGAGED_TIMEOUT_MSEC));
-        sleep(500); // Let the setting propagate.
+        mMediaDeviceConfig.set(
+                MEDIA_SESSION_CALLBACK_FGS_ALLOWLIST_DURATION_MS_KEY,
+                Integer.toString(MEDIA_SESSION_CALLBACK_FGS_ALLOWLIST_DURATION_MS));
+        mMediaDeviceConfig.set(
+                MEDIA_SESSION_CALLBACK_WIU_TEMP_ALLOW_DURATION_MS_KEY,
+                Integer.toString(MEDIA_SESSION_CALLBACK_WIU_TEMP_ALLOW_DURATION_MS));
+        mActivityManagerDeviceConfig.set(
+                FG_TO_BG_FGS_GRACE_DURATION_KEY,
+                Integer.toString(FG_TO_BG_FGS_GRACE_DURATION_MSEC));
+        sleep(2000); // Let the setting propagate.
         final String dumpLines = runShellCommand("dumpsys media_session");
         final String expectedLine =
                 String.format("%s: [cur: %d", USER_ENGAGED_TIMEOUT_KEY, USER_ENGAGED_TIMEOUT_MSEC);
@@ -119,6 +143,7 @@ public class ActivityManagerNotifyMediaFGSTypeTest {
     public void tearDown() throws Exception {
         cleanUp();
         mMediaDeviceConfig.restoreOriginalValues();
+        mActivityManagerDeviceConfig.restoreOriginalValues();
     }
 
     private void cleanUp() {
@@ -657,12 +682,8 @@ public class ActivityManagerNotifyMediaFGSTypeTest {
         assertTrue(
                 "Failed to start media foreground service with notification", notificationId > 0);
 
-        // Set the service inactive for test case.
-        runShellCommand(
-                mInstrumentation,
-                String.format(
-                        "am set-media-foreground-service inactive --user %d %s %d",
-                        mContext.getUserId(), PACKAGE_NAME_APP1, notificationId));
+        // Let the media session move from USER_TEMPORARY_DISENGAGED to USER_DISENGAGED state.
+        sleep(USER_ENGAGED_TIMEOUT_MSEC);
         uid1Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_SERVICE);
         // Get the controller and press play.
         MediaController controller = getMediaControllerForActiveSession();
@@ -865,6 +886,52 @@ public class ActivityManagerNotifyMediaFGSTypeTest {
         controller.getTransportControls().pause();
         uid1Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_SERVICE);
         controller.getTransportControls().play();
+        uid1Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_FG_SERVICE);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(
+            Flags.FLAG_ENABLE_NOTIFYING_ACTIVITY_MANAGER_WITH_MEDIA_SESSION_STATUS_CHANGE)
+    public void testAppInBgWithInActiveMediaSessionGoesToFgWhenMediaSessionActive()
+            throws Exception {
+        ApplicationInfo app1Info =
+                mContext.getPackageManager().getApplicationInfo(PACKAGE_NAME_APP1, 0);
+        WatchUidRunner uid1Watcher =
+                new WatchUidRunner(mInstrumentation, app1Info.uid, WAITFOR_MSEC);
+        // Start the media service in foreground state.
+        final int notificationId = setupMediaForegroundService();
+        assertTrue(
+                "Failed to start media foreground service with notification", notificationId > 0);
+
+        // Stop media to allow media session service to mark fgs inactive.
+        Bundle extras =
+                LocalForegroundServiceMedia.newCommand(
+                        LocalForegroundServiceMedia.COMMAND_STOP_MEDIA);
+        CommandReceiver.sendCommand(
+                mContext,
+                CommandReceiver.COMMAND_START_SERVICE_MEDIA,
+                PACKAGE_NAME_APP1,
+                PACKAGE_NAME_APP1,
+                0,
+                extras);
+
+        // Make sure we are in Home screen.
+        mInstrumentation
+                .getUiAutomation()
+                .performGlobalAction(AccessibilityService.GLOBAL_ACTION_HOME);
+        uid1Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_SERVICE);
+
+        // Play media to allow media session service to make fgs active again.
+        extras =
+                LocalForegroundServiceMedia.newCommand(
+                        LocalForegroundServiceMedia.COMMAND_PLAY_MEDIA);
+        CommandReceiver.sendCommand(
+                mContext,
+                CommandReceiver.COMMAND_START_SERVICE_MEDIA,
+                PACKAGE_NAME_APP1,
+                PACKAGE_NAME_APP1,
+                0,
+                extras);
         uid1Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_FG_SERVICE);
     }
 }
