@@ -1543,6 +1543,53 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
     }
 
     /**
+     * Test that during the IME hide animation, there will be no other show request dispatched to
+     * IMS. This could happen, as we set clientVisibility first, but the IME is still animating out.
+     */
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_REPORT_ANIMATING_INSETS_TYPES)
+    public void testImeNoShowSoftInputCallDuringHideAnimation() throws Exception {
+        try (MockImeSession imeSession =
+                MockImeSession.create(
+                        mInstrumentation.getContext(),
+                        mInstrumentation.getUiAutomation(),
+                        new ImeSettings.Builder())) {
+            final ImeEventStream stream = imeSession.openEventStream();
+            final String marker = getTestMarker();
+
+            final AtomicReference<EditText> editTextRef = new AtomicReference<>();
+            TestActivity.startSync(
+                    activity -> {
+                        final LinearLayout layout = new LinearLayout(activity);
+                        layout.setOrientation(LinearLayout.VERTICAL);
+
+                        final EditText editText = new EditText(activity);
+                        layout.addView(editText);
+                        editText.setHint("focused editText");
+                        editText.setPrivateImeOptions(marker);
+                        editText.requestFocus();
+                        editTextRef.set(editText);
+                        activity.getWindow().getDecorView().getWindowInsetsController().show(ime());
+                        return layout;
+                    });
+
+            expectEvent(stream, showSoftInputMatcher(0), TIMEOUT);
+            expectEvent(stream, editorMatcher("onStartInputView", marker), TIMEOUT);
+            expectImeVisible(TIMEOUT);
+
+            TestUtils.runOnMainSync(
+                    () -> {
+                        editTextRef.get().getWindowInsetsController().hide(ime());
+                    });
+
+            // During the hide animation, no other showSoftInput should be called
+            expectImeInvisible(TIMEOUT);
+            notExpectEvent(stream, editorMatcher("onStartInputView", marker), TIMEOUT);
+            notExpectEvent(stream, showSoftInputMatcher(0), TIMEOUT);
+        }
+    }
+
+    /**
      * Test the IME visibility when in split-screen mode, switching the focus to the app task with
      * {@link WindowManager.LayoutParams#SOFT_INPUT_STATE_HIDDEN} flag from the app showing the
      * IME will expect to be hidden.
