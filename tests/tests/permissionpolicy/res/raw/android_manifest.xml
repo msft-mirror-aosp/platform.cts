@@ -1793,6 +1793,29 @@
                 android:protectionLevel="dangerous|instant" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
+
+    <!-- ====================================================================== -->
+    <!-- Permissions for Android XR                                             -->
+    <!-- ====================================================================== -->
+    <eat-comment />
+
+    <!-- Used for permissions that are associated with accessing XR
+         tracked information about the person using the device and the
+         environment around them. -->
+    <permission-group android:name="android.permission-group.XR_TRACKING"
+                      android:label="@string/permgrouplab_xr_tracking"
+                      android:description="@string/permgroupdesc_xr_tracking"
+                      android:priority="100"
+                      android:featureFlag="android.xr.xr_manifest_entries" />
+    <!-- Used for permissions that are associated with accessing
+         particularly sensitive XR tracking data. -->
+    <permission-group android:name="android.permission-group.XR_TRACKING_SENSITIVE"
+                      android:label="@string/permgrouplab_xr_tracking_sensitive"
+                      android:description="@string/permgroupdesc_xr_tracking_sensitive"
+                      android:priority="100"
+                      android:featureFlag="android.xr.xr_manifest_entries" />
+
+
     <!-- ====================================================================== -->
     <!-- REMOVED PERMISSIONS                                                    -->
     <!-- ====================================================================== -->
