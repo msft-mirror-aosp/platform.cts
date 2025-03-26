@@ -55,7 +55,6 @@ import android.Manifest.permission.WRITE_CONTACTS
 import android.Manifest.permission.WRITE_EXTERNAL_STORAGE
 import android.Manifest.permission_group.UNDEFINED
 import android.app.AppOpsManager.permissionToOp
-import android.content.pm.PackageManager
 import android.content.pm.PackageManager.GET_PERMISSIONS
 import android.content.pm.PermissionInfo.PROTECTION_DANGEROUS
 import android.content.pm.PermissionInfo.PROTECTION_FLAG_APPOP
@@ -166,6 +165,17 @@ class RuntimePermissionProperties {
         // Add runtime permissions added in U which were _not_ split from a previously existing
         // runtime permission
         expectedPerms.add(READ_MEDIA_VISUAL_USER_SELECTED)
+
+        // Add Android XR permissions.
+        if (pm.hasSystemFeature("android.software.xr.api.openxr")) {
+            expectedPerms.add("android.permission.EYE_TRACKING_COARSE")
+            expectedPerms.add("android.permission.EYE_TRACKING_FINE")
+            expectedPerms.add("android.permission.FACE_TRACKING")
+            expectedPerms.add("android.permission.HAND_TRACKING")
+            expectedPerms.add("android.permission.HEAD_TRACKING")
+            expectedPerms.add("android.permission.SCENE_UNDERSTANDING_COARSE")
+            expectedPerms.add("android.permission.SCENE_UNDERSTANDING_FINE")
+        }
 
         assertThat(expectedPerms).containsExactlyElementsIn(platformRuntimePerms.map { it.name })
     }
