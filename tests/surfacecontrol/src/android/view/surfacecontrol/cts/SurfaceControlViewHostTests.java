@@ -197,7 +197,7 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
     private final Map<String,
             FutureConnection<ICrossProcessSurfaceControlViewHostTestService>> mConnections =
             new ArrayMap<>();
-    private ICrossProcessSurfaceControlViewHostTestService mTestService = null;
+    private ICrossProcessSurfaceControlViewHostTestService mTestService;
     private static final long TIMEOUT_MS = 3000L * HW_TIMEOUT_MULTIPLIER;
 
     /*
@@ -244,6 +244,7 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
         mEmbeddedLayoutParams = null;
         mPopupWindow = null;
         mRemoteSurfacePackage = null;
+        mTestService = null;
 
         if (supportsInstallableIme()) {
             mImeSession = createManagedMockImeSession(this);
