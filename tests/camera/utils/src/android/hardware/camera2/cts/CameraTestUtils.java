@@ -4804,7 +4804,6 @@ public class CameraTestUtils extends Assert {
             {V, PRIV, S1080P,  JPEG, UHD},
             {V, PRIV, S1080P,  JPEG, S1440P_16_9},
             {V, PRIV, S1080P,  JPEG, S1080P},
-            {V, PRIV, S1080P,  PRIV, UHD},
             {V, PRIV, S720P,   JPEG, MAXIMUM_16_9},
             {V, PRIV, S720P,   JPEG, UHD},
             {V, PRIV, S720P,   JPEG, S1080P},

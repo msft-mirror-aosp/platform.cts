@@ -262,8 +262,10 @@ public abstract class VirtualInputDevice implements
     private void updateInputDevice(int deviceId) {
         InputDevice device = mInputManager.getInputDevice(deviceId);
         if (device == null) {
+            Log.i(TAG, "getInputDevice(deviceId=" + deviceId + ") returned null");
             return;
         }
+        Log.i(TAG, "updateInputDevice: processing device " + device);
         // Check if the device is what we expected
         if (device.getVendorId() == mVendorId && device.getProductId() == mProductId) {
             if ((device.getSources() & mSources) == mSources) {

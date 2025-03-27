@@ -36,12 +36,11 @@ import java.util.concurrent.CountDownLatch;
 public class CtsCallDiagnosticService extends CallDiagnosticService {
     private static final String LOG_TAG = "CtsCallDiagnosticService";
     private static CtsCallDiagnosticService sCtsCallDiagnosticService;
-    private CallAudioState mCallAudioState;
     private BluetoothCallQualityReport mBluetoothCallQualityReport;
     private static CountDownLatch sBindLatch = new CountDownLatch(1);
     private CountDownLatch mChangeLatch = new CountDownLatch(1);
     private CountDownLatch mBluetoothCallQualityReportLatch = new CountDownLatch(1);
-    private CountDownLatch mCallAudioStateLatch = new CountDownLatch(1);
+    private List<CallAudioState> mCallAudioStates = new ArrayList<>();
     private List<CtsCallDiagnostics> mCalls = new ArrayList<>();
     private CharSequence mDisconnectMessage = null;
 
@@ -162,8 +161,7 @@ public class CtsCallDiagnosticService extends CallDiagnosticService {
 
     @Override
     public void onCallAudioStateChanged(@NonNull CallAudioState audioState) {
-        mCallAudioState = audioState;
-        mCallAudioStateLatch.countDown();
+        mCallAudioStates.add(audioState);
     }
 
     @Override
@@ -181,12 +179,8 @@ public class CtsCallDiagnosticService extends CallDiagnosticService {
         return sBindLatch;
     }
 
-    public CallAudioState getCallAudioState() {
-        return mCallAudioState;
-    }
-
-    public CountDownLatch getCallAudioStateLatch() {
-        return mCallAudioStateLatch;
+    public List<CallAudioState> getCallAudioStates() {
+        return mCallAudioStates;
     }
 
     public BluetoothCallQualityReport getBluetoothCallQualityReport() {
