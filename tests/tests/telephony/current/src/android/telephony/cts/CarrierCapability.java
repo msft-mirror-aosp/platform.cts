@@ -107,6 +107,16 @@ public class CarrierCapability {
                     "45005",    // SKT Mobility
                     "45002",     // SKT Mobility
                     "45006",    // LGT
+                    "46000",    // China Mobile
+                    "46001",    // China Unicom
+                    "46002",    // China Mobile
+                    "46003",    // China Telecom
+                    "46005",    // China Telecom
+                    "46006",    // China Unicom
+                    "46007",    // China Mobile
+                    "46008",    // China Mobile
+                    "46009",    // China Unicom
+                    "46011",    // China Telecom
                     "310260",   // Republic Wireless US
                     // Verizon
                     "310004",
