@@ -1268,6 +1268,10 @@
     <string name="nfc_result_message">Written data:\n%1$s\n\nRead data:\n%2$s</string>
     <string name="nfc_ndef_content">Id: %1$s\nMime: %2$s\nPayload: %3$s</string>
 
+    <string name="nfc_hce">Host-based card emulation</string>
+    <string name="nfc_hce_emulator_polling_loop_annotations">Polling Loop Emulator Annotations</string>
+    <string name="nfc_hce_reader_polling_loop_annotations">Polling Loop Reader Annotations</string>
+
     <string name="nfc_hce_f">Host-based Felica card emulation</string>
     <string name="nfc_hce_f_reader_tests">HCE Felica reader tests</string>
     <string name="nfc_hce_f_emulator_observe_mode_tests">NFC-F observe mode emulator tests</string>
