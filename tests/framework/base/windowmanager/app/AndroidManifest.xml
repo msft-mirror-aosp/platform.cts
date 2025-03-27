@@ -392,6 +392,7 @@
         <activity android:name=".SplashscreenActivity"
              android:taskAffinity="nobody.but.SplashscreenActivity"
              android:theme="@style/SplashscreenTheme"
+            android:screenOrientation="locked"
              android:exported="true"/>
 
         <activity android:name=".DisablePreviewActivity"
@@ -637,18 +638,22 @@
         <activity android:name=".HandleSplashScreenExitActivity"
                   android:theme="@style/ShowBrandingTheme"
                   android:configChanges="uiMode"
+                  android:screenOrientation="locked"
                   android:exported="true"
                   android:taskAffinity="nobody.but.TestSplashScreenAffinity"/>
         <activity android:name=".SplashScreenReplaceIconActivity"
                   android:exported="true"
+                  android:screenOrientation="locked"
                   android:theme="@style/ReplaceIconTheme"
                   android:taskAffinity="nobody.but.TestSplashScreenAffinity"/>
         <activity android:name=".SplashScreenReplaceThemeActivity"
                   android:exported="true"
+                  android:screenOrientation="locked"
                   android:theme="@style/ReplaceIconTheme"
                   android:taskAffinity="nobody.but.TestSplashScreenAffinity"/>
         <activity android:name=".SplashScreenStyleThemeActivity"
                   android:exported="true"
+                  android:screenOrientation="locked"
                   android:theme="@style/SplashScreenStyleTheme"
                   android:taskAffinity="nobody.but.TestSplashScreenAffinity"/>
 
