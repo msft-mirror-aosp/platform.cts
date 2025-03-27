@@ -28,7 +28,6 @@ import static com.android.cts.content.Utils.requestSync;
 import static com.android.cts.content.Utils.withAccount;
 
 import static org.junit.Assume.assumeFalse;
-import static org.junit.Assume.assumeNotNull;
 import static org.junit.Assume.assumeTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
@@ -48,6 +47,7 @@ import androidx.test.rule.ActivityTestRule;
 import androidx.test.runner.AndroidJUnit4;
 import androidx.test.uiautomator.By;
 import androidx.test.uiautomator.Direction;
+import androidx.test.uiautomator.StaleObjectException;
 import androidx.test.uiautomator.UiDevice;
 import androidx.test.uiautomator.UiObject2;
 import androidx.test.uiautomator.UiObjectNotFoundException;
@@ -78,6 +78,7 @@ public class CtsSyncAccountAccessOtherCertTestCases {
             "Permission Requested.*|Permission requested.*");
     private static final Pattern ALLOW_SYNC = Pattern.compile("ALLOW|Allow");
     private static final String OPEN_NOTIFICATION_WATCH = "Open";
+    private static final String CLEAR_ALL_TEXT = "Clear all";
 
     @Rule
     public final TestRule mFlakyTestRule = new FlakyTestRule(3);
@@ -95,10 +96,6 @@ public class CtsSyncAccountAccessOtherCertTestCases {
         disallowSyncAdapterRunInBackgroundAndDataInBackground();
     }
 
-    /*
-    @Ignore("In some cases test cannot scroll through notifications to find permission request "
-            + "b/147410068")
-     */
     @Test
     public void testAccountAccess_otherCertAsAuthenticatorCanNotSeeAccount() throws Exception {
         assumeTrue(hasDataConnection());
@@ -114,18 +111,24 @@ public class CtsSyncAccountAccessOtherCertTestCases {
         // so that the search for the permission notification does not fail
         UiDevice uiDevice = getUiDevice();
         if (uiDevice.openNotification()) {
-            Thread.sleep(1000);
-            UiObject2 scrollable = uiDevice.findObject(By.scrollable(true));
-            UiObject2 clear;
-            if (scrollable != null) {
-                clear = scrollable.scrollUntil(Direction.DOWN,
-                                        Until.findObject(By.text("Clear all")));
-            } else {
-                clear = uiDevice.findObject(By.text("Clear all"));
+            UiObject2 clearAll = uiDevice.wait(
+                    Until.findObject(By.text(CLEAR_ALL_TEXT)), UI_TIMEOUT_MILLIS);
+            try {
+                if (clearAll == null) {
+                    UiObject2 scrollable = uiDevice.findObject(By.scrollable(true));
+                    if (scrollable != null) {
+                        clearAll = scrollable.scrollUntil(
+                                Direction.DOWN, Until.findObject(By.text(CLEAR_ALL_TEXT)));
+                    }
+                }
+            } catch (StaleObjectException ignore) {
+                // TODO (b/406640881): Couldn't find the appropriate scrollable object.
             }
-            assumeNotNull(clear);
-            clear.click();
+            if (clearAll != null) {
+                clearAll.click();
+            }
         }
+        swipeUp(uiDevice); // Ensure notification pane is closed
 
         try (AutoCloseable ignored = withAccount(activity.getActivity())) {
             AbstractThreadedSyncAdapter adapter = AlwaysSyncableSyncService.getInstance(
@@ -155,8 +158,9 @@ public class CtsSyncAccountAccessOtherCertTestCases {
                     try {
                         UiObject2 permissionRequest = uiDevice.wait(
                                 Until.findObject(By.text(PERMISSION_REQUESTED)), UI_TIMEOUT_MILLIS);
-
-                        permissionRequest.click();
+                        if (permissionRequest != null) {
+                            permissionRequest.click();
+                        }
                         break;
                     } catch (Throwable t) {
                         if (scrollUps < 10) {
@@ -182,7 +186,11 @@ public class CtsSyncAccountAccessOtherCertTestCases {
                 }
             }
 
-            uiDevice.wait(Until.findObject(By.text(ALLOW_SYNC)), UI_TIMEOUT_MILLIS).click();
+            UiObject2 allowSyncButton = uiDevice.wait(
+                    Until.findObject(By.text(ALLOW_SYNC)), UI_TIMEOUT_MILLIS);
+            if (allowSyncButton != null) {
+                allowSyncButton.click();
+            }
 
             ContentResolver.requestSync(request);
 
