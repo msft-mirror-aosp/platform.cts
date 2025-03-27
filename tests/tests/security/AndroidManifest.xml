@@ -40,6 +40,14 @@
      <!-- CVE-2023-21143 -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
+    <!-- CVE-2024-0014 -->
+    <uses-permission android:name="com.google.android.providers.gsf.permission.READ_GSERVICES" />
+    <queries>
+       <intent>
+           <action android:name="com.google.android.gms.phenotype.UPDATE" />
+       </intent>
+    </queries>
+
     <!-- CVE-2024-0022 -->
     <uses-feature android:name="android.software.companion_device_setup" />
 
