@@ -493,7 +493,7 @@ def switch_default_camera(dut, facing, log_path):
   """
   flip_camera_pattern = (
       r'(switch to|flip camera|switch camera|camera switch|)'
-      r'(switch|toggle_button|front_back_switcher|switch_camera_button)'
+      r'(toggle_button|front_back_switcher|switch_camera_button|camera_switch_button)'
     )
   flash_pattern = 'flash'
   default_ui_dump = dut.ui.dump()
