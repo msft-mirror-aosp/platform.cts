@@ -185,6 +185,7 @@ public class VehiclePropertyVerifier<T> {
     private final boolean mVerifyErrorStates;
     private final ImmutableSet<String> mReadPermissions;
     private final ImmutableList<ImmutableSet<String>> mWritePermissions;
+    private final List<Integer> mStoredProperties = new ArrayList<>();
 
     private boolean mIsCarPropertyConfigCached;
     private CarPropertyConfig<T> mCachedCarPropertyConfig;
@@ -706,10 +707,12 @@ public class VehiclePropertyVerifier<T> {
                         .build();
 
         try {
+            runWithShellPermissionIdentity(() -> {
+                storeCurrentValues();
+            }, propertyPermissions.toArray(new String[0]));
             enableAdasFeatureIfAdasStateProperty();
             runWithShellPermissionIdentity(() -> {
                 turnOnHvacPowerIfHvacPowerDependent();
-                storeCurrentValues();
                 verifyCarPropertyValueSetter();
                 if (exceptedExceptionClass != null) {
                     assertWithMessage("Expected " + sExceptionClassOnSet + " to be of type "
@@ -852,7 +855,27 @@ public class VehiclePropertyVerifier<T> {
         if (areaIdToInitialValue == null || areaIdToInitialValue.size() == 0) {
             return;
         }
-        mPropertyToAreaIdValues.put(carPropertyConfig.getPropertyId(), areaIdToInitialValue);
+        var propertyId = carPropertyConfig.getPropertyId();
+        if (mPropertyToAreaIdValues.contains(propertyId)) {
+            throw new IllegalStateException("The property: "
+                    + VehiclePropertyIds.toString(propertyId) + " already has a stored value");
+        }
+        mStoredProperties.add(propertyId);
+        mPropertyToAreaIdValues.put(propertyId, areaIdToInitialValue);
+    }
+
+    private void restoreInitialValue(int propertyId) {
+        var carPropertyConfig = mCarPropertyManager.getCarPropertyConfig(propertyId);
+        SparseArray<?> areaIdToInitialValue = mPropertyToAreaIdValues.get(propertyId);
+
+        if (areaIdToInitialValue == null || carPropertyConfig == null) {
+            Log.w(TAG, "No stored values for " + VehiclePropertyIds.toString(propertyId)
+                    + " to restore to, ignore");
+            return;
+        }
+
+        restoreInitialValuesByAreaId(carPropertyConfig, mCarPropertyManager,
+                areaIdToInitialValue);
     }
 
     /**
@@ -860,24 +883,15 @@ public class VehiclePropertyVerifier<T> {
      * {@link #storeCurrentValues}.
      *
      * Do nothing if no stored current values are available.
+     *
+     * The properties values are restored in the reverse-order as they are stored.
      */
-    public <U> void restoreInitialValues() {
-        for (int i = 0; i < mPropertyToAreaIdValues.size(); i++) {
-            int propertyId = mPropertyToAreaIdValues.keyAt(i);
-            CarPropertyConfig<U> carPropertyConfig = (CarPropertyConfig<U>)
-                    mCarPropertyManager.getCarPropertyConfig(propertyId);
-            SparseArray<U> areaIdToInitialValue = (SparseArray<U>)
-                    mPropertyToAreaIdValues.get(propertyId);
-
-            if (areaIdToInitialValue == null || carPropertyConfig == null) {
-                Log.w(TAG, "No stored values for " + VehiclePropertyIds.toString(propertyId)
-                        + " to restore to, ignore");
-                return;
-            }
-
-            restoreInitialValuesByAreaId(carPropertyConfig, mCarPropertyManager,
-                    areaIdToInitialValue);
+    public void restoreInitialValues() {
+        for (int i = mStoredProperties.size() - 1; i >= 0; i--) {
+            restoreInitialValue(mStoredProperties.get(i));
         }
+        mStoredProperties.clear();
+        mPropertyToAreaIdValues.clear();
     }
 
     // Get a map storing the property's area Ids to the initial values.
@@ -932,14 +946,14 @@ public class VehiclePropertyVerifier<T> {
     }
 
     // Restore the initial values of the property provided by {@code areaIdToInitialValue}.
-    private static <U> void restoreInitialValuesByAreaId(CarPropertyConfig<U> carPropertyConfig,
-            CarPropertyManager carPropertyManager, SparseArray<U> areaIdToInitialValue) {
+    private static void restoreInitialValuesByAreaId(CarPropertyConfig<?> carPropertyConfig,
+            CarPropertyManager carPropertyManager, SparseArray<?> areaIdToInitialValue) {
         int propertyId = carPropertyConfig.getPropertyId();
         String propertyName = VehiclePropertyIds.toString(propertyId);
         for (int i = 0; i < areaIdToInitialValue.size(); i++) {
             int areaId = areaIdToInitialValue.keyAt(i);
-            U originalValue = areaIdToInitialValue.valueAt(i);
-            CarPropertyValue<U> currentCarPropertyValue = null;
+            Object originalValue = areaIdToInitialValue.valueAt(i);
+            CarPropertyValue<?> currentCarPropertyValue = null;
             try {
                 currentCarPropertyValue = carPropertyManager.getProperty(propertyId, areaId);
             } catch (PropertyNotAvailableAndRetryException | PropertyNotAvailableException
@@ -953,12 +967,20 @@ public class VehiclePropertyVerifier<T> {
                         + " to restore initial car property value.");
                 continue;
             }
-            U currentValue = (U) currentCarPropertyValue.getValue();
+            Object currentValue = currentCarPropertyValue.getValue();
             if (valueEquals(originalValue, currentValue)) {
                 continue;
             }
-            setPropertyAndWaitForChange(carPropertyManager,
-                    propertyId, carPropertyConfig.getPropertyType(), areaId, originalValue);
+            Log.i(
+                    TAG,
+                    "Restoring value for: "
+                            + propertyName
+                            + " at area ID: "
+                            + areaId
+                            + " to "
+                            + originalValue);
+            setPropertyAndWaitForChange(
+                    carPropertyManager, propertyId, Object.class, areaId, originalValue);
         }
     }
 
