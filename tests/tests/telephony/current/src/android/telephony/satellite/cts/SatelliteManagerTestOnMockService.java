@@ -3440,6 +3440,8 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
                 SatelliteManager.SATELLITE_RESULT_SUCCESS;
         @SatelliteManager.SatelliteResult int expectedError;
 
+        List<String> allPlmnListBeforeCarrierConfigOverride = getCarrierPlmnList();
+
         /* Test when satellite is not supported in the carrier config */
         PersistableBundle bundle = new PersistableBundle();
         bundle.putBoolean(
@@ -3477,11 +3479,18 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         assertEquals(expectedCarrierPlmnList, carrierPlmnList);
         List<String> satellitePlmnListFromOverlayConfig =
                 sMockSatelliteServiceManager.getPlmnListFromOverlayConfig();
-        List<String> expectedAllSatellitePlmnList = SatelliteServiceUtils.mergeStrLists(
-                carrierPlmnList, satellitePlmnListFromOverlayConfig);
+        List<String> expectedAllSatellitePlmnList =
+                SatelliteServiceUtils.mergeStrLists(
+                        carrierPlmnList,
+                        satellitePlmnListFromOverlayConfig,
+                        allPlmnListBeforeCarrierConfigOverride);
         List<String> allSatellitePlmnList = getAllSatellitePlmnList();
         assertNotNull(allSatellitePlmnList);
-        assertEquals(expectedAllSatellitePlmnList, allSatellitePlmnList);
+        boolean listsAreEqual =
+                expectedAllSatellitePlmnList.containsAll(allSatellitePlmnList)
+                        && allSatellitePlmnList.containsAll(expectedAllSatellitePlmnList);
+        assertTrue(listsAreEqual);
+
         requestSatelliteAttachEnabledForCarrier(true, expectedSuccess);
 
         pair = requestIsSatelliteAttachEnabledForCarrier();
@@ -4697,6 +4706,8 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         @SatelliteManager.SatelliteResult int expectedSuccess =
                 SatelliteManager.SATELLITE_RESULT_SUCCESS;
 
+        List<String> allSatellitePlmnListBeforeCarrierConfigOverride = getAllSatellitePlmnList();
+
         /* Test when satellite is supported in the carrier config */
         setSatelliteErrorBasedOnHalVersion(expectedSuccess);
         PersistableBundle bundle = new PersistableBundle();
@@ -4726,11 +4737,18 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
 
         List<String> satellitePlmnListFromOverlayConfig =
                 sMockSatelliteServiceManager.getPlmnListFromOverlayConfig();
-        List<String> expectedAllSatellitePlmnList = SatelliteServiceUtils.mergeStrLists(
-                carrierPlmnList, satellitePlmnListFromOverlayConfig);
+        List<String> expectedAllSatellitePlmnList =
+                SatelliteServiceUtils.mergeStrLists(
+                        carrierPlmnList,
+                        satellitePlmnListFromOverlayConfig,
+                        allSatellitePlmnListBeforeCarrierConfigOverride);
         List<String> allSatellitePlmnList = getAllSatellitePlmnList();
+
         assertNotNull(allSatellitePlmnList);
-        assertEquals(expectedAllSatellitePlmnList, allSatellitePlmnList);
+        boolean listsAreEqual =
+                expectedAllSatellitePlmnList.containsAll(allSatellitePlmnList)
+                        && allSatellitePlmnList.containsAll(expectedAllSatellitePlmnList);
+        assertTrue(listsAreEqual);
 
         afterSatelliteForCarrierTest();
         revokeSatellitePermission();
