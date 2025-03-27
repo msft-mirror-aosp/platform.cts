@@ -41,6 +41,7 @@ import static android.view.MotionEvent.ACTION_UP;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
+import static org.junit.Assume.assumeTrue;
 
 import android.accessibility.cts.common.AccessibilityDumpOnFailureRule;
 import android.accessibility.cts.common.InstrumentedAccessibilityService;
@@ -63,6 +64,7 @@ import androidx.test.rule.ActivityTestRule;
 import androidx.test.runner.AndroidJUnit4;
 
 import com.android.compatibility.common.util.CddTest;
+import com.android.compatibility.common.util.XrUtil;
 
 import org.junit.After;
 import org.junit.Before;
@@ -123,7 +125,10 @@ public class FullScreenMagnificationGestureHandlerTest {
         if (!mHasTouchscreen) return;
         assumeFalse("Magnification is not supported on Automotive.",
                 isAutomotive(mInstrumentation.getTargetContext()));
-
+        assumeTrue("Magnification and third-party accessibility services (3.10/C-1-1)"
+                        + " are not supported on Android XR by default.",
+                XrUtil.supportsXrThirdPartyMagnificationServices(
+                        mInstrumentation.getTargetContext()));
         // Backup and reset magnification settings.
         mOriginalIsMagnificationCapabilities = getSecureSettingInt(
                 Settings.Secure.ACCESSIBILITY_MAGNIFICATION_CAPABILITY,
