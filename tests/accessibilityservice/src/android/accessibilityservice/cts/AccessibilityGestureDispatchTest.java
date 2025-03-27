@@ -1,11 +1,11 @@
 /**
  * Copyright (C) 2016 The Android Open Source Project
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
- *
+ * <p>
  * http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
  * Unless required by applicable law or agreed to in writing, software distributed under the
  * License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
  * express or implied. See the License for the specific language governing permissions and
@@ -46,6 +46,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
+import static org.junit.Assume.assumeTrue;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
@@ -77,6 +78,7 @@ import androidx.test.rule.ActivityTestRule;
 import androidx.test.runner.AndroidJUnit4;
 
 import com.android.compatibility.common.util.CddTest;
+import com.android.compatibility.common.util.XrUtil;
 
 import org.hamcrest.Matcher;
 import org.junit.AfterClass;
@@ -257,7 +259,7 @@ public class AccessibilityGestureDispatchTest {
         MotionEvent downEvent = mMotionEvents.get(0);
         MotionEvent upEvent = mMotionEvents.get(numEvents - 1);
         assertThat(downEvent, both(IS_ACTION_DOWN).and(isAtPoint(startPoint,
-                    pointTolerance)));
+                pointTolerance)));
         assertThat(upEvent, both(IS_ACTION_UP).and(isAtPoint(endPoint, pointTolerance)));
         assertEquals(gestureTime, upEvent.getEventTime() - downEvent.getEventTime());
 
@@ -270,7 +272,7 @@ public class AccessibilityGestureDispatchTest {
             PointF intermediatePoint = add(startPoint,
                     times(fractionOfSwipe, diff(endPoint, startPoint)));
             assertThat(moveEvent, both(IS_ACTION_MOVE).and(
-                isAtPoint(intermediatePoint, pointTolerance)));
+                    isAtPoint(intermediatePoint, pointTolerance)));
             lastEventTime = moveEvent.getEventTime();
         }
     }
@@ -367,7 +369,10 @@ public class AccessibilityGestureDispatchTest {
         }
         assumeFalse("Magnification is not supported on Automotive.",
                 isAutomotive(sInstrumentation.getTargetContext()));
-
+        assumeTrue("Magnification and third-party accessibility services (3.10/C-1-1)"
+                        + " are not supported on Android XR by default.",
+                XrUtil.supportsXrThirdPartyMagnificationServices(
+                        sInstrumentation.getTargetContext()));
         int displayId = mActivity.getWindow().getDecorView().getDisplay().getDisplayId();
         if (displayId != Display.DEFAULT_DISPLAY) {
             Log.i(TAG, "Magnification is not supported on virtual displays.");
@@ -421,14 +426,14 @@ public class AccessibilityGestureDispatchTest {
 
             // Click in the center of the magnification region
             dispatch(new GestureDescription.Builder()
-                    .addStroke(click(magRegionCenterClickPoint))
-                    .build(),
+                            .addStroke(click(magRegionCenterClickPoint))
+                            .build(),
                     GESTURE_COMPLETION_TIMEOUT);
 
             // Click at a slightly offset point
             dispatch(new GestureDescription.Builder()
-                    .addStroke(click(magRegionOffsetClickPoint))
-                    .build(),
+                            .addStroke(click(magRegionOffsetClickPoint))
+                            .build(),
                     GESTURE_COMPLETION_TIMEOUT);
             waitForMotionEvents(any(MotionEvent.class), 4);
         } finally {
