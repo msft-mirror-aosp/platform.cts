@@ -148,7 +148,7 @@ public final class ApiMapXmlGenerator extends ApiXmlGenerator {
         for (ApiConstructor constructor : apiClass.getConstructors()) {
             element.appendChild(createApiConstructorElement(constructor));
         }
-        for (ApiMethod method : apiClass.getMethods()) {
+        for (ApiMethod method : apiClass.getDeclaredMethods()) {
             element.appendChild(createApiMethodElement(method));
         }
         return element;

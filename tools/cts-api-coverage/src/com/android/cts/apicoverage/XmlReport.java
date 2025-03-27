@@ -114,7 +114,7 @@ class XmlReport {
                             out.println("</constructor>");
                         }
 
-                        for (ApiMethod method : apiClass.getMethods()) {
+                        for (ApiMethod method : apiClass.getDeclaredMethods()) {
                             List<String> coveredWithList = new ArrayList<String>(method.getCoveredWith());
                             Collections.sort(coveredWithList);
                             String coveredWith = coveredWithList.stream().collect(Collectors.joining(","));

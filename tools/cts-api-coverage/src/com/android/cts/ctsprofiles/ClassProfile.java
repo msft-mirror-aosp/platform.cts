@@ -237,7 +237,7 @@ public class ClassProfile {
                             .getClass(
                                     inheritedApiClass.getPackageName(),
                                     inheritedApiClass.getClassName())
-                            .getMethods()) {
+                            .getDeclaredMethods()) {
                 if (apiMethod.isAbstractMethod()) {
                     continue;
                 }

@@ -68,7 +68,7 @@ class TextReport {
                             printConstructor(constructor, out);
                         }
 
-                        List<ApiMethod> methods = new ArrayList<ApiMethod>(apiClass.getMethods());
+                        List<ApiMethod> methods = new ArrayList<ApiMethod>(apiClass.getDeclaredMethods());
                         Collections.sort(methods);
                         for (ApiMethod method : methods) {
                             printMethod(method, out);
