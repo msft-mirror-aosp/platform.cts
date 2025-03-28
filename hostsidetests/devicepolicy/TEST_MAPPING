@@ -17,5 +17,10 @@
       "name": "CtsDevicePolicyManagerTestCases_Permissions_NoFlakes",
       "name": "CtsDevicePolicyManagerTestCases_LockSettings_NoFlakes"
     }
+  ],
+  "desktop-postsubmit": [
+    {
+      "name": "CtsDevicePolicyManagerTestCases"
+    }
   ]
 }
