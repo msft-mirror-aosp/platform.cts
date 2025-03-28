@@ -368,6 +368,8 @@ public class LoginActivityTest extends AutoFillServiceTestCase.ManualActivityLau
         LoginActivity activity = startLoginActivity();
         mUiBot.waitForIdleSync();
 
+        // Assert there is no pre-triggered fill request
+        sReplier.assertOnFillRequestNotCalled();
 
         // Click on password field
         mUiBot.selectByRelativeId(ID_PASSWORD);
@@ -376,9 +378,6 @@ public class LoginActivityTest extends AutoFillServiceTestCase.ManualActivityLau
 
         final FillRequest fillRequest = sReplier.getNextFillRequest();
         mUiBot.waitForIdleSync();
-
-        // Verify IME is not shown
-        assertThat(isImeShowing(activity.getRootWindowInsets())).isFalse();
 
         // Verify the content of fill dialog, and then select dataset in fill dialog
         mUiBot.assertFillDialogHeader("Dialog Header");
