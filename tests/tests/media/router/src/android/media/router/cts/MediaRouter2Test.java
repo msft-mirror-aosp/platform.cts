@@ -1571,6 +1571,8 @@ public class MediaRouter2Test {
             fail("Expected security exception was not thrown. Result: " + result);
         } catch (SecurityException e) {
             // Expected.
+        } catch (IllegalStateException e) {
+            fail("Expected exception was not thrown but IllegalStateException was thrown.");
         }
     }
 
