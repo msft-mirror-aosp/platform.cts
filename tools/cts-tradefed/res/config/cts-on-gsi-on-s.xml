@@ -91,4 +91,7 @@
     <!-- b/395524060 -->
     <option name="compatibility:exclude-filter" value="CtsMediaV2TestCases android.mediav2.cts.CodecDecoderSurfaceTest#testDetachAndReattachSurface" />
 
+    <!-- b/395834565 -->
+    <option name="compatibility:exclude-filter" value="CtsVideoCodecTestCases android.videocodec.cts.VideoEncoderPsnrTest#testPsnr" />
+
 </configuration>
