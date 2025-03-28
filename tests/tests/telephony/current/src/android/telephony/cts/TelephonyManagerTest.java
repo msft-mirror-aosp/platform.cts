@@ -6116,8 +6116,10 @@ public class TelephonyManagerTest {
             List<Uri> impuList = ShellIdentityUtils.invokeMethodWithShellPermissions(
                     mTelephonyManager, tm -> tm.getImsPublicUserIdentities(),
                     Manifest.permission.READ_PRIVILEGED_PHONE_STATE);
+            Log.i(TAG, "getImsPublicUserIdentities_ReadPrivilegedPermission: impuList " + impuList);
             assertNotNull(impuList);
             for (Uri impu : impuList) {
+                Log.i(TAG, "getImsPublicUserIdentities_ReadPrivilegedPermission: impu " + impu);
                 assertTrue(impu.getScheme().equalsIgnoreCase("sip"));
             }
         } catch (IllegalStateException e) {
