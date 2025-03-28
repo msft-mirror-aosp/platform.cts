@@ -140,6 +140,7 @@ public class BiometricSimpleTests extends BiometricTestBase {
      */
     @ApiTest(apis = {"android.hardware.biometrics.BiometricManager#getEnrollmentStatus"})
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_MOVE_FM_API_TO_BM)
     public void testGetEnrolledFingerprintCount_withoutPermissionFailed() {
         assumeTrue(Utils.isFirstApiLevel29orGreater());
         mInstrumentation.getUiAutomation().dropShellPermissionIdentity();
