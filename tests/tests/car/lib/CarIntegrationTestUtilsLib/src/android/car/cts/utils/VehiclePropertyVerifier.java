@@ -610,27 +610,32 @@ public class VehiclePropertyVerifier<T> {
 
     /** Runs a specific verification step. */
     public void verify(String step, @Nullable Class<?> exceptedExceptionClass) {
-        if (step.equals(STEP_VERIFY_PROPERTY_CONFIG)) {
-            verifyConfig();
-            return;
-        }
-        if (step.equals(STEP_VERIFY_IS_PROPERTY_AVAILABLE)) {
-            verifyIsPropertyAvailable();
-            return;
-        }
-        assumeTrue("Property: " + getPropertyName() + " is not supported", isSupported());
-        if (step.equals(STEP_VERIFY_PERMISSION_NOT_GRANTED_EXCEPTION)) {
-            verifyPermissionNotGrantedException();
-        } else if (step.startsWith(STEP_VERIFY_READ_APIS_PREFIX)) {
-            verifyReadApis(step, exceptedExceptionClass);
-        } else if (step.startsWith(STEP_VERIFY_WRITE_APIS_PREFIX)) {
-            verifyWriteApis(step, exceptedExceptionClass);
-        } else if (step.equals(STEP_VERIFY_READ_PERMISSION_CANNOT_WRITE)) {
-            verifyReadPermissionCannotWrite();
-        } else if (step.equals(STEP_VERIFY_WRITE_PERMISSION_CANNOT_READ)) {
-            verifyWritePermissionCannotRead();
-        } else {
-            throw new IllegalStateException("Unknown step: " + step);
+        try {
+            Log.i(TAG, "Running test case: " + step);
+            if (step.equals(STEP_VERIFY_PROPERTY_CONFIG)) {
+                verifyConfig();
+                return;
+            }
+            if (step.equals(STEP_VERIFY_IS_PROPERTY_AVAILABLE)) {
+                verifyIsPropertyAvailable();
+                return;
+            }
+            assumeTrue("Property: " + getPropertyName() + " is not supported", isSupported());
+            if (step.equals(STEP_VERIFY_PERMISSION_NOT_GRANTED_EXCEPTION)) {
+                verifyPermissionNotGrantedException();
+            } else if (step.startsWith(STEP_VERIFY_READ_APIS_PREFIX)) {
+                verifyReadApis(step, exceptedExceptionClass);
+            } else if (step.startsWith(STEP_VERIFY_WRITE_APIS_PREFIX)) {
+                verifyWriteApis(step, exceptedExceptionClass);
+            } else if (step.equals(STEP_VERIFY_READ_PERMISSION_CANNOT_WRITE)) {
+                verifyReadPermissionCannotWrite();
+            } else if (step.equals(STEP_VERIFY_WRITE_PERMISSION_CANNOT_READ)) {
+                verifyWritePermissionCannotRead();
+            } else {
+                throw new IllegalStateException("Unknown step: " + step);
+            }
+        } finally {
+            Log.i(TAG, "Finished test case: " + step);
         }
     }
 
