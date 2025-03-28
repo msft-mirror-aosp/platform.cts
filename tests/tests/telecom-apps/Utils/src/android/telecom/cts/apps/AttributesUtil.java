@@ -34,7 +34,7 @@ public class AttributesUtil {
     private static final Uri TEST_URI_IN = Uri.parse("tel:456-TEST");
     private static final String TEST_NAME_IN = "Alan Turing";
     public static final String TEST_EMERGENCY_NUMBER = "5553637";
-    private static final Uri TEST_EMERGENCY_URI = Uri.fromParts("tel", TEST_EMERGENCY_NUMBER, null);
+    public static final Uri TEST_EMERGENCY_URI = Uri.fromParts("tel", TEST_EMERGENCY_NUMBER, null);
     public static final String SYSTEM_DIALER_PKG_NAME = "android.telecom.cts.cuj/.CujInCallService";
     public static final String TEST_EMERGENCY_MANAGED_PHONE_ACCOUNT_PKG_NAME =
             "android.telecom.cts.apps.managedapp";
