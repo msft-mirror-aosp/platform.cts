@@ -71,6 +71,8 @@ import androidx.test.uiautomator.Configurator;
 
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.CddTest;
+import com.android.compatibility.common.util.FeatureUtil;
+import com.android.compatibility.common.util.PropertyUtil;
 import com.android.compatibility.common.util.SystemUtil;
 
 import org.junit.AfterClass;
@@ -102,6 +104,9 @@ public class AccessibilityTakeScreenshotTest {
      * The timeout for waiting screenshot had been taken done.
      */
     private static final long TIMEOUT_TAKE_SCREENSHOT_DONE_MILLIS = 1000;
+
+    private static final String XR_SCREENSHOT_RESOLUTION_PROPERTY =
+            "persist.cpm.default_capture_resolution";
     public static final int SECURE_WINDOW_CONTENT_COLOR = Color.BLUE;
 
     private static Instrumentation sInstrumentation;
@@ -120,7 +125,7 @@ public class AccessibilityTakeScreenshotTest {
 
     private StubTakeScreenshotService mService;
     private Context mContext;
-    private Point mDisplaySize;
+    private Point mScreenshotSize;
     private long mStartTestingTime;
     @Mock
     private TakeScreenshotCallback mCallback;
@@ -151,9 +156,25 @@ public class AccessibilityTakeScreenshotTest {
         WindowManager windowManager =
                 (WindowManager) mContext.getSystemService(Context.WINDOW_SERVICE);
         final Display display = windowManager.getDefaultDisplay();
+        mScreenshotSize = getScreenshotSize(display);
+    }
 
-        mDisplaySize = new Point();
-        display.getRealSize(mDisplaySize);
+    private static Point getScreenshotSize(final Display display) {
+        if (FeatureUtil.isXrHeadset()
+                && PropertyUtil.propertyExists(XR_SCREENSHOT_RESOLUTION_PROPERTY)) {
+            String captureResolution = PropertyUtil.getProperty(XR_SCREENSHOT_RESOLUTION_PROPERTY);
+            String[] widthAndHeight = captureResolution.split("x");
+            if (widthAndHeight.length == 2) {
+                int width = Integer.parseInt(widthAndHeight[0]);
+                int height = Integer.parseInt(widthAndHeight[1]);
+                if (width > 0 && height > 0) {
+                    return new Point(width, height);
+                }
+            }
+        }
+        Point size = new Point();
+        display.getRealSize(size);
+        return size;
     }
 
     @Test
@@ -473,7 +494,7 @@ public class AccessibilityTakeScreenshotTest {
     }
 
     private void verifyScreenshotResult(AccessibilityService.ScreenshotResult screenshot) {
-        verifyScreenshotResult(screenshot, mDisplaySize.x, mDisplaySize.y, mStartTestingTime);
+        verifyScreenshotResult(screenshot, mScreenshotSize.x, mScreenshotSize.y, mStartTestingTime);
     }
 
     private void verifyScreenshotResult(AccessibilityService.ScreenshotResult screenshot,
