@@ -27,6 +27,7 @@ import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
+import static org.junit.Assume.assumeFalse;
 
 import android.app.Activity;
 import android.app.Instrumentation;
@@ -1010,6 +1011,8 @@ public class RoleManagerTest {
     @Test
     public void removeSmsRoleHolderThenPermissionIsRevoked() throws Exception {
         assumeTrue(sRoleManager.isRoleAvailable(RoleManager.ROLE_SMS));
+        assumeFalse(callWithShellPermissionIdentity(
+                () -> getRoleHolders(RoleManager.ROLE_SMS)).contains(APP_PACKAGE_NAME));
 
         String smsRoleHolder = getRoleHolders(RoleManager.ROLE_SMS).get(0);
         addRoleHolder(RoleManager.ROLE_SMS, APP_PACKAGE_NAME);
