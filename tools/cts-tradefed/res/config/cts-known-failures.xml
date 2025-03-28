@@ -413,4 +413,7 @@
 
     <!-- b/404299890 -->
     <option name="compatibility:exclude-filter" value="CtsWindowManagerDeviceOther android.server.wm.other.AnrTests#embeddedWindowTriggersAnr" />
+
+    <!-- b/406965817 -->
+    <option name="compatibility:exclude-filter" value="CtsVirtualDevicesCameraTestCases android.virtualdevice.cts.camera.VirtualCameraCaptureTest.testRenderingRate"/>
 </configuration>
