@@ -270,6 +270,8 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         sNtnOnlySubId = getNtnOnlySubscriptionId();
         assumeTrue(sNtnOnlySubId != SubscriptionManager.INVALID_SUBSCRIPTION_ID);
         setUpNtnOnlySubscription();
+        // Enable CTS mode to ignore the requests from SG-APK and real Pointing UI app.
+        assertTrue(sMockSatelliteServiceManager.setCtsMode(true));
 
         revokeSatellitePermission();
     }
@@ -332,6 +334,8 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         assertTrue(sMockSatelliteServiceManager
                 .setIsSatelliteCommunicationAllowedForCurrentLocationCache(
                         "cache_clear_and_not_allowed"));
+        // Disable CTS mode to accept the requests from SG-APK and real Pointing UI app.
+        assertTrue(sMockSatelliteServiceManager.setCtsMode(false));
         afterAllTestsBase();
         sMockSatelliteServiceManager = null;
         sCarrierConfigReceiver = null;
