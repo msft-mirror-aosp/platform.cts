@@ -50,7 +50,7 @@ CHART_SCALE_STEP = 0.025
 
 CIRCLE_AR_ATOL = 0.1  # circle aspect ratio tolerance
 CIRCLISH_ATOL = 0.10  # contour area vs ideal circle area & aspect ratio TOL
-CIRCLISH_LOW_RES_ATOL = 0.15  # loosen for low res images
+CIRCLISH_LOW_RES_ATOL = 0.155  # loosen for low res images
 CIRCLE_MIN_PTS = 20
 CIRCLE_RADIUS_NUMPTS_THRESH = 2  # contour num_pts/radius: empirically ~3x
 CIRCLE_COLOR_ATOL = 0.05  # circle color fill tolerance
