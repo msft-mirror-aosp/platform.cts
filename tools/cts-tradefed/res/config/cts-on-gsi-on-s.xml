@@ -88,4 +88,7 @@
     <!-- b/391173906 -->
     <option name="compatibility:exclude-filter" value="CtsPackageManagerTestCases android.content.pm.cts.PackageManagerShellCommandIncrementalTest#testBug270117845Fixed" />
 
+    <!-- b/395524060 -->
+    <option name="compatibility:exclude-filter" value="CtsMediaV2TestCases android.mediav2.cts.CodecDecoderSurfaceTest#testDetachAndReattachSurface" />
+
 </configuration>
