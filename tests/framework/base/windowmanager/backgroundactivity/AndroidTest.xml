@@ -29,6 +29,7 @@
         <option name="install-arg" value="-t" />
         <option name="test-file-name" value="CtsBackgroundActivityAppA.apk" />
         <option name="test-file-name" value="CtsBackgroundActivityAppA33.apk" />
+        <option name="test-file-name" value="CtsBackgroundActivityAppA36.apk" />
         <option name="test-file-name" value="CtsBackgroundActivityAppB.apk" />
         <option name="test-file-name" value="CtsBackgroundActivityAppB33.apk" />
         <option name="test-file-name" value="CtsBackgroundActivityAppC.apk" />

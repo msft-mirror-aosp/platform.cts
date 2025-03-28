@@ -112,8 +112,13 @@ public class TestService extends Service {
                 Bundle sendOptions) {
             try {
                 sLatestForegroundActivity.startIntentSenderForResult(
-                        pendingIntent.getIntentSender(), /*requestCode*/1, /*fillinIntent*/
-                        null, /*flagsMask*/0, /*flagsValue*/0, /*extraFlags*/0);
+                        pendingIntent.getIntentSender(),
+                        /* requestCode */ 1,
+                        /* fillinIntent */ null,
+                        /* flagsMask */ 0,
+                        /* flagsValue */ 0,
+                        /* extraFlags */ 0,
+                        sendOptions);
             } catch (IllegalArgumentException e) {
                 throw e;
             } catch (Exception e) {
@@ -127,8 +132,12 @@ public class TestService extends Service {
                 Bundle sendOptions) {
             try {
                 sLatestForegroundActivity.startIntentSender(
-                        pendingIntent.getIntentSender(), /*fillinIntent*/
-                        null, /*flagsMask*/0, /*flagsValue*/0, /*extraFlags*/0);
+                        pendingIntent.getIntentSender(),
+                        /* fillinIntent */ null,
+                        /* flagsMask */ 0,
+                        /* flagsValue */ 0,
+                        /* extraFlags */ 0,
+                        sendOptions);
             } catch (IllegalArgumentException e) {
                 throw e;
             } catch (Exception e) {
@@ -141,8 +150,25 @@ public class TestService extends Service {
         public void sendIntentSender(IntentSender intentSender,
                 Bundle sendOptions) {
             try {
-                intentSender.sendIntent(getApplicationContext(), /*code*/0, /*intent*/null,
-                        /*onFinished*/null, /*handler*/null, /*requiredPermission*/null);
+                if (sendOptions == null) {
+                    intentSender.sendIntent(
+                            getApplicationContext(),
+                            /* code */ 0,
+                            /* intent */ null,
+                            /* requiredPermission */ null,
+                            /* onFinished */ null,
+                            /* handler */ null);
+
+                } else {
+                    intentSender.sendIntent(
+                            getApplicationContext(),
+                            /* code */ 0,
+                            /* intent */ null,
+                            /* requiredPermission */ null,
+                            sendOptions,
+                            /* onFinished */ null,
+                            /* handler */ null);
+                }
             } catch (IllegalArgumentException e) {
                 throw e;
             } catch (Exception e) {

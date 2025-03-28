@@ -405,6 +405,7 @@ public class BackgroundActivityLaunchTest extends BackgroundActivityTestBase {
                         new Intent[]{ new Intent()
                                 .setComponent(APP_A_33.BACKGROUND_ACTIVITY)
                                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) }));
+        // The background activity must be able to launch from a visible task
         assertActivityFocused(APP_A_33.BACKGROUND_ACTIVITY);
     }
 
@@ -670,6 +671,7 @@ public class BackgroundActivityLaunchTest extends BackgroundActivityTestBase {
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_BAL_REQUIRE_OPT_IN_BY_PENDING_INTENT_CREATOR)
+    @RequiresFlagsDisabled(Flags.FLAG_BAL_COVER_INTENT_SENDER)
     public void testPI_onlySenderAllowsBALwithoutOptInIntentSender_isNotBlocked() throws Exception {
         startActivity(APP_A.FOREGROUND_ACTIVITY);
 
@@ -677,7 +679,63 @@ public class BackgroundActivityLaunchTest extends BackgroundActivityTestBase {
         PendingIntent pi = serviceB.generatePendingIntent(APP_B.BACKGROUND_ACTIVITY);
         TestServiceClient serviceA = getTestService(APP_A);
         // there is no explicit opt-in, but using IntentSender.sendIntent implicitly grants
-        serviceA.sendIntentSender(pi.getIntentSender(), Bundle.EMPTY);
+        serviceA.sendIntentSender(pi.getIntentSender(), null);
+
+        assertActivityFocused(APP_B.BACKGROUND_ACTIVITY);
+        assertTaskStackHasComponents(APP_A.FOREGROUND_ACTIVITY, APP_A.FOREGROUND_ACTIVITY);
+        assertTaskStackHasComponents(APP_B.BACKGROUND_ACTIVITY, APP_B.BACKGROUND_ACTIVITY);
+    }
+
+    @Test
+    @RequiresFlagsEnabled({
+        Flags.FLAG_BAL_REQUIRE_OPT_IN_BY_PENDING_INTENT_CREATOR,
+        Flags.FLAG_BAL_COVER_INTENT_SENDER
+    })
+    public void testPI_onlySenderAllowsBALwithoutOptInIntentSender36_isNotBlocked()
+            throws Exception {
+        startActivity(APP_A_36.FOREGROUND_ACTIVITY);
+
+        TestServiceClient serviceB = getTestService(APP_B);
+        PendingIntent pi = serviceB.generatePendingIntent(APP_B.BACKGROUND_ACTIVITY);
+        TestServiceClient serviceA = getTestService(APP_A_36);
+        // there is no explicit opt-in, but using IntentSender.sendIntent implicitly grants
+        serviceA.sendIntentSender(pi.getIntentSender(), null);
+
+        assertActivityFocused(APP_B.BACKGROUND_ACTIVITY);
+        assertTaskStackHasComponents(APP_A_36.FOREGROUND_ACTIVITY, APP_A_36.FOREGROUND_ACTIVITY);
+        assertTaskStackHasComponents(APP_B.BACKGROUND_ACTIVITY, APP_B.BACKGROUND_ACTIVITY);
+    }
+
+    @Test
+    @RequiresFlagsEnabled({
+        Flags.FLAG_BAL_REQUIRE_OPT_IN_BY_PENDING_INTENT_CREATOR,
+        Flags.FLAG_BAL_COVER_INTENT_SENDER
+    })
+    public void testPI_onlySenderAllowsBALwithoutOptInIntentSender_isBlocked() throws Exception {
+        startActivity(APP_A.FOREGROUND_ACTIVITY);
+
+        TestServiceClient serviceB = getTestService(APP_B);
+        PendingIntent pi = serviceB.generatePendingIntent(APP_B.BACKGROUND_ACTIVITY);
+        TestServiceClient serviceA = getTestService(APP_A);
+        // there is no explicit opt-in, so it should block
+        serviceA.sendIntentSender(pi.getIntentSender(), null);
+
+        assertActivityNotFocused(APP_B.BACKGROUND_ACTIVITY);
+    }
+
+    @Test
+    @RequiresFlagsEnabled({
+        Flags.FLAG_BAL_REQUIRE_OPT_IN_BY_PENDING_INTENT_CREATOR,
+        Flags.FLAG_BAL_COVER_INTENT_SENDER
+    })
+    public void testPI_onlySenderAllowsBALwithOptInIntentSender_isNotBlocked() throws Exception {
+        startActivity(APP_A.FOREGROUND_ACTIVITY);
+
+        TestServiceClient serviceB = getTestService(APP_B);
+        PendingIntent pi = serviceB.generatePendingIntent(APP_B.BACKGROUND_ACTIVITY);
+        TestServiceClient serviceA = getTestService(APP_A);
+        // explicit opt-in
+        serviceA.sendIntentSender(pi.getIntentSender(), SEND_OPTIONS_ALLOW_BAL);
 
         assertActivityFocused(APP_B.BACKGROUND_ACTIVITY);
         assertTaskStackHasComponents(APP_A.FOREGROUND_ACTIVITY, APP_A.FOREGROUND_ACTIVITY);
