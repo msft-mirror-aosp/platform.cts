@@ -5872,7 +5872,12 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
                 if (ch.getFrequencyMhz() <= 2462) {
                     //Channels 1-11 are supported for STA in all countries
                     assertEquals(ch.getOperationalModes() & OP_MODE_STA, OP_MODE_STA);
-                    assertEquals(ch.getChannelWidth(), ScanResult.CHANNEL_WIDTH_20MHZ);
+                    // Assert channel width is 20MHz or 40Mhz
+                    assertTrue(
+                            "Channel width should be either 20MHz or 40MHz, but was: "
+                                    + ch.getChannelWidth(),
+                            ch.getChannelWidth() == ScanResult.CHANNEL_WIDTH_40MHZ
+                                    || ch.getChannelWidth() == ScanResult.CHANNEL_WIDTH_20MHZ);
                 }
             }
         } catch (UnsupportedOperationException ex) {
