@@ -91,9 +91,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
@@ -1082,7 +1084,6 @@ public class SystemMediaRouter2Test {
         assertThat(route).isNotNull();
 
         final CountDownLatch onTransferLatch = new CountDownLatch(1);
-        final CountDownLatch onControllerUpdatedLatch = new CountDownLatch(1);
         final CountDownLatch onStopLatch = new CountDownLatch(1);
         final List<RoutingController> controllers = new ArrayList<>();
 
@@ -1106,28 +1107,34 @@ public class SystemMediaRouter2Test {
             }
         };
 
+        // We want to verify that our ControllerCallback only fires once, for the call to transferTo
+        // for ROUTE_ID1. This queue stores the selected routes for any invocations of the
+        // callback for our stub controller.
+        BlockingQueue<List<String>> controllerUpdatedCalls = new LinkedBlockingQueue<>();
+
         ControllerCallback controllerCallback =
                 new ControllerCallback() {
                     @Override
                     public void onControllerUpdated(RoutingController controller) {
-                        if (onTransferLatch.getCount() != 0
-                                || !TextUtils.equals(
-                                        controllers.get(0).getId(), controller.getId())) {
-                            return;
-                        }
-                        if (!TextUtils.equals(
-                                controller.getSelectedRoutes().get(0).getOriginalId(),
-                                route.getOriginalId())) {
-                            onControllerUpdatedLatch.countDown();
+                        if (TextUtils.equals(controllers.get(0).getId(), controller.getId())
+                                && !TextUtils.equals(
+                                        controller.getSelectedRoutes().get(0).getOriginalId(),
+                                        route.getOriginalId())) {
+                            controllerUpdatedCalls.add(
+                                    controller.getSelectedRoutes().stream()
+                                            .map(i -> i.getOriginalId())
+                                            .toList());
                         }
                     }
                 };
 
         try {
-            mSystemRouter2ForCts.registerTransferCallback(mExecutor, transferCallback);
             mSystemRouter2ForCts.registerControllerCallback(mExecutor, controllerCallback);
+            mSystemRouter2ForCts.registerTransferCallback(mExecutor, transferCallback);
             mSystemRouter2ForCts.transferTo(route);
             assertThat(onTransferLatch.await(TIMEOUT_MS, TimeUnit.MILLISECONDS)).isTrue();
+            assertThat(controllerUpdatedCalls.poll(TIMEOUT_MS, TimeUnit.MILLISECONDS))
+                    .containsExactlyElementsIn(List.of(ROUTE_ID1));
 
             assertThat(controllers).hasSize(1);
             RoutingController controller = controllers.get(0);
@@ -1138,10 +1145,10 @@ public class SystemMediaRouter2Test {
             MediaRoute2Info routeToSelect = routes.get(ROUTE_ID4_TO_SELECT_AND_DESELECT);
             assertThat(routeToSelect).isNotNull();
 
-            // This call should be ignored.
-            // The onControllerUpdated() shouldn't be called.
+            // The selectRoute call should be ignored, and onControllerUpdated() shouldn't be
+            // called a second time.
             controller.selectRoute(routeToSelect);
-            assertThat(onControllerUpdatedLatch.await(WAIT_MS, TimeUnit.MILLISECONDS)).isFalse();
+            assertThat(controllerUpdatedCalls.poll(WAIT_MS, TimeUnit.MILLISECONDS)).isNull();
 
             // onStop should be called.
             assertThat(onStopLatch.await(TIMEOUT_MS, TimeUnit.MILLISECONDS)).isTrue();

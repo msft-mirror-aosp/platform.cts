@@ -51,6 +51,7 @@ android_test {
     data: [
         ":CtsBackgroundActivityAppA",
         ":CtsBackgroundActivityAppA33",
+        ":CtsBackgroundActivityAppA36",
         ":CtsBackgroundActivityAppB",
         ":CtsBackgroundActivityAppB33",
         ":CtsBackgroundActivityAppC",

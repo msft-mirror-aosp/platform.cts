@@ -111,6 +111,7 @@ class MockSatelliteServiceManager {
             "cmd phone override-config-data-version";
     private static final String UPDATE_TELEPHONY_CONFIG_INTENT =
             "com.google.android.configupdater.TelephonyConfigUpdate.UPDATE_CONFIG";
+    private static final String SET_CTS_MODE_CMD = "cmd phone set-cts-mode";
     private static final String CONFIG_UPDATER_PACKAGE = "com.google.android.configupdater";
 
     private static final long TIMEOUT = 5000;
@@ -1618,6 +1619,24 @@ class MockSatelliteServiceManager {
             return true;
         } catch (Exception e) {
             loge("setSatelliteTnScanningSupport: e=" + e);
+            return false;
+        }
+    }
+
+    boolean setCtsMode(boolean ctsMode) {
+        StringBuilder command = new StringBuilder();
+        command.append(SET_CTS_MODE_CMD);
+        if (ctsMode) {
+            command.append(" -e");
+        }
+
+        try {
+            String result = TelephonyUtils.executeShellCommand(mInstrumentation,
+                    command.toString());
+            logd("setCtsMode(" + command.toString() + "): result = " + result);
+            return true;
+        } catch (Exception e) {
+            loge("setCtsMode: e=" + e);
             return false;
         }
     }

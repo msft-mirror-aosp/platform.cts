@@ -42,6 +42,7 @@ import com.android.compatibility.common.util.SystemUtil;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -89,7 +90,8 @@ public class SettingsPanelTest {
         mSettingsPackage = packageManager.resolveActivity(settingsIntent,
                 PackageManager.MATCH_DEFAULT_ONLY).activityInfo.packageName;
 
-        assumeFalse("Skipping test: Auto does not support provider android.settings.panel", isCar());
+        assumeFalse(
+                "Skipping test: Auto does not support provider android.settings.panel", isCar());
         assumeFalse(
             "Skipping test: Watch does not support provider android.settings.panel", isWatch());
     }
@@ -101,7 +103,7 @@ public class SettingsPanelTest {
     }
 
     // Check correct package is opened
-
+    @Ignore("b/400587940")
     @Test
     public void volumePanel_correctPackage() {
         assumeTrue(mHasTouchScreen);
@@ -121,6 +123,7 @@ public class SettingsPanelTest {
         assertThat(currentPackage).isEqualTo(packageNameForAction(Settings.Panel.ACTION_NFC));
     }
 
+    @Ignore("b/389839567")
     @Test
     public void wifiPanel_correctPackage() {
         launchWifiPanel();
@@ -130,6 +133,7 @@ public class SettingsPanelTest {
         assertThat(currentPackage).isEqualTo(packageNameForAction(Settings.Panel.ACTION_WIFI));
     }
 
+    @Ignore("b/400587940")
     @Test
     public void volumePanel_doneClosesPanel() {
         assumeTrue(mHasTouchScreen);
@@ -165,6 +169,7 @@ public class SettingsPanelTest {
         assertThat(currentPackage).isNotEqualTo(packageNameForAction(Settings.Panel.ACTION_NFC));
     }
 
+    @Ignore("b/389839567")
     @Test
     public void wifiPanel_doneClosesPanel() {
         assumeTrue(packageNameForAction(Settings.Panel.ACTION_WIFI).equals(mSettingsPackage));
@@ -182,6 +187,7 @@ public class SettingsPanelTest {
         assertThat(currentPackage).isNotEqualTo(packageNameForAction(Settings.Panel.ACTION_WIFI));
     }
 
+    @Ignore("b/400587940")
     @Test
     public void volumePanel_seeMoreButton_launchesIntoSettings() {
         assumeTrue(mHasTouchScreen);

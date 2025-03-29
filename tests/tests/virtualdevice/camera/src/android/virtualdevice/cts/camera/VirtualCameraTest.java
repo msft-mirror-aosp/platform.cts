@@ -43,8 +43,11 @@ import static com.google.common.util.concurrent.MoreExecutors.directExecutor;
 
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assume.assumeNoException;
+import static org.mockito.AdditionalMatchers.not;
+import static org.mockito.AdditionalMatchers.or;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.after;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
@@ -67,6 +70,8 @@ import android.hardware.camera2.params.SessionConfiguration;
 import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.ImageReader;
 import android.platform.test.annotations.AppModeFull;
+import android.platform.test.annotations.RequiresFlagsDisabled;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.util.ArrayMap;
 import android.util.Size;
 import android.view.Surface;
@@ -228,6 +233,24 @@ public class VirtualCameraTest {
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_EXTERNAL_VIRTUAL_CAMERAS)
+    public void defaultContext_withVirtualExternalCamera_triggersCameraAvailabilityCallbacks() {
+        // Create virtual device with default camera policy.
+        mVirtualDevice = mRule.createManagedVirtualDevice();
+        setupDefaultDeviceCameraManager();
+        VirtualCamera virtualCamera = createVirtualCamera(LENS_FACING_EXTERNAL);
+
+        verify(mMockDefaultContextCameraAvailabilityCallback,
+                timeout(TIMEOUT_MILLIS)).onCameraAvailable(
+                not(or(eq(FRONT_CAMERA_ID), eq(BACK_CAMERA_ID))));
+
+        virtualCamera.close();
+        verify(mMockDefaultContextCameraAvailabilityCallback,
+                timeout(TIMEOUT_MILLIS)).onCameraUnavailable(
+                not(or(eq(FRONT_CAMERA_ID), eq(BACK_CAMERA_ID))));
+    }
+
+    @Test
     public void getCameraIdList_withDefaultContext_withVirtualCamera_doesNotIncludeVirtualCamera()
         throws Exception {
         setupDefaultDeviceCameraManager();
@@ -343,13 +366,41 @@ public class VirtualCameraTest {
         }
     }
 
-    @Parameters(method = "getAllLensFacingDirections")
     @Test
-    public void createVirtualCamera_withDefaultPolicy_fails(int lensFacing) {
+    public void createVirtualCamera_withDefaultPolicy_fails() {
         // Create virtual device with default camera policy.
         mVirtualDevice = mRule.createManagedVirtualDevice();
 
-        assertThrows(IllegalArgumentException.class, () -> createVirtualCamera(lensFacing));
+        assertThrows(IllegalArgumentException.class, () -> createVirtualCamera(LENS_FACING_FRONT));
+        assertThrows(IllegalArgumentException.class, () -> createVirtualCamera(LENS_FACING_BACK));
+    }
+
+    @Test
+    @RequiresFlagsDisabled(Flags.FLAG_EXTERNAL_VIRTUAL_CAMERAS)
+    public void createExternalVirtualCamera_withDefaultPolicy_fails() {
+        // Create virtual device with default camera policy.
+        mVirtualDevice = mRule.createManagedVirtualDevice();
+
+        assertThrows(IllegalArgumentException.class,
+                () -> createVirtualCamera(LENS_FACING_EXTERNAL));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_EXTERNAL_VIRTUAL_CAMERAS)
+    public void createExternalVirtualCamera_withDefaultPolicy_succeeds() throws Exception {
+        // Create virtual device with default camera policy.
+        mVirtualDevice = mRule.createManagedVirtualDevice();
+        setupDefaultDeviceCameraManager();
+        List<String> defaultCameraIds = Arrays.asList(mCameraManager.getCameraIdListNoLazy());
+
+        createVirtualCamera(LENS_FACING_EXTERNAL);
+
+        List<String> cameraIds = new ArrayList<>(
+                Arrays.asList(mCameraManager.getCameraIdListNoLazy()));
+        cameraIds.removeAll(defaultCameraIds);
+
+        // only one added virtual external camera on the default device
+        assertThat(cameraIds).hasSize(1);
     }
 
     @Test
