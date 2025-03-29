@@ -30,6 +30,7 @@ import android.media.MediaExtractor;
 import android.media.MediaFormat;
 import android.media.cts.MediaCodecAsyncHelper;
 import android.media.cts.MediaCodecBlockModelHelper;
+import android.mediav2.common.cts.OutputManager;
 import android.os.Build;
 import android.os.ParcelFileDescriptor;
 import android.platform.test.annotations.AppModeFull;
@@ -170,7 +171,8 @@ public class MediaCodecBlockModelTest {
             }
             mediaCodec = MediaCodec.createByCodecName(codecs[0]);
 
-            List<Long> timestampList = Collections.synchronizedList(new ArrayList<>());
+            List<Long> inputTimestampList = Collections.synchronizedList(new ArrayList<>());
+            List<Long> outputTimestampList = Collections.synchronizedList(new ArrayList<>());
             MediaCodecBlockModelHelper.Result result =
                 MediaCodecBlockModelHelper.runComponentWithLinearInput(
                     mediaCodec,
@@ -183,13 +185,15 @@ public class MediaCodecBlockModelTest {
                             .setExtractor(mediaExtractor)
                             .setLastBufferTimestampUs(lastBufferTimestampUs)
                             .setObtainBlockForEachBuffer(obtainBlockForEachBuffer)
-                            .setTimestampQueue(timestampList)
+                            .setTimestampQueue(inputTimestampList)
                             .build(),
                     new MediaCodecBlockModelHelper.DummyOutputSlotListener(
-                            false /* graphic */, timestampList));
+                            false /* graphic */, outputTimestampList));
             if (result == MediaCodecBlockModelHelper.Result.SUCCESS) {
-                assertTrue("Timestamp should match between input / output: " + timestampList,
-                        timestampList.isEmpty());
+                StringBuilder msg = new StringBuilder();
+                boolean isOk = OutputManager.isPtsStrictlyIncreasing(
+                        new ArrayList<Long>(outputTimestampList), -1L, msg);
+                assertTrue(msg.toString(), isOk);
             }
             return result;
         } catch (IOException e) {
@@ -225,7 +229,8 @@ public class MediaCodecBlockModelTest {
             }
             mediaCodec = MediaCodec.createByCodecName(codecs[0]);
 
-            List<Long> timestampList = Collections.synchronizedList(new ArrayList<>());
+            List<Long> inputTimestampList = Collections.synchronizedList(new ArrayList<>());
+            List<Long> outputTimestampList = Collections.synchronizedList(new ArrayList<>());
             MediaCodecBlockModelHelper.Result result =
                 MediaCodecBlockModelHelper.runComponentWithLinearInput(
                     mediaCodec,
@@ -237,13 +242,15 @@ public class MediaCodecBlockModelTest {
                             .Builder()
                             .setExtractor(mediaExtractor)
                             .setLastBufferTimestampUs(LAST_BUFFER_TIMESTAMP_US)
-                            .setTimestampQueue(timestampList)
+                            .setTimestampQueue(inputTimestampList)
                             .build(),
                     new MediaCodecBlockModelHelper.DummyOutputSlotListener(
-                            false /* graphic */, timestampList));
+                            false /* graphic */, outputTimestampList));
             if (result == MediaCodecBlockModelHelper.Result.SUCCESS) {
-                assertTrue("Timestamp should match between input / output: " + timestampList,
-                        timestampList.isEmpty());
+                StringBuilder msg = new StringBuilder();
+                boolean isOk = OutputManager.isPtsStrictlyIncreasing(
+                        new ArrayList<Long>(outputTimestampList), -1L, msg);
+                assertTrue(msg.toString(), isOk);
             }
             return result;
         } catch (IOException e) {

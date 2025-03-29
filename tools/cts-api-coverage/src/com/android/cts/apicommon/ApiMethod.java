@@ -58,7 +58,7 @@ public class ApiMethod implements Comparable<ApiMethod> {
             boolean finalMethod,
             boolean abstractMethod) {
         mName = name;
-        mParameterTypes = new ArrayList<String>(parameterTypes);
+        mParameterTypes = new ArrayList<>(parameterTypes);
         mReturnType = returnType;
         mDeprecated = deprecated;
         mVisibility = visibility;

@@ -17,6 +17,8 @@
 package android.server.biometrics;
 
 import static android.hardware.biometrics.BiometricManager.Authenticators.DEVICE_CREDENTIAL;
+import static android.hardware.biometrics.BiometricManager.TYPE_FACE;
+import static android.hardware.biometrics.BiometricManager.TYPE_FINGERPRINT;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -35,14 +37,17 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import android.content.pm.PackageManager;
+import android.hardware.biometrics.BiometricEnrollmentStatus;
 import android.hardware.biometrics.BiometricManager;
 import android.hardware.biometrics.BiometricManager.Authenticators;
 import android.hardware.biometrics.BiometricPrompt;
 import android.hardware.biometrics.BiometricTestSession;
+import android.hardware.biometrics.Flags;
 import android.hardware.biometrics.SensorProperties;
 import android.os.CancellationSignal;
 import android.os.SystemClock;
 import android.platform.test.annotations.Presubmit;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.server.biometrics.util.BiometricServiceState;
 import android.server.biometrics.util.Utils;
 import android.util.Log;
@@ -86,6 +91,62 @@ public class BiometricSimpleTests extends BiometricTestBase {
                 enrollForSensor(session, prop.getSensorId());
             }
         }
+    }
+
+    /** Tests that the corresponding enrolled count is correct. */
+    @ApiTest(apis = {"android.hardware.biometrics.BiometricManager#getEnrollmentStatus"})
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_MOVE_FM_API_TO_BM)
+    public void testGetEnrollCount() throws Exception {
+        assumeTrue(Utils.isFirstApiLevel29orGreater());
+        for (BiometricEnrollmentStatus status : mBiometricManager.getEnrollmentStatus()) {
+            assertEquals(0, status.getEnrollCount());
+        }
+
+        for (SensorProperties prop : mSensorProperties) {
+            final int sensorId = prop.getSensorId();
+            final int sensorModality =
+                    getCurrentState().mSensorStates.sensorStates.get(sensorId).getModality();
+
+            int enrolledModality = 0;
+
+            if (sensorModality == SensorStateProto.FINGERPRINT) {
+                enrolledModality = TYPE_FINGERPRINT;
+            } else if (sensorModality == SensorStateProto.FACE) {
+                enrolledModality = TYPE_FACE;
+            }
+            final int expectedModality = enrolledModality;
+
+            try (BiometricTestSession session = mBiometricManager.createTestSession(sensorId)) {
+                enrollForSensor(session, sensorId);
+
+                mBiometricManager
+                        .getEnrollmentStatus()
+                        .forEach(
+                                status -> {
+                                    if (status.getModality() == expectedModality) {
+                                        assertEquals(1, status.getEnrollCount());
+                                    } else {
+                                        assertEquals(0, status.getEnrollCount());
+                                    }
+                                });
+            }
+        }
+    }
+
+    /**
+     * Test without USE_BIOMETRIC permission, {@link BiometricManager#getEnrollmentStatus()} should
+     * throw security exception.
+     */
+    @ApiTest(apis = {"android.hardware.biometrics.BiometricManager#getEnrollmentStatus"})
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_MOVE_FM_API_TO_BM)
+    public void testGetEnrolledFingerprintCount_withoutPermissionFailed() {
+        assumeTrue(Utils.isFirstApiLevel29orGreater());
+        mInstrumentation.getUiAutomation().dropShellPermissionIdentity();
+        SecurityException e =
+                assertThrows(SecurityException.class, mBiometricManager::getEnrollmentStatus);
+        assertThat(e).hasMessageThat().contains("SET_BIOMETRIC_DIALOG_ADVANCED");
     }
 
     /**

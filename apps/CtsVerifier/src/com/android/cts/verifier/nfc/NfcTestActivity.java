@@ -21,14 +21,19 @@ import android.content.pm.PackageManager;
 import android.nfc.tech.MifareUltralight;
 import android.nfc.tech.Ndef;
 import android.nfc.tech.TagTechnology;
+import android.os.Build;
 import android.os.Bundle;
 
 import com.android.cts.verifier.ArrayTestListAdapter;
 import com.android.cts.verifier.PassFailButtons;
 import com.android.cts.verifier.R;
 import com.android.cts.verifier.TestListAdapter.TestListItem;
+import com.android.cts.verifier.nfc.hce.HceEmulatorPollingLoopTestActivity;
+import com.android.cts.verifier.nfc.hce.HceReaderPollingLoopTestActivity;
 import com.android.cts.verifier.nfc.hcef.HceFEmulatorTestActivity;
+import com.android.cts.verifier.nfc.hcef.HceFReaderActivity;
 import com.android.cts.verifier.nfc.hcef.HceFReaderTestActivity;
+import com.android.cts.verifier.nfc.hcef.NfcFObserveModeEmulatorTestActivity;
 import com.android.cts.verifier.nfc.offhost.OffhostUiccEmulatorTestActivity;
 import com.android.cts.verifier.nfc.offhost.OffhostUiccReaderTestActivity;
 
@@ -62,6 +67,28 @@ public class NfcTestActivity extends PassFailButtons.TestListActivity {
             }
         }
 
+        if (getPackageManager().hasSystemFeature(PackageManager.FEATURE_NFC_HOST_CARD_EMULATION)) {
+            adapter.add(TestListItem.newCategory(this, R.string.nfc_hce));
+            if (Build.VERSION.SDK_INT_FULL > Build.VERSION_CODES_FULL.BAKLAVA) {
+                if (getPackageManager().hasSystemFeature(PackageManager.FEATURE_NFC)) {
+                    adapter.add(
+                            TestListItem.newTest(
+                                    this,
+                                    R.string.nfc_hce_reader_polling_loop_annotations,
+                                    HceReaderPollingLoopTestActivity.class.getName(),
+                                    new Intent(this, HceReaderPollingLoopTestActivity.class),
+                                    null));
+                }
+                adapter.add(
+                        TestListItem.newTest(
+                                this,
+                                R.string.nfc_hce_emulator_polling_loop_annotations,
+                                HceEmulatorPollingLoopTestActivity.class.getName(),
+                                new Intent(this, HceEmulatorPollingLoopTestActivity.class),
+                                null));
+            }
+        }
+
         if (getPackageManager().hasSystemFeature(PackageManager.FEATURE_NFC_HOST_CARD_EMULATION_NFCF)) {
             adapter.add(TestListItem.newCategory(this, R.string.nfc_hce_f));
             if (getPackageManager().hasSystemFeature(PackageManager.FEATURE_NFC)) {
@@ -72,6 +99,22 @@ public class NfcTestActivity extends PassFailButtons.TestListActivity {
             adapter.add(TestListItem.newTest(this, R.string.nfc_hce_f_emulator_tests,
                     HceFEmulatorTestActivity.class.getName(),
                     new Intent(this, HceFEmulatorTestActivity.class), null));
+            if (getPackageManager().hasSystemFeature(PackageManager.FEATURE_NFC)) {
+                adapter.add(
+                        TestListItem.newTest(
+                                this,
+                                R.string.nfc_hce_f_reader_observe_mode_tests,
+                                HceFReaderActivity.class.getName(),
+                                new Intent(this, HceFReaderActivity.class),
+                                null));
+            }
+            adapter.add(
+                    TestListItem.newTest(
+                            this,
+                            R.string.nfc_hce_f_emulator_observe_mode_tests,
+                            NfcFObserveModeEmulatorTestActivity.class.getName(),
+                            new Intent(this, NfcFObserveModeEmulatorTestActivity.class),
+                            null));
         }
 
         if (getPackageManager().hasSystemFeature(PackageManager.FEATURE_NFC_OFF_HOST_CARD_EMULATION_UICC)) {

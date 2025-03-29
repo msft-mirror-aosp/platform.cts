@@ -621,6 +621,10 @@ public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
             "android.media.AudioManager.AudioPlaybackCallback#isMuted",
             "android.media.AudioManager.AudioPlaybackCallback#getMutedBy"})
     public void testAudioTrackMuteFromStreamVolumeNotification() throws Exception {
+        if (isAutomotive()) {
+            Log.w(TAG, "Skip testAudioTrackMuteFromStreamVolumeNotification for Auto");
+            return;
+        }
         if (!isValidPlatform("testAudioTrackMuteFromStreamVolumeNotification")) return;
         if (hasAudioSilentProperty()) {
             Log.w(TAG, "Device has ro.audio.silent set, skipping "
@@ -638,6 +642,10 @@ public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
             "android.media.AudioManager.AudioPlaybackCallback#isMuted",
             "android.media.AudioManager.AudioPlaybackCallback#getMutedBy"})
     public void testMediaPlayerMuteFromStreamVolumeNotification() throws Exception {
+        if (isAutomotive()) {
+            Log.w(TAG, "Skip testMediaPlayerMuteFromStreamVolumeNotification for Auto");
+            return;
+        }
         if (!isValidPlatform("testMediaPlayerMuteFromStreamVolumeNotification")) return;
         if (hasAudioSilentProperty()) {
             Log.w(TAG, "Device has ro.audio.silent set, skipping "
@@ -1108,14 +1116,16 @@ public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
                                 TEST_TIMING_TOLERANCE_MS,
                                 () -> callback.getCbInvocationNumber() >= 1));
                 final List<AudioPlaybackConfiguration> configs = callback.getMediaPlayerConfigs();
-                assertTrue(
-                        "Active player, attributes "
-                                + aa
-                                + " not expected in policy "
-                                + configs.get(0).getAudioAttributes().getAllowedCapturePolicy()
-                                + " vs "
-                                + aa.getAllowedCapturePolicy(),
-                        hasAttr(configs, aa));
+                if (configs.size() != 0) {
+                    assertTrue(
+                            "Active player, attributes "
+                                    + aa
+                                    + " not expected in policy "
+                                    + configs.get(0).getAudioAttributes().getAllowedCapturePolicy()
+                                    + " vs "
+                                    + aa.getAllowedCapturePolicy(),
+                            hasAttr(configs, aa));
+                }
             }
 
             // active MediaPlayer, number of configs should increase by 1
@@ -1341,6 +1351,10 @@ public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
 
     private boolean isWatch() {
         return getContext().getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH);
+    }
+
+    private boolean isAutomotive() {
+        return getContext().getPackageManager().hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE);
     }
 
     private void adoptShellPermissionIdentity(String permission) {

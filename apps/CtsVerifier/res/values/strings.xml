@@ -1268,8 +1268,14 @@
     <string name="nfc_result_message">Written data:\n%1$s\n\nRead data:\n%2$s</string>
     <string name="nfc_ndef_content">Id: %1$s\nMime: %2$s\nPayload: %3$s</string>
 
+    <string name="nfc_hce">Host-based card emulation</string>
+    <string name="nfc_hce_emulator_polling_loop_annotations">Polling Loop Emulator Annotations</string>
+    <string name="nfc_hce_reader_polling_loop_annotations">Polling Loop Reader Annotations</string>
+
     <string name="nfc_hce_f">Host-based Felica card emulation</string>
     <string name="nfc_hce_f_reader_tests">HCE Felica reader tests</string>
+    <string name="nfc_hce_f_emulator_observe_mode_tests">NFC-F observe mode emulator tests</string>
+    <string name="nfc_hce_f_reader_observe_mode_tests">NFC-F observe mode  reader tests</string>
     <string name="nfc_hce_f_emulator_tests">HCE Felica emulator tests</string>
     <string name="nfc_hce_f_emulator">HCE Felica emulator</string>
     <string name="nfc_hce_f_reader">HCE Felica reader</string>
@@ -1289,6 +1295,7 @@
         and makes sure the device-under-test implements card emulation correctly.
     </string>
 
+    <string name="pollingloopservice">Polling Loop HCE Service</string>
     <string name="felicaservice">Felica Service</string>
     <string name="UiccTransactionEventService">Uicc Transaction Event Service</string>
 
@@ -2424,7 +2431,7 @@
          \n\u2022 The left 60% of the progress bar should be filled and the rest is unfilled.
          \n\u2022 The start icon should have S.
          \n\u2022 The start icon should be displayed at the beginning of the progress bar, with a margin between the icon and the progress bar itself.
-         \n\u2022 The start icon should have E.
+         \n\u2022 The end icon should have E.
          \n\u2022 The end icon should be displayed at the end of the progress bar, with a margin between the icon and the progress bar.
     </string>
     <string name="progress_style_progress_tracker_icon" formatted="false">A progress style notification with progress tracker icon was posted. Expand it (if it\'s not already expanded), and verify that:
@@ -7178,6 +7185,11 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="presence_test_info">
         The Presence tests check whether or not a device is properly calibrated for BLE, NAN and UWB based on Presence requirements.
         \nAll tests are required to pass on every device, if the radio technology is supported
+    </string>
+    <string name="presence_test_legacy_info">
+        The Presence tests check whether or not a device is properly calibrated for BLE, NAN and UWB based on Presence requirements.
+        \nAll tests are required to pass on all Android Q+ launched devices, if the radio technology is supported.
+        \nIf the device is launched on Android P or older, BLE Rssi and RxTxOffset tests will be disabled. Press Pass to pass this case.
     </string>
     <string name="presence_test_tv_info">
         The Presence tests check whether or not a device is properly calibrated for BLE, NAN and UWB based on Presence requirements.

@@ -43,9 +43,14 @@ public class ApiClass implements Comparable<ApiClass>, HasCoverage {
 
     private final String mSuperClassName;
 
+    private final String mPackageName;
+
     private ApiClass mSuperClass;
 
-    private Map<String, ApiClass> mInterfaceMap = new HashMap<String, ApiClass>();
+    private final Map<String, ApiClass> mInterfaceMap = new HashMap<>();
+
+    // A map storing methods inherited from superclasses and interfaces.
+    private Map<ApiClass, List<ApiMethod>> mInheritedMethods = null;
 
     /**
      * @param name The name of the class
@@ -54,10 +59,12 @@ public class ApiClass implements Comparable<ApiClass>, HasCoverage {
      * @param superClassName The fully qualified name of the super class
      */
     public ApiClass(
+            String packageName,
             String name,
             boolean deprecated,
             boolean classAbstract,
             String superClassName) {
+        mPackageName = packageName;
         mName = name;
         mDeprecated = deprecated;
         mAbstract = classAbstract;
@@ -74,12 +81,20 @@ public class ApiClass implements Comparable<ApiClass>, HasCoverage {
         return mName;
     }
 
+    public String getPackageName() {
+        return mPackageName;
+    }
+
     public boolean isDeprecated() {
         return mDeprecated;
     }
 
     public String getSuperClassName() {
         return mSuperClassName;
+    }
+
+    public Map<ApiClass, List<ApiMethod>> getInheritedMethods() {
+        return mInheritedMethods;
     }
 
     public boolean isAbstract() {
@@ -113,7 +128,7 @@ public class ApiClass implements Comparable<ApiClass>, HasCoverage {
     }
 
     public void addMethod(ApiMethod method) {
-        if (getMethod(method.getName(), method.getParameterTypes()).isEmpty()) {
+        if (getDeclaredMethod(method.getName(), method.getParameterTypes()).isEmpty()) {
             mApiMethods.add(method);
         }
     }
@@ -146,7 +161,7 @@ public class ApiClass implements Comparable<ApiClass>, HasCoverage {
                 }
             }
         }
-        Optional<ApiMethod> apiMethod = getMethod(name, parameterTypes);
+        Optional<ApiMethod> apiMethod = getDeclaredMethod(name, parameterTypes);
         apiMethod.ifPresent(method -> method.setCoveredTest(testMethodInfo));
     }
 
@@ -175,12 +190,8 @@ public class ApiClass implements Comparable<ApiClass>, HasCoverage {
                 }
             }
         }
-        Optional<ApiMethod> apiMethod = getMethod(name, parameterTypes);
+        Optional<ApiMethod> apiMethod = getDeclaredMethod(name, parameterTypes);
         apiMethod.ifPresent(method -> method.setCovered(coveredbyApk));
-    }
-
-    public Collection<ApiMethod> getMethods() {
-        return Collections.unmodifiableList(mApiMethods);
     }
 
     public int getNumCoveredMethods() {
@@ -216,17 +227,135 @@ public class ApiClass implements Comparable<ApiClass>, HasCoverage {
         return getTotalMethods();
     }
 
+    public Collection<ApiMethod> getDeclaredMethods() {
+        return Collections.unmodifiableList(mApiMethods);
+    }
+
     /** Finds the given API method. */
+    public Optional<ApiMethod> getDeclaredMethod(String name, List<String> parameterTypes) {
+        return mApiMethods.stream()
+                .filter(method -> compareMethod(name, parameterTypes, method))
+                .findFirst();
+    }
+
+    /** Finds the given inherited API methods. */
+    public Map<ApiClass, ApiMethod> getInheritedMethods(String name, List<String> parameterTypes) {
+        Map<ApiClass, ApiMethod> inheritedMethod = new HashMap<>();
+        mInheritedMethods.forEach(
+                (apiClass, apiMethods) ->
+                        apiMethods.stream()
+                                .filter(method -> compareMethod(name, parameterTypes, method))
+                                .forEach(method -> inheritedMethod.put(apiClass, method)));
+        return inheritedMethod;
+    }
+
+    /** Finds the given API method including both inherited and directly declared methods. */
     public Optional<ApiMethod> getMethod(String name, List<String> parameterTypes) {
-        for (ApiMethod method : mApiMethods) {
-            boolean methodNameMatch = name.equals(method.getName());
-            boolean parameterTypeMatch =
-                    compareParameterTypes(method.getParameterTypes(), parameterTypes);
-            if (methodNameMatch && parameterTypeMatch) {
-                return Optional.of(method);
+        Map<ApiClass, ApiMethod> methods = getInheritedMethods(name, parameterTypes);
+        if (methods.isEmpty()) {
+            return getDeclaredMethod(name, parameterTypes);
+        }
+        return methods.values().stream().findFirst();
+    }
+
+    /**
+     * Retrieves a map of methods that are overridden by a method with the given name and parameter
+     * types in this class, including methods from superclasses and interfaces.
+     *
+     * @param name The name of the method to check for overriding.
+     * @param parameterTypes The parameter types of the method.
+     * @return A map where the key is the superclass or interface, and the value is the overriding
+     *     method.
+     */
+    public Map<ApiClass, ApiMethod> getOverriddenMethods(String name, List<String> parameterTypes) {
+        Map<ApiClass, ApiMethod> overriddenMethods = new HashMap<>();
+        // If the method is not directly declared in this class, it cannot override anything.
+        if (getDeclaredMethod(name, parameterTypes).isEmpty()) {
+            return overriddenMethods;
+        }
+        if (mSuperClass != null) {
+            Optional<ApiMethod> method = mSuperClass.getMethod(name, parameterTypes);
+            method.ifPresent(apiMethod -> overriddenMethods.put(mSuperClass, apiMethod));
+        }
+        for (ApiClass interfaceClass : mInterfaceMap.values()) {
+            if (interfaceClass != null) {
+                Optional<ApiMethod> method = interfaceClass.getMethod(name, parameterTypes);
+                method.ifPresent(apiMethod -> overriddenMethods.put(interfaceClass, apiMethod));
             }
         }
-        return Optional.empty();
+        return overriddenMethods;
+    }
+
+    /** Resolves all inherited methods from superclasses and interfaces. */
+    public void resolveInheritedMethods() {
+        if (mInheritedMethods != null) {
+            return;
+        }
+        mInheritedMethods = new HashMap<>();
+        if (mSuperClass != null) {
+            resolveInheritedMethods(mSuperClass);
+        }
+        mInterfaceMap
+                .values()
+                .forEach(
+                        interfaceClass -> {
+                            if (interfaceClass != null) {
+                                resolveInheritedMethods(interfaceClass);
+                            }
+                        });
+    }
+
+    /**
+     * Adds an inherited method from a superclass or interface only if a method with the same
+     * signature does not exist in this ApiClass.
+     *
+     * @param superClass The superclass or interface from which the method is inherited.
+     * @param inheritedMethod The inherited method.
+     */
+    private void addInheritedMethod(ApiClass superClass, ApiMethod inheritedMethod) {
+        if (getDeclaredMethod(inheritedMethod.getName(), inheritedMethod.getParameterTypes())
+                .isEmpty()) {
+            mInheritedMethods.putIfAbsent(superClass, new ArrayList<>());
+            mInheritedMethods.get(superClass).add(inheritedMethod);
+        }
+    }
+
+    private void addInheritedMethods(ApiClass superClass, List<ApiMethod> inheritedMethods) {
+        inheritedMethods.forEach(method -> addInheritedMethod(superClass, method));
+    }
+
+    /**
+     * Recursively resolves the inherited methods from a superclass or interface.
+     *
+     * @param superClass The superclass or interface to resolve inherited methods from.
+     */
+    private void resolveInheritedMethods(ApiClass superClass) {
+        // Skip java.lang.Object, which can make the report large.
+        if (String.format("%s.%s", superClass.getPackageName(), superClass.getName())
+                .startsWith("java.lang.Object")) {
+            return;
+        }
+        superClass.resolveInheritedMethods();
+        superClass.getDeclaredMethods().forEach(method -> addInheritedMethod(superClass, method));
+        superClass
+                .getInheritedMethods()
+                .values()
+                .forEach(methods -> addInheritedMethods(superClass, methods));
+    }
+
+    /**
+     * Compares a given method name and parameter types with another ApiMethod for equality.
+     *
+     * @param name The name of the method to compare.
+     * @param parameterTypes The parameter types of the method to compare.
+     * @param another The ApiMethod to compare against.
+     * @return true if the names and parameter types match.
+     */
+    private boolean compareMethod(String name, List<String> parameterTypes, ApiMethod another) {
+        boolean methodNameMatch = name.equals(another.getName());
+        boolean parameterTypeMatch =
+                compareParameterTypes(another.getParameterTypes(), parameterTypes);
+        return methodNameMatch && parameterTypeMatch;
     }
 
     /**

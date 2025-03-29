@@ -33,6 +33,7 @@ import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.stream.IntStream;
@@ -97,20 +98,27 @@ public class OutputManager {
     }
 
     public boolean isPtsStrictlyIncreasing(long lastPts) {
+        return isPtsStrictlyIncreasing(mOutPtsList, lastPts, mErrorLogs);
+    }
+
+    public static boolean isPtsStrictlyIncreasing(List<Long> ptsList, long lastPts,
+            StringBuilder msg) {
         boolean res = true;
-        for (int i = 0; i < mOutPtsList.size(); i++) {
-            if (lastPts < mOutPtsList.get(i)) {
-                lastPts = mOutPtsList.get(i);
+        for (int i = 0; i < ptsList.size(); i++) {
+            if (lastPts < ptsList.get(i)) {
+                lastPts = ptsList.get(i);
             } else {
-                mErrorLogs.append("Timestamp values are not strictly increasing. \n");
-                mErrorLogs.append("Frame indices around which timestamp values decreased :- \n");
-                for (int j = Math.max(0, i - 3); j < Math.min(mOutPtsList.size(), i + 3); j++) {
-                    if (j == 0) {
-                        mErrorLogs.append(String.format(Locale.getDefault(),
-                                "pts of frame idx -1 is %d \n", lastPts));
+                if (msg != null) {
+                    msg.append("Timestamp values are not strictly increasing. \n");
+                    msg.append("Frame indices around which timestamp values decreased :- \n");
+                    for (int j = Math.max(0, i - 3); j < Math.min(ptsList.size(), i + 3); j++) {
+                        if (j == 0) {
+                            msg.append(String.format(Locale.getDefault(),
+                                    "pts of frame idx -1 is %d \n", lastPts));
+                        }
+                        msg.append(String.format(Locale.getDefault(),
+                                "pts of frame idx %d is %d \n", j, ptsList.get(j)));
                     }
-                    mErrorLogs.append(String.format(Locale.getDefault(),
-                            "pts of frame idx %d is %d \n", j, mOutPtsList.get(j)));
                 }
                 res = false;
                 break;
@@ -119,7 +127,7 @@ public class OutputManager {
         return res;
     }
 
-    static boolean arePtsListsIdentical(ArrayList<Long> refList, ArrayList<Long> testList,
+    public static boolean arePtsListsIdentical(ArrayList<Long> refList, ArrayList<Long> testList,
             StringBuilder msg) {
         boolean res = true;
         if (refList.size() != testList.size()) {

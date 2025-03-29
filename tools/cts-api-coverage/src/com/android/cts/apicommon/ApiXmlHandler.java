@@ -79,8 +79,13 @@ public class ApiXmlHandler extends DefaultHandler {
             mCurrentClassName = getValue(attributes, "name");
             mDeprecated = isDeprecated(attributes);
             String superClass = attributes.getValue("extends");
-            ApiClass apiClass = new ApiClass(
-                    mCurrentClassName, mDeprecated, is(attributes, "abstract"), superClass);
+            ApiClass apiClass =
+                    new ApiClass(
+                            mCurrentPackageName,
+                            mCurrentClassName,
+                            mDeprecated,
+                            is(attributes, "abstract"),
+                            superClass);
             ApiPackage apiPackage = mApiCoverage.getPackage(mCurrentPackageName);
             apiPackage.addClass(apiClass);
         } else if ("implements".equalsIgnoreCase(localName)) {

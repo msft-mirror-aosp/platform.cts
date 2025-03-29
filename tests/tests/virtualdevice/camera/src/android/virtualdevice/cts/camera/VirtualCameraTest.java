@@ -27,6 +27,7 @@ import static android.content.Context.DEVICE_ID_DEFAULT;
 import static android.graphics.ImageFormat.RGB_565;
 import static android.graphics.ImageFormat.YUV_420_888;
 import static android.hardware.camera2.CameraMetadata.LENS_FACING_BACK;
+import static android.hardware.camera2.CameraMetadata.LENS_FACING_EXTERNAL;
 import static android.hardware.camera2.CameraMetadata.LENS_FACING_FRONT;
 import static android.hardware.camera2.params.SessionConfiguration.SESSION_REGULAR;
 import static android.virtualdevice.cts.camera.util.VirtualCameraUtils.BACK_CAMERA_ID;
@@ -42,8 +43,11 @@ import static com.google.common.util.concurrent.MoreExecutors.directExecutor;
 
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assume.assumeNoException;
+import static org.mockito.AdditionalMatchers.not;
+import static org.mockito.AdditionalMatchers.or;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.after;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
@@ -53,6 +57,7 @@ import android.companion.virtual.VirtualDeviceParams;
 import android.companion.virtual.camera.VirtualCamera;
 import android.companion.virtual.camera.VirtualCameraCallback;
 import android.companion.virtual.camera.VirtualCameraConfig;
+import android.companion.virtualdevice.flags.Flags;
 import android.content.Context;
 import android.graphics.SurfaceTexture;
 import android.hardware.Camera;
@@ -65,6 +70,8 @@ import android.hardware.camera2.params.SessionConfiguration;
 import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.ImageReader;
 import android.platform.test.annotations.AppModeFull;
+import android.platform.test.annotations.RequiresFlagsDisabled;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.util.ArrayMap;
 import android.util.Size;
 import android.view.Surface;
@@ -226,6 +233,24 @@ public class VirtualCameraTest {
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_EXTERNAL_VIRTUAL_CAMERAS)
+    public void defaultContext_withVirtualExternalCamera_triggersCameraAvailabilityCallbacks() {
+        // Create virtual device with default camera policy.
+        mVirtualDevice = mRule.createManagedVirtualDevice();
+        setupDefaultDeviceCameraManager();
+        VirtualCamera virtualCamera = createVirtualCamera(LENS_FACING_EXTERNAL);
+
+        verify(mMockDefaultContextCameraAvailabilityCallback,
+                timeout(TIMEOUT_MILLIS)).onCameraAvailable(
+                not(or(eq(FRONT_CAMERA_ID), eq(BACK_CAMERA_ID))));
+
+        virtualCamera.close();
+        verify(mMockDefaultContextCameraAvailabilityCallback,
+                timeout(TIMEOUT_MILLIS)).onCameraUnavailable(
+                not(or(eq(FRONT_CAMERA_ID), eq(BACK_CAMERA_ID))));
+    }
+
+    @Test
     public void getCameraIdList_withDefaultContext_withVirtualCamera_doesNotIncludeVirtualCamera()
         throws Exception {
         setupDefaultDeviceCameraManager();
@@ -312,27 +337,70 @@ public class VirtualCameraTest {
         setupVirtualDeviceCameraManager();
         createVirtualCamera(lensFacing);
 
-        verifyCameraLensFacing(lensFacing == LENS_FACING_BACK ? BACK_CAMERA_ID : FRONT_CAMERA_ID,
-                lensFacing);
+        String cameraId = "";
+        if (lensFacing == LENS_FACING_BACK) {
+            cameraId = BACK_CAMERA_ID;
+        } else if (lensFacing == LENS_FACING_FRONT) {
+            cameraId = FRONT_CAMERA_ID;
+        } else {
+            // get the mapped cameraId from the list of cameras in the CameraManager
+            // there should be only one
+            cameraId = mCameraManager.getCameraIdList()[0];
+        }
+
+        verifyCameraLensFacing(cameraId, lensFacing);
     }
 
     @Parameters(method = "getAllLensFacingDirections")
     @Test
-    public void createMultipleVirtualCameras_withSameLensFacing_fails(int lensFacing) {
+    public void createMultipleVirtualCameras_withSameLensFacing_failsNonExternal(int lensFacing) {
         setupDefaultDeviceCameraManager();
         createVirtualCamera(lensFacing);
 
-        // Creating another camera with same lens facing should fail.
-        assertThrows(IllegalArgumentException.class, () -> createVirtualCamera(lensFacing));
+        // Creating another camera with same lens facing should fail for FRONT and BACK lens facing.
+        if (lensFacing == LENS_FACING_BACK || lensFacing == LENS_FACING_FRONT) {
+            assertThrows(IllegalArgumentException.class, () -> createVirtualCamera(lensFacing));
+        } else {
+            // allow multiple external cameras
+            createVirtualCamera(lensFacing);
+        }
     }
 
-    @Parameters(method = "getAllLensFacingDirections")
     @Test
-    public void createVirtualCamera_withDefaultPolicy_fails(int lensFacing) {
+    public void createVirtualCamera_withDefaultPolicy_fails() {
         // Create virtual device with default camera policy.
         mVirtualDevice = mRule.createManagedVirtualDevice();
 
-        assertThrows(IllegalArgumentException.class, () -> createVirtualCamera(lensFacing));
+        assertThrows(IllegalArgumentException.class, () -> createVirtualCamera(LENS_FACING_FRONT));
+        assertThrows(IllegalArgumentException.class, () -> createVirtualCamera(LENS_FACING_BACK));
+    }
+
+    @Test
+    @RequiresFlagsDisabled(Flags.FLAG_EXTERNAL_VIRTUAL_CAMERAS)
+    public void createExternalVirtualCamera_withDefaultPolicy_fails() {
+        // Create virtual device with default camera policy.
+        mVirtualDevice = mRule.createManagedVirtualDevice();
+
+        assertThrows(IllegalArgumentException.class,
+                () -> createVirtualCamera(LENS_FACING_EXTERNAL));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_EXTERNAL_VIRTUAL_CAMERAS)
+    public void createExternalVirtualCamera_withDefaultPolicy_succeeds() throws Exception {
+        // Create virtual device with default camera policy.
+        mVirtualDevice = mRule.createManagedVirtualDevice();
+        setupDefaultDeviceCameraManager();
+        List<String> defaultCameraIds = Arrays.asList(mCameraManager.getCameraIdListNoLazy());
+
+        createVirtualCamera(LENS_FACING_EXTERNAL);
+
+        List<String> cameraIds = new ArrayList<>(
+                Arrays.asList(mCameraManager.getCameraIdListNoLazy()));
+        cameraIds.removeAll(defaultCameraIds);
+
+        // only one added virtual external camera on the default device
+        assertThat(cameraIds).hasSize(1);
     }
 
     @Test
@@ -678,6 +746,7 @@ public class VirtualCameraTest {
                 pixelFormat, IMAGE_READER_MAX_IMAGES);
     }
 
+    @SuppressWarnings("unused") // Parameter for parametrized tests
     private static Integer[] getAllSensorOrientations() {
         return new Integer[]{
                 SENSOR_ORIENTATION_0,
@@ -687,10 +756,13 @@ public class VirtualCameraTest {
         };
     }
 
-    private static Integer[] getAllLensFacingDirections() {
-        return new Integer[]{
-                LENS_FACING_BACK,
-                LENS_FACING_FRONT,
-        };
+    @SuppressWarnings("unused") // Parameter for parametrized tests
+    private static List<Integer> getAllLensFacingDirections() {
+        List<Integer> lensFacingDirections = new ArrayList<>(
+                List.of(LENS_FACING_BACK, LENS_FACING_FRONT));
+        if (Flags.externalVirtualCameras()) {
+            lensFacingDirections.add(LENS_FACING_EXTERNAL);
+        }
+        return lensFacingDirections;
     }
 }

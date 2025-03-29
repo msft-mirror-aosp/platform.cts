@@ -1312,6 +1312,7 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
             try (AutoCloseable closable = MockTestActivityUtil.launchSync(
                     instant, TIMEOUT,
                     Map.of(MockTestActivityUtil.EXTRA_KEY_PRIVATE_IME_OPTIONS, marker))) {
+                expectEvent(stream, eventMatcher("bindInput"), TIMEOUT);
                 expectEvent(stream, editorMatcher("onStartInput", marker), START_INPUT_TIMEOUT);
                 expectImeInvisible(TIMEOUT);
 
@@ -1328,6 +1329,7 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
                 // remote process stopped by forceStopPackage.
                 MockTestActivityUtil.forceStopPackage();
                 expectEvent(stream, onFinishInputViewMatcher(false), TIMEOUT);
+                expectEvent(stream, eventMatcher("unbindInput"), TIMEOUT);
                 expectImeInvisible(TIMEOUT);
             }
         }
@@ -1428,8 +1430,6 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
                 "enabled".equals(SystemUtil.runShellCommand(FIXED_TO_USER_ROTATION_CMD).trim());
         assumeFalse("Device shouldn't have fixed rotation.", isFixedToUserRotation);
 
-        final InputMethodManager imm = mInstrumentation
-                .getTargetContext().getSystemService(InputMethodManager.class);
         // Disable auto-rotate screen and set the screen orientation to portrait mode.
         setAutoRotateScreen(false);
         final UiDevice uiDevice = UiDevice.getInstance(mInstrumentation);
@@ -1452,6 +1452,9 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
             expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
             notExpectEvent(stream, editorMatcher("onStartInputView", marker), TIMEOUT);
             expectImeInvisible(TIMEOUT);
+            final InputMethodManager imm = editText.getContext().getSystemService(
+                    InputMethodManager.class);
+
             assertTrue("hasActiveInputConnection() must return true if the View has IME focus",
                     getOnMainSync(() -> imm.hasActiveInputConnection(editText)));
             assumeFalse("onEvaluateFullscreenMode() should be false for portrait",
@@ -1539,6 +1542,53 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
             // Back to home to clean up states after the test finished.
             // TODO(b/368974455): Use UinputKeyboard instead.
             UiDevice.getInstance(mInstrumentation).pressHome();
+        }
+    }
+
+    /**
+     * Test that during the IME hide animation, there will be no other show request dispatched to
+     * IMS. This could happen, as we set clientVisibility first, but the IME is still animating out.
+     */
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_REPORT_ANIMATING_INSETS_TYPES)
+    public void testImeNoShowSoftInputCallDuringHideAnimation() throws Exception {
+        try (MockImeSession imeSession =
+                MockImeSession.create(
+                        mInstrumentation.getContext(),
+                        mInstrumentation.getUiAutomation(),
+                        new ImeSettings.Builder())) {
+            final ImeEventStream stream = imeSession.openEventStream();
+            final String marker = getTestMarker();
+
+            final AtomicReference<EditText> editTextRef = new AtomicReference<>();
+            TestActivity.startSync(
+                    activity -> {
+                        final LinearLayout layout = new LinearLayout(activity);
+                        layout.setOrientation(LinearLayout.VERTICAL);
+
+                        final EditText editText = new EditText(activity);
+                        layout.addView(editText);
+                        editText.setHint("focused editText");
+                        editText.setPrivateImeOptions(marker);
+                        editText.requestFocus();
+                        editTextRef.set(editText);
+                        activity.getWindow().getDecorView().getWindowInsetsController().show(ime());
+                        return layout;
+                    });
+
+            expectEvent(stream, showSoftInputMatcher(0), TIMEOUT);
+            expectEvent(stream, editorMatcher("onStartInputView", marker), TIMEOUT);
+            expectImeVisible(TIMEOUT);
+
+            TestUtils.runOnMainSync(
+                    () -> {
+                        editTextRef.get().getWindowInsetsController().hide(ime());
+                    });
+
+            // During the hide animation, no other showSoftInput should be called
+            expectImeInvisible(TIMEOUT);
+            notExpectEvent(stream, editorMatcher("onStartInputView", marker), TIMEOUT);
+            notExpectEvent(stream, showSoftInputMatcher(0), TIMEOUT);
         }
     }
 

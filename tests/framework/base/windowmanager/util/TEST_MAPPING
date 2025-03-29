@@ -1,0 +1,53 @@
+{
+  "imports": [
+    {
+      // Includes all CTS configs
+      "path": "cts/tests/framework/base/windowmanager/src/android/server/wm/activity"
+    },
+    {
+      "path": "cts/tests/framework/base/windowmanager/src/android/server/wm/am"
+    },
+    {
+      "path": "cts/tests/framework/base/windowmanager/src/android/server/wm/animations"
+    },
+    {
+      "path": "cts/tests/framework/base/windowmanager/src/android/server/wm/backnavigation"
+    },
+    {
+      "path": "cts/tests/framework/base/windowmanager/src/android/server/wm/display"
+    },
+    {
+      "path": "cts/tests/framework/base/windowmanager/src/android/server/wm/ime"
+    },
+    {
+      "path": "cts/tests/framework/base/windowmanager/src/android/server/wm/input"
+    },
+    {
+      "path": "cts/tests/framework/base/windowmanager/src/android/server/wm/insets"
+    },
+    {
+      "path": "cts/tests/framework/base/windowmanager/src/android/server/wm/keyguard"
+    },
+    {
+      "path": "cts/tests/framework/base/windowmanager/src/android/server/wm/multidisplay"
+    },
+    {
+      "path": "cts/tests/framework/base/windowmanager/src/android/server/wm/other"
+    },
+    {
+      "path": "cts/tests/framework/base/windowmanager/src/android/server/wm/taskfragment"
+    },
+    {
+      "path": "cts/tests/framework/base/windowmanager/src/android/server/wm/window"
+    },
+    {
+      "path": "cts/tests/framework/base/windowmanager/src/android/server/wm/testsdk29"
+    },
+    {
+      "path": "cts/tests/framework/base/windowmanager/src/android/server/wm/testsdk34"
+    },
+    {
+      "path": "cts/tests/framework/base/windowmanager/src/android/server/wm/testsdk35"
+    }
+  ]
+}

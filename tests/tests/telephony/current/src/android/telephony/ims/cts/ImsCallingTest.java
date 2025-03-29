@@ -16,21 +16,34 @@
 
 package android.telephony.ims.cts;
 
+import static android.telephony.CarrierConfigManager.ImsVoice.ALERTING_SRVCC_SUPPORT;
+import static android.telephony.CarrierConfigManager.ImsVoice.BASIC_SRVCC_SUPPORT;
+import static android.telephony.CarrierConfigManager.ImsVoice.MIDCALL_SRVCC_SUPPORT;
+import static android.telephony.CarrierConfigManager.ImsVoice.PREALERTING_SRVCC_SUPPORT;
+import static android.telephony.PreciseCallState.PRECISE_CALL_STATE_ACTIVE;
+import static android.telephony.PreciseCallState.PRECISE_CALL_STATE_HOLDING;
+import static android.telephony.PreciseCallState.PRECISE_CALL_STATE_INCOMING;
+import static android.telephony.PreciseCallState.PRECISE_CALL_STATE_INCOMING_SETUP;
+import static android.telephony.TelephonyManager.SRVCC_STATE_HANDOVER_CANCELED;
+import static android.telephony.TelephonyManager.SRVCC_STATE_HANDOVER_STARTED;
+import static android.telephony.mockmodem.MockImsService.LATCH_WAIT_FOR_SRVCC_CALL_INFO;
+import static android.telephony.mockmodem.MockSimService.MOCK_SIM_PROFILE_ID_TWN_CHT;
+
 import static junit.framework.Assert.assertNotNull;
 import static junit.framework.Assert.assertTrue;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeTrue;
 
 import android.annotation.NonNull;
 import android.content.Context;
-import android.database.ContentObserver;
 import android.media.AudioManager;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Looper;
+import android.os.PersistableBundle;
+import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -39,6 +52,7 @@ import android.telecom.PhoneAccount;
 import android.telecom.TelecomManager;
 import android.telephony.AccessNetworkConstants;
 import android.telephony.CallState;
+import android.telephony.CarrierConfigManager;
 import android.telephony.PreciseCallState;
 import android.telephony.SubscriptionManager;
 import android.telephony.TelephonyCallback;
@@ -49,9 +63,13 @@ import android.telephony.ims.ImsCallProfile;
 import android.telephony.ims.ImsCallSessionListener;
 import android.telephony.ims.ImsStreamMediaProfile;
 import android.telephony.ims.MediaQualityStatus;
+import android.telephony.ims.SrvccCall;
 import android.telephony.ims.feature.MmTelFeature;
+import android.telephony.mockmodem.MockModemManager;
+import android.telephony.mockmodem.MockSrvccCall;
 import android.text.TextUtils;
 import android.util.Log;
+import android.util.Pair;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -71,11 +89,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+
 /** CTS tests for ImsCall . */
 @RunWith(AndroidJUnit4.class)
 public class ImsCallingTest extends ImsCallingBase {
@@ -96,7 +114,10 @@ public class ImsCallingTest extends ImsCallingBase {
     private static final long WAIT_FOR_STATE_CHANGE_TIMEOUT_MS = 10000;
 
     private static TelephonyManager sTelephonyManager;
-    private static Handler sHandler;
+    private static MockModemManager sMockModemManager;
+    // Can not assert/assume in beforeAllTests, so track if the setup was successful here.
+    private static boolean sTestPreconditionsSet;
+    private static boolean sSupportsImsHal = false;
 
     static {
         initializeLatches();
@@ -111,27 +132,54 @@ public class ImsCallingTest extends ImsCallingBase {
         if (!ImsUtils.shouldTestImsCall()) {
             return;
         }
-
         sTelephonyManager =
                 (TelephonyManager) getContext().getSystemService(Context.TELEPHONY_SERVICE);
 
-        sTestSub = ImsUtils.getPreferredActiveSubId();
-        sTestSlot = SubscriptionManager.getSlotIndex(sTestSub);
-        if (!isSimReady()) {
+        Pair<Integer, Integer> halVersion =
+                sTelephonyManager.getHalVersion(TelephonyManager.HAL_SERVICE_IMS);
+        if (!(halVersion.equals(TelephonyManager.HAL_VERSION_UNKNOWN)
+                || halVersion.equals(TelephonyManager.HAL_VERSION_UNSUPPORTED))) {
+            sSupportsImsHal = true;
+        }
+
+        MockModemManager.enforceMockModemDeveloperSetting();
+        sMockModemManager = new MockModemManager();
+        // SLOT 0
+        sTestPreconditionsSet =
+                sMockModemManager.connectMockModemService(MOCK_SIM_PROFILE_ID_TWN_CHT);
+        if (!sTestPreconditionsSet) {
+            Log.w(LOG_TAG, "beforeAllTests: couldn't connect mock modem");
             return;
         }
 
-        if (Looper.getMainLooper() == null) {
-            Looper.prepareMainLooper();
-        }
-        sHandler = new Handler(Looper.getMainLooper());
+        TimeUnit.MILLISECONDS.sleep(WAIT_UPDATE_TIMEOUT_MS);
 
+        sTestPreconditionsSet &= isSimReady();
+        if (!sTestPreconditionsSet) {
+            Log.w(LOG_TAG, "beforeAllTests: SIM state not ready");
+            return;
+        }
+
+        int subId = SubscriptionManager.getSubscriptionId(sTestSlot);
+        sTestPreconditionsSet &= SubscriptionManager.isValidSubscriptionId(subId);
+        if (!sTestPreconditionsSet) {
+            Log.w(LOG_TAG, "beforeAllTests: subId is not valid, subId=" + subId);
+            return;
+        }
+        sTestSub = subId;
+
+        sTestPreconditionsSet &= sMockModemManager.changeNetworkService(sTestSlot, 310260, true);
+        if (!sTestPreconditionsSet) {
+            Log.w(LOG_TAG, "beforeAllTests: couldn't change network service");
+            return;
+        }
+        TimeUnit.MILLISECONDS.sleep(WAIT_UPDATE_TIMEOUT_MS);
         beforeAllTestsBase();
     }
 
     private static boolean isSimReady() {
         if (sTelephonyManager.getSimState(sTestSlot) != TelephonyManager.SIM_STATE_READY) {
-            Log.d(LOG_TAG, "sim is not present");
+            Log.d(LOG_TAG, "sim is not READY");
             return false;
         }
         return true;
@@ -143,21 +191,31 @@ public class ImsCallingTest extends ImsCallingBase {
             return;
         }
 
-        if (!isSimReady()) {
-            return;
-        }
-
         afterAllTestsBase();
+
+        // Rebind all interfaces which is binding to MockModemService to default.
+        if (sMockModemManager != null) {
+            boolean success = sMockModemManager.disconnectMockModemService();
+            if (!success) {
+                Log.w(LOG_TAG, "afterAllTests: couldn't disconnect mock modem");
+            }
+            sMockModemManager = null;
+            TimeUnit.MILLISECONDS.sleep(WAIT_UPDATE_TIMEOUT_MS);
+        }
     }
 
     @Before
     public void beforeTest() throws Exception {
-        if (!ImsUtils.shouldTestImsCall()) {
-            return;
+        assumeTrue(ImsUtils.shouldTestImsService());
+        if (!sTestPreconditionsSet) {
+            fail("Couldn't set up mock modem, so test can not be run");
+        }
+        if (!isSimReady()) {
+            fail("This test requires that there is a SIM in the device that is ready!");
         }
 
-        if (!isSimReady()) {
-            fail("This test requires that there is a SIM in the device!");
+        if (sMockModemManager != null) {
+            sMockModemManager.resetImsAllLatchCountdown();
         }
 
         // Correctness check: ensure that the subscription hasn't changed between tests.
@@ -172,11 +230,6 @@ public class ImsCallingTest extends ImsCallingBase {
         if (!ImsUtils.shouldTestImsCall()) {
             return;
         }
-
-        if (!isSimReady()) {
-            return;
-        }
-
         resetCallSessionObjects();
 
         if (!mCalls.isEmpty() && (mCurrentCallId != null)) {
@@ -184,10 +237,7 @@ public class ImsCallingTest extends ImsCallingBase {
             call.disconnect();
         }
 
-        //Set the untracked CountDownLatches which are reseted in ServiceCallBack
-        for (int i = 0; i < LATCH_MAX; i++) {
-            sLatches[i] = new CountDownLatch(1);
-        }
+        initializeLatches();
 
         if (sServiceConnector != null && sIsBound) {
             TestImsService imsService = sServiceConnector.getCarrierService();
@@ -294,6 +344,85 @@ public class ImsCallingTest extends ImsCallingBase {
         isCallActive(call, callSession);
         callSession.terminateIncomingCall();
 
+        isCallDisconnected(call, callSession);
+        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
+        waitForUnboundService();
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_REUSE_ORIGINAL_CONN_REMOTE_CONF_BEHAVIOR)
+    @Test
+    public void testIncomingCallBecomesRemotelyHostedConference() throws Exception {
+        if (!ImsUtils.shouldTestImsCall()) {
+            return;
+        }
+        bindImsService();
+        mServiceCallBack = new ServiceCallBack();
+        InCallServiceStateValidator.setCallbacks(mServiceCallBack);
+
+        Bundle extras = new Bundle();
+        sServiceConnector.getCarrierService().getMmTelFeature().onIncomingCallReceived(extras);
+        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
+
+        Call call = getCall(mCurrentCallId);
+        if (call.getDetails().getState() == Call.STATE_RINGING) {
+            call.answer(0);
+        }
+
+        waitForCallSessionToNotBe(null);
+        TestImsCallSessionImpl callSession =
+                sServiceConnector.getCarrierService().getMmTelFeature().getImsCallsession();
+
+        isCallActive(call, callSession);
+
+        // Initiate this call becoming a remotely hosted conference call:
+        callSession.changeMultipartyState(true);
+
+        // Ensure that the original call is converted into a conference:
+        waitForCallProperties(call, Call.Details.PROPERTY_CONFERENCE);
+
+        // Ensure the original call was reused for the conference and thus is still ACTIVE:
+        isCallActive(call, callSession);
+
+        // End the conference call and ensure it is cleaned up correctly:
+        callSession.terminateIncomingCall();
+        isCallDisconnected(call, callSession);
+        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
+        waitForUnboundService();
+    }
+
+    @RequiresFlagsDisabled(Flags.FLAG_REUSE_ORIGINAL_CONN_REMOTE_CONF_BEHAVIOR)
+    @Test
+    public void testIncomingCallBecomesRemotelyHostedConferenceLegacy() throws Exception {
+        if (!ImsUtils.shouldTestImsCall()) {
+            return;
+        }
+        bindImsService();
+        mServiceCallBack = new ServiceCallBack();
+        InCallServiceStateValidator.setCallbacks(mServiceCallBack);
+
+        Bundle extras = new Bundle();
+        sServiceConnector.getCarrierService().getMmTelFeature().onIncomingCallReceived(extras);
+        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
+
+        Call call = getCall(mCurrentCallId);
+        if (call.getDetails().getState() == Call.STATE_RINGING) {
+            call.answer(0);
+        }
+
+        waitForCallSessionToNotBe(null);
+        TestImsCallSessionImpl callSession =
+                sServiceConnector.getCarrierService().getMmTelFeature().getImsCallsession();
+
+        isCallActive(call, callSession);
+
+        // Initiate this call becoming a remotely hosted conference call:
+        callSession.changeMultipartyState(true);
+
+        // Ensure that the original call is disconnected when the new conference call is created:
+        waitForCallState(call, Call.STATE_DISCONNECTED);
+
+        // End the conference call and ensure it is cleaned up correctly:
+        callSession.terminateIncomingCall();
         isCallDisconnected(call, callSession);
         assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
         waitForUnboundService();
@@ -1505,28 +1634,344 @@ public class ImsCallingTest extends ImsCallingBase {
         waitForUnboundService();
     }
 
-    private ContentObserver createObserver(Uri observerUri, CountDownLatch latch) {
-        ContentObserver observer = new ContentObserver(sHandler) {
-            @Override
-            public void onChange(boolean selfChange, Uri uri) {
-                if (observerUri.equals(uri)) {
-                    latch.countDown();
-                }
-            }
-        };
-        getContext().getContentResolver().registerContentObserver(observerUri, true, observer);
-        return observer;
+    @Test
+    public void testSrvccActiveCall() throws Exception {
+        assumeTrue(ImsUtils.shouldTestImsCall());
+        assumeTrue(sSupportsImsHal);
+
+        bindImsService();
+
+        // Place outgoing call
+        Call call = placeOutgoingCall();
+
+        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DIALING, WAIT_FOR_CALL_STATE));
+
+        TimeUnit.MILLISECONDS.sleep(WAIT_UPDATE_TIMEOUT_MS);
+        TestImsCallSessionImpl callSession =
+                sServiceConnector.getCarrierService().getMmTelFeature().getImsCallsession();
+
+        isCallActive(call, callSession);
+
+        List<SrvccCall> profiles = new ArrayList<>();
+        List<SrvccCall> effectiveProfiles = new ArrayList<>();
+        PersistableBundle bundle = new PersistableBundle();
+        bundle.putIntArray(
+                CarrierConfigManager.ImsVoice.KEY_SRVCC_TYPE_INT_ARRAY,
+                new int[] {
+                    BASIC_SRVCC_SUPPORT,
+                });
+        SrvccCall srvccProfile =
+                new SrvccCall(
+                        callSession.getCallId(),
+                        PRECISE_CALL_STATE_ACTIVE,
+                        callSession.getCallProfile());
+        profiles.add(srvccProfile);
+        effectiveProfiles.add(srvccProfile);
+
+        verifySrvccTypeFiltered(bundle, profiles, effectiveProfiles);
+
+        profiles.clear();
+        effectiveProfiles.clear();
+
+        ImsUtils.waitInCurrentState(WAIT_IN_CURRENT_STATE);
+        call.disconnect();
+
+        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
+        isCallDisconnected(call, callSession);
+        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
+        waitForUnboundService();
     }
 
-    private void waitForLatch(CountDownLatch latch, ContentObserver observer) {
-        try {
-            // Wait for the ContentObserver to fire signalling the change.
-            latch.await(ImsUtils.TEST_TIMEOUT_MS, TimeUnit.MILLISECONDS);
-        } catch (InterruptedException e) {
-            fail("Interrupted Exception waiting for latch countdown:" + e.getMessage());
-        } finally {
-            getContext().getContentResolver().unregisterContentObserver(observer);
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_SUPPORT_IMS_MMTEL_INTERFACE)
+    public void testSendAnbrQuery() throws Exception {
+        assumeTrue(ImsUtils.shouldTestImsCall());
+        assumeTrue(sSupportsImsHal);
+
+        bindImsService();
+
+        // Place outgoing call
+        Call call = placeOutgoingCall();
+
+        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DIALING, WAIT_FOR_CALL_STATE));
+
+        TimeUnit.MILLISECONDS.sleep(WAIT_UPDATE_TIMEOUT_MS);
+        TestImsCallSessionImpl callSession =
+                sServiceConnector.getCarrierService().getMmTelFeature().getImsCallsession();
+
+        isCallActive(call, callSession);
+
+        sMockModemManager.resetAnbrValues(sTestSlot);
+        callSession.callSessionSendAnbrQuery(2, 1, 24400);
+        TimeUnit.MILLISECONDS.sleep(500);
+
+        int[] retValues = sMockModemManager.getAnbrValues(sTestSlot);
+        assertNotNull(retValues);
+        assertEquals(2, retValues[0]);
+        assertEquals(1, retValues[1]);
+        assertEquals(24400, retValues[2]);
+
+        call.disconnect();
+        waitForUnboundService();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_SUPPORT_IMS_MMTEL_INTERFACE)
+    public void testNotifyAnbr() throws Exception {
+        assumeTrue(ImsUtils.shouldTestImsCall());
+        assumeTrue(sSupportsImsHal);
+
+        assumeTrue(sSupportsImsHal);
+
+        bindImsService();
+
+        // Place outgoing call
+        Call call = placeOutgoingCall();
+
+        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DIALING, WAIT_FOR_CALL_STATE));
+
+        TimeUnit.MILLISECONDS.sleep(WAIT_UPDATE_TIMEOUT_MS);
+        TestImsCallSessionImpl callSession =
+                sServiceConnector.getCarrierService().getMmTelFeature().getImsCallsession();
+
+        isCallActive(call, callSession);
+
+        callSession.resetAnbrValues();
+        assertTrue(sMockModemManager.notifyAnbr(sTestSlot, 2, 1, 24400));
+        TimeUnit.MILLISECONDS.sleep(500);
+
+        int[] retValues = callSession.getAnbrValues();
+        assertNotNull(retValues);
+        assertEquals(2, retValues[0]);
+        assertEquals(1, retValues[1]);
+        assertEquals(24400, retValues[2]);
+
+        call.disconnect();
+        waitForUnboundService();
+    }
+
+    @Test
+    public void testSrvccIncomingCall() throws Exception {
+        assumeTrue(ImsUtils.shouldTestImsCall());
+        assumeTrue(sSupportsImsHal);
+
+        bindImsService();
+        mServiceCallBack = new ServiceCallBack();
+        InCallServiceStateValidator.setCallbacks(mServiceCallBack);
+
+        Bundle extras = new Bundle();
+        sServiceConnector.getCarrierService().getMmTelFeature().onIncomingCallReceived(extras);
+        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
+
+        Call call = getCall(mCurrentCallId);
+        if (call.getDetails().getState() == call.STATE_RINGING) {
+            TimeUnit.MILLISECONDS.sleep(5000);
+            TestImsCallSessionImpl callSession =
+                    sServiceConnector.getCarrierService().getMmTelFeature().getImsCallsession();
+
+            List<SrvccCall> profiles = new ArrayList<>();
+            List<SrvccCall> effectiveProfiles = new ArrayList<>();
+            PersistableBundle bundle = new PersistableBundle();
+            bundle.putIntArray(
+                    CarrierConfigManager.ImsVoice.KEY_SRVCC_TYPE_INT_ARRAY,
+                    new int[] {
+                        BASIC_SRVCC_SUPPORT,
+                    });
+            SrvccCall srvccProfile =
+                    new SrvccCall(
+                            callSession.getCallId(),
+                            PRECISE_CALL_STATE_INCOMING,
+                            callSession.getCallProfile());
+            profiles.add(srvccProfile);
+
+            verifySrvccTypeFiltered(bundle, profiles, effectiveProfiles);
+
+            bundle = new PersistableBundle();
+            bundle.putIntArray(
+                    CarrierConfigManager.ImsVoice.KEY_SRVCC_TYPE_INT_ARRAY,
+                    new int[] {
+                        BASIC_SRVCC_SUPPORT, ALERTING_SRVCC_SUPPORT,
+                    });
+            effectiveProfiles.add(srvccProfile);
+
+            verifySrvccTypeFiltered(bundle, profiles, effectiveProfiles);
+
+            profiles.clear();
+            effectiveProfiles.clear();
+
+            call.answer(0);
         }
+
+        TestImsCallSessionImpl callSession =
+                sServiceConnector.getCarrierService().getMmTelFeature().getImsCallsession();
+
+        isCallActive(call, callSession);
+
+        ImsUtils.waitInCurrentState(WAIT_IN_CURRENT_STATE);
+        callSession.terminateIncomingCall();
+
+        isCallDisconnected(call, callSession);
+        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
+        waitForUnboundService();
+    }
+
+    @Test
+    public void testSrvccPreAlertingIncomingCall() throws Exception {
+        assumeTrue(ImsUtils.shouldTestImsCall());
+        assumeTrue(sSupportsImsHal);
+
+        bindImsService();
+
+        List<SrvccCall> profiles = new ArrayList<>();
+        List<SrvccCall> effectiveProfiles = new ArrayList<>();
+        PersistableBundle bundle = new PersistableBundle();
+        bundle.putIntArray(
+                CarrierConfigManager.ImsVoice.KEY_SRVCC_TYPE_INT_ARRAY,
+                new int[] {
+                    BASIC_SRVCC_SUPPORT,
+                });
+        SrvccCall srvccProfile =
+                new SrvccCall("", PRECISE_CALL_STATE_INCOMING_SETUP, new ImsCallProfile());
+        profiles.add(srvccProfile);
+
+        verifySrvccTypeFiltered(bundle, profiles, effectiveProfiles);
+
+        bundle = new PersistableBundle();
+        bundle.putIntArray(
+                CarrierConfigManager.ImsVoice.KEY_SRVCC_TYPE_INT_ARRAY,
+                new int[] {
+                    BASIC_SRVCC_SUPPORT, PREALERTING_SRVCC_SUPPORT,
+                });
+        effectiveProfiles.add(srvccProfile);
+
+        verifySrvccTypeFiltered(bundle, profiles, effectiveProfiles);
+
+        profiles.clear();
+        effectiveProfiles.clear();
+    }
+
+    @Test
+    public void testSrvccHoldingCall() throws Exception {
+        assumeTrue(ImsUtils.shouldTestImsCall());
+        assumeTrue(sSupportsImsHal);
+
+        bindImsService();
+
+        // Place outgoing call
+        Call call = placeOutgoingCall();
+
+        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DIALING, WAIT_FOR_CALL_STATE));
+
+        TimeUnit.MILLISECONDS.sleep(WAIT_UPDATE_TIMEOUT_MS);
+        TestImsCallSessionImpl callSession =
+                sServiceConnector.getCarrierService().getMmTelFeature().getImsCallsession();
+
+        isCallActive(call, callSession);
+
+        ImsUtils.waitInCurrentState(WAIT_IN_CURRENT_STATE);
+        // Put on hold
+        call.hold();
+        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_HOLDING, WAIT_FOR_CALL_STATE));
+
+        List<SrvccCall> profiles = new ArrayList<>();
+        List<SrvccCall> effectiveProfiles = new ArrayList<>();
+        PersistableBundle bundle = new PersistableBundle();
+        bundle.putIntArray(
+                CarrierConfigManager.ImsVoice.KEY_SRVCC_TYPE_INT_ARRAY,
+                new int[] {
+                    BASIC_SRVCC_SUPPORT,
+                });
+        SrvccCall srvccProfile =
+                new SrvccCall(
+                        callSession.getCallId(),
+                        PRECISE_CALL_STATE_HOLDING,
+                        callSession.getCallProfile());
+        profiles.add(srvccProfile);
+
+        verifySrvccTypeFiltered(bundle, profiles, effectiveProfiles);
+
+        bundle = new PersistableBundle();
+        bundle.putIntArray(
+                CarrierConfigManager.ImsVoice.KEY_SRVCC_TYPE_INT_ARRAY,
+                new int[] {
+                    BASIC_SRVCC_SUPPORT, MIDCALL_SRVCC_SUPPORT,
+                });
+        effectiveProfiles.add(srvccProfile);
+
+        verifySrvccTypeFiltered(bundle, profiles, effectiveProfiles);
+
+        profiles.clear();
+        effectiveProfiles.clear();
+
+        ImsUtils.waitInCurrentState(WAIT_IN_CURRENT_STATE);
+        call.disconnect();
+
+        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
+        isCallDisconnected(call, callSession);
+        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
+        waitForUnboundService();
+    }
+
+    private void verifySrvccStateChange(int state) throws Exception {
+        assertTrue(sMockModemManager.srvccStateNotify(sTestSlot, state));
+        sServiceConnector
+                .getCarrierService()
+                .getMmTelFeature()
+                .getSrvccStateLatch()
+                .await(WAIT_UPDATE_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+
+        assertEquals(
+                state, sServiceConnector.getCarrierService().getMmTelFeature().getSrvccState());
+    }
+
+    private void verifySrvccTypeFiltered(
+            PersistableBundle bundle, List<SrvccCall> profiles, List<SrvccCall> effectiveProfiles)
+            throws Exception {
+        // Trigger carrier config changed
+        overrideCarrierConfig(bundle);
+
+        // HANDOVER_STARTED
+        verifySrvccStateChange(SRVCC_STATE_HANDOVER_STARTED);
+
+        sServiceConnector.getCarrierService().getMmTelFeature().notifySrvccCall(profiles);
+        assertTrue(waitForMockImsStateLatchCountdown(LATCH_WAIT_FOR_SRVCC_CALL_INFO));
+
+        List<MockSrvccCall> srvccCalls = sMockModemManager.getSrvccCalls(sTestSlot);
+        assertNotNull(srvccCalls);
+        assertEquals(effectiveProfiles.size(), srvccCalls.size());
+
+        // HANDOVER_CANCELED
+        verifySrvccStateChange(SRVCC_STATE_HANDOVER_CANCELED);
+    }
+
+    private Call placeOutgoingCall() throws Exception {
+        mServiceCallBack = new ServiceCallBack();
+        InCallServiceStateValidator.setCallbacks(mServiceCallBack);
+
+        TelecomManager telecomManager =
+                (TelecomManager)
+                        InstrumentationRegistry.getInstrumentation()
+                                .getContext()
+                                .getSystemService(Context.TELECOM_SERVICE);
+
+        final Uri imsUri = Uri.fromParts(PhoneAccount.SCHEME_TEL, String.valueOf(++sCounter), null);
+        Bundle extras = new Bundle();
+
+        // Place outgoing call
+        telecomManager.placeCall(imsUri, extras);
+        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
+
+        Call call = getCall(mCurrentCallId);
+
+        return call;
+    }
+
+    private boolean waitForMockImsStateLatchCountdown(int latchIndex) {
+        return waitForMockImsStateLatchCountdown(latchIndex, WAIT_UPDATE_TIMEOUT_MS);
+    }
+
+    private boolean waitForMockImsStateLatchCountdown(int latchIndex, int waitMs) {
+        return sMockModemManager.waitForImsLatchCountdown(latchIndex, waitMs);
     }
 
     private class TestTelephonyCallback extends TelephonyCallback
@@ -1789,6 +2234,55 @@ public class ImsCallingTest extends ImsCallingBase {
         isCallActive(mCall3, mCallSession3);
         assertTrue("Call is not in Active State", (mCall3.getDetails().getState()
                 == Call.STATE_ACTIVE));
+    }
+
+    /**
+     * Asserts that a call's properties are as expected.
+     *
+     * @param call The call.
+     * @param properties The expected properties.
+     */
+    public void waitForCallProperties(final Call call, final int properties) {
+        waitUntilConditionIsTrueOrTimeout(
+                new Condition() {
+                    @Override
+                    public Object expected() {
+                        return true;
+                    }
+
+                    @Override
+                    public Object actual() {
+                        return call.getDetails().hasProperty(properties);
+                    }
+                },
+                WAIT_FOR_CONDITION,
+                "Call should have properties " + properties
+        );
+    }
+
+    /**
+     * Asserts that a call's state is as expected.
+     *
+     * @param call The call.
+     * @param state The expected state.
+     */
+    public void waitForCallState(final Call call, final int state) {
+        waitUntilConditionIsTrueOrTimeout(
+                new Condition() {
+                    @Override
+                    public Object expected() {
+                        return state;
+                    }
+
+                    @Override
+                    public Object actual() {
+                        return call.getDetails().getState();
+                    }
+                },
+                WAIT_FOR_CONDITION,
+                "Call should be in state " + state + "; but was in state "
+                        + call.getDetails().getState()
+        );
     }
 
     private void waitForCallSessionToNotBe(TestImsCallSessionImpl previousCallSession) {

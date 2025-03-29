@@ -737,8 +737,15 @@ public class MediaRouter2HostSideTest extends BaseHostJUnit4Test {
         CompatibilityBuildHelper buildHelper = new CompatibilityBuildHelper(
                 testInfo.getBuildInfo());
         final String result = testInfo.getDevice().installPackage(
-                buildHelper.getTestFile(apkName), /*reinstall=*/true, /*grantPermissions=*/true,
-                /*allow test apps*/"-t");
+                buildHelper.getTestFile(apkName),
+                /*reinstall=*/true,
+                /*grantPermissions=*/true,
+                /*allow test apps*/"-t",
+                "--abi",
+                testInfo.getContext()
+                        .getConfigurationDescriptor()
+                        .getAbi()
+                        .getName());
         assertWithMessage("Failed to install " + apkName + ": " + result).that(result).isNull();
     }
 }

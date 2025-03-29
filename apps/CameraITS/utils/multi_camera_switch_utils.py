@@ -193,15 +193,14 @@ def find_aruco_markers(img, img_path, suffix):
   return corners, ids
 
 
-def get_error_msg(failed_awb_msg, failed_ae_msg, failed_af_msg):
+def get_error_msg(failed_awb_msg, failed_ae_msg):
   """"Returns the error message string.
 
   Args:
-    failed_awb_msg: list of awb error msgs
-    failed_ae_msg: list of ae error msgs
-    failed_af_msg: list of af error msgs
+    failed_awb_msg: list of awb error msgs.
+    failed_ae_msg: list of ae error msgs.
   Returns:
-    error_msg: str; error_msg string
+    error_msg: str; error_msg string.
   """
   error_msg = ''
   if failed_awb_msg:
@@ -211,10 +210,6 @@ def get_error_msg(failed_awb_msg, failed_ae_msg, failed_af_msg):
   if failed_ae_msg:
     error_msg = f'{error_msg}----AE Check----\n'
     for msg in failed_ae_msg:
-      error_msg = f'{error_msg}{msg}\n'
-  if failed_af_msg:
-    error_msg = f'{error_msg}----AF Check----\n'
-    for msg in failed_af_msg:
       error_msg = f'{error_msg}{msg}\n'
   return error_msg
 

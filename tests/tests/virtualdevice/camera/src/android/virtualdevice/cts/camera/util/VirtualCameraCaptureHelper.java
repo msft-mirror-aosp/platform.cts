@@ -21,9 +21,9 @@ import static android.graphics.ImageFormat.YUV_420_888;
 import static android.hardware.camera2.CameraMetadata.LENS_FACING_FRONT;
 import static android.virtualdevice.cts.camera.util.VirtualCameraUtils.createVirtualCameraConfig;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import static org.junit.Assume.assumeNoException;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.never;
 
 import android.companion.virtual.VirtualDeviceManager;
 import android.companion.virtual.camera.VirtualCamera;
@@ -34,9 +34,11 @@ import android.graphics.ImageFormat;
 import android.graphics.PixelFormat;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
+import android.hardware.camera2.CameraCaptureSession.CaptureCallback;
 import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.CameraMetadata;
+import android.hardware.camera2.CaptureFailure;
 import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.TotalCaptureResult;
 import android.hardware.camera2.params.OutputConfiguration;
@@ -48,10 +50,10 @@ import android.view.Surface;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.test.core.app.ApplicationProvider;
 
 import com.google.common.truth.Truth;
 
+import org.junit.Assert;
 import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentMatchers;
 import org.mockito.Captor;
@@ -59,10 +61,12 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
@@ -83,14 +87,13 @@ public class VirtualCameraCaptureHelper {
 
     private final Handler mImageReaderHandler = VirtualCameraUtils.createHandler(
             "image-reader-callback");
-    private final Executor mExecutor =
-            ApplicationProvider.getApplicationContext().getMainExecutor();
+    private final Executor mCameraExecutor = Executors.newSingleThreadExecutor();
     @Mock
     private CameraDevice.StateCallback mCameraStateCallback;
     @Mock
     private CameraCaptureSession.StateCallback mSessionStateCallback;
-    @Mock
-    private CameraCaptureSession.CaptureCallback mCaptureCallback;
+
+    private TestCaptureCallback mCaptureCallback;
     @Mock
     private VirtualCameraCallback mVirtualCameraCallback;
     @Captor
@@ -99,8 +102,6 @@ public class VirtualCameraCaptureHelper {
     private ArgumentCaptor<CameraCaptureSession> mCameraCaptureSessionCaptor;
     @Captor
     private ArgumentCaptor<Surface> mSurfaceCaptor;
-    @Captor
-    private ArgumentCaptor<TotalCaptureResult> mTotalCaptureResultCaptor;
 
     @Nullable
     private CameraManager mCameraManager = null;
@@ -130,8 +131,7 @@ public class VirtualCameraCaptureHelper {
      * Clean up resources after the test has been run
      */
     public void tearDown() {
-        Mockito.reset(mCaptureCallback, mCameraStateCallback, mSessionStateCallback,
-                mVirtualCameraCallback);
+        Mockito.reset(mCameraStateCallback, mSessionStateCallback, mVirtualCameraCallback);
         if (mCameraDevice != null) {
             mCameraDevice.close();
             mCameraDevice = null;
@@ -168,7 +168,7 @@ public class VirtualCameraCaptureHelper {
     }
 
     /**
-     * Create a virtual camera with the provided configuration
+     * Create a virtual camera with the provided configuration and lens facing LENS_FACING_FRONT
      *
      * @param inputWidth  width of the input of this virtual camera
      * @param inputHeight height of the input of this virtual camera
@@ -177,11 +177,26 @@ public class VirtualCameraCaptureHelper {
      */
     public void createVirtualCamera(int inputWidth, int inputHeight, int inputFormat,
             int fps) {
+        createVirtualCamera(inputWidth, inputHeight, inputFormat,
+                fps, LENS_FACING_FRONT);
+    }
+
+    /**
+     * Create a virtual camera with the provided configuration
+     *
+     * @param inputWidth  width of the input of this virtual camera
+     * @param inputHeight height of the input of this virtual camera
+     * @param inputFormat format of the input of this virtual camera
+     * @param fps         fps of the input of this virtual camera
+     * @param lensFacing  lens facing of this virtual camera
+     */
+    public void createVirtualCamera(int inputWidth, int inputHeight, int inputFormat,
+            int fps, int lensFacing) {
         Objects.requireNonNull(mVirtualDevice,
                 "mVirtualDevice must not be null when calling #createVirtualCamera()");
         VirtualCameraConfig config = createVirtualCameraConfig(inputWidth, inputHeight,
-                inputFormat, fps, SENSOR_ORIENTATION_0, LENS_FACING_FRONT,
-                VirtualCameraCaptureHelper.CAMERA_NAME, mExecutor,
+                inputFormat, fps, SENSOR_ORIENTATION_0, lensFacing,
+                VirtualCameraCaptureHelper.CAMERA_NAME, mCameraExecutor,
                 mVirtualCameraCallback);
         try {
             mVirtualCamera = mVirtualDevice.createVirtualCamera(config);
@@ -192,13 +207,16 @@ public class VirtualCameraCaptureHelper {
 
     /**
      * Capture images using the provided {@link CaptureConfiguration}
-     *
+     * <p>
      * The camera device and session will be automatically created if needed.
      *
      * @return The latest captured image.
      */
     public Image captureImages(CaptureConfiguration config) {
         AtomicReference<Image> latestImageRef = new AtomicReference<>(null);
+
+        mCaptureCallback = new TestCaptureCallback();
+        mCaptureCallback.mFailOnFailedCapture = config.mFailOnCaptureError;
 
         try {
             ImageReader reader = getOrCreateOutputReader(config);
@@ -222,7 +240,7 @@ public class VirtualCameraCaptureHelper {
             }, mImageReaderHandler);
 
             for (int i = 0; i < config.mImageCount; i++) {
-                cameraCaptureSession.captureSingleRequest(request.build(), mExecutor,
+                cameraCaptureSession.captureSingleRequest(request.build(), mCameraExecutor,
                         mCaptureCallback);
             }
 
@@ -246,7 +264,9 @@ public class VirtualCameraCaptureHelper {
         }
     }
 
-    /** Returns the {@link CameraDevice} corresponding to the virtual camera. */
+    /**
+     * Returns the {@link CameraDevice} corresponding to the virtual camera.
+     */
     public CameraDevice getOrOpenCameraDevice() {
         try {
             if (mCameraDevice != null) {
@@ -256,7 +276,7 @@ public class VirtualCameraCaptureHelper {
                     "mVirtualCamera must not be null when calling this method.");
             Objects.requireNonNull(mCameraManager,
                     "mCameraManager must not be null when calling this method.");
-            mCameraManager.openCamera(getVirtualCameraId(mVirtualCamera), mExecutor,
+            mCameraManager.openCamera(getVirtualCameraId(mVirtualCamera), mCameraExecutor,
                     mCameraStateCallback);
             Mockito.verify(mCameraStateCallback, Mockito.timeout(TIMEOUT_MILLIS)).onOpened(
                     mCameraDeviceCaptor.capture());
@@ -269,7 +289,7 @@ public class VirtualCameraCaptureHelper {
 
     private Surface getInputSurface() {
         Surface surface = mSurfaceCaptor.getValue();
-        Truth.assertThat(surface.isValid()).isTrue();
+        assertThat(surface.isValid()).isTrue();
         return surface;
     }
 
@@ -282,7 +302,7 @@ public class VirtualCameraCaptureHelper {
         OutputConfiguration outputConfiguration = new OutputConfiguration(reader.getSurface());
         cameraDevice.createCaptureSession(
                 new SessionConfiguration(SessionConfiguration.SESSION_REGULAR,
-                        List.of(outputConfiguration), mExecutor, mSessionStateCallback));
+                        List.of(outputConfiguration), mCameraExecutor, mSessionStateCallback));
         Mockito.verify(mSessionStateCallback, Mockito.timeout(TIMEOUT_MILLIS)).onConfigured(
                 mCameraCaptureSessionCaptor.capture());
         Mockito.verify(mVirtualCameraCallback,
@@ -312,47 +332,49 @@ public class VirtualCameraCaptureHelper {
         Mockito.verify(mVirtualCameraCallback,
                 Mockito.timeout(TIMEOUT_MILLIS).atLeast(imageCount)).onProcessCaptureRequest(
                 ArgumentMatchers.anyInt(), ArgumentMatchers.anyLong());
-        Mockito.verify(mCaptureCallback,
-                Mockito.timeout(TIMEOUT_MILLIS).atLeast(imageCount)).onCaptureCompleted(
-                ArgumentMatchers.any(), ArgumentMatchers.any(),
-                getTotalCaptureResultCaptor().capture());
+        mCaptureCallback.waitForCaptures(imageCount, TIMEOUT_MILLIS);
     }
 
     /**
      * Check that the capture has failed at least one time and never succeeded.
      */
     public void verifyCaptureFailed() {
-        Mockito.verify(mCaptureCallback, Mockito.timeout(FAILURE_TIMEOUT).times(1).description(
-                "Verify that the capture has failed")).onCaptureFailed(ArgumentMatchers.any(),
-                ArgumentMatchers.any(), ArgumentMatchers.any());
-        Mockito.verify(mCaptureCallback, never()).onCaptureCompleted(any(), any(),
-                getTotalCaptureResultCaptor().capture());
+        mCaptureCallback.waitForCaptures(1, FAILURE_TIMEOUT);
+        assertThat(mCaptureCallback.getFailedCaptureCount()).isEqualTo(1);
+        assertThat(mCaptureCallback.getCaptureResults()).isEmpty();
     }
 
     private static String getVirtualCameraId(VirtualCamera virtualCamera) {
         return switch (virtualCamera.getConfig().getLensFacing()) {
-            case CameraMetadata.LENS_FACING_FRONT -> VirtualCameraUtils.FRONT_CAMERA_ID;
+            case LENS_FACING_FRONT -> VirtualCameraUtils.FRONT_CAMERA_ID;
             case CameraMetadata.LENS_FACING_BACK -> VirtualCameraUtils.BACK_CAMERA_ID;
             default -> virtualCamera.getId();
         };
     }
 
     /**
-     * Returns the {@link ArgumentCaptor} for the {@link TotalCaptureResult} of all the capture
-     * requests
+     * Returns a {@link Mock} of {@link CaptureCallback}
      */
-    public ArgumentCaptor<TotalCaptureResult> getTotalCaptureResultCaptor() {
-        return mTotalCaptureResultCaptor;
-    }
-
-    /** Returns a {@link Mock} of {@link CameraCaptureSession.CaptureCallback} */
-    public CameraCaptureSession.CaptureCallback getCaptureCallback() {
+    public CaptureCallback getCaptureCallback() {
         return mCaptureCallback;
     }
 
-    /** Returns a {@link Mock} of {@link VirtualCameraCallback} */
+    /**
+     * Returns a {@link Mock} of {@link VirtualCameraCallback}
+     */
     public VirtualCameraCallback getVirtualCameraCallback() {
         return mVirtualCameraCallback;
+    }
+
+    public List<TotalCaptureResult> getCaptureResults() {
+        return mCaptureCallback.getCaptureResults();
+    }
+
+    public TotalCaptureResult getLastResult() {
+        if (mCaptureCallback.getCaptureResults().isEmpty()) {
+            return null;
+        }
+        return mCaptureCallback.getCaptureResults().getLast();
     }
 
     /**
@@ -361,7 +383,9 @@ public class VirtualCameraCaptureHelper {
      * The default configuration can be used as is, all setters are optional.
      */
     public static final class CaptureConfiguration {
+
         private int mImageCount = 1;
+        public boolean mFailOnCaptureError = true;
         private boolean mVerifyCaptureComplete = true;
         private Consumer<Surface> mInputSurfaceConsumer = (surface) -> {
         };
@@ -382,12 +406,25 @@ public class VirtualCameraCaptureHelper {
         }
 
         /**
-         * Set the whether the sucessful completion of the capture should be checked
+         * Set the whether the successful completion of the capture should be checked
          * <p>
          * Default is true.
          */
         public CaptureConfiguration setVerifyCaptureComplete(boolean verifyCaptureComplete) {
             mVerifyCaptureComplete = verifyCaptureComplete;
+            return this;
+        }
+
+        /**
+         * Set the whether we should fail as soon as we get a capture error.
+         * <p>
+         * Default is true.
+         *
+         * @see CaptureCallback#onCaptureFailed(CameraCaptureSession, CaptureRequest,
+         * CaptureFailure)
+         */
+        public CaptureConfiguration setFailOnCaptureError(boolean failOnCaptureError) {
+            mFailOnCaptureError = failOnCaptureError;
             return this;
         }
 
@@ -442,6 +479,88 @@ public class VirtualCameraCaptureHelper {
         public CaptureConfiguration setOutputFormat(int outputFormat) {
             mOutputFormat = outputFormat;
             return this;
+        }
+    }
+
+    private static class TestCaptureCallback extends CaptureCallback {
+
+        private final ArrayList<TotalCaptureResult> mCaptureResults = new ArrayList<>();
+        private CountDownLatch mCaptureAndErrorLatch = new CountDownLatch(0);
+        private int mFailedCaptureCount = 0;
+        private boolean mFailOnFailedCapture = true;
+
+        @Override
+        public void onCaptureFailed(@NonNull CameraCaptureSession session,
+                @NonNull CaptureRequest request,
+                @NonNull CaptureFailure failure) {
+            mFailedCaptureCount++;
+            mCaptureAndErrorLatch.countDown();
+            if (!mFailOnFailedCapture) {
+                return;
+            }
+            synchronized (mCaptureResults) {
+                Assert.fail(
+                        ("Unexpected capture failure for request %s. Failure frame: %d , reason "
+                                + "%s, imageCaptured: %s. Before this error we received %d "
+                                + "successful frames")
+                                .formatted(request, failure.getFrameNumber(),
+                                        failureToString(failure),
+                                        failure.wasImageCaptured(), mCaptureResults.size()));
+            }
+        }
+
+        @NonNull
+        private static Object failureToString(@NonNull CaptureFailure failure) {
+            return switch (failure.getReason()) {
+                case CaptureFailure.REASON_ERROR -> "REASON_ERROR";
+                case CaptureFailure.REASON_FLUSHED -> "REASON_FLUSHED";
+                default -> failure.getReason();
+            };
+        }
+
+        @Override
+        public void onCaptureCompleted(@NonNull CameraCaptureSession session,
+                @NonNull CaptureRequest request,
+                @NonNull TotalCaptureResult result) {
+            mCaptureResults.add(result);
+            mCaptureAndErrorLatch.countDown();
+        }
+
+        public List<TotalCaptureResult> getCaptureResults() {
+            synchronized (mCaptureResults) {
+                return List.copyOf(mCaptureResults);
+            }
+        }
+
+        public int getFailedCaptureCount() {
+            return mFailedCaptureCount;
+        }
+
+        public void waitForCaptures(int expectedCaptureNumber, long timeoutMillis) {
+            int captureAndErrorCount;
+            synchronized (mCaptureResults) {
+                captureAndErrorCount = mCaptureResults.size() + mFailedCaptureCount;
+            }
+            if (captureAndErrorCount >= expectedCaptureNumber) {
+                return;
+            }
+            int missingCaptureCount = expectedCaptureNumber - captureAndErrorCount;
+            mCaptureAndErrorLatch = new CountDownLatch(missingCaptureCount);
+            try {
+                if (!mCaptureAndErrorLatch.await(timeoutMillis * missingCaptureCount,
+                        TimeUnit.MILLISECONDS)) {
+                    synchronized (mCaptureResults) {
+                        captureAndErrorCount = mCaptureResults.size();
+                    }
+                    Assert.fail(
+                            ("Timed out waiting for capture. Expected: %d, received: %d "
+                                    + "successful captures and %d errors")
+                                    .formatted(expectedCaptureNumber, captureAndErrorCount,
+                                            mFailedCaptureCount));
+                }
+            } catch (InterruptedException e) {
+                throw new RuntimeException("Interrupted while waiting for capture", e);
+            }
         }
     }
 }

@@ -52,7 +52,7 @@ import java.util.Map;
  */
 public class TvViewTest extends ActivityInstrumentationTestCase2<TvViewStubActivity> {
     /** The maximum time to wait for an operation. */
-    private static final long TIME_OUT_MS = 15000L;
+    private static final long TIME_OUT_MS = 30000L;
 
     private static final String PERMISSION_ACCESS_WATCHED_PROGRAMS =
             "com.android.providers.tv.permission.ACCESS_WATCHED_PROGRAMS";

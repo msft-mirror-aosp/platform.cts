@@ -31,8 +31,8 @@ android_test {
         "wycheproof",
     ],
     srcs: ["src/**/*.java"],
-    host_required: [
-        "cts-dalvik-host-test-runner",
+    host_common_data: [
+        ":cts-dalvik-host-test-runner",
     ],
     dex_preopt: {
         enabled: false,

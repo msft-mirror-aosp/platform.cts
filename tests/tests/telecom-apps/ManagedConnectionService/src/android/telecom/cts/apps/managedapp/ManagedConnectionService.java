@@ -15,6 +15,8 @@
  */
 package android.telecom.cts.apps.managedapp;
 
+import static android.telecom.cts.apps.AttributesUtil.TEST_EMERGENCY_URI;
+
 import android.content.Intent;
 import android.telecom.Connection;
 import android.telecom.ConnectionRequest;
@@ -69,7 +71,19 @@ public class ManagedConnectionService extends ConnectionService {
         // connection service level.
         if (getAllConnections().stream()
                 .filter(c-> c.getState() != Connection.STATE_DISCONNECTED).count() > 1) {
-            return Connection.createFailedConnection(new DisconnectCause(DisconnectCause.ERROR));
+            // If the new connection is an emergency call, ensure that the ongoing active call is
+            // disconnected (for the single sim case). In Telecom, we disconnect the live call but
+            // don't wait on the completion before placing the emergency call, so we shouldn't fail
+            // the emergency call if the call hasn't been disconnected yet.
+            if (request.getAddress().equals(TEST_EMERGENCY_URI)) {
+                getAllConnections().stream()
+                        .filter(c -> c.getState() == Connection.STATE_ACTIVE)
+                        .findFirst()
+                        .ifPresent(Connection::onDisconnect);
+            } else {
+                return Connection.createFailedConnection(
+                        new DisconnectCause(DisconnectCause.ERROR));
+            }
         }
         // Special case: for multiple call scenarios on the same PA, Telecom assumes the
         // ConnectionService will handle holding the existing call.

@@ -33,7 +33,6 @@ import android.content.pm.PackageManager;
 import android.content.res.Resources;
 import android.os.IBinder;
 import android.os.RemoteException;
-import android.telephony.Rlog;
 import android.telephony.cts.externalpointingui.ExternalMockPointingUi;
 import android.telephony.cts.externalsatellitegatewayservice.ExternalMockSatelliteGatewayService;
 import android.telephony.cts.externalsatellitegatewayservice.IExternalMockSatelliteGatewayService;
@@ -50,6 +49,7 @@ import android.telephony.satellite.stub.PointingInfo;
 import android.telephony.satellite.stub.SatelliteDatagram;
 import android.text.TextUtils;
 import android.util.IntArray;
+import android.util.Log;
 
 import com.android.internal.R;
 
@@ -111,6 +111,7 @@ class MockSatelliteServiceManager {
             "cmd phone override-config-data-version";
     private static final String UPDATE_TELEPHONY_CONFIG_INTENT =
             "com.google.android.configupdater.TelephonyConfigUpdate.UPDATE_CONFIG";
+    private static final String SET_CTS_MODE_CMD = "cmd phone set-cts-mode";
     private static final String CONFIG_UPDATER_PACKAGE = "com.google.android.configupdater";
 
     private static final long TIMEOUT = 5000;
@@ -1622,6 +1623,24 @@ class MockSatelliteServiceManager {
         }
     }
 
+    boolean setCtsMode(boolean ctsMode) {
+        StringBuilder command = new StringBuilder();
+        command.append(SET_CTS_MODE_CMD);
+        if (ctsMode) {
+            command.append(" -e");
+        }
+
+        try {
+            String result = TelephonyUtils.executeShellCommand(mInstrumentation,
+                    command.toString());
+            logd("setCtsMode(" + command.toString() + "): result = " + result);
+            return true;
+        } catch (Exception e) {
+            loge("setCtsMode: e=" + e);
+            return false;
+        }
+    }
+
     boolean setSupportDisableSatelliteWhileEnableInProgress(boolean reset, boolean supported) {
         StringBuilder command = new StringBuilder();
         command.append(SET_SUPPORT_DISABLE_SATELLITE_WHILE_ENABLE_IN_PROGRESS_CMD);
@@ -1688,11 +1707,11 @@ class MockSatelliteServiceManager {
     }
 
     private static void logd(@NonNull String log) {
-        Rlog.d(TAG, log);
+        Log.d(TAG, log);
     }
 
     private static void loge(@NonNull String log) {
-        Rlog.e(TAG, log);
+        Log.e(TAG, log);
     }
 
     private static class MockPointingUiActivityStatusReceiver extends BroadcastReceiver {

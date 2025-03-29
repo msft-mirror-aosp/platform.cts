@@ -25,7 +25,6 @@ import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.waitAndAsser
 import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.waitAndAssertNotResumed;
 import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.waitAndAssertResumed;
 import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.waitAndAssertResumedAndFillsTask;
-import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.waitAndGetTaskBounds;
 import static android.server.wm.jetpack.utils.TestActivityLauncher.KEY_ACTIVITY_ID;
 
 import static androidx.window.extensions.embedding.SplitRule.FINISH_ADJACENT;
@@ -35,7 +34,6 @@ import android.content.Intent;
 import android.graphics.Rect;
 import android.platform.test.annotations.Presubmit;
 import android.server.wm.WindowManagerState.Task;
-import android.server.wm.WindowManagerStateHelper;
 import android.server.wm.jetpack.utils.TestActivity;
 import android.server.wm.jetpack.utils.TestActivityWithId;
 import android.support.test.uiautomator.UiDevice;
@@ -44,7 +42,6 @@ import android.util.Size;
 import android.view.WindowMetrics;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.window.extensions.embedding.ActivityEmbeddingComponent;
 import androidx.window.extensions.embedding.SplitPlaceholderRule;
@@ -113,8 +110,9 @@ public class ActivityEmbeddingPlaceholderTests extends ActivityEmbeddingTestBase
 
         // Launch the primary activity and verify that the placeholder activity was not launched and
         // the primary activity fills the task.
-        Activity primaryActivity = startFullScreenActivityNewTask(TestActivityWithId.class,
-                PRIMARY_ACTIVITY_ID);
+        Activity primaryActivity = startActivityNewTaskInMultiWindowWithBounds(
+                TestActivityWithId.class, PRIMARY_ACTIVITY_ID, null /* displayId */,
+                null /* bounds */);
         waitAndAssertNotResumed(PLACEHOLDER_ACTIVITY_ID);
         waitAndAssertResumedAndFillsTask(primaryActivity);
     }
@@ -208,7 +206,8 @@ public class ActivityEmbeddingPlaceholderTests extends ActivityEmbeddingTestBase
                 primaryActivity.getComponentName(), placeholderActivity.getComponentName());
         // Primary and placeholder activities should be in the same task
         final Task task = mWmState.getTaskByActivity(primaryActivity.getComponentName());
-        if (task.getWindowingMode() == WINDOWING_MODE_FREEFORM) {
+        if (task.getWindowingMode() == WINDOWING_MODE_FREEFORM
+                || task.getWindowingMode() == WINDOWING_MODE_MULTI_WINDOW) {
             final Rect origTaskBounds = task.getBounds();
             resizeActivityTask(primaryActivity.getComponentName(),
                     origTaskBounds.left, origTaskBounds.top,
@@ -234,6 +233,8 @@ public class ActivityEmbeddingPlaceholderTests extends ActivityEmbeddingTestBase
      */
     @Test
     public void testPlaceholderLaunchedWhenTaskWidthIncreased() {
+        // TODO(b/397120232): Fix this test in multi window mode by shrinking the task first instead
+        // of shrinking the display size before enlarging the task later.
         // Reduce display size by 50% so that display size won't exceed the maximum display
         // size during the test.
         final Size currentSize = mReportedDisplayMetrics.getSize();
@@ -322,8 +323,8 @@ public class ActivityEmbeddingPlaceholderTests extends ActivityEmbeddingTestBase
         final TestActivity placeholderActivity = (TestActivity) activityPair.second;
 
         // Shrink by 10% so that the primary and placeholder activities are stacked.
-        // If the activity was launched in freeform windowing mode, resize the task bounds
-        // instead of resizing the display.
+        // If the activity was launched in freeform windowing mode or multi window mode,
+        // resize the task bounds instead of resizing the display.
         mWmState.computeState(
                 primaryActivity.getComponentName(), placeholderActivity.getComponentName());
         // Primary and placeholder activities should be in the same task
@@ -425,8 +426,8 @@ public class ActivityEmbeddingPlaceholderTests extends ActivityEmbeddingTestBase
             @NonNull String primaryActivityId, @NonNull String placeholderActivityId,
             @NonNull SplitPlaceholderRule splitPlaceholderRule) {
         // Launch the primary activity
-        startFullScreenActivityNewTask(TestActivityWithId.class, primaryActivityId,
-                getLaunchingDisplayId());
+        startActivityNewTaskInMultiWindowWithBounds(TestActivityWithId.class, primaryActivityId,
+                getLaunchingDisplayId(), null /* bounds */);
         // Get primary activity
         waitAndAssertResumed(primaryActivityId);
         Activity primaryActivity = getResumedActivityById(primaryActivityId);
@@ -436,21 +437,5 @@ public class ActivityEmbeddingPlaceholderTests extends ActivityEmbeddingTestBase
         // Verify they are correctly split
         assertValidSplit(primaryActivity, placeholderActivity, splitPlaceholderRule);
         return new Pair<>(primaryActivity, placeholderActivity);
-    }
-
-    @NonNull
-    private Rect getTaskBounds() {
-        return getTaskBounds(getLaunchingDisplayId());
-    }
-
-    @NonNull
-    protected Rect getTaskBounds(@Nullable Integer displayId) {
-        final Activity activity = startFullScreenActivityNewTask(TestActivity.class,
-                null /* activityId */, displayId);
-        final Rect taskBounds = waitAndGetTaskBounds(activity, true /* shouldWaitForResume */);
-        activity.finish();
-        new WindowManagerStateHelper().waitAndAssertActivityRemoved(activity.getComponentName());
-
-        return taskBounds;
     }
 }

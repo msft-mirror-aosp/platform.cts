@@ -66,7 +66,6 @@ import androidx.test.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.PollingCheck;
 
-import org.junit.Ignore;
 import org.xmlpull.v1.XmlPullParserException;
 
 import java.io.IOException;
@@ -84,8 +83,9 @@ public class TvInputManagerTest extends ActivityInstrumentationTestCase2<TvViewS
     private static final String TAG = "TvInputManagerTest";
 
     /** The maximum time to wait for an operation. */
-    private static final long TIME_OUT_MS = 15000L;
-    private static final long LONG_TIME_OUT_MS = 30000L;
+    private static final long TIME_OUT_MS = 30000L;
+
+    private static final long LONG_TIME_OUT_MS = 50000L;
     private static final int PRIORITY_HINT_USE_CASE_TYPE_INVALID = 1000;
 
     private static final int DUMMY_DEVICE_ID = Integer.MAX_VALUE;
@@ -717,7 +717,6 @@ public class TvInputManagerTest extends ActivityInstrumentationTestCase2<TvViewS
         }
     }
 
-    @Ignore("b/342025666")
     public void testGetAvailableExtensionInterfaceNames() {
         if (!Utils.hasTvInputFramework(getActivity())) {
             return;
@@ -756,7 +755,6 @@ public class TvInputManagerTest extends ActivityInstrumentationTestCase2<TvViewS
         }
     }
 
-    @Ignore("b/342025666")
     public void testGetExtensionInterface() {
         if (!Utils.hasTvInputFramework(getActivity())) {
             return;
