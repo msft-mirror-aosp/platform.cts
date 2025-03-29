@@ -23,6 +23,7 @@ import static android.inputmethodservice.cts.common.BusyWaitUtils.pollingCheck;
 import static android.inputmethodservice.cts.common.DeviceEventConstants.DeviceEventType.ON_BIND_INPUT;
 import static android.inputmethodservice.cts.common.DeviceEventConstants.DeviceEventType.ON_CREATE;
 import static android.inputmethodservice.cts.common.DeviceEventConstants.DeviceEventType.ON_START_INPUT;
+import static android.inputmethodservice.cts.common.DeviceEventConstants.DeviceEventType.ON_UNBIND_INPUT;
 import static android.inputmethodservice.cts.common.ImeCommandConstants.ACTION_IME_COMMAND;
 import static android.inputmethodservice.cts.common.ImeCommandConstants.COMMAND_SWITCH_INPUT_METHOD;
 import static android.inputmethodservice.cts.common.ImeCommandConstants.COMMAND_SWITCH_TO_NEXT_INPUT;
@@ -35,8 +36,11 @@ import static android.provider.Settings.Secure.STYLUS_HANDWRITING_ENABLED;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeNotNull;
+import static org.junit.Assume.assumeTrue;
 
 import android.Manifest;
+import android.app.UiAutomation;
 import android.content.Context;
 import android.inputmethodservice.cts.DeviceEvent;
 import android.inputmethodservice.cts.common.DeviceEventConstants.DeviceEventType;
@@ -45,6 +49,7 @@ import android.inputmethodservice.cts.common.Ime1Constants;
 import android.inputmethodservice.cts.common.Ime2Constants;
 import android.inputmethodservice.cts.common.test.ShellCommandUtils;
 import android.inputmethodservice.cts.devicetest.SequenceMatcher.MatchResult;
+import android.os.PowerManager;
 import android.os.SystemClock;
 import android.os.UserHandle;
 import android.provider.Settings;
@@ -53,6 +58,7 @@ import android.view.inputmethod.InputMethodManager;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
+import androidx.test.uiautomator.UiObject2;
 
 import com.android.compatibility.common.util.SystemUtil;
 
@@ -225,6 +231,118 @@ public class InputMethodServiceDeviceTest {
     }
 
     /**
+     * Test if uninstalling the currently selected IME then selecting another IME triggers standard
+     * startInput/bindInput sequence.
+     */
+    @Test
+    public void testInputUnbindsOnImeStopped() throws Throwable {
+        final TestHelper helper = new TestHelper();
+        final long startActivityTime = SystemClock.uptimeMillis();
+        helper.launchActivity(EditTextAppConstants.PACKAGE, EditTextAppConstants.CLASS,
+                EditTextAppConstants.URI);
+        final UiObject2 editText = helper.findUiObject(EditTextAppConstants.EDIT_TEXT_RES_NAME);
+        editText.click();
+
+        pollingCheck(() -> helper.queryAllEvents()
+                        .filter(isNewerThan(startActivityTime))
+                        .anyMatch(isFrom(Ime1Constants.CLASS).and(isType(ON_START_INPUT))),
+                TIMEOUT, "CtsInputMethod1.onStartInput is called");
+        pollingCheck(() -> helper.queryAllEvents()
+                        .filter(isNewerThan(startActivityTime))
+                        .anyMatch(isFrom(Ime1Constants.CLASS).and(isType(ON_BIND_INPUT))),
+                TIMEOUT, "CtsInputMethod1.onBindInput is called");
+
+        final long imeForceStopTime = SystemClock.uptimeMillis();
+        helper.shell(ShellCommandUtils.uninstallPackage(Ime1Constants.PACKAGE));
+
+        helper.shell(ShellCommandUtils.setCurrentImeSync(Ime2Constants.IME_ID,
+                UserHandle.myUserId()));
+        editText.click();
+        pollingCheck(() -> helper.queryAllEvents()
+                        .filter(isNewerThan(imeForceStopTime))
+                        .anyMatch(isFrom(Ime2Constants.CLASS).and(isType(ON_START_INPUT))),
+                TIMEOUT, "CtsInputMethod2.onStartInput is called");
+        pollingCheck(() -> helper.queryAllEvents()
+                        .filter(isNewerThan(imeForceStopTime))
+                        .anyMatch(isFrom(Ime2Constants.CLASS).and(isType(ON_BIND_INPUT))),
+                TIMEOUT, "CtsInputMethod2.onBindInput is called");
+    }
+
+    /**
+     * Test if uninstalling the currently running IME client triggers
+     * {@link android.inputmethodservice.InputMethodService#onUnbindInput()}.
+     */
+    @Test
+    public void testInputUnbindsOnAppStopped() throws Throwable {
+        final TestHelper helper = new TestHelper();
+        final long startActivityTime = SystemClock.uptimeMillis();
+        helper.launchActivity(EditTextAppConstants.PACKAGE, EditTextAppConstants.CLASS,
+                EditTextAppConstants.URI);
+        helper.findUiObject(EditTextAppConstants.EDIT_TEXT_RES_NAME).click();
+
+        pollingCheck(() -> helper.queryAllEvents()
+                        .filter(isNewerThan(startActivityTime))
+                        .anyMatch(isFrom(Ime1Constants.CLASS).and(isType(ON_START_INPUT))),
+                TIMEOUT, "CtsInputMethod1.onStartInput is called");
+        pollingCheck(() -> helper.queryAllEvents()
+                        .filter(isNewerThan(startActivityTime))
+                        .anyMatch(isFrom(Ime1Constants.CLASS).and(isType(ON_BIND_INPUT))),
+                TIMEOUT, "CtsInputMethod1.onBindInput is called");
+
+        helper.shell(ShellCommandUtils.uninstallPackage(EditTextAppConstants.PACKAGE));
+
+        pollingCheck(() -> helper.queryAllEvents()
+                        .filter(isNewerThan(startActivityTime))
+                        .anyMatch(isFrom(Ime1Constants.CLASS).and(isType(ON_UNBIND_INPUT))),
+                TIMEOUT, "CtsInputMethod1.onUnBindInput is called");
+    }
+
+    /**
+     * Test IME switcher dialog after turning off/on the screen.
+     *
+     * <p>Regression test for Bug 160391516.</p>
+     */
+    @Test
+    public void testImeSwitchingWithoutWindowFocusAfterDisplayOffOn() throws Throwable {
+        final TestHelper helper = new TestHelper();
+
+        helper.launchActivity(EditTextAppConstants.PACKAGE, EditTextAppConstants.CLASS,
+                EditTextAppConstants.URI);
+
+        helper.findUiObject(EditTextAppConstants.EDIT_TEXT_RES_NAME).click();
+
+        InputMethodVisibilityVerifier.assertIme1Visible(TIMEOUT);
+
+        turnScreenOff(helper);
+        turnScreenOn(helper);
+        helper.shell(ShellCommandUtils.dismissKeyguard());
+        helper.shell(ShellCommandUtils.unlockScreen());
+        {
+            final UiObject2 editText = helper.findUiObject(EditTextAppConstants.EDIT_TEXT_RES_NAME);
+            assumeNotNull("App's view focus behavior after turning off/on the screen is not fully"
+                            + " guaranteed. If the IME is not shown here, just skip this test.",
+                    editText);
+            assumeTrue("App's view focus behavior after turning off/on the screen is not fully"
+                            + " guaranteed. If the IME is not shown here, just skip this test.",
+                    editText.isFocused());
+        }
+
+        InputMethodVisibilityVerifier.assumeIme1Visible("IME behavior after turning off/on the"
+                + " screen is not fully guaranteed. If the IME is not shown here, just skip this.",
+                TIMEOUT);
+
+        // Emulating IME switching with the IME switcher dialog.  An interesting point is that
+        // the IME target window is not focused when the IME switcher dialog is shown.
+        showInputMethodPicker(helper);
+        helper.shell(ShellCommandUtils.broadcastIntent(
+                ACTION_IME_COMMAND, Ime1Constants.PACKAGE,
+                "-e", EXTRA_COMMAND, COMMAND_SWITCH_INPUT_METHOD,
+                "-e", EXTRA_ARG_STRING1, Ime2Constants.IME_ID));
+
+        InputMethodVisibilityVerifier.assertIme2Visible(TIMEOUT);
+    }
+
+    /**
      * Build stream collector of {@link DeviceEvent} collecting sequence that elements have
      * specified types.
      *
@@ -237,5 +355,58 @@ public class InputMethodServiceDeviceTest {
         return SequenceMatcher.of(Arrays.stream(types)
                 .map(DeviceEvent::isType)
                 .toArray(arraySupplier));
+    }
+
+    /**
+     * Call a command to turn screen On.
+     *
+     * This method will wait until the power state is interactive with {@link
+     * PowerManager#isInteractive()}.
+     */
+    private static void turnScreenOn(TestHelper helper) throws Exception {
+        final Context context = InstrumentationRegistry.getInstrumentation().getContext();
+        final PowerManager pm = context.getSystemService(PowerManager.class);
+        helper.shell(ShellCommandUtils.wakeUp());
+        pollingCheck(() -> pm != null && pm.isInteractive(), TIMEOUT,
+                "Device does not wake up within the timeout period");
+    }
+
+    /**
+     * Call a command to turn screen off.
+     *
+     * This method will wait until the power state is *NOT* interactive with
+     * {@link PowerManager#isInteractive()}.
+     * Note that {@link PowerManager#isInteractive()} may not return {@code true} when the device
+     * enables Aod mode, recommend to add (@link DisableScreenDozeRule} in the test to disable Aod
+     * for making power state reliable.
+     */
+    private static void turnScreenOff(TestHelper helper) throws Exception {
+        final Context context = InstrumentationRegistry.getInstrumentation().getContext();
+        final PowerManager pm = context.getSystemService(PowerManager.class);
+        helper.shell(ShellCommandUtils.sleepDevice());
+        pollingCheck(() -> pm != null && !pm.isInteractive(), TIMEOUT,
+                "Device does not sleep within the timeout period");
+    }
+
+    private static void showInputMethodPicker(TestHelper helper) throws Exception {
+        // Test InputMethodManager#showInputMethodPicker() works as expected.
+        helper.shell(ShellCommandUtils.showImePicker());
+        pollingCheck(InputMethodServiceDeviceTest::isInputMethodPickerShown, TIMEOUT,
+                "InputMethod picker should be shown");
+    }
+
+    private static boolean isInputMethodPickerShown() {
+        final InputMethodManager imm = InstrumentationRegistry.getInstrumentation().getContext()
+                .getSystemService(InputMethodManager.class);
+        final UiAutomation uiAutomation =
+                InstrumentationRegistry.getInstrumentation().getUiAutomation();
+        try {
+            uiAutomation.adoptShellPermissionIdentity();
+            return imm.isInputMethodPickerShown();
+        } catch (Exception e) {
+            throw new RuntimeException("Caught exception", e);
+        } finally {
+            uiAutomation.dropShellPermissionIdentity();
+        }
     }
 }
