@@ -19,6 +19,7 @@ package android.location.cts.gnss;
 import static android.Manifest.permission.ACCESS_COARSE_LOCATION;
 import static android.Manifest.permission.ACCESS_FINE_LOCATION;
 
+import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationManager;
 import android.location.cts.common.GnssTestCase;
@@ -106,9 +107,20 @@ public class GnssLocationUpdateIntervalTest extends GnssTestCase {
         List<String> courseLocationPackages = TestUtils.revokePermissions(ACCESS_COARSE_LOCATION);
         List<String> fineLocationPackages = TestUtils.revokePermissions(ACCESS_FINE_LOCATION);
 
+        boolean skipPassive = false;
+        boolean isAutomotive =
+                getContext()
+                        .getPackageManager()
+                        .hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE);
+        if (isAutomotive) {
+            // TODO(gracemc): Skip passive location test only when GSR-ISA apps are installed after
+            // getAdasAllowlist() is changed to a system API. Bug 335763768.
+            skipPassive = true;
+        }
+
         try {
             for (int fixIntervalMillis : FIX_INTERVALS_MILLIS) {
-                testLocationUpdatesAtInterval(fixIntervalMillis);
+                testLocationUpdatesAtInterval(fixIntervalMillis, skipPassive);
             }
         } finally {
             // For each location package, re-grant the permission
@@ -128,7 +140,8 @@ public class GnssLocationUpdateIntervalTest extends GnssTestCase {
         testUtcToElapsedRealtimeDriftAtInterval(/* fixIntervalMillis= */ 0);
     }
 
-    private void testLocationUpdatesAtInterval(int fixIntervalMillis) throws Exception {
+    private void testLocationUpdatesAtInterval(int fixIntervalMillis, boolean skipPassive)
+            throws Exception {
         Log.i(TAG, "testLocationUpdatesAtInterval, fixIntervalMillis: " + fixIntervalMillis);
         TestLocationListener activeLocationListener = new TestLocationListener(
                 LOCATION_TO_COLLECT_COUNT);
@@ -150,7 +163,8 @@ public class GnssLocationUpdateIntervalTest extends GnssTestCase {
 
         List<Location> activeLocations = activeLocationListener.getReceivedLocationList();
         List<Location> passiveLocations = passiveLocationListener.getReceivedLocationList();
-        validateLocationUpdateInterval(activeLocations, passiveLocations, fixIntervalMillis);
+        validateLocationUpdateInterval(
+                activeLocations, passiveLocations, fixIntervalMillis, skipPassive);
     }
 
     /**
@@ -223,26 +237,41 @@ public class GnssLocationUpdateIntervalTest extends GnssTestCase {
         softAssert.assertAll();
     }
 
-    private static void validateLocationUpdateInterval(List<Location> activeLocations,
-            List<Location> passiveLocations, int fixIntervalMillis) {
+    private static void validateLocationUpdateInterval(
+            List<Location> activeLocations,
+            List<Location> passiveLocations,
+            int fixIntervalMillis,
+            boolean skipPassive) {
+        SoftAssert softAssert = new SoftAssert(TAG);
         // For active locations, consider all fixes.
         long minFirstFixTimestamp = 0;
         List<Long> activeDeltas = getTimeBetweenFixes(LocationManager.GPS_PROVIDER,
                 activeLocations, minFirstFixTimestamp);
+        assertMeanAndStdev(
+                softAssert,
+                LocationManager.GPS_PROVIDER,
+                fixIntervalMillis,
+                activeDeltas,
+                ACTIVE_MIN_MEAN_RATIO);
 
-        // When a test round starts, passive listener shouldn't receive location before active
-        // listener. If this situation occurs, we treat this location as overdue location.
-        // (The overdue location comes from previous test round, it occurs occasionally)
-        // We have to skip it to prevent wrong calculation of time interval.
-        minFirstFixTimestamp = activeLocations.get(0).getTime();
-        List<Long> passiveDeltas = getTimeBetweenFixes(LocationManager.PASSIVE_PROVIDER,
-                passiveLocations, minFirstFixTimestamp);
-
-        SoftAssert softAssert = new SoftAssert(TAG);
-        assertMeanAndStdev(softAssert, LocationManager.GPS_PROVIDER, fixIntervalMillis,
-                activeDeltas, ACTIVE_MIN_MEAN_RATIO);
-        assertMeanAndStdev(softAssert, LocationManager.PASSIVE_PROVIDER, fixIntervalMillis,
-                passiveDeltas, PASSIVE_MIN_MEAN_RATIO);
+        if (!skipPassive) {
+            // When a test round starts, passive listener shouldn't receive location before active
+            // listener. If this situation occurs, we treat this location as overdue location.
+            // (The overdue location comes from previous test round, it occurs occasionally)
+            // We have to skip it to prevent wrong calculation of time interval.
+            minFirstFixTimestamp = activeLocations.get(0).getTime();
+            List<Long> passiveDeltas =
+                    getTimeBetweenFixes(
+                            LocationManager.PASSIVE_PROVIDER,
+                            passiveLocations,
+                            minFirstFixTimestamp);
+            assertMeanAndStdev(
+                    softAssert,
+                    LocationManager.PASSIVE_PROVIDER,
+                    fixIntervalMillis,
+                    passiveDeltas,
+                    PASSIVE_MIN_MEAN_RATIO);
+        }
         softAssert.assertAll();
     }
 
