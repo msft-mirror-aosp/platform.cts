@@ -77,7 +77,7 @@ class Cv2ImageProcessingUtilsTests(unittest.TestCase):
     # Wide (61-90deg FoV) in 22cm rig
     self.assertEqual(opencv_processing_utils.calc_chart_scaling(22, 80), 0.67)
     # TELE (41-60deg FoV) in 55cm rig
-    self.assertEqual(opencv_processing_utils.calc_chart_scaling(55, 45), 0.5)
+    self.assertEqual(opencv_processing_utils.calc_chart_scaling(55, 40), 0.5)
     # No scaling rule is found for input FoV, default is used
     self.assertIsNone(opencv_processing_utils.calc_chart_scaling(50, 115))
     # No scaling rule is found for input distance, default is used
