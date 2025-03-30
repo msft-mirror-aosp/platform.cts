@@ -1216,7 +1216,7 @@ public abstract class AudioDataPathsBaseActivity
                 // Expand out to PerformanceMode.None & PerformanceMode.LowLatency
                 TestModule clonedModule = module.clone();
                 // Test Performance Mode LowLatency for both Output and Input
-                clonedModule.mOutPerformanceMode = module.mInPerformanceMode =
+                clonedModule.mOutPerformanceMode = clonedModule.mInPerformanceMode =
                         BuilderBase.PERFORMANCE_MODE_LOWLATENCY;
                 clonedModule.mSectionTitle = null;
                 addIndexedTestModule(clonedModule);
@@ -1233,7 +1233,7 @@ public abstract class AudioDataPathsBaseActivity
                     TestModule moduleMMAP = module.clone();
                     moduleMMAP.setTransferType(TestModule.TRANSFER_MMAP_SHARED);
                     // Test Performance Mode LowLatency for both Output and Input
-                    moduleMMAP.mOutPerformanceMode = module.mInPerformanceMode =
+                    moduleMMAP.mOutPerformanceMode = moduleMMAP.mInPerformanceMode =
                             BuilderBase.PERFORMANCE_MODE_LOWLATENCY;
                     addIndexedTestModule(moduleMMAP);
                     moduleMMAP.mSectionTitle = null;
@@ -1248,7 +1248,7 @@ public abstract class AudioDataPathsBaseActivity
                     TestModule moduleExclusive = module.clone();
                     moduleExclusive.setTransferType(TestModule.TRANSFER_MMAP_EXCLUSIVE);
                     // Test Performance Mode LowLatency for both Output and Input
-                    moduleExclusive.mOutPerformanceMode = module.mInPerformanceMode =
+                    moduleExclusive.mOutPerformanceMode = moduleExclusive.mInPerformanceMode =
                             BuilderBase.PERFORMANCE_MODE_LOWLATENCY;
                     addIndexedTestModule(moduleExclusive);
                     moduleExclusive.mSectionTitle = null;
