@@ -76,15 +76,68 @@ public class SELinuxNeverallowRulesParserTest extends BaseHostJUnit4Test {
                 + "};\n";
         List<SELinuxNeverallowRule> rules = SELinuxNeverallowRule.parsePolicy(policy);
         assertEquals(1, rules.size());
-        assertEquals("neverallow d1 {   d2   d3 }:file {   p1   p2 };", rules.get(0).mText());
+        assertEquals("neverallow d1 { d2 d3 }:file { p1 p2 };", rules.get(0).mText());
+    }
+
+    /**
+     * Ensure policy which differs only by whitespace is collapsed into 1 rule.
+     *
+     * <p>A policy may have neverallow assertions which are identical except for whitespace
+     * differences. An example of this is:
+     *
+     * <p>system/sepolicy/public/property.te
+     *
+     * <pre>
+     *   system_vendor_config_prop(charger_config_prop)
+     * </pre>
+     *
+     * which expands to:
+     *
+     * <pre>
+     *   neverallow { domain -init -vendor_init } charger_config_prop:property_service set;
+     * </pre>
+     *
+     * and system/sepolicy/private/charger_type.te which has
+     *
+     * <pre>
+     *   # charger_config_prop: Only init and vendor_init is allowed to set it
+     *   neverallow {
+     *       domain
+     *       -init
+     *       -vendor_init
+     *   } charger_config_prop:property_service set;
+     * </pre>
+     *
+     * These are identical absent whitespace differences.
+     */
+    @Test
+    public void testDuplicateNeverallowRules() throws Exception {
+        String policy =
+                "# expanded from system_vendor_config_prop(charger_config_prop)\n"
+                        + "neverallow { domain -init -vendor_init }"
+                        + " charger_config_prop:property_service set;\n"
+                        + "# from private/charger_type.te\n"
+                        + "# charger_config_prop: Only init and vendor_init is allowed to set it\n"
+                        + "neverallow {\n"
+                        + "    domain\n"
+                        + "    -init\n"
+                        + "    -vendor_init\n"
+                        + "} charger_config_prop:property_service set;\n";
+        List<SELinuxNeverallowRule> rules = SELinuxNeverallowRule.parsePolicy(policy);
+        assertEquals(1, rules.size());
+        assertEquals(
+                "neverallow { domain -init -vendor_init } charger_config_prop:property_service"
+                        + " set;",
+                rules.get(0).mText());
     }
 
     @Test
     public void testParsingWithConditions() throws Exception {
-        String policy = "# BEGIN_TREBLE_ONLY\n"
-                + "neverallow d1 d2:c1 p;\n"
-                + "# END_TREBLE_ONLY\n"
-                + "neverallow d2 d3:c2 p2;\n";
+        String policy =
+                "# BEGIN_TREBLE_ONLY\n"
+                        + "neverallow d1 d2:c1 p;\n"
+                        + "# END_TREBLE_ONLY\n"
+                        + "neverallow d2 d3:c2 p2;\n";
         List<SELinuxNeverallowRule> rules = SELinuxNeverallowRule.parsePolicy(policy);
         assertEquals(2, rules.size());
         assertEquals(true, rules.get(0).fullTrebleOnly());

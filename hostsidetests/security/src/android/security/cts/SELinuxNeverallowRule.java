@@ -28,8 +28,10 @@ import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -52,7 +54,7 @@ record SELinuxNeverallowRule(
 
     SELinuxNeverallowRule(String text, Map<String, Integer> conditions) {
         this(
-                text,
+                text.trim().replaceAll(" +", " "),
                 (conditions.getOrDefault("TREBLE_ONLY", 0) > 0),
                 (conditions.getOrDefault("LAUNCHING_WITH_R_ONLY", 0) > 0),
                 (conditions.getOrDefault("LAUNCHING_WITH_S_ONLY", 0) > 0),
@@ -127,7 +129,7 @@ record SELinuxNeverallowRule(
                 "(neverallow\\s[^;]+?;|" + patternConditions + ")",
                 Pattern.MULTILINE);
 
-        List<SELinuxNeverallowRule> rules = new ArrayList();
+        Set<SELinuxNeverallowRule> rules = new LinkedHashSet();
         Map<String, Integer> conditions = new HashMap();
 
         matcher = neverAllowPattern.matcher(policy);
@@ -159,7 +161,7 @@ record SELinuxNeverallowRule(
             }
         }
 
-        return rules;
+        return new ArrayList(rules);
     }
 
     public void testNeverallowRule(File sepolicyAnalyze, File policyFile) throws Exception {
