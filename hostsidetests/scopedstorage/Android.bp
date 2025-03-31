@@ -573,7 +573,7 @@ android_test {
         "cts",
     ],
     sdk_version: "test_current",
-    target_sdk_version: "33",
+    target_sdk_version: "35",
     min_sdk_version: "29",
     platform_apis: true,
     libs: [
