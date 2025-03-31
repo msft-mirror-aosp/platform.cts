@@ -70,39 +70,29 @@ public final class CarPropertyValueTest extends AbstractCarTestCase {
     public void setUp() throws Exception {
         CarPropertyManager carPropertyManager = (CarPropertyManager) getCar().getCarManager(
                 Car.PROPERTY_SERVICE);
-        ShellPermissionUtils.runWithShellPermissionIdentity(() -> {
-            List<CarPropertyConfig> configs = carPropertyManager.getPropertyList();
-            for (CarPropertyConfig cfg : configs) {
-                mPropIdToConfig.put(cfg.getPropertyId(), cfg);
-                if (!Flags.areaIdConfigAccess()) {
-                    if (cfg.getAccess() == CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ
-                            || cfg.getAccess()
-                            == CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE) {
-                        CarPropertyValue value = getCarPropertyValue(carPropertyManager, cfg,
-                                cfg.getAreaIds()[0]);
-                        if (value != null) {
-                            Assert.assertEquals(value.getPropertyId(), cfg.getPropertyId());
-                            mCarPropertyValues.add(value);
-                        }
-                    }
-                } else {
-                    List<? extends AreaIdConfig<?>> areaIdConfigs = cfg.getAreaIdConfigs();
-                    for (AreaIdConfig<?> areaIdConfig : areaIdConfigs) {
-                        if (Flags.areaIdConfigAccess() && (areaIdConfig.getAccess()
-                                == CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ
-                                || areaIdConfig.getAccess()
-                                == CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE)) {
-                            CarPropertyValue value = getCarPropertyValue(carPropertyManager, cfg,
-                                    areaIdConfig.getAreaId());
-                            if (value != null) {
-                                Assert.assertEquals(value.getPropertyId(), cfg.getPropertyId());
-                                mCarPropertyValues.add(value);
+        ShellPermissionUtils.runWithShellPermissionIdentity(
+                () -> {
+                    List<CarPropertyConfig> configs = carPropertyManager.getPropertyList();
+                    for (CarPropertyConfig cfg : configs) {
+                        mPropIdToConfig.put(cfg.getPropertyId(), cfg);
+                        List<? extends AreaIdConfig<?>> areaIdConfigs = cfg.getAreaIdConfigs();
+                        for (AreaIdConfig<?> areaIdConfig : areaIdConfigs) {
+                            if (areaIdConfig.getAccess()
+                                            == CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ
+                                    || areaIdConfig.getAccess()
+                                            == CarPropertyConfig
+                                                    .VEHICLE_PROPERTY_ACCESS_READ_WRITE) {
+                                CarPropertyValue value =
+                                        getCarPropertyValue(
+                                                carPropertyManager, cfg, areaIdConfig.getAreaId());
+                                if (value != null) {
+                                    Assert.assertEquals(value.getPropertyId(), cfg.getPropertyId());
+                                    mCarPropertyValues.add(value);
+                                }
                             }
                         }
                     }
-                }
-            }
-        });
+                });
         assertThat(mPropIdToConfig.size()).isAtLeast(4);
         assertThat(mCarPropertyValues.size()).isAtLeast(4);
     }
