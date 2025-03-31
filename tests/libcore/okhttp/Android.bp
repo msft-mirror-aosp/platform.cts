@@ -52,7 +52,6 @@ android_test {
         "cts",
         "general-tests",
         "mts-conscrypt",
-        "mcts-conscrypt",
     ],
     host_common_data: [":cts-dalvik-host-test-runner"],
     test_config: "CtsLibcoreOkHttpTestCases.xml",
