@@ -128,9 +128,10 @@ record SELinuxNeverallowRule(
                 .collect(Collectors.joining("|"));
 
         /* Uncomment conditions delimiter lines. */
-        Pattern uncommentConditions = Pattern.compile("^\\s*#\\s*("
-                + patternConditions + "|" + sUserOnlyMarker + ").*$",
-                Pattern.MULTILINE);
+        Pattern uncommentConditions =
+                Pattern.compile(
+                        "^\\s*#\\s*(" + patternConditions + "|" + sUserOnlyMarker + ").*$",
+                        Pattern.MULTILINE);
         Matcher matcher = uncommentConditions.matcher(policy);
         policy = matcher.replaceAll("$1");
 

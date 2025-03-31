@@ -82,25 +82,28 @@ public class SELinuxNeverallowRulesTestVendor extends BaseHostJUnit4Test {
                         .getCodeSource()
                         .getLocation()
                         .getPath());
-        jarFile.stream().forEach(entry -> {
-            try {
-                String name = entry.getName();
-                Matcher m = VENDOR_POLICY_PATTERN.matcher(name);
-                if (m.matches()) {
-                    int ver = Integer.parseInt(m.group(1));
-                    File publicPolicy = SELinuxHostTest.copyResourceToTempFile("/" + name);
-                    String policy = Files.readString(publicPolicy.toPath());
-                    List<SELinuxNeverallowRule> parsedRules =
-                            SELinuxNeverallowRule.parsePolicy(policy);
+        jarFile.stream()
+                .forEach(
+                        entry -> {
+                            try {
+                                String name = entry.getName();
+                                Matcher m = VENDOR_POLICY_PATTERN.matcher(name);
+                                if (m.matches()) {
+                                    int ver = Integer.parseInt(m.group(1));
+                                    File publicPolicy =
+                                            SELinuxHostTest.copyResourceToTempFile("/" + name);
+                                    String policy = Files.readString(publicPolicy.toPath());
+                                    List<SELinuxNeverallowRule> parsedRules =
+                                            SELinuxNeverallowRule.parsePolicy(policy);
 
-                    for (SELinuxNeverallowRule rule : parsedRules) {
-                        rules.add(new Object[]{ver, rule.getStableId(), rule});
-                    }
-                }
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        });
+                                    for (SELinuxNeverallowRule rule : parsedRules) {
+                                        rules.add(new Object[] {ver, rule.getStableId(), rule});
+                                    }
+                                }
+                            } catch (Exception e) {
+                                throw new RuntimeException(e);
+                            }
+                        });
         jarFile.close();
 
         assertFalse("No test generated from the CTS-embedded policy", rules.isEmpty());
