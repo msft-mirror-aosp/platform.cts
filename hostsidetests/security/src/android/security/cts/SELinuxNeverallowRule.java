@@ -35,7 +35,13 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-class SELinuxNeverallowRule {
+record SELinuxNeverallowRule(
+        String mText,
+        boolean fullTrebleOnly,
+        boolean launchingWithROnly,
+        boolean launchingWithSOnly,
+        boolean compatiblePropertyOnly,
+        boolean userOnly) {
     private static String[] sConditions = {
         "TREBLE_ONLY",
         "COMPATIBLE_PROPERTY_ONLY",
@@ -44,40 +50,14 @@ class SELinuxNeverallowRule {
     };
     private static String sUserOnlyMarker = "SUPPRESSED_BY_USERDEBUG_OR_ENG";
 
-    public String mText;
-    public boolean fullTrebleOnly;
-    public boolean launchingWithROnly;
-    public boolean launchingWithSOnly;
-    public boolean compatiblePropertyOnly;
-    public boolean userOnly;
-
     SELinuxNeverallowRule(String text, Map<String, Integer> conditions) {
-        mText = text;
-        if (conditions.getOrDefault("TREBLE_ONLY", 0) > 0) {
-            fullTrebleOnly = true;
-        }
-        if (conditions.getOrDefault("COMPATIBLE_PROPERTY_ONLY", 0) > 0) {
-            compatiblePropertyOnly = true;
-        }
-        if (conditions.getOrDefault("LAUNCHING_WITH_R_ONLY", 0) > 0) {
-            launchingWithROnly = true;
-        }
-        if (conditions.getOrDefault("LAUNCHING_WITH_S_ONLY", 0) > 0) {
-            launchingWithSOnly = true;
-        }
-        if (conditions.getOrDefault("USER_ONLY", 0) > 0) {
-            userOnly = true;
-        }
-    }
-
-    public String toString() {
-        return "Rule [text= " + mText
-                + ", fullTrebleOnly=" + fullTrebleOnly
-                + ", compatiblePropertyOnly=" + compatiblePropertyOnly
-                + ", launchingWithROnly=" + launchingWithROnly
-                + ", launchingWithSOnly=" + launchingWithSOnly
-                + ", userOnly=" + userOnly
-                + "]";
+        this(
+                text,
+                (conditions.getOrDefault("TREBLE_ONLY", 0) > 0),
+                (conditions.getOrDefault("LAUNCHING_WITH_R_ONLY", 0) > 0),
+                (conditions.getOrDefault("LAUNCHING_WITH_S_ONLY", 0) > 0),
+                (conditions.getOrDefault("COMPATIBLE_PROPERTY_ONLY", 0) > 0),
+                (conditions.getOrDefault("USER_ONLY", 0) > 0));
     }
 
     private boolean isFullTrebleDevice(ITestDevice device) throws Exception {
