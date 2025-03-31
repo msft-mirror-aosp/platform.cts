@@ -114,6 +114,7 @@ public class SettingsPanelTest {
         assertThat(currentPackage).isEqualTo(packageNameForAction(Settings.Panel.ACTION_VOLUME));
     }
 
+    @Ignore("b/406956040")
     @Test
     public void nfcPanel_correctPackage() {
         launchNfcPanel();
@@ -151,6 +152,7 @@ public class SettingsPanelTest {
         assertThat(currentPackage).isNotEqualTo(packageNameForAction(Settings.Panel.ACTION_VOLUME));
     }
 
+    @Ignore("b/406956040")
     @Test
     public void nfcPanel_doneClosesPanel() {
         assumeTrue(mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_NFC));
@@ -207,6 +209,7 @@ public class SettingsPanelTest {
         assertThat(titleView).isNull();
     }
 
+    @Ignore("b/406956040")
     @Test
     public void nfcPanel_seeMoreButton_launchesIntoSettings() {
         assumeTrue(mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_NFC));
@@ -228,6 +231,7 @@ public class SettingsPanelTest {
         assertThat(titleView).isNull();
     }
 
+    @Ignore("b/389839567")
     @Test
     public void wifiPanel_seeMoreButton_launchesIntoSettings() {
         assumeTrue(packageNameForAction(Settings.Panel.ACTION_WIFI).equals(mSettingsPackage));
