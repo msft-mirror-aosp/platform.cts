@@ -110,6 +110,7 @@ import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.DeviceConfig;
 import android.provider.Settings;
+import android.server.wm.WindowManagerState;
 import android.server.wm.WindowManagerStateHelper;
 import android.server.wm.settings.SettingsSession;
 import android.util.Log;
@@ -162,6 +163,7 @@ public final class ActivityManagerTest {
     // A secondary test activity from another APK.
     static final String SIMPLE_PACKAGE_NAME = "com.android.cts.launcherapps.simpleapp";
     static final String SIMPLE_ACTIVITY = ".SimpleActivity";
+    static final String SIMPLE_ACTIVITY_COMPONENT = STUB_PACKAGE_NAME + SIMPLE_ACTIVITY;
     static final String SIMPLE_ACTIVITY_IMMEDIATE_EXIT = ".SimpleActivityImmediateExit";
     static final String SIMPLE_ACTIVITY_CHAIN_EXIT = ".SimpleActivityChainExit";
     static final String SIMPLE_RECEIVER = ".SimpleReceiver";
@@ -1712,10 +1714,23 @@ public final class ActivityManagerTest {
             CommandReceiver.sendCommand(mTargetContext, CommandReceiver.COMMAND_START_ACTIVITY,
                     PACKAGE_NAME_APP1, PACKAGE_NAME_APP2, 0, null);
             watcher2.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_TOP, null);
-            watcher1.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_SERVICE, null);
-            assertTrue("Failed to wait for the trim memory event",
-                    latchHolder[0].await(waitForSec, TimeUnit.MILLISECONDS));
-
+            ComponentName app1 = new ComponentName(PACKAGE_NAME_APP1, SIMPLE_ACTIVITY_COMPONENT);
+            mWmState.waitForValidState(app1);
+            boolean resumed = mWmState.waitForActivityState(app1, WindowManagerState.STATE_RESUMED);
+            if (!resumed) {
+                watcher1.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_SERVICE, null);
+                assertTrue(
+                        "Failed to wait for the trim memory event",
+                        latchHolder[0].await(waitForSec, TimeUnit.MILLISECONDS));
+            } else {
+                // On some form factors, like XR, multiple activities can be in the resumed state,
+                // so PACKAGE_NAME_APP1 doesn't go into the background or the service state.
+                // Therefore, there should not be any changes in the process state
+                // or the memory trim level.
+                assertFalse(
+                        "The memory trim level shouldn't change",
+                        latchHolder[0].await(waitForSec, TimeUnit.MILLISECONDS));
+            }
         } finally {
             runShellCommand(mInstrumentation,
                     "cmd deviceidle whitelist -" + PACKAGE_NAME_APP1);

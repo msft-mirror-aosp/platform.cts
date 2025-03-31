@@ -32,6 +32,7 @@ import static android.content.pm.ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED;
 import static android.content.res.Configuration.ORIENTATION_LANDSCAPE;
 import static android.content.res.Configuration.ORIENTATION_PORTRAIT;
 import static android.provider.DeviceConfig.NAMESPACE_CONSTRAIN_DISPLAY_APIS;
+import static android.server.wm.WindowManagerState.STATE_RESUMED;
 import static android.server.wm.allowdisplayorientationoverride.Components.ALLOW_DISPLAY_ORIENTATION_OVERRIDE_ACTIVITY;
 import static android.server.wm.allowignoringorientationrequestwhenloopdetectedoptin.Components.ALLOW_IGNORING_ORIENTATION_REQUEST_WHEN_LOOP_DETECTED_OPT_IN_ACTIVITY;
 import static android.server.wm.allowignoringorientationrequestwhenloopdetectedoptout.Components.ALLOW_IGNORING_ORIENTATION_REQUEST_WHEN_LOOP_DETECTED_OPT_OUT_ACTIVITY;
@@ -66,6 +67,7 @@ import static android.server.wm.propertycameracompatenablerefreshviapauseoptout.
 import static android.view.Display.DEFAULT_DISPLAY;
 import static android.view.Surface.ROTATION_0;
 import static android.view.Surface.ROTATION_90;
+import static android.view.WindowManager.DISPLAY_IME_POLICY_LOCAL;
 
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 
@@ -921,6 +923,34 @@ public final class CompatChangeTests extends MultiDisplayTestBase {
     public void testSandboxForNonResizableAspectRatioActivity() {
         runSizeCompatModeSandboxTest(NON_RESIZEABLE_LARGE_ASPECT_RATIO_ACTIVITY,
                 /* isSandboxed */ true, /* inSizeCompatModeAfterResize */ true);
+    }
+
+    /** Test that an SCM app does not relaunch with display move. */
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_SIZE_COMPAT_MODE_IMPROVEMENTS_FOR_CONNECTED_DISPLAYS)
+    public void testSizeCompatDoesNotRestartWithDisplayMove() {
+        assumeTrue(supportsMultiDisplay());
+        final int secondaryDisplayId =
+                createManagedVirtualDisplaySession()
+                        .setSimulateDisplay(true)
+                        .setSimulationDisplaySize(1920 /* width */, 1080 /* height */)
+                        .setDisplayImePolicy(DISPLAY_IME_POLICY_LOCAL)
+                        .createDisplay()
+                        .mId;
+
+        final ComponentName activity = NON_RESIZEABLE_PORTRAIT_ACTIVITY;
+        startActivityOnDisplay(DEFAULT_DISPLAY, activity);
+        waitForActivityFocused(5000, activity);
+
+        startActivityOnDisplay(secondaryDisplayId, activity);
+        assertTrue(
+                mWmState.waitFor(
+                        state ->
+                                state.getDisplayByActivity(activity) == secondaryDisplayId
+                                        && state.hasActivityState(activity, STATE_RESUMED),
+                        "Waiting for the activity to move to a secondary display"));
+
+        assertActivityLifecycle(activity, false /* relaunch */);
     }
 
      // =================

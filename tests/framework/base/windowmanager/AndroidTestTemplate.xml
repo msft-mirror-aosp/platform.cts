@@ -111,6 +111,8 @@
         <!-- disable lowlight dream -->
         <option name="run-command" value="cmd statusbar low-light disable" />
         <option name="teardown-command" value="cmd statusbar low-light clear" />
+        <!-- Ensure app compat does not interfere -->
+        <option name="run-command" value="wm set-letterbox-style --cornerRadius 0" />
     </target_preparer>
 
     <test class="com.android.tradefed.testtype.AndroidJUnitTest">

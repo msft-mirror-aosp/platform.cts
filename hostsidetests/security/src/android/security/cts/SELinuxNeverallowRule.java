@@ -51,7 +51,7 @@ class SELinuxNeverallowRule {
     public boolean compatiblePropertyOnly;
     public boolean userOnly;
 
-    private SELinuxNeverallowRule(String text, Map<String, Integer> conditions) {
+    SELinuxNeverallowRule(String text, Map<String, Integer> conditions) {
         mText = text;
         if (conditions.getOrDefault("TREBLE_ONLY", 0) > 0) {
             fullTrebleOnly = true;
