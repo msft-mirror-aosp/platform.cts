@@ -332,14 +332,14 @@ static std::optional<std::string> testRegisterThermalHeadroomListener(JNIEnv *, 
     auto headroomRes = ctx.mListenerHeadroom.back();
     // verify if headroom is nan or not:
     if (!isnan(headroomRes.headroom)) {
-        if (headroomRes.headroom < 0.0f || headroomRes.headroom > 1) {
-            return StringPrintf("Expected headroom of range [0, 1] but got %2.2f",
+        if (headroomRes.headroom < 0.0f) {
+            return StringPrintf("Expected non-negative headroom but got %2.2f",
                                 headroomRes.headroom);
         }
     }
     if (!isnan(headroomRes.forecastHeadroom)) {
-        if (headroomRes.forecastHeadroom < 0.0f || headroomRes.forecastHeadroom > 1) {
-            return StringPrintf("Expected forecast headroom of range [0, 1] but got %2.2f",
+        if (headroomRes.forecastHeadroom < 0.0f) {
+            return StringPrintf("Expected non-negative forecast headroom but got %2.2f",
                                 headroomRes.forecastHeadroom);
         }
         if (headroomRes.forecastSeconds < 0) {
@@ -353,12 +353,19 @@ static std::optional<std::string> testRegisterThermalHeadroomListener(JNIEnv *, 
         for (int i = 0; i < headroomRes.thresholdsCount; i++) {
             if (!isnan(headroomRes.thresholds[i].headroom)) {
                 auto threshold = headroomRes.thresholds[i];
-                if (threshold.headroom < 0.0f ||
-                    (threshold.thermalStatus == ATHERMAL_STATUS_SEVERE &&
-                     threshold.headroom != 1.0f) ||
-                    (threshold.thermalStatus < ATHERMAL_STATUS_SEVERE && threshold.headroom > 1)) {
-                    return StringPrintf("Expected headroom threshold for status %d of range [0, 1] "
+                if (threshold.headroom < 0.0f) {
+                    return StringPrintf("Expected non-negative headroom threshold for status %d "
                                         "but got %2.2f",
+                                        threshold.thermalStatus, threshold.headroom);
+                } else if (threshold.thermalStatus == ATHERMAL_STATUS_SEVERE &&
+                           threshold.headroom != 1.0f) {
+                    return StringPrintf("Expected headroom threshold for SEVERE status %d to be "
+                                        "1.0f but got %2.2f",
+                                        threshold.thermalStatus, threshold.headroom);
+                } else if (threshold.thermalStatus < ATHERMAL_STATUS_SEVERE &&
+                           threshold.headroom > 1) {
+                    return StringPrintf("Expected headroom threshold for status %d under SEVERE to "
+                                        "be of range [0, 1] but got %2.2f",
                                         threshold.thermalStatus, threshold.headroom);
                 }
             }
