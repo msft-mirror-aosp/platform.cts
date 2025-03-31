@@ -25,6 +25,7 @@ import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.waitAndAsser
 import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.waitAndAssertNotResumed;
 import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.waitAndAssertResumed;
 import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.waitAndAssertResumedAndFillsTask;
+import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.waitAndGetTaskBounds;
 import static android.server.wm.jetpack.utils.TestActivityLauncher.KEY_ACTIVITY_ID;
 
 import static androidx.window.extensions.embedding.SplitRule.FINISH_ADJACENT;
@@ -37,6 +38,7 @@ import android.server.wm.WindowManagerState.Task;
 import android.server.wm.jetpack.utils.TestActivity;
 import android.server.wm.jetpack.utils.TestActivityWithId;
 import android.support.test.uiautomator.UiDevice;
+import android.util.Log;
 import android.util.Pair;
 import android.util.Size;
 import android.view.WindowMetrics;
@@ -70,6 +72,8 @@ public class ActivityEmbeddingPlaceholderTests extends ActivityEmbeddingTestBase
 
     static final String PRIMARY_ACTIVITY_ID = "primaryActivity";
     static final String PLACEHOLDER_ACTIVITY_ID = "placeholderActivity";
+
+    private static final String TAG = "AePlaceholderTests";
 
     /**
      * Tests that an activity with a matching {@link SplitPlaceholderRule} is successfully able to
@@ -233,21 +237,36 @@ public class ActivityEmbeddingPlaceholderTests extends ActivityEmbeddingTestBase
      */
     @Test
     public void testPlaceholderLaunchedWhenTaskWidthIncreased() {
-        // TODO(b/397120232): Fix this test in multi window mode by shrinking the task first instead
-        // of shrinking the display size before enlarging the task later.
-        // Reduce display size by 50% so that display size won't exceed the maximum display
-        // size during the test.
-        final Size currentSize = mReportedDisplayMetrics.getSize();
-        final Size displaySize = new Size((int) (currentSize.getWidth() * 0.5),
-                (int) (currentSize.getHeight() * 0.5));
-        mReportedDisplayMetrics.setSize(displaySize);
+        // Start an Activity in multi-window mode
+        Log.d(TAG, "Start Activity");
+        final Activity primaryActivity =
+                startActivityNewTaskInMultiWindowWithBounds(
+                        TestActivityWithId.class,
+                        PRIMARY_ACTIVITY_ID,
+                        getLaunchingDisplayId(),
+                        null /* bounds */);
 
-        final Rect taskBounds = getTaskBounds();
-        final double splitTaskWidth = taskBounds.width() * 1.05;
-        final double splitTaskHeight = taskBounds.height() * 1.05;
+        // Resize the task to half width/height
+        final Rect initialTaskBounds =
+                waitAndGetTaskBounds(primaryActivity, true /* shouldWaitForResume */);
+        final Rect taskBounds =
+                new Rect(
+                        initialTaskBounds.left,
+                        initialTaskBounds.top,
+                        (int) (initialTaskBounds.left + initialTaskBounds.width() * 0.8),
+                        (int) (initialTaskBounds.top + initialTaskBounds.height() * 0.8));
+        Log.d(TAG, "Resize Task from " + initialTaskBounds + " to " + taskBounds);
+        resizeActivityTask(
+                primaryActivity.getComponentName(),
+                taskBounds.left,
+                taskBounds.top,
+                taskBounds.right,
+                taskBounds.bottom);
 
         // Set embedding rules with the parent window metrics only allowing side-by-side
         // activities on a task bounds 5% larger than the current task bounds.
+        final double splitTaskWidth = taskBounds.width() * 1.05;
+        final double splitTaskHeight = taskBounds.height() * 1.05;
         final SplitPlaceholderRule splitPlaceholderRule =
                 new SplitPlaceholderRuleBuilderWithDefaults(PRIMARY_ACTIVITY_ID,
                         PLACEHOLDER_ACTIVITY_ID)
@@ -259,31 +278,23 @@ public class ActivityEmbeddingPlaceholderTests extends ActivityEmbeddingTestBase
         mActivityEmbeddingComponent.setEmbeddingRules(
                 Collections.singleton(splitPlaceholderRule));
 
-        // Launch activity and verify that it fills the task and that a placeholder activity is
-        // not launched
-        Activity primaryActivity = startFullScreenActivityNewTask(TestActivityWithId.class,
-                PRIMARY_ACTIVITY_ID, getLaunchingDisplayId());
         waitAndAssertResumedAndFillsTask(primaryActivity);
         waitAndAssertNotResumed(PLACEHOLDER_ACTIVITY_ID);
 
-        // Enlarge by 10% so that the primary and placeholder activities are stacked.
-        // If the primary activity was launched in freeform windowing mode, resize the task bounds
-        // instead of resizing the display.
-        mWmState.computeState(primaryActivity.getComponentName());
-        // Primary and placeholder activities should be in the same task
-        final Task task = mWmState.getTaskByActivity(primaryActivity.getComponentName());
-        if (task.getWindowingMode() == WINDOWING_MODE_FREEFORM) {
-            final Rect origTaskBounds = task.getBounds();
-            resizeActivityTask(primaryActivity.getComponentName(),
-                    origTaskBounds.left, origTaskBounds.top,
-                    origTaskBounds.left + (int) (origTaskBounds.width() * 1.1),
-                    origTaskBounds.top + (int) (origTaskBounds.height() * 1.1));
-        } else {
-            final Size origDisplaySize = mReportedDisplayMetrics.getSize();
-            mReportedDisplayMetrics.setSize(
-                    new Size((int) (origDisplaySize.getWidth() * 1.1),
-                             (int) (origDisplaySize.getHeight() * 1.1)));
-        }
+        // Enlarge by 10% so that the placeholder activity should be launched.
+        final Rect largeTaskBounds =
+                new Rect(
+                        taskBounds.left,
+                        taskBounds.top,
+                        taskBounds.left + (int) (taskBounds.width() * 1.1),
+                        taskBounds.top + (int) (taskBounds.height() * 1.1));
+        Log.d(TAG, "Resize Task to " + largeTaskBounds);
+        resizeActivityTask(
+                primaryActivity.getComponentName(),
+                largeTaskBounds.left,
+                largeTaskBounds.top,
+                largeTaskBounds.right,
+                largeTaskBounds.bottom);
 
         // Verify that the placeholder activity is launched into a split with the primary
         // activity
