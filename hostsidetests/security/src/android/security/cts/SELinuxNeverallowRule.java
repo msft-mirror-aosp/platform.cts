@@ -62,6 +62,21 @@ record SELinuxNeverallowRule(
                 (conditions.getOrDefault("USER_ONLY", 0) > 0));
     }
 
+    public String getStableId() {
+        String id =
+                mText.replaceFirst("^neverallow ", "")
+                        .replaceAll("[^A-Za-z0-9_]", "_")
+                        .replaceAll("_+", "_");
+        byte b = 0;
+        b += (fullTrebleOnly ? 1 : 0) << 0;
+        b += (compatiblePropertyOnly ? 1 : 0) << 1;
+        b += (launchingWithROnly ? 1 : 0) << 2;
+        b += (launchingWithSOnly ? 1 : 0) << 3;
+        b += (userOnly ? 1 : 0) << 4;
+        id += String.format("%X", b);
+        return id;
+    }
+
     private boolean isFullTrebleDevice(ITestDevice device) throws Exception {
         return SELinuxHostTest.isFullTrebleDevice(device);
     }

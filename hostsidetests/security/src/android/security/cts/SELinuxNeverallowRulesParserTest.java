@@ -16,6 +16,7 @@
 package android.security.cts;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
@@ -177,5 +178,52 @@ public class SELinuxNeverallowRulesParserTest extends BaseHostJUnit4Test {
         assertEquals(false, rules.get(0).userOnly());
         assertEquals(true, rules.get(1).userOnly());
         assertEquals(false, rules.get(2).userOnly());
+    }
+
+    @Test
+    public void testStableIdNotTheSame() throws Exception {
+        String policy =
+                "# A comment, no big deal\n"
+                        + "neverallow d1 d2:c1 p;\n"
+                        + "neverallow d2 d3:c2 p2;\n";
+        List<SELinuxNeverallowRule> rules = SELinuxNeverallowRule.parsePolicy(policy);
+        assertEquals(2, rules.size());
+        assertFalse(rules.get(0).getStableId().equals(rules.get(1).getStableId()));
+    }
+
+    @Test
+    public void testStableIdReorder() throws Exception {
+        String policy1 =
+                "# A comment, no big deal\n"
+                        + "neverallow d1 d2:c1 p;\n"
+                        + "neverallow d2 d3:c2 p2;\n";
+        String policy2 =
+                "# A comment, no big deal\n"
+                        + "neverallow d2 d3:c2 p2;\n"
+                        + "neverallow d1 d2:c1 p;\n";
+        List<SELinuxNeverallowRule> rules1 = SELinuxNeverallowRule.parsePolicy(policy1);
+        List<SELinuxNeverallowRule> rules2 = SELinuxNeverallowRule.parsePolicy(policy2);
+        assertEquals(2, rules1.size());
+        assertEquals(2, rules2.size());
+        assertEquals(rules1.get(0).getStableId(), rules2.get(1).getStableId());
+        assertEquals(rules1.get(1).getStableId(), rules2.get(0).getStableId());
+    }
+
+    @Test
+    public void testStableIdMoveComment() throws Exception {
+        String policy1 =
+                "neverallow d1 d2:c1 p;\n"
+                        + "# A comment, no big deal\n"
+                        + "neverallow d2 d3:c2 p2;\n";
+        String policy2 =
+                "# A comment, no big deal\n"
+                        + "neverallow d2 d3:c2 p2;\n"
+                        + "neverallow d1 d2:c1 p;\n";
+        List<SELinuxNeverallowRule> rules1 = SELinuxNeverallowRule.parsePolicy(policy1);
+        List<SELinuxNeverallowRule> rules2 = SELinuxNeverallowRule.parsePolicy(policy2);
+        assertEquals(2, rules1.size());
+        assertEquals(2, rules2.size());
+        assertEquals(rules1.get(0).getStableId(), rules2.get(1).getStableId());
+        assertEquals(rules1.get(1).getStableId(), rules2.get(0).getStableId());
     }
 }
