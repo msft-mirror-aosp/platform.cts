@@ -56,6 +56,7 @@ import android.os.IBinder;
 import android.os.Looper;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
+import android.provider.Settings;
 import android.server.wm.ActivityManagerTestBase;
 import android.server.wm.ComponentNameUtils;
 import android.server.wm.Condition;
@@ -65,6 +66,7 @@ import android.server.wm.TouchHelper;
 import android.server.wm.WindowManagerState;
 import android.server.wm.WindowManagerStateHelper;
 import android.server.wm.overlay.Components;
+import android.server.wm.settings.SettingsSession;
 import android.server.wm.shared.BlockingResultReceiver;
 import android.server.wm.shared.IUntrustedTouchTestService;
 import android.util.ArrayMap;
@@ -76,6 +78,7 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager.LayoutParams;
+import android.view.accessibility.AccessibilityManager;
 import android.widget.Toast;
 
 import androidx.annotation.AnimRes;
@@ -85,6 +88,7 @@ import androidx.test.ext.junit.rules.ActivityScenarioRule;
 
 import com.android.compatibility.common.util.AppOpsUtils;
 import com.android.compatibility.common.util.SystemUtil;
+import com.android.compatibility.common.util.TestUtils;
 
 import org.junit.After;
 import org.junit.Before;
@@ -130,6 +134,9 @@ public abstract class WindowUntrustedTouchTestBase {
     static final String WINDOW_2 = "W2";
 
     private static final String[] APPS = {APP_A, APP_B};
+
+    private static final String ACCESSIBILITY_NON_INTERACTIVE_UI_TIMEOUT_MS =
+            "accessibility_non_interactive_ui_timeout_ms";
 
     final WindowManagerStateHelper mWmState = new WindowManagerStateHelper();
     private final Map<String, FutureConnection<IUntrustedTouchTestService>> mConnections =
@@ -240,55 +247,100 @@ public abstract class WindowUntrustedTouchTestBase {
                 WindowManagerStateHelper.APP_STATE_RUNNING);
     }
 
-    void addToastOverlay(String packageName, boolean custom) throws Exception {
-        // Making sure there are no toasts currently since we can only check for the presence of
-        // *any* toast afterwards and we don't want to be in a situation where this method returned
-        // because another toast was being displayed.
-        waitForNoToastOverlays();
-        if (custom) {
-            if (packageName.equals(getAppSelf())) {
-                // We add the custom toast here because we already have foreground status due to
-                // the activity rule, so no need to start another activity.
-                addMyCustomToastOverlay();
-            } else {
-                // We have to use an activity that will display the toast then finish itself because
-                // custom toasts cannot be posted from the background.
-                Intent intent = new Intent();
-                intent.setComponent(repackage(packageName, Components.ToastActivity.COMPONENT));
-                mActivity.startActivity(intent);
-            }
-        } else {
-            getService(packageName).showToast();
-        }
+    private SettingsSession<Integer> secureIntSession(String settingName) {
+        return new SettingsSession<>(
+                Settings.Secure.getUriFor(settingName),
+                Settings.Secure::getInt,
+                Settings.Secure::putInt);
+    }
 
-        Condition.waitFor(
-                new Condition<WindowManagerState.WindowState>(null)
-                        .setRetryIntervalMs(100)
-                        .setRetryLimit(20)
-                        .setResultSupplier(
-                                () -> {
-                                    mWmState.computeState();
-                                    return mWmState.findFirstWindowWithType(
-                                            LayoutParams.TYPE_TOAST);
-                                })
-                        .setResultValidator(
-                                toastWindow -> {
-                                    String invalidReason = validateToastWindow(toastWindow);
-                                    if (invalidReason != null) {
-                                        Log.d(TAG, "Failed to validate toast window: " +
-                                            invalidReason);
-                                        return false;
-                                    }
-                                    return true;
-                                })
-                        .setOnFailure(
-                                toastWindow ->
-                                        fail(
-                                                "Toast from app "
-                                                        + packageName
-                                                        + " did not appear on time or is outside of"
-                                                        + " container bounds. Last reason: "
-                                                        + validateToastWindow(toastWindow))));
+    /** Wait for accessibility recommended timeout to equal the expected timeout. */
+    private void waitForA11yRecommendedTimeoutChanged(
+            Context context, Duration waitTimeout, int expectedTimeoutMs) {
+        final AccessibilityManager manager = context.getSystemService(AccessibilityManager.class);
+        final Object lock = new Object();
+        AccessibilityManager.AccessibilityServicesStateChangeListener listener =
+                (m) -> {
+                    synchronized (lock) {
+                        lock.notifyAll();
+                    }
+                };
+        manager.addAccessibilityServicesStateChangeListener(listener);
+        try {
+            TestUtils.waitOn(
+                    lock,
+                    () ->
+                            manager.getRecommendedTimeoutMillis(
+                                            0, AccessibilityManager.FLAG_CONTENT_TEXT)
+                                    == expectedTimeoutMs,
+                    waitTimeout.toMillis(),
+                    "Wait for accessibility recommended timeout changed");
+        } finally {
+            manager.removeAccessibilityServicesStateChangeListener(listener);
+        }
+    }
+
+    void addToastOverlay(String packageName, boolean custom) throws Exception {
+        try (SettingsSession<Integer> toastDurationSession =
+                secureIntSession(ACCESSIBILITY_NON_INTERACTIVE_UI_TIMEOUT_MS)) {
+            // Set a very long duration. This will not delay the test because we will remove the
+            // toast after the test is done.
+            final int toastTimeoutMs = 10000;
+            toastDurationSession.set(toastTimeoutMs);
+            waitForA11yRecommendedTimeoutChanged(mContext, Duration.ofSeconds(5), toastTimeoutMs);
+
+            // Making sure there are no toasts currently since we can only check for the presence of
+            // *any* toast afterwards and we don't want to be in a situation where this method
+            // returned because another toast was being displayed.
+            waitForNoToastOverlays();
+            if (custom) {
+                if (packageName.equals(getAppSelf())) {
+                    // We add the custom toast here because we already have foreground status due to
+                    // the activity rule, so no need to start another activity.
+                    addMyCustomToastOverlay();
+                } else {
+                    // We have to use an activity that will display the toast then finish itself
+                    // because custom toasts cannot be posted from the background.
+                    Intent intent = new Intent();
+                    intent.setComponent(repackage(packageName, Components.ToastActivity.COMPONENT));
+                    mActivity.startActivity(intent);
+                }
+            } else {
+                getService(packageName).showToast();
+            }
+
+            Condition.waitFor(
+                    new Condition<WindowManagerState.WindowState>(null)
+                            .setRetryIntervalMs(100)
+                            .setRetryLimit(20)
+                            .setResultSupplier(
+                                    () -> {
+                                        mWmState.computeState();
+                                        return mWmState.findFirstWindowWithType(
+                                                LayoutParams.TYPE_TOAST);
+                                    })
+                            .setResultValidator(
+                                    toastWindow -> {
+                                        String invalidReason = validateToastWindow(toastWindow);
+                                        if (invalidReason != null) {
+                                            Log.d(
+                                                    TAG,
+                                                    "Failed to validate toast window: "
+                                                            + invalidReason);
+                                            return false;
+                                        }
+                                        return true;
+                                    })
+                            .setOnFailure(
+                                    toastWindow ->
+                                            fail(
+                                                    "Toast from app "
+                                                            + packageName
+                                                            + " did not appear on time or is"
+                                                            + " outside of container bounds. Last"
+                                                            + " reason: "
+                                                            + validateToastWindow(toastWindow))));
+        }
     }
 
     private String validateToastWindow(WindowManagerState.WindowState toastWindow) {
