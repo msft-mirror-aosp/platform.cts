@@ -44,16 +44,16 @@ public class SELinuxNeverallowRulesParserTest extends BaseHostJUnit4Test {
                 + "neverallow d2 d3:c2 p2;\n";
         List<SELinuxNeverallowRule> rules = SELinuxNeverallowRule.parsePolicy(policy);
         assertEquals(2, rules.size());
-        assertEquals("neverallow d1 d2:c1 p;", rules.get(0).mText);
-        assertEquals(false, rules.get(0).fullTrebleOnly);
-        assertEquals(false, rules.get(0).launchingWithROnly);
-        assertEquals(false, rules.get(0).launchingWithSOnly);
-        assertEquals(false, rules.get(0).compatiblePropertyOnly);
-        assertEquals("neverallow d2 d3:c2 p2;", rules.get(1).mText);
-        assertEquals(false, rules.get(1).fullTrebleOnly);
-        assertEquals(false, rules.get(1).launchingWithROnly);
-        assertEquals(false, rules.get(1).launchingWithSOnly);
-        assertEquals(false, rules.get(1).compatiblePropertyOnly);
+        assertEquals("neverallow d1 d2:c1 p;", rules.get(0).mText());
+        assertEquals(false, rules.get(0).fullTrebleOnly());
+        assertEquals(false, rules.get(0).launchingWithROnly());
+        assertEquals(false, rules.get(0).launchingWithSOnly());
+        assertEquals(false, rules.get(0).compatiblePropertyOnly());
+        assertEquals("neverallow d2 d3:c2 p2;", rules.get(1).mText());
+        assertEquals(false, rules.get(1).fullTrebleOnly());
+        assertEquals(false, rules.get(1).launchingWithROnly());
+        assertEquals(false, rules.get(1).launchingWithSOnly());
+        assertEquals(false, rules.get(1).compatiblePropertyOnly());
     }
 
     @Test
@@ -76,7 +76,7 @@ public class SELinuxNeverallowRulesParserTest extends BaseHostJUnit4Test {
                 + "};\n";
         List<SELinuxNeverallowRule> rules = SELinuxNeverallowRule.parsePolicy(policy);
         assertEquals(1, rules.size());
-        assertEquals("neverallow d1 {   d2   d3 }:file {   p1   p2 };", rules.get(0).mText);
+        assertEquals("neverallow d1 {   d2   d3 }:file {   p1   p2 };", rules.get(0).mText());
     }
 
     @Test
@@ -87,8 +87,8 @@ public class SELinuxNeverallowRulesParserTest extends BaseHostJUnit4Test {
                 + "neverallow d2 d3:c2 p2;\n";
         List<SELinuxNeverallowRule> rules = SELinuxNeverallowRule.parsePolicy(policy);
         assertEquals(2, rules.size());
-        assertEquals(true, rules.get(0).fullTrebleOnly);
-        assertEquals(false, rules.get(1).fullTrebleOnly);
+        assertEquals(true, rules.get(0).fullTrebleOnly());
+        assertEquals(false, rules.get(1).fullTrebleOnly());
     }
 
     @Test
@@ -100,8 +100,8 @@ public class SELinuxNeverallowRulesParserTest extends BaseHostJUnit4Test {
                 + "neverallow d2 d3:c2 p2;\n";
         List<SELinuxNeverallowRule> rules = SELinuxNeverallowRule.parsePolicy(policy);
         assertEquals(2, rules.size());
-        assertEquals(true, rules.get(0).launchingWithSOnly);
-        assertEquals(false, rules.get(1).launchingWithSOnly);
+        assertEquals(true, rules.get(0).launchingWithSOnly());
+        assertEquals(false, rules.get(1).launchingWithSOnly());
     }
 
     @Test
@@ -121,8 +121,8 @@ public class SELinuxNeverallowRulesParserTest extends BaseHostJUnit4Test {
                 + "neverallow d6 d7:c3 p3;\n";
         List<SELinuxNeverallowRule> rules = SELinuxNeverallowRule.parsePolicy(policy);
         assertEquals(3, rules.size());
-        assertEquals(false, rules.get(0).userOnly);
-        assertEquals(true, rules.get(1).userOnly);
-        assertEquals(false, rules.get(2).userOnly);
+        assertEquals(false, rules.get(0).userOnly());
+        assertEquals(true, rules.get(1).userOnly());
+        assertEquals(false, rules.get(2).userOnly());
     }
 }
