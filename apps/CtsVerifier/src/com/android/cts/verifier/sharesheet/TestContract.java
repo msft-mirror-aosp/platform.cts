@@ -29,6 +29,8 @@ public interface TestContract {
     interface UriParams {
         String Name = "name";
         String Type = "type";
+        String BgColor = "bgColor";
+        String TextColor = "txColor";
     }
 
     interface Uris {
