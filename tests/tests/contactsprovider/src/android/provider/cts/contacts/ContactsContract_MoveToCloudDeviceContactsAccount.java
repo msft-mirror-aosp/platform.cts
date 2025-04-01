@@ -86,6 +86,8 @@ public class ContactsContract_MoveToCloudDeviceContactsAccount {
 
     @Before
     public void setUp() throws Exception {
+        mCreatedContacts = new HashSet<>();
+        mNeedDefaultAccountReset = false;
         Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
         mContext = instrumentation.getContext();
         mResolver = getContext().getContentResolver();
@@ -99,9 +101,6 @@ public class ContactsContract_MoveToCloudDeviceContactsAccount {
             SimContacts.addSimAccount(mResolver, SIM_ACCT_NAME_2, SIM_ACCT_TYPE_2, SIM_SLOT_1,
                     SimAccount.ADN_EF_TYPE);
         });
-
-        mCreatedContacts = new HashSet<>();
-        mNeedDefaultAccountReset = false;
 
         // this test uses the null account which is hard to otherwise keep isolated
         deleteLocalRawContacts();
