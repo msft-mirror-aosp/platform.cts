@@ -76,8 +76,8 @@ record SELinuxNeverallowRule(
         return SELinuxHostTest.isCompatiblePropertyEnforcedDevice(device);
     }
 
-    private boolean isUserBuild(ITestDevice device) throws DeviceNotAvailableException {
-        return PropertyUtil.isUserBuild(device);
+    private boolean isDebuggableBuild(ITestDevice device) throws DeviceNotAvailableException {
+        return !PropertyUtil.propertyEquals(device, "ro.debuggable", "0");
     }
 
     public boolean isCompatible(ITestDevice device) throws Exception {
@@ -98,8 +98,9 @@ record SELinuxNeverallowRule(
             // device isn't one
             return false;
         }
-        if (userOnly && !isUserBuild(device)) {
-            // This test applies to -user builds only. Skip on -userdebug or -eng.
+        if (userOnly && isDebuggableBuild(device)) {
+            // This test applies to non-debuggable builds only.
+            // Skip on -userdebug, -eng, or forceDebuggable builds.
             return false;
         }
         return true;
