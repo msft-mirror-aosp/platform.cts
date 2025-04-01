@@ -17,6 +17,7 @@
 package android.security.cts;
 
 import static com.android.sts.common.CommandUtil.runAndCheck;
+import static com.android.sts.common.DumpsysUtils.getParsedDumpsys;
 import static com.android.sts.common.DumpsysUtils.hasActivityResumed;
 import static com.android.sts.common.ProcessUtil.INTENT_QUERY_CMDS;
 import static com.android.sts.common.ProcessUtil.getAllProcessIdsFromComponents;
@@ -24,6 +25,8 @@ import static com.android.sts.common.SystemUtil.poll;
 
 import static com.google.common.truth.Truth.assertWithMessage;
 import static com.google.common.truth.TruthJUnit.assume;
+
+import static java.util.regex.Pattern.CASE_INSENSITIVE;
 
 import android.platform.test.annotations.AsbSecurityTest;
 
@@ -76,9 +79,10 @@ public class CVE_2025_22434 extends NonRootSecurityTestCase {
 
             // Enable screen lock and attempt to exploit the bug
             try (AutoCloseable withLockScreen = new LockSettingsUtil(mDevice).withLockScreen()) {
-                // Lock the mDevice
-                runAndCheck(mDevice, "input keyevent KEYCODE_POWER");
+                // Lock the mDevice and wait for keyguard to appear
+                runAndCheck(mDevice, "input keyevent KEYCODE_SLEEP");
                 runAndCheck(mDevice, "input keyevent KEYCODE_WAKEUP");
+                assume().that(isKeyguardShowing()).isTrue();
 
                 // Attempt to launch settings app using Windows key + I
                 runAndCheck(mDevice, "input keycombination KEYCODE_META_LEFT KEYCODE_I");
@@ -110,6 +114,22 @@ public class CVE_2025_22434 extends NonRootSecurityTestCase {
                 () -> {
                     try {
                         return hasActivityResumed(mDevice, settingsPkgName);
+                    } catch (Exception e) {
+                        return false;
+                    }
+                });
+    }
+
+    private boolean isKeyguardShowing() throws Exception {
+        return poll(
+                () -> {
+                    try {
+                        return getParsedDumpsys(
+                                        mDevice,
+                                        "window" /* service */,
+                                        "isKeyguardShowing=true" /* pattern */,
+                                        CASE_INSENSITIVE /* matcherFlag */)
+                                .find();
                     } catch (Exception e) {
                         return false;
                     }
