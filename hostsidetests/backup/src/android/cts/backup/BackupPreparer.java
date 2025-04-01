@@ -61,13 +61,13 @@ public class BackupPreparer extends BaseTargetPreparer {
 
     private static final String LOCAL_TRANSPORT =
             "com.android.localtransport/.LocalTransport";
-    private final int USER_SYSTEM = 0;
 
     private boolean mIsBackupSupported;
     private boolean mWasBackupEnabled;
     private String mOldTransport;
     private ITestDevice mDevice;
     private BackupUtils mBackupUtils;
+    private int mCurrentUser;
 
     @Override
     public void setUp(ITestDevice device, IBuildInfo buildInfo)
@@ -82,9 +82,18 @@ public class BackupPreparer extends BaseTargetPreparer {
 
         if (mIsBackupSupported) {
             BackupHostSideUtils.checkSetupComplete(mDevice);
-            if (!isBackupActiveForSysytemUser()) {
-                throw new TargetSetupError("Cannot run test as backup is not active for system "
-                        + "user", device.getDeviceDescriptor());
+
+            try {
+                mCurrentUser = mBackupUtils.getCurrentUserId();
+            } catch (IOException e) {
+                throw new TargetSetupError("Failed to get current user ID", e);
+            }
+            CLog.i("Current user is " + mCurrentUser);
+
+            if (!isBackupActiveForUser(mCurrentUser)) {
+                throw new TargetSetupError(
+                        "Cannot run test as backup is not active for current user " + mCurrentUser,
+                        device.getDeviceDescriptor());
             }
 
             // Enable backup and select local backup transport
@@ -141,7 +150,8 @@ public class BackupPreparer extends BaseTargetPreparer {
 
     private boolean hasBackupTransport(String transport, boolean logIfFail)
             throws DeviceNotAvailableException, TargetSetupError {
-        String output = mDevice.executeShellCommand("bmgr list transports");
+        String output =
+                mDevice.executeShellCommand("bmgr --user " + mCurrentUser + " list transports");
         for (String t : output.split(" ")) {
             if (transport.equals(t.trim())) {
                 return true;
@@ -182,7 +192,7 @@ public class BackupPreparer extends BaseTargetPreparer {
     // Copied over from BackupQuotaTest
     private boolean enableBackup(boolean enable) throws DeviceNotAvailableException {
         boolean previouslyEnabled;
-        String output = mDevice.executeShellCommand("bmgr enabled");
+        String output = mDevice.executeShellCommand("bmgr --user " + mCurrentUser + " enabled");
         Pattern pattern = Pattern.compile("^Backup Manager currently (enabled|disabled)$");
         Matcher matcher = pattern.matcher(output.trim());
         if (matcher.find()) {
@@ -191,13 +201,15 @@ public class BackupPreparer extends BaseTargetPreparer {
             throw new RuntimeException("non-parsable output setting bmgr enabled: " + output);
         }
 
-        mDevice.executeShellCommand("bmgr enable " + enable);
+        mDevice.executeShellCommand("bmgr --user " + mCurrentUser + " enable " + enable);
         return previouslyEnabled;
     }
 
     // Copied over from BackupQuotaTest
     private String setBackupTransport(String transport) throws DeviceNotAvailableException {
-        String output = mDevice.executeShellCommand("bmgr transport " + transport);
+        String output =
+                mDevice.executeShellCommand(
+                        "bmgr --user " + mCurrentUser + " transport " + transport);
         Pattern pattern = Pattern.compile("\\(formerly (.*)\\)$");
         Matcher matcher = pattern.matcher(output);
         if (matcher.find()) {
@@ -227,11 +239,12 @@ public class BackupPreparer extends BaseTargetPreparer {
         }
     }
 
-    private boolean isBackupActiveForSysytemUser() {
+    private boolean isBackupActiveForUser(int userId) {
         try {
-            return mBackupUtils.isBackupActivatedForUser(USER_SYSTEM);
+            return mBackupUtils.isBackupActivatedForUser(userId);
         } catch (IOException e) {
-            throw new RuntimeException("Failed to check backup activation status");
+            throw new RuntimeException(
+                    "Failed to check backup activation status for user " + userId);
         }
     }
 
