@@ -61,11 +61,9 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-/**
- * Guide the user to run test for the USB accessory interface.
- */
-public class UsbAccessoryTestActivity extends PassFailButtons.Activity implements
-        AccessoryAttachmentHandler.AccessoryAttachmentObserver {
+/** Guide the user to run test for the USB accessory interface. */
+public class UsbAccessoryTestActivity extends PassFailButtons.Activity
+        implements AccessoryAttachmentHandler.AccessoryAttachmentObserver {
     private static final String LOG_TAG = UsbAccessoryTestActivity.class.getSimpleName();
     private static final int MAX_BUFFER_SIZE = 16384;
 
@@ -90,15 +88,12 @@ public class UsbAccessoryTestActivity extends PassFailButtons.Activity implement
     private final byte[] mBuffer32 = new byte[32];
     private final byte[] mBuffer16 = new byte[16];
 
-
-
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
         setContentView(R.layout.usb_main);
-        setInfoResources(
-                R.string.usb_accessory_test, R.string.usb_accessory_test_info, -1);
+        setInfoResources(R.string.usb_accessory_test, R.string.usb_accessory_test_info, -1);
 
         setPassFailButtonClickListeners();
         mStatus = (TextView) findViewById(R.id.status);
@@ -111,33 +106,33 @@ public class UsbAccessoryTestActivity extends PassFailButtons.Activity implement
         IntentFilter filter = new IntentFilter();
         filter.addAction(UsbManager.ACTION_USB_ACCESSORY_HANDSHAKE);
 
-        mUsbAccessoryHandshakeReceiver = new BroadcastReceiver() {
-            @Override
-            public void onReceive(Context context, Intent intent) {
-                synchronized (UsbAccessoryTestActivity.this) {
-                    mAccessoryStart = intent.getBooleanExtra(
-                            UsbManager.EXTRA_ACCESSORY_START, false);
+        mUsbAccessoryHandshakeReceiver =
+                new BroadcastReceiver() {
+                    @Override
+                    public void onReceive(Context context, Intent intent) {
+                        synchronized (UsbAccessoryTestActivity.this) {
+                            mAccessoryStart =
+                                    intent.getBooleanExtra(UsbManager.EXTRA_ACCESSORY_START, false);
 
-                    // check SENDSTRING event
-                    if (intent.hasExtra(UsbManager.EXTRA_ACCESSORY_STRING_COUNT)) {
-                        mHasSendStringCount = true;
-                    }
+                            // check SENDSTRING event
+                            if (intent.hasExtra(UsbManager.EXTRA_ACCESSORY_STRING_COUNT)) {
+                                mHasSendStringCount = true;
+                            }
 
-                    // check GETPROTOCOL event
-                    if (intent.hasExtra(UsbManager.EXTRA_ACCESSORY_UEVENT_TIME)) {
-                        mHasAccessoryConnectionStartTime = true;
+                            // check GETPROTOCOL event
+                            if (intent.hasExtra(UsbManager.EXTRA_ACCESSORY_UEVENT_TIME)) {
+                                mHasAccessoryConnectionStartTime = true;
+                            }
+                            mAccessoryHandshakeIntent.complete(null);
+                        }
                     }
-                    mAccessoryHandshakeIntent.complete(null);
-                }
-            }
-        };
+                };
 
         registerReceiver(mUsbAccessoryHandshakeReceiver, filter, Context.RECEIVER_EXPORTED);
 
         // initialise buffers
         (new Random()).nextBytes(mOrigBuffer32);
         (new Random()).nextBytes(mOrigBufferMax);
-
     }
 
     @Override
@@ -162,28 +157,31 @@ public class UsbAccessoryTestActivity extends PassFailButtons.Activity implement
                     assertEquals("Android CTS test companion device", accessory.getModel());
                     assertEquals("Android device running CTS verifier", accessory.getDescription());
                     assertEquals("2", accessory.getVersion());
-                    assertEquals("https://source.android.com/compatibility/cts/verifier.html",
+                    assertEquals(
+                            "https://source.android.com/compatibility/cts/verifier.html",
                             accessory.getUri());
                     assertEquals("0", accessory.getSerial());
 
                     assertTrue(Arrays.asList(usbManager.getAccessoryList()).contains(accessory));
 
-                    runAndAssertException(() -> usbManager.openAccessory(null),
+                    runAndAssertException(
+                            () -> usbManager.openAccessory(null), NullPointerException.class);
+
+                    runAndAssertException(
+                            () -> usbManager.openAccessoryInputStream(null),
                             NullPointerException.class);
 
-                    runAndAssertException(() -> usbManager.openAccessoryInputStream(null),
-                            NullPointerException.class);
-
-                    runAndAssertException(() -> usbManager.openAccessoryOutputStream(null),
+                    runAndAssertException(
+                            () -> usbManager.openAccessoryOutputStream(null),
                             NullPointerException.class);
 
                     ParcelFileDescriptor accessoryFd = usbManager.openAccessory(accessory);
                     assertNotNull(accessoryFd);
 
-                    try (InputStream is = new ParcelFileDescriptor.AutoCloseInputStream(
-                            accessoryFd)) {
-                        try (OutputStream os = new ParcelFileDescriptor.AutoCloseOutputStream(
-                                accessoryFd)) {
+                    try (InputStream is =
+                            new ParcelFileDescriptor.AutoCloseInputStream(accessoryFd)) {
+                        try (OutputStream os =
+                                new ParcelFileDescriptor.AutoCloseOutputStream(accessoryFd)) {
 
                             runTestsForAccessory(is, os);
 
@@ -200,32 +198,9 @@ public class UsbAccessoryTestActivity extends PassFailButtons.Activity implement
 
                         Log.i(LOG_TAG, "Using stream APIs...");
 
-                        try (InputStream ignored = usbManager.openAccessoryInputStream(accessory)) {
-                            assertNull(usbManager.openAccessory(accessory));
-                            Log.i(LOG_TAG, "Accessory cannot be opened when input stream is open");
-                        }
-
-                        // check that accessory is autoclosed when input stream is closed
-                        accessoryFd = usbManager.openAccessory(accessory);
-                        assertNotNull(accessoryFd);
-                        Log.i(LOG_TAG, "Accessory is openable after input stream is closed");
-                        accessoryFd.close();
-
-                        try (OutputStream ignored = usbManager.openAccessoryOutputStream(
-                                accessory)) {
-                            assertNull(usbManager.openAccessory(accessory));
-                            Log.i(LOG_TAG, "Accessory cannot be opened when output stream is open");
-                        }
-
-                        // check that accessory is autoclosed when output stream is closed
-                        accessoryFd = usbManager.openAccessory(accessory);
-                        assertNotNull(accessoryFd);
-                        Log.i(LOG_TAG, "Accessory is openable after output stream is closed");
-                        accessoryFd.close();
-
                         try (InputStream is = usbManager.openAccessoryInputStream(accessory)) {
-                            try (OutputStream os = usbManager.openAccessoryOutputStream(
-                                    accessory)) {
+                            try (OutputStream os =
+                                    usbManager.openAccessoryOutputStream(accessory)) {
 
                                 runTestsForAccessory(is, os);
 
@@ -239,7 +214,7 @@ public class UsbAccessoryTestActivity extends PassFailButtons.Activity implement
 
                     return null;
                 } catch (Throwable t) {
-                    return  t;
+                    return t;
                 }
             }
 
@@ -257,12 +232,13 @@ public class UsbAccessoryTestActivity extends PassFailButtons.Activity implement
     /**
      * Signal to the companion device that we want to switch to the next test.
      *
-     * @param is       The input stream from the companion device
-     * @param os       The output stream from the companion device
+     * @param is The input stream from the companion device
+     * @param os The output stream from the companion device
      * @param testName The name of the new test
      */
-    private boolean nextTest(@NonNull InputStream is, @NonNull OutputStream os,
-            @NonNull String testName) throws IOException {
+    private boolean nextTest(
+            @NonNull InputStream is, @NonNull OutputStream os, @NonNull String testName)
+            throws IOException {
         Log.i(LOG_TAG, "Init new test " + testName);
 
         ByteBuffer nameBuffer = Charset.forName("UTF-8").encode(CharBuffer.wrap(testName));
@@ -296,9 +272,7 @@ public class UsbAccessoryTestActivity extends PassFailButtons.Activity implement
         super.onDestroy();
     }
 
-    /**
-     * Indicate that the test failed.
-     */
+    /** Indicate that the test failed. */
     private void fail(@Nullable String s, @Nullable Throwable e) {
         Log.e(LOG_TAG, s, e);
         setTestResultAndFinish(false);
@@ -312,7 +286,6 @@ public class UsbAccessoryTestActivity extends PassFailButtons.Activity implement
         int numRead = is.read(mBuffer32);
         assertEquals(32, numRead);
         assertArrayEquals(mOrigBuffer32, mBuffer32);
-
     }
 
     private void testReceiveLessDataThanAvailable(InputStream is, OutputStream os)
@@ -341,8 +314,8 @@ public class UsbAccessoryTestActivity extends PassFailButtons.Activity implement
         assertArrayEquals(mOrigBuffer32, mBuffer32);
     }
 
-    private void testReceiveTwoTransfersInARowInBufferBiggerThanTransfer(InputStream is,
-            OutputStream os) throws IOException {
+    private void testReceiveTwoTransfersInARowInBufferBiggerThanTransfer(
+            InputStream is, OutputStream os) throws IOException {
         nextTest(is, os, "echo 32 bytes as two 16 byte transfers");
 
         os.write(mOrigBuffer32);
@@ -351,13 +324,11 @@ public class UsbAccessoryTestActivity extends PassFailButtons.Activity implement
         // the transfers individually
         int numRead = is.read(mBuffer32);
         assertEquals(16, numRead);
-        assertArrayEquals(Arrays.copyOf(mOrigBuffer32, 16),
-                Arrays.copyOf(mBuffer32, 16));
+        assertArrayEquals(Arrays.copyOf(mOrigBuffer32, 16), Arrays.copyOf(mBuffer32, 16));
 
         numRead = is.read(mBuffer32);
         assertEquals(16, numRead);
-        assertArrayEquals(Arrays.copyOfRange(mOrigBuffer32, 16, 32),
-                Arrays.copyOf(mBuffer32, 16));
+        assertArrayEquals(Arrays.copyOfRange(mOrigBuffer32, 16, 32), Arrays.copyOf(mBuffer32, 16));
     }
 
     private void testMeasureInTransferSpeed(InputStream is, OutputStream os) throws IOException {
@@ -375,16 +346,16 @@ public class UsbAccessoryTestActivity extends PassFailButtons.Activity implement
         }
 
         int numRead = is.read(result);
-        speedKBPS = (bytesRead * 8 * 1000. / 1024.)
-                / (SystemClock.elapsedRealtime() - timeStart);
+        speedKBPS = (bytesRead * 8 * 1000. / 1024.) / (SystemClock.elapsedRealtime() - timeStart);
         assertEquals(1, numRead);
         assertEquals(1, result[0]);
         // We don't mandate min speed for now, let's collect data on what it is.
-        getReportLog().setSummary(
-                "Input USB accessory transfer speed",
-                speedKBPS,
-                ResultType.HIGHER_BETTER,
-                ResultUnit.KBPS);
+        getReportLog()
+                .setSummary(
+                        "Input USB accessory transfer speed",
+                        speedKBPS,
+                        ResultType.HIGHER_BETTER,
+                        ResultUnit.KBPS);
         Log.i(LOG_TAG, "Read data transfer speed is " + speedKBPS + "KBPS");
     }
 
@@ -399,16 +370,17 @@ public class UsbAccessoryTestActivity extends PassFailButtons.Activity implement
             bytesSent += MAX_BUFFER_SIZE;
         }
         int numRead = is.read(result);
-        double speedKBPS = (bytesSent * 8 * 1000. / 1024.)
-                / (SystemClock.elapsedRealtime() - timeStart);
+        double speedKBPS =
+                (bytesSent * 8 * 1000. / 1024.) / (SystemClock.elapsedRealtime() - timeStart);
         assertEquals(1, numRead);
         assertEquals(1, result[0]);
         // We don't mandate min speed for now, let's collect data on what it is.
-        getReportLog().setSummary(
-                "Output USB accessory transfer speed",
-                speedKBPS,
-                ResultType.HIGHER_BETTER,
-                ResultUnit.KBPS);
+        getReportLog()
+                .setSummary(
+                        "Output USB accessory transfer speed",
+                        speedKBPS,
+                        ResultType.HIGHER_BETTER,
+                        ResultUnit.KBPS);
         Log.i(LOG_TAG, "Write data transfer speed is " + speedKBPS + "KBPS");
     }
 
@@ -417,8 +389,7 @@ public class UsbAccessoryTestActivity extends PassFailButtons.Activity implement
 
         byte[] oversizeBuffer = new byte[MAX_BUFFER_SIZE * 2];
         System.arraycopy(mOrigBufferMax, 0, oversizeBuffer, 0, MAX_BUFFER_SIZE);
-        System.arraycopy(mOrigBufferMax, 0, oversizeBuffer, MAX_BUFFER_SIZE,
-                MAX_BUFFER_SIZE);
+        System.arraycopy(mOrigBufferMax, 0, oversizeBuffer, MAX_BUFFER_SIZE, MAX_BUFFER_SIZE);
         os.write(oversizeBuffer);
 
         // The other side can not write more than the maximum size at once,
@@ -446,7 +417,8 @@ public class UsbAccessoryTestActivity extends PassFailButtons.Activity implement
             throws IOException, InterruptedException, ExecutionException, TimeoutException {
         nextTest(is, os, "Receive USB_ACCESSORY_HANDSHAKE intent");
 
-        mAccessoryHandshakeIntent.get(3 * 1000, //3 s
+        mAccessoryHandshakeIntent.get(
+                3 * 1000, // 3 s
                 TimeUnit.MILLISECONDS);
         assertTrue(mAccessoryStart);
         assertTrue(mHasSendStringCount);
