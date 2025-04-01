@@ -17,6 +17,9 @@
 package android.telephony.satellite.cts;
 
 import static android.telephony.satellite.SatelliteManager.DATAGRAM_TYPE_UNKNOWN;
+import static android.telephony.satellite.SatelliteManager.SATELLITE_MODEM_STATE_IDLE;
+import static android.telephony.satellite.SatelliteManager.SATELLITE_MODEM_STATE_NOT_CONNECTED;
+import static android.telephony.satellite.SatelliteManager.SATELLITE_MODEM_STATE_OFF;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -159,6 +162,10 @@ public class SatelliteManagerTestBase {
                     .getHalVersion(TelephonyManager.HAL_SERVICE_RADIO);
         } catch (IllegalStateException e) {
             logd("Skipping tests because Telephony service is null, exception=" + e);
+            return false;
+        }
+        if (getDefaultActiveSubIdForSatelliteTest() == SubscriptionManager.INVALID_SUBSCRIPTION_ID) {
+            logd("Skipping tests because the device has no active subscription");
             return false;
         }
         return true;
@@ -590,6 +597,7 @@ public class SatelliteManagerTestBase {
         private final Object mModemStatesLock = new Object();
         private final Semaphore mSemaphore = new Semaphore(0);
         private final Semaphore mModemOffSemaphore = new Semaphore(0);
+        private final Semaphore mModemIdleOrNotConnectedSemaphore = new Semaphore(0);
 
         @Override
         public void onSatelliteModemStateChanged(int state) {
@@ -604,12 +612,20 @@ public class SatelliteManagerTestBase {
                 Log.e(TAG, "onSatelliteModemStateChanged: Got exception, ex=" + ex);
             }
 
-            if (state == SatelliteManager.SATELLITE_MODEM_STATE_OFF) {
+            if (state == SATELLITE_MODEM_STATE_OFF) {
                 try {
                     mModemOffSemaphore.release();
                 } catch (Exception ex) {
                     Log.e(TAG, "onSatelliteModemStateChanged: Got exception in "
                             + "releasing mModemOffSemaphore, ex=" + ex);
+                }
+            } else if (state == SATELLITE_MODEM_STATE_IDLE
+                           || state == SATELLITE_MODEM_STATE_NOT_CONNECTED) {
+                try {
+                    mModemIdleOrNotConnectedSemaphore.release();
+                } catch (Exception ex) {
+                    Log.e(TAG, "onSatelliteModemStateChanged: Got exception in "
+                            + "releasing mModemIdleSemaphore, ex=" + ex);
                 }
             }
         }
@@ -655,12 +671,27 @@ public class SatelliteManagerTestBase {
             return true;
         }
 
+        public boolean waitUntilModemIdleOrNotConnected() {
+            try {
+                if (!mModemIdleOrNotConnectedSemaphore.tryAcquire(TIMEOUT, TimeUnit.MILLISECONDS)) {
+                    Log.e(TAG, "Timeout to receive satellite modem idle/not_connected event");
+                    return false;
+                }
+            } catch (Exception ex) {
+                Log.e(TAG, "Waiting for satellite modem idle/not_connected event:"
+                    + " Got exception=" + ex);
+                return false;
+            }
+            return true;
+        }
+
         public void clearModemStates() {
             synchronized (mModemStatesLock) {
                 Log.d(TAG, "onSatelliteModemStateChanged: clearModemStates");
                 mModemStates.clear();
                 mSemaphore.drainPermits();
                 mModemOffSemaphore.drainPermits();
+                mModemIdleOrNotConnectedSemaphore.drainPermits();
             }
         }
 
@@ -1808,7 +1839,7 @@ public class SatelliteManagerTestBase {
     }
 
     // Get default active subscription ID.
-    protected static int getActiveSubIDForCarrierSatelliteTest() {
+    protected static int getDefaultActiveSubIdForSatelliteTest() {
         Context context = InstrumentationRegistry.getInstrumentation().getContext();
         SubscriptionManager sm = context.getSystemService(SubscriptionManager.class);
         List<SubscriptionInfo> infos = ShellIdentityUtils.invokeMethodWithShellPermissions(sm,

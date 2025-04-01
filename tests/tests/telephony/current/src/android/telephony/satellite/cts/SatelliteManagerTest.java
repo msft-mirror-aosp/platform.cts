@@ -772,11 +772,11 @@ public class SatelliteManagerTest extends SatelliteManagerTestBase {
         // Throws SecurityException as we do not have SATELLITE_COMMUNICATION permission.
         assertThrows(SecurityException.class,
                 () -> sSatelliteManager.requestAttachEnabledForCarrier(
-                        getActiveSubIDForCarrierSatelliteTest(), true,
+                        getDefaultActiveSubIdForSatelliteTest(), true,
                         getContext().getMainExecutor(), error::offer));
         assertThrows(SecurityException.class,
                 () -> sSatelliteManager.requestAttachEnabledForCarrier(
-                        getActiveSubIDForCarrierSatelliteTest(), false,
+                        getDefaultActiveSubIdForSatelliteTest(), false,
                         getContext().getMainExecutor(), error::offer));
     }
 
@@ -804,7 +804,7 @@ public class SatelliteManagerTest extends SatelliteManagerTestBase {
         // Throws SecurityException as we do not have SATELLITE_COMMUNICATION permission.
         assertThrows(SecurityException.class,
                 () -> sSatelliteManager.requestIsAttachEnabledForCarrier(
-                        getActiveSubIDForCarrierSatelliteTest(),
+                        getDefaultActiveSubIdForSatelliteTest(),
                         getContext().getMainExecutor(), receiver));
     }
 
@@ -817,7 +817,7 @@ public class SatelliteManagerTest extends SatelliteManagerTestBase {
         // Throws SecurityException as we do not have SATELLITE_COMMUNICATION permission.
         assertThrows(SecurityException.class,
                 () -> sSatelliteManager.addAttachRestrictionForCarrier(
-                        getActiveSubIDForCarrierSatelliteTest(),
+                        getDefaultActiveSubIdForSatelliteTest(),
                         SATELLITE_COMMUNICATION_RESTRICTION_REASON_GEOLOCATION,
                         getContext().getMainExecutor(), error::offer));
     }
@@ -831,7 +831,7 @@ public class SatelliteManagerTest extends SatelliteManagerTestBase {
         // Throws SecurityException as we do not have SATELLITE_COMMUNICATION permission.
         assertThrows(SecurityException.class,
                 () -> sSatelliteManager.removeAttachRestrictionForCarrier(
-                        getActiveSubIDForCarrierSatelliteTest(),
+                        getDefaultActiveSubIdForSatelliteTest(),
                         SATELLITE_COMMUNICATION_RESTRICTION_REASON_GEOLOCATION,
                         getContext().getMainExecutor(), error::offer));
     }
@@ -843,7 +843,7 @@ public class SatelliteManagerTest extends SatelliteManagerTestBase {
         // Throws SecurityException as we do not have SATELLITE_COMMUNICATION permission.
         assertThrows(SecurityException.class,
                 () -> sSatelliteManager.getAttachRestrictionReasonsForCarrier(
-                        getActiveSubIDForCarrierSatelliteTest()));
+                        getDefaultActiveSubIdForSatelliteTest()));
     }
 
     @Test
@@ -948,7 +948,7 @@ public class SatelliteManagerTest extends SatelliteManagerTestBase {
         // Throws SecurityException as we do not have SATELLITE_COMMUNICATION permission.
         assertThrows(SecurityException.class,
                 () -> sSatelliteManager.getSatellitePlmnsForCarrier(
-                        getActiveSubIDForCarrierSatelliteTest()));
+                        getDefaultActiveSubIdForSatelliteTest()));
     }
 
     @Test
