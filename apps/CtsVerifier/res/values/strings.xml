@@ -2416,14 +2416,14 @@
          \n\u2022 The left 60% of the progress bar should be filled and the rest is unfilled.
          \nFrom left to right:
          \n\u2022 Segment 1 is 20% of the bar and is filled and its color is orange.
-         \n\u2022 Segment 2 is 30% of the bar and is filled and its color is yellow.
+         \n\u2022 Segment 2 is 30% of the bar and is filled and its color is green.
          \n\u2022 Segment 3 is 10% of the bar and is filled and its color is red.
          \n\u2022 Segment 4 is 40% of the bar and is unfilled and segment’s appearance should indicate that it is not completed yet.
     </string>
     <string name="progress_style_multiple_points" formatted="false">A progress style notification with multiple progress points was posted. Expand it (if it\'s not already expanded), and verify that:
          \n\u2022 The left 60% of the progress bar should be filled and the rest is unfilled.
          \n\u2022 Point 1 should be positioned at 20% of the progress bar\'s length and its color should be orange.
-         \n\u2022 Point 2 should be positioned at the middle of the bar and its color should be yellow.
+         \n\u2022 Point 2 should be positioned at the middle of the bar and its color should be green.
          \n\u2022 Point 3 should be positioned at 80% of the progress bar\'s length and its color should be blue. The progress bar\’s appearance should indicate that it is not completed yet.
     </string>
     <string name="progress_style_start_and_end_icons" formatted="false">A progress style notification with start and end progress icons was posted. Expand it (if it\'s not already expanded), and verify that:
@@ -2450,14 +2450,14 @@
     <string name="progress_style_not_styled_by_progress" formatted="false">A progress style notification which is not styled by its progress was posted. Expand it (if it\'s not already expanded), and verify that:
          \n\u2022 The progress tracker icon should be displayed, and its position should be at 60% of the progress bar\'s length.
          \n\u2022 The progress tracker icon should be a white arrow in a blue filled circle.
-         \n\u2022 Segments 1, 2 and 3 should look filled with orange, yellow and red respectively.
-         \n\u2022 Points 1, 2, 3, and 4 should look filled with  orange, yellow, orange and red, respectively.
+         \n\u2022 Segments 1, 2 and 3 should look filled with orange, green and red respectively.
+         \n\u2022 Points 1, 2, 3, and 4 should look filled with  orange, green, orange and red, respectively.
     </string>
     <string name="progress_style_rtl_enabled" formatted="false">A progress style notification was posted.  Change device layout direction to RTL (Developer options > Drawing > Force RTL layout direction). Expand the notification (if it’s not already expanded), and verify that:
          \n\u2022 The progress tracker icon should be displayed, and its position should be at 60% of the progress bar\'s length.
          \n\u2022 The progress tracker icon should be a white arrow in a blue filled circle.
-         \n\u2022 Segments from left to right should look filled with red, yellow and orange colors respectively.
-         \n\u2022 Points from left to right  should look filled with  red, orange, yellow and orange colors respectively.
+         \n\u2022 Segments from left to right should look filled with red, green and orange colors respectively.
+         \n\u2022 Points from left to right  should look filled with  red, orange, green and orange colors respectively.
          \n\u2022 The arrow on the bar should point away from the S and toward the E.
          \n\u2022 S icon should appear on the right and it is not mirrored.
          \n\u2022 E icon should appear on the left and it is not mirrored.
@@ -7475,6 +7475,16 @@ You should be prompted to select credentials; choose the ones you just installed
         1. Press the \"Share\" button below to launch the system sharesheet.
         \n\n
         2. In the system sharesheet, select all images and tap on the chooser action.
+    </string>
+    <string name="sharesheet_payload_text_plus_image_test">Sharesheet Text Plus Image</string>
+    <string name="sharesheet_payload_text_plus_image_test_info">
+        This test verifies that the system sharesheet properly handles the text plus thumbnail sharing.
+        \n\n
+        1. Press the \"Share\" button below to launch the system sharesheet.
+        \n\n
+        2. Dismiss the system sharesheet.
+        \n\n
+        3. If an image of a black letter \"A\" on a white background was shown in the sharesheet, pass the test, otherwise fail.
     </string>
     <string name="sharesheet_chooser_action">Test Action</string>
     <string name="sharesheet_wrong_intent_action">Wrong intent action; test failed.</string>
