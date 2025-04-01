@@ -20,11 +20,11 @@ import android.app.AppOpsManager
 import android.platform.test.annotations.AppModeFull
 import androidx.test.platform.app.InstrumentationRegistry
 import com.google.common.truth.Truth.assertThat
+import java.lang.Thread.sleep
+import org.junit.After
 import org.junit.Assert.fail
 import org.junit.Before
-import org.junit.After;
 import org.junit.Test
-import java.lang.Thread.sleep
 
 private const val APK_PATH = "/data/local/tmp/cts/appops/"
 
@@ -40,7 +40,8 @@ class RuntimeMessageCollectionTest {
 
     private fun installApk(apk: String) {
         val result = runCommand(
-            "pm install --user ${context.userId} -r -g --force-queryable $APK_PATH$apk")
+            "pm install --user ${context.userId} -r -g --force-queryable $APK_PATH$apk"
+        )
         assertThat(result.trim()).isEqualTo("Success")
         appUid = context.packageManager.getPackageUid(APP_PKG, 0)
     }
@@ -58,17 +59,22 @@ class RuntimeMessageCollectionTest {
 
     @Test
     fun collectAsyncStackTrace() {
-        installApk("CtsAppToCollect.apk")
         for (attempt in 0..25) {
+            installApk("CtsAppToCollect.apk")
             val start = System.currentTimeMillis()
+            runWithShellPermissionIdentity {
+                appOpsManager.noteOp(
+                    AppOpsManager.OPSTR_READ_CONTACTS,
+                    appUid,
+                    APP_PKG,
+                    TEST_ATTRIBUTION_TAG,
+                    null
+                )
+            }
 
             while (System.currentTimeMillis() - start < TIMEOUT_MILLIS) {
                 runWithShellPermissionIdentity {
-                    appOpsManager.noteOp(AppOpsManager.OPSTR_READ_CONTACTS, appUid, APP_PKG,
-                        TEST_ATTRIBUTION_TAG, null)
-
-                    sleep(200)
-
+                    sleep(100)
                     val message = appOpsManager.collectRuntimeAppOpAccessMessage()
                     if (message != null && message.packageName.equals(APP_PKG)) {
                         assertThat(message.op).isEqualTo(AppOpsManager.OPSTR_READ_CONTACTS)
@@ -79,6 +85,7 @@ class RuntimeMessageCollectionTest {
                     }
                 }
             }
+            uninstallTestApp()
         }
         fail("App Op use message was not collected")
     }
