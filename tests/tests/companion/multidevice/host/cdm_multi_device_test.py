@@ -5,6 +5,8 @@ Test core CDM APIs involving multiple devices on mobly.
 Run: atest CtsCompanionDeviceManagerMultiDeviceTestCases
 """
 
+import sys
+
 import api_flags_utils
 import cdm_base_test
 
