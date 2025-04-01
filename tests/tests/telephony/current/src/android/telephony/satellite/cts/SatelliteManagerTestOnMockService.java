@@ -401,9 +401,10 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
                     != SatelliteManager.SATELLITE_RESULT_SUCCESS && i < 3) {
                 waitFor(500);
                 i++;
+                logd("requestSatelliteEnabledWithResult failed, retrying, iteration=" + i);
             }
 
-            assertTrue(callback.waitUntilResult(1));
+            assertTrue(callback.waitUntilModemIdleOrNotConnected());
             assertTrue(isSatelliteEnabled());
             sSatelliteManager.unregisterForModemStateChanged(callback);
             // Set initial mIsEnabled to match the actual satellite state
@@ -7012,7 +7013,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
     public void testReceiveIntentActionSatelliteSubscriberIdListChangedAfterCarrierConfigChanged()
             throws Exception {
         logd("testReceiveIntentActionSatelliteSubscriberIdListChangedAfterCarrierConfigChanged:");
-        sTestSubIDForCarrierSatellite = getActiveSubIDForCarrierSatelliteTest();
+        sTestSubIDForCarrierSatellite = getDefaultActiveSubIdForSatelliteTest();
         SatelliteReceiverTest receiver = setUpSatelliteReceiverTest();
         Context context = getContext();
         grantSatellitePermission();
@@ -7263,7 +7264,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
     @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ROAMING_NB_IOT_NTN)
     public void testDeprovisionSatellite() {
         logd("testDeprovisionSatellite:");
-        sTestSubIDForCarrierSatellite = getActiveSubIDForCarrierSatelliteTest();
+        sTestSubIDForCarrierSatellite = getDefaultActiveSubIdForSatelliteTest();
         assumeTrue(sTestSubIDForCarrierSatellite != SubscriptionManager.INVALID_SUBSCRIPTION_ID);
 
         SatelliteSubscriptionProvisionStateChangedTest callback =
@@ -7283,7 +7284,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         grantSatellitePermission();
 
         if (Flags.carrierRoamingNbIotNtn()) {
-            sTestSubIDForCarrierSatellite = getActiveSubIDForCarrierSatelliteTest();
+            sTestSubIDForCarrierSatellite = getDefaultActiveSubIdForSatelliteTest();
             logd("sub_id:" + sTestSubIDForCarrierSatellite);
             if (sTestSubIDForCarrierSatellite == SubscriptionManager.INVALID_SUBSCRIPTION_ID) {
                 return;
@@ -8410,7 +8411,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
             loge("beforeSatelliteForCarrierTest: exception=" + e);
         }
 
-        sTestSubIDForCarrierSatellite = getActiveSubIDForCarrierSatelliteTest();
+        sTestSubIDForCarrierSatellite = getDefaultActiveSubIdForSatelliteTest();
         sSubscriptionManager = InstrumentationRegistry.getInstrumentation()
                 .getContext().getSystemService(SubscriptionManager.class);
         // Get the default subscription values for COLUMN_SATELLITE_ATTACH_ENABLED_FOR_CARRIER.
@@ -8648,7 +8649,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
 
     private static SatelliteReceiverTest setUpSatelliteReceiverTest() {
         SatelliteReceiverTest receiver = new SatelliteReceiverTest();
-        sTestSubIDForCarrierSatellite = getActiveSubIDForCarrierSatelliteTest();
+        sTestSubIDForCarrierSatellite = getDefaultActiveSubIdForSatelliteTest();
         assertTrue(sMockSatelliteServiceManager.setSatelliteControllerTimeoutDuration(false,
                 TIMEOUT_TYPE_EVALUATE_ESOS_PROFILES_PRIORITIZATION_DURATION_MILLIS, 5));
         Context context = getContext();
