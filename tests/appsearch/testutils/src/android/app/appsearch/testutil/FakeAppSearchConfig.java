@@ -319,6 +319,12 @@ public final class FakeAppSearchConfig implements ServiceAppSearchConfig {
         return PersistType.Code.LITE;
     }
 
+    @Override
+    public int getCompressionThresholdBytes() {
+        throwIfClosed();
+        return DEFAULT_COMPRESSION_THRESHOLD_BYTES;
+    }
+
     private void throwIfClosed() {
         if (mIsClosed.get()) {
             throw new IllegalStateException(
