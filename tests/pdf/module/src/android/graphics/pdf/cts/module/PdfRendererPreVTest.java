@@ -60,7 +60,6 @@ import android.graphics.pdf.component.PdfAnnotation;
 import android.graphics.pdf.component.PdfAnnotationType;
 import android.graphics.pdf.component.PdfPageImageObject;
 import android.graphics.pdf.component.PdfPageObject;
-import android.graphics.pdf.component.PdfPageObjectRenderMode;
 import android.graphics.pdf.component.PdfPageObjectType;
 import android.graphics.pdf.component.PdfPagePathObject;
 import android.graphics.pdf.component.PdfPageTextObject;
@@ -1085,7 +1084,7 @@ public class PdfRendererPreVTest {
             assertThat(pdfPageTextObject.getFillColor()).isEqualTo(Color.YELLOW);
             assertThat(pdfPageTextObject.getStrokeColor()).isEqualTo(Color.GREEN);
             assertThat(pdfPageTextObject.getRenderMode())
-                    .isEqualTo(PdfPageObjectRenderMode.FILL_STROKE);
+                    .isEqualTo(PdfPageTextObject.RENDER_MODE_FILL_STROKE);
         }
     }
 
@@ -1400,7 +1399,7 @@ public class PdfRendererPreVTest {
         PdfPageTextObject textObject = new PdfPageTextObject(text, font, fontSize);
         textObject.setFillColor(Color.YELLOW);
         textObject.setStrokeColor(Color.GREEN);
-        textObject.setRenderMode(PdfPageObjectRenderMode.FILL_STROKE);
+        textObject.setRenderMode(PdfPageTextObject.RENDER_MODE_FILL_STROKE);
 
         return textObject;
     }
