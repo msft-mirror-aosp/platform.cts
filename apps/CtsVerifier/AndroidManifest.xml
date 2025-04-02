@@ -5684,9 +5684,26 @@
                     android.media.AudioTrack#stop" />
         </activity>
 
-        <activity android:name=".audio.AudioDataPathsUSBActivity"
+        <activity android:name=".audio.AudioDataPathsUSBHeadsetActivity"
             android:exported="true"
-            android:label="@string/audio_datapaths_USB_test">
+            android:label="@string/audio_datapaths_USB_headset_test">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.cts.intent.category.MANUAL_TEST" />
+            </intent-filter>
+            <meta-data android:name="test_category" android:value="@string/test_category_audio" />
+            <meta-data android:name="test_required_features" android:value="android.hardware.microphone:android.hardware.audio.output:android.software.webview" />
+            <meta-data android:name="display_mode" android:value="multi_display_mode" />
+            <meta-data android:name="ApiTest"
+                android:value="android.media.AudioRecord#startRecording|
+                    android.media.AudioRecord#stopRecording|
+                    android.media.AudioTrack#play|
+                    android.media.AudioTrack#stop" />
+        </activity>
+
+        <activity android:name=".audio.AudioDataPathsUSBInterfaceActivity"
+            android:exported="true"
+            android:label="@string/audio_datapaths_USB_interface_test">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.cts.intent.category.MANUAL_TEST" />
