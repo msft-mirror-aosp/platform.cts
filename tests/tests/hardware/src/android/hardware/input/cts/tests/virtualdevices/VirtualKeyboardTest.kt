@@ -13,10 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package android.hardware.input.cts.tests
+package android.hardware.input.cts.tests.virtualdevices
 
-import android.hardware.input.VirtualDpad
 import android.hardware.input.VirtualKeyEvent
+import android.hardware.input.VirtualKeyboard
 import android.hardware.input.cts.virtualcreators.VirtualInputDeviceCreator
 import android.hardware.input.cts.virtualcreators.VirtualInputEventCreator
 import android.view.InputEvent
@@ -30,59 +30,39 @@ import org.junit.runner.RunWith
 
 @SmallTest
 @RunWith(AndroidJUnit4::class)
-class VirtualDpadTest : VirtualDeviceTestCase() {
-    private lateinit var mVirtualDpad: VirtualDpad
+class VirtualKeyboardTest : VirtualDeviceTestCase() {
+    private lateinit var mVirtualKeyboard: VirtualKeyboard
 
     override fun onSetUpVirtualInputDevice() {
-        mVirtualDpad = VirtualInputDeviceCreator.createAndPrepareDpad(
-            mVirtualDevice, DEVICE_NAME,
-            mVirtualDisplay.display
+        mVirtualKeyboard = VirtualInputDeviceCreator.createAndPrepareKeyboard(
+            mVirtualDevice,
+            DEVICE_NAME, mVirtualDisplay.display
         ).device
     }
 
     @Test
     fun sendKeyEvent() {
-        mVirtualDpad.sendKeyEvent(
+        mVirtualKeyboard.sendKeyEvent(
             VirtualKeyEvent.Builder()
-                .setKeyCode(KeyEvent.KEYCODE_DPAD_UP)
+                .setKeyCode(KeyEvent.KEYCODE_A)
                 .setAction(VirtualKeyEvent.ACTION_DOWN)
                 .build()
         )
-        mVirtualDpad.sendKeyEvent(
+        mVirtualKeyboard.sendKeyEvent(
             VirtualKeyEvent.Builder()
-                .setKeyCode(KeyEvent.KEYCODE_DPAD_UP)
-                .setAction(VirtualKeyEvent.ACTION_UP)
-                .build()
-        )
-        mVirtualDpad.sendKeyEvent(
-            VirtualKeyEvent.Builder()
-                .setKeyCode(KeyEvent.KEYCODE_DPAD_CENTER)
-                .setAction(VirtualKeyEvent.ACTION_DOWN)
-                .build()
-        )
-        mVirtualDpad.sendKeyEvent(
-            VirtualKeyEvent.Builder()
-                .setKeyCode(KeyEvent.KEYCODE_DPAD_CENTER)
+                .setKeyCode(KeyEvent.KEYCODE_A)
                 .setAction(VirtualKeyEvent.ACTION_UP)
                 .build()
         )
         verifyEvents(
             listOf<InputEvent>(
-                VirtualInputEventCreator.createDpadEvent(
+                VirtualInputEventCreator.createKeyboardEvent(
                     KeyEvent.ACTION_DOWN,
-                    KeyEvent.KEYCODE_DPAD_UP
+                    KeyEvent.KEYCODE_A
                 ),
-                VirtualInputEventCreator.createDpadEvent(
+                VirtualInputEventCreator.createKeyboardEvent(
                     KeyEvent.ACTION_UP,
-                    KeyEvent.KEYCODE_DPAD_UP
-                ),
-                VirtualInputEventCreator.createDpadEvent(
-                    KeyEvent.ACTION_DOWN,
-                    KeyEvent.KEYCODE_DPAD_CENTER
-                ),
-                VirtualInputEventCreator.createDpadEvent(
-                    KeyEvent.ACTION_UP,
-                    KeyEvent.KEYCODE_DPAD_CENTER
+                    KeyEvent.KEYCODE_A
                 )
             )
         )
@@ -91,9 +71,9 @@ class VirtualDpadTest : VirtualDeviceTestCase() {
     @Test
     fun rejectsUnsupportedKeyCodes() {
         assertThrows(IllegalArgumentException::class.java) {
-            mVirtualDpad.sendKeyEvent(
+            mVirtualKeyboard.sendKeyEvent(
                 VirtualKeyEvent.Builder()
-                    .setKeyCode(KeyEvent.KEYCODE_Q)
+                    .setKeyCode(KeyEvent.KEYCODE_DPAD_CENTER)
                     .setAction(VirtualKeyEvent.ACTION_DOWN)
                     .build()
             )
@@ -101,6 +81,6 @@ class VirtualDpadTest : VirtualDeviceTestCase() {
     }
 
     companion object {
-        private const val DEVICE_NAME = "CtsVirtualDpadTestDevice"
+        private const val DEVICE_NAME = "CtsVirtualKeyboardTestDevice"
     }
 }

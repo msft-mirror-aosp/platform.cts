@@ -131,8 +131,8 @@
     <!-- CtsHardwareTestCases -->
     <option name="compatibility:include-filter" value="CtsHardwareTestCases android.hardware.input.cts.tests.SonyDualSenseEdgeBluetoothTest#kernelModule"/>
     <option name="compatibility:include-filter" value="CtsHardwareTestCases android.hardware.input.cts.tests.SonyDualshock3UsbTest#testLights"/>
-    <option name="compatibility:include-filter" value="CtsHardwareTestCases android.hardware.input.cts.tests.VirtualDeviceMirrorDisplayTest#virtualDpad_keyEvent"/>
-    <option name="compatibility:include-filter" value="CtsHardwareTestCases android.hardware.input.cts.tests.VirtualDeviceMirrorDisplayTest#virtualKeyboard_keyEvent"/>
+    <option name="compatibility:include-filter" value="CtsHardwareTestCases android.hardware.input.cts.tests.virtualdevices.VirtualDeviceMirrorDisplayTest#virtualDpad_keyEvent"/>
+    <option name="compatibility:include-filter" value="CtsHardwareTestCases android.hardware.input.cts.tests.virtualdevices.VirtualDeviceMirrorDisplayTest#virtualKeyboard_keyEvent"/>
     <!-- CtsHealthFitnessDeviceTestCases -->
     <option name="compatibility:include-filter" value="CtsHealthFitnessDeviceTestCases android.healthconnect.cts.migration.DataMigrationTest#testInsertMinDataMigrationSdkExtensionVersion_noUpgradeRequired"/>
     <!-- CtsIncrementalInstallHostTestCases -->
