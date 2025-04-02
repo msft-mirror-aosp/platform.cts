@@ -981,14 +981,12 @@ public class SystemMediaRouter2Test {
 
         StubMediaRoute2ProviderService service = mService;
         if (service != null) {
-            service.setProxy(
-                    new StubMediaRoute2ProviderService.Proxy() {
-                        @Override
-                        public boolean onReleaseSession(long requestId, String sessionId) {
-                            onReleaseSessionLatch.countDown();
-                            return true;
-                        }
-                    });
+            service.setProxy(new StubMediaRoute2ProviderService.Proxy() {
+                @Override
+                public void onReleaseSession(long requestId, String sessionId) {
+                    onReleaseSessionLatch.countDown();
+                }
+            });
         }
 
         Map<String, MediaRoute2Info> routes = waitAndGetRoutes(FEATURE_SAMPLE);
