@@ -20,7 +20,6 @@ import static com.google.common.truth.Truth.assertThat;
 
 import android.graphics.Color;
 import android.graphics.Path;
-import android.graphics.pdf.component.PdfPageObjectRenderMode;
 import android.graphics.pdf.component.PdfPageObjectType;
 import android.graphics.pdf.component.PdfPagePathObject;
 import android.graphics.pdf.flags.Flags;
@@ -45,7 +44,7 @@ public class PdfPagePathObjectTest {
     private static final int FILL_COLOR = Color.WHITE;
     private static final int STROKE_COLOR = Color.GREEN;
     private static final float STROKE_WIDTH = 5.0f;
-    private static final int RENDER_MODE = PdfPageObjectRenderMode.FILL_STROKE;
+    private static final int RENDER_MODE = PdfPagePathObject.RENDER_MODE_FILL_STROKE;
     private PdfPagePathObject mPdfPagePathObject;
 
     @Before
@@ -60,7 +59,8 @@ public class PdfPagePathObjectTest {
     @Test
     public void testPathPageObjectSetters() {
         assertThat(mPdfPagePathObject.getPdfObjectType()).isEqualTo(PdfPageObjectType.PATH);
-        assertThat(mPdfPagePathObject.getRenderMode()).isEqualTo(PdfPageObjectRenderMode.FILL);
+        assertThat(mPdfPagePathObject.getRenderMode())
+                .isEqualTo(PdfPagePathObject.RENDER_MODE_FILL);
 
         // Path coordinates in the format [x0, y0, x1, y1,...]
         float[] expectedCoordinates = {0.0f, 800f, 100f, 650f, 150f, 650f, 0f, 800f};
