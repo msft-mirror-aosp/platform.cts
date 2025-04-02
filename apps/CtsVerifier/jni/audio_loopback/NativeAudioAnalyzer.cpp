@@ -24,7 +24,12 @@ static bool (*aaudioStream_isMMap)(AAudioStream *stream) = nullptr;
 
 #include "WavFileCapture.h"
 
+#include <memory>
+#include <set>
+
 extern WavFileCapture sWavFileCapture;
+
+static const int OUTPUT_CHANNEL_COUNT = 2;
 
 static void convertPcm16ToFloat(const int16_t *source,
                                 float *destination,
@@ -32,6 +37,59 @@ static void convertPcm16ToFloat(const int16_t *source,
     constexpr float scaler = 1.0f / 32768.0f;
     for (int i = 0; i < numSamples; i++) {
         destination[i] = source[i] * scaler;
+    }
+}
+
+static void convertPcmFloatToPcm16(const float* source,
+                                   int16_t* destination,
+                                   int32_t numSamples) {
+    for (; numSamples > 0; --numSamples) {
+        static const float scale = 1 << 15;
+        *destination++ = roundf(fmaxf(fminf((*source++) * scale, scale - 1.f), -scale));
+    }
+}
+
+static void convertPcmFloatToPcm24Packed(const float* source,
+                                         uint8_t* destination,
+                                         int32_t numSamples) {
+    for (; numSamples > 0; --numSamples) {
+        static const float scale = 1 << 23;
+        int32_t ival = roundf(fmaxf(fminf((*source++) * scale, scale - 1.f), -scale));
+#if HAVE_BIG_ENDIAN
+        *destination++ = ival >> 16;
+        *destination++ = ival >> 8;
+        *destination++ = ival;
+#else
+        *destination++ = ival;
+        *destination++ = ival >> 8;
+        *destination++ = ival >> 16;
+#endif
+    }
+}
+
+static inline int32_t clamp32_from_float(float f)
+{
+    static const float scale = (float)(1UL << 31);
+    static const float limpos = 1.;
+    static const float limneg = -1.;
+
+    if (f <= limneg) {
+        return INT32_MIN;
+    } else if (f >= limpos) {
+        return INT32_MAX;
+    }
+    f *= scale;
+    /* integer conversion is through truncation (though int to float is not).
+     * ensure that we round to nearest, ties away from 0.
+     */
+    return f > 0 ? f + 0.5 : f - 0.5;
+}
+
+static void convertPcmFloatToPcm32(const float* source,
+                                   int32_t* destination,
+                                   int32_t numSamples) {
+    for (; numSamples > 0; --numSamples) {
+        *destination++ = clamp32_from_float(*source++);
     }
 }
 
@@ -75,7 +133,8 @@ aaudio_data_callback_result_t NativeAudioAnalyzer::dataCallbackProc(
         int32_t numFrames
 ) {
     aaudio_data_callback_result_t callbackResult = AAUDIO_CALLBACK_RESULT_CONTINUE;
-    float  *outputData = (float  *) audioData;
+    const int32_t numSamplesToProcess = numFrames * mActualOutputChannelCount;
+    std::unique_ptr<float[]> outputFloatData = std::make_unique<float[]>(numSamplesToProcess);
 
     // Read audio data from the input stream.
     int32_t actualFramesRead;
@@ -101,7 +160,7 @@ aaudio_data_callback_result_t NativeAudioAnalyzer::dataCallbackProc(
     mWriteReadDeltaValid = true;
 
     // Silence the output.
-    int32_t numBytes = numFrames * mActualOutputChannelCount * sizeof(float);
+    int32_t numBytes = numFrames * mActualOutputChannelCount * mBytesPerOutputSample;
     memset(audioData, 0 /* value */, numBytes);
 
     if (mNumCallbacksToDrain > 0) {
@@ -174,11 +233,35 @@ aaudio_data_callback_result_t NativeAudioAnalyzer::dataCallbackProc(
             mLoopbackProcessor->process(mInputFloatData,
                                                mActualInputChannelCount,
                                                numFrames,
-                                               outputData,
+                                               outputFloatData.get(),
                                                mActualOutputChannelCount,
                                                numFrames);
 
-            sWavFileCapture.captureData(audioData, numFrames);
+            switch (mActualOutputFormat) {
+                case AAUDIO_FORMAT_PCM_I16:
+                    convertPcmFloatToPcm16(outputFloatData.get(),
+                                           static_cast<int16_t*>(audioData),
+                                           numSamplesToProcess);
+                    break;
+                case AAUDIO_FORMAT_PCM_FLOAT:
+                    memcpy(audioData, outputFloatData.get(), numSamplesToProcess * sizeof(float));
+                    break;
+                case AAUDIO_FORMAT_PCM_I24_PACKED:
+                    convertPcmFloatToPcm24Packed(outputFloatData.get(),
+                                                 static_cast<uint8_t*>(audioData),
+                                                 numSamplesToProcess);
+                    break;
+                case AAUDIO_FORMAT_PCM_I32:
+                    convertPcmFloatToPcm32(outputFloatData.get(),
+                                           static_cast<int32_t*>(audioData),
+                                           numSamplesToProcess);
+                    break;
+                default:
+                    ALOGE("Unexpected format: %d", mActualOutputFormat);
+                    return AAUDIO_CALLBACK_RESULT_STOP;
+            }
+
+            sWavFileCapture.captureData(outputFloatData.get(), numFrames);
 
             mIsDone = mLoopbackProcessor->isDone();
             if (mIsDone) {
@@ -238,7 +321,7 @@ int NativeAudioAnalyzer::getSampleRate() {
     return mOutputSampleRate;
 }
 
-aaudio_result_t NativeAudioAnalyzer::openAudio(int inputDeviceId, int outputDeviceId) {
+aaudio_result_t NativeAudioAnalyzer::openAudio(int inputDeviceId, int outputDeviceId, int format) {
     mInputDeviceId = inputDeviceId;
     mOutputDeviceId = outputDeviceId;
 
@@ -259,8 +342,8 @@ aaudio_result_t NativeAudioAnalyzer::openAudio(int inputDeviceId, int outputDevi
     AAudioStreamBuilder_setDirection(builder, AAUDIO_DIRECTION_OUTPUT);
     AAudioStreamBuilder_setPerformanceMode(builder, AAUDIO_PERFORMANCE_MODE_LOW_LATENCY);
     AAudioStreamBuilder_setSharingMode(builder, AAUDIO_SHARING_MODE_EXCLUSIVE);
-    AAudioStreamBuilder_setFormat(builder, AAUDIO_FORMAT_PCM_FLOAT);
-    AAudioStreamBuilder_setChannelCount(builder, 2); // stereo
+    AAudioStreamBuilder_setFormat(builder, format);
+    AAudioStreamBuilder_setChannelCount(builder, OUTPUT_CHANNEL_COUNT); // stereo
     AAudioStreamBuilder_setDataCallback(builder, s_MyDataCallbackProc, this);
     AAudioStreamBuilder_setErrorCallback(builder, s_MyErrorCallbackProc, this);
     AAudioStreamBuilder_setDeviceId(builder, mOutputDeviceId);
@@ -270,6 +353,41 @@ aaudio_result_t NativeAudioAnalyzer::openAudio(int inputDeviceId, int outputDevi
         ALOGE("NativeAudioAnalyzer::openAudio() OUTPUT error %s",
                AAudio_convertResultToText(result));
         return result;
+    }
+
+    mActualOutputFormat = AAudioStream_getFormat(mOutputStream);
+    if (mActualOutputFormat != format) {
+        // This must not happen. Audio framework provide format conversion, app should be
+        // able to get the requested PCM format. Return earlier if the actual format is different
+        // from the requested one.
+        ALOGE("The actual output format(%d) is different from the requested one(%d)",
+              mActualOutputFormat, format);
+        return AAUDIO_ERROR_INTERNAL;
+    }
+    mActualOutputChannelCount = AAudioStream_getChannelCount(mOutputStream);
+    if (mActualOutputChannelCount != OUTPUT_CHANNEL_COUNT) {
+        // This must not happen. Return earlier if the actual channel count is different
+        // from the requested one.
+        ALOGE("The actual output channel count(%d) is different from the requested one(%d)",
+              mActualOutputChannelCount, OUTPUT_CHANNEL_COUNT);
+        return AAUDIO_ERROR_INTERNAL;
+    }
+    switch (mActualOutputFormat) {
+        case AAUDIO_FORMAT_PCM_I16:
+            mBytesPerOutputSample = sizeof(int16_t);
+            break;
+        case AAUDIO_FORMAT_PCM_FLOAT:
+            mBytesPerOutputSample = sizeof(float);
+            break;
+        case AAUDIO_FORMAT_PCM_I24_PACKED:
+            mBytesPerOutputSample = sizeof(uint8_t) * 3;
+            break;
+        case AAUDIO_FORMAT_PCM_I32:
+            mBytesPerOutputSample = sizeof(int32_t);
+            break;
+        default:
+            ALOGE("Unexpected format: %d", mActualOutputFormat);
+            return AAUDIO_ERROR_INTERNAL;
     }
 
     mHardwareFormat = AAudioStream_getHardwareFormat(mOutputStream);
@@ -296,7 +414,6 @@ aaudio_result_t NativeAudioAnalyzer::openAudio(int inputDeviceId, int outputDevi
             aaudioStream_isMMap != nullptr ? aaudioStream_isMMap(mOutputStream) : false;
 
     mOutputSampleRate = AAudioStream_getSampleRate(mOutputStream);
-    mActualOutputChannelCount = AAudioStream_getChannelCount(mOutputStream);
 
     // Create the INPUT stream -----------------------
     AAudioStreamBuilder_setDirection(builder, AAUDIO_DIRECTION_INPUT);
