@@ -250,16 +250,20 @@ public class MessageQueueTest {
                 mLastMessage = 4;
 
                 /* Queue up some messages, then remove from the front, the middle and the back. */
-                Object object = new Object();
-                mHandler.sendMessageAtTime(mHandler.obtainMessage(5, object), now + 5);
-                mHandler.sendMessageAtTime(mHandler.obtainMessage(2), now + 2);
+                Object object1 = new Object();
+                Object object2 = new Object();
+                Object object3 = new Object();
+                mHandler.sendMessageAtTime(mHandler.obtainMessage(5, object1), now + 5);
+                mHandler.sendMessageAtTime(mHandler.obtainMessage(2, object2), now + 2);
                 mHandler.sendMessageAtTime(mHandler.obtainMessage(3), now + 3);
                 mHandler.sendMessageAtTime(mHandler.obtainMessage(4), now + 4);
                 mHandler.sendMessageAtTime(mHandler.obtainMessage(0), now + 0);
                 mHandler.sendMessageAtTime(mHandler.obtainMessage(1), now + 1);
+                mHandler.sendMessageAtTime(mHandler.obtainMessage(6), now + 1000);
                 mHandler.removeMessages(3, null);
-                mHandler.removeMessages(2, null);
-                mHandler.removeCallbacksAndMessages(object);
+                mHandler.removeMessages(2, object2);
+                mHandler.removeMessages(6, object3);
+                mHandler.removeCallbacksAndMessages(object1);
                 /* Re-add these messages as OrderTestHelper will be looking for them */
                 mHandler.sendMessageAtTime(mHandler.obtainMessage(2), now + 2);
                 mHandler.sendMessageAtTime(mHandler.obtainMessage(3), now + 3);
