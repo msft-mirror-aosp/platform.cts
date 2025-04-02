@@ -24,8 +24,9 @@
 #include <mutex>
 #include <utils/Log.h>
 
-#define CheckErr(res) LOG_ALWAYS_FATAL_IF( \
-        (res) != SL_RESULT_SUCCESS, "result error %s", android::getSLErrStr(res));
+#define CheckErr(res)                                                                         \
+    LOG_ALWAYS_FATAL_IF((res) != SL_RESULT_SUCCESS, "%s: result error %s at %s:%d", __func__, \
+                        android::getSLErrStr(res), __FILE__, __LINE__);
 
 namespace android {
 

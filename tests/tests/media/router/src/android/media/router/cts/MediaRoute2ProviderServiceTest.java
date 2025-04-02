@@ -396,94 +396,79 @@ public class MediaRoute2ProviderServiceTest {
         CountDownLatch onTransferToRouteLatch = new CountDownLatch(1);
 
         // Now test all session-related callbacks.
-        setProxy(
-                new Proxy() {
-                    @Override
-                    public boolean onCreateSession(
-                            long requestId,
-                            String packageName,
-                            String routeId,
-                            Bundle sessionHints) {
-                        assertThat(packageName).isEqualTo(mContext.getPackageName());
-                        assertThat(routeId).isEqualTo(ROUTE_ID1);
-                        assertThat(sessionHints).isNotNull();
-                        assertThat(sessionHints).containsKey(TEST_KEY);
-                        assertThat(sessionHints).string(TEST_KEY).isEqualTo(TEST_VALUE);
+        setProxy(new Proxy() {
+            @Override
+            public void onCreateSession(long requestId, String packageName, String routeId,
+                    Bundle sessionHints) {
+                assertThat(packageName).isEqualTo(mContext.getPackageName());
+                assertThat(routeId).isEqualTo(ROUTE_ID1);
+                assertThat(sessionHints).isNotNull();
+                assertThat(sessionHints).containsKey(TEST_KEY);
+                assertThat(sessionHints).string(TEST_KEY).isEqualTo(TEST_VALUE);
 
-                        RoutingSessionInfo info =
-                                new RoutingSessionInfo.Builder(
-                                                SESSION_ID_1, mContext.getPackageName())
-                                        .addSelectedRoute(ROUTE_ID1)
-                                        .addSelectableRoute(ROUTE_ID4_TO_SELECT_AND_DESELECT)
-                                        .addTransferableRoute(ROUTE_ID5_TO_TRANSFER_TO)
-                                        .build();
-                        mService.notifySessionCreated(requestId, info);
-                        onCreateSessionLatch.countDown();
-                        return true;
-                    }
+                RoutingSessionInfo info = new RoutingSessionInfo.Builder(
+                        SESSION_ID_1, mContext.getPackageName())
+                        .addSelectedRoute(ROUTE_ID1)
+                        .addSelectableRoute(ROUTE_ID4_TO_SELECT_AND_DESELECT)
+                        .addTransferableRoute(ROUTE_ID5_TO_TRANSFER_TO)
+                        .build();
+                mService.notifySessionCreated(requestId, info);
+                onCreateSessionLatch.countDown();
+            }
 
-                    @Override
-                    public boolean onSelectRoute(long requestId, String sessionId, String routeId) {
-                        assertThat(sessionId).isEqualTo(SESSION_ID_1);
-                        assertThat(routeId).isEqualTo(ROUTE_ID4_TO_SELECT_AND_DESELECT);
+            @Override
+            public void onSelectRoute(long requestId, String sessionId, String routeId) {
+                assertThat(sessionId).isEqualTo(SESSION_ID_1);
+                assertThat(routeId).isEqualTo(ROUTE_ID4_TO_SELECT_AND_DESELECT);
 
-                        RoutingSessionInfo oldInfo = mService.getSessionInfo(SESSION_ID_1);
-                        RoutingSessionInfo newInfo =
-                                new RoutingSessionInfo.Builder(oldInfo)
-                                        .addSelectedRoute(ROUTE_ID4_TO_SELECT_AND_DESELECT)
-                                        .removeSelectableRoute(ROUTE_ID4_TO_SELECT_AND_DESELECT)
-                                        .addDeselectableRoute(ROUTE_ID4_TO_SELECT_AND_DESELECT)
-                                        .build();
-                        mService.notifySessionUpdated(newInfo);
-                        onSelectRouteLatch.countDown();
-                        return true;
-                    }
+                RoutingSessionInfo oldInfo = mService.getSessionInfo(SESSION_ID_1);
+                RoutingSessionInfo newInfo = new RoutingSessionInfo.Builder(oldInfo)
+                        .addSelectedRoute(ROUTE_ID4_TO_SELECT_AND_DESELECT)
+                        .removeSelectableRoute(ROUTE_ID4_TO_SELECT_AND_DESELECT)
+                        .addDeselectableRoute(ROUTE_ID4_TO_SELECT_AND_DESELECT)
+                        .build();
+                mService.notifySessionUpdated(newInfo);
+                onSelectRouteLatch.countDown();
+            }
 
-                    @Override
-                    public boolean onDeselectRoute(
-                            long requestId, String sessionId, String routeId) {
-                        assertThat(sessionId).isEqualTo(SESSION_ID_1);
-                        assertThat(routeId).isEqualTo(ROUTE_ID4_TO_SELECT_AND_DESELECT);
+            @Override
+            public void onDeselectRoute(long requestId, String sessionId, String routeId) {
+                assertThat(sessionId).isEqualTo(SESSION_ID_1);
+                assertThat(routeId).isEqualTo(ROUTE_ID4_TO_SELECT_AND_DESELECT);
 
-                        RoutingSessionInfo oldInfo = mService.getSessionInfo(SESSION_ID_1);
-                        RoutingSessionInfo newInfo =
-                                new RoutingSessionInfo.Builder(oldInfo)
-                                        .removeSelectedRoute(ROUTE_ID4_TO_SELECT_AND_DESELECT)
-                                        .addSelectableRoute(ROUTE_ID4_TO_SELECT_AND_DESELECT)
-                                        .removeDeselectableRoute(ROUTE_ID4_TO_SELECT_AND_DESELECT)
-                                        .build();
-                        mService.notifySessionUpdated(newInfo);
-                        onDeselectRouteLatch.countDown();
-                        return true;
-                    }
+                RoutingSessionInfo oldInfo = mService.getSessionInfo(SESSION_ID_1);
+                RoutingSessionInfo newInfo = new RoutingSessionInfo.Builder(oldInfo)
+                        .removeSelectedRoute(ROUTE_ID4_TO_SELECT_AND_DESELECT)
+                        .addSelectableRoute(ROUTE_ID4_TO_SELECT_AND_DESELECT)
+                        .removeDeselectableRoute(ROUTE_ID4_TO_SELECT_AND_DESELECT)
+                        .build();
+                mService.notifySessionUpdated(newInfo);
+                onDeselectRouteLatch.countDown();
+            }
 
-                    @Override
-                    public boolean onTransferToRoute(
-                            long requestId, String sessionId, String routeId) {
-                        assertThat(sessionId).isEqualTo(SESSION_ID_1);
-                        assertThat(routeId).isEqualTo(ROUTE_ID5_TO_TRANSFER_TO);
+            @Override
+            public void onTransferToRoute(long requestId, String sessionId, String routeId) {
+                assertThat(sessionId).isEqualTo(SESSION_ID_1);
+                assertThat(routeId).isEqualTo(ROUTE_ID5_TO_TRANSFER_TO);
 
-                        RoutingSessionInfo oldInfo = mService.getSessionInfo(SESSION_ID_1);
-                        RoutingSessionInfo newInfo =
-                                new RoutingSessionInfo.Builder(oldInfo)
-                                        .clearDeselectableRoutes()
-                                        .clearSelectedRoutes()
-                                        .clearDeselectableRoutes()
-                                        .addSelectedRoute(ROUTE_ID5_TO_TRANSFER_TO)
-                                        .build();
-                        mService.notifySessionUpdated(newInfo);
-                        onTransferToRouteLatch.countDown();
-                        return true;
-                    }
+                RoutingSessionInfo oldInfo = mService.getSessionInfo(SESSION_ID_1);
+                RoutingSessionInfo newInfo = new RoutingSessionInfo.Builder(oldInfo)
+                        .clearDeselectableRoutes()
+                        .clearSelectedRoutes()
+                        .clearDeselectableRoutes()
+                        .addSelectedRoute(ROUTE_ID5_TO_TRANSFER_TO)
+                        .build();
+                mService.notifySessionUpdated(newInfo);
+                onTransferToRouteLatch.countDown();
+            }
 
-                    @Override
-                    public boolean onReleaseSession(long requestId, String sessionId) {
-                        assertThat(sessionId).isEqualTo(SESSION_ID_1);
-                        mService.notifySessionReleased(sessionId);
-                        onReleaseSessionLatch.countDown();
-                        return true;
-                    }
-                });
+            @Override
+            public void onReleaseSession(long requestId, String sessionId) {
+                assertThat(sessionId).isEqualTo(SESSION_ID_1);
+                mService.notifySessionReleased(sessionId);
+                onReleaseSessionLatch.countDown();
+            }
+        });
 
         CountDownLatch onTransferredLatch = new CountDownLatch(1);
         CountDownLatch onControllerUpdatedForSelectLatch = new CountDownLatch(1);
@@ -580,30 +565,25 @@ public class MediaRoute2ProviderServiceTest {
         assertThat(routeToCreateSession).isNotNull();
 
         CountDownLatch onCreateSessionLatch = new CountDownLatch(1);
-        setProxy(
-                new Proxy() {
-                    @Override
-                    public boolean onCreateSession(
-                            long requestId,
-                            String packageName,
-                            String routeId,
-                            Bundle sessionHints) {
-                        assertThat(packageName).isEqualTo(mContext.getPackageName());
-                        assertThat(routeId).isEqualTo(ROUTE_ID1);
-                        assertThat(sessionHints).isNull();
+        setProxy(new Proxy() {
+            @Override
+            public void onCreateSession(long requestId, String packageName, String routeId,
+                    Bundle sessionHints) {
+                assertThat(packageName).isEqualTo(mContext.getPackageName());
+                assertThat(routeId).isEqualTo(ROUTE_ID1);
+                assertThat(sessionHints).isNull();
 
-                        RoutingSessionInfo info =
-                                new RoutingSessionInfo.Builder(
-                                                SESSION_ID_1, mContext.getPackageName())
-                                        .addSelectedRoute(ROUTE_ID1)
-                                        .addSelectableRoute(ROUTE_ID4_TO_SELECT_AND_DESELECT)
-                                        .addTransferableRoute(ROUTE_ID5_TO_TRANSFER_TO)
-                                        .build();
-                        mService.notifySessionCreated(requestId, info);
-                        onCreateSessionLatch.countDown();
-                        return true;
-                    }
-                });
+                RoutingSessionInfo info = new RoutingSessionInfo.Builder(
+                        SESSION_ID_1, mContext.getPackageName())
+                        .addSelectedRoute(ROUTE_ID1)
+                        .addSelectableRoute(ROUTE_ID4_TO_SELECT_AND_DESELECT)
+                        .addTransferableRoute(ROUTE_ID5_TO_TRANSFER_TO)
+                        .build();
+                mService.notifySessionCreated(requestId, info);
+                onCreateSessionLatch.countDown();
+            }
+        });
+
 
         CountDownLatch onTransferredLatch = new CountDownLatch(1);
         CountDownLatch onStoppedLatch = new CountDownLatch(1);
@@ -661,25 +641,20 @@ public class MediaRoute2ProviderServiceTest {
         List<String> featuresSample = Collections.singletonList(FEATURE_SAMPLE);
         List<String> featuresSpecial = Collections.singletonList(FEATURE_SPECIAL);
 
-        setProxy(
-                new Proxy() {
-                    @Override
-                    public boolean onDiscoveryPreferenceChanged(
-                            RouteDiscoveryPreference preference) {
-                        List<String> features = preference.getPreferredFeatures();
-                        if (features.contains(FEATURE_SAMPLE)
-                                && features.contains(FEATURE_SPECIAL)
-                                && preference.shouldPerformActiveScan()) {
-                            latch.countDown();
-                        }
-                        if (latch.getCount() == 0
-                                && !features.contains(FEATURE_SAMPLE)
-                                && features.contains(FEATURE_SPECIAL)) {
-                            latch2.countDown();
-                        }
-                        return true;
-                    }
-                });
+        setProxy(new Proxy() {
+            @Override
+            public void onDiscoveryPreferenceChanged(RouteDiscoveryPreference preference) {
+                List<String> features = preference.getPreferredFeatures();
+                if (features.contains(FEATURE_SAMPLE) && features.contains(FEATURE_SPECIAL)
+                        && preference.shouldPerformActiveScan()) {
+                    latch.countDown();
+                }
+                if (latch.getCount() == 0 && !features.contains(FEATURE_SAMPLE)
+                        && features.contains(FEATURE_SPECIAL)) {
+                    latch2.countDown();
+                }
+            }
+        });
 
         mRouter2.registerRouteCallback(mExecutor, routeCallback,
                 new RouteDiscoveryPreference.Builder(featuresSample, true).build());

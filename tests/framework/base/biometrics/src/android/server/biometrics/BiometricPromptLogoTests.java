@@ -22,7 +22,6 @@ import static org.junit.Assert.assertThrows;
 import static org.junit.Assume.assumeTrue;
 import static org.mockito.Mockito.mock;
 
-import android.Manifest;
 import android.graphics.Bitmap;
 import android.hardware.biometrics.BiometricPrompt;
 import android.hardware.biometrics.BiometricTestSession;
@@ -174,10 +173,12 @@ public class BiometricPromptLogoTests extends BiometricTestBase {
     private void test_setLogo(boolean testLogoRes, boolean withPermission) throws Exception {
         if (!withPermission) {
             mInstrumentation.getUiAutomation().dropShellPermissionIdentity();
-            mInstrumentation.getUiAutomation().adoptShellPermissionIdentity(
-                    android.Manifest.permission.WAKE_LOCK, Manifest.permission.TEST_BIOMETRIC,
-                    android.Manifest.permission.USE_BIOMETRIC);
-
+            // Add these permissions back for mBiometricManager.createTestSession().
+            mInstrumentation
+                    .getUiAutomation()
+                    .adoptShellPermissionIdentity(
+                            android.Manifest.permission.TEST_BIOMETRIC,
+                            android.Manifest.permission.USE_BIOMETRIC);
         }
         for (SensorProperties props : mSensorProperties) {
             if (props.getSensorStrength() == SensorProperties.STRENGTH_CONVENIENCE) {

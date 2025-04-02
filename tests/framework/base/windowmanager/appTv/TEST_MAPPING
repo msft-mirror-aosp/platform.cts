@@ -1,8 +1,0 @@
-{
-  "imports": [
-    {
-      // Includes all CTS configs since we don't know which apps are used in which
-      "path": "cts/tests/framework/base/windowmanager/util/"
-    }
-  ]
-}
