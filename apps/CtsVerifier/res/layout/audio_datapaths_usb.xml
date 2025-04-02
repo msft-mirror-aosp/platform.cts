@@ -33,7 +33,6 @@
             android:layout_width="wrap_content"
             android:layout_height="match_parent"
             android:id="@+id/audio_datapaths_deviceprompt"
-            android:text="@string/audio_datapaths_usb_nodevices"
             android:textSize="20sp" />
 
         <include layout="@layout/pass_fail_buttons" />

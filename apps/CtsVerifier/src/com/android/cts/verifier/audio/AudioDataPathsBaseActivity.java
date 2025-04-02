@@ -1365,10 +1365,6 @@ public abstract class AudioDataPathsBaseActivity
                 }
                 sb.append(testModule.getDescription());
 
-                if (testModule.canRun() && testStep != mTestStep) {
-                    sb.append(" *");
-                }
-
                 if (testStep == mTestStep) {
                     sb.append("<<<");
                 }
