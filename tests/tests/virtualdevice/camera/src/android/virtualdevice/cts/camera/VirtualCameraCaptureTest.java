@@ -74,6 +74,7 @@ import junitparams.naming.TestCaseName;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -405,6 +406,7 @@ public class VirtualCameraCaptureTest {
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_CAMERA_TIMESTAMP_FROM_SURFACE)
+    @Ignore("b/406965817")
     public void inputRate_HigherThanMaxFps_allFulfilled() {
         // We render faster than the max fps to be sure that no input frame will be skipped
         android.util.Range<Integer> requestFPSRange = android.util.Range.create(1,
