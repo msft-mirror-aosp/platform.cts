@@ -1919,7 +1919,7 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
         assertNotNull(mListener);
 
         //Post multiple groups with a single summary & a single child notification: "sparse groups"
-        final int numGroups = 4;
+        final int numGroups = 7;
         final int startId = 900;
         final int startSummaryId = 990;
         List<Integer> postedIds = new ArrayList<>();
@@ -1980,7 +1980,7 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
         assertNotNull(mListener);
 
         //Post multiple groups with a single summary & a single child notification: "sparse groups"
-        final int numGroups = 4;
+        final int numGroups = 7;
         final int startId = 900;
         final int startSummaryId = 990;
         List<Integer> postedSummaryIds = new ArrayList<>();
