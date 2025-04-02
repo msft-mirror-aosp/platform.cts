@@ -1463,6 +1463,7 @@ public class PinnedStackTests extends ActivityManagerTestBase {
         // Wait for animation complete so that system has reported pip mode change event to
         // client and the last reported pip mode has updated.
         waitForEnterPipAnimationComplete(PIP_ACTIVITY);
+        waitForValidPictureInPictureCallbacks(PIP_ACTIVITY);
         assertPinnedStackExists();
 
         // Dismiss it
