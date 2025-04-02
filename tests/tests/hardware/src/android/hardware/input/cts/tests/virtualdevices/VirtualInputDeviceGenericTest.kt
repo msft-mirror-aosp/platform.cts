@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package android.hardware.input.cts.tests
+package android.hardware.input.cts.tests.virtualdevices
 
 import android.Manifest
 import android.companion.virtual.VirtualDeviceManager
