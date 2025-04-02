@@ -13,10 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package android.hardware.input.cts.tests.virtualdevices
+package android.hardware.input.cts.tests
 
+import android.hardware.input.VirtualDpad
 import android.hardware.input.VirtualKeyEvent
-import android.hardware.input.VirtualKeyboard
 import android.hardware.input.cts.virtualcreators.VirtualInputDeviceCreator
 import android.hardware.input.cts.virtualcreators.VirtualInputEventCreator
 import android.view.InputEvent
@@ -30,39 +30,59 @@ import org.junit.runner.RunWith
 
 @SmallTest
 @RunWith(AndroidJUnit4::class)
-class VirtualKeyboardTest : VirtualDeviceTestCase() {
-    private lateinit var mVirtualKeyboard: VirtualKeyboard
+class VirtualDpadTest : VirtualDeviceTestCase() {
+    private lateinit var mVirtualDpad: VirtualDpad
 
     override fun onSetUpVirtualInputDevice() {
-        mVirtualKeyboard = VirtualInputDeviceCreator.createAndPrepareKeyboard(
-            mVirtualDevice,
-            DEVICE_NAME, mVirtualDisplay.display
+        mVirtualDpad = VirtualInputDeviceCreator.createAndPrepareDpad(
+            mVirtualDevice, DEVICE_NAME,
+            mVirtualDisplay.display
         ).device
     }
 
     @Test
     fun sendKeyEvent() {
-        mVirtualKeyboard.sendKeyEvent(
+        mVirtualDpad.sendKeyEvent(
             VirtualKeyEvent.Builder()
-                .setKeyCode(KeyEvent.KEYCODE_A)
+                .setKeyCode(KeyEvent.KEYCODE_DPAD_UP)
                 .setAction(VirtualKeyEvent.ACTION_DOWN)
                 .build()
         )
-        mVirtualKeyboard.sendKeyEvent(
+        mVirtualDpad.sendKeyEvent(
             VirtualKeyEvent.Builder()
-                .setKeyCode(KeyEvent.KEYCODE_A)
+                .setKeyCode(KeyEvent.KEYCODE_DPAD_UP)
+                .setAction(VirtualKeyEvent.ACTION_UP)
+                .build()
+        )
+        mVirtualDpad.sendKeyEvent(
+            VirtualKeyEvent.Builder()
+                .setKeyCode(KeyEvent.KEYCODE_DPAD_CENTER)
+                .setAction(VirtualKeyEvent.ACTION_DOWN)
+                .build()
+        )
+        mVirtualDpad.sendKeyEvent(
+            VirtualKeyEvent.Builder()
+                .setKeyCode(KeyEvent.KEYCODE_DPAD_CENTER)
                 .setAction(VirtualKeyEvent.ACTION_UP)
                 .build()
         )
         verifyEvents(
             listOf<InputEvent>(
-                VirtualInputEventCreator.createKeyboardEvent(
+                VirtualInputEventCreator.createDpadEvent(
                     KeyEvent.ACTION_DOWN,
-                    KeyEvent.KEYCODE_A
+                    KeyEvent.KEYCODE_DPAD_UP
                 ),
-                VirtualInputEventCreator.createKeyboardEvent(
+                VirtualInputEventCreator.createDpadEvent(
                     KeyEvent.ACTION_UP,
-                    KeyEvent.KEYCODE_A
+                    KeyEvent.KEYCODE_DPAD_UP
+                ),
+                VirtualInputEventCreator.createDpadEvent(
+                    KeyEvent.ACTION_DOWN,
+                    KeyEvent.KEYCODE_DPAD_CENTER
+                ),
+                VirtualInputEventCreator.createDpadEvent(
+                    KeyEvent.ACTION_UP,
+                    KeyEvent.KEYCODE_DPAD_CENTER
                 )
             )
         )
@@ -71,9 +91,9 @@ class VirtualKeyboardTest : VirtualDeviceTestCase() {
     @Test
     fun rejectsUnsupportedKeyCodes() {
         assertThrows(IllegalArgumentException::class.java) {
-            mVirtualKeyboard.sendKeyEvent(
+            mVirtualDpad.sendKeyEvent(
                 VirtualKeyEvent.Builder()
-                    .setKeyCode(KeyEvent.KEYCODE_DPAD_CENTER)
+                    .setKeyCode(KeyEvent.KEYCODE_Q)
                     .setAction(VirtualKeyEvent.ACTION_DOWN)
                     .build()
             )
@@ -81,6 +101,6 @@ class VirtualKeyboardTest : VirtualDeviceTestCase() {
     }
 
     companion object {
-        private const val DEVICE_NAME = "CtsVirtualKeyboardTestDevice"
+        private const val DEVICE_NAME = "CtsVirtualDpadTestDevice"
     }
 }
