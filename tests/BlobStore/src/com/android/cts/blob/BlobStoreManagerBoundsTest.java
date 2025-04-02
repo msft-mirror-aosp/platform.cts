@@ -26,6 +26,7 @@ import static org.testng.Assert.assertThrows;
 
 import android.app.blob.BlobStoreManager;
 import android.content.Context;
+import android.platform.test.annotations.AsbSecurityTest;
 
 import androidx.test.platform.app.InstrumentationRegistry;
 
@@ -56,6 +57,7 @@ public class BlobStoreManagerBoundsTest extends StsExtraBusinessLogicTestCase {
                 (BlobStoreManager) mContext.getSystemService(Context.BLOB_STORE_SERVICE);
     }
 
+    @AsbSecurityTest(cveBugId = 303227969)
     @Test
     public void testPakageNameExceedsLimit() throws Exception {
         final FakeBlobData blobData = new FakeBlobData.Builder(mContext).build();
@@ -77,6 +79,7 @@ public class BlobStoreManagerBoundsTest extends StsExtraBusinessLogicTestCase {
         }
     }
 
+    @AsbSecurityTest(cveBugId = 303227969)
     @Test
     public void testCertificateExceedsLimit() throws Exception {
         final FakeBlobData blobData = new FakeBlobData.Builder(mContext).build();
