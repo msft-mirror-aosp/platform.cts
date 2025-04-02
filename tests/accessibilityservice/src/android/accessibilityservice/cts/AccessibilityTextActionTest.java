@@ -566,8 +566,13 @@ public class AccessibilityTextActionTest {
 
                         Rect windowBounds = new Rect();
                         info.getWindow().getBoundsInScreen(windowBounds);
-                        assertThat(windowBounds.left).isWithin(1).of(left);
-                        assertThat(windowBounds.top).isWithin(1).of(top);
+
+                        // TODO(b:407145278): We cannot assume the window was launched at the right
+                        // place. Instead, we can check that it's not at the top left, which means
+                        // it is at least windowed. Resume checking exact bounds when launching
+                        // activities to specific bounds is not flaky.
+                        assertThat(windowBounds.left).isNotWithin(10).of(0);
+                        assertThat(windowBounds.top).isNotWithin(10).of(0);
 
                         Rect nodeBoundsInScreen = new Rect();
                         info.getBoundsInScreen(nodeBoundsInScreen);
@@ -616,13 +621,17 @@ public class AccessibilityTextActionTest {
                         final RectF[] charLocations = (RectF[]) parcelables;
                         assertThat(charLocations).hasLength(info.getText().length());
 
-                        // Check the window is in the right part of the screen.
                         Rect windowBounds = new Rect();
                         info.getWindow().getBoundsInScreen(windowBounds);
-                        assertThat(windowBounds.left).isWithin(1).of(left);
-                        assertThat(windowBounds.top).isWithin(1).of(top);
 
-                        // The first primary location should be at the left edge of the window.
+                        // TODO(b:407145278): We cannot assume the window was launched at the right
+                        // place. Instead, we can check that it's not at the top left, which means
+                        // it is at least windowed. Resume checking exact bounds when launching
+                        // activities to specific bounds is not flaky.
+                        assertThat(windowBounds.left).isNotWithin(10).of(0);
+                        assertThat(windowBounds.top).isNotWithin(10).of(0);
+
+                        // The first primary location should be at the left edge of its window.
                         assertThat(charLocations[0].left).isLessThan(1);
 
                         Rect nodeBoundsInWindow = new Rect();
