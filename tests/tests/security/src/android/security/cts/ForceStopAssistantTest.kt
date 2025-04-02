@@ -33,6 +33,7 @@ import java.util.concurrent.Executor
 import java.util.concurrent.TimeUnit
 import java.util.function.Consumer
 import org.junit.After
+import org.junit.Assume.assumeFalse
 import org.junit.Assume.assumeTrue
 import org.junit.Before
 import org.junit.Test
@@ -45,12 +46,17 @@ class ForceStopAssistantTest : StsExtraBusinessLogicTestCase() {
 
     @Before
     fun setUp() {
+        // VoiceInteractionService is unsupported on low RAM devices.
+        assumeFalse(activityManager.isLowRamDevice)
         assistantRoleHolder = getRoleHolders(RoleManager.ROLE_ASSISTANT).firstOrNull()
         installPackage(APP_APK_PATH);
     }
 
     @After
     fun tearDown() {
+        if (activityManager.isLowRamDevice) {
+            return;
+        }
         uninstallPackage(APP_PACKAGE_NAME);
         assistantRoleHolder?.let { addRoleHolder(RoleManager.ROLE_ASSISTANT, it) }
     }
@@ -109,7 +115,7 @@ class ForceStopAssistantTest : StsExtraBusinessLogicTestCase() {
 
         private val user = Process.myUserHandle()
         private val context = InstrumentationRegistry.getInstrumentation().targetContext
-        private val activityManager = context.getSystemService(ActivityManager::class.java)
-        private val roleManager = context.getSystemService(RoleManager::class.java)
+        private val activityManager = context.getSystemService(ActivityManager::class.java)!!
+        private val roleManager = context.getSystemService(RoleManager::class.java)!!
     }
 }
