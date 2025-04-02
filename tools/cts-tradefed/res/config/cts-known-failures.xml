@@ -520,4 +520,14 @@
     <option name="compatibility:exclude-filter" value="CtsHealthConnectHostTestCases android.healthconnect.cts.logging.HealthConnectDailyLogsStatsTests" />
     <option name="compatibility:exclude-filter" value="CtsHealthConnectHostTestCases android.healthconnect.cts.logging.HealthConnectServiceStatsTests" />
     <option name="compatibility:exclude-filter" value="CtsHealthConnectHostTestCases android.healthconnect.cts.logging.HealthConnectUiLogsTests" />
+
+    <!-- b/406239886 -->
+    <option name="compatibility:exclude-filter" value="CtsPerfettoTestCases PerfettoCmdlineTest#CloneByName" />
+    <option name="compatibility:exclude-filter" value="CtsPerfettoTestCases PerfettoCmdlineTest#MultipleTriggersCloneSnapshot" />
+    <option name="compatibility:exclude-filter" value="CtsPerfettoTestCases PerfettoCmdlineTest#SaveAllForBugreport_FourTraces" />
+    <option name="compatibility:exclude-filter" value="CtsPerfettoTestCases PerfettoCmdlineTest#SaveAllForBugreport_LargeTrace" />
+    <option name="compatibility:exclude-filter" value="CtsPerfettoTestCases PerfettoCmdlineTest#SaveAllForBugreport_NoTraces" />
+    <option name="compatibility:exclude-filter" value="CtsPerfettoTestCases PerfettoCmdlineTest#TriggerCloneSnapshot" />
+    <option name="compatibility:exclude-filter" value="CtsPerfettoTestCases PerfettoFtraceIntegrationTest#KernelAddressSymbolization" />
+    <option name="compatibility:exclude-filter" value="CtsPerfettoTestCases TracedPerfCtsTest#ProfileKernelCallstack" />
 </configuration>
