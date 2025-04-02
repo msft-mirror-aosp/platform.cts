@@ -110,8 +110,8 @@ import androidx.test.runner.AndroidJUnit4;
 import com.android.compatibility.common.util.AmUtils;
 import com.android.compatibility.common.util.ApiLevelUtil;
 import com.android.compatibility.common.util.CddTest;
-import com.android.compatibility.common.util.MediaUtils;
 import com.android.compatibility.common.util.FrameworkSpecificTest;
+import com.android.compatibility.common.util.MediaUtils;
 import com.android.compatibility.common.util.SettingsStateKeeperRule;
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.compatibility.common.util.UserHelper;
@@ -393,8 +393,7 @@ public class AudioManagerTest {
     @Test
     public void testSpeakerphoneIntent() throws Exception {
         //  Speaker Phone Not supported in Automotive
-        assumeFalse(mContext.getPackageManager().hasSystemFeature(
-                    PackageManager.FEATURE_AUTOMOTIVE));
+        assumeFalse(isAutomotive());
 
         assumeTrue(hasBuiltinSpeaker());
 
@@ -2451,8 +2450,9 @@ public class AudioManagerTest {
     @AppModeFull(reason = "Instant apps cannot hold permission.MODIFY_AUDIO_SETTINGS_PRIVILEGED")
     @Test
     public void testStreamTypeAliasChange() throws Exception {
-        if (!mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_TELEPHONY)) {
-            Log.i(TAG, "skipping testStreamTypeAliasChange, not a phone");
+        if (!mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_TELEPHONY)
+                || isAutomotive()) {
+            Log.i(TAG, "skipping testStreamTypeAliasChange, automotive target or not a phone");
             return;
         }
         Log.i(TAG, "starting testStreamTypeAliasChange");
