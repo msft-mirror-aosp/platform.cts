@@ -1206,6 +1206,7 @@ public class ConcurrencyTest extends WifiJUnit4TestBase {
         resetResponse(MY_RESPONSE);
         sWifiP2pManager.discoverPeers(sWifiP2pChannel, sActionListener);
         assertTrue(waitForServiceResponse(MY_RESPONSE));
+        sWifiP2pManager.stopPeerDiscovery(sWifiP2pChannel, null);
     }
 
     /** Test IEs whose size is greater than the maximum allowed size. */
