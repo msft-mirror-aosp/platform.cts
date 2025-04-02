@@ -46,7 +46,7 @@ public class MicrosoftDesignerKeyboardTest extends InputHidTestCase {
      * Do not verify the meta key states that have global state and initially to be on.
      */
     @Override
-    void assertMetaState(String testCase, int expectedMetaState, int actualMetaState) {
+    protected void assertMetaState(String testCase, int expectedMetaState, int actualMetaState) {
         final int metaStates = KeyEvent.META_NUM_LOCK_ON | KeyEvent.META_CAPS_LOCK_ON
                 | KeyEvent.META_SCROLL_LOCK_ON;
         actualMetaState &= ~metaStates;

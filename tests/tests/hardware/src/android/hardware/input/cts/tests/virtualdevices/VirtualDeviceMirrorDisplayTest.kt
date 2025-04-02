@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package android.hardware.input.cts.tests
+package android.hardware.input.cts.tests.virtualdevices
 
 import android.companion.virtual.VirtualDeviceManager
 import android.companion.virtualdevice.flags.Flags
@@ -35,6 +35,7 @@ import android.hardware.input.VirtualStylus
 import android.hardware.input.VirtualStylusMotionEvent
 import android.hardware.input.VirtualTouchEvent
 import android.hardware.input.VirtualTouchscreen
+import android.hardware.input.cts.tests.InputTestCase
 import android.hardware.input.cts.virtualcreators.VirtualInputDeviceCreator
 import android.hardware.input.cts.virtualcreators.VirtualInputEventCreator
 import android.platform.test.annotations.RequiresFlagsEnabled
