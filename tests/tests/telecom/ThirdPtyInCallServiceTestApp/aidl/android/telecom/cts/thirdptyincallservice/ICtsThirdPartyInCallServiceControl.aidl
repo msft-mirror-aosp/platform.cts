@@ -28,6 +28,8 @@ interface ICtsThirdPartyInCallServiceControl {
 
     boolean checkPermissionGrant(String permission);
 
+    boolean hasManageOngoingCallsPermission();
+
     void setExpectedExtra(String newKey, String newValue);
 
     boolean waitUntilExpectedExtrasReceived();
