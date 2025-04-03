@@ -20,12 +20,14 @@
     <device name="AndroidDevice">
         <target_preparer class="AndroidDeviceFeaturesCheckDecorator">
             <option name="required_feature" value="android.software.companion_device_setup" />
+            <option name="forbidden_feature" value="android.hardware.type.automotive" />
         </target_preparer>
         <target_preparer class="AndroidInstallAppsDecorator" />
     </device>
     <device name="AndroidDevice">
         <target_preparer class="AndroidDeviceFeaturesCheckDecorator">
             <option name="required_feature" value="android.software.companion_device_setup" />
+            <option name="forbidden_feature" value="android.hardware.type.automotive" />
         </target_preparer>
         <target_preparer class="AndroidInstallAppsDecorator" />
     </device>
