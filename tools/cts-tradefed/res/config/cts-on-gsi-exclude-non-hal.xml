@@ -78,6 +78,16 @@
     <option name="compatibility:exclude-filter" value="CtsCurrentApiSignatureTestCases" />
     <option name="compatibility:exclude-filter" value="CtsDatabaseTestCases" />
     <option name="compatibility:exclude-filter" value="CtsDexMetadataHostTestCases" />
+    <option name="compatibility:exclude-filter" value="CtsHealthConnectControllerTestCases" />
+    <option name="compatibility:exclude-filter" value="CtsHealthConnectHostSideDeviceTestCases" />
+    <option name="compatibility:exclude-filter" value="CtsHealthConnectHostTestCases" />
+    <option name="compatibility:exclude-filter" value="CtsHealthFitnessDeviceTestCases" />
+    <option name="compatibility:exclude-filter" value="CtsHealthFitnessDeviceTestCasesHistoricAccessLimitWithPermission" />
+    <option name="compatibility:exclude-filter" value="CtsHealthFitnessDeviceTestCasesNoPermission" />
+    <option name="compatibility:exclude-filter" value="CtsHealthFitnessDeviceTestCasesNotAllPermissionsAreGranted" />
+    <option name="compatibility:exclude-filter" value="CtsHealthFitnessDeviceTestCasesRateLimiter" />
+    <option name="compatibility:exclude-filter" value="CtsHealthFitnessPhrTestCases" />
+    <option name="compatibility:exclude-filter" value="CtsHealthFitnessShowMigrationInfoIntentAbsentTests" />
     <option name="compatibility:exclude-filter" value="CtsHiddenApiKillswitchDebugClassTestCases" />
     <option name="compatibility:exclude-filter" value="CtsHiddenApiKillswitchWildcardTestCases" />
     <option name="compatibility:exclude-filter" value="CtsJdwpTestCases" />
