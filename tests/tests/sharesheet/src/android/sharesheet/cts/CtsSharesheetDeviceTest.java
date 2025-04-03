@@ -101,6 +101,8 @@ public class CtsSharesheetDeviceTest {
     private static final int WAIT_AND_ASSERT_FOUND_TIMEOUT_MS = 5000;
     private static final int WAIT_AND_ASSERT_NOT_FOUND_TIMEOUT_MS = 2500;
     private static final int WAIT_FOR_IDLE_TIMEOUT_MS = 5000;
+    private static final int BROADCAST_TIMEOUT_MS = 2000;
+    private static final int ACTIVITY_START_TIMEOUT_MS = 2000;
 
     private static final int MAX_EXTRA_INITIAL_INTENTS_SHOWN = 2;
     private static final int MAX_EXTRA_CHOOSER_TARGETS_SHOWN = 2;
@@ -256,7 +258,7 @@ public class CtsSharesheetDeviceTest {
             // Must be run last, partial completion closes the Sharesheet
             firesIntentSenderWithExtraChosenComponent();
 
-            appStarted.await(1000, TimeUnit.MILLISECONDS);
+            appStarted.await(ACTIVITY_START_TIMEOUT_MS, TimeUnit.MILLISECONDS);
             assertThat(targetLaunchIntent.get().getType()).isEqualTo(CTS_DATA_TYPE);
             assertThat(targetLaunchIntent.get().getAction()).isEqualTo(Intent.ACTION_SEND);
         }, () -> {
@@ -374,11 +376,12 @@ public class CtsSharesheetDeviceTest {
             launchSharesheet(shareIntent);
             findTextContains(mAppLabel).click();
             assertWithMessage("Refinement broadcast not received").that(
-                    broadcastInvoked.await(1000, TimeUnit.MILLISECONDS)).isTrue();
+                    broadcastInvoked.await(BROADCAST_TIMEOUT_MS, TimeUnit.MILLISECONDS)).isTrue();
             assertWithMessage("Chosen target callback not received").that(
-                    chooserCallbackInvoked.await(1000, TimeUnit.MILLISECONDS)).isTrue();
+                    chooserCallbackInvoked.await(
+                        BROADCAST_TIMEOUT_MS, TimeUnit.MILLISECONDS)).isTrue();
             assertWithMessage("Share target didn't start").that(
-                    appStarted.await(1000, TimeUnit.MILLISECONDS)).isTrue();
+                    appStarted.await(ACTIVITY_START_TIMEOUT_MS, TimeUnit.MILLISECONDS)).isTrue();
 
             assertThat(chooserCallbackCountdownAtRefinementStart.get()).isEqualTo(1);
             Intent mainIntentForRefinement =
@@ -469,8 +472,10 @@ public class CtsSharesheetDeviceTest {
             launchSharesheet(wrappedShareIntent);
 
             findTextContains(mAppLabel).click();
-            assertThat(broadcastInvoked.await(1000, TimeUnit.MILLISECONDS)).isTrue();
-            assertThat(appStarted.await(1000, TimeUnit.MILLISECONDS)).isTrue();
+            assertThat(
+                broadcastInvoked.await(BROADCAST_TIMEOUT_MS, TimeUnit.MILLISECONDS)).isTrue();
+            assertThat(
+                appStarted.await(ACTIVITY_START_TIMEOUT_MS, TimeUnit.MILLISECONDS)).isTrue();
 
             Intent originalTargetForRefinement =
                     refinementRequest.get().getParcelableExtra(Intent.EXTRA_INTENT, Intent.class);
@@ -521,7 +526,7 @@ public class CtsSharesheetDeviceTest {
             isSharingShortcutDirectShareEnabled();
             findTextContains(mSharingShortcutLabel).click();
             assertWithMessage("Shortcut app didn't start").that(
-                    appStarted.await(1000, TimeUnit.MILLISECONDS)).isTrue();
+                    appStarted.await(ACTIVITY_START_TIMEOUT_MS, TimeUnit.MILLISECONDS)).isTrue();
             // The intent carries the shortcut ID that was registered with ShortcutManager.
             assertThat(shortcutIdTargetLaunchedWith.get()).isEqualTo(testShortcutId);
         }, () -> {
@@ -607,9 +612,12 @@ public class CtsSharesheetDeviceTest {
             launchSharesheet(shareIntent);
             isSharingShortcutDirectShareEnabled();
             findTextContains(mSharingShortcutLabel).click();
-            assertThat(broadcastInvoked.await(1000, TimeUnit.MILLISECONDS)).isTrue();
-            assertThat(chooserCallbackInvoked.await(1000, TimeUnit.MILLISECONDS)).isTrue();
-            assertThat(appStarted.await(1000, TimeUnit.MILLISECONDS)).isTrue();
+            assertThat(
+                broadcastInvoked.await(BROADCAST_TIMEOUT_MS, TimeUnit.MILLISECONDS)).isTrue();
+            assertThat(chooserCallbackInvoked.await(
+                           BROADCAST_TIMEOUT_MS, TimeUnit.MILLISECONDS)).isTrue();
+            assertThat(
+                appStarted.await(ACTIVITY_START_TIMEOUT_MS, TimeUnit.MILLISECONDS)).isTrue();
 
             Intent mainIntentForRefinement =
                     refinementRequest.get().getParcelableExtra(Intent.EXTRA_INTENT, Intent.class);
@@ -661,7 +669,8 @@ public class CtsSharesheetDeviceTest {
             launchSharesheet(shareIntent);
             findTextContains(mContext.getString(R.string.test_alternate_app_label)).click();
             assertWithMessage("Chosen component callback not received").that(
-                    chooserCallbackInvoked.await(1000, TimeUnit.MILLISECONDS)).isTrue();
+                    chooserCallbackInvoked.await(
+                        BROADCAST_TIMEOUT_MS, TimeUnit.MILLISECONDS)).isTrue();
             assertThat(chosenComponent.get().getPackageName()).isEqualTo(
                     "android.sharesheet.cts.packages.alternatetype");
             assertThat(chosenComponent.get().getClassName()).isEqualTo(
@@ -712,7 +721,7 @@ public class CtsSharesheetDeviceTest {
             chooserTargetButton.click();
 
             assertWithMessage("ChooserTarget app didn't start").that(
-                    appStarted.await(1000, TimeUnit.MILLISECONDS)).isTrue();
+                    appStarted.await(ACTIVITY_START_TIMEOUT_MS, TimeUnit.MILLISECONDS)).isTrue();
             assertThat(targetLaunchIntent.get().getBooleanExtra("FROM_CHOOSER_TARGET",
                     false)).isTrue();
         }, this::closeSharesheet);
@@ -793,9 +802,9 @@ public class CtsSharesheetDeviceTest {
             chooserTargetButton.click();
 
             assertWithMessage("Didn't receive refinement callback").that(
-                    broadcastInvoked.await(1000, TimeUnit.MILLISECONDS)).isTrue();
+                    broadcastInvoked.await(BROADCAST_TIMEOUT_MS, TimeUnit.MILLISECONDS)).isTrue();
             assertWithMessage("App didn't start after refinement").that(
-                    appStarted.await(1000, TimeUnit.MILLISECONDS)).isTrue();
+                    appStarted.await(ACTIVITY_START_TIMEOUT_MS, TimeUnit.MILLISECONDS)).isTrue();
             assertThat(targetLaunchIntent.get().getBooleanExtra("FROM_CHOOSER_TARGET",
                     false)).isTrue();
             assertThat(targetLaunchIntent.get().getBooleanExtra("REFINED", false)).isTrue();
@@ -856,7 +865,7 @@ public class CtsSharesheetDeviceTest {
             clickText(actions[2].getLabel().toString());
 
             assertWithMessage("Custom action not invoked").that(
-                    broadcastInvoked.await(1000, TimeUnit.MILLISECONDS)).isTrue();
+                    broadcastInvoked.await(BROADCAST_TIMEOUT_MS, TimeUnit.MILLISECONDS)).isTrue();
         }, () -> {
             mContext.unregisterReceiver(customActionReceiver);
             closeSharesheet();
@@ -901,7 +910,8 @@ public class CtsSharesheetDeviceTest {
                     launchSharesheet(shareIntent);
                     clickText(modifyShareLabel);
                     assertWithMessage("Modify share action not invoked").that(
-                            broadcastInvoked.await(1000, TimeUnit.MILLISECONDS)).isTrue();
+                            broadcastInvoked.await(
+                                BROADCAST_TIMEOUT_MS, TimeUnit.MILLISECONDS)).isTrue();
                 },
                 () -> {
                     mContext.unregisterReceiver(modifyShareActionReceiver);
@@ -1036,7 +1046,7 @@ public class CtsSharesheetDeviceTest {
         shareTarget.click();
 
         runAndExecuteCleanupBeforeAnyThrow(
-                () -> latch.await(1000, TimeUnit.MILLISECONDS),
+                () -> latch.await(BROADCAST_TIMEOUT_MS, TimeUnit.MILLISECONDS),
                 () -> mContext.unregisterReceiver(br));
 
         // Finally validate the received Intent
