@@ -138,20 +138,19 @@ def collect_data_with_surfaces(cam, tablet_device, output_surfaces,
   """
 
   logging.debug('Starting sensor event collection')
-  serial_port = None
-  if rot_rig['cntl'].lower() == sensor_fusion_utils.ARDUINO_STRING.lower():
-    # identify port
-    serial_port = sensor_fusion_utils.serial_port_def(
-        sensor_fusion_utils.ARDUINO_STRING)
-    # send test cmd to Arduino until cmd returns properly
-    sensor_fusion_utils.establish_serial_comm(serial_port)
+  if rot_rig['cntl'] == 'gen2_rotator':
+    logging.debug('using gen2_rotator')
+    rotate_func = gen2_rig_controller_utils.rotation_rig
+  else:
+    logging.debug('using sensor_fusion rotator')
+    rotate_func = sensor_fusion_utils.rotation_rig
   # Start camera vibration
   if tablet_device:
     servo_speed = sensor_fusion_utils.ARDUINO_SERVO_SPEED_STABILIZATION_TABLET
   else:
     servo_speed = sensor_fusion_utils.ARDUINO_SERVO_SPEED_STABILIZATION
   p = threading.Thread(
-      target=sensor_fusion_utils.rotation_rig,
+      target=rotate_func,
       args=(
           rot_rig['cntl'],
           rot_rig['ch'],
@@ -159,7 +158,6 @@ def collect_data_with_surfaces(cam, tablet_device, output_surfaces,
           sensor_fusion_utils.ARDUINO_ANGLES_STABILIZATION,
           servo_speed,
           sensor_fusion_utils.ARDUINO_MOVE_TIME_STABILIZATION,
-          serial_port,
       ),
   )
   p.start()
