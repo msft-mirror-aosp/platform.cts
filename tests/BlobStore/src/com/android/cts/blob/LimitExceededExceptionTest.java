@@ -14,21 +14,21 @@
  * limitations under the License.
  */
 
-package android.os.cts;
+package com.android.cts.blob;
 
 import static com.google.common.truth.Truth.assertThat;
 
 import android.os.LimitExceededException;
 import android.platform.test.annotations.AppModeSdkSandbox;
 
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import androidx.test.ext.junit.runners.AndroidJUnit4;
-
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 @RunWith(AndroidJUnit4.class)
-public class LimitExceededExceptionTest {
+public final class LimitExceededExceptionTest {
     @Test
     public void testLimitExceededExceptionCtor() {
         try {
