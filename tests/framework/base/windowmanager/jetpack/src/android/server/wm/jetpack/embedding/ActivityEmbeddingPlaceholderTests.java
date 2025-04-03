@@ -30,6 +30,9 @@ import static android.server.wm.jetpack.utils.TestActivityLauncher.KEY_ACTIVITY_
 
 import static androidx.window.extensions.embedding.SplitRule.FINISH_ADJACENT;
 
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+
 import android.app.Activity;
 import android.content.Intent;
 import android.graphics.Rect;
@@ -46,6 +49,7 @@ import android.view.WindowMetrics;
 import androidx.annotation.NonNull;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.window.extensions.embedding.ActivityEmbeddingComponent;
+import androidx.window.extensions.embedding.EmbeddedActivityWindowInfo;
 import androidx.window.extensions.embedding.SplitPlaceholderRule;
 
 import org.junit.Test;
@@ -113,11 +117,22 @@ public class ActivityEmbeddingPlaceholderTests extends ActivityEmbeddingTestBase
         mActivityEmbeddingComponent.setEmbeddingRules(Collections.singleton(splitPlaceholderRule));
 
         // Launch the primary activity and verify that the placeholder activity was not launched and
-        // the primary activity fills the task.
+        // the primary activity is not embedded.
         Activity primaryActivity = startFullScreenActivityNewTask(
                 TestActivityWithId.class, PRIMARY_ACTIVITY_ID, null /* displayId */);
         waitAndAssertNotResumed(PLACEHOLDER_ACTIVITY_ID);
-        waitAndAssertResumedAndFillsTask(primaryActivity);
+        waitAndAssertActivityResumedAndNotEmbedded(primaryActivity);
+    }
+
+    private void waitAndAssertActivityResumedAndNotEmbedded(@NonNull Activity activity) {
+        waitAndAssertResumed(activity);
+        mInstrumentation.runOnMainSync(
+                () -> {
+                    final EmbeddedActivityWindowInfo info =
+                            mActivityEmbeddingComponent.getEmbeddedActivityWindowInfo(activity);
+                    assertNotNull(info);
+                    assertFalse(info.isEmbedded());
+                });
     }
 
     /**
@@ -278,7 +293,7 @@ public class ActivityEmbeddingPlaceholderTests extends ActivityEmbeddingTestBase
         mActivityEmbeddingComponent.setEmbeddingRules(
                 Collections.singleton(splitPlaceholderRule));
 
-        waitAndAssertResumedAndFillsTask(primaryActivity);
+        waitAndAssertActivityResumedAndNotEmbedded(primaryActivity);
         waitAndAssertNotResumed(PLACEHOLDER_ACTIVITY_ID);
 
         // Enlarge by 10% so that the placeholder activity should be launched.
