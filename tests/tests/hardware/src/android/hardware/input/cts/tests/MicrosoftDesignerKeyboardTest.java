@@ -42,8 +42,8 @@ public class MicrosoftDesignerKeyboardTest extends InputHidTestCase {
     }
 
     /**
-     * Microsoft Designer Keyboard has meta control keys of NUM_LOCK, CAPS_LOCK and SCROLL_LOCK.
-     * Do not verify the meta key states that have global state and initially to be on.
+     * Microsoft Designer Keyboard has meta control keys of NUM_LOCK, CAPS_LOCK and SCROLL_LOCK. Do
+     * not verify the meta key states that have global state and initially to be on.
      */
     @Override
     protected void assertMetaState(String testCase, int expectedMetaState, int actualMetaState) {

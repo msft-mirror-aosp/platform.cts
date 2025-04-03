@@ -125,6 +125,7 @@ public abstract class InputTestCase {
 
     /**
      * Get the activity options to launch the activity with.
+     *
      * @return the activity options or null.
      */
     protected @Nullable Bundle getActivityOptions() {

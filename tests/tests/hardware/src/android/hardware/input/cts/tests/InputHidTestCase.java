@@ -26,7 +26,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
@@ -185,7 +184,8 @@ public abstract class InputHidTestCase extends InputTestCase {
      * @return Vibrator object in specified InputDevice
      */
     private Vibrator getVibrator() {
-        InputDevice inputDevice = waitForCapability("vibrator", (d) -> d.getVibrator().hasVibrator());
+        InputDevice inputDevice =
+                waitForCapability("vibrator", (d) -> d.getVibrator().hasVibrator());
         return inputDevice.getVibrator();
     }
 

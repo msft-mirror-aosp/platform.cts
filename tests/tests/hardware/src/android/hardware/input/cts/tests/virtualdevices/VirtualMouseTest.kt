@@ -27,7 +27,6 @@ import android.platform.test.annotations.RequiresFlagsDisabled
 import android.platform.test.annotations.RequiresFlagsEnabled
 import android.view.InputEvent
 import android.view.MotionEvent
-import com.android.compatibility.common.util.SystemUtil
 import com.android.cts.input.DefaultPointerSpeedRule
 import junitparams.JUnitParamsRunner
 import junitparams.Parameters
