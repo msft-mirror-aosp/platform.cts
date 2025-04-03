@@ -192,11 +192,11 @@ class MultiCameraSwitchTeleTest(its_base_test.ItsBaseTest):
 
         # AE Check: Extract the Y component from rectangle patch
         file_stem = f'{os.path.join(self.log_path, _NAME)}'
-        ae_msg, w_y_avg, tele_y_avg = multi_camera_switch_utils.do_ae_check(
-            w_patch, tele_patch, file_stem, patch_color, _LENS_SUFFIX_W,
-            _LENS_SUFFIX_TELE, _AE_RTOL, _AE_ATOL)
-        if ae_msg:
-          failed_ae_msg.append(f'{ae_msg}\n')
+        failed_ae_msg, w_y_avg, tele_y_avg = (
+            multi_camera_switch_utils.do_ae_check(
+                w_patch, tele_patch, file_stem, patch_color, props,
+                _LENS_SUFFIX_W, _LENS_SUFFIX_TELE, _AE_RTOL, _AE_ATOL))
+
         ae_w_y_avgs.update({patch_color: f'{w_y_avg:.4f}'})
         ae_tele_y_avgs.update({patch_color: f'{tele_y_avg:.4f}'})
 
