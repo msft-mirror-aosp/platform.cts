@@ -77,7 +77,7 @@ public class SELinuxNeverallowRulesParserTest extends BaseHostJUnit4Test {
                 + "};\n";
         List<SELinuxNeverallowRule> rules = SELinuxNeverallowRule.parsePolicy(policy);
         assertEquals(1, rules.size());
-        assertEquals("neverallow d1 { d2 d3 }:file { p1 p2 };", rules.get(0).mText());
+        assertEquals("neverallow d1 {d2 d3}:file {p1 p2};", rules.get(0).mText());
     }
 
     /**
@@ -127,7 +127,7 @@ public class SELinuxNeverallowRulesParserTest extends BaseHostJUnit4Test {
         List<SELinuxNeverallowRule> rules = SELinuxNeverallowRule.parsePolicy(policy);
         assertEquals(1, rules.size());
         assertEquals(
-                "neverallow { domain -init -vendor_init } charger_config_prop:property_service"
+                "neverallow {domain -init -vendor_init} charger_config_prop:property_service"
                         + " set;",
                 rules.get(0).mText());
     }
