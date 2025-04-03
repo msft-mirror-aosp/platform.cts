@@ -23,6 +23,9 @@ import android.app.AppOpsManager.OPSTR_REQUEST_DELETE_PACKAGES
 import android.app.AppOpsManager.OP_FLAGS_ALL
 import android.os.Process
 import android.os.SystemClock
+import android.permission.flags.Flags
+import android.platform.test.annotations.RequiresFlagsDisabled
+import android.platform.test.annotations.RequiresFlagsEnabled
 import androidx.test.InstrumentationRegistry
 import androidx.test.rule.ActivityTestRule
 import androidx.test.runner.AndroidJUnit4
@@ -309,6 +312,90 @@ class HistoricalAppopsTest {
 
         val diskOps = getHistoricalOps(appOpsManager, uid = uid)!!
         assertThat(diskOps.getUidOpsAt(0)).isEqualTo(memOps?.getUidOpsAt(0))
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_NOTE_OP_BATCHING_ENABLED)
+    @RequiresFlagsDisabled(Flags.FLAG_RATE_LIMIT_BATCHED_NOTE_OP_ASYNC_CALLBACKS_ENABLED)
+    @Test
+    fun testBatchedNoteOpWithAccessDenied() {
+        setHistoryParameters(
+            AppOpsManager.HISTORICAL_MODE_ENABLED_ACTIVE,
+            SNAPSHOT_INTERVAL_MILLIS,
+            INTERVAL_COMPRESSION_MULTIPLIER)
+
+        setUidMode(AppOpsManager.OPSTR_RESERVED_FOR_TESTING, uid, AppOpsManager.MODE_IGNORED)
+        UidStateForceActivity.waitForResumed()
+
+        val noteCount = 5
+        for (i in 0 until noteCount) {
+            appOpsManager.noteOp(
+                AppOpsManager.OPSTR_RESERVED_FOR_TESTING,
+                uid,
+                packageName,
+                null,
+                null
+            )
+        }
+
+        eventually {
+            val allOps = getHistoricalOps(
+                appOpsManager, uid, packageName, arrayListOf(AppOpsManager.OPSTR_RESERVED_FOR_TESTING)
+            )
+
+            val op = allOps!!.getUidOpsAt(0).getPackageOpsAt(0).getOpAt(0)
+
+            assertThat(op).isNotNull()
+            assertThat(op.opName).isEqualTo(AppOpsManager.OPSTR_RESERVED_FOR_TESTING)
+            assertThat(
+                op.getRejectCount(
+                    AppOpsManager.MAX_PRIORITY_UID_STATE,
+                    AppOpsManager.MIN_PRIORITY_UID_STATE,
+                    OP_FLAGS_ALL
+                )
+            ).isEqualTo(noteCount)
+        }
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_NOTE_OP_BATCHING_ENABLED)
+    @RequiresFlagsDisabled(Flags.FLAG_RATE_LIMIT_BATCHED_NOTE_OP_ASYNC_CALLBACKS_ENABLED)
+    @Test
+    fun testBatchedNoteOpWithAccessAllowed() {
+        setHistoryParameters(
+            AppOpsManager.HISTORICAL_MODE_ENABLED_ACTIVE,
+            SNAPSHOT_INTERVAL_MILLIS,
+            INTERVAL_COMPRESSION_MULTIPLIER)
+
+        setUidMode(AppOpsManager.OPSTR_RESERVED_FOR_TESTING, uid, AppOpsManager.MODE_ALLOWED)
+        UidStateForceActivity.waitForResumed()
+
+        val noteCount = 5
+        for (i in 0 until noteCount) {
+            appOpsManager.noteOp(
+                AppOpsManager.OPSTR_RESERVED_FOR_TESTING,
+                uid,
+                packageName,
+                null,
+                null
+            )
+        }
+
+        eventually {
+            val allOps = getHistoricalOps(
+                appOpsManager, uid, packageName, arrayListOf(AppOpsManager.OPSTR_RESERVED_FOR_TESTING)
+            )
+
+            val op = allOps!!.getUidOpsAt(0).getPackageOpsAt(0).getOpAt(0)
+
+            assertThat(op).isNotNull()
+            assertThat(op.opName).isEqualTo(AppOpsManager.OPSTR_RESERVED_FOR_TESTING)
+            assertThat(
+                op.getAccessCount(
+                    AppOpsManager.MAX_PRIORITY_UID_STATE,
+                    AppOpsManager.MIN_PRIORITY_UID_STATE,
+                    OP_FLAGS_ALL
+                )
+            ).isEqualTo(noteCount)
+        }
     }
 
     private fun testHistoricalAggregationSomeLevelsDeep(depth: Int) {
