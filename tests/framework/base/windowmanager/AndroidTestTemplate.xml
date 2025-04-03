@@ -106,6 +106,8 @@
         <option name="run-command" value="settings put secure user_setup_complete 1" />
         <!-- disable DeprecatedAbi warning -->
         <option name="run-command" value="setprop debug.wm.disable_deprecated_abi_dialog 1" />
+        <!-- Ensure app compat does not interfere -->
+        <option name="run-command" value="wm set-letterbox-style --cornerRadius 0" />
     </target_preparer>
 
     <test class="com.android.tradefed.testtype.AndroidJUnitTest">
