@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package android.hardware.input.cts.tests.virtualdevices
+package android.hardware.input.cts.tests
 
 import android.companion.virtualdevice.flags.Flags
 import android.hardware.input.VirtualRotaryEncoderScrollEvent

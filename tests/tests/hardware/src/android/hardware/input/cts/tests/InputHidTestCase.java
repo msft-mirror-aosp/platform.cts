@@ -108,7 +108,7 @@ public abstract class InputHidTestCase extends InputTestCase {
     }
 
     @Override
-    protected void onSetUp() {
+    void onSetUp() {
         mParser = new InputJsonParser(mInstrumentation.getTargetContext());
         mVid = mParser.readVendorId(mRegisterResourceId);
         mPid = mParser.readProductId(mRegisterResourceId);
@@ -130,7 +130,7 @@ public abstract class InputHidTestCase extends InputTestCase {
     }
 
     @Override
-    protected void onTearDown() {
+    void onTearDown() {
         if (mHidDevice != null) {
             mHidDevice.close();
         }

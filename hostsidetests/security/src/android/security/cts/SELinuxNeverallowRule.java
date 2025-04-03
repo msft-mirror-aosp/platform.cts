@@ -16,6 +16,8 @@
 
 package android.security.cts;
 
+import static android.security.cts.Asserts.assertUniqueIds;
+
 import static org.junit.Assert.assertTrue;
 
 import com.android.compatibility.common.util.PropertyUtil;
@@ -54,7 +56,7 @@ record SELinuxNeverallowRule(
 
     SELinuxNeverallowRule(String text, Map<String, Integer> conditions) {
         this(
-                text.trim().replaceAll(" +", " "),
+                cleanupRule(text),
                 (conditions.getOrDefault("TREBLE_ONLY", 0) > 0),
                 (conditions.getOrDefault("LAUNCHING_WITH_R_ONLY", 0) > 0),
                 (conditions.getOrDefault("LAUNCHING_WITH_S_ONLY", 0) > 0),
@@ -62,11 +64,15 @@ record SELinuxNeverallowRule(
                 (conditions.getOrDefault("USER_ONLY", 0) > 0));
     }
 
+    private static String cleanupRule(String rule) {
+        return rule.trim()
+                .replaceAll(" +", " ")
+                .replaceAll(" \\}", "\\}")
+                .replaceAll("\\{ ", "\\{");
+    }
+
     public String getStableId() {
-        String id =
-                mText.replaceFirst("^neverallow ", "")
-                        .replaceAll("[^A-Za-z0-9_]", "_")
-                        .replaceAll("_+", "_");
+        String id = mText.replaceFirst("^neverallow ", "").replaceAll("[^A-Za-z0-9_]", "_");
         byte b = 0;
         b += (fullTrebleOnly ? 1 : 0) << 0;
         b += (compatiblePropertyOnly ? 1 : 0) << 1;
@@ -178,6 +184,7 @@ record SELinuxNeverallowRule(
             }
         }
 
+        assertUniqueIds(rules);
         return new ArrayList(rules);
     }
 

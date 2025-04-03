@@ -13,13 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package android.hardware.input.cts.tests.virtualdevices
+package android.hardware.input.cts.tests
 
 import android.app.ActivityOptions
 import android.companion.virtual.VirtualDeviceManager
 import android.graphics.Point
 import android.hardware.display.VirtualDisplay
-import android.hardware.input.cts.tests.InputTestCase
 import android.os.Bundle
 import android.server.wm.WindowManagerStateHelper
 import android.virtualdevice.cts.common.VirtualDeviceRule

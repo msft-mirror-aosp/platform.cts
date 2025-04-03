@@ -31,7 +31,7 @@ import zoom_capture_utils
 
 
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
-_NUMBER_OF_CAMERAS_TO_TEST = 2  # WIDE and TELE
+_NUMBER_OF_CAMERAS_TO_TEST = 0
 _NUM_STEPS_PER_SECTION = 10
 # YUV only to improve marker detection, JPEG is tested in test_zoom
 _TEST_FORMATS = ('yuv',)

@@ -42,7 +42,7 @@ public:
      * Open the audio input and output streams.
      * @return AAUDIO_OK or negative error
      */
-    aaudio_result_t openAudio(int inputDeviceId, int outputDeviceId);
+    aaudio_result_t openAudio(int inputDeviceId, int outputDeviceId, int format);
 
     /**
      * Start the audio input and output streams.
@@ -195,6 +195,8 @@ private:
     bool               mIsDone = false;
     bool               mHas24BitHardwareSupport = false;
     int32_t            mHardwareFormat = 0;
+    aaudio_format_t    mActualOutputFormat = AAUDIO_UNSPECIFIED;
+    int32_t            mBytesPerOutputSample = 0;
 
     int32_t            mBurstFrames[NUM_STREAM_TYPES] = {-1, -1};
     int32_t            mCapacityFrames[NUM_STREAM_TYPES] = {-1, -1};
