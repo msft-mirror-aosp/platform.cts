@@ -176,18 +176,10 @@ class MultiCameraSwitchTest(its_base_test.ItsBaseTest):
 
         # AE Check: Extract the Y component from rectangle patch
         file_stem = f'{os.path.join(self.log_path, _NAME)}_{patch_color}'
-        ae_msg, uw_y_avg, w_y_avg = multi_camera_switch_utils.do_ae_check(
-            uw_patch, w_patch, file_stem, patch_color, _LENS_SUFFIX_UW,
-            _LENS_SUFFIX_W, _AE_RTOL, _AE_ATOL)
-        if ae_msg:
-          # If the device supports both ae_regions and awb_regions,
-          # then fail for all 4 patches.
-          if camera_properties_utils.awb_regions(props):
-            failed_ae_msg.append(f'{ae_msg}\n')
-          else:
-            # If only ae_regions is supported, then fail only for gray patch
-            if patch_color == 'gray':
-              failed_ae_msg.append(f'{ae_msg}\n')
+        failed_ae_msg, uw_y_avg, w_y_avg = (
+            multi_camera_switch_utils.do_ae_check(
+                uw_patch, w_patch, file_stem, patch_color, props,
+                _LENS_SUFFIX_UW, _LENS_SUFFIX_W, _AE_RTOL, _AE_ATOL))
 
         ae_uw_y_avgs.update({patch_color: f'{uw_y_avg:.4f}'})
         ae_w_y_avgs.update({patch_color: f'{w_y_avg:.4f}'})
