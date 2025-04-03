@@ -64,8 +64,8 @@ public class SettingsMultiPaneDeepLinkTest {
      * Whether split is supported when the connected display support flag is disabled.
      *
      * @deprecated use {@link mIsSplitSupportedWithCdFlag} unless the flag {@link
-     *     com.android.window.flags.Flags.FLAG_ACTIVITY_EMBEDDING_SUPPORT_FOR_CONNECTED_DISPLAYS} is
-     *     disabled.
+     *     com.android.window.flags.Flags
+     *     .FLAG_ENABLE_ACTIVITY_EMBEDDING_SUPPORT_FOR_CONNECTED_DISPLAYS} is disabled.
      */
     @Deprecated private boolean mIsSplitSupported;
 
@@ -125,7 +125,8 @@ public class SettingsMultiPaneDeepLinkTest {
     }
 
     @RequiresFlagsDisabled(
-            com.android.window.flags.Flags.FLAG_ACTIVITY_EMBEDDING_SUPPORT_FOR_CONNECTED_DISPLAYS)
+            com.android.window.flags.Flags
+                    .FLAG_ENABLE_ACTIVITY_EMBEDDING_SUPPORT_FOR_CONNECTED_DISPLAYS)
     @CddTest(requirement = "3.2.3.5/C-17-1")
     @Test
     public void deepLinkHomeActivity_splitSupported_deepLinkHomeEnabled() throws Exception {
@@ -137,7 +138,8 @@ public class SettingsMultiPaneDeepLinkTest {
     }
 
     @RequiresFlagsEnabled(
-            com.android.window.flags.Flags.FLAG_ACTIVITY_EMBEDDING_SUPPORT_FOR_CONNECTED_DISPLAYS)
+            com.android.window.flags.Flags
+                    .FLAG_ENABLE_ACTIVITY_EMBEDDING_SUPPORT_FOR_CONNECTED_DISPLAYS)
     @CddTest(requirement = "3.2.3.5/C-17-1")
     @Test
     public void deepLinkHomeActivity_splitSupported_deepLinkHomeEnabled_withCdFlag()
@@ -151,7 +153,8 @@ public class SettingsMultiPaneDeepLinkTest {
     }
 
     @RequiresFlagsDisabled(
-            com.android.window.flags.Flags.FLAG_ACTIVITY_EMBEDDING_SUPPORT_FOR_CONNECTED_DISPLAYS)
+            com.android.window.flags.Flags
+                    .FLAG_ENABLE_ACTIVITY_EMBEDDING_SUPPORT_FOR_CONNECTED_DISPLAYS)
     @CddTest(requirement = "3.2.3.5/C-17-1")
     @Test
     public void deepLinkHomeActivity_splitNotSupported_deepLinkHomeDisabled() throws Exception {
@@ -163,7 +166,8 @@ public class SettingsMultiPaneDeepLinkTest {
     }
 
     @RequiresFlagsEnabled(
-            com.android.window.flags.Flags.FLAG_ACTIVITY_EMBEDDING_SUPPORT_FOR_CONNECTED_DISPLAYS)
+            com.android.window.flags.Flags
+                    .FLAG_ENABLE_ACTIVITY_EMBEDDING_SUPPORT_FOR_CONNECTED_DISPLAYS)
     @CddTest(requirement = "3.2.3.5/C-17-1")
     @Test
     public void deepLinkHomeActivity_splitNotSupported_deepLinkHomeDisabled_withCdFlag()
