@@ -495,12 +495,13 @@ def verify_zoom_data(test_data, size, plot_name_stem=None,
 
   Returns:
     Boolean whether the test passes (True) or not (False)
+    e_msg: string; error message
   """
   range_success = True
   side_success = True
   offset_success = True
   used_smooth_offset = False
-
+  e_msg = ''
   # assert that multiple cameras were tested where applicable
   ids_tested = set([v.physical_id for v in test_data])
   if len(ids_tested) < number_of_cameras_to_test:
@@ -625,15 +626,15 @@ def verify_zoom_data(test_data, size, plot_name_stem=None,
              f'Baseline offset value: {initial_offset:.4f}, '
              f'Expected offset: {offset_hypot_rel:.4f}, '
              f'Zoom: {z_ratio:.1f}, '
-             f'RTOL: {rel_tol}, ATOL: {_OFFSET_ATOL}')
+             f'RTOL: {rel_tol}, ATOL: {_OFFSET_ATOL}. ')
       if not math.isclose(initial_offset, offset_hypot_rel,
                           rel_tol=rel_tol, abs_tol=_OFFSET_ATOL):
-        logging.warning('Offset check failed. %s', msg)
+        e_msg += f'Offset check failed. {msg}'
         used_smooth_offset = True
         if data.physical_id not in id_to_next_offset_and_zoom:
           offset_success = False
-          logging.error('No physical camera is available to explain '
-                        'offset changes!')
+          e_msg += ('No physical camera is available to explain '
+                    'offset changes!')
         else:
           next_initial_offset, next_initial_zoom = (
               id_to_next_offset_and_zoom[data.physical_id]
@@ -653,16 +654,15 @@ def verify_zoom_data(test_data, size, plot_name_stem=None,
           )
           if not absolutely_close and not relatively_close:
             offset_success = False
-            e_msg = ('Current offset did not match upcoming physical camera! '
-                     f'{i} zoom: {data.result_zoom:.2f}, '
-                     f'next initial offset: {next_initial_offset:.1f}, '
-                     f'current offset: {data.aruco_offset:.1f}, '
-                     f'current scaled offset: {offset_hypot_rel:.1f}, '
-                     'next offset scaled according to next zoom: '
-                     f'{next_offset_scaled_by_next_zoom:.1f}, '
-                     f'RTOL: {OFFSET_RTOL_SMOOTH_ZOOM}, '
-                     f'ATOL: {OFFSET_ATOL_SMOOTH_ZOOM}')
-            logging.error(e_msg)
+            e_msg += ('Current offset did not match upcoming physical camera! '
+                      f'{i} zoom: {data.result_zoom:.2f}, '
+                      f'next initial offset: {next_initial_offset:.1f}, '
+                      f'current offset: {data.aruco_offset:.1f}, '
+                      f'current scaled offset: {offset_hypot_rel:.1f}, '
+                      'next offset scaled according to next zoom: '
+                      f'{next_offset_scaled_by_next_zoom:.1f}, '
+                      f'RTOL: {OFFSET_RTOL_SMOOTH_ZOOM}, '
+                      f'ATOL: {OFFSET_ATOL_SMOOTH_ZOOM}')
           else:
             logging.debug('Successfully matched current offset with upcoming '
                           'physical camera offset')
@@ -697,7 +697,7 @@ def verify_zoom_data(test_data, size, plot_name_stem=None,
         f'{offset_plot_name_stem}_offset_trajectory.gif'  # GIF animation
     )
 
-  return range_success and side_success and offset_success
+  return range_success and side_success and offset_success, e_msg
 
 
 def verify_preview_zoom_results(test_data, size, z_max, z_min, z_step_size,
@@ -712,18 +712,20 @@ def verify_preview_zoom_results(test_data, size, z_max, z_min, z_step_size,
 
   Args:
     test_data: Iterable[ZoomTestData]
-    size: array; the width and height of the images
-    z_max: float; the maximum zoom ratio being tested
-    z_min: float; the minimum zoom ratio being tested
-    z_step_size: float; zoom step size to zoom from z_min to z_max
-    plot_name_stem: str; log path and name of the plot
-    number_of_cameras_to_test: [Optional][int]; minimum cameras in ZoomTestData
+    size: array; the width and height of the images.
+    z_max: float; the maximum zoom ratio being tested.
+    z_min: float; the minimum zoom ratio being tested.
+    z_step_size: float; zoom step size to zoom from z_min to z_max.
+    plot_name_stem: str; log path and name of the plot.
+    number_of_cameras_to_test: [Optional][int]; minimum cameras in ZoomTestData.
 
   Returns:
-    Boolean whether the test passes (True) or not (False)
+    test_success: boolean; whether the test passes (True) or not (False).
+    e_msg: string; error message.
   """
-  test_success = True
-
+  zoom_ratio_check_success = True
+  zoom_data_check_success = True
+  e_msg = ''
   test_data_zoom_values = [v.result_zoom for v in test_data]
   results_z_max = max(test_data_zoom_values)
   results_z_min = min(test_data_zoom_values)
@@ -733,32 +735,32 @@ def verify_preview_zoom_results(test_data, size, z_max, z_min, z_step_size,
   # check if max zoom in capture result close to requested zoom range
   if not (math.isclose(results_z_max, z_max, rel_tol=PRV_Z_RTOL) or
           math.isclose(results_z_max, z_max - z_step_size, rel_tol=PRV_Z_RTOL)):
-    test_success = False
-    e_msg = (f'Max zoom ratio {results_z_max:.4f} in capture results '
-             f'is not close to requested zoom ratio {z_max:.2f} or '
-             f'close to max zoom ratio subtract zoom step '
-             f'{z_max - z_step_size:.2f} within {PRV_Z_RTOL:.2f}% tolerance.')
-    logging.error(e_msg)
+    zoom_ratio_check_success = False
+    e_msg += (f'Max zoom ratio {results_z_max:.4f} in capture results '
+              f'is not close to requested zoom ratio {z_max:.2f} or '
+              f'close to max zoom ratio subtract zoom step '
+              f'{z_max - z_step_size:.2f} within {PRV_Z_RTOL:.2f}% tolerance.')
   else:
     d_msg = (f'Max zoom ratio in capture results {results_z_max:.2f} is within'
              f' tolerance of requested max zoom ratio {z_max:.2f}.')
     logging.debug(d_msg)
-
   if not math.isclose(results_z_min, z_min, rel_tol=PRV_Z_RTOL):
-    test_success = False
-    e_msg = (f'Min zoom ratio {results_z_min:.4f} in capture results is not '
-             f'close to requested min zoom {z_min:.2f} within {PRV_Z_RTOL:.2f}%'
-             f' tolerance.')
-    logging.error(e_msg)
+    zoom_ratio_check_success = False
+    e_msg += (f'Min zoom ratio {results_z_min:.4f} in capture results is not '
+              f'close to requested min zoom {z_min:.2f} within '
+              f'{PRV_Z_RTOL:.2f}% tolerance.')
   else:
     d_msg = (f'Min zoom ratio in capture results {results_z_min:.2f} is within'
              f' tolerance of requested min zoom ratio {z_min:.2f}.')
     logging.debug(d_msg)
-
-  return test_success and verify_zoom_data(
+  logging.debug('Zoom ratio check success: %s', zoom_ratio_check_success)
+  zoom_data_check_success, e_msg = verify_zoom_data(
       test_data, size, plot_name_stem=plot_name_stem,
       monotonicity_atol=_PREVIEW_SMOOTH_ZOOM_OFFSET_MONOTONICITY_ATOL,
       number_of_cameras_to_test=number_of_cameras_to_test)
+  logging.debug('Zoom data success: %s', zoom_data_check_success)
+
+  return zoom_ratio_check_success and zoom_data_check_success, e_msg
 
 
 def get_preview_zoom_params(zoom_range, steps):
