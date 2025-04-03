@@ -38,4 +38,8 @@
     <object type="module_controller" class="com.android.tradefed.testtype.suite.module.MainlineTestModuleController">
         <option name="mainline-module-package-name" value="com.google.android.crashrecovery" />
     </object>
+
+    <!-- Only run on SDK 36+ -->
+    <object type="module_controller" class="com.android.tradefed.testtype.suite.module.Sdk36ModuleController" />
+
 </configuration>
