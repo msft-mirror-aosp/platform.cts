@@ -45,7 +45,7 @@ public class UpdateSelfViaIntentTest extends InstallationTestBase {
 
         clickUpdateButtonForInstallerUpdateSelf();
 
-        assertInstallSuccessDialogAndLaunchInstallerApp();
+        assertInstallSuccessDialogAndLaunchInstallerApp(/* isAppUpdating= */ true);
         assertInstallerVersion2Installed();
     }
 
@@ -110,7 +110,7 @@ public class UpdateSelfViaIntentTest extends InstallationTestBase {
 
         clickUpdateButtonForInstallerUpdateSelf();
 
-        assertInstallSuccessDialogAndLaunchInstallerApp();
+        assertInstallSuccessDialogAndLaunchInstallerApp(/* isAppUpdating= */ true);
         assertInstallerVersion2Installed();
     }
 

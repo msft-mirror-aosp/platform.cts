@@ -40,7 +40,7 @@ public class InstallationViaIntentWithUpdateOwnershipTest extends UpdateOwnershi
 
         clickUpdateAnywayButton();
 
-        assertInstallSuccessDialogForNoLauncherActivity();
+        assertInstallSuccessDialogForNoLauncherActivity(/* isAppUpdating= */ true);
         assertTestPackageVersion2Installed();
     }
 
@@ -58,7 +58,7 @@ public class InstallationViaIntentWithUpdateOwnershipTest extends UpdateOwnershi
 
         clickUpdateAnywayButton();
 
-        assertInstallSuccessDialogForNoLauncherActivity();
+        assertInstallSuccessDialogForNoLauncherActivity(/* isAppUpdating= */ true);
         assertTestPackageVersion2Installed();
     }
 
@@ -74,7 +74,7 @@ public class InstallationViaIntentWithUpdateOwnershipTest extends UpdateOwnershi
 
         clickUpdateAnywayButton();
 
-        assertInstallSuccessDialogAndLaunchTestApp();
+        assertInstallSuccessDialogAndLaunchTestApp(/* isAppUpdating= */ true);
         assertTestPackageVersion2Installed();
     }
 
@@ -140,7 +140,7 @@ public class InstallationViaIntentWithUpdateOwnershipTest extends UpdateOwnershi
 
         clickUpdateAnywayButton();
 
-        assertInstallSuccessDialogForNoLauncherActivity();
+        assertInstallSuccessDialogForNoLauncherActivity(/* isAppUpdating= */ true);
         assertTestPackageVersion2Installed();
     }
 
@@ -156,7 +156,7 @@ public class InstallationViaIntentWithUpdateOwnershipTest extends UpdateOwnershi
 
         clickUpdateAnywayButton();
 
-        assertInstallSuccessDialogForNoLauncherActivity();
+        assertInstallSuccessDialogForNoLauncherActivity(/* isAppUpdating= */ true);
         assertTestPackageVersion2Installed();
     }
 
@@ -170,7 +170,7 @@ public class InstallationViaIntentWithUpdateOwnershipTest extends UpdateOwnershi
 
         clickUpdateAnywayButton();
 
-        assertInstallSuccessDialogAndLaunchTestApp();
+        assertInstallSuccessDialogAndLaunchTestApp(/* isAppUpdating= */ true);
         assertTestPackageVersion2Installed();
     }
 
