@@ -169,8 +169,6 @@ import com.android.internal.security.VerityUtils;
 
 import com.google.common.truth.Expect;
 
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import junit.framework.AssertionFailedError;
 
 import org.junit.After;
@@ -204,6 +202,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -368,6 +368,7 @@ public class PackageManagerTest {
 
     @Before
     public void setup() throws Exception {
+        cleanUpTestPackages();
         mInstrumentation = InstrumentationRegistry.getInstrumentation();
         mContext = mInstrumentation.getContext();
         mPackageManager = mContext.getPackageManager();
@@ -376,6 +377,10 @@ public class PackageManagerTest {
 
     @After
     public void tearDown() throws Exception {
+        cleanUpTestPackages();
+    }
+
+    private void cleanUpTestPackages() throws Exception {
         uninstallPackage(EMPTY_APP_PACKAGE_NAME);
         uninstallPackage(EMPTY_APP_MAX_PACKAGE_NAME);
         uninstallPackage(HELLO_WORLD_PACKAGE_NAME);
