@@ -179,14 +179,17 @@ public class AppEnumerationTestsBase {
                     waitForReady ? DEFAULT_TIMEOUT_WAIT_FOR_READY_MS : DEFAULT_TIMEOUT_MS;
             if (!latch.block(latchTimeout)) {
                 throw new TimeoutException(
-                        "Latch timed out while awaiting a response from " + sourcePackageName
-                                + " after " + latchTimeout + "ms");
+                        "Latch timed out while awaiting a response from "
+                                + sourcePackageName
+                                + " after "
+                                + latchTimeout
+                                + "ms");
             }
             final Bundle bundle = resultReference.get();
             if (bundle != null && bundle.containsKey(EXTRA_ERROR)) {
                 throw Objects.requireNonNull(bundle.getSerializable(EXTRA_ERROR, Exception.class));
             }
-            return bundle;
+            return bundle != null ? bundle.deepCopy() : null;
         };
     }
 

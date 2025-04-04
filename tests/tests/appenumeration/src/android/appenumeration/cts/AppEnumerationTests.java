@@ -21,10 +21,10 @@ import static android.appenumeration.cts.Constants.ACTION_APP_ENUMERATION_PREFER
 import static android.appenumeration.cts.Constants.ACTION_BIND_SERVICE;
 import static android.appenumeration.cts.Constants.ACTION_CAN_PACKAGE_QUERIES;
 import static android.appenumeration.cts.Constants.ACTION_CAN_PACKAGE_QUERY;
+import static android.appenumeration.cts.Constants.ACTION_CHECK_CONTENT_URI_PERMISSION_FULL;
 import static android.appenumeration.cts.Constants.ACTION_CHECK_PACKAGE;
 import static android.appenumeration.cts.Constants.ACTION_CHECK_SIGNATURES;
 import static android.appenumeration.cts.Constants.ACTION_CHECK_URI_PERMISSION;
-import static android.appenumeration.cts.Constants.ACTION_CHECK_CONTENT_URI_PERMISSION_FULL;
 import static android.appenumeration.cts.Constants.ACTION_GET_CONTENT_PROVIDER_MIME_TYPE;
 import static android.appenumeration.cts.Constants.ACTION_GET_INSTALLED_ACCESSIBILITYSERVICES_PACKAGES;
 import static android.appenumeration.cts.Constants.ACTION_GET_INSTALLED_APPWIDGET_PROVIDERS;
@@ -210,7 +210,9 @@ import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @RunWith(Parameterized.class)
 public class AppEnumerationTests extends AppEnumerationTestsBase {
@@ -1642,12 +1644,15 @@ public class AppEnumerationTests extends AppEnumerationTestsBase {
     private String[] getInstalledAppWidgetProviders(String sourcePackageName) throws Exception {
         final Bundle response = sendCommandBlocking(sourcePackageName, /* targetPackageName */ null,
                 /* intentExtra */ null, ACTION_GET_INSTALLED_APPWIDGET_PROVIDERS);
+        final Set<String> packageNames = new HashSet<>();
         final List<AppWidgetProviderInfo> infos = response.getParcelableArrayList(
                 Intent.EXTRA_RETURN_RESULT, AppWidgetProviderInfo.class);
-        return infos.stream()
-                .map(info -> info.provider.getPackageName())
-                .distinct()
-                .toArray(String[]::new);
+        if (infos != null) {
+            for (AppWidgetProviderInfo info : infos) {
+                packageNames.add(info.provider.getPackageName());
+            }
+        }
+        return packageNames.toArray(new String[0]);
     }
 
     private String[] getSharedLibraryDependentPackages(String sourcePackageName) throws Exception {
