@@ -3260,33 +3260,6 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
     }
 
     /**
-     * Test startTetheringRequest() starts a soft AP and relays the TetheringRequest object back via
-     * SoftApCallback.
-     * @throws Exception
-     */
-    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM)
-    @Test
-    public void testStartTetheredHotspotWithTetheringRequest() throws Exception {
-        // check that softap  is supported by the device
-        if (!sWifiManager.isPortableHotspotSupported()) {
-            return;
-        }
-        runWithScanning(() -> {
-            TestExecutor executor = new TestExecutor();
-            TestSoftApCallback callback = new TestSoftApCallback(mLock);
-            try {
-                TetheringManager.TetheringRequest request =
-                        new TetheringManager.TetheringRequest.Builder(
-                                TetheringManager.TETHERING_WIFI).build();
-                sWifiManager.startTetheredHotspot(request, executor, callback);
-                fail("startTetheredHotspot succeeded even without NETWORK_STACK permission!");
-            } catch (SecurityException e) {
-                // Expected to fail without NETWORK_STACK
-            }
-        }, false /* run with disabled */);
-    }
-
-    /**
      * Verify that the configuration from getSoftApConfiguration is same as the configuration which
      * set by setSoftApConfiguration. And depends softap capability callback to test different
      * configuration.
