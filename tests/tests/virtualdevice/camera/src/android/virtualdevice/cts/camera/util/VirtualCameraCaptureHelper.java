@@ -46,6 +46,7 @@ import android.hardware.camera2.params.SessionConfiguration;
 import android.media.Image;
 import android.media.ImageReader;
 import android.os.Handler;
+import android.os.SystemClock;
 import android.view.Surface;
 
 import androidx.annotation.NonNull;
@@ -377,6 +378,10 @@ public class VirtualCameraCaptureHelper {
         return mCaptureCallback.getCaptureResults().getLast();
     }
 
+    public List<Long> getCaptureDeviceTimestampsNanos() {
+        return mCaptureCallback.getCaptureDeviceTimestamp();
+    }
+
     /**
      * Holds the configuration used for {@link #captureImages(CaptureConfiguration)}.
      * <p>
@@ -485,6 +490,7 @@ public class VirtualCameraCaptureHelper {
     private static class TestCaptureCallback extends CaptureCallback {
 
         private final ArrayList<TotalCaptureResult> mCaptureResults = new ArrayList<>();
+        private final ArrayList<Long> mCaptureResultsDeviceTimestamps = new ArrayList<>();
         private CountDownLatch mCaptureAndErrorLatch = new CountDownLatch(0);
         private int mFailedCaptureCount = 0;
         private boolean mFailOnFailedCapture = true;
@@ -523,12 +529,19 @@ public class VirtualCameraCaptureHelper {
                 @NonNull CaptureRequest request,
                 @NonNull TotalCaptureResult result) {
             mCaptureResults.add(result);
+            mCaptureResultsDeviceTimestamps.add(SystemClock.uptimeNanos());
             mCaptureAndErrorLatch.countDown();
         }
 
         public List<TotalCaptureResult> getCaptureResults() {
             synchronized (mCaptureResults) {
                 return List.copyOf(mCaptureResults);
+            }
+        }
+
+        public List<Long> getCaptureDeviceTimestamp() {
+            synchronized (mCaptureResultsDeviceTimestamps) {
+                return List.copyOf(mCaptureResultsDeviceTimestamps);
             }
         }
 
