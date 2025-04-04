@@ -942,6 +942,7 @@ public final class CompatChangeTests extends MultiDisplayTestBase {
         startActivityOnDisplay(DEFAULT_DISPLAY, activity);
         waitForActivityFocused(5000, activity);
 
+        separateTestJournal();
         startActivityOnDisplay(secondaryDisplayId, activity);
         assertTrue(
                 mWmState.waitFor(
@@ -950,7 +951,7 @@ public final class CompatChangeTests extends MultiDisplayTestBase {
                                         && state.hasActivityState(activity, STATE_RESUMED),
                         "Waiting for the activity to move to a secondary display"));
 
-        assertActivityLifecycle(activity, false /* relaunch */);
+        assertRelaunchOrConfigChanged(activity, 0 /* numRelaunch */, 0 /* numConfigChange */);
     }
 
      // =================
