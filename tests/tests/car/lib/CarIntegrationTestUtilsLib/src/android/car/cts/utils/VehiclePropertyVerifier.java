@@ -3084,28 +3084,11 @@ public class VehiclePropertyVerifier<T> {
     }
 
     private static boolean canRead(CarPropertyConfig<?> carPropertyConfig, int areaId) {
-        return doesAreaIdAccessMatch(
-                        carPropertyConfig, areaId, CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ)
-                || doesAreaIdAccessMatch(
-                        carPropertyConfig,
-                        areaId,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE);
+        return canRead(getAreaIdAccessOrElseGlobalAccess(carPropertyConfig, areaId));
     }
 
     private static boolean canWrite(CarPropertyConfig<?> carPropertyConfig, int areaId) {
-        return doesAreaIdAccessMatch(
-                        carPropertyConfig, areaId, CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_WRITE)
-                || doesAreaIdAccessMatch(
-                        carPropertyConfig,
-                        areaId,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE);
-    }
-
-    private static boolean doesAreaIdAccessMatch(
-            CarPropertyConfig<?> carPropertyConfig, int areaId, int expectedAccess) {
-        return getAreaIdAccess(carPropertyConfig, areaId)
-                .filter(areaIdAccess -> areaIdAccess == expectedAccess)
-                .isPresent();
+        return canWrite(getAreaIdAccessOrElseGlobalAccess(carPropertyConfig, areaId));
     }
 
     /** Verifies that hvac temperature is valid. */
