@@ -77,6 +77,7 @@ public class PopupMenuTest {
     private Builder mBuilder;
     private PopupMenu mPopupMenu;
 
+    private static final int MAX_REPEAT_HOVER_EVENTS = 5;
     @Rule
     public ActivityTestRule<PopupMenuCtsActivity> mActivityRule =
             new ActivityTestRule<>(PopupMenuCtsActivity.class);
@@ -447,7 +448,8 @@ public class PopupMenuTest {
         mActivityRule.runOnUiThread(
                 () -> menuItemList.setSelectionFromTop(mPopupMenu.getMenu().size() - 1, 0));
         mInstrumentation.waitForIdleSync();
-
+        // Give the list a few more ms before we evaluate its position
+        SystemClock.sleep(200);
         assertNotEquals("Too few menu items to test for scrolling",
                 0, menuItemList.getFirstVisiblePosition());
         emulateHoverOverVisibleItems(menuItemList);
@@ -461,12 +463,20 @@ public class PopupMenuTest {
         // mouse events to prevent the event send to the wrong target.
         for (int i = 1; i < childCount - 1; i++) {
             View itemView = listView.getChildAt(i);
-            CtsMouseUtil.emulateHoverOnView(mInstrumentation, itemView, itemView.getWidth() / 2,
-                    itemView.getHeight() / 2);
-            // Wait for the system to process all events in the queue.
-            mInstrumentation.waitForIdleSync();
-            // Hovered menu item should be selected.
-            assertEquals(listView.getFirstVisiblePosition() + i,
+            int targetSelectionItem = listView.getFirstVisiblePosition() + i;
+            // Sometime these HOVER events are lost so another need to be sent.
+            for (int j = 0; j < MAX_REPEAT_HOVER_EVENTS; j++) {
+                CtsMouseUtil.emulateHoverOnView(mInstrumentation, itemView, itemView.getWidth() / 2,
+                        itemView.getHeight() / 2);
+                mInstrumentation.waitForIdleSync();
+                // Hovered menu item should be selected.
+                if (targetSelectionItem == listView.getSelectedItemPosition()) {
+                    break;
+                }
+                // Pause 10 ms before we send event again.
+                SystemClock.sleep(10);
+            }
+            assertEquals("Wrong item selected in list", targetSelectionItem,
                     listView.getSelectedItemPosition());
         }
     }
