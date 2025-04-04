@@ -257,6 +257,7 @@ public class VulkanFeaturesTest {
     private JSONObject mBestDevice = null;
     private boolean mIsTV = false;
     private boolean mIsWatch = false;
+    private boolean mIsAutomotive = false;
     private boolean mHasTouchscreen = false;
 
     @Before
@@ -291,6 +292,8 @@ public class VulkanFeaturesTest {
                     mIsWatch = true;
                 } else if (PackageManager.FEATURE_TOUCHSCREEN.equals(feature.name)) {
                     mHasTouchscreen = true;
+                } else if (PackageManager.FEATURE_AUTOMOTIVE.equals(feature.name)) {
+                    mIsAutomotive = true;
                 }
             }
         }
@@ -528,7 +531,7 @@ public class VulkanFeaturesTest {
 
     private boolean isHandheld() {
         // There is no PM feature for "handheld"
-        return mHasTouchscreen && !mIsTV && !mIsWatch;
+        return mHasTouchscreen && !mIsTV && !mIsWatch && !mIsAutomotive;
     }
 
     @CddTest(requirements = {"7.1.4.2/H-1-1"})
@@ -595,8 +598,10 @@ public class VulkanFeaturesTest {
         boolean textureCompressionASTC_LDR = features.getInt("textureCompressionASTC_LDR") != 0;
         boolean fragmentStoresAndAtomics = features.getInt("fragmentStoresAndAtomics") != 0;
         boolean shaderImageGatherExtended = features.getInt("shaderImageGatherExtended") != 0;
-        boolean shaderUniformBufferArrayDynamicIndexing = features.getInt("shaderUniformBufferArrayDynamicIndexing") != 0;
-        boolean shaderSampledImageArrayDynamicIndexing = features.getInt("shaderSampledImageArrayDynamicIndexing") != 0;
+        boolean shaderUniformBufferArrayDynamicIndexing =
+                features.getInt("shaderUniformBufferArrayDynamicIndexing") != 0;
+        boolean shaderSampledImageArrayDynamicIndexing =
+                features.getInt("shaderSampledImageArrayDynamicIndexing") != 0;
         if (!textureCompressionETC2) {
             return -1;
         }
@@ -631,7 +636,8 @@ public class VulkanFeaturesTest {
             }
         }
         JSONObject limits = device.getJSONObject("properties").getJSONObject("limits");
-        int maxPerStageDescriptorStorageBuffers = limits.getInt("maxPerStageDescriptorStorageBuffers");
+        int maxPerStageDescriptorStorageBuffers =
+                limits.getInt("maxPerStageDescriptorStorageBuffers");
         if (DEBUG) {
             Log.d(TAG, device.getJSONObject("properties").getString("deviceName") +
                 ": variablePointers=" + variablePointers +
