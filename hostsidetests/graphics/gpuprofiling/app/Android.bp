@@ -17,37 +17,6 @@ package {
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
-cc_test {
-    name: "ctsgraphicsgpucountersinit",
-    srcs: [
-        "android_graphics_cts_GpuCounters.cpp",
-    ],
-    test_suites: [
-        "cts",
-        "general-tests",
-    ],
-    compile_multilib: "both",
-    multilib: {
-        lib32: {
-            suffix: "32",
-        },
-        lib64: {
-            suffix: "64",
-        },
-    },
-    cflags: [
-        "-Wall",
-        "-Werror",
-    ],
-    shared_libs: [
-        "libdl",
-        "libandroid",
-        "liblog",
-    ],
-    stl: "c++_static",
-    sdk_version: "current",
-}
-
 cc_test_library {
     name: "libctsgraphicsgpuprofiling_jni",
     gtest: false,
