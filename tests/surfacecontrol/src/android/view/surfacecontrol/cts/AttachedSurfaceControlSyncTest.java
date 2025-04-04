@@ -22,6 +22,9 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.platform.test.annotations.Presubmit;
+import android.provider.Settings;
+import android.server.wm.ActivityManagerTestBase.DisableImmersiveModeConfirmationRule;
+import android.server.wm.settings.SettingsSession;
 import android.util.IntProperty;
 import android.util.Property;
 import android.view.Gravity;
@@ -40,14 +43,44 @@ import androidx.test.filters.SmallTest;
 import androidx.test.rule.ActivityTestRule;
 
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
+import org.junit.rules.TestRule;
 
 @SmallTest
 @Presubmit
 public class AttachedSurfaceControlSyncTest {
     private static final String TAG = "AttachedSurfaceControlSyncTests";
+
+    @ClassRule
+    public static DisableImmersiveModeConfirmationRule sDisableImmersiveModeConfirmationRule =
+            new DisableImmersiveModeConfirmationRule();
+
+    @ClassRule
+    public static final TestRule sResetWindowAnimationRule =
+            SettingsSession.overrideForTest(
+                    Settings.Global.getUriFor(Settings.Global.WINDOW_ANIMATION_SCALE),
+                    Settings.Global::getFloat,
+                    Settings.Global::putFloat,
+                    1.0f);
+
+    @ClassRule
+    public static final TestRule sResetTransitionAnimationRule =
+            SettingsSession.overrideForTest(
+                    Settings.Global.getUriFor(Settings.Global.TRANSITION_ANIMATION_SCALE),
+                    Settings.Global::getFloat,
+                    Settings.Global::putFloat,
+                    1.0f);
+
+    @ClassRule
+    public static final TestRule sResetAnimatorDurationRule =
+            SettingsSession.overrideForTest(
+                    Settings.Global.getUriFor(Settings.Global.ANIMATOR_DURATION_SCALE),
+                    Settings.Global::getFloat,
+                    Settings.Global::putFloat,
+                    1.0f);
 
     @Rule
     public ActivityTestRule<CapturedActivityWithResource> mActivityRule =
