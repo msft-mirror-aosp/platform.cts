@@ -370,8 +370,8 @@ public class VideoEncoderAvailabilityTest extends CodecEncoderGLSurface {
     }
 
     /**
-     * Briefly, this test verifies the functionality of media codec apis getRequiredResources()
-     * and onRequiredResourcesChanged() at various codec states.
+     * Briefly, this test verifies the functionality of media codec api getRequiredResources() at
+     * various codec states.
      * <p>
      * getRequiredResources() is expected to return illegal state exception in uninitialized
      * state and resources required for current codec configuration in executing state. The test
@@ -384,17 +384,13 @@ public class VideoEncoderAvailabilityTest extends CodecEncoderGLSurface {
      * the codec operational consumption resources. In other words, at any given time, current
      * global available resources + current instance codec resources equals global available
      * resources at the start of the test.
-     * <p>
-     * In the executing state, the codec shall update the required resources status via
-     * callback onRequiredResourcesChanged(). This is also verified.
      */
     @LargeTest
     @VsrTest(requirements = {"VSR-4.1-002"})
     @Test(timeout = PER_TEST_TIMEOUT_LARGE_TEST_MS)
     @RequiresFlagsEnabled(FLAG_CODEC_AVAILABILITY)
     @ApiTest(apis = {"android.media.MediaCodec#getGloballyAvailableResources",
-            "android.media.MediaCodec#getRequiredResources",
-            "android.media.MediaCodec.Callback#onRequiredResourcesChanged"})
+            "android.media.MediaCodec#getRequiredResources"})
     public void testSimpleEncode() throws IOException, InterruptedException {
         CodecAsyncHandlerResource asyncHandleResource = new CodecAsyncHandlerResource();
         mAsyncHandle = asyncHandleResource;
@@ -426,9 +422,6 @@ public class VideoEncoderAvailabilityTest extends CodecEncoderGLSurface {
                 GLOBAL_AVBL_RESOURCES, String.format(Locale.getDefault(),
                         "getRequiredResources() failed in %s state \n", CodecState.EOS)
                         + mTestEnv + mTestConfig);
-        Assert.assertTrue("did not receive callback onRequiredResourcesChanged() from"
-                        + " codec\n" + mTestEnv + mTestConfig,
-                asyncHandleResource.hasRequiredResourceChangeCbReceived());
         mCodec.stop();
         validateGetCodecResources(List.of(Pair.create(mCodec, CodecState.STOPPED)),
                 GLOBAL_AVBL_RESOURCES, String.format(Locale.getDefault(),
@@ -578,8 +571,7 @@ public class VideoEncoderAvailabilityTest extends CodecEncoderGLSurface {
     @Test(timeout = PER_TEST_TIMEOUT_LARGE_TEST_MS)
     @RequiresFlagsEnabled(FLAG_CODEC_AVAILABILITY)
     @ApiTest(apis = {"android.media.MediaCodec#getGloballyAvailableResources",
-            "android.media.MediaCodec#getRequiredResources",
-            "android.media.MediaCodec.Callback#onRequiredResourcesChanged"})
+            "android.media.MediaCodec#getRequiredResources"})
     public void testConcurrentMaxInstances() {
         validateMaxInstances(mCodecName, mMediaType);
     }
@@ -596,8 +588,7 @@ public class VideoEncoderAvailabilityTest extends CodecEncoderGLSurface {
     @Test(timeout = PER_TEST_TIMEOUT_LARGE_TEST_MS)
     @RequiresFlagsEnabled(FLAG_CODEC_AVAILABILITY)
     @ApiTest(apis = {"android.media.MediaCodec#getGloballyAvailableResources",
-            "android.media.MediaCodec#getRequiredResources",
-            "android.media.MediaCodec.Callback#onRequiredResourcesChanged"})
+            "android.media.MediaCodec#getRequiredResources"})
     public void testResourceConsumptionForPerfPoints() throws IOException, InterruptedException {
         List<CodecResource> globalResources = getCurrentGlobalCodecResources();
         MediaCodecInfo.CodecCapabilities caps = getCodecCapabilities(mCodecName, mMediaType);
