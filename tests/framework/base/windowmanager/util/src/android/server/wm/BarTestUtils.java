@@ -22,6 +22,7 @@ import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentat
 
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
+import static org.junit.Assert.assertNotEquals;
 
 import android.app.Activity;
 import android.app.ActivityManager;
@@ -31,6 +32,7 @@ import android.content.res.Configuration;
 import android.graphics.Insets;
 import android.util.Log;
 import android.view.WindowInsets;
+import android.view.WindowManager;
 import android.view.WindowMetrics;
 
 import androidx.test.InstrumentationRegistry;
@@ -65,6 +67,13 @@ public final class BarTestUtils {
     public static void assumeHasColoredStatusBar(ActivityTestRule<?> rule) {
         assumeHasColoredBars();
         assumeHasStatusBar(rule);
+    }
+
+    public static void assumeHasStatusBar(Activity activity) {
+        assumeFalse("No status bar when running in VR", isRunningInVr());
+        Insets statusBar = activity.getWindowManager().getMaximumWindowMetrics().getWindowInsets()
+                .getInsetsIgnoringVisibility(WindowInsets.Type.statusBars());
+        assertNotEquals("There must be status bar insets.", Insets.NONE, statusBar);
     }
 
     public static void assumeHasStatusBar(ActivityTestRule<?> rule) {
