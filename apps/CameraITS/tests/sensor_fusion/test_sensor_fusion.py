@@ -94,13 +94,6 @@ def _collect_data(cam, fps, w, h, test_length, rot_rig, chart_dist,
       cam.get_sensors().get('gyro'))
 
   # Start camera rotation.
-  serial_port = None
-  if rot_rig['cntl'].lower() == sensor_fusion_utils.ARDUINO_STRING.lower():
-    # identify port
-    serial_port = sensor_fusion_utils.serial_port_def(
-        sensor_fusion_utils.ARDUINO_STRING)
-    # send test cmd to Arduino until cmd returns properly
-    sensor_fusion_utils.establish_serial_comm(serial_port)
   p = threading.Thread(
       target=sensor_fusion_utils.rotation_rig,
       args=(
@@ -110,7 +103,6 @@ def _collect_data(cam, fps, w, h, test_length, rot_rig, chart_dist,
           sensor_fusion_utils.ARDUINO_ANGLES_SENSOR_FUSION,
           sensor_fusion_utils.ARDUINO_SERVO_SPEED_SENSOR_FUSION,
           sensor_fusion_utils.ARDUINO_MOVE_TIME_SENSOR_FUSION,
-          serial_port,
       ),
   )
   p.start()

@@ -309,7 +309,7 @@ def arduino_rotate_servo(ch, angles, move_time, serial_port):
 
 
 def rotation_rig(rotate_cntl, rotate_ch, num_rotations, angles, servo_speed,
-                 move_time, arduino_serial_port):
+                 move_time):
   """Rotate the phone n times using rotate_cntl and rotate_ch defined.
 
   rotate_ch is hard wired and must be determined from physical setup.
@@ -323,11 +323,16 @@ def rotation_rig(rotate_cntl, rotate_ch, num_rotations, angles, servo_speed,
     angles: list of ints; servo angle to move to.
     servo_speed: int number of move speed between [1, 255].
     move_time: int time required to allow for arduino movement.
-    arduino_serial_port: optional initialized serial port object
   """
 
   logging.debug('Controller: %s, ch: %s', rotate_cntl, rotate_ch)
-  if arduino_serial_port:
+  arduino_serial_port = None
+  if rotate_cntl.lower() == ARDUINO_STRING.lower():
+    # identify port
+    arduino_serial_port = serial_port_def(ARDUINO_STRING)
+    # send test cmd to Arduino until cmd returns properly
+    establish_serial_comm(arduino_serial_port)
+
     # initialize servo at origin
     logging.debug('Moving servo to origin')
     arduino_rotate_servo_to_angle(rotate_ch, 0, arduino_serial_port, 1)
