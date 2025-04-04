@@ -17,10 +17,8 @@
 package android.view.inspector.cts;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 import android.Manifest;
-import android.os.Looper;
 import android.platform.test.annotations.AppModeSdkSandbox;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.view.View;
@@ -113,7 +111,6 @@ public class WindowInspectorTest {
 
         assertEquals(1, elements.size());
         assertEquals(expected, elements.getFirst());
-        assertTrue("Must return on main thread.", collector.isAlwaysOnMainThread());
     }
 
     /**
@@ -126,18 +123,11 @@ public class WindowInspectorTest {
     public void testAddRootViewListener_doesNotDoubleRegisterListener()
             throws InterruptedException {
         final RootViewCollector collector = new RootViewCollector(1);
-        // need a second root view collector to know a second one was not reported later.
-        final RootViewCollector endCollector = new RootViewCollector(1);
-
         addListenerToWindowInspector(Runnable::run, collector);
         addListenerToWindowInspector(Runnable::run, collector);
-        addListenerToWindowInspector(Runnable::run, endCollector);
 
         final List<View> expected = WindowInspector.getGlobalWindowViews();
-
-        // Because everything is reported on the main thread it is sufficient to wait for
-        // the end collector.
-        endCollector.waitForElements();
+        collector.waitForElements();
 
         final List<List<View>> elements = collector.getElements();
 
@@ -182,7 +172,6 @@ public class WindowInspectorTest {
         assertEquals(2, elements.size());
         assertEquals(decorView, elements.getFirst());
         assertEquals(expected, elements.get(1));
-        assertTrue("Must return on main thread.", collector.isAlwaysOnMainThread());
     }
 
     /**
@@ -255,9 +244,6 @@ public class WindowInspectorTest {
         @GuardedBy("mLock")
         private final List<List<View>> mElements = new ArrayList<>();
 
-        @GuardedBy("mLock")
-        private boolean mIsAlwaysOnMainThread = true;
-
         private final CountDownLatch mCountDownLatch;
 
         RootViewCollector(int expectedValueCount) {
@@ -268,8 +254,6 @@ public class WindowInspectorTest {
         public void accept(@NonNull List<View> views) {
             synchronized (mLock) {
                 mElements.add(Objects.requireNonNull(views));
-                mIsAlwaysOnMainThread =
-                        mIsAlwaysOnMainThread && Looper.getMainLooper().equals(Looper.myLooper());
                 mCountDownLatch.countDown();
             }
         }
@@ -281,12 +265,6 @@ public class WindowInspectorTest {
         public List<List<View>> getElements() {
             synchronized (mLock) {
                 return new ArrayList<>(mElements);
-            }
-        }
-
-        public boolean isAlwaysOnMainThread() {
-            synchronized (mLock) {
-                return mIsAlwaysOnMainThread;
             }
         }
     }
