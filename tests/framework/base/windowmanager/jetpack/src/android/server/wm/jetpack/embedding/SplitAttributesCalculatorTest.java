@@ -309,6 +309,8 @@ public class SplitAttributesCalculatorTest extends ActivityEmbeddingTestBase {
     /** Verify the calculator function is called when the host task enters/leaves split screen. */
     @Test
     public void testSplitAttributesCalculatorInvocation_splitScreen() throws InterruptedException {
+        assumeTrue("Skipping test: no split multi-window support",
+                supportsSplitScreenMultiWindow());
         final String tag = "testSplitAttributesCalculatorInvocation_screenRotation";
         final InvocationVerifier verifier = new InvocationVerifier(tag);
 
