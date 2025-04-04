@@ -50,6 +50,7 @@ import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
 import android.os.SystemClock
+import android.telephony.TelephonyManager
 import android.util.DisplayMetrics
 import android.util.Log
 import android.view.View
@@ -78,6 +79,7 @@ class NotificationHidingVerifierActivity : PassFailButtons.Activity() {
     private lateinit var buttonView: View
     private var currentTestIdx = 0
     private var numFailures = 0
+    private var supportsSms = true
     private var mediaProjection: MediaProjection? = null
     private val mediaProjectionCallback = object : MediaProjection.Callback() {}
     private var imageReader: ImageReader? = null
@@ -90,6 +92,12 @@ class NotificationHidingVerifierActivity : PassFailButtons.Activity() {
         notificationManager = getSystemService(NotificationManager::class.java)!!
         mediaProjectionManager = getSystemService(MediaProjectionManager::class.java)!!
         shortcutManager = getSystemService(ShortcutManager::class.java)!!
+        val telephonyManager = getSystemService(TelephonyManager::class.java)!!
+        supportsSms = try {
+            telephonyManager.isDeviceSmsCapable
+        } catch (_: RuntimeException) {
+            false
+        }
         createChannel()
         setContentView(R.layout.notif_hiding_main)
         title = requireViewById(R.id.test_title)
@@ -115,6 +123,9 @@ class NotificationHidingVerifierActivity : PassFailButtons.Activity() {
         }
         requireViewById<Button>(R.id.request_sms_button).setOnClickListener { _ ->
             requestSmsRole()
+        }
+        if (!supportsSms) {
+           requireViewById<Button>(R.id.request_sms_button).isEnabled = false
         }
         val am = getSystemService(ActivityManager::class.java)!!
 
