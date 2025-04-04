@@ -19,10 +19,15 @@ package android.media.router.cts;
 import static android.content.Intent.ACTION_CLOSE_SYSTEM_DIALOGS;
 import static android.content.Intent.FLAG_RECEIVER_FOREGROUND;
 import static android.media.router.cts.StubMediaRoute2ProviderService.FEATURE_SAMPLE;
+import static android.media.router.cts.StubMediaRoute2ProviderService.FEATURE_SPECIAL;
 import static android.media.router.cts.StubMediaRoute2ProviderService.ROUTE_ID1;
 import static android.media.router.cts.StubMediaRoute2ProviderService.ROUTE_ID2;
+import static android.media.router.cts.StubMediaRoute2ProviderService.ROUTE_ID5_TO_TRANSFER_TO;
+import static android.media.router.cts.StubMediaRoute2ProviderService.ROUTE_ID_SPECIAL_FEATURE;
 import static android.media.router.cts.StubMediaRoute2ProviderService.ROUTE_NAME1;
 import static android.media.router.cts.StubMediaRoute2ProviderService.ROUTE_NAME2;
+import static android.media.router.cts.StubMediaRoute2ProviderService.ROUTE_NAME5;
+import static android.media.router.cts.StubMediaRoute2ProviderService.ROUTE_NAME_SPECIAL_FEATURE;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -180,6 +185,61 @@ public class OutputSwitcherTest {
 
         assertThat(mRouter2.showSystemOutputSwitcher()).isTrue();
         assertDialogShowsConnectionTo(ROUTE_NAME1);
+    }
+
+    @Test
+    public void selectOneRoute_thenTransferToAnother_sessionTransferred() throws Exception {
+        mService.removeAllRoutesExcept(List.of(ROUTE_ID1, ROUTE_ID5_TO_TRANSFER_TO));
+        registerRouteCallback(List.of(FEATURE_SAMPLE));
+
+        assertThat(mRouter2.showSystemOutputSwitcher()).isTrue();
+
+        clickRouteInDialog(ROUTE_NAME1);
+        verify(mProviderProxy, timeout(TIMEOUT_MS))
+                .onCreateSession(anyLong(), any(), eq(ROUTE_ID1), any());
+        assertDialogShowsConnectionTo(ROUTE_NAME1);
+
+        clickRouteInDialog(ROUTE_NAME5);
+        verify(mProviderProxy, timeout(TIMEOUT_MS))
+                .onTransferToRoute(anyLong(), any(), eq(ROUTE_ID5_TO_TRANSFER_TO));
+        assertDialogShowsConnectionTo(ROUTE_NAME5);
+    }
+
+    @Test
+    public void changePublishedRoutesWhileDialogOpen_listOfRoutesUpdates() throws Exception {
+        mService.removeAllRoutesExcept(List.of(ROUTE_ID1, ROUTE_ID2));
+        registerRouteCallback(List.of(FEATURE_SAMPLE));
+
+        assertThat(mRouter2.showSystemOutputSwitcher()).isTrue();
+        UiAutomatorUtils2.waitFindObject(By.text(ROUTE_NAME1).pkg(SYSTEM_UI_PACKAGE), TIMEOUT_MS);
+        UiAutomatorUtils2.waitFindObject(By.text(ROUTE_NAME2).pkg(SYSTEM_UI_PACKAGE), TIMEOUT_MS);
+
+        // Change the list of advertised routes to 1 and 5 (instead of 1 and 2).
+        mService.initializeRoutes();
+        mService.removeAllRoutesExcept(List.of(ROUTE_ID1, ROUTE_ID5_TO_TRANSFER_TO));
+        mService.publishRoutes();
+
+        UiAutomatorUtils2.waitUntilObjectGone(By.text(ROUTE_NAME2).pkg(SYSTEM_UI_PACKAGE));
+        UiAutomatorUtils2.waitFindObject(By.text(ROUTE_NAME1).pkg(SYSTEM_UI_PACKAGE), TIMEOUT_MS);
+        UiAutomatorUtils2.waitFindObject(By.text(ROUTE_NAME5).pkg(SYSTEM_UI_PACKAGE), TIMEOUT_MS);
+    }
+
+    @Test
+    public void changeDiscoveryPreferenceWhileDialogOpen_listOfRoutesUpdates() throws Exception {
+        mService.removeAllRoutesExcept(List.of(ROUTE_ID1, ROUTE_ID2, ROUTE_ID_SPECIAL_FEATURE));
+        registerRouteCallback(List.of(FEATURE_SAMPLE));
+
+        assertThat(mRouter2.showSystemOutputSwitcher()).isTrue();
+        UiAutomatorUtils2.waitFindObject(By.text(ROUTE_NAME1).pkg(SYSTEM_UI_PACKAGE), TIMEOUT_MS);
+        UiAutomatorUtils2.waitFindObject(By.text(ROUTE_NAME2).pkg(SYSTEM_UI_PACKAGE), TIMEOUT_MS);
+
+        mRouter2.unregisterRouteCallback(mEmptyRouteCallback);
+        registerRouteCallback(List.of(FEATURE_SPECIAL));
+
+        UiAutomatorUtils2.waitUntilObjectGone(By.text(ROUTE_NAME1).pkg(SYSTEM_UI_PACKAGE));
+        UiAutomatorUtils2.waitUntilObjectGone(By.text(ROUTE_NAME2).pkg(SYSTEM_UI_PACKAGE));
+        UiAutomatorUtils2.waitFindObject(
+                By.text(ROUTE_NAME_SPECIAL_FEATURE).pkg(SYSTEM_UI_PACKAGE), TIMEOUT_MS);
     }
 
     private void registerRouteCallback(List<String> features) {
