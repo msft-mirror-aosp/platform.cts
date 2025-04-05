@@ -16,6 +16,8 @@
 
 package android.security.cts;
 
+import static android.security.cts.Asserts.assertUniqueIds;
+
 import static org.junit.Assert.assertTrue;
 
 import com.android.compatibility.common.util.PropertyUtil;
@@ -28,14 +30,22 @@ import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-class SELinuxNeverallowRule {
+record SELinuxNeverallowRule(
+        String mText,
+        boolean fullTrebleOnly,
+        boolean launchingWithROnly,
+        boolean launchingWithSOnly,
+        boolean compatiblePropertyOnly,
+        boolean userOnly) {
     private static String[] sConditions = {
         "TREBLE_ONLY",
         "COMPATIBLE_PROPERTY_ONLY",
@@ -44,40 +54,33 @@ class SELinuxNeverallowRule {
     };
     private static String sUserOnlyMarker = "SUPPRESSED_BY_USERDEBUG_OR_ENG";
 
-    public String mText;
-    public boolean fullTrebleOnly;
-    public boolean launchingWithROnly;
-    public boolean launchingWithSOnly;
-    public boolean compatiblePropertyOnly;
-    public boolean userOnly;
-
-    private SELinuxNeverallowRule(String text, Map<String, Integer> conditions) {
-        mText = text;
-        if (conditions.getOrDefault("TREBLE_ONLY", 0) > 0) {
-            fullTrebleOnly = true;
-        }
-        if (conditions.getOrDefault("COMPATIBLE_PROPERTY_ONLY", 0) > 0) {
-            compatiblePropertyOnly = true;
-        }
-        if (conditions.getOrDefault("LAUNCHING_WITH_R_ONLY", 0) > 0) {
-            launchingWithROnly = true;
-        }
-        if (conditions.getOrDefault("LAUNCHING_WITH_S_ONLY", 0) > 0) {
-            launchingWithSOnly = true;
-        }
-        if (conditions.getOrDefault("USER_ONLY", 0) > 0) {
-            userOnly = true;
-        }
+    SELinuxNeverallowRule(String text, Map<String, Integer> conditions) {
+        this(
+                cleanupRule(text),
+                (conditions.getOrDefault("TREBLE_ONLY", 0) > 0),
+                (conditions.getOrDefault("LAUNCHING_WITH_R_ONLY", 0) > 0),
+                (conditions.getOrDefault("LAUNCHING_WITH_S_ONLY", 0) > 0),
+                (conditions.getOrDefault("COMPATIBLE_PROPERTY_ONLY", 0) > 0),
+                (conditions.getOrDefault("USER_ONLY", 0) > 0));
     }
 
-    public String toString() {
-        return "Rule [text= " + mText
-                + ", fullTrebleOnly=" + fullTrebleOnly
-                + ", compatiblePropertyOnly=" + compatiblePropertyOnly
-                + ", launchingWithROnly=" + launchingWithROnly
-                + ", launchingWithSOnly=" + launchingWithSOnly
-                + ", userOnly=" + userOnly
-                + "]";
+    private static String cleanupRule(String rule) {
+        return rule.trim()
+                .replaceAll(" +", " ")
+                .replaceAll(" \\}", "\\}")
+                .replaceAll("\\{ ", "\\{");
+    }
+
+    public String getStableId() {
+        String id = mText.replaceFirst("^neverallow ", "").replaceAll("[^A-Za-z0-9_]", "_");
+        byte b = 0;
+        b += (fullTrebleOnly ? 1 : 0) << 0;
+        b += (compatiblePropertyOnly ? 1 : 0) << 1;
+        b += (launchingWithROnly ? 1 : 0) << 2;
+        b += (launchingWithSOnly ? 1 : 0) << 3;
+        b += (userOnly ? 1 : 0) << 4;
+        id += String.format("%X", b);
+        return id;
     }
 
     private boolean isFullTrebleDevice(ITestDevice device) throws Exception {
@@ -96,8 +99,8 @@ class SELinuxNeverallowRule {
         return SELinuxHostTest.isCompatiblePropertyEnforcedDevice(device);
     }
 
-    private boolean isUserBuild(ITestDevice device) throws DeviceNotAvailableException {
-        return PropertyUtil.isUserBuild(device);
+    private boolean isDebuggableBuild(ITestDevice device) throws DeviceNotAvailableException {
+        return !PropertyUtil.propertyEquals(device, "ro.debuggable", "0");
     }
 
     public boolean isCompatible(ITestDevice device) throws Exception {
@@ -118,8 +121,9 @@ class SELinuxNeverallowRule {
             // device isn't one
             return false;
         }
-        if (userOnly && !isUserBuild(device)) {
-            // This test applies to -user builds only. Skip on -userdebug or -eng.
+        if (userOnly && isDebuggableBuild(device)) {
+            // This test applies to non-debuggable builds only.
+            // Skip on -userdebug, -eng, or forceDebuggable builds.
             return false;
         }
         return true;
@@ -131,9 +135,10 @@ class SELinuxNeverallowRule {
                 .collect(Collectors.joining("|"));
 
         /* Uncomment conditions delimiter lines. */
-        Pattern uncommentConditions = Pattern.compile("^\\s*#\\s*("
-                + patternConditions + "|" + sUserOnlyMarker + ").*$",
-                Pattern.MULTILINE);
+        Pattern uncommentConditions =
+                Pattern.compile(
+                        "^\\s*#\\s*(" + patternConditions + "|" + sUserOnlyMarker + ").*$",
+                        Pattern.MULTILINE);
         Matcher matcher = uncommentConditions.matcher(policy);
         policy = matcher.replaceAll("$1");
 
@@ -147,7 +152,7 @@ class SELinuxNeverallowRule {
                 "(neverallow\\s[^;]+?;|" + patternConditions + ")",
                 Pattern.MULTILINE);
 
-        List<SELinuxNeverallowRule> rules = new ArrayList();
+        Set<SELinuxNeverallowRule> rules = new LinkedHashSet();
         Map<String, Integer> conditions = new HashMap();
 
         matcher = neverAllowPattern.matcher(policy);
@@ -179,7 +184,8 @@ class SELinuxNeverallowRule {
             }
         }
 
-        return rules;
+        assertUniqueIds(rules);
+        return new ArrayList(rules);
     }
 
     public void testNeverallowRule(File sepolicyAnalyze, File policyFile) throws Exception {

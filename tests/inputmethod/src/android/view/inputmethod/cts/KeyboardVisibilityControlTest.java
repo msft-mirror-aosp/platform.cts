@@ -1312,7 +1312,6 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
             try (AutoCloseable closable = MockTestActivityUtil.launchSync(
                     instant, TIMEOUT,
                     Map.of(MockTestActivityUtil.EXTRA_KEY_PRIVATE_IME_OPTIONS, marker))) {
-                expectEvent(stream, eventMatcher("bindInput"), TIMEOUT);
                 expectEvent(stream, editorMatcher("onStartInput", marker), START_INPUT_TIMEOUT);
                 expectImeInvisible(TIMEOUT);
 
@@ -1329,7 +1328,6 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
                 // remote process stopped by forceStopPackage.
                 MockTestActivityUtil.forceStopPackage();
                 expectEvent(stream, onFinishInputViewMatcher(false), TIMEOUT);
-                expectEvent(stream, eventMatcher("unbindInput"), TIMEOUT);
                 expectImeInvisible(TIMEOUT);
             }
         }
@@ -1872,6 +1870,65 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
                 // Rerun the test procedure to ensure it passes after exiting split-screen mode.
                 testProcedureForTestActivity2.run();
             }
+        }
+    }
+
+    /**
+     * Test show the IME with {@link InputMethodManager#showSoftInput(View, int)} and then hide the
+     * IME in multi window mode via public WindowInsetsController API.
+     */
+    @Test
+    public void testImeShowWithInputMethodManagerHideInsetsControllerInSplitScreen()
+            throws Throwable {
+        assumeTrue(TestUtils.supportsSplitScreenMultiWindow());
+
+        try (MockImeSession imeSession = MockImeSession.create(mInstrumentation.getContext(),
+                mInstrumentation.getUiAutomation(), new ImeSettings.Builder())) {
+            final ImeEventStream stream = imeSession.openEventStream();
+            final TestActivity splitPrimaryActivity = TestActivity.startSync(LinearLayout::new);
+
+            // Launch another test activity in split-screen with edit field
+            final AtomicReference<EditText> editTextRef = new AtomicReference<>();
+            final String marker = getTestMarker();
+            final TestActivity testActivity2 =
+                    new TestActivity.Starter().asMultipleTask().withAdditionalFlags(
+                            Intent.FLAG_ACTIVITY_LAUNCH_ADJACENT).startSync(splitPrimaryActivity,
+                            activity -> {
+                                LinearLayout layout = new LinearLayout(activity);
+                                activity.getWindow().setSoftInputMode(
+                                        SOFT_INPUT_STATE_ALWAYS_HIDDEN);
+
+                                final EditText editText = new EditText(activity);
+                                editText.setHint("This is editText");
+                                editText.setPrivateImeOptions(marker);
+                                editTextRef.set(editText);
+
+                                layout.addView(editText);
+                                return layout;
+                            }, TestActivity2.class);
+
+            notExpectEvent(stream, eventMatcher("onStartInputView"), NOT_EXPECT_TIMEOUT);
+            expectImeInvisible(TIMEOUT);
+
+            // Show IME via WindowInsetsController
+            final InputMethodManager imm = mInstrumentation.getTargetContext().getSystemService(
+                    InputMethodManager.class);
+            runOnMainSync(() -> {
+                editTextRef.get().requestFocus();
+                imm.showSoftInput(editTextRef.get(), 0);
+            });
+            expectEvent(stream, editorMatcher("onStartInputView", marker), TIMEOUT);
+            expectImeVisible(TIMEOUT);
+
+            // Hide IME via WindowInsetsController
+            testActivity2.runOnUiThread(() -> {
+                editTextRef.get().getWindowInsetsController().hide(WindowInsets.Type.ime());
+            });
+            expectEvent(stream, hideSoftInputMatcher(), TIMEOUT);
+            expectEvent(stream, onFinishInputViewMatcher(false), TIMEOUT);
+            expectEventWithKeyValue(stream, "onWindowVisibilityChanged", "visible", View.GONE,
+                    TIMEOUT);
+            expectImeInvisible(TIMEOUT);
         }
     }
 

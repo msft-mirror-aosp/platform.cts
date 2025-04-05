@@ -19,7 +19,6 @@ package android.app.cts;
 import static android.app.cts.ActivityManagerFgsBgStartTest.PACKAGE_NAME_APP1;
 import static android.app.cts.ActivityManagerFgsBgStartTest.PACKAGE_NAME_APP2;
 import static android.app.cts.ActivityManagerFgsBgStartTest.WAITFOR_MSEC;
-import static android.app.cts.BroadcastOptionsTest.cloneViaBundle;
 import static android.app.cts.CtsAppTestUtils.clearBadProcess;
 import static android.app.cts.CtsAppTestUtils.unstopApp;
 import static android.app.stubs.LocalForegroundService.ACTION_START_FGS_RESULT;
@@ -138,5 +137,10 @@ public class BroadcastOptionsIntegrationTest {
         final BroadcastOptions options = BroadcastOptions.makeBasic();
         options.setRequireCompatChange(BroadcastOptions.CHANGE_ALWAYS_ENABLED, false);
         assertBroadcastFailure(options);
+    }
+
+    /** Creates a clone of BroadcastOptions, using toBundle(). */
+    static BroadcastOptions cloneViaBundle(BroadcastOptions bo) {
+        return BroadcastOptions.fromBundle(bo.toBundle());
     }
 }

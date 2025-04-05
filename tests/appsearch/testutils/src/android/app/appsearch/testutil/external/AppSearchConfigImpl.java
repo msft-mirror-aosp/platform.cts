@@ -186,4 +186,9 @@ public class AppSearchConfigImpl implements AppSearchConfig {
                 ? PersistType.Code.RECOVERY_PROOF
                 : PersistType.Code.LITE;
     }
+
+    @Override
+    public int getCompressionThresholdBytes() {
+        return mIcingOptionsConfig.getCompressionThresholdBytes();
+    }
 }

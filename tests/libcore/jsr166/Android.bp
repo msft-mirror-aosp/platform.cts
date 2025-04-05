@@ -41,7 +41,6 @@ android_test {
         "cts",
         "general-tests",
         "mts-art",
-        "mcts-art",
     ],
     host_common_data: [":cts-dalvik-host-test-runner"],
     sdk_version: "test_current",

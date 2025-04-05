@@ -137,7 +137,8 @@ public class RingerTest extends BaseAppVerifier {
             setCallStateAndVerify(managedApp, mt, STATE_DISCONNECTED);
         } finally {
             tearDownApp(managedApp);
-            audioManager.unregisterAudioPlaybackCallback(callback);
+            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                    audioManager, am -> am.unregisterAudioPlaybackCallback(callback));
         }
     }
 
@@ -192,7 +193,8 @@ public class RingerTest extends BaseAppVerifier {
             setCallStateAndVerify(managedApp, mt, STATE_DISCONNECTED);
         } finally {
             tearDownApp(managedApp);
-            audioManager.unregisterAudioPlaybackCallback(callback);
+            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                    audioManager, am -> am.unregisterAudioPlaybackCallback(callback));
         }
     }
 
@@ -246,7 +248,8 @@ public class RingerTest extends BaseAppVerifier {
             setCallStateAndVerify(managedApp, mt, STATE_DISCONNECTED);
         } finally {
             tearDownApp(managedApp);
-            audioManager.unregisterAudioPlaybackCallback(callback);
+            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                    audioManager, am -> am.unregisterAudioPlaybackCallback(callback));
         }
     }
 
@@ -302,7 +305,8 @@ public class RingerTest extends BaseAppVerifier {
             setCallStateAndVerify(managedApp, mt, STATE_DISCONNECTED);
         } finally {
             tearDownApp(managedApp);
-            audioManager.unregisterAudioPlaybackCallback(callback);
+            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                    audioManager, am -> am.unregisterAudioPlaybackCallback(callback));
         }
     }
 
@@ -379,7 +383,8 @@ public class RingerTest extends BaseAppVerifier {
             setCallStateAndVerify(managedApp, mt, STATE_DISCONNECTED);
         } finally {
             tearDownApp(managedApp);
-            audioManager.unregisterAudioPlaybackCallback(callback);
+            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                    audioManager, am -> am.unregisterAudioPlaybackCallback(callback));
         }
     }
 
@@ -449,7 +454,8 @@ public class RingerTest extends BaseAppVerifier {
                     () -> RingtoneManager.setActualDefaultRingtoneUri(mContext,
                             RingtoneManager.TYPE_RINGTONE, defaultRingtoneUri));
             tearDownApp(managedApp);
-            audioManager.unregisterAudioPlaybackCallback(callback);
+            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                    audioManager, am -> am.unregisterAudioPlaybackCallback(callback));
         }
     }
 
@@ -486,7 +492,12 @@ public class RingerTest extends BaseAppVerifier {
         ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(audioManager,
                 am -> am.setRingerMode(ringerMode));
 
-        audioManager.registerAudioPlaybackCallback(callback, new Handler(Looper.getMainLooper()));
+        // Need to register as shell or we will never get callbacks for telecom.
+        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                audioManager,
+                am ->
+                        am.registerAudioPlaybackCallback(
+                                callback, new Handler(Looper.getMainLooper())));
 
         return audioManager;
     }

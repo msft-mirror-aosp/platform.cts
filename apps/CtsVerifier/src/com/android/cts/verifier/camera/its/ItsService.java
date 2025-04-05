@@ -1074,7 +1074,7 @@ public class ItsService extends Service implements SensorEventListener {
                     double zoomRatio = cmdObj.optDouble("zoomRatio");
                     int aeTargetFpsMin = cmdObj.optInt("aeTargetFpsMin");
                     int aeTargetFpsMax = cmdObj.optInt("aeTargetFpsMax");
-                    int aeAntibandingMode = cmdObj.optInt("aeAntibandingMode");
+                    int aeAntibandingMode = cmdObj.optInt("aeAntibandingMode", -1);
                     int faceDetectMode = cmdObj.optInt("faceDetectMode");
                     doBasicRecording(cameraId, profileId, quality, recordingDuration,
                             videoStabilizationMode, hlg10Enabled, zoomRatio,
@@ -3224,7 +3224,7 @@ public class ItsService extends Service implements SensorEventListener {
         boolean paddedFrames = cmdObj.optBoolean("paddedFrames", false);
         int aeTargetFpsMin = cmdObj.optInt("aeTargetFpsMin");
         int aeTargetFpsMax = cmdObj.optInt("aeTargetFpsMax");
-        int aeAntibandingMode = cmdObj.optInt("aeAntibandingMode");
+        int aeAntibandingMode = cmdObj.optInt("aeAntibandingMode", -1);
         int faceDetectMode = cmdObj.optInt("faceDetectMode");
         // Record surface size and HDRness.
         JSONArray outputSpecs = ItsUtils.getOutputSpecs(cmdObj);
@@ -3758,7 +3758,7 @@ public class ItsService extends Service implements SensorEventListener {
             mCaptureRequestBuilder.set(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE,
                     new Range<Integer>(aeTargetFpsMin, aeTargetFpsMax));
         }
-        if (aeAntibandingMode > 0) {
+        if (aeAntibandingMode != -1) {
             Logt.i(TAG, "AE Antibanding Mode: " + aeAntibandingMode);
             mCaptureRequestBuilder.set(CaptureRequest.CONTROL_AE_ANTIBANDING_MODE,
                     aeAntibandingMode);

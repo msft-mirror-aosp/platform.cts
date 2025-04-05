@@ -41,7 +41,7 @@ _VIDEO_STABILIZATION_FACTOR = 0.7  # 70% of gyro movement allowed.
 
 
 def _collect_data(cam, dut, lens_facing, log_path,
-                  aspect_ratio, rot_rig, servo_speed, serial_port):
+                  aspect_ratio, rot_rig, servo_speed):
   """Capture a new set of data from the device.
 
   Captures camera frames while the device is being rotated in the prescribed
@@ -55,7 +55,6 @@ def _collect_data(cam, dut, lens_facing, log_path,
     aspect_ratio: str; Key string for video aspect ratio defined by JCA.
     rot_rig: dict with 'cntl' and 'ch' defined.
     servo_speed: int; Speed of servo motor.
-    serial_port: str; Serial port for Arduino controller.
 
   Returns:
     output path: Output path for the recording.
@@ -78,7 +77,6 @@ def _collect_data(cam, dut, lens_facing, log_path,
           sensor_fusion_utils.ARDUINO_ANGLES_STABILIZATION,
           servo_speed,
           sensor_fusion_utils.ARDUINO_MOVE_TIME_STABILIZATION,
-          serial_port,
       ),
   )
   movement.start()
@@ -194,29 +192,21 @@ def _initialize_rotation_rig(rot_rig, rotator_cntl, rotator_ch):
   return rot_rig
 
 
-def _initialize_servo_controller(tablet_device, rot_rig):
-  """Initialize controller.
+def _get_servo_speed(tablet_device, rot_rig):
+  """Get servo speed.
 
   Args:
     tablet_device: bool; True if tablet device is connected.
     rot_rig: dict with 'cntl' and 'ch' defined.
 
   Returns:
-    serial_port: str; Serial port for Arduino controller.
     servo_speed: int; Speed of servo motor.
   """
-  serial_port = None
-  if rot_rig['cntl'].lower() == sensor_fusion_utils.ARDUINO_STRING.lower():
-    # Identify port.
-    serial_port = sensor_fusion_utils.serial_port_def(
-        sensor_fusion_utils.ARDUINO_STRING)
-    # Send test cmd to arduino until cmd returns properly.
-    sensor_fusion_utils.establish_serial_comm(serial_port)
   if tablet_device:
     servo_speed = sensor_fusion_utils.ARDUINO_SERVO_SPEED_STABILIZATION_TABLET
   else:
     servo_speed = sensor_fusion_utils.ARDUINO_SERVO_SPEED_STABILIZATION
-  return serial_port, servo_speed
+  return servo_speed
 
 
 class VideoStabilizationJCATest(its_base_test.UiAutomatorItsBaseTest):
@@ -279,15 +269,14 @@ class VideoStabilizationJCATest(its_base_test.UiAutomatorItsBaseTest):
       rot_rig = _initialize_rotation_rig(
           rot_rig, self.rotator_cntl, self.rotator_ch)
       # Initialize connection with controller.
-      serial_port, servo_speed = _initialize_servo_controller(
-          self.tablet_device, rot_rig)
+      servo_speed = _get_servo_speed(self.tablet_device, rot_rig)
       max_cam_gyro_angles = {}
 
       for ratio_tested in ui_interaction_utils.RATIO_TO_UI_DESCRIPTION.keys():
         # Record video.
         recording_path = _collect_data(
             cam, self.dut, lens_facing, log_path, ratio_tested,
-            rot_rig, servo_speed, serial_port
+            rot_rig, servo_speed
         )
 
         # Get gyro events.

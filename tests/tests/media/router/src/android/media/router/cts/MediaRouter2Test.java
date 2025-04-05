@@ -39,6 +39,7 @@ import static androidx.test.ext.truth.os.BundleSubject.assertThat;
 import static com.android.media.flags.Flags.FLAG_ENABLE_BUILT_IN_SPEAKER_ROUTE_SUITABILITY_STATUSES;
 import static com.android.media.flags.Flags.FLAG_ENABLE_GET_TRANSFERABLE_ROUTES;
 import static com.android.media.flags.Flags.FLAG_ENABLE_PRIVILEGED_ROUTING_FOR_MEDIA_ROUTING_CONTROL;
+import static com.android.media.flags.Flags.FLAG_ENABLE_SUGGESTED_DEVICE_API;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -58,6 +59,7 @@ import android.media.AudioManager;
 import android.media.MediaRoute2Info;
 import android.media.MediaRouter2;
 import android.media.MediaRouter2.ControllerCallback;
+import android.media.MediaRouter2.DeviceSuggestionsCallback;
 import android.media.MediaRouter2.OnGetControllerHintsListener;
 import android.media.MediaRouter2.RouteCallback;
 import android.media.MediaRouter2.RoutingController;
@@ -65,6 +67,7 @@ import android.media.MediaRouter2.TransferCallback;
 import android.media.RouteDiscoveryPreference;
 import android.media.RouteListingPreference;
 import android.media.RoutingSessionInfo;
+import android.media.SuggestedDeviceInfo;
 import android.media.VolumeProvider;
 import android.media.cts.ResourceReleaser;
 import android.media.cts.SimpleMediaBrowserService;
@@ -77,6 +80,8 @@ import android.os.Looper;
 import android.os.UserManager;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.text.TextUtils;
 import android.view.KeyEvent;
 
@@ -138,6 +143,9 @@ public class MediaRouter2Test {
     @Rule(order = 2)
     public StubMediaRoute2ProviderService.Setup mStubProviderSetup =
             new StubMediaRoute2ProviderService.Setup();
+
+    @Rule(order = 3)
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     // Required by Bedstead.
     @ClassRule @Rule public static final DeviceState sDeviceState = new DeviceState();
@@ -406,12 +414,14 @@ public class MediaRouter2Test {
 
         StubMediaRoute2ProviderService service = mService;
         if (service != null) {
-            service.setProxy(new StubMediaRoute2ProviderService.Proxy() {
-                @Override
-                public void onReleaseSession(long requestId, String sessionId) {
-                    onReleaseSessionLatch.countDown();
-                }
-            });
+            service.setProxy(
+                    new StubMediaRoute2ProviderService.Proxy() {
+                        @Override
+                        public boolean onReleaseSession(long requestId, String sessionId) {
+                            onReleaseSessionLatch.countDown();
+                            return true;
+                        }
+                    });
         }
 
         Map<String, MediaRoute2Info> routes = waitAndGetRoutes(sampleRouteType);
@@ -1677,6 +1687,132 @@ public class MediaRouter2Test {
         }
     }
 
+    @RequiresFlagsEnabled({FLAG_ENABLE_SUGGESTED_DEVICE_API})
+    @Test
+    public void proxyRouterSetSuggestedDeviceInfo_callbackNotified() throws InterruptedException {
+        testRouterSetsSuggestedDeviceInfoAndCallbackNotified(getProxyRouter());
+    }
+
+    @RequiresFlagsEnabled({FLAG_ENABLE_SUGGESTED_DEVICE_API})
+    @Test
+    public void localRouterSetSuggestedDeviceInfo_callbackNotified() throws InterruptedException {
+        testRouterSetsSuggestedDeviceInfoAndCallbackNotified(mRouter2);
+    }
+
+    @RequiresFlagsEnabled({FLAG_ENABLE_SUGGESTED_DEVICE_API})
+    @Test
+    public void proxyRouterRequestSuggestion_callbackNotified() throws InterruptedException {
+        MediaRouter2 proxyRouter = getProxyRouter();
+        TestDeviceSuggestionsCallback callback = new TestDeviceSuggestionsCallback();
+        proxyRouter.registerDeviceSuggestionsCallback(mExecutor, callback);
+
+        try {
+            proxyRouter.notifyDeviceSuggestionRequested();
+
+            assertThat(callback.mSuggestionRequestedLatch.await(TIMEOUT_MS, TimeUnit.MILLISECONDS))
+                    .isTrue();
+        } finally {
+            proxyRouter.unregisterDeviceSuggestionsCallback(callback);
+        }
+    }
+
+    @RequiresFlagsEnabled({FLAG_ENABLE_SUGGESTED_DEVICE_API})
+    @Test
+    public void localRouterRequestSuggestion_callbackNotNotified() throws InterruptedException {
+        MediaRouter2 proxyRouter = getProxyRouter();
+        TestDeviceSuggestionsCallback localCallback = new TestDeviceSuggestionsCallback();
+        TestDeviceSuggestionsCallback proxyCallback = new TestDeviceSuggestionsCallback();
+        mRouter2.registerDeviceSuggestionsCallback(mExecutor, localCallback);
+        proxyRouter.registerDeviceSuggestionsCallback(mExecutor, proxyCallback);
+
+        try {
+            mRouter2.notifyDeviceSuggestionRequested();
+
+            assertThat(
+                            localCallback.mSuggestionRequestedLatch.await(
+                                    TIMEOUT_MS, TimeUnit.MILLISECONDS))
+                    .isFalse();
+            assertThat(
+                            proxyCallback.mSuggestionRequestedLatch.await(
+                                    TIMEOUT_MS, TimeUnit.MILLISECONDS))
+                    .isFalse();
+        } finally {
+            mRouter2.unregisterDeviceSuggestionsCallback(localCallback);
+            proxyRouter.unregisterDeviceSuggestionsCallback(proxyCallback);
+        }
+    }
+
+    private void testRouterSetsSuggestedDeviceInfoAndCallbackNotified(MediaRouter2 router)
+            throws InterruptedException {
+        SuggestedDeviceInfo.Builder builder =
+                new SuggestedDeviceInfo.Builder("DEVICE_DISPLAY_NAME", "ROUTE_ID", 0);
+        List<SuggestedDeviceInfo> suggestedDeviceInfo = List.of(builder.build());
+        TestDeviceSuggestionsCallback callback = new TestDeviceSuggestionsCallback();
+
+        try {
+            router.registerDeviceSuggestionsCallback(mExecutor, callback);
+
+            router.setDeviceSuggestions(suggestedDeviceInfo);
+
+            assertThat(callback.mSuggestionChangedLatch.await(TIMEOUT_MS, TimeUnit.MILLISECONDS))
+                    .isTrue();
+            assertThat(callback.mLastSuggestingPackage).isEqualTo(mContext.getPackageName());
+            assertThat(callback.mLastSuggestedDeviceInfo).isEqualTo(suggestedDeviceInfo);
+        } finally {
+            router.unregisterDeviceSuggestionsCallback(callback);
+        }
+    }
+
+    @RequiresFlagsEnabled({FLAG_ENABLE_SUGGESTED_DEVICE_API})
+    @Test
+    public void proxyRouterGetSuggestedDeviceInfo() throws InterruptedException {
+        testRouterGetSuggestedDeviceInfo(getProxyRouter());
+    }
+
+    @RequiresFlagsEnabled({FLAG_ENABLE_SUGGESTED_DEVICE_API})
+    @Test
+    public void localRouterGetSuggestedDeviceInfo() throws InterruptedException {
+        testRouterGetSuggestedDeviceInfo(mRouter2);
+    }
+
+    private void testRouterGetSuggestedDeviceInfo(MediaRouter2 router) {
+        SuggestedDeviceInfo.Builder builder =
+                new SuggestedDeviceInfo.Builder("DEVICE_DISPLAY_NAME", "ROUTE_ID", 0);
+        List<SuggestedDeviceInfo> suggestedDeviceInfo = List.of(builder.build());
+        TestDeviceSuggestionsCallback callback = new TestDeviceSuggestionsCallback();
+
+        try {
+            router.setDeviceSuggestions(suggestedDeviceInfo);
+
+            Map<String, List<SuggestedDeviceInfo>> suggestions = router.getDeviceSuggestions();
+
+            assertThat(suggestions.get(mContext.getPackageName())).isEqualTo(suggestedDeviceInfo);
+        } finally {
+            router.unregisterDeviceSuggestionsCallback(callback);
+        }
+    }
+
+    private static class TestDeviceSuggestionsCallback implements DeviceSuggestionsCallback {
+
+        String mLastSuggestingPackage = null;
+        List<SuggestedDeviceInfo> mLastSuggestedDeviceInfo = null;
+        CountDownLatch mSuggestionChangedLatch = new CountDownLatch(1);
+        CountDownLatch mSuggestionRequestedLatch = new CountDownLatch(1);
+
+        @Override
+        public void onSuggestionUpdated(
+                String suggestingPackageName, List<SuggestedDeviceInfo> suggestedDeviceInfo) {
+            mLastSuggestingPackage = suggestingPackageName;
+            mLastSuggestedDeviceInfo = suggestedDeviceInfo;
+            mSuggestionChangedLatch.countDown();
+        }
+
+        @Override
+        public void onSuggestionRequested() {
+            mSuggestionRequestedLatch.countDown();
+        }
+    }
+
     @Test
     public void getRouteListingPreference_returnsLastSetPreference() {
         RouteListingPreference testPreference = new RouteListingPreference.Builder().build();
@@ -1746,30 +1882,7 @@ public class MediaRouter2Test {
         assertThat(remoteController.getRoutingSessionInfo().getTransferReason())
                 .isEqualTo(RoutingSessionInfo.TRANSFER_REASON_APP);
 
-        int myUid = mContext.getApplicationInfo().uid;
-        String myPackageName = mContext.getPackageName();
-        mUiAutomation.adoptShellPermissionIdentity(Manifest.permission.MANAGE_APP_OPS_MODES);
-        AppOpsManager appOpsManager = mContext.getSystemService(AppOpsManager.class);
-        // We need MEDIA_ROUTING_CONTROL to create a proxy router, to make the transfer reason be
-        // SYSTEM.
-        appOpsManager.setMode(
-                AppOpsManager.OP_MEDIA_ROUTING_CONTROL,
-                myUid,
-                myPackageName,
-                AppOpsManager.MODE_ALLOWED);
-        mResourceReleaser.add(
-                () ->
-                        appOpsManager.setMode(
-                                AppOpsManager.OP_MEDIA_ROUTING_CONTROL,
-                                myUid,
-                                mContext.getPackageName(),
-                                AppOpsManager.MODE_DEFAULT));
-        MediaRouter2 proxyRouter =
-                MediaRouter2.getInstance(
-                        mContext,
-                        myPackageName,
-                        mExecutor,
-                        /* onInstanceInvalidatedListener= */ () -> {});
+        MediaRouter2 proxyRouter = getProxyRouter();
         CountDownLatch proxyControllerUpdateLatch = new CountDownLatch(1);
         ControllerCallback proxyControllerCallback =
                 new ControllerCallback() {
@@ -1864,5 +1977,28 @@ public class MediaRouter2Test {
 
     private boolean isAutomotive() {
         return mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE);
+    }
+
+    private MediaRouter2 getProxyRouter() {
+        int myUid = mContext.getApplicationInfo().uid;
+        String myPackageName = mContext.getPackageName();
+        mUiAutomation.adoptShellPermissionIdentity(Manifest.permission.MANAGE_APP_OPS_MODES);
+        AppOpsManager appOpsManager = mContext.getSystemService(AppOpsManager.class);
+        // We need MEDIA_ROUTING_CONTROL to create a proxy router, to make the transfer reason be
+        // SYSTEM.
+        appOpsManager.setMode(
+                AppOpsManager.OP_MEDIA_ROUTING_CONTROL,
+                myUid,
+                myPackageName,
+                AppOpsManager.MODE_ALLOWED);
+        mResourceReleaser.add(
+                () ->
+                        appOpsManager.setMode(
+                                AppOpsManager.OP_MEDIA_ROUTING_CONTROL,
+                                myUid,
+                                mContext.getPackageName(),
+                                AppOpsManager.MODE_DEFAULT));
+        return MediaRouter2.getInstance(
+                mContext, myPackageName, mExecutor, /* onInstanceInvalidatedListener= */ () -> {});
     }
 }

@@ -968,7 +968,7 @@ public class WindowManagerStateHelper extends WindowManagerState {
 
     public void assertWindowDisplayed(final String windowName) {
         waitForValidState(WaitForValidActivityState.forWindow(windowName));
-        assertTrue(windowName + " is visible", isWindowSurfaceShown(windowName));
+        assertTrue(windowName + " must be visible", isWindowSurfaceShown(windowName));
     }
 
     public void waitAndAssertImePickerShownOnDisplay(int displayId, String message) {

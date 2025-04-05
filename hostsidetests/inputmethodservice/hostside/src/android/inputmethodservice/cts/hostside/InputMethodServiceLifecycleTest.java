@@ -24,6 +24,7 @@ import static android.inputmethodservice.cts.common.DeviceEventConstants.EXTRA_E
 import static android.inputmethodservice.cts.common.DeviceEventConstants.RECEIVER_COMPONENT;
 
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeFalse;
 
 import android.inputmethodservice.cts.common.EditTextAppConstants;
 import android.inputmethodservice.cts.common.EventProviderConstants.EventTableConstants;
@@ -281,6 +282,131 @@ public class InputMethodServiceLifecycleTest extends BaseHostJUnit4Test {
         testSwitchToPreviousInput(true, false /* imeForceQueryable */);
     }
 
+    private void testInputUnbindsOnImeStopped(boolean instant) throws Exception {
+        sendTestStartEvent(DeviceTestConstants.TEST_INPUT_UNBINDS_ON_IME_STOPPED);
+        installPossibleInstantPackage(
+                EditTextAppConstants.APK, EditTextAppConstants.PACKAGE, instant);
+        installImePackageSync(Ime1Constants.APK, Ime1Constants.IME_ID);
+        installImePackageSync(Ime2Constants.APK, Ime2Constants.IME_ID);
+        shell(ShellCommandUtils.waitForBroadcastBarrier());
+        shell(ShellCommandUtils.enableIme(Ime1Constants.IME_ID, mCurrentUserId));
+        shell(ShellCommandUtils.enableIme(Ime2Constants.IME_ID, mCurrentUserId));
+        waitUntilImesAreEnabled(Ime1Constants.IME_ID, Ime2Constants.IME_ID);
+        shell(ShellCommandUtils.setCurrentImeSync(Ime1Constants.IME_ID, mCurrentUserId));
+
+        assertTrue(runDeviceTestMethod(DeviceTestConstants.TEST_INPUT_UNBINDS_ON_IME_STOPPED));
+    }
+
+    /**
+     * Test if uninstalling the currently selected IME then selecting another IME triggers standard
+     * startInput/bindInput sequence for full (non-instant) apps.
+     */
+    @AppModeFull
+    @Test
+    public void testInputUnbindsOnImeStoppedFull() throws Exception {
+        testInputUnbindsOnImeStopped(false);
+    }
+
+    /**
+     * Test if uninstalling the currently selected IME then selecting another IME triggers standard
+     * startInput/bindInput sequence for instant apps.
+     */
+    @AppModeInstant
+    @Test
+    public void testInputUnbindsOnImeStoppedInstant() throws Exception {
+        testInputUnbindsOnImeStopped(true);
+    }
+
+    private void testInputUnbindsOnAppStop(boolean instant) throws Exception {
+        sendTestStartEvent(DeviceTestConstants.TEST_INPUT_UNBINDS_ON_APP_STOPPED);
+        installPossibleInstantPackage(
+                EditTextAppConstants.APK, EditTextAppConstants.PACKAGE, instant);
+        installImePackageSync(Ime1Constants.APK, Ime1Constants.IME_ID);
+        shell(ShellCommandUtils.waitForBroadcastBarrier());
+        shell(ShellCommandUtils.enableIme(Ime1Constants.IME_ID, mCurrentUserId));
+        waitUntilImesAreEnabled(Ime1Constants.IME_ID);
+        shell(ShellCommandUtils.setCurrentImeSync(Ime1Constants.IME_ID, mCurrentUserId));
+
+        assertTrue(runDeviceTestMethod(DeviceTestConstants.TEST_INPUT_UNBINDS_ON_APP_STOPPED));
+    }
+
+    /**
+     * Test if uninstalling the currently running IME client triggers
+     * "InputMethodService#onUnbindInput" callback for full (non-instant) apps.
+     */
+    @AppModeFull
+    @Test
+    public void testInputUnbindsOnAppStopFull() throws Exception {
+        testInputUnbindsOnAppStop(false);
+    }
+
+    /**
+     * Test if uninstalling the currently running IME client triggers
+     * "InputMethodService#onUnbindInput" callback for instant apps.
+     */
+    @AppModeInstant
+    @Test
+    public void testInputUnbindsOnAppStopInstant() throws Exception {
+        testInputUnbindsOnAppStop(true);
+    }
+
+    private void testImeSwitchingWithoutWindowFocusAfterDisplayOffOn(boolean instant)
+            throws Exception {
+        // Skip whole tests when DUT has com.google.android.tv.operator_tier feature.
+        assumeFalse(hasDeviceFeature(ShellCommandUtils.FEATURE_TV_OPERATOR_TIER));
+        assumeFalse(hasDeviceFeature(ShellCommandUtils.FEATURE_AUTOMOTIVE));
+        sendTestStartEvent(
+                DeviceTestConstants.TEST_IME_SWITCHING_WITHOUT_WINDOW_FOCUS_AFTER_DISPLAY_OFF_ON);
+        installPossibleInstantPackage(
+                EditTextAppConstants.APK, EditTextAppConstants.PACKAGE, instant);
+        installImePackageSync(Ime1Constants.APK, Ime1Constants.IME_ID);
+        installImePackageSync(Ime2Constants.APK, Ime2Constants.IME_ID);
+        shell(ShellCommandUtils.waitForBroadcastBarrier());
+        shell(ShellCommandUtils.enableIme(Ime1Constants.IME_ID, mCurrentUserId));
+        shell(ShellCommandUtils.enableIme(Ime2Constants.IME_ID, mCurrentUserId));
+        waitUntilImesAreEnabled(Ime1Constants.IME_ID, Ime2Constants.IME_ID);
+        shell(ShellCommandUtils.setCurrentImeSync(Ime1Constants.IME_ID, mCurrentUserId));
+
+        assertTrue(runDeviceTestMethod(
+                DeviceTestConstants.TEST_IME_SWITCHING_WITHOUT_WINDOW_FOCUS_AFTER_DISPLAY_OFF_ON));
+    }
+
+    /**
+     * Test IME switching while another window (e.g. IME switcher dialog) is focused on top of the
+     * IME target window after turning off/on the screen.
+     *
+     * <p>Regression test for Bug 160391516.</p>
+     */
+    // TODO(b/330610015): Consider re-enabling this test for automotive with visible background user
+    //  once PowerManager#isInteractive is fixed on form factors with visible background user
+    //  (note: this may not be necessary since IME hostside tests are going to be decommissioned by
+    //  b/323251870.
+    @AppModeFull
+    @Test
+    public void testImeSwitchingWithoutWindowFocusAfterDisplayOffOnFull() throws Exception {
+        assumeFalse("This test is disabled on automotive with visible background users enabled",
+                isAutomotiveWithVisibleBackgroundUser());
+        testImeSwitchingWithoutWindowFocusAfterDisplayOffOn(false);
+    }
+
+    /**
+     * Test IME switching while another window (e.g. IME switcher dialog) is focused on top of the
+     * IME target window after turning off/on the screen.
+     *
+     * <p>Regression test for Bug 160391516.</p>
+     */
+    // TODO(b/330610015): Consider re-enabling this test for automotive with visible background user
+    //  once PowerManager#isInteractive is fixed on form factors with visible background user
+    //  (note: this may not be necessary since IME hostside tests are going to be decommissioned by
+    //  b/323251870.
+    @AppModeInstant
+    @Test
+    public void testImeSwitchingWithoutWindowFocusAfterDisplayOffOnInstant() throws Exception {
+        assumeFalse("This test is disabled on automotive with visible background users enabled",
+                isAutomotiveWithVisibleBackgroundUser());
+        testImeSwitchingWithoutWindowFocusAfterDisplayOffOn(true);
+    }
+
     private void sendTestStartEvent(TestInfo deviceTest) throws Exception {
         final String sender = deviceTest.getTestName();
         // {@link EventType#EXTRA_EVENT_TIME} will be recorded at device side.
@@ -382,5 +508,10 @@ public class InputMethodServiceLifecycleTest extends BaseHostJUnit4Test {
             pollingCheck(() -> shell(cmd).contains(imeId), PACKAGE_OP_TIMEOUT,
                     imeId + " should be " + (shouldBeEnabled ? "enabled." : "available."));
         }
+    }
+
+    private boolean isAutomotiveWithVisibleBackgroundUser() throws Exception {
+        return getDevice().hasFeature("android.hardware.type.automotive")
+                && "true".equalsIgnoreCase(shell("cmd user is-visible-background-users-supported"));
     }
 }

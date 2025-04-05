@@ -54,6 +54,8 @@ import android.Manifest;
 import android.app.Instrumentation;
 import android.app.PendingIntent;
 import android.compat.testing.PlatformCompatChangeRule;
+import android.content.ContentProviderOperation;
+import android.content.ContentProviderResult;
 import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.content.Context;
@@ -285,16 +287,8 @@ public class StorageOtherFilesTest {
         }
 
         assertThat(uris.size()).isEqualTo(numFiles);
-        return uris;
-    }
 
-    private void deleteTestFiles(Collection<Uri> uris) {
-        // Delete all files created during the test
-        for (Uri uri : uris) {
-            sContentResolver.delete(uri, null, null);
-        }
-
-        // Assert that files are deleted from the Mediaprovider database
+        // Assert that files are inserted in the Mediaprovider database
         try (Cursor c =
                 sContentResolver.query(
                         uris.iterator().next(),
@@ -302,43 +296,93 @@ public class StorageOtherFilesTest {
                         null,
                         null,
                         null)) {
-            assertThat(c.getCount()).isEqualTo(0);
+            assertThat(c.getCount()).isEqualTo(1);
+        }
+
+        return uris;
+    }
+
+    private void deleteTestFiles(Collection<Uri> uris) throws Exception {
+        // Delete all files created during the test
+        String authority = uris.iterator().next().getAuthority();
+        assertThat(authority).isNotNull();
+
+        ArrayList<ContentProviderOperation> deleteOps = new ArrayList<>();
+        for (Uri uri : uris) {
+            deleteOps.add(ContentProviderOperation.newDelete(uri).build());
+        }
+
+        ContentProviderResult[] contentProviderResults =
+                sContentResolver.applyBatch(authority, deleteOps);
+        assertThat(contentProviderResults).isNotNull();
+        assertThat(contentProviderResults.length).isEqualTo(uris.size());
+    }
+
+    @Test
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA, codeName = "Baklava")
+    @EnableCompatChanges({LIMIT_CREATE_REQUEST_URIS})
+    public void testCreateWriteRequestLimitUris_throwsIllegalArgumentException() throws Exception {
+        assumeTrue(sContext.getApplicationInfo().targetSdkVersion >= Build.VERSION_CODES.BAKLAVA);
+
+        final int numFiles = 2010;
+        Collection<Uri> uris = createTestFiles(numFiles);
+
+        try {
+            assertThrows(
+                    IllegalArgumentException.class,
+                    () -> MediaStore.createWriteRequest(sContentResolver, uris));
+        } finally {
+            deleteTestFiles(uris);
         }
     }
 
     @Test
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA, codeName = "Baklava")
     @EnableCompatChanges({LIMIT_CREATE_REQUEST_URIS})
-    public void testCreateRequestLimitUris_throwsIllegalArgumentException() throws Exception {
+    public void testCreateDeleteRequestLimitUris_throwsIllegalArgumentException() throws Exception {
         assumeTrue(sContext.getApplicationInfo().targetSdkVersion >= Build.VERSION_CODES.BAKLAVA);
 
-        final int numFiles = 2100;
+        final int numFiles = 2010;
         Collection<Uri> uris = createTestFiles(numFiles);
 
         try {
-            // Assert that files are inserted in the Mediaprovider database
-            try (Cursor c =
-                    sContentResolver.query(
-                            uris.iterator().next(),
-                            new String[] {MediaColumns.DATA},
-                            null,
-                            null,
-                            null)) {
-                assertThat(c.getCount()).isEqualTo(1);
-            }
-
-            assertThrows(
-                    IllegalArgumentException.class,
-                    () -> MediaStore.createWriteRequest(sContentResolver, uris));
-
             assertThrows(
                     IllegalArgumentException.class,
                     () -> MediaStore.createDeleteRequest(sContentResolver, uris));
+        } finally {
+            deleteTestFiles(uris);
+        }
+    }
 
+    @Test
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA, codeName = "Baklava")
+    @EnableCompatChanges({LIMIT_CREATE_REQUEST_URIS})
+    public void testCreateFavoriteRequestLimitUris_throwsIllegalArgumentException()
+            throws Exception {
+        assumeTrue(sContext.getApplicationInfo().targetSdkVersion >= Build.VERSION_CODES.BAKLAVA);
+
+        final int numFiles = 2010;
+        Collection<Uri> uris = createTestFiles(numFiles);
+
+        try {
             assertThrows(
                     IllegalArgumentException.class,
                     () -> MediaStore.createFavoriteRequest(sContentResolver, uris, true));
+        } finally {
+            deleteTestFiles(uris);
+        }
+    }
 
+    @Test
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA, codeName = "Baklava")
+    @EnableCompatChanges({LIMIT_CREATE_REQUEST_URIS})
+    public void testCreateTrashRequestLimitUris_throwsIllegalArgumentException() throws Exception {
+        assumeTrue(sContext.getApplicationInfo().targetSdkVersion >= Build.VERSION_CODES.BAKLAVA);
+
+        final int numFiles = 2010;
+        Collection<Uri> uris = createTestFiles(numFiles);
+
+        try {
             assertThrows(
                     IllegalArgumentException.class,
                     () -> MediaStore.createTrashRequest(sContentResolver, uris, true));
@@ -350,38 +394,30 @@ public class StorageOtherFilesTest {
     @Test
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA, codeName = "Baklava")
     @EnableCompatChanges({LIMIT_CREATE_REQUEST_URIS})
-    public void testCreateRequestLimitUris_success() throws Exception {
+    public void testCreateWriteRequestLimitUris_success() throws Exception {
         final int numFiles = 2000;
         Collection<Uri> uris = createTestFiles(numFiles);
 
         try {
-            // Assert that files are inserted in the Mediaprovider database
-            try (Cursor c =
-                    sContentResolver.query(
-                            uris.iterator().next(),
-                            new String[] {MediaColumns.DATA},
-                            null,
-                            null,
-                            null)) {
-                assertThat(c.getCount()).isEqualTo(1);
-            }
-
             PendingIntent pi = MediaStore.createWriteRequest(sContentResolver, uris);
             assertNotNull(pi);
             doEscalation(pi, true, true, true);
+        } finally {
+            deleteTestFiles(uris);
+        }
+    }
 
-            pi = MediaStore.createFavoriteRequest(sContentResolver, uris, true);
-            assertNotNull(pi);
-            doEscalation(pi);
+    @Test
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA, codeName = "Baklava")
+    @EnableCompatChanges({LIMIT_CREATE_REQUEST_URIS})
+    public void testCreateDeleteRequestLimitUris_success() throws Exception {
+        final int numFiles = 2000;
+        Collection<Uri> uris = createTestFiles(numFiles);
 
-            pi = MediaStore.createTrashRequest(sContentResolver, uris, true);
+        try {
+            PendingIntent pi = MediaStore.createDeleteRequest(sContentResolver, uris);
             assertNotNull(pi);
             doEscalation(pi, true, true, true);
-
-            pi = MediaStore.createDeleteRequest(sContentResolver, uris);
-            assertNotNull(pi);
-            doEscalation(pi, true, true, true);
-
         } finally {
             // Assert that files are deleted from the Mediaprovider database
             try (Cursor c =
@@ -393,6 +429,38 @@ public class StorageOtherFilesTest {
                             null)) {
                 assertThat(c.getCount()).isEqualTo(0);
             }
+        }
+    }
+
+    @Test
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA, codeName = "Baklava")
+    @EnableCompatChanges({LIMIT_CREATE_REQUEST_URIS})
+    public void testCreateFavoriteRequestLimitUris_success() throws Exception {
+        final int numFiles = 2000;
+        Collection<Uri> uris = createTestFiles(numFiles);
+
+        try {
+            PendingIntent pi = MediaStore.createFavoriteRequest(sContentResolver, uris, true);
+            assertNotNull(pi);
+            doEscalation(pi);
+        } finally {
+            deleteTestFiles(uris);
+        }
+    }
+
+    @Test
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA, codeName = "Baklava")
+    @EnableCompatChanges({LIMIT_CREATE_REQUEST_URIS})
+    public void testCreateTrashRequestLimitUris_success() throws Exception {
+        final int numFiles = 2000;
+        Collection<Uri> uris = createTestFiles(numFiles);
+
+        try {
+            PendingIntent pi = MediaStore.createTrashRequest(sContentResolver, uris, true);
+            assertNotNull(pi);
+            doEscalation(pi, true, true, true);
+        } finally {
+            deleteTestFiles(uris);
         }
     }
 

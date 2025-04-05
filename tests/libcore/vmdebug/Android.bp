@@ -35,8 +35,8 @@ android_test {
     test_suites: [
         "cts",
         "general-tests",
-        "mcts-art",
         "mts-art",
     ],
     sdk_version: "module_current",
+    min_sdk_version: "31",
 }

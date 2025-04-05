@@ -261,8 +261,6 @@ public class VehiclePropertyVerifier<T> {
                     PropertyNotAvailableErrorCode.NOT_AVAILABLE_SPEED_HIGH,
                     PropertyNotAvailableErrorCode.NOT_AVAILABLE_POOR_VISIBILITY,
                     PropertyNotAvailableErrorCode.NOT_AVAILABLE_SAFETY);
-    private static final boolean AREA_ID_CONFIG_ACCESS_FLAG =
-            isAtLeastV() && Flags.areaIdConfigAccess();
     private static final boolean CAR_PROPERTY_SUPPORTED_VALUE_FLAG =
             isAtLeastB() && Flags.carPropertySupportedValue();
     private static final List<Integer> VALID_CAR_PROPERTY_VALUE_STATUSES =
@@ -798,7 +796,7 @@ public class VehiclePropertyVerifier<T> {
     private void verifyReadPermissionCannotWrite() {
         CarPropertyConfig<T> carPropertyConfig = getCarPropertyConfig();
         for (String readPermission : mReadPermissions) {
-            if (AREA_ID_CONFIG_ACCESS_FLAG) {
+            if (isAtLeastV()) {
                 for (int areaId : carPropertyConfig.getAreaIds()) {
                     if (canWrite(carPropertyConfig, areaId)) {
                         verifyReadPermissionCannotWrite(readPermission, mWritePermissions, areaId);
@@ -815,7 +813,7 @@ public class VehiclePropertyVerifier<T> {
     private void verifyWritePermissionCannotRead() {
         CarPropertyConfig<T> carPropertyConfig = getCarPropertyConfig();
         for (ImmutableSet<String> writePermissions : mWritePermissions) {
-            if (AREA_ID_CONFIG_ACCESS_FLAG) {
+            if (isAtLeastV()) {
                 for (int areaId : carPropertyConfig.getAreaIds()) {
                     if (canRead(carPropertyConfig, areaId)) {
                         verifyWritePermissionsCannotRead(
@@ -1381,7 +1379,7 @@ public class VehiclePropertyVerifier<T> {
     @Nullable
     private static <U> SparseArray<U> getInitialValuesByAreaId(
             CarPropertyConfig<U> carPropertyConfig, CarPropertyManager carPropertyManager) {
-        if (!AREA_ID_CONFIG_ACCESS_FLAG
+        if (!isAtLeastV()
                 && !(canRead(carPropertyConfig.getAccess())
                         && canWrite(carPropertyConfig.getAccess()))) {
             return null;
@@ -1676,7 +1674,7 @@ public class VehiclePropertyVerifier<T> {
 
     private void verifyCarPropertyValueSetter() {
         CarPropertyConfig<T> carPropertyConfig = getCarPropertyConfig();
-        if (!AREA_ID_CONFIG_ACCESS_FLAG && !canWrite(carPropertyConfig.getAccess())) {
+        if (!isAtLeastV() && !canWrite(carPropertyConfig.getAccess())) {
             verifySetPropertyFails(carPropertyConfig.getAreaIds()[0]);
             return;
         }
@@ -1976,7 +1974,7 @@ public class VehiclePropertyVerifier<T> {
 
     private void verifySetNotAvailable(Collection<Integer> areaIdsNotAvailable) {
         CarPropertyConfig<T> carPropertyConfig = getCarPropertyConfig();
-        if (!AREA_ID_CONFIG_ACCESS_FLAG
+        if (!isAtLeastV()
                 && !(canRead(carPropertyConfig.getAccess())
                         && canWrite(carPropertyConfig.getAccess()))) {
             return;
@@ -2058,7 +2056,7 @@ public class VehiclePropertyVerifier<T> {
 
     private void verifyAdasPropertyErrorState(Collection<Integer> areaIdsDisabled) {
         CarPropertyConfig<T> carPropertyConfig = getCarPropertyConfig();
-        if (!AREA_ID_CONFIG_ACCESS_FLAG && !canRead(carPropertyConfig.getAccess())) {
+        if (!isAtLeastV() && !canRead(carPropertyConfig.getAccess())) {
             return;
         }
 
@@ -2220,7 +2218,7 @@ public class VehiclePropertyVerifier<T> {
                 .isEqualTo(mPropertyId);
         int carPropConfigAccess = carPropertyConfig.getAccess();
         verifyAccess_isSubsetOfOtherAccess(carPropConfigAccess, mAllowedAccessModes);
-        if (AREA_ID_CONFIG_ACCESS_FLAG) {
+        if (isAtLeastV()) {
             for (AreaIdConfig<?> areaIdConfig : carPropertyConfig.getAreaIdConfigs()) {
                 int areaAccess = areaIdConfig.getAccess();
                 verifyAccess_isSubsetOfOtherAccess(areaAccess, mAllowedAccessModes);
@@ -2604,7 +2602,7 @@ public class VehiclePropertyVerifier<T> {
 
     private void verifyCarPropertyValueGetter() {
         CarPropertyConfig<T> carPropertyConfig = getCarPropertyConfig();
-        if (!AREA_ID_CONFIG_ACCESS_FLAG && !canRead(carPropertyConfig.getAccess())) {
+        if (!isAtLeastV() && !canRead(carPropertyConfig.getAccess())) {
             verifyGetPropertyFails(carPropertyConfig.getAreaIds()[0]);
             return;
         }
@@ -2955,7 +2953,7 @@ public class VehiclePropertyVerifier<T> {
 
     /** Returns whether all AreaIds for the property is readable. */
     private boolean canReadAllAreaIds(CarPropertyConfig<T> carPropertyConfig) {
-        if (!AREA_ID_CONFIG_ACCESS_FLAG) {
+        if (!isAtLeastV()) {
             return canRead(carPropertyConfig.getAccess());
         }
         for (int areaId : carPropertyConfig.getAreaIds()) {
@@ -2986,7 +2984,7 @@ public class VehiclePropertyVerifier<T> {
 
         int access = carPropertyConfig.getAccess();
         for (int areaId : carPropertyConfig.getAreaIds()) {
-            if (AREA_ID_CONFIG_ACCESS_FLAG) {
+            if (isAtLeastV()) {
                 access = carPropertyConfig.getAreaIdConfig(areaId).getAccess();
             }
 
@@ -3065,7 +3063,7 @@ public class VehiclePropertyVerifier<T> {
 
     private static Optional<Integer> getAreaIdAccess(
             CarPropertyConfig<?> carPropertyConfig, int areaId) {
-        return AREA_ID_CONFIG_ACCESS_FLAG
+        return isAtLeastV()
                 ? Optional.of(carPropertyConfig.getAreaIdConfig(areaId).getAccess())
                 : Optional.empty();
     }
@@ -3086,28 +3084,11 @@ public class VehiclePropertyVerifier<T> {
     }
 
     private static boolean canRead(CarPropertyConfig<?> carPropertyConfig, int areaId) {
-        return doesAreaIdAccessMatch(
-                        carPropertyConfig, areaId, CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ)
-                || doesAreaIdAccessMatch(
-                        carPropertyConfig,
-                        areaId,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE);
+        return canRead(getAreaIdAccessOrElseGlobalAccess(carPropertyConfig, areaId));
     }
 
     private static boolean canWrite(CarPropertyConfig<?> carPropertyConfig, int areaId) {
-        return doesAreaIdAccessMatch(
-                        carPropertyConfig, areaId, CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_WRITE)
-                || doesAreaIdAccessMatch(
-                        carPropertyConfig,
-                        areaId,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE);
-    }
-
-    private static boolean doesAreaIdAccessMatch(
-            CarPropertyConfig<?> carPropertyConfig, int areaId, int expectedAccess) {
-        return getAreaIdAccess(carPropertyConfig, areaId)
-                .filter(areaIdAccess -> areaIdAccess == expectedAccess)
-                .isPresent();
+        return canWrite(getAreaIdAccessOrElseGlobalAccess(carPropertyConfig, areaId));
     }
 
     /** Verifies that hvac temperature is valid. */
@@ -3903,7 +3884,7 @@ public class VehiclePropertyVerifier<T> {
             return;
         }
         CarPropertyConfig<T> carPropertyConfig = getCarPropertyConfig();
-        if (!AREA_ID_CONFIG_ACCESS_FLAG && !canRead(carPropertyConfig.getAccess())) {
+        if (!isAtLeastV() && !canRead(carPropertyConfig.getAccess())) {
             verifyGetPropertiesAsyncFails(carPropertyConfig.getAreaIds()[0]);
             return;
         }
@@ -3996,7 +3977,7 @@ public class VehiclePropertyVerifier<T> {
             return;
         }
         CarPropertyConfig<T> carPropertyConfig = getCarPropertyConfig();
-        if (!AREA_ID_CONFIG_ACCESS_FLAG && !canWrite(carPropertyConfig.getAccess())) {
+        if (!isAtLeastV() && !canWrite(carPropertyConfig.getAccess())) {
             verifySetPropertiesAsyncFails(carPropertyConfig.getAreaIds()[0]);
             return;
         }

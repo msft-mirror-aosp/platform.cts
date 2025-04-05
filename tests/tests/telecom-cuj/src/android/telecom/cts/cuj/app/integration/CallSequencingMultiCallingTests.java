@@ -152,11 +152,16 @@ public class CallSequencingMultiCallingTests extends BaseAppVerifier {
                 assertNotNull("ANSWER operation never received for second call " + c2,
                         answerOp);
                 verifyCallIsInState(c2, STATE_ACTIVE);
-                // Verify that HOLD operation is received before the ANSWER operation
-                long holdOpTimestamp = holdOp.getCreationTimeMs();
-                long answerOpTimestamp = answerOp.getCreationTimeMs();
-                assertTrue("HOLD operation should've been received before ANSWER operation",
-                        holdOpTimestamp < answerOpTimestamp);
+                // Skip verification if the test apps are the same. Sequencing should really only
+                // be verified across phone accounts.
+                if (app.getTelecomApps() != apps.get(0).getTelecomApps()) {
+                    // Verify that HOLD operation is received before the ANSWER operation
+                    long holdOpTimestamp = holdOp.getCreationTimeMs();
+                    long answerOpTimestamp = answerOp.getCreationTimeMs();
+                    assertTrue(
+                            "HOLD operation should've been received before ANSWER operation",
+                            holdOpTimestamp < answerOpTimestamp);
+                }
             } else {
                 // Verify first call held
                 CallStateTransitionOperation holdOp = c1Validator.completePendingOperationOrTimeout(

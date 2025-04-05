@@ -42,7 +42,7 @@ import java.util.List;
 public class NotificationStyleVerifierActivity extends InteractiveVerifierActivity {
 
     private static final int COLOR_ORANGE = Color.parseColor("#ff7f50");
-    private static final int  COLOR_YELLOW = Color.parseColor("#ffff00");
+    private static final int COLOR_GREEN = Color.parseColor("#00FF00");
     private static final int  COLOR_RED = Color.parseColor("#ff0000");
     private static final int COLOR_BLUE = Color.parseColor("#1155cc");
 
@@ -360,19 +360,15 @@ public class NotificationStyleVerifierActivity extends InteractiveVerifierActivi
                     .setStyle(
                             new Notification.ProgressStyle()
                                     .addProgressSegment(
-                                            new Notification.ProgressStyle.Segment(20).setColor(
-                                                    COLOR_ORANGE)
-                                    )
+                                            new Notification.ProgressStyle.Segment(20)
+                                                    .setColor(COLOR_ORANGE))
                                     .addProgressSegment(
-                                            new Notification.ProgressStyle.Segment(30).setColor(
-                                                    COLOR_YELLOW)
-                                    )
+                                            new Notification.ProgressStyle.Segment(30)
+                                                    .setColor(COLOR_GREEN))
                                     .addProgressSegment(
-                                            new Notification.ProgressStyle.Segment(50).setColor(
-                                                    COLOR_RED)
-                                    )
-                                    .setProgress(60)
-                    )
+                                            new Notification.ProgressStyle.Segment(50)
+                                                    .setColor(COLOR_RED))
+                                    .setProgress(60))
                     .build();
         }
     }
@@ -400,20 +396,18 @@ public class NotificationStyleVerifierActivity extends InteractiveVerifierActivi
                     .setStyle(
                             new Notification.ProgressStyle()
                                     .addProgressSegment(
-                                            new Notification.ProgressStyle.Segment(100).setColor(
-                                                    COLOR_ORANGE)
-                                    )
+                                            new Notification.ProgressStyle.Segment(100)
+                                                    .setColor(COLOR_ORANGE))
                                     .addProgressPoint(
-                                            new Notification.ProgressStyle.Point(20).setColor(
-                                                    COLOR_ORANGE))
+                                            new Notification.ProgressStyle.Point(20)
+                                                    .setColor(COLOR_ORANGE))
                                     .addProgressPoint(
-                                            new Notification.ProgressStyle.Point(50).setColor(
-                                                    COLOR_YELLOW))
+                                            new Notification.ProgressStyle.Point(50)
+                                                    .setColor(COLOR_GREEN))
                                     .addProgressPoint(
-                                            new Notification.ProgressStyle.Point(80).setColor(
-                                                    COLOR_BLUE))
-                                    .setProgress(60)
-                    )
+                                            new Notification.ProgressStyle.Point(80)
+                                                    .setColor(COLOR_BLUE))
+                                    .setProgress(60))
                     .build();
         }
     }
@@ -562,7 +556,7 @@ public class NotificationStyleVerifierActivity extends InteractiveVerifierActivi
                                                     .setColor(COLOR_ORANGE))
                                     .addProgressSegment(
                                             new Notification.ProgressStyle.Segment(30)
-                                                    .setColor(COLOR_YELLOW))
+                                                    .setColor(COLOR_GREEN))
                                     .addProgressSegment(
                                             new Notification.ProgressStyle.Segment(50)
                                                     .setColor(COLOR_RED))
@@ -571,7 +565,7 @@ public class NotificationStyleVerifierActivity extends InteractiveVerifierActivi
                                                     .setColor(COLOR_ORANGE))
                                     .addProgressPoint(
                                             new Notification.ProgressStyle.Point(30)
-                                                    .setColor(COLOR_YELLOW))
+                                                    .setColor(COLOR_GREEN))
                                     .addProgressPoint(
                                             new Notification.ProgressStyle.Point(70)
                                                     .setColor(COLOR_ORANGE))
@@ -609,50 +603,37 @@ public class NotificationStyleVerifierActivity extends InteractiveVerifierActivi
                     .setStyle(
                             new Notification.ProgressStyle()
                                     .addProgressSegment(
-                                            new Notification.ProgressStyle.Segment(20).setColor(
-                                                    COLOR_ORANGE)
-                                    )
+                                            new Notification.ProgressStyle.Segment(20)
+                                                    .setColor(COLOR_ORANGE))
                                     .addProgressSegment(
-                                            new Notification.ProgressStyle.Segment(30).setColor(
-                                                    COLOR_YELLOW)
-                                    )
+                                            new Notification.ProgressStyle.Segment(30)
+                                                    .setColor(COLOR_GREEN))
                                     .addProgressSegment(
-                                            new Notification.ProgressStyle.Segment(50).setColor(
-                                                    COLOR_RED)
-                                    )
+                                            new Notification.ProgressStyle.Segment(50)
+                                                    .setColor(COLOR_RED))
                                     .addProgressPoint(
-                                            new Notification.ProgressStyle.Point(10).setColor(
-                                                    COLOR_ORANGE))
+                                            new Notification.ProgressStyle.Point(10)
+                                                    .setColor(COLOR_ORANGE))
                                     .addProgressPoint(
-                                            new Notification.ProgressStyle.Point(30).setColor(
-                                                    COLOR_YELLOW))
+                                            new Notification.ProgressStyle.Point(30)
+                                                    .setColor(COLOR_GREEN))
                                     .addProgressPoint(
-                                            new Notification.ProgressStyle.Point(70).setColor(
-                                                    COLOR_ORANGE))
+                                            new Notification.ProgressStyle.Point(70)
+                                                    .setColor(COLOR_ORANGE))
                                     .addProgressPoint(
-                                            new Notification.ProgressStyle.Point(90).setColor(
-                                                    COLOR_RED))
+                                            new Notification.ProgressStyle.Point(90)
+                                                    .setColor(COLOR_RED))
                                     .setProgressTrackerIcon(
                                             Icon.createWithResource(
-                                                    mContext,
-                                                    R.drawable.navigation_tracker
-                                            )
-                                    )
+                                                    mContext, R.drawable.navigation_tracker))
                                     .setProgressStartIcon(
                                             Icon.createWithResource(
-                                                    mContext,
-                                                    R.drawable.transit_s_icon
-                                            )
-                                    )
+                                                    mContext, R.drawable.transit_s_icon))
                                     .setProgressEndIcon(
                                             Icon.createWithResource(
-                                                    mContext,
-                                                    R.drawable.transit_e_icon
-                                            )
-                                    )
+                                                    mContext, R.drawable.transit_e_icon))
                                     .setStyledByProgress(false)
-                                    .setProgress(60)
-                    )
+                                    .setProgress(60))
                     .build();
         }
     }

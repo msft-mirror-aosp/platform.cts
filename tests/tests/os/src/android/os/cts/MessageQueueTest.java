@@ -250,22 +250,83 @@ public class MessageQueueTest {
                 mLastMessage = 4;
 
                 /* Queue up some messages, then remove from the front, the middle and the back. */
-                Object object = new Object();
-                mHandler.sendMessageAtTime(mHandler.obtainMessage(5, object), now + 5);
-                mHandler.sendMessageAtTime(mHandler.obtainMessage(2), now + 2);
+                Object object1 = new Object();
+                Object object2 = new Object();
+                Object object3 = new Object();
+                mHandler.sendMessageAtTime(mHandler.obtainMessage(5, object1), now + 5);
+                mHandler.sendMessageAtTime(mHandler.obtainMessage(2, object2), now + 2);
                 mHandler.sendMessageAtTime(mHandler.obtainMessage(3), now + 3);
                 mHandler.sendMessageAtTime(mHandler.obtainMessage(4), now + 4);
                 mHandler.sendMessageAtTime(mHandler.obtainMessage(0), now + 0);
                 mHandler.sendMessageAtTime(mHandler.obtainMessage(1), now + 1);
+                mHandler.sendMessageAtTime(mHandler.obtainMessage(6), now + 1000);
                 mHandler.removeMessages(3, null);
-                mHandler.removeMessages(2, null);
-                mHandler.removeCallbacksAndMessages(object);
+                mHandler.removeMessages(2, object2);
+                mHandler.removeMessages(6, object3);
+                mHandler.removeCallbacksAndMessages(object1);
                 /* Re-add these messages as OrderTestHelper will be looking for them */
                 mHandler.sendMessageAtTime(mHandler.obtainMessage(2), now + 2);
                 mHandler.sendMessageAtTime(mHandler.obtainMessage(3), now + 3);
             }
         };
         tester.doTest(TEST_TIMEOUT, TEST_INTERVAL);
+    }
+
+    @Test
+    @DisabledOnRavenwood(
+            blockedBy = android.os.SystemClock.class,
+            reason = "currentThreadTimeMillis is missing")
+    public void testEnqueueThenRemoveMessages() throws Throwable {
+        AssertableHandlerThread thread = new AssertableHandlerThread();
+        thread.start();
+        try {
+            // We expect no messages to actually be handled, because they should be removed before
+            // they are handled.
+            Handler crasher = new Handler(thread.getLooper()) {
+                @Override
+                public void handleMessage(Message msg) {
+                    throw new RuntimeException("Unexpected message: " + msg);
+                }
+            };
+
+            // Stress test to ensure that adding and removing messages doesn't race in a way such
+            // that messages that were added strictly before removal is called may still be
+            // handled.
+            for (int i = 0; i < 1_000; i++) {
+                // Add messages far enough in the future
+                Message msg1 = crasher.obtainMessage(1);
+                Object obj1 = new Object();
+                msg1.obj = obj1;
+                crasher.sendMessageDelayed(msg1, 5_000);
+
+                Message msg2 = crasher.obtainMessage(2);
+                Object obj2 = new Object();
+                msg2.obj = obj2;
+                crasher.sendMessageDelayed(msg2, 5_000);
+
+                Message msg3 = crasher.obtainMessage(3);
+                Object obj3 = new Object();
+                msg3.obj = obj3;
+                crasher.sendMessageDelayed(msg3, 5_000);
+
+                // Remove the same messages before they could ever be handled
+                crasher.removeMessages(1, obj1);
+                crasher.removeMessages(2, obj2);
+                crasher.removeMessages(3, obj3);
+            }
+
+            assertFalse(
+                    "Message that should have been removed is still in the queue",
+                    crasher.hasMessages(1));
+            assertFalse(
+                    "Message that should have been removed is still in the queue",
+                    crasher.hasMessages(2));
+            assertFalse(
+                    "Message that should have been removed is still in the queue",
+                    crasher.hasMessages(3));
+        } finally {
+            thread.quitAndRethrow();
+        }
     }
 
     /**

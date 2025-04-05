@@ -6751,6 +6751,33 @@
                 android:value="android.hardware.type.watch" />
         </activity>
 
+        <activity
+            android:name=".sharesheet.SharesheetTextPlusImageActivity"
+            android:exported="true"
+            android:label="@string/sharesheet_payload_text_plus_image_test">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.cts.intent.category.MANUAL_TEST" />
+            </intent-filter>
+
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.cts.intent.category.MANUAL_TEST.SharesheetTextPlusImageActivity" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/*" />
+            </intent-filter>
+
+            <meta-data
+                android:name="test_category"
+                android:value="@string/category_sharesheet" />
+            <meta-data
+                android:name="ApiTest"
+                android:value="android.content.Intent#ACTION_CHOOSER|android.content.Intent#EXTRA_TEXT|android.content.Intent#setData" />
+            <meta-data android:name="display_mode" android:value="single_display_mode" />
+            <meta-data android:name="test_excluded_features"
+                android:value="android.hardware.type.watch" />
+        </activity>
+
         <provider
             android:authorities="com.android.cts.verifier.sharesheet.images"
             android:name=".sharesheet.SharesheetTestImageProvider"

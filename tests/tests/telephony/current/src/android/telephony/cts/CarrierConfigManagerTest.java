@@ -646,7 +646,11 @@ public class CarrierConfigManagerTest {
             t.start();
             boolean didCarrierNameUpdate =
                     COUNT_DOWN_LATCH.await(BROADCAST_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
-            if (!didCarrierNameUpdate) {
+            if (// Currently the overridden name is not cleared properly if test is run multiple
+                // times because its source is carrier, which is prioritized over the default name
+                // whose source is SIM_PNN.
+                    !CARRIER_NAME_OVERRIDE.equals(mTelephonyManager.getSimOperatorName())
+                            && !didCarrierNameUpdate) {
                 fail("CarrierName not overridden in " + BROADCAST_TIMEOUT_MILLIS + " ms");
             }
         } finally {

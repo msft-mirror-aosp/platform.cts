@@ -60,7 +60,6 @@ android_test {
     // Tag this module as a cts test artifact
     test_suites: [
         "cts",
-        "mcts-art",
         "mts-art",
         "general-tests",
         "automotive-general-tests",

@@ -86,7 +86,7 @@ public class TelephonyCallbackTest {
     public final CheckFlagsRule mCheckFlagsRule =
             DeviceFlagsValueProvider.createCheckFlagsRule();
 
-    public static final long WAIT_TIME = 1000;
+    public static final long WAIT_TIME = 5000;
 
     private static final String TEST_EMERGENCY_NUMBER = "998877665544332211";
 

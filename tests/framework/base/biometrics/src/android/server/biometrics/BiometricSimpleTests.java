@@ -37,7 +37,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import android.content.pm.PackageManager;
-import android.hardware.biometrics.BiometricEnrollmentStatus;
 import android.hardware.biometrics.BiometricManager;
 import android.hardware.biometrics.BiometricManager.Authenticators;
 import android.hardware.biometrics.BiometricPrompt;
@@ -97,11 +96,11 @@ public class BiometricSimpleTests extends BiometricTestBase {
     @ApiTest(apis = {"android.hardware.biometrics.BiometricManager#getEnrollmentStatus"})
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_MOVE_FM_API_TO_BM)
-    public void testGetEnrollCount() throws Exception {
+    public void testGetEnrollmentCount() throws Exception {
         assumeTrue(Utils.isFirstApiLevel29orGreater());
-        for (BiometricEnrollmentStatus status : mBiometricManager.getEnrollmentStatus()) {
-            assertEquals(0, status.getEnrollCount());
-        }
+        mBiometricManager
+                .getEnrollmentStatus()
+                .forEach((modality, status) -> assertEquals(0, status.getEnrollmentCount()));
 
         for (SensorProperties prop : mSensorProperties) {
             final int sensorId = prop.getSensorId();
@@ -123,11 +122,11 @@ public class BiometricSimpleTests extends BiometricTestBase {
                 mBiometricManager
                         .getEnrollmentStatus()
                         .forEach(
-                                status -> {
-                                    if (status.getModality() == expectedModality) {
-                                        assertEquals(1, status.getEnrollCount());
+                                (modality, status) -> {
+                                    if (modality == expectedModality) {
+                                        assertEquals(1, status.getEnrollmentCount());
                                     } else {
-                                        assertEquals(0, status.getEnrollCount());
+                                        assertEquals(0, status.getEnrollmentCount());
                                     }
                                 });
             }
@@ -150,12 +149,10 @@ public class BiometricSimpleTests extends BiometricTestBase {
     }
 
     /**
-     * Tests that the sensorIds retrieved via {@link BiometricManager#getSensorProperties()} and
-     * the dumpsys are consistent with each other.
+     * Tests that the sensorIds retrieved via {@link BiometricManager#getSensorProperties()} and the
+     * dumpsys are consistent with each other.
      */
-    @ApiTest(apis = {
-            "android.hardware.biometrics."
-                    + "BiometricManager#getSensorProperties"})
+    @ApiTest(apis = {"android.hardware.biometrics." + "BiometricManager#getSensorProperties"})
     @Test
     public void testSensorPropertiesAndDumpsysMatch() throws Exception {
         assumeTrue(Utils.isFirstApiLevel29orGreater());

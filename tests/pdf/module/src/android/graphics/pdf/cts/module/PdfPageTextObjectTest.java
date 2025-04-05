@@ -19,7 +19,6 @@ package android.graphics.pdf.cts.module;
 import static com.google.common.truth.Truth.assertThat;
 
 import android.graphics.Color;
-import android.graphics.pdf.component.PdfPageObjectRenderMode;
 import android.graphics.pdf.component.PdfPageTextObject;
 import android.graphics.pdf.component.PdfPageTextObjectFont;
 import android.graphics.pdf.flags.Flags;
@@ -46,7 +45,7 @@ public class PdfPageTextObjectTest {
     private static final int STROKE_COLOR = Color.YELLOW;
     private static final float STROKE_WIDTH = 10.0F;
     private static final int FILL_COLOR = Color.GREEN;
-    private static final int RENDER_MODE = PdfPageObjectRenderMode.FILL_STROKE;
+    private static final int RENDER_MODE = PdfPageTextObject.RENDER_MODE_FILL_STROKE;
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_EDIT_PDF_TEXT_OBJECTS)
@@ -59,7 +58,7 @@ public class PdfPageTextObjectTest {
                         FONT_SIZE);
         assertThat(pageTextObject.getText()).isEqualTo(TEXT);
         assertThat(pageTextObject.getFontSize()).isEqualTo(FONT_SIZE);
-        assertThat(pageTextObject.getRenderMode()).isEqualTo(PdfPageObjectRenderMode.FILL);
+        assertThat(pageTextObject.getRenderMode()).isEqualTo(PdfPageTextObject.RENDER_MODE_FILL);
 
         PdfPageTextObjectFont font = pageTextObject.getFont();
         assertThat(font.getFontFamily()).isEqualTo(PdfPageTextObjectFont.FONT_FAMILY_COURIER);

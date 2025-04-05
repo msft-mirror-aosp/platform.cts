@@ -64,6 +64,13 @@ public class NativeAnalyzerThread {
     static final int NATIVE_AUDIO_THREAD_MESSAGE_REC_COMPLETE_ERRORS = 896;
     static final int NATIVE_AUDIO_THREAD_MESSAGE_ANALYZING = 897;
 
+    private static final int[] ALL_AAUDIO_PCM_FORMATS = {
+        1, // AAUDIO_FORMAT_PCM_I16
+        2, // AAUDIO_FORMAT_PCM_FLOAT
+        3, // AAUDIO_FORMAT_PCM_I24_PACKED
+        4 // AAUDIO_FORMAT_PCM_I32
+    };
+
     public NativeAnalyzerThread(Context context) {
         mContext = context;
     }
@@ -88,7 +95,8 @@ public class NativeAnalyzerThread {
     /**
      * @return native audio context
      */
-    private native long openAudio(int inputDeviceID, int outputDeviceId);
+    private native long openAudio(int inputDeviceID, int outputDeviceId, int format);
+
     private native int startAudio(long audioContext);
     private native int stopAudio(long audioContext);
     private native int closeAudio(long audioContext);
@@ -207,90 +215,109 @@ public class NativeAnalyzerThread {
         }
     }
 
-    private Runnable mBackGroundTask = () -> {
-        mLatencyMillis = 0.0;
-        mConfidence = 0.0;
-        mSampleRate = 0;
-        mTimestampLatencyMillis = 0.0;
+    private Runnable mBackGroundTask =
+            () -> {
+                mLatencyMillis = 0.0;
+                mConfidence = 0.0;
+                mSampleRate = 0;
+                mTimestampLatencyMillis = 0.0;
 
-        boolean analysisComplete = false;
+                boolean analysisComplete = false;
+                int result = 0;
 
-        log(" Started capture test");
-        sendMessage(NATIVE_AUDIO_THREAD_MESSAGE_REC_STARTED);
+                log(" Started capture test");
+                sendMessage(NATIVE_AUDIO_THREAD_MESSAGE_REC_STARTED);
 
-        //TODO - route parameters
-        long audioContext = openAudio(mInputDeviceId, mOutputDeviceId);
-        log(String.format("audioContext = 0x%X",audioContext));
+                for (int format : ALL_AAUDIO_PCM_FORMATS) {
+                    analysisComplete = false;
+                    // TODO - route parameters
+                    long audioContext = openAudio(mInputDeviceId, mOutputDeviceId, format);
+                    log(String.format("audioContext = 0x%X", audioContext));
 
-        if (audioContext == 0 ) {
-            log(" ERROR at JNI initialization");
-            sendMessage(NATIVE_AUDIO_THREAD_MESSAGE_OPEN_ERROR);
-        }  else if (mEnabled) {
-            int result = startAudio(audioContext);
-            if (result < 0) {
-                sendMessage(NATIVE_AUDIO_THREAD_MESSAGE_REC_ERROR);
-                mEnabled = false;
-            }
-            mHas24BitHardwareSupport = has24BitHardwareSupport(audioContext);
-            mHardwareFormat = getHardwareFormat(audioContext);
+                    if (audioContext == 0) {
+                        log(" ERROR at JNI initialization");
+                        sendMessage(NATIVE_AUDIO_THREAD_MESSAGE_OPEN_ERROR);
+                    } else if (mEnabled) {
+                        result = startAudio(audioContext);
+                        if (result < 0) {
+                            sendMessage(NATIVE_AUDIO_THREAD_MESSAGE_REC_ERROR);
+                            mEnabled = false;
+                        }
+                        if (has24BitHardwareSupport(audioContext)) {
+                            // mHas24BitHardwareSupport is initialized as false, only set it to true
+                            // when the stream has 24 bit hardware support.
+                            mHas24BitHardwareSupport = true;
+                        }
+                        StreamBasicInfo streamBasicInfo =
+                                new StreamBasicInfo(
+                                        isLowlatency(audioContext, STREAM_OUTPUT),
+                                        isLowlatency(audioContext, STREAM_INPUT),
+                                        getBurstFrames(audioContext, STREAM_OUTPUT),
+                                        getBurstFrames(audioContext, STREAM_INPUT),
+                                        getCapacityFrames(audioContext, STREAM_OUTPUT),
+                                        getCapacityFrames(audioContext, STREAM_INPUT),
+                                        isMMapStream(audioContext, STREAM_OUTPUT),
+                                        isMMapStream(audioContext, STREAM_INPUT),
+                                        getHardwareFormat(audioContext));
 
-            mIsLowLatencyStream[STREAM_OUTPUT] = isLowlatency(audioContext, STREAM_OUTPUT);
-            mIsLowLatencyStream[STREAM_INPUT] = isLowlatency(audioContext, STREAM_INPUT);
+                        final long timeoutMillis = mSecondsToRun * 1000;
+                        final long startedAtMillis = System.currentTimeMillis();
+                        boolean timedOut = false;
+                        while (mEnabled && !timedOut) {
+                            result = getError(audioContext);
+                            if (result < 0) {
+                                sendMessage(NATIVE_AUDIO_THREAD_MESSAGE_REC_ERROR);
+                                break;
+                            } else if (isRecordingComplete(audioContext)) {
+                                mTimestampLatencyMillis =
+                                        measureTimestampLatencyMillis(audioContext);
+                                stopAudio(audioContext);
 
-            mBurstFrames[STREAM_OUTPUT] = getBurstFrames(audioContext, STREAM_OUTPUT);
-            mBurstFrames[STREAM_INPUT] = getBurstFrames(audioContext, STREAM_INPUT);
+                                // Analyze the recording and measure latency.
+                                mThread.setPriority(Thread.MAX_PRIORITY);
+                                sendMessage(NATIVE_AUDIO_THREAD_MESSAGE_ANALYZING);
+                                result = analyze(audioContext);
+                                if (result < 0) {
+                                    break;
+                                } else {
+                                    analysisComplete = true;
+                                }
+                                double currentLatencyMillis = getLatencyMillis(audioContext);
+                                if (mLatencyMillis == 0.0
+                                        || mLatencyMillis > currentLatencyMillis) {
+                                    // Update stream info for best latency
+                                    updateStreamBasicInfo(streamBasicInfo);
+                                    mLatencyMillis = currentLatencyMillis;
+                                    mConfidence = getConfidence(audioContext);
+                                    mSampleRate = getSampleRate(audioContext);
+                                }
+                                break;
+                            } else {
+                                try {
+                                    Thread.sleep(100);
+                                } catch (InterruptedException e) {
+                                    e.printStackTrace();
+                                }
+                            }
+                            long now = System.currentTimeMillis();
+                            timedOut = (now - startedAtMillis) > timeoutMillis;
+                        }
+                        log("latency: format=" + format + ", analyze returns " + result);
+                        closeAudio(audioContext);
 
-            mCapacityFrames[STREAM_OUTPUT] = getCapacityFrames(audioContext, STREAM_OUTPUT);
-            mCapacityFrames[STREAM_INPUT] = getCapacityFrames(audioContext, STREAM_INPUT);
-
-            mIsMMapStream[STREAM_OUTPUT] = isMMapStream(audioContext, STREAM_OUTPUT);
-            mIsMMapStream[STREAM_INPUT] = isMMapStream(audioContext, STREAM_INPUT);
-
-            final long timeoutMillis = mSecondsToRun * 1000;
-            final long startedAtMillis = System.currentTimeMillis();
-            boolean timedOut = false;
-            int loopCounter = 0;
-            while (mEnabled && !timedOut) {
-                result = getError(audioContext);
-                if (result < 0) {
-                    sendMessage(NATIVE_AUDIO_THREAD_MESSAGE_REC_ERROR);
-                    break;
-                } else if (isRecordingComplete(audioContext)) {
-                    mTimestampLatencyMillis = measureTimestampLatencyMillis(audioContext);
-                    stopAudio(audioContext);
-
-                    // Analyze the recording and measure latency.
-                    mThread.setPriority(Thread.MAX_PRIORITY);
-                    sendMessage(NATIVE_AUDIO_THREAD_MESSAGE_ANALYZING);
-                    result = analyze(audioContext);
-                    if (result < 0) {
-                        break;
-                    } else {
-                        analysisComplete = true;
-                    }
-                    mLatencyMillis = getLatencyMillis(audioContext);
-                    mConfidence = getConfidence(audioContext);
-                    mSampleRate = getSampleRate(audioContext);
-                    break;
-                } else {
-                    try {
-                        Thread.sleep(100);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
+                        if (!analysisComplete || result != 0) {
+                            // Update stream info when error happens
+                            updateStreamBasicInfo(streamBasicInfo);
+                            sendMessage(NATIVE_AUDIO_THREAD_MESSAGE_REC_COMPLETE_ERRORS);
+                            break;
+                        }
                     }
                 }
-                long now = System.currentTimeMillis();
-                timedOut = (now - startedAtMillis) > timeoutMillis;
-            }
-            log("latency: analyze returns " + result);
-            closeAudio(audioContext);
-
-            int what = (analysisComplete && result == 0)
-                    ? NATIVE_AUDIO_THREAD_MESSAGE_REC_COMPLETE
-                    : NATIVE_AUDIO_THREAD_MESSAGE_REC_COMPLETE_ERRORS;
-            sendMessage(what);
-        }
-    };
+                if (analysisComplete && result == 0) {
+                    // Only send succeed message as the failure should be handled above.
+                    sendMessage(NATIVE_AUDIO_THREAD_MESSAGE_REC_COMPLETE);
+                }
+            };
 
     public void setMessageHandler(Handler messageHandler) {
         mMessageHandler = messageHandler;
@@ -300,4 +327,40 @@ public class NativeAnalyzerThread {
         Log.v("Loopback", msg);
     }
 
+    static class StreamBasicInfo {
+        boolean[] mIsLowLatencyStream = new boolean[NUM_STREAM_TYPES];
+        int[] mBurstFrames = new int[NUM_STREAM_TYPES];
+        int[] mCapacityFrames = new int[NUM_STREAM_TYPES];
+        boolean[] mIsMMapStream = new boolean[NUM_STREAM_TYPES];
+        int mHardwareFormat = 0;
+
+        StreamBasicInfo(
+                boolean isLowLatencyOutput,
+                boolean isLowLatencyInput,
+                int outputBurstFrames,
+                int inputBurstFrames,
+                int outputCapacityFrames,
+                int inputCapacityFrames,
+                boolean isMMapOutput,
+                boolean isMMapInput,
+                int hardwareFormat) {
+            this.mIsLowLatencyStream[STREAM_OUTPUT] = isLowLatencyOutput;
+            this.mIsLowLatencyStream[STREAM_INPUT] = isLowLatencyInput;
+            this.mBurstFrames[STREAM_OUTPUT] = outputBurstFrames;
+            this.mBurstFrames[STREAM_INPUT] = inputBurstFrames;
+            this.mCapacityFrames[STREAM_OUTPUT] = outputCapacityFrames;
+            this.mCapacityFrames[STREAM_INPUT] = inputCapacityFrames;
+            this.mIsMMapStream[STREAM_OUTPUT] = isMMapOutput;
+            this.mIsMMapStream[STREAM_INPUT] = isMMapInput;
+            this.mHardwareFormat = hardwareFormat;
+        }
+    }
+
+    void updateStreamBasicInfo(StreamBasicInfo info) {
+        mIsLowLatencyStream = info.mIsLowLatencyStream.clone();
+        mBurstFrames = info.mBurstFrames.clone();
+        mCapacityFrames = info.mCapacityFrames.clone();
+        mIsMMapStream = info.mIsMMapStream.clone();
+        mHardwareFormat = info.mHardwareFormat;
+    }
 }  //end thread.

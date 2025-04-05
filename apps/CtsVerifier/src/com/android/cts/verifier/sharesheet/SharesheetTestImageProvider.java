@@ -28,6 +28,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Paint.Align;
+import android.graphics.Paint.FontMetrics;
 import android.graphics.Paint.Style;
 import android.net.Uri;
 import android.os.ParcelFileDescriptor;
@@ -67,33 +68,50 @@ public class SharesheetTestImageProvider extends ContentProvider {
         if (name == null) {
             throw new FileNotFoundException("Malformed URI: " + uri);
         }
+        int bgColor = getIntQueryParam(uri, UriParams.BgColor, objectToColor(uri));
+        int textColor = getIntQueryParam(uri, UriParams.TextColor, getContrast(bgColor));
         try {
             final ParcelFileDescriptor[] pipe = ParcelFileDescriptor.createReliablePipe();
-            mExecutor.execute(() -> {
-                try {
-                    sendBitmap(pipe[1], uriToColor(uri), name, getType(uri));
-                } catch (IOException e) {
-                    Log.e(TAG, "Failed to send bitmap", e);
-                } finally {
-                    try {
-                        pipe[1].close();
-                    } catch (Throwable t) {
-                        // ignore
-                    }
-                }
-            });
+            mExecutor.execute(
+                    () -> {
+                        try {
+                            sendBitmap(pipe[1], bgColor, textColor, name, getType(uri));
+                        } catch (IOException e) {
+                            Log.e(TAG, "Failed to send bitmap", e);
+                        } finally {
+                            try {
+                                pipe[1].close();
+                            } catch (Throwable t) {
+                                // ignore
+                            }
+                        }
+                    });
             return new AssetFileDescriptor(pipe[0], 0, -1);
         } catch (IOException e) {
             throw new FileNotFoundException(e.getMessage());
         }
     }
 
+    private int getIntQueryParam(Uri uri, String paramName, int defaultValue) {
+        try {
+            String param = uri.getQueryParameter(paramName);
+            if (param != null) {
+                return Integer.parseInt(param);
+            }
+        } catch (NumberFormatException e) {
+            // ignore if the argument is not an integer
+        }
+        return defaultValue;
+    }
+
     private void sendBitmap(
-                ParcelFileDescriptor fd,
-                int color,
-                String name,
-                @Nullable String mimeType) throws IOException {
-        Bitmap bitmap = createBitmap(200, 200, color, name);
+            ParcelFileDescriptor fd,
+            int bgColor,
+            int textColor,
+            String name,
+            @Nullable String mimeType)
+            throws IOException {
+        Bitmap bitmap = createBitmap(200, 200, bgColor, textColor, name);
         try (FileOutputStream fos = new FileOutputStream(fd.getFileDescriptor())) {
             CompressFormat format = ClipDescription.compareMimeTypes(mimeType, "image/jpg")
                     ? CompressFormat.JPEG
@@ -102,23 +120,41 @@ public class SharesheetTestImageProvider extends ContentProvider {
         }
     }
 
-    private static Bitmap createBitmap(int width, int height, int bgColor, String name) {
+    private static Bitmap createBitmap(
+            int width, int height, int bgColor, int textColor, String name) {
         Bitmap bitmap = Bitmap.createBitmap(width, height, Config.ARGB_8888);
         Canvas canvas = new Canvas(bitmap);
         Paint paint = new Paint();
         paint.setColor(bgColor);
         paint.setStyle(Style.FILL);
         canvas.drawPaint(paint);
-        paint.setColor(getContrast(bgColor));
+
+        paint.setColor(textColor);
         paint.setAntiAlias(true);
-        paint.setTextSize(28f);
-        paint.setTextAlign(Align.CENTER);
-        canvas.drawText(name, width / 2f, height / 2f, paint);
+        paint.setTextSize(height);
+        FontMetrics fontMetrics = paint.getFontMetrics();
+        float textWidth = paint.measureText(name);
+        float textHeight = fontMetrics.bottom - fontMetrics.top;
+        if (textWidth > 0 && textHeight > 0) {
+            float kw = ((float) width) / textWidth;
+            float kh = ((float) height) / textHeight;
+            float k = Math.min(kw, kh) * 0.7f;
+            paint.setTextSize(k * textHeight);
+            paint.setTextAlign(Align.LEFT);
+            fontMetrics = paint.getFontMetrics();
+            textWidth = paint.measureText(name);
+            textHeight = fontMetrics.bottom - fontMetrics.top;
+            canvas.drawText(
+                    name,
+                    (width - textWidth) / 2,
+                    (height - textHeight) / 2 - fontMetrics.top,
+                    paint);
+        }
         return bitmap;
     }
 
-    private static int uriToColor(Uri uri) {
-        int hash = uri.hashCode();
+    private static int objectToColor(Object obj) {
+        int hash = obj.hashCode();
         return Color.argb(
                 255,
                 (hash & 0x00ff0000) >>> 16,

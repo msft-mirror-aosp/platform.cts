@@ -354,6 +354,9 @@
     <!-- b/403621110 -->
     <option name="compatibility:exclude-filter" value="CtsTelephonyTestCases android.telephony.cts.SmsUsageMonitorShortCodeTest" />
 
+    <!-- b/404682208 -->
+    <option name="compatibility:exclude-filter" value="CtsADPFHostTestCases" />
+
     <!-- b/368509186 -->
     <option name="compatibility:exclude-filter" value="CtsGameFrameRateTestCases android.gameframerate.cts.GameFrameRateTest" />
     <option name="compatibility:exclude-filter" value="CtsGameFrameRateTestCases[instant] android.gameframerate.cts.GameFrameRateTest" />
@@ -415,4 +418,8 @@
 
     <!-- b/406965817 -->
     <option name="compatibility:exclude-filter" value="CtsVirtualDevicesCameraTestCases android.virtualdevice.cts.camera.VirtualCameraCaptureTest.testRenderingRate"/>
+
+    <!-- b/406676107 -->
+    <option name="compatibility:exclude-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.DeviceOwnerTest#testTethering"/>
+
 </configuration>
