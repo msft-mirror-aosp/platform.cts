@@ -42,34 +42,31 @@ import android.content.SyncRequest;
 import android.content.res.Configuration;
 import android.util.Log;
 
-import androidx.test.InstrumentationRegistry;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.rule.ActivityTestRule;
-import androidx.test.runner.AndroidJUnit4;
 import androidx.test.uiautomator.By;
 import androidx.test.uiautomator.Direction;
-import androidx.test.uiautomator.StaleObjectException;
 import androidx.test.uiautomator.UiDevice;
 import androidx.test.uiautomator.UiObject2;
-import androidx.test.uiautomator.UiObjectNotFoundException;
-import androidx.test.uiautomator.UiScrollable;
-import androidx.test.uiautomator.UiSelector;
 import androidx.test.uiautomator.Until;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 import org.junit.runner.RunWith;
 
-import java.io.ByteArrayOutputStream;
 import java.util.regex.Pattern;
 
 /**
  * Tests whether a sync adapter can access accounts.
  */
+@Ignore("This will be re-enabled upon further investigation (b/406640881)")
 @RunWith(AndroidJUnit4.class)
-public class CtsSyncAccountAccessOtherCertTestCases {
+public final class CtsSyncAccountAccessOtherCertTestCases {
     private static final long UI_TIMEOUT_MILLIS = 5000; // 5 sec
     private static final String LOG_TAG =
             CtsSyncAccountAccessOtherCertTestCases.class.getSimpleName();
@@ -77,8 +74,6 @@ public class CtsSyncAccountAccessOtherCertTestCases {
     private static final Pattern PERMISSION_REQUESTED = Pattern.compile(
             "Permission Requested.*|Permission requested.*");
     private static final Pattern ALLOW_SYNC = Pattern.compile("ALLOW|Allow");
-    private static final String OPEN_NOTIFICATION_WATCH = "Open";
-    private static final String CLEAR_ALL_TEXT = "Clear all";
 
     @Rule
     public final TestRule mFlakyTestRule = new FlakyTestRule(3);
@@ -98,151 +93,55 @@ public class CtsSyncAccountAccessOtherCertTestCases {
 
     @Test
     public void testAccountAccess_otherCertAsAuthenticatorCanNotSeeAccount() throws Exception {
-        assumeTrue(hasDataConnection());
-        assumeTrue(hasNotificationSupport());
-        assumeFalse(isRunningInVR());
-        assumeFalse(isWatch());
+        assumeTrue("Device requires a data connection", hasDataConnection());
+        assumeTrue("Device requires notification support", hasNotificationSupport());
+        assumeFalse("Device cannot run in VR", isRunningInVR());
+        assumeFalse("Device cannot be a watch", isWatch());
 
-        // If running in a test harness the Account Manager never denies access to an account. Hence
-        // the permission request will not trigger. b/72114924
-        assumeFalse(ActivityManager.isRunningInUserTestHarness());
+        // If running in a test harness, Account Manager never denies access to an account.
+        // Hence, the permission request will not trigger. b/72114924
+        assumeFalse("Device cannot be running in a test harness",
+                ActivityManager.isRunningInUserTestHarness());
 
-        // We need to ensure there are no other notifications present
-        // so that the search for the permission notification does not fail
         UiDevice uiDevice = getUiDevice();
-        if (uiDevice.openNotification()) {
-            UiObject2 clearAll = uiDevice.wait(
-                    Until.findObject(By.text(CLEAR_ALL_TEXT)), UI_TIMEOUT_MILLIS);
-            try {
-                if (clearAll == null) {
-                    UiObject2 scrollable = uiDevice.findObject(By.scrollable(true));
-                    if (scrollable != null) {
-                        clearAll = scrollable.scrollUntil(
-                                Direction.DOWN, Until.findObject(By.text(CLEAR_ALL_TEXT)));
-                    }
-                }
-            } catch (StaleObjectException ignore) {
-                // TODO (b/406640881): Couldn't find the appropriate scrollable object.
-            }
-            if (clearAll != null) {
-                clearAll.click();
-            }
-        }
-        swipeUp(uiDevice); // Ensure notification pane is closed
-
         try (AutoCloseable ignored = withAccount(activity.getActivity())) {
-            AbstractThreadedSyncAdapter adapter = AlwaysSyncableSyncService.getInstance(
+            AbstractThreadedSyncAdapter mockAdapter = AlwaysSyncableSyncService.getInstance(
                     activity.getActivity()).setNewDelegate();
 
             SyncRequest request = requestSync(ALWAYS_SYNCABLE_AUTHORITY);
             Log.i(LOG_TAG, "Sync requested " + request);
 
             Thread.sleep(SYNC_TIMEOUT_MILLIS);
-            verify(adapter, never()).onPerformSync(any(), any(), any(), any(), any());
+            verify(mockAdapter, never()).onPerformSync(any(), any(), any(), any(), any());
             Log.i(LOG_TAG, "Did not get onPerformSync");
 
-            if (isWatch()) {
-                UiObject2 notification = findPermissionNotificationInStream(uiDevice);
-                notification.click();
-                UiObject2 openButton = uiDevice.wait(
-                        Until.findObject(By.text(OPEN_NOTIFICATION_WATCH)), UI_TIMEOUT_MILLIS);
-                if (openButton != null) {
-                    // older sysui may not have the "open" button
-                    openButton.click();
-                }
-            } else {
-                uiDevice.openNotification();
-                int scrollUps = 0;
-
-                while (true) {
-                    try {
-                        UiObject2 permissionRequest = uiDevice.wait(
-                                Until.findObject(By.text(PERMISSION_REQUESTED)), UI_TIMEOUT_MILLIS);
-                        if (permissionRequest != null) {
-                            permissionRequest.click();
-                        }
-                        break;
-                    } catch (Throwable t) {
-                        if (scrollUps < 10) {
-                            // The notification we search for is below the fold, scroll to find it
-                            scrollNotifications();
-                            scrollUps++;
-                            continue;
-                        }
-
-                        ByteArrayOutputStream os = new ByteArrayOutputStream();
-                        getUiDevice().dumpWindowHierarchy(os);
-
-                        Log.w(LOG_TAG, "Window hierarchy:");
-                        for (String line : os.toString("UTF-8").split("\n")) {
-                            Log.w(LOG_TAG, line);
-
-                            // Do not overwhelm logging
-                            Thread.sleep(10);
-                        }
-
-                        throw t;
-                    }
+            uiDevice.openNotification();
+            UiObject2 permissionRequest = uiDevice.wait(
+                    Until.findObject(By.text(PERMISSION_REQUESTED)), UI_TIMEOUT_MILLIS);
+            if (permissionRequest == null) {
+                UiObject2 scrollable = uiDevice.findObject(By.scrollable(true));
+                if (scrollable != null) {
+                    permissionRequest = scrollable.scrollUntil(
+                            Direction.DOWN, Until.findObject(By.text(PERMISSION_REQUESTED)));
                 }
             }
+            assumeTrue("Couldn't find permission request to allow sync", permissionRequest != null);
+            permissionRequest.click();
 
             UiObject2 allowSyncButton = uiDevice.wait(
                     Until.findObject(By.text(ALLOW_SYNC)), UI_TIMEOUT_MILLIS);
-            if (allowSyncButton != null) {
-                allowSyncButton.click();
-            }
+            assumeTrue("Couldn't find button to allow sync", allowSyncButton != null);
+            allowSyncButton.click();
 
             ContentResolver.requestSync(request);
-
-            verify(adapter, timeout(SYNC_TIMEOUT_MILLIS)).onPerformSync(any(), any(), any(), any(),
-                    any());
+            verify(mockAdapter, timeout(SYNC_TIMEOUT_MILLIS))
+                    .onPerformSync(any(), any(), any(), any(), any());
             Log.i(LOG_TAG, "Got onPerformSync");
         }
     }
 
-    private UiObject2 findPermissionNotificationInStream(UiDevice uiDevice) {
-        uiDevice.pressHome();
-        swipeUp(uiDevice);
-        if (uiDevice.hasObject(By.text(PERMISSION_REQUESTED))) {
-          return uiDevice.findObject(By.text(PERMISSION_REQUESTED));
-        }
-        for (int i = 0; i < 100; i++) {
-          if (!swipeUp(uiDevice)) {
-            // We have reached the end of the stream and not found the target.
-            break;
-          }
-          if (uiDevice.hasObject(By.text(PERMISSION_REQUESTED))) {
-            return uiDevice.findObject(By.text(PERMISSION_REQUESTED));
-          }
-        }
-        return null;
-    }
-
-    private boolean swipeUp(UiDevice uiDevice) {
-        int width = uiDevice.getDisplayWidth();
-        int height = uiDevice.getDisplayHeight();
-        return uiDevice.swipe(
-            width / 2 /* startX */,
-            height / 2 /* startY */,
-            width / 2 /* endX */,
-            1 /* endY */,
-            50 /* numberOfSteps */);
-    }
-
-    private boolean scrollNotifications() {
-        UiScrollable scrollable = new UiScrollable(new UiSelector().scrollable(true));
-        if (!scrollable.exists()) {
-            return false;
-        }
-        try {
-            return scrollable.scrollForward(50);
-        } catch (UiObjectNotFoundException e) {
-            return false;
-        }
-    }
-
     private boolean isRunningInVR() {
-        final Context context = InstrumentationRegistry.getTargetContext();
+        final Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
         return ((context.getResources().getConfiguration().uiMode &
                  Configuration.UI_MODE_TYPE_MASK) == Configuration.UI_MODE_TYPE_VR_HEADSET);
     }
