@@ -127,7 +127,7 @@ public class OutputManager {
         return res;
     }
 
-    public static boolean arePtsListsIdentical(ArrayList<Long> refList, ArrayList<Long> testList,
+    static boolean arePtsListsIdentical(ArrayList<Long> refList, ArrayList<Long> testList,
             StringBuilder msg) {
         boolean res = true;
         if (refList.size() != testList.size()) {
@@ -163,15 +163,21 @@ public class OutputManager {
         return res;
     }
 
-    public boolean isOutPtsListIdenticalToInpPtsList(boolean requireSorting) {
-        ArrayList<Long> inpPtsListCopy = new ArrayList<>(mInpPtsList);
+    public static boolean isOutPtsListIdenticalToInpPtsList(ArrayList<Long> inpPtsList,
+            ArrayList<Long> outPtsList, boolean requireSorting, StringBuilder msg) {
+        ArrayList<Long> inpPtsListCopy = new ArrayList<>(inpPtsList);
         Collections.sort(inpPtsListCopy);
         if (requireSorting) {
-            ArrayList<Long> outPtsListCopy = new ArrayList<>(mOutPtsList);
-            Collections.sort(outPtsListCopy);
-            return arePtsListsIdentical(inpPtsListCopy, outPtsListCopy, mErrorLogs);
+            ArrayList<Long> outPtsListCopy = new ArrayList<>(outPtsList);
+            Collections.sort(outPtsList);
+            return arePtsListsIdentical(inpPtsListCopy, outPtsListCopy, msg);
         }
-        return arePtsListsIdentical(inpPtsListCopy, mOutPtsList, mErrorLogs);
+        return arePtsListsIdentical(inpPtsListCopy, outPtsList, msg);
+    }
+
+    public boolean isOutPtsListIdenticalToInpPtsList(boolean requireSorting) {
+        return isOutPtsListIdenticalToInpPtsList(mInpPtsList, mOutPtsList, requireSorting,
+                mErrorLogs);
     }
 
     public int getOutStreamSize() {
