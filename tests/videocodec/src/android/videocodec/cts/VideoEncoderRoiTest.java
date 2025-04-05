@@ -16,17 +16,19 @@
 
 package android.videocodec.cts;
 
-import static android.media.codec.Flags.FLAG_REGION_OF_INTEREST;
+import static android.media.MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_CBR;
 import static android.media.MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_VBR;
 import static android.media.MediaFormat.QpOffsetRect;
+import static android.media.codec.Flags.FLAG_REGION_OF_INTEREST;
+import static android.mediav2.common.cts.CodecEncoderTestBase.bitRateModeToString;
 import static android.mediav2.common.cts.CodecTestBase.ComponentClass.HARDWARE;
 import static android.mediav2.common.cts.CodecTestBase.areFormatsSupported;
-import static android.mediav2.common.cts.CodecTestBase.isFeatureSupported;
 import static android.mediav2.common.cts.CodecTestBase.prepareParamList;
+import static android.videocodec.cts.VideoEncoderInput.CompressedResource;
 import static android.videocodec.cts.VideoEncoderInput.SELFIEGROUP_FULLHD_PORTRAIT;
 import static android.videocodec.cts.VideoEncoderInput.getRawResource;
-import static android.videocodec.cts.VideoEncoderInput.CompressedResource;
 import static android.videocodec.cts.VideoEncoderRoiTest.ErrorType.*;
+import static android.videocodec.cts.VideoEncoderRoiTest.RoiType.*;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
@@ -61,6 +63,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Predicate;
@@ -78,7 +81,8 @@ import java.util.function.Predicate;
 @RequiresFlagsEnabled(FLAG_REGION_OF_INTEREST)
 @RunWith(Parameterized.class)
 public class VideoEncoderRoiTest extends VideoEncoderQualityRegressionTestBase {
-    private static final int[] BIT_RATES = {800000, 1500000, 2000000, 3000000, 4000000};
+    private static final int[] FULLHD_BIT_RATES =
+            {800000, 1500000, 2000000, 3000000, 4000000, 5000000, 6000000, 7000000, 8000000};
     private static final int FRAME_LIMIT = 10;
     private static final int FRAME_RATE = 30;
     private static final int KEY_FRAME_INTERVAL = 600;
@@ -91,7 +95,18 @@ public class VideoEncoderRoiTest extends VideoEncoderQualityRegressionTestBase {
 
     public enum RoiType {
         ROI_TYPE_RECTS,
-        ROI_TYPE_MAP
+        ROI_TYPE_MAP;
+
+        public static String toString(RoiType roiType) {
+            switch (roiType) {
+                case ROI_TYPE_RECTS:
+                    return "roi_rect";
+                case ROI_TYPE_MAP:
+                    return "roi_map";
+                default:
+                    return "unknown_roi_type";
+            }
+        }
     }
 
     public enum ErrorType {
@@ -99,36 +114,81 @@ public class VideoEncoderRoiTest extends VideoEncoderQualityRegressionTestBase {
         ROI_RECT_INCORRECT,
         ROI_MAP_CORRECT,
         ROI_MAP_TOO_SMALL,
-        ROI_MAP_TOO_LARGE
+        ROI_MAP_TOO_LARGE;
+
+        public static String toString(ErrorType errorType) {
+            switch (errorType) {
+                case ROI_RECT_CORRECT:
+                    return "rect_valid";
+                case ROI_RECT_INCORRECT:
+                    return "rect_invalid";
+                case ROI_MAP_CORRECT:
+                    return "map_valid";
+                case ROI_MAP_TOO_SMALL:
+                    return "map_too_small";
+                case ROI_MAP_TOO_LARGE:
+                    return "map_too_large";
+                default:
+                    return "unknown_error_type";
+            }
+        }
     }
 
+    private final int[] mBitRates;
+    private final int mBitRateMode;
     private final RoiType mRoiType;
     private final ErrorType mErrorType;
 
-    private static void addParams(CompressedResource cRes, RoiType roiType, ErrorType errorType) {
+    private static void addParams(CompressedResource cRes, int[] bitrates, int bitrateMode,
+            RoiType roiType, ErrorType errorType) {
         final String[] mediaTypes =
                 new String[]{MediaFormat.MIMETYPE_VIDEO_AVC, MediaFormat.MIMETYPE_VIDEO_HEVC,
                         MediaFormat.MIMETYPE_VIDEO_VP9, MediaFormat.MIMETYPE_VIDEO_AV1};
         RESOURCES.add(cRes);
         for (String mediaType : mediaTypes) {
-            // mediaType, resource, roiType, errorType
-            exhaustiveArgsList.add(new Object[]{mediaType, cRes, roiType, errorType});
+            // mediaType, resource, bitrates, bitrate mode, roiType, errorType, label
+            String label =
+                    String.format(Locale.getDefault(), "%s_%s_%s", bitRateModeToString(bitrateMode),
+                            RoiType.toString(roiType), ErrorType.toString(errorType));
+            exhaustiveArgsList.add(
+                    new Object[]{mediaType, cRes, bitrates, bitrateMode, roiType, errorType,
+                            label});
         }
     }
 
-    @Parameterized.Parameters(name = "{index}_{0}_{1}_{4}")
+    @Parameterized.Parameters(name = "{index}_{0}_{1}_{7}")
     public static Collection<Object[]> input() {
-        addParams(SELFIEGROUP_FULLHD_PORTRAIT, RoiType.ROI_TYPE_RECTS, ROI_RECT_CORRECT);
-        addParams(SELFIEGROUP_FULLHD_PORTRAIT, RoiType.ROI_TYPE_RECTS, ROI_RECT_INCORRECT);
-        addParams(SELFIEGROUP_FULLHD_PORTRAIT, RoiType.ROI_TYPE_MAP, ROI_MAP_CORRECT);
-        addParams(SELFIEGROUP_FULLHD_PORTRAIT, RoiType.ROI_TYPE_MAP, ROI_MAP_TOO_SMALL);
-        addParams(SELFIEGROUP_FULLHD_PORTRAIT, RoiType.ROI_TYPE_MAP, ROI_MAP_TOO_LARGE);
+        addParams(SELFIEGROUP_FULLHD_PORTRAIT, FULLHD_BIT_RATES, BITRATE_MODE_VBR,
+                ROI_TYPE_RECTS, ROI_RECT_INCORRECT);
+        addParams(SELFIEGROUP_FULLHD_PORTRAIT, FULLHD_BIT_RATES, BITRATE_MODE_CBR,
+                ROI_TYPE_RECTS, ROI_RECT_INCORRECT);
+
+        addParams(SELFIEGROUP_FULLHD_PORTRAIT, FULLHD_BIT_RATES, BITRATE_MODE_VBR,
+                ROI_TYPE_RECTS, ROI_RECT_CORRECT);
+        addParams(SELFIEGROUP_FULLHD_PORTRAIT, FULLHD_BIT_RATES, BITRATE_MODE_VBR, ROI_TYPE_MAP,
+                ROI_MAP_CORRECT);
+        addParams(SELFIEGROUP_FULLHD_PORTRAIT, FULLHD_BIT_RATES, BITRATE_MODE_VBR, ROI_TYPE_MAP,
+                ROI_MAP_TOO_SMALL);
+        addParams(SELFIEGROUP_FULLHD_PORTRAIT, FULLHD_BIT_RATES, BITRATE_MODE_VBR, ROI_TYPE_MAP,
+                ROI_MAP_TOO_LARGE);
+
+        addParams(SELFIEGROUP_FULLHD_PORTRAIT, FULLHD_BIT_RATES, BITRATE_MODE_CBR,
+                ROI_TYPE_RECTS, ROI_RECT_CORRECT);
+        addParams(SELFIEGROUP_FULLHD_PORTRAIT, FULLHD_BIT_RATES, BITRATE_MODE_CBR, ROI_TYPE_MAP,
+                ROI_MAP_CORRECT);
+        addParams(SELFIEGROUP_FULLHD_PORTRAIT, FULLHD_BIT_RATES, BITRATE_MODE_CBR, ROI_TYPE_MAP,
+                ROI_MAP_TOO_SMALL);
+        addParams(SELFIEGROUP_FULLHD_PORTRAIT, FULLHD_BIT_RATES, BITRATE_MODE_CBR, ROI_TYPE_MAP,
+                ROI_MAP_TOO_LARGE);
         return prepareParamList(exhaustiveArgsList, true, false, true, false, HARDWARE);
     }
 
     public VideoEncoderRoiTest(String encoder, String mediaType, CompressedResource cRes,
-            RoiType roiType, ErrorType errorType, String allTestParams) {
+            int[] bitrates, int bitrateMode, RoiType roiType, ErrorType errorType,
+            @SuppressWarnings("unused") String label, String allTestParams) {
         super(encoder, mediaType, cRes, allTestParams);
+        mBitRates = bitrates;
+        mBitRateMode = bitrateMode;
         mRoiType = roiType;
         mErrorType = errorType;
     }
@@ -140,7 +200,6 @@ public class VideoEncoderRoiTest extends VideoEncoderQualityRegressionTestBase {
         private final Map<Long, List<QpOffsetRect>> mRoiMetadata;
         private final RoiType mRoiType;
         private final ErrorType mErrorType;
-
 
         VideoEncoderRoiHelper(String encoder, String mediaType, EncoderConfigParams encCfgParams,
                 Map<Long, List<QpOffsetRect>> roiMetadata, RoiType roiType, ErrorType errorType,
@@ -192,10 +251,10 @@ public class VideoEncoderRoiTest extends VideoEncoderQualityRegressionTestBase {
             List<QpOffsetRect> qpOffsetRects = getRoiMetadataForPts(pts);
             if (qpOffsetRects != null) {
                 Bundle param = new Bundle();
-                if (Objects.equals(mRoiType, RoiType.ROI_TYPE_RECTS)) {
+                if (Objects.equals(mRoiType, ROI_TYPE_RECTS)) {
                     param.putString(MediaCodec.PARAMETER_KEY_QP_OFFSET_RECTS,
                             QpOffsetRect.flattenToString(qpOffsetRects));
-                } else if (Objects.equals(mRoiType, RoiType.ROI_TYPE_MAP)) {
+                } else if (Objects.equals(mRoiType, ROI_TYPE_MAP)) {
                     int alignedWidth =
                             ((mActiveEncCfg.mWidth + (BLOCK_WD - 1)) / BLOCK_WD) * BLOCK_WD;
                     int alignedHeight =
@@ -265,13 +324,13 @@ public class VideoEncoderRoiTest extends VideoEncoderQualityRegressionTestBase {
         String[] encoderNames = new String[FEATURES.length];
         List<EncoderConfigParams[]> cfgsUnion = new ArrayList<>();
         for (int i = 0; i < FEATURES.length; i++) {
-            EncoderConfigParams[] cfgs = new EncoderConfigParams[BIT_RATES.length];
+            EncoderConfigParams[] cfgs = new EncoderConfigParams[mBitRates.length];
             cfgsUnion.add(cfgs);
             ArrayList<MediaFormat> fmts = new ArrayList<>();
             for (int j = 0; j < cfgs.length; j++) {
                 Pair<String, Boolean> feature = new Pair<>(FEATURES[i], FEATURES[i] != null);
                 cfgs[j] = getVideoEncoderCfgParams(mMediaType, res.mWidth, res.mHeight,
-                        BIT_RATES[j], BITRATE_MODE_VBR, KEY_FRAME_INTERVAL, FRAME_RATE,
+                        mBitRates[j], mBitRateMode, KEY_FRAME_INTERVAL, FRAME_RATE,
                         MAX_B_FRAMES, feature);
                 fmts.add(cfgs[j].getFormat());
             }
@@ -279,7 +338,7 @@ public class VideoEncoderRoiTest extends VideoEncoderQualityRegressionTestBase {
                     areFormatsSupported(mCodecName, mMediaType, fmts));
             encoderNames[i] = mCodecName;
         }
-        Predicate<Double> predicate = bdRate -> bdRate <= EXPECTED_BD_RATE;
+        Predicate<Double> predicate = bdRate -> bdRate < EXPECTED_BD_RATE;
         Map<Long, List<Rect>> frameCropRects = getPtsRectMap(roiMetadata);
         getQualityRegressionForCfgs(cfgsUnion, testInstances, encoderNames, res, FRAME_LIMIT,
                 FRAME_RATE, frameCropRects, false, predicate, true);
@@ -291,12 +350,12 @@ public class VideoEncoderRoiTest extends VideoEncoderQualityRegressionTestBase {
         assertNotNull("no roi metadata found for resource " + mCRes.uniqueLabel(), roiMetadata);
 
         EncoderConfigParams refCfg = getVideoEncoderCfgParams(mMediaType, res.mWidth, res.mHeight,
-                BIT_RATES[0], BITRATE_MODE_VBR, KEY_FRAME_INTERVAL, FRAME_RATE,
+                mBitRates[0], mBitRateMode, KEY_FRAME_INTERVAL, FRAME_RATE,
                 MAX_B_FRAMES, null);
         Pair<String, Boolean> feature =
                 new Pair<>(MediaCodecInfo.CodecCapabilities.FEATURE_Roi, true);
         EncoderConfigParams testCfg = getVideoEncoderCfgParams(mMediaType, res.mWidth, res.mHeight,
-                BIT_RATES[0], BITRATE_MODE_VBR, KEY_FRAME_INTERVAL, FRAME_RATE,
+                mBitRates[0], mBitRateMode, KEY_FRAME_INTERVAL, FRAME_RATE,
                 MAX_B_FRAMES, feature);
         ArrayList<MediaFormat> fmts = new ArrayList<>();
         fmts.add(refCfg.getFormat());
@@ -310,8 +369,8 @@ public class VideoEncoderRoiTest extends VideoEncoderQualityRegressionTestBase {
         OutputManager ref = refInstance.getOutputManager();
 
         VideoEncoderValidationTestBase testInstance =
-                new VideoEncoderRoiHelper(null, mMediaType, null, roiMetadata, mRoiType,
-                        mErrorType, mAllTestParams);
+                new VideoEncoderRoiHelper(null, mMediaType, null, roiMetadata, mRoiType, mErrorType,
+                        mAllTestParams);
         testInstance.encodeToMemory(mCodecName, testCfg, res, FRAME_LIMIT, true, false);
         OutputManager test = testInstance.getOutputManager();
         if (!ref.equals(test)) {
@@ -327,10 +386,6 @@ public class VideoEncoderRoiTest extends VideoEncoderQualityRegressionTestBase {
     @Test
     public void testRoiSupport()
             throws IOException, InterruptedException, NoSuchFieldException, IllegalAccessException {
-        assumeTrue(mCodecName + " does not support FEATURE_Roi",
-                isFeatureSupported(mCodecName, mMediaType,
-                        MediaCodecInfo.CodecCapabilities.FEATURE_Roi));
-
         if (mErrorType == ROI_RECT_CORRECT || mErrorType == ROI_MAP_CORRECT
                 || mErrorType == ROI_MAP_TOO_LARGE) {
             testValidConfig();
@@ -395,9 +450,9 @@ class GenerateRoiMetadata {
 
         Map<Long, List<QpOffsetRect>> roiInvalidMetadata = new HashMap<>();
         roiInvalidMetadata.put(0L, new ArrayList<>(
-                Arrays.asList(new QpOffsetRect(new Rect(-694, -668, -991, -1487), -5))));
+                List.of(new QpOffsetRect(new Rect(-694, -668, -991, -1487), -5))));
         roiInvalidMetadata.put(100000L, new ArrayList<>(
-                Arrays.asList(new QpOffsetRect(new Rect(2264, 2265, 2783, 2807), -5))));
+                List.of(new QpOffsetRect(new Rect(2264, 2265, 2783, 2807), -5))));
         ROI_INVALID_INFO.put(SELFIEGROUP_FULLHD_PORTRAIT, roiInvalidMetadata);
     }
 }
