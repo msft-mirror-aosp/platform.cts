@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package android.app.cts;
+package android.app.cts.broadcasts;
 
 import static android.app.ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOWED;
 import static android.app.ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_DENIED;
@@ -38,10 +38,8 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 @RunWith(AndroidJUnit4.class)
-public class BroadcastOptionsTest {
-    /**
-     * Creates a clone of BroadcastOptions, using toBundle().
-     */
+public final class BroadcastOptionsTest {
+    /** Creates a clone of BroadcastOptions, using toBundle(). */
     static BroadcastOptions cloneViaBundle(BroadcastOptions bo) {
         return BroadcastOptions.fromBundle(bo.toBundle());
     }
@@ -66,7 +64,8 @@ public class BroadcastOptionsTest {
     }
 
     private void assertBroadcastOption_noTemporaryAppAllowList(BroadcastOptions bo) {
-        assertBroadcastOptionTemporaryAppAllowList(bo,
+        assertBroadcastOptionTemporaryAppAllowList(
+                bo,
                 /* duration= */ 0,
                 PowerExemptionManager.TEMPORARY_ALLOW_LIST_TYPE_NONE,
                 PowerExemptionManager.REASON_UNKNOWN,
@@ -90,7 +89,8 @@ public class BroadcastOptionsTest {
 
         bo.setTemporaryAppWhitelistDuration(10);
 
-        assertBroadcastOptionTemporaryAppAllowList(bo,
+        assertBroadcastOptionTemporaryAppAllowList(
+                bo,
                 /* duration= */ 10,
                 PowerExemptionManager.TEMPORARY_ALLOW_LIST_TYPE_FOREGROUND_SERVICE_ALLOWED,
                 PowerExemptionManager.REASON_UNKNOWN,
@@ -109,38 +109,44 @@ public class BroadcastOptionsTest {
 
         bo = BroadcastOptions.makeBasic();
 
-        bo.setTemporaryAppAllowlist(10,
+        bo.setTemporaryAppAllowlist(
+                10,
                 PowerExemptionManager.TEMPORARY_ALLOW_LIST_TYPE_FOREGROUND_SERVICE_NOT_ALLOWED,
                 PowerExemptionManager.REASON_GEOFENCING,
                 null);
 
-        assertBroadcastOptionTemporaryAppAllowList(bo,
+        assertBroadcastOptionTemporaryAppAllowList(
+                bo,
                 /* duration= */ 10,
                 PowerExemptionManager.TEMPORARY_ALLOW_LIST_TYPE_FOREGROUND_SERVICE_NOT_ALLOWED,
                 PowerExemptionManager.REASON_GEOFENCING,
                 /* reason= */ null);
 
         // Setting duration 0 will clear the previous call.
-        bo.setTemporaryAppAllowlist(0,
+        bo.setTemporaryAppAllowlist(
+                0,
                 PowerExemptionManager.TEMPORARY_ALLOW_LIST_TYPE_FOREGROUND_SERVICE_NOT_ALLOWED,
                 PowerExemptionManager.REASON_ACTIVITY_RECOGNITION,
                 "reason");
         assertBroadcastOption_noTemporaryAppAllowList(bo);
 
         // Set again.
-        bo.setTemporaryAppAllowlist(20,
+        bo.setTemporaryAppAllowlist(
+                20,
                 PowerExemptionManager.TEMPORARY_ALLOW_LIST_TYPE_FOREGROUND_SERVICE_ALLOWED,
                 PowerExemptionManager.REASON_GEOFENCING,
                 "reason");
 
-        assertBroadcastOptionTemporaryAppAllowList(bo,
+        assertBroadcastOptionTemporaryAppAllowList(
+                bo,
                 /* duration= */ 20,
                 PowerExemptionManager.TEMPORARY_ALLOW_LIST_TYPE_FOREGROUND_SERVICE_ALLOWED,
                 PowerExemptionManager.REASON_GEOFENCING,
                 /* reason= */ "reason");
 
         // Set to NONE will clear the previous call too.
-        bo.setTemporaryAppAllowlist(10,
+        bo.setTemporaryAppAllowlist(
+                10,
                 PowerExemptionManager.TEMPORARY_ALLOW_LIST_TYPE_NONE,
                 PowerExemptionManager.REASON_ACTIVITY_RECOGNITION,
                 "reason");
@@ -168,8 +174,8 @@ public class BroadcastOptionsTest {
         BroadcastOptions options = BroadcastOptions.makeBasic();
         // backwards compatibility
         assertTrue(options.isPendingIntentBackgroundActivityLaunchAllowed());
-        assertThat(options.getPendingIntentBackgroundActivityStartMode()).isEqualTo(
-                MODE_BACKGROUND_ACTIVITY_START_SYSTEM_DEFINED);
+        assertThat(options.getPendingIntentBackgroundActivityStartMode())
+                .isEqualTo(MODE_BACKGROUND_ACTIVITY_START_SYSTEM_DEFINED);
     }
 
     @Test
@@ -177,8 +183,8 @@ public class BroadcastOptionsTest {
         BroadcastOptions options = BroadcastOptions.makeBasic();
         options.setPendingIntentBackgroundActivityLaunchAllowed(true);
         assertTrue(options.isPendingIntentBackgroundActivityLaunchAllowed());
-        assertThat(options.getPendingIntentBackgroundActivityStartMode()).isEqualTo(
-                MODE_BACKGROUND_ACTIVITY_START_ALLOWED);
+        assertThat(options.getPendingIntentBackgroundActivityStartMode())
+                .isEqualTo(MODE_BACKGROUND_ACTIVITY_START_ALLOWED);
     }
 
     @Test
@@ -186,47 +192,45 @@ public class BroadcastOptionsTest {
         BroadcastOptions options = BroadcastOptions.makeBasic();
         options.setPendingIntentBackgroundActivityLaunchAllowed(false);
         assertFalse(options.isPendingIntentBackgroundActivityLaunchAllowed());
-        assertThat(options.getPendingIntentBackgroundActivityStartMode()).isEqualTo(
-                MODE_BACKGROUND_ACTIVITY_START_DENIED);
+        assertThat(options.getPendingIntentBackgroundActivityStartMode())
+                .isEqualTo(MODE_BACKGROUND_ACTIVITY_START_DENIED);
     }
 
     @Test
     public void testGetSetPendingIntentBackgroundActivityStartModeAllowed() {
-        BroadcastOptions options = BroadcastOptions.makeBasic()
-                .setPendingIntentBackgroundActivityStartMode(
-                        MODE_BACKGROUND_ACTIVITY_START_ALLOWED);
+        BroadcastOptions options =
+                BroadcastOptions.makeBasic()
+                        .setPendingIntentBackgroundActivityStartMode(
+                                MODE_BACKGROUND_ACTIVITY_START_ALLOWED);
         assertTrue(options.isPendingIntentBackgroundActivityLaunchAllowed());
-        assertThat(options.getPendingIntentBackgroundActivityStartMode()).isEqualTo(
-                MODE_BACKGROUND_ACTIVITY_START_ALLOWED);
+        assertThat(options.getPendingIntentBackgroundActivityStartMode())
+                .isEqualTo(MODE_BACKGROUND_ACTIVITY_START_ALLOWED);
     }
 
     @Test
     public void testGetSetPendingIntentBackgroundActivityStartModeDenied() {
-        BroadcastOptions options = BroadcastOptions.makeBasic()
-                .setPendingIntentBackgroundActivityStartMode(
-                        MODE_BACKGROUND_ACTIVITY_START_DENIED);
+        BroadcastOptions options =
+                BroadcastOptions.makeBasic()
+                        .setPendingIntentBackgroundActivityStartMode(
+                                MODE_BACKGROUND_ACTIVITY_START_DENIED);
         assertFalse(options.isPendingIntentBackgroundActivityLaunchAllowed());
-        assertThat(options.getPendingIntentBackgroundActivityStartMode()).isEqualTo(
-                MODE_BACKGROUND_ACTIVITY_START_DENIED);
+        assertThat(options.getPendingIntentBackgroundActivityStartMode())
+                .isEqualTo(MODE_BACKGROUND_ACTIVITY_START_DENIED);
     }
 
     @Test
     public void testSetGetDeferralPolicy() {
         final BroadcastOptions options = BroadcastOptions.makeBasic();
-        assertEquals(BroadcastOptions.DEFERRAL_POLICY_DEFAULT,
-                options.getDeferralPolicy());
+        assertEquals(BroadcastOptions.DEFERRAL_POLICY_DEFAULT, options.getDeferralPolicy());
 
         options.setDeferralPolicy(BroadcastOptions.DEFERRAL_POLICY_UNTIL_ACTIVE);
-        assertEquals(BroadcastOptions.DEFERRAL_POLICY_UNTIL_ACTIVE,
-                options.getDeferralPolicy());
+        assertEquals(BroadcastOptions.DEFERRAL_POLICY_UNTIL_ACTIVE, options.getDeferralPolicy());
 
         final BroadcastOptions options2 = cloneViaBundle(options);
-        assertEquals(BroadcastOptions.DEFERRAL_POLICY_UNTIL_ACTIVE,
-                options2.getDeferralPolicy());
+        assertEquals(BroadcastOptions.DEFERRAL_POLICY_UNTIL_ACTIVE, options2.getDeferralPolicy());
 
         options.clearDeferralPolicy();
-        assertEquals(BroadcastOptions.DEFERRAL_POLICY_DEFAULT,
-                options.getDeferralPolicy());
+        assertEquals(BroadcastOptions.DEFERRAL_POLICY_DEFAULT, options.getDeferralPolicy());
     }
 
     @Test
@@ -235,11 +239,13 @@ public class BroadcastOptionsTest {
         final int defaultPolicy = options.getDeliveryGroupPolicy();
 
         options.setDeliveryGroupPolicy(BroadcastOptions.DELIVERY_GROUP_POLICY_MOST_RECENT);
-        assertEquals(BroadcastOptions.DELIVERY_GROUP_POLICY_MOST_RECENT,
+        assertEquals(
+                BroadcastOptions.DELIVERY_GROUP_POLICY_MOST_RECENT,
                 options.getDeliveryGroupPolicy());
 
         final BroadcastOptions options2 = cloneViaBundle(options);
-        assertEquals(BroadcastOptions.DELIVERY_GROUP_POLICY_MOST_RECENT,
+        assertEquals(
+                BroadcastOptions.DELIVERY_GROUP_POLICY_MOST_RECENT,
                 options2.getDeliveryGroupPolicy());
 
         options.clearDeliveryGroupPolicy();
@@ -255,12 +261,10 @@ public class BroadcastOptionsTest {
         final String namespace = "test_namespace";
         final String key = "test_key";
         options.setDeliveryGroupMatchingKey(namespace, key);
-        assertEquals(String.join(":", namespace, key),
-                options.getDeliveryGroupMatchingKey());
+        assertEquals(String.join(":", namespace, key), options.getDeliveryGroupMatchingKey());
 
         final BroadcastOptions options2 = cloneViaBundle(options);
-        assertEquals(String.join(":", namespace, key),
-                options2.getDeliveryGroupMatchingKey());
+        assertEquals(String.join(":", namespace, key), options2.getDeliveryGroupMatchingKey());
 
         options.clearDeliveryGroupMatchingKey();
         assertNull(options.getDeliveryGroupMatchingKey());
