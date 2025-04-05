@@ -159,6 +159,12 @@ public class CtsCredentialProviderServiceDeviceTest {
     public static void setUpClass() {
         Log.i(TAG, "Skipping all tests in the file if we are not on the right SDK level...");
         assumeTrue("VERSION.SDK_INT=" + VERSION.SDK_INT, BuildCompat.isAtLeastU());
+
+        // Skip all tests if the device is Automotive
+        PackageManager pm = getInstrumentation().getContext().getPackageManager();
+        assumeFalse(
+                "Skipping tests: Device has FEATURE_AUTOMOTIVE",
+                pm.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE));
     }
 
     // To be run before every test

@@ -15,6 +15,9 @@
  */
 package android.signature.cts.api;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+
 import android.app.Instrumentation;
 import android.os.Bundle;
 import android.provider.Settings;
@@ -27,10 +30,17 @@ import android.signature.cts.JDiffClassDescription;
 import android.signature.cts.ResultObserver;
 import android.signature.cts.VirtualPath;
 import android.util.Log;
+
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
+
 import com.android.compatibility.common.util.DynamicConfigDeviceSide;
+
 import com.google.common.base.Suppliers;
+
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.runner.RunWith;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -38,12 +48,6 @@ import java.util.Collections;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.runner.RunWith;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
 
 /**
  * Base class for the signature tests.
@@ -113,14 +117,31 @@ public abstract class AbstractApiTest {
                         Settings.Global.HIDDEN_API_POLICY),
                 getGlobalHiddenApiPolicy());
 
-
         // Prepare for a class provider that loads classes from bootclasspath but filters
         // out known inaccessible classes.
-        // Note that com.android.internal.R.* inner classes are also excluded as they are
-        // not part of API though exist in the runtime.
-        mClassProvider = new ExcludingClassProvider(
-                new BootClassPathClassesProvider(),
-                name -> name != null && name.startsWith("com.android.internal.R."));
+        mClassProvider =
+                new ExcludingClassProvider(
+                        new BootClassPathClassesProvider(),
+                        name -> {
+                            if (name == null) {
+                                return false;
+                            }
+                            // com.android.internal.R.* inner classes are also excluded as they are
+                            // not part of API though exist in the runtime.
+                            if (name.startsWith("com.android.internal.R.")) {
+                                return true;
+                            }
+                            // http://b/407596762: This class requires prior initialization which
+                            // this test does not know how to perform.
+                            // This would normally not be an issue, but this leads to a native
+                            // crash instead of a native exception; which this test is not able to
+                            // recover from.
+                            if (name.startsWith(
+                                    "android.net.connectivity.org.chromium.base.TraceEvent")) {
+                                return true;
+                            }
+                            return false;
+                        });
 
         String dynamicConfigName = instrumentationArgs.getString(DYNAMIC_CONFIG_NAME_OPTION);
         if (dynamicConfigName != null) {

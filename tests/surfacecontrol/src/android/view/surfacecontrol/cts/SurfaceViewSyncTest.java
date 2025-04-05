@@ -25,6 +25,9 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.media.MediaPlayer;
+import android.provider.Settings;
+import android.server.wm.ActivityManagerTestBase.DisableImmersiveModeConfirmationRule;
+import android.server.wm.settings.SettingsSession;
 import android.view.Gravity;
 import android.view.SurfaceControl;
 import android.view.SurfaceHolder;
@@ -44,9 +47,11 @@ import androidx.test.rule.ActivityTestRule;
 import androidx.test.runner.AndroidJUnit4;
 
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
+import org.junit.rules.TestRule;
 import org.junit.runner.RunWith;
 
 import java.util.concurrent.CountDownLatch;
@@ -58,6 +63,34 @@ public class SurfaceViewSyncTest {
     private static final String TAG = "SurfaceViewSyncTests";
 
     private static final long WAIT_TIMEOUT_S = 5L * HW_TIMEOUT_MULTIPLIER;
+
+    @ClassRule
+    public static DisableImmersiveModeConfirmationRule sDisableImmersiveModeConfirmationRule =
+            new DisableImmersiveModeConfirmationRule();
+
+    @ClassRule
+    public static final TestRule sResetWindowAnimationRule =
+            SettingsSession.overrideForTest(
+                    Settings.Global.getUriFor(Settings.Global.WINDOW_ANIMATION_SCALE),
+                    Settings.Global::getFloat,
+                    Settings.Global::putFloat,
+                    1.0f);
+
+    @ClassRule
+    public static final TestRule sResetTransitionAnimationRule =
+            SettingsSession.overrideForTest(
+                    Settings.Global.getUriFor(Settings.Global.TRANSITION_ANIMATION_SCALE),
+                    Settings.Global::getFloat,
+                    Settings.Global::putFloat,
+                    1.0f);
+
+    @ClassRule
+    public static final TestRule sResetAnimatorDurationRule =
+            SettingsSession.overrideForTest(
+                    Settings.Global.getUriFor(Settings.Global.ANIMATOR_DURATION_SCALE),
+                    Settings.Global::getFloat,
+                    Settings.Global::putFloat,
+                    1.0f);
 
     @Rule
     public ActivityTestRule<CapturedActivityWithResource> mActivityRule =

@@ -21,6 +21,7 @@ import static android.content.pm.PackageManager.PERMISSION_GRANTED;
 import android.app.Service;
 import android.content.Intent;
 import android.os.IBinder;
+import android.telecom.TelecomManager;
 import android.util.Log;
 
 public class CtsThirdPartyInCallServiceControl extends Service {
@@ -29,44 +30,52 @@ public class CtsThirdPartyInCallServiceControl extends Service {
     public static final String CONTROL_INTERFACE_ACTION =
             "android.telecom.cts.thirdptyincallservice.ACTION_THIRDPTY_CTRL";
 
-    private final IBinder mCtsCompanionAppControl = new ICtsThirdPartyInCallServiceControl.Stub() {
+    private final IBinder mCtsCompanionAppControl =
+            new ICtsThirdPartyInCallServiceControl.Stub() {
 
-        @Override
-        public boolean checkBindStatus(boolean bind) {
-            return CtsThirdPartyInCallService.checkBindStatus(bind);
-        }
+                @Override
+                public boolean checkBindStatus(boolean bind) {
+                    return CtsThirdPartyInCallService.checkBindStatus(bind);
+                }
 
-        @Override
-        public int getLocalCallCount() {
-            return CtsThirdPartyInCallService.getLocalCallCount();
-        }
+                @Override
+                public int getLocalCallCount() {
+                    return CtsThirdPartyInCallService.getLocalCallCount();
+                }
 
-        @Override
-        public void resetLatchForServiceBound(boolean bind) {
-            CtsThirdPartyInCallService.resetLatchForServiceBound(bind);
-        }
+                @Override
+                public void resetLatchForServiceBound(boolean bind) {
+                    CtsThirdPartyInCallService.resetLatchForServiceBound(bind);
+                }
 
-        @Override
-        public void resetCalls() {
-            CtsThirdPartyInCallService.resetCalls();
-        }
+                @Override
+                public void resetCalls() {
+                    CtsThirdPartyInCallService.resetCalls();
+                }
 
-        @Override
-        public boolean checkPermissionGrant(String permission) {
-            return getPackageManager().checkPermission(permission
-                    , getApplication().getPackageName()) == PERMISSION_GRANTED;
-        }
+                @Override
+                public boolean checkPermissionGrant(String permission) {
+                    return getPackageManager()
+                                    .checkPermission(permission, getApplication().getPackageName())
+                            == PERMISSION_GRANTED;
+                }
 
-        @Override
-        public void setExpectedExtra(String newKey, String newValue) {
-            CtsThirdPartyInCallService.getInstance().setExpectedExtra(newKey, newValue);
-        }
+                @Override
+                public boolean hasManageOngoingCallsPermission() {
+                    TelecomManager tm = getSystemService(TelecomManager.class);
+                    return tm.hasManageOngoingCallsPermission();
+                }
 
-        @Override
-        public boolean waitUntilExpectedExtrasReceived() {
-            return CtsThirdPartyInCallService.getInstance().waitForExtrasChanged();
-        }
-    };
+                @Override
+                public void setExpectedExtra(String newKey, String newValue) {
+                    CtsThirdPartyInCallService.getInstance().setExpectedExtra(newKey, newValue);
+                }
+
+                @Override
+                public boolean waitUntilExpectedExtrasReceived() {
+                    return CtsThirdPartyInCallService.getInstance().waitForExtrasChanged();
+                }
+            };
 
     @Override
     public IBinder onBind(Intent intent) {

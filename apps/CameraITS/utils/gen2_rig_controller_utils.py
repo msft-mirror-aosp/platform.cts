@@ -165,13 +165,13 @@ def _set_angular_deceleration(serial_port, channel, value):
   _rotator_write(serial_port, channel, _LSS_CONFIG_ANGULAR_DECELERATION, value)
 
 
-def _move_to(serial_port, channel, position):
+def _move_to(serial_port, channel, position, move_time):
   _rotator_write(serial_port, channel, _LSS_ACTION_MOVE, position)
-  # Wait for two seconds.
-  time.sleep(_WAIT_FOR_ROTATOR_MOVEMENT)
+  time.sleep(move_time)
 
 
-def rotate(serial_port, channel, position_degree=0):
+def rotate(serial_port, channel, position_degree=0,
+           move_time=_WAIT_FOR_ROTATOR_MOVEMENT):
   """Rotate servo to the specified direction.
 
   Args:
@@ -182,6 +182,7 @@ def rotate(serial_port, channel, position_degree=0):
       A full circle is from -180 to 180 degrees.
       Positive value will move the servo in clockwise direction.
       Negative value will move the servo  in anti-clockwise direction.
+    move_time: int; number of seconds for movement
 
   Returns:
     Command response.
@@ -193,7 +194,7 @@ def rotate(serial_port, channel, position_degree=0):
     else:
       position = _POSITION_0_DEGREE
     logging.debug('Moving servo %s to position %s', channel, position)
-    _move_to(serial_port, channel, position)
+    _move_to(serial_port, channel, position, move_time)
     response = f'Moving servo {channel} to direction {position_degree}'
     # Hold the angular position after movement
     _rotator_write(serial_port, channel, _LSS_ACTION_HOLD)
@@ -201,6 +202,48 @@ def rotate(serial_port, channel, position_degree=0):
   else:
     logging.debug('Not a valid servo position: %s', position_degree)
     return None
+
+
+def rotation_rig(rotate_cntl, rotate_ch, num_rotations, angles, servo_speed,
+                 move_time):
+  """Rotate the phone n times using rotate_cntl and rotate_ch defined.
+
+  rotate_ch is hard wired and must be determined from physical setup.
+  If using Gen2 rig, serial port must be initialized and communication must be
+  established before rotation.
+
+  Args:
+    rotate_cntl: str to identify 'gen2_rotator' controller.
+    rotate_ch: str to identify rotation channel number.
+    num_rotations: int number of rotations.
+    angles: list of ints; servo angle to move to.
+    servo_speed: int number of move speed between [1, 255].
+    move_time: int time required to allow for arduino movement.
+  """
+
+  logging.debug('Controller: %s, ch: %s', rotate_cntl, rotate_ch)
+  try:
+    serial_port = find_serial_port(rotate_cntl)
+    logging.debug('found serial port')
+    channel = int(rotate_ch)
+    configure_rotator(serial_port, channel)
+
+    # initialize servo at origin
+    logging.debug('Moving servo to origin')
+    rotate(serial_port, channel, 0, _WAIT_FOR_ROTATOR_MOVEMENT)
+
+    # rotate phone
+    logging.debug('Rotating phone %dx', num_rotations)
+    for i in range(num_rotations):
+      for angle in angles:
+        rotate(serial_port, channel, angle, move_time)
+    logging.debug('Finished rotations')
+
+    logging.debug('Moving servo to origin')
+    rotate(serial_port, channel, 0, _WAIT_FOR_ROTATOR_MOVEMENT)
+  except Exception as e:
+    logging.debug(f'An unexpected error occurred {e}')
+    raise
 
 
 def set_light_brightness(serial_port, channel, brightness_level, delay=0):

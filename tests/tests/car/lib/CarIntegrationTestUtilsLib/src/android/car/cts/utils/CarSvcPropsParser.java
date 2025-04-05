@@ -31,6 +31,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -236,7 +237,10 @@ public final class CarSvcPropsParser {
         try (InputStream configFile =
                 this.getClass().getClassLoader().getResourceAsStream(CONFIG_RESOURCE_NAME)) {
             try {
-                configString = new String(configFile.readAllBytes());
+                byte[] bytes = new byte[configFile.available()];
+                DataInputStream dataInputStream = new DataInputStream(configFile);
+                dataInputStream.readFully(bytes);
+                configString = new String(bytes);
             } catch (IOException e) {
                 throw new IllegalStateException(
                         "Cannot read from config file: " + CONFIG_RESOURCE_NAME, e);

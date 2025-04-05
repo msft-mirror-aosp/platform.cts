@@ -92,6 +92,7 @@ public class ThirdPartyInCallServiceAppOpsPermissionTest extends BaseTelecomTest
         }
         setInCallServiceAppOpsPermission(false);
         int previousCallCount = mICtsThirdPartyInCallServiceControl.getLocalCallCount();
+        assertFalse(mICtsThirdPartyInCallServiceControl.hasManageOngoingCallsPermission());
         addAndVerifyNewIncomingCall(TEST_URI, null);
         assertBindStatus(/* true: bind, false: unbind */true, /* expected result */false);
         assertCallCount(previousCallCount);
@@ -107,6 +108,7 @@ public class ThirdPartyInCallServiceAppOpsPermissionTest extends BaseTelecomTest
         setInCallServiceAppOpsPermission(true);
 
         int previousCallCount = mICtsThirdPartyInCallServiceControl.getLocalCallCount();
+        assertTrue(mICtsThirdPartyInCallServiceControl.hasManageOngoingCallsPermission());
         addAndVerifyNewIncomingCall(TEST_URI, null);
         assertBindStatus(/* true: bind, false: unbind */true, /* expected result */true);
         assertCallCount(previousCallCount + 1);

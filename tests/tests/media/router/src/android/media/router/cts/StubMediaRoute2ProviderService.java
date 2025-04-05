@@ -41,7 +41,6 @@ import com.android.compatibility.common.util.PollingCheck;
 
 import org.junit.rules.ExternalResource;
 
-import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -268,9 +267,8 @@ public class StubMediaRoute2ProviderService extends MediaRoute2ProviderService {
     @Override
     public void onCreateSession(long requestId, String packageName, String routeId,
             @Nullable Bundle sessionHints) {
-        Proxy proxy = mProxy;
-        if (doesProxyOverridesMethod(proxy, "onCreateSession")) {
-            proxy.onCreateSession(requestId, packageName, routeId, sessionHints);
+        if (mProxy != null
+                && mProxy.onCreateSession(requestId, packageName, routeId, sessionHints)) {
             return;
         }
 
@@ -321,9 +319,7 @@ public class StubMediaRoute2ProviderService extends MediaRoute2ProviderService {
 
     @Override
     public void onReleaseSession(long requestId, String sessionId) {
-        Proxy proxy = mProxy;
-        if (doesProxyOverridesMethod(proxy, "onReleaseSession")) {
-            proxy.onReleaseSession(requestId, sessionId);
+        if (mProxy != null && mProxy.onReleaseSession(requestId, sessionId)) {
             return;
         }
 
@@ -347,9 +343,7 @@ public class StubMediaRoute2ProviderService extends MediaRoute2ProviderService {
 
     @Override
     public void onDiscoveryPreferenceChanged(RouteDiscoveryPreference preference) {
-        Proxy proxy = mProxy;
-        if (doesProxyOverridesMethod(proxy, "onDiscoveryPreferenceChanged")) {
-            proxy.onDiscoveryPreferenceChanged(preference);
+        if (mProxy != null && mProxy.onDiscoveryPreferenceChanged(preference)) {
             return;
         }
 
@@ -359,9 +353,7 @@ public class StubMediaRoute2ProviderService extends MediaRoute2ProviderService {
 
     @Override
     public void onSelectRoute(long requestId, String sessionId, String routeId) {
-        Proxy proxy = mProxy;
-        if (doesProxyOverridesMethod(proxy, "onSelectRoute")) {
-            proxy.onSelectRoute(requestId, sessionId, routeId);
+        if (mProxy != null && mProxy.onSelectRoute(requestId, sessionId, routeId)) {
             return;
         }
 
@@ -388,9 +380,7 @@ public class StubMediaRoute2ProviderService extends MediaRoute2ProviderService {
 
     @Override
     public void onDeselectRoute(long requestId, String sessionId, String routeId) {
-        Proxy proxy = mProxy;
-        if (doesProxyOverridesMethod(proxy, "onDeselectRoute")) {
-            proxy.onDeselectRoute(requestId, sessionId, routeId);
+        if (mProxy != null && mProxy.onDeselectRoute(requestId, sessionId, routeId)) {
             return;
         }
 
@@ -424,8 +414,7 @@ public class StubMediaRoute2ProviderService extends MediaRoute2ProviderService {
     @Override
     public void onTransferToRoute(long requestId, String sessionId, String routeId) {
         Proxy proxy = mProxy;
-        if (doesProxyOverridesMethod(proxy, "onTransferToRoute")) {
-            proxy.onTransferToRoute(requestId, sessionId, routeId);
+        if (proxy != null && proxy.onTransferToRoute(requestId, sessionId, routeId)) {
             return;
         }
 
@@ -507,35 +496,55 @@ public class StubMediaRoute2ProviderService extends MediaRoute2ProviderService {
         notifyRoutes(new ArrayList<>(mRoutes.values()));
     }
 
+    /**
+     * For tests that want to customize the behavior of StubMediaRoute2ProviderService callbacks or
+     * just verify that they are invoked, they could write a subclass of
+     * StubMediaRoute2ProviderService. However, to use it they'd need to declare that subclass in
+     * their manifest, which is inconvenient.
+     *
+     * <p>Instead, we have this Proxy class which can be subclassed by tests and registered with the
+     * {@link #setProxy(Proxy proxy)} method to allow observation and/or customization of callback
+     * behavior. Each method returns a boolean where true indicates they have completely handled the
+     * event, and false indicates they want to continue executing the default behavior.
+     */
     public static class Proxy {
-        public void onCreateSession(long requestId, @NonNull String packageName,
-                @NonNull String routeId, @Nullable Bundle sessionHints) {}
-        public void onReleaseSession(long requestId, @NonNull String sessionId) {}
-        public void onSelectRoute(long requestId, @NonNull String sessionId,
-                @NonNull String routeId) {}
-        public void onDeselectRoute(long requestId, @NonNull String sessionId,
-                @NonNull String routeId) {}
-        public void onTransferToRoute(long requestId, @NonNull String sessionId,
-                @NonNull String routeId) {}
-        public void onDiscoveryPreferenceChanged(RouteDiscoveryPreference preference) {}
-        // TODO: Handle onSetRouteVolume() && onSetSessionVolume()
-    }
+        /** customizes StubMediaRoute2ProviderService#onCreateSession behavior */
+        public boolean onCreateSession(
+                long requestId,
+                @NonNull String packageName,
+                @NonNull String routeId,
+                @Nullable Bundle sessionHints) {
+            return false;
+        }
 
-    private static boolean doesProxyOverridesMethod(Proxy proxy, String methodName) {
-        if (proxy == null) {
+        /** customizes StubMediaRoute2ProviderService#onReleaseSession behavior */
+        public boolean onReleaseSession(long requestId, @NonNull String sessionId) {
             return false;
         }
-        Method[] methods = proxy.getClass().getMethods();
-        if (methods == null) {
+
+        /** customizes StubMediaRoute2ProviderService#onSelectRoute behavior */
+        public boolean onSelectRoute(
+                long requestId, @NonNull String sessionId, @NonNull String routeId) {
             return false;
         }
-        for (int i = 0; i < methods.length; i++) {
-            if (methods[i].getName().equals(methodName)) {
-                // Found method. Check if it overrides
-                return methods[i].getDeclaringClass() != Proxy.class;
-            }
+
+        /** customizes StubMediaRoute2ProviderService#onDeselectRoute behavior */
+        public boolean onDeselectRoute(
+                long requestId, @NonNull String sessionId, @NonNull String routeId) {
+            return false;
         }
-        return false;
+
+        /** customizes StubMediaRoute2ProviderService#onTransferToRoute behavior */
+        public boolean onTransferToRoute(
+                long requestId, @NonNull String sessionId, @NonNull String routeId) {
+            return false;
+        }
+
+        /** customizes StubMediaRoute2ProviderService#onDiscoveryPreferenceChanged behavior */
+        public boolean onDiscoveryPreferenceChanged(RouteDiscoveryPreference preference) {
+            return false;
+        }
+        // TODO: Handle onSetRouteVolume() && onSetSessionVolume()
     }
 
     // This class can be used as a JUnit @Rule to initialize and get a reference to a running

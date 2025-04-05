@@ -57,6 +57,9 @@ public class AudioDeviceVolumeManagerTest extends CtsAndroidTestCase {
 
     private static final AudioDeviceAttributes BT_DEV = new AudioDeviceAttributes(
             AudioDeviceAttributes.ROLE_OUTPUT, AudioDeviceInfo.TYPE_BLUETOOTH_A2DP, "bla");
+    private static final AudioDeviceAttributes BT_DEV2 =
+            new AudioDeviceAttributes(
+                    AudioDeviceAttributes.ROLE_OUTPUT, AudioDeviceInfo.TYPE_BLUETOOTH_A2DP, "bla2");
 
     private static final AudioDeviceAttributes BT_SCO_DEV =
             new AudioDeviceAttributes(
@@ -295,6 +298,39 @@ public class AudioDeviceVolumeManagerTest extends CtsAndroidTestCase {
                 listener);
         mADVmgr.setDeviceVolume(newVolume, BT_SCO_DEV);
 
+        assertEquals(
+                newVolume,
+                listener.waitForVolumeChanged(VOLUME_UPDATE_TIME_MAX_MS, TimeUnit.MILLISECONDS));
+    }
+
+    @RequiresFlagsEnabled(FLAG_UNIFY_ABSOLUTE_VOLUME_MANAGEMENT)
+    @ApiTest(
+            apis = {
+                "android.media.AudioDeviceVolumeManager#setDeviceAbsoluteVolumeBehavior",
+                "android.media.AudioDeviceVolumeManager#setDeviceVolume",
+                "android.media.AudioDeviceVolumeManager#getDeviceVolume"
+            })
+    public void testCallbackForSameTypeDifferentVolumeBehaviour() {
+        if (mSkipRingerTests) {
+            return;
+        }
+        AudioManager am = getContext().getSystemService(AudioManager.class);
+        final int minIndex = am.getStreamMinVolume(AudioManager.STREAM_MUSIC);
+        final int maxIndex = am.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
+        final VolumeInfo volMedia =
+                new VolumeInfo.Builder(AudioManager.STREAM_MUSIC)
+                        .setMaxVolumeIndex(maxIndex)
+                        .setMinVolumeIndex(minIndex)
+                        .build();
+        final VolumeInfo newVolume = computeNewVolume(volMedia);
+        final AudioDeviceVolumeChangedListener listener = new AudioDeviceVolumeChangedListener();
+        mADVmgr.setDeviceAbsoluteVolumeBehavior(
+                BT_DEV, volMedia, getContext().getMainExecutor(), listener);
+
+        mADVmgr.setDeviceVolume(newVolume, BT_DEV2);
+        assertNull(listener.waitForVolumeChanged(VOLUME_UPDATE_TIME_MAX_MS, TimeUnit.MILLISECONDS));
+
+        mADVmgr.setDeviceVolume(newVolume, BT_DEV);
         assertEquals(
                 newVolume,
                 listener.waitForVolumeChanged(VOLUME_UPDATE_TIME_MAX_MS, TimeUnit.MILLISECONDS));

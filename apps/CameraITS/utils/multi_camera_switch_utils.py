@@ -49,8 +49,8 @@ def check_orientation_and_flip(props, img, img_name_stem, suffix):
   return img
 
 
-def do_ae_check(
-    img1, img2, file_stem, patch_color, suffix1, suffix2, rel_tol, abs_tol):
+def do_ae_check(img1, img2, file_stem, patch_color, props, suffix1,
+                suffix2, rel_tol, abs_tol):
   """Check two images' luma change is within specified tolerance.
 
   Args:
@@ -58,6 +58,7 @@ def do_ae_check(
     img2: second image.
     file_stem: str; path to file.
     patch_color: str; color of the patch to be tested.
+    props: obj; camera properties object.
     suffix1: str; suffix for the first image file name.
     suffix2: str; suffix for the second image file name.
     rel_tol: float; relative threshold for delta between brightness.
@@ -81,13 +82,22 @@ def do_ae_check(
   logging.debug('Y avg change percentage: %.4f', y_avg_change_percent)
 
   if not math.isclose(y1_avg, y2_avg, rel_tol=rel_tol, abs_tol=abs_tol):
-    failed_ae_msg.append('Y avg change is greater than threshold value for '
-                         f'patches: {patch_color} '
-                         f'diff: {abs(y2_avg - y1_avg):.4f} '
-                         f'ATOL: {abs_tol} '
-                         f'RTOL: {rel_tol} '
-                         f'{suffix1} y avg: {y1_avg:.4f} '
-                         f'{suffix2} y avg: {y2_avg:.4f} ')
+    failed_msg = ('Y avg change is greater than threshold value for '
+                  f'patches: {patch_color} '
+                  f'diff: {abs(y2_avg - y1_avg):.4f} '
+                  f'ATOL: {abs_tol} '
+                  f'RTOL: {rel_tol} '
+                  f'{suffix1} y avg: {y1_avg:.4f} '
+                  f'{suffix2} y avg: {y2_avg:.4f} ')
+    # If the device supports both ae_regions and awb_regions,
+    # then fail for all 4 patches.
+    if camera_properties_utils.awb_regions(props):
+      failed_ae_msg.append(failed_msg)
+    else:
+      # If only ae_regions is supported, then fail only for gray patch
+      if patch_color == 'gray':
+        failed_ae_msg.append(failed_msg)
+
   return failed_ae_msg, y1_avg, y2_avg
 
 

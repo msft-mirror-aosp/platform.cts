@@ -74,8 +74,7 @@ public class CtsGpuProfilingDataTest extends BaseHostJUnit4Test {
     // available
     // - Ensure the validity of GPU counter values
 
-    private static final String BIN_NAME = "ctsgraphicsgpucountersinit";
-    private static final String DEVICE_BIN_PATH = "/data/local/tmp/" + BIN_NAME;
+    private static final String BIN_NAME = "gpu_counter_producer";
     private static final String APP = "android.graphics.gpuprofiling.app";
     private static final String APK = "CtsGraphicsProfilingDataApp.apk";
     private static final String ACTIVITY = "GpuProfilingNativeActivity";
@@ -180,7 +179,7 @@ public class CtsGpuProfilingDataTest extends BaseHostJUnit4Test {
 
         // Spin up a new thread to avoid blocking the main thread while the native process waits to
         // be killed.
-        ShellThread shellThread = new ShellThread(DEVICE_BIN_PATH);
+        ShellThread shellThread = new ShellThread(BIN_NAME);
         shellThread.start();
         CommandResult activityStatus =
                 getDevice().executeShellV2Command("am start -n " + APP + "/." + ACTIVITY);

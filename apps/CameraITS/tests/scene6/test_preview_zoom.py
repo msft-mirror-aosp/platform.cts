@@ -329,16 +329,16 @@ class PreviewZoomTest(its_base_test.ItsBaseTest):
       # Make reporting active physical IDs optional
       if all(d.physical_id is None for d in test_data):
         number_of_cameras_to_test = 0
-      if not zoom_capture_utils.verify_preview_zoom_results(
+      test_success, msg = zoom_capture_utils.verify_preview_zoom_results(
           test_data, size, z_max, z_min, z_step_size, plot_name_stem,
-          number_of_cameras_to_test=number_of_cameras_to_test):
+          number_of_cameras_to_test=number_of_cameras_to_test)
+      if not test_success:
         first_api_level = its_session_utils.get_first_api_level(self.dut.serial)
-        failure_msg = f'{_NAME} failed! Check test_log.DEBUG for errors'
         if first_api_level >= its_session_utils.ANDROID15_API_LEVEL:
-          raise AssertionError(failure_msg)
+          raise AssertionError(msg)
         else:
           raise AssertionError(f'{its_session_utils.NOT_YET_MANDATED_MESSAGE}'
-                               f'\n\n{failure_msg}')
+                               f'\n\n{msg}')
 
 if __name__ == '__main__':
   test_runner.main()

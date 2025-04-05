@@ -53,6 +53,7 @@ import androidx.test.uiautomator.Until;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
@@ -63,6 +64,7 @@ import java.util.regex.Pattern;
 /**
  * Tests whether a sync adapter can access accounts.
  */
+@Ignore("This will be re-enabled upon further investigation (b/406640881)")
 @RunWith(AndroidJUnit4.class)
 public final class CtsSyncAccountAccessOtherCertTestCases {
     private static final long UI_TIMEOUT_MILLIS = 5000; // 5 sec

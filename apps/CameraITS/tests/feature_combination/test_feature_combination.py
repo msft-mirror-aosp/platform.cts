@@ -40,6 +40,8 @@ _FPS_SELECTION_ATOL = 0.01
 _FPS_ATOL_CODEC = 1.2
 _FPS_ATOL_METADATA = 1.1
 
+_VALID_RIGS = ['arduino', 'gen2_rotator']
+
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
 _SEC_TO_NSEC = 1_000_000_000
 
@@ -244,9 +246,9 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
       # Initialize rotation rig
       rot_rig['cntl'] = self.rotator_cntl
       rot_rig['ch'] = self.rotator_ch
-      if rot_rig['cntl'].lower() != 'arduino':
+      if rot_rig['cntl'].lower() not in _VALID_RIGS:
         raise AssertionError(
-            f'You must use the arduino controller for {_NAME}.')
+            f'You must use the arduino or gen2_rotator controller for {_NAME}.')
 
       # List of queryable stream combinations
       combinations_str, combinations = cam.get_queryable_stream_combinations()
