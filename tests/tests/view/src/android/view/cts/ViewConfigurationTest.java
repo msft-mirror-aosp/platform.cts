@@ -20,9 +20,13 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
+import android.companion.virtualdevice.flags.Flags;
 import android.content.Context;
 import android.graphics.Point;
 import android.platform.test.annotations.AppModeSdkSandbox;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.TypedValue;
 import android.view.Display;
 import android.view.InputDevice;
@@ -35,10 +39,9 @@ import androidx.test.InstrumentationRegistry;
 import androidx.test.filters.SmallTest;
 import androidx.test.runner.AndroidJUnit4;
 
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-
-import java.util.Set;
 
 /**
  * Test {@link ViewConfiguration}.
@@ -47,7 +50,9 @@ import java.util.Set;
 @RunWith(AndroidJUnit4.class)
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class ViewConfigurationTest {
-    private static Set<Integer> SUPPORTED_AXES_FOR_SCROLL_HAPTICS = Set.of(MotionEvent.AXIS_SCROLL);
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Test
     public void testStaticValues() {
@@ -110,6 +115,30 @@ public class ViewConfigurationTest {
         float scaledMinScalingSpanMm = vc.getScaledMinimumScalingSpan() / pixelsToMmRatio;
         assertTrue(scaledMinScalingSpanMm > 0);
         assertTrue(scaledMinScalingSpanMm < 40.5); // 1.5 times the recommended size of 27mm
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_VIEWCONFIGURATION_APIS)
+    public void testGetDoubleTapTimeoutMillisInstanceMethod() {
+        ViewConfiguration vc = ViewConfiguration.get(InstrumentationRegistry.getTargetContext());
+        int doubleTapTimeoutMillis = vc.getDoubleTapTimeoutMillis();
+        assertTrue(doubleTapTimeoutMillis > 0);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_VIEWCONFIGURATION_APIS)
+    public void testGetTapTimeoutMillisInstanceMethod() {
+        ViewConfiguration vc = ViewConfiguration.get(InstrumentationRegistry.getTargetContext());
+        int tapTimeoutMillis = vc.getTapTimeoutMillis();
+        assertTrue(tapTimeoutMillis > 0);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_VIEWCONFIGURATION_APIS)
+    public void testScrollFrictionAmountInstanceMethod() {
+        ViewConfiguration vc = ViewConfiguration.get(InstrumentationRegistry.getTargetContext());
+        float scrollFrictionAmount = vc.getScrollFrictionAmount();
+        assertTrue(scrollFrictionAmount > 0);
     }
 
     @Test
