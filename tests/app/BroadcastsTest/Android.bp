@@ -46,6 +46,20 @@ android_test {
     per_testcase_directory: true,
 }
 
+android_ravenwood_test {
+    name: "CtsBroadcastTestCasesRavenwood",
+    static_libs: [
+        "androidx.annotation_annotation",
+        "androidx.test.rules",
+        "compatibility-device-util-axt-ravenwood",
+    ],
+    srcs: [
+        "src/android/app/cts/broadcasts/BroadcastOptionsTest.java",
+    ],
+    auto_gen_config: true,
+    team: "trendy_team_ravenwood",
+}
+
 android_test_helper_app {
     name: "CtsBroadcastsTestHelper",
     defaults: ["cts_defaults"],
