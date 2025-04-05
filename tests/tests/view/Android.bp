@@ -35,6 +35,7 @@ android_test {
     ],
 
     static_libs: [
+        "android.companion.virtualdevice.flags-aconfig-java",
         "android.view.flags-aconfig-java",
         "androidx.test.rules",
         "androidx.test.ext.junit",
@@ -52,7 +53,6 @@ android_test {
         "CtsSurfaceValidatorLib",
         "cts-wm-util",
         "flag-junit",
-        "android.view.flags-aconfig-java",
         "android.view.inputmethod.flags-aconfig-java",
         "com.android.hardware.input-aconfig-java",
         "com.android.input.flags-aconfig-java",

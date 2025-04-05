@@ -98,7 +98,6 @@ android_ravenwood_test {
     ],
     srcs: [
         "src/android/app/cts/ActivityOptionsTest.java",
-        "src/android/app/cts/BroadcastOptionsTest.java",
     ],
     auto_gen_config: true,
     team: "trendy_team_ravenwood",
