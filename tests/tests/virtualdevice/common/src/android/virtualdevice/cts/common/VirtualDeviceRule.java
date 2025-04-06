@@ -17,7 +17,7 @@
 package android.virtualdevice.cts.common;
 
 import static android.content.pm.PackageManager.FEATURE_ACTIVITIES_ON_SECONDARY_DISPLAYS;
-import static android.content.pm.PackageManager.FEATURE_FREEFORM_WINDOW_MANAGEMENT;
+import static android.content.pm.PackageManager.FEATURE_PC;
 
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 
@@ -491,7 +491,7 @@ public class VirtualDeviceRule implements TestRule {
         if (displayId != Display.DEFAULT_DISPLAY) {
             assumeTrue(FeatureUtil.hasSystemFeature(FEATURE_ACTIVITIES_ON_SECONDARY_DISPLAYS));
             // TODO(b/261155110): Re-enable once freeform mode is supported on virtual displays.
-            assumeFalse(FeatureUtil.hasSystemFeature(FEATURE_FREEFORM_WINDOW_MANAGEMENT));
+            assumeFalse(FeatureUtil.hasSystemFeature(FEATURE_PC));
         }
     }
 
