@@ -1274,8 +1274,9 @@
 
     <string name="nfc_hce_f">Host-based Felica card emulation</string>
     <string name="nfc_hce_f_reader_tests">HCE Felica reader tests</string>
-    <string name="nfc_hce_f_emulator_observe_mode_tests">NFC-F observe mode emulator tests</string>
-    <string name="nfc_hce_f_reader_observe_mode_tests">NFC-F observe mode  reader tests</string>
+    <string name="nfc_hce_f_emulator_observe_mode_tests">NFC-F observe mode emulator test</string>
+    <string name="nfc_hce_f_help_text">Launch the \"%s\" test on the other device and tap the two devices back to back.</string>
+    <string name="nfc_hce_f_reader_observe_mode_tests">NFC-F observe mode  reader test</string>
     <string name="nfc_hce_f_emulator_tests">HCE Felica emulator tests</string>
     <string name="nfc_hce_f_emulator">HCE Felica emulator</string>
     <string name="nfc_hce_f_reader">HCE Felica reader</string>
