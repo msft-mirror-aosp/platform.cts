@@ -16,6 +16,7 @@
 package com.android.cts.verifier.nfc.hcef;
 
 import android.annotation.TargetApi;
+import android.content.Intent;
 import android.nfc.NfcAdapter;
 import android.nfc.NfcAdapter.ReaderCallback;
 import android.nfc.Tag;
@@ -25,6 +26,7 @@ import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemSelectedListener;
+import android.widget.TextView;
 
 import com.android.cts.verifier.PassFailButtons;
 import com.android.cts.verifier.R;
@@ -42,6 +44,16 @@ public class HceFReaderActivity extends PassFailButtons.Activity implements Read
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.pass_fail_text);
+
+        Intent intent = getIntent();
+        TextView textView = (TextView) findViewById(R.id.text);
+        textView.setText(
+                getString(
+                        R.string.nfc_hce_f_help_text,
+                        (intent.hasExtra(HceFReaderTestActivity.TEST_NAME_EXTRA)
+                                ? getString(R.string.nfc_hce_f_emulator_observe_mode_tests)
+                                : getString(R.string.nfc_hce_f_emulator))));
+
         setPassFailButtonClickListeners();
         getPassButton().setEnabled(false);
 
@@ -53,6 +65,18 @@ public class HceFReaderActivity extends PassFailButtons.Activity implements Read
         super.onResume();
         mAdapter.enableReaderMode(this, this, NfcAdapter.FLAG_READER_NFC_F |
                 NfcAdapter.FLAG_READER_SKIP_NDEF_CHECK, null);
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        TextView textView = (TextView) findViewById(R.id.text);
+        textView.setText(
+                getString(
+                        R.string.nfc_hce_f_help_text,
+                        (intent.hasExtra(HceFReaderTestActivity.TEST_NAME_EXTRA)
+                                ? getString(R.string.nfc_hce_f_emulator_observe_mode_tests)
+                                : getString(R.string.nfc_hce_f_emulator))));
     }
 
     static byte[] createEchoCommand(byte[] nfcid2, byte[] payload) {

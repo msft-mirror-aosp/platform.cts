@@ -38,6 +38,7 @@ import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.server.wm.UiDeviceUtils;
+import android.support.test.uiautomator.UiDevice;
 import android.util.Log;
 import android.util.Pair;
 import android.view.Display;
@@ -55,6 +56,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -108,6 +110,8 @@ public class DisplayEventTest extends TestBase {
             new LinkedBlockingQueue<>();
     private DisplayManager.DisplayListener mDisplayListener;
 
+    private int mInitialMatchContentFrameRate;
+
     @Before
     public void setUp() throws Exception {
         mInstrumentation = InstrumentationRegistry.getInstrumentation();
@@ -119,11 +123,24 @@ public class DisplayEventTest extends TestBase {
         mHandlerThread.start();
         mHandler = new TestHandler(mHandlerThread.getLooper());
         mMessenger = new Messenger(mHandler);
+        mInitialMatchContentFrameRate =
+                toSwitchingType(mDisplayManager.getMatchContentFrameRateUserPreference());
+        mDisplayManager.setRefreshRateSwitchingType(
+                DisplayManager.SWITCHING_TYPE_RENDER_FRAME_RATE_ONLY);
+        mDisplayManager.setShouldAlwaysRespectAppRequestedMode(true);
+
+        UiDevice uiDevice =
+                UiDevice.getInstance(
+                        androidx.test.platform.app.InstrumentationRegistry.getInstrumentation());
+        uiDevice.wakeUp();
+        uiDevice.executeShellCommand("wm dismiss-keyguard");
     }
 
     @After
     public void tearDown() throws Exception {
         mHandlerThread.quitSafely();
+        mDisplayManager.setRefreshRateSwitchingType(mInitialMatchContentFrameRate);
+        mDisplayManager.setShouldAlwaysRespectAppRequestedMode(false);
         if (mDisplayListener != null) {
             mDisplayManager.unregisterDisplayListener(mDisplayListener);
         }
@@ -149,7 +166,7 @@ public class DisplayEventTest extends TestBase {
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_DISPLAY_LISTENER_PERFORMANCE_IMPROVEMENTS)
-    public void testDisplayRefreshRateChangedEvent() throws InterruptedException {
+    public void testDisplayRefreshRateChangedEvent() {
         assumeTrue(notInConcurrentDisplayState());
         registerDisplayListener((int) DisplayManager.EVENT_TYPE_DISPLAY_REFRESH_RATE);
 
@@ -159,7 +176,7 @@ public class DisplayEventTest extends TestBase {
     }
 
     @Test
-    public void testNoDisplayRefreshRateChangedEvent() throws InterruptedException {
+    public void testNoDisplayRefreshRateChangedEvent() {
         assumeTrue(notInConcurrentDisplayState());
         registerDisplayListener((int) DisplayManager.EVENT_TYPE_DISPLAY_CHANGED);
 
@@ -170,8 +187,7 @@ public class DisplayEventTest extends TestBase {
 
     @Test
     @RequiresFlagsDisabled(Flags.FLAG_DELAY_IMPLICIT_RR_REGISTRATION_UNTIL_RR_ACCESSED)
-    public void test_displayRrChangedEvent_delayImplicitRegistrationUntilRrAccessedDisabled()
-            throws InterruptedException {
+    public void test_displayRrChangedEvent_delayImplicitRegistrationUntilRrAccessedDisabled() {
         assumeTrue(notInConcurrentDisplayState());
         registerDisplayListener();
 
@@ -182,8 +198,7 @@ public class DisplayEventTest extends TestBase {
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_DELAY_IMPLICIT_RR_REGISTRATION_UNTIL_RR_ACCESSED)
-    public void test_noDisplayRrChangedEvent_delayImplicitRegistrationUntilRrAccessedEnabled()
-            throws InterruptedException {
+    public void test_noDisplayRrChangedEvent_delayImplicitRegistrationUntilRrAccessedEnabled() {
         assumeTrue(notInConcurrentDisplayState());
 
         // Reset the implicit RR callbacks registration
@@ -296,63 +311,21 @@ public class DisplayEventTest extends TestBase {
         }
     }
 
-    private void switchRefreshRate() throws InterruptedException {
-        UiDeviceUtils.pressSleepButton();
-        UiDeviceUtils.pressWakeupButton();
-        int mInitialMatchContentFrameRate =
-                toSwitchingType(mDisplayManager.getMatchContentFrameRateUserPreference());
-        setRefreshRateSwitchingType(DisplayManager.SWITCHING_TYPE_NONE, true);
+    private void switchRefreshRate() {
         flushDisplayEventsQueue();
-
-        int alternateRefreshRateModeId = getAlternateRefreshRateModeId();
-        mActivityRule.getScenario().onActivity(activity -> {
-            activity.setModeId(alternateRefreshRateModeId);
-        });
-
-        setRefreshRateSwitchingType(mInitialMatchContentFrameRate, false);
-    }
-
-    private void setRefreshRateSwitchingType(int switchingType, boolean appRequestedMode)
-            throws InterruptedException {
-        mDisplayManager.setRefreshRateSwitchingType(switchingType);
-        mDisplayManager.setShouldAlwaysRespectAppRequestedMode(appRequestedMode);
-
-        // Wait for DisplayModeDirector to notify sf about the changes to the switching type
-        Thread.sleep(2000);
-    }
-
-    private int getAlternateRefreshRateModeId() {
-        int refreshRateModeId = mDisplay.getMode().getModeId();
-        boolean supportsMultipleRefreshRates = false;
-        for (Display.Mode mode : mDisplay.getSupportedModes()) {
-            if (mode.getModeId() == mDisplay.getMode().getModeId()) {
-                continue;
-            }
-
-            if (mode.getPhysicalHeight() != mDisplay.getMode().getPhysicalHeight()) {
-                continue;
-            }
-
-            if (mode.getPhysicalWidth() != mDisplay.getMode().getPhysicalWidth()) {
-                continue;
-            }
-
-            if (mode.isSynthetic()) {
-                continue;
-            }
-
-            if (!floatEquals(mode.getRefreshRate(), mDisplay.getMode().getRefreshRate(),
-                    RR_FLOAT_DELTA)) {
-                supportsMultipleRefreshRates = true;
-                refreshRateModeId = mode.getModeId();
-            }
-        }
-        assumeTrue(supportsMultipleRefreshRates);
-        return refreshRateModeId;
-    }
-
-    private boolean floatEquals(float f1, float f2, float delta) {
-        return Math.abs(f1 - f2) <= delta;
+        mActivityRule
+                .getScenario()
+                .onActivity(
+                        activity -> {
+                            try {
+                                activity.testFrameRateOverride(
+                                        activity.getDisplay().getMode().getRefreshRate());
+                            } catch (InterruptedException e) {
+                                throw new RuntimeException(e);
+                            } catch (IOException e) {
+                                throw new RuntimeException(e);
+                            }
+                        });
     }
 
     private static int toSwitchingType(int matchContentFrameRateUserPreference) {
