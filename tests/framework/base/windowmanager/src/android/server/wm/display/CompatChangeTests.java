@@ -927,6 +927,7 @@ public final class CompatChangeTests extends MultiDisplayTestBase {
 
     /** Test that an SCM app does not relaunch with display move. */
     @Test
+    @DisableCompatChanges({ActivityInfo.UNIVERSAL_RESIZABLE_BY_DEFAULT})
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_SIZE_COMPAT_MODE_IMPROVEMENTS_FOR_CONNECTED_DISPLAYS)
     public void testSizeCompatDoesNotRestartWithDisplayMove() {
         assumeTrue(supportsMultiDisplay());
