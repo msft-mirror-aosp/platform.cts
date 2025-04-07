@@ -41,12 +41,14 @@ record SELinuxNeverallowRule(
         boolean launchingWithROnly,
         boolean launchingWithSOnly,
         boolean compatiblePropertyOnly,
-        boolean userOnly) {
+        boolean userOnly,
+        boolean physicalDeviceOnly) {
     private static String[] sConditions = {
         "TREBLE_ONLY",
         "COMPATIBLE_PROPERTY_ONLY",
         "LAUNCHING_WITH_R_ONLY",
         "LAUNCHING_WITH_S_ONLY",
+        "PHYSICAL_DEVICE_ONLY", // Equivalent of @RequiresDevice
     };
     private static String sUserOnlyMarker = "SUPPRESSED_BY_USERDEBUG_OR_ENG";
 
@@ -57,7 +59,8 @@ record SELinuxNeverallowRule(
                 (conditions.getOrDefault("LAUNCHING_WITH_R_ONLY", 0) > 0),
                 (conditions.getOrDefault("LAUNCHING_WITH_S_ONLY", 0) > 0),
                 (conditions.getOrDefault("COMPATIBLE_PROPERTY_ONLY", 0) > 0),
-                (conditions.getOrDefault("USER_ONLY", 0) > 0));
+                (conditions.getOrDefault("USER_ONLY", 0) > 0),
+                (conditions.getOrDefault("PHYSICAL_DEVICE_ONLY", 0) > 0));
     }
 
     private boolean isFullTrebleDevice(ITestDevice device) throws Exception {
@@ -74,6 +77,10 @@ record SELinuxNeverallowRule(
 
     private boolean isCompatiblePropertyEnforcedDevice(ITestDevice device) throws Exception {
         return SELinuxHostTest.isCompatiblePropertyEnforcedDevice(device);
+    }
+
+    private boolean isVirtualDevice(ITestDevice device) throws DeviceNotAvailableException {
+        return PropertyUtil.propertyEquals(device, "ro.hardware.virtual_device", "1");
     }
 
     private boolean isDebuggableBuild(ITestDevice device) throws DeviceNotAvailableException {
@@ -96,6 +103,10 @@ record SELinuxNeverallowRule(
         if ((compatiblePropertyOnly) && (!isCompatiblePropertyEnforcedDevice(device))) {
             // This test applies only to devices on which compatible property is enforced but this
             // device isn't one
+            return false;
+        }
+        if (physicalDeviceOnly && isVirtualDevice(device)) {
+            // This test applies to physical devices. Skip on virtual devices (e.g., Cuttlefish).
             return false;
         }
         if (userOnly && isDebuggableBuild(device)) {
