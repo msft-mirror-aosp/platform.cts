@@ -43,7 +43,8 @@ AGREE_BUTTON = 'Agree'
 AGREE_AND_CONTINUE_BUTTON = 'Agree and continue'
 CANCEL_BUTTON_TXT = 'Cancel'
 CAMERA_FILES_PATHS = ('/sdcard/DCIM/Camera',
-                      '/storage/emulated/0/Pictures')
+                      '/storage/emulated/0/Pictures',
+                      '/sdcard/DCIM',)
 CAPTURE_BUTTON_RESOURCE_ID = 'CaptureButton'
 DEFAULT_CAMERA_APP_DUMPSYS_PATH = '/sdcard/default_camera_dumpsys.txt'
 DEFAULT_CAMERA_CONTENT_DESC_SEPARATOR = ','
@@ -78,7 +79,7 @@ RATIO_TO_UI_DESCRIPTION = {
     '3 to 4 aspect ratio': 'QuickSettingsRatio3:4Button',
     '9 to 16 aspect ratio': 'QuickSettingsRatio9:16Button'
 }
-REMOVE_CAMERA_FILES_CMD = 'rm '
+REMOVE_CAMERA_FILES_CMD = 'rm -rf'
 SETTINGS_BACK_BUTTON_RESOURCE_ID = 'BackButton'
 SETTINGS_BUTTON_RESOURCE_ID = 'SettingsButton'
 SETTINGS_CLOSE_TEXT = 'Close'
