@@ -52,7 +52,7 @@
     <metrics_collector class="com.android.tradefed.device.metric.FilePullerLogCollector">
         <option name="pull-pattern-keys" value="input_.*" />
         <!-- Pull perfetto traces from DefaultUITraceListener -->
-        <option name="pull-pattern-keys" value="perfetto_file_path*" />
+        <option name="pull-pattern-keys" value="perfetto_file_path" />
         <!-- Pull screenshot on test failure -->
         <option name="pull-pattern-keys"
             value="android.device.collectors.ScreenshotOnFailureCollector.*\.png" />
