@@ -309,6 +309,19 @@ public class IRadioImsImpl extends IRadioIms.Stub {
         }
     }
 
+    @Override
+    public void updateAllowedServices(int serial,
+            android.hardware.radio.ims.ImsService[] imsServices) {
+        Log.d(mTag, "updateAllowedServices");
+
+        RadioResponseInfo rsp = mService.makeSolRsp(serial, RadioError.REQUEST_NOT_SUPPORTED);
+        try {
+            mRadioImsResponse.updateAllowedServicesResponse(rsp);
+        } catch (RemoteException ex) {
+            Log.e(mTag, "Failed to updateAllowedServices from AIDL. Exception" + ex);
+        }
+    }
+
     /**
      * Returns the reason that caused EPS fallback.
      *
