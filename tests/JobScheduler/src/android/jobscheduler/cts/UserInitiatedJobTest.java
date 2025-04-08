@@ -526,7 +526,7 @@ public class UserInitiatedJobTest {
                 DEFAULT_WAIT_TIMEOUT_MS, JobScheduler.RESULT_FAILURE));
     }
 
-    // TODO(141645789): merge with android.app.cts.android.app.cts.tools.WatchUidRunner
+    // TODO(141645789): merge with android.app.tools.WatchUidRunner
     static class WatchUidRunner implements AutoCloseable {
         static final String TAG = "WatchUidRunner";
 
