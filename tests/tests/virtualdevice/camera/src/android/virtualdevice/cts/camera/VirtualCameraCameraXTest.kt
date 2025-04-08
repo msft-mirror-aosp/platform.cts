@@ -55,13 +55,12 @@ import com.google.common.truth.Truth.assertThat
 import java.io.File
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
-import junit.framework.Assert.fail
 import junitparams.JUnitParamsRunner
 import junitparams.Parameters
-import kotlin.coroutines.suspendCoroutine
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import org.junit.After
@@ -232,7 +231,7 @@ class VirtualCameraCameraXTest {
                     imageCapture
                 )
             }
-            suspendCoroutine { cont ->
+            suspendCancellableCoroutine { cont ->
                 imageCapture.takePicture(
                     OutputFileOptions.Builder(imageFile).build(),
                     ContextCompat.getMainExecutor(vdContext!!),
@@ -244,7 +243,7 @@ class VirtualCameraCameraXTest {
                         }
 
                         override fun onError(exception: ImageCaptureException) {
-                            fail(exception.stackTrace.joinToString("\n") { it.toString() })
+                            throw exception
                         }
                     }
                 )
@@ -272,11 +271,18 @@ class VirtualCameraCameraXTest {
                 format: Int
             ) {
                 inputSurface = surface
-                surfaceWriter(inputSurface!!)
             }
 
-            override fun onStreamClosed(streamId: Int) = Unit
+            override fun onStreamClosed(streamId: Int) {
+                inputSurface?.release()
+                inputSurface = null
+            }
+
+            override fun onProcessCaptureRequest(streamId: Int, frameId: Long) {
+                surfaceWriter(inputSurface!!)
+            }
         }
+
         val config = VirtualCameraConfig.Builder("CameraXVirtualCamera")
             .addStreamConfig(inputWidth, inputHeight, inputFormat, 30)
             .setVirtualCameraCallback(sameThreadExecutor, cameraCallBack)
