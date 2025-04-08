@@ -267,7 +267,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
 
         sMockSatelliteServiceManager.setDatagramControllerBooleanConfig(false,
                 DatagramController.BOOLEAN_TYPE_WAIT_FOR_DEVICE_ALIGNMENT_IN_DEMO_DATAGRAM, true);
-        sNtnOnlySubId = getNtnOnlySubscriptionId();
+        sNtnOnlySubId = getDefaultActiveSubIdForSatelliteTest();
         assumeTrue(sNtnOnlySubId != SubscriptionManager.INVALID_SUBSCRIPTION_ID);
         setUpNtnOnlySubscription();
         // Enable CTS mode to ignore the requests from SG-APK and real Pointing UI app.
