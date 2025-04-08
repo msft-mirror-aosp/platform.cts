@@ -45,6 +45,7 @@ import androidx.annotation.UiThread;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.SystemUtil;
+import com.android.compatibility.common.util.WindowUtil;
 
 import com.google.common.util.concurrent.SettableFuture;
 
@@ -372,13 +373,15 @@ public class TestActivity extends Activity {
             final Callable<TestActivity> launcher =
                     () -> (TestActivity) instrumentation.startActivitySync(
                             intent, mOptions == null ? null : mOptions.toBundle());
-
             try {
+                TestActivity activity;
                 if (mRequireShellPermission) {
-                    return SystemUtil.callWithShellPermissionIdentity(launcher);
+                    activity = SystemUtil.callWithShellPermissionIdentity(launcher);
                 } else {
-                    return launcher.call();
+                    activity = launcher.call();
                 }
+                WindowUtil.waitForFocus(activity);
+                return activity;
             } catch (Exception e) {
                 fail("Failed to start TestActivity: " + e);
                 return null;
