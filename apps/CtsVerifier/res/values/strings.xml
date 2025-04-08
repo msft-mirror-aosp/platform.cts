@@ -5898,22 +5898,26 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="audio_loopback_mmapexclusive">MMAP Exclusive:</string>
     <string name="audio_loopback_mmap">MMAP:</string>
     <string name="audio_loopback_mcp">MPC:</string>
+    <string name="audio_loopback_proaudio">Pro Audio:</string>
     <string name="audio_loopback_lowlatency">Low Latency:</string>
     <string name="audio_loopback_basiclatency">Basic Latency:</string>
     <string name="audio_loopback_mpclatency">MPC Latency</string>
     <string name="audio_loopback_proaudiolatency">"Pro Audio Latency"</string>
+    <string name="audio_loopback_timestamplatency">"Time Stamp Latency"</string>
+    <string name="audio_loopback_24bitsupport">"24-bit Support"</string>
     <string name="audio_loopback_noproaudiosupport">No Pro Audio Support (PASS)</string>
     <string name="audio_loopback_nopmpcsupport">No MPC Support (PASS)</string>
     <string name="audio_loopback_wavcapturefolder">WAV Capture Folder:</string>
     <string name="audio_loopback_wavcapturefile">Capture File:</string>
     <string name="audio_loopback_nocapture">No Capture</string>
     <string name="audio_general_proaudio">Pro Audio</string>
-    <string name="audio_general_mpc">MCP</string>
+    <string name="audio_general_mpc">MPC</string>
     <string name="audio_general_basicaudio">Basic Audio</string>
 
     <string name="ctsv_general_pass">PASS</string>
     <string name="ctsv_general_fail">FAIL</string>
     <string name="ctsv_general_cantwritereportlog">Warning - Can\'t write ReportLog File.</string>
+    <string name="ctsv_general_passsuffix"> - PASS</string>
     <string name="ctsv_general_failsuffix"> - FAIL</string>
     <string name="ctsv_general_specification">Specification</string>
     <string name="ctsv_general_mssuffix"> ms.</string>
@@ -5921,9 +5925,11 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="ctsv_loopback_features">Features</string>
     <string name="ctsv_loopback_platform">Platform</string>
 
-    <string name="ctsv_loopback_meetsproaudio">Meets Pro Audio Specification</string>
-    <string name="ctsv_loopback_meetsmpclevel">Meets MPC Level</string>
-    <string name="ctsv_loopback_meetsbasicaudio">Meets Basic Audio Specification</string>
+    <string name="ctsv_loopback_proaudiospec">Pro Audio</string>
+    <string name="ctsv_loopback_mpclevelspec">MPC Level</string>
+    <string name="ctsv_loopback_basicaudiospec">Basic Audio</string>
+    <string name="ctsv_loopback_timestampspec">Timestamp</string>
+    <string name="ctsv_loopback_24bitspec">24-bit Support</string>
 
     <string name="ctsv_loopback_testspeakermic">"Not Tested. Please test the Speaker/Mic route."</string>
 
@@ -5947,10 +5953,10 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="ctsv_loopback_usbspec">  - USB Audio Latency &lt;= </string>
 
     <!-- Status Strings -->
-    <string name="audio_loopback_noanalog">The DUT does not support an Analog Headset Jack. This Test phase is automatically PASSED.</string>
+    <string name="audio_loopback_noanalog">The DUT does not support an Analog Headset Jack.</string>
     <string name="audio_loopback_unknownanalog">Support for an Analog Headset Jack could not be determined. If supported, insert the loopback plug
         into the headset jack.  Press the Start button and allow the test to proceed.</string>
-    <string name="audio_loopback_nousb">The DUT does not support a USB Audio Port. This Test phase is automatically PASSED.</string>
+    <string name="audio_loopback_nousb">The DUT does not support a USB Audio Port.</string>
     <string name="audio_loopback_unknownusb">Support for USB Audio could not be determined. If USB Audio is supported, Connect the USB
         port to an appropriate USB audio test peripheral with loopback set up. Press the Start
         button and allow the test to proceed.</string>
@@ -5965,6 +5971,7 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="audio_loopback_erroropeningstream">Test Error opening streams.</string>
     <string name="audio_loopback_errorwhilerecording">Test Error while recording.</string>
     <string name="audio_loopback_failedduetoerrors">Test FAILED due to errors.</string>
+    <string name="audio_loopback_timestamp_requirement">Time Stamp Latency must be less than</string>
 
     <!-- Multichannel Mixdown Test -->
     <string name="audio_multichannel_mixdown_test">Multichannel Mixdown Test</string>

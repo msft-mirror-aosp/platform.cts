@@ -1,4 +1,4 @@
-// Copyright (C) 2018 The Android Open Source Project
+// Copyright (C) 2025 The Android Open Source Project
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -30,6 +30,7 @@ java_test_host {
     static_libs: [
         "am_flags_host_lib",
         "flag-junit-host",
+        "android.app.supervision.flags-aconfig-java-host",
     ],
     // tag this module as a cts test artifact
     test_suites: [
@@ -45,5 +46,8 @@ java_test_host {
         ":CtsAppBindingService6",
         ":CtsAppBindingService7",
         ":CtsAppBindingServiceB",
+        ":CtsAppBindingServiceSupervision1",
+        ":CtsAppBindingServiceSupervision2",
+        ":CtsAppBindingServiceSupervision3",
     ],
 }

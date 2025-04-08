@@ -1229,7 +1229,7 @@ public class PdfRendererPreVTest {
              * The original matrix values were obtained from the script used to generate the PDF
              * used in this test.
              */
-            float[] originalMatrixValues = {1.0f, 0f, 0f, 0f, 1.0f, 789.425f, 0f, 0f, 1.0f};
+            float[] originalMatrixValues = {1.0f, 0f, 0f, 0f, 1.0f, 800.0f, 0f, 0f, 1.0f};
             assertTrue(
                     isAcceptableError(pdfPageTextObject.getMatrix(), originalMatrixValues, 0.01f));
             assertThat(pdfPageTextObject.getFillColor()).isEqualTo(Color.GREEN);

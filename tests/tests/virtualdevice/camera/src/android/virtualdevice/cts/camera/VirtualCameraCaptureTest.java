@@ -71,21 +71,21 @@ import androidx.test.core.app.ApplicationProvider;
 
 import com.google.common.collect.Range;
 
-import junitparams.JUnitParamsRunner;
-import junitparams.Parameters;
-import junitparams.naming.TestCaseName;
-
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+
+import junitparams.JUnitParamsRunner;
+import junitparams.Parameters;
+import junitparams.naming.TestCaseName;
 
 @AppModeFull(reason = "VirtualDeviceManager cannot be accessed by instant apps")
 @RunWith(JUnitParamsRunner.class)
@@ -378,9 +378,9 @@ public class VirtualCameraCaptureTest {
         int height = 260;
         long renderedTimestampNanos = 123456L;
         int imageCount = 10;
-        long expectedTimeNanos = (long) (Math.pow(10, 9) / VirtualCameraCaptureHelper.CAMERA_MAX_FPS
+        long expectedTimeNanos = (long) SECOND_TO_NANOS / VirtualCameraCaptureHelper.CAMERA_MAX_FPS
                 * imageCount
-                + renderedTimestampNanos);
+                + renderedTimestampNanos;
         int toleranceNanos = 50_000_000; // 50 millis
 
         mCaptureHelper.createVirtualCamera(width, height, YUV_420_888);
@@ -410,38 +410,36 @@ public class VirtualCameraCaptureTest {
     @RequiresFlagsEnabled(Flags.FLAG_CAMERA_TIMESTAMP_FROM_SURFACE)
     public void inputRate_LowerThanMaxFps_allFulfilled() {
         // Render slower than the max fps to be sure that no input frame will be skipped
-        android.util.Range<Integer> requestFPSRange = android.util.Range.create(1,
-                VirtualCameraCaptureHelper.CAMERA_MAX_FPS);
-        testRenderingRate(requestFPSRange, VirtualCameraCaptureHelper.CAMERA_MAX_FPS - 10);
+        int inputFps = 15;
+        android.util.Range<Integer> requestFPSRange = android.util.Range.create(1, 30);
+        testRenderingRate(requestFPSRange, inputFps);
     }
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_CAMERA_TIMESTAMP_FROM_SURFACE)
-    @Ignore("b/406965817")
     public void inputRate_HigherThanMaxFps_allFulfilled() {
         // We render faster than the max fps to be sure that no input frame will be skipped
-        android.util.Range<Integer> requestFPSRange = android.util.Range.create(1,
-                VirtualCameraCaptureHelper.CAMERA_MAX_FPS);
-        testRenderingRate(requestFPSRange, VirtualCameraCaptureHelper.CAMERA_MAX_FPS + 10);
+        int inputFps = 60;
+        android.util.Range<Integer> requestFPSRange = android.util.Range.create(1, 30);
+
+        // Here we expect that the input will render more frame that required, so the virtual
+        // camera hal should automatically advance when it gets out of sync with the input
+        testRenderingRate(requestFPSRange, inputFps);
     }
 
+    /**
+     * Checks that the virtual camera hal will correctly throttle the requests if they come too
+     * fast compared to the FPS declared by the virtual camera owner and that it will duplicate
+     * frames if the camera owner does not fulfill the request min fps.
+     */
     private void testRenderingRate(android.util.Range<Integer> requestFPSRange, int inputFps) {
-        long initialRenderedTimestampNanos = 1000;
+        long initialRenderedTimestampNanos = 1000 * MILLISECOND_TO_NANOS; // start at t = 1s
         int width = 460;
         int height = 260;
         int imageCount = 25;
 
-        int outputPeriodMillis = Math.round(1000f / Math.min(inputFps, requestFPSRange.getUpper()));
-        // Time it takes to get all the captures
-        long outputCaptureLastTimestamp = initialRenderedTimestampNanos
-                + (long) (imageCount) * outputPeriodMillis * MILLISECOND_TO_NANOS;
 
-        // The number of frame we allow to be out of sync between the input and output
-        int toleranceFrameNumber = 5;
-        int toleranceNanos = toleranceFrameNumber * outputPeriodMillis
-                * MILLISECOND_TO_NANOS; // 1 Frame tolerance
-
-        mCaptureHelper.createVirtualCamera(width, height, YUV_420_888);
+        mCaptureHelper.createVirtualCamera(width, height, YUV_420_888, inputFps);
 
         FixedRateImageWriter fixedRateImageWriter = new FixedRateImageWriter(
                 initialRenderedTimestampNanos, inputFps);
@@ -451,29 +449,59 @@ public class VirtualCameraCaptureTest {
                 .setHeight(height)
                 .setImageCount(imageCount)
                 .setVerifyCaptureComplete(true)
-                .setRequestBuilderModifier((request) -> request.set(
-                        CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE, requestFPSRange))
+                .setRequestBuilderModifier((request) -> {
+                    request.set(
+                            CaptureRequest.CONTROL_CAPTURE_INTENT,
+                            CaptureRequest.CONTROL_CAPTURE_INTENT_PREVIEW);
+                    request.set(
+                            CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE, requestFPSRange);
+                })
+                .setCapturePeriod(Duration.ofNanos(
+                        SECOND_TO_NANOS / VirtualCameraCaptureHelper.CAMERA_MAX_FPS))
                 .setInputSurfaceConsumer(fixedRateImageWriter);
         mCaptureHelper.captureImages(config).close();
         List<TotalCaptureResult> captureResults = mCaptureHelper.getCaptureResults();
         assertThat(captureResults).hasSize(imageCount);
 
-        double averageCaptureTime = captureResults.stream().mapToLong(
-                (current) -> current.get(
-                        TotalCaptureResult.SENSOR_TIMESTAMP)).average().orElse(0);
+        List<Long> captureDeviceTimestampsNanos = mCaptureHelper.getCaptureDeviceTimestampsNanos();
 
-        assertWithMessage("Request took more time than requested min FPS in average").that(
-                averageCaptureTime).isLessThan(
-                1.0 * SECOND_TO_NANOS / requestFPSRange.getLower());
-        assertWithMessage("Request took less time than requested max FPS ").that(
-                averageCaptureTime).isGreaterThan(
-                1.0 * SECOND_TO_NANOS / requestFPSRange.getUpper());
+        // The Virtual Camera HAL should write at a FPS within the requestFPSRange.
+        // If inputFps is below the range, the lower fps should be used.
+        // If inputFps is above the range, the upper fps should be used.
+        int actualFps = Math.max(requestFPSRange.getLower(),
+                Math.min(inputFps, requestFPSRange.getUpper()));
+        long outputPeriodNanos = Math.round((float) SECOND_TO_NANOS / actualFps);
+        long outputTotalTimeNanos = outputPeriodNanos * imageCount;
 
-        Long lastCaptureTimestamp = mCaptureHelper.getLastResult().get(
-                TotalCaptureResult.SENSOR_TIMESTAMP);
+        // The number of frame we allow to be out of sync between the input and output
+        int toleranceFrameCount = 5;
+        long toleranceNanos = toleranceFrameCount * outputPeriodNanos;
 
-        assertThat(lastCaptureTimestamp).isWithin(toleranceNanos).of(
-                outputCaptureLastTimestamp);
+        long firstCaptureDeviceTimestampNanos = captureDeviceTimestampsNanos.getFirst();
+        long lastCaptureDeviceTimestampNanos = captureDeviceTimestampsNanos.getLast();
+        long captureTime = lastCaptureDeviceTimestampNanos - firstCaptureDeviceTimestampNanos;
+        assertThat(captureTime).isWithin(toleranceNanos).of(outputTotalTimeNanos);
+
+        double averageFrameDuration = 0;
+        for (int i = 1; i < captureDeviceTimestampsNanos.size(); i++) {
+            double frameDeviceTimeNanos = captureDeviceTimestampsNanos.get(i)
+                    - captureDeviceTimestampsNanos.get(i - 1);
+            averageFrameDuration += frameDeviceTimeNanos;
+        }
+        averageFrameDuration /= captureDeviceTimestampsNanos.size() - 1;
+
+        // Check that lowerFps < averageFps < higherFps
+        double tolerance = 0.2; // 20% tolerance because the time measurement is not accurate
+        double lowerTolerance = 1 - tolerance;
+        double higherTolerance = 1 + tolerance;
+
+        double higherFps = requestFPSRange.getUpper();
+        double lowerFps = requestFPSRange.getLower();
+        double averageFps = SECOND_TO_NANOS / averageFrameDuration;
+
+        assertWithMessage("Average frame fps out of range")
+                .that(averageFps)
+                .isIn(Range.closed(lowerFps * lowerTolerance, higherFps * higherTolerance));
     }
 
     @Test
@@ -501,6 +529,94 @@ public class VirtualCameraCaptureTest {
                     .get(CaptureResult.SENSOR_TIMESTAMP)).isIn(timestampRange);
             assertThat(image.getTimestamp()).isIn(timestampRange);
         }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_CAMERA_NO_FRAME_DUPLICATION)
+    public void captureMultipleImages_motionCapture_noDuplication() {
+        int width = 460;
+        int height = 260;
+        long renderedTimestampNanos = 1_000_000;
+        int imageCount = 10;
+        int virtualCameraDeclaredFPS = 5;
+        int imageWriterFPS = 5;
+
+        mCaptureHelper.createVirtualCamera(width, height, YUV_420_888,
+                virtualCameraDeclaredFPS /* fps */);
+        FixedRateImageWriter fixedRateImageWriter =
+                new FixedRateImageWriter(renderedTimestampNanos, imageWriterFPS);
+        CaptureConfiguration config = new CaptureConfiguration()
+                .setOutputFormat(YUV_420_888)
+                .setWidth(width)
+                .setHeight(height)
+                .setImageCount(imageCount)
+                .setInputSurfaceConsumer(fixedRateImageWriter)
+                .setRequestBuilderModifier(request -> {
+                    request.set(CaptureRequest.CONTROL_CAPTURE_INTENT,
+                            CaptureRequest.CONTROL_CAPTURE_INTENT_MOTION_TRACKING);
+                    request.set(
+                            CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE,
+                            android.util.Range.create(30, 30));
+                });
+
+        mCaptureHelper.captureImages(config);
+
+        List<TotalCaptureResult> captureResults = mCaptureHelper.getCaptureResults();
+
+        List<Long> expectedTimestamps = fixedRateImageWriter.getWrittenTimestamps();
+        List<Long> receivedTimestamps = captureResults.stream()
+                .map(result -> result.get(CaptureResult.SENSOR_TIMESTAMP))
+                .toList();
+
+        // We check that the virtual camera HAL did not create a duplicate frame by checking that
+        // all the timestamps we received are the ones the image writer wrote
+        assertThat(receivedTimestamps).containsExactlyElementsIn(expectedTimestamps);
+        assertThat(captureResults).hasSize(imageCount);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_CAMERA_NO_FRAME_DUPLICATION)
+    public void captureMultipleImages_preview_FrameDuplication() {
+        int width = 460;
+        int height = 260;
+        long renderedTimestampNanos = 1_000_000;
+        int imageCount = 10;
+        int virtualCameraDeclaredFPS = 30;
+        int imageWriterFPS = 5;
+
+        mCaptureHelper.createVirtualCamera(width, height, YUV_420_888, virtualCameraDeclaredFPS);
+
+        FixedRateImageWriter fixedRateImageWriter =
+                new FixedRateImageWriter(renderedTimestampNanos, imageWriterFPS);
+        CaptureConfiguration config = new CaptureConfiguration()
+                .setOutputFormat(YUV_420_888)
+                .setWidth(width)
+                .setHeight(height)
+                .setImageCount(imageCount)
+                .setInputSurfaceConsumer(fixedRateImageWriter)
+                .setRequestBuilderModifier(request -> {
+                    request.set(CaptureRequest.CONTROL_CAPTURE_INTENT,
+                            CaptureRequest.CONTROL_CAPTURE_INTENT_PREVIEW);
+                    request.set(
+                            CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE,
+                            android.util.Range.create(30, 30));
+                });
+
+        mCaptureHelper.captureImages(config);
+
+        List<TotalCaptureResult> captureResults = mCaptureHelper.getCaptureResults();
+
+        List<Long> writtenTimestamps = fixedRateImageWriter.getWrittenTimestamps();
+        List<Long> receivedTimestamps = captureResults.stream()
+                .map(result -> result.get(CaptureResult.SENSOR_TIMESTAMP))
+                .toList();
+
+        // We check that the virtual camera HAL created duplicated frames by checking that
+        // all the timestamps we received are the one we wrote and that we have more timestamp
+        // than the ones the image writer actually wrote.
+        assertThat(receivedTimestamps).containsAtLeastElementsIn(writtenTimestamps);
+        assertThat(receivedTimestamps.size()).isGreaterThan(writtenTimestamps.size());
+        assertThat(captureResults).hasSize(imageCount);
     }
 
     @SuppressWarnings("unused") // Parameter for parametrized tests

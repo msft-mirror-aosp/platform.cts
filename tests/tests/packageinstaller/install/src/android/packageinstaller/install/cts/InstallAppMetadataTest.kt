@@ -15,7 +15,6 @@
  */
 package android.packageinstaller.install.cts
 
-import android.app.UiAutomation
 import android.content.pm.Flags
 import android.content.pm.PackageInstaller
 import android.content.pm.PackageManager
@@ -30,7 +29,7 @@ import android.platform.test.flag.junit.CheckFlagsRule
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import android.platform.test.rule.ScreenRecordRule.ScreenRecord
 import androidx.test.runner.AndroidJUnit4
-import androidx.test.InstrumentationRegistry
+import com.android.bedstead.nene.TestApis
 import com.google.common.truth.Truth.assertThat
 import java.io.File
 import java.io.FileNotFoundException
@@ -50,9 +49,6 @@ class InstallAppMetadataTest : PackageInstallerTestBase() {
         private val TEST_APK3_NAME = "CtsEmptyTestApp_AppMetadataInApk_ExceedSizeLimit.apk"
     }
 
-    private val uiAutomation: UiAutomation =
-            InstrumentationRegistry.getInstrumentation().getUiAutomation()
-
     @JvmField
     @Rule
     val mCheckFlagsRule: CheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
@@ -68,13 +64,13 @@ class InstallAppMetadataTest : PackageInstallerTestBase() {
     @RequiresFlagsEnabled(Flags.FLAG_ASL_IN_APK_APP_METADATA_SOURCE)
     @Test(expected = NameNotFoundException::class)
     fun getAppMetadataSourceApNotInstall() {
-        uiAutomation.adoptShellPermissionIdentity()
+        val p = TestApis.permissions().withPermission("android.permission.GET_APP_METADATA")
         try {
             pm.getAppMetadataSource(TEST_APK_PACKAGE_NAME)
         } catch (e: Exception) {
             throw e
         } finally {
-            uiAutomation.dropShellPermissionIdentity()
+            p.close()
         }
     }
 
@@ -153,16 +149,20 @@ class InstallAppMetadataTest : PackageInstallerTestBase() {
     fun resetAppMetadataInSession() {
         val data = createAppMetadata()
         val (sessionId, session) = createSession(0, false, null)
-        writeSession(session, TEST_APK_NAME)
-        setAppMetadata(session, data)
-        assertBundleAreEqual(data, session.appMetadata)
-        setAppMetadata(session, null)
-        assertThat(session.getAppMetadata().isEmpty()).isTrue()
-        commitSession(session)
-        clickInstallerUIButton(INSTALL_BUTTON_ID)
-        val result = getInstallSessionResult()
-        assertThat(result.status).isEqualTo(PackageInstaller.STATUS_SUCCESS)
-        assertAppMetadata(null)
+        val p = TestApis.permissions().withPermission("android.permission.INSTALL_PACKAGES")
+        try {
+            writeSession(session, TEST_APK_NAME)
+            setAppMetadata(session, data)
+            assertBundleAreEqual(data, session.appMetadata)
+            setAppMetadata(session, null)
+            assertThat(session.getAppMetadata().isEmpty()).isTrue()
+            commitSession(session, false)
+            val result = getInstallSessionResult()
+            assertThat(result.status).isEqualTo(PackageInstaller.STATUS_SUCCESS)
+            assertAppMetadata(null)
+        } finally {
+            p.close()
+        }
     }
 
     @Test(expected = FileNotFoundException::class)
@@ -181,7 +181,7 @@ class InstallAppMetadataTest : PackageInstallerTestBase() {
     private fun installApk(apkName: String, shouldHaveAppMetadata: Boolean) {
         installPackage(apkName)
 
-        uiAutomation.adoptShellPermissionIdentity()
+        val p = TestApis.permissions().withPermission("android.permission.GET_APP_METADATA")
         try {
             val data = pm.getAppMetadata(TEST_APK_PACKAGE_NAME)
             if (shouldHaveAppMetadata) {
@@ -196,25 +196,28 @@ class InstallAppMetadataTest : PackageInstallerTestBase() {
                     .isEqualTo(APP_METADATA_SOURCE_UNKNOWN)
             }
         } finally {
-            uiAutomation.dropShellPermissionIdentity()
+            p.close()
         }
     }
 
     private fun installApkViaSession(data: PersistableBundle?, apkName: String = TEST_APK_NAME) {
         val (sessionId, session) = createSession(0, false, null)
-        writeSession(session, apkName)
-        if (data != null) {
-            setAppMetadata(session, data)
-            assertBundleAreEqual(data, session.appMetadata)
-            assertThat(session.getNames()).hasLength(1)
+        val p = TestApis.permissions().withPermission("android.permission.INSTALL_PACKAGES")
+        try {
+            writeSession(session, apkName)
+            if (data != null) {
+                setAppMetadata(session, data)
+                assertBundleAreEqual(data, session.appMetadata)
+                assertThat(session.getNames()).hasLength(1)
+            }
+            commitSession(session, false)
+
+            // Install should have succeeded
+            val result = getInstallSessionResult()
+            assertThat(result.status).isEqualTo(PackageInstaller.STATUS_SUCCESS)
+        } finally {
+            p.close()
         }
-        commitSession(session)
-
-        clickInstallerUIButton(INSTALL_BUTTON_ID)
-
-        // Install should have succeeded
-        val result = getInstallSessionResult()
-        assertThat(result.status).isEqualTo(PackageInstaller.STATUS_SUCCESS)
     }
 
     private fun setAppMetadata(session: PackageInstaller.Session, data: PersistableBundle?) {
@@ -235,7 +238,7 @@ class InstallAppMetadataTest : PackageInstallerTestBase() {
     }
 
     private fun assertAppMetadata(testValue: String?) {
-        uiAutomation.adoptShellPermissionIdentity()
+        val p = TestApis.permissions().withPermission("android.permission.GET_APP_METADATA")
         try {
             val data = pm.getAppMetadata(TEST_APK_PACKAGE_NAME)
             assertThat(data).isNotNull()
@@ -255,7 +258,7 @@ class InstallAppMetadataTest : PackageInstallerTestBase() {
                 }
             }
         } finally {
-            uiAutomation.dropShellPermissionIdentity()
+            p.close()
         }
     }
 

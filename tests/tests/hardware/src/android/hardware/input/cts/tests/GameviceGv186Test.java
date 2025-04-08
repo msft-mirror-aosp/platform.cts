@@ -38,7 +38,7 @@ public class GameviceGv186Test extends InputHidTestCase {
     }
 
     @Override
-    void assertAxis(String testCase, MotionEvent expectedEvent, MotionEvent actualEvent) {
+    protected void assertAxis(String testCase, MotionEvent expectedEvent, MotionEvent actualEvent) {
         for (int axis = MotionEvent.AXIS_X; axis <= MotionEvent.AXIS_GENERIC_16; axis++) {
             // Skip checking AXIS_GENERIC_1 and AXIS_GENERIC_2, this device has HID usage of DPAD
             // which maps to HAT1X and HAT1Y, which have non zero axes values always.

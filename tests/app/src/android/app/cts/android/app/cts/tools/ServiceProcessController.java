@@ -18,6 +18,7 @@ package android.app.cts.android.app.cts.tools;
 
 import android.app.ActivityManager;
 import android.app.Instrumentation;
+import android.app.tools.WatchUidRunner;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ApplicationInfo;

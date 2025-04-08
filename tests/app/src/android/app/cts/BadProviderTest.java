@@ -18,7 +18,7 @@ package android.app.cts;
 
 import static junit.framework.Assert.fail;
 
-import android.app.cts.android.app.cts.tools.WatchUidRunner;
+import android.app.tools.WatchUidRunner;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.content.pm.ApplicationInfo;

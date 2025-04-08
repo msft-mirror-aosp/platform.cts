@@ -20,8 +20,11 @@ import static android.graphics.ImageFormat.YUV_420_888;
 
 import android.media.Image;
 import android.media.ImageWriter;
+import android.util.Log;
 import android.view.Surface;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.atomic.AtomicReference;
@@ -31,10 +34,15 @@ import java.util.function.Consumer;
  * An Image writer which queue buffer into the provided Surface at a fixed rate.
  */
 public class FixedRateImageWriter implements Consumer<Surface>, AutoCloseable {
+    private static final String TAG = "FixedRateImageWriter";
+    private static final boolean DEBUG = false;
+    private static final long MILLIS_TO_NANOS = 1_000_000L;
     private final AtomicReference<ImageWriter> mImageWriter;
     private final Timer mTimer;
     private final long mInitialRenderedTimestampNanos;
     private final int mRenderingPeriodMillis;
+
+    private final List<Long> mWrittenTimestamps = new ArrayList<>(10);
 
     /**
      * Creates a new image writer without starting the rendering thread.
@@ -56,33 +64,38 @@ public class FixedRateImageWriter implements Consumer<Surface>, AutoCloseable {
     @Override
     public void accept(Surface surface) {
         mImageWriter.set(ImageWriter.newInstance(surface, 1, YUV_420_888));
-        mTimer.scheduleAtFixedRate(new TimerTask() {
+        TimerTask task = new TimerTask() {
 
             long renderedTimestampNanos = mInitialRenderedTimestampNanos;
 
             @Override
             public void run() {
-                if (surface.isValid()) {
-                    ImageWriter imageWriter = mImageWriter.get();
-                    if (imageWriter == null) {
-                        cancel();
-                        return;
-                    }
-                    try {
-                        Image image = imageWriter.dequeueInputImage();
-                        image.setTimestamp(renderedTimestampNanos);
-                        imageWriter.queueInputImage(image);
-                        renderedTimestampNanos += mRenderingPeriodMillis * 1_000_000L;
-                    } catch (IllegalStateException ex) {
-                        // Surface might have been disconnected because of a test
-                        // timeout. The assertion below will be more explicit about
-                        // the cause.
-                    }
-                } else {
+                ImageWriter imageWriter = mImageWriter.get();
+                if (!surface.isValid() || imageWriter == null) {
                     cancel();
+                    return;
+                }
+
+                try {
+                    Image image = imageWriter.dequeueInputImage();
+                    image.setTimestamp(renderedTimestampNanos);
+                    if (DEBUG) {
+                        Log.d(TAG, "queueInputImage with timestamp: " + renderedTimestampNanos);
+                    }
+                    imageWriter.queueInputImage(image);
+                    mWrittenTimestamps.add(renderedTimestampNanos);
+                    renderedTimestampNanos += mRenderingPeriodMillis * MILLIS_TO_NANOS;
+                } catch (IllegalStateException ex) {
+                    // Surface might have been disconnected because of a test
+                    // timeout.
                 }
             }
-        }, 0, mRenderingPeriodMillis);
+        };
+        mTimer.scheduleAtFixedRate(task, 0, mRenderingPeriodMillis);
+    }
+
+    public List<Long> getWrittenTimestamps() {
+        return mWrittenTimestamps;
     }
 
     @Override

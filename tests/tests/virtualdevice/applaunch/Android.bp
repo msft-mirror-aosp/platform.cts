@@ -28,6 +28,7 @@ android_test {
     ],
 
     static_libs: [
+        "android.content.res.flags-aconfig-java",
         "CtsVirtualDeviceCommonLib",
         "CtsDefaultCameraAccessTestBaseLib",
     ],
