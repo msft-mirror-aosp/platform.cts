@@ -20,6 +20,7 @@ import android.app.Instrumentation;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.provider.DeviceConfig;
 
 import androidx.annotation.Nullable;
 import androidx.test.InstrumentationRegistry;
@@ -49,10 +50,13 @@ public class PhotoPickerBaseTest {
 
     protected GetResultActivity mActivity;
     protected Context mContext;
+    private static final String READ_DEVICE_CONFIG_PERMISSION =
+            "android.permission.READ_DEVICE_CONFIG";
 
     @Before
     public void setUp() throws Exception {
         Assume.assumeTrue(isHardwareSupported());
+        Assume.assumeFalse(isModernPickerEnabled());
 
         final String setSyncDelayCommand =
                 "device_config put storage pickerdb.default_sync_delay_ms 0";
@@ -71,6 +75,17 @@ public class PhotoPickerBaseTest {
         sInstrumentation.waitForIdleSync();
         mActivity.clearResult();
         sDevice.waitForIdle();
+    }
+
+    static boolean isModernPickerEnabled() {
+        sInstrumentation
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(READ_DEVICE_CONFIG_PERMISSION);
+        try {
+            return DeviceConfig.getBoolean("mediaprovider", "enable_modern_picker", false);
+        } finally {
+            sInstrumentation.getUiAutomation().dropShellPermissionIdentity();
+        }
     }
 
     static boolean isHardwareSupported() {

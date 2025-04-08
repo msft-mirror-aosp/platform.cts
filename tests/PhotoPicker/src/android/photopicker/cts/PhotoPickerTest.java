@@ -108,7 +108,9 @@ public class PhotoPickerTest extends PhotoPickerBaseTest {
             mActivity.finish();
         }
 
-        GetContentActivityAliasUtils.restoreState(sGetContentTakeOverActivityAliasState);
+        if (!super.isModernPickerEnabled()) {
+            GetContentActivityAliasUtils.restoreState(sGetContentTakeOverActivityAliasState);
+        }
     }
 
     @Test
