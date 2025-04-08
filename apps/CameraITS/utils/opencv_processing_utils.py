@@ -39,6 +39,7 @@ CH_FULL_SCALE = 255
 CHART_FILE = os.path.join(TEST_IMG_DIR, 'ISO12233.png')
 CHART_HEIGHT_31CM = 13.5  # cm height of chart for 31cm distance chart
 CHART_HEIGHT_22CM = 9.5  # cm height of chart for 22cm distance chart
+CHART_DISTANCE_115CM = 115.0  # cm
 CHART_DISTANCE_85CM = 85.0  # cm
 CHART_DISTANCE_50CM = 50.0  # cm
 CHART_DISTANCE_31CM = 31.0  # cm
@@ -125,6 +126,10 @@ CHART_DISTANCE_WITH_SCALING_RULES = types.MappingProxyType({
     CHART_DISTANCE_85CM: {
         (FOV_ZERO, FOV_THRESH_TELE13): SCALE_CHART_50_PERCENT,
         (FOV_THRESH_TELE13+EPSILON, FOV_THRESH_TELE25): SCALE_CHART_67_PERCENT,
+    },
+    # Chart distance set at 115cm in order to cover both 110cm and 120cm rigs
+    CHART_DISTANCE_115CM: {
+        (FOV_ZERO, FOV_THRESH_TELE13): SCALE_CHART_67_PERCENT,
     },
 })
 
