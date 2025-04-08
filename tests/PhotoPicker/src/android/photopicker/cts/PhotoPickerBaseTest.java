@@ -16,11 +16,11 @@
 
 package android.photopicker.cts;
 
-import android.Manifest;
 import android.app.Instrumentation;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.provider.DeviceConfig;
 
 import androidx.test.InstrumentationRegistry;
 import androidx.test.uiautomator.UiDevice;
@@ -38,10 +38,14 @@ public class PhotoPickerBaseTest {
     protected GetResultActivity mActivity;
     protected Context mContext;
     protected UiDevice mDevice;
+    private static final String READ_DEVICE_CONFIG_PERMISSION =
+            "android.permission.READ_DEVICE_CONFIG";
 
     @Before
     public void setUp() throws Exception {
         Assume.assumeTrue(isHardwareSupported());
+        // Tests that derive from the class do not support the modern picker
+        Assume.assumeFalse(isModernPickerEnabled());
 
         final Instrumentation inst = InstrumentationRegistry.getInstrumentation();
         mDevice = UiDevice.getInstance(inst);
@@ -63,6 +67,16 @@ public class PhotoPickerBaseTest {
         inst.waitForIdleSync();
         mActivity.clearResult();
         mDevice.waitForIdle();
+    }
+
+    static boolean isModernPickerEnabled() {
+        final Instrumentation inst = InstrumentationRegistry.getInstrumentation();
+        inst.getUiAutomation().adoptShellPermissionIdentity(READ_DEVICE_CONFIG_PERMISSION);
+        try {
+            return DeviceConfig.getBoolean("mediaprovider", "enable_modern_picker", false);
+        } finally {
+            inst.getUiAutomation().dropShellPermissionIdentity();
+        }
     }
 
     private static boolean isHardwareSupported() {
