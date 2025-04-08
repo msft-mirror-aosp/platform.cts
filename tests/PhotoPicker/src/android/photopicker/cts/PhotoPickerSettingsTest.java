@@ -108,8 +108,10 @@ public class PhotoPickerSettingsTest extends PhotoPickerBaseTest {
             mActivity.finish();
         }
 
-        PhotoPickerComponentUtils.setState(PICKER_SETTINGS_ACTIVITY_COMPONENT,
-                sPhotoPickerSettingsActivityState);
+        if (!super.isModernPickerEnabled()) {
+            PhotoPickerComponentUtils.setState(
+                    PICKER_SETTINGS_ACTIVITY_COMPONENT, sPhotoPickerSettingsActivityState);
+        }
 
         // Reset CloudMedia configs.
         if (SdkLevel.isAtLeastS() && sDeviceStatePreserver != null) {
