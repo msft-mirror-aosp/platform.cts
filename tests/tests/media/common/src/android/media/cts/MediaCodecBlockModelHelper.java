@@ -406,9 +406,9 @@ public class MediaCodecBlockModelHelper extends AndroidTestCase {
                     new SurfaceOutputSlotListener(outputSurface, outputTimestampList, events));
             if (result == Result.SUCCESS) {
                 StringBuilder msg = new StringBuilder();
-                boolean isEqual = OutputManager.isOutPtsListIdenticalToInpPtsList(
+                boolean isEqual = OutputManager.arePtsListsIdentical(
                         new ArrayList<Long>(inputTimestampList),
-                        new ArrayList<Long>(outputTimestampList), false, msg);
+                        new ArrayList<Long>(outputTimestampList), msg);
                 assertTrue(msg.toString(), isEqual);
             }
             return result;
