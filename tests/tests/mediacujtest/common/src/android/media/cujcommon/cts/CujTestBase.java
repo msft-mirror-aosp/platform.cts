@@ -109,6 +109,14 @@ public class CujTestBase {
   }
 
   /**
+   * Whether the device supports telecom service.
+   */
+  public static boolean deviceSupportTelecomService(final Activity activity) {
+    final PackageManager pm = activity.getPackageManager();
+    return pm.hasSystemFeature(PackageManager.FEATURE_TELECOM);
+  }
+
+  /**
    * Whether the device supports picture-in-picture feature.
    */
   public static boolean deviceSupportPipMode(final Activity activity) {
