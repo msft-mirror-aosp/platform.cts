@@ -592,10 +592,51 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     private static final String KEY_VULKAN_MEMORY_MODEL_DEVICE_SCOPE = "vulkanMemoryModelDeviceScope";
     private static final String KEY_WIDE_LINES = "wideLines";
     private static final String KEY_WIDTH = "width";
+    private static final String KEY_CORE14 = "core14";
+    private static final String KEY_VULKAN_14_FEATURES = "vulkan_14_features";
+    private static final String KEY_GLOBAL_PRIORITY_QUERY = "globalPriorityQuery";
+    private static final String KEY_SHADER_SUBGROUP_ROTATE = "shaderSubgroupRotate";
+    private static final String KEY_SHADER_SUBGROUP_ROTATE_CLUSTERED = "shaderSubgroupRotateClustered";
+    private static final String KEY_SHADER_FLOAT_CONTROLS2 = "shaderFloatControls2";
+    private static final String KEY_SHADER_EXPECT_ASSUME = "shaderExpectAssume";
+    private static final String KEY_DYNAMIC_RENDERING_LOCAL_READ = "dynamicRenderingLocalRead";
+    private static final String KEY_MAINTENANCE5 = "maintenance5";
+    private static final String KEY_MAINTENANCE6 = "maintenance6";
+    private static final String KEY_PIPELINE_PROTECTED_ACCESS = "pipelineProtectedAccess";
+    private static final String KEY_PIPELINE_ROBUSTNESS = "pipelineRobustness";
+    private static final String KEY_HOST_IMAGE_COPY = "hostImageCopy";
+    private static final String KEY_PUSH_DESCRIPTOR = "pushDescriptor";
+    private static final String KEY_VULKAN_14_PROPERTIES = "vulkan_14_properties";
+    private static final String KEY_LINE_SUB_PIXEL_PRECISION_BITS = "lineSubPixelPrecisionBits";
+    private static final String KEY_MAX_VERTEX_ATTRIB_DIVISOR = "maxVertexAttribDivisor";
+    private static final String KEY_SUPPORTS_NON_ZERO_FIRST_INSTANCE = "supportsNonZeroFirstInstance";
+    private static final String KEY_MAX_PUSH_DESCRIPTORS = "maxPushDescriptors";
+    private static final String KEY_DYNAMIC_RENDERING_LOCAL_READ_DEPTH_STENCIL_ATTACHMENTS = "dynamicRenderingLocalReadDepthStencilAttachments";
+    private static final String KEY_DYNAMIC_RENDERING_LOCAL_READ_MULTISAMPLED_ATTACHMENTS = "dynamicRenderingLocalReadMultisampledAttachments";
+    private static final String KEY_EARLY_FRAGMENT_MULTISAMPLE_COVERAGE_AFTER_SAMPLE_COUNTING = "earlyFragmentMultisampleCoverageAfterSampleCounting";
+    private static final String KEY_EARLY_FRAGMENT_SAMPLE_MASK_TEST_BEFORE_SAMPLE_COUNTING = "earlyFragmentSampleMaskTestBeforeSampleCounting";
+    private static final String KEY_DEPTH_STENCIL_SWIZZLE_ONE_SUPPORT = "depthStencilSwizzleOneSupport";
+    private static final String KEY_POLYGON_MODE_POINT_SIZE = "polygonModePointSize";
+    private static final String KEY_NON_STRICT_SINGLE_PIXEL_WIDE_LINES_USE_PARALLELOGRAM = "nonStrictSinglePixelWideLinesUseParallelogram";
+    private static final String KEY_NON_STRICT_WIDE_LINES_USE_PARALLELOGRAM = "nonStrictWideLinesUseParallelogram";
+    private static final String KEY_BLOCK_TEXEL_VIEW_COMPATIBLE_MULTIPLE_LAYERS = "blockTexelViewCompatibleMultipleLayers";
+    private static final String KEY_MAX_COMBINED_IMAGE_SAMPLER_DESCRIPTOR_COUNT = "maxCombinedImageSamplerDescriptorCount";
+    private static final String KEY_FRAGMENT_SHADING_RATE_CLAMP_COMBINER_INPUTS = "fragmentShadingRateClampCombinerInputs";
+    private static final String KEY_DEFAULT_ROBUSTNESS_STORAGE_BUFFERS = "defaultRobustnessStorageBuffers";
+    private static final String KEY_DEFAULT_ROBUSTNESS_UNIFORM_BUFFERS = "defaultRobustnessUniformBuffers";
+    private static final String KEY_DEFAULT_ROBUSTNESS_VERTEX_INPUTS = "defaultRobustnessVertexInputs";
+    private static final String KEY_DEFAULT_ROBUSTNESS_IMAGES = "defaultRobustnessImages";
+    private static final String KEY_COPY_SRC_LAYOUT_COUNT = "copySrcLayoutCount";
+    private static final String KEY_P_COPY_SRC_LAYOUTS = "pCopySrcLayouts";
+    private static final String KEY_COPY_DST_LAYOUT_COUNT = "copyDstLayoutCount";
+    private static final String KEY_P_COPY_DST_LAYOUTS = "pCopyDstLayouts";
+    private static final String KEY_OPTIMAL_TILING_LAYOUT_UUID = "optimalTilingLayoutUUID";
+    private static final String KEY_IDENTICAL_MEMORY_TYPE_REQUIREMENTS = "identicalMemoryTypeRequirements";
 
     private static final int VK_API_VERSION_1_1 = 4198400;
     private static final int VK_API_VERSION_1_2 = 4202496;
     private static final int VK_API_VERSION_1_3 = 4206592;
+    private static final int VK_API_VERSION_1_4 = 4210688;
     private static final int ENUM_VK_KHR_VARIABLE_POINTERS = 0;
     private static final int ENUM_VK_KHR_DRIVER_PROPERTIES = 1;
     private static final int ENUM_KEY_VK_EXT_IMAGE_2D_VIEW_OF_3D = 2;
@@ -981,6 +1022,39 @@ ENUM_KEY_VK_EXT_PRIMITIVE_TOPOLOGY_LIST_RESTART);
                         }
                         store.endGroup();
                     }
+                    if (properties.getLong(KEY_API_VERSION) >= VK_API_VERSION_1_4) {
+                        JSONObject core14 = device.getJSONObject(KEY_CORE14);
+                        JSONObject vulkan14Properties = core14.getJSONObject(KEY_PROPERTIES);
+                        store.startGroup(convertName(KEY_VULKAN_14_PROPERTIES));
+                        {
+                            emitLong(store, vulkan14Properties, KEY_LINE_SUB_PIXEL_PRECISION_BITS);
+                            emitLong(store, vulkan14Properties, KEY_MAX_VERTEX_ATTRIB_DIVISOR);
+                            emitBoolean(store, vulkan14Properties, KEY_SUPPORTS_NON_ZERO_FIRST_INSTANCE);
+                            emitLong(store, vulkan14Properties, KEY_MAX_PUSH_DESCRIPTORS);
+                            emitBoolean(store, vulkan14Properties, KEY_DYNAMIC_RENDERING_LOCAL_READ_DEPTH_STENCIL_ATTACHMENTS);
+                            emitBoolean(store, vulkan14Properties,  KEY_DYNAMIC_RENDERING_LOCAL_READ_MULTISAMPLED_ATTACHMENTS);
+                            emitBoolean(store, vulkan14Properties,  KEY_EARLY_FRAGMENT_MULTISAMPLE_COVERAGE_AFTER_SAMPLE_COUNTING);
+                            emitBoolean(store, vulkan14Properties,  KEY_EARLY_FRAGMENT_SAMPLE_MASK_TEST_BEFORE_SAMPLE_COUNTING);
+                            emitBoolean(store, vulkan14Properties, KEY_DEPTH_STENCIL_SWIZZLE_ONE_SUPPORT);
+                            emitBoolean(store, vulkan14Properties, KEY_POLYGON_MODE_POINT_SIZE);
+                            emitBoolean(store, vulkan14Properties, KEY_NON_STRICT_SINGLE_PIXEL_WIDE_LINES_USE_PARALLELOGRAM);
+                            emitBoolean(store, vulkan14Properties, KEY_NON_STRICT_WIDE_LINES_USE_PARALLELOGRAM);
+                            emitBoolean(store, vulkan14Properties, KEY_BLOCK_TEXEL_VIEW_COMPATIBLE_MULTIPLE_LAYERS);
+                            emitLong(store, vulkan14Properties, KEY_MAX_COMBINED_IMAGE_SAMPLER_DESCRIPTOR_COUNT);
+                            emitBoolean(store, vulkan14Properties, KEY_FRAGMENT_SHADING_RATE_CLAMP_COMBINER_INPUTS);
+                            emitLong(store, vulkan14Properties, KEY_DEFAULT_ROBUSTNESS_STORAGE_BUFFERS);
+                            emitLong(store, vulkan14Properties, KEY_DEFAULT_ROBUSTNESS_UNIFORM_BUFFERS);
+                            emitLong(store, vulkan14Properties, KEY_DEFAULT_ROBUSTNESS_VERTEX_INPUTS);
+                            emitLong(store, vulkan14Properties, KEY_DEFAULT_ROBUSTNESS_IMAGES);
+                            emitLong(store, vulkan14Properties, KEY_COPY_SRC_LAYOUT_COUNT);
+                            emitLongArray(store, vulkan14Properties, KEY_P_COPY_SRC_LAYOUTS);
+                            emitLong(store, vulkan14Properties, KEY_COPY_DST_LAYOUT_COUNT);
+                            emitLongArray(store, vulkan14Properties, KEY_P_COPY_DST_LAYOUTS);
+                            emitLongArray(store, vulkan14Properties, KEY_OPTIMAL_TILING_LAYOUT_UUID);
+                            emitBoolean(store, vulkan14Properties, KEY_IDENTICAL_MEMORY_TYPE_REQUIREMENTS);
+                        }
+                        store.endGroup();
+                    }
                 }
                 store.endGroup();
 
@@ -1143,6 +1217,36 @@ ENUM_KEY_VK_EXT_PRIMITIVE_TOPOLOGY_LIST_RESTART);
                             emitBoolean(store, vulkan13Features, KEY_DYNAMIC_RENDERING);
                             emitBoolean(store, vulkan13Features, KEY_SHADER_INTEGER_DOT_PRODUCT);
                             emitBoolean(store, vulkan13Features, KEY_MAINTENANCE4);
+                        }
+                        store.endGroup();
+                    }
+
+                    if (properties.getLong(KEY_API_VERSION) >= VK_API_VERSION_1_4) {
+                        JSONObject core14 = device.getJSONObject(KEY_CORE14);
+                        JSONObject vulkan14Features = core14.getJSONObject(KEY_FEATURES);
+                        store.startGroup(convertName(KEY_VULKAN_14_FEATURES));
+                        {
+                            emitBoolean(store, vulkan14Features, KEY_GLOBAL_PRIORITY_QUERY);
+                            emitBoolean(store, vulkan14Features, KEY_SHADER_SUBGROUP_ROTATE);
+                            emitBoolean(store, vulkan14Features, KEY_SHADER_SUBGROUP_ROTATE_CLUSTERED);
+                            emitBoolean(store, vulkan14Features, KEY_SHADER_FLOAT_CONTROLS2);
+                            emitBoolean(store, vulkan14Features, KEY_SHADER_EXPECT_ASSUME);
+                            emitBoolean(store, vulkan14Features, KEY_RECTANGULAR_LINES);
+                            emitBoolean(store, vulkan14Features, KEY_BRESENHAM_LINES);
+                            emitBoolean(store, vulkan14Features, KEY_SMOOTH_LINES);
+                            emitBoolean(store, vulkan14Features, KEY_STIPPLED_RECTANGULAR_LINES);
+                            emitBoolean(store, vulkan14Features, KEY_STIPPLED_BRESENHAM_LINES);
+                            emitBoolean(store, vulkan14Features, KEY_STIPPLED_SMOOTH_LINES);
+                            emitBoolean(store, vulkan14Features, KEY_VERTEX_ATTRIBUTE_INSTANCE_RATE_DIVISOR);
+                            emitBoolean(store, vulkan14Features, KEY_VERTEX_ATTRIBUTE_INSTANCE_RATE_ZERO_DIVISOR);
+                            emitBoolean(store, vulkan14Features, KEY_INDEX_TYPE_UINT8);
+                            emitBoolean(store, vulkan14Features, KEY_DYNAMIC_RENDERING_LOCAL_READ);
+                            emitBoolean(store, vulkan14Features, KEY_MAINTENANCE5);
+                            emitBoolean(store, vulkan14Features, KEY_MAINTENANCE6);
+                            emitBoolean(store, vulkan14Features, KEY_PIPELINE_PROTECTED_ACCESS);
+                            emitBoolean(store, vulkan14Features, KEY_PIPELINE_ROBUSTNESS);
+                            emitBoolean(store, vulkan14Features, KEY_HOST_IMAGE_COPY);
+                            emitBoolean(store, vulkan14Features, KEY_PUSH_DESCRIPTOR);
                         }
                         store.endGroup();
                     }
@@ -2704,6 +2808,45 @@ ENUM_KEY_VK_EXT_PRIMITIVE_TOPOLOGY_LIST_RESTART);
             case KEY_VULKAN_MEMORY_MODEL_DEVICE_SCOPE: return "vulkan_memory_model_device_scope";
             case KEY_WIDE_LINES: return "wide_lines";
             case KEY_WIDTH: return "width";
+            case KEY_VULKAN_14_FEATURES: return "vulkan_14_features";
+            case KEY_VULKAN_14_PROPERTIES: return "vulkan_14_properties";
+            case KEY_GLOBAL_PRIORITY_QUERY : return "global_priority_query";
+            case KEY_SHADER_SUBGROUP_ROTATE : return "shader_subgroup_rotate";
+            case KEY_SHADER_SUBGROUP_ROTATE_CLUSTERED : return "shader_subgroup_rotate_clustered";
+            case KEY_SHADER_FLOAT_CONTROLS2 : return "shader_float_controls2";
+            case KEY_SHADER_EXPECT_ASSUME : return "shader_expect_assume";
+            case KEY_DYNAMIC_RENDERING_LOCAL_READ : return "dynamic_rendering_local_read";
+            case KEY_MAINTENANCE5 : return "maintenance5";
+            case KEY_MAINTENANCE6 : return "maintenance6";
+            case KEY_PIPELINE_PROTECTED_ACCESS : return "pipeline_protected_access";
+            case KEY_PIPELINE_ROBUSTNESS : return "pipeline_robustness";
+            case KEY_HOST_IMAGE_COPY : return "host_image_copy";
+            case KEY_PUSH_DESCRIPTOR : return "push_descriptor";
+            case KEY_LINE_SUB_PIXEL_PRECISION_BITS : return "line_sub_pixel_precision_bits";
+            case KEY_MAX_VERTEX_ATTRIB_DIVISOR : return "max_vertex_attrib_divisor";
+            case KEY_SUPPORTS_NON_ZERO_FIRST_INSTANCE : return "supports_non_zero_first_instance";
+            case KEY_MAX_PUSH_DESCRIPTORS : return "max_push_descriptors";
+            case KEY_DYNAMIC_RENDERING_LOCAL_READ_DEPTH_STENCIL_ATTACHMENTS : return "dynamic_rendering_local_read_depth_stencil_attachments";
+            case KEY_DYNAMIC_RENDERING_LOCAL_READ_MULTISAMPLED_ATTACHMENTS : return "dynamic_rendering_local_read_multisampled_attachments";
+            case KEY_EARLY_FRAGMENT_MULTISAMPLE_COVERAGE_AFTER_SAMPLE_COUNTING: return "early_fragment_multisample_coverage_after_sample_counting";
+            case KEY_EARLY_FRAGMENT_SAMPLE_MASK_TEST_BEFORE_SAMPLE_COUNTING : return "early_fragment_sample_mask_test_before_sample_counting";
+            case KEY_DEPTH_STENCIL_SWIZZLE_ONE_SUPPORT : return "depth_stencil_swizzle_one_support";
+            case KEY_POLYGON_MODE_POINT_SIZE : return "polygon_mode_point_size";
+            case KEY_NON_STRICT_SINGLE_PIXEL_WIDE_LINES_USE_PARALLELOGRAM : return "non_strict_single_pixel_wide_lines_use_parallelogram";
+            case KEY_NON_STRICT_WIDE_LINES_USE_PARALLELOGRAM : return "non_strict_wide_lines_use_parallelogram";
+            case KEY_BLOCK_TEXEL_VIEW_COMPATIBLE_MULTIPLE_LAYERS : return "block_texel_view_compatible_multiple_layers";
+            case KEY_MAX_COMBINED_IMAGE_SAMPLER_DESCRIPTOR_COUNT: return "max_combined_image_sampler_descriptor_count";
+            case KEY_FRAGMENT_SHADING_RATE_CLAMP_COMBINER_INPUTS : return "fragment_shading_rate_clamp_combiner_inputs";
+            case KEY_DEFAULT_ROBUSTNESS_STORAGE_BUFFERS : return "default_robustness_storage_buffers";
+            case KEY_DEFAULT_ROBUSTNESS_UNIFORM_BUFFERS : return "default_robustness_uniform_buffers";
+            case KEY_DEFAULT_ROBUSTNESS_VERTEX_INPUTS : return "default_robustness_vertex_inputs";
+            case KEY_DEFAULT_ROBUSTNESS_IMAGES : return "default_robustness_images";
+            case KEY_COPY_SRC_LAYOUT_COUNT : return "copy_src_layout_count";
+            case KEY_P_COPY_SRC_LAYOUTS : return "p_copy_src_layouts";
+            case KEY_COPY_DST_LAYOUT_COUNT : return "copy_dst_layout_count";
+            case KEY_P_COPY_DST_LAYOUTS : return "p_copy_dst_layouts";
+            case KEY_OPTIMAL_TILING_LAYOUT_UUID : return "optimal_tiling_layout_uuid";
+            case KEY_IDENTICAL_MEMORY_TYPE_REQUIREMENTS: return "identical_memory_type_requirements";
             default: throw new RuntimeException("unknown key name: " + name);
         }
     }
