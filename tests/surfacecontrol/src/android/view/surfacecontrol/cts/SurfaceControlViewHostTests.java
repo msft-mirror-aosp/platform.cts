@@ -1000,14 +1000,14 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
         addSurfaceView(DEFAULT_SURFACE_VIEW_WIDTH, DEFAULT_SURFACE_VIEW_HEIGHT);
         requestSurfaceViewFocus();
         mSvCreatedLatch.await();
-        mEmbeddedView = new Button(mActivity);
+        Button embeddedView = new Button(mActivity);
         mActivityRule.runOnUiThread(
                 () -> {
                     addViewToSurfaceView(
-                            mSurfaceView, mEmbeddedView, mEmbeddedViewWidth, mEmbeddedViewHeight);
+                            mSurfaceView, embeddedView, mEmbeddedViewWidth, mEmbeddedViewHeight);
                 });
-        waitForWindowVisible(mEmbeddedView);
-        assertWindowFocused(mEmbeddedView, true);
+        waitForWindowVisible(embeddedView);
+        assertWindowFocused(embeddedView, true);
         assertWindowFocused(mSurfaceView, false);
 
         final ActivityTestRule<SecondActivity> secondActivityRule =
@@ -1022,7 +1022,7 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
         waitAndAssertActivityState(
                 mActivity.getComponentName(), STATE_RESUMED, "Test activity must be resumed.");
         // Input focus should remained as the remote view.
-        assertWindowFocused(mEmbeddedView, false);
+        assertWindowFocused(embeddedView, true);
         // The remote view should forward the back key to host activity, which will finish itself.
         TouchHelper.injectKey(KeyEvent.KEYCODE_BACK, false /* longpress */, true /* sync */);
         mWmState.waitForHomeActivityVisible();
