@@ -92,7 +92,6 @@ import android.os.SystemProperties;
 import android.os.UserHandle;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.AsbSecurityTest;
-import android.provider.DeviceConfig;
 import android.provider.Settings;
 import android.support.test.uiautomator.UiDevice;
 import android.telephony.TelephonyManager;
@@ -6417,10 +6416,9 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
 
         // Supplicant V2 is supported if the vendor partition indicates API > T.
         boolean halSupport = PropertyUtil.isVndkApiLevelNewerThan(Build.VERSION_CODES.TIRAMISU);
-        boolean featureFlagEnabled = DeviceConfig.getBoolean(DEVICE_CONFIG_NAMESPACE,
-                "application_qos_policy_api_enabled", false);
 
-        return overlayEnabled && featureFlagEnabled && halSupport;
+        Log.i(TAG, "QoS support. overlay=" + overlayEnabled + ", hal=" + halSupport);
+        return overlayEnabled && halSupport;
     }
 
     /**
