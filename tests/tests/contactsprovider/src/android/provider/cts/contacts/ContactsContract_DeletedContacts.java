@@ -23,10 +23,6 @@ import android.content.ContentUris;
 import android.net.Uri;
 import android.os.SystemClock;
 import android.provider.ContactsContract;
-import android.provider.cts.contacts.CommonDatabaseUtils;
-import android.provider.cts.contacts.DatabaseAsserts;
-import android.provider.cts.contacts.DeletedContactUtil;
-import android.provider.cts.contacts.RawContactUtil;
 import android.test.AndroidTestCase;
 import android.test.MoreAsserts;
 
@@ -42,6 +38,12 @@ public class ContactsContract_DeletedContacts extends AndroidTestCase {
     @Override
     public void setUp() {
         mResolver = getContext().getContentResolver();
+
+        try {
+            Thread.sleep(5000);
+        } catch (InterruptedException e) {
+            // ignore
+        }
     }
 
     public void testDelete_isUnsupported() {
@@ -60,10 +62,11 @@ public class ContactsContract_DeletedContacts extends AndroidTestCase {
         long start = System.currentTimeMillis();
         ContactIdPair ids = createAndDeleteContact();
 
-        String[] projection = new String[] {
-                ContactsContract.DeletedContacts.CONTACT_ID,
-                ContactsContract.DeletedContacts.CONTACT_DELETED_TIMESTAMP
-        };
+        String[] projection =
+                new String[] {
+                    ContactsContract.DeletedContacts.CONTACT_ID,
+                    ContactsContract.DeletedContacts.CONTACT_DELETED_TIMESTAMP
+                };
         List<String[]> records = DeletedContactUtil.query(mResolver, projection);
         boolean found = false;
         for (String[] record : records) {
