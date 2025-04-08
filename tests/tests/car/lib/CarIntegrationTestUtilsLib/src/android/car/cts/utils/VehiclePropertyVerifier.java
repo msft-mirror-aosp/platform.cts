@@ -1559,6 +1559,18 @@ public class VehiclePropertyVerifier<T> {
         return null;
     }
 
+    public static boolean isAtLeastR() {
+        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.R;
+    }
+
+    public static boolean isAtLeastS() {
+        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.S;
+    }
+
+    public static boolean isAtLeastT() {
+        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU;
+    }
+
     public static boolean isAtLeastU() {
         return Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE;
     }
