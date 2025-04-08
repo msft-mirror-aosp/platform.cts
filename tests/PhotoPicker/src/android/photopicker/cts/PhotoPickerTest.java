@@ -863,7 +863,7 @@ public class PhotoPickerTest extends PhotoPickerBaseTest {
         final UiObject playerView = findPlayerView();
         // Click on StyledPlayerView to make the video controls visible
         // Don't click in the center else it may pause the video and hide the controls.
-        playerView.clickBottomRight();
+        playerView.clickTopLeft();
         sDevice.waitForIdle();
         assertPlayerControlsVisible(playPauseButton, muteButton);
 
@@ -875,7 +875,7 @@ public class PhotoPickerTest extends PhotoPickerBaseTest {
 
         // Click on the StyledPlayerView and check that controls appear
         // Don't click in the center else it may pause the video and hide the controls.
-        playerView.clickBottomRight();
+        playerView.clickTopLeft();
         sDevice.waitForIdle();
         assertPlayerControlsVisible(playPauseButton, muteButton);
 
