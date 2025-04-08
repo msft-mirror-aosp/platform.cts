@@ -78,8 +78,9 @@ public class CarrierRoamingSatelliteSmsTest extends CarrierRoamingSatelliteTestB
         if (!shouldTestSatelliteWithMockService()) return;
 
         try {
-            beforeAllTestsBase();
-            insertSatelliteEnabledSim(SLOT_ID_0, MOCK_SIM_PROFILE_ID_TWN_CHT);
+            beforeAllCarrierRoamingTestsBase();
+            setUpAutoConnectTestEnvironment(
+                SLOT_ID_0, MOCK_SIM_PROFILE_ID_TWN_CHT, PHONE_NUMBER_0);
         } catch (AssertionError e) {
             sInitError = e;
         }
@@ -95,8 +96,8 @@ public class CarrierRoamingSatelliteSmsTest extends CarrierRoamingSatelliteTestB
 
         if (!shouldTestSatelliteWithMockService()) return;
 
-        removeSatelliteEnabledSim(SLOT_ID_0, MOCK_SIM_PROFILE_ID_TWN_CHT);
-        afterAllTestsBase();
+        cleanUpMockSim(SLOT_ID_0, MOCK_SIM_PROFILE_ID_TWN_CHT);
+        afterAllCarrierRoamingTestsBase();
     }
 
     @Before

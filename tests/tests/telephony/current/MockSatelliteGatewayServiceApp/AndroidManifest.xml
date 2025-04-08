@@ -29,5 +29,7 @@
                 <action android:name="android.telephony.satellite.SatelliteGatewayService"/>
             </intent-filter>
         </service>
+        <meta-data android:name="android.telephony.METADATA_SATELLITE_MANUAL_CONNECT_P2P_SUPPORT"
+          android:value="true"/>
     </application>
 </manifest>
