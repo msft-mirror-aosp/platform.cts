@@ -69,6 +69,8 @@ public class BasePackageInstallTest {
     protected static final int PACKAGE_INSTALLER_TIMEOUT_MS = 30000; // 30 seconds
     private static final String ACTION_INSTALL_COMMIT =
             "com.android.cts.deviceowner.INTENT_PACKAGE_INSTALL_COMMIT";
+    private static final String ACTION_UNINSTALL =
+            "com.android.cts.deviceowner.INTENT_PACKAGE_UNINSTALL";
     protected static final int PACKAGE_INSTALLER_STATUS_UNDEFINED = -1000;
     public static final String PACKAGE_NAME = SilentPackageInstallTest.class.getPackage().getName();
 
@@ -87,7 +89,7 @@ public class BasePackageInstallTest {
     protected UiAutomation mUiAutomation = mInstrumentation.getUiAutomation();
     protected final Object mPackageInstallerTimeoutLock = new Object();
 
-    private final BroadcastReceiver mBroadcastReceiver = new BroadcastReceiver() {
+    private class MyBroadcastReceiver extends BroadcastReceiver {
         @Override
         public void onReceive(Context context, Intent intent) {
             synchronized (mPackageInstallerTimeoutLock) {
@@ -104,7 +106,10 @@ public class BasePackageInstallTest {
                 mPackageInstallerTimeoutLock.notify();
             }
         }
-    };
+    }
+
+    private final MyBroadcastReceiver mBroadcastReceiver = new MyBroadcastReceiver();
+    private final MyBroadcastReceiver mUninstallBroadcastReceiver = new MyBroadcastReceiver();
 
     @Rule
     public RequiredFeatureRule mAdminFeatureRule = new RequiredFeatureRule(
@@ -159,6 +164,11 @@ public class BasePackageInstallTest {
         } catch (IllegalArgumentException e) {
             // ignore
         }
+        try {
+            mContext.unregisterReceiver(mUninstallBroadcastReceiver);
+        } catch (IllegalArgumentException e) {
+            // ignore
+        }
         if (mSession != null) {
             mSession.abandon();
         }
@@ -198,7 +208,7 @@ public class BasePackageInstallTest {
             mCallbackReceived = false;
             mCallbackStatus = PACKAGE_INSTALLER_STATUS_UNDEFINED;
         }
-        mPackageInstaller.uninstall(TEST_APP_PKG, getCommitCallback(0));
+        mPackageInstaller.uninstall(TEST_APP_PKG, getUninstallCallback());
         synchronized (mPackageInstallerTimeoutLock) {
             try {
                 mPackageInstallerTimeoutLock.wait(PACKAGE_INSTALLER_TIMEOUT_MS);
@@ -233,9 +243,15 @@ public class BasePackageInstallTest {
     private IntentSender getCommitCallback(int sessionId) {
         // Create an intent-filter and register the receiver
         String action = ACTION_INSTALL_COMMIT + "." + sessionId;
+        return getCallbackAndRegisterReceiver(action, sessionId, mBroadcastReceiver);
+    }
+
+    private IntentSender getCallbackAndRegisterReceiver(String action,
+            int requestCode, MyBroadcastReceiver receiver) {
+        // Create an intent-filter and register the receiver
         IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(action);
-        mContext.registerReceiver(mBroadcastReceiver, intentFilter,
+        mContext.registerReceiver(receiver, intentFilter,
                 Context.RECEIVER_EXPORTED);
 
         // Create a PendingIntent and use it to generate the IntentSender
@@ -243,10 +259,14 @@ public class BasePackageInstallTest {
                 .addFlags(Intent.FLAG_RECEIVER_FOREGROUND);;
         PendingIntent pendingIntent = PendingIntent.getBroadcast(
                 mContext,
-                sessionId,
+                requestCode,
                 broadcastIntent,
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_MUTABLE);
         return pendingIntent.getIntentSender();
+    }
+
+    private IntentSender getUninstallCallback() {
+        return getCallbackAndRegisterReceiver(ACTION_UNINSTALL, 0, mUninstallBroadcastReceiver);
     }
 
     protected boolean isPackageInstalled(String packageName) {
