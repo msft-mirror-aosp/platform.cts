@@ -115,6 +115,7 @@ public class KeyguardWeakEscrowTokenTest {
     public void testAddWeakEscrowToken_hasCredentialSetUp_tokenActivatedAfterVerification() {
         assumeIsAutomotiveDevice();
         assumeKeyguardManagerAvailable();
+        assumeSecureLockScreenvailable();
 
         runWithShellPermissionIdentity(() -> {
             setLockCredential(TEST_PIN1);
@@ -195,6 +196,7 @@ public class KeyguardWeakEscrowTokenTest {
     public void testWeakEscrowTokenRemovedWhenCredentialChanged() {
         assumeIsAutomotiveDevice();
         assumeKeyguardManagerAvailable();
+        assumeSecureLockScreenvailable();
 
         runWithShellPermissionIdentity(() -> {
             long handle = mKeyguardManager.addWeakEscrowToken(mTestToken1, mTestUser, mTestExecutor,
@@ -215,6 +217,7 @@ public class KeyguardWeakEscrowTokenTest {
     public void testAutoEscrowTokenRemovedWhenCredentialRemoved() {
         assumeIsAutomotiveDevice();
         assumeKeyguardManagerAvailable();
+        assumeSecureLockScreenvailable();
 
         runWithShellPermissionIdentity(() -> {
             long handle = mKeyguardManager.addWeakEscrowToken(mTestToken1, mTestUser, mTestExecutor,
@@ -243,6 +246,16 @@ public class KeyguardWeakEscrowTokenTest {
     private void assumeKeyguardManagerAvailable() {
         assumeFalse("Test skipped because KeyguardManager is not available.",
                 mKeyguardManager == null);
+    }
+
+    private void assumeSecureLockScreenvailable() {
+        assumeTrue("Test skipped because secure lock screen is not available.",
+                hasSecureLockScreen());
+    }
+
+    private boolean hasSecureLockScreen() {
+        return mContext.getPackageManager().hasSystemFeature(
+                PackageManager.FEATURE_SECURE_LOCK_SCREEN);
     }
 
     private static void removeLockCredential(String oldCredential) throws IOException {
