@@ -152,7 +152,7 @@ public final class ImeInsetsVisibilityTest extends EndToEndImeTestBase {
             final EditText editText = editTextTestActivityPair.first;
             final TestActivity activity = editTextTestActivityPair.second;
 
-            notExpectEvent(stream, editorMatcher("onStartInputView", marker), TIMEOUT);
+            notExpectEvent(stream, editorMatcher("onStartInputView", marker), NOT_EXPECT_TIMEOUT);
             expectImeInvisible(TIMEOUT);
 
             assertTrue("showSoftInput must success if the View has IME focus", getOnMainSync(
@@ -165,6 +165,7 @@ public final class ImeInsetsVisibilityTest extends EndToEndImeTestBase {
                     () -> editText.getRootWindowInsets().isVisible(WindowInsets.Type.ime()));
             expectImeVisible(TIMEOUT);
 
+            stream.skipAll();
             try (ChildWindowHolder childWindow = createChildBottomPanelWindowOnMain(activity,
                     MATCH_PARENT /* width */, NEW_KEYBOARD_HEIGHT /* height */,
                     FLAG_NOT_FOCUSABLE | FLAG_ALT_FOCUSABLE_IM)) {
@@ -174,7 +175,8 @@ public final class ImeInsetsVisibilityTest extends EndToEndImeTestBase {
                     childWindow.getRootView().setVisibility(View.VISIBLE);
                 });
                 // IME should be on screen without reset.
-                notExpectEvent(stream, editorMatcher("onStartInputView", marker), TIMEOUT);
+                notExpectEvent(
+                        stream, editorMatcher("onStartInputView", marker), NOT_EXPECT_TIMEOUT);
 
                 TestUtils.waitOnMainUntil(
                         () -> editText.getRootWindowInsets().isVisible(WindowInsets.Type.ime()),
@@ -214,6 +216,7 @@ public final class ImeInsetsVisibilityTest extends EndToEndImeTestBase {
                     () -> editText.getRootWindowInsets().isVisible(WindowInsets.Type.ime()));
             expectImeVisible(TIMEOUT);
 
+            stream.skipAll();
             try (ChildWindowHolder childWindow = createChildBottomPanelWindowOnMain(activity,
                     MATCH_PARENT /* width */, NEW_KEYBOARD_HEIGHT /* height */,
                     FLAG_NOT_FOCUSABLE | FLAG_ALT_FOCUSABLE_IM | FLAG_LAYOUT_IN_SCREEN)) {
@@ -223,7 +226,8 @@ public final class ImeInsetsVisibilityTest extends EndToEndImeTestBase {
                     childWindow.getRootView().setVisibility(View.VISIBLE);
                 });
                 // IME should be on screen without reset.
-                notExpectEvent(stream, editorMatcher("onStartInputView", marker), TIMEOUT);
+                notExpectEvent(
+                        stream, editorMatcher("onStartInputView", marker), NOT_EXPECT_TIMEOUT);
 
                 TestUtils.waitOnMainUntil(
                         () -> editText.getRootWindowInsets().isVisible(WindowInsets.Type.ime()),
