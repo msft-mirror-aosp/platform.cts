@@ -82,7 +82,7 @@ public abstract class InputTestCase {
 
     protected InputCtsActivity mTestActivity;
 
-    InputTestCase() {
+    protected InputTestCase() {
         mEvents = new LinkedBlockingQueue<>();
         mInputListener = new InputListener();
     }
@@ -117,17 +117,18 @@ public abstract class InputTestCase {
     }
 
     /** Optional setup logic performed before the test activity is launched. */
-    void onBeforeLaunchActivity() {}
+    protected void onBeforeLaunchActivity() {}
 
-    abstract void onSetUp();
+    protected abstract void onSetUp();
 
-    abstract void onTearDown();
+    protected abstract void onTearDown();
 
     /**
      * Get the activity options to launch the activity with.
+     *
      * @return the activity options or null.
      */
-    @Nullable Bundle getActivityOptions() {
+    protected @Nullable Bundle getActivityOptions() {
         return null;
     }
 
@@ -205,7 +206,7 @@ public abstract class InputTestCase {
      * @param expectedEvent expected event flag specified in JSON files.
      * @param actualEvent actual event flag received in the test app.
      */
-    void assertAxis(String testCase, MotionEvent expectedEvent, MotionEvent actualEvent) {
+    protected void assertAxis(String testCase, MotionEvent expectedEvent, MotionEvent actualEvent) {
         for (int i = 0; i < actualEvent.getPointerCount(); i++) {
             for (int axis = MotionEvent.AXIS_X; axis <= MotionEvent.AXIS_GENERIC_16; axis++) {
                 if (IGNORE_AXES.contains(axis)) continue;
@@ -243,7 +244,7 @@ public abstract class InputTestCase {
      * @param expectedMetaState expected meta state specified in JSON files.
      * @param actualMetaState actual meta state received in the test app.
      */
-    void assertMetaState(String testCase, int expectedMetaState, int actualMetaState) {
+    protected void assertMetaState(String testCase, int expectedMetaState, int actualMetaState) {
         assertEquals(testCase + " (meta state)", expectedMetaState, actualMetaState);
     }
 
@@ -359,7 +360,7 @@ public abstract class InputTestCase {
         fail(mCurrentTestCase + ": " + message);
     }
 
-    void setConsumeGenericMotionEvents(boolean enable) {
+    protected void setConsumeGenericMotionEvents(boolean enable) {
         mTestActivity.setConsumeGenericMotionEvents(enable);
     }
 

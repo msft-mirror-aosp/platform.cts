@@ -408,15 +408,15 @@
     <option name="compatibility:include-filter" value="CtsHardwareTestCases android.hardware.input.cts.tests.UsbVoiceCommandTest#testMediaKeys"/>
     <option name="compatibility:include-filter" value="CtsHardwareTestCases android.hardware.input.cts.tests.UsbVoiceCommandTest#testVoiceAssistantKey"/>
     <option name="compatibility:include-filter" value="CtsHardwareTestCases android.hardware.input.cts.tests.UsbVoiceCommandTest#testVolumeKeys"/>
-    <option name="compatibility:include-filter" value="CtsHardwareTestCases android.hardware.input.cts.tests.VirtualDeviceMirrorDisplayTest#virtualDpad_keyEvent"/>
-    <option name="compatibility:include-filter" value="CtsHardwareTestCases android.hardware.input.cts.tests.VirtualDeviceMirrorDisplayTest#virtualKeyboard_keyEvent"/>
-    <option name="compatibility:include-filter" value="CtsHardwareTestCases android.hardware.input.cts.tests.VirtualDeviceMirrorDisplayTest#virtualMouse_buttonEvent"/>
-    <option name="compatibility:include-filter" value="CtsHardwareTestCases android.hardware.input.cts.tests.VirtualDeviceMirrorDisplayTest#virtualMouse_relativeEvent"/>
-    <option name="compatibility:include-filter" value="CtsHardwareTestCases android.hardware.input.cts.tests.VirtualDeviceMirrorDisplayTest#virtualMouse_scrollEvent"/>
-    <option name="compatibility:include-filter" value="CtsHardwareTestCases android.hardware.input.cts.tests.VirtualDeviceMirrorDisplayTest#virtualNavigationTouchpad_touchEvent"/>
-    <option name="compatibility:include-filter" value="CtsHardwareTestCases android.hardware.input.cts.tests.VirtualDeviceMirrorDisplayTest#virtualRotary_scrollEvent"/>
-    <option name="compatibility:include-filter" value="CtsHardwareTestCases android.hardware.input.cts.tests.VirtualDeviceMirrorDisplayTest#virtualStylus_touchEvent"/>
-    <option name="compatibility:include-filter" value="CtsHardwareTestCases android.hardware.input.cts.tests.VirtualDeviceMirrorDisplayTest#virtualTouchscreen_touchEvent"/>
+    <option name="compatibility:include-filter" value="CtsHardwareTestCases android.hardware.input.cts.tests.virtualdevices.VirtualDeviceMirrorDisplayTest#virtualDpad_keyEvent"/>
+    <option name="compatibility:include-filter" value="CtsHardwareTestCases android.hardware.input.cts.tests.virtualdevices.VirtualDeviceMirrorDisplayTest#virtualKeyboard_keyEvent"/>
+    <option name="compatibility:include-filter" value="CtsHardwareTestCases android.hardware.input.cts.tests.virtualdevices.VirtualDeviceMirrorDisplayTest#virtualMouse_buttonEvent"/>
+    <option name="compatibility:include-filter" value="CtsHardwareTestCases android.hardware.input.cts.tests.virtualdevices.VirtualDeviceMirrorDisplayTest#virtualMouse_relativeEvent"/>
+    <option name="compatibility:include-filter" value="CtsHardwareTestCases android.hardware.input.cts.tests.virtualdevices.VirtualDeviceMirrorDisplayTest#virtualMouse_scrollEvent"/>
+    <option name="compatibility:include-filter" value="CtsHardwareTestCases android.hardware.input.cts.tests.virtualdevices.VirtualDeviceMirrorDisplayTest#virtualNavigationTouchpad_touchEvent"/>
+    <option name="compatibility:include-filter" value="CtsHardwareTestCases android.hardware.input.cts.tests.virtualdevices.VirtualDeviceMirrorDisplayTest#virtualRotary_scrollEvent"/>
+    <option name="compatibility:include-filter" value="CtsHardwareTestCases android.hardware.input.cts.tests.virtualdevices.VirtualDeviceMirrorDisplayTest#virtualStylus_touchEvent"/>
+    <option name="compatibility:include-filter" value="CtsHardwareTestCases android.hardware.input.cts.tests.virtualdevices.VirtualDeviceMirrorDisplayTest#virtualTouchscreen_touchEvent"/>
     <!-- CtsHealthConnectControllerTestCases -->
     <option name="compatibility:include-filter" value="CtsHealthConnectControllerTestCases android.healthconnect.cts.ui.newia.AppDataFragmentTest#appPermissions_showsAppDataButton"/>
     <option name="compatibility:include-filter" value="CtsHealthConnectControllerTestCases android.healthconnect.cts.ui.permissions.AdditionalPermissionsRequestUITest#requestAdditionalPermissions_showsBothAdditionalPermissions_grantsBoth"/>

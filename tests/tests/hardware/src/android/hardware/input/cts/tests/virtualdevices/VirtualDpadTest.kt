@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package android.hardware.input.cts.tests
+package android.hardware.input.cts.tests.virtualdevices
 
 import android.hardware.input.VirtualDpad
 import android.hardware.input.VirtualKeyEvent
@@ -23,7 +23,6 @@ import android.view.InputEvent
 import android.view.KeyEvent
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.SmallTest
-import com.android.compatibility.common.util.SystemUtil
 import org.junit.Assert.assertThrows
 import org.junit.Test
 import org.junit.runner.RunWith
