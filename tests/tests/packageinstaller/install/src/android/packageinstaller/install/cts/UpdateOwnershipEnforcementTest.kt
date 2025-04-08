@@ -128,7 +128,7 @@ class UpdateOwnershipEnforcementTest : UpdateOwnershipEnforcementTestBase() {
         assertInstalled()
 
         // Try to update the app with using SessionParams.setRequestUpdateOwnership.
-        startInstallationViaSession(INSTALL_REQUEST_UPDATE_OWNERSHIP)
+        startInstallationViaSession(INSTALL_REQUEST_UPDATE_OWNERSHIP, apkName = NEW_TEST_APK_NAME)
         clickInstallerUIButton(INSTALL_BUTTON_ID)
 
         // request should have succeeded
@@ -179,7 +179,7 @@ class UpdateOwnershipEnforcementTest : UpdateOwnershipEnforcementTestBase() {
         try {
             InstrumentationRegistry.getInstrumentation().uiAutomation
                 .adoptShellPermissionIdentity(Manifest.permission.INSTALL_PACKAGES)
-            startInstallationViaSessionNoPrompt()
+            startInstallationViaSession(apkName = NEW_TEST_APK_NAME, expectedPrompt = false)
             // No need to click installer UI here.
 
             val result = getInstallSessionResult()
@@ -202,7 +202,7 @@ class UpdateOwnershipEnforcementTest : UpdateOwnershipEnforcementTestBase() {
         try {
             InstrumentationRegistry.getInstrumentation().uiAutomation
                 .adoptShellPermissionIdentity(Manifest.permission.INSTALL_PACKAGES)
-            startInstallationViaSession()
+            startInstallationViaSession(apkName = NEW_TEST_APK_NAME)
 
             assertInstallerLabelShown()
 
@@ -231,7 +231,9 @@ class UpdateOwnershipEnforcementTest : UpdateOwnershipEnforcementTestBase() {
         try {
             InstrumentationRegistry.getInstrumentation().uiAutomation
                 .adoptShellPermissionIdentity(Manifest.permission.INSTALL_PACKAGES)
-            val result = startInstallationViaIntent()
+            val result = startInstallationViaIntent(
+                intent = getInstallationIntent(NEW_TEST_APK_NAME)
+            )
 
             assertInstallerLabelShown()
 
@@ -322,7 +324,7 @@ class UpdateOwnershipEnforcementTest : UpdateOwnershipEnforcementTestBase() {
         try {
             InstrumentationRegistry.getInstrumentation().uiAutomation
                 .adoptShellPermissionIdentity(Manifest.permission.INSTALL_PACKAGES)
-            startInstallationViaSessionNoPrompt()
+            startInstallationViaSession(apkName = NEW_TEST_APK_NAME, expectedPrompt = false)
             // No need to click installer UI here.
 
             val result = getInstallSessionResult()
@@ -341,7 +343,7 @@ class UpdateOwnershipEnforcementTest : UpdateOwnershipEnforcementTestBase() {
         // Install the test app and enable update ownership enforcement with another package
         installTestPackage("--update-ownership -i $TEST_INSTALLER_APK_PACKAGE_NAME")
 
-        startInstallationViaSession(INSTALL_REQUEST_UPDATE_OWNERSHIP)
+        startInstallationViaSession(INSTALL_REQUEST_UPDATE_OWNERSHIP, apkName = NEW_TEST_APK_NAME)
         clickInstallerUIButton(INSTALL_BUTTON_ID)
 
         val result = getInstallSessionResult()
@@ -359,7 +361,7 @@ class UpdateOwnershipEnforcementTest : UpdateOwnershipEnforcementTestBase() {
         // Install the test app and enable update ownership enforcement with another package
         installTestPackage("--update-ownership -i " + context.opPackageName)
 
-        startInstallationViaSession()
+        startInstallationViaSession(apkName = NEW_TEST_APK_NAME)
         clickInstallerUIButton(INSTALL_BUTTON_ID)
 
         val result = getInstallSessionResult()
@@ -418,7 +420,7 @@ class UpdateOwnershipEnforcementTest : UpdateOwnershipEnforcementTestBase() {
             /* packageSource */
             null
         )
-        writeAndCommitSession(TEST_APK_NAME, session)
+        writeAndCommitSession(NEW_TEST_APK_NAME, session)
 
         // Since SessionInfo will be null once install is complete, we need to get it when prompting
         val sessionInfo = pi.getSessionInfo(sessionId)

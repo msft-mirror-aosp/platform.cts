@@ -28,6 +28,9 @@ open class UpdateOwnershipEnforcementTestBase : PackageInstallerTestBase() {
     companion object {
         const val TEST_INSTALLER_APK_NAME = "CtsEmptyInstallerApp.apk"
         const val TEST_INSTALLER_APK_PACKAGE_NAME = "android.packageinstaller.emptyinstaller.cts"
+
+        const val OLD_TEST_APK_NAME = "CtsEmptyTestApp.apk"
+        const val NEW_TEST_APK_NAME = "CtsEmptyTestAppV2.apk"
     }
 
     private var isUpdateOwnershipEnforcementAvailable: String? = null
