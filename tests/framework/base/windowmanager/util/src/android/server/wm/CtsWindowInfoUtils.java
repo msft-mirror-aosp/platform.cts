@@ -18,17 +18,16 @@ package android.server.wm;
 
 import android.Manifest;
 import android.app.Instrumentation;
-import android.app.UiAutomation;
 import android.graphics.Point;
 import android.graphics.Rect;
 import android.os.IBinder;
 import android.os.SystemClock;
 import android.os.SystemProperties;
 import android.util.Log;
+import android.view.Display;
 import android.view.View;
 import android.view.ViewTreeObserver;
 import android.view.Window;
-import android.view.Display;
 import android.window.WindowInfosListenerForTest;
 import android.window.WindowInfosListenerForTest.WindowInfo;
 
@@ -38,7 +37,6 @@ import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.CtsTouchUtils;
 import com.android.compatibility.common.util.SystemUtil;
-import com.android.compatibility.common.util.ThrowingRunnable;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -456,7 +454,7 @@ public class CtsWindowInfoUtils {
         return true;
     }
 
-    private static Rect getWindowBounds(@NonNull Supplier<IBinder> windowTokenSupplier)
+    public static Rect getWindowBounds(@NonNull Supplier<IBinder> windowTokenSupplier)
             throws InterruptedException {
         Rect bounds = new Rect();
         Predicate<WindowInfo> predicate = windowInfo -> {

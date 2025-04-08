@@ -41,7 +41,9 @@ public class SurfaceSyncGroupContinuousTest {
     @Before
     public void setup() {
         mCapturedActivity = mActivityRule.getActivity();
-        mCapturedActivity.setLogicalDisplaySize(getLogicalDisplaySize());
+        if (!CapturedActivity.wmCanReplaceContentOnDisplay()) {
+            mCapturedActivity.setLogicalDisplaySize(getLogicalDisplaySize());
+        }
     }
 
     @Test
