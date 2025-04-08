@@ -30,9 +30,9 @@ import android.app.AppOpsManager;
 import android.app.ForegroundServiceTypePolicy;
 import android.app.ForegroundServiceTypePolicy.ForegroundServiceTypePolicyInfo;
 import android.app.Instrumentation;
-import android.app.cts.android.app.cts.tools.WatchUidRunner;
 import android.app.fgstesthelper.LocalForegroundServiceBase;
 import android.app.role.RoleManager;
+import android.app.tools.WatchUidRunner;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
@@ -48,8 +48,8 @@ import android.os.UserHandle;
 import android.platform.test.annotations.Presubmit;
 import android.util.ArrayMap;
 
-import androidx.test.InstrumentationRegistry;
-import androidx.test.runner.AndroidJUnit4;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.uiautomator.UiDevice;
 
 import com.android.compatibility.common.util.ApiTest;
@@ -71,7 +71,6 @@ import java.util.concurrent.TimeUnit;
 @RunWith(AndroidJUnit4.class)
 @Presubmit
 public final class ActivityManagerForegroundServiceTypeTest {
-    private static final String TAG = ActivityManagerForegroundServiceTypeTest.class.getName();
 
     private static final String TEST_PKG_NAME_TARGET = "android.app.fgstesthelper";
     private static final String TEST_PKG_NAME_CURRENT = "android.app.fgstesthelpercurrent";
@@ -198,14 +197,12 @@ public final class ActivityManagerForegroundServiceTypeTest {
         final UserHandle user = Process.myUserHandle();
         final boolean wasEnabled = lm.isLocationEnabledForUser(user);
         try {
-            SystemUtil.runWithShellPermissionIdentity(() -> {
-                lm.setLocationEnabledForUser(true, user);
-            });
+            SystemUtil.runWithShellPermissionIdentity(
+                    () -> lm.setLocationEnabledForUser(true, user));
             testPermissionEnforcementCommon(ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION);
         } finally {
-            SystemUtil.runWithShellPermissionIdentity(() -> {
-                lm.setLocationEnabledForUser(wasEnabled, user);
-            });
+            SystemUtil.runWithShellPermissionIdentity(
+                    () -> lm.setLocationEnabledForUser(wasEnabled, user));
         }
     }
 
@@ -317,9 +314,8 @@ public final class ActivityManagerForegroundServiceTypeTest {
             startAndStopFgsType(api33Comp, type, uid33Watcher);
             startAndStopFgsType(apiCurComp, type, uidCurWatcher);
 
-            SystemUtil.runWithShellPermissionIdentity(() -> {
-                info.setTypeDisabledForTest(true, TEST_PKG_NAME_CURRENT);
-            });
+            SystemUtil.runWithShellPermissionIdentity(
+                    () -> info.setTypeDisabledForTest(true, TEST_PKG_NAME_CURRENT));
 
             assertEquals(exceptionType, startForegroundServiceWithType(apiCurComp, type));
 
@@ -482,7 +478,7 @@ public final class ActivityManagerForegroundServiceTypeTest {
             }
             ret.add(list[i]);
         }
-        if (ret.size() > 0) {
+        if (!ret.isEmpty()) {
             return ret.toArray(new TestPermissionInfo[ret.size()]);
         } else {
             return null;
@@ -509,7 +505,7 @@ public final class ActivityManagerForegroundServiceTypeTest {
         return uiDevice.executeShellCommand(cmd).trim();
     }
 
-    private class TestPermissionInfo {
+    private static class TestPermissionInfo {
         final String mName;
         final boolean mIsAppOps;
         final SpecialPermissionOp mSpecialOp;
