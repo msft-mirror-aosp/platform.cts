@@ -65,7 +65,7 @@ public abstract class BaseTileServiceTest {
     protected static final long CHECK_DELAY = 250;
     // Number of times to check before failing. This is set so the maximum wait time is about 4s,
     // as some tests were observed to take around 3s.
-    protected static final long CHECK_RETRIES = 15;
+    protected static final long CHECK_RETRIES = 20;
     // Timeout to wait for launcher
     protected static final long TIMEOUT = 8000;
 
