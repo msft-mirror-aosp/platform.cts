@@ -24,6 +24,7 @@ import capture_request_utils
 import image_processing_utils
 import its_base_test
 import its_session_utils
+import opencv_processing_utils
 import target_exposure_utils
 
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
@@ -71,7 +72,7 @@ def _get_regions_of_interest(props, cam, test_name_with_log_path):
 
   # Find blue, yellow, and light regions from scene8
   chart_path = f'{test_name_with_log_path}_chart_boundary.jpg'
-  regions = image_processing_utils.define_regions(
+  regions = opencv_processing_utils.define_regions(
       img, img_path, chart_path, props, match_ar[0], match_ar[1])
 
   return regions
