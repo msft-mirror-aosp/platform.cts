@@ -50,6 +50,11 @@ public class LocalStorageIcingOptionsConfig implements IcingOptionsConfig {
     }
 
     @Override
+    public int getCompressionMemLevel() {
+        return DEFAULT_COMPRESSION_MEM_LEVEL;
+    }
+
+    @Override
     public boolean getAllowCircularSchemaDefinitions() {
         return true;
     }
@@ -107,5 +112,10 @@ public class LocalStorageIcingOptionsConfig implements IcingOptionsConfig {
     @Override
     public @NonNull String getIcuDataFileAbsolutePath() {
         return DEFAULT_ICU_DATA_FILE_ABSOLUTE_PATH;
+    }
+
+    @Override
+    public int getCompressionThresholdBytes() {
+        return DEFAULT_COMPRESSION_THRESHOLD_BYTES;
     }
 }

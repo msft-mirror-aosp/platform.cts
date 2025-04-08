@@ -81,6 +81,11 @@ public class AppSearchConfigImpl implements AppSearchConfig {
     }
 
     @Override
+    public int getCompressionMemLevel() {
+        return mIcingOptionsConfig.getCompressionMemLevel();
+    }
+
+    @Override
     public boolean getAllowCircularSchemaDefinitions() {
         return mIcingOptionsConfig.getAllowCircularSchemaDefinitions();
     }
@@ -185,5 +190,10 @@ public class AppSearchConfigImpl implements AppSearchConfig {
         return mPersistToDiskRecoveryProof
                 ? PersistType.Code.RECOVERY_PROOF
                 : PersistType.Code.LITE;
+    }
+
+    @Override
+    public int getCompressionThresholdBytes() {
+        return mIcingOptionsConfig.getCompressionThresholdBytes();
     }
 }

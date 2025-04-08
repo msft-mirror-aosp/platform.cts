@@ -193,6 +193,12 @@ public final class FakeAppSearchConfig implements ServiceAppSearchConfig {
     }
 
     @Override
+    public int getCompressionMemLevel() {
+        throwIfClosed();
+        return defaultCompressionMemLevel();
+    }
+
+    @Override
     public boolean getAllowCircularSchemaDefinitions() {
         throwIfClosed();
         return Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE;
@@ -317,6 +323,12 @@ public final class FakeAppSearchConfig implements ServiceAppSearchConfig {
     @Override
     public PersistType.@NonNull Code getLightweightPersistType() {
         return PersistType.Code.LITE;
+    }
+
+    @Override
+    public int getCompressionThresholdBytes() {
+        throwIfClosed();
+        return DEFAULT_COMPRESSION_THRESHOLD_BYTES;
     }
 
     private void throwIfClosed() {
