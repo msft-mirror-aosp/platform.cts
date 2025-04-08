@@ -179,6 +179,9 @@ public class NotificationTest {
         if (Flags.apiRichOngoing()) {
             builder.setShortCriticalText(SHORT_CRITICAL_TEXT);
         }
+        if (Flags.nmSummarization()) {
+            builder.setHasSummarizedContent(true);
+        }
         mNotification = builder.build();
         mNotification.icon = 0;
         mNotification.number = 1;
@@ -242,6 +245,7 @@ public class NotificationTest {
         assertNotNull(result.getBubbleMetadata());
         assertEquals(mNotification.getAllowSystemGeneratedContextualActions(),
                 result.getAllowSystemGeneratedContextualActions());
+        assertTrue(mNotification.hasSummarizedContent());
 
         mNotification.contentIntent = null;
         parcel = Parcel.obtain();
