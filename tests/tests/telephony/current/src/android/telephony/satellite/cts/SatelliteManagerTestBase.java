@@ -2460,15 +2460,14 @@ public class SatelliteManagerTestBase {
                         SubscriptionManager.IS_ONLY_NTN,
                         false,
                         getContext());
-        logd("enableNtnOnlySubscription: sOriginalNtnOnlyState="
-                        + isNtnOnly
-                        + ", sNtnOnlySubId="
-                        + sNtnOnlySubId);
+        logd("enableNtnOnlySubscription: original isNtnOnly="
+                 + isNtnOnly + ", subId=" + subId);
         if (isNtnOnly) {
             logd("enableNtnOnlySubscription: subId=" + subId + " is already NTN only");
             return;
         }
 
+        // Enable NTN only subscription
         UiAutomation ui = InstrumentationRegistry.getInstrumentation().getUiAutomation();
         try {
             ui.adoptShellPermissionIdentity();
@@ -2620,31 +2619,10 @@ public class SatelliteManagerTestBase {
 
     protected static void overrideSatelliteAccessForNtnOnlySubscription(int subId) {
         assumeTrue(subId != SubscriptionManager.INVALID_SUBSCRIPTION_ID);
-        grantSatellitePermission();
-        // Check if device has selected a binding satellite subscription
-        boolean shouldWaitForSelectedSatelliteSubChanged = !isSatelliteSubscriptionSelected();
-
-        // Register callback for satellite subscription id changed event
-        SelectedNbIotSatelliteSubscriptionCallbackTest selectedNbIotSatelliteSubCallback = null;
-        if (shouldWaitForSelectedSatelliteSubChanged) {
-            selectedNbIotSatelliteSubCallback =
-                    registerForSelectedNbIotSatelliteSubscriptionChanged();
-        }
-
         String subIdListStr = String.valueOf(subId);
         logd("overrideSatelliteAccessForNtnOnlySubscription: subIdListStr=" + subIdListStr);
         assertTrue(sMockSatelliteServiceManager.setSatelliteAccessAllowedForSubscriptions(
                 subIdListStr));
-
-        if (shouldWaitForSelectedSatelliteSubChanged)  {
-            // Overrding satellite access for NTN only subscription should trigger the
-            // selected satellite subscription changed event.
-            assertNotNull(selectedNbIotSatelliteSubCallback);
-            assertTrue(selectedNbIotSatelliteSubCallback.waitUntilResult(1));
-            logd("overrideSatelliteAccessForNtnOnlySubscription: selectedSatelliteSubId="
-                    + selectedNbIotSatelliteSubCallback.mSelectedSubId);
-            assertEquals(subId, selectedNbIotSatelliteSubCallback.mSelectedSubId);
-        }
     }
 
     protected static void enableSatelliteAccessForEsosSubscription(int subId) {
@@ -2674,6 +2652,10 @@ public class SatelliteManagerTestBase {
             logd("overrideSatelliteAccessForEsosSubscription: selectedSatelliteSubId="
                     + selectedNbIotSatelliteSubCallback.mSelectedSubId);
             assertEquals(subId, selectedNbIotSatelliteSubCallback.mSelectedSubId);
+
+            // Unregister the callback
+            sSatelliteManager.unregisterForSelectedNbIotSatelliteSubscriptionChanged(
+                    selectedNbIotSatelliteSubCallback);
         }
     }
 
@@ -2796,8 +2778,36 @@ public class SatelliteManagerTestBase {
     protected static void setUpNtnOnlySubscription() {
         logd("setUpNtnOnlySubscription");
         assumeTrue(sNtnOnlySubId != SubscriptionManager.INVALID_SUBSCRIPTION_ID);
+
+        grantSatellitePermission();
+        // Check if device has selected a binding satellite subscription
+        boolean shouldWaitForSelectedSatelliteSubChanged = !isSatelliteSubscriptionSelected();
+        // Register callback for satellite subscription id changed event
+        SelectedNbIotSatelliteSubscriptionCallbackTest selectedNbIotSatelliteSubCallback = null;
+        if (shouldWaitForSelectedSatelliteSubChanged) {
+            selectedNbIotSatelliteSubCallback =
+                    registerForSelectedNbIotSatelliteSubscriptionChanged();
+        }
+
         enableNtnOnlySubscription(sNtnOnlySubId);
+        grantSatellitePermission();
         overrideSatelliteAccessForNtnOnlySubscription(sNtnOnlySubId);
+
+        if (shouldWaitForSelectedSatelliteSubChanged)  {
+            // Enabling NTN only subscription and overrding satellite access for this subscription
+            // should trigger the selected satellite subscription changed event.
+            assertNotNull(selectedNbIotSatelliteSubCallback);
+            assertTrue(selectedNbIotSatelliteSubCallback.waitUntilResult(1));
+            logd("setUpNtnOnlySubscription: selectedSatelliteSubId="
+                    + selectedNbIotSatelliteSubCallback.mSelectedSubId);
+            assertNotEquals(SubscriptionManager.INVALID_SUBSCRIPTION_ID,
+                selectedNbIotSatelliteSubCallback.mSelectedSubId);
+
+            // Unregister the callback
+            sSatelliteManager.unregisterForSelectedNbIotSatelliteSubscriptionChanged(
+                    selectedNbIotSatelliteSubCallback);
+        }
+
         if (!isSatelliteProvisioned()) {
             logd("setUpNtnOnlySubscription: Provision satellite");
             assertTrue(provisionSatellite());
@@ -2824,6 +2834,10 @@ public class SatelliteManagerTestBase {
             logd("setUpEsosSubscription: selectedSatelliteSubId="
                     + selectedNbIotSatelliteSubCallback.mSelectedSubId);
             assertEquals(sEsosSubId, selectedNbIotSatelliteSubCallback.mSelectedSubId);
+
+            // Unregister the callback
+            sSatelliteManager.unregisterForSelectedNbIotSatelliteSubscriptionChanged(
+                selectedNbIotSatelliteSubCallback);
         } else {
             logd("setUpEsosSubscription: Satellite already provisioned for subId="
                      + sEsosSubId);
