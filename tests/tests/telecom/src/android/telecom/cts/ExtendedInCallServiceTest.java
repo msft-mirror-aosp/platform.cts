@@ -46,8 +46,6 @@ import android.util.Log;
 
 import androidx.test.filters.FlakyTest;
 
-import com.android.server.telecom.flags.Flags;
-
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.Executor;
@@ -507,7 +505,7 @@ public class ExtendedInCallServiceTest extends BaseTelecomTestWithMockServices {
     }
 
     public void testSwitchCallEndpoint() {
-        if (!mShouldTestTelecom || !Flags.earlyUpdateInternalCallAudioState()) {
+        if (!mShouldTestTelecom) {
             return;
         }
 
