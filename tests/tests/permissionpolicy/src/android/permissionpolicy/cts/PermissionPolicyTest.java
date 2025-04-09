@@ -103,6 +103,12 @@ public class PermissionPolicyTest {
     private static final Set<String> sBackportedPermissions =
             Set.of(
                 "android.permission.THREAD_NETWORK_PRIVILEGED",
+                // Permission backported for Android XR.
+                "android.permission.ACCESS_CONTEXTUAL_SEARCH",
+                "android.permission.BIND_APP_FUNCTION_SERVICE",
+                "android.permission.EXECUTE_APP_FUNCTIONS",
+                "android.permission.MANAGE_DEVICE_POLICY_APP_FUNCTIONS",
+                "android.permission.OVERRIDE_SYSTEM_KEY_BEHAVIOR_IN_FOCUSED_WINDOW",
                 // Android XR specific permissions.
                 "android.permission.EYE_TRACKING_COARSE",
                 "android.permission.EYE_TRACKING_FINE",

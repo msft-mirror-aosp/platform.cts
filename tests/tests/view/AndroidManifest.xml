@@ -202,7 +202,7 @@
              android:screenOrientation="portrait"
              android:resizeableActivity="false"
              android:rotationAnimation="jumpcut"
-             android:theme="@android:style/Theme.DeviceDefault.NoActionBar"
+             android:theme="@android:style/Theme.DeviceDefault.NoActionBar.Fullscreen"
              android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize"/>
 
         <activity android:name="android.view.cts.PixelCopyWideGamutViewProducerActivity"
