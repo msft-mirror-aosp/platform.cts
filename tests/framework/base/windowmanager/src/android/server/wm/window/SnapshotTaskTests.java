@@ -99,11 +99,7 @@ public class SnapshotTaskTests extends ActivityManagerTestBase {
         boolean matchesPixels = false;
         while (retries < 5) {
             Bitmap bitmap = mWindowManager.snapshotTaskForRecents(mActivity.getTaskId());
-            // Check activity bounds since activity may not be taking fullscreen bounds which can
-            // happen when the activity is letterboxed. While the task may not be letterboxed, the
-            // activity can be with safe region letterboxing. So the task snapshot would match
-            // the fullscreen bounds but the activity bounds may not match.
-            Rect boundToCheck = mActivity.getWindowManager().getCurrentWindowMetrics().getBounds();
+            Rect boundToCheck =  new Rect(0, 0, bitmap.getWidth(), bitmap.getHeight());
             // Even when the activity requests immersive mode, the bars may or may not be hidden
             // depending on the form-factor.
             boundToCheck.inset(mActivity.getSystemBarOverlaps());
