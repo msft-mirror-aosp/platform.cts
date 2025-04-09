@@ -19,7 +19,6 @@ package android.telephony.satellite.cts;
 import static android.telephony.mockmodem.MockSimService.MOCK_SIM_PROFILE_ID_TWN_CHT;
 import static android.telephony.satellite.SatelliteManager.SATELLITE_COMMUNICATION_RESTRICTION_REASON_ENTITLEMENT;
 import static android.telephony.satellite.SatelliteManager.SATELLITE_COMMUNICATION_RESTRICTION_REASON_GEOLOCATION;
-import static android.telephony.satellite.SatelliteManager.SATELLITE_DISALLOWED_REASON_UNSUPPORTED_DEFAULT_MSG_APP;
 import static android.telephony.satellite.SatelliteManager.SATELLITE_RESULT_ACCESS_BARRED;
 import static android.telephony.satellite.SatelliteManager.SATELLITE_RESULT_DISABLE_IN_PROGRESS;
 import static android.telephony.satellite.SatelliteManager.SATELLITE_RESULT_ENABLE_IN_PROGRESS;
@@ -51,19 +50,14 @@ import static org.junit.Assume.assumeTrue;
 import android.Manifest;
 import android.annotation.NonNull;
 import android.annotation.Nullable;
-import android.app.AppOpsManager;
 import android.app.UiAutomation;
 import android.bluetooth.BluetoothAdapter;
 import android.content.BroadcastReceiver;
-import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.hardware.radio.RadioError;
-import android.location.Location;
-import android.location.LocationManager;
-import android.location.provider.ProviderProperties;
 import android.net.ConnectivityManager;
 import android.net.wifi.WifiManager;
 import android.nfc.NfcAdapter;
@@ -80,7 +74,6 @@ import android.telephony.CarrierConfigManager;
 import android.telephony.SubscriptionInfo;
 import android.telephony.SubscriptionManager;
 import android.telephony.TelephonyManager;
-import android.telephony.cts.SatelliteReceiver;
 import android.telephony.cts.TelephonyManagerTest.ServiceStateRadioStateListener;
 import android.telephony.mockmodem.MockModemManager;
 import android.telephony.satellite.AntennaDirection;
@@ -109,9 +102,6 @@ import android.uwb.UwbManager;
 
 import androidx.test.InstrumentationRegistry;
 
-import com.android.compatibility.common.util.LocationUtils;
-import com.android.compatibility.common.util.ShellIdentityUtils;
-import com.android.internal.telephony.SmsApplication;
 import com.android.internal.telephony.flags.Flags;
 import com.android.internal.telephony.satellite.DatagramController;
 import com.android.internal.telephony.satellite.SatelliteServiceUtils;
@@ -185,6 +175,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
             "file:///cts_test_01212025-test-v15-telephony_config.pb";
     private static final String TEST_V15_CONFIG_DATA_METADATA_LOCAL_URI =
             "file:///cts_test_01212025-test-v15-telephony_config-metadata.txt";
+    private static final String PACKAGE_CONFIGUPDATER = "com.google.android.configupdater";
 
     private static final int SUB_ID = SubscriptionManager.DEFAULT_SUBSCRIPTION_ID;
 
@@ -4385,10 +4376,13 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         return verificationConfigForUs;
     }
 
-    @Ignore("b/404901907 - Need to fix and re-enable this test.")
     @Test
-    public void testSatelliteAccessControllerLoadSatelliteAccessData() throws Exception {
+    public void testSatelliteAccessControllerLoadSatelliteAccessData() {
         logd("testSatelliteAccessControllerLoadSatelliteAccessData");
+        logd(
+                "testSatelliteAccessControllerLoadSatelliteAccessData: "
+                        + "check if configupdater is installed");
+        assumeTrue(isAppInstalled(PACKAGE_CONFIGUPDATER));
 
         // Get rid of the overridden test satellite configs, as we are going
         // to use actual on-device and ota'd satellite configs in this test
@@ -4410,12 +4404,20 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         long registerResultAllowState =
                 sSatelliteManager.registerForCommunicationAccessStateChanged(
                         getContext().getMainExecutor(), allowStateCallback);
+
         assertEquals(SatelliteManager.SATELLITE_RESULT_SUCCESS, registerResultAllowState);
+        assertTrue(
+                allowStateCallback.waitUntilSatelliteAccessConfigurationChangedEvent(1, timeOut));
+        allowStateCallback.waitUntilResult(1);
+        SatelliteAccessConfiguration notifiedSatelliteAccessConfiguration =
+                allowStateCallback.getSatelliteAccessConfiguration();
+        assertNull(notifiedSatelliteAccessConfiguration);
 
         logd(
                 "testSatelliteAccessControllerLoadSatelliteAccessData: override the config data "
                         + "version so that the new config data can be accepted by Telephony");
         assertTrue(sMockSatelliteServiceManager.overrideConfigDataVersion(false, 0));
+        allowStateCallback.drainPermits();
 
         logd(
                 "testSatelliteAccessControllerLoadSatelliteAccessData:"
@@ -4425,12 +4427,10 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
                 sMockSatelliteServiceManager.updateTelephonyConfig(
                         TEST_V14_CONFIG_DATA_CONTENT_LOCAL_URI,
                         TEST_V14_CONFIG_DATA_METADATA_LOCAL_URI));
-        waitFor(1000);
 
         assertTrue(
                 allowStateCallback.waitUntilSatelliteAccessConfigurationChangedEvent(1, timeOut));
-        SatelliteAccessConfiguration notifiedSatelliteAccessConfiguration =
-                allowStateCallback.getSatelliteAccessConfiguration();
+        notifiedSatelliteAccessConfiguration = allowStateCallback.getSatelliteAccessConfiguration();
         assertNull(notifiedSatelliteAccessConfiguration);
         verifyIsSatelliteAllowed(false);
 
@@ -4464,11 +4464,12 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         logd(
                 "testSatelliteAccessControllerLoadSatelliteAccessData:"
                         + "request Telephony to download config data v15 support only US");
+        allowStateCallback.drainPermits();
+
         assertTrue(
                 sMockSatelliteServiceManager.updateTelephonyConfig(
                         TEST_V15_CONFIG_DATA_CONTENT_LOCAL_URI,
                         TEST_V15_CONFIG_DATA_METADATA_LOCAL_URI));
-        waitFor(1000);
 
         logd("wait for callback for V15");
         assertTrue(
