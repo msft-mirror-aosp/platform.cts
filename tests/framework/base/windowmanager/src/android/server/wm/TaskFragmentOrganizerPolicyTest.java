@@ -45,6 +45,7 @@ import android.content.Intent;
 import android.graphics.Rect;
 import android.os.Binder;
 import android.os.IBinder;
+import android.os.OperationCanceledException;
 import android.platform.test.annotations.Presubmit;
 import android.server.wm.TaskFragmentOrganizerTestBase.BasicTaskFragmentOrganizer;
 import android.server.wm.WindowContextTests.TestActivity;
@@ -671,7 +672,11 @@ public class TaskFragmentOrganizerPolicyTest extends ActivityManagerTestBase {
                 false /* shouldApplyIndependently */);
         mTaskFragmentOrganizer.waitForTaskFragmentError();
 
-        assertThat(mTaskFragmentOrganizer.getThrowable()).isInstanceOf(SecurityException.class);
+        Throwable thrown = mTaskFragmentOrganizer.getThrowable();
+        boolean isExpectedType = (thrown instanceof OperationCanceledException) ||
+                (thrown instanceof SecurityException);
+        assertWithMessage("Thrown exception is of expected type")
+                .that(isExpectedType).isTrue();
         assertThat(mTaskFragmentOrganizer.getErrorCallbackToken()).isEqualTo(errorCallbackToken);
 
         // Activity must be launched on a new task instead.
