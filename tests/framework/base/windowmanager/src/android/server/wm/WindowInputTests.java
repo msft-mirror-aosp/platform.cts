@@ -16,10 +16,8 @@
 
 package android.server.wm;
 
-import static android.server.wm.ActivityManagerTestBase.launchHomeActivityNoWait;
 import static android.server.wm.BarTestUtils.assumeHasStatusBar;
-import static android.server.wm.UiDeviceUtils.pressUnlockButton;
-import static android.server.wm.UiDeviceUtils.pressWakeupButton;
+import static android.server.wm.UiDeviceUtils.wakeUpAndUnlock;
 import static android.server.wm.WindowUntrustedTouchTest.MIN_POSITIVE_OPACITY;
 import static android.server.wm.app.Components.OverlayTestService.EXTRA_LAYOUT_PARAMS;
 import static android.view.WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN;
@@ -39,6 +37,7 @@ import static org.junit.Assert.fail;
 import android.app.Activity;
 import android.app.Instrumentation;
 import android.content.ContentResolver;
+import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.Insets;
@@ -107,13 +106,11 @@ public class WindowInputTests {
 
     @Before
     public void setUp() {
-        pressWakeupButton();
-        pressUnlockButton();
-        launchHomeActivityNoWait();
-
         mInstrumentation = getInstrumentation();
+        Context context = mInstrumentation.getTargetContext();
+        mInputManager = context.getSystemService(InputManager.class);
+        wakeUpAndUnlock(context);
         mActivity = mActivityRule.launchActivity(null);
-        mInputManager = mActivity.getSystemService(InputManager.class);
         mInstrumentation.waitForIdleSync();
         mClickCount = 0;
     }
