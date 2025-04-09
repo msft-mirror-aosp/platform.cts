@@ -137,14 +137,14 @@ public class HDREncoderTestBase extends CodecEncoderTestBase {
         queueEOS();
         waitForAllOutputs();
 
-        MediaFormat fmt = mCodec.getOutputFormat();
+        MediaFormat outFormat = mCodec.getOutputFormat();
 
         mCodec.stop();
         mCodec.release();
 
         // verify if the out fmt contains HDR Static info as expected
         if (mHdrStaticInfo != null) {
-            validateHDRInfo(fmt, MediaFormat.KEY_HDR_STATIC_INFO, mHdrStaticInfo, -1L);
+            validateHDRInfo(outFormat, MediaFormat.KEY_HDR_STATIC_INFO, mHdrStaticInfo, -1L);
         }
 
         // verify if the out fmt contains HDR Dynamic info as expected
@@ -154,9 +154,10 @@ public class HDREncoderTestBase extends CodecEncoderTestBase {
             for (Map.Entry<Long, String> entry : mHdrDynamicInfo.entrySet()) {
                 Long pts = entry.getKey();
                 if (mMediaType.equals(MediaFormat.MIMETYPE_VIDEO_VP9)) {
-                    assertTrue("At timestamp : " + pts + " application queued hdr10+ metadata,"
-                            + " during dequeue application did not receive it in output format",
-                            mHdrDynamicInfoReceived.containsKey(pts));
+                   assertTrue("At timestamp : " + pts
+                       + " application queued hdr10+ metadata, during dequeue application"
+                       + " did not receive it in output format\n"
+                       + mTestConfig + mTestEnv, mHdrDynamicInfoReceived.containsKey(pts));
                 }
                 if (mHdrDynamicInfoReceived.containsKey(pts)) {
                     ByteBuffer hdrInfoRef =
@@ -170,9 +171,9 @@ public class HDREncoderTestBase extends CodecEncoderTestBase {
 
         // verify if the muxed file contains HDR metadata as expected
         MediaCodecList codecList = new MediaCodecList(MediaCodecList.REGULAR_CODECS);
-        String decoder = codecList.findDecoderForFormat(format);
-        assertNotNull("Device advertises support for encoding " + format + " but not decoding it \n"
-                + mTestConfig + mTestEnv, decoder);
+        String decoder = codecList.findDecoderForFormat(outFormat);
+        assertNotNull("Device advertises support for encoding " + outFormat + " but not "
+                + "decoding it \n" +  mTestConfig + mTestEnv, decoder);
 
         HDRDecoderTestBase decoderTest =
                 new HDRDecoderTestBase(decoder, mMediaType, mMuxedOutputFile, mAllTestParams);

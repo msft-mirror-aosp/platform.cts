@@ -380,8 +380,8 @@ public class EncoderColorAspectsTest extends CodecEncoderTestBase {
             }
 
             // verify if the out fmt contains color aspects as expected
-            MediaFormat fmt = mCodec.getOutputFormat();
-            validateColorAspects(fmt, mActiveEncCfg.mRange, mActiveEncCfg.mStandard,
+            MediaFormat outFormat = mCodec.getOutputFormat();
+            validateColorAspects(outFormat, mActiveEncCfg.mRange, mActiveEncCfg.mStandard,
                     mActiveEncCfg.mTransfer);
             mCodec.stop();
             mCodec.release();
@@ -392,13 +392,13 @@ public class EncoderColorAspectsTest extends CodecEncoderTestBase {
                 String tmpPath = getTempFilePath((mActiveEncCfg.mInputBitDepth == 10) ? "10bit"
                                                                                       : "");
                 mTmpFiles.add(tmpPath);
-                muxOutput(tmpPath, muxerFormat, fmt, mOutputBuff.getBuffer(), mInfoList);
+                muxOutput(tmpPath, muxerFormat, outFormat, mOutputBuff.getBuffer(), mInfoList);
 
                 // verify if the muxed file contains color aspects as expected
                 MediaCodecList codecList = new MediaCodecList(MediaCodecList.REGULAR_CODECS);
-                String decoder = codecList.findDecoderForFormat(mActiveEncCfg.getFormat());
-                assertNotNull("Device advertises support for encoding " + mActiveEncCfg.getFormat()
-                        + " but not decoding it. \n" + mTestConfig + mTestEnv, decoder);
+                String decoder = codecList.findDecoderForFormat(outFormat);
+                assertNotNull("Device advertises support for encoding " + outFormat + " but not "
+                        + "decoding it. \n" + mTestConfig + mTestEnv, decoder);
                 CodecDecoderTestBase cdtb = new CodecDecoderTestBase(decoder, mMediaType, tmpPath,
                         mAllTestParams);
                 cdtb.validateColorAspects(mActiveEncCfg.mRange, mActiveEncCfg.mStandard,
