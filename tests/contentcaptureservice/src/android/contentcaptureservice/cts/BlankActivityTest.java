@@ -36,10 +36,15 @@ import android.content.ComponentName;
 import android.content.Intent;
 import android.contentcaptureservice.cts.CtsContentCaptureService.Session;
 import android.platform.test.annotations.AppModeFull;
+import android.platform.test.annotations.RequiresFlagsDisabled;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.DeviceConfig;
 import android.support.test.uiautomator.UiDevice;
 import android.util.Log;
 import android.view.contentcapture.ContentCaptureManager;
+import android.view.contentcapture.flags.Flags;
 
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.rule.ActivityTestRule;
@@ -51,6 +56,7 @@ import com.android.compatibility.common.util.PollingCheck;
 
 import org.junit.Before;
 import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -66,6 +72,10 @@ public class BlankActivityTest
 
     private static final ActivityTestRule<BlankActivity> sActivityRule = new ActivityTestRule<>(
             BlankActivity.class, false, false);
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule =
+            DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private UiDevice mDevice;
 
@@ -281,11 +291,58 @@ public class BlankActivityTest
         deviceConfigStateManager.set(originalConfigVal);
     }
 
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_SYSTEM_UI_UNDERLAY)
+    public void testCreateUnderlay_flagEnabled() throws Exception {
+        final CtsContentCaptureService service = enableService();
+        service.waitUntilConnected();
+
+        final ActivityWatcher watcher = startWatcher();
+
+        BlockingBroadcastReceiver receiver1 = registerCreateUnderlayReceiver();
+
+        final BlankActivity activity = launchActivity();
+        watcher.waitFor(RESUMED);
+
+        // Verify the broadcast is received.
+        assertCreateUnderlayIntent(receiver1.awaitForBroadcast(5000));
+    }
+
+    @Test
+    @RequiresFlagsDisabled(Flags.FLAG_ENABLE_SYSTEM_UI_UNDERLAY)
+    public void testCreateUnderlay_flagDisabled() throws Exception {
+        final CtsContentCaptureService service = enableService();
+        service.waitUntilConnected();
+
+        final ActivityWatcher watcher = startWatcher();
+
+        BlockingBroadcastReceiver receiver1 = registerCreateUnderlayReceiver();
+
+        final BlankActivity activity = launchActivity();
+        watcher.waitFor(RESUMED);
+
+        assertThat(receiver1.awaitForBroadcast(5000)).isNull();
+    }
+
     private BlockingBroadcastReceiver registerResultReceiver() {
         final String action = "ACTION_ACTIVITY_CC_STATUS_TEST";
         BlockingBroadcastReceiver receiver = new BlockingBroadcastReceiver(sContext, action);
         receiver.register();
         return receiver;
+    }
+
+    private BlockingBroadcastReceiver registerCreateUnderlayReceiver() {
+        final String action = "com.systemui.underlay.action.CREATE_UNDERLAY";
+        BlockingBroadcastReceiver receiver = new BlockingBroadcastReceiver(sContext, action);
+        receiver.register();
+        return receiver;
+    }
+
+    private void assertCreateUnderlayIntent(Intent intent) {
+        assertThat(intent).isNotNull();
+        assertThat(intent.getAction()).isEqualTo("com.systemui.underlay.action.CREATE_UNDERLAY");
+        assertThat(intent.getIntExtra("dataSessionId", -1)).isNotEqualTo(-1);
+        assertThat(intent.getLongExtra("timestamp", -1)).isNotEqualTo(-1);
     }
 
     private void startOutsideActivity(boolean finishActivity) {

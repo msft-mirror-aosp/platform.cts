@@ -114,9 +114,8 @@ public class ActivityEmbeddingPlaceholderTests extends ActivityEmbeddingTestBase
 
         // Launch the primary activity and verify that the placeholder activity was not launched and
         // the primary activity fills the task.
-        Activity primaryActivity = startActivityNewTaskInMultiWindowWithBounds(
-                TestActivityWithId.class, PRIMARY_ACTIVITY_ID, null /* displayId */,
-                null /* bounds */);
+        Activity primaryActivity = startFullScreenActivityNewTask(
+                TestActivityWithId.class, PRIMARY_ACTIVITY_ID, null /* displayId */);
         waitAndAssertNotResumed(PLACEHOLDER_ACTIVITY_ID);
         waitAndAssertResumedAndFillsTask(primaryActivity);
     }
@@ -239,6 +238,7 @@ public class ActivityEmbeddingPlaceholderTests extends ActivityEmbeddingTestBase
     public void testPlaceholderLaunchedWhenTaskWidthIncreased() {
         // Start an Activity in multi-window mode
         Log.d(TAG, "Start Activity");
+        // TODO(b/397120232): Investigate whether we can change this to full screen launch.
         final Activity primaryActivity =
                 startActivityNewTaskInMultiWindowWithBounds(
                         TestActivityWithId.class,
@@ -246,7 +246,7 @@ public class ActivityEmbeddingPlaceholderTests extends ActivityEmbeddingTestBase
                         getLaunchingDisplayId(),
                         null /* bounds */);
 
-        // Resize the task to half width/height
+        // Resize the task to half width/height in prep for the enlargement later.
         final Rect initialTaskBounds =
                 waitAndGetTaskBounds(primaryActivity, true /* shouldWaitForResume */);
         final Rect taskBounds =
@@ -437,8 +437,8 @@ public class ActivityEmbeddingPlaceholderTests extends ActivityEmbeddingTestBase
             @NonNull String primaryActivityId, @NonNull String placeholderActivityId,
             @NonNull SplitPlaceholderRule splitPlaceholderRule) {
         // Launch the primary activity
-        startActivityNewTaskInMultiWindowWithBounds(TestActivityWithId.class, primaryActivityId,
-                getLaunchingDisplayId(), null /* bounds */);
+        startFullScreenActivityNewTask(TestActivityWithId.class, primaryActivityId,
+                getLaunchingDisplayId());
         // Get primary activity
         waitAndAssertResumed(primaryActivityId);
         Activity primaryActivity = getResumedActivityById(primaryActivityId);

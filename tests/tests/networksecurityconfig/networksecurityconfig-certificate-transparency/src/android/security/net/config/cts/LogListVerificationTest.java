@@ -18,6 +18,7 @@ package android.security.net.config.cts;
 
 import static android.security.net.config.cts.CertificateTransparencyTestUtils.HTTP_OK_RESPONSE_CODE;
 import static android.security.net.config.cts.CertificateTransparencyTestUtils.SCT_PROVIDED_DOMAIN;
+import static android.security.net.config.cts.CertificateTransparencyTestUtils.SCT_PROVIDED_DOMAIN_2;
 import static android.security.net.config.cts.CertificateTransparencyTestUtils.isLogListFilePresent;
 
 import static org.junit.Assert.assertEquals;
@@ -58,25 +59,37 @@ public class LogListVerificationTest extends BaseTestCase {
     public void testCTVerification_whenLogListPresent_sctDomain_connectionSucceeds()
             throws IOException {
         assumeTrue(isLogListFilePresent());
+        // Check multiple domains as part of the retrospective for b/408109183
         URL url = new URL(SCT_PROVIDED_DOMAIN);
+        URL url2 = new URL(SCT_PROVIDED_DOMAIN_2);
 
         HttpsURLConnection urlConnection = (HttpsURLConnection) url.openConnection();
+        HttpsURLConnection urlConnection2 = (HttpsURLConnection) url2.openConnection();
         urlConnection.connect();
+        urlConnection2.connect();
 
         assertEquals(urlConnection.getResponseCode(), HTTP_OK_RESPONSE_CODE);
+        assertEquals(urlConnection2.getResponseCode(), HTTP_OK_RESPONSE_CODE);
         urlConnection.disconnect();
+        urlConnection2.disconnect();
     }
 
     @Test
     public void testCTVerification_whenLogListAbsent_sctDomain_failsOpen() throws IOException {
         assumeFalse(isLogListFilePresent());
+        // Check multiple domains as part of the retrospective for b/408109183
         URL url = new URL(SCT_PROVIDED_DOMAIN);
+        URL url2 = new URL(SCT_PROVIDED_DOMAIN_2);
 
         HttpsURLConnection urlConnection = (HttpsURLConnection) url.openConnection();
+        HttpsURLConnection urlConnection2 = (HttpsURLConnection) url2.openConnection();
         urlConnection.connect();
+        urlConnection2.connect();
 
         assertEquals(urlConnection.getResponseCode(), HTTP_OK_RESPONSE_CODE);
+        assertEquals(urlConnection2.getResponseCode(), HTTP_OK_RESPONSE_CODE);
         urlConnection.disconnect();
+        urlConnection2.disconnect();
     }
 
     @Test
@@ -100,6 +113,7 @@ public class LogListVerificationTest extends BaseTestCase {
                 "RSA",
                 url.getHost());
 
+        // No assert needed as any failure would result in an exception being thrown
         urlConnection.disconnect();
     }
 }

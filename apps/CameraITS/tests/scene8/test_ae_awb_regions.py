@@ -223,7 +223,7 @@ class AeAwbRegions(its_base_test.ItsBaseTest):
 
       # Define AE/AWB metering regions
       chart_path = f'{test_name_with_log_path}_chart_boundary.jpg'
-      ae_awb_regions = image_processing_utils.define_regions(
+      ae_awb_regions = opencv_processing_utils.define_regions(
           img, img_path, chart_path, props, width, height)
 
       # Do preview recording with pre-defined AE/AWB regions

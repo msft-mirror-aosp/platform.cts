@@ -84,4 +84,7 @@
     <!-- b/377770233 -->
     <option name="compatibility:exclude-filter" value="CtsPackageManagerTestCases android.content.pm.cts.PackageManagerShellCommandIncrementalTest#testInstallWithIdSigStreamPerUidTimeoutsIncompleteData" />
 
+    <!-- b/395524060 -->
+    <option name="compatibility:exclude-filter" value="CtsMediaV2TestCases android.mediav2.cts.CodecDecoderSurfaceTest#testDetachAndReattachSurface" />
+
 </configuration>
