@@ -55,7 +55,7 @@ public class ForegroundEmbeddingActivity extends Activity {
                 Intent[] intents = intent.getParcelableArrayExtra(
                         mA.FOREGROUND_ACTIVITY_EXTRA.LAUNCH_INTENTS, Intent.class);
                 startActivityInSplit(intents);
-            } else if (mA.FOREGROUND_ACTIVITY_ACTIONS.FINISH_ACTIVITY.equals(action)) {
+            } else if (mA.FOREGROUND_EMBEDDING_ACTIVITY_ACTIONS.FINISH_ACTIVITY.equals(action)) {
                 finish();
             }
         }

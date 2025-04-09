@@ -1215,10 +1215,10 @@ public class BackgroundActivityLaunchTest extends BackgroundActivityTestBase {
     @Test
     @AsbSecurityTest(cveBugId = 271576718)
     public void testPipCannotStartFromBackground() throws Exception {
-        startActivity(APP_A.LAUNCH_INTO_PIP_ACTIVITY);
+        startActivity(APP_A.FOREGROUND_ACTIVITY);
 
         pressHomeAndWaitHomeResumed();
-        assertActivityNotFocused(APP_A.LAUNCH_INTO_PIP_ACTIVITY);
+        assertActivityNotFocused(APP_A.FOREGROUND_ACTIVITY);
 
         ActivityOptions options = ActivityOptions.makeLaunchIntoPip(
                 new PictureInPictureParams.Builder().build());
