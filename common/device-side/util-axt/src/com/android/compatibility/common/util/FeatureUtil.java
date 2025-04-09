@@ -21,9 +21,11 @@ import android.content.pm.FeatureInfo;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.os.Build;
+import android.os.SystemProperties;
 
 import androidx.test.InstrumentationRegistry;
 
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -105,6 +107,12 @@ public class FeatureUtil {
     /** Returns true if the device has feature XR_FEATURE */
     public static boolean isXrHeadset() {
         return hasSystemFeature(getPackageManager().FEATURE_XR_API_SPATIAL);
+    }
+
+    /** Returns true if the device is a tablet. */
+    public static boolean isTablet() {
+        return Arrays.asList(
+                SystemProperties.get("ro.build.characteristics").split(",")).contains("tablet");
     }
 
     /** Returns true if the device is a low ram device:
