@@ -895,6 +895,7 @@ public final class CompatChangeTests extends MultiDisplayTestBase {
      * the display, when the {@link ActivityInfo#FORCE_NON_RESIZE_APP} compat change is enabled.
      */
     @Test
+    @DisableCompatChanges({ActivityInfo.UNIVERSAL_RESIZABLE_BY_DEFAULT})
     @EnableCompatChanges({ActivityInfo.FORCE_NON_RESIZE_APP})
     public void testSizeCompatForResizeableActivityForceNonResizeEnabled() {
         runSizeCompatTest(RESIZEABLE_PORTRAIT_ACTIVITY, /* inSizeCompatModeAfterResize */ true);
@@ -906,6 +907,7 @@ public final class CompatChangeTests extends MultiDisplayTestBase {
      * change is enabled.
      */
     @Test
+    @DisableCompatChanges({ActivityInfo.UNIVERSAL_RESIZABLE_BY_DEFAULT})
     @EnableCompatChanges({ActivityInfo.FORCE_NON_RESIZE_APP})
     public void testSizeCompatForSupportsSizeChangesActivityForceNonResizeEnabled() {
         runSizeCompatTest(
