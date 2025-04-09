@@ -109,7 +109,7 @@ public class ForegroundActivity extends Activity {
     @Override
     public void onCreate(Bundle bundle) {
         super.onCreate(bundle);
-        TestService.onForegroundActivityCreated(this);
+        TestService.onForegroundActivityCreated(mActivityId, this);
         mA = Components.get(getApplicationContext());
 
         Intent intent = getIntent();
@@ -140,6 +140,6 @@ public class ForegroundActivity extends Activity {
     protected void onDestroy() {
         super.onDestroy();
         unregisterReceiver(mReceiver);
-        TestService.onForegroundActivityDestroyed(this);
+        TestService.onForegroundActivityDestroyed(mActivityId, this);
     }
 }

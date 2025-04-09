@@ -36,15 +36,15 @@ import android.view.textclassifier.TextClassification;
 import androidx.annotation.NonNull;
 
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class TestService extends Service {
     static final String TAG = TestService.class.getName();
     private final ITestService mBinder = new MyBinder();
 
     // The latest ForegroundActivity created. It is stored to start a PendingIntent.
-    private static final AtomicReference<Activity> sLatestForegroundActivity =
-            new AtomicReference<>();
+    private static final ConcurrentHashMap<Integer, Activity> sForegroundActivities =
+            new ConcurrentHashMap<>();
 
     @Override
     public IBinder onBind(Intent intent) {
@@ -52,18 +52,18 @@ public class TestService extends Service {
     }
 
     /** Notify that a foreground activity has been created. */
-    public static void onForegroundActivityCreated(Activity activity) {
-        sLatestForegroundActivity.set(activity);
+    public static void onForegroundActivityCreated(int id, Activity activity) {
+        sForegroundActivities.put(id, activity);
     }
 
     /** Notify that a foreground activity has been destroyed. */
-    public static void onForegroundActivityDestroyed(Activity activity) {
-        sLatestForegroundActivity.compareAndExchange(activity, null);
+    public static void onForegroundActivityDestroyed(int id, Activity activity) {
+        sForegroundActivities.remove(id, activity);
     }
 
     @NonNull
-    private static Activity getActivity() {
-        Activity activity = sLatestForegroundActivity.get();
+    private static Activity getActivity(int id) {
+        Activity activity = sForegroundActivities.get(id);
         if (activity == null) {
             throw new IllegalArgumentException("No running Activity.");
         }
@@ -131,10 +131,10 @@ public class TestService extends Service {
         }
 
         @Override
-        public void sendPendingIntentWithActivityForResult(PendingIntent pendingIntent,
-                Bundle sendOptions) {
+        public void sendPendingIntentWithActivityForResult(int activityId,
+                PendingIntent pendingIntent, Bundle sendOptions) {
             try {
-                getActivity().startIntentSenderForResult(
+                getActivity(activityId).startIntentSenderForResult(
                         pendingIntent.getIntentSender(),
                         /* requestCode */ 1,
                         /* fillinIntent */ null,
@@ -151,10 +151,10 @@ public class TestService extends Service {
         }
 
         @Override
-        public void sendPendingIntentWithActivity(PendingIntent pendingIntent,
+        public void sendPendingIntentWithActivity(int activityId, PendingIntent pendingIntent,
                 Bundle sendOptions) {
             try {
-                getActivity().startIntentSender(
+                getActivity(activityId).startIntentSender(
                         pendingIntent.getIntentSender(),
                         /* fillinIntent */ null,
                         /* flagsMask */ 0,
@@ -201,14 +201,15 @@ public class TestService extends Service {
         }
 
         @Override
-        public void startActivityIntent(Intent intent, Bundle options) {
+        public void startActivityIntent(int activityId, Intent intent, Bundle options) {
             try {
-                Activity activity = sLatestForegroundActivity.get();
-                if ((intent.getFlags() & Intent.FLAG_ACTIVITY_NEW_TASK) != 0) {
+                Activity activity = sForegroundActivities.get(activityId);
+                if (activity == null) {
+                    if ((intent.getFlags() & Intent.FLAG_ACTIVITY_NEW_TASK) == 0) {
+                        throw new IllegalArgumentException("startActivityIntent(" + intent
+                                + ") without FLAG_ACTIVITY_NEW_TASK and no running Activity.");
+                    }
                     startActivity(intent);
-                } else if (activity == null) {
-                    throw new IllegalArgumentException("startActivityIntent(" + intent
-                            + ") without FLAG_ACTIVITY_NEW_TASK and no running Activity.");
                 } else {
                     activity.startActivity(intent, options);
                 }
@@ -222,9 +223,9 @@ public class TestService extends Service {
         }
 
         @Override
-        public void finishActivity() {
+        public void finishActivity(int activityId) {
             try {
-                getActivity().finish();
+                getActivity(activityId).finish();
             } catch (IllegalArgumentException e) {
                 Log.w(TAG, "finishActivity failed", e);
                 throw e;

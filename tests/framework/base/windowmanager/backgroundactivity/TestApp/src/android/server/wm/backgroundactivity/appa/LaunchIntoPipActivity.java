@@ -28,6 +28,7 @@ import android.server.wm.backgroundactivity.common.TestService;
 
 public class LaunchIntoPipActivity extends Activity {
     private Components mA;
+    private int activityId = -1;
 
     private final BroadcastReceiver mReceiver = new BroadcastReceiver() {
         @Override
@@ -47,13 +48,13 @@ public class LaunchIntoPipActivity extends Activity {
         IntentFilter filter = new IntentFilter();
         filter.addAction(mA.LAUNCH_INTO_PIP_ACTIONS.LAUNCH_INTO_PIP);
         registerReceiver(mReceiver, filter, Context.RECEIVER_EXPORTED);
-        TestService.onForegroundActivityCreated(this);
+        TestService.onForegroundActivityCreated(activityId, this);
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
         unregisterReceiver(mReceiver);
-        TestService.onForegroundActivityDestroyed(this);
+        TestService.onForegroundActivityDestroyed(activityId, this);
     }
 }

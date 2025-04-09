@@ -72,6 +72,8 @@ public class Components extends ComponentsBase {
         public final String RELAUNCH_FOREGROUND_ACTIVITY_EXTRA =
                 "RELAUNCH_FOREGROUND_ACTIVITY_EXTRA";
 
+        public final int DEFAULT_ACTIVITY_ID = -1;
+
         // Keep in sync with  android.server.wm.backgroundactivity.common.CommonComponents
         // .CommonForegroundActivityExtras
         public final String ACTIVITY_ID = "ACTIVITY_ID_EXTRA";
