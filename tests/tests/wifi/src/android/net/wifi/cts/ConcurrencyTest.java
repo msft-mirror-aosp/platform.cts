@@ -356,6 +356,15 @@ public class ConcurrencyTest extends WifiJUnit4TestBase {
             resetResponse(MY_RESPONSE);
         }
 
+        if (WifiP2pManager.WIFI_P2P_DISCOVERY_STARTED == requestDiscoveryState()) {
+            Log.w(
+                    TAG,
+                    "Discovery process unexpectedly active before starting the test!"
+                            + " Stop discovery first.");
+            sWifiP2pManager.stopPeerDiscovery(sWifiP2pChannel, null);
+            Thread.sleep(1000);
+        }
+
         // for general connect command
         mTestWifiP2pPeerConfig = new WifiP2pConfig();
         mTestWifiP2pPeerConfig.deviceAddress = "aa:bb:cc:dd:ee:ff";
@@ -541,11 +550,8 @@ public class ConcurrencyTest extends WifiJUnit4TestBase {
         assertEquals(WifiP2pManager.WIFI_P2P_STATE_ENABLED, MY_RESPONSE.p2pState);
     }
 
-    @ApiTest(apis = {"android.net.wifi.p2p.WifiP2pManager#requestDiscoveryState",
-            "android.net.wifi.p2p.WifiP2pManager#discoverPeers",
-            "android.net.wifi.p2p.WifiP2pManager#stopPeerDiscovery"})
-    @Test
-    public void testRequestDiscoveryState() {
+    private int requestDiscoveryState() {
+        resetResponse(MY_RESPONSE);
         sWifiP2pManager.requestDiscoveryState(
                 sWifiP2pChannel, new WifiP2pManager.DiscoveryStateListener() {
                     @Override
@@ -558,7 +564,20 @@ public class ConcurrencyTest extends WifiJUnit4TestBase {
                     }
                 });
         assertTrue(waitForServiceResponse(MY_RESPONSE));
-        assertEquals(WifiP2pManager.WIFI_P2P_DISCOVERY_STOPPED, MY_RESPONSE.discoveryState);
+        int discoveryState = MY_RESPONSE.discoveryState;
+        resetResponse(MY_RESPONSE);
+        return discoveryState;
+    }
+
+    @ApiTest(
+            apis = {
+                "android.net.wifi.p2p.WifiP2pManager#requestDiscoveryState",
+                "android.net.wifi.p2p.WifiP2pManager#discoverPeers",
+                "android.net.wifi.p2p.WifiP2pManager#stopPeerDiscovery"
+            })
+    @Test
+    public void testRequestDiscoveryState() {
+        assertEquals(WifiP2pManager.WIFI_P2P_DISCOVERY_STOPPED, requestDiscoveryState());
 
         // If there is any saved network and this device is connecting to this saved network,
         // p2p discovery might be blocked during DHCP provision.
@@ -579,21 +598,7 @@ public class ConcurrencyTest extends WifiJUnit4TestBase {
         }
         assertTrue(MY_RESPONSE.success);
         assertTrue(waitForBroadcasts(MySync.DISCOVERY_STATE));
-
-        resetResponse(MY_RESPONSE);
-        sWifiP2pManager.requestDiscoveryState(sWifiP2pChannel,
-                new WifiP2pManager.DiscoveryStateListener() {
-                    @Override
-                    public void onDiscoveryStateAvailable(int state) {
-                        synchronized (MY_RESPONSE) {
-                            MY_RESPONSE.valid = true;
-                            MY_RESPONSE.discoveryState = state;
-                            MY_RESPONSE.notify();
-                        }
-                    }
-                });
-        assertTrue(waitForServiceResponse(MY_RESPONSE));
-        assertEquals(WifiP2pManager.WIFI_P2P_DISCOVERY_STARTED, MY_RESPONSE.discoveryState);
+        assertEquals(WifiP2pManager.WIFI_P2P_DISCOVERY_STARTED, requestDiscoveryState());
 
         sWifiP2pManager.stopPeerDiscovery(sWifiP2pChannel, null);
     }
@@ -949,20 +954,7 @@ public class ConcurrencyTest extends WifiJUnit4TestBase {
     public void testDiscoverPeersOnSpecificFreq() {
         if (!sWifiP2pManager.isChannelConstrainedDiscoverySupported()) return;
 
-        resetResponse(MY_RESPONSE);
-        sWifiP2pManager.requestDiscoveryState(
-                sWifiP2pChannel, new WifiP2pManager.DiscoveryStateListener() {
-                    @Override
-                    public void onDiscoveryStateAvailable(int state) {
-                        synchronized (MY_RESPONSE) {
-                            MY_RESPONSE.valid = true;
-                            MY_RESPONSE.discoveryState = state;
-                            MY_RESPONSE.notify();
-                        }
-                    }
-                });
-        assertTrue(waitForServiceResponse(MY_RESPONSE));
-        assertEquals(WifiP2pManager.WIFI_P2P_DISCOVERY_STOPPED, MY_RESPONSE.discoveryState);
+        assertEquals(WifiP2pManager.WIFI_P2P_DISCOVERY_STOPPED, requestDiscoveryState());
 
         // If there is any saved network and this device is connecting to this saved network,
         // p2p discovery might be blocked during DHCP provision.
@@ -984,21 +976,7 @@ public class ConcurrencyTest extends WifiJUnit4TestBase {
         }
         assertTrue(MY_RESPONSE.success);
         assertTrue(waitForBroadcasts(MySync.DISCOVERY_STATE));
-
-        resetResponse(MY_RESPONSE);
-        sWifiP2pManager.requestDiscoveryState(sWifiP2pChannel,
-                new WifiP2pManager.DiscoveryStateListener() {
-                    @Override
-                    public void onDiscoveryStateAvailable(int state) {
-                        synchronized (MY_RESPONSE) {
-                            MY_RESPONSE.valid = true;
-                            MY_RESPONSE.discoveryState = state;
-                            MY_RESPONSE.notify();
-                        }
-                    }
-                });
-        assertTrue(waitForServiceResponse(MY_RESPONSE));
-        assertEquals(WifiP2pManager.WIFI_P2P_DISCOVERY_STARTED, MY_RESPONSE.discoveryState);
+        assertEquals(WifiP2pManager.WIFI_P2P_DISCOVERY_STARTED, requestDiscoveryState());
 
         sWifiP2pManager.stopPeerDiscovery(sWifiP2pChannel, null);
     }
@@ -1010,20 +988,7 @@ public class ConcurrencyTest extends WifiJUnit4TestBase {
 
         if (!sWifiP2pManager.isChannelConstrainedDiscoverySupported()) return;
 
-        resetResponse(MY_RESPONSE);
-        sWifiP2pManager.requestDiscoveryState(
-                sWifiP2pChannel, new WifiP2pManager.DiscoveryStateListener() {
-                    @Override
-                    public void onDiscoveryStateAvailable(int state) {
-                        synchronized (MY_RESPONSE) {
-                            MY_RESPONSE.valid = true;
-                            MY_RESPONSE.discoveryState = state;
-                            MY_RESPONSE.notify();
-                        }
-                    }
-                });
-        assertTrue(waitForServiceResponse(MY_RESPONSE));
-        assertEquals(WifiP2pManager.WIFI_P2P_DISCOVERY_STOPPED, MY_RESPONSE.discoveryState);
+        assertEquals(WifiP2pManager.WIFI_P2P_DISCOVERY_STOPPED, requestDiscoveryState());
 
         // If there is any saved network and this device is connecting to this saved network,
         // p2p discovery might be blocked during DHCP provision.
@@ -1044,21 +1009,7 @@ public class ConcurrencyTest extends WifiJUnit4TestBase {
         }
         assertTrue(MY_RESPONSE.success);
         assertTrue(waitForBroadcasts(MySync.DISCOVERY_STATE));
-
-        resetResponse(MY_RESPONSE);
-        sWifiP2pManager.requestDiscoveryState(sWifiP2pChannel,
-                new WifiP2pManager.DiscoveryStateListener() {
-                    @Override
-                    public void onDiscoveryStateAvailable(int state) {
-                        synchronized (MY_RESPONSE) {
-                            MY_RESPONSE.valid = true;
-                            MY_RESPONSE.discoveryState = state;
-                            MY_RESPONSE.notify();
-                        }
-                    }
-                });
-        assertTrue(waitForServiceResponse(MY_RESPONSE));
-        assertEquals(WifiP2pManager.WIFI_P2P_DISCOVERY_STARTED, MY_RESPONSE.discoveryState);
+        assertEquals(WifiP2pManager.WIFI_P2P_DISCOVERY_STARTED, requestDiscoveryState());
 
         sWifiP2pManager.stopPeerDiscovery(sWifiP2pChannel, null);
     }
@@ -1091,20 +1042,7 @@ public class ConcurrencyTest extends WifiJUnit4TestBase {
     public void testStartPeerDiscovery() {
         if (!sWifiP2pManager.isChannelConstrainedDiscoverySupported()) return;
 
-        resetResponse(MY_RESPONSE);
-        sWifiP2pManager.requestDiscoveryState(
-                sWifiP2pChannel, new WifiP2pManager.DiscoveryStateListener() {
-                    @Override
-                    public void onDiscoveryStateAvailable(int state) {
-                        synchronized (MY_RESPONSE) {
-                            MY_RESPONSE.valid = true;
-                            MY_RESPONSE.discoveryState = state;
-                            MY_RESPONSE.notify();
-                        }
-                    }
-                });
-        assertTrue(waitForServiceResponse(MY_RESPONSE));
-        assertEquals(WifiP2pManager.WIFI_P2P_DISCOVERY_STOPPED, MY_RESPONSE.discoveryState);
+        assertEquals(WifiP2pManager.WIFI_P2P_DISCOVERY_STOPPED, requestDiscoveryState());
 
         WifiP2pDiscoveryConfig discoveryConfig = new WifiP2pDiscoveryConfig.Builder(
                 WifiP2pManager.WIFI_P2P_SCAN_SINGLE_FREQ)
@@ -1132,21 +1070,7 @@ public class ConcurrencyTest extends WifiJUnit4TestBase {
         }
         assertTrue(MY_RESPONSE.success);
         assertTrue(waitForBroadcasts(MySync.DISCOVERY_STATE));
-
-        resetResponse(MY_RESPONSE);
-        sWifiP2pManager.requestDiscoveryState(sWifiP2pChannel,
-                new WifiP2pManager.DiscoveryStateListener() {
-                    @Override
-                    public void onDiscoveryStateAvailable(int state) {
-                        synchronized (MY_RESPONSE) {
-                            MY_RESPONSE.valid = true;
-                            MY_RESPONSE.discoveryState = state;
-                            MY_RESPONSE.notify();
-                        }
-                    }
-                });
-        assertTrue(waitForServiceResponse(MY_RESPONSE));
-        assertEquals(WifiP2pManager.WIFI_P2P_DISCOVERY_STARTED, MY_RESPONSE.discoveryState);
+        assertEquals(WifiP2pManager.WIFI_P2P_DISCOVERY_STARTED, requestDiscoveryState());
 
         sWifiP2pManager.stopPeerDiscovery(sWifiP2pChannel, null);
     }
