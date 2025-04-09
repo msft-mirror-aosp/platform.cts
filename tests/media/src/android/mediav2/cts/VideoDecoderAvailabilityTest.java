@@ -681,7 +681,10 @@ public class VideoDecoderAvailabilityTest extends CodecDecoderTestBase {
         Assume.assumeFalse(mCodecName + " did not advertise any performance points",
                 pps == null || pps.isEmpty());
         mActivityRule.getScenario().onActivity(activity -> mDynamicActivity = activity);
-        for (PerformancePoint pp : pps) {
+        double maxPixelsProcessedPerSec = 0;
+        double pixelsProcessedPerSec;
+        for (int i = 0; i < pps.size(); i++) {
+            PerformancePoint pp = pps.get(i);
             Pair<Integer, Surface> obj = mDynamicActivity.getSurface();
             if (obj == null) {
                 int index = mDynamicActivity.addSurfaceView();
@@ -694,6 +697,14 @@ public class VideoDecoderAvailabilityTest extends CodecDecoderTestBase {
                     videoSize.getHeight());
             format.setInteger(MediaFormat.KEY_FRAME_RATE, pp.getMaxFrameRate());
             format.setInteger(MediaFormat.KEY_PRIORITY, 0);
+            pixelsProcessedPerSec =
+                    videoSize.getWidth() * videoSize.getHeight() * pp.getMaxFrameRate();
+            if (i == 0) {
+                // as performance points are sorted by decreasing number of pixels, then by
+                // decreasing width, then by frame rate, the first point should indicate peak
+                // processing power
+                maxPixelsProcessedPerSec = pixelsProcessedPerSec;
+            }
             codec.configure(format, obj.second, null, 0);
             codec.start();
             List<CodecResource> usedResources = getCurrentGlobalCodecResources();
@@ -701,10 +712,12 @@ public class VideoDecoderAvailabilityTest extends CodecDecoderTestBase {
             codec.stop();
             codec.release();
             mDynamicActivity.markSurface(obj.first, true);
-            if (consumption < MIN_UTILIZATION_THRESHOLD) {
+            double relativeThreshold =
+                    pixelsProcessedPerSec * MIN_UTILIZATION_THRESHOLD / maxPixelsProcessedPerSec;
+            if (consumption < relativeThreshold) {
                 Assert.fail("For performance point " + pp + " and codec : " + mCodecName
                         + " max resources consumed is expected to be at least "
-                        + MIN_UTILIZATION_THRESHOLD + "% but got " + consumption + "%");
+                        + relativeThreshold + "% but got " + consumption + "%");
             }
         }
     }
