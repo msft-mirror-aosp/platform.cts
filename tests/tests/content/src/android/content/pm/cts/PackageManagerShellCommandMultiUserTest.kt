@@ -23,7 +23,6 @@ import android.content.Context.RECEIVER_EXPORTED
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.Flags.FLAG_ARCHIVING
-import android.content.pm.Flags.FLAG_NULLABLE_DATA_DIR
 import android.content.pm.PackageInfo
 import android.content.pm.PackageInstaller
 import android.content.pm.PackageManager
@@ -659,7 +658,6 @@ class PackageManagerShellCommandMultiUserTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_NULLABLE_DATA_DIR)
     fun testNullableDataDir() {
         testUninstallSetup()
         // Delete data on second user only
