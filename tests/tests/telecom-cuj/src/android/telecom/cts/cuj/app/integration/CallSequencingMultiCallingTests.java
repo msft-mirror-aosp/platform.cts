@@ -17,6 +17,7 @@
 package android.telecom.cts.cuj.app.integration;
 
 import static android.telecom.Call.STATE_ACTIVE;
+import static android.telecom.Call.STATE_DIALING;
 import static android.telecom.Call.STATE_HOLDING;
 import static android.telecom.cts.apps.CallSequencingUtil.CALL_TYPE_NAME;
 import static android.telecom.cts.apps.CallSequencingUtil.INCOMING_MANAGED_CALL;
@@ -132,6 +133,7 @@ public class CallSequencingMultiCallingTests extends BaseAppVerifier {
                 assertNotNull("ANSWER operation never received for first call" + c1, op);
                 verifyCallIsInState(c1, STATE_ACTIVE);
             } else {
+                verifyCallIsInState(c1, STATE_DIALING);
                 setCallStateAndVerify(app, c1, Call.STATE_ACTIVE);
             }
             // Place second call
@@ -169,6 +171,7 @@ public class CallSequencingMultiCallingTests extends BaseAppVerifier {
                 assertNotNull("HOLD operation never received for first call " + c1,
                         holdOp);
                 verifyCallIsInState(c1, Call.STATE_HOLDING);
+                verifyCallIsInState(c2, STATE_DIALING);
                 setCallStateAndVerify(app, c2, STATE_ACTIVE);
             }
             // Third call
