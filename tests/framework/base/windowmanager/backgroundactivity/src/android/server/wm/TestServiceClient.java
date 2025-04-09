@@ -118,8 +118,17 @@ public class TestServiceClient implements ITestService {
     }
 
     @Override
+    public void startActivityIntent(Intent intent, Bundle options) throws RemoteException {
+        mTestService.startActivityIntent(intent, options);
+    }
+
     public void startActivityIntent(Intent intent) throws RemoteException {
-        mTestService.startActivityIntent(intent);
+        mTestService.startActivityIntent(intent, null);
+    }
+
+    @Override
+    public void finishActivity() throws RemoteException {
+        mTestService.finishActivity();
     }
 
     @Override

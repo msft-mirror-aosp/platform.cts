@@ -30,5 +30,6 @@ interface ITestService {
     void sendPendingIntentWithActivity(in PendingIntent pendingIntent, in Bundle sendOptions);
     void sendPendingIntentWithActivityForResult(in PendingIntent pendingIntent, in Bundle sendOptions);
     void sendIntentSender(in IntentSender intentSender, in Bundle sendOptions);
-    void startActivityIntent(in Intent intent);
+    void startActivityIntent(in Intent intent, in Bundle options);
+    void finishActivity();
 }

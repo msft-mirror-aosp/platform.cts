@@ -33,18 +33,41 @@ import android.util.Log;
 import android.view.View;
 import android.view.textclassifier.TextClassification;
 
+import androidx.annotation.NonNull;
+
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class TestService extends Service {
     static final String TAG = TestService.class.getName();
     private final ITestService mBinder = new MyBinder();
 
     // The latest ForegroundActivity created. It is stored to start a PendingIntent.
-    public static Activity sLatestForegroundActivity;
+    private static final AtomicReference<Activity> sLatestForegroundActivity =
+            new AtomicReference<>();
 
     @Override
     public IBinder onBind(Intent intent) {
         return mBinder.asBinder();
+    }
+
+    /** Notify that a foreground activity has been created. */
+    public static void onForegroundActivityCreated(Activity activity) {
+        sLatestForegroundActivity.set(activity);
+    }
+
+    /** Notify that a foreground activity has been destroyed. */
+    public static void onForegroundActivityDestroyed(Activity activity) {
+        sLatestForegroundActivity.compareAndExchange(activity, null);
+    }
+
+    @NonNull
+    private static Activity getActivity() {
+        Activity activity = sLatestForegroundActivity.get();
+        if (activity == null) {
+            throw new IllegalArgumentException("No running Activity.");
+        }
+        return activity;
     }
 
     private class MyBinder extends ITestService.Stub {
@@ -111,7 +134,7 @@ public class TestService extends Service {
         public void sendPendingIntentWithActivityForResult(PendingIntent pendingIntent,
                 Bundle sendOptions) {
             try {
-                sLatestForegroundActivity.startIntentSenderForResult(
+                getActivity().startIntentSenderForResult(
                         pendingIntent.getIntentSender(),
                         /* requestCode */ 1,
                         /* fillinIntent */ null,
@@ -131,7 +154,7 @@ public class TestService extends Service {
         public void sendPendingIntentWithActivity(PendingIntent pendingIntent,
                 Bundle sendOptions) {
             try {
-                sLatestForegroundActivity.startIntentSender(
+                getActivity().startIntentSender(
                         pendingIntent.getIntentSender(),
                         /* fillinIntent */ null,
                         /* flagsMask */ 0,
@@ -178,13 +201,35 @@ public class TestService extends Service {
         }
 
         @Override
-        public void startActivityIntent(Intent intent) {
+        public void startActivityIntent(Intent intent, Bundle options) {
             try {
-                startActivity(intent);
+                Activity activity = sLatestForegroundActivity.get();
+                if ((intent.getFlags() & Intent.FLAG_ACTIVITY_NEW_TASK) != 0) {
+                    startActivity(intent);
+                } else if (activity == null) {
+                    throw new IllegalArgumentException("startActivityIntent(" + intent
+                            + ") without FLAG_ACTIVITY_NEW_TASK and no running Activity.");
+                } else {
+                    activity.startActivity(intent, options);
+                }
             } catch (IllegalArgumentException e) {
+                Log.w(TAG, "startActivityIntent(" + intent + ") failed", e);
                 throw e;
             } catch (Exception e) {
                 Log.e(TAG, "startActivityIntent failed", e);
+                throw new AssertionError(e);
+            }
+        }
+
+        @Override
+        public void finishActivity() {
+            try {
+                getActivity().finish();
+            } catch (IllegalArgumentException e) {
+                Log.w(TAG, "finishActivity failed", e);
+                throw e;
+            } catch (Exception e) {
+                Log.e(TAG, "finishActivity failed", e);
                 throw new AssertionError(e);
             }
         }
