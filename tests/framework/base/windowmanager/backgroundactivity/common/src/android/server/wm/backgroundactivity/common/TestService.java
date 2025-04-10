@@ -131,17 +131,18 @@ public class TestService extends Service {
         }
 
         @Override
-        public void sendPendingIntentWithActivityForResult(int activityId,
-                PendingIntent pendingIntent, Bundle sendOptions) {
+        public void sendPendingIntentWithActivityForResult(
+                int activityId, PendingIntent pendingIntent, Bundle sendOptions) {
             try {
-                getActivity(activityId).startIntentSenderForResult(
-                        pendingIntent.getIntentSender(),
-                        /* requestCode */ 1,
-                        /* fillinIntent */ null,
-                        /* flagsMask */ 0,
-                        /* flagsValue */ 0,
-                        /* extraFlags */ 0,
-                        sendOptions);
+                getActivity(activityId)
+                        .startIntentSenderForResult(
+                                pendingIntent.getIntentSender(),
+                                /* requestCode */ 1,
+                                /* fillinIntent */ null,
+                                /* flagsMask */ 0,
+                                /* flagsValue */ 0,
+                                /* extraFlags */ 0,
+                                sendOptions);
             } catch (IllegalArgumentException e) {
                 throw e;
             } catch (Exception e) {
@@ -151,16 +152,17 @@ public class TestService extends Service {
         }
 
         @Override
-        public void sendPendingIntentWithActivity(int activityId, PendingIntent pendingIntent,
-                Bundle sendOptions) {
+        public void sendPendingIntentWithActivity(
+                int activityId, PendingIntent pendingIntent, Bundle sendOptions) {
             try {
-                getActivity(activityId).startIntentSender(
-                        pendingIntent.getIntentSender(),
-                        /* fillinIntent */ null,
-                        /* flagsMask */ 0,
-                        /* flagsValue */ 0,
-                        /* extraFlags */ 0,
-                        sendOptions);
+                getActivity(activityId)
+                        .startIntentSender(
+                                pendingIntent.getIntentSender(),
+                                /* fillinIntent */ null,
+                                /* flagsMask */ 0,
+                                /* flagsValue */ 0,
+                                /* extraFlags */ 0,
+                                sendOptions);
             } catch (IllegalArgumentException e) {
                 throw e;
             } catch (Exception e) {
@@ -206,8 +208,11 @@ public class TestService extends Service {
                 Activity activity = sForegroundActivities.get(activityId);
                 if (activity == null) {
                     if ((intent.getFlags() & Intent.FLAG_ACTIVITY_NEW_TASK) == 0) {
-                        throw new IllegalArgumentException("startActivityIntent(" + intent
-                                + ") without FLAG_ACTIVITY_NEW_TASK and no running Activity.");
+                        throw new IllegalArgumentException(
+                                "startActivityIntent("
+                                        + intent
+                                        + ") without FLAG_ACTIVITY_NEW_TASK and no running"
+                                        + " Activity.");
                     }
                     startActivity(intent);
                 } else {

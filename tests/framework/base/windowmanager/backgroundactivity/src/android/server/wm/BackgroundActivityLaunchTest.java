@@ -373,9 +373,11 @@ public class BackgroundActivityLaunchTest extends BackgroundActivityTestBase {
         startActivityUnchecked(APP_A.FOREGROUND_ACTIVITY);
         mWmState.waitForValidState(APP_B.FOREGROUND_ACTIVITY);
         // As A is not visible, it can not start activities.
-        startViaApp(APP_A, new Intent()
-                .setComponent(APP_A.BACKGROUND_ACTIVITY)
-                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+        startViaApp(
+                APP_A,
+                new Intent()
+                        .setComponent(APP_A.BACKGROUND_ACTIVITY)
+                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
         assertActivityNotFocused(APP_A.BACKGROUND_ACTIVITY);
         assertTaskStackHasComponents(APP_A.FOREGROUND_ACTIVITY,
                 APP_B.FOREGROUND_ACTIVITY,
@@ -398,9 +400,11 @@ public class BackgroundActivityLaunchTest extends BackgroundActivityTestBase {
         assertActivityFocused(APP_B.FOREGROUND_ACTIVITY);
         // Though process A is in background, it is in a visible Task (top is B) so it should be
         // able to start activity successfully.
-        startViaApp(APP_A_33, new Intent()
-                .setComponent(APP_A_33.BACKGROUND_ACTIVITY)
-                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+        startViaApp(
+                APP_A_33,
+                new Intent()
+                        .setComponent(APP_A_33.BACKGROUND_ACTIVITY)
+                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
         // The background activity must be able to launch from a visible task
         assertActivityFocused(APP_A_33.BACKGROUND_ACTIVITY);
     }
@@ -1220,8 +1224,8 @@ public class BackgroundActivityLaunchTest extends BackgroundActivityTestBase {
         pressHomeAndWaitHomeResumed();
         assertActivityNotFocused(APP_A.FOREGROUND_ACTIVITY);
 
-        ActivityOptions options = ActivityOptions.makeLaunchIntoPip(
-                new PictureInPictureParams.Builder().build());
+        ActivityOptions options =
+                ActivityOptions.makeLaunchIntoPip(new PictureInPictureParams.Builder().build());
         Intent pipIntent = new Intent().setComponent(APP_A.BACKGROUND_ACTIVITY);
         startViaApp(APP_A, pipIntent, options.toBundle());
 
@@ -1593,8 +1597,8 @@ public class BackgroundActivityLaunchTest extends BackgroundActivityTestBase {
             TestServiceClient serviceA = getTestService(app);
             serviceA.startActivityIntent(intent);
         } catch (Exception e) {
-            throw new AssertionError("Failed to start " + intent + " via " + app.APP_PACKAGE_NAME,
-                    e);
+            throw new AssertionError(
+                    "Failed to start " + intent + " via " + app.APP_PACKAGE_NAME, e);
         }
     }
 
@@ -1603,8 +1607,8 @@ public class BackgroundActivityLaunchTest extends BackgroundActivityTestBase {
             TestServiceClient serviceA = getTestService(app);
             serviceA.startActivityIntent(intent, options);
         } catch (Exception e) {
-            throw new AssertionError("Failed to start " + intent + " via " + app.APP_PACKAGE_NAME,
-                    e);
+            throw new AssertionError(
+                    "Failed to start " + intent + " via " + app.APP_PACKAGE_NAME, e);
         }
     }
 }

@@ -16,9 +16,9 @@
 
 package android.server.wm.backgroundactivity.appa;
 
+import static android.server.wm.jetpack.extensions.util.ExtensionsUtil.getWindowExtensions;
 import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.EMBEDDED_ACTIVITY_ID;
 import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.createWildcardSplitPairRule;
-import static android.server.wm.jetpack.extensions.util.ExtensionsUtil.getWindowExtensions;
 
 import android.app.Activity;
 import android.content.BroadcastReceiver;
@@ -40,26 +40,32 @@ public class ForegroundEmbeddingActivity extends Activity {
 
     private int mActivityId = -1;
 
-    private final BroadcastReceiver mReceiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            String action = intent.getAction();
-            int activityId = intent.getIntExtra(mA.FOREGROUND_ACTIVITY_EXTRA.ACTIVITY_ID,
-                    mActivityId);
-            if (activityId != mActivityId) {
-                return;
-            }
-            if (mA.FOREGROUND_EMBEDDING_ACTIVITY_ACTIONS.LAUNCH_EMBEDDED_ACTIVITY.equals(action)) {
-                // Need to copy as a new array instead of just casting to Intent[] since a new
-                // array of type Parcelable[] is created when deserializing.
-                Intent[] intents = intent.getParcelableArrayExtra(
-                        mA.FOREGROUND_ACTIVITY_EXTRA.LAUNCH_INTENTS, Intent.class);
-                startActivityInSplit(intents);
-            } else if (mA.FOREGROUND_EMBEDDING_ACTIVITY_ACTIONS.FINISH_ACTIVITY.equals(action)) {
-                finish();
-            }
-        }
-    };
+    private final BroadcastReceiver mReceiver =
+            new BroadcastReceiver() {
+                @Override
+                public void onReceive(Context context, Intent intent) {
+                    String action = intent.getAction();
+                    int activityId =
+                            intent.getIntExtra(
+                                    mA.FOREGROUND_ACTIVITY_EXTRA.ACTIVITY_ID, mActivityId);
+                    if (activityId != mActivityId) {
+                        return;
+                    }
+                    if (mA.FOREGROUND_EMBEDDING_ACTIVITY_ACTIONS.LAUNCH_EMBEDDED_ACTIVITY.equals(
+                            action)) {
+                        // Need to copy as a new array instead of just casting to Intent[] since a
+                        // new
+                        // array of type Parcelable[] is created when deserializing.
+                        Intent[] intents =
+                                intent.getParcelableArrayExtra(
+                                        mA.FOREGROUND_ACTIVITY_EXTRA.LAUNCH_INTENTS, Intent.class);
+                        startActivityInSplit(intents);
+                    } else if (mA.FOREGROUND_EMBEDDING_ACTIVITY_ACTIONS.FINISH_ACTIVITY.equals(
+                            action)) {
+                        finish();
+                    }
+                }
+            };
 
     @Override
     public void onCreate(Bundle bundle) {

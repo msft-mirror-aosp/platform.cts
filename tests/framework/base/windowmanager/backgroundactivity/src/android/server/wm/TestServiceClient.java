@@ -92,8 +92,9 @@ public class TestServiceClient implements ITestService {
     }
 
     @Override
-    public void sendPendingIntentWithActivity(int activityId, PendingIntent pendingIntent,
-            Bundle sendOptions) throws RemoteException {
+    public void sendPendingIntentWithActivity(
+            int activityId, PendingIntent pendingIntent, Bundle sendOptions)
+            throws RemoteException {
         mTestService.sendPendingIntentWithActivity(activityId, pendingIntent, sendOptions);
     }
 
@@ -103,16 +104,19 @@ public class TestServiceClient implements ITestService {
     }
 
     @Override
-    public void sendPendingIntentWithActivityForResult(int activityId, PendingIntent pendingIntent,
-            Bundle sendOptions) throws RemoteException {
+    public void sendPendingIntentWithActivityForResult(
+            int activityId, PendingIntent pendingIntent, Bundle sendOptions)
+            throws RemoteException {
         mTestService.sendPendingIntentWithActivityForResult(activityId, pendingIntent, sendOptions);
     }
 
-    /** @see #sendPendingIntentWithActivityForResult(int, PendingIntent, Bundle) */
-    public void sendPendingIntentWithActivityForResult(PendingIntent pendingIntent,
-            Bundle sendOptions) throws RemoteException {
-        mTestService.sendPendingIntentWithActivityForResult(DEFAULT_ACTIVITY_ID, pendingIntent,
-                sendOptions);
+    /**
+     * @see #sendPendingIntentWithActivityForResult(int, PendingIntent, Bundle)
+     */
+    public void sendPendingIntentWithActivityForResult(
+            PendingIntent pendingIntent, Bundle sendOptions) throws RemoteException {
+        mTestService.sendPendingIntentWithActivityForResult(
+                DEFAULT_ACTIVITY_ID, pendingIntent, sendOptions);
     }
 
     @Override
