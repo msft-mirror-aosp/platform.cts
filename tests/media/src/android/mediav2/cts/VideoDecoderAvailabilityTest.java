@@ -56,7 +56,6 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -547,7 +546,6 @@ public class VideoDecoderAvailabilityTest extends CodecDecoderTestBase {
     @LargeTest
     @VsrTest(requirements = {"VSR-4.1-002"})
     @Test(timeout = PER_TEST_TIMEOUT_LARGE_TEST_MS)
-    @Ignore("Skipped for 25Q2 release")
     @RequiresFlagsEnabled(FLAG_CODEC_AVAILABILITY)
     @ApiTest(apis = {"android.media.MediaCodec#getGloballyAvailableResources",
             "android.media.MediaCodec#getRequiredResources",
