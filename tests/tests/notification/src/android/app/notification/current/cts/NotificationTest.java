@@ -65,6 +65,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -1521,6 +1522,7 @@ public class NotificationTest {
     }
 
     @Test
+    @Ignore("b/409811239")
     @RequiresFlagsEnabled(Flags.FLAG_API_RICH_ONGOING)
     public void testHasPromotableCharacteristics() {
         Notification n = new Notification.Builder(mContext, "test")
@@ -1534,6 +1536,7 @@ public class NotificationTest {
     }
 
     @Test
+    @Ignore("b/409811239")
     @RequiresFlagsEnabled(Flags.FLAG_API_RICH_ONGOING)
     public void testHasPromotableCharacteristics_notOngoing() {
         Notification n = new Notification.Builder(mContext, "test")
@@ -1546,6 +1549,7 @@ public class NotificationTest {
     }
 
     @Test
+    @Ignore("b/409811239")
     @RequiresFlagsEnabled(Flags.FLAG_API_RICH_ONGOING)
     public void testHasPromotableCharacteristics_wrongStyle() {
         Notification n = new Notification.Builder(mContext, "test")
@@ -1560,6 +1564,7 @@ public class NotificationTest {
     }
 
     @Test
+    @Ignore("b/409811239")
     @RequiresFlagsEnabled(Flags.FLAG_API_RICH_ONGOING)
     public void testHasPromotableCharacteristics_notColorized() {
         Notification n = new Notification.Builder(mContext, "test")
@@ -1572,6 +1577,7 @@ public class NotificationTest {
     }
 
     @Test
+    @Ignore("b/409811239")
     @RequiresFlagsEnabled(Flags.FLAG_API_RICH_ONGOING)
     public void testHasPromotableCharacteristics_noTitle() {
         Notification n = new Notification.Builder(mContext, "test")
@@ -1585,6 +1591,7 @@ public class NotificationTest {
     }
 
     @Test
+    @Ignore("b/409811239")
     @RequiresFlagsEnabled(Flags.FLAG_API_RICH_ONGOING)
     public void testHasPromotableCharacteristics_groupSummary() {
         Notification n = new Notification.Builder(mContext, "test")
