@@ -64,12 +64,16 @@ import android.app.Instrumentation;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
+import android.app.PendingIntent;
+import android.app.RemoteInput;
 import android.app.compat.CompatChanges;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.res.Resources;
 import android.graphics.Color;
+import android.graphics.Rect;
 import android.os.SystemClock;
 import android.os.UserHandle;
 import android.platform.test.annotations.AppModeFull;
@@ -116,10 +120,13 @@ import androidx.test.filters.MediumTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.uiautomator.By;
 import androidx.test.uiautomator.BySelector;
+import androidx.test.uiautomator.Direction;
 import androidx.test.uiautomator.UiDevice;
 import androidx.test.uiautomator.UiObject2;
 import androidx.test.uiautomator.Until;
 
+import com.android.bedstead.harrier.annotations.RequireNotAutomotive;
+import com.android.bedstead.harrier.annotations.RequireNotWatch;
 import com.android.bedstead.multiuser.annotations.RequireNotVisibleBackgroundUsers;
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.compatibility.common.util.UserHelper;
@@ -1474,9 +1481,14 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
             // Rotate screen to landscape.
             uiDevice.setOrientationLandscape();
             mInstrumentation.waitForIdleSync();
-            expectImeVisible(TIMEOUT);
-            assertTrue("IME should be in fullscreen mode",
-                    getOnMainSync(() -> imm.isFullscreenMode()));
+            if (android.view.inputmethod.Flags.disableImeRestoreOnActivityCreate()) {
+                // IME was not explicitly requested again, so it should not be restored.
+                expectImeInvisible(TIMEOUT);
+            } else {
+                expectImeVisible(TIMEOUT);
+                assertTrue("IME should be in fullscreen mode",
+                        getOnMainSync(() -> imm.isFullscreenMode()));
+            }
         } finally {
             setAutoRotateScreen(true);
             uiDevice.setOrientationNatural();
@@ -2006,6 +2018,199 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
         } finally {
             // Make sure to dismiss the notification even if the test failed.
             notificationManager.cancel(notificationId);
+        }
+    }
+
+    /**
+     * A regression test for Bug 291740458
+     *
+     * <p>This test verifies that the IME stays hidden in an activity with
+     * SOFT_INPUT_STATE_UNCHANGED. For that, the following steps are executed: 1. Launch activity
+     * with SOFT_INPUT_STATE_UNCHANGED and show the IME there. 2. Go to another activity where the
+     * IME is not shown. 3. Go back to first activity, IME should still be shown. 4. Hide IME. 5.
+     * Focus other editText (notification bar) and show the IME there. 6. Hide IME, close
+     * notification shade and make sure the IME is still hidden on the launched activity.
+     */
+    @Test
+    @AppModeFull(reason = "Instant apps cannot create notifications")
+    @RequiresFlagsEnabled(Flags.FLAG_DISABLE_IME_RESTORE_ON_ACTIVITY_CREATE)
+    @RequireNotAutomotive(reason = "Auto has a different notification UI")
+    @RequireNotWatch(reason = "Watch has a different notification UI")
+    public void testImeHiddenWhenSoftInputStateUnchanged() throws Exception {
+        final Context targetContext = mInstrumentation.getTargetContext();
+        final PackageManager pm = targetContext.getPackageManager();
+        // Exclude major known non-phone, non-tablet form factors which have different notification
+        // UIs. Watch and automotive are already handled by bedstead annotations.
+        assumeFalse(pm.hasSystemFeature(PackageManager.FEATURE_LEANBACK_ONLY));
+
+        final NotificationManager notificationManager =
+                targetContext.getSystemService(NotificationManager.class);
+        assumeNotNull(notificationManager);
+        // Usually notification permission should be auto-granted by the test runner.
+        // Skip the test if notification is disabled for some other reason.
+        assumeTrue(notificationManager.areNotificationsEnabled());
+
+        final int notificationId = 123456;
+        try (MockImeSession imeSession =
+                MockImeSession.create(
+                        mInstrumentation.getContext(),
+                        mInstrumentation.getUiAutomation(),
+                        new ImeSettings.Builder())) {
+            final ImeEventStream stream = imeSession.openEventStream();
+            final String marker = getTestMarker();
+
+            // Make sure to dismiss all notifications before
+            notificationManager.cancelAll();
+            // Hide notification shade, if it was not properly closed
+            targetContext.sendBroadcast(new Intent(Intent.ACTION_CLOSE_SYSTEM_DIALOGS));
+
+            final AtomicReference<EditText> editTextRef = new AtomicReference<>();
+            TestActivity testActivity =
+                    new TestActivity.Starter()
+                            .withAdditionalFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                            .startSync(
+                                    activity -> {
+                                        activity.getWindow()
+                                                .setSoftInputMode(SOFT_INPUT_STATE_UNCHANGED);
+                                        final LinearLayout layout = new LinearLayout(activity);
+                                        layout.setOrientation(LinearLayout.VERTICAL);
+                                        final EditText editText = new EditText(activity);
+                                        editTextRef.set(editText);
+                                        layout.addView(editText);
+                                        editText.setHint("focused editText");
+                                        editText.setPrivateImeOptions(marker);
+                                        editText.requestFocus();
+                                        return layout;
+                                    },
+                                    TestActivity.class);
+            // 1. Show IME and make sure it has window focus
+            TestUtils.runOnMainSync(
+                    () -> {
+                        editTextRef.get().requestFocus();
+                        editTextRef.get().getWindowInsetsController().show(WindowInsets.Type.ime());
+                    });
+            expectImeVisible(TIMEOUT);
+
+            // 2. Launch second activity with no IME shown
+            TestActivity testActivity2 =
+                    new TestActivity.Starter()
+                            .withAdditionalFlags(Intent.FLAG_ACTIVITY_MULTIPLE_TASK)
+                            .startSync(LinearLayout::new, TestActivity2.class);
+            expectImeInvisible(TIMEOUT);
+
+            // 3. Press the back key to show the first activity with the IME visible.
+            mInstrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK);
+            mInstrumentation.waitForIdleSync();
+            TestUtils.waitOnMainUntil(testActivity2::isStopped, TIMEOUT);
+            expectEvent(stream, hideSoftInputMatcher(), TIMEOUT);
+            expectImeVisible(TIMEOUT);
+
+            // 4. Hide the IME
+            TestUtils.runOnMainSync(
+                    () -> {
+                        editTextRef.get().requestFocus();
+                        editTextRef.get().getWindowInsetsController().hide(WindowInsets.Type.ime());
+                    });
+            expectEvent(stream, hideSoftInputMatcher(), TIMEOUT);
+            expectImeInvisible(TIMEOUT);
+
+            // 5. Create notification with reply field and show it
+            final String replyButtonLabel = "REPLY_IME_BTN";
+            Intent intent = new Intent(targetContext, BroadcastReceiver.class);
+            intent.putExtra("ID", 0);
+            RemoteInput remoteInput =
+                    new RemoteInput.Builder("REPLY").setLabel(replyButtonLabel).build();
+            PendingIntent replyPendingIntent =
+                    PendingIntent.getBroadcast(
+                            targetContext,
+                            0,
+                            intent,
+                            PendingIntent.FLAG_MUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
+            Notification.Action action =
+                    new Notification.Action.Builder(0, replyButtonLabel, replyPendingIntent)
+                            .addRemoteInput(remoteInput)
+                            .build();
+            final NotificationChannel channel =
+                    new NotificationChannel(
+                            "test" /* id */,
+                            "Test Channel" /* name */,
+                            NotificationManager.IMPORTANCE_HIGH);
+            notificationManager.createNotificationChannel(channel);
+            final String notificationContent = "notification-" + marker;
+            final String notificationTitle = "IME-test-notif";
+            notificationManager.notify(
+                    notificationId,
+                    new Notification.Builder(targetContext, channel.getId())
+                            .setContentTitle(notificationTitle)
+                            .addAction(action)
+                            .setStyle(new Notification.BigTextStyle().bigText(notificationContent))
+                            .setContentText("Tap to expand")
+                            .setSmallIcon(android.R.drawable.ic_info)
+                            .build());
+
+            UiDevice uiDevice = UiDevice.getInstance(mInstrumentation);
+            assertTrue("Notification Shade must have been opened", uiDevice.openNotification());
+            notExpectEvent(stream, hideSoftInputMatcher(), TIMEOUT);
+            expectImeInvisible(TIMEOUT);
+
+            // Sometimes the notification is at the bottom, so we need to scroll down
+            UiObject2 scrollableContainer = null;
+            if (uiDevice.hasObject(By.res("com.android.systemui:id/notification_stack_scroller"))) {
+                scrollableContainer =
+                        uiDevice.findObject(
+                                By.res("com.android.systemui:id/notification_stack_scroller"));
+            } else if (uiDevice.hasObject(By.clazz("android.widget.ScrollView").scrollable(true))) {
+                scrollableContainer =
+                        uiDevice.findObject(By.clazz("android.widget.ScrollView").scrollable(true));
+            } else {
+                fail("Could not find the scrollable container in the notification shade.");
+            }
+            scrollableContainer.scrollUntil(
+                    Direction.DOWN, Until.hasObject(By.text(notificationTitle)));
+            UiObject2 targetNotification = uiDevice.findObject(By.text(notificationTitle));
+            assertNotNull(
+                    "Notification '" + notificationTitle + "' not found after scrolling.",
+                    targetNotification);
+
+            // Try to enlarge the notification if the reply button is not yet found
+            if (!uiDevice.hasObject(By.text(replyButtonLabel))) {
+                Rect bounds = targetNotification.getVisibleBounds();
+                uiDevice.swipe(
+                        bounds.centerX(),
+                        bounds.top + 10,
+                        bounds.centerX(),
+                        bounds.bottom + 100,
+                        20);
+            }
+
+            final var replyButton =
+                    uiDevice.wait(Until.findObject(By.text(replyButtonLabel)), TIMEOUT);
+            assertNotNull("Reply button of the notification should be found", replyButton);
+
+            // Tap on the reply button of the notification to show the IME.
+            replyButton.click();
+            expectEvent(stream, showSoftInputMatcher(InputMethod.SHOW_EXPLICIT), TIMEOUT);
+            // Hide the IME via back button and close the notification shade
+            mInstrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK);
+            mInstrumentation.waitForIdleSync();
+            expectImeInvisible(TIMEOUT);
+            targetContext.sendBroadcast(new Intent(Intent.ACTION_CLOSE_SYSTEM_DIALOGS));
+
+            // Result: initial activity should be focussed and IME not being shown
+            TestUtils.waitOnMainUntil(
+                    () -> {
+                        final View decorView = testActivity.getWindow().getDecorView();
+                        return decorView.hasWindowFocus() && decorView.getVisibility() == VISIBLE;
+                    },
+                    TIMEOUT,
+                    "Activity should be focused when dismissing notification shade");
+
+            expectImeInvisible(TIMEOUT);
+        } finally {
+            // Make sure to dismiss the notification even if the test failed.
+            notificationManager.cancelAll();
+            // Hide notification shade, if it was not properly closed
+            targetContext.sendBroadcast(new Intent(Intent.ACTION_CLOSE_SYSTEM_DIALOGS));
         }
     }
 
