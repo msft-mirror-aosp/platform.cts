@@ -127,15 +127,22 @@ public class VideoEncoderQualityRegressionTestBase {
             int frameLimit, int frameRate, Map<Long, List<Rect>> frameCropRects,
             boolean setLoopBack, Predicate<Double> predicate, boolean enforcePredicate)
             throws IOException, InterruptedException {
-        assertEquals("Quality comparison is done between two sets", 2, cfgsUnion.size());
-        assertTrue("Minimum of 4 points are required for polynomial curve fitting",
-                cfgsUnion.get(0).length >= 4);
+        assertEquals("Quality comparison is expected to be done between two sets", 2,
+                cfgsUnion.size());
+        assertEquals("Quality comparison is expected to be done between two sets of same length",
+                cfgsUnion.get(0).length, cfgsUnion.get(1).length);
         double[][] psnrs = new double[cfgsUnion.size()][cfgsUnion.get(0).length];
         double[][] rates = new double[cfgsUnion.size()][cfgsUnion.get(0).length];
+        int[] indices = new int[cfgsUnion.size()];
+        StringBuilder retMsg = new StringBuilder();
         for (int i = 0; i < cfgsUnion.size(); i++) {
             EncoderConfigParams[] cfgs = cfgsUnion.get(i);
             String mediaType = cfgs[0].mMediaType;
             testInstances[i].setLoopBack(setLoopBack);
+            int count = 0;
+            retMsg.setLength(0);
+            retMsg.append("Bitrates Psnr Details : ").append("\n");
+            retMsg.append("Codec Name : ").append(encoderNames[i]).append("\n");
             for (int j = 0; j < cfgs.length; j++) {
                 testInstances[i].encodeToMemory(encoderNames[i], cfgs[j], res, frameLimit, true,
                         true);
@@ -150,15 +157,44 @@ public class VideoEncoderQualityRegressionTestBase {
                             testInstances[i].getMuxedOutputFilePath(), frameCropRects, true, true);
                     final double[] globalPSNR = cs.getGlobalPSNR();
                     double weightedPSNR = (6 * globalPSNR[0] + globalPSNR[1] + globalPSNR[2]) / 8;
-                    psnrs[i][j] = weightedPSNR;
-                    rates[i][j] = achievedBitRate;
+                    boolean isDuplicate = false;
+                    for (int k = 0; k < j; k++) {
+                        if (achievedBitRate == rates[i][k]) {
+                            isDuplicate = true;
+                            break;
+                        }
+                    }
+                    retMsg.append(String.format(Locale.getDefault(),
+                            "point %s, weight psnr %f, bitrate %f \n", cfgs[i].toString(),
+                            weightedPSNR, achievedBitRate));
+                    if (!isDuplicate) {
+                        psnrs[i][count] = weightedPSNR;
+                        rates[i][count] = achievedBitRate;
+                        count++;
+                    }
                 } finally {
                     if (cs != null) cs.cleanUp();
                 }
                 testInstances[i].deleteMuxedFile();
             }
+            indices[i] = count;
+            assertTrue(String.format(Locale.getDefault(),
+                    "Minimum of %d distinct points are required for polynomial curve fitting. Got"
+                            + " %d. \n %s ",
+                    4, indices[i], retMsg), indices[i] >= 4);
         }
-        StringBuilder retMsg = new StringBuilder();
+        for (int i = 0; i < cfgsUnion.size(); i++) {
+            int count = indices[i];
+            if (count != cfgsUnion.get(i).length) {
+                double[] psnrsTrimmed = new double[count];
+                System.arraycopy(psnrs[i], 0, psnrsTrimmed, 0, count);
+                psnrs[i] = psnrsTrimmed;
+                double[] ratesTrimmed = new double[count];
+                System.arraycopy(rates[i], 0, ratesTrimmed, 0, count);
+                rates[i] = ratesTrimmed;
+            }
+        }
+        retMsg.setLength(0);
         double bdRate = nativeGetBDRate(psnrs[0], rates[0], psnrs[1], rates[1], false, retMsg);
         if (retMsg.length() != 0) fail(retMsg.toString());
         for (int i = 0; i < psnrs.length; i++) {
