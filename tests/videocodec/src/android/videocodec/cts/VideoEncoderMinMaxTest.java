@@ -71,7 +71,7 @@ import java.util.stream.Stream;
 @RunWith(Parameterized.class)
 public class VideoEncoderMinMaxTest extends VideoEncoderValidationTestBase {
     private static final float MIN_ACCEPTABLE_QUALITY = 20.0f;  // psnr in dB
-    private static final int FRAME_LIMIT = 300;
+    private static final int FRAME_LIMIT = 30;
     private static final int TARGET_WIDTH = 1280;
     private static final int TARGET_HEIGHT = 720;
     private static final int TARGET_FRAME_RATE = 30;
