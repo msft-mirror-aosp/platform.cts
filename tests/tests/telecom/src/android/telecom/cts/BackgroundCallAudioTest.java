@@ -46,6 +46,7 @@ public class BackgroundCallAudioTest extends BaseTelecomTestWithMockServices {
     private boolean doesAudioManagerSupportCallScreening = false;
 
     private String mPreviousDefaultDialer = null;
+    private boolean mIsStreamVolumeAdjusted = false;
 
     @Override
     protected void setUp() throws Exception {
@@ -60,8 +61,15 @@ public class BackgroundCallAudioTest extends BaseTelecomTestWithMockServices {
             // Some of the tests expect changes in audio mode when the ringer starts, so we're
             // going to turn up the ring stream volume.
             AudioManager audioManager = mContext.getSystemService(AudioManager.class);
-            audioManager.adjustStreamVolume(AudioManager.STREAM_RING,
-                    AudioManager.ADJUST_UNMUTE, 0);
+            try {
+                audioManager.adjustStreamVolume(
+                        AudioManager.STREAM_RING, AudioManager.ADJUST_UNMUTE, 0);
+                mIsStreamVolumeAdjusted = true;
+            } catch (SecurityException e) {
+                // If we can't adjust the stream volume, then we can't verify the tests which rely
+                // on this functionality
+                return;
+            }
             doesAudioManagerSupportCallScreening =
                     audioManager.isCallScreeningModeSupported();
         }
@@ -74,13 +82,13 @@ public class BackgroundCallAudioTest extends BaseTelecomTestWithMockServices {
                 && !TextUtils.isEmpty(mPreviousDefaultDialer)) {
             TestUtils.setDefaultDialer(getInstrumentation(), mPreviousDefaultDialer);
             MockCallScreeningService.disableService(mContext);
+            mIsStreamVolumeAdjusted = false;
         }
         super.tearDown();
     }
 
     public void testAudioProcessingFromCallScreeningAllow() throws Exception {
-        if (!mShouldTestTelecom || !TestUtils.hasDialerRole(mContext)
-                || !TestUtils.hasTelephonyFeature(mContext)) {
+        if (shouldSkipTest()) {
             return;
         }
 
@@ -106,8 +114,7 @@ public class BackgroundCallAudioTest extends BaseTelecomTestWithMockServices {
     }
 
     public void testHoldAfterAudioProcessingFromCallScreening() throws Exception {
-        if (!mShouldTestTelecom || !TestUtils.hasDialerRole(mContext)
-                || !TestUtils.hasTelephonyFeature(mContext)) {
+        if (shouldSkipTest()) {
             return;
         }
 
@@ -138,8 +145,7 @@ public class BackgroundCallAudioTest extends BaseTelecomTestWithMockServices {
     }
 
     public void testAudioProcessingFromCallScreeningDisallow() throws Exception {
-        if (!mShouldTestTelecom || !TestUtils.hasDialerRole(mContext)
-                || !TestUtils.hasTelephonyFeature(mContext)) {
+        if (shouldSkipTest()) {
             return;
         }
 
@@ -167,8 +173,7 @@ public class BackgroundCallAudioTest extends BaseTelecomTestWithMockServices {
     }
 
     public void testAudioProcessingFromCallScreeningMissed() throws Exception {
-        if (!mShouldTestTelecom || !TestUtils.hasDialerRole(mContext)
-                || !TestUtils.hasTelephonyFeature(mContext)) {
+        if (shouldSkipTest()) {
             return;
         }
 
@@ -194,8 +199,7 @@ public class BackgroundCallAudioTest extends BaseTelecomTestWithMockServices {
     }
 
     public void testAudioProcessingFromCallScreeningRemoteHangupDuringRing() throws Exception {
-        if (!mShouldTestTelecom || !TestUtils.hasDialerRole(mContext)
-                || !TestUtils.hasTelephonyFeature(mContext)) {
+        if (shouldSkipTest()) {
             return;
         }
 
@@ -234,8 +238,7 @@ public class BackgroundCallAudioTest extends BaseTelecomTestWithMockServices {
     }
 
     public void testAudioProcessingFromCallScreeningAllowPlaceEmergencyCall() throws Exception {
-        if (!mShouldTestTelecom || !TestUtils.hasDialerRole(mContext)
-                || !TestUtils.hasTelephonyFeature(mContext)) {
+        if (shouldSkipTest()) {
             return;
         }
         setupForEmergencyCalling(TEST_EMERGENCY_NUMBER);
@@ -280,8 +283,7 @@ public class BackgroundCallAudioTest extends BaseTelecomTestWithMockServices {
     }
 
     public void testAudioProcessingFromIncomingActivePlaceEmergencyCall() throws Exception {
-        if (!mShouldTestTelecom || !TestUtils.hasDialerRole(mContext)
-                || !TestUtils.hasTelephonyFeature(mContext)) {
+        if (shouldSkipTest()) {
             return;
         }
         setupForEmergencyCalling(TEST_EMERGENCY_NUMBER);
@@ -323,8 +325,7 @@ public class BackgroundCallAudioTest extends BaseTelecomTestWithMockServices {
     }
 
     public void testAudioProcessActiveCall() {
-        if (!mShouldTestTelecom || !TestUtils.hasDialerRole(mContext)
-                || !TestUtils.hasTelephonyFeature(mContext)) {
+        if (shouldSkipTest()) {
             return;
         }
         Connection connection = placeActiveOutgoingCall();
@@ -344,8 +345,7 @@ public class BackgroundCallAudioTest extends BaseTelecomTestWithMockServices {
     }
 
     public void testAudioProcessActiveCallMissed() throws Exception {
-        if (!mShouldTestTelecom || !TestUtils.hasDialerRole(mContext)
-                || !TestUtils.hasTelephonyFeature(mContext)) {
+        if (shouldSkipTest()) {
             return;
         }
 
@@ -366,8 +366,7 @@ public class BackgroundCallAudioTest extends BaseTelecomTestWithMockServices {
     }
 
     public void testAudioProcessActiveCallRemoteHangup() {
-        if (!mShouldTestTelecom || !TestUtils.hasDialerRole(mContext)
-                || !TestUtils.hasTelephonyFeature(mContext)) {
+        if (shouldSkipTest()) {
             return;
         }
 
@@ -391,8 +390,7 @@ public class BackgroundCallAudioTest extends BaseTelecomTestWithMockServices {
     }
 
     public void testAudioProcessOutgoingActiveEmergencyCallPlaced() throws Exception {
-        if (!mShouldTestTelecom || !TestUtils.hasDialerRole(mContext)
-                || !TestUtils.hasTelephonyFeature(mContext)) {
+        if (shouldSkipTest()) {
             return;
         }
         setupForEmergencyCalling(TEST_EMERGENCY_NUMBER);
@@ -425,8 +423,7 @@ public class BackgroundCallAudioTest extends BaseTelecomTestWithMockServices {
     }
 
     public void testManualAudioCallScreenAccept() {
-        if (!mShouldTestTelecom || !TestUtils.hasDialerRole(mContext)
-                || !TestUtils.hasTelephonyFeature(mContext)) {
+        if (shouldSkipTest()) {
             return;
         }
 
@@ -453,8 +450,7 @@ public class BackgroundCallAudioTest extends BaseTelecomTestWithMockServices {
     }
 
     public void testManualAudioCallScreenReject() {
-        if (!mShouldTestTelecom || !TestUtils.hasDialerRole(mContext)
-                || !TestUtils.hasTelephonyFeature(mContext)) {
+        if (shouldSkipTest()) {
             return;
         }
 
@@ -480,8 +476,7 @@ public class BackgroundCallAudioTest extends BaseTelecomTestWithMockServices {
     }
 
     public void testEnterAudioProcessingWithoutPermission() {
-        if (!mShouldTestTelecom || !TestUtils.hasDialerRole(mContext)
-                || !TestUtils.hasTelephonyFeature(mContext)) {
+        if (shouldSkipTest()) {
             return;
         }
 
@@ -508,8 +503,7 @@ public class BackgroundCallAudioTest extends BaseTelecomTestWithMockServices {
     }
 
     public void testLowerApiLevelCompatibility1() throws Exception {
-        if (!mShouldTestTelecom || !TestUtils.hasDialerRole(mContext)
-                || !TestUtils.hasTelephonyFeature(mContext)) {
+        if (shouldSkipTest()) {
             return;
         }
 
@@ -557,8 +551,7 @@ public class BackgroundCallAudioTest extends BaseTelecomTestWithMockServices {
     }
 
     public void testLowerApiLevelCompatibility2() throws Exception {
-        if (!mShouldTestTelecom || !TestUtils.hasDialerRole(mContext)
-                || !TestUtils.hasTelephonyFeature(mContext)) {
+        if (shouldSkipTest()) {
             return;
         }
         InstrumentationRegistry.getInstrumentation().getUiAutomation()
@@ -698,5 +691,12 @@ public class BackgroundCallAudioTest extends BaseTelecomTestWithMockServices {
                 }));
         boolean result = queue.poll(ASYNC_TIMEOUT, TimeUnit.MILLISECONDS);
         assertTrue(result);
+    }
+
+    private boolean shouldSkipTest() {
+        return !mShouldTestTelecom
+                || !TestUtils.hasDialerRole(mContext)
+                || !TestUtils.hasTelephonyFeature(mContext)
+                || !mIsStreamVolumeAdjusted;
     }
 }
