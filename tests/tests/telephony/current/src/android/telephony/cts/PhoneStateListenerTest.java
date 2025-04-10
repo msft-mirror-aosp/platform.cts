@@ -53,6 +53,7 @@ import android.telephony.TelephonyManager;
 import android.telephony.cts.util.TelephonyUtils;
 import android.telephony.emergency.EmergencyNumber;
 import android.telephony.ims.ImsReasonInfo;
+import android.util.ArraySet;
 import android.util.Log;
 import android.util.Pair;
 
@@ -67,6 +68,7 @@ import org.junit.Test;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -139,6 +141,17 @@ public class PhoneStateListenerTest {
             PreciseCallState.PRECISE_CALL_STATE_NOT_VALID,
             PreciseCallState.PRECISE_CALL_STATE_WAITING
     );
+
+    /* From 36.331:
+     * uac-BarringFactor-r16 ENUMERATED {p00, p05, p10, p15, p20, q25, p30, p40,
+     * p50, p60, p70, p75, p80, p85, p90, p95},
+     * ...
+     * ac-BarringFactor ENUMERATED {p00, p05, p10, p15, p20, q25, p30, p40,
+     * p50, p60, p70, p75, p80, p85, p90, p95},
+     */
+    private static final Set<Integer> BARRING_PERCENTAGES =
+            new ArraySet<Integer>(
+                    Arrays.asList(0, 5, 10, 15, 20, 25, 30, 40, 50, 60, 70, 75, 80, 85, 90, 95));
 
     private Executor mSimpleExecutor = new Executor() {
         @Override
@@ -1025,7 +1038,7 @@ public class PhoneStateListenerTest {
                     // If conditional barring is active, then the barring time and factor must
                     // be known (set), but the device may or may not be barred at the moment,
                     // so isConditionallyBarred() can be either true or false (hence not checked).
-                    assertNotEquals(0, bsi.getConditionalBarringFactor());
+                    assertTrue(BARRING_PERCENTAGES.contains(bsi.getConditionalBarringFactor()));
                     assertNotEquals(0, bsi.getConditionalBarringTimeSeconds());
                     assertEquals(bsi.isBarred(), bsi.isConditionallyBarred());
                     break;
