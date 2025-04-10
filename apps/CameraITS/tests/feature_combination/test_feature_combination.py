@@ -185,7 +185,8 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
     else:
       failures['optional'].append(msg)
 
-  def _handle_one_completed_future(self, pending_futures, future, database):
+  def _handle_one_completed_future(
+      self, pending_futures, future, test_failures, database):
     result = future.result()
     pending_futures.remove(future)
     logging.debug('Verification result: %s', result)
@@ -201,14 +202,17 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
     )
     gc.collect()
 
-  def _handle_completed_futures(self, verifications, database):
+  def _handle_completed_futures(self, verifications, test_failures, database):
     for future in verifications[:]:
       if future.done():
-        self._handle_one_completed_future(verifications, future, database)
+        self._handle_one_completed_future(
+            verifications, future, test_failures, database)
 
-  def _drain_feature_verification_futures(self, verifications, database):
+  def _drain_feature_verification_futures(
+      self, verifications, test_failures, database):
     for future in concurrent.futures.as_completed(verifications):
-        self._handle_one_completed_future(verifications, future, database)
+      self._handle_one_completed_future(
+          verifications, future, test_failures, database)
 
   def _test_feature_combination(self, executor):
     """Tests features using an injected ThreadPoolExecutor for analysis.
@@ -521,12 +525,12 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
                 )
                 # Handle completed feature verification futures
                 self._handle_completed_futures(
-                    feature_verification_futures, database)
+                    feature_verification_futures, test_failures, database)
                 feature_verification_futures.append(future)
 
       # Drain the remaining feature combination results
       self._drain_feature_verification_futures(
-          feature_verification_futures, database)
+          feature_verification_futures, test_failures, database)
 
       # Output the feature combination proto to ItsService and optionally to
       # file
