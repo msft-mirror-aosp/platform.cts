@@ -6128,7 +6128,8 @@ public class TelephonyManagerTest {
             assertNotNull(impuList);
             for (Uri impu : impuList) {
                 Log.i(TAG, "getImsPublicUserIdentities_ReadPrivilegedPermission: impu " + impu);
-                assertTrue(impu.getScheme().equalsIgnoreCase("sip"));
+                assertTrue(impu.getScheme().equalsIgnoreCase("sip")
+                        || impu.getScheme().equalsIgnoreCase("tel"));
             }
         } catch (IllegalStateException e) {
             assumeNoException("Skipping test in case SIM do not support ISIM", e);
