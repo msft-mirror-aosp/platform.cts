@@ -135,7 +135,7 @@ public class SharedConnectivityManagerTest {
                         .setConnectionStrength(2)
                         .setBatteryPercentage(50);
 
-        if (Flags.networkProviderBatteryChargingStatus() && SdkLevel.isAtLeastV()) {
+        if (SdkLevel.isAtLeastV()) {
             builder.setBatteryCharging(false);
         }
 
