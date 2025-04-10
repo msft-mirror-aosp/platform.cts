@@ -1155,10 +1155,6 @@ public class StorageManagerTest {
 
     @Test
     public void testStorageRemainingLifetime() {
-        if (!android.os.Flags.storageLifetimeApi()) {
-            return;
-        }
-
         int value = -1;
         boolean gotSecurityException = false;
         try {
