@@ -841,7 +841,6 @@ public class PackageManagerShellCommandInstallTest {
         }
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_IMPROVE_INSTALL_DONT_KILL)
     @Test
     public void testDontKillOldPathsArePreserved() throws Exception {
         assumeFalse(mStreaming);
