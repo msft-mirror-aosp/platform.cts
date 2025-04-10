@@ -32,6 +32,7 @@ android_test {
         "telephony_flags_core_java_lib",
         "camera_platform_flags_java_lib",
         "com_android_car_settings_flags_lib",
+        "cts-install-lib",
     ],
 
     srcs: [

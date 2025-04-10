@@ -16,8 +16,11 @@
 
 package android.settings.cts;
 
+import static com.android.cts.install.lib.InstallUtils.getPackageInfo;
+
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
+import static org.junit.Assume.assumeNotNull;
 
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -46,6 +49,10 @@ public class AppLocaleSettingsTest {
         assumeFalse(
                 "Skipping test: AppLocaleSettings is not supported in AAOS",
                 SettingsTestUtils.isAutomotive());
+        assumeNotNull(
+                "Skipping test: Settings application is not installed",
+                getPackageInfo("com.android.settings"));
+
         final Intent intent = new Intent(Settings.ACTION_APP_LOCALE_SETTINGS);
         intent.setData(Uri.parse("package:com.my.app"));
         final ResolveInfo ri = InstrumentationRegistry.getTargetContext()
