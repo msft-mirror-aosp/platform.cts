@@ -22,9 +22,7 @@ import static org.junit.Assert.assertThrows;
 
 import android.car.Car;
 import android.car.cts.permissiontest.AbstractCarManagerPermissionTest;
-import android.car.feature.Flags;
 import android.car.wifi.CarWifiManager;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
@@ -48,7 +46,6 @@ public class CarWifiManagerPermissionTest extends AbstractCarManagerPermissionTe
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_PERSIST_AP_SETTINGS)
     public void testCanControlPersistTetheringSettings() {
         expectPermissionException(Car.PERMISSION_READ_PERSIST_TETHERING_SETTINGS,
                 () -> mCarWifiManager.canControlPersistTetheringSettings());
