@@ -16,7 +16,6 @@
 package android.os.cts.batteryhealth;
 
 import static android.os.Flags.stateOfHealthPublic;
-import static android.os.Flags.batteryPartStatusApi;
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assert.fail;
@@ -139,9 +138,6 @@ public class BatteryHealthTest {
     @Test
     @ApiTest(apis = {"android.os.BatteryManager#BATTERY_PROPERTY_SERIAL_NUMBER"})
     public void testBatterySerialNumber_dataValid() {
-        if (!batteryPartStatusApi()) {
-            return;
-        }
         mAutomation = getInstrumentation().getUiAutomation();
         mAutomation.adoptShellPermissionIdentity(android.Manifest.permission.BATTERY_STATS);
         final String serialNumber = mBatteryManager.getStringProperty(BatteryManager
@@ -156,9 +152,6 @@ public class BatteryHealthTest {
     @Test
     @ApiTest(apis = {"android.os.BatteryManager#BATTERY_PROPERTY_PART_STATUS"})
     public void testBatteryPartStatus_dataInRange() {
-        if (!batteryPartStatusApi()) {
-            return;
-        }
         mAutomation = getInstrumentation().getUiAutomation();
         mAutomation.adoptShellPermissionIdentity(android.Manifest.permission.BATTERY_STATS);
         final int partStatus = mBatteryManager.getIntProperty(BatteryManager
