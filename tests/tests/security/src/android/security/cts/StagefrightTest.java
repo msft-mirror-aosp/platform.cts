@@ -49,7 +49,6 @@ import android.os.Parcel;
 import android.os.SystemClock;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.AsbSecurityTest;
-import android.security.NetworkSecurityPolicy;
 import android.util.Log;
 import android.view.Surface;
 import android.webkit.cts.CtsTestServer;
@@ -1036,8 +1035,6 @@ public class StagefrightTest extends StsExtraBusinessLogicTestCase {
     @Test
     @AsbSecurityTest(cveBugId = 68342866)
     public void testStagefright_bug_68342866() throws Exception {
-        NetworkSecurityPolicy policy = NetworkSecurityPolicy.getInstance();
-        policy.setCleartextTrafficPermitted(true);
         Thread server = new Thread() {
             @Override
             public void run() {
@@ -1103,7 +1100,6 @@ public class StagefrightTest extends StsExtraBusinessLogicTestCase {
                 mpcl.waitForError() == MediaPlayer.MEDIA_ERROR_SERVER_DIED);
         t.stopLooper();
         t.join();
-        policy.setCleartextTrafficPermitted(false);
         server.join();
     }
 
@@ -1910,8 +1906,6 @@ public class StagefrightTest extends StsExtraBusinessLogicTestCase {
     }
 
     private void doStagefrightTest(final int rid, CrashUtils.Config config) throws Exception {
-        NetworkSecurityPolicy policy = NetworkSecurityPolicy.getInstance();
-        policy.setCleartextTrafficPermitted(true);
         doStagefrightTestMediaPlayer(rid, config);
         doStagefrightTestMediaCodec(rid, config);
         doStagefrightTestMediaMetadataRetriever(rid, config);
@@ -1933,7 +1927,6 @@ public class StagefrightTest extends StsExtraBusinessLogicTestCase {
         doStagefrightTestMediaPlayer(url, config);
         doStagefrightTestMediaCodec(url, config);
         doStagefrightTestMediaMetadataRetriever(url, config);
-        policy.setCleartextTrafficPermitted(false);
         server.shutdown();
     }
 

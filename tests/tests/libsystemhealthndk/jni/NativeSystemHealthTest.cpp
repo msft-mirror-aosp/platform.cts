@@ -95,8 +95,9 @@ static inline std::optional<std::string> checkCpuHeadroom(const ACpuHeadroomPara
         }
         return StringPrintf("Failed to get CPU headroom result: %d", ret);
     }
-    if (isnan(outHeadroom) || outHeadroom < 0.0f || outHeadroom > 100.0f) {
-        return StringPrintf("Expected headroom in range [0, 100] but got %2.2f", outHeadroom);
+    if (!isnan(outHeadroom) && (outHeadroom < 0.0f || outHeadroom > 100.0f)) {
+        return StringPrintf("Expected headroom to be nan or in range [0, 100] but got %2.2f",
+                            outHeadroom);
     }
     return std::nullopt;
 }
@@ -115,8 +116,9 @@ static inline std::optional<std::string> checkGpuHeadroom(const AGpuHeadroomPara
         }
         return StringPrintf("Failed to get GPU headroom result: %d", ret);
     }
-    if (isnan(outHeadroom) || outHeadroom < 0.0f || outHeadroom > 100.0f) {
-        return StringPrintf("Expected headroom in range [0, 100] but got %2.2f", outHeadroom);
+    if (!isnan(outHeadroom) && (outHeadroom < 0.0f || outHeadroom > 100.0f)) {
+        return StringPrintf("Expected headroom to be nan or in range [0, 100] but got %2.2f",
+                            outHeadroom);
     }
     return std::nullopt;
 }
