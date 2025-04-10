@@ -2541,7 +2541,7 @@
             <meta-data android:name="test_category" android:value="@string/test_category_sensors"/>
             <meta-data android:name="CddTest" android:value="7.4.1/C-4-1|7.4.2/C-1-1" />
             <meta-data android:name="test_required_features"
-                       android:value="android.hardware.sensor.barometer:android.hardware.bluetooth_le"/>
+                       android:value="android.hardware.sensor.barometer:android.hardware.bluetooth_le:sensor.barometer.high_quality.implemented"/>
             <meta-data android:name="test_excluded_features"
                        android:value="android.hardware.type.automotive"/>
             <meta-data android:name="display_mode"
@@ -2559,7 +2559,7 @@
             </intent-filter>
             <meta-data android:name="CddTest" android:value="7.4.1/C-4-1|7.4.2/C-1-1" />
             <meta-data android:name="test_required_features"
-                       android:value="android.hardware.sensor.barometer:android.hardware.bluetooth_le"/>
+                       android:value="android.hardware.sensor.barometer:android.hardware.bluetooth_le:sensor.barometer.high_quality.implemented"/>
             <meta-data android:name="test_excluded_features"
                        android:value="android.hardware.type.automotive"/>
             <meta-data android:name="display_mode"
