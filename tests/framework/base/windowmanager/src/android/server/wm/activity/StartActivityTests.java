@@ -58,7 +58,6 @@ import android.content.pm.PackageManager;
 import android.graphics.Rect;
 import android.os.Bundle;
 import android.platform.test.annotations.Presubmit;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.server.wm.ActivityManagerTestBase;
@@ -393,7 +392,6 @@ public class StartActivityTests extends ActivityManagerTestBase {
      */
     @Test
     @ApiTest(apis = {"android.app.ActivityOptions#setLaunchBounds"})
-    @RequiresFlagsEnabled(com.android.window.flags.Flags.FLAG_FIX_LAYOUT_EXISTING_TASK)
     public void testStartActivityWithLaunchBounds() {
         assumeTrue("Device doesn't support pip or freeform", supportsPip() || supportsFreeform());
 
