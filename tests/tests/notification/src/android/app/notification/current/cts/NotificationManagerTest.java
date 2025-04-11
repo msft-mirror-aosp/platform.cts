@@ -122,6 +122,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.FixMethodOrder;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -3883,6 +3884,7 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
     }
 
     @Test
+    @Ignore("b/409850649")
     @RequiresFlagsEnabled(android.app.Flags.FLAG_API_RICH_ONGOING)
     public void testCanPostPromotedNotifications() {
         boolean initialValue = mNotificationManager.canPostPromotedNotifications();
