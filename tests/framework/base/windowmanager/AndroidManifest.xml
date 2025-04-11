@@ -628,6 +628,9 @@
         <activity android:name="android.server.wm.backnavigation.BackNavigationActivity"
                   android:enableOnBackInvokedCallback="true"
                   android:exported="true"/>
+        <activity android:name="android.server.wm.backnavigation.OptOutBackNavigationActivity"
+            android:enableOnBackInvokedCallback="false"
+            android:exported="true"/>
         <activity android:name="android.server.wm.other.PinnedStackTests$TestActivity"
                   android:exported="true"/>
         <activity android:name="android.server.wm.taskfragment.TaskFragmentTrustedModeTest$TranslucentActivity"
