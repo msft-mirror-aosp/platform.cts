@@ -6,7 +6,7 @@ per-file SetFrameRateTest.java = adyabr@google.com, ramindani@google.com, rnlee@
 per-file GainmapTest.java = file:platform/frameworks/native:/libs/shaders/OWNERS
 per-file ImageDecoderTest.java =dichenzhang@google.com
 per-file ParcelableColorSpaceTest.java = file:platform/frameworks/native:/libs/shaders/OWNERS
-per-file SystemPaletteTest.kt = arteiro@google.com, dupin@google.com
+per-file SystemPaletteTest.kt = arteiro@google.com, dupin@google.com, michschn@google.com
 
 # Bug template url: https://b.corp.google.com/issues/new?component=25699&template=183271 = per-file Typeface*.java
 per-file Typeface* = nona@google.com, haoyuchang@google.com, justinghan@google.com
