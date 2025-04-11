@@ -27,7 +27,6 @@ import static com.android.os.framework.FrameworkExtensionAtoms.MediaProjectionSt
 import static com.android.os.framework.FrameworkExtensionAtoms.MediaProjectionStateChanged.MediaProjectionState.MEDIA_PROJECTION_STATE_INITIATED;
 import static com.android.os.framework.FrameworkExtensionAtoms.MediaProjectionStateChanged.MediaProjectionState.MEDIA_PROJECTION_STATE_PERMISSION_REQUEST_DISPLAYED;
 import static com.android.os.framework.FrameworkExtensionAtoms.MediaProjectionStateChanged.MediaProjectionState.MEDIA_PROJECTION_STATE_STOPPED;
-import static com.android.os.framework.FrameworkExtensionAtoms.MediaProjectionTargetChanged.TargetChangeType.TARGET_CHANGE_BOUNDS;
 import static com.android.os.framework.FrameworkExtensionAtoms.MediaProjectionTargetChanged.TargetChangeType.TARGET_CHANGE_WINDOWING_MODE;
 import static com.android.os.framework.FrameworkExtensionAtoms.MediaProjectionTargetChanged.TargetType.TARGET_TYPE_DISPLAY;
 import static com.android.os.framework.FrameworkExtensionAtoms.MediaProjectionTargetChanged.WindowingMode.WINDOWING_MODE_FULLSCREEN;
@@ -213,6 +212,8 @@ public class MediaProjectionAtomsTests extends BaseHostJUnit4Test implements IBu
 
     @Test
     public void testMediaProjectionStateChanged_appSelectorShown() throws Exception {
+        // TODO(b/411157411): support MediaProjection on automotive targets
+        assumeFalse(DeviceUtils.hasFeature(getDevice(), DeviceUtils.FEATURE_AUTOMOTIVE));
         final String testClass = ".MediaProjectionTests";
         final String testMethod2 = "testMediaProjectionShowAppSelector";
 
