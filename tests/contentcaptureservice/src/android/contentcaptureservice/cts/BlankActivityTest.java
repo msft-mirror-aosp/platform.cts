@@ -32,6 +32,7 @@ import static com.android.compatibility.common.util.ActivitiesWatcher.ActivityLi
 import static com.google.common.truth.Truth.assertThat;
 
 import android.app.Instrumentation;
+import android.app.assist.ActivityId;
 import android.content.ComponentName;
 import android.content.Intent;
 import android.contentcaptureservice.cts.CtsContentCaptureService.Session;
@@ -301,7 +302,7 @@ public class BlankActivityTest
 
         BlockingBroadcastReceiver receiver1 = registerCreateUnderlayReceiver();
 
-        final BlankActivity activity = launchActivity();
+        launchActivity();
         watcher.waitFor(RESUMED);
 
         // Verify the broadcast is received.
@@ -318,7 +319,7 @@ public class BlankActivityTest
 
         BlockingBroadcastReceiver receiver1 = registerCreateUnderlayReceiver();
 
-        final BlankActivity activity = launchActivity();
+        launchActivity();
         watcher.waitFor(RESUMED);
 
         assertThat(receiver1.awaitForBroadcast(5000)).isNull();
@@ -343,6 +344,7 @@ public class BlankActivityTest
         assertThat(intent.getAction()).isEqualTo("com.systemui.underlay.action.CREATE_UNDERLAY");
         assertThat(intent.getIntExtra("dataSessionId", -1)).isNotEqualTo(-1);
         assertThat(intent.getLongExtra("timestamp", -1)).isNotEqualTo(-1);
+        assertThat(intent.getParcelableExtra("activityId", ActivityId.class)).isNotNull();
     }
 
     private void startOutsideActivity(boolean finishActivity) {
