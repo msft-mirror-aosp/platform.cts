@@ -44,6 +44,7 @@ _EXTENSION_NONE = -1  # Use Camera2 instead of a Camera Extension
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
 _NUM_FRAMES_TO_WAIT = 40  # The preview frame number to capture
 _BRIGHTNESS_SETTING_CHANGE_WAIT_SEC = 5  # Seconds
+_MAX_NUM_BRIGHTEST_SQUARES = 2
 
 _AVG_DELTA_LUMINANCE_THRESH = 18
 _AVG_DELTA_LUMINANCE_THRESH_METERED_REGION = 17
@@ -99,7 +100,8 @@ def _capture_and_analyze(cam, file_stem, camera_id, preview_size, extension,
     img_rgb = cv2.flip(img_rgb, 1)
   try:
     low_light_utils.analyze_low_light_scene_capture(
-        file_stem, img_rgb, luminance_thresh, delta_luminance_thresh
+        file_stem, img_rgb, luminance_thresh, delta_luminance_thresh,
+        _MAX_NUM_BRIGHTEST_SQUARES
     )
   except AssertionError as e:
     # On Android 15, we initially test without metered region. If it fails, we
