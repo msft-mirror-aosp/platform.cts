@@ -159,7 +159,7 @@ public class GestureDetectionStubAccessibilityService extends InstrumentedAccess
                 .that(getGestureInfoSize())
                 .isEqualTo(1);
         AccessibilityGestureEvent received = getGestureInfo(0);
-        assertThat(expected.toString()).isEqualTo(received.toString());
+        assertThat(received.toString()).isEqualTo(expected.toString());
         clearGestures();
     }
 
@@ -175,6 +175,6 @@ public class GestureDetectionStubAccessibilityService extends InstrumentedAccess
         for (int i = 0; i < getEventsSize(); ++i) {
             received.add(AccessibilityEvent.eventTypeToString(getEvent(i)));
         }
-        assertThat(expected).isEqualTo(received);
+        assertThat(received).isEqualTo(expected);
     }
 }
