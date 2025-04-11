@@ -205,7 +205,7 @@
     </target_preparer>
     <!-- Collect the files from DumpOnFailure. -->
     <metrics_collector class="com.android.tradefed.device.metric.FilePullerLogCollector">
-        <option name="pull-pattern-keys" value="perfetto_file_path*"/>
+        <option name="pull-pattern-keys" value="perfetto_file_path"/>
         <option name="pull-pattern-keys" value="android.device.collectors.ScreenshotOnFailureCollector.*\.png"/>
         <option name="directory-keys" value="/sdcard/DumpOnFailure" />
         <option name="collect-on-run-ended-only" value="true" />
