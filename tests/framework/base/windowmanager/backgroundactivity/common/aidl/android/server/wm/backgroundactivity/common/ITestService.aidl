@@ -27,8 +27,9 @@ interface ITestService {
     void startManageSpaceActivity();
     void sendByTextClassification(in TextClassification classification);
     void sendPendingIntent(in PendingIntent pendingIntent, in Bundle sendOptions);
-    void sendPendingIntentWithActivity(in PendingIntent pendingIntent, in Bundle sendOptions);
-    void sendPendingIntentWithActivityForResult(in PendingIntent pendingIntent, in Bundle sendOptions);
+    void sendPendingIntentWithActivity(in int activityId, in PendingIntent pendingIntent, in Bundle sendOptions);
+    void sendPendingIntentWithActivityForResult(in int activityId, in PendingIntent pendingIntent, in Bundle sendOptions);
     void sendIntentSender(in IntentSender intentSender, in Bundle sendOptions);
-    void startActivityIntent(in Intent intent);
+    void startActivityIntent(in int activityId, in Intent intent, in Bundle options);
+    void finishActivity(in int activityId);
 }
