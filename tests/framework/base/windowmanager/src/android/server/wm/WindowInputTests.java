@@ -758,7 +758,7 @@ public class WindowInputTests {
     @Test
     public void testInjectToStatusBar() {
         // Try to inject event to status bar.
-        assumeHasStatusBar(mActivityRule);
+        assumeHasStatusBar(mActivity);
         final long downTime = SystemClock.uptimeMillis();
         final MotionEvent eventHover = MotionEvent.obtain(
                 downTime, downTime, MotionEvent.ACTION_HOVER_MOVE, 0, 0, 0);
