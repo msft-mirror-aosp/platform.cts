@@ -34,6 +34,7 @@ import android.media.cts.MediaHeavyPresubmitTest;
 import android.media.cts.MediaTestBase;
 import android.media.cts.NdkMediaCodec;
 import android.media.cts.SdkMediaCodec;
+import android.media.cts.TestArgs;
 import android.os.Build;
 import android.platform.test.annotations.AppModeFull;
 import android.util.Log;
@@ -112,6 +113,9 @@ public class DecoderLowLatencyTest extends MediaTestBase {
             String[] decoderNames = MediaUtils.getDecoderNamesForMime(mediaType);
 
             for (String decoder : decoderNames) {
+                if (TestArgs.shouldSkipCodec(decoder)) {
+                    continue;
+                }
                 Object[] testArgs = new Object[argLength + 1];
                 System.arraycopy(arg, 0, testArgs, 0, argLength);
                 testArgs[argLength] = decoder;
