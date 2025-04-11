@@ -67,6 +67,8 @@ public class BatteryHealthTests extends DeviceTestCase implements IBuildReceiver
     public void testBatteryHealthAtomValid() throws Exception {
         List<AtomsProto.Atom> atoms = pullBatteryHealthAsGaugeMetric();
 
+        // Not all devices will report a BatteryHealthAtom
+        if (atoms.size() == 0) return;
         assertThat(atoms.size()).isEqualTo(1);
 
         BatteryHealth bh = atoms.get(0).getExtension(BatteryExtensionAtoms.batteryHealth);
