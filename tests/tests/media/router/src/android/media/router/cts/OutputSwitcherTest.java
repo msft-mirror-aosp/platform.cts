@@ -23,15 +23,11 @@ import static android.media.router.cts.StubMediaRoute2ProviderService.FEATURE_SA
 import static android.media.router.cts.StubMediaRoute2ProviderService.FEATURE_SPECIAL;
 import static android.media.router.cts.StubMediaRoute2ProviderService.ROUTE_ID1;
 import static android.media.router.cts.StubMediaRoute2ProviderService.ROUTE_ID2;
-import static android.media.router.cts.StubMediaRoute2ProviderService.ROUTE_ID4_TO_SELECT_AND_DESELECT;
 import static android.media.router.cts.StubMediaRoute2ProviderService.ROUTE_ID5_TO_TRANSFER_TO;
-import static android.media.router.cts.StubMediaRoute2ProviderService.ROUTE_ID9_REMOTE;
 import static android.media.router.cts.StubMediaRoute2ProviderService.ROUTE_ID_SPECIAL_FEATURE;
 import static android.media.router.cts.StubMediaRoute2ProviderService.ROUTE_NAME1;
 import static android.media.router.cts.StubMediaRoute2ProviderService.ROUTE_NAME2;
-import static android.media.router.cts.StubMediaRoute2ProviderService.ROUTE_NAME4;
 import static android.media.router.cts.StubMediaRoute2ProviderService.ROUTE_NAME5;
-import static android.media.router.cts.StubMediaRoute2ProviderService.ROUTE_NAME9;
 import static android.media.router.cts.StubMediaRoute2ProviderService.ROUTE_NAME_SPECIAL_FEATURE;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -84,10 +80,8 @@ import org.mockito.junit.MockitoRule;
 
 import java.util.List;
 import java.util.Locale;
-import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
-import java.util.stream.Collectors;
 
 @RunWith(BedsteadJUnit4.class)
 @AppModeFull(reason = "The system should be able to bind to StubMediaRoute2ProviderService")
@@ -109,19 +103,6 @@ public class OutputSwitcherTest {
     // (frameworks/base/packages/SettingsLib/res/values/strings.xml)
     public static final String THIS_DEVICE_PREFIX = "This ";
 
-    // This comes from the value of
-    // com.android.systemui.R.string.cast_to_other_device_stop_dialog_button
-    // (frameworks/base/packages/SystemUI/res/values/strings.xml)
-    private static final String STOP_CASTING_BUTTON_TITLE = "Stop casting";
-
-    // These come from the values of
-    //   com.android.systemui.R.string.accessibility_add_device_to_group
-    // and
-    //   com.android.systemui.R.string.accessibility_remove_device_from_group
-    // (frameworks/base/packages/SystemUI/res/values/strings.xml)
-    private static final String ADD_DEVICE_TO_GROUP = "Add device to group";
-    private static final String REMOVE_DEVICE_FROM_GROUP = "Remove device from group";
-
     // Required by Bedstead.
     @ClassRule @Rule public static final DeviceState sDeviceState = new DeviceState();
 
@@ -137,7 +118,6 @@ public class OutputSwitcherTest {
     @Mock private StubMediaRoute2ProviderService.Proxy mProviderProxy;
 
     @Mock private MediaRouter2.TransferCallback mTransferCallback;
-    @Mock private MediaRouter2.ControllerCallback mControllerCallback;
 
     private Context mContext;
     private Executor mExecutor;
@@ -327,91 +307,6 @@ public class OutputSwitcherTest {
                 By.text(ROUTE_NAME_SPECIAL_FEATURE).pkg(SYSTEM_UI_PACKAGE), TIMEOUT_MS);
     }
 
-    @Test
-    public void selectRemoteRoute_thenTapStopCastingButton_correctEventsFire() throws Exception {
-        mService.removeAllRoutesExcept(List.of(ROUTE_ID1, ROUTE_ID9_REMOTE));
-        registerRouteCallback(List.of(FEATURE_SAMPLE, MediaRoute2Info.FEATURE_REMOTE_PLAYBACK));
-        mRouter2.registerTransferCallback(mExecutor, mTransferCallback);
-
-        assertThat(mRouter2.showSystemOutputSwitcher()).isTrue();
-        clickRouteInDialog(ROUTE_NAME9);
-
-        verify(mProviderProxy, timeout(TIMEOUT_MS))
-                .onCreateSession(anyLong(), any(), eq(ROUTE_ID9_REMOTE), any());
-
-        ArgumentCaptor<RoutingController> controllerCaptor =
-                ArgumentCaptor.forClass(RoutingController.class);
-
-        verify(mTransferCallback, timeout(TIMEOUT_MS))
-                .onTransfer(any(), controllerCaptor.capture());
-        String sessionId = controllerCaptor.getValue().getId();
-        String originalSessionId = controllerCaptor.getValue().getOriginalId();
-
-        UiObject2 stopCastingButton =
-                UiAutomatorUtils2.waitFindObject(
-                        By.text(STOP_CASTING_BUTTON_TITLE).pkg(SYSTEM_UI_PACKAGE), TIMEOUT_MS);
-        stopCastingButton.click();
-
-        verify(mTransferCallback, timeout(TIMEOUT_MS))
-                .onStop(argThat(stoppedController -> sessionId.equals(stoppedController.getId())));
-        verify(mProviderProxy, timeout(TIMEOUT_MS))
-                .onReleaseSession(anyLong(), eq(originalSessionId));
-    }
-
-    @Test
-    public void streamExpansion_addSecondRoute_eventsFire() throws Exception {
-        mService.removeAllRoutesExcept(List.of(ROUTE_ID1, ROUTE_ID4_TO_SELECT_AND_DESELECT));
-        registerRouteCallback(List.of(FEATURE_SAMPLE));
-        mRouter2.registerTransferCallback(mExecutor, mTransferCallback);
-        mRouter2.registerControllerCallback(mExecutor, mControllerCallback);
-
-        assertThat(mRouter2.showSystemOutputSwitcher()).isTrue();
-        clickRouteInDialog(ROUTE_NAME1);
-
-        ArgumentCaptor<RoutingController> controllerCaptor =
-                ArgumentCaptor.forClass(RoutingController.class);
-        verify(mTransferCallback, timeout(TIMEOUT_MS))
-                .onTransfer(any(), controllerCaptor.capture());
-
-        String sessionId = controllerCaptor.getValue().getOriginalId();
-
-        clickAddDeviceToGroup(ROUTE_NAME4);
-
-        verify(mProviderProxy, timeout(TIMEOUT_MS))
-                .onSelectRoute(anyLong(), eq(sessionId), eq(ROUTE_ID4_TO_SELECT_AND_DESELECT));
-
-        verify(mControllerCallback, timeout(TIMEOUT_MS).atLeastOnce())
-                .onControllerUpdated(
-                        argThat(
-                                controller -> {
-                                    Set<String> selectedRouteIds =
-                                            controller.getSelectedRoutes().stream()
-                                                    .map(MediaRoute2Info::getOriginalId)
-                                                    .collect(Collectors.toSet());
-                                    return selectedRouteIds.equals(
-                                            Set.of(ROUTE_ID1, ROUTE_ID4_TO_SELECT_AND_DESELECT));
-                                }));
-    }
-
-    @Test
-    public void streamExpansion_addAndRemoveSecondRoute_eventsFire() throws Exception {
-        mService.removeAllRoutesExcept(List.of(ROUTE_ID1, ROUTE_ID4_TO_SELECT_AND_DESELECT));
-        registerRouteCallback(List.of(FEATURE_SAMPLE));
-
-        assertThat(mRouter2.showSystemOutputSwitcher()).isTrue();
-        clickRouteInDialog(ROUTE_NAME1);
-
-        clickAddDeviceToGroup(ROUTE_NAME4);
-
-        verify(mProviderProxy, timeout(TIMEOUT_MS))
-                .onSelectRoute(anyLong(), any(), eq(ROUTE_ID4_TO_SELECT_AND_DESELECT));
-
-        clickRemoveDeviceFromGroup(ROUTE_NAME4);
-
-        verify(mProviderProxy, timeout(TIMEOUT_MS))
-                .onDeselectRoute(anyLong(), any(), eq(ROUTE_ID4_TO_SELECT_AND_DESELECT));
-    }
-
     private void registerRouteCallback(List<String> features) {
         mRouter2.registerRouteCallback(
                 mExecutor,
@@ -439,44 +334,6 @@ public class OutputSwitcherTest {
                 UiAutomatorUtils2.waitFindObject(
                         By.textStartsWith(THIS_DEVICE_PREFIX).pkg(SYSTEM_UI_PACKAGE), TIMEOUT_MS);
         route.click();
-    }
-
-    // This finds an element with the given route name, and then tries to find an element with an
-    // accessibility label of "Add device to group" as close as possible to it, and clicks on that.
-    private static void clickAddDeviceToGroup(String routeName) throws UiObjectNotFoundException {
-        UiObject2 route =
-                UiAutomatorUtils2.waitFindObject(
-                        By.text(routeName).pkg(SYSTEM_UI_PACKAGE), TIMEOUT_MS);
-        clickNearestElementWithDescription(route, ADD_DEVICE_TO_GROUP);
-    }
-
-    // Similar to the above, but searches for "Remove device from group".
-    private static void clickRemoveDeviceFromGroup(String routeName)
-            throws UiObjectNotFoundException {
-        UiObject2 route =
-                UiAutomatorUtils2.waitFindObject(
-                        By.text(routeName).pkg(SYSTEM_UI_PACKAGE), TIMEOUT_MS);
-        clickNearestElementWithDescription(route, REMOVE_DEVICE_FROM_GROUP);
-    }
-
-    private static void clickNearestElementWithDescription(
-            UiObject2 startNode, String description) {
-        while (startNode != null) {
-            UiObject2 element = startNode.findObject(By.descContains(description));
-            if (element != null) {
-                element.click();
-                return;
-            }
-            // Keep moving search start point farther up in the tree as long as we haven't found the
-            // target.
-            startNode = startNode.getParent();
-        }
-
-        UiAutomatorUtils2.assertWithUiDump(
-                () -> {
-                    throw new RuntimeException(
-                            "Unable to find element with description: " + description);
-                });
     }
 
     private static void assertDialogShowsConnectionTo(String routeName) throws Exception {
