@@ -6895,6 +6895,81 @@ public class TelephonyManagerTest {
 
     }
 
+    @Test
+    public void testUserAgentWithReplacePattern() throws Exception {
+        if (!mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_MESSAGING)) {
+            Log.d(TAG, "skipping test on device without FEATURE_TELEPHONY_MESSAGING present");
+            return;
+        }
+        final String userAgentWithReplacePattern = new String("Brand%s");
+        final String userAgentReplaced = new String("Brand" + Build.MODEL);
+
+        PersistableBundle carrierConfig = new PersistableBundle();
+        carrierConfig.putString(
+                CarrierConfigManager.KEY_MMS_USER_AGENT_STRING, userAgentWithReplacePattern);
+        overrideCarrierConfig(carrierConfig);
+        PollingCheck.waitFor(
+                10000,
+                () -> mTelephonyManager.getMmsUserAgent().equals(userAgentReplaced),
+                "Timeout when waiting for MmsUserAgent config override");
+        assertEquals(userAgentReplaced, mTelephonyManager.getMmsUserAgent());
+        overrideCarrierConfig(null);
+    }
+
+    @Test
+    public void testUserAgentWithoutReplacePattern() throws Exception {
+        if (!mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_MESSAGING)) {
+            Log.d(TAG, "skipping test on device without FEATURE_TELEPHONY_MESSAGING present");
+            return;
+        }
+        final String userAgentWithoutReplacePattern = new String("Brand");
+
+        PersistableBundle carrierConfig = new PersistableBundle();
+        carrierConfig.putString(
+                CarrierConfigManager.KEY_MMS_USER_AGENT_STRING, userAgentWithoutReplacePattern);
+        overrideCarrierConfig(carrierConfig);
+        assertEquals(userAgentWithoutReplacePattern, mTelephonyManager.getMmsUserAgent());
+        overrideCarrierConfig(null);
+    }
+
+    @Test
+    public void testMmsUAProfUrlWithReplacePattern() throws Exception {
+        if (!mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_MESSAGING)) {
+            Log.d(TAG, "skipping test on device without FEATURE_TELEPHONY_MESSAGING present");
+            return;
+        }
+        final String uaprofWithReplacePattern = new String("http://uaprof.oemmobile.com/%sV1.xml");
+        final String uaprofReplaced =
+                new String("http://uaprof.oemmobile.com/" + Build.MODEL + "V1.xml");
+
+        PersistableBundle carrierConfig = new PersistableBundle();
+        carrierConfig.putString(
+                CarrierConfigManager.KEY_MMS_UA_PROF_URL_STRING, uaprofWithReplacePattern);
+        overrideCarrierConfig(carrierConfig);
+        PollingCheck.waitFor(
+                10000,
+                () -> mTelephonyManager.getMmsUAProfUrl().equals(uaprofReplaced),
+                "Timeout when waiting for MmsUAProfUrl config override");
+        assertEquals(uaprofReplaced, mTelephonyManager.getMmsUAProfUrl());
+        overrideCarrierConfig(null);
+    }
+
+    @Test
+    public void testMmsUAProfUrlWithoutReplacePattern() throws Exception {
+        if (!mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_MESSAGING)) {
+            Log.d(TAG, "skipping test on device without FEATURE_TELEPHONY_MESSAGING present");
+            return;
+        }
+        final String uaprofWithoutReplacePattern = new String("http://uaprof.oemmobile.com/V1.xml");
+
+        PersistableBundle carrierConfig = new PersistableBundle();
+        carrierConfig.putString(
+                CarrierConfigManager.KEY_MMS_UA_PROF_URL_STRING, uaprofWithoutReplacePattern);
+        overrideCarrierConfig(carrierConfig);
+        assertEquals(uaprofWithoutReplacePattern, mTelephonyManager.getMmsUAProfUrl());
+        overrideCarrierConfig(null);
+    }
+
     /**
      * Tests that getGroupIdLevel2 methods return null or hexadecimal
      */
