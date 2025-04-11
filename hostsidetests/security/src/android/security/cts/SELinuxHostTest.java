@@ -99,6 +99,7 @@ public class SELinuxHostTest extends BaseHostJUnit4Test {
     private static final Map<ITestDevice, File> sCachedDeviceVendorPolicy = new HashMap<>(1);
     private static final Map<ITestDevice, File> sCachedDeviceVintfJson = new HashMap<>(1);
     private static final Map<ITestDevice, File> sCachedDeviceSystemPolicy = new HashMap<>(1);
+    private static final Map<ITestDevice, Boolean> sCachedDeviceIsSplit = new HashMap<>(1);
 
     private File mSepolicyAnalyze;
     private File checkSeapp;
@@ -204,15 +205,15 @@ public class SELinuxHostTest extends BaseHostJUnit4Test {
     private static File getDeviceFile(ITestDevice device,
             Map<ITestDevice, File> cache, String deviceFilePath,
             String tmpFileName) throws Exception {
-        if (!device.doesFileExist(deviceFilePath)){
-            throw new Exception("File not found on the device: " + deviceFilePath);
-        }
         File file;
         synchronized (cache) {
             file = cache.get(device);
         }
         if (file != null) {
             return file;
+        }
+        if (!device.doesFileExist(deviceFilePath)) {
+            throw new Exception("File not found on the device: " + deviceFilePath);
         }
         file = createTempFile(tmpFileName, ".tmp");
         device.pullFile(deviceFilePath, file);
@@ -610,8 +611,22 @@ public class SELinuxHostTest extends BaseHostJUnit4Test {
      */
     public static boolean isSepolicySplit(ITestDevice device)
             throws DeviceNotAvailableException {
-        return PropertyUtil.getFirstApiLevel(device) > 34 /* Build.VERSION_CODES.UPSIDE_DOWN_CAKE */
-                || device.doesFileExist("/system/etc/selinux/plat_file_contexts");
+        Boolean retval;
+        synchronized (sCachedDeviceIsSplit) {
+            retval = sCachedDeviceIsSplit.get(device);
+        }
+        if (retval != null) {
+            return retval.booleanValue();
+        }
+        retval =
+                Boolean.valueOf(
+                        PropertyUtil.getFirstApiLevel(device)
+                                        > 34 /* Build.VERSION_CODES.UPSIDE_DOWN_CAKE */
+                                || device.doesFileExist("/system/etc/selinux/plat_file_contexts"));
+        synchronized (sCachedDeviceIsSplit) {
+            sCachedDeviceIsSplit.put(device, retval);
+        }
+        return retval.booleanValue();
     }
 
     /**
