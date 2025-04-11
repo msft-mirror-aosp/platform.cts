@@ -36,6 +36,8 @@ import android.provider.cts.contacts.ContactsContract_TestDataBuilder.TestRawCon
 import android.provider.cts.contacts.account.StaticAccountAuthenticator;
 import android.test.AndroidTestCase;
 
+import com.android.compatibility.common.util.FeatureUtil;
+
 import java.util.List;
 
 public class ContactsContract_ContactsTest extends AndroidTestCase {
@@ -88,6 +90,11 @@ public class ContactsContract_ContactsTest extends AndroidTestCase {
     }
 
     public void testContentUri() {
+        if (FeatureUtil.isXrHeadset()) {
+            //Contact app in XR device is optional to OEM. No need for test
+            return;
+        }
+
         Context context = getContext();
         PackageManager packageManager = context.getPackageManager();
         Intent intent = new Intent(Intent.ACTION_VIEW, ContactsContract.Contacts.CONTENT_URI);
