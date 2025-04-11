@@ -1,0 +1,170 @@
+{
+  "US": [
+    {"latitude": 32.9098, "longitude": -117.1817, "city": "San Diego"},
+    {"latitude": 19.6914, "longitude": -155.5338, "city": "Hawaii"},
+    {"latitude": 61.2165, "longitude": -149.8974, "city": "Anchorage"}
+  ],
+  "CA": [
+    {"latitude": 43.7136, "longitude": -79.3989, "city": "Toronto"},
+    {"latitude": 45.5017, "longitude": -73.5673, "city": "Montreal"},
+    {"latitude": 49.2827, "longitude": -123.1207, "city": "Vancouver"}
+  ],
+  "PR": [
+    {"latitude": 18.4663, "longitude": -66.1193, "city": "San Juan"},
+    {"latitude": 18.0116, "longitude": -67.1454, "city": "Mayagüez"}
+  ],
+  "AU": [
+    {"latitude": -35.3082, "longitude": 149.1245, "city": "Canberra"},
+    {"latitude": -33.8651, "longitude": 151.2099, "city": "Sydney"},
+    {"latitude": -37.8136, "longitude": 144.9631, "city": "Melbourne"}
+  ],
+  "AT": [
+    {"latitude": 48.2082, "longitude": 16.3738, "city": "Vienna"},
+    {"latitude": 47.2692, "longitude": 11.4041, "city": "Innsbruck"}
+  ],
+  "BE": [
+    {"latitude": 50.8503, "longitude": 4.3517, "city": "Brussels"},
+    {"latitude": 51.2139, "longitude": 4.4014, "city": "Antwerp"}
+  ],
+  "BG": [
+    {"latitude": 42.6977, "longitude": 23.3219, "city": "Sofia"},
+    {"latitude": 42.1354, "longitude": 24.7453, "city": "Plovdiv"}
+  ],
+  "HR": [
+    {"latitude": 45.8150, "longitude": 15.9819, "city": "Zagreb"},
+    {"latitude": 42.6516, "longitude": 18.0947, "city": "Dubrovnik"}
+  ],
+  "CY": [
+    {"latitude": 35.1856, "longitude": 33.3823, "city": "Nicosia"},
+    {"latitude": 34.6750, "longitude": 33.0431, "city": "Limassol"}
+  ],
+  "CZ": [
+    {"latitude": 50.0755, "longitude": 14.4378, "city": "Prague"},
+    {"latitude": 49.1951, "longitude": 16.6068, "city": "Brno"}
+  ],
+  "DK": [
+    {"latitude": 55.6761, "longitude": 12.5683, "city": "Copenhagen"},
+    {"latitude": 56.1629, "longitude": 10.2039, "city": "Aarhus"}
+  ],
+  "EE": [
+    {"latitude": 59.4370, "longitude": 24.7536, "city": "Tallinn"},
+    {"latitude": 58.3806, "longitude": 26.7251, "city": "Tartu"}
+  ],
+  "FI": [
+    {"latitude": 60.1699, "longitude": 24.9384, "city": "Helsinki"},
+    {"latitude": 65.0121, "longitude": 25.4651, "city": "Oulu"}
+  ],
+  "FR": [
+    {"latitude": 48.8566, "longitude": 2.3522, "city": "Paris"},
+    {"latitude": 43.2965, "longitude": 5.3698, "city": "Marseille"},
+    {"latitude": 45.7640, "longitude": 4.8357, "city": "Lyon"}
+  ],
+  "DE": [
+    {"latitude": 52.5200, "longitude": 13.4050, "city": "Berlin"},
+    {"latitude": 50.1109, "longitude": 8.6821, "city": "Frankfurt"},
+    {"latitude": 48.1351, "longitude": 11.5820, "city": "Munich"}
+  ],
+  "GR": [
+    {"latitude": 37.9838, "longitude": 23.7275, "city": "Athens"},
+    {"latitude": 40.6401, "longitude": 22.9444, "city": "Thessaloniki"}
+  ],
+  "HU": [
+    {"latitude": 47.4979, "longitude": 19.0402, "city": "Budapest"},
+    {"latitude": 46.2530, "longitude": 20.1482, "city": "Szeged"}
+  ],
+  "IE": [
+    {"latitude": 53.3498, "longitude": -6.2603, "city": "Dublin"},
+    {"latitude": 51.8985, "longitude": -8.4756, "city": "Cork"}
+  ],
+  "IT": [
+    {"latitude": 41.9028, "longitude": 12.4964, "city": "Rome"},
+    {"latitude": 45.4642, "longitude": 9.1900, "city": "Milan"},
+    {"latitude": 40.8518, "longitude": 14.2681, "city": "Naples"}
+  ],
+  "LI": [
+    {"latitude": 47.1410, "longitude": 9.5215, "city": "Vaduz"}
+  ],
+  "LV": [
+    {"latitude": 56.9496, "longitude": 24.1052, "city": "Riga"},
+    {"latitude": 55.8713, "longitude": 26.5160, "city": "Daugavpils"}
+  ],
+  "LT": [
+    {"latitude": 54.6872, "longitude": 25.2797, "city": "Vilnius"},
+    {"latitude": 54.8985, "longitude": 23.9036, "city": "Kaunas"}
+  ],
+  "LU": [
+    {"latitude": 49.8153, "longitude": 6.1296, "city": "Luxembourg City"}
+  ],
+  "NL": [
+    {"latitude": 52.3676, "longitude": 4.9041, "city": "Amsterdam"},
+    {"latitude": 51.9244, "longitude": 4.4777, "city": "Rotterdam"}
+  ],
+  "NO": [
+    {"latitude": 59.9139, "longitude": 10.7522, "city": "Oslo"},
+    {"latitude": 60.3913, "longitude": 5.3221, "city": "Bergen"},
+    {"latitude": 63.4305, "longitude": 10.3951, "city": "Trondheim"}
+  ],
+  "PL": [
+    {"latitude": 52.2297, "longitude": 21.0122, "city": "Warsaw"},
+    {"latitude": 50.0647, "longitude": 19.9450, "city": "Krakow"}
+  ],
+  "PT": [
+    {"latitude": 38.7223, "longitude": -9.1393, "city": "Lisbon"},
+    {"latitude": 41.1579, "longitude": -8.6291, "city": "Porto"}
+  ],
+  "RO": [
+    {"latitude": 44.4268, "longitude": 26.1025, "city": "Bucharest"},
+    {"latitude": 45.7500, "longitude": 21.2250, "city": "Timisoara"}
+  ],
+  "SK": [
+    {"latitude": 48.1486, "longitude": 17.1077, "city": "Bratislava"},
+    {"latitude": 48.7139, "longitude": 21.2581, "city": "Kosice"}
+  ],
+  "SI": [
+    {"latitude": 46.0569, "longitude": 14.5058, "city": "Ljubljana"},
+    {"latitude": 46.5547, "longitude": 15.6459, "city": "Maribor"}
+  ],
+  "ES": [
+    {"latitude": 40.4168, "longitude": -3.7038, "city": "Madrid"},
+    {"latitude": 41.3851, "longitude": 2.1734, "city": "Barcelona"},
+    {"latitude": 39.4699, "longitude": -0.3763, "city": "Valencia"}
+  ],
+  "SE": [
+    {"latitude": 59.3293, "longitude": 18.0686, "city": "Stockholm"},
+    {"latitude": 57.7089, "longitude": 11.9746, "city": "Gothenburg"}
+  ],
+  "CH": [
+    {"latitude": 46.9480, "longitude": 7.4474, "city": "Bern"},
+    {"latitude": 47.3769, "longitude": 8.5417, "city": "Zurich"}
+  ],
+  "GB": [
+    {"latitude": 51.5074, "longitude": 0.1278, "city": "London"},
+    {"latitude": 53.4808, "longitude": -2.2426, "city": "Manchester"},
+    {"latitude": 55.8642, "longitude": -4.2518, "city": "Glasgow"}
+  ],
+  "KR": [
+    {"latitude": 37.5665, "longitude": 126.9780, "city": "Seoul"},
+    {"latitude": 35.1796, "longitude": 129.0756, "city": "Busan"},
+    {"latitude": 35.1595, "longitude": 126.8526, "city": "Gwangju"}
+  ],
+  "JP": [
+    {"latitude": 35.6895, "longitude": 139.6917, "city": "Tokyo"},
+    {"latitude": 34.6937, "longitude": 135.5023, "city": "Osaka"},
+    {"latitude": 35.1815, "longitude": 136.9066, "city": "Nagoya"},
+    {"latitude": 33.5904, "longitude": 130.4017, "city": "Fukuoka"},
+    {"latitude": 43.0618, "longitude": 141.3545, "city": "Sapporo"}
+  ],
+  "TW": [
+    {"latitude": 25.0330, "longitude": 121.5654, "city": "Taipei"},
+    {"latitude": 22.6203, "longitude": 120.3025, "city": "Kaohsiung"},
+    {"latitude": 24.1368, "longitude": 120.6849, "city": "Taichung"},
+    {"latitude": 22.9997, "longitude": 120.2270, "city": "Tainan"}
+  ],
+  "IN": [
+    {"latitude": 28.6139, "longitude": 77.2090, "city": "Delhi"},
+    {"latitude": 19.0760, "longitude": 72.8777, "city": "Mumbai"},
+    {"latitude": 12.9716, "longitude": 77.5946, "city": "Bangalore"},
+    {"latitude": 22.5726, "longitude": 88.3639, "city": "Kolkata"},
+    {"latitude": 13.0827, "longitude": 80.2707, "city": "Chennai"}
+  ]
+}
