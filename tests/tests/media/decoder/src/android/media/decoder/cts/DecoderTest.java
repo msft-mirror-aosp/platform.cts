@@ -52,6 +52,7 @@ import android.media.cts.CodecState;
 import android.media.cts.MediaCodecTunneledPlayer;
 import android.media.cts.MediaHeavyPresubmitTest;
 import android.media.cts.MediaTestBase;
+import android.media.cts.TestArgs;
 import android.media.cts.TestUtils;
 import android.net.Uri;
 import android.os.Build;
@@ -759,6 +760,9 @@ public class DecoderTest extends MediaTestBase {
         mimeFormat.setString(MediaFormat.KEY_MIME, format.getString(MediaFormat.KEY_MIME));
 
         for (String decoderName: MediaUtils.getDecoderNames(mimeFormat)) {
+            if (TestArgs.shouldSkipCodec(decoderName)) {
+                continue;
+            }
             if (!MediaUtils.supports(decoderName, format)) {
                 MediaUtils.skipTest(decoderName + " cannot play resource " + mInpPrefix + res);
             } else {
@@ -1619,8 +1623,7 @@ public class DecoderTest extends MediaTestBase {
         // testing all matching codecs requires us to run both CtsMediaXXX and MctsMediaXXX
         ArrayList<String> usingCodecs = new ArrayList<String>();
         for (String codecName : matchingCodecs) {
-            if (!TestUtils.isTestableCodecInCurrentMode(codecName)) {
-                Log.i(TAG, "skip codec " + codecName + " in current mode");
+            if (TestArgs.shouldSkipCodec(codecName)) {
                 continue;
             }
             usingCodecs.add(codecName);
@@ -2793,6 +2796,9 @@ public class DecoderTest extends MediaTestBase {
 
         String[] decoderNames = MediaUtils.getDecoderNames(format);
         for (String decoderName: decoderNames) {
+            if (TestArgs.shouldSkipCodec(decoderName)) {
+                continue;
+            }
             List<Long> outputChecksums = new ArrayList<Long>();
             List<Long> outputTimestamps = new ArrayList<Long>();
             Arrays.sort(stopAtSample);
