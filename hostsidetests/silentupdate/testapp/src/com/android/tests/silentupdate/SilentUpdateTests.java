@@ -321,12 +321,13 @@ public class SilentUpdateTests {
             params.setDontKillApp(true);
         }
         int sessionId = installer.createSession(params);
-        Assert.assertEquals("SessionInfo.getRequireUserAction and "
+        Assert.assertEquals(
+                "SessionInfo.getRequireUserAction and "
                         + "SessionParams.setRequireUserAction are not equal",
                 installer.getSessionInfo(sessionId).getRequireUserAction(),
                 requireUserAction == null
                         ? USER_ACTION_UNSPECIFIED
-                        : requireUserAction == Boolean.TRUE
+                        : requireUserAction
                                 ? USER_ACTION_REQUIRED
                                 : SessionParams.USER_ACTION_NOT_REQUIRED);
         final PackageInstaller.Session session = installer.openSession(sessionId);
