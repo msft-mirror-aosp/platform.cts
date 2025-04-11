@@ -30,6 +30,7 @@ import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.harrier.UserType
 import com.android.bedstead.harrier.annotations.Postsubmit
+import com.android.bedstead.multiuser.additionalUser
 import com.android.bedstead.multiuser.annotations.EnsureHasSecondaryUser
 import com.android.bedstead.multiuser.secondaryUser
 import com.android.bedstead.nene.TestApis
@@ -37,6 +38,7 @@ import com.android.bedstead.permissions.CommonPermissions.COPY_ACCOUNTS
 import com.android.bedstead.permissions.annotations.EnsureDoesNotHavePermission
 import com.android.bedstead.remoteaccountauthenticator.RemoteAccountAuthenticator
 import com.android.compatibility.common.util.ApiTest
+import com.android.bedstead.multiuser.annotations.EnsureHasAdditionalUser
 import com.google.common.truth.Truth.assertThat
 import org.junit.Assert.assertThrows
 import org.junit.ClassRule
@@ -87,8 +89,7 @@ class AccountMigrationTest {
 
         assertThat(result).isTrue()
         assertThat(
-            sDeviceState.accounts(sDeviceState.secondaryUser())
-                .containsAccount(account)
+            containsAccount(sDeviceState.accounts(sDeviceState.secondaryUser()), account)
         ).isTrue()
     }
 
@@ -114,37 +115,37 @@ class AccountMigrationTest {
 
     @Test
     @EnsureHasDevicePolicyManagerRoleHolder
-    @EnsureHasSecondaryUser
-    @EnsureHasAccountAuthenticator(onUser = UserType.SECONDARY_USER)
+    @EnsureHasAdditionalUser
+    @EnsureHasAccountAuthenticator(onUser = UserType.ADDITIONAL_USER)
     fun migrateAccount_hasCopyAccountsAndRemoveAccountsPermission_migratesAccountToOtherUser() {
         val previousNumberOfAccounts = sDeviceState.accounts().allAccounts().size
         val account = addAccount()
 
-        sDeviceState.dpmRoleHolder().accountManager().migrateAccount(
-                account,
-            sDeviceState.secondaryUser().userHandle()
+        migrateAccount(
+            sDeviceState.dpmRoleHolder().accountManager(),
+            account,
+            sDeviceState.additionalUser().userHandle()
         )
 
         assertThat(sDeviceState.accounts().allAccounts().size).isEqualTo(previousNumberOfAccounts)
         assertThat(
-            sDeviceState.accounts(sDeviceState.secondaryUser())
-                .containsAccount(account)
+            containsAccount(sDeviceState.accounts(sDeviceState.additionalUser()), account)
         ).isTrue()
     }
 
-    private fun RemoteAccountManager.migrateAccount(account: Account, userHandle: UserHandle) {
-        copyAccountToUser(
-                account,
+    private fun migrateAccount(accountManager: RemoteAccountManager, account: Account, userHandle: UserHandle) {
+        accountManager.copyAccountToUser(
+            account,
             sDeviceState.initialUser().userHandle(),
-                userHandle,
+            userHandle,
             null,
             null
         ).result
-        removeAccount(account, null, null, null).result
+        accountManager.removeAccount(account, null, null, null).result
     }
 
-    private fun RemoteAccountAuthenticator.containsAccount(account: Account): Boolean {
-        for (accountReference in allAccounts()) {
+    private fun containsAccount(auth: RemoteAccountAuthenticator, account: Account): Boolean {
+        for (accountReference in auth.allAccounts()) {
             if (accountReference.account() == account) {
                 return true
             }
