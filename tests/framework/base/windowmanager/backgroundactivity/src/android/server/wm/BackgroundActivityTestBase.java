@@ -31,8 +31,8 @@ import static com.google.common.truth.Truth.assertWithMessage;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
-import android.app.PendingIntent;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -225,39 +225,6 @@ public abstract class BackgroundActivityTestBase extends ActivityManagerTestBase
 
     List<String> getActivityNames(List<WindowManagerState.Activity> activities) {
         return activities.stream().map(a -> a.getName()).collect(Collectors.toList());
-    }
-
-    Intent getLaunchActivitiesBroadcast(Components app,
-            ComponentName... componentNames) {
-        Intent broadcastIntent = new Intent(
-                app.FOREGROUND_ACTIVITY_ACTIONS.LAUNCH_BACKGROUND_ACTIVITIES);
-        Intent[] intents = Stream.of(componentNames)
-                .map(c -> {
-                    Intent intent = new Intent();
-                    intent.setComponent(c);
-                    return intent;
-                })
-                .toArray(Intent[]::new);
-        broadcastIntent.putExtra(app.FOREGROUND_ACTIVITY_EXTRA.LAUNCH_INTENTS, intents);
-        return broadcastIntent;
-    }
-
-    Intent getLaunchActivitiesBroadcast(Components app,
-            PendingIntent... pendingIntents) {
-        Intent broadcastIntent = new Intent(
-                app.FOREGROUND_ACTIVITY_ACTIONS.LAUNCH_BACKGROUND_ACTIVITIES);
-        broadcastIntent.putExtra(app.FOREGROUND_ACTIVITY_EXTRA.LAUNCH_PENDING_INTENTS,
-                pendingIntents);
-        return broadcastIntent;
-    }
-
-    Intent getLaunchAndFinishActivitiesBroadcast(Components app, PendingIntent... pendingIntents) {
-        Intent broadcastIntent = new Intent(
-                app.FOREGROUND_ACTIVITY_ACTIONS.LAUNCH_BACKGROUND_ACTIVITIES);
-        broadcastIntent.putExtra(app.FOREGROUND_ACTIVITY_EXTRA.LAUNCH_PENDING_INTENTS,
-                pendingIntents);
-        broadcastIntent.putExtra(app.FOREGROUND_ACTIVITY_EXTRA.LAUNCH_FOR_RESULT_AND_FINISH, true);
-        return broadcastIntent;
     }
 
     class ActivityStartVerifier {
@@ -532,7 +499,11 @@ public abstract class BackgroundActivityTestBase extends ActivityManagerTestBase
                     Context.BIND_AUTO_CREATE);
             assertTrue("Failed to setup " + componentName.toString(), success);
         }
-        return new TestServiceClient(futureConnection.get(TEST_SERVICE_SETUP_TIMEOUT_MS));
+        ITestService testService = futureConnection.get(TEST_SERVICE_SETUP_TIMEOUT_MS);
+        if (!testService.asBinder().isBinderAlive()) {
+            fail("test service process is dead (" + componentName + ")");
+        }
+        return new TestServiceClient(testService);
     }
 
     private void waitForCondition(Duration timeout, Predicate<WindowManagerStateHelper> predicate) {

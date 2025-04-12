@@ -93,27 +93,39 @@ double getAvgImprovement(std::vector<double>& xA, std::vector<double>& yA, std::
 static jdouble nativeGetBDRate(JNIEnv* env, jobject, jdoubleArray jQualityA, jdoubleArray jRatesA,
                                jdoubleArray jQualityB, jdoubleArray jRatesB, jboolean selBdSnr,
                                jobject jRetMsg) {
-    jsize len[4]{env->GetArrayLength(jQualityA), env->GetArrayLength(jRatesA),
-                 env->GetArrayLength(jQualityB), env->GetArrayLength(jRatesB)};
+    jsize lenA[2]{env->GetArrayLength(jQualityA), env->GetArrayLength(jRatesA)};
+    jsize lenB[2]{env->GetArrayLength(jQualityB), env->GetArrayLength(jRatesB)};
     std::string msg;
-    if (len[0] != len[1] || len[0] != len[2] || len[0] != len[3]) {
-        msg = StringFormat("array length of quality and bit rates for set A/B are not same, "
-                           "lengths are %d %d %d %d \n",
-                           (int)len[0], (int)len[1], (int)len[2], (int)len[3]);
-    } else if (len[0] < 4) {
-        msg = StringFormat("too few data-points present for bd rate analysis, count %d \n", len[0]);
+    if (lenA[0] != lenA[1]) {
+        msg = StringFormat("array length of quality and bit rates for set A are not same, "
+                           "lengths are %d %d \n",
+                           (int)lenA[0], (int)lenA[1]);
+    } else if (lenB[0] != lenB[1]) {
+        msg = StringFormat("array length of quality and bit rates for set B are not same, "
+                           "lengths are %d %d \n",
+                           (int)lenB[0], (int)lenB[1]);
+    } else if (lenA[0] < 4) {
+        msg = StringFormat("too few data-points present for bd rate analysis for set A, count %d "
+                           "\n",
+                           lenA[0]);
+    } else if (lenB[0] < 4) {
+        msg = StringFormat("too few data-points present for bd rate analysis for set B, count %d "
+                           "\n",
+                           lenB[0]);
     } else {
-        std::vector<double> ratesA(len[0]);
-        env->GetDoubleArrayRegion(jRatesA, 0, len[0], &ratesA[0]);
-        std::vector<double> ratesB(len[0]);
-        env->GetDoubleArrayRegion(jRatesB, 0, len[0], &ratesB[0]);
-        std::vector<double> qualitiesA(len[0]);
-        env->GetDoubleArrayRegion(jQualityA, 0, len[0], &qualitiesA[0]);
-        std::vector<double> qualitiesB(len[0]);
-        env->GetDoubleArrayRegion(jQualityB, 0, len[0], &qualitiesB[0]);
+        std::vector<double> ratesA(lenA[0]);
+        env->GetDoubleArrayRegion(jRatesA, 0, lenA[0], &ratesA[0]);
+        std::vector<double> ratesB(lenB[0]);
+        env->GetDoubleArrayRegion(jRatesB, 0, lenB[0], &ratesB[0]);
+        std::vector<double> qualitiesA(lenA[0]);
+        env->GetDoubleArrayRegion(jQualityA, 0, lenA[0], &qualitiesA[0]);
+        std::vector<double> qualitiesB(lenB[0]);
+        env->GetDoubleArrayRegion(jQualityB, 0, lenB[0], &qualitiesB[0]);
         // log rate
-        for (int i = 0; i < len[0]; i++) {
+        for (int i = 0; i < lenA[0]; i++) {
             ratesA[i] = std::log(ratesA[i]);
+        }
+        for (int i = 0; i < lenB[0]; i++) {
             ratesB[i] = std::log(ratesB[i]);
         }
         const int order = 3;

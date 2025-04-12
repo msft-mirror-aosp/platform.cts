@@ -29,9 +29,6 @@ import android.content.pm.ServiceInfo;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.AsbSecurityTest;
 import android.platform.test.annotations.Presubmit;
-import android.platform.test.annotations.RequiresFlagsEnabled;
-import android.platform.test.flag.junit.CheckFlagsRule;
-import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.view.accessibility.AccessibilityManager;
 
 import androidx.test.core.app.ApplicationProvider;
@@ -44,7 +41,6 @@ import com.android.compatibility.common.util.TestUtils;
 import com.android.cts.install.lib.Install;
 import com.android.cts.install.lib.TestApp;
 import com.android.cts.install.lib.Uninstall;
-import com.android.server.accessibility.Flags;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -86,17 +82,14 @@ public class AccessibilityAppUpdateTest {
             new AccessibilityShortcutSettingsRule();
     private final AccessibilityDumpOnFailureRule mDumpOnFailureRule =
             new AccessibilityDumpOnFailureRule();
-    private final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Rule
-    public final RuleChain mRuleChain = RuleChain
-            .outerRule(mCheckFlagsRule)
-            .around(mShortcutSettingsRule)
-            .around(mDumpOnFailureRule);
+    public final RuleChain mRuleChain =
+            RuleChain.outerRule(mShortcutSettingsRule).around(mDumpOnFailureRule);
+
     private final UiAutomation mUiAutomation = InstrumentationRegistry.getInstrumentation()
             .getUiAutomation(FLAG_DONT_SUPPRESS_ACCESSIBILITY_SERVICES);
 
-    @RequiresFlagsEnabled(Flags.FLAG_CLEAR_SHORTCUTS_WHEN_ACTIVITY_UPDATES_TO_SERVICE)
     @AsbSecurityTest(cveBugId = 358092445)
     @Test
     public void updateA11yActivityToA11yService_sameComponentName_a11yActivityShortcutsAreCleared()
@@ -118,7 +111,6 @@ public class AccessibilityAppUpdateTest {
         }
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_CLEAR_SHORTCUTS_WHEN_ACTIVITY_UPDATES_TO_SERVICE)
     @AsbSecurityTest(cveBugId = 358092445)
     @Test
     public void updateA11yServiceToA11yActivity_sameComponentName_a11yShortcutsPersist()

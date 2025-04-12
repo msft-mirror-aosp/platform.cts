@@ -17,11 +17,18 @@
 package android.server.wm.backgroundactivity.appa;
 
 import android.app.Activity;
-import android.os.Bundle;
 import android.content.Intent;
+import android.os.Bundle;
 import android.os.SystemClock;
 
+import androidx.annotation.Nullable;
+
 public class PipActivity extends Activity {
+
+    @Override
+    protected void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+    }
 
     @Override
     public void onPause() {
@@ -41,5 +48,10 @@ public class PipActivity extends Activity {
                 startActivity(intent);
             }
         }.start();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
     }
 }

@@ -121,6 +121,8 @@ public class CtsMediaShortFormFullModePlaybackTest extends CujTestBase {
   @PlatinumTest(focusArea = "media")
   public void testVideoPlayback() throws Exception {
     if (mCujTestParam.getPlayerListener().isCallNotificationTest()) {
+      Assume.assumeTrue("Skipping " + mTestType + " as device doesn't telecom service",
+          deviceSupportTelecomService(mActivity));
       Assume.assumeTrue("Skipping " + mTestType + " as device doesn't support call feature",
           deviceSupportPhoneCall(mActivity));
       // Skip call notification tests for visible background users.

@@ -16,12 +16,12 @@
 
 package android.telephony.satellite.cts;
 
+import static android.telephony.SubscriptionManager.INVALID_SUBSCRIPTION_ID;
 import static android.telephony.satellite.SatelliteManager.DATAGRAM_TYPE_UNKNOWN;
 import static android.telephony.satellite.SatelliteManager.SATELLITE_DISALLOWED_REASON_UNSUPPORTED_DEFAULT_MSG_APP;
 import static android.telephony.satellite.SatelliteManager.SATELLITE_MODEM_STATE_IDLE;
 import static android.telephony.satellite.SatelliteManager.SATELLITE_MODEM_STATE_NOT_CONNECTED;
 import static android.telephony.satellite.SatelliteManager.SATELLITE_MODEM_STATE_OFF;
-import static android.telephony.SubscriptionManager.INVALID_SUBSCRIPTION_ID;
 
 import static com.android.internal.telephony.satellite.SatelliteController.TIMEOUT_TYPE_EVALUATE_ESOS_PROFILES_PRIORITIZATION_DURATION_MILLIS;
 
@@ -35,11 +35,11 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 
-import android.app.AppOpsManager;
-import android.app.UiAutomation;
 import android.Manifest;
 import android.annotation.NonNull;
 import android.annotation.Nullable;
+import android.app.AppOpsManager;
+import android.app.UiAutomation;
 import android.bluetooth.BluetoothAdapter;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
@@ -3224,5 +3224,17 @@ public class SatelliteManagerTestBase {
                 + ", input subId: " + subId);
 
         return allSubsList.contains(subId);
+    }
+
+    protected static boolean isAppInstalled(String packageName) {
+        PackageManager packageManager = getContext().getPackageManager();
+        try {
+            packageManager.getPackageInfo(packageName, 0);
+            logd("isAppInstalled: true: " + packageName);
+            return true;
+        } catch (PackageManager.NameNotFoundException e) {
+            logd("isAppInstalled: false: " + packageName);
+            return false;
+        }
     }
 }

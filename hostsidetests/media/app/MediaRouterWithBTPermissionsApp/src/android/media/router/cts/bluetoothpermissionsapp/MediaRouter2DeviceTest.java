@@ -751,7 +751,6 @@ public class MediaRouter2DeviceTest {
         }
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_PREVENTION_OF_MANAGER_SCANS_WHEN_NO_APPS_SCAN)
     @Test
     public void managerScan_withNoAppsScanning_doesNotWakeUpProvider() {
         // Permission required for the proxy router scan (also known as manager scan).

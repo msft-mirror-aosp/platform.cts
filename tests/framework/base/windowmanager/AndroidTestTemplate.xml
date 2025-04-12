@@ -127,7 +127,7 @@
 
     <!-- Collect the test artifacts. -->
     <metrics_collector class="com.android.tradefed.device.metric.FilePullerLogCollector">
-        <option name="pull-pattern-keys" value="perfetto_file_path*"/>
+        <option name="pull-pattern-keys" value="perfetto_file_path" />
         <option name="directory-keys" value="/sdcard/DumpOnFailure" />
         <!-- Collect the files generated on error -->
         <option name="pull-pattern-keys" value="android.device.collectors.ScreenshotOnFailureCollector.*\.png" />

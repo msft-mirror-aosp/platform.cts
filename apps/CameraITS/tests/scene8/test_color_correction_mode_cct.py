@@ -183,9 +183,7 @@ class ColorCorrectionModeCct(its_base_test.ItsBaseTest):
       log_path = self.log_path
       test_name_with_log_path = os.path.join(log_path, _NAME)
 
-      first_api_level = its_session_utils.get_first_api_level(self.dut.serial)
       camera_properties_utils.skip_unless(
-          first_api_level >= its_session_utils.ANDROID16_API_LEVEL and
           (_COLOR_CORRECTION_MODE_CCT in
            camera_properties_utils.color_correction_aberration_modes(props)))
 
