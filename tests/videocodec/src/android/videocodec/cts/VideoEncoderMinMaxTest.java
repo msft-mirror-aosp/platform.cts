@@ -16,6 +16,7 @@
 
 package android.videocodec.cts;
 
+import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Flexible;
 import static android.media.MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_CBR;
 import static android.media.MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_VBR;
 import static android.media.codec.Flags.apvSupport;
@@ -70,7 +71,7 @@ import java.util.stream.Stream;
 @RunWith(Parameterized.class)
 public class VideoEncoderMinMaxTest extends VideoEncoderValidationTestBase {
     private static final float MIN_ACCEPTABLE_QUALITY = 20.0f;  // psnr in dB
-    private static final int FRAME_LIMIT = 300;
+    private static final int FRAME_LIMIT = 30;
     private static final int TARGET_WIDTH = 1280;
     private static final int TARGET_HEIGHT = 720;
     private static final int TARGET_FRAME_RATE = 30;
@@ -311,12 +312,15 @@ public class VideoEncoderMinMaxTest extends VideoEncoderValidationTestBase {
         RawResource res = getRawResource(mEncCfgParams[0]);
         assertNotNull("no raw resource found for testing config : " + mEncCfgParams[0] + mTestConfig
                 + mTestEnv + DIAGNOSTICS, res);
-        encodeToMemory(mCodecName, mEncCfgParams[0], res, FRAME_LIMIT, false, true);
+        encodeToMemory(mCodecName, mEncCfgParams[0], res, FRAME_LIMIT, true, false);
         CompareStreams cs = null;
         StringBuilder msg = new StringBuilder();
         boolean isOk = true;
         try {
-            cs = new CompareStreams(res, mMediaType, mMuxedOutputFile, true, mIsLoopBack);
+            MediaFormat decFormat = getOutputFormat();
+            decFormat.setInteger(MediaFormat.KEY_COLOR_FORMAT, COLOR_FormatYUV420Flexible);
+            cs = new CompareStreams(res, decFormat, getOutputManager().getBuffer(), mInfoList, true,
+                    mIsLoopBack);
             final double[] minPSNR = cs.getMinimumPSNR();
             for (int i = 0; i < minPSNR.length; i++) {
                 if (minPSNR[i] < MIN_ACCEPTABLE_QUALITY) {

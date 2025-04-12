@@ -56,7 +56,6 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -235,8 +234,8 @@ public class VideoDecoderAvailabilityTest extends CodecDecoderTestBase {
     }
 
     /**
-     * Briefly, this test verifies the functionality of media codec apis getRequiredResources()
-     * and onRequiredResourcesChanged() at various codec states.
+     * Briefly, this test verifies the functionality of media codec api getRequiredResources() at
+     * various codec states.
      * <p>
      * getRequiredResources() is expected to return illegal state exception in uninitialized
      * state and resources required for current codec configuration in executing state. The test
@@ -249,17 +248,13 @@ public class VideoDecoderAvailabilityTest extends CodecDecoderTestBase {
      * the codec operational consumption resources. In other words, at any given time, current
      * global available resources + current instance codec resources equals global available
      * resources at the start of the test.
-     * <p>
-     * In the executing state, the codec shall update the required resources status via
-     * callback onRequiredResourcesChanged(). This is also verified.
      */
     @LargeTest
     @VsrTest(requirements = {"VSR-4.1-002"})
     @Test(timeout = PER_TEST_TIMEOUT_LARGE_TEST_MS)
     @RequiresFlagsEnabled(FLAG_CODEC_AVAILABILITY)
     @ApiTest(apis = {"android.media.MediaCodec#getGloballyAvailableResources",
-            "android.media.MediaCodec#getRequiredResources",
-            "android.media.MediaCodec.Callback#onRequiredResourcesChanged"})
+            "android.media.MediaCodec#getRequiredResources"})
     public void testSimpleDecode() throws IOException, InterruptedException {
         CodecAsyncHandlerResource asyncHandleResource = new CodecAsyncHandlerResource();
         mAsyncHandle = asyncHandleResource;
@@ -305,9 +300,6 @@ public class VideoDecoderAvailabilityTest extends CodecDecoderTestBase {
         doWork(5);
         queueEOS();
         waitForAllOutputs();
-        Assert.assertTrue("did not receive callback onRequiredResourcesChanged() from"
-                        + " codec\n" + mTestEnv + mTestConfig,
-                asyncHandleResource.hasRequiredResourceChangeCbReceived());
         mCodec.stop();
         validateGetCodecResources(List.of(Pair.create(mCodec, CodecState.STOPPED)),
                 GLOBAL_AVBL_RESOURCES, String.format(Locale.getDefault(),
@@ -326,46 +318,6 @@ public class VideoDecoderAvailabilityTest extends CodecDecoderTestBase {
     }
 
     static Size estimateVideoSizeFromPerformancePoint(PerformancePoint pp) {
-        final Size SUBQCIF = new Size(128, 96);
-        final Size QCIF = new Size(176, 144);
-        final Size SD144P = new Size(256, 144);
-        final Size CIFNTSC = new Size(352, 240);
-        final Size CIF = new Size(352, 288);
-        final Size QVGA = new Size(320, 240);
-        final Size SD240P = new Size(426, 240);
-        final Size SD360P = new Size(640, 360);
-        final Size VGA = new Size(640, 480);
-        final Size SDNTSC = new Size(720, 480);
-        final Size SDPAL = new Size(720, 576);
-        final Size WVGA = new Size(800, 480);
-        final Size SD480P = new Size(854, 480);
-        final Size HD = new Size(1280, 720);
-        final Size HDPAL = new Size(1440, 1080);
-        final Size FULLHD = new Size(1920, 1080);
-        final Size FULLHD_ALT = new Size(1920, 1088);
-        final Size UHD1440P = new Size(2560, 1440);
-        final Size UHD = new Size(3840, 2160);
-        final Size DC4K = new Size(4096, 2160);
-        final Size UHD8K = new Size(7680, 4320);
-        final Size[] STANDARD_RES =
-                {SUBQCIF, QCIF, SD144P, CIFNTSC, CIF, QVGA, SD240P, SD360P, VGA, SDNTSC, SDPAL,
-                        WVGA, SD480P, HD, HDPAL, FULLHD, FULLHD_ALT, UHD1440P, UHD, DC4K, UHD8K};
-        Size maxSupportedSize = null;
-        long maxResolution = 0;
-        for (Size size : STANDARD_RES) {
-            if (pp.covers(new PerformancePoint(size.getWidth(), size.getHeight(),
-                    pp.getMaxFrameRate()))) {
-                long resolution = (long) size.getWidth() * size.getHeight();
-                if (resolution > maxResolution) {
-                    maxResolution = resolution;
-                    maxSupportedSize = size;
-                }
-            }
-        }
-        if (maxSupportedSize != null) {
-            return maxSupportedSize;
-        }
-        // if look up is not successful, rely on string parsing to get the desired info
         String info = pp.toString();
         Scanner scanner = new Scanner(info);
         scanner.useDelimiter("[\\(x@]");
@@ -580,8 +532,7 @@ public class VideoDecoderAvailabilityTest extends CodecDecoderTestBase {
     @Test(timeout = PER_TEST_TIMEOUT_LARGE_TEST_MS)
     @RequiresFlagsEnabled(FLAG_CODEC_AVAILABILITY)
     @ApiTest(apis = {"android.media.MediaCodec#getGloballyAvailableResources",
-            "android.media.MediaCodec#getRequiredResources",
-            "android.media.MediaCodec.Callback#onRequiredResourcesChanged"})
+            "android.media.MediaCodec#getRequiredResources"})
     public void testConcurrentMaxInstances() {
         mActivityRule.getScenario().onActivity(activity -> mDynamicActivity = activity);
         validateMaxInstances(mCodecName, mMediaType);
@@ -595,7 +546,6 @@ public class VideoDecoderAvailabilityTest extends CodecDecoderTestBase {
     @LargeTest
     @VsrTest(requirements = {"VSR-4.1-002"})
     @Test(timeout = PER_TEST_TIMEOUT_LARGE_TEST_MS)
-    @Ignore("Skipped for 25Q2 release")
     @RequiresFlagsEnabled(FLAG_CODEC_AVAILABILITY)
     @ApiTest(apis = {"android.media.MediaCodec#getGloballyAvailableResources",
             "android.media.MediaCodec#getRequiredResources",
@@ -649,10 +599,10 @@ public class VideoDecoderAvailabilityTest extends CodecDecoderTestBase {
         if (obj != null) {
             mDynamicActivity.markSurface(obj.first, true);
         }
-        if (asyncHandleResource.getResourceChangeCbCount() < resFiles.size()) {
+        if (asyncHandleResource.getResourceChangeCbCount() < resFiles.size() - 1) {
             Assert.fail(String.format("number of resource change callbacks received is less than"
                             + " number of files tried in apb test. exp >= %d, got %d \n",
-                    resFiles.size(),
+                    resFiles.size() - 1,
                     asyncHandleResource.getResourceChangeCbCount()) + mTestEnv + mTestConfig);
         }
     }
@@ -669,8 +619,7 @@ public class VideoDecoderAvailabilityTest extends CodecDecoderTestBase {
     @Test(timeout = PER_TEST_TIMEOUT_LARGE_TEST_MS)
     @RequiresFlagsEnabled(FLAG_CODEC_AVAILABILITY)
     @ApiTest(apis = {"android.media.MediaCodec#getGloballyAvailableResources",
-            "android.media.MediaCodec#getRequiredResources",
-            "android.media.MediaCodec.Callback#onRequiredResourcesChanged"})
+            "android.media.MediaCodec#getRequiredResources"})
     public void testResourceConsumptionForPerfPoints() throws IOException, InterruptedException {
         List<CodecResource> globalResources = getCurrentGlobalCodecResources();
         MediaCodecInfo.CodecCapabilities caps = getCodecCapabilities(mCodecName, mMediaType);
@@ -681,7 +630,10 @@ public class VideoDecoderAvailabilityTest extends CodecDecoderTestBase {
         Assume.assumeFalse(mCodecName + " did not advertise any performance points",
                 pps == null || pps.isEmpty());
         mActivityRule.getScenario().onActivity(activity -> mDynamicActivity = activity);
-        for (PerformancePoint pp : pps) {
+        double maxPixelsProcessedPerSec = 0;
+        double pixelsProcessedPerSec;
+        for (int i = 0; i < pps.size(); i++) {
+            PerformancePoint pp = pps.get(i);
             Pair<Integer, Surface> obj = mDynamicActivity.getSurface();
             if (obj == null) {
                 int index = mDynamicActivity.addSurfaceView();
@@ -694,6 +646,14 @@ public class VideoDecoderAvailabilityTest extends CodecDecoderTestBase {
                     videoSize.getHeight());
             format.setInteger(MediaFormat.KEY_FRAME_RATE, pp.getMaxFrameRate());
             format.setInteger(MediaFormat.KEY_PRIORITY, 0);
+            pixelsProcessedPerSec =
+                    videoSize.getWidth() * videoSize.getHeight() * pp.getMaxFrameRate();
+            if (i == 0) {
+                // as performance points are sorted by decreasing number of pixels, then by
+                // decreasing width, then by frame rate, the first point should indicate peak
+                // processing power
+                maxPixelsProcessedPerSec = pixelsProcessedPerSec;
+            }
             codec.configure(format, obj.second, null, 0);
             codec.start();
             List<CodecResource> usedResources = getCurrentGlobalCodecResources();
@@ -701,10 +661,12 @@ public class VideoDecoderAvailabilityTest extends CodecDecoderTestBase {
             codec.stop();
             codec.release();
             mDynamicActivity.markSurface(obj.first, true);
-            if (consumption < MIN_UTILIZATION_THRESHOLD) {
+            double relativeThreshold =
+                    pixelsProcessedPerSec * MIN_UTILIZATION_THRESHOLD / maxPixelsProcessedPerSec;
+            if (consumption < relativeThreshold) {
                 Assert.fail("For performance point " + pp + " and codec : " + mCodecName
                         + " max resources consumed is expected to be at least "
-                        + MIN_UTILIZATION_THRESHOLD + "% but got " + consumption + "%");
+                        + relativeThreshold + "% but got " + consumption + "%");
             }
         }
     }

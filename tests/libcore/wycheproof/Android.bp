@@ -46,5 +46,5 @@ android_test {
         "general-tests",
         "mts-conscrypt",
     ],
-    host_common_data: [":cts-dalvik-host-test-runner"],
+    host_required: ["cts-dalvik-host-test-runner"],
 }

@@ -39,6 +39,7 @@ CH_FULL_SCALE = 255
 CHART_FILE = os.path.join(TEST_IMG_DIR, 'ISO12233.png')
 CHART_HEIGHT_31CM = 13.5  # cm height of chart for 31cm distance chart
 CHART_HEIGHT_22CM = 9.5  # cm height of chart for 22cm distance chart
+CHART_DISTANCE_115CM = 115.0  # cm
 CHART_DISTANCE_85CM = 85.0  # cm
 CHART_DISTANCE_50CM = 50.0  # cm
 CHART_DISTANCE_31CM = 31.0  # cm
@@ -125,6 +126,10 @@ CHART_DISTANCE_WITH_SCALING_RULES = types.MappingProxyType({
     CHART_DISTANCE_85CM: {
         (FOV_ZERO, FOV_THRESH_TELE13): SCALE_CHART_50_PERCENT,
         (FOV_THRESH_TELE13+EPSILON, FOV_THRESH_TELE25): SCALE_CHART_67_PERCENT,
+    },
+    # Chart distance set at 115cm in order to cover both 110cm and 120cm rigs
+    CHART_DISTANCE_115CM: {
+        (FOV_ZERO, FOV_THRESH_TELE13): SCALE_CHART_67_PERCENT,
     },
 })
 
@@ -1402,3 +1407,50 @@ def extract_y(img_uint8, file_name):
   y_uint8 = numpy.expand_dims(y_uint8, axis=2)  # add plane to save image
   image_processing_utils.write_image(y_uint8/CH_FULL_SCALE, file_name)
   return y_uint8
+
+
+def define_regions(img, img_path, chart_path, props, width, height):
+  """Defines the 4 rectangle regions based on ArUco markers in scene8.
+
+  Args:
+    img: numpy array; RGB image.
+    img_path: str; image file location.
+    chart_path: str; chart file location.
+    props: dict; camera properties object.
+    width: int; preview's width in pixels.
+    height: int; preview's height in pixels.
+  Returns:
+    regions: 4 regions of the img
+  """
+  # Extract chart coordinates from aruco markers
+  # TODO: b/330382627 - get chart boundary from 4 aruco markers instead of 2
+  aruco_corners, aruco_ids, _ = find_aruco_markers(img, img_path)
+  tl, tr, br, bl = get_chart_boundary_from_aruco_markers(
+      aruco_corners, aruco_ids, img, chart_path)
+
+  # Convert image coordinates to sensor coordinates for metering rectangles
+  aa = props['android.sensor.info.activeArraySize']
+  aa_width, aa_height = aa['right'] - aa['left'], aa['bottom'] - aa['top']
+  logging.debug('Active array size: %s', aa)
+  sc_tl = image_processing_utils.convert_image_coords_to_sensor_coords(
+      aa_width, aa_height, tl, width, height)
+  sc_tr = image_processing_utils.convert_image_coords_to_sensor_coords(
+      aa_width, aa_height, tr, width, height)
+  sc_br = image_processing_utils.convert_image_coords_to_sensor_coords(
+      aa_width, aa_height, br, width, height)
+  sc_bl = image_processing_utils.convert_image_coords_to_sensor_coords(
+      aa_width, aa_height, bl, width, height)
+
+  # Define regions through ArUco markers' positions
+  region_blue, region_light, region_dark, region_yellow = (
+      define_metering_rectangle_values(
+          props, sc_tl, sc_tr, sc_br, sc_bl, aa_width, aa_height))
+
+  # Create a dictionary of regions for testing
+  regions = {
+      'regionBlue': region_blue,
+      'regionLight': region_light,
+      'regionDark': region_dark,
+      'regionYellow': region_yellow,
+  }
+  return regions

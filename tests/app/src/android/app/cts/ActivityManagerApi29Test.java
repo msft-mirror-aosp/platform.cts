@@ -42,7 +42,7 @@ import android.app.AppOpsManager.HistoricalOps;
 import android.app.AppOpsManager.HistoricalOpsRequest;
 import android.app.Instrumentation;
 import android.app.cts.android.app.cts.tools.WaitForBroadcast;
-import android.app.cts.android.app.cts.tools.WatchUidRunner;
+import android.app.tools.WatchUidRunner;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager.NameNotFoundException;

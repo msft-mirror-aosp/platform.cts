@@ -62,9 +62,11 @@ class IntentTest : PackageInstallerTestBase() {
                 "TCWSFu2YqAVxVdiRKAay19k5VFlSaM7QW9uhvlrLQqsTW01ofFzxNDbp2QfIFHZR6rebKzK" +
                 "Bz6byQFM0DYQnYMwFWXjWkMPNdqkRLykoFLyBup53G68k2n8wl27jEBRNRG3ozwBsGr"
         const val NO_INSTALL_APPS_RESTRICTION_TEXT = "This user is not allowed to install apps"
+        const val NO_INSTALL_APPS_RESTRICTION_TEXT_V2 ="Installing apps has been restricted"
         const val DISABLED_LAUNCHER_ACTIVITY_PKG_NAME =
                 "android.packageinstaller.disabledlauncheractivity.cts"
         const val INSTALL_SUCCESS_TEXT = "App installed."
+        const val REINSTALL_SUCCESS_TEXT = "App reinstalled"
         const val TEST_VERIFIER_APK_NAME = "CtsSufficientVerifierReject.apk"
         const val TEST_VERIFIER_PACKAGE_NAME = "android.packageinstaller.sufficientverifierreject"
         const val TEST_REJECTED_BY_VERIFIER_APK_NAME = "CtsEmptyTestApp_RejectedByVerifier.apk"
@@ -129,8 +131,9 @@ class IntentTest : PackageInstallerTestBase() {
 
         clickInstallerUIButton(INSTALL_BUTTON_ID)
 
-        // Click the positive button on InstallFailed dialog.
-        clickInstallerUIButton(INSTALL_BUTTON_ID)
+        // Click the positive button on InstallFailed dialog or negative button on the
+        // InstallFailedFragment.
+        clickInstallerUIButton(if (usePiaV2) { CANCEL_BUTTON_ID } else { INSTALL_BUTTON_ID })
 
         assertEquals(RESULT_CANCELED, installation.get(GLOBAL_TIMEOUT, TimeUnit.MILLISECONDS))
     }
@@ -254,14 +257,24 @@ class IntentTest : PackageInstallerTestBase() {
 
             val installation = startInstallationViaIntent()
 
+            val targetString = if (usePiaV2) {
+                NO_INSTALL_APPS_RESTRICTION_TEXT_V2
+            } else {
+                NO_INSTALL_APPS_RESTRICTION_TEXT
+            }
             assertNotNull(
                 "Error dialog not shown",
                 uiDevice.wait(
-                    Until.findObject(By.text(NO_INSTALL_APPS_RESTRICTION_TEXT)),
+                    Until.findObject(By.text(targetString)),
                     GLOBAL_TIMEOUT
                 )
             )
-            clickInstallerUIButton(INSTALL_BUTTON_ID)
+            val targetButton = if (usePiaV2) {
+                CANCEL_BUTTON_ID
+            } else {
+                INSTALL_BUTTON_ID
+            }
+            clickInstallerUIButton(targetButton)
 
             assertEquals(RESULT_CANCELED, installation.get(GLOBAL_TIMEOUT, TimeUnit.MILLISECONDS))
         } finally {
@@ -280,14 +293,25 @@ class IntentTest : PackageInstallerTestBase() {
             )
             var installation = startInstallationViaIntent()
 
+            val targetString = if (usePiaV2) {
+                NO_INSTALL_APPS_RESTRICTION_TEXT_V2
+            } else {
+                NO_INSTALL_APPS_RESTRICTION_TEXT
+            }
+
             assertNotNull(
                 "Error dialog not shown",
                 uiDevice.wait(
-                    Until.findObject(By.text(NO_INSTALL_APPS_RESTRICTION_TEXT)),
+                    Until.findObject(By.text(targetString)),
                     GLOBAL_TIMEOUT
                 )
             )
-            clickInstallerUIButton(INSTALL_BUTTON_ID)
+            val targetButton = if (usePiaV2) {
+                CANCEL_BUTTON_ID
+            } else {
+                INSTALL_BUTTON_ID
+            }
+            clickInstallerUIButton(targetButton)
 
             assertEquals(RESULT_CANCELED, installation.get(GLOBAL_TIMEOUT, TimeUnit.MILLISECONDS))
         } finally {
@@ -327,9 +351,14 @@ class IntentTest : PackageInstallerTestBase() {
         clickInstallerUIButton(INSTALL_BUTTON_ID)
 
         // Wait for success dialog
+        val targetString = if (usePiaV2) {
+            REINSTALL_SUCCESS_TEXT
+        } else {
+            INSTALL_SUCCESS_TEXT
+        }
         assertNotNull(
             "Success dialog not shown",
-            uiDevice.wait(Until.findObject(By.text(INSTALL_SUCCESS_TEXT)), GLOBAL_TIMEOUT)
+            uiDevice.wait(Until.findObject(By.textContains(targetString)), GLOBAL_TIMEOUT)
         )
 
         // Since the dialog is already visible, no need to wait for long for the "Open" button.
@@ -358,8 +387,9 @@ class IntentTest : PackageInstallerTestBase() {
         val installation = startInstallationViaIntent(installIntent)
         clickInstallerUIButton(INSTALL_BUTTON_ID)
 
-        // Click the positive button on the InstallFailed dialog
-        clickInstallerUIButton(INSTALL_BUTTON_ID)
+        // Click the positive button on InstallFailed dialog or negative button on the
+        // InstallFailedFragment.
+        clickInstallerUIButton(if (usePiaV2) { CANCEL_BUTTON_ID } else { INSTALL_BUTTON_ID })
 
         assertEquals(RESULT_CANCELED, installation.get(GLOBAL_TIMEOUT, TimeUnit.MILLISECONDS))
         assertNotInstalled(TEST_REJECTED_BY_VERIFIER_PACKAGE_NAME)

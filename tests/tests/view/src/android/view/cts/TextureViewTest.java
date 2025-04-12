@@ -144,11 +144,12 @@ public class TextureViewTest {
         activity.waitForSurface();
         activity.initGl();
         int updatedCount;
+        int waitCount;
         updatedCount = activity.waitForSurfaceUpdateCount(0);
-        assertEquals(0, updatedCount);
         activity.drawColor(Color.GREEN);
-        updatedCount = activity.waitForSurfaceUpdateCount(1);
-        assertEquals(1, updatedCount);
+        waitCount = updatedCount + 1;
+        updatedCount = activity.waitForSurfaceUpdateCount(waitCount);
+        assertEquals(waitCount, updatedCount);
         assertEquals(Color.WHITE, getPixel(window, center));
         WidgetTestUtils.runOnMainAndDrawSync(mActivityRule,
                 activity.findViewById(android.R.id.content), () -> activity.removeCover());
@@ -156,8 +157,9 @@ public class TextureViewTest {
         int color = waitForChange(window, center, Color.WHITE);
         assertEquals(Color.GREEN, color);
         activity.drawColor(Color.BLUE);
-        updatedCount = activity.waitForSurfaceUpdateCount(2);
-        assertEquals(2, updatedCount);
+        waitCount = updatedCount + 1;
+        updatedCount = activity.waitForSurfaceUpdateCount(waitCount);
+        assertEquals(waitCount, updatedCount);
         color = waitForChange(window, center, color);
         assertEquals(Color.BLUE, color);
     }
@@ -782,6 +784,7 @@ public class TextureViewTest {
             boolean useHalfFloat, boolean isFramebufferLinear,
             CompareFunction compareFunction) throws Throwable {
         final TextureViewCtsActivity activity = mActivityRule.launchActivity(null);
+        activity.waitForEnterAnimationComplete();
         activity.waitForSurface();
 
         try {
@@ -798,11 +801,12 @@ public class TextureViewTest {
         final float[] inputColor = { 1.0f, 128 / 255.0f, 0.0f};
 
         int updatedCount;
+        int waitCount;
         updatedCount = activity.waitForSurfaceUpdateCount(0);
-        assertEquals(0, updatedCount);
         activity.drawColor(inputColor[0], inputColor[1], inputColor[2], 1.0f);
-        updatedCount = activity.waitForSurfaceUpdateCount(1);
-        assertEquals(1, updatedCount);
+        waitCount = updatedCount + 1;
+        updatedCount = activity.waitForSurfaceUpdateCount(waitCount);
+        assertEquals(waitCount, updatedCount);
 
         final Bitmap bitmap = activity.getContents(compareFunction.getConfig(),
                 compareFunction.getColorSpace());

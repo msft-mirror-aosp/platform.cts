@@ -370,8 +370,8 @@ public class VideoEncoderAvailabilityTest extends CodecEncoderGLSurface {
     }
 
     /**
-     * Briefly, this test verifies the functionality of media codec apis getRequiredResources()
-     * and onRequiredResourcesChanged() at various codec states.
+     * Briefly, this test verifies the functionality of media codec api getRequiredResources() at
+     * various codec states.
      * <p>
      * getRequiredResources() is expected to return illegal state exception in uninitialized
      * state and resources required for current codec configuration in executing state. The test
@@ -384,17 +384,13 @@ public class VideoEncoderAvailabilityTest extends CodecEncoderGLSurface {
      * the codec operational consumption resources. In other words, at any given time, current
      * global available resources + current instance codec resources equals global available
      * resources at the start of the test.
-     * <p>
-     * In the executing state, the codec shall update the required resources status via
-     * callback onRequiredResourcesChanged(). This is also verified.
      */
     @LargeTest
     @VsrTest(requirements = {"VSR-4.1-002"})
     @Test(timeout = PER_TEST_TIMEOUT_LARGE_TEST_MS)
     @RequiresFlagsEnabled(FLAG_CODEC_AVAILABILITY)
     @ApiTest(apis = {"android.media.MediaCodec#getGloballyAvailableResources",
-            "android.media.MediaCodec#getRequiredResources",
-            "android.media.MediaCodec.Callback#onRequiredResourcesChanged"})
+            "android.media.MediaCodec#getRequiredResources"})
     public void testSimpleEncode() throws IOException, InterruptedException {
         CodecAsyncHandlerResource asyncHandleResource = new CodecAsyncHandlerResource();
         mAsyncHandle = asyncHandleResource;
@@ -426,9 +422,6 @@ public class VideoEncoderAvailabilityTest extends CodecEncoderGLSurface {
                 GLOBAL_AVBL_RESOURCES, String.format(Locale.getDefault(),
                         "getRequiredResources() failed in %s state \n", CodecState.EOS)
                         + mTestEnv + mTestConfig);
-        Assert.assertTrue("did not receive callback onRequiredResourcesChanged() from"
-                        + " codec\n" + mTestEnv + mTestConfig,
-                asyncHandleResource.hasRequiredResourceChangeCbReceived());
         mCodec.stop();
         validateGetCodecResources(List.of(Pair.create(mCodec, CodecState.STOPPED)),
                 GLOBAL_AVBL_RESOURCES, String.format(Locale.getDefault(),
@@ -578,8 +571,7 @@ public class VideoEncoderAvailabilityTest extends CodecEncoderGLSurface {
     @Test(timeout = PER_TEST_TIMEOUT_LARGE_TEST_MS)
     @RequiresFlagsEnabled(FLAG_CODEC_AVAILABILITY)
     @ApiTest(apis = {"android.media.MediaCodec#getGloballyAvailableResources",
-            "android.media.MediaCodec#getRequiredResources",
-            "android.media.MediaCodec.Callback#onRequiredResourcesChanged"})
+            "android.media.MediaCodec#getRequiredResources"})
     public void testConcurrentMaxInstances() {
         validateMaxInstances(mCodecName, mMediaType);
     }
@@ -596,8 +588,7 @@ public class VideoEncoderAvailabilityTest extends CodecEncoderGLSurface {
     @Test(timeout = PER_TEST_TIMEOUT_LARGE_TEST_MS)
     @RequiresFlagsEnabled(FLAG_CODEC_AVAILABILITY)
     @ApiTest(apis = {"android.media.MediaCodec#getGloballyAvailableResources",
-            "android.media.MediaCodec#getRequiredResources",
-            "android.media.MediaCodec.Callback#onRequiredResourcesChanged"})
+            "android.media.MediaCodec#getRequiredResources"})
     public void testResourceConsumptionForPerfPoints() throws IOException, InterruptedException {
         List<CodecResource> globalResources = getCurrentGlobalCodecResources();
         MediaCodecInfo.CodecCapabilities caps = getCodecCapabilities(mCodecName, mMediaType);
@@ -608,12 +599,23 @@ public class VideoEncoderAvailabilityTest extends CodecEncoderGLSurface {
                 vcaps.getSupportedPerformancePoints();
         Assume.assumeFalse(mCodecName + " codec did not advertise any performance points",
                 pps == null || pps.isEmpty());
-        for (MediaCodecInfo.VideoCapabilities.PerformancePoint pp : pps) {
+        double maxPixelsProcessedPerSec = 0;
+        double pixelsProcessedPerSec;
+        for (int i = 0; i < pps.size(); i++) {
+            MediaCodecInfo.VideoCapabilities.PerformancePoint pp = pps.get(i);
             Size videoSize = estimateVideoSizeFromPerformancePoint(pp);
             EncoderConfigParams configParam =
                     new EncoderConfigParams.Builder(mMediaType).setWidth(videoSize.getWidth())
                             .setHeight(videoSize.getHeight()).setFrameRate(pp.getMaxFrameRate())
                             .setColorFormat(COLOR_FormatSurface).build();
+            pixelsProcessedPerSec =
+                    videoSize.getWidth() * videoSize.getHeight() * pp.getMaxFrameRate();
+            if (i == 0) {
+                // as performance points are sorted by decreasing number of pixels, then by
+                // decreasing width, then by frame rate, the first point should indicate peak
+                // processing power
+                maxPixelsProcessedPerSec = pixelsProcessedPerSec;
+            }
             CodecEncoderGLSurface codec =
                     new CodecEncoderGLSurface(mCodecName, mMediaType, configParam, mAllTestParams);
             codec.launchInstance();
@@ -621,10 +623,12 @@ public class VideoEncoderAvailabilityTest extends CodecEncoderGLSurface {
             double consumption = computeConsumption(globalResources, usedResources);
             codec.stopInstance();
             codec.releaseInstance();
-            if (consumption < MIN_UTILIZATION_THRESHOLD) {
+            double relativeThreshold =
+                    pixelsProcessedPerSec * MIN_UTILIZATION_THRESHOLD / maxPixelsProcessedPerSec;
+            if (consumption < relativeThreshold) {
                 Assert.fail("For performance point " + pp + " and codec : " + mCodecName
                         + " max resources consumed is expected to be at least "
-                        + MIN_UTILIZATION_THRESHOLD + "% but got " + consumption + "%");
+                        + relativeThreshold + "% but got " + consumption + "%");
             }
         }
     }

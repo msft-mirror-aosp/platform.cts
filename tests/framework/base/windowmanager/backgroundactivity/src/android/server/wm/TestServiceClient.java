@@ -29,7 +29,8 @@ import android.view.textclassifier.TextClassification;
 
 public class TestServiceClient implements ITestService {
 
-    ITestService mTestService;
+    private static final int DEFAULT_ACTIVITY_ID = -1;
+    private ITestService mTestService;
 
     TestServiceClient(ITestService mTestService) {
         this.mTestService = mTestService;
@@ -90,36 +91,61 @@ public class TestServiceClient implements ITestService {
         sendPendingIntent(pendingIntent, Bundle.EMPTY);
     }
 
-    /**
-     * @see android.server.wm.backgroundactivity.common.TestService#sendPendingIntentWithActivity(
-     *          PendingIntent, Bundle)
-     */
+    @Override
+    public void sendPendingIntentWithActivity(
+            int activityId, PendingIntent pendingIntent, Bundle sendOptions)
+            throws RemoteException {
+        mTestService.sendPendingIntentWithActivity(activityId, pendingIntent, sendOptions);
+    }
+
     public void sendPendingIntentWithActivity(PendingIntent pendingIntent, Bundle sendOptions)
             throws RemoteException {
-        mTestService.sendPendingIntentWithActivity(pendingIntent, sendOptions);
+        mTestService.sendPendingIntentWithActivity(DEFAULT_ACTIVITY_ID, pendingIntent, sendOptions);
+    }
+
+    @Override
+    public void sendPendingIntentWithActivityForResult(
+            int activityId, PendingIntent pendingIntent, Bundle sendOptions)
+            throws RemoteException {
+        mTestService.sendPendingIntentWithActivityForResult(activityId, pendingIntent, sendOptions);
     }
 
     /**
-     * @see android.server.wm.backgroundactivity.common.TestService#sendPendingIntentWithActivityForResult(
-     *          PendingIntent, Bundle)
+     * @see #sendPendingIntentWithActivityForResult(int, PendingIntent, Bundle)
      */
-    public void sendPendingIntentWithActivityForResult(PendingIntent pendingIntent,
-            Bundle sendOptions) throws RemoteException {
-        mTestService.sendPendingIntentWithActivityForResult(pendingIntent, sendOptions);
+    public void sendPendingIntentWithActivityForResult(
+            PendingIntent pendingIntent, Bundle sendOptions) throws RemoteException {
+        mTestService.sendPendingIntentWithActivityForResult(
+                DEFAULT_ACTIVITY_ID, pendingIntent, sendOptions);
     }
 
-    /**
-     * @see android.server.wm.backgroundactivity.common.TestService#sendIntentSender(
-     *          IntentSender, Bundle)
-     */
-    public void sendIntentSender(IntentSender intentSender,
-            Bundle sendOptions) throws RemoteException {
+    @Override
+    public void sendIntentSender(IntentSender intentSender, Bundle sendOptions)
+            throws RemoteException {
         mTestService.sendIntentSender(intentSender, sendOptions);
     }
 
     @Override
+    public void startActivityIntent(int activityId, Intent intent, Bundle options)
+            throws RemoteException {
+        mTestService.startActivityIntent(activityId, intent, options);
+    }
+
+    public void startActivityIntent(Intent intent, Bundle options) throws RemoteException {
+        mTestService.startActivityIntent(DEFAULT_ACTIVITY_ID, intent, options);
+    }
+
     public void startActivityIntent(Intent intent) throws RemoteException {
-        mTestService.startActivityIntent(intent);
+        mTestService.startActivityIntent(DEFAULT_ACTIVITY_ID, intent, null);
+    }
+
+    @Override
+    public void finishActivity(int activityId) throws RemoteException {
+        mTestService.finishActivity(activityId);
+    }
+
+    public void finishActivity() throws RemoteException {
+        mTestService.finishActivity(DEFAULT_ACTIVITY_ID);
     }
 
     @Override

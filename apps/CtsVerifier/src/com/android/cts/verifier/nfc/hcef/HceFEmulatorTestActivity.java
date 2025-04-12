@@ -48,6 +48,15 @@ public class HceFEmulatorTestActivity extends PassFailButtons.TestListActivity {
             adapter.add(TestListItem.newTest(this, R.string.nfc_hce_f_emulator,
                     HceFEmulatorActivity.class.getName(),
                     new Intent(this, HceFEmulatorActivity.class), null));
+            if (nfcAdapter.isObserveModeSupported()) {
+                adapter.add(
+                        TestListItem.newTest(
+                                this,
+                                R.string.nfc_hce_f_emulator_observe_mode_tests,
+                                NfcFObserveModeEmulatorTestActivity.class.getName(),
+                                new Intent(this, NfcFObserveModeEmulatorTestActivity.class),
+                                null));
+            }
         }
 
         setTestListAdapter(adapter);

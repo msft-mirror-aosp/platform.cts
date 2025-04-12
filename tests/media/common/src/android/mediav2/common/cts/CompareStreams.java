@@ -89,7 +89,7 @@ public class CompareStreams extends CodecDecoderTestBase {
     private int mFrameSize;
     private byte[] mInputData;
 
-    private CompareStreams(RawResource refYuv, MediaFormat testFormat, ByteBuffer testBuffer,
+    public CompareStreams(RawResource refYuv, MediaFormat testFormat, ByteBuffer testBuffer,
             ArrayList<MediaCodec.BufferInfo> testBufferInfos, boolean allowRefResize,
             boolean allowRefLoopBack) {
         super(findDecoderForFormat(testFormat), testFormat.getString(MediaFormat.KEY_MIME), null,

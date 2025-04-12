@@ -20,11 +20,9 @@ import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.car.Car;
-import android.car.feature.Flags;
 import android.car.test.PermissionsCheckerRule.EnsureHasPermission;
 import android.car.wifi.CarWifiManager;
 import android.platform.test.annotations.AppModeFull;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 
 import androidx.test.platform.app.InstrumentationRegistry;
 
@@ -38,7 +36,7 @@ import org.junit.Test;
 @AppModeFull(reason = "Instant Apps cannot get car related permissions")
 public final class CarWifiManagerTest extends AbstractCarTestCase {
 
-    private static final String CMD_DUMPSYS_WIFI_PROTO =
+    private static final String CMD_DUMPSYS_WIFI =
             "dumpsys car_service --services CarWifiService --proto";
 
     private CarWifiManager mCarWifiManager;
@@ -52,7 +50,6 @@ public final class CarWifiManagerTest extends AbstractCarTestCase {
     @Test
     @ApiTest(apis = {"android.car.wifi.CarWifiManager#canControlPersistTetheringSettings"})
     @EnsureHasPermission(Car.PERMISSION_READ_PERSIST_TETHERING_SETTINGS)
-    @RequiresFlagsEnabled({Flags.FLAG_PERSIST_AP_SETTINGS, Flags.FLAG_CAR_DUMP_TO_PROTO})
     public void testCanControlPersistTetheringSettings_withCapability_returnsTrue()
             throws Exception {
         assumeTrue("Skipping test: tethering capability disabled",
@@ -65,7 +62,6 @@ public final class CarWifiManagerTest extends AbstractCarTestCase {
     @Test
     @ApiTest(apis = {"android.car.wifi.CarWifiManager#canControlPersistTetheringSettings"})
     @EnsureHasPermission(Car.PERMISSION_READ_PERSIST_TETHERING_SETTINGS)
-    @RequiresFlagsEnabled({Flags.FLAG_PERSIST_AP_SETTINGS, Flags.FLAG_CAR_DUMP_TO_PROTO})
     public void testCanControlPersistTetheringSettings_noCapability_returnsFalse()
             throws Exception {
         assumeFalse("Skipping test: tethering capability enabled",
@@ -76,9 +72,11 @@ public final class CarWifiManagerTest extends AbstractCarTestCase {
     }
 
     private boolean isPersistTetheringCapabilityEnabled() throws Exception {
-        CarWifiDumpProto dump = ProtoUtils.getProto(
-                InstrumentationRegistry.getInstrumentation().getUiAutomation(),
-                CarWifiDumpProto.class, CMD_DUMPSYS_WIFI_PROTO);
+        CarWifiDumpProto dump =
+                ProtoUtils.getProto(
+                        InstrumentationRegistry.getInstrumentation().getUiAutomation(),
+                        CarWifiDumpProto.class,
+                        CMD_DUMPSYS_WIFI);
 
         return dump.getPersistTetheringCapabilitiesEnabled();
     }

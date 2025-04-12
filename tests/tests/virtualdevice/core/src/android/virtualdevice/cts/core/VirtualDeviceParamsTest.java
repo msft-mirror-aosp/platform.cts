@@ -30,12 +30,15 @@ import static android.media.AudioManager.AUDIO_SESSION_ID_GENERATE;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThrows;
 
+import android.companion.virtual.ViewConfigurationParams;
 import android.companion.virtual.VirtualDeviceParams;
 import android.companion.virtual.sensor.VirtualSensorCallback;
 import android.companion.virtual.sensor.VirtualSensorConfig;
 import android.companion.virtual.sensor.VirtualSensorDirectChannelCallback;
+import android.companion.virtualdevice.flags.Flags;
 import android.content.ComponentName;
 import android.hardware.SensorDirectChannel;
 import android.os.Parcel;
@@ -138,8 +141,7 @@ public class VirtualDeviceParamsTest {
         assertThat(sensorConfig.getVendor()).isEqualTo(SENSOR_VENDOR);
     }
 
-    @RequiresFlagsEnabled(
-            android.companion.virtualdevice.flags.Flags.FLAG_DEVICE_AWARE_DISPLAY_POWER)
+    @RequiresFlagsEnabled(Flags.FLAG_DEVICE_AWARE_DISPLAY_POWER)
     @Test
     public void customTimeouts_parcelable_shouldRecreateSuccessfully() {
         final Duration dimDuration = Duration.ofMinutes(2);
@@ -157,6 +159,53 @@ public class VirtualDeviceParamsTest {
         assertThat(params).isEqualTo(originalParams);
         assertThat(params.getDimDuration()).isEqualTo(dimDuration);
         assertThat(params.getScreenOffTimeout()).isEqualTo(screenOffTimeout);
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_VIEWCONFIGURATION_APIS)
+    @Test
+    public void viewConfigurationParams_parcelable_shouldRecreateSuccessfully() throws Exception {
+        final Duration tapTimeoutDuration = Duration.ofMillis(10L);
+        final Duration doubleTapTimeoutDuration = Duration.ofMillis(20L);
+        final Duration doubleTapMinTimeDuration = Duration.ofMillis(30L);
+        final float scrollFriction = 50f;
+        final float touchSlopDp = 40f;
+        final float maximumFlingVelocityDpPerSecond = 90f;
+        final float minimumFlingVelocityDpPerSecond = 70f;
+        VirtualDeviceParams originalParams =
+                new VirtualDeviceParams.Builder()
+                        .setViewConfigurationParams(
+                                new ViewConfigurationParams.Builder()
+                                        .setTapTimeoutDuration(tapTimeoutDuration)
+                                        .setDoubleTapTimeoutDuration(doubleTapTimeoutDuration)
+                                        .setDoubleTapMinTimeDuration(doubleTapMinTimeDuration)
+                                        .setScrollFriction(scrollFriction)
+                                        .setMinimumFlingVelocityDpPerSecond(
+                                                minimumFlingVelocityDpPerSecond)
+                                        .setMaximumFlingVelocityDpPerSecond(
+                                                maximumFlingVelocityDpPerSecond)
+                                        .setTouchSlopDp(touchSlopDp)
+                                        .build())
+                        .build();
+
+        Parcel parcel = Parcel.obtain();
+        originalParams.writeToParcel(parcel, 0);
+        parcel.setDataPosition(0);
+
+        VirtualDeviceParams params = VirtualDeviceParams.CREATOR.createFromParcel(parcel);
+        assertThat(params).isEqualTo(originalParams);
+        ViewConfigurationParams viewConfigurationParams = params.getViewConfigurationParams();
+        assertNotNull(viewConfigurationParams);
+        assertThat(viewConfigurationParams.getTapTimeoutDuration()).isEqualTo(tapTimeoutDuration);
+        assertThat(viewConfigurationParams.getDoubleTapTimeoutDuration())
+                .isEqualTo(doubleTapTimeoutDuration);
+        assertThat(viewConfigurationParams.getDoubleTapMinTimeDuration())
+                .isEqualTo(doubleTapMinTimeDuration);
+        assertThat(viewConfigurationParams.getScrollFriction()).isEqualTo(scrollFriction);
+        assertThat(viewConfigurationParams.getTouchSlopDp()).isEqualTo(touchSlopDp);
+        assertThat(viewConfigurationParams.getMinimumFlingVelocityDpPerSecond())
+                .isEqualTo(minimumFlingVelocityDpPerSecond);
+        assertThat(viewConfigurationParams.getMaximumFlingVelocityDpPerSecond())
+                .isEqualTo(maximumFlingVelocityDpPerSecond);
     }
 
     @Test
@@ -362,9 +411,11 @@ public class VirtualDeviceParamsTest {
         assertThat(params.getDevicePolicy(POLICY_TYPE_RECENTS)).isEqualTo(DEVICE_POLICY_CUSTOM);
         assertThat(params.getDevicePolicy(POLICY_TYPE_CLIPBOARD)).isEqualTo(DEVICE_POLICY_CUSTOM);
         assertThat(params.getDevicePolicy(POLICY_TYPE_CAMERA)).isEqualTo(DEVICE_POLICY_CUSTOM);
-        assertThat(params.getDevicePolicy(POLICY_TYPE_DEFAULT_DEVICE_CAMERA_ACCESS)).isEqualTo(
-                android.companion.virtualdevice.flags.Flags.defaultDeviceCameraAccessPolicy()
-                        ? DEVICE_POLICY_CUSTOM : DEVICE_POLICY_DEFAULT);
+        assertThat(params.getDevicePolicy(POLICY_TYPE_DEFAULT_DEVICE_CAMERA_ACCESS))
+                .isEqualTo(
+                        Flags.defaultDeviceCameraAccessPolicy()
+                                ? DEVICE_POLICY_CUSTOM
+                                : DEVICE_POLICY_DEFAULT);
     }
 
     @Test
@@ -520,8 +571,7 @@ public class VirtualDeviceParamsTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(
-            android.companion.virtualdevice.flags.Flags.FLAG_DEVICE_AWARE_DISPLAY_POWER)
+    @RequiresFlagsEnabled(Flags.FLAG_DEVICE_AWARE_DISPLAY_POWER)
     public void invalidTimeouts_throwsException() {
         assertThrows(NullPointerException.class, () ->
                 new VirtualDeviceParams.Builder().setScreenOffTimeout(null));
@@ -542,6 +592,5 @@ public class VirtualDeviceParamsTest {
                         .setScreenOffTimeout(Duration.ofMillis(500))
                         .build());
     }
-
 }
 

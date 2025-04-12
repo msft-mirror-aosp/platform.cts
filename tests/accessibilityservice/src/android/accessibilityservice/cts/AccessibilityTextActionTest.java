@@ -657,14 +657,14 @@ public class AccessibilityTextActionTest {
                         .getContext()
                         .getPackageManager()
                         .hasSystemFeature(FEATURE_FREEFORM_WINDOW_MANAGEMENT));
-        homeScreenOrBust(sInstrumentation.getContext(), sUiAutomation);
         mActivityRule.getScenario().close();
 
         final ActivityOptions options = ActivityOptions.makeBasic();
         options.setLaunchWindowingMode(WINDOWING_MODE_FREEFORM);
         options.setLaunchBounds(new Rect(left, top, left + 400, top + 400));
         options.setLaunchDisplayId(Display.DEFAULT_DISPLAY);
-        return ActivityScenario.launch(AccessibilityTextViewActivity.class, options.toBundle());
+        return ActivityScenario.launch(AccessibilityTextViewActivity.class, options.toBundle())
+                .moveToState(Lifecycle.State.RESUMED);
     }
 
     @Test

@@ -46,6 +46,7 @@ import android.hardware.camera2.params.SessionConfiguration;
 import android.media.Image;
 import android.media.ImageReader;
 import android.os.Handler;
+import android.os.SystemClock;
 import android.view.Surface;
 
 import androidx.annotation.NonNull;
@@ -61,9 +62,12 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
@@ -239,9 +243,34 @@ public class VirtualCameraCaptureHelper {
                 imageReaderLatch.countDown();
             }, mImageReaderHandler);
 
-            for (int i = 0; i < config.mImageCount; i++) {
-                cameraCaptureSession.captureSingleRequest(request.build(), mCameraExecutor,
-                        mCaptureCallback);
+            Duration capturePeriod = config.mCapturePeriod;
+            if (capturePeriod != null) {
+                Timer cameraCaptureTimer = new Timer("Camera Capture Timer");
+                cameraCaptureTimer.scheduleAtFixedRate(new TimerTask() {
+
+                    int mRemainingCapture = config.mImageCount;
+
+                    @Override
+                    public void run() {
+                        try {
+                            if (mRemainingCapture <= 0) {
+                                cancel();
+                                return;
+                            }
+                            mRemainingCapture--;
+                            cameraCaptureSession.captureSingleRequest(request.build(),
+                                    mCameraExecutor,
+                                    mCaptureCallback);
+                        } catch (CameraAccessException e) {
+                            throw new RuntimeException(e);
+                        }
+                    }
+                }, 0, capturePeriod.toMillis());
+            } else {
+                for (int i = 0; i < config.mImageCount; i++) {
+                    cameraCaptureSession.captureSingleRequest(request.build(), mCameraExecutor,
+                            mCaptureCallback);
+                }
             }
 
             if (!config.mVerifyCaptureComplete) {
@@ -377,6 +406,10 @@ public class VirtualCameraCaptureHelper {
         return mCaptureCallback.getCaptureResults().getLast();
     }
 
+    public List<Long> getCaptureDeviceTimestampsNanos() {
+        return mCaptureCallback.getCaptureDeviceTimestamp();
+    }
+
     /**
      * Holds the configuration used for {@link #captureImages(CaptureConfiguration)}.
      * <p>
@@ -394,6 +427,7 @@ public class VirtualCameraCaptureHelper {
         private int mWidth = CAMERA_WIDTH;
         private int mHeight = CAMERA_HEIGHT;
         private int mOutputFormat = YUV_420_888;
+        private Duration mCapturePeriod = null;
 
         /**
          * Set the number of image to capture
@@ -402,6 +436,11 @@ public class VirtualCameraCaptureHelper {
          */
         public CaptureConfiguration setImageCount(int imageCount) {
             mImageCount = imageCount;
+            return this;
+        }
+
+        public CaptureConfiguration setCapturePeriod(Duration period) {
+            mCapturePeriod = period;
             return this;
         }
 
@@ -485,6 +524,7 @@ public class VirtualCameraCaptureHelper {
     private static class TestCaptureCallback extends CaptureCallback {
 
         private final ArrayList<TotalCaptureResult> mCaptureResults = new ArrayList<>();
+        private final ArrayList<Long> mCaptureResultsDeviceTimestamps = new ArrayList<>();
         private CountDownLatch mCaptureAndErrorLatch = new CountDownLatch(0);
         private int mFailedCaptureCount = 0;
         private boolean mFailOnFailedCapture = true;
@@ -523,12 +563,19 @@ public class VirtualCameraCaptureHelper {
                 @NonNull CaptureRequest request,
                 @NonNull TotalCaptureResult result) {
             mCaptureResults.add(result);
+            mCaptureResultsDeviceTimestamps.add(SystemClock.uptimeNanos());
             mCaptureAndErrorLatch.countDown();
         }
 
         public List<TotalCaptureResult> getCaptureResults() {
             synchronized (mCaptureResults) {
                 return List.copyOf(mCaptureResults);
+            }
+        }
+
+        public List<Long> getCaptureDeviceTimestamp() {
+            synchronized (mCaptureResultsDeviceTimestamps) {
+                return List.copyOf(mCaptureResultsDeviceTimestamps);
             }
         }
 

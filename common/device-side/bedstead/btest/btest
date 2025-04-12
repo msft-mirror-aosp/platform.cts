@@ -680,7 +680,7 @@ def build_modules(args):
             targets.update(supported_modules[t[0]].get(ADDITIONAL_TARGETS, []))
             targets.update([app[TARGET_NAME] for app in supported_modules[t[0]].get(ADDITIONAL_APPS, [])])
 
-        command += " &&" + " && ".join(["m " + t for t in targets])
+        command += " && " + " && ".join(["m " + t for t in targets])
 
     if args.interactive and args.build_interactive:
         must_build = True
@@ -799,9 +799,8 @@ class Test:
                     sys.exit(1)
                 for class_method in self.class_methods:
                     # class_method = self.class_methods[0]
-                    # We need to escape 3 times to get through the various interpreters
                     # Using regex adds 5 seconds or so to running a single test so has to be opt-in
-                    command += " -e tests_regex " + ".*".join([re.escape(re.escape(re.escape(s))) for s in class_method.split("*")])
+                    command += " -e tests_regex '" + ".*".join([re.escape(s) for s in class_method.split("*")]) + "'"
             else:
                 command += " -e class " + ",".join(self.class_methods)
 
@@ -849,7 +848,7 @@ class Test:
                     # Process has finished
                     break
 
-                test_name_parts = re.split('[#\[\]]', result["testName"])
+                test_name_parts = re.split(r'[#\[\]]', result["testName"])
                 print("[" + str(self.next_test).rjust(total_test_length) + "/" + modified_total_test_count + "] " + CLASS_NAME_COLOUR_CODE + test_name_parts[0] + RESET_CODE + "#" + TEST_NAME_COLOUR_CODE + test_name_parts[1] + RESET_CODE, end='')
                 self.next_test += 1
 
@@ -1359,6 +1358,9 @@ def ensure_correct_number_of_non_for_testing_users(args, device_state):
     if has_changed_users:
         device_state["users"] = get_users(args)
 
+def were_any_tests_run(btest_run):
+    return len(btest_run.passed_tests) != 0 or len(btest_run.failed_tests) != 0 or len(btest_run.ignored_tests) != 0 or len(btest_run.assumption_failed_tests) != 0
+
 def main():
     args = get_args()
 
@@ -1372,34 +1374,37 @@ def main():
             should_run = False
             btest_run, has_quit = run_tests(args)
 
-            out = os.environ["OUT"]
-            with open(out + "/btest_passes.txt", "w") as o:
-                for test in btest_run.passed_tests:
-                    o.write(test["testName"] + "\n")
-            with open(out + "/btest_failures.txt", "w") as o:
-                for test in btest_run.failed_tests:
-                    o.write(test["testName"] + "\n")
-            with open(out + "/btest_ignored.txt", "w") as o:
-                for test in btest_run.ignored_tests:
-                    o.write(test["testName"] + "\n")
-            with open(out + "/btest_assumption_failed.txt", "w") as o:
-                for test in btest_run.assumption_failed_tests:
-                    o.write(test["testName"] + "\n")
-
-            print("\n" + PASSED_CODE + "Passed: " + str(len(btest_run.passed_tests)) + RESET_CODE
-                  + "," + FAILED_CODE + " Failed: " + str(len(btest_run.failed_tests)) + RESET_CODE
-                  + "," + IGNORED_CODE + " Ignored: " + str(len(btest_run.ignored_tests)) + RESET_CODE
-                  + ", " + IGNORED_CODE + "Assumption Failed: " + str(len(btest_run.assumption_failed_tests)) + RESET_CODE)
-
-            if len(btest_run.failed_tests) > 0:
-                print("\n\nFailures:")
-                for test_result in btest_run.failed_tests:
-                    print(test_result["testName"] + " ❌  " + FAILED_CODE + "FAILED (" + test_result["message"] + ")" + RESET_CODE + " (" + format_nanos(test_result["runTime"]) + ")", flush=True)
+            if not were_any_tests_run(btest_run):
+                print("No tests run. If this test is parameterised try running it with * at the end of the method's name to run all its parameterisations.")
             else:
-                # No failures
-                if args.rerun_after_all_pass and not has_quit:
-                    print("All passed. rerun-after-all-pass specified. Rerunning...")
-                    should_run = True
+                out = os.environ["OUT"]
+                with open(out + "/btest_passes.txt", "w") as o:
+                    for test in btest_run.passed_tests:
+                        o.write(test["testName"] + "\n")
+                with open(out + "/btest_failures.txt", "w") as o:
+                    for test in btest_run.failed_tests:
+                        o.write(test["testName"] + "\n")
+                with open(out + "/btest_ignored.txt", "w") as o:
+                    for test in btest_run.ignored_tests:
+                        o.write(test["testName"] + "\n")
+                with open(out + "/btest_assumption_failed.txt", "w") as o:
+                    for test in btest_run.assumption_failed_tests:
+                        o.write(test["testName"] + "\n")
+
+                print("\n" + PASSED_CODE + "Passed: " + str(len(btest_run.passed_tests)) + RESET_CODE
+                      + "," + FAILED_CODE + " Failed: " + str(len(btest_run.failed_tests)) + RESET_CODE
+                      + "," + IGNORED_CODE + " Ignored: " + str(len(btest_run.ignored_tests)) + RESET_CODE
+                      + ", " + IGNORED_CODE + "Assumption Failed: " + str(len(btest_run.assumption_failed_tests)) + RESET_CODE)
+
+                if len(btest_run.failed_tests) > 0:
+                    print("\n\nFailures:")
+                    for test_result in btest_run.failed_tests:
+                        print(test_result["testName"] + " ❌  " + FAILED_CODE + "FAILED (" + test_result["message"] + ")" + RESET_CODE + " (" + format_nanos(test_result["runTime"]) + ")", flush=True)
+                else:
+                    # No failures
+                    if args.rerun_after_all_pass and not has_quit:
+                        print("All passed. rerun-after-all-pass specified. Rerunning...")
+                        should_run = True
 
 def debug(args, msg):
     if args.debug:

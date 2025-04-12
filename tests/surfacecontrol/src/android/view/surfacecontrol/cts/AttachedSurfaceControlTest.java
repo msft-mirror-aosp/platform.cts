@@ -39,11 +39,14 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Insets;
 import android.graphics.Rect;
+import android.provider.Settings;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
+import android.server.wm.ActivityManagerTestBase.DisableImmersiveModeConfirmationRule;
 import android.server.wm.IgnoreOrientationRequestSession;
 import android.server.wm.WindowManagerStateHelper;
+import android.server.wm.settings.SettingsSession;
 import android.util.Log;
 import android.view.AttachedSurfaceControl;
 import android.view.Gravity;
@@ -68,9 +71,11 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
+import org.junit.rules.TestRule;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -83,6 +88,31 @@ public class AttachedSurfaceControlTest {
     private WindowManagerStateHelper mWmState;
 
     private static final long WAIT_TIMEOUT_S = 5L * HW_TIMEOUT_MULTIPLIER;
+
+    @ClassRule
+    public static DisableImmersiveModeConfirmationRule sDisableImmersiveModeConfirmationRule =
+            new DisableImmersiveModeConfirmationRule();
+    @ClassRule
+    public static final TestRule sResetWindowAnimationRule =
+            SettingsSession.overrideForTest(
+                    Settings.Global.getUriFor(Settings.Global.WINDOW_ANIMATION_SCALE),
+                    Settings.Global::getFloat,
+                    Settings.Global::putFloat,
+                    1.0f);
+    @ClassRule
+    public static final TestRule sResetTransitionAnimationRule =
+            SettingsSession.overrideForTest(
+                    Settings.Global.getUriFor(Settings.Global.TRANSITION_ANIMATION_SCALE),
+                    Settings.Global::getFloat,
+                    Settings.Global::putFloat,
+                    1.0f);
+    @ClassRule
+    public static final TestRule sResetAnimatorDurationRule =
+            SettingsSession.overrideForTest(
+                    Settings.Global.getUriFor(Settings.Global.ANIMATOR_DURATION_SCALE),
+                    Settings.Global::getFloat,
+                    Settings.Global::putFloat,
+                    1.0f);
 
     @Rule
     public TestName mName = new TestName();

@@ -28,7 +28,6 @@ import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
 import android.content.Context;
 import android.database.DatabaseUtils;
-import android.database.sqlite.Flags;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteRawStatement;
 import android.test.AndroidTestCase;
@@ -48,7 +47,6 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-@RequiresFlagsEnabled(Flags.FLAG_SQLITE_APIS_35)
 @RunWith(AndroidJUnit4.class)
 @SmallTest
 public class SQLiteRawStatementTest {

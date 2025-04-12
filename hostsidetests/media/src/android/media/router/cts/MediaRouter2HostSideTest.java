@@ -597,7 +597,6 @@ public class MediaRouter2HostSideTest extends BaseHostJUnit4Test {
 
     @AppModeFull
     @RequiresDevice
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_PREVENTION_OF_MANAGER_SCANS_WHEN_NO_APPS_SCAN)
     @Test
     public void managerScan_withNoAppsScanning_doesNotWakeUpProvider() throws Exception {
         runDeviceTests(

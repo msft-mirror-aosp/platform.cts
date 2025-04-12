@@ -26,5 +26,9 @@
 
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.ExtendedCameraCharacteristicsTest#testCameraPerfClassCharacteristics" />
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.ExtendedCameraCharacteristicsTest#testSPerfClassJpegSizes" />
+    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.ExtendedCameraCharacteristicsTest.testCameraUPerfClassExtensionCharacteristics" />
+    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.ExtendedCameraCharacteristicsTest.testCameraUPerfClassCharacteristics" />
+    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.ExtendedCameraCharacteristicsTest.testCameraVPerfClassCharacteristic" />
+    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.FeatureCombinationTest.testVPerfClassRequirements" />
 
 </configuration>

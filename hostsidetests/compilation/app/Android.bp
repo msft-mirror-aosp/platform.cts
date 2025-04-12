@@ -20,7 +20,8 @@ java_defaults {
     name: "CtsCompilationApp_defaults",
     defaults: ["cts_support_defaults"],
     srcs: ["src/**/*.java"],
-    sdk_version: "29",
+    min_sdk_version: "31",
+    sdk_version: "current",
     // tag this module as a cts test artifact
     test_suites: [
         "cts",

@@ -95,18 +95,6 @@ public class InstallDontKillTest {
     }
 
     @Test
-    @RequiresFlagsDisabled(Flags.FLAG_IMPROVE_INSTALL_DONT_KILL)
-    public void testDontKill_pathsDeletedAfterSmallDelay() throws Exception {
-        installSplitsWithDontKill();
-        // Wait a bit and check that the old paths are deleted
-        Thread.sleep(WAIT_MILLIS);
-        // Test that the old code paths are deleted
-        assertThat(new File(mOldPath).exists()).isFalse();
-        assertThat(new File(mPathAfterFirstSplitInstall).exists()).isFalse();
-    }
-
-    @Test
-    @RequiresFlagsEnabled(Flags.FLAG_IMPROVE_INSTALL_DONT_KILL)
     public void testDontKill_pathsNotDeletedAfterAdjustedDelay() throws Exception {
         setDeleteDelayInDeviceConfig(String.valueOf(ADJUSTED_DELETE_DELAY_MILLIS));
         installSplitsWithDontKill();

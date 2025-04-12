@@ -26,6 +26,7 @@ import android.nfc.NfcAdapter;
 import android.nfc.cardemulation.CardEmulation;
 import android.nfc.cardemulation.NfcFCardEmulation;
 import android.os.Bundle;
+import android.widget.TextView;
 
 import com.android.cts.verifier.PassFailButtons;
 import com.android.cts.verifier.R;
@@ -59,6 +60,13 @@ public class NfcFObserveModeEmulatorTestActivity extends PassFailButtons.Activit
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.pass_fail_text);
+
+        TextView textView = (TextView) findViewById(R.id.text);
+        textView.setText(
+                getString(
+                        R.string.nfc_hce_f_help_text,
+                        getString(R.string.nfc_hce_f_reader_observe_mode_tests)));
+
         setPassFailButtonClickListeners();
         getPassButton().setEnabled(false);
         mAdapter = NfcAdapter.getDefaultAdapter(this);

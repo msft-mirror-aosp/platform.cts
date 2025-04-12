@@ -193,6 +193,12 @@ public final class FakeAppSearchConfig implements ServiceAppSearchConfig {
     }
 
     @Override
+    public int getCompressionMemLevel() {
+        throwIfClosed();
+        return defaultCompressionMemLevel();
+    }
+
+    @Override
     public boolean getAllowCircularSchemaDefinitions() {
         throwIfClosed();
         return Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE;

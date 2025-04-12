@@ -897,6 +897,7 @@ public final class CompatChangeTests extends MultiDisplayTestBase {
      * the display, when the {@link ActivityInfo#FORCE_NON_RESIZE_APP} compat change is enabled.
      */
     @Test
+    @DisableCompatChanges({ActivityInfo.UNIVERSAL_RESIZABLE_BY_DEFAULT})
     @EnableCompatChanges({ActivityInfo.FORCE_NON_RESIZE_APP})
     public void testSizeCompatForResizeableActivityForceNonResizeEnabled() {
         runSizeCompatTest(RESIZEABLE_PORTRAIT_ACTIVITY, /* inSizeCompatModeAfterResize */ true);
@@ -908,6 +909,7 @@ public final class CompatChangeTests extends MultiDisplayTestBase {
      * change is enabled.
      */
     @Test
+    @DisableCompatChanges({ActivityInfo.UNIVERSAL_RESIZABLE_BY_DEFAULT})
     @EnableCompatChanges({ActivityInfo.FORCE_NON_RESIZE_APP})
     public void testSizeCompatForSupportsSizeChangesActivityForceNonResizeEnabled() {
         runSizeCompatTest(
@@ -927,6 +929,7 @@ public final class CompatChangeTests extends MultiDisplayTestBase {
 
     /** Test that an SCM app does not relaunch with display move. */
     @Test
+    @DisableCompatChanges({ActivityInfo.UNIVERSAL_RESIZABLE_BY_DEFAULT})
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_SIZE_COMPAT_MODE_IMPROVEMENTS_FOR_CONNECTED_DISPLAYS)
     public void testSizeCompatDoesNotRestartWithDisplayMove() {
         assumeTrue(supportsMultiDisplay());

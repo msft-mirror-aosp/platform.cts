@@ -29,6 +29,7 @@ import java.util.stream.Stream;
 final class CertificateTransparencyTestUtils {
 
     static final String SCT_PROVIDED_DOMAIN = "https://android.com";
+    static final String SCT_PROVIDED_DOMAIN_2 = "https://sha256.badssl.com";
     static final String NO_SCT_PROVIDED_DOMAIN = "https://no-sct.badssl.com/";
     static final int HTTP_OK_RESPONSE_CODE = 200;
 

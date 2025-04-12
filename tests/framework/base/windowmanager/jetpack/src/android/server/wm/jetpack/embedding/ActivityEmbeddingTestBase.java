@@ -113,8 +113,8 @@ public class ActivityEmbeddingTestBase extends WindowManagerJetpackTestBase {
 
     @NonNull
     protected Rect getTaskBounds(@Nullable Integer displayId) {
-        final Activity activity = startActivityNewTaskInMultiWindowWithBounds(TestActivity.class,
-                null /* activityId */, displayId, null /* bounds */);
+        final Activity activity = startFullScreenActivityNewTask(TestActivity.class,
+                null /* activityId */, displayId);
         final Rect taskBounds = waitAndGetTaskBounds(activity, true /* shouldWaitForResume */);
         activity.finish();
         new WindowManagerStateHelper().waitAndAssertActivityRemoved(activity.getComponentName());

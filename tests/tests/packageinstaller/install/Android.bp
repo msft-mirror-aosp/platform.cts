@@ -156,6 +156,7 @@ android_test {
         ":CtsArchiveTestApp",
         ":CtsEmptyInstallerApp",
         ":CtsEmptyTestApp",
+        ":CtsEmptyTestAppV2",
     ],
     per_testcase_directory: true,
     platform_apis: true,

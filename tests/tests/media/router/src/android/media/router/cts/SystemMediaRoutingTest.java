@@ -47,6 +47,7 @@ import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.text.TextUtils;
 import android.util.ArraySet;
+import android.view.KeyEvent;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.LargeTest;
@@ -54,6 +55,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.FrameworkSpecificTest;
 import com.android.compatibility.common.util.PollingCheck;
+import com.android.compatibility.common.util.SystemUtil;
 
 import org.junit.After;
 import org.junit.AfterClass;
@@ -63,6 +65,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -90,7 +93,7 @@ public class SystemMediaRoutingTest {
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
-    private MediaRouter2 mSelfProxyRoute;
+    private MediaRouter2 mSelfProxyRouter;
     private MediaRouter2.ScanToken mScanToken;
     private MediaRoute2Info mSelectedRouteBeforeRunningTheTest;
     private SystemMediaRoutingProviderService mService;
@@ -126,10 +129,10 @@ public class SystemMediaRoutingTest {
                 .adoptShellPermissionIdentity(
                         Manifest.permission.MEDIA_ROUTING_CONTROL,
                         Manifest.permission.MODIFY_AUDIO_ROUTING);
-        mSelfProxyRoute = MediaRouter2.getInstance(context, context.getPackageName());
+        mSelfProxyRouter = MediaRouter2.getInstance(context, context.getPackageName());
         mSelectedRouteBeforeRunningTheTest = getSelectedRoute();
         mScanToken =
-                mSelfProxyRoute.requestScan(
+                mSelfProxyRouter.requestScan(
                         new MediaRouter2.ScanRequest.Builder().setScreenOffScan(true).build());
         mService =
                 PollingCheck.waitFor(
@@ -154,10 +157,10 @@ public class SystemMediaRoutingTest {
             assertThat(mService.getNoisyBytesCount()).isEqualTo(0);
         }
         mService = null;
-        mSelfProxyRoute.cancelScanRequest(mScanToken);
+        mSelfProxyRouter.cancelScanRequest(mScanToken);
 
         waitForCondition(
-                () -> mSelfProxyRoute.getSystemController().getTransferableRoutes().isEmpty());
+                () -> mSelfProxyRouter.getSystemController().getTransferableRoutes().isEmpty());
     }
 
     @AfterClass
@@ -246,7 +249,7 @@ public class SystemMediaRoutingTest {
         assertThat(newVolume).isNotEqualTo(INITIAL_VOLUME);
         assertThat(newVolume).isLessThan(SystemMediaRoutingProviderService.VOLUME_MAX);
         var selectedRoute = getSelectedRoute();
-        mSelfProxyRoute.setRouteVolume(selectedRoute, newVolume);
+        mSelfProxyRouter.setRouteVolume(selectedRoute, newVolume);
 
         waitForCondition(() -> getSelectedRoute().getVolume() == newVolume);
     }
@@ -264,7 +267,7 @@ public class SystemMediaRoutingTest {
         int newVolume = 70;
         assertThat(newVolume).isNotEqualTo(INITIAL_VOLUME);
         assertThat(newVolume).isLessThan(SystemMediaRoutingProviderService.VOLUME_MAX);
-        var systemController = mSelfProxyRoute.getSystemController();
+        var systemController = mSelfProxyRouter.getSystemController();
         assertThat(systemController.getVolume()).isEqualTo(INITIAL_VOLUME);
         systemController.setVolume(newVolume);
 
@@ -284,7 +287,7 @@ public class SystemMediaRoutingTest {
 
         // We verify that the selectable route id is in the list of selectable routes of the
         // controller.
-        var systemController = mSelfProxyRoute.getSystemController();
+        var systemController = mSelfProxyRouter.getSystemController();
         var selectableRouteNames =
                 systemController.getSelectableRoutes().stream()
                         .map(MediaRoute2Info::getName)
@@ -369,9 +372,48 @@ public class SystemMediaRoutingTest {
                 () -> mService.notifyRoutes(List.of(routeWithDedupId, routeWithoutDedupId)));
     }
 
+    @RequiresFlagsEnabled({FLAG_ENABLE_MIRRORING_IN_MEDIA_ROUTER_2})
+    @Test
+    public void onSetSessionVolume_calledWhenVolumeKeyIsPressed() throws IOException {
+        var audioManager =
+                (AudioManager)
+                        InstrumentationRegistry.getInstrumentation()
+                                .getContext()
+                                .getSystemService(Context.AUDIO_SERVICE);
+        // TODO: b/407496004 - Replace STREAM_MUSIC with USE_DEFAULT_STREAM.
+        var oldAudioManagerVolume = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC);
+
+        var route = waitForTransferableRouteWithName(ROUTE_ID_ONLY_SYSTEM_AUDIO_TRANSFERABLE_1);
+        transferAndWaitForSessionUpdate(route);
+
+        var systemController = mSelfProxyRouter.getSystemController();
+        var oldSessionVolume = systemController.getVolume();
+        assertThat(oldSessionVolume).isLessThan(systemController.getVolumeMax());
+
+        injectKeyEvent(KeyEvent.KEYCODE_VOLUME_UP);
+
+        waitForCondition(() -> systemController.getVolume() > oldSessionVolume);
+        assertThat(audioManager.getStreamVolume(AudioManager.STREAM_MUSIC))
+                .isEqualTo(oldAudioManagerVolume);
+
+        var newSessionVolume = systemController.getVolume();
+        assertThat(newSessionVolume).isGreaterThan(0);
+
+        injectKeyEvent(KeyEvent.KEYCODE_VOLUME_DOWN);
+
+        waitForCondition(() -> systemController.getVolume() < newSessionVolume);
+        assertThat(audioManager.getStreamVolume(AudioManager.STREAM_MUSIC))
+                .isEqualTo(oldAudioManagerVolume);
+    }
+
+    private void injectKeyEvent(int keyCode) throws IOException {
+        final String command = "input keyevent " + keyCode;
+        SystemUtil.runShellCommand(InstrumentationRegistry.getInstrumentation(), command);
+    }
+
     /** Retrieves the selected routes, asserts it contains one entry, and returns it. */
     private MediaRoute2Info getSelectedRoute() {
-        var selectedRoutes = mSelfProxyRoute.getSystemController().getSelectedRoutes();
+        var selectedRoutes = mSelfProxyRouter.getSystemController().getSelectedRoutes();
         assertWithMessage("Unexpected number of selected routes").that(selectedRoutes).hasSize(1);
         return selectedRoutes.getFirst();
     }
@@ -381,7 +423,7 @@ public class SystemMediaRoutingTest {
      * selected route.
      */
     private void transferAndWaitForSessionUpdate(MediaRoute2Info previouslySelectedRoute) {
-        mSelfProxyRoute.transferTo(previouslySelectedRoute);
+        mSelfProxyRouter.transferTo(previouslySelectedRoute);
         waitForSelectedRouteWithName(previouslySelectedRoute.getName().toString());
     }
 
@@ -442,7 +484,7 @@ public class SystemMediaRoutingTest {
      * Returns the names of routes retrieved from the system controller using the given retriever.
      */
     private List<String> getNamesOfRoutesInController(RouteRetriever routeRetriever) {
-        var routes = routeRetriever.getRoutesFrom(mSelfProxyRoute.getSystemController());
+        var routes = routeRetriever.getRoutesFrom(mSelfProxyRouter.getSystemController());
         return routes.stream().map(MediaRoute2Info::getName).map(CharSequence::toString).toList();
     }
 
@@ -452,7 +494,7 @@ public class SystemMediaRoutingTest {
      */
     private Optional<MediaRoute2Info> getSystemControllerRouteWithName(
             String name, RouteRetriever routeRetriever) {
-        return routeRetriever.getRoutesFrom(mSelfProxyRoute.getSystemController()).stream()
+        return routeRetriever.getRoutesFrom(mSelfProxyRouter.getSystemController()).stream()
                 .filter(route -> TextUtils.equals(route.getName(), name))
                 .findFirst();
     }
@@ -473,7 +515,7 @@ public class SystemMediaRoutingTest {
                 TIMEOUT_MS,
                 /* supplier= */ () -> {
                     var result = new ArraySet<MediaRoute2Info>();
-                    var systemController = mSelfProxyRoute.getSystemController();
+                    var systemController = mSelfProxyRouter.getSystemController();
                     result.addAll(systemController.getSelectableRoutes());
                     result.addAll(systemController.getTransferableRoutes());
                     return result;

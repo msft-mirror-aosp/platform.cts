@@ -21,9 +21,11 @@ import android.content.pm.FeatureInfo;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.os.Build;
+import android.os.SystemProperties;
 
 import androidx.test.InstrumentationRegistry;
 
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -40,8 +42,9 @@ public class FeatureUtil {
     public static final String TELEPHONY_FEATURE = "android.hardware.telephony";
     public static final String TV_FEATURE = "android.hardware.type.television";
     public static final String WATCH_FEATURE = "android.hardware.type.watch";
-    public static final String XR_FEATURE = "android.software.xr.immersive";
 
+    /** The minimum screen width for a 7-inch tablet. */
+    private static final int SEVEN_INCH_TABLET_MINIMUM_SCREEN_WIDTH_DP = 600;
 
     /** Returns true if the device has a given system feature */
     public static boolean hasSystemFeature(String feature) {
@@ -106,7 +109,36 @@ public class FeatureUtil {
 
     /** Returns true if the device has feature XR_FEATURE */
     public static boolean isXrHeadset() {
-        return hasSystemFeature(XR_FEATURE);
+        return hasSystemFeature(getPackageManager().FEATURE_XR_API_SPATIAL);
+    }
+
+    /** Returns true if the device is a tablet. */
+    public static boolean isTablet() {
+        // If the device's build characteristics include "tablet", then it's a tablet.
+        boolean isTablet = Arrays.asList(
+                SystemProperties.get("ro.build.characteristics").split(",")).contains("tablet");
+        if (isTablet) {
+            return true;
+        }
+
+        // A foldable cannot be a tablet.
+        boolean isFoldable = Build.VERSION.SDK_INT >= Build.VERSION_CODES.R
+                && getPackageManager().hasSystemFeature(PackageManager.FEATURE_SENSOR_HINGE_ANGLE);
+        if (isFoldable) {
+            return false;
+        }
+
+        // Consider it to be tablet if it's either a) xlarge-v11, or b) sw600dp-v13.
+        Configuration configuration = getConfiguration();
+        boolean isXlarge =
+                (configuration.screenLayout & Configuration.SCREENLAYOUT_SIZE_MASK)
+                        > Configuration.SCREENLAYOUT_SIZE_LARGE;
+        boolean isSevenInchTablet =
+                (configuration.screenLayout & Configuration.SCREENLAYOUT_SIZE_MASK)
+                        <= Configuration.SCREENLAYOUT_SIZE_LARGE
+                        && configuration.smallestScreenWidthDp
+                                >= SEVEN_INCH_TABLET_MINIMUM_SCREEN_WIDTH_DP;
+        return isXlarge || isSevenInchTablet;
     }
 
     /** Returns true if the device is a low ram device:

@@ -17,7 +17,6 @@
 
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
           package="android.compilation.cts.appusingotherapp">
-    <uses-sdk android:minSdkVersion="23"/>
     <queries>
         <package android:name="android.compilation.cts.appusedbyotherapp" />
     </queries>

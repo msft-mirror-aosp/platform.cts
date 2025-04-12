@@ -27,6 +27,8 @@ import com.android.cts.verifier.TestListAdapter.TestListItem;
 
 /** Activity that lists all the NFC HCE reader tests. */
 public class HceFReaderTestActivity extends PassFailButtons.TestListActivity {
+    public static final String TEST_NAME_EXTRA = "TEST_NAME_EXTRA";
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -40,10 +42,23 @@ public class HceFReaderTestActivity extends PassFailButtons.TestListActivity {
                 PackageManager.FEATURE_NFC_HOST_CARD_EMULATION_NFCF)) {
             adapter.add(TestListItem.newCategory(this, R.string.nfc_hce_f_reader_tests));
 
-            adapter.add(TestListItem.newTest(this, R.string.nfc_hce_f_reader,
-                    HceFReaderActivity.class.getName(),
-                    new Intent(this, HceFReaderActivity.class), null));
-
+            adapter.add(
+                    TestListItem.newTest(
+                            this,
+                            R.string.nfc_hce_f_reader,
+                            HceFReaderActivity.class.getName(),
+                            new Intent(this, HceFReaderActivity.class),
+                            null));
+            Intent observeModeIntent = new Intent(this, HceFReaderActivity.class);
+            observeModeIntent.putExtra(
+                    TEST_NAME_EXTRA, getString(R.string.nfc_hce_f_reader_observe_mode_tests));
+            adapter.add(
+                    TestListItem.newTest(
+                            this,
+                            R.string.nfc_hce_f_reader_observe_mode_tests,
+                            HceFReaderActivity.class.getName(),
+                            observeModeIntent,
+                            null));
         }
 
         setTestListAdapter(adapter);

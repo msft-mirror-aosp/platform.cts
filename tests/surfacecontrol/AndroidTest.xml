@@ -47,7 +47,7 @@
     </test>
     <!-- Collect the dumped files for debugging -->
     <metrics_collector class="com.android.tradefed.device.metric.FilePullerLogCollector">
-        <option name="pull-pattern-keys" value="perfetto_file_path*"/>
+        <option name="pull-pattern-keys" value="perfetto_file_path"/>
         <option name="pull-pattern-keys" value="input_.*" />
         <option name="pull-pattern-keys" value="android.device.collectors.ScreenshotOnFailureCollector.*\.png"/>
         <option name="directory-keys" value="/storage/emulated/0/CtsSurfaceControl" />

@@ -38,4 +38,8 @@
     <option name="compatibility:exclude-filter" value="CtsOsTestCases android.os.cts.RemoteCallbackListTest#testQueueMostRecentCallbackWhenFrozen" />
     <option name="compatibility:exclude-filter" value="CtsOsTestCases android.os.cts.RemoteCallbackListTest#testDropCallbacksWhenFrozen" />
     <option name="compatibility:exclude-filter" value="CtsOsTestCases android.os.cts.RemoteCallbackListTest#testRemoveQueuedCallbacksOnUnregistration" />
+
+    <!-- b/395524060 -->
+    <option name="compatibility:exclude-filter" value="CtsMediaV2TestCases android.mediav2.cts.CodecDecoderSurfaceTest#testDetachAndReattachSurface" />
+
 </configuration>

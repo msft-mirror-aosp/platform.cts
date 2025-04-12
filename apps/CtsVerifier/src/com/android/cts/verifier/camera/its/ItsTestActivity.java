@@ -211,6 +211,8 @@ public class ItsTestActivity extends DialogTestListActivity {
 
     private static final Pattern PERF_METRICS_PREVIEW_STABILIZATION_FOV_PATTERN =
             Pattern.compile("test_preview_stabilization_fov_.*");
+    private static final String PERF_METRICS_KEY_PREFIX_PREVIEW_STABILIZATION_FOV =
+            "preview_stabilization_fov";
 
     private final ResultReceiver mResultsReceiver = new ResultReceiver();
     private final BroadcastReceiver mCommandReceiver = new BroadcastReceiver() {
@@ -865,7 +867,7 @@ public class ItsTestActivity extends DialogTestListActivity {
 
                 if (previewStabilizationFovMetricsMatches) {
                     Log.i(TAG, "preview stabilization fov matches");
-                    addPerfMetricsResult(PERF_METRICS_KEY_PREFIX_PREVIEW_FRAME_DROP,
+                    addPerfMetricsResult(PERF_METRICS_KEY_PREFIX_PREVIEW_STABILIZATION_FOV,
                             perfMetricsResult, obj);
                 }
 

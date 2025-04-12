@@ -18,15 +18,13 @@ package android.packageinstaller.criticaluserjourney.cts;
 
 import android.platform.test.annotations.AppModeFull;
 
-import com.google.testing.junit.testparameterinjector.TestParameterInjector;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-/**
- * Tests for PackageInstaller CUJs via startActivity with update-ownership.
- */
-@RunWith(TestParameterInjector.class)
+/** Tests for PackageInstaller CUJs via startActivity with update-ownership. */
+@RunWith(AndroidJUnit4.class)
 @AppModeFull
 public class InstallationViaIntentWithUpdateOwnershipTest extends UpdateOwnershipTestBase {
 
