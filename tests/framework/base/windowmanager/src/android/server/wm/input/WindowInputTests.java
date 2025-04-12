@@ -306,7 +306,7 @@ public class WindowInputTests {
             PollingCheck.waitFor(TOUCH_EVENT_PROPAGATION_TIMEOUT,
                     () -> previousCount + 1 == mClickCount);
         }
-        assertEquals(totalClicks, mClickCount);
+        assertEquals("Wrong number of clicks", totalClicks, mClickCount);
     }
 
     private void selectRandomLocationInWindow(Rect bounds, Point outLocation) {
@@ -339,7 +339,7 @@ public class WindowInputTests {
         mTouchScreen.tapOnViewCenter(mView);
 
         PollingCheck.waitFor(TOUCH_EVENT_PROPAGATION_TIMEOUT, () -> touchedSecondaryView.get());
-        assertEquals(0, mClickCount);
+        assertEquals("Wrong number of clicks", 0, mClickCount);
     }
 
     // If a window is obscured by another window from the same app, touches should still get
@@ -368,12 +368,15 @@ public class WindowInputTests {
 
         mTouchScreen.tapOnViewCenter(mView);
 
-        PollingCheck.waitFor(TOUCH_EVENT_PROPAGATION_TIMEOUT, () -> touchReceived.get());
+        PollingCheck.waitFor(
+                TOUCH_EVENT_PROPAGATION_TIMEOUT,
+                () -> touchReceived.get(),
+                "Did not receive any touch input");
         assertEquals(
                 0,
                 eventFlags.get(EVENT_FLAGS_WAIT_TIME, TimeUnit.SECONDS)
                         & MotionEvent.FLAG_WINDOW_IS_OBSCURED);
-        PollingCheck.waitFor(() -> mClickCount == 1);
+        PollingCheck.waitFor(() -> mClickCount == 1, "Wrong number of clicks");
     }
 
     @Test
@@ -408,8 +411,8 @@ public class WindowInputTests {
             // Touch not received due to setFilterTouchesWhenObscured(true)
             // Give time for the touch event to be propagted.
             SystemClock.sleep(TOUCH_EVENT_PROPAGATION_TIMEOUT_SHORT);
-            assertFalse(touchReceived.get());
-            assertEquals(0, mClickCount);
+            assertFalse("Should not receive any touch input", touchReceived.get());
+            assertEquals("Wrong number of clicks", 0, mClickCount);
         }
     }
 
@@ -443,12 +446,16 @@ public class WindowInputTests {
         try (var overlay = addForeignOverlayWindow(overlayConfig)) {
             mTouchScreen.tapOnViewCenter(mView);
 
-            PollingCheck.waitFor(TOUCH_EVENT_PROPAGATION_TIMEOUT, () -> touchReceived.get());
+            PollingCheck.waitFor(
+                    TOUCH_EVENT_PROPAGATION_TIMEOUT,
+                    () -> touchReceived.get(),
+                    "Did not receive any touch input");
             assertEquals(
+                    "Window was not obscured",
                     MotionEvent.FLAG_WINDOW_IS_OBSCURED,
                     eventFlags.get(EVENT_FLAGS_WAIT_TIME, TimeUnit.SECONDS)
                             & MotionEvent.FLAG_WINDOW_IS_OBSCURED);
-            PollingCheck.waitFor(() -> mClickCount == 1);
+            PollingCheck.waitFor(() -> mClickCount == 1, "Wrong number of clicks");
         }
     }
 
@@ -477,12 +484,15 @@ public class WindowInputTests {
         try (var overlay = addForeignOverlayWindow(overlayConfig)) {
             mTouchScreen.tapOnViewCenter(mView);
 
-            PollingCheck.waitFor(TOUCH_EVENT_PROPAGATION_TIMEOUT, () -> touchReceived.get());
+            PollingCheck.waitFor(
+                    TOUCH_EVENT_PROPAGATION_TIMEOUT,
+                    () -> touchReceived.get(),
+                    "Did not receive any touch input");
             assertEquals(
                     0,
                     eventFlags.get(EVENT_FLAGS_WAIT_TIME, TimeUnit.SECONDS)
                             & MotionEvent.FLAG_WINDOW_IS_OBSCURED);
-            PollingCheck.waitFor(() -> mClickCount == 1);
+            PollingCheck.waitFor(() -> mClickCount == 1, "Wrong number of clicks");
         }
     }
 
@@ -515,12 +525,16 @@ public class WindowInputTests {
         try (var overlay = addForeignOverlayWindow(overlayConfig)) {
             mTouchScreen.tapOnViewCenter(mView);
 
-            PollingCheck.waitFor(TOUCH_EVENT_PROPAGATION_TIMEOUT, () -> touchReceived.get());
+            PollingCheck.waitFor(
+                    TOUCH_EVENT_PROPAGATION_TIMEOUT,
+                    () -> touchReceived.get(),
+                    "Did not receive any touch input");
             assertEquals(
+                    "Window was not partially obscured",
                     MotionEvent.FLAG_WINDOW_IS_OBSCURED,
                     eventFlags.get(EVENT_FLAGS_WAIT_TIME, TimeUnit.SECONDS)
                             & MotionEvent.FLAG_WINDOW_IS_OBSCURED);
-            PollingCheck.waitFor(() -> mClickCount == 1);
+            PollingCheck.waitFor(() -> mClickCount == 1, "Wrong number of clicks");
         }
     }
 
@@ -562,7 +576,7 @@ public class WindowInputTests {
                     MotionEvent.FLAG_WINDOW_IS_PARTIALLY_OBSCURED,
                     eventFlags.get(EVENT_FLAGS_WAIT_TIME, TimeUnit.SECONDS)
                             & MotionEvent.FLAG_WINDOW_IS_PARTIALLY_OBSCURED);
-            PollingCheck.waitFor(() -> mClickCount == 1);
+            PollingCheck.waitFor(() -> mClickCount == 1, "Wrong number of clicks");
         }
     }
 
@@ -598,7 +612,7 @@ public class WindowInputTests {
             assertEquals(0, eventFlags.get(EVENT_FLAGS_WAIT_TIME, TimeUnit.SECONDS) & (
                     MotionEvent.FLAG_WINDOW_IS_OBSCURED
                             | MotionEvent.FLAG_WINDOW_IS_PARTIALLY_OBSCURED));
-            PollingCheck.waitFor(() -> mClickCount == 1);
+            PollingCheck.waitFor(() -> mClickCount == 1, "Wrong number of clicks");
         }
     }
 
@@ -616,7 +630,8 @@ public class WindowInputTests {
 
             mTouchScreen.tapOnViewCenter(mView);
         }
-        PollingCheck.waitFor(TOUCH_EVENT_PROPAGATION_TIMEOUT, () -> mClickCount == 1);
+        PollingCheck.waitFor(
+                TOUCH_EVENT_PROPAGATION_TIMEOUT, () -> mClickCount == 1, "Wrong number of clicks");
     }
 
     @Test
@@ -653,7 +668,8 @@ public class WindowInputTests {
 
         mTouchScreen.tapOnViewCenter(mView);
 
-        PollingCheck.waitFor(TOUCH_EVENT_PROPAGATION_TIMEOUT, () -> mClickCount == 1);
+        PollingCheck.waitFor(
+                TOUCH_EVENT_PROPAGATION_TIMEOUT, () -> mClickCount == 1, "Wrong number of clicks");
     }
 
     @Test
@@ -672,9 +688,15 @@ public class WindowInputTests {
 
         mTouchScreen.tapOnViewCenter(mView);
 
-        PollingCheck.waitFor(TOUCH_EVENT_PROPAGATION_TIMEOUT, () -> events.size() == 1);
+        PollingCheck.waitFor(
+                TOUCH_EVENT_PROPAGATION_TIMEOUT,
+                () -> events.size() == 1,
+                "Wrong number of expected events");
         MotionEvent event = events.iterator().next();
-        assertEquals(MotionEvent.ACTION_OUTSIDE, event.getAction());
+        assertEquals(
+                "Expected motion event ACTION_OUTSIDE",
+                MotionEvent.ACTION_OUTSIDE,
+                event.getAction());
     }
 
     @Test
@@ -786,7 +808,7 @@ public class WindowInputTests {
         mInstrumentation.waitForIdleSync();
 
         executor.shutdown();
-        executor.awaitTermination(5L, TimeUnit.SECONDS);
+        assertTrue("Failed to shutdown executor", executor.awaitTermination(5L, TimeUnit.SECONDS));
 
         if (securityExceptionCaught[0]) {
             // Fail the test here instead of in the executor lambda,
@@ -885,8 +907,9 @@ public class WindowInputTests {
         private static void waitUntilPointerLocationShown(int displayId) {
             final WindowManagerStateHelper wmState = new WindowManagerStateHelper();
             final String windowName = "PointerLocation - display " + displayId;
-            wmState.waitForWithAmState(state -> state.isWindowSurfaceShown(windowName),
-                    windowName + "'s surface is appeared");
+            wmState.waitForWithAmState(
+                    state -> state.isWindowSurfaceShown(windowName),
+                    windowName + "'s surface did not appear");
         }
     }
 }

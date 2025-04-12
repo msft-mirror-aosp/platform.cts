@@ -31,9 +31,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-
-private const val INSTALL_CONFIRM_TEXT_ID = "install_confirm_question"
-private const val ALERT_DIALOG_TITLE_ID = "android:id/alertTitle"
+import java.util.regex.Pattern
 
 @RunWith(TestParameterInjector::class)
 @MediumTest
@@ -46,10 +44,8 @@ class ExternalSourcesTestAppOpAllowed : PackageInstallerTestBase() {
     }
 
     private fun assertInstallAllowed(errorMessage: String) {
-        assertUiObject(errorMessage, By.res(
-            PACKAGE_INSTALLER_PACKAGE_NAME,
-                INSTALL_CONFIRM_TEXT_ID
-        ))
+        val installString = Pattern.compile("install", Pattern.CASE_INSENSITIVE)
+        assertUiObject(errorMessage, By.text(installString))
         uiDevice.pressBack()
     }
 

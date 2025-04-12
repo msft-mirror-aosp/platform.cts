@@ -23,6 +23,7 @@ import static android.app.cts.fgstimeouttesthelper.FgsTimeoutHelper.HELPER_PACKA
 import static android.app.cts.fgstimeouttesthelper.FgsTimeoutHelper.TAG;
 import static android.app.cts.fgstimeouttesthelper.FgsTimeoutHelper.flattenComponentName;
 import static android.app.nano.AppProtoEnums.PROCESS_STATE_TOP;
+import static android.content.pm.PackageManager.FEATURE_AUTOMOTIVE;
 import static android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC;
 import static android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROCESSING;
 import static android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE;
@@ -78,14 +79,15 @@ public class FgsTimeoutTest {
 
     protected static final Context sContext = FgsTimeoutHelper.sContext;
     public static DeviceConfigStateHelper sDeviceConfig;
-
-    public static final long WAIT_TIMEOUT = 10_000;
+    private static final boolean sIsCar =
+            FgsTimeoutHelper.sContext.getPackageManager().hasSystemFeature(FEATURE_AUTOMOTIVE);
+    private static final long WAIT_TIMEOUT = sIsCar ? 60_000 : 10_000;
 
     /**
      * Timeout for FGS used throughout this test.
      * It's shorter than the default value to speed up the test.
      */
-    public static final long SHORTENED_TIMEOUT = 5_000;
+    private static final long SHORTENED_TIMEOUT = sIsCar ? 30_000 : 5_000;
 
     @BeforeClass
     public static void setUpClass() throws Exception {

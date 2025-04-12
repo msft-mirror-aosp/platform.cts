@@ -90,6 +90,14 @@ public class HeifWriterTest {
     private static final int GRID_WIDTH = 512;
     private static final int GRID_HEIGHT = 512;
     private static final boolean IS_BEFORE_R = ApiLevelUtil.isBefore(Build.VERSION_CODES.R);
+    // The parameters below are used for estimating the encoding finishing time (the timeout
+    // bar). We use heifWriter.stop(timeOutBarMs) to trigger the HeifWriter component to stop
+    // if the time is up. Once that occurs, the HeifWriter component will throw a
+    // TimeoutException and the test will fail. The time out bar is calculated as:
+    // PER_PIXEL_ENCODING_TIME_MICRO_SEC * width * height * number_of_frames
+    // + RESIDUE_TIME_MICRO_SEC
+    private static final long PER_PIXEL_ENCODING_TIME_MICRO_SEC = 1;
+    private static final long RESIDUE_TIME_MICRO_SEC = 2000000;
 
     private static byte[][] TEST_YUV_COLORS = {
             {(byte) 255, (byte) 0, (byte) 0},
@@ -490,6 +498,11 @@ public class HeifWriterTest {
         final int width = config.mWidth;
         final int height = config.mHeight;
         final int actualNumImages = config.mActualNumImages;
+        // The timeout in the stop() call is the unit of millisecond, so we need to convert
+        // from microsecond to millisecond here.
+        final int estimatedTimeOutMs =
+                (int) ((PER_PIXEL_ENCODING_TIME_MICRO_SEC * width * height * actualNumImages +
+                RESIDUE_TIME_MICRO_SEC) / 1000L);
 
         mInputIndex = 0;
         HeifWriter heifWriter = null;
@@ -566,7 +579,7 @@ public class HeifWriterTest {
                 }
             }
 
-            heifWriter.stop(5000);
+            heifWriter.stop(estimatedTimeOutMs);
             // The test sets the primary index to the last image.
             // However, if we're testing early abort, the last image will not be
             // present and the muxer is supposed to set it to 0 by default.
