@@ -116,7 +116,6 @@
     <option name="compatibility:include-filter" value="CtsIdentityTestCases" />
     <option name="compatibility:include-filter" value="CtsIkeTestCases" />
     <option name="compatibility:include-filter" value="CtsInputMethodTestCases" />
-    <option name="compatibility:include-filter" value="CtsInputMethodTestCases32" />
     <option name="compatibility:include-filter" value="CtsInputTestCases" />
     <option name="compatibility:include-filter" value="CtsInstantAppTests" />
     <option name="compatibility:include-filter" value="CtsIntentSignatureTestCases" />
