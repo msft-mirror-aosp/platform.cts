@@ -81,7 +81,6 @@ public final class ActivityManagerForegroundServiceTypeTest {
             "android.app.fgstesthelper.LocalForegroundServiceNoType";
     private static final String TEST_CLS_NAME_ALL_TYPE =
             "android.app.fgstesthelper.LocalForegroundServiceAllTypes";
-    private static final String FGS_TYPE_PERMISSION_CHANGE_ID = "FGS_TYPE_PERMISSION_CHANGE_ID";
 
     private static final long WAITFOR_MSEC = 5000;
 

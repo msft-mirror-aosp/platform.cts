@@ -16,5 +16,7 @@
 
 package android.app.stubs;
 
+import android.app.stubs.shared.LocalService;
+
 public class IsolatedService extends LocalService {
 }

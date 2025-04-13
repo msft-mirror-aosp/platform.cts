@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package android.app.stubs;
+package android.app.stubs.shared;
 
 import android.content.ContentProvider;
 import android.content.ContentValues;
@@ -37,8 +37,12 @@ public class TestProvider extends ContentProvider {
     }
 
     @Override
-    public Cursor query(Uri uri, String[] projection, String selection, String[] selectionArgs,
-                        String sortOrder) {
+    public Cursor query(
+            Uri uri,
+            String[] projection,
+            String selection,
+            String[] selectionArgs,
+            String sortOrder) {
         throw new UnsupportedOperationException();
     }
 

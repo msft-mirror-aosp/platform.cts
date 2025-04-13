@@ -16,7 +16,7 @@
 
 package android.app.cts;
 
-import static android.app.stubs.LocalForegroundServiceMedia.ACTION_START_FGSM_RESULT;
+import static android.app.stubs.shared.LocalForegroundServiceMedia.ACTION_START_FGSM_RESULT;
 import static android.os.SystemClock.sleep;
 
 import static com.android.compatibility.common.util.SystemUtil.runShellCommand;
@@ -31,8 +31,8 @@ import android.app.Instrumentation;
 import android.app.compat.CompatChanges;
 import android.app.compat.PackageOverride;
 import android.app.cts.android.app.cts.tools.WaitForBroadcast;
-import android.app.stubs.CommandReceiver;
-import android.app.stubs.LocalForegroundServiceMedia;
+import android.app.stubs.shared.CommandReceiver;
+import android.app.stubs.shared.LocalForegroundServiceMedia;
 import android.app.tools.WatchUidRunner;
 import android.content.Context;
 import android.content.Intent;

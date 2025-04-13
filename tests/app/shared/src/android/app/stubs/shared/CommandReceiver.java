@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package android.app.stubs;
+package android.app.stubs.shared;
 
 import static android.content.ContentResolver.SCHEME_CONTENT;
 
@@ -112,18 +112,18 @@ public class CommandReceiver extends BroadcastReceiver {
     public static final String EXTRA_MESSENGER = "android.app.stubs.extra.EXTRA_MESSENGER";
     public static final String EXTRA_URI = "android.app.stubs.extra.EXTRA_URI";
 
-    public static final String SERVICE_NAME = "android.app.stubs.LocalService";
-    public static final String FG_SERVICE_NAME = "android.app.stubs.LocalForegroundService";
+    public static final String SERVICE_NAME = "android.app.stubs.shared.LocalService";
+    public static final String FG_SERVICE_NAME = "android.app.stubs.shared.LocalForegroundService";
     public static final String FG_LOCATION_SERVICE_NAME =
-            "android.app.stubs.LocalForegroundServiceLocation";
+            "android.app.stubs.shared.LocalForegroundServiceLocation";
     public static final String FG_STICKY_SERVICE_NAME =
             "android.app.stubs.LocalForegroundServiceSticky";
     public static final String FG_MEDIA_SERVICE_NAME =
-            "android.app.stubs.LocalForegroundServiceMedia";
+            "android.app.stubs.shared.LocalForegroundServiceMedia";
 
     public static final String ACTIVITY_NAME = "android.app.stubs.SimpleActivity";
 
-    private static ArrayMap<String,ServiceConnection> sServiceMap = new ArrayMap<>();
+    private static ArrayMap<String, ServiceConnection> sServiceMap = new ArrayMap<>();
 
     // Map a packageName to a Intent that starts an Activity.
     private static ArrayMap<String, Intent> sActivityIntent = new ArrayMap<>();
@@ -145,6 +145,7 @@ public class CommandReceiver extends BroadcastReceiver {
 
     /**
      * Handle the different types of binding/unbinding requests.
+     *
      * @param context The Context in which the receiver is running.
      * @param intent The Intent being received.
      */
@@ -153,8 +154,9 @@ public class CommandReceiver extends BroadcastReceiver {
         // Use the application context as the receiver context could be restricted.
         context = context.getApplicationContext();
         int command = intent.getIntExtra(EXTRA_COMMAND, -1);
-        Log.d(TAG + "_" + context.getPackageName(), "Got command " + command + ", intent="
-                + intent);
+        Log.d(
+                TAG + "_" + context.getPackageName(),
+                "Got command " + command + ", intent=" + intent);
         Bundle resultExtras = null;
         switch (command) {
             case COMMAND_BIND_SERVICE:
@@ -235,8 +237,10 @@ public class CommandReceiver extends BroadcastReceiver {
                 doStartForegroundServiceSpoofPackageName(context, intent);
                 break;
             case COMMAND_CREATE_ACTIVE_MEDIA_SESSION:
-                doStartMediaPlayback(context, intent.getParcelableExtra(
-                        Intent.EXTRA_REMOTE_CALLBACK, RemoteCallback.class));
+                doStartMediaPlayback(
+                        context,
+                        intent.getParcelableExtra(
+                                Intent.EXTRA_REMOTE_CALLBACK, RemoteCallback.class));
                 break;
             case COMMAND_CREATE_MEDIA_SESSION_FGS_DELEGATE:
                 doCreateMediaSession(
@@ -331,8 +335,11 @@ public class CommandReceiver extends BroadcastReceiver {
         try {
             context.startForegroundService(fgsIntent);
         } catch (ForegroundServiceStartNotAllowedException e) {
-            Log.d(TAG, "startForegroundService gets an "
-                    + " ForegroundServiceStartNotAllowedException", e);
+            Log.d(
+                    TAG,
+                    "startForegroundService gets an "
+                            + " ForegroundServiceStartNotAllowedException",
+                    e);
         }
     }
 
@@ -354,8 +361,10 @@ public class CommandReceiver extends BroadcastReceiver {
         try {
             context.startForegroundService(fgsIntent);
         } catch (ForegroundServiceStartNotAllowedException e) {
-            Log.d(TAG, "startForegroundService gets an "
-                    + "ForegroundServiceStartNotAllowedException", e);
+            Log.d(
+                    TAG,
+                    "startForegroundService gets an " + "ForegroundServiceStartNotAllowedException",
+                    e);
         }
     }
 
@@ -377,8 +386,10 @@ public class CommandReceiver extends BroadcastReceiver {
         try {
             context.startForegroundService(fgsIntent);
         } catch (ForegroundServiceStartNotAllowedException e) {
-            Log.d(TAG, "startForegroundService gets an "
-                    + "ForegroundServiceStartNotAllowedException", e);
+            Log.d(
+                    TAG,
+                    "startForegroundService gets an " + "ForegroundServiceStartNotAllowedException",
+                    e);
         }
     }
 
@@ -392,13 +403,14 @@ public class CommandReceiver extends BroadcastReceiver {
         try {
             context.startForegroundService(fgsIntent);
         } catch (ForegroundServiceStartNotAllowedException e) {
-            Log.d(TAG, "startForegroundService gets an "
-                    + "ForegroundServiceStartNotAllowedException", e);
+            Log.d(
+                    TAG,
+                    "startForegroundService gets an " + "ForegroundServiceStartNotAllowedException",
+                    e);
         }
     }
 
-    private void doStopService(Context context, Intent commandIntent,
-            String serviceName) {
+    private void doStopService(Context context, Intent commandIntent, String serviceName) {
         String targetPackage = getTargetPackage(commandIntent);
         Intent fgsIntent = new Intent();
         fgsIntent.setComponent(new ComponentName(targetPackage, serviceName));
@@ -442,12 +454,14 @@ public class CommandReceiver extends BroadcastReceiver {
 
     private PendingIntent doCreateFgslPendingIntent(Context context, Intent commandIntent) {
         final String targetPackage = getTargetPackage(commandIntent);
-        final Intent intent = new Intent().setComponent(
-                new ComponentName(targetPackage, FG_LOCATION_SERVICE_NAME));
+        final Intent intent =
+                new Intent()
+                        .setComponent(new ComponentName(targetPackage, FG_LOCATION_SERVICE_NAME));
         int command = LocalForegroundServiceLocation.COMMAND_START_FOREGROUND_WITH_TYPE;
         intent.putExtras(LocalForegroundService.newCommand(command));
-        final PendingIntent pendingIntent = PendingIntent.getForegroundService(context, 0,
-                intent, PendingIntent.FLAG_IMMUTABLE);
+        final PendingIntent pendingIntent =
+                PendingIntent.getForegroundService(
+                        context, 0, intent, PendingIntent.FLAG_IMMUTABLE);
         sPendingIntent.put(targetPackage, pendingIntent);
         return pendingIntent;
     }
@@ -497,40 +511,49 @@ public class CommandReceiver extends BroadcastReceiver {
         waitForChildProcessGone(false, callback, RESULT_CHILD_PROCESS_GONE, timeout);
     }
 
-    private static synchronized void waitForChildProcessGone(final boolean destroy,
-            final IBinder callback, final int transactionCode, final long timeout) {
+    private static synchronized void waitForChildProcessGone(
+            final boolean destroy,
+            final IBinder callback,
+            final int transactionCode,
+            final long timeout) {
         if (destroy) {
             sChildProcess.destroy();
         }
-        new Thread(() -> {
-            final Parcel data = Parcel.obtain();
-            final Parcel reply = Parcel.obtain();
-            try {
-                if (sChildProcess != null && sChildProcess.isAlive()) {
-                    final boolean exit = sChildProcess.waitFor(timeout, TimeUnit.MILLISECONDS);
-                    if (exit) {
-                        Log.i(TAG, "Child process died: " + sChildProcess);
-                        callback.transact(transactionCode, data, reply, 0);
-                    } else {
-                        Log.w(TAG, "Child process is still alive: " + sChildProcess);
-                    }
-                } else {
-                    callback.transact(transactionCode, data, reply, 0);
-                }
-            } catch (Exception e) {
-                Log.e(TAG, "Error", e);
-            } finally {
-                data.recycle();
-                reply.recycle();
-            }
-        }).start();
+        new Thread(
+                        () -> {
+                            final Parcel data = Parcel.obtain();
+                            final Parcel reply = Parcel.obtain();
+                            try {
+                                if (sChildProcess != null && sChildProcess.isAlive()) {
+                                    final boolean exit =
+                                            sChildProcess.waitFor(timeout, TimeUnit.MILLISECONDS);
+                                    if (exit) {
+                                        Log.i(TAG, "Child process died: " + sChildProcess);
+                                        callback.transact(transactionCode, data, reply, 0);
+                                    } else {
+                                        Log.w(
+                                                TAG,
+                                                "Child process is still alive: " + sChildProcess);
+                                    }
+                                } else {
+                                    callback.transact(transactionCode, data, reply, 0);
+                                }
+                            } catch (Exception e) {
+                                Log.e(TAG, "Error", e);
+                            } finally {
+                                data.recycle();
+                                reply.recycle();
+                            }
+                        })
+                .start();
     }
 
     /**
      * Directly call IActivityManager.startService() using a spoofed packageName which is known to
-     * be allowlisted by Android framework to be able to start foreground service
-     * from the background. Framework will disallow the foreground service to start from the
-     * background and a ForegroundServiceStartNotAllowedException will be caught.
+     * be allowlisted by Android framework to be able to start foreground service from the
+     * background. Framework will disallow the foreground service to start from the background and a
+     * ForegroundServiceStartNotAllowedException will be caught.
+     *
      * @param context
      * @param commandIntent
      */
@@ -555,18 +578,21 @@ public class CommandReceiver extends BroadcastReceiver {
             Log.d(TAG, "spoofPackageName: " + spoofPackageName);
             final IBinder activityProxy = android.os.ServiceManager.getService("activity");
             // Call IActivityManager.startService() directly using a spoofed packageName.
-            IActivityManager.Stub.asInterface(activityProxy).startService(
-                    context.getIApplicationThread(),
-                    fgsIntent,
-                    null,
-                    true,
-                    spoofPackageName,
-                    null,
-                    android.os.Process.myUserHandle().getIdentifier()
-            );
+            IActivityManager.Stub.asInterface(activityProxy)
+                    .startService(
+                            context.getIApplicationThread(),
+                            fgsIntent,
+                            null,
+                            true,
+                            spoofPackageName,
+                            null,
+                            android.os.Process.myUserHandle().getIdentifier());
         } catch (ForegroundServiceStartNotAllowedException e) {
-            Log.d(TAG, "startForegroundService gets an "
-                    + " ForegroundServiceStartNotAllowedException", e);
+            Log.d(
+                    TAG,
+                    "startForegroundService gets an "
+                            + " ForegroundServiceStartNotAllowedException",
+                    e);
         } catch (LinkageError e) {
             // IActivityManager.startService() is a hidden API, access hidden API could get
             // LinkageError, consider the test as pass if we get LinkageError.
@@ -578,37 +604,41 @@ public class CommandReceiver extends BroadcastReceiver {
 
     private void doStartMediaPlayback(Context context, RemoteCallback callback) {
         mMediaSession = new MediaSession(context, TAG);
-        mMediaSession.setCallback(new MediaSession.Callback() {
-            @Override
-            public void onPlay() {
-                super.onPlay();
-                final Intent fgsIntent = new Intent(context, LocalForegroundService.class);
-                fgsIntent.putExtras(LocalForegroundService.newCommand(
-                        LocalForegroundService.COMMAND_START_FOREGROUND));
-                try {
-                    context.startForegroundService(fgsIntent);
-                } catch (ForegroundServiceStartNotAllowedException e) {
-                    Log.e(TAG, "Error while trying to start an FGS", e);
-                }
-            }
+        mMediaSession.setCallback(
+                new MediaSession.Callback() {
+                    @Override
+                    public void onPlay() {
+                        super.onPlay();
+                        final Intent fgsIntent = new Intent(context, LocalForegroundService.class);
+                        fgsIntent.putExtras(
+                                LocalForegroundService.newCommand(
+                                        LocalForegroundService.COMMAND_START_FOREGROUND));
+                        try {
+                            context.startForegroundService(fgsIntent);
+                        } catch (ForegroundServiceStartNotAllowedException e) {
+                            Log.e(TAG, "Error while trying to start an FGS", e);
+                        }
+                    }
 
-            @Override
-            public void onPause() {
-                super.onPause();
-                final Intent intent = new Intent(context, LocalForegroundService.class);
-                intent.putExtras(LocalForegroundService.newCommand(
-                        LocalForegroundService.COMMAND_STOP_FOREGROUND_DONT_REMOVE_NOTIFICATION));
-                context.startService(intent);
-            }
+                    @Override
+                    public void onPause() {
+                        super.onPause();
+                        final Intent intent = new Intent(context, LocalForegroundService.class);
+                        intent.putExtras(
+                                LocalForegroundService.newCommand(
+                                        LocalForegroundService
+                                                .COMMAND_STOP_FOREGROUND_DONT_REMOVE_NOTIFICATION));
+                        context.startService(intent);
+                    }
 
-            @Override
-            public void onStop() {
-                super.onStop();
-                final Intent intent = new Intent(context, LocalForegroundService.class);
-                context.stopService(intent);
-                mMediaSession.release();
-            }
-        });
+                    @Override
+                    public void onStop() {
+                        super.onStop();
+                        final Intent intent = new Intent(context, LocalForegroundService.class);
+                        context.stopService(intent);
+                        mMediaSession.release();
+                    }
+                });
         mMediaSession.setActive(true);
 
         callback.sendResult(null);
@@ -657,10 +687,8 @@ public class CommandReceiver extends BroadcastReceiver {
     private IntentFilter doSendStickyBroadcast(Context context) {
         final String action = "android.app.stubs.action.TEST";
         final Intent stickyIntent = new Intent(action);
-        final Uri uri = new Uri.Builder()
-                .scheme(SCHEME_CONTENT)
-                .authority(TestProvider.AUTHORITY)
-                .build();
+        final Uri uri =
+                new Uri.Builder().scheme(SCHEME_CONTENT).authority(TestProvider.AUTHORITY).build();
         stickyIntent.setData(uri);
         context.sendStickyBroadcast(stickyIntent);
         final IntentFilter intentFilter = new IntentFilter(action);
@@ -671,7 +699,6 @@ public class CommandReceiver extends BroadcastReceiver {
             return null;
         }
         return intentFilter;
-
     }
 
     private void doCreateMediaNotification(Context context, RemoteCallback callback) {
@@ -681,7 +708,7 @@ public class CommandReceiver extends BroadcastReceiver {
         Notification notification =
                 new Notification.Builder(context, mNotificationChannelId)
                         .setContentTitle("Track title")
-                        .setSmallIcon(R.drawable.ic_call_answer)
+                        .setSmallIcon(R.drawable.icon_black)
                         .setContentText("Artist - Album")
                         .setStyle(
                                 new Notification.MediaStyle()
@@ -728,12 +755,20 @@ public class CommandReceiver extends BroadcastReceiver {
     }
 
     private void setPlaybackState(int state, MediaSession mediaSession) {
-        final long allActions = PlaybackState.ACTION_PLAY | PlaybackState.ACTION_PAUSE
-                | PlaybackState.ACTION_PLAY_PAUSE | PlaybackState.ACTION_STOP
-                | PlaybackState.ACTION_SKIP_TO_NEXT | PlaybackState.ACTION_SKIP_TO_PREVIOUS
-                | PlaybackState.ACTION_FAST_FORWARD | PlaybackState.ACTION_REWIND;
-        PlaybackState playbackState = new PlaybackState.Builder().setActions(allActions)
-                .setState(state, 0L, 0.0f).build();
+        final long allActions =
+                PlaybackState.ACTION_PLAY
+                        | PlaybackState.ACTION_PAUSE
+                        | PlaybackState.ACTION_PLAY_PAUSE
+                        | PlaybackState.ACTION_STOP
+                        | PlaybackState.ACTION_SKIP_TO_NEXT
+                        | PlaybackState.ACTION_SKIP_TO_PREVIOUS
+                        | PlaybackState.ACTION_FAST_FORWARD
+                        | PlaybackState.ACTION_REWIND;
+        PlaybackState playbackState =
+                new PlaybackState.Builder()
+                        .setActions(allActions)
+                        .setState(state, 0L, 0.0f)
+                        .build();
         mediaSession.setPlaybackState(playbackState);
     }
 
@@ -753,49 +788,77 @@ public class CommandReceiver extends BroadcastReceiver {
         return intent.getIntExtra(EXTRA_FLAGS, 0);
     }
 
-    public static void sendCommand(Context context, int command, String sourcePackage,
-            String targetPackage, int flags, Bundle extras) {
+    public static void sendCommand(
+            Context context,
+            int command,
+            String sourcePackage,
+            String targetPackage,
+            int flags,
+            Bundle extras) {
         final Intent intent = makeIntent(command, sourcePackage, targetPackage, flags, extras);
         Log.d(TAG, "Sending broadcast " + intent);
-        sendOrderedBroadcast(context, intent, null /* resultReceiver */,
-                null /* broadcastOptions */);
+        sendOrderedBroadcast(
+                context, intent, null /* resultReceiver */, null /* broadcastOptions */);
     }
 
-    public static void sendCommandWithResultReceiver(Context context, int command,
-            String sourcePackage, String targetPackage, int flags, Bundle extras,
+    public static void sendCommandWithResultReceiver(
+            Context context,
+            int command,
+            String sourcePackage,
+            String targetPackage,
+            int flags,
+            Bundle extras,
             BroadcastReceiver resultReceiver) {
         final Intent intent = makeIntent(command, sourcePackage, targetPackage, flags, extras);
         Log.d(TAG, "Sending broadcast with result receiver " + intent);
         sendOrderedBroadcast(context, intent, resultReceiver, null /* broadcastOptions */);
     }
 
-    public static void sendCommandWithBroadcastOptions(Context context, int command,
-            String sourcePackage, String targetPackage, int flags, Bundle extras,
+    public static void sendCommandWithBroadcastOptions(
+            Context context,
+            int command,
+            String sourcePackage,
+            String targetPackage,
+            int flags,
+            Bundle extras,
             BroadcastOptions broadcastOptions) {
         final Intent intent = makeIntent(command, sourcePackage, targetPackage, flags, extras);
         Log.d(TAG, "Sending broadcast with BroadcastOptions " + intent);
         sendOrderedBroadcast(context, intent, null /* resultReceiver */, broadcastOptions);
     }
 
-    private static void sendOrderedBroadcast(Context context, Intent intent,
-            BroadcastReceiver resultReceiver, BroadcastOptions broadcastOptions) {
-        final BroadcastOptions effectiveOptions = broadcastOptions == null
-                ? BroadcastOptions.makeBasic() : broadcastOptions;
+    private static void sendOrderedBroadcast(
+            Context context,
+            Intent intent,
+            BroadcastReceiver resultReceiver,
+            BroadcastOptions broadcastOptions) {
+        final BroadcastOptions effectiveOptions =
+                broadcastOptions == null ? BroadcastOptions.makeBasic() : broadcastOptions;
         effectiveOptions.setDebugLogEnabled(true);
-        context.sendOrderedBroadcast(intent, null /* receiverPermission */,
-                effectiveOptions.toBundle(), resultReceiver, null /* scheduler */,
-                Activity.RESULT_OK, null /* initialData */, null /* initialExtras */);
+        context.sendOrderedBroadcast(
+                intent,
+                null /* receiverPermission */,
+                effectiveOptions.toBundle(),
+                resultReceiver,
+                null /* scheduler */,
+                Activity.RESULT_OK,
+                null /* initialData */,
+                null /* initialExtras */);
     }
 
-    private static Intent makeIntent(int command, String sourcePackage,
-            String targetPackage, int flags, Bundle extras) {
+    private static Intent makeIntent(
+            int command, String sourcePackage, String targetPackage, int flags, Bundle extras) {
         Intent intent = new Intent();
-        if (command == COMMAND_BIND_SERVICE || command == COMMAND_START_FOREGROUND_SERVICE
-                || command == COMMAND_STOP_FOREGROUND_SERVICE || command == COMMAND_START_ACTIVITY
-                || command == COMMAND_START_FOREGROUND_SERVICE_LOCATION || command == COMMAND_UNBIND_SERVICE) {
+        if (command == COMMAND_BIND_SERVICE
+                || command == COMMAND_START_FOREGROUND_SERVICE
+                || command == COMMAND_STOP_FOREGROUND_SERVICE
+                || command == COMMAND_START_ACTIVITY
+                || command == COMMAND_START_FOREGROUND_SERVICE_LOCATION
+                || command == COMMAND_UNBIND_SERVICE) {
             intent.setFlags(Intent.FLAG_RECEIVER_FOREGROUND);
         }
-        intent.setComponent(new ComponentName(sourcePackage, "android.app.stubs.CommandReceiver"));
+        intent.setComponent(
+                new ComponentName(sourcePackage, "android.app.stubs.shared.CommandReceiver"));
         intent.putExtra(EXTRA_COMMAND, command);
         intent.putExtra(EXTRA_FLAGS, flags);
         intent.putExtra(EXTRA_TARGET_PACKAGE, targetPackage);
@@ -806,15 +869,14 @@ public class CommandReceiver extends BroadcastReceiver {
     }
 
     private ServiceConnection addServiceConnection(final String packageName) {
-        ServiceConnection connection = new ServiceConnection() {
-            @Override
-            public void onServiceConnected(ComponentName name, IBinder service) {
-            }
+        ServiceConnection connection =
+                new ServiceConnection() {
+                    @Override
+                    public void onServiceConnected(ComponentName name, IBinder service) {}
 
-            @Override
-            public void onServiceDisconnected(ComponentName name) {
-            }
-        };
+                    @Override
+                    public void onServiceDisconnected(ComponentName name) {}
+                };
         sServiceMap.put(packageName, connection);
         return connection;
     }

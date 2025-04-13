@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package android.app.stubs;
+package android.app.stubs.shared;
 
 import android.app.ForegroundServiceStartNotAllowedException;
 import android.app.Notification;
@@ -42,7 +42,7 @@ public class LocalForegroundService extends LocalService {
     public static final String EXTRA_FOREGROUND_SERVICE_TYPE = "ForegroundService.type";
     public static final String NOTIFICATION_CHANNEL_ID = "cts/" + TAG;
     public static String ACTION_START_FGS_RESULT =
-            "android.app.stubs.LocalForegroundService.RESULT";
+            "android.app.stubs.shared.LocalForegroundService.RESULT";
 
     public static final int COMMAND_START_FOREGROUND = 1;
     public static final int COMMAND_STOP_FOREGROUND_REMOVE_NOTIFICATION = 2;
@@ -78,9 +78,11 @@ public class LocalForegroundService extends LocalService {
     public int onStartCommand(Intent intent, int flags, int startId) {
         String notificationChannelId = getNotificationChannelId();
         NotificationManager notificationManager = getSystemService(NotificationManager.class);
-        notificationManager.createNotificationChannel(new NotificationChannel(
-                notificationChannelId, notificationChannelId,
-                NotificationManager.IMPORTANCE_DEFAULT));
+        notificationManager.createNotificationChannel(
+                new NotificationChannel(
+                        notificationChannelId,
+                        notificationChannelId,
+                        NotificationManager.IMPORTANCE_DEFAULT));
 
         Context context = getApplicationContext();
         final int command = intent.getIntExtra(EXTRA_COMMAND, -1);
@@ -89,29 +91,33 @@ public class LocalForegroundService extends LocalService {
 
         switch (command) {
             case COMMAND_START_FOREGROUND:
-            case COMMAND_START_FOREGROUND_DEFER_NOTIFICATION: {
-                handleIncomingMessengerIfNeeded(intent);
-                mNotificationId ++;
-                final boolean showNow = (command == COMMAND_START_FOREGROUND);
-                Log.d(getTag(), "Starting foreground using notification " + mNotificationId);
-                Notification.Builder builder =
-                        new Notification.Builder(context, NOTIFICATION_CHANNEL_ID)
-                                .setContentTitle(getNotificationTitle(mNotificationId))
-                                .setSmallIcon(R.drawable.black);
-                if (showNow) {
-                    builder.setForegroundServiceBehavior(
-                            Notification.FOREGROUND_SERVICE_IMMEDIATE);
+            case COMMAND_START_FOREGROUND_DEFER_NOTIFICATION:
+                {
+                    handleIncomingMessengerIfNeeded(intent);
+                    mNotificationId++;
+                    final boolean showNow = (command == COMMAND_START_FOREGROUND);
+                    Log.d(getTag(), "Starting foreground using notification " + mNotificationId);
+                    Notification.Builder builder =
+                            new Notification.Builder(context, NOTIFICATION_CHANNEL_ID)
+                                    .setContentTitle(getNotificationTitle(mNotificationId))
+                                    .setSmallIcon(android.R.drawable.sym_def_app_icon);
+                    if (showNow) {
+                        builder.setForegroundServiceBehavior(
+                                Notification.FOREGROUND_SERVICE_IMMEDIATE);
+                    }
+                    final int fgsType =
+                            intent.getIntExtra(EXTRA_FOREGROUND_SERVICE_TYPE, DEFAULT_FGS_TYPE);
+                    try {
+                        startForeground(mNotificationId, builder.build(), fgsType);
+                    } catch (ForegroundServiceStartNotAllowedException e) {
+                        Log.d(
+                                TAG,
+                                "startForeground gets an "
+                                        + " ForegroundServiceStartNotAllowedException",
+                                e);
+                    }
+                    break;
                 }
-                final int fgsType = intent.getIntExtra(EXTRA_FOREGROUND_SERVICE_TYPE,
-                        DEFAULT_FGS_TYPE);
-                try {
-                    startForeground(mNotificationId, builder.build(), fgsType);
-                } catch (ForegroundServiceStartNotAllowedException e) {
-                    Log.d(TAG, "startForeground gets an "
-                            + " ForegroundServiceStartNotAllowedException", e);
-                }
-                break;
-            }
             case COMMAND_STOP_FOREGROUND_REMOVE_NOTIFICATION:
                 Log.d(getTag(), "Stopping foreground removing notification");
                 stopForeground(true);
@@ -169,8 +175,8 @@ public class LocalForegroundService extends LocalService {
     }
 
     /**
-     * Check if the given {@code intent} has embodied a messenger object which is to receive
-     * the messenger interface based controller, if so, send our {@link #mMessenger} to it.
+     * Check if the given {@code intent} has embodied a messenger object which is to receive the
+     * messenger interface based controller, if so, send our {@link #mMessenger} to it.
      */
     private void handleIncomingMessengerIfNeeded(final Intent intent) {
         final Bundle extras = intent.getExtras();

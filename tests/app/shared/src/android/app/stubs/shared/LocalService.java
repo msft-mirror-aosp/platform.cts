@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package android.app.stubs;
+package android.app.stubs.shared;
 
 import android.app.Service;
 import android.content.Context;
@@ -30,8 +30,7 @@ import com.android.compatibility.common.util.IBinderParcelable;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class LocalService extends Service {
-    public static final String SERVICE_LOCAL =
-            "android.app.cts.activity.SERVICE_LOCAL";
+    public static final String SERVICE_LOCAL = "android.app.cts.activity.SERVICE_LOCAL";
     public static final String SERVICE_LOCAL_GRANTED =
             "android.app.cts.activity.SERVICE_LOCAL_GRANTED";
     public static final String SERVICE_LOCAL_DENIED =
@@ -66,59 +65,59 @@ public class LocalService extends Service {
     private int mStartId = -1;
     private boolean mIsStoppedSelfSuccess;
 
-    private final IBinder mBinder = new Binder() {
-        @Override
-        protected boolean onTransact(int code, Parcel data, Parcel reply,
-                int flags) throws RemoteException {
-            switch (code) {
-                case SET_REPORTER_CODE:
-                    data.enforceInterface(SERVICE_LOCAL);
-                    mReportObject = data.readStrongBinder();
-                    return true;
-                case GET_VALUE_CODE:
-                    data.enforceInterface(SERVICE_LOCAL);
-                    reply.writeInt(mValue);
-                    return true;
-                case SET_VALUE_CODE:
-                    data.enforceInterface(SERVICE_LOCAL);
-                    mValue = data.readInt();
-                    return true;
-                case GET_PID_CODE:
-                    data.enforceInterface(SERVICE_LOCAL);
-                    reply.writeInt(Process.myPid());
-                    return true;
-                case GET_UID_CODE:
-                    data.enforceInterface(SERVICE_LOCAL);
-                    reply.writeInt(Process.myUid());
-                    return true;
-                case GET_PPID_CODE:
-                    data.enforceInterface(SERVICE_LOCAL);
-                    reply.writeInt(Process.myPpid());
-                    return true;
-                case GET_ZYGOTE_PRELOAD_CALLED:
-                    data.enforceInterface(SERVICE_LOCAL);
-                    reply.writeBoolean(ZygotePreload.preloadCalled());
-                    return true;
-                case STOP_SELF_RESULT_CODE:
-                    synchronized (LocalService.this) {
-                        mIsStoppedSelfSuccess = stopSelfResult(mStartId);
+    private final IBinder mBinder =
+            new Binder() {
+                @Override
+                protected boolean onTransact(int code, Parcel data, Parcel reply, int flags)
+                        throws RemoteException {
+                    switch (code) {
+                        case SET_REPORTER_CODE:
+                            data.enforceInterface(SERVICE_LOCAL);
+                            mReportObject = data.readStrongBinder();
+                            return true;
+                        case GET_VALUE_CODE:
+                            data.enforceInterface(SERVICE_LOCAL);
+                            reply.writeInt(mValue);
+                            return true;
+                        case SET_VALUE_CODE:
+                            data.enforceInterface(SERVICE_LOCAL);
+                            mValue = data.readInt();
+                            return true;
+                        case GET_PID_CODE:
+                            data.enforceInterface(SERVICE_LOCAL);
+                            reply.writeInt(Process.myPid());
+                            return true;
+                        case GET_UID_CODE:
+                            data.enforceInterface(SERVICE_LOCAL);
+                            reply.writeInt(Process.myUid());
+                            return true;
+                        case GET_PPID_CODE:
+                            data.enforceInterface(SERVICE_LOCAL);
+                            reply.writeInt(Process.myPpid());
+                            return true;
+                        case GET_ZYGOTE_PRELOAD_CALLED:
+                            data.enforceInterface(SERVICE_LOCAL);
+                            reply.writeBoolean(ZygotePreload.preloadCalled());
+                            return true;
+                        case STOP_SELF_RESULT_CODE:
+                            synchronized (LocalService.this) {
+                                mIsStoppedSelfSuccess = stopSelfResult(mStartId);
+                            }
+                            return true;
+                        case STOP_SELF_CODE:
+                            stopSelf(mStartId);
+                            return true;
+                        case GET_ON_CREATE_CALLED_COUNT:
+                            data.enforceInterface(SERVICE_LOCAL);
+                            reply.writeInt(sOnCreateCount);
+                            return true;
+                        default:
+                            return super.onTransact(code, data, reply, flags);
                     }
-                    return true;
-                case STOP_SELF_CODE:
-                    stopSelf(mStartId);
-                    return true;
-                case GET_ON_CREATE_CALLED_COUNT:
-                    data.enforceInterface(SERVICE_LOCAL);
-                    reply.writeInt(sOnCreateCount);
-                    return true;
-                default:
-                    return super.onTransact(code, data, reply, flags);
-            }
-        }
-    };
+                }
+            };
 
-    public LocalService() {
-    }
+    public LocalService() {}
 
     @Override
     public void onCreate() {
@@ -135,8 +134,8 @@ public class LocalService extends Service {
     public void onStart(Intent intent, int startId) {
         mStartId = startId;
         if (intent.getExtras() != null) {
-            IBinderParcelable parcelable
-                    = (IBinderParcelable) intent.getExtras().getParcelable(REPORT_OBJ_NAME);
+            IBinderParcelable parcelable =
+                    (IBinderParcelable) intent.getExtras().getParcelable(REPORT_OBJ_NAME);
             mReportObject = parcelable.binder;
             if (mReportObject != null) {
                 bindAction(STARTED_CODE);
@@ -191,8 +190,7 @@ public class LocalService extends Service {
                 data.writeInt(mStartCount);
                 mStartCount++;
             }
-            mReportObject.transact(
-                    bindCode, data, null, 0);
+            mReportObject.transact(bindCode, data, null, 0);
             data.recycle();
         } catch (RemoteException e) {
             // fail

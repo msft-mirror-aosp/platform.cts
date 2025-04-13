@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License
  */
-package android.app.stubs;
+package android.app.stubs.shared;
 
 import static android.view.Gravity.LEFT;
 import static android.view.Gravity.TOP;
@@ -65,14 +65,16 @@ public class LocalAlertService extends Service {
 
     private View showAlertWindow(String windowName) {
         final Point size = new Point();
-        final WindowManager wm = mUserHelper.isVisibleBackgroundUser()
-                ? getContextForSaw(this).getSystemService(WindowManager.class)
-                : getSystemService(WindowManager.class);
+        final WindowManager wm =
+                mUserHelper.isVisibleBackgroundUser()
+                        ? getContextForSaw(this).getSystemService(WindowManager.class)
+                        : getSystemService(WindowManager.class);
         wm.getDefaultDisplay().getSize(size);
 
-        WindowManager.LayoutParams params = new WindowManager.LayoutParams(
-                TYPE_APPLICATION_OVERLAY, FLAG_NOT_FOCUSABLE | FLAG_WATCH_OUTSIDE_TOUCH |
-                FLAG_NOT_TOUCHABLE);
+        WindowManager.LayoutParams params =
+                new WindowManager.LayoutParams(
+                        TYPE_APPLICATION_OVERLAY,
+                        FLAG_NOT_FOCUSABLE | FLAG_WATCH_OUTSIDE_TOUCH | FLAG_NOT_TOUCHABLE);
         params.width = size.x / 3;
         params.height = size.y / 3;
         params.gravity = TOP | LEFT;
