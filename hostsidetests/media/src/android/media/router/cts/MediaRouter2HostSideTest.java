@@ -59,7 +59,6 @@ import com.android.tradefed.testtype.junit4.BeforeClassWithInfo;
 import com.google.common.truth.Expect;
 
 import org.junit.Before;
-import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -80,7 +79,7 @@ public class MediaRouter2HostSideTest extends BaseHostJUnit4Test {
     /** The maximum period of time to wait for a scan request to take effect, in milliseconds. */
     private static final long WAIT_MS_SCAN_PROPAGATION = 3000;
 
-    @ClassRule public static final Expect expect = Expect.create();
+    @Rule public final Expect expect = Expect.create();
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule =
@@ -102,13 +101,12 @@ public class MediaRouter2HostSideTest extends BaseHostJUnit4Test {
     @AfterClassWithInfo
     public static void uninstallApps(TestInformation testInfo) throws DeviceNotAvailableException {
         ITestDevice device = testInfo.getDevice();
-        expect.that(device.uninstallPackage(MEDIA_ROUTER_PROVIDER_1_PACKAGE)).isNull();
-        expect.that(device.uninstallPackage(MEDIA_ROUTER_PROVIDER_2_PACKAGE)).isNull();
-        expect.that(device.uninstallPackage(MEDIA_ROUTER_PROVIDER_3_PACKAGE)).isNull();
-        expect.that(device.uninstallPackage(MEDIA_ROUTER_PROVIDER_SELF_SCAN_ONLY_PACKAGE)).isNull();
-        expect.that(device.uninstallPackage(MEDIA_ROUTER_TEST_PACKAGE)).isNull();
-        expect.that(device.uninstallPackage(MEDIA_ROUTER_TEST_WITH_MODIFY_AUDIO_ROUTING_PACKAGE))
-                .isNull();
+        device.uninstallPackage(MEDIA_ROUTER_PROVIDER_1_PACKAGE);
+        device.uninstallPackage(MEDIA_ROUTER_PROVIDER_2_PACKAGE);
+        device.uninstallPackage(MEDIA_ROUTER_PROVIDER_3_PACKAGE);
+        device.uninstallPackage(MEDIA_ROUTER_PROVIDER_SELF_SCAN_ONLY_PACKAGE);
+        device.uninstallPackage(MEDIA_ROUTER_TEST_PACKAGE);
+        device.uninstallPackage(MEDIA_ROUTER_TEST_WITH_MODIFY_AUDIO_ROUTING_PACKAGE);
     }
 
     @Before
