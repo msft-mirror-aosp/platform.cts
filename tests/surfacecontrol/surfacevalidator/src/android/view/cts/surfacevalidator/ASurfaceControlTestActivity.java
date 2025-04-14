@@ -20,6 +20,7 @@ import static android.view.cts.surfacevalidator.CapturedActivity.STORAGE_DIR;
 
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
@@ -109,6 +110,7 @@ public class ASurfaceControlTestActivity extends Activity {
         mSurfaceView.getHolder().setFixedSize(DEFAULT_LAYOUT_WIDTH, DEFAULT_LAYOUT_HEIGHT);
 
         mParent = findViewById(android.R.id.content);
+        mParent.removeAllViews();
 
         mInstrumentation = getInstrumentation();
     }
@@ -157,10 +159,13 @@ public class ASurfaceControlTestActivity extends Activity {
     public void createSurface(SurfaceHolderCallback surfaceHolderCallback) {
         awaitReadyState();
 
-        mHandler.post(() -> {
-            mSurfaceView.getHolder().addCallback(surfaceHolderCallback);
-            mParent.addView(mSurfaceView, mLayoutParams);
-        });
+        mHandler.post(
+                () -> {
+                    assertFalse("Surface is valid. SurfaceView is already attached",
+                            mSurfaceView.getHolder().getSurface().isValid());
+                    mSurfaceView.getHolder().addCallback(surfaceHolderCallback);
+                    mParent.addView(mSurfaceView, mLayoutParams);
+                });
     }
 
     public void verifyScreenshot(PixelChecker pixelChecker, TestName name) {
@@ -180,8 +185,10 @@ public class ASurfaceControlTestActivity extends Activity {
         });
 
         try {
-            countDownLatch.await(WAIT_TIMEOUT_S, TimeUnit.SECONDS);
+            assertTrue("Timed out waiting for screenshot",
+                            countDownLatch.await(WAIT_TIMEOUT_S, TimeUnit.SECONDS));
         } catch (Exception e) {
+            Log.e(TAG, "Interrupted");
         }
 
         assertNotNull(mScreenshot);
