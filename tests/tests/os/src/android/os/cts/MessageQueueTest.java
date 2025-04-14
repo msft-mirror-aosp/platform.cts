@@ -39,6 +39,8 @@ import android.system.Os;
 
 import androidx.test.runner.AndroidJUnit4;
 
+import java.util.concurrent.FutureTask;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -52,9 +54,10 @@ import java.util.concurrent.TimeUnit;
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 @RunWith(AndroidJUnit4.class)
 public class MessageQueueTest {
-    private static final long TIMEOUT = 1000;
-    private static final long TEST_TIMEOUT = 1000;
+    private static final long TIMEOUT = 1_000;
+    private static final long TEST_TIMEOUT = 1_000;
     private static final long TEST_INTERVAL = 50;
+    private static final long JOIN_TIMEOUT = 30_000;
 
     @Test
     public void testAddIdleHandler() throws InterruptedException {
@@ -273,9 +276,6 @@ public class MessageQueueTest {
     }
 
     @Test
-    @DisabledOnRavenwood(
-            blockedBy = android.os.SystemClock.class,
-            reason = "currentThreadTimeMillis is missing")
     public void testEnqueueThenRemoveMessages() throws Throwable {
         AssertableHandlerThread thread = new AssertableHandlerThread();
         thread.start();
@@ -326,6 +326,71 @@ public class MessageQueueTest {
                     crasher.hasMessages(3));
         } finally {
             thread.quitAndRethrow();
+        }
+    }
+
+    @Test
+    public void testStressQuit() throws Throwable {
+        final AtomicReference<Handler> stressedRef = new AtomicReference<>();
+        final Runnable doNothing = () -> {};
+
+        // Stress the queue by enqueuing future messages which will wake the MessageQueue.
+        FutureTask<Void> enqueueingTask =
+                new FutureTask<>(
+                        () -> {
+                            final long dayInMillis = 24 * 60 * 60 * 1_000;
+                            long delay = dayInMillis;
+                            // Used to avoid using a Handler that we already observed will reject
+                            // messages and throw.
+                            Handler lastFailedPost = null;
+                            while (!Thread.interrupted()) {
+                                Handler stressed = stressedRef.get();
+                                if (stressed != null && stressed != lastFailedPost) {
+                                    // Post with enough of a delay such that the message will
+                                    // never be handled.
+                                    // We want to wake the MessageQueue for stress purposes, but
+                                    // not to keep it busy so as to maximize the chance of
+                                    // exposing any race conditions.
+                                    final boolean posted =
+                                            stressed.postDelayed(
+                                                    doNothing,
+                                                    // Count down so that every message is a
+                                                    // wake.
+                                                    delay--);
+                                    if (posted) {
+                                        lastFailedPost = null;
+                                    } else {
+                                        lastFailedPost = stressed;
+                                    }
+                                    // Remove the message that we just posted to avoid OOMing
+                                    // during the test.
+                                    stressed.removeCallbacks(doNothing);
+                                }
+                            }
+                        },
+                        null);
+        Thread enqueueingThread = new Thread(enqueueingTask);
+        enqueueingThread.start();
+
+        try {
+            // Stress test to shake out any race conditions in the implementation.
+            for (int i = 0; i < 10_000; i++) {
+                AssertableHandlerThread stressedThread = new AssertableHandlerThread();
+                stressedThread.start();
+                stressedRef.set(new Handler(stressedThread.getLooper()));
+                try {
+                    stressedThread.quit();
+                    // Quit should be idempotent
+                    stressedThread.quit();
+                } finally {
+                    stressedThread.quitAndRethrow();
+                    stressedRef.set(null);
+                }
+            }
+        }
+        finally {
+            enqueueingThread.interrupt();
+            enqueueingTask.get(JOIN_TIMEOUT, TimeUnit.MILLISECONDS);
         }
     }
 
@@ -808,7 +873,7 @@ public class MessageQueueTest {
     public void testPathologicalFileDescriptorReuseCallbacks4() throws Throwable {
         // Prepare a special looper that we can catch exceptions from.
         ParcelFileDescriptor dup = null;
-        AssertableHandlerThread thread = new AssertableHandlerThread();
+        AssertableHandlerThreadWithRuntime thread = new AssertableHandlerThreadWithRuntime();
         thread.start();
         try {
             try {
@@ -856,7 +921,7 @@ public class MessageQueueTest {
                 // was happening.  If we failed to actually rebuild the epoll set then the
                 // Looper may have been spinning continuously due to an FD that was never
                 // properly removed from the epoll set so the thread runtime will be very high.
-                long runtime = thread.quitAndRethrow();
+                long runtime = thread.quitAndRethrowReturnRuntime();
                 assertFalse("Looper thread spent most of its time spinning instead of blocked.",
                         runtime > 1000);
             }
@@ -1114,9 +1179,8 @@ public class MessageQueueTest {
      * A HandlerThread that propagates exceptions out of the event loop
      * instead of crashing the process.
      */
-    private static class AssertableHandlerThread extends HandlerThread {
+    private static final class AssertableHandlerThread extends HandlerThread {
         private Throwable mThrowable;
-        private long mRuntime;
 
         public AssertableHandlerThread() {
             super("AssertableHandlerThread");
@@ -1124,23 +1188,64 @@ public class MessageQueueTest {
 
         @Override
         public void run() {
-            final long startTime = SystemClock.currentThreadTimeMillis();
             try {
                 super.run();
             } catch (Throwable t) {
                 mThrowable = t;
+            }
+        }
+
+        public void quitAndRethrow() throws Throwable {
+            quitSafely();
+            join(JOIN_TIMEOUT);
+            if (isAlive()) {
+                throw new RuntimeException(
+                        "Looper thread did not quit in 30s", new ThreadState(getStackTrace()));
+            }
+            if (mThrowable != null) {
+                throw mThrowable;
+            }
+        }
+    }
+
+    /**
+     * AssertableHandlerThread that counts its own thread time.
+     */
+    private static final class AssertableHandlerThreadWithRuntime extends HandlerThread {
+        private Throwable mThrowable;
+        private long mRuntime;
+
+        public AssertableHandlerThreadWithRuntime() {
+            super("AssertableHandlerThreadWithRuntime");
+        }
+
+        @Override
+        public void run() {
+            final long startTime = SystemClock.currentThreadTimeMillis();
+            try {
+                super.run();
             } finally {
                 mRuntime = SystemClock.currentThreadTimeMillis() - startTime;
             }
         }
 
-        public long quitAndRethrow() throws Throwable {
+        public long quitAndRethrowReturnRuntime() throws Throwable {
             quitSafely();
-            join(TIMEOUT);
+            join(JOIN_TIMEOUT);
+            if (isAlive()) {
+                throw new RuntimeException(
+                        "Looper thread did not quit in 30s", new ThreadState(getStackTrace()));
+            }
             if (mThrowable != null) {
                 throw mThrowable;
             }
             return mRuntime;
+        }
+    }
+
+    private static final class ThreadState extends Exception {
+        ThreadState(StackTraceElement[] stack) {
+            setStackTrace(stack);
         }
     }
 }
