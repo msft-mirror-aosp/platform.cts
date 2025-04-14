@@ -607,6 +607,7 @@ public abstract class GlobalSearchSessionCtsTestBase {
                         "body",
                         new SearchSpec.Builder()
                                 .setTermMatch(SearchSpec.TERM_MATCH_EXACT_ONLY)
+                                .addFilterPackageNames(mContext.getPackageName())
                                 .addProjection(
                                         AppSearchEmail.SCHEMA_TYPE,
                                         ImmutableList.of("subject", "to"))
@@ -670,6 +671,7 @@ public abstract class GlobalSearchSessionCtsTestBase {
                         "body",
                         new SearchSpec.Builder()
                                 .setTermMatch(SearchSpec.TERM_MATCH_EXACT_ONLY)
+                                .addFilterPackageNames(mContext.getPackageName())
                                 .addProjection(AppSearchEmail.SCHEMA_TYPE, Collections.emptyList())
                                 .build());
 
@@ -810,9 +812,11 @@ public abstract class GlobalSearchSessionCtsTestBase {
                         "body",
                         new SearchSpec.Builder()
                                 .setTermMatch(SearchSpec.TERM_MATCH_EXACT_ONLY)
+                                .addFilterPackageNames(mContext.getPackageName())
                                 .setResultGrouping(
                                         SearchSpec.GROUPING_TYPE_PER_PACKAGE, /*resultLimit=*/ 1)
                                 .build());
+
         assertThat(documents).containsExactly(inEmail4);
 
         // Query with per namespace result grouping. Only the last document in each namespace should
@@ -822,6 +826,7 @@ public abstract class GlobalSearchSessionCtsTestBase {
                         "body",
                         new SearchSpec.Builder()
                                 .setTermMatch(SearchSpec.TERM_MATCH_EXACT_ONLY)
+                                .addFilterPackageNames(mContext.getPackageName())
                                 .setResultGrouping(
                                         SearchSpec.GROUPING_TYPE_PER_NAMESPACE, /*resultLimit=*/ 1)
                                 .build());
@@ -834,6 +839,7 @@ public abstract class GlobalSearchSessionCtsTestBase {
                         "body",
                         new SearchSpec.Builder()
                                 .setTermMatch(SearchSpec.TERM_MATCH_EXACT_ONLY)
+                                .addFilterPackageNames(mContext.getPackageName())
                                 .setResultGrouping(
                                         SearchSpec.GROUPING_TYPE_PER_NAMESPACE
                                                 | SearchSpec.GROUPING_TYPE_PER_PACKAGE,
