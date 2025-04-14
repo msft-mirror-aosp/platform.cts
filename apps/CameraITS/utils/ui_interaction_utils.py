@@ -900,8 +900,6 @@ def get_default_camera_video_stabilization(file_name):
   with open(file_name, 'r') as file:
     for line in file:
       if 'videoStabilizationMode' in line:
-        if _REQ_STR_PATTERN not in line:
-          continue
         logging.debug('videoStabilizationMode line: %s', line)
         values = line.split(':')
         value_str = values[-1]
