@@ -1506,14 +1506,15 @@ public class BackgroundActivityLaunchTest extends BackgroundActivityTestBase {
     /**
      * Start the given activity in a new task.
      *
-     * After starting the activity this method asserts that the activity is actually started and is
-     * shown as the focused activity in the foreground.
+     * <p>After starting the activity, this method waits for the activity resumed, asserts that the
+     * activity is actually started and is shown as the focused activity in the foreground.
      *
      * @param componentName activity to start
      * @param extraTrueNames (optional) names of extras that should be set to <code>true</code>
      */
     private void startActivity(ComponentName componentName, String... extraTrueNames) {
         startActivityUnchecked(componentName, extraTrueNames);
+        waitForActivityResumed(ACTIVITY_START_TIMEOUT_MS, componentName);
         assertActivityFocusedOnMainDisplay(componentName);
     }
 
