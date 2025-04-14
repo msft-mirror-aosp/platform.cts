@@ -203,7 +203,7 @@ public class AnrTests extends ActivityManagerTestBase {
             ComponentName activity) {
         String flags = waitForCompletion ? " -W -n " : " -n ";
         String startCmd = "am start" + flags + activity.flattenToString() +
-                " --ei " + delayTypeExtra + " 30000";
+                " --ei " + delayTypeExtra + " 60000";
         executeShellCommand(startCmd);
     }
 
