@@ -54,11 +54,12 @@ public class XmlWriter {
 
     private final List<XmlGenerator<?>> mXmlGenerators = new ArrayList<>();
 
-    private static final Map<ModeType, Class<? extends XmlGenerator<?>>> GENERATOR_CLASSES =
+    private static final Map<ModeType, List<Class<? extends XmlGenerator<?>>>> GENERATOR_CLASSES =
             Map.of(
-                    ModeType.API_MAP, ApiMapXmlGenerator.class,
-                    ModeType.XTS_ANNOTATION, XtsAnnotationXmlGenerator.class,
-                    ModeType.XTS_API_INHERIT, XtsApiInheritGenerator.class);
+                    ModeType.API_MAP, List.of(ApiMapXmlGenerator.class),
+                    ModeType.XTS_ANNOTATION, List.of(XtsAnnotationXmlGenerator.class),
+                    ModeType.XTS_API_INHERIT,
+                            List.of(XtsApiInheritGenerator.class, ApiInheritGenerator.class));
 
     /**
      * Constructs an {@code XmlWriter}, initializing the XML document with a root element and a
@@ -136,19 +137,21 @@ public class XmlWriter {
         Collections.sort(sortedModes);
         sortedModes.forEach(
                 modeType -> {
-                    XmlGenerator<?> xmlGenerator;
-                    try {
-                        xmlGenerator =
-                                GENERATOR_CLASSES
-                                        .get(modeType)
-                                        .getDeclaredConstructor(Document.class)
-                                        .newInstance(mDoc);
+                    for (Class<? extends XmlGenerator<?>> generatorClass :
+                            GENERATOR_CLASSES.get(modeType)) {
+                        XmlGenerator<?> xmlGenerator;
+                        try {
+                            xmlGenerator =
+                                    generatorClass
+                                            .getDeclaredConstructor(Document.class)
+                                            .newInstance(mDoc);
 
-                    } catch (ReflectiveOperationException e) {
-                        throw new RuntimeException(e);
+                        } catch (ReflectiveOperationException e) {
+                            throw new RuntimeException(e);
+                        }
+                        mXmlGenerators.add(xmlGenerator);
+                        xmlGenerator.getTopElements().forEach(mRootElement::appendChild);
                     }
-                    mXmlGenerators.add(xmlGenerator);
-                    xmlGenerator.getTopElements().forEach(mRootElement::appendChild);
                 });
     }
 }

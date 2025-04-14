@@ -18,6 +18,7 @@ package android.view.surfacecontrol.cts;
 
 import static android.hardware.flags.Flags.FLAG_LUTS_API;
 import static android.server.wm.ActivityManagerTestBase.createFullscreenActivityScenarioRule;
+import static android.server.wm.CtsWindowInfoUtils.waitForWindowOnTop;
 import static android.view.cts.surfacevalidator.ASurfaceControlTestActivity.WAIT_TIMEOUT_S;
 import static android.view.cts.util.ASurfaceControlTestUtils.getBufferId;
 import static android.view.cts.util.ASurfaceControlTestUtils.getQuadrantBuffer;
@@ -131,8 +132,9 @@ public class SurfaceControlTest {
     private long mDesiredPresentTimeNanos;
 
     @Before
-    public void setup() {
+    public void setup() throws InterruptedException {
         mActivityRule.getScenario().onActivity(activity -> mActivity = activity);
+        assertTrue("Window did not become visible", waitForWindowOnTop(mActivity.getWindow()));
     }
 
     SurfaceControl getHostSurfaceControl() {

@@ -16,8 +16,12 @@
 
 package android.media.audio.cts;
 
+import static com.google.common.truth.Truth.assertThat;
+import static com.google.common.truth.Truth.assertWithMessage;
+
 import static org.junit.Assert.assertEquals;
 
+import android.annotation.NonNull;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.media.AudioAttributes;
@@ -29,13 +33,20 @@ import android.os.PowerManager;
 
 import androidx.test.InstrumentationRegistry;
 
+import com.android.media.mediatestutils.CancelAllFuturesRule;
+import com.android.media.mediatestutils.TestUtils;
+
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.IntSupplier;
 
 class AudioTestUtil {
+
+    private static final int FUTURE_WAIT_SECS = 5; // Should never timeout; early fail
+
     // Default matches the invalid (empty) attributes from native.
     // The difference is the input source default which is not aligned between native and java
     public static final AudioAttributes DEFAULT_ATTRIBUTES =
@@ -192,7 +203,6 @@ class AudioTestUtil {
         }
     }
 
-
     private static final List<Integer> MEDIA_DEVICE_TYPES = List.of(
             AudioDeviceInfo.TYPE_BUILTIN_SPEAKER,
             AudioDeviceInfo.TYPE_WIRED_HEADSET,
@@ -214,5 +224,41 @@ class AudioTestUtil {
             }
         }
         return mediaDevices;
+    }
+
+    //-------------------------------------------------------------------------------------------
+    /**
+     * Set a stream type volume and block until an expected volume value for a given stream type
+     * has been posted through the ACTION_VOLUME_CHANGED intent. No-op if the volume is already
+     * at the expected value.
+     * @param am the AudioManager instance used for
+     * @param stream the stream type to modify
+     * @param expectedVolume the target volume
+     * @throws Exception
+     */
+    static void setAndWaitForStreamVolume(@NonNull CancelAllFuturesRule cancelRule,
+            @NonNull Context context, @NonNull AudioManager am,
+            int stream, int expectedVolume) throws Exception {
+        Objects.requireNonNull(cancelRule);
+        Objects.requireNonNull(am);
+        final var initVol = am.getStreamVolume(stream);
+        // Set the volume to a known value
+        if (initVol != expectedVolume) {
+            var future = cancelRule.registerFuture(TestUtils.getFutureForIntent(
+                    context,
+                    AudioManager.ACTION_VOLUME_CHANGED,
+                    i -> (i != null)
+                            && i.getIntExtra(AudioManager.EXTRA_VOLUME_STREAM_TYPE, -1)
+                            == stream));
+            am.setStreamVolume(stream,
+                    expectedVolume, 0 /* flags */);
+            assertThat(future.get(FUTURE_WAIT_SECS, TimeUnit.SECONDS)
+                    .getIntExtra(AudioManager.EXTRA_VOLUME_STREAM_VALUE, -1))
+                    .isEqualTo(expectedVolume);
+        }
+        assertWithMessage("Failed to set stream volume for " + stream + " to " + expectedVolume)
+                .that(am.getStreamVolume(stream))
+                .isEqualTo(expectedVolume);
+
     }
 }

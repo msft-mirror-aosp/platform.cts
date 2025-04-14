@@ -42,12 +42,19 @@
         <option name="package" value="android.systemui.cts" />
         <option name="runtime-hint" value="10m19s" />
         <option name="isolated-storage" value="false" />
+
+        <option name="device-listeners" value="android.tools.collectors.DefaultUITraceListener"/>
+        <!-- DefaultUITraceListener args -->
+        <option name="instrumentation-arg" key="skip_test_success_metrics" value="true"/>
+        <option name="instrumentation-arg" key="per_class" value="true"/>
     </test>
 
     <!-- Collect the files in the dump directory for debugging -->
     <metrics_collector class="com.android.tradefed.device.metric.FilePullerLogCollector">
         <option name="directory-keys" value="/sdcard/LightBarTestBase/" />
         <option name="directory-keys" value="/sdcard/WindowInsetsBehaviorTests" />
+        <!-- Pull perfetto traces from DefaultUITraceListener -->
+        <option name="pull-pattern-keys" value="perfetto_file_path" />
         <option name="collect-on-run-ended-only" value="true" />
     </metrics_collector>
 

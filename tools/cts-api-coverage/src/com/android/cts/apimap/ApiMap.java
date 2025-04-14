@@ -158,10 +158,11 @@ public final class ApiMap {
         }
 
         ApiCoverage apiCoverage =
-                modeTypes.contains(ModeType.API_MAP) || modeTypes.contains(ModeType.XTS_API_INHERIT)
-                        ? getApiCoverage(apiXmlPaths)
-                        : new ApiCoverage();
+                hasApiMode(modeTypes) ? getApiCoverage(apiXmlPaths) : new ApiCoverage();
         apiCoverage.resolveSuperClasses();
+        if (hasApiMode(modeTypes)) {
+            apiCoverage.resolveInheritedMethods();
+        }
         ExecutorService service = Executors.newFixedThreadPool(parallelism);
         List<Future<CallGraphManager>> tasks = new ArrayList<>();
 
@@ -188,6 +189,10 @@ public final class ApiMap {
         } else {
             HtmlWriter.printHtmlReport(xmlWriter, output);
         }
+    }
+
+    private static boolean hasApiMode(List<ModeType> modeTypes) {
+        return modeTypes.contains(ModeType.API_MAP) || modeTypes.contains(ModeType.XTS_API_INHERIT);
     }
 
     /** Executes given tasks. */
@@ -273,8 +278,8 @@ public final class ApiMap {
                         callGraphManager.resolveOverriddenAbstractApiMethods(apiCoverage);
                         callGraphManager.resolveCoveredApis(apiCoverage);
                     } else if (modeTypes.contains(ModeType.XTS_API_INHERIT)) {
-                        callGraphManager.resolveOverriddenAbstractApiMethods(apiCoverage);
                         callGraphManager.resolveInheritedApiMethods(apiCoverage);
+                        callGraphManager.resolveOverriddenAbstractApiMethods(apiCoverage);
                     }
                     return callGraphManager;
                 });
