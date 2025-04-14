@@ -493,8 +493,8 @@ def switch_default_camera(dut, facing, log_path):
       camera has been switched.
   """
   flip_camera_pattern = (
-      r'(switch to|flip camera|switch camera|camera switch|)'
-      r'(toggle_button|front_back_switcher|switch_camera_button|camera_switch_button)'
+      r'(switch to|flip camera|switch camera|camera switch|'
+      r'toggle_button|front_back_switcher|switch_camera_button|camera_switch_button)'
     )
   flash_pattern = 'flash'
   default_ui_dump = dut.ui.dump()
@@ -664,7 +664,7 @@ def default_camera_app_dut_setup(device_id, pkg_name):
   default_camera_app_setup(device_id, pkg_name)
   for path in CAMERA_FILES_PATHS:
     its_device_utils.run_adb_shell_command(
-        device_id, f'{REMOVE_CAMERA_FILES_CMD}{path}/*')
+        device_id, f'{REMOVE_CAMERA_FILES_CMD} {path}/*')
 
 
 def launch_jca_and_capture(dut, log_path, camera_facing, zoom_ratio=None,
