@@ -212,7 +212,7 @@ public class SupervisionAppBindingHostTest extends BaseHostJUnit4Test implements
                 });
 
         // This should contain:
-        // "conn,0,[Supervision app],PACKAGE,CLASS,bound,connected"
+        // "conn,[Supervision app],0,PACKAGE,CLASS,bound,connected"
 
         // The binding information is propagated asynchronously, so we need a retry here too.
         // (Even though the activity manager said it's already bound.)
@@ -243,15 +243,17 @@ public class SupervisionAppBindingHostTest extends BaseHostJUnit4Test implements
     private void checkNotBoundWithError(String packageName, int userId, String expectedErrorPattern)
             throws Throwable {
         // This should contain:
-        // "finder,0,[Default SMS app],PACKAGE,null,ERROR-MESSAGE"
+        // "finder,0,[Supervision app],0,PACKAGE,null,ERROR-MESSAGE"
         runWithRetries(
                 DEFAULT_TIMEOUT_SEC,
                 () -> {
                     runCommand(
                             "dumpsys app_binding -s",
-                            String.format("^%s.*%s.*$",
+                            String.format("^%s(%s|null)%s.*%s.*$",
+                                    Pattern.quote("finder,[Supervision app],"),
+                                    userId,
                                     Pattern.quote(String.format(
-                                    "finder,[Supervision app],%s,%s,null,", userId, packageName)),
+                                            ",%s,null,", packageName)),
                                     Pattern.quote(expectedErrorPattern)));
                 });
     }
