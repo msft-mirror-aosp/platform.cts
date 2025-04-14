@@ -539,3 +539,10 @@ int getVersionCodeFullBaklava() {
                                            "getVersionFull", "(I)I", BAKLAVA);
     return kVersionCodeFullBaklava;
 }
+
+void permissionBarrier() {
+    __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, "%s start", __func__);
+    callJavaStaticVoidFunction(nullptr /*env*/, "android/nativemedia/aaudio/AAudioTests",
+                               "permissionBarrier", "()V");
+    __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, "%s finish", __func__);
+}
