@@ -23,7 +23,7 @@
     <application android:label="Cts Package Installer CUJ Update Self Tests">
         <uses-library android:name="android.test.runner" />
 
-        <provider android:authorities="android.packageinstaller.criticaluserjourney.cts.updateself.fileprovider"
+        <provider android:authorities="${applicationId}.fileprovider"
             android:name="androidx.core.content.FileProvider"
             android:grantUriPermissions="true">
             <meta-data
@@ -34,7 +34,7 @@
 
     <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner"
                      android:functionalTest="true"
-                     android:targetPackage="android.packageinstaller.criticaluserjourney.cts.updateself"
+                     android:targetPackage="${applicationId}"
                      android:label="Package Installer CUJ Update Self Tests"/>
 
 </manifest>

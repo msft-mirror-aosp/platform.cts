@@ -26,7 +26,7 @@
 
     <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner"
                      android:functionalTest="true"
-                     android:targetPackage="android.packageinstaller.criticaluserjourney.cts.deviceadmin"
+                     android:targetPackage="${applicationId}"
                      android:label="Package Installer CUJ Device Admin Tests"/>
 
 </manifest>

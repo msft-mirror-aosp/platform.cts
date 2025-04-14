@@ -22,7 +22,7 @@
 
     <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner"
                      android:functionalTest="true"
-                     android:targetPackage="android.packageinstaller.criticaluserjourney.cts.uninstallation"
+                     android:targetPackage="${applicationId}"
                      android:label="Package Installer CUJ Uninstallation Tests"/>
 
 </manifest>

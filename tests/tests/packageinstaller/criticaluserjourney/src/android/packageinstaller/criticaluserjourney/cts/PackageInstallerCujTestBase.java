@@ -37,6 +37,7 @@ import android.graphics.Insets;
 import android.graphics.Rect;
 import android.net.Uri;
 import android.provider.DeviceConfig;
+import android.provider.Settings;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.WindowManager;
@@ -129,7 +130,7 @@ public class PackageInstallerCujTestBase {
     private static final ComponentName TEST_APP_ACTIVITY_COMPONENT = new ComponentName(
             TEST_APP_PACKAGE_NAME, "android.packageinstaller.cts.cuj.app.MainActivity");
 
-    private static boolean sUsePiaV2 = false;
+    public static boolean sUsePiaV2 = false;
 
     @ClassRule
     public static final DisableAnimationRule sDisableAnimationRule = new DisableAnimationRule();
@@ -172,6 +173,10 @@ public class PackageInstallerCujTestBase {
 
         uninstallTestPackage();
         assertTestPackageNotInstalled();
+
+        sUsePiaV2 = Settings.System.getInt(getContext().getContentResolver(),
+                /* name= */ "use_pia_v2", /* def= */ 0) == 1;
+        Log.i(TAG, "Using Pia V" + (sUsePiaV2 ? "2" : "1"));
     }
 
     @After
