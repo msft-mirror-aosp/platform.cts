@@ -1167,19 +1167,19 @@ def ae_priority_mode(props):
   return available_priority_modes
 
 
-def color_correction_aberration_modes(props):
-  """Returns list of color correction aberration modes supported by device.
+def color_correction_modes(props):
+  """Returns list of color correction available modes supported by device.
 
   Args:
     props: Camera properties object.
 
   Returns:
-    List of available color correction aberration modes.
+    List of available color correction modes.
   """
-  available_aberration_modes = []
-  if 'android.colorCorrection.availableAberrationModes' in props:
-    available_aberration_modes = (
-        props['android.colorCorrection.availableAberrationModes']
+  available_modes = []
+  if 'android.colorCorrection.availableModes' in props:
+    available_modes = (
+        props['android.colorCorrection.availableModes']
     )
 
-  return available_aberration_modes
+  return available_modes
