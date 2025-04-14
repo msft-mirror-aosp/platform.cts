@@ -45,6 +45,8 @@ android_test {
         "androidx.test.uiautomator_uiautomator",
         "aconfig_settingslib_flags_java_lib",
         "com_android_systemui_flags_lib",
+        "ui-trace-collector",
+        "collector-device-lib",
     ],
     srcs: [
         "src/**/*.java",
