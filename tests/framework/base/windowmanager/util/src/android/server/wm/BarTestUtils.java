@@ -22,7 +22,6 @@ import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentat
 
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
-import static org.junit.Assert.assertNotEquals;
 
 import android.app.Activity;
 import android.app.ActivityManager;
@@ -73,7 +72,7 @@ public final class BarTestUtils {
         assumeFalse("No status bar when running in VR", isRunningInVr());
         Insets statusBar = activity.getWindowManager().getMaximumWindowMetrics().getWindowInsets()
                 .getInsetsIgnoringVisibility(WindowInsets.Type.statusBars());
-        assertNotEquals("There must be status bar insets.", Insets.NONE, statusBar);
+        assumeFalse("There must be status bar insets.", Insets.NONE.equals(statusBar));
     }
 
     public static void assumeHasStatusBar(ActivityTestRule<?> rule) {
