@@ -38,7 +38,6 @@ import android.hardware.camera2.CameraManager
 import android.hardware.camera2.CameraMetadata
 import android.hardware.camera2.CameraMetadataInfo
 import android.hardware.camera2.ICameraDeviceCallbacks
-import android.hardware.camera2.impl.CameraMetadataNative
 import android.hardware.camera2.impl.CaptureResultExtras
 import android.hardware.camera2.impl.PhysicalCaptureResultInfo
 import android.os.Binder
@@ -46,8 +45,6 @@ import android.os.IBinder
 import android.os.Process
 import android.os.ServiceManager
 import android.os.ServiceSpecificException
-import android.platform.test.annotations.RequiresFlagsDisabled
-import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import android.provider.Settings
 import android.security.cts.camera.open.lib.ICameraOpener
@@ -62,7 +59,6 @@ import com.android.compatibility.common.util.SystemUtil.runWithShellPermissionId
 import com.android.cts.install.lib.Install
 import com.android.cts.install.lib.TestApp
 import com.android.cts.install.lib.Uninstall
-import com.android.internal.camera.flags.Flags
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
@@ -225,25 +221,11 @@ class CameraPermissionTest {
   }
 
   @Test
-  @RequiresFlagsDisabled(Flags.FLAG_DATA_DELIVERY_PERMISSION_CHECKS)
-  fun testConnectDevice_dataDeliveryPermissionChecks_off() {
-    testConnectDevice(expectDenial = true)
-  }
-
-  @Test
-  @RequiresFlagsEnabled(Flags.FLAG_DATA_DELIVERY_PERMISSION_CHECKS)
   fun testConnectDevice_dataDeliveryPermissionChecks_on() {
     testConnectDevice(expectDenial = false)
   }
 
   @Test
-  @RequiresFlagsDisabled(Flags.FLAG_DATA_DELIVERY_PERMISSION_CHECKS)
-  fun testConnect_dataDeliveryPermissionChecks_off() {
-    testConnect(expectDenial = true)
-  }
-
-  @Test
-  @RequiresFlagsEnabled(Flags.FLAG_DATA_DELIVERY_PERMISSION_CHECKS)
   fun testConnect_dataDeliveryPermissionChecks_on() {
     testConnect(expectDenial = false)
   }
@@ -380,7 +362,6 @@ class CameraPermissionTest {
       testProxyOpenCamera_noPermission(Api.API_2, OPEN_CAMERA_APP)
 
   @Test
-  @RequiresFlagsEnabled(Flags.FLAG_DATA_DELIVERY_PERMISSION_CHECKS)
   fun testProxyConnectDevice_noCameraProxyPermission() =
       testProxyOpenCamera_noPermission(Api.API_2, CAMERA_PROXY_APP)
 
@@ -388,14 +369,6 @@ class CameraPermissionTest {
     denyAppPermission(deniedApp)
     openCameraByProxy(openCameraByProxyKey(api))
     checkAppFailedToOpenCameraByProxy(cameraOpenedKey(api))
-  }
-
-  @Test
-  @RequiresFlagsDisabled(Flags.FLAG_DATA_DELIVERY_PERMISSION_CHECKS)
-  fun testProxyConnectDevice_noCameraProxyPermission_dataDeliveryPermissionChecks_off() {
-    denyAppPermission(CAMERA_PROXY_APP)
-    openCameraByProxy(OPEN_CAMERA_APP.keys.openCamera2ByProxy)
-    checkAppOpenedCameraByProxy(OPEN_CAMERA_APP.keys.cameraOpened2)
   }
 
   @Test fun testProxyStreaming2() = testProxyStreaming(Api.API_2)
@@ -459,13 +432,11 @@ class CameraPermissionTest {
   }
 
   @Test
-  @RequiresFlagsEnabled(Flags.FLAG_DATA_DELIVERY_PERMISSION_CHECKS)
   fun testProxyStreaming2_noOpenCameraPermission_opChanged_softDenial_block() {
     testProxyStreaming2_opChanged_softDenial_block(OPEN_CAMERA_APP)
   }
 
   @Test
-  @RequiresFlagsEnabled(Flags.FLAG_DATA_DELIVERY_PERMISSION_CHECKS)
   fun testProxyStreaming2_noCameraProxyPermission_opChanged_softDenial_block() {
     testProxyStreaming2_opChanged_softDenial_block(CAMERA_PROXY_APP)
   }
