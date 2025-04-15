@@ -27,15 +27,10 @@ import static android.appsecurity.cts.Utils.PKG;
 
 import static org.junit.Assert.assertNotNull;
 
-import android.content.pm.Flags;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.AppModeInstant;
 import android.platform.test.annotations.PlatinumTest;
 import android.platform.test.annotations.Presubmit;
-import android.platform.test.annotations.RequiresFlagsDisabled;
-import android.platform.test.annotations.RequiresFlagsEnabled;
-import android.platform.test.flag.junit.CheckFlagsRule;
-import android.platform.test.flag.junit.host.HostFlagsValueProvider;
 
 import com.android.compatibility.common.util.CpuFeatures;
 import com.android.tradefed.device.DeviceNotAvailableException;
@@ -47,7 +42,6 @@ import com.android.tradefed.util.AbiUtils;
 import org.junit.After;
 import org.junit.Assume;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -128,10 +122,6 @@ public class SplitTests extends BaseAppSecurityTest {
         ABI_TO_REVISION_APK.put("mips64", "CtsSplitApp_revision12_mips64.apk");
         ABI_TO_REVISION_APK.put("mips", "CtsSplitApp_revision12_mips.apk");
     }
-
-    @Rule
-    public final CheckFlagsRule mCheckFlagsRule =
-            HostFlagsValueProvider.createCheckFlagsRule(this::getDevice);
 
     private String mDeviceDefaultAbi = null;
     private String mDeviceDefaultBitness = null;
@@ -432,27 +422,13 @@ public class SplitTests extends BaseAppSecurityTest {
      */
     @Test
     @AppModeFull(reason = "'full' portion of the hostside test")
-    @RequiresFlagsDisabled(Flags.FLAG_FORCE_MULTI_ARCH_NATIVE_LIBS_MATCH)
-    public void testNativeSingleNatural_full() throws Exception {
-        testNativeSingle(false, true);
-    }
-    @Test
-    @AppModeInstant(reason = "'instant' portion of the hostside test")
-    @RequiresFlagsDisabled(Flags.FLAG_FORCE_MULTI_ARCH_NATIVE_LIBS_MATCH)
-    public void testNativeSingleNatural_instant() throws Exception {
-        testNativeSingle(true, true);
-    }
-
-    @Test
-    @AppModeFull(reason = "'full' portion of the hostside test")
-    @RequiresFlagsEnabled(Flags.FLAG_FORCE_MULTI_ARCH_NATIVE_LIBS_MATCH)
     public void testNativeSingleNatural_full_fail() throws Exception {
         testNativeSingle_assertFail(/* instant= */ false, /* useNaturalAbi= */ true,
                 "don't support all the natively supported ABIs of the device");
     }
+
     @Test
     @AppModeInstant(reason = "'instant' portion of the hostside test")
-    @RequiresFlagsEnabled(Flags.FLAG_FORCE_MULTI_ARCH_NATIVE_LIBS_MATCH)
     public void testNativeSingleNatural_instant_fail() throws Exception {
         testNativeSingle_assertFail(/* instant= */ true, /* useNaturalAbi= */ true,
                 "don't support all the natively supported ABIs of the device");
