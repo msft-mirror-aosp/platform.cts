@@ -206,7 +206,7 @@ public class ImsCallingTest extends ImsCallingBase {
 
     @Before
     public void beforeTest() throws Exception {
-        assumeTrue(ImsUtils.shouldTestImsService());
+        assumeTrue(ImsUtils.shouldTestImsCall());
         if (!sTestPreconditionsSet) {
             fail("Couldn't set up mock modem, so test can not be run");
         }
@@ -2392,7 +2392,8 @@ public class ImsCallingTest extends ImsCallingBase {
     private void resetCallSessionObjects() {
         mCall1 = mCall2 = mCall3 = mConferenceCall = null;
         mCallSession1 = mCallSession2 = mCallSession3 = mConfCallSession = null;
-        if (sServiceConnector.getCarrierService() == null
+        if (sServiceConnector == null
+                || sServiceConnector.getCarrierService() == null
                 || sServiceConnector.getCarrierService().getMmTelFeature() == null) {
             return;
         }
