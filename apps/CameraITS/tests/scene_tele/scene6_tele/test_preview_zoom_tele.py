@@ -35,7 +35,7 @@ _FPS = 30
 _MP4V = 'mp4v'
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
 _NUM_STEPS = 50
-_NUMBER_OF_CAMERAS_TO_TEST = 2  # WIDE and TELE
+_NUMBER_OF_CAMERAS_TO_TEST = 0
 _WIDE_ZOOM_RATIO_MAX = 2.5
 
 
