@@ -29,6 +29,7 @@ import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.ViewGroup;
+import android.view.Window;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -149,6 +150,8 @@ public class DisplayEventPropertyChangeActivity extends Activity {
                             ViewGroup.LayoutParams.MATCH_PARENT,
                             ViewGroup.LayoutParams.MATCH_PARENT));
             mSurfaceView.getHolder().addCallback(mSurfaceHolderCallback);
+            Window window = getWindow();
+            window.setFrameRatePowerSavingsBalanced(false);
         }
     }
 
