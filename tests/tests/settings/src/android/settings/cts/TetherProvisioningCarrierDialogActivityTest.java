@@ -16,14 +16,16 @@
 
 package android.settings.cts;
 
-import static org.junit.Assume.assumeFalse;
+import static com.android.cts.install.lib.InstallUtils.getPackageInfo;
+
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeFalse;
+import static org.junit.Assume.assumeNotNull;
 import static org.junit.Assume.assumeTrue;
 
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
-import android.net.Uri;
 import android.os.RemoteException;
 import android.provider.Settings;
 
@@ -51,6 +53,10 @@ public class TetherProvisioningCarrierDialogActivityTest {
 
     @Test
     public void testTetheringProvisioningCarrierUiExisted() throws RemoteException {
+        assumeNotNull(
+                "Skipping test: Settings application is not installed",
+                getPackageInfo("com.android.settings"));
+
         final Intent intent = new Intent(Settings.ACTION_TETHER_UNSUPPORTED_CARRIER_UI);
         final ResolveInfo ri = InstrumentationRegistry.getTargetContext()
                 .getPackageManager().resolveActivity(
