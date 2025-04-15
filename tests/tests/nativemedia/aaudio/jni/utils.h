@@ -290,4 +290,15 @@ int getSdkVersionFull();
 
 int getVersionCodeFullBaklava();
 
+void permissionBarrier();
+
+class AAudioTestEnvironment : public ::testing::Environment {
+public:
+    void SetUp() override { permissionBarrier(); }
+};
+// The test is run with GtestRunner, RUN_ALL_TESTS is called from there. In that case, use
+// a global variable for global environment setup.
+testing::Environment* const gAAudioTestEnv =
+        testing::AddGlobalTestEnvironment(new AAudioTestEnvironment);
+
 #endif  // CTS_MEDIA_TEST_AAUDIO_UTILS_H

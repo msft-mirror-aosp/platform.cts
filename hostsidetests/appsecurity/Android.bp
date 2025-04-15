@@ -300,10 +300,6 @@ java_test_host {
         "src/**/SplitTests.java",
         "src/**/UseProcessTest.java",
     ],
-    static_libs: [
-        "flag-junit-host",
-        "android.content.pm.flags-aconfig-java-host",
-    ],
     device_common_data: [
         // ApplicationVisibilityTest
         ":CtsPkgInstallTinyApp",

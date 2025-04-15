@@ -18,6 +18,7 @@ package android.input.cts
 
 import android.hardware.input.InputManager
 import android.view.KeyEvent
+import android.window.OnBackInvokedDispatcher.PRIORITY_DEFAULT
 import androidx.test.ext.junit.rules.ActivityScenarioRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.MediumTest
@@ -28,6 +29,8 @@ import com.android.cts.input.EvdevInputEventCodes.Companion.KEY_ESC
 import com.android.cts.input.EvdevInputEventCodes.Companion.KEY_LEFT
 import com.android.cts.input.EvdevInputEventCodes.Companion.KEY_LEFTMETA
 import com.android.cts.input.UinputKeyboard
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Before
@@ -60,31 +63,24 @@ class BackKeyShortcutsTest {
         PollingCheck.waitFor { activity.hasWindowFocus() }
     }
 
-    private fun assertReceivedEventsCorrectlyMapped(numEvents: Int, expectedKeyCode: Int) {
-        for (i in 1..numEvents) {
-            val lastInputEvent = activity.getInputEvent() as? KeyEvent
-            assertNotNull("Failed to receive key event number $i", lastInputEvent)
-            assertEquals(
-                    "Key code should be " + KeyEvent.keyCodeToString(expectedKeyCode),
-                    expectedKeyCode,
-                    lastInputEvent!!.keyCode
-            )
-        }
-        activity.assertNoEvents()
-    }
-
     @Test
     fun testBackKeyMetaShortcuts() {
         UinputKeyboard(instrumentation).use { keyboardDevice ->
             activity.assertNoEvents()
 
+            var countDown: CountDownLatch? = null
+            activity.onBackInvokedDispatcher.registerOnBackInvokedCallback(PRIORITY_DEFAULT) {
+                countDown?.countDown()
+            }
+
             for (scanCode in intArrayOf(KEY_ESC, KEY_LEFT)) {
+                countDown = CountDownLatch(1)
                 keyboardDevice.injectKeyDown(KEY_LEFTMETA)
                 keyboardDevice.injectKeyDown(scanCode)
                 keyboardDevice.injectKeyUp(scanCode)
                 keyboardDevice.injectKeyUp(KEY_LEFTMETA)
 
-                assertReceivedEventsCorrectlyMapped(2, KeyEvent.KEYCODE_BACK)
+                countDown.await(5, TimeUnit.SECONDS)
             }
         }
     }

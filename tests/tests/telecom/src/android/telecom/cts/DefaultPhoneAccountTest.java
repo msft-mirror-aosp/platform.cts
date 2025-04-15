@@ -29,10 +29,9 @@ import android.telecom.PhoneAccountHandle;
 import android.telecom.TelecomManager;
 import android.util.Log;
 
-import com.android.server.telecom.flags.Flags;
-
 import java.util.ArrayList;
 import java.util.List;
+
 /**
  * Tests use of APIs related to changing the default outgoing phone account.
  */
@@ -236,7 +235,7 @@ public class DefaultPhoneAccountTest extends BaseTelecomTestWithMockServices {
      * (aka the default outgoing PhoneAccount is a sim/e-sim).
      */
     public void testSelfManagedCallWithSimBasedPhoneAccountAsDefault() throws Exception {
-        if (!mShouldTestTelecom || !Flags.onlyUpdateTelephonyOnValidSubIds()) {
+        if (!mShouldTestTelecom) {
             return;
         }
         // avoid the CtsConnectionService binding which acts as a connection manager
@@ -263,7 +262,7 @@ public class DefaultPhoneAccountTest extends BaseTelecomTestWithMockServices {
      * an account when placing a call).
      */
     public void testSelfManagedCallWithNoCallPreferenceAsDefault() throws Exception {
-        if (!mShouldTestTelecom || !Flags.onlyUpdateTelephonyOnValidSubIds()) {
+        if (!mShouldTestTelecom) {
             return;
         }
         // avoid the CtsConnectionService binding which acts as a connection manager
@@ -291,7 +290,7 @@ public class DefaultPhoneAccountTest extends BaseTelecomTestWithMockServices {
      */
     public void testSelfManagedCallWithMultipleSimBasedAccountsActiveAndAsDefault()
             throws Exception {
-        if (!mShouldTestTelecom || !Flags.onlyUpdateTelephonyOnValidSubIds()) {
+        if (!mShouldTestTelecom) {
             return;
         }
         // avoid the CtsConnectionService binding which acts as a connection manager

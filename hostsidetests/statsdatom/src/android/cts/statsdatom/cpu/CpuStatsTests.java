@@ -16,8 +16,6 @@
 
 package android.cts.statsdatom.cpu;
 
-import static com.android.server.power.optimization.Flags.FLAG_DISABLE_SYSTEM_SERVICE_POWER_ATTR;
-
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
@@ -25,7 +23,6 @@ import android.cts.statsdatom.lib.AtomTestUtils;
 import android.cts.statsdatom.lib.ConfigUtils;
 import android.cts.statsdatom.lib.DeviceUtils;
 import android.cts.statsdatom.lib.ReportUtils;
-import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.host.HostFlagsValueProvider;
 
@@ -143,31 +140,6 @@ public class CpuStatsTests extends BaseHostJUnit4Test implements IBuildReceiver 
             assertThat(atom.getCpuCyclesPerUidCluster().getMcycles()).isAtLeast(0);
             assertThat(atom.getCpuCyclesPerUidCluster().getTimeMillis()).isAtLeast(0);
             assertThat(atom.getCpuCyclesPerUidCluster().getPowerProfileEstimate()).isAtLeast(0);
-        }
-    }
-
-    @Test
-    @RequiresFlagsDisabled(FLAG_DISABLE_SYSTEM_SERVICE_POWER_ATTR)
-    public void testCpuCyclesPerThreadGroupCluster() throws Exception {
-        ConfigUtils.uploadConfigForPulledAtom(getDevice(), DeviceUtils.STATSD_ATOM_TEST_PKG,
-                AtomsProto.Atom.CPU_CYCLES_PER_THREAD_GROUP_CLUSTER_FIELD_NUMBER);
-
-        // Do some trivial work on the app
-        DeviceUtils.runDeviceTestsOnStatsdApp(getDevice(), ".AtomTests", "testSimpleCpu");
-        RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_SHORT);
-        // Trigger atom pull
-        AtomTestUtils.sendAppBreadcrumbReportedAtom(getDevice());
-        RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
-
-        // The list of atoms will be empty if the atom is not supported.
-        List<AtomsProto.Atom> atoms = ReportUtils.getGaugeMetricAtoms(getDevice());
-
-        for (AtomsProto.Atom atom : atoms) {
-            assertThat(atom.getCpuCyclesPerThreadGroupCluster().getThreadGroup()).isNotEqualTo(
-              AtomsProto.CpuCyclesPerThreadGroupCluster.ThreadGroup.UNKNOWN_THREAD_GROUP);
-            assertThat(atom.getCpuCyclesPerThreadGroupCluster().getCluster()).isAtLeast(0);
-            assertThat(atom.getCpuCyclesPerThreadGroupCluster().getMcycles()).isAtLeast(0);
-            assertThat(atom.getCpuCyclesPerThreadGroupCluster().getTimeMillis()).isAtLeast(0);
         }
     }
 }

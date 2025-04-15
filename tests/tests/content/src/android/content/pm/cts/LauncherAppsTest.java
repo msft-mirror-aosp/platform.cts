@@ -17,7 +17,6 @@
 package android.content.pm.cts;
 
 import static android.content.pm.Flags.FLAG_ARCHIVING;
-import static android.content.pm.Flags.FLAG_LIGHTWEIGHT_INVISIBLE_LABEL_DETECTION;
 import static android.os.Flags.FLAG_ALLOW_PRIVATE_PROFILE;
 
 import static com.android.server.pm.shortcutmanagertest.ShortcutManagerTestUtils.getDefaultLauncher;
@@ -304,7 +303,6 @@ public class LauncherAppsTest {
 
     @Test
     @AppModeFull(reason = "Need special permission")
-    @RequiresFlagsEnabled(FLAG_LIGHTWEIGHT_INVISIBLE_LABEL_DETECTION)
     public void testGetActivityListAndGetLabel_ActivityLabel() {
         try {
             installPackage(ACTIVITY_LABEL_APK_PATH);
@@ -321,7 +319,6 @@ public class LauncherAppsTest {
 
     @Test
     @AppModeFull(reason = "Need special permission")
-    @RequiresFlagsEnabled(FLAG_LIGHTWEIGHT_INVISIBLE_LABEL_DETECTION)
     public void testGetActivityListAndGetLabel_emptyActivityLabel_ApplicationLabel() {
         try {
             installPackage(APPLICATION_LABEL_APK_PATH);
@@ -339,7 +336,6 @@ public class LauncherAppsTest {
 
     @Test
     @AppModeFull(reason = "Need special permission")
-    @RequiresFlagsEnabled(FLAG_LIGHTWEIGHT_INVISIBLE_LABEL_DETECTION)
     public void testGetActivityListAndGetLabel_emptyLabels_PackageName() {
         try {
             installPackage(INVISIBLE_LABELS_APK_PATH);

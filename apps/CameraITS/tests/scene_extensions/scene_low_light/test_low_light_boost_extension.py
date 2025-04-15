@@ -108,7 +108,7 @@ def _capture_and_analyze(cam, file_stem, camera_id, preview_size, extension,
     # fallback to test with metered region. Otherwise, for newer than
     # Android 15, we always start test with metered region.
     if (
-        first_api_level == its_session_utils.ANDROID15_API_LEVEL
+        first_api_level <= its_session_utils.ANDROID15_API_LEVEL
         and not use_metering_region
     ):
       logging.debug('Retrying with metering region: %s', e)
@@ -149,11 +149,8 @@ class LowLightBoostTest(its_base_test.ItsBaseTest):
       props = cam.override_with_hidden_physical_camera_props(props)
       test_name = os.path.join(self.log_path, _NAME)
 
-      # Check SKIP conditions
       # Determine if DUT is at least Android 15
       first_api_level = its_session_utils.get_first_api_level(self.dut.serial)
-      camera_properties_utils.skip_unless(
-          first_api_level >= its_session_utils.ANDROID15_API_LEVEL)
 
       # Determine if low light boost is available
       is_low_light_boost_supported = (
