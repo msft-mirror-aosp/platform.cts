@@ -35,6 +35,67 @@ _PRINCIPAL_POINT_THRESH = 1  # Threshold for principal point changes in pixels.
 _START_FRAME = 30  # give 3A some frames to warm up
 _VIDEO_DELAY_TIME = 5.5  # seconds
 
+# Note: b/284232490: 1080p could be 1088. 480p could be 704 or 640 too.
+#       Use for tests not sensitive to variations of 1080p or 480p.
+# TODO: b/370841141 - Remove usage of VIDEO_PREVIEW_QUALITY_SIZE.
+#                     Create and use get_supported_video_sizes instead of
+#                     get_supported_video_qualities.
+_VIDEO_PREVIEW_QUALITY_SIZE = {
+    # 'HIGH' and 'LOW' not included as they are DUT-dependent
+    '4KDC': '4096x2160',
+    '2160P': '3840x2160',
+    'QHD': '2560x1440',
+    '2k': '2048x1080',
+    '1080P': '1920x1080',
+    '720P': '1280x720',
+    '480P': '720x480',
+    'VGA': '640x480',
+    'CIF': '352x288',
+    'QVGA': '320x240',
+    'QCIF': '176x144',
+}
+
+
+def get_largest_video_size(cam, camera_id):
+  """Returns the largest supported video size and its area.
+
+  Determine largest supported video size and its area from
+  get_supported_video_qualities.
+
+  Args:
+    cam: camera object.
+    camera_id: str; camera ID.
+
+  Returns:
+    max_size: str; largest supported video size in the format 'widthxheight'.
+    max_area: int; area of the largest supported video size.
+  """
+  supported_video_qualities = cam.get_supported_video_qualities(camera_id)
+  logging.debug('Supported video profiles & IDs: %s',
+                supported_video_qualities)
+
+  quality_keys = [
+      quality.split(':')[0]
+      for quality in supported_video_qualities
+  ]
+  logging.debug('Quality keys: %s', quality_keys)
+
+  supported_video_sizes = [
+      _VIDEO_PREVIEW_QUALITY_SIZE[key]
+      for key in quality_keys
+      if key in _VIDEO_PREVIEW_QUALITY_SIZE
+  ]
+  logging.debug('Supported video sizes: %s', supported_video_sizes)
+
+  if not supported_video_sizes:
+    raise AssertionError('No supported video sizes found!')
+
+  size_to_area = lambda s: int(s.split('x')[0])*int(s.split('x')[1])
+  max_size = max(supported_video_sizes, key=size_to_area)
+
+  logging.debug('Largest video size: %s', max_size)
+  return size_to_area(max_size)
+
 
 def calculate_principal_point(f_x, f_y, c_x, c_y, s):
   """Calculates the principal point of a camera given its intrinsic parameters.
@@ -285,8 +346,10 @@ class LensIntrinsicCalibrationTest(its_base_test.ItsBaseTest):
         raise AssertionError(
             f'You must use the arduino controller for {_NAME}.')
 
+      largest_area = get_largest_video_size(cam, self.camera_id)
+
       preview_size = preview_processing_utils.get_max_preview_test_size(
-          cam, self.camera_id)
+          cam, self.camera_id, aspect_ratio=None, max_tested_area=largest_area)
       logging.debug('preview_test_size: %s', preview_size)
 
       recording_obj = preview_processing_utils.collect_data(
