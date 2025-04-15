@@ -239,7 +239,6 @@ public class ConnectedNetworkScorerTest extends WifiJUnit4TestBase {
 
             assertThat(statsEntry.getTimeStampMillis()).isGreaterThan(0L);
             assertThat(statsEntry.getRssi()).isLessThan(0);
-            assertThat(statsEntry.getLinkSpeedMbps()).isAtLeast(0);
             assertThat(statsEntry.getTotalTxSuccess()).isAtLeast(0L);
             assertThat(statsEntry.getTotalTxRetries()).isAtLeast(0L);
             assertThat(statsEntry.getTotalTxBad()).isAtLeast(0L);
@@ -266,6 +265,7 @@ public class ConnectedNetworkScorerTest extends WifiJUnit4TestBase {
                 // -1 is default value for some of these fields if they're not available.
                 assertThat(statsEntry.getProbeElapsedTimeSinceLastUpdateMillis()).isAtLeast(-1);
                 assertThat(statsEntry.getProbeMcsRateSinceLastUpdate()).isAtLeast(-1);
+                assertThat(statsEntry.getLinkSpeedMbps()).isAtLeast(-1);
                 assertThat(statsEntry.getRxLinkSpeedMbps()).isAtLeast(-1);
                 if (ApiLevelUtil.isAtLeast(Build.VERSION_CODES.S)) {
                     try {
