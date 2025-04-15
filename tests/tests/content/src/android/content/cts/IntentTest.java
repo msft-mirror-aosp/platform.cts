@@ -1223,7 +1223,6 @@ public class IntentTest {
     }
 
     @Test
-    @DisabledOnRavenwood(reason = "feature flag dependent test")
     public void testUris() {
         checkIntentUri(
                 "intent:#Intent;action=android.test.FOO;end",
