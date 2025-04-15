@@ -199,14 +199,13 @@ class ZoomTest(its_base_test.UiAutomatorItsBaseTest):
       # Make reporting active physical IDs optional
       if all(d.physical_id is None for d in test_data):
         number_of_cameras_to_test = 0
-      if not zoom_capture_utils.verify_zoom_data(
+      test_success, msg =  zoom_capture_utils.verify_zoom_data(
           test_data, size,
           offset_plot_name_stem=img_name_stem,
-          number_of_cameras_to_test=number_of_cameras_to_test):
-        test_failed = True
+          number_of_cameras_to_test=number_of_cameras_to_test)
 
-    if test_failed:
-      raise AssertionError(f'{_NAME} failed! Check test_log.DEBUG for errors')
+    if not test_success:
+      raise AssertionError(msg)
 
 if __name__ == '__main__':
   test_runner.main()
