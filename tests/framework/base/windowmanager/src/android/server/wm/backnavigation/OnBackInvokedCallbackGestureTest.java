@@ -21,6 +21,7 @@ import static android.view.Display.DEFAULT_DISPLAY;
 import static android.window.OnBackInvokedDispatcher.PRIORITY_DEFAULT;
 import static android.window.OnBackInvokedDispatcher.PRIORITY_SYSTEM_NAVIGATION_OBSERVER;
 
+import static com.android.window.flags.Flags.FLAG_INTERCEPT_MOTION_FROM_MOVE_TO_CANCEL;
 import static com.android.window.flags.Flags.FLAG_PREDICTIVE_BACK_PRIORITY_SYSTEM_NAVIGATION_OBSERVER;
 import static com.android.window.flags.Flags.FLAG_PREDICTIVE_BACK_SWIPE_EDGE_NONE_API;
 import static com.android.window.flags.Flags.FLAG_PREDICTIVE_BACK_SYSTEM_OVERRIDE_CALLBACK;
@@ -374,6 +375,75 @@ public class OnBackInvokedCallbackGestureTest extends ActivityManagerTestBase {
         assertInvoked(mTracker.mInvokeLatch);
         assertNotInvoked(mTracker.mCancelLatch);
         mWmState.waitAndAssertActivityState(activityName, STATE_STOPPED);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_INTERCEPT_MOTION_FROM_MOVE_TO_CANCEL)
+    public void testReceiveCancelEvent_default_cancel() throws InterruptedException {
+        testReceivedCancelEvent(mActivity, false, false);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_INTERCEPT_MOTION_FROM_MOVE_TO_CANCEL)
+    public void testReceiveCancelEvent_default_finish() throws InterruptedException {
+        testReceivedCancelEvent(mActivity, false, true);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_INTERCEPT_MOTION_FROM_MOVE_TO_CANCEL)
+    public void testReceiveCancelEvent_override_cancel() throws InterruptedException {
+        testReceivedCancelEvent(mActivity, true, false);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_INTERCEPT_MOTION_FROM_MOVE_TO_CANCEL)
+    public void testReceiveCancelEvent_override_finish() throws InterruptedException {
+        testReceivedCancelEvent(mActivity, true, true);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_INTERCEPT_MOTION_FROM_MOVE_TO_CANCEL)
+    public void testOptOutActivityReceiveCancelEvent_cancel() throws InterruptedException {
+        try (TestActivitySession<OptOutBackNavigationActivity> activitySession =
+                createManagedTestActivitySession()) {
+            activitySession.launchTestActivityOnDisplaySync(
+                    OptOutBackNavigationActivity.class, DEFAULT_DISPLAY);
+            mWmState.waitForAppTransitionIdleOnDisplay(DEFAULT_DISPLAY);
+            final OptOutBackNavigationActivity activity = activitySession.getActivity();
+            testReceivedCancelEvent(activity, false, false);
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_INTERCEPT_MOTION_FROM_MOVE_TO_CANCEL)
+    public void testOptOutActivityReceiveCancelEvent_finish() throws InterruptedException {
+        try (TestActivitySession<OptOutBackNavigationActivity> activitySession =
+                createManagedTestActivitySession()) {
+            activitySession.launchTestActivityOnDisplaySync(
+                    OptOutBackNavigationActivity.class, DEFAULT_DISPLAY);
+            mWmState.waitForAppTransitionIdleOnDisplay(DEFAULT_DISPLAY);
+            final OptOutBackNavigationActivity activity = activitySession.getActivity();
+            testReceivedCancelEvent(activity, false, true);
+        }
+    }
+
+    private void testReceivedCancelEvent(
+            BackNavigationActivity activity, boolean registerCallback, boolean finishGesture)
+            throws InterruptedException {
+        if (registerCallback) {
+            registerBackCallback(activity, mAnimationCallback, PRIORITY_DEFAULT);
+        }
+        int midHeight = mUiDevice.getDisplayHeight() / 2;
+        int midWidth = mUiDevice.getDisplayWidth() / 2;
+
+        mTouchSwipeSession.beginSwipe(0, midHeight);
+        mTouchSwipeSession.continueSwipe(midWidth, midHeight, PROGRESS_SWIPE_STEPS);
+        if (finishGesture) {
+            mTouchSwipeSession.finishSwipe();
+        } else {
+            mTouchSwipeSession.cancelSwipe();
+        }
+        assertInvoked(activity.mReceiveMotionCancel);
     }
 
     @Test
