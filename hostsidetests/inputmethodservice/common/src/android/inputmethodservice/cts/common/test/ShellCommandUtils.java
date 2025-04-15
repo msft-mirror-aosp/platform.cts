@@ -28,6 +28,8 @@ public final class ShellCommandUtils {
 
     public static final String FEATURE_TV_OPERATOR_TIER = "com.google.android.tv.operator_tier";
 
+    public static final String FEATURE_AUTOMOTIVE = "android.hardware.type.automotive";
+
     private static final String SETTING_DEFAULT_IME = "secure default_input_method";
 
     /** Command to get ID of current IME. */
