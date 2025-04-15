@@ -34,5 +34,6 @@
     <test class="com.android.compatibility.common.tradefed.testtype.JarHostTest" >
         <option name="jar" value="CtsSecurityHostTestCases.jar" />
         <option name="runtime-hint" value="8m40s" />
+        <option name="enable-pretty-logs" value="false" />
     </test>
 </configuration>
