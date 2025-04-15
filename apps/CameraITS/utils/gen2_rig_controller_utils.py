@@ -36,6 +36,9 @@ _LSS_CONFIG_ANGULAR_ACCELERATION = 'CAA'
 _LSS_CONFIG_ANGULAR_DECELERATION = 'CAD'
 _LSS_ACTION_MOVE = 'D'
 _LSS_ACTION_HOLD = 'H'
+_LSS_ACTION_LIMP = 'L'
+_LSS_CONFIG_FILTER_POSITION_COUNT = 'CFPC'
+_LSS_MODIFIER_TIMED = 'T'
 
 # servo controller configuration
 _DEFAULT_MAX_SPEED_RPM = 45
@@ -43,6 +46,17 @@ _DEFAULT_ANGULAR_STIFFNESS = 0
 _DEFAULT_ANGULAR_HOLDING_STIFFNESS = 0
 _DEFAULT_ANGULAR_ACCELERATION = 35
 _DEFAULT_ANGULAR_DECELERATION = 20
+_DEFAULT_FILTER_POSITION_COUNT = 5
+
+# servo controller configuration for SF
+_DEFAULT_MAX_SPEED_RPM_SF = 12
+_ANGULAR_ACCELERATIO_SF = 30
+_ANGULAR_DECELERATION_SF = 30
+_FILTER_POSITION_COUNT_SF = 2
+_OVERSHOOT_ANGLE_SF = 5
+_OVERSHOOT_LIMP_TIME = 0.05
+_WAIT_TIME_SF = 0.25
+_MOVE_TIME_SF = 0.35
 
 # Position of origin.
 _POSITION_0_DEGREE = '0'
@@ -56,6 +70,7 @@ _ARDUINO_LIGHT_START_BYTE = 100
 _ARDUINO_CMD_LENGTH = 3
 _WAIT_FOR_ROTATOR_MOVEMENT = 2
 _WAIT_FOR_CMD_COMPLETION = 1
+_WAIT_FOR_CONFIG_COMPLETION = 0.2
 
 # Constants for strings used to find serial port
 _ARDUINO_STR = 'Arduino'
@@ -89,9 +104,9 @@ def _rotator_write(serial_port, channel, command, value=None):
   tmp = f'{channel}{command}'
   if value:
     tmp += str(value)
-    msg = (f'{_LSS_COMMAND_START}{tmp}{_LSS_COMMAND_END}').encode()
-    logging.debug('Writing message to rotator board: %s', msg)
-    serial_port.write(msg)
+  msg = (f'{_LSS_COMMAND_START}{tmp}{_LSS_COMMAND_END}').encode()
+  logging.debug('Writing message to rotator board: %s', msg)
+  serial_port.write(msg)
 
 
 def find_serial_port(name):
@@ -165,13 +180,32 @@ def _set_angular_deceleration(serial_port, channel, value):
   _rotator_write(serial_port, channel, _LSS_CONFIG_ANGULAR_DECELERATION, value)
 
 
-def _move_to(serial_port, channel, position, move_time):
+def _set_filter_position_count(serial_port, channel, value):
+  _rotator_write(serial_port, channel, _LSS_CONFIG_FILTER_POSITION_COUNT, value)
+
+
+def _move_to(serial_port, channel, position):
   _rotator_write(serial_port, channel, _LSS_ACTION_MOVE, position)
-  time.sleep(move_time)
+  # Wait for two seconds.
+  time.sleep(_WAIT_FOR_ROTATOR_MOVEMENT)
 
 
-def rotate(serial_port, channel, position_degree=0,
-           move_time=_WAIT_FOR_ROTATOR_MOVEMENT):
+def _move_to_timed(serial_port, channel, position, move_time):
+  """Rotate servo to the specified direction in a timed fashion.
+
+  Args:
+    serial_port: obj; the serial port
+    channel: int; channel used by rotator
+    position: int; the position in degrees to rotate to
+    move_time: float; time required to allow for movement in seconds
+  """
+  position_scaled = position * _SERVO_ANGLE_SCALE_FACTOR
+  move_time_ms = int(move_time * 1000)
+  value = f'{position_scaled}{_LSS_MODIFIER_TIMED}{move_time_ms}'
+  _rotator_write(serial_port, channel, _LSS_ACTION_MOVE, value)
+
+
+def rotate(serial_port, channel, position_degree=0):
   """Rotate servo to the specified direction.
 
   Args:
@@ -182,7 +216,6 @@ def rotate(serial_port, channel, position_degree=0,
       A full circle is from -180 to 180 degrees.
       Positive value will move the servo in clockwise direction.
       Negative value will move the servo  in anti-clockwise direction.
-    move_time: int; number of seconds for movement
 
   Returns:
     Command response.
@@ -194,7 +227,7 @@ def rotate(serial_port, channel, position_degree=0,
     else:
       position = _POSITION_0_DEGREE
     logging.debug('Moving servo %s to position %s', channel, position)
-    _move_to(serial_port, channel, position, move_time)
+    _move_to(serial_port, channel, position)
     response = f'Moving servo {channel} to direction {position_degree}'
     # Hold the angular position after movement
     _rotator_write(serial_port, channel, _LSS_ACTION_HOLD)
@@ -204,45 +237,77 @@ def rotate(serial_port, channel, position_degree=0,
     return None
 
 
-def rotation_rig(rotate_cntl, rotate_ch, num_rotations, angles, servo_speed,
-                 move_time):
+def rotation_rig(rotate_cntl, rotate_ch, num_rotations, angles):
   """Rotate the phone n times using rotate_cntl and rotate_ch defined.
 
   rotate_ch is hard wired and must be determined from physical setup.
   If using Gen2 rig, serial port must be initialized and communication must be
   established before rotation.
 
+  Note that these configuration parameters are derived based on
+  trial and error. So make sure to experiment on the rotator when
+  making any changes.
+
   Args:
     rotate_cntl: str to identify 'gen2_rotator' controller.
     rotate_ch: str to identify rotation channel number.
     num_rotations: int number of rotations.
     angles: list of ints; servo angle to move to.
-    servo_speed: int number of move speed between [1, 255].
-    move_time: int time required to allow for arduino movement.
   """
 
   logging.debug('Controller: %s, ch: %s', rotate_cntl, rotate_ch)
+  if len(angles) != 2:
+    raise ValueError(
+        f'angles should contain 2 values, but it contains {len(angles)}')
   try:
     serial_port = find_serial_port(rotate_cntl)
     logging.debug('found serial port')
     channel = int(rotate_ch)
-    configure_rotator(serial_port, channel)
+    _check_channel(channel)
 
-    # initialize servo at origin
-    logging.debug('Moving servo to origin')
-    rotate(serial_port, channel, 0, _WAIT_FOR_ROTATOR_MOVEMENT)
+    # Configure motor
+    _set_max_speed_rpm(serial_port, channel, _DEFAULT_MAX_SPEED_RPM_SF)
+    _set_angular_stiffness(serial_port, channel, _DEFAULT_ANGULAR_STIFFNESS)
+    _set_angular_holding_stiffness(serial_port, channel,
+                                   _DEFAULT_ANGULAR_HOLDING_STIFFNESS)
+    _set_angular_acceleration(serial_port, channel, _ANGULAR_ACCELERATIO_SF)
+    _set_angular_deceleration(serial_port, channel, _ANGULAR_DECELERATION_SF)
+    _set_filter_position_count(serial_port, channel, _FILTER_POSITION_COUNT_SF)
+
+    # initialize servo at starting angle
+    logging.debug('Moving servo to starting position')
+    _move_to(serial_port, channel, angles[0] * _SERVO_ANGLE_SCALE_FACTOR)
 
     # rotate phone
-    logging.debug('Rotating phone %dx', num_rotations)
-    for i in range(num_rotations):
-      for angle in angles:
-        rotate(serial_port, channel, angle, move_time)
+    for _ in range(num_rotations):
+      # Move to target angle
+      _move_to_timed(
+          serial_port, channel, angles[1] + _OVERSHOOT_ANGLE_SF, _MOVE_TIME_SF)
+      time.sleep(_WAIT_TIME_SF)
+      # limp
+      _rotator_write(serial_port, channel, _LSS_ACTION_LIMP)
+      time.sleep(_OVERSHOOT_LIMP_TIME)
+      # Move back to starting angle
+      _move_to_timed(
+          serial_port, channel, angles[0] - _OVERSHOOT_ANGLE_SF, _MOVE_TIME_SF)
+      time.sleep(_WAIT_TIME_SF)
+      # limp
+      _rotator_write(serial_port, channel, _LSS_ACTION_LIMP)
+      time.sleep(_OVERSHOOT_LIMP_TIME)
     logging.debug('Finished rotations')
 
+    # reset rotator parameters and move back to origin
+    _set_angular_acceleration(
+        serial_port, channel, _DEFAULT_ANGULAR_ACCELERATION)
+    _set_angular_deceleration(
+        serial_port, channel, _DEFAULT_ANGULAR_DECELERATION)
+    _set_filter_position_count(
+        serial_port, channel, _DEFAULT_FILTER_POSITION_COUNT)
+    time.sleep(_WAIT_FOR_CONFIG_COMPLETION)
     logging.debug('Moving servo to origin')
-    rotate(serial_port, channel, 0, _WAIT_FOR_ROTATOR_MOVEMENT)
+    _move_to(serial_port, channel, 0)
   except Exception as e:
-    logging.debug(f'An unexpected error occurred {e}')
+    logging.debug('An unexpected error occurred: %s', e)
     raise
 
 
