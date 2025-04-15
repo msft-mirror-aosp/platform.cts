@@ -70,11 +70,8 @@ class SensorSensitivityPriorityTest(its_base_test.ItsBaseTest):
         hidden_physical_id=self.hidden_physical_id) as cam:
       props = cam.get_camera_properties()
       props = cam.override_with_hidden_physical_camera_props(props)
-      first_api_level = its_session_utils.get_first_api_level(self.dut.serial)
       camera_properties_utils.skip_unless(
-          first_api_level < its_session_utils.ANDROID16_API_LEVEL and
           camera_properties_utils.raw16(props) and
-          camera_properties_utils.manual_sensor(props) and
           camera_properties_utils.read_3a(props) and
           camera_properties_utils.per_frame_control(props) and
           (_CONTROL_AE_PRIORITY_MODE_SENSOR_SENSITIVITY_PRIORITY in
