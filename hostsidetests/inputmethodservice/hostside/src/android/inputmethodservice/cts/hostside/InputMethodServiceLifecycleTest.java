@@ -354,6 +354,7 @@ public class InputMethodServiceLifecycleTest extends BaseHostJUnit4Test {
             throws Exception {
         // Skip whole tests when DUT has com.google.android.tv.operator_tier feature.
         assumeFalse(hasDeviceFeature(ShellCommandUtils.FEATURE_TV_OPERATOR_TIER));
+        assumeFalse(hasDeviceFeature(ShellCommandUtils.FEATURE_AUTOMOTIVE));
         sendTestStartEvent(
                 DeviceTestConstants.TEST_IME_SWITCHING_WITHOUT_WINDOW_FOCUS_AFTER_DISPLAY_OFF_ON);
         installPossibleInstantPackage(
