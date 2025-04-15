@@ -36,10 +36,10 @@ import org.junit.runner.RunWith;
 @RunWith(AndroidJUnit4.class)
 public class LongSparseArrayTest {
     private static final long[] KEYS = {12, 23, 4, 6, 8, 1, 3, -12, 0, -3, 11, 14, -23};
-    private static final Integer[] VALUES = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12};
+    private static final int[] VALUES = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12};
     private static final int LENGTH = VALUES.length;
     private static final long NON_EXISTED_KEY = 123;
-    private static final Integer VALUE_FOR_NON_EXISTED_KEY = -1;
+    private static final int VALUE_FOR_NON_EXISTED_KEY = -1;
 
     @Test
     public void testSparseArrayWithDefaultCapacity() {
@@ -71,8 +71,9 @@ public class LongSparseArrayTest {
         assertEquals(newValue, sparseArray.get(existKey));
         assertEquals(LENGTH, sparseArray.size());
 
-        assertEquals(VALUE_FOR_NON_EXISTED_KEY,
-                sparseArray.get(NON_EXISTED_KEY, VALUE_FOR_NON_EXISTED_KEY));
+        assertEquals(
+                VALUE_FOR_NON_EXISTED_KEY,
+                (int) sparseArray.get(NON_EXISTED_KEY, VALUE_FOR_NON_EXISTED_KEY));
         assertNull(sparseArray.get(NON_EXISTED_KEY)); // the default value is null
 
         int size = sparseArray.size();
@@ -81,26 +82,28 @@ public class LongSparseArrayTest {
         assertEquals(size, sparseArray.indexOfKey(NON_EXISTED_KEY));
         assertEquals(size, sparseArray.indexOfValue(VALUE_FOR_NON_EXISTED_KEY));
         assertEquals(NON_EXISTED_KEY, sparseArray.keyAt(size));
-        assertEquals(VALUE_FOR_NON_EXISTED_KEY, sparseArray.valueAt(size));
+        assertEquals(VALUE_FOR_NON_EXISTED_KEY, (int) sparseArray.valueAt(size));
 
         sparseArray.setValueAt(size, VALUES[1]);
         assertTrue(VALUE_FOR_NON_EXISTED_KEY != sparseArray.valueAt(size));
-        assertEquals(VALUES[1], sparseArray.valueAt(size));
+        assertEquals(VALUES[1], (int) sparseArray.valueAt(size));
 
         size = sparseArray.size();
-        assertEquals(VALUES[1], sparseArray.get(KEYS[1]));
+        assertEquals(VALUES[1], (int) sparseArray.get(KEYS[1]));
         assertFalse(VALUE_FOR_NON_EXISTED_KEY == VALUES[1]);
         sparseArray.delete(KEYS[1]);
-        assertEquals(VALUE_FOR_NON_EXISTED_KEY,
-                sparseArray.get(KEYS[1], VALUE_FOR_NON_EXISTED_KEY));
+        assertEquals(
+                VALUE_FOR_NON_EXISTED_KEY,
+                (int) sparseArray.get(KEYS[1], VALUE_FOR_NON_EXISTED_KEY));
         assertEquals(size - 1, sparseArray.size());
 
         size = sparseArray.size();
-        assertEquals(VALUES[2], sparseArray.get(KEYS[2]));
+        assertEquals(VALUES[2], (int) sparseArray.get(KEYS[2]));
         assertFalse(VALUE_FOR_NON_EXISTED_KEY == VALUES[2]);
         sparseArray.remove(KEYS[2]);
-        assertEquals(VALUE_FOR_NON_EXISTED_KEY,
-                sparseArray.get(KEYS[2], VALUE_FOR_NON_EXISTED_KEY));
+        assertEquals(
+                VALUE_FOR_NON_EXISTED_KEY,
+                (int) sparseArray.get(KEYS[2], VALUE_FOR_NON_EXISTED_KEY));
         assertEquals(size - 1, sparseArray.size());
 
         sparseArray.clear();
@@ -120,7 +123,7 @@ public class LongSparseArrayTest {
         }
 
         for (int i = 0; i < length; i++) {
-            assertEquals(VALUES[i], sparseArray.get(KEYS[i]));
+            assertEquals(VALUES[i], (int) sparseArray.get(KEYS[i]));
         }
 
         for (int i = 0; i < length; i++) {
@@ -137,8 +140,9 @@ public class LongSparseArrayTest {
         assertEquals(newValue, sparseArray.get(existKey));
         assertEquals(LENGTH, sparseArray.size());
 
-        assertEquals(VALUE_FOR_NON_EXISTED_KEY,
-                     sparseArray.get(NON_EXISTED_KEY, VALUE_FOR_NON_EXISTED_KEY));
+        assertEquals(
+                VALUE_FOR_NON_EXISTED_KEY,
+                (int) sparseArray.get(NON_EXISTED_KEY, VALUE_FOR_NON_EXISTED_KEY));
         assertNull(sparseArray.get(NON_EXISTED_KEY)); // the default value is null
 
         int size = sparseArray.size();
@@ -147,26 +151,28 @@ public class LongSparseArrayTest {
         assertEquals(size, sparseArray.indexOfKey(NON_EXISTED_KEY));
         assertEquals(size, sparseArray.indexOfValue(VALUE_FOR_NON_EXISTED_KEY));
         assertEquals(NON_EXISTED_KEY, sparseArray.keyAt(size));
-        assertEquals(VALUE_FOR_NON_EXISTED_KEY, sparseArray.valueAt(size));
+        assertEquals(VALUE_FOR_NON_EXISTED_KEY, (int) sparseArray.valueAt(size));
 
         sparseArray.setValueAt(size, VALUES[1]);
         assertTrue(VALUE_FOR_NON_EXISTED_KEY != sparseArray.valueAt(size));
-        assertEquals(VALUES[1], sparseArray.valueAt(size));
+        assertEquals(VALUES[1], (int) sparseArray.valueAt(size));
 
         size = sparseArray.size();
-        assertEquals(VALUES[1], sparseArray.get(KEYS[1]));
+        assertEquals(VALUES[1], (int) sparseArray.get(KEYS[1]));
         assertFalse(VALUE_FOR_NON_EXISTED_KEY == VALUES[1]);
         sparseArray.delete(KEYS[1]);
-        assertEquals(VALUE_FOR_NON_EXISTED_KEY,
-                sparseArray.get(KEYS[1], VALUE_FOR_NON_EXISTED_KEY));
+        assertEquals(
+                VALUE_FOR_NON_EXISTED_KEY,
+                (int) sparseArray.get(KEYS[1], VALUE_FOR_NON_EXISTED_KEY));
         assertEquals(size - 1, sparseArray.size());
 
         size = sparseArray.size();
-        assertEquals(VALUES[2], sparseArray.get(KEYS[2]));
+        assertEquals(VALUES[2], (int) sparseArray.get(KEYS[2]));
         assertFalse(VALUE_FOR_NON_EXISTED_KEY == VALUES[2]);
         sparseArray.remove(KEYS[2]);
-        assertEquals(VALUE_FOR_NON_EXISTED_KEY,
-                sparseArray.get(KEYS[2], VALUE_FOR_NON_EXISTED_KEY));
+        assertEquals(
+                VALUE_FOR_NON_EXISTED_KEY,
+                (int) sparseArray.get(KEYS[2], VALUE_FOR_NON_EXISTED_KEY));
         assertEquals(size - 1, sparseArray.size());
 
         sparseArray.clear();
