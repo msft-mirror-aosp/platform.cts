@@ -17,6 +17,7 @@
 package android.server.wm.jetpack.utils;
 
 import static android.app.WindowConfiguration.WINDOWING_MODE_FULLSCREEN;
+import static android.app.WindowConfiguration.WINDOWING_MODE_MULTI_WINDOW;
 import static android.app.WindowConfiguration.WINDOWING_MODE_UNDEFINED;
 import static android.content.Intent.FLAG_ACTIVITY_NEW_TASK;
 import static android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP;
@@ -27,6 +28,7 @@ import static android.content.pm.PackageManager.FEATURE_SCREEN_LANDSCAPE;
 import static android.content.pm.PackageManager.FEATURE_SCREEN_PORTRAIT;
 import static android.content.res.Configuration.ORIENTATION_LANDSCAPE;
 import static android.content.res.Configuration.ORIENTATION_PORTRAIT;
+import static android.server.wm.WindowManagerState.STATE_RESUMED;
 import static android.server.wm.jetpack.utils.TestActivityLauncher.KEY_ACTIVITY_ID;
 import static android.view.Surface.ROTATION_0;
 import static android.view.Surface.ROTATION_180;
@@ -159,6 +161,23 @@ public class WindowManagerJetpackTestBase extends ActivityManagerTestBase {
                 .launch(mInstrumentation);
     }
 
+    /**
+     * Starts an {@link Activity} on given {@code displayId} in multi window mode with given
+     * {@code bounds}.
+     */
+    public <T extends Activity> T startActivityNewTaskInMultiWindowWithBounds(
+            @NonNull Class<T> activityClass, @Nullable String activityId,
+            @Nullable Integer displayId, @Nullable Rect bounds) {
+        final T activity = launcherForActivityNewTask(activityClass, activityId,
+                WINDOWING_MODE_MULTI_WINDOW, displayId, bounds)
+                .launch(mInstrumentation);
+        if (displayId != null) {
+            waitAndAssertActivityStateOnDisplay(activity.getComponentName(), STATE_RESUMED,
+                    displayId, "Activity must be launched on display#" + displayId);
+        }
+        return activity;
+    }
+
     public static void waitForOrFail(String message, BooleanSupplier condition) {
         Condition.waitFor(new Condition<>(message, condition)
                 .setRetryIntervalMs(500)
@@ -171,12 +190,24 @@ public class WindowManagerJetpackTestBase extends ActivityManagerTestBase {
             @Nullable Integer launchDisplayId) {
         final int windowingMode = isFullScreen ? WINDOWING_MODE_FULLSCREEN :
                 WINDOWING_MODE_UNDEFINED;
-        final TestActivityLauncher launcher = new TestActivityLauncher<>(mContext, activityClass)
-                .addIntentFlag(FLAG_ACTIVITY_NEW_TASK)
-                .setActivityId(activityId)
-                .setWindowingMode(windowingMode);
+
+        return launcherForActivityNewTask(activityClass, activityId, windowingMode,
+                launchDisplayId, null /* launchBounds */);
+    }
+
+    private <T extends Activity> TestActivityLauncher<T> launcherForActivityNewTask(
+            @NonNull Class<T> activityClass, @Nullable String activityId, int windowingMode,
+            @Nullable Integer launchDisplayId, @Nullable Rect launchBounds) {
+        final TestActivityLauncher<T> launcher =
+                new TestActivityLauncher<>(mContext, activityClass)
+                        .addIntentFlag(FLAG_ACTIVITY_NEW_TASK)
+                        .setActivityId(activityId)
+                        .setWindowingMode(windowingMode);
         if (launchDisplayId != null) {
             launcher.setLaunchDisplayId(launchDisplayId);
+        }
+        if (launchBounds != null) {
+            launcher.setLaunchBounds(launchBounds);
         }
         return launcher;
     }
