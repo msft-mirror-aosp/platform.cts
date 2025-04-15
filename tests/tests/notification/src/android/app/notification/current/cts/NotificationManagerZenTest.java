@@ -2057,12 +2057,8 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
             }
             sleep();
         }
-        if (android.app.Flags.restrictAudioAttributesMedia()) {
-            // media notifications are moved to notification stream, so they should be intercepted
-            assertTrue(isCharlieIntercepted);
-        } else {
-            assertFalse(isCharlieIntercepted);
-        }
+        // media notifications are moved to notification stream, so they should be intercepted
+        assertTrue(isCharlieIntercepted);
 
         assertTrue(mListener.mIntercepted.get(alice.getKey()));
     }
