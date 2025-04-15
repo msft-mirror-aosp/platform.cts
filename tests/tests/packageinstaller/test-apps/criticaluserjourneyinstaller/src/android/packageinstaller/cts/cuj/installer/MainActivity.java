@@ -32,6 +32,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.IntentSender;
 import android.content.pm.PackageInstaller;
+import android.content.pm.ResolveInfo;
 import android.net.Uri;
 import android.os.Bundle;
 import android.text.TextUtils;
@@ -102,7 +103,7 @@ public class MainActivity extends Activity {
     private static final int EVENT_REQUEST_INSTALLER_INTENT_WITH_ACTION_VIEW = 5;
     private static final int REQUEST_CODE = 311;
     private static String sTestPackageName;
-
+    private static String sSystemPackageInstallerPackageName;
 
     private PackageInstaller mPackageInstaller;
     private RequestInstallerReceiver mRequestInstallerReceiver;
@@ -241,6 +242,7 @@ public class MainActivity extends Activity {
         intent.setDataAndType(FileProvider.getUriForFile(this, CONTENT_AUTHORITY, apkFile),
                 APK_MIME_TYPE);
         intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        intent.setPackage(getPackageInstallerPackageName(this));
         startActivity(intent);
         sendInstallerResponseBroadcast(getApplicationContext(),
                 STATUS_CUJ_INSTALLER_START_ACTIVITY_READY);
@@ -282,6 +284,19 @@ public class MainActivity extends Activity {
         while ((length = inputStream.read(buffer)) != -1) {
             outputStream.write(buffer, 0, length);
         }
+    }
+
+    private static String getPackageInstallerPackageName(Context context) {
+        if (sSystemPackageInstallerPackageName != null) {
+            return sSystemPackageInstallerPackageName;
+        }
+
+        final Intent intent =
+                new Intent(Intent.ACTION_INSTALL_PACKAGE).setData(Uri.parse("content:"));
+        final ResolveInfo ri = context.getPackageManager().resolveActivity(intent, /* flags= */ 0);
+        sSystemPackageInstallerPackageName = ri != null ? ri.activityInfo.packageName : null;
+        Log.d(TAG, "packageInstallerPackageName = " + sSystemPackageInstallerPackageName);
+        return sSystemPackageInstallerPackageName;
     }
 
     public static class InstallResultReceiver extends BroadcastReceiver {
