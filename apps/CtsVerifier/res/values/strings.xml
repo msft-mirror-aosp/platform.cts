@@ -1529,8 +1529,7 @@
 
     <!-- Sensor Batching -->
     <string name="snsr_batch_test">Sensor Batching Manual Tests</string>
-    <string name="snsr_batching_walking_needed">Once the test begins, you will have to take the
-        device in your hand and walk.</string>
+    <string name="snsr_batching_walking_needed">Once the test begins, you will need to walk with the device.</string>
 
     <!-- Sensor Synchronization -->
     <string name="snsr_synch_test">Sensor Synchronization Test</string>
@@ -1538,7 +1537,7 @@
     <!-- Step Counter and Detector -->
     <string name="snsr_step_counter_test">Step Counter and Detector Tests</string>
     <string name="snsr_step_counter_test_walking">Once the test begins, you will need to walk, and tap on the screen with each step you take.</string>
-    <string name="snsr_step_counter_test_still">Once the test begins, you will need to remain still and hold the device still in your hand.</string>
+    <string name="snsr_step_counter_test_still">Once the test begins, you will need to remain still and hold the device still.</string>
     <string name="snsr_step_counter_expected_steps">At least %1$d steps are expected to be reported. Reported=%2$d.</string>
     <string name="snsr_step_counter_detected_reported">Steps reported by user=%1$d. Steps counted=%2$d. Delta=%3$d. Tolerance=%4$d.</string>
     <string name="snsr_step_detector_detected_reported">Steps reported by user=%1$d. Steps detected=%2$d. Delta=%3$d. Tolerance=%4$d.</string>
