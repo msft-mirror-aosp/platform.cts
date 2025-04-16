@@ -58,9 +58,9 @@ public class MockSatelliteService extends SatelliteImplBase {
 
     // Hardcoded values below
     private static final int SATELLITE_ALWAYS_VISIBLE = 0;
-    /** SatelliteCapabilities constant indicating that the radio technology is proprietary. */
+    /** SatelliteCapabilities constant indicating that the radio technology is NB_IOT_NTN. */
     private static final int[] SUPPORTED_RADIO_TECHNOLOGIES =
-            new int[]{NTRadioTechnology.PROPRIETARY};
+            new int[]{NTRadioTechnology.NB_IOT_NTN};
     /** SatelliteCapabilities constant indicating that pointing to satellite is required. */
     private static final boolean POINTING_TO_SATELLITE_REQUIRED = true;
     /** SatelliteCapabilities constant indicating the maximum number of characters per datagram. */
@@ -630,6 +630,14 @@ public class MockSatelliteService extends SatelliteImplBase {
         logd("setSupportedRadioTechnologies: supportedRadioTechnologies="
                 + supportedRadioTechnologies[0]);
         mSupportedRadioTechnologies = supportedRadioTechnologies;
+
+        SatelliteCapabilities capabilities = new SatelliteCapabilities();
+        capabilities.supportedRadioTechnologies = mSupportedRadioTechnologies;
+        capabilities.isPointingRequired = POINTING_TO_SATELLITE_REQUIRED;
+        capabilities.maxBytesPerOutgoingDatagram = MAX_BYTES_PER_DATAGRAM;
+        capabilities.antennaPositionKeys = ANTENNA_POSITION_KEYS;
+        capabilities.antennaPositionValues = ANTENNA_POSITION_VALUES;
+        sendOnSatelliteCapabilitiesChanged(capabilities);
     }
 
     public void setSatelliteSupport(boolean supported) {
