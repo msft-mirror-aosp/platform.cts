@@ -60,6 +60,7 @@ import com.android.ex.camera2.utils.StateWaiter;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.Executor;
 
 /**
@@ -438,10 +439,12 @@ public class SharedCameraActivity extends Camera2SurfaceViewCtsActivity {
                         }
                         for (int i = 0; i < sharedStreamArray.size(); i++) {
                             Integer surfaceType = sharedStreamArray.get(i);
-                            if (surfaceType == TestConstants.SURFACE_TYPE_SURFACE_VIEW) {
+                            if (Objects.equals(
+                                    surfaceType, TestConstants.SURFACE_TYPE_SURFACE_VIEW)) {
                                 outputs.add(new OutputConfiguration(mPreviewSurface));
                             }
-                            if (surfaceType == TestConstants.SURFACE_TYPE_IMAGE_READER) {
+                            if (Objects.equals(
+                                    surfaceType, TestConstants.SURFACE_TYPE_IMAGE_READER)) {
                                 outputs.add(new OutputConfiguration(mReaderSurface));
                             }
                         }
@@ -948,14 +951,16 @@ public class SharedCameraActivity extends Camera2SurfaceViewCtsActivity {
                         }
                         for (int i = 0; i < previewStreamArray.size(); i++) {
                             Integer surfaceType = previewStreamArray.get(i);
-                            if (surfaceType == TestConstants.SURFACE_TYPE_SURFACE_VIEW) {
+                            if (Objects.equals(
+                                    surfaceType, TestConstants.SURFACE_TYPE_SURFACE_VIEW)) {
                                 if (mIsPrimary) {
                                     mCaptureRequestBuilder.addTarget(mPreviewSurface);
                                 } else {
                                     surfaces.add(mPreviewSurface);
                                 }
                             }
-                            if (surfaceType == TestConstants.SURFACE_TYPE_IMAGE_READER) {
+                            if (Objects.equals(
+                                    surfaceType, TestConstants.SURFACE_TYPE_IMAGE_READER)) {
                                 imageReaderUsed = true;
                                 if (mIsPrimary) {
                                     mCaptureRequestBuilder.addTarget(mReaderSurface);

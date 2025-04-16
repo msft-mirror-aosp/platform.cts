@@ -246,11 +246,13 @@ public class SatelliteManagerTestBase {
     }
 
     protected static void grantSatellitePermission() {
+        logd("grantSatellitePermission");
         InstrumentationRegistry.getInstrumentation().getUiAutomation()
                 .adoptShellPermissionIdentity(Manifest.permission.SATELLITE_COMMUNICATION);
     }
 
     protected static void revokeSatellitePermission() {
+        logd("revokeSatellitePermission");
         InstrumentationRegistry.getInstrumentation().getUiAutomation()
                 .dropShellPermissionIdentity();
     }
@@ -2255,6 +2257,181 @@ public class SatelliteManagerTestBase {
                         configuration5));
     }
 
+    protected static class LocationSettingBroadcastReceiver extends BroadcastReceiver {
+        private final Semaphore mLocationEnabledSemaphore = new Semaphore(0);
+        private final Semaphore mLocationDisabledSemaphore = new Semaphore(0);
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (LocationManager.MODE_CHANGED_ACTION.equals(intent.getAction())) {
+                LocationManager locationManager = context.getSystemService(LocationManager.class);
+                if (locationManager == null) {
+                    loge("LocationSettingBroadcastReceiver: LocationManager is null.");
+                    return;
+                }
+                if (locationManager.isLocationEnabled()) {
+                    logd("LocationSettingBroadcastReceiver: Location is now ENABLED.");
+                    try {
+                        if (mLocationEnabledSemaphore.availablePermits() == 0) {
+                            mLocationEnabledSemaphore.release();
+                        } else {
+                            logd(
+                                    "LocationSettingBroadcastReceiver: "
+                                            + "mLocationEnabledSemaphore already released.");
+                        }
+                        logd(
+                                "LocationSettingBroadcastReceiver: "
+                                        + "mLocationDisabledSemaphore.drainPermits()");
+                        mLocationDisabledSemaphore.drainPermits();
+                    } catch (Exception e) {
+                        loge("LocationSettingBroadcastReceiver: Got exception on enable, ex=" + e);
+                    }
+                } else {
+                    logd("LocationSettingBroadcastReceiver: Location is now DISABLED.");
+                    try {
+                        if (mLocationDisabledSemaphore.availablePermits() == 0) {
+                            mLocationDisabledSemaphore.release();
+                        } else {
+                            logd(
+                                    "LocationSettingBroadcastReceiver: "
+                                            + "mLocationDisabledSemaphore already released.");
+                        }
+                        logd(
+                                "LocationSettingBroadcastReceiver: "
+                                        + "mLocationEnabledSemaphore.drainPermits()");
+                        mLocationEnabledSemaphore.drainPermits();
+                    } catch (Exception e) {
+                        loge("LocationSettingBroadcastReceiver: Got exception on disable, ex=" + e);
+                    }
+                }
+            }
+        }
+
+        public void drainAllPermits() {
+            logd("LocationSettingBroadcastReceiver: drainAllPermits");
+            mLocationEnabledSemaphore.drainPermits();
+            mLocationDisabledSemaphore.drainPermits();
+        }
+
+        public boolean waitUntilLocationEnabled(long timeoutMs) {
+            logd(
+                    "LocationSettingBroadcastReceiver: "
+                            + "Waiting for location enabled ("
+                            + timeoutMs
+                            + "ms)...");
+            try {
+                if (!mLocationEnabledSemaphore.tryAcquire(timeoutMs, TimeUnit.MILLISECONDS)) {
+                    loge(
+                            "LocationSettingBroadcastReceiver: "
+                                    + "Timeout waiting for location enabled event");
+                    return false;
+                }
+                logd("LocationSettingBroadcastReceiver: Location enabled event received.");
+            } catch (InterruptedException ex) {
+                Thread.currentThread().interrupt();
+                loge(
+                        "LocationSettingBroadcastReceiver: "
+                                + "waitUntilLocationEnabled: Interrupted! ex="
+                                + ex);
+                return false;
+            } catch (Exception ex) {
+                loge(
+                        "LocationSettingBroadcastReceiver: "
+                                + "waitUntilLocationEnabled: Got exception="
+                                + ex);
+                return false;
+            }
+            return true;
+        }
+
+        public boolean waitUntilLocationDisabled(long timeoutMs) {
+            logd(
+                    "LocationSettingBroadcastReceiver: "
+                            + "Waiting for location disabled ("
+                            + timeoutMs
+                            + "ms)...");
+            try {
+                if (!mLocationDisabledSemaphore.tryAcquire(timeoutMs, TimeUnit.MILLISECONDS)) {
+                    loge(
+                            "LocationSettingBroadcastReceiver: "
+                                    + "Timeout waiting for location disabled event");
+                    return false;
+                }
+                logd("LocationSettingBroadcastReceiver: " + "Location disabled event received.");
+            } catch (InterruptedException ex) {
+                Thread.currentThread().interrupt();
+                loge(
+                        "LocationSettingBroadcastReceiver: "
+                                + "waitUntilLocationDisabled: Interrupted! ex="
+                                + ex);
+                return false;
+            } catch (Exception ex) {
+                loge(
+                        "LocationSettingBroadcastReceiver: "
+                                + "waitUntilLocationDisabled: Got exception="
+                                + ex);
+                return false;
+            }
+            return true;
+        }
+    }
+
+    /** Register and return an instance of LocationSettingBroadcastReceiver */
+    protected static LocationSettingBroadcastReceiver registerLocationSettingReceiver(
+            Context context) {
+        LocationSettingBroadcastReceiver receiver = new LocationSettingBroadcastReceiver();
+        IntentFilter filter = new IntentFilter(LocationManager.MODE_CHANGED_ACTION);
+        context.registerReceiver(receiver, filter);
+        logd("registerLocationSettingReceiver: Receiver registered.");
+        return receiver;
+    }
+
+    /**
+     * Wait for and verify the location disabled event using the registered
+     * LocationSettingBroadcastReceiver.
+     */
+    protected static void verifyLocationEnabledEventReceived(
+            LocationSettingBroadcastReceiver receiver, long timeoutMs) {
+        logd("verifyLocationEnabledEventReceived: " + "Waiting (timeout: " + timeoutMs + "ms)...");
+        boolean eventReceived = receiver.waitUntilLocationEnabled(timeoutMs);
+        logd(
+                "verifyLocationEnabledEventReceived: "
+                        + "Wait finished. Event received: "
+                        + eventReceived);
+        assertTrue("Timed out waiting for location enabled event.", eventReceived);
+    }
+
+    /**
+     * Wait for and verify the location disabled event using the registered
+     * LocationSettingBroadcastReceiver.
+     */
+    protected static void verifyLocationDisabledEventReceived(
+            LocationSettingBroadcastReceiver receiver, long timeoutMs) {
+        logd("verifyLocationDisabledEventReceived: Waiting (timeout: " + timeoutMs + "ms)...");
+        boolean eventReceived = receiver.waitUntilLocationDisabled(timeoutMs);
+        logd(
+                "verifyLocationDisabledEventReceived: "
+                        + "Wait finished. Event received: "
+                        + eventReceived);
+        assertTrue("Timed out waiting for location disabled event.", eventReceived);
+    }
+
+    /** Unregister the registered LocationSettingBroadcastReceiver */
+    protected static void unregisterLocationSettingReceiver(
+            Context context, LocationSettingBroadcastReceiver receiver) {
+        if (receiver != null) {
+            try {
+                context.unregisterReceiver(receiver);
+                logd("unregisterLocationSettingReceiver: Receiver unregistered.");
+            } catch (IllegalArgumentException e) {
+                logd(
+                        "unregisterLocationSettingReceiver: "
+                                + "Receiver already unregistered or never registered: "
+                                + e.getMessage());
+            }
+        }
+    }
+
     protected void verifySatelliteAccessConfiguration(
             @NonNull SatelliteAccessConfiguration expectedConfiguration,
             @NonNull SystemSelectionSpecifier actualSystemSelectionSpecifier) {
@@ -2737,7 +2914,9 @@ public class SatelliteManagerTestBase {
                                 SATELLITE_DISALLOWED_REASON_UNSUPPORTED_DEFAULT_MSG_APP));
             }
         } else {
-            logd("enableDefaultSmsAppSupportForNtnOnlySubscription: no need to update default SMS app");
+            logd(
+                    "enableDefaultSmsAppSupportForNtnOnlySubscription: no need to update default"
+                            + " SMS app");
         }
     }
 

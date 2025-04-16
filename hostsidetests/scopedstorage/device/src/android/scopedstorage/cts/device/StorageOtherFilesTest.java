@@ -16,6 +16,7 @@
 
 package android.scopedstorage.cts.device;
 
+import static android.app.AppOpsManager.OPSTR_MANAGE_EXTERNAL_STORAGE;
 import static android.scopedstorage.cts.device.OtherAppFilesRule.GrantModifications.GRANT;
 import static android.scopedstorage.cts.device.OtherAppFilesRule.modifyReadAccess;
 import static android.scopedstorage.cts.device.OwnedFilesRule.RESOURCE_ID_WITH_METADATA;
@@ -35,6 +36,7 @@ import static android.scopedstorage.cts.lib.ResolverAccessTestUtils.assertResolv
 import static android.scopedstorage.cts.lib.ResolverAccessTestUtils.assertResolver_uriDoesNotExist;
 import static android.scopedstorage.cts.lib.ResolverAccessTestUtils.assertResolver_uriIsFavorite;
 import static android.scopedstorage.cts.lib.ResolverAccessTestUtils.assertResolver_uriIsNotFavorite;
+import static android.scopedstorage.cts.lib.TestUtils.allowAppOpsToUid;
 import static android.scopedstorage.cts.lib.TestUtils.canOpenFileAs;
 import static android.scopedstorage.cts.lib.TestUtils.doEscalation;
 import static android.scopedstorage.cts.lib.TestUtils.getContentResolver;
@@ -68,6 +70,7 @@ import android.os.Environment;
 import android.os.FileUtils;
 import android.provider.MediaStore;
 import android.provider.MediaStore.MediaColumns;
+import android.scopedstorage.cts.lib.TestUtils;
 
 import androidx.test.core.app.ApplicationProvider;
 import androidx.test.filters.SdkSuppress;
@@ -105,6 +108,16 @@ public class StorageOtherFilesTest {
     private static final TestApp APP_VU_SELECTED = new TestApp("TestAppVUSelected",
             "android.scopedstorage.cts.testapp.VUSelected", 1, false,
             "CtsScopedStorageTestAppVUSelected.apk");
+
+    // An app that has file manager (MANAGE_EXTERNAL_STORAGE) permission.
+    private static final TestApp APP_FM =
+            new TestApp(
+                    "TestAppFileManager",
+                    "android.scopedstorage.cts.testapp.filemanager",
+                    1,
+                    false,
+                    "CtsScopedStorageTestAppFileManager.apk");
+
     private static final Instrumentation sInstrumentation =
             InstrumentationRegistry.getInstrumentation();
 
@@ -135,6 +148,9 @@ public class StorageOtherFilesTest {
         // creating grants only for one
         modifyReadAccess(IMAGE_FILE_READABLE, THIS_PACKAGE_NAME, GRANT);
         modifyReadAccess(VIDEO_FILE_READABLE, THIS_PACKAGE_NAME, GRANT);
+
+        final int fmUid = sContext.getPackageManager().getPackageUid(APP_FM.getPackageName(), 0);
+        allowAppOpsToUid(fmUid, OPSTR_MANAGE_EXTERNAL_STORAGE);
     }
 
     @Before
@@ -231,7 +247,7 @@ public class StorageOtherFilesTest {
     }
 
     @Test
-    public void testDeleteWithParamDeleteData() throws Exception {
+    public void testParamDeleteDataOnlyDisallowedAfterSdkLevel34() throws Exception {
         int expectedTargetSdk = sContext.getPackageManager().getApplicationInfo(
                 THIS_PACKAGE_NAME, PackageManager.ApplicationInfoFlags.of(0)).targetSdkVersion;
         assumeTrue(expectedTargetSdk > Build.VERSION_CODES.UPSIDE_DOWN_CAKE);
@@ -429,6 +445,47 @@ public class StorageOtherFilesTest {
                             null)) {
                 assertThat(c.getCount()).isEqualTo(0);
             }
+        }
+    }
+
+    @Test
+    public void testParamDeleteDataOnlyAllowedWithManageExternalStorage() throws Exception {
+        int expectedTargetSdk =
+                sContext.getPackageManager()
+                        .getApplicationInfo(
+                                APP_FM.getPackageName(), PackageManager.ApplicationInfoFlags.of(0))
+                        .targetSdkVersion;
+        assumeTrue(expectedTargetSdk > Build.VERSION_CODES.UPSIDE_DOWN_CAKE);
+        File testFile =
+                stageImageFile("test" + System.nanoTime() + ".jpg", RESOURCE_ID_WITH_METADATA);
+        try {
+            final Uri uri = MediaStore.scanFile(sContentResolver, testFile);
+            String path;
+            try (Cursor c =
+                    sContentResolver.query(
+                            uri, new String[] {MediaColumns.DATA}, null, null, null)) {
+                c.moveToNext();
+                path = c.getString(c.getColumnIndex(MediaColumns.DATA));
+            }
+            assertTrue(new File(path).exists());
+
+            assertThat(
+                            TestUtils.deleteMediaByUriAs(
+                                    APP_FM,
+                                    uri.buildUpon()
+                                            .appendQueryParameter("deletedata", "false")
+                                            .build()))
+                    .isEqualTo(1);
+
+            try (Cursor c =
+                    sContentResolver.query(
+                            uri, new String[] {MediaColumns.DATA}, null, null, null)) {
+                assertThat(c.getCount()).isEqualTo(0);
+            }
+            // File should be present as file delete will be skipped
+            assertTrue(new File(path).exists());
+        } finally {
+            testFile.delete();
         }
     }
 

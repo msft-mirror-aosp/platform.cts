@@ -237,7 +237,7 @@ def check_lens_switch_conditions(props, first_api_level, zoom_range_lenses):
               level.
   """
   camera_properties_utils.skip_unless(
-      first_api_level >= its_session_utils.ANDROID15_API_LEVEL and
+      first_api_level >= its_session_utils.ANDROID16_API_LEVEL and
       camera_properties_utils.zoom_ratio_range(props) and
       camera_properties_utils.logical_multi_camera(props) and
       camera_properties_utils.ae_regions(props))

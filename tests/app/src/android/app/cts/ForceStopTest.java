@@ -20,7 +20,6 @@ import static android.app.Flags.FLAG_USE_APP_INFO_NOT_LAUNCHED;
 import static android.content.pm.Flags.FLAG_STAY_STOPPED;
 
 import static com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity;
-import static com.android.server.am.Flags.FLAG_AVOID_RESOLVING_TYPE;
 
 import static junit.framework.Assert.fail;
 
@@ -588,7 +587,6 @@ public final class ForceStopTest {
                 () -> mActivityManager.forceStopPackage(APP_PACKAGE));
     }
 
-    @RequiresFlagsEnabled(FLAG_AVOID_RESOLVING_TYPE)
     @Test
     public void testStickyBroadcastDispatch() throws Exception {
         final String pkg = APP_PROVIDER_PACKAGE;

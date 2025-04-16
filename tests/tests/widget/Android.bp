@@ -39,6 +39,7 @@ android_test {
         "cts-wm-util",
         "testables",
         "com.android.text.flags-aconfig-java",
+        "android.view.accessibility.flags-aconfig-java",
         "android.view.inputmethod.flags-aconfig-java",
         "flag-junit",
         "bedstead",
