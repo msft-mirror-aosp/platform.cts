@@ -75,11 +75,14 @@ public class MockView extends View {
     private boolean mCalledOnVisibilityAggregated = false;
     private boolean mCalledRequestFocus = false;
     private boolean mCalledPerformHapticFeedback = false;
+    private boolean mCalledRequestRectangleOnScreen = false;
 
     private int mOldWidth = -1;
     private int mOldHeight = -1;
 
     private boolean mLastAggregatedVisibility;
+
+    private int mLastRequestRectangleOnScreenSource;
 
     private BlockingQueue<MotionEvent> mTouchEvents = new LinkedBlockingQueue<>();
 
@@ -647,6 +650,21 @@ public class MockView extends View {
         return super.requestFocus(direction, previouslyFocusedRect);
     }
 
+    @Override
+    public boolean requestRectangleOnScreen(Rect rect, boolean immediate, int source) {
+        mCalledRequestRectangleOnScreen = true;
+        mLastRequestRectangleOnScreenSource = source;
+        return super.requestRectangleOnScreen(rect, immediate, source);
+    }
+
+    public boolean hasCalledRequestRectangleOnScreen() {
+        return mCalledRequestRectangleOnScreen;
+    }
+
+    public int getLastRequestRectangleOnScreenSource() {
+        return mLastRequestRectangleOnScreenSource;
+    }
+
     public boolean hasCalledOnVisibilityAggregated() {
         return mCalledOnVisibilityAggregated;
     }
@@ -710,10 +728,12 @@ public class MockView extends View {
         mCalledOnVisibilityAggregated = false;
         mCalledRequestFocus = false;
         mCalledPerformHapticFeedback = false;
+        mCalledRequestRectangleOnScreen = false;
 
         mOldWidth = -1;
         mOldHeight = -1;
         mLastAggregatedVisibility = false;
+        mLastRequestRectangleOnScreenSource = -1;
 
         while (!mTouchEvents.isEmpty()) {
             mTouchEvents.poll().recycle();

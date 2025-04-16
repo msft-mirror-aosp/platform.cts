@@ -16,6 +16,7 @@
 
 package android.view.cts;
 
+import static android.view.accessibility.Flags.FLAG_REQUEST_RECTANGLE_WITH_SOURCE;
 import static android.view.flags.Flags.FLAG_TOOLKIT_SET_FRAME_RATE_READ_ONLY;
 import static android.view.flags.Flags.FLAG_VIEW_VELOCITY_API;
 
@@ -26,6 +27,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -3502,6 +3504,36 @@ public class ViewTest {
 
     @UiThreadTest
     @Test
+    @RequiresFlagsDisabled(FLAG_REQUEST_RECTANGLE_WITH_SOURCE)
+    public void testOnFocusChanged_doesNotRequestRectangleOnScreen() throws Throwable {
+        MockView view = (MockView) mActivity.findViewById(R.id.mock_view);
+
+        mActivity.findViewById(R.id.fit_windows).setFocusable(true);
+        view.setFocusable(true);
+        view.requestFocus();
+        assertTrue(view.hasCalledOnFocusChanged());
+        assertFalse(view.hasCalledRequestRectangleOnScreen());
+    }
+
+    @UiThreadTest
+    @Test
+    @RequiresFlagsEnabled(FLAG_REQUEST_RECTANGLE_WITH_SOURCE)
+    public void testOnFocusChanged_callsRequestRectangleOnScreen() throws Throwable {
+        MockView view = (MockView) mActivity.findViewById(R.id.mock_view);
+
+        mActivity.findViewById(R.id.fit_windows).setFocusable(true);
+        view.setFocusable(true);
+        view.requestFocus();
+        assertTrue(view.hasCalledOnFocusChanged());
+        assertTrue(view.hasFocus());
+        assertTrue(view.hasCalledRequestRectangleOnScreen());
+        assertEquals(
+                View.RECTANGLE_ON_SCREEN_REQUEST_SOURCE_INPUT_FOCUS,
+                view.getLastRequestRectangleOnScreenSource());
+    }
+
+    @UiThreadTest
+    @Test
     public void testRestoreDefaultFocus() {
         MockView view = new MockView(mActivity);
         view.restoreDefaultFocus();
@@ -3636,10 +3668,7 @@ public class ViewTest {
         // parent is null
         assertFalse(view.requestRectangleOnScreen(rectangle));
         assertFalse(view.requestRectangleOnScreen(null));
-        assertEquals(0, rectangle.left);
-        assertEquals(0, rectangle.top);
-        assertEquals(0, rectangle.right);
-        assertEquals(0, rectangle.bottom);
+        assertEquals(new Rect(0, 0, 0, 0), rectangle);
 
         parent.addView(view);
         parent.scrollTo(1, 2);
@@ -3655,16 +3684,13 @@ public class ViewTest {
 
         // it is grand parent's responsibility to check parent's scroll offset
         final Rect requestedRect = grandparent.getLastRequestedChildRectOnScreen();
-        assertEquals(0, requestedRect.left);
-        assertEquals(0, requestedRect.top);
-        assertEquals(0, requestedRect.right);
-        assertEquals(0, requestedRect.bottom);
+        assertEquals(new Rect(0, 0, 0, 0), requestedRect);
 
-        try {
-            view.requestRectangleOnScreen(null);
-            fail("should throw NullPointerException");
-        } catch (NullPointerException e) {
-        }
+        assertThrows(
+                NullPointerException.class,
+                () -> {
+                    view.requestRectangleOnScreen(null);
+                });
     }
 
     @Test
@@ -3733,6 +3759,116 @@ public class ViewTest {
         child.requestRectangleOnScreen(new Rect(10, 10, 12, 13));
         assertEquals(new Rect(10, 10, 12, 13), parent.getLastRequestedChildRectOnScreen());
         assertEquals(new Rect(10, 10, 12, 13), grandParent.getLastRequestedChildRectOnScreen());
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_REQUEST_RECTANGLE_WITH_SOURCE)
+    public void testRequestRectangleOnScreen_withUndefinedSource() {
+        MockView view = new MockView(mActivity);
+        Rect rectangle = new Rect();
+        MockViewGroupParent parent = new MockViewGroupParent(mActivity);
+        MockViewGroupParent grandparent = new MockViewGroupParent(mActivity);
+
+        parent.addView(view);
+        grandparent.addView(parent);
+
+        assertFalse(parent.hasRequestChildRectangleOnScreen());
+        assertFalse(grandparent.hasRequestChildRectangleOnScreen());
+
+        assertFalse(view.requestRectangleOnScreen(rectangle));
+
+        assertTrue(parent.hasRequestChildRectangleOnScreen());
+        assertEquals(
+                View.RECTANGLE_ON_SCREEN_REQUEST_SOURCE_UNDEFINED,
+                parent.getLastRequestedSourceOnScreen());
+        assertTrue(grandparent.hasRequestChildRectangleOnScreen());
+        assertEquals(
+                View.RECTANGLE_ON_SCREEN_REQUEST_SOURCE_UNDEFINED,
+                grandparent.getLastRequestedSourceOnScreen());
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_REQUEST_RECTANGLE_WITH_SOURCE)
+    public void testRequestRectangleOnScreen_withTextCursorSource() {
+        MockView view = new MockView(mActivity);
+        Rect rectangle = new Rect();
+        MockViewGroupParent parent = new MockViewGroupParent(mActivity);
+        MockViewGroupParent grandparent = new MockViewGroupParent(mActivity);
+
+        parent.addView(view);
+        grandparent.addView(parent);
+
+        assertFalse(parent.hasRequestChildRectangleOnScreen());
+        assertFalse(grandparent.hasRequestChildRectangleOnScreen());
+
+        assertFalse(
+                view.requestRectangleOnScreen(
+                        rectangle, false, View.RECTANGLE_ON_SCREEN_REQUEST_SOURCE_TEXT_CURSOR));
+
+        assertTrue(parent.hasRequestChildRectangleOnScreen());
+        assertEquals(
+                View.RECTANGLE_ON_SCREEN_REQUEST_SOURCE_TEXT_CURSOR,
+                parent.getLastRequestedSourceOnScreen());
+        assertTrue(grandparent.hasRequestChildRectangleOnScreen());
+        assertEquals(
+                View.RECTANGLE_ON_SCREEN_REQUEST_SOURCE_TEXT_CURSOR,
+                grandparent.getLastRequestedSourceOnScreen());
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_REQUEST_RECTANGLE_WITH_SOURCE)
+    public void testRequestRectangleOnScreen_withInputFocusSource() {
+        MockView view = new MockView(mActivity);
+        Rect rectangle = new Rect();
+        MockViewGroupParent parent = new MockViewGroupParent(mActivity);
+        MockViewGroupParent grandparent = new MockViewGroupParent(mActivity);
+
+        parent.addView(view);
+        grandparent.addView(parent);
+
+        assertFalse(parent.hasRequestChildRectangleOnScreen());
+        assertFalse(grandparent.hasRequestChildRectangleOnScreen());
+
+        assertFalse(
+                view.requestRectangleOnScreen(
+                        rectangle, false, View.RECTANGLE_ON_SCREEN_REQUEST_SOURCE_INPUT_FOCUS));
+
+        assertTrue(parent.hasRequestChildRectangleOnScreen());
+        assertEquals(
+                View.RECTANGLE_ON_SCREEN_REQUEST_SOURCE_INPUT_FOCUS,
+                parent.getLastRequestedSourceOnScreen());
+        assertTrue(grandparent.hasRequestChildRectangleOnScreen());
+        assertEquals(
+                View.RECTANGLE_ON_SCREEN_REQUEST_SOURCE_INPUT_FOCUS,
+                grandparent.getLastRequestedSourceOnScreen());
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_REQUEST_RECTANGLE_WITH_SOURCE)
+    public void testRequestRectangleOnScreen_withScrollOnlySource() {
+        MockView view = new MockView(mActivity);
+        Rect rectangle = new Rect();
+        MockViewGroupParent parent = new MockViewGroupParent(mActivity);
+        MockViewGroupParent grandparent = new MockViewGroupParent(mActivity);
+
+        parent.addView(view);
+        grandparent.addView(parent);
+
+        assertFalse(parent.hasRequestChildRectangleOnScreen());
+        assertFalse(grandparent.hasRequestChildRectangleOnScreen());
+
+        assertFalse(
+                view.requestRectangleOnScreen(
+                        rectangle, false, View.RECTANGLE_ON_SCREEN_REQUEST_SOURCE_SCROLL_ONLY));
+
+        assertTrue(parent.hasRequestChildRectangleOnScreen());
+        assertEquals(
+                View.RECTANGLE_ON_SCREEN_REQUEST_SOURCE_SCROLL_ONLY,
+                parent.getLastRequestedSourceOnScreen());
+        assertTrue(grandparent.hasRequestChildRectangleOnScreen());
+        assertEquals(
+                View.RECTANGLE_ON_SCREEN_REQUEST_SOURCE_SCROLL_ONLY,
+                grandparent.getLastRequestedSourceOnScreen());
     }
 
     /**
@@ -4637,7 +4773,8 @@ public class ViewTest {
         bg.reset();
         view.setBackground(null);
         view.setBackground(bg);
-        assertTrue("Background tint applied when setBackgroundTints() called before setBackground()",
+        assertTrue(
+                "Background tint applied when setBackgroundTints() called before setBackground()",
                 bg.hasCalledSetTint());
     }
 
@@ -5756,6 +5893,7 @@ public class ViewTest {
         private boolean mHasRequestChildRectangleOnScreen = false;
         private Rect mLastRequestedChildRectOnScreen = new Rect(
                 Integer.MIN_VALUE, Integer.MIN_VALUE, Integer.MIN_VALUE, Integer.MIN_VALUE);
+        private int mLastRequestedSourceOnScreen = -1;
 
         public MockViewGroupParent(Context context) {
             super(context);
@@ -5774,8 +5912,21 @@ public class ViewTest {
             return super.requestChildRectangleOnScreen(child, rectangle, immediate);
         }
 
+        @Override
+        public boolean requestChildRectangleOnScreen(
+                View child, Rect rectangle, boolean immediate, int source) {
+            mHasRequestChildRectangleOnScreen = true;
+            mLastRequestedChildRectOnScreen.set(rectangle);
+            mLastRequestedSourceOnScreen = source;
+            return super.requestChildRectangleOnScreen(child, rectangle, immediate, source);
+        }
+
         public Rect getLastRequestedChildRectOnScreen() {
             return mLastRequestedChildRectOnScreen;
+        }
+
+        public int getLastRequestedSourceOnScreen() {
+            return mLastRequestedSourceOnScreen;
         }
 
         public boolean hasRequestChildRectangleOnScreen() {
@@ -5789,6 +5940,7 @@ public class ViewTest {
 
         public void reset() {
             mHasRequestChildRectangleOnScreen = false;
+            mLastRequestedSourceOnScreen = -1;
         }
     }
 
