@@ -16,22 +16,35 @@
 
 package android.telephonyprovider.cts;
 
-import static android.telephony.cts.util.DefaultSmsAppHelper.assumeTelephony;
+import static android.Manifest.permission.RECEIVE_SENSITIVE_NOTIFICATIONS;
+import static android.provider.Telephony.Sms.CONTAINS_OTP;
+import static android.provider.Telephony.Sms.OTP_TYPE_CONTAINS_OTP;
+import static android.provider.Telephony.Sms.OTP_TYPE_NONE;
 import static android.telephony.cts.util.DefaultSmsAppHelper.assumeMessaging;
+import static android.telephony.cts.util.DefaultSmsAppHelper.assumeTelephony;
+import static android.telephony.cts.util.DefaultSmsAppHelper.stopBeingDefaultSmsApp;
 
 import static androidx.test.InstrumentationRegistry.getInstrumentation;
 
+import static com.android.internal.telephony.flags.Flags.FLAG_REDACT_OTP_SMS;
+import static com.android.internal.telephony.flags.Flags.FLAG_REDACT_OTP_SMS_API;
+
 import static com.google.common.truth.Truth.assertThat;
+import static com.google.common.truth.Truth.assertWithMessage;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
 
 import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.database.Cursor;
 import android.net.Uri;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.Telephony;
 import android.telephony.SubscriptionManager;
 import android.telephony.cts.util.DefaultSmsAppHelper;
@@ -40,21 +53,30 @@ import android.util.Log;
 import androidx.test.filters.SmallTest;
 
 import com.android.compatibility.common.util.ApiTest;
+import com.android.compatibility.common.util.SystemUtil;
 
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
 
+import java.util.concurrent.TimeUnit;
 
 @SmallTest
 public class SmsTest {
     private static final String TAG = "SmsTest";
     private static final String TEST_SMS_BODY = "TEST_SMS_BODY";
+    private static final String TEST_OTP_SMS_BODY = "Your one time code is 12345";
+    private static final String TEST_NOT_OTP_SMS_BODY = "Your account number is 12345";
     private static final String TEST_ADDRESS = "+19998880001";
     private static final int TEST_THREAD_ID_1 = 101;
+    private static final long OTP_HIDING_TIME_MS = TimeUnit.HOURS.toMillis(3);
     private ContentResolver mContentResolver;
     private SmsTestHelper mSmsTestHelper;
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @BeforeClass
     public static void ensureDefaultSmsApp() {
@@ -370,14 +392,14 @@ public class SmsTest {
         assertNotNull(uriWithoutSqlInjectionCur);
     }
 
-    /**
-     * Verifies sql injection is not allowed within a URI.
-     */
+    /** Verifies sql injection is not allowed within a URI. */
     @Test
     @ApiTest(apis = "com.android.providers.telephony.MmsSmsProvider#query")
     public void query_threadIdParameter_sqlInjection() {
-        Uri uriWithSqlInjection = Uri.parse("content://mms-sms/conversations?simple=true&"
-                + "thread_type=1 union select type,name,tbl_name,rootpage,sql FROM SQLITE_MASTER;; --");
+        Uri uriWithSqlInjection =
+                Uri.parse(
+                        "content://mms-sms/conversations?simple=true&thread_type=1 union select"
+                                + " type,name,tbl_name,rootpage,sql FROM SQLITE_MASTER;; --");
         Cursor uriWithSqlInjectionCur = mContentResolver.query(uriWithSqlInjection,
                 new String[]{"1","2","3","4","5"}, null, null, null);
         assertNull(uriWithSqlInjectionCur);
@@ -541,6 +563,112 @@ public class SmsTest {
                 "threadID/" + TEST_THREAD_ID_1);
         Cursor cursor = mContentResolver.query(canonicalAddressUri, null, null, null);
         assertThat(cursor).isNotNull();
+    }
+
+    @Test
+    @RequiresFlagsEnabled({FLAG_REDACT_OTP_SMS, FLAG_REDACT_OTP_SMS_API})
+    public void testOtpSms_DefaultSmsAppCanRead() {
+        Uri inserted = mSmsTestHelper.insertTestOtpSmsAndWaitForOtpDetection(TEST_ADDRESS,
+                TEST_OTP_SMS_BODY, System.currentTimeMillis());
+        assertSmsPresence(inserted, TEST_OTP_SMS_BODY, true);
+    }
+
+    @Test
+    @RequiresFlagsEnabled({FLAG_REDACT_OTP_SMS, FLAG_REDACT_OTP_SMS_API})
+    public void testOtpSms_DefaultSmsAppCantUpdate() {
+        Uri inserted = mSmsTestHelper.insertTestOtpSmsAndWaitForOtpDetection(TEST_ADDRESS,
+                TEST_OTP_SMS_BODY, System.currentTimeMillis());
+        ContentValues values = new ContentValues();
+        values.put(CONTAINS_OTP, OTP_TYPE_NONE);
+        try {
+            // Attempt to update the CONTAINS_OTP column, which will be removed on the back end
+            mContentResolver.update(inserted, values, null, null);
+            fail("Expected update call to throw IllegalArgumentException for empty ContentValues");
+        } catch (IllegalArgumentException expected) {
+            // Pass the test
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled({FLAG_REDACT_OTP_SMS, FLAG_REDACT_OTP_SMS_API})
+    public void testOtpSms_StandardAppCantRead() {
+        Uri inserted = mSmsTestHelper.insertTestOtpSmsAndWaitForOtpDetection(TEST_ADDRESS,
+                TEST_OTP_SMS_BODY, System.currentTimeMillis());
+        try {
+            stopBeingDefaultSmsApp();
+            assertSmsPresence(inserted, TEST_OTP_SMS_BODY, false);
+        } finally {
+            ensureDefaultSmsApp();
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled({FLAG_REDACT_OTP_SMS, FLAG_REDACT_OTP_SMS_API})
+    public void testOtpSms_StandardAppCanReadAfterOtpHidingTimeExpires() {
+        long expiredOtpHidingTime =
+                System.currentTimeMillis() - OTP_HIDING_TIME_MS - TimeUnit.SECONDS.toMillis(1);
+        Uri inserted = mSmsTestHelper.insertTestOtpSmsAndWaitForOtpDetection(TEST_ADDRESS,
+                TEST_OTP_SMS_BODY, expiredOtpHidingTime);
+        try {
+            stopBeingDefaultSmsApp();
+            assertSmsPresence(inserted, TEST_OTP_SMS_BODY, true);
+        } finally {
+            ensureDefaultSmsApp();
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled({FLAG_REDACT_OTP_SMS, FLAG_REDACT_OTP_SMS_API})
+    public void testOtpSms_AppWithReadSensitiveNotificationsCanRead() {
+        Uri inserted = mSmsTestHelper.insertTestOtpSmsAndWaitForOtpDetection(TEST_ADDRESS,
+                TEST_OTP_SMS_BODY, System.currentTimeMillis());
+        try {
+            stopBeingDefaultSmsApp();
+            SystemUtil.runWithShellPermissionIdentity(
+                    () -> assertSmsPresence(inserted, TEST_OTP_SMS_BODY, true),
+                    RECEIVE_SENSITIVE_NOTIFICATIONS);
+        } finally {
+            ensureDefaultSmsApp();
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled({FLAG_REDACT_OTP_SMS, FLAG_REDACT_OTP_SMS_API})
+    public void testOtpSms_UpdatesFromOtpPending() {
+        Uri inserted = mSmsTestHelper.insertTestSms(TEST_ADDRESS, TEST_OTP_SMS_BODY);
+        SystemUtil.eventually(() -> assertSmsOtpColumn(inserted, OTP_TYPE_CONTAINS_OTP));
+    }
+
+    @Test
+    @RequiresFlagsEnabled({FLAG_REDACT_OTP_SMS, FLAG_REDACT_OTP_SMS_API})
+    public void testOtpSms_OtpFalsePositive() {
+        Uri inserted = mSmsTestHelper.insertTestSms(TEST_ADDRESS, TEST_NOT_OTP_SMS_BODY);
+        SystemUtil.eventually(() -> assertSmsOtpColumn(inserted, OTP_TYPE_NONE));
+    }
+
+    private void assertSmsPresence(Uri uri, String smsBody, boolean canRead) {
+        Cursor cursor = mContentResolver.query(uri, null, null, null);
+        if (!canRead) {
+            assertThat(cursor.getCount()).isEqualTo(0);
+            return;
+        }
+        assertWithMessage("Expected to get a query result").that(cursor.getCount()).isEqualTo(1);
+        cursor.moveToNext();
+
+        String actualSmsBody = cursor.getString(cursor.getColumnIndex(Telephony.Sms.BODY));
+        if (canRead) {
+            assertThat(actualSmsBody).isEqualTo(smsBody);
+        } else {
+            assertThat(actualSmsBody).isNotEqualTo(smsBody);
+        }
+    }
+
+    private void assertSmsOtpColumn(Uri uri, int expectedOtpColumn) {
+        Cursor cursor = mContentResolver.query(uri, null, null, null);
+        cursor.moveToNext();
+
+        int actualSmsOtpColumn = cursor.getInt(cursor.getColumnIndex(CONTAINS_OTP));
+        assertThat(actualSmsOtpColumn).isEqualTo(expectedOtpColumn);
     }
 
     private String getDefaultSmsApp() {
