@@ -16,8 +16,6 @@
 
 package android.net.wifi.sharedconnectivity.cts;
 
-import static com.android.wifi.flags.Flags.networkProviderBatteryChargingStatus;
-
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertThrows;
@@ -89,7 +87,7 @@ public class SharedConnectivityTest {
                         .setDeviceType(NetworkProviderInfo.DEVICE_TYPE_PHONE)
                         .setBatteryPercentage(80)
                         .setConnectionStrength(3);
-        if (networkProviderBatteryChargingStatus() && SdkLevel.isAtLeastV()) {
+        if (SdkLevel.isAtLeastV()) {
             builder.setBatteryCharging(false);
         }
         mTestHotspotNetwork1 = new HotspotNetwork.Builder()
@@ -106,7 +104,7 @@ public class SharedConnectivityTest {
                 .setDeviceType(NetworkProviderInfo.DEVICE_TYPE_LAPTOP)
                 .setBatteryPercentage(30)
                 .setConnectionStrength(2);
-        if (networkProviderBatteryChargingStatus() && SdkLevel.isAtLeastV()) {
+        if (SdkLevel.isAtLeastV()) {
             builder.setBatteryCharging(true);
         }
         mTestHotspotNetwork2 = new HotspotNetwork.Builder()
@@ -120,7 +118,7 @@ public class SharedConnectivityTest {
                 .setDeviceType(NetworkProviderInfo.DEVICE_TYPE_PHONE)
                 .setBatteryPercentage(99)
                 .setConnectionStrength(3);
-        if (networkProviderBatteryChargingStatus() && SdkLevel.isAtLeastV()) {
+        if (SdkLevel.isAtLeastV()) {
             builder.setBatteryCharging(false);
         }
         mTestKnownNetwork1 = new KnownNetwork.Builder()
@@ -134,7 +132,7 @@ public class SharedConnectivityTest {
                         .setDeviceType(NetworkProviderInfo.DEVICE_TYPE_PHONE)
                         .setBatteryPercentage(15)
                         .setConnectionStrength(1);
-        if (networkProviderBatteryChargingStatus() && SdkLevel.isAtLeastV()) {
+        if (SdkLevel.isAtLeastV()) {
             builder.setBatteryCharging(true);
         }
         mTestKnownNetwork2 = new KnownNetwork.Builder()
