@@ -19,6 +19,8 @@ import android.content.Context;
 import android.graphics.Rect;
 import android.widget.FrameLayout;
 
+import androidx.annotation.Nullable;
+
 public interface ISurfaceValidatorTestCase {
     PixelChecker getChecker();
 
@@ -30,15 +32,27 @@ public interface ISurfaceValidatorTestCase {
         return true;
     }
 
+    /**
+     * Returning null means the entire content bounds should be checked.
+     */
+    @Nullable
     default Rect getBoundsToCheck(FrameLayout parent) {
-        Rect boundsToCheck = new Rect(0, 0, parent.getWidth(), parent.getHeight());
-        int[] topLeft = new int[2];
-        parent.getLocationOnScreen(topLeft);
-        boundsToCheck.offset(topLeft[0], topLeft[1]);
-        return  boundsToCheck;
+        if (CapturedActivity.wmCanReplaceContentOnDisplay()) {
+            return null;
+        } else {
+            Rect boundsToCheck = new Rect(0, 0, parent.getWidth(), parent.getHeight());
+            int[] topLeft = new int[2];
+            parent.getLocationOnScreen(topLeft);
+            boundsToCheck.offset(topLeft[0], topLeft[1]);
+            return boundsToCheck;
+        }
     }
 
-    default void waitForReady() {
-        return;
+    default boolean waitForReady() {
+        return true;
+    }
+
+    default int getNumFramesRequired() {
+        return 100;
     }
 }
