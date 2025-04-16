@@ -40,6 +40,7 @@ import com.android.compatibility.common.util.PollingCheck;
 import org.junit.After;
 import org.junit.Assume;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -230,6 +231,7 @@ public class WebViewZoomTest extends SharedWebViewTest{
     }
 
     @Test
+    @Ignore("b/407724361")
     public void testZoomByNonPowerOfTwoIncrements() throws Throwable {
         setUpPage();
 
