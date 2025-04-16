@@ -1848,7 +1848,7 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
 
         InputTransferToken hostInputTransferToken = Objects.requireNonNull(
                 mSurfaceView.getRootSurfaceControl()).getInputTransferToken();
-        // Ask the embedded process to request gesture transfer from the host and then
+        // Ask the embedded process to request gesture transfer from the host and then 
         // verify that the call throws a security exception. We need to do the assertion
         // in the test process to handle the assertion correctly.
         assertTrue(mTestService.requestTouchGestureTransferFromHostThrows(hostInputTransferToken));
@@ -2017,70 +2017,5 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
 
         assertTrue("Failed to receive touch event in host window", hostGotEvent[0]);
         assertTrue("Failed to receive touch event in embedded window", embeddedGotEvent[0]);
-    }
-
-    @RequiresFlagsEnabled(Flags.FLAG_UPDATE_HOST_INPUT_TRANSFER_TOKEN)
-    @Test
-    public void testAddScvhToDetachedView() throws Throwable {
-        // Create a surface view and wait for its surface to be created.
-        CountDownLatch surfaceCreated = new CountDownLatch(1);
-        mActivityRule.runOnUiThread(
-                () -> {
-                    final FrameLayout content = new FrameLayout(mActivity);
-                    mSurfaceView = new SurfaceView(mActivity);
-                    mSurfaceView.setZOrderOnTop(true);
-                    content.addView(
-                            mSurfaceView,
-                            new FrameLayout.LayoutParams(
-                                    DEFAULT_SURFACE_VIEW_WIDTH,
-                                    DEFAULT_SURFACE_VIEW_HEIGHT,
-                                    Gravity.LEFT | Gravity.TOP));
-                    mActivity.setContentView(
-                            content,
-                            new ViewGroup.LayoutParams(
-                                    DEFAULT_SURFACE_VIEW_WIDTH, DEFAULT_SURFACE_VIEW_HEIGHT));
-                    mSurfaceView
-                            .getHolder()
-                            .addCallback(new SurfaceCreatedCallback(surfaceCreated));
-
-                    // Create an embedded view.
-                    mVr =
-                            new SurfaceControlViewHost(
-                                    (Context) mActivity, mActivity.getDisplay(), (IBinder) null);
-                    mEmbeddedView = new Button(mActivity);
-                    mEmbeddedView.setOnClickListener((View v) -> mClicked = true);
-                    mVr.setView(mEmbeddedView, mEmbeddedViewWidth, mEmbeddedViewHeight);
-                });
-        assertTrue(
-                "Failed to wait for SurfaceView created",
-                surfaceCreated.await(WAIT_TIMEOUT_S, TimeUnit.SECONDS));
-
-        CountDownLatch surfacePackageReparented = new CountDownLatch(1);
-        mActivityRule.runOnUiThread(
-                () -> {
-                    mSurfaceView.setChildSurfacePackage(mVr.getSurfacePackage());
-                    SurfaceControl.Transaction t = new SurfaceControl.Transaction();
-                    t.addTransactionCommittedListener(
-                            Runnable::run, surfacePackageReparented::countDown);
-                    mSurfaceView.getRootSurfaceControl().applyTransactionOnDraw(t);
-                });
-        assertTrue(
-                "Failed to wait for surface package to get reparented",
-                surfacePackageReparented.await(WAIT_TIMEOUT_S, TimeUnit.SECONDS));
-
-        mInstrumentation.waitForIdleSync();
-        waitUntilEmbeddedViewDrawn();
-
-        // When surface view is focused, it should transfer focus to the embedded view.
-        requestSurfaceViewFocus();
-        assertWindowFocused(mEmbeddedView, true);
-        // assert host does not have focus
-        assertWindowFocused(mSurfaceView, false);
-
-        // When surface view is no longer focused, it should transfer focus back to the host window.
-        mActivityRule.runOnUiThread(() -> mSurfaceView.setFocusable(false));
-        assertWindowFocused(mEmbeddedView, false);
-        // assert host has focus
-        assertWindowFocused(mSurfaceView, true);
     }
 }

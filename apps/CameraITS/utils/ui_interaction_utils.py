@@ -515,14 +515,14 @@ def switch_default_camera(dut, facing, log_path):
         logging.debug('Resource id: %s', resource_id)
         logging.debug('Flip camera content-desc: %s', content_desc)
         break
-      else:
-        if re.search(
-            flip_camera_pattern, resource_id, re.IGNORECASE
-        ):
-          logging.debug('Pattern matches')
-          logging.debug('Resource id: %s', resource_id)
-          logging.debug('Flip camera content-desc: %s', content_desc)
-          break
+    else:
+      if re.search(
+          flip_camera_pattern, resource_id, re.IGNORECASE
+      ):
+        logging.debug('Pattern matches')
+        logging.debug('Resource id: %s', resource_id)
+        logging.debug('Flip camera content-desc: %s', content_desc)
+        break
   else:
     raise AssertionError('Flip camera resource not found.')
   if facing == _get_current_camera_facing(content_desc, resource_id):
@@ -900,8 +900,6 @@ def get_default_camera_video_stabilization(file_name):
   with open(file_name, 'r') as file:
     for line in file:
       if 'videoStabilizationMode' in line:
-        if _REQ_STR_PATTERN not in line:
-          continue
         logging.debug('videoStabilizationMode line: %s', line)
         values = line.split(':')
         value_str = values[-1]
