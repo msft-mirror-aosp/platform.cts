@@ -102,7 +102,7 @@ def _rotator_write(serial_port, channel, command, value=None):
     value: Integer; the parameter value send to the rotator board.
   """
   tmp = f'{channel}{command}'
-  if value:
+  if value is not None:
     tmp += str(value)
   msg = (f'{_LSS_COMMAND_START}{tmp}{_LSS_COMMAND_END}').encode()
   logging.debug('Writing message to rotator board: %s', msg)
