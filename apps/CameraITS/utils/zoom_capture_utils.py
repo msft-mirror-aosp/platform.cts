@@ -466,8 +466,9 @@ def verify_zoom_results(test_data, size, z_max, z_min,
              f'range advertised min: {z_min}, max: {z_max} '
              f'THRESH: {zoom_max_thresh + ZOOM_RTOL}')
     logging.error(e_msg)
-  return test_success and verify_zoom_data(
+  verify_zoom_data_success, _ = verify_zoom_data(
       test_data, size, offset_plot_name_stem=offset_plot_name_stem)
+  return test_success and verify_zoom_data_success
 
 
 def verify_zoom_data(test_data, size, plot_name_stem=None,
