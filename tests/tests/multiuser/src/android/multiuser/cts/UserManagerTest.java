@@ -23,7 +23,6 @@ import static android.Manifest.permission.MANAGE_USERS;
 import static android.Manifest.permission.MODIFY_QUIET_MODE;
 import static android.Manifest.permission.QUERY_USERS;
 import static android.content.pm.PackageManager.FEATURE_MANAGED_USERS;
-import static android.multiuser.cts.TestingUtils.assumeTvNotSupported;
 import static android.multiuser.cts.TestingUtils.getBooleanProperty;
 import static android.multiuser.cts.TestingUtils.getContextForOtherUser;
 import static android.multiuser.cts.TestingUtils.getContextForUser;
@@ -82,6 +81,7 @@ import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.EnsurePasswordNotSet;
 import com.android.bedstead.harrier.annotations.RequireFeature;
+import com.android.bedstead.harrier.annotations.RequireNotTv;
 import com.android.bedstead.harrier.annotations.RequireResourcesIntegerValue;
 import com.android.bedstead.harrier.annotations.RequireRunOnInitialUser;
 import com.android.bedstead.multiuser.annotations.EnsureCanAddUser;
@@ -1198,11 +1198,13 @@ public final class UserManagerTest {
     }
 
     @Test
+    @RequireNotTv(
+            reason =
+                    "Passwords are required for kid profiles on TV and cannot be set for "
+                            + "the main profile")
     @EnsureHasAdditionalUser(switchedToUser = FALSE)
     @EnsurePasswordNotSet(forUser = ANY)
     public void testSwitchFromNonCredentialToCredentialUser() {
-        assumeTvNotSupported();
-
         UserReference initialUser = sDeviceState.initialUser();
         UserReference additionalUser = additionalUser(sDeviceState);
 

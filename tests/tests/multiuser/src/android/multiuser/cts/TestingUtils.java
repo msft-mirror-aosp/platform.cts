@@ -17,11 +17,8 @@ package android.multiuser.cts;
 
 import static com.android.compatibility.common.util.SystemUtil.runShellCommand;
 
-import static org.junit.Assume.assumeFalse;
-
 import android.app.Instrumentation;
 import android.content.Context;
-import android.content.pm.PackageManager;
 import android.os.UserHandle;
 import android.util.Log;
 
@@ -57,12 +54,6 @@ final class TestingUtils {
         Context context = sContext.createContextAsUser(UserHandle.of(userId), /* flags= */ 0);
         Log.d(TAG, "Got it: " + context);
         return context;
-    }
-
-    static void assumeTvNotSupported() {
-        assumeFalse(
-                "Skipping test as TV does not support lock screen",
-                sContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_LEANBACK));
     }
 
     private static String trim(String s) {
