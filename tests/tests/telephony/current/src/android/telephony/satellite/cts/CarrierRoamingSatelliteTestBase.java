@@ -26,6 +26,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assume.assumeTrue;
 
 import android.annotation.NonNull;
+import android.annotation.Nullable;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -189,23 +190,51 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
     protected static class ServiceStateListenerTest extends TelephonyCallback
             implements TelephonyCallback.ServiceStateListener {
 
+        private final Semaphore mSemaphore = new Semaphore(0);
         private final Semaphore mNtnConnectedSemaphore = new Semaphore(0);
         private final Semaphore mNtnDisconnetedSemaphore = new Semaphore(0);
-
+        private final Semaphore mInServiceSemaphore = new Semaphore(0);
+        private final Semaphore mOutOfServiceSemaphore = new Semaphore(0);
+        @Nullable
+        private ServiceState mServiceState = null;
 
         @Override
         public void onServiceStateChanged(ServiceState serviceState) {
             logd(TAG, "onServiceStateChanged: serviceState=" + serviceState);
+            mServiceState = serviceState;
 
             try {
+                mSemaphore.release();
+
                 if (serviceState.isUsingNonTerrestrialNetwork()) {
                     mNtnConnectedSemaphore.release();
                 } else {
                     mNtnDisconnetedSemaphore.release();
                 }
+
+                int currentState = serviceState.getState();
+                if (currentState == ServiceState.STATE_IN_SERVICE) {
+                    mInServiceSemaphore.release();
+                } else if (currentState == ServiceState.STATE_OUT_OF_SERVICE) {
+                    mOutOfServiceSemaphore.release();
+                }
             } catch (Exception e) {
                 loge(TAG, "onServiceStateChanged: Got exception=" + e);
             }
+        }
+
+        public boolean waitUntilServiceStateChanged() {
+            try {
+                if (!mSemaphore.tryAcquire(TIMEOUT, TimeUnit.MILLISECONDS)) {
+                    loge(TAG, "Timeout to wait for service state changed");
+                    return false;
+                }
+            } catch (Exception e) {
+                loge(TAG, "ServiceStateListenerTest waitUntilServiceStateChanged: "
+                        + "Got exception=" + e);
+                return false;
+            }
+            return true;
         }
 
         public boolean waitUntilNonTerrestrialNetworkConnected() {
@@ -236,10 +265,42 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
             return true;
         }
 
+        public boolean waitUntilInService() {
+            try {
+                if (!mInServiceSemaphore.tryAcquire(TIMEOUT, TimeUnit.MILLISECONDS)) {
+                    loge(TAG, "Timeout to enter in service state");
+                    return false;
+                }
+            } catch (Exception e) {
+                loge(TAG, "ServiceStateListenerTest waitUntilInService: Got exception=" + e);
+                return false;
+            }
+            return true;
+        }
+
+        public boolean waitUntilOutOfService() {
+            try {
+                if (!mOutOfServiceSemaphore.tryAcquire(TIMEOUT, TimeUnit.MILLISECONDS)) {
+                    loge(TAG, "Timeout to enter out of service state");
+                    return false;
+                }
+            } catch (Exception e) {
+                loge(TAG, "ServiceStateListenerTest waitUntilOutOfService: Got exception=" + e);
+                return false;
+            }
+            return true;
+        }
+
         public void clearServiceStateChanges() {
             logd(TAG, "clearServiceStateChanges()");
             mNtnConnectedSemaphore.drainPermits();
             mNtnDisconnetedSemaphore.drainPermits();
+            mInServiceSemaphore.drainPermits();
+            mOutOfServiceSemaphore.drainPermits();
+        }
+
+        public boolean isInService() {
+            return mServiceState != null && mServiceState.getState() == ServiceState.STATE_IN_SERVICE;
         }
     }
 
@@ -386,10 +447,7 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
             + " profile:" + profile);
 
         // Register service state listener
-        ServiceStateListenerTest serviceStateListener = new ServiceStateListenerTest();
-        serviceStateListener.clearServiceStateChanges();
-        sTelephonyManager.registerTelephonyCallback(getContext().getMainExecutor(),
-                serviceStateListener);
+        ServiceStateListenerTest serviceStateListener = registerServiceStateListener();
 
         assertTrue(sMockModemManager.insertSimCard(slotId, profile));
         TimeUnit.MILLISECONDS.sleep(TIMEOUT);
@@ -403,8 +461,9 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
 
         // Enter service
         sMockModemManager.changeNetworkService(slotId, profile, true);
-
         assertTrue(serviceStateListener.waitUntilNonTerrestrialNetworkConnected());
+
+        sTelephonyManager.unregisterTelephonyCallback(serviceStateListener);
     }
 
     protected static void cleanUpMockSim(int slotId, int profile) throws Exception {
@@ -483,11 +542,7 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
                 });
     }
 
-    protected static Context getContext() {
-        return InstrumentationRegistry.getContext();
-    }
-
-    protected SmsManager getSmsManager() {
+    protected static SmsManager getSmsManager() {
         return SmsManager.getDefault();
     }
 
@@ -586,7 +641,7 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
         // Insert sim card
         assertTrue(sMockModemManager.insertSimCard(eSosSlotId, eSosSimProfileId));
         TimeUnit.MILLISECONDS.sleep(TIMEOUT);
-        sMockModemManager.changeNetworkService(eSosSlotId, eSosSimProfileId, true);
+        moveSimToInService(eSosSlotId, eSosSimProfileId);
 
         sEsosSubId = SubscriptionManager.getSubscriptionId(eSosSlotId);
         assumeTrue(sEsosSubId != SubscriptionManager.INVALID_SUBSCRIPTION_ID);
@@ -650,5 +705,27 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
         revokeSatellitePermission();
 
         cleanUpMockSim(slotId, simProfileId);
+    }
+
+    protected static ServiceStateListenerTest registerServiceStateListener() {
+        ServiceStateListenerTest serviceStateListener = new ServiceStateListenerTest();
+        sTelephonyManager.registerTelephonyCallback(getContext().getMainExecutor(),
+                serviceStateListener);
+        // Current service state is broadcasted immediately at registration.
+        serviceStateListener.waitUntilServiceStateChanged();
+        serviceStateListener.clearServiceStateChanges();
+        return serviceStateListener;
+    }
+
+    protected static void moveSimToInService(int slotId, int simProfileId) throws Exception {
+        logd(TAG, "moveSimToInService: slotId=" + slotId + ", simProfileId=" + simProfileId);
+        ServiceStateListenerTest serviceStateListener = registerServiceStateListener();
+        if (serviceStateListener.isInService()) {
+            logd(TAG, "SIM slot is already in service");
+        } else {
+            sMockModemManager.changeNetworkService(slotId, simProfileId, true);
+            assertTrue(serviceStateListener.waitUntilInService());
+        }
+        sTelephonyManager.unregisterTelephonyCallback(serviceStateListener);
     }
 }

@@ -28,6 +28,8 @@ import android.support.annotation.GuardedBy;
 import android.util.ArraySet;
 import android.util.Log;
 
+import com.android.internal.telephony.RILConstants;
+
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
@@ -52,6 +54,9 @@ public class IRadioMessagingImpl extends IRadioMessaging.Stub {
     private int mSubId;
     private String mTag;
     private final MockMessagingService mMockMessagingService;
+    @RadioError
+    private int mSendSmsErrorCode = RadioError.NONE;
+    private int mRilErrorCode = RILConstants.SUCCESS;
 
     public interface BroadcastCallback {
         void onGsmBroadcastActivated();
@@ -233,13 +238,14 @@ public class IRadioMessagingImpl extends IRadioMessaging.Stub {
 
     @Override
     public void sendImsSms(int serial, android.hardware.radio.messaging.ImsSmsMessage message) {
-        Log.d(mTag, "sendImsSms");
+        Log.d(mTag, "sendImsSms: mSendSmsErrorCode=" + mSendSmsErrorCode
+            + ", mRilErrorCode=" + mRilErrorCode);
 
         android.hardware.radio.messaging.SendSmsResult sms = new SendSmsResult();
         sms.messageRef = 0;
         sms.ackPDU = "ack";
-        sms.errorCode = 0;
-        RadioResponseInfo rsp = mService.makeSolRsp(serial);
+        sms.errorCode = mSendSmsErrorCode;
+        RadioResponseInfo rsp = mService.makeSolRsp(serial, mRilErrorCode);
         try {
             mRadioMessagingResponse.sendImsSmsResponse(rsp, sms);
         } catch (RemoteException ex) {
@@ -249,13 +255,14 @@ public class IRadioMessagingImpl extends IRadioMessaging.Stub {
 
     @Override
     public void sendSms(int serial, android.hardware.radio.messaging.GsmSmsMessage message) {
-        Log.d(mTag, "sendSms");
+        Log.d(mTag, "sendSms: mSendSmsErrorCode=" + mSendSmsErrorCode
+            + ", mRilErrorCode=" + mRilErrorCode);
 
         android.hardware.radio.messaging.SendSmsResult sms = new SendSmsResult();
         sms.messageRef = 0;
         sms.ackPDU = "ack";
-        sms.errorCode = 0;
-        RadioResponseInfo rsp = mService.makeSolRsp(serial);
+        sms.errorCode = mSendSmsErrorCode;
+        RadioResponseInfo rsp = mService.makeSolRsp(serial, mRilErrorCode);
         try {
             mRadioMessagingResponse.sendSmsResponse(rsp, sms);
         } catch (RemoteException ex) {
@@ -546,5 +553,12 @@ public class IRadioMessagingImpl extends IRadioMessaging.Stub {
     }
     public void unregisterBroadcastCallback(CallBackWithExecutor callback) {
         mBroadcastCallbacks.remove(callback);
+    }
+
+    public void setSendSmsErrorCode(@RadioError int sendSmsErrorCode, int rilErrorCode) {
+        Log.d(mTag, "setSendSmsErrorCode: sendSmsErrorCode=" + sendSmsErrorCode
+            + ", rilErrorCode=" + rilErrorCode);
+        mSendSmsErrorCode = sendSmsErrorCode;
+        mRilErrorCode = rilErrorCode;
     }
 }
