@@ -84,6 +84,29 @@ fun withRawCoords(pt: PointF, epsilon: Float = EPSILON):
     }
 }
 
+fun withRelativeMotion(dx: Float, dy: Float, epsilon: Float = EPSILON):
+        Matcher<MotionEvent> = object : TypeSafeMatcher<MotionEvent>() {
+    override fun describeTo(description: Description) {
+        description.appendText("With relative motion of ($dx, $dy)")
+    }
+
+    override fun matchesSafely(event: MotionEvent): Boolean {
+        return (abs(event.getAxisValue(MotionEvent.AXIS_RELATIVE_X) - dx) < epsilon) &&
+                (abs(event.getAxisValue(MotionEvent.AXIS_RELATIVE_Y) - dy) < epsilon)
+    }
+
+    override fun describeMismatchSafely(event: MotionEvent, mismatchDescription: Description) {
+        mismatchDescription.appendText(
+            "Got relative motion (${event.getAxisValue(
+                MotionEvent.AXIS_RELATIVE_X
+            )}, ${event.getAxisValue(MotionEvent.AXIS_RELATIVE_Y)})"
+        )
+    }
+}
+
+fun withRelativeMotion(dx: Int, dy: Int, epsilon: Float = EPSILON):
+        Matcher<MotionEvent> = withRelativeMotion(dx.toFloat(), dy.toFloat(), epsilon)
+
 private fun hasResampledSamples(event: MotionEvent): Boolean {
     for (h in 0 until event.historySize) {
         for (p in 0 until event.pointerCount) {

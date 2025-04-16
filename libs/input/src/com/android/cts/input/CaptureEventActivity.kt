@@ -25,7 +25,7 @@ import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.TimeUnit
 import org.junit.Assert.assertNull
 
-class CaptureEventActivity : Activity() {
+open class CaptureEventActivity : Activity() {
     private val events = LinkedBlockingQueue<InputEvent>()
     var shouldHandleKeyEvents = true
 
@@ -76,6 +76,10 @@ class CaptureEventActivity : Activity() {
     fun assertNoEvents() {
         val event = events.poll(100, TimeUnit.MILLISECONDS)
         assertNull("Expected no events, but received $event", event)
+    }
+
+    fun makeVerifier(): BlockingQueueEventVerifier {
+        return BlockingQueueEventVerifier(events)
     }
 
     companion object {
