@@ -46,6 +46,7 @@ public class CredentialsStatsTest extends DeviceTestCase implements IBuildReceiv
     private static final String TAG = "CredentialsStats";
 
     private static final String FEATURE_CREDENTIALS = "android.software.credentials";
+    private static final String FEATURE_AUTOMOTIVE = "android.hardware.type.automotive";
 
     public static final String TEST_PKG = "android.credentials.cts";
     public static final String TEST_APK = "CtsCredentialManagerTestCases.apk";
@@ -122,13 +123,15 @@ public class CredentialsStatsTest extends DeviceTestCase implements IBuildReceiv
 
     /**
      * Check whether the device is supported or not. Currently, the device needs to have
-     * FEATURE_CREDENTIALS.
+     * FEATURE_CREDENTIALS. For the time being, we exclude FEATURE_AUTOMOTIVE, where Credential
+     * Manager is not supported.
      *
      * @param device the device
      * @return {@code True} if the device is supported. Otherwise, return {@code false}.
      * @throws Exception If DeviceUtils has an exception
      */
     public static boolean isSupportedDevice(ITestDevice device) throws Exception {
-        return DeviceUtils.hasFeature(device, FEATURE_CREDENTIALS);
+        return DeviceUtils.hasFeature(device, FEATURE_CREDENTIALS)
+                && !DeviceUtils.hasFeature(device, FEATURE_AUTOMOTIVE);
     }
 }
