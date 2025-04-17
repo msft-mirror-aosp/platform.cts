@@ -162,6 +162,9 @@ public final class CompatChangeTests extends MultiDisplayTestBase {
             component(HelperActivities.ResponsiveActivity.class);
     private static final ComponentName NO_PROPERTY_CHANGE_ORIENTATION_WHILE_RELAUNCHING_ACTIVITY =
             component(HelperActivities.NoPropertyChangeOrientationWhileRelaunchingActivity.class);
+    private static final ComponentName NO_DISPLAY_CONFIG_CHANGE_SUPPORT_GAME_ACTIVITY =
+            ComponentName.createRelative(
+                    "android.server.wm.displaycompat", ".NoDisplayConfigChangeSupportGameActivity");
 
     // Fixed orientation min aspect ratio
     private static final float FIXED_ORIENTATION_MIN_ASPECT_RATIO = 1.03f;
@@ -942,6 +945,39 @@ public final class CompatChangeTests extends MultiDisplayTestBase {
                         .mId;
 
         final ComponentName activity = NON_RESIZEABLE_PORTRAIT_ACTIVITY;
+        startActivityOnDisplay(DEFAULT_DISPLAY, activity);
+        waitForActivityFocused(5000, activity);
+
+        separateTestJournal();
+        startActivityOnDisplay(secondaryDisplayId, activity);
+        assertTrue(
+                mWmState.waitFor(
+                        state ->
+                                state.getDisplayByActivity(activity) == secondaryDisplayId
+                                        && state.hasActivityState(activity, STATE_RESUMED),
+                        "Waiting for the activity to move to a secondary display"));
+
+        assertRelaunchOrConfigChanged(activity, 0 /* numRelaunch */, 0 /* numConfigChange */);
+    }
+
+    /** Test that a DCM app does not relaunch with display move. */
+    @Test
+    @RequiresFlagsEnabled({
+            Flags.FLAG_ENABLE_DISPLAY_COMPAT_MODE,
+            Flags.FLAG_ENABLE_RESTART_MENU_FOR_CONNECTED_DISPLAYS
+    })
+    public void testDisplayCompatGameDoesNotRestartWithDisplayMove() {
+        assumeTrue(supportsMultiDisplay());
+        final int secondaryDisplayId =
+                createManagedVirtualDisplaySession()
+                        .setSimulateDisplay(true)
+                        .setSimulationDisplaySize(1920 /* width */, 1080 /* height */)
+                        .setDisplayImePolicy(DISPLAY_IME_POLICY_LOCAL)
+                        .setDensityDpi(123)
+                        .createDisplay()
+                        .mId;
+
+        final ComponentName activity = NO_DISPLAY_CONFIG_CHANGE_SUPPORT_GAME_ACTIVITY;
         startActivityOnDisplay(DEFAULT_DISPLAY, activity);
         waitForActivityFocused(5000, activity);
 
