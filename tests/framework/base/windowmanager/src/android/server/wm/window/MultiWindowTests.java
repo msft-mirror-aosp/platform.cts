@@ -18,8 +18,10 @@ package android.server.wm.window;
 
 import static android.app.ActivityManager.LOCK_TASK_MODE_NONE;
 import static android.app.WindowConfiguration.ACTIVITY_TYPE_STANDARD;
+import static android.app.WindowConfiguration.WINDOWING_MODE_FREEFORM;
 import static android.app.WindowConfiguration.WINDOWING_MODE_FULLSCREEN;
 import static android.app.WindowConfiguration.WINDOWING_MODE_MULTI_WINDOW;
+import static android.app.WindowConfiguration.WINDOWING_MODE_UNDEFINED;
 import static android.server.wm.TestTaskOrganizer.INVALID_TASK_ID;
 import static android.server.wm.WindowManagerState.STATE_RESUMED;
 import static android.server.wm.WindowManagerState.STATE_STOPPED;
@@ -544,22 +546,24 @@ public class MultiWindowTests extends ActivityManagerTestBase {
                 getLaunchActivityBuilder().setTargetActivity(LAUNCHING_ACTIVITY),
                 getLaunchActivityBuilder().setTargetActivity(TEST_ACTIVITY_WITH_SAME_AFFINITY));
 
-        mTaskOrganizer.setLaunchRoot(mTaskOrganizer.getSecondarySplitTaskId());
+        mTaskOrganizer.setLaunchRoot(
+                mTaskOrganizer.getSecondarySplitTaskId(),
+                new int[] {
+                    WINDOWING_MODE_FULLSCREEN,
+                    WINDOWING_MODE_MULTI_WINDOW,
+                    WINDOWING_MODE_FREEFORM,
+                    WINDOWING_MODE_UNDEFINED
+                });
 
         // Launch two more activities on a different task on top of split-screen-secondary and
         // only the top opaque activity should be visible.
-        // Explicitly launch them into fullscreen mode because the control windowing mode of the
-        // launch root doesn't include freeform mode. Freeform first devices launch apps in freeform
-        // mode by default, which won't trigger the launch root.
         getLaunchActivityBuilder().setTargetActivity(TRANSLUCENT_TEST_ACTIVITY)
                 .setUseInstrumentation()
                 .setWaitForLaunched(true)
-                .setWindowingMode(WINDOWING_MODE_FULLSCREEN)
                 .execute();
         getLaunchActivityBuilder().setTargetActivity(TEST_ACTIVITY)
                 .setUseInstrumentation()
                 .setWaitForLaunched(true)
-                .setWindowingMode(WINDOWING_MODE_FULLSCREEN)
                 .execute();
         mWmState.assertVisibility(TEST_ACTIVITY, true);
         mWmState.waitForActivityState(TRANSLUCENT_TEST_ACTIVITY, STATE_STOPPED);

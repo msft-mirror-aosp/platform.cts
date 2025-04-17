@@ -243,15 +243,24 @@ public class TestTaskOrganizer extends TaskOrganizer {
         });
     }
 
+    /** Sets the launch-root taskId and the controlled windowingModes. */
+    public void setLaunchRoot(int taskId, int[] controlledWindowingModes) {
+        NestedShellPermission.run(
+                () -> {
+                    synchronized (this) {
+                        final WindowContainerTransaction t =
+                                new WindowContainerTransaction()
+                                        .setLaunchRoot(
+                                                mKnownTasks.get(taskId).getToken(),
+                                                controlledWindowingModes,
+                                                CONTROLLED_ACTIVITY_TYPES);
+                        applyTransaction(t);
+                    }
+                });
+    }
+
     public void setLaunchRoot(int taskId) {
-        NestedShellPermission.run(() -> {
-            synchronized (this) {
-                final WindowContainerTransaction t = new WindowContainerTransaction()
-                        .setLaunchRoot(mKnownTasks.get(taskId).getToken(),
-                                CONTROLLED_WINDOWING_MODES, CONTROLLED_ACTIVITY_TYPES);
-                applyTransaction(t);
-            }
-        });
+        setLaunchRoot(taskId, CONTROLLED_WINDOWING_MODES);
     }
 
     void dismissSplitScreen() {
