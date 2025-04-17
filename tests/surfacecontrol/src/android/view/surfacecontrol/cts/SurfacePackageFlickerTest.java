@@ -16,6 +16,7 @@
 package android.view.surfacecontrol.cts;
 
 import static android.server.wm.ActivityManagerTestBase.createFullscreenActivityScenarioRule;
+import static android.server.wm.BuildUtils.HW_TIMEOUT_MULTIPLIER;
 import static android.server.wm.WindowManagerState.getLogicalDisplaySize;
 
 import android.content.Context;
@@ -39,6 +40,7 @@ import org.junit.Test;
 import org.junit.rules.TestName;
 
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 public class SurfacePackageFlickerTest {
     private static final int DEFAULT_LAYOUT_WIDTH = 100;
@@ -57,7 +59,9 @@ public class SurfacePackageFlickerTest {
     @Before
     public void setup() {
         mActivityRule.getScenario().onActivity(activity -> mActivity = activity);
-        mActivity.setLogicalDisplaySize(getLogicalDisplaySize());
+        if (!CapturedActivity.wmCanReplaceContentOnDisplay()) {
+            mActivity.setLogicalDisplaySize(getLogicalDisplaySize());
+        }
         // Change runtime to 10s instead of 50s
         mActivity.setMinimumCaptureDurationMs(10000);
     }
@@ -113,10 +117,11 @@ public class SurfacePackageFlickerTest {
             });
         }
 
-        public void waitForReady() {
+        public boolean waitForReady() {
             try {
-                mFirstDrawLatch.await();
+                return mFirstDrawLatch.await(5L * HW_TIMEOUT_MULTIPLIER, TimeUnit.SECONDS);
             } catch (Exception e) {
+                return false;
                 // Oh well
             }
         }

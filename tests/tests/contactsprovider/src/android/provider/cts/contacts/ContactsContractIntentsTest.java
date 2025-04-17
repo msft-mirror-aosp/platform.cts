@@ -23,6 +23,7 @@ import android.provider.ContactsContract;
 import android.test.AndroidTestCase;
 
 import com.android.compatibility.common.util.CddTest;
+import com.android.compatibility.common.util.FeatureUtil;
 
 import java.util.List;
 
@@ -40,18 +41,33 @@ public class ContactsContractIntentsTest extends AndroidTestCase {
     }
 
     public void testViewContactDir() {
+        if (FeatureUtil.isXrHeadset()) {
+            // Contact app in XR device is optional to OEM. No need for test.
+            return;
+        }
+
         Intent intent = new Intent(Intent.ACTION_VIEW);
         intent.setData(ContactsContract.Contacts.CONTENT_URI);
         assertCanBeHandled(intent);
     }
 
     public void testPickContactDir() {
+        if (FeatureUtil.isXrHeadset()) {
+            // Contact app in XR device is optional to OEM. No need for test.
+            return;
+        }
+
         Intent intent = new Intent(Intent.ACTION_PICK);
         intent.setData(ContactsContract.Contacts.CONTENT_URI);
         assertCanBeHandled(intent);
     }
 
     public void testGetContentContactDir() {
+        if (FeatureUtil.isXrHeadset()) {
+            // Contact app in XR device is optional to OEM. No need for test.
+            return;
+        }
+
         Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
         intent.setType(ContactsContract.Contacts.CONTENT_ITEM_TYPE);
         assertCanBeHandled(intent);
@@ -60,11 +76,12 @@ public class ContactsContractIntentsTest extends AndroidTestCase {
     @CddTest(requirements={"3.18/C-2-1"})
     public void testSetDefaultAccount() {
         PackageManager packageManager = getContext().getPackageManager();
-        if (
-                packageManager.hasSystemFeature(PackageManager.FEATURE_WATCH)
+        if (packageManager.hasSystemFeature(PackageManager.FEATURE_WATCH)
                 || packageManager.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE)
-        ) {
-            return; // Skip test on watch and automotive since the intent is not required.
+                || FeatureUtil.isXrHeadset()) {
+            // Skip test on watch, automotive and XR Headset since the intent is
+            // not required.
+            return;
         }
 
         Intent intent = new Intent(ContactsContract.Settings.ACTION_SET_DEFAULT_ACCOUNT);

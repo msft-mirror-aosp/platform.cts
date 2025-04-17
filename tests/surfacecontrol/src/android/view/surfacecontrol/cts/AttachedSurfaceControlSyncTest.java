@@ -37,6 +37,7 @@ import android.view.ViewTreeObserver;
 import android.view.animation.LinearInterpolator;
 import android.view.cts.surfacevalidator.AnimationFactory;
 import android.view.cts.surfacevalidator.AnimationTestCase;
+import android.view.cts.surfacevalidator.CapturedActivity;
 import android.view.cts.surfacevalidator.CapturedActivityWithResource;
 import android.view.cts.surfacevalidator.PixelChecker;
 import android.view.cts.surfacevalidator.ViewFactory;
@@ -154,7 +155,7 @@ public class AttachedSurfaceControlSyncTest {
             GreenSurfaceAnchorView::new;
 
     private static final AnimationFactory sTranslateAnimationFactory = view -> {
-        Property<View, Integer> translationX = new IntProperty<View>("translationX") {
+        Property<View, Integer> translationX = new IntProperty<>("translationX") {
             @Override
             public void setValue(View object, int value) {
                 object.setTranslationX(value);
@@ -186,7 +187,9 @@ public class AttachedSurfaceControlSyncTest {
     @Before
     public void setup() {
         mActivity = mActivityRule.getActivity();
-        mActivity.setLogicalDisplaySize(getLogicalDisplaySize());
+        if (!CapturedActivity.wmCanReplaceContentOnDisplay()) {
+            mActivity.setLogicalDisplaySize(getLogicalDisplaySize());
+        }
     }
 
     /** Draws a moving 10x10 green rectangle with hole punch, make sure we don't get any sync errors */

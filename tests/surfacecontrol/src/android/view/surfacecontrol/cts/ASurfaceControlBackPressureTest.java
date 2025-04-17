@@ -92,7 +92,9 @@ public class ASurfaceControlBackPressureTest {
     @Before
     public void setup() {
         mActivity = mActivityRule.getActivity();
-        mActivity.setLogicalDisplaySize(getLogicalDisplaySize());
+        if (!CapturedActivity.wmCanReplaceContentOnDisplay()) {
+            mActivity.setLogicalDisplaySize(getLogicalDisplaySize());
+        }
         mActivity.setMinimumCaptureDurationMs(1000);
         assumeFalse(mActivity.isOnWatch());
     }

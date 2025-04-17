@@ -15,11 +15,14 @@
  */
 package android.view.cts.surfacevalidator;
 
+import static android.server.wm.BuildUtils.HW_TIMEOUT_MULTIPLIER;
 import static android.view.WindowInsets.Type.statusBars;
 
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import android.Manifest;
 import android.app.Activity;
 import android.app.KeyguardManager;
 import android.content.Context;
@@ -55,17 +58,23 @@ import android.util.Log;
 import android.util.SparseArray;
 import android.view.Display;
 import android.view.PointerIcon;
+import android.view.SurfaceControl;
 import android.view.View;
+import android.view.ViewTreeObserver;
+import android.view.Window;
 import android.view.WindowManager;
 import android.widget.FrameLayout;
 
 import androidx.test.InstrumentationRegistry;
+
+import com.android.compatibility.common.util.SystemUtil;
 
 import org.junit.rules.TestName;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.lang.reflect.Method;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -94,6 +103,7 @@ public class CapturedActivity extends Activity {
     private VirtualDisplay mVirtualDisplay;
 
     private SurfacePixelValidator2 mSurfacePixelValidator;
+    private static final long WAIT_TIMEOUT_S = 5L * HW_TIMEOUT_MULTIPLIER;
 
     private static final int PERMISSION_DIALOG_WAIT_MS = 1000;
     private static final int RETRY_COUNT = 2;
@@ -112,12 +122,24 @@ public class CapturedActivity extends Activity {
     private volatile boolean mOnWatch;
     private CountDownLatch mMediaProjectionCreatedLatch;
     private Point mLogicalDisplaySize = new Point();
+    private Point mTestAreaSize = new Point();
     private long mMinimumCaptureDurationMs = 0;
 
     private AtomicBoolean mIsSharingScreenDenied;
 
     private int mResultCode;
     private Intent mResultData;
+    private FrameLayout mParentLayout;
+
+    public static Boolean wmCanReplaceContentOnDisplay() {
+        try {
+            WindowManager.class.getMethod(
+                    "replaceContentOnDisplayWithMirror", int.class, Window.class);
+            return true;
+        } catch (NoSuchMethodException e) {
+            return false;
+        }
+    }
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -129,6 +151,13 @@ public class CapturedActivity extends Activity {
             // Don't try and set up test/capture infrastructure - they're not supported
             return;
         }
+
+        mParentLayout = new FrameLayout(this);
+        FrameLayout.LayoutParams layoutParams = new FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT);
+        setContentView(mParentLayout, layoutParams);
+
         // Embedded devices are significantly slower, and are given
         // longer duration to capture the expected number of frames
         mOnEmbedded = packageManager.hasSystemFeature(PackageManager.FEATURE_EMBEDDED);
@@ -144,17 +173,21 @@ public class CapturedActivity extends Activity {
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
 
-        mProjectionManager =
-                (MediaProjectionManager) getSystemService(Context.MEDIA_PROJECTION_SERVICE);
+        if (!wmCanReplaceContentOnDisplay()) {
+            mProjectionManager =
+                    (MediaProjectionManager) getSystemService(Context.MEDIA_PROJECTION_SERVICE);
 
-        mMediaProjectionCreatedLatch = new CountDownLatch(1);
+            mMediaProjectionCreatedLatch = new CountDownLatch(1);
+        }
 
         KeyguardManager keyguardManager = getSystemService(KeyguardManager.class);
         if (keyguardManager != null) {
             keyguardManager.requestDismissKeyguard(this, null);
         }
 
-        startActivityForResult(mProjectionManager.createScreenCaptureIntent(), PERMISSION_CODE);
+        if (!wmCanReplaceContentOnDisplay()) {
+            startActivityForResult(mProjectionManager.createScreenCaptureIntent(), PERMISSION_CODE);
+        }
     }
 
     public void setLogicalDisplaySize(Point logicalDisplaySize) {
@@ -274,6 +307,9 @@ public class CapturedActivity extends Activity {
 
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (wmCanReplaceContentOnDisplay()) {
+            return;
+        }
         if (mOnWatch) return;
         getWindow().getDecorView().setSystemUiVisibility(
                 View.SYSTEM_UI_FLAG_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_FULLSCREEN);
@@ -309,6 +345,159 @@ public class CapturedActivity extends Activity {
     }
 
     public TestResult runTest(ISurfaceValidatorTestCase animationTestCase) throws Throwable {
+        if (wmCanReplaceContentOnDisplay()) {
+            return runTestWithWMReplaceContent(animationTestCase);
+        } else {
+            return runTestWithoutWMReplaceContent(animationTestCase);
+        }
+    }
+
+    private TestResult runTestWithWMReplaceContent(
+            ISurfaceValidatorTestCase animationTestCase) throws Throwable {
+        Log.d(TAG, "runTestWithWMReplaceContent");
+        TestResult testResult = new TestResult();
+        Runnable cleanupRunnable = () -> {
+            Log.d(TAG, "Stopping capture and ending test case");
+            if (mVirtualDisplay != null) {
+                mVirtualDisplay.release();
+                mVirtualDisplay = null;
+            }
+
+            animationTestCase.end();
+            FrameLayout contentLayout = findViewById(android.R.id.content);
+            contentLayout.removeAllViews();
+            if (mSurfacePixelValidator != null) {
+                mSurfacePixelValidator.finish(testResult);
+                mSurfacePixelValidator = null;
+            }
+        };
+
+        try {
+            final int numFramesRequired = animationTestCase.getNumFramesRequired();
+            final long maxCapturedDuration = getCaptureDurationMs();
+
+            CountDownLatch frameDrawnLatch = new CountDownLatch(1);
+            mHandler.post(() -> {
+                Log.d(TAG, "Setting up test case");
+
+                // See b/216583939. On some devices, hiding system bars is disabled. In those cases,
+                // adjust the area that is rendering the test content to be outside the status bar
+                // margins to ensure capturing and comparing frames skips the status bar area.
+                Insets statusBarInsets = getWindow()
+                        .getDecorView()
+                        .getRootWindowInsets()
+                        .getInsets(statusBars());
+                FrameLayout.LayoutParams layoutParams =
+                        (FrameLayout.LayoutParams) mParentLayout.getLayoutParams();
+                layoutParams.setMargins(statusBarInsets.left, statusBarInsets.top,
+                        statusBarInsets.right, statusBarInsets.bottom);
+                mParentLayout.setLayoutParams(layoutParams);
+
+                animationTestCase.start(getApplicationContext(), mParentLayout);
+
+                Runnable runnable = () -> {
+                    SurfaceControl.Transaction t = new SurfaceControl.Transaction();
+                    t.addTransactionCommittedListener(Runnable::run, frameDrawnLatch::countDown);
+                    mParentLayout.getRootSurfaceControl().applyTransactionOnDraw(t);
+                };
+
+                if (mParentLayout.isAttachedToWindow()) {
+                    runnable.run();
+                } else {
+                    mParentLayout.getViewTreeObserver().addOnWindowAttachListener(
+                            new ViewTreeObserver.OnWindowAttachListener() {
+                                @Override
+                                public void onWindowAttached() {
+                                    runnable.run();
+                                }
+
+                                @Override
+                                public void onWindowDetached() {
+                                }
+                            });
+                }
+            });
+
+            assertTrue("Failed to wait for animation to start", animationTestCase.waitForReady());
+            assertTrue("Failed to wait for frame draw",
+                    frameDrawnLatch.await(WAIT_TIMEOUT_S, TimeUnit.SECONDS));
+
+            Rect bounds = getWindowManager().getCurrentWindowMetrics().getBounds();
+            assertNotNull("Failed to wait for test window bounds", bounds);
+            mTestAreaSize.set(bounds.width(), bounds.height());
+
+            CountDownLatch setupLatch = new CountDownLatch(1);
+            mHandler.post(() -> {
+                Log.d(TAG, "Starting capture");
+
+                Log.d(TAG, "testAreaWidth: " + mTestAreaSize.x
+                        + ", testAreaHeight: " + mTestAreaSize.y);
+
+                Rect boundsToCheck = animationTestCase.getBoundsToCheck(mParentLayout);
+                if (boundsToCheck != null && (boundsToCheck.width() < 40
+                        || boundsToCheck.height() < 40)) {
+                    fail("capture bounds too small to be a fullscreen activity: " + boundsToCheck);
+                }
+
+                Log.d(TAG, "Size is " + mTestAreaSize + ", bounds are "
+                        + (boundsToCheck == null ? "full screen" : boundsToCheck.toShortString()));
+
+                mSurfacePixelValidator = new SurfacePixelValidator2(CapturedActivity.this,
+                        mTestAreaSize, boundsToCheck, animationTestCase.getChecker());
+
+                int density = (int) getWindowManager().getCurrentWindowMetrics().getDensity();
+                DisplayManager dm = getSystemService(DisplayManager.class);
+                mVirtualDisplay = dm.createVirtualDisplay("CtsCapturedActivity",
+                        mTestAreaSize.x, mTestAreaSize.y, density,
+                        mSurfacePixelValidator.getSurface(), 0, null /*Callbacks*/,
+                        null /*Handler*/);
+                assertNotNull("Failed to create VirtualDisplay", mVirtualDisplay);
+                try {
+                    Method method = WindowManager.class.getMethod(
+                            "replaceContentOnDisplayWithMirror", int.class, Window.class);
+                    Log.d(TAG, "Invoking replaceContentOnDisplayWithMirror.");
+                    SystemUtil.runWithShellPermissionIdentity(
+                            () -> assertTrue("Failed to mirror content onto display",
+                                    (boolean) method.invoke(
+                                            getWindowManager(),
+                                            mVirtualDisplay.getDisplay().getDisplayId(),
+                                            getWindow())),
+                            Manifest.permission.ACCESS_SURFACE_FLINGER);
+                } catch (NoSuchMethodException e) {
+                    Log.e(TAG,
+                            "WindowManager replaceContentOnDisplayWithMirror API not found.");
+                }
+
+                setupLatch.countDown();
+            });
+
+            assertTrue("Failed to complete creating and setting up VD",
+                    setupLatch.await(WAIT_TIMEOUT_S, TimeUnit.SECONDS));
+            assertTrue("Failed to wait for required number of frames",
+                    mSurfacePixelValidator.waitForAllFrames(maxCapturedDuration));
+            final CountDownLatch testRunLatch = new CountDownLatch(1);
+            mHandler.post(() -> {
+                cleanupRunnable.run();
+                testRunLatch.countDown();
+            });
+
+            assertTrue("Failed to wait for test to complete",
+                    testRunLatch.await(WAIT_TIMEOUT_S, TimeUnit.SECONDS));
+
+            Log.d(TAG, "Test finished, passFrames " + testResult.passFrames
+                    + ", failFrames " + testResult.failFrames);
+            return testResult;
+        } catch (Throwable throwable) {
+            mHandler.post(cleanupRunnable);
+            Log.e(TAG, "Test Failed, passFrames " + testResult.passFrames + ", failFrames "
+                    + testResult.failFrames);
+            throw throwable;
+        }
+    }
+
+    private TestResult runTestWithoutWMReplaceContent(
+            ISurfaceValidatorTestCase animationTestCase) throws Throwable {
+        Log.d(TAG, "runTestWithoutWMReplaceContent");
         TestResult testResult = new TestResult();
         if (mOnWatch) {
             /**
@@ -499,7 +688,9 @@ public class CapturedActivity extends Activity {
                         + " incorrect frames observed - incorrect positioning",
                 result.failFrames == 0);
 
-        if (testCase.hasAnimation()) {
+        // Frame number validation is skipped when using replaceContentOnDisplayWithMirror API
+        // because the frame rate is much lower
+        if (!wmCanReplaceContentOnDisplay() && testCase.hasAnimation()) {
             float framesPerSecond = 1.0f * result.passFrames
                     / TimeUnit.MILLISECONDS.toSeconds(getCaptureDurationMs());
             assertTrue("Error, only " + result.passFrames
