@@ -75,12 +75,13 @@ public class SupervisionAppBindingHostTest extends BaseHostJUnit4Test implements
                 getDevice()
                         .installPackageForUser(
                                 buildHelper.getTestFile(appFileName),
-                                true, //reinstall app if it is already installed
+                                true, // reinstall app if it is already installed
                                 grantPermissions,
                                 userId,
                                 "-t");
-        assertNull(String.format(
-                "Failed to install %s for user %s: %s", appFileName, userId, result), result);
+        assertNull(
+                String.format("Failed to install %s for user %s: %s", appFileName, userId, result),
+                result);
         waitForBroadcastIdle();
     }
 
@@ -108,11 +109,12 @@ public class SupervisionAppBindingHostTest extends BaseHostJUnit4Test implements
         final Pattern pat =
                 Pattern.compile(expectedOutputPattern, Pattern.MULTILINE | Pattern.COMMENTS);
         if (pat.matcher(output.trim()).find() != shouldMatch) {
-            fail(String.format(
-                    "Output from \"%s\" %s \"%s\"",
-                    command,
-                    (shouldMatch ? "didn't match" : "unexpectedly matched"),
-                    expectedOutputPattern));
+            fail(
+                    String.format(
+                            "Output from \"%s\" %s \"%s\"",
+                            command,
+                            (shouldMatch ? "didn't match" : "unexpectedly matched"),
+                            expectedOutputPattern));
         }
         return output;
     }
@@ -126,14 +128,20 @@ public class SupervisionAppBindingHostTest extends BaseHostJUnit4Test implements
                 300,
                 () -> {
                     String output1 =
-                            runCommand(String.format(
-                                    "cmd role get-role-holders --user %s android.app.role.SYSTEM_SUPERVISION ", userId));
+                            runCommand(
+                                    String.format(
+                                            "cmd role get-role-holders --user %s"
+                                                    + " android.app.role.SYSTEM_SUPERVISION ",
+                                            userId));
                     if (output1.equals(pkg)) {
                         CLog.d(String.format("%s has been set default supervision app.", pkg));
                     } else {
                         String output2 =
-                                runCommand(String.format(
-                                        "cmd role add-role-holder --user %s android.app.role.SYSTEM_SUPERVISION %s", userId, pkg));
+                                runCommand(
+                                        String.format(
+                                                "cmd role add-role-holder --user %s"
+                                                        + " android.app.role.SYSTEM_SUPERVISION %s",
+                                                userId, pkg));
                         if (output2.contains("TimeoutException")) {
                             RunUtil.getDefault().sleep(10000);
                             throw new RuntimeException("cmd role add-role-holder timeout.");
@@ -195,20 +203,24 @@ public class SupervisionAppBindingHostTest extends BaseHostJUnit4Test implements
         // Set as the default app
         setSupervisionApp(packageName, userId);
 
-        checkBound(packageName, serviceClass, userId);
+        checkBound(packageName, serviceClass, userId, false);
     }
 
-    private void checkBound(String packageName, String serviceClass, int userId) throws Throwable {
+    private void checkBound(
+            String packageName, String serviceClass, int userId, boolean supervisionEnabled)
+            throws Throwable {
         runWithRetries(
                 DEFAULT_LONG_TIMEOUT_SEC,
                 () -> {
                     runCommand(
-                            String.format("dumpsys activity service %s/%s",
-                                    packageName, serviceClass),
-                            String.format("%s .* %s",
+                            String.format(
+                                    "dumpsys activity service %s/%s", packageName, serviceClass),
+                            String.format(
+                                    "%s .* %s.*%s",
                                     Pattern.quote(String.format("[%s]", packageName)),
-                                    Pattern.quote(String.format("[%s]", serviceClass)))
-                    );
+                                    Pattern.quote(String.format("[%s]", serviceClass)),
+                                    Pattern.quote(
+                                            String.format("Enabled=[%s]", supervisionEnabled))));
                 });
 
         // This should contain:
@@ -221,10 +233,13 @@ public class SupervisionAppBindingHostTest extends BaseHostJUnit4Test implements
                 () -> {
                     runCommand(
                             "dumpsys app_binding -s",
-                            String.format("^%s",
-                                    Pattern.quote(String.format(
-                                            "conn,[Supervision app],%s,%s,%s,bound,connected,",
-                                            userId, packageName, serviceClass))));
+                            String.format(
+                                    "^%s",
+                                    Pattern.quote(
+                                            String.format(
+                                                    "conn,[Supervision"
+                                                            + " app],%s,%s,%s,bound,connected,",
+                                                    userId, packageName, serviceClass))));
                 });
     }
 
@@ -249,11 +264,11 @@ public class SupervisionAppBindingHostTest extends BaseHostJUnit4Test implements
                 () -> {
                     runCommand(
                             "dumpsys app_binding -s",
-                            String.format("^%s(%s|null)%s.*%s.*$",
+                            String.format(
+                                    "^%s(%s|null)%s.*%s.*$",
                                     Pattern.quote("finder,[Supervision app],"),
                                     userId,
-                                    Pattern.quote(String.format(
-                                            ",%s,null,", packageName)),
+                                    Pattern.quote(String.format(",%s,null,", packageName)),
                                     Pattern.quote(expectedErrorPattern)));
                 });
     }
@@ -282,5 +297,36 @@ public class SupervisionAppBindingHostTest extends BaseHostJUnit4Test implements
                 PACKAGE_SUP,
                 mCurrentUserId,
                 "Service with android.app.action.BIND_SUPERVISION_APP_SERVICE not found");
+    }
+
+    /** Test calling onEnabled(). */
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_SUPERVISION_MANAGER_APIS)
+    public void testOnEnabled() throws Throwable {
+        // We need to make sure it is bound before enabling/disabling supervision
+        installAndCheckBound(APK_SUP1, PACKAGE_SUP, SERVICE_SUP, mCurrentUserId);
+
+        waitForBroadcastIdle();
+        runCommand(String.format("cmd supervision enable %s", mCurrentUserId));
+
+        // Check that supervisionAppService is bound and supervision is disabled
+        checkBound(PACKAGE_SUP, SERVICE_SUP, mCurrentUserId, true);
+    }
+
+    /** Test calling onDisabled(). */
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_SUPERVISION_MANAGER_APIS)
+    public void testOnDisabled() throws Throwable {
+        // We need to make sure it is bound before enabling/disabling supervision
+        installAndCheckBound(APK_SUP1, PACKAGE_SUP, SERVICE_SUP, mCurrentUserId);
+
+        waitForBroadcastIdle();
+        runCommand(String.format("cmd supervision enable %s", mCurrentUserId));
+
+        waitForBroadcastIdle();
+        runCommand(String.format("cmd supervision disable %s", mCurrentUserId));
+
+        // Check that supervisionAppService is bound and supervision is disabled
+        checkBound(PACKAGE_SUP, SERVICE_SUP, mCurrentUserId, false);
     }
 }
