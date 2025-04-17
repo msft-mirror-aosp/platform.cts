@@ -67,31 +67,27 @@ public class ApiInheritGenerator extends ApiXmlGenerator {
         for (ApiMethod apiMethod : apiClass.getDeclaredMethods()) {
             apiClass.getOverriddenMethods(apiMethod.getName(), apiMethod.getParameterTypes())
                     .forEach(
-                            (superClass, superMethod) -> {
-                                getTopElement(TOP_ELEMENT_NAME)
-                                        .appendChild(
-                                                createMethodElement(
-                                                        apiClass,
-                                                        apiMethod,
-                                                        superClass,
-                                                        superMethod,
-                                                        "override"));
-                            });
+                            (superClass, superMethod) ->
+                                    getTopElement(TOP_ELEMENT_NAME)
+                                            .appendChild(
+                                                    createMethodElement(
+                                                            apiClass,
+                                                            apiMethod,
+                                                            superClass,
+                                                            superMethod,
+                                                            "override")));
         }
         apiClass.getInheritedMethods()
                 .forEach(
-                        (superClass, superMethods) -> {
-                            for (ApiMethod superMethod : superMethods) {
+                        superClassMethod ->
                                 getTopElement(TOP_ELEMENT_NAME)
                                         .appendChild(
                                                 createMethodElement(
                                                         apiClass,
-                                                        superMethod,
-                                                        superClass,
-                                                        superMethod,
-                                                        "inherit"));
-                            }
-                        });
+                                                        superClassMethod.getSecond(),
+                                                        superClassMethod.getFirst(),
+                                                        superClassMethod.getSecond(),
+                                                        "inherit")));
     }
 
     private Element createMethodElement(
