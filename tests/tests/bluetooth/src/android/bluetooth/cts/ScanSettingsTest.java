@@ -22,21 +22,29 @@ import static org.junit.Assert.assertThrows;
 
 import android.bluetooth.le.ScanSettings;
 import android.os.Parcel;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.bluetooth.flags.Flags;
 import com.android.compatibility.common.util.CddTest;
 
 import org.junit.Assume;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 /** Test for Bluetooth LE {@link ScanSettings}. */
 @RunWith(AndroidJUnit4.class)
 public class ScanSettingsTest {
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Before
     public void setUp() {
@@ -166,5 +174,17 @@ public class ScanSettingsTest {
         ScanSettings settingsFromParcel = ScanSettings.CREATOR.createFromParcel(parcel);
         assertThat(settingsFromParcel.getReportDelayMillis()).isEqualTo(reportDelayMillis);
         assertThat(settings.getScanMode()).isEqualTo(ScanSettings.SCAN_MODE_LOW_LATENCY);
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_RSSI_SCAN_FILTER)
+    @Test
+    public void rssiThreshold() {
+        int rssiThreshold = -50;
+        ScanSettings settingsRssi =
+                new ScanSettings.Builder()
+                        .setRssiThreshold(rssiThreshold)
+                        .build();
+
+        assertThat(settingsRssi.getRssiThreshold()).isEqualTo(rssiThreshold);
     }
 }
