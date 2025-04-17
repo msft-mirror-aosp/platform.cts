@@ -20,6 +20,8 @@ import com.android.cts.apicommon.ApiClass;
 import com.android.cts.apicommon.ApiCoverage;
 import com.android.cts.apicommon.ApiMethod;
 
+import org.apache.commons.math3.util.Pair;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -52,7 +54,7 @@ public class ClassProfile {
     private Map<String, MethodProfile> mTestMethods = null;
 
     // Methods inherited from apis.
-    private Map<ClassProfile, List<MethodProfile>> mInheritedApiMethods = null;
+    private Map<String, Pair<ClassProfile, MethodProfile>> mInheritedApiMethods = null;
 
     // A map of API classes extended/implemented by this class with the API class signature as
     // the key.
@@ -127,8 +129,8 @@ public class ClassProfile {
         return mMethods;
     }
 
-    public Map<ClassProfile, List<MethodProfile>> getInheritedApiMethods() {
-        return mInheritedApiMethods;
+    public List<Pair<ClassProfile, MethodProfile>> getInheritedApiMethods() {
+        return mInheritedApiMethods.values().stream().toList();
     }
 
     /** Creates a class method. */
@@ -378,16 +380,16 @@ public class ClassProfile {
             String methodName,
             List<String> methodParams,
             boolean isAbstract) {
-        String methodKey = Utils.getMethodSignature(methodName, methodParams);
-        if (mMethods.get(methodKey) != null && mMethods.get(methodKey).isDirectMember()) {
+        String methodSignature = Utils.getMethodSignature(methodName, methodParams);
+        if (mMethods.get(methodSignature) != null
+                && mMethods.get(methodSignature).isDirectMember()) {
             return;
         }
         MethodProfile inheritedMethod = superClass.getOrCreateMethod(methodName, methodParams);
         if (isAbstract) {
             inheritedMethod.addMethodType(MethodProfile.MethodType.ABSTRACT);
         }
-        mInheritedApiMethods.putIfAbsent(superClass, new ArrayList<>());
-        mInheritedApiMethods.get(superClass).add(inheritedMethod);
+        mInheritedApiMethods.putIfAbsent(methodSignature, new Pair<>(superClass, inheritedMethod));
     }
 
     private void addInheritedApiMethods(ClassProfile superClass, ApiCoverage apiCoverage) {
@@ -396,14 +398,13 @@ public class ClassProfile {
                 && !superClass.getClassSignature().startsWith("java.lang.Object")) {
             ApiClass apiClass =
                     apiCoverage.getClass(superClass.getPackageName(), superClass.getClassName());
-            for (List<ApiMethod> methods : apiClass.getInheritedMethods().values()) {
-                for (ApiMethod method : methods) {
-                    addInheritedApiMethod(
-                            superClass,
-                            method.getName(),
-                            method.getParameterTypes(),
-                            method.isAbstractMethod());
-                }
+            for (Pair<ApiClass, ApiMethod> classMethod : apiClass.getInheritedMethods()) {
+                ApiMethod method = classMethod.getSecond();
+                addInheritedApiMethod(
+                        superClass,
+                        method.getName(),
+                        method.getParameterTypes(),
+                        method.isAbstractMethod());
             }
             for (ApiMethod method : apiClass.getDeclaredMethods()) {
                 addInheritedApiMethod(
@@ -415,14 +416,13 @@ public class ClassProfile {
             return;
         }
         superClass.resolveInheritedApiMethods(apiCoverage);
-        for (List<MethodProfile> methods : superClass.getInheritedApiMethods().values()) {
-            for (MethodProfile method : methods) {
-                addInheritedApiMethod(
-                        superClass,
-                        method.getMethodName(),
-                        method.getMethodParams(),
-                        method.isAbstract());
-            }
+        for (Pair<ClassProfile, MethodProfile> classMethod : superClass.getInheritedApiMethods()) {
+            MethodProfile method = classMethod.getSecond();
+            addInheritedApiMethod(
+                    superClass,
+                    method.getMethodName(),
+                    method.getMethodParams(),
+                    method.isAbstract());
         }
     }
 

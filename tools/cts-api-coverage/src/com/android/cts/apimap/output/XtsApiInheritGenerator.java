@@ -82,15 +82,18 @@ public final class XtsApiInheritGenerator extends XtsXmlGenerator {
                                 }
                             });
         }
-        for (Map.Entry<ClassProfile, List<MethodProfile>> methods :
-                classProfile.getInheritedApiMethods().entrySet()) {
-            for (MethodProfile method : methods.getValue()) {
-                getTopElement(TOP_ELEMENT_NAME)
-                        .appendChild(
-                                createMethodElement(
-                                        classProfile, method, methods.getKey(), method, "inherit"));
-            }
-        }
+        classProfile
+                .getInheritedApiMethods()
+                .forEach(
+                        classMethod ->
+                                getTopElement(TOP_ELEMENT_NAME)
+                                        .appendChild(
+                                                createMethodElement(
+                                                        classProfile,
+                                                        classMethod.getSecond(),
+                                                        classMethod.getFirst(),
+                                                        classMethod.getSecond(),
+                                                        "inherit")));
     }
 
     private Element createMethodElement(
