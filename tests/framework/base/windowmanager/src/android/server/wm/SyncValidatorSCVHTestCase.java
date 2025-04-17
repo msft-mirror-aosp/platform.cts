@@ -150,12 +150,13 @@ public class SyncValidatorSCVHTestCase implements ISurfaceValidatorTestCase {
     }
 
     @Override
-    public void waitForReady() {
+    public boolean waitForReady() {
         boolean ready = false;
         try {
             ready = mReadyToStart.await(3L * HW_TIMEOUT_MULTIPLIER, TimeUnit.SECONDS);
         } catch (InterruptedException e) {
             Log.e(TAG, "Failed to wait for SCVH to attach");
+            return false;
         }
 
         assertTrue("Failed to attach SCVH", ready);
@@ -164,6 +165,7 @@ public class SyncValidatorSCVHTestCase implements ISurfaceValidatorTestCase {
         mIAttachEmbeddedWindow = mSurfaceControlViewHostHelper.getAttachedEmbeddedWindow();
 
         mHandler.post(mResizeWithSurfaceSyncGroup);
+        return true;
     }
 
     @Override

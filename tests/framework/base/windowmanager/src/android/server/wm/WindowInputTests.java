@@ -76,6 +76,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -93,7 +94,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @Presubmit
 public class WindowInputTests {
     private static final String TAG = "WindowInputTests";
-    private final int TOTAL_NUMBER_OF_CLICKS = 100;
+    private static final int TOTAL_NUMBER_OF_CLICKS = 100;
     private final ActivityTestRule<TestActivity> mActivityRule =
             new ActivityTestRule<>(TestActivity.class);
     private static final int TAPPING_TARGET_WINDOW_SIZE = 100;
@@ -234,7 +235,7 @@ public class WindowInputTests {
         mInstrumentation.waitForIdleSync();
 
         mCtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mView);
-        assertEquals(0, mClickCount);
+        assertEquals("Wrong number of clicks", 0, mClickCount);
     }
 
     // If a window is obscured by another window from the same app, touches should still get
@@ -275,10 +276,10 @@ public class WindowInputTests {
         mInstrumentation.waitForIdleSync();
         mCtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mView);
 
-        assertTrue(touchReceived.get());
+        assertTrue("Did not receive any touch input", touchReceived.get());
         assertEquals(0, eventFlags.get(EVENT_FLAGS_WAIT_TIME, TimeUnit.SECONDS)
                 & MotionEvent.FLAG_WINDOW_IS_OBSCURED);
-        assertEquals(1, mClickCount);
+        assertEquals("Wrong number of clicks", 1, mClickCount);
     }
 
     @Test
@@ -332,8 +333,8 @@ public class WindowInputTests {
             mCtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mView);
 
             // Touch not received due to setFilterTouchesWhenObscured(true)
-            assertFalse(touchReceived.get());
-            assertEquals(0, mClickCount);
+            assertFalse("Should not receive any touch input", touchReceived.get());
+            assertEquals("Wrong number of clicks", 0, mClickCount);
         } finally {
             mActivity.stopService(intent);
         }
@@ -390,11 +391,11 @@ public class WindowInputTests {
             waitForWindow(windowName);
             mCtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mView);
 
-            assertTrue(touchReceived.get());
-            assertEquals(MotionEvent.FLAG_WINDOW_IS_OBSCURED,
+            assertTrue("Did not receive any touch input", touchReceived.get());
+            assertEquals("Window was not obscured", MotionEvent.FLAG_WINDOW_IS_OBSCURED,
                     eventFlags.get(EVENT_FLAGS_WAIT_TIME, TimeUnit.SECONDS)
                             & MotionEvent.FLAG_WINDOW_IS_OBSCURED);
-            assertEquals(1, mClickCount);
+            assertEquals("Wrong number of clicks", 1, mClickCount);
         } finally {
             mActivity.stopService(intent);
         }
@@ -439,10 +440,10 @@ public class WindowInputTests {
             waitForWindow(windowName);
             mCtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mView);
 
-            assertTrue(touchReceived.get());
+            assertTrue("Did not receive any touch input", touchReceived.get());
             assertEquals(0, eventFlags.get(EVENT_FLAGS_WAIT_TIME, TimeUnit.SECONDS)
                     & MotionEvent.FLAG_WINDOW_IS_OBSCURED);
-            assertEquals(1, mClickCount);
+            assertEquals("Wrong number of clicks", 1, mClickCount);
         } finally {
             mActivity.stopService(intent);
         }
@@ -497,11 +498,11 @@ public class WindowInputTests {
             waitForWindow(windowName);
             mCtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mView);
 
-            assertTrue(touchReceived.get());
-            assertEquals(MotionEvent.FLAG_WINDOW_IS_OBSCURED,
+            assertTrue("Did not receive any touch input", touchReceived.get());
+            assertEquals("Window was not obscured", MotionEvent.FLAG_WINDOW_IS_OBSCURED,
                     eventFlags.get(EVENT_FLAGS_WAIT_TIME, TimeUnit.SECONDS)
                             & MotionEvent.FLAG_WINDOW_IS_OBSCURED);
-            assertEquals(1, mClickCount);
+            assertEquals("Wrong number of clicks", 1, mClickCount);
         } finally {
             mActivity.stopService(intent);
         }
@@ -557,11 +558,11 @@ public class WindowInputTests {
             waitForWindow(windowName);
             mCtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mView);
 
-            assertTrue(touchReceived.get());
-            assertEquals(MotionEvent.FLAG_WINDOW_IS_PARTIALLY_OBSCURED,
+            assertTrue("Did not receive any touch input", touchReceived.get());
+            assertEquals("Window was not partially obscured", MotionEvent.FLAG_WINDOW_IS_PARTIALLY_OBSCURED,
                     eventFlags.get(EVENT_FLAGS_WAIT_TIME, TimeUnit.SECONDS)
                             & MotionEvent.FLAG_WINDOW_IS_PARTIALLY_OBSCURED);
-            assertEquals(1, mClickCount);
+            assertEquals("Wrong number of clicks", 1, mClickCount);
         } finally {
             mActivity.stopService(intent);
         }
@@ -609,10 +610,10 @@ public class WindowInputTests {
             waitForWindow(windowName);
             mCtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mView);
 
-            assertTrue(touchReceived.get());
+            assertTrue("Did not receive any touch input", touchReceived.get());
             assertEquals(0, eventFlags.get(EVENT_FLAGS_WAIT_TIME, TimeUnit.SECONDS)
                     & MotionEvent.FLAG_WINDOW_IS_PARTIALLY_OBSCURED);
-            assertEquals(1, mClickCount);
+            assertEquals("Wrong number of clicks", 1, mClickCount);
         } finally {
             mActivity.stopService(intent);
         }
@@ -657,7 +658,7 @@ public class WindowInputTests {
 
             mCtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mView);
         }
-        assertEquals(1, mClickCount);
+        assertEquals("Wrong number of clicks",1, mClickCount);
     }
 
     @Test
@@ -697,7 +698,7 @@ public class WindowInputTests {
         mInstrumentation.waitForIdleSync();
 
         mCtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mView);
-        assertEquals(1, mClickCount);
+        assertEquals("Wrong number of clicks",1, mClickCount);
     }
 
     @Test
@@ -722,9 +723,9 @@ public class WindowInputTests {
 
         mCtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mView);
 
-        assertEquals(1, events.size());
+        assertEquals("Wrong number of events", 1, events.size());
         MotionEvent event = events.iterator().next();
-        assertEquals(MotionEvent.ACTION_OUTSIDE, event.getAction());
+        assertEquals("Expected motion event ACTION_OUTSIDE", MotionEvent.ACTION_OUTSIDE, event.getAction());
     }
 
     @Test
@@ -750,9 +751,9 @@ public class WindowInputTests {
 
         mCtsTouchUtils.emulateTapOnView(mInstrumentation, mActivityRule, mView, size + 5, size + 5);
 
-        assertEquals(1, events.size());
+        assertEquals("Wrong number of expected events", 1, events.size());
         MotionEvent event = events.iterator().next();
-        assertEquals(MotionEvent.ACTION_OUTSIDE, event.getAction());
+        assertEquals("Expected motion event ACTION_OUTSIDE", MotionEvent.ACTION_OUTSIDE, event.getAction());
     }
 
     @Test
@@ -821,7 +822,7 @@ public class WindowInputTests {
         mInstrumentation.waitForIdleSync();
 
         executor.shutdown();
-        executor.awaitTermination(5L, TimeUnit.SECONDS);
+        assertTrue("Failed to shutdown executor", executor.awaitTermination(5L, TimeUnit.SECONDS));
 
         if (securityExceptionCaught[0]) {
             // Fail the test here instead of in the executor lambda,
@@ -835,12 +836,13 @@ public class WindowInputTests {
         }
     }
 
-    private void waitForWindow(String name) {
-        mWmState.waitAndAssertWindowSurfaceShown(name, true);
+    private void waitForWindow(final String name) {
+        mWmState.waitForWithAmState(state -> state.isWindowSurfaceShown(name),
+                name + "'s surface did not appear");
     }
 
     public static class TestActivity extends Activity {
-        private ArrayList<View> mViews = new ArrayList<>();
+        private final List<View> mViews = new ArrayList<>();
 
         @Override
         protected void onCreate(Bundle savedInstanceState) {
@@ -903,7 +905,7 @@ public class WindowInputTests {
             final String windowName = "PointerLocation - display " + displayId;
             wmState.waitForWithAmState(state -> {
                 return state.isWindowSurfaceShown(windowName);
-            }, windowName + "'s surface is appeared");
+            }, windowName + "'s surface did not appear");
         }
     }
 }
