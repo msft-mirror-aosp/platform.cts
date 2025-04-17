@@ -27,7 +27,7 @@
 class VulkanRenderer {
 public:
     void init();
-    void render();
+    void render(uint32_t trianglesCount);
     void cleanup();
     void cleanupSwapChain();
     void reset(ANativeWindow *newWindow, AAssetManager *newManager);
@@ -53,7 +53,8 @@ private:
     void createSyncObjects();
     bool isDeviceSuitable(VkPhysicalDevice device);
     VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR &capabilities);
-    void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
+    void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t trianglesCount,
+                             uint32_t imageIndex);
     void recreateSwapChain();
     void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties,
                       VkBuffer &buffer, VkDeviceMemory &bufferMemory);
