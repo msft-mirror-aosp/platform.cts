@@ -87,10 +87,6 @@ record SELinuxNeverallowRule(
         return id;
     }
 
-    private boolean isFullTrebleDevice(ITestDevice device) throws Exception {
-        return SELinuxHostTest.isFullTrebleDevice(device);
-    }
-
     private boolean isDeviceLaunchingWithR(ITestDevice device) throws Exception {
         return PropertyUtil.getFirstApiLevel(device) > 29;
     }
@@ -112,10 +108,6 @@ record SELinuxNeverallowRule(
     }
 
     public boolean isCompatible(ITestDevice device) throws Exception {
-        if ((fullTrebleOnly) && (!isFullTrebleDevice(device))) {
-            // This test applies only to Treble devices but this device isn't one
-            return false;
-        }
         if ((launchingWithROnly) && (!isDeviceLaunchingWithR(device))) {
             // This test applies only to devices launching with R or later but this device isn't one
             return false;
