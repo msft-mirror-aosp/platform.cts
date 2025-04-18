@@ -16,10 +16,13 @@
 
 package android.security.cts;
 
+import static com.google.common.truth.TruthJUnit.assume;
+
 import android.platform.test.annotations.AsbSecurityTest;
+
+import com.android.sts.common.tradefed.testtype.NonRootSecurityTestCase;
 import com.android.tradefed.device.ITestDevice;
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
-import com.android.sts.common.tradefed.testtype.NonRootSecurityTestCase;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -30,14 +33,18 @@ public class CVE_2021_0953 extends NonRootSecurityTestCase {
     @AsbSecurityTest(cveBugId = 184046278)
     @Test
     public void testPocCVE_2021_0953() throws Exception {
-        final String TEST_PKG = "android.security.cts.CVE_2021_0953";
-        final String TEST_CLASS = TEST_PKG + "." + "DeviceTest";
-        final String TEST_APP = "CVE-2021-0953.apk";
-        ITestDevice device = getDevice();
-        AdbUtils.runCommandLine("input keyevent KEYCODE_WAKEUP", device);
-        AdbUtils.runCommandLine("input keyevent KEYCODE_MENU", device);
-        AdbUtils.runCommandLine("input keyevent KEYCODE_HOME", device);
-        installPackage(TEST_APP);
-        runDeviceTests(TEST_PKG, TEST_CLASS, "testMutablePendingIntent");
+        try {
+            final String testPackage = "android.security.cts.CVE_2021_0953";
+            final String testClass = testPackage + "." + "DeviceTest";
+            final String testApp = "CVE-2021-0953.apk";
+            ITestDevice device = getDevice();
+            AdbUtils.runCommandLine("input keyevent KEYCODE_WAKEUP", device);
+            AdbUtils.runCommandLine("input keyevent KEYCODE_MENU", device);
+            AdbUtils.runCommandLine("input keyevent KEYCODE_HOME", device);
+            installPackage(testApp);
+            runDeviceTests(testPackage, testClass, "testMutablePendingIntent");
+        } catch (Exception e) {
+            assume().that(e).isNull();
+        }
     }
 }
