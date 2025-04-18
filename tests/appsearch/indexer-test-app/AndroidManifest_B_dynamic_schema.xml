@@ -30,7 +30,7 @@
             android:exported="true">
             <property android:name="android.app.appfunctions" android:value="appfunctions.xml" />
             <property android:name="android.app.appfunctions.v2"
-                android:value="appfunctions_v2.xml" />
+                android:resource="@xml/appfunctions_v2" />
             <property android:name="android.app.appfunctions.schema"
                 android:value="app_functions_schema.xsd" />
             <intent-filter>
