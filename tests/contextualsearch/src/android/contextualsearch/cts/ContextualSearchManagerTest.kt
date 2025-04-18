@@ -182,7 +182,6 @@ class ContextualSearchManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_CONTEXTUAL_SEARCH_PREVENT_SELF_CAPTURE)
     fun testOwnSecureOverlayNotCaptured() {
         context.startActivity(
             Intent(context, OverlayActivity::class.java)
