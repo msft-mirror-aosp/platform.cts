@@ -97,7 +97,6 @@ class AppOpsMultiUserTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_RUNTIME_PERMISSION_APPOPS_MAPPING_ENABLED)
     fun testUninstallDoesntAffectOtherUsers() {
         installApkForAllUsers(APK)
 
