@@ -43,10 +43,6 @@ public class ProcessMustUseSeccompTest extends DeviceTestCase {
         super.tearDown();
     }
 
-    private boolean isFullTrebleDevice() throws DeviceNotAvailableException {
-        return PropertyUtil.getFirstApiLevel(mDevice) > 25;
-    }
-
     /*
      * Get the PID of process "Name" using "Cmd". If prefix == True only do
      * prefix matching. This is used for HALs which are versioned
