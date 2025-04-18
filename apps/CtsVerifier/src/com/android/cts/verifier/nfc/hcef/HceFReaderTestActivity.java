@@ -43,7 +43,13 @@ public class HceFReaderTestActivity extends PassFailButtons.TestListActivity {
             adapter.add(TestListItem.newTest(this, R.string.nfc_hce_f_reader,
                     HceFReaderActivity.class.getName(),
                     new Intent(this, HceFReaderActivity.class), null));
-
+            adapter.add(
+                    TestListItem.newTest(
+                            this,
+                            R.string.nfc_hce_f_reader_observe_mode_tests,
+                            HceFReaderActivity.class.getName(),
+                            new Intent(this, HceFReaderActivity.class),
+                            null));
         }
 
         setTestListAdapter(adapter);
