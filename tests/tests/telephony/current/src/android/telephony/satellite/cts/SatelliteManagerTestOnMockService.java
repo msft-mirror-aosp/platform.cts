@@ -95,7 +95,6 @@ import android.telephony.satellite.SystemSelectionSpecifier;
 import android.telephony.satellite.stub.NTRadioTechnology;
 import android.telephony.satellite.stub.SatelliteModemState;
 import android.telephony.satellite.stub.SatelliteResult;
-import android.text.TextUtils;
 import android.util.Log;
 import android.util.Pair;
 import android.uwb.UwbManager;
@@ -6916,38 +6915,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
                 fail("requestSelectedNbIotSatelliteSubscriptionId: null");
             }
             assertNotEquals(SubscriptionManager.INVALID_SUBSCRIPTION_ID, (long) pairResult.first);
-        } finally {
-            revokeSatellitePermission();
-        }
-    }
-
-    @Test
-    @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ROAMING_NB_IOT_NTN)
-    public void testRequestSatelliteDisplayName() {
-        logd("testRequestSatelliteDisplayName: sEsosSubId=" + sEsosSubId);
-        grantSatellitePermission();
-        try {
-            Pair<CharSequence, Integer> pairResult = requestSatelliteDisplayName();
-            if (pairResult == null) {
-                fail("requestSatelliteDisplayName: null");
-            }
-            assertNull(pairResult.second);
-            if (TextUtils.isEmpty(pairResult.first)) {
-                assumeTrue(sEsosSubId != SubscriptionManager.INVALID_SUBSCRIPTION_ID);
-
-                String displayName = "Satellite";
-                PersistableBundle bundle = new PersistableBundle();
-                bundle.putString(
-                        CarrierConfigManager.KEY_SATELLITE_DISPLAY_NAME_STRING, displayName);
-                overrideCarrierConfig(sEsosSubId, bundle);
-
-                pairResult = requestSatelliteDisplayName();
-                if (pairResult == null) {
-                    fail("requestSatelliteDisplayName: null");
-                }
-                assertEquals(displayName, pairResult.first);
-                assertNull(pairResult.second);
-            }
         } finally {
             revokeSatellitePermission();
         }
