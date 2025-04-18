@@ -54,12 +54,30 @@ public class ReachabilityStateStatsTests extends DeviceTestCase implements IBuil
             "wm set-ignore-orientation-request ";
     private static final String WM_GET_IGNORE_ORIENTATION_REQUEST =
             "wm get-ignore-orientation-request";
+    private static final String DUMPSYS_ACTIVITY_ACTIVITIES = "dumpsys activity activities";
     private static final Pattern IGNORE_ORIENTATION_REQUEST_PATTERN =
             Pattern.compile("ignoreOrientationRequest (true|false) for displayId=\\d+");
     private static final Pattern HORIZONTAL_REACHABILITY_PATTERN =
             Pattern.compile("Is horizontal reachability enabled: (true|false)");
     private static final Pattern VERTICAL_REACHABILITY_PATTERN =
             Pattern.compile("Is vertical reachability enabled: (true|false)");
+    private static final String TEST_ACTIVITY = "StatsdCtsForegroundActivity";
+
+    // Regex to find the ActivityRecord and extract windowing mode
+    private static final Pattern WINDOWING_MODE_PATTERN =
+            Pattern.compile(
+                    "\\* Hist\\s+#\\d+:\\s+ActivityRecord\\{[^\\}]*?\\s+"
+                            + "\\b"
+                            + DeviceUtils.STATSD_ATOM_TEST_PKG.replace(".", "\\.")
+                            + "/\\."
+                            + TEST_ACTIVITY
+                            + "\\b[^\\}]*?\\s+"
+                            + ".*?mWindowingMode=(\\S+)",
+                    Pattern.DOTALL);
+    private static final String WINDOWING_MODE_FULLSCREEN = "fullscreen";
+    private static final String KEY_ACTION = "action";
+    private static final String ACTION_LONG_SLEEP_WHILE_TOP = "action.long_sleep_top";
+
     private IBuildInfo mCtsBuild;
     private boolean mInitialIgnoreOrientationRequest;
 
@@ -101,7 +119,8 @@ public class ReachabilityStateStatsTests extends DeviceTestCase implements IBuil
     }
 
     public void testHorizontalReachability() throws Exception {
-        if (isReachabilityDisabled(HORIZONTAL_REACHABILITY_PATTERN)) {
+        if (isReachabilityDisabled(HORIZONTAL_REACHABILITY_PATTERN)
+                || hasUnsupportedWindowingMode()) {
             return;
         }
         // Run an local test (AppCompatTests#testHorizontalReachability) to
@@ -128,7 +147,8 @@ public class ReachabilityStateStatsTests extends DeviceTestCase implements IBuil
     }
 
     public void testVerticalReachability() throws Exception {
-        if (isReachabilityDisabled(VERTICAL_REACHABILITY_PATTERN)) {
+        if (isReachabilityDisabled(VERTICAL_REACHABILITY_PATTERN)
+                || hasUnsupportedWindowingMode()) {
             return;
         }
         // Run an local test (AppCompatTests#testVerticalReachability) to
@@ -159,5 +179,34 @@ public class ReachabilityStateStatsTests extends DeviceTestCase implements IBuil
         final Matcher matcher = pattern.matcher(output);
         assertTrue(matcher.find());
         return !Boolean.parseBoolean(matcher.group(1));
+    }
+
+    private boolean hasUnsupportedWindowingMode() throws Exception {
+        // Reachability is disabled when the system doesn't use full screen windowing, so check if
+        // the test activity will be launched in a fullscreen window
+        try (AutoCloseable a =
+                DeviceUtils.withActivity(
+                        getDevice(),
+                        DeviceUtils.STATSD_ATOM_TEST_PKG,
+                        TEST_ACTIVITY,
+                        /* actionKey= */ KEY_ACTION,
+                        /* actionValue= */ ACTION_LONG_SLEEP_WHILE_TOP)) {
+            // Wait for the activity to come up
+            RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
+
+            String output = getDevice().executeShellCommand(DUMPSYS_ACTIVITY_ACTIVITIES);
+            Matcher matcher = WINDOWING_MODE_PATTERN.matcher(output);
+
+            while (matcher.find()) {
+                for (int i = 1; i <= matcher.groupCount(); i++) {
+                    if (!matcher.group(i).equals(WINDOWING_MODE_FULLSCREEN)) {
+                        a.close();
+                        return true;
+                    }
+                }
+            }
+            a.close();
+            return false;
+        }
     }
 }

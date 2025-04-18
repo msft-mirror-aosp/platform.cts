@@ -686,6 +686,12 @@ public class BitmapRegionDecoderTest {
         Bitmap full = decoder.decodeRegion(new Rect(0, 0, decoder.getWidth(), decoder.getHeight()),
                 null);
         assertNotNull(full);
+
+        // Prior to a fix, this crashed in native code (b/390822777).
+        Options opts = new BitmapFactory.Options();
+        opts.inSampleSize = 2;
+        Bitmap scaledRegion = decoder.decodeRegion(new Rect(0, 0, TILE_SIZE, TILE_SIZE), opts);
+        assertNotNull(scaledRegion);
     }
 
     @Test(expected = NullPointerException.class)

@@ -16,6 +16,8 @@
 
 package com.android.cts.apicommon;
 
+import org.apache.commons.math3.util.Pair;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -50,7 +52,7 @@ public class ApiClass implements Comparable<ApiClass>, HasCoverage {
     private final Map<String, ApiClass> mInterfaceMap = new HashMap<>();
 
     // A map storing methods inherited from superclasses and interfaces.
-    private Map<ApiClass, List<ApiMethod>> mInheritedMethods = null;
+    private Map<String, Pair<ApiClass, ApiMethod>> mInheritedMethods = null;
 
     /**
      * @param name The name of the class
@@ -93,8 +95,8 @@ public class ApiClass implements Comparable<ApiClass>, HasCoverage {
         return mSuperClassName;
     }
 
-    public Map<ApiClass, List<ApiMethod>> getInheritedMethods() {
-        return mInheritedMethods;
+    public List<Pair<ApiClass, ApiMethod>> getInheritedMethods() {
+        return mInheritedMethods.values().stream().toList();
     }
 
     public boolean isAbstract() {
@@ -238,24 +240,17 @@ public class ApiClass implements Comparable<ApiClass>, HasCoverage {
                 .findFirst();
     }
 
-    /** Finds the given inherited API methods. */
-    public Map<ApiClass, ApiMethod> getInheritedMethods(String name, List<String> parameterTypes) {
-        Map<ApiClass, ApiMethod> inheritedMethod = new HashMap<>();
-        mInheritedMethods.forEach(
-                (apiClass, apiMethods) ->
-                        apiMethods.stream()
-                                .filter(method -> compareMethod(name, parameterTypes, method))
-                                .forEach(method -> inheritedMethod.put(apiClass, method)));
-        return inheritedMethod;
+    /** Finds the given inherited API method. */
+    public Optional<ApiMethod> getInheritedMethod(String name, List<String> parameterTypes) {
+        Pair<ApiClass, ApiMethod> apiClassMethod =
+                mInheritedMethods.get(ApiUtils.getMethodSignature(name, parameterTypes));
+        return Optional.ofNullable(apiClassMethod == null ? null : apiClassMethod.getSecond());
     }
 
     /** Finds the given API method including both inherited and directly declared methods. */
     public Optional<ApiMethod> getMethod(String name, List<String> parameterTypes) {
-        Map<ApiClass, ApiMethod> methods = getInheritedMethods(name, parameterTypes);
-        if (methods.isEmpty()) {
-            return getDeclaredMethod(name, parameterTypes);
-        }
-        return methods.values().stream().findFirst();
+        Optional<ApiMethod> method = getInheritedMethod(name, parameterTypes);
+        return method.isEmpty() ? getDeclaredMethod(name, parameterTypes) : method;
     }
 
     /**
@@ -315,13 +310,11 @@ public class ApiClass implements Comparable<ApiClass>, HasCoverage {
     private void addInheritedMethod(ApiClass superClass, ApiMethod inheritedMethod) {
         if (getDeclaredMethod(inheritedMethod.getName(), inheritedMethod.getParameterTypes())
                 .isEmpty()) {
-            mInheritedMethods.putIfAbsent(superClass, new ArrayList<>());
-            mInheritedMethods.get(superClass).add(inheritedMethod);
+            String methodSignature =
+                    ApiUtils.getMethodSignature(
+                            inheritedMethod.getName(), inheritedMethod.getParameterTypes());
+            mInheritedMethods.putIfAbsent(methodSignature, new Pair<>(superClass, inheritedMethod));
         }
-    }
-
-    private void addInheritedMethods(ApiClass superClass, List<ApiMethod> inheritedMethods) {
-        inheritedMethods.forEach(method -> addInheritedMethod(superClass, method));
     }
 
     /**
@@ -339,8 +332,7 @@ public class ApiClass implements Comparable<ApiClass>, HasCoverage {
         superClass.getDeclaredMethods().forEach(method -> addInheritedMethod(superClass, method));
         superClass
                 .getInheritedMethods()
-                .values()
-                .forEach(methods -> addInheritedMethods(superClass, methods));
+                .forEach(classMethod -> addInheritedMethod(superClass, classMethod.getSecond()));
     }
 
     /**

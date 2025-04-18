@@ -206,19 +206,17 @@ class ZoomTestTELE(its_base_test.ItsBaseTest):
         opencv_processing_utils.mark_zoom_images(
             images, test_data, test_artifacts_name_stem)
 
-        if not zoom_capture_utils.verify_zoom_data(
+        test_success, msg = zoom_capture_utils.verify_zoom_data(
             test_data, size,
             offset_plot_name_stem=test_artifacts_name_stem,
-            number_of_cameras_to_test=_NUMBER_OF_CAMERAS_TO_TEST):
-          test_failed = True
+            number_of_cameras_to_test=_NUMBER_OF_CAMERAS_TO_TEST)
 
-    if test_failed:
-      failure_message = f'{_NAME} failed! Check test_log.DEBUG for errors'
+    if not test_success:
       if first_api_level >= its_session_utils.ANDROID16_API_LEVEL:
-        raise AssertionError(failure_message)
+        raise AssertionError(msg)
       else:
         raise AssertionError(f'{its_session_utils.NOT_YET_MANDATED_MESSAGE}'
-                             f'\n\n{failure_message}')
+                             f'\n\n{msg}')
 
 if __name__ == '__main__':
   test_runner.main()

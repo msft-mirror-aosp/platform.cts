@@ -19,8 +19,6 @@ package android.net.wifi.sharedconnectivity.cts.app;
 import static android.net.wifi.sharedconnectivity.app.NetworkProviderInfo.DEVICE_TYPE_LAPTOP;
 import static android.net.wifi.sharedconnectivity.app.NetworkProviderInfo.DEVICE_TYPE_PHONE;
 
-import static com.android.wifi.flags.Flags.networkProviderBatteryChargingStatus;
-
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertThrows;
@@ -98,7 +96,7 @@ public class NetworkProviderInfoTest {
                 .setBatteryPercentage(BATTERY_PERCENTAGE_1);
         assertThat(builder.build()).isNotEqualTo(info1);
 
-        if (networkProviderBatteryChargingStatus() && SdkLevel.isAtLeastV()) {
+        if (SdkLevel.isAtLeastV()) {
             builder = buildNetworkProviderInfoBuilder()
                     .setBatteryCharging(BATTERY_CHARGING_1);
             assertThat(builder.build()).isNotEqualTo(info1);

@@ -25,6 +25,7 @@ import static android.app.appsearch.testutil.AppFunctionConstants.APP_B_PRINT_AP
 
 import static com.google.common.truth.Truth.assertThat;
 
+import android.Manifest;
 import android.app.appsearch.GenericDocument;
 import android.app.appsearch.GlobalSearchSessionShim;
 import android.app.appsearch.SearchResult;
@@ -32,7 +33,9 @@ import android.app.appsearch.SearchResultsShim;
 import android.app.appsearch.SearchSpec;
 import android.app.appsearch.testutil.AppSearchTestUtils;
 import android.app.appsearch.testutil.GlobalSearchSessionShimImpl;
+import android.content.ComponentName;
 import android.content.Context;
+import android.content.pm.PackageManager;
 import android.os.Build;
 import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
@@ -41,6 +44,7 @@ import android.util.ArrayMap;
 import androidx.annotation.NonNull;
 import androidx.test.core.app.ApplicationProvider;
 import androidx.test.filters.SdkSuppress;
+import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.appsearch.flags.Flags;
 import com.android.compatibility.common.util.SystemUtil;
@@ -81,6 +85,9 @@ public class AppIndexerCtsTest {
                     + "CtsAppSearchIndexerTestAppADynamicSchemaMultipleRootSchemas.apk";
     private static final String TEST_APP_B_DYNAMIC_SCHEMA_PATH =
             TEST_APP_ROOT_FOLDER + "CtsAppSearchIndexerTestAppBDynamicSchema.apk";
+
+    private static final String TEST_APP_A_APP_FUNCTION_SERVICE_DISABLED =
+            TEST_APP_ROOT_FOLDER + "CtsAppSearchIndexerTestAppAAppFunctionServiceDisabled.apk";
     private static final String TEST_APP_A_PKG = "com.android.cts.appsearch.indexertestapp.a";
     private static final String TEST_APP_B_PKG = "com.android.cts.appsearch.indexertestapp.b";
     private static final String NAMESPACE_MOBILE_APPLICATION = "apps";
@@ -684,6 +691,126 @@ public class AppIndexerCtsTest {
                                                         TEST_APP_A_PKG
                                                                 + "/com.example.utils#print1")))
                                 .isEqualTo(APP_A_DYNAMIC_SCHEMA_PRINT_APP_FUNCTION);
+                    });
+        }
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_INDEXER_RUN_ON_APP_FUNCTION_COMPONENT_CHANGE)
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
+    @Test
+    public void indexApp_appFunctionServiceEnabledInRuntime_functionsIndexed() throws Throwable {
+        {
+            installPackage(TEST_APP_A_APP_FUNCTION_SERVICE_DISABLED);
+            installPackage(TEST_APP_B_V1_PATH);
+
+            // Retry till the indexer has completed a run.
+            retryAssert(
+                    () -> {
+                        // A MobileApplication for AppB should be inserted.
+                        GenericDocument mobileApplication =
+                                searchMobileApplicationWithId(TEST_APP_B_PKG);
+                        assertThat(mobileApplication).isNotNull();
+                    });
+            // AppFunctions for App A should not be indexed.
+            Map<String, GenericDocument> appFnMap =
+                    searchAppFunctionDocumentsIntoMap(TEST_APP_A_PKG);
+            assertThat(appFnMap).isEmpty();
+        }
+
+        {
+            updateAppFunctionServiceEnabledState(
+                    TEST_APP_A_PKG, PackageManager.COMPONENT_ENABLED_STATE_ENABLED);
+
+            // Retry till the indexer has completed another run.
+            retryAssert(
+                    () -> {
+                        Map<String, GenericDocument> appFnMap =
+                                searchAppFunctionDocumentsIntoMap(TEST_APP_A_PKG);
+                        // Make sure after enabling app is indexed.
+                        assertThat(appFnMap).hasSize(1);
+                    });
+        }
+    }
+
+    private void updateAppFunctionServiceEnabledState(String packageName, int newState) {
+        InstrumentationRegistry.getInstrumentation()
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(Manifest.permission.CHANGE_COMPONENT_ENABLED_STATE);
+
+        mContext.getPackageManager()
+                .setComponentEnabledSetting(
+                        new ComponentName(
+                                packageName, "com.android.cts.appsearch.helper.AppFunctionService"),
+                        newState,
+                        /* flags= */ 0);
+        InstrumentationRegistry.getInstrumentation()
+                .getUiAutomation()
+                .dropShellPermissionIdentity();
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_INDEXER_RUN_ON_APP_FUNCTION_COMPONENT_CHANGE)
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
+    @Test
+    public void indexApp_appFunctionServiceDisabledInRuntime_functionsRemoved() throws Throwable {
+        {
+            installPackage(TEST_APP_A_DYNAMIC_SCHEMA_PATH);
+
+            // Retry till the indexer has completed a run.
+            retryAssert(
+                    () -> {
+                        // AppFunctions for App A should be indexed.
+                        Map<String, GenericDocument> appFnMap =
+                                searchAppFunctionDocumentsIntoMap(TEST_APP_A_PKG);
+                        assertThat(appFnMap).hasSize(1);
+                    });
+        }
+
+        {
+            updateAppFunctionServiceEnabledState(
+                    TEST_APP_A_PKG, PackageManager.COMPONENT_ENABLED_STATE_DISABLED);
+
+            // Retry till the indexer has completed another run.
+            retryAssert(
+                    () -> {
+                        Map<String, GenericDocument> appFnMap =
+                                searchAppFunctionDocumentsIntoMap(TEST_APP_A_PKG);
+                        // Functions removed.
+                        assertThat(appFnMap).isEmpty();
+                    });
+        }
+    }
+
+    @RequiresFlagsDisabled(Flags.FLAG_ENABLE_INDEXER_RUN_ON_APP_FUNCTION_COMPONENT_CHANGE)
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
+    @Test
+    public void
+            indexApp_compChangeFlagDisabled_appFunctionServiceDisabledInRuntime_functionNotRemoved()
+                    throws Throwable {
+        {
+            installPackage(TEST_APP_A_DYNAMIC_SCHEMA_PATH);
+
+            // Retry till the indexer has completed a run.
+            retryAssert(
+                    () -> {
+                        // AppFunctions for App A should be indexed.
+                        Map<String, GenericDocument> appFnMap =
+                                searchAppFunctionDocumentsIntoMap(TEST_APP_A_PKG);
+                        assertThat(appFnMap).hasSize(1);
+                    });
+        }
+
+        {
+            updateAppFunctionServiceEnabledState(
+                    TEST_APP_A_PKG, PackageManager.COMPONENT_ENABLED_STATE_DISABLED);
+
+            // Retry till the indexer has completed another run.
+            retryAssert(
+                    () -> {
+                        Map<String, GenericDocument> appFnMap =
+                                searchAppFunctionDocumentsIntoMap(TEST_APP_A_PKG);
+                        // Since flag is disabled app is not re-indexed and functions were not
+                        // removed.
+                        assertThat(appFnMap).hasSize(1);
                     });
         }
     }

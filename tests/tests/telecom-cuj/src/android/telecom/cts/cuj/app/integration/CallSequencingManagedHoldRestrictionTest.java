@@ -60,6 +60,9 @@ public class CallSequencingManagedHoldRestrictionTest extends BaseAppVerifier {
     @Test
     @RequiresFlagsEnabled({Flags.FLAG_ENABLE_CALL_SEQUENCING})
     public void testActive0_Answer0() throws Exception {
+        if (!mShouldTestTelecom) {
+            return;
+        }
         HashMap<Integer, AppControlWrapper> apps = new HashMap<>(2);
         try {
             // initial state
@@ -89,6 +92,9 @@ public class CallSequencingManagedHoldRestrictionTest extends BaseAppVerifier {
     @Test
     @RequiresFlagsEnabled({Flags.FLAG_ENABLE_CALL_SEQUENCING})
     public void testActive0_Answer1() throws Exception {
+        if (!mShouldTestTelecom) {
+            return;
+        }
         HashMap<Integer, AppControlWrapper> apps = new HashMap<>(2);
         try {
             // initial state
@@ -117,6 +123,9 @@ public class CallSequencingManagedHoldRestrictionTest extends BaseAppVerifier {
     @Test
     @RequiresFlagsEnabled({Flags.FLAG_ENABLE_CALL_SEQUENCING})
     public void testActive0_Place0() throws Exception {
+        if (!mShouldTestTelecom) {
+            return;
+        }
         HashMap<Integer, AppControlWrapper> apps = new HashMap<>(2);
         try {
             // initial state
@@ -145,6 +154,9 @@ public class CallSequencingManagedHoldRestrictionTest extends BaseAppVerifier {
     @Test
     @RequiresFlagsEnabled({Flags.FLAG_ENABLE_CALL_SEQUENCING})
     public void testActive0_Place1() throws Exception {
+        if (!mShouldTestTelecom) {
+            return;
+        }
         HashMap<Integer, AppControlWrapper> apps = new HashMap<>(2);
         try {
             // initial state
@@ -172,6 +184,9 @@ public class CallSequencingManagedHoldRestrictionTest extends BaseAppVerifier {
     @Test
     @RequiresFlagsEnabled({Flags.FLAG_ENABLE_CALL_SEQUENCING})
     public void testHeld0Active0_Answer0() throws Exception {
+        if (!mShouldTestTelecom) {
+            return;
+        }
         HashMap<Integer, AppControlWrapper> apps = new HashMap<>(2);
         try {
             // initial state
@@ -204,6 +219,9 @@ public class CallSequencingManagedHoldRestrictionTest extends BaseAppVerifier {
     @Test
     @RequiresFlagsEnabled({Flags.FLAG_ENABLE_CALL_SEQUENCING})
     public void testHeld0Active0_Place0() throws Exception {
+        if (!mShouldTestTelecom) {
+            return;
+        }
         HashMap<Integer, AppControlWrapper> apps = new HashMap<>(2);
         try {
             // initial state
@@ -231,6 +249,9 @@ public class CallSequencingManagedHoldRestrictionTest extends BaseAppVerifier {
     @Test
     @RequiresFlagsEnabled({Flags.FLAG_ENABLE_CALL_SEQUENCING})
     public void testHeld0Active0_Place1() throws Exception {
+        if (!mShouldTestTelecom) {
+            return;
+        }
         HashMap<Integer, AppControlWrapper> apps = new HashMap<>(2);
         try {
             // initial state
@@ -259,6 +280,9 @@ public class CallSequencingManagedHoldRestrictionTest extends BaseAppVerifier {
     @Test
     @RequiresFlagsEnabled({Flags.FLAG_ENABLE_CALL_SEQUENCING})
     public void testHeld0Active0_Answer1() throws Exception {
+        if (!mShouldTestTelecom) {
+            return;
+        }
         HashMap<Integer, AppControlWrapper> apps = new HashMap<>(2);
         try {
             // initial state
@@ -288,6 +312,9 @@ public class CallSequencingManagedHoldRestrictionTest extends BaseAppVerifier {
     @Test
     @RequiresFlagsEnabled({Flags.FLAG_ENABLE_CALL_SEQUENCING})
     public void testHeld0Active1_Answer1() throws Exception {
+        if (!mShouldTestTelecom) {
+            return;
+        }
         HashMap<Integer, AppControlWrapper> apps = new HashMap<>(2);
         try {
             // initial state

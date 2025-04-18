@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 The Android Open Source Project
+ * Copyright (C) 2025 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,9 +24,10 @@ import android.cts.statsdatom.lib.DeviceUtils;
 import android.cts.statsdatom.lib.ReportUtils;
 
 import com.android.os.AtomsProto;
-import com.android.os.hardware.health.BatteryExtensionAtoms;
-import com.android.os.hardware.health.BatteryHealth;
+import com.android.os.hardware.health.StorageExtensionAtoms;
+import com.android.os.hardware.health.StorageHealth;
 import com.android.tradefed.build.IBuildInfo;
+import com.android.tradefed.log.LogUtil.CLog;
 import com.android.tradefed.testtype.DeviceTestCase;
 import com.android.tradefed.testtype.IBuildReceiver;
 import com.android.tradefed.util.RunUtil;
@@ -34,11 +35,9 @@ import com.android.tradefed.util.RunUtil;
 import com.google.common.collect.Range;
 import com.google.protobuf.ExtensionRegistry;
 
-import java.util.Calendar;
-import java.util.GregorianCalendar;
 import java.util.List;
 
-public class BatteryHealthTests extends DeviceTestCase implements IBuildReceiver {
+public class StorageHealthTests extends DeviceTestCase implements IBuildReceiver {
     private IBuildInfo mCtsBuild;
 
     @Override
@@ -64,48 +63,32 @@ public class BatteryHealthTests extends DeviceTestCase implements IBuildReceiver
         mCtsBuild = buildInfo;
     }
 
-    public void testBatteryHealthAtomValid() throws Exception {
-        List<AtomsProto.Atom> atoms = pullBatteryHealthAsGaugeMetric();
+    public void testStorageHealthAtomValid() throws Exception {
+        List<AtomsProto.Atom> atoms = pullStorageHealthAsGaugeMetric();
+        if (atoms.size() == 0) {
+            CLog.w("Skipping test - no atom returned");
+            return;
+        }
 
-        // Not all devices will report a BatteryHealthAtom
-        if (atoms.size() == 0) return;
         assertThat(atoms.size()).isEqualTo(1);
-
-        BatteryHealth bh = atoms.get(0).getExtension(BatteryExtensionAtoms.batteryHealth);
-
-        int manufacturing_date = bh.getBatteryManufacturingDate();
-        Calendar manufacturing_cal = intYYYYMMDDToCalendar(manufacturing_date);
-        assertThat(manufacturing_cal.get(Calendar.DAY_OF_WEEK)).isEqualTo(Calendar.MONDAY);
-
-        int first_usage_date = bh.getBatteryFirstUsageDate();
-        Calendar first_usage_cal = intYYYYMMDDToCalendar(first_usage_date);
-        assertThat(first_usage_cal.get(Calendar.DAY_OF_WEEK)).isEqualTo(Calendar.MONDAY);
-
-        assertThat(bh.getBatteryStateOfHealth()).isIn(Range.closed(0, 100));
-
-        assertThat(bh.getBatterySerialNumberHash()).isIn(Range.closed(0, 0xFF));
+        StorageHealth bh = atoms.get(0).getExtension(StorageExtensionAtoms.storageHealth);
+        assertThat(bh.getRemainingLifetimePercent()).isIn(Range.closed(-1, 100));
     }
 
-    private List<AtomsProto.Atom> pullBatteryHealthAsGaugeMetric() throws Exception {
-        ConfigUtils.uploadConfigForPulledAtom(getDevice(), DeviceUtils.STATSD_ATOM_TEST_PKG,
-                BatteryExtensionAtoms.BATTERY_HEALTH_FIELD_NUMBER);
+    private List<AtomsProto.Atom> pullStorageHealthAsGaugeMetric() throws Exception {
+        ConfigUtils.uploadConfigForPulledAtom(
+                getDevice(),
+                DeviceUtils.STATSD_ATOM_TEST_PKG,
+                StorageExtensionAtoms.STORAGE_HEALTH_FIELD_NUMBER);
 
         AtomTestUtils.sendAppBreadcrumbReportedAtom(getDevice());
         RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
 
         ExtensionRegistry registry = ExtensionRegistry.newInstance();
-        BatteryExtensionAtoms.registerAllExtensions(registry);
+        StorageExtensionAtoms.registerAllExtensions(registry);
 
         List<AtomsProto.Atom> atoms = ReportUtils.getGaugeMetricAtoms(getDevice(), registry, false);
 
         return atoms;
-    }
-
-    private Calendar intYYYYMMDDToCalendar(int date) {
-        int year = date / 10000;
-        int month = date / 100 % 100;
-        int day = date % 100;
-
-        return new GregorianCalendar(year, month - 1, day); // Months are indexed 0-11
     }
 }
