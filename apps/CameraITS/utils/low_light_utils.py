@@ -281,7 +281,7 @@ def _find_boxes(image):
   return boxes
 
 
-def _correct_image_rotation(img, regions):
+def _correct_image_rotation(img, regions, max_num_brightest_squares):
   """Corrects the captured image orientation.
 
   The captured image should be of scene_low_light.png. The darkest square
@@ -293,6 +293,8 @@ def _correct_image_rotation(img, regions):
     img: numpy array; the original image captured.
     regions: the tuple of (box, luminance) computed for each square
       in the image.
+    max_num_brightest_squares: maximum number of brightest squares present in
+      the image.
   Returns:
     numpy array; image in the corrected orientation.
   """
@@ -304,54 +306,60 @@ def _correct_image_rotation(img, regions):
   }
 
   darkest_corner = ('', float('inf'))
-  brightest_corner = ('', float('-inf'))
+  brightest_corner = [('', float('-inf'))]
 
   for corner, luminance in corner_brightness.items():
     if luminance < darkest_corner[1]:
       darkest_corner = (corner, luminance)
-    if luminance > brightest_corner[1]:
-      brightest_corner = (corner, luminance)
+    if luminance > brightest_corner[0][1]:
+      brightest_corner = [(corner, luminance)]
+    elif luminance == brightest_corner[0][1]:
+      brightest_corner.append((corner, luminance))
+
+  if len(brightest_corner) > max_num_brightest_squares:
+    raise AssertionError('The captured image is over exposed due to the '
+                         'presence of multiple bright squares.')
 
   if darkest_corner == brightest_corner:
     raise AssertionError('The captured image failed to detect the location '
                          'of the darkest and brightest squares.')
 
   if darkest_corner[0] == _KEY_TOP_LEFT:
-    if brightest_corner[0] == _KEY_BOTTOM_LEFT:
+    if any(corner == _KEY_BOTTOM_LEFT for corner, _ in brightest_corner):
       # rotate 90 CW and then flip vertically
       img = cv2.rotate(img, cv2.ROTATE_90_CLOCKWISE)
       img = cv2.flip(img, 0)
-    elif brightest_corner[0] == _KEY_TOP_RIGHT:
+    elif any(corner == _KEY_TOP_RIGHT for corner, _ in brightest_corner):
       # flip both vertically and horizontally
       img = cv2.flip(img, -1)
     else:
       raise AssertionError('The captured image failed to detect the location '
                            'of the brightest square.')
   elif darkest_corner[0] == _KEY_BOTTOM_LEFT:
-    if brightest_corner[0] == _KEY_TOP_LEFT:
+    if any(corner == _KEY_TOP_LEFT for corner, _ in brightest_corner):
       # rotate 90 CCW
       img = cv2.rotate(img, cv2.ROTATE_90_COUNTERCLOCKWISE)
-    elif brightest_corner[0] == _KEY_BOTTOM_RIGHT:
+    elif any(corner == _KEY_BOTTOM_RIGHT for corner, _ in brightest_corner):
       # flip horizontally
       img = cv2.flip(img, 1)
     else:
       raise AssertionError('The captured image failed to detect the location '
                            'of the brightest square.')
   elif darkest_corner[0] == _KEY_TOP_RIGHT:
-    if brightest_corner[0] == _KEY_TOP_LEFT:
+    if any(corner == _KEY_TOP_LEFT for corner, _ in brightest_corner):
       # flip vertically
       img = cv2.flip(img, 0)
-    elif brightest_corner[0] == _KEY_BOTTOM_RIGHT:
+    elif any(corner == _KEY_BOTTOM_RIGHT for corner, _ in brightest_corner):
       # rotate 90 CW
       img = cv2.rotate(img, cv2.ROTATE_90_CLOCKWISE)
     else:
       raise AssertionError('The captured image failed to detect the location '
                            'of the brightest square.')
   elif darkest_corner[0] == _KEY_BOTTOM_RIGHT:
-    if brightest_corner[0] == _KEY_BOTTOM_LEFT:
+    if any(corner == _KEY_BOTTOM_LEFT for corner, _ in brightest_corner):
       # correct orientation
       pass
-    elif brightest_corner[0] == _KEY_TOP_RIGHT:
+    elif any(corner == _KEY_TOP_RIGHT for corner, _ in brightest_corner):
       # rotate 90 and flip horizontally
       img = cv2.rotate(img, cv2.ROTATE_90_CLOCKWISE)
       img = cv2.flip(img, 1)
@@ -589,7 +597,8 @@ def analyze_low_light_scene_capture(
     file_stem,
     img,
     avg_luminance_threshold=_LOW_LIGHT_BOOST_AVG_LUMINANCE_THRESH,
-    avg_delta_luminance_threshold=_LOW_LIGHT_BOOST_AVG_DELTA_LUMINANCE_THRESH):
+    avg_delta_luminance_threshold=_LOW_LIGHT_BOOST_AVG_DELTA_LUMINANCE_THRESH,
+    max_num_brightest_squares=1):
   """Analyze a captured frame to check if it meets low light scene criteria.
 
   The capture is cropped first, then detects for boxes, and then computes the
@@ -602,6 +611,8 @@ def analyze_low_light_scene_capture(
     avg_luminance_threshold: minimum average luminance of the first 6 boxes.
     avg_delta_luminance_threshold: minimum average difference in luminance
       of the first 5 successive boxes of luminance.
+    max_num_brightest_squares: maximum number of brightest squares present in
+      the image.
   """
   cv2.imwrite(f'{file_stem}_original.jpg', img)
   img = _crop(img)
@@ -619,7 +630,7 @@ def analyze_low_light_scene_capture(
 
   # Sorted so each column is read left to right
   sorted_regions = _sort_by_columns(regions)
-  img = _correct_image_rotation(img, sorted_regions)
+  img = _correct_image_rotation(img, sorted_regions, max_num_brightest_squares)
   cv2.imwrite(f'{file_stem}_rotated.jpg', img)
 
   # The orientation of the image may have changed which will affect the
