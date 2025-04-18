@@ -17,10 +17,15 @@
 package android.media.audio.cts;
 
 import static android.media.audio.Flags.FLAG_UNIFY_ABSOLUTE_VOLUME_MANAGEMENT;
+import static android.media.audio.Flags.unifyAbsoluteVolumeManagement;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThrows;
 
 import android.Manifest;
+import android.app.Instrumentation;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.content.res.Resources;
@@ -32,21 +37,33 @@ import android.media.VolumeInfo;
 import android.media.audio.cts.AudioTestUtil.SleepAssertIntEquals;
 import android.platform.test.annotations.AppModeSdkSandbox;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
 import androidx.annotation.NonNull;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.ApiTest;
-import com.android.compatibility.common.util.CtsAndroidTestCase;
 import com.android.compatibility.common.util.FrameworkSpecificTest;
 
 import com.google.common.collect.ImmutableList;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 @FrameworkSpecificTest
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
-public class AudioDeviceVolumeManagerTest extends CtsAndroidTestCase {
+@RunWith(AndroidJUnit4.class)
+public class AudioDeviceVolumeManagerTest {
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private static final String TAG = "AudioDeviceVolumeManagerTest";
     private AudioDeviceVolumeManager mADVmgr;
@@ -54,6 +71,7 @@ public class AudioDeviceVolumeManagerTest extends CtsAndroidTestCase {
     private boolean mIsTelevision;
     private boolean mIsSingleVolume;
     private boolean mSkipRingerTests;
+    private Context mContext;
 
     private static final AudioDeviceAttributes BT_DEV = new AudioDeviceAttributes(
             AudioDeviceAttributes.ROLE_OUTPUT, AudioDeviceInfo.TYPE_BLUETOOTH_A2DP, "bla");
@@ -104,46 +122,60 @@ public class AudioDeviceVolumeManagerTest extends CtsAndroidTestCase {
         }
     }
 
-    @Override
-    protected void setUp() throws Exception {
-        super.setUp();
-        getInstrumentation()
+    @Before
+    public void setUp() throws Exception {
+        Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
+        mContext = instrumentation.getContext();
+        instrumentation
                 .getUiAutomation()
                 .adoptShellPermissionIdentity(
                         Manifest.permission.MODIFY_AUDIO_ROUTING,
                         Manifest.permission.MODIFY_AUDIO_SETTINGS_PRIVILEGED,
                         Manifest.permission.STATUS_BAR_SERVICE);
-        mADVmgr = (AudioDeviceVolumeManager) getContext().getSystemService(
-                Context.AUDIO_DEVICE_VOLUME_SERVICE);
-        mUseFixedVolume = getContext().getResources().getBoolean(
-                Resources.getSystem().getIdentifier("config_useFixedVolume", "bool", "android"));
-        PackageManager packageManager = getContext().getPackageManager();
+        mADVmgr = mContext.getSystemService(AudioDeviceVolumeManager.class);
+        mUseFixedVolume =
+                mContext.getResources()
+                        .getBoolean(
+                                Resources.getSystem()
+                                        .getIdentifier("config_useFixedVolume", "bool", "android"));
+        PackageManager packageManager = mContext.getPackageManager();
         mIsTelevision = packageManager != null
                 && (packageManager.hasSystemFeature(PackageManager.FEATURE_LEANBACK)
                 || packageManager.hasSystemFeature(PackageManager.FEATURE_TELEVISION));
-        mIsSingleVolume = getContext().getResources().getBoolean(
-                Resources.getSystem().getIdentifier("config_single_volume", "bool", "android"));
+        mIsSingleVolume =
+                mContext.getResources()
+                        .getBoolean(
+                                Resources.getSystem()
+                                        .getIdentifier("config_single_volume", "bool", "android"));
         mSkipRingerTests = mUseFixedVolume || mIsTelevision || mIsSingleVolume;
     }
 
-    @Override
-    protected void tearDown() throws Exception {
+    @After
+    public void tearDown() throws Exception {
         // clean up device behavior
-        mADVmgr.resetDeviceAbsoluteVolumeBehavior(BT_DEV);
-        mADVmgr.resetDeviceAbsoluteVolumeBehavior(BT_DEV2);
-        mADVmgr.resetDeviceAbsoluteVolumeBehavior(BT_SCO_DEV);
+        if (unifyAbsoluteVolumeManagement()) {
+            mADVmgr.resetDeviceAbsoluteVolumeBehavior(BT_DEV);
+            mADVmgr.resetDeviceAbsoluteVolumeBehavior(BT_DEV2);
+            mADVmgr.resetDeviceAbsoluteVolumeBehavior(BT_SCO_DEV);
+        }
 
-        getInstrumentation().getUiAutomation().dropShellPermissionIdentity();
-        super.tearDown();
+        InstrumentationRegistry.getInstrumentation()
+                .getUiAutomation()
+                .dropShellPermissionIdentity();
     }
 
     /**
      * Verify calling AudioDeviceVolumeManager.setDeviceVolume/getDeviceVolume with null parameters
      * throws an NPE.
+     *
      * @throws Exception
      */
-    @ApiTest(apis = {"android.media.AudioDeviceVolumeManager#setDeviceVolume",
-            "android.media.AudioDeviceVolumeManager#getDeviceVolume"})
+    @ApiTest(
+            apis = {
+                "android.media.AudioDeviceVolumeManager#setDeviceVolume",
+                "android.media.AudioDeviceVolumeManager#getDeviceVolume"
+            })
+    @Test
     public void testNullability() throws Exception {
         assertThrows("Able to call setDeviceVolume with null VolumeInfo",
                 NullPointerException.class,
@@ -161,9 +193,11 @@ public class AudioDeviceVolumeManagerTest extends CtsAndroidTestCase {
 
     /**
      * Verify VolumeInfo used for setting the volume needs to have a volume index
+     *
      * @throws Exception
      */
     @ApiTest(apis = {"android.media.AudioDeviceVolumeManager#setDeviceVolume"})
+    @Test
     public void testVolumeInfoArguments() throws Exception {
         VolumeInfo defVolInfo = VolumeInfo.getDefaultVolumeInfo();
         VolumeInfo vi = new VolumeInfo.Builder(defVolInfo).setVolumeIndex(VolumeInfo.INDEX_NOT_SET)
@@ -174,13 +208,17 @@ public class AudioDeviceVolumeManagerTest extends CtsAndroidTestCase {
                 () ->mADVmgr.setDeviceVolume(vi, BT_DEV));
     }
 
-    @ApiTest(apis = {"android.media.AudioDeviceVolumeManager#setDeviceVolume",
-            "android.media.AudioDeviceVolumeManager#getDeviceVolume"})
+    @ApiTest(
+            apis = {
+                "android.media.AudioDeviceVolumeManager#setDeviceVolume",
+                "android.media.AudioDeviceVolumeManager#getDeviceVolume"
+            })
+    @Test
     public void testSetGetVolume() throws Exception {
         if (mSkipRingerTests) {
             return;
         }
-        AudioManager am = getContext().getSystemService(AudioManager.class);
+        AudioManager am = mContext.getSystemService(AudioManager.class);
         final int minIndex = am.getStreamMinVolume(AudioManager.STREAM_MUSIC);
         final int maxIndex = am.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
         final int midIndex = (minIndex + maxIndex) / 2;
@@ -196,8 +234,8 @@ public class AudioDeviceVolumeManagerTest extends CtsAndroidTestCase {
 
         // verify set volume is what get returns
         mADVmgr.setDeviceVolume(volMin, BT_DEV);
-        final SleepAssertIntEquals checkVol = new SleepAssertIntEquals(
-                5000 /*maxWaitMs*/, 50 /*periodMs*/, getContext());
+        final SleepAssertIntEquals checkVol =
+                new SleepAssertIntEquals(5000 /*maxWaitMs*/, 50 /*periodMs*/, mContext);
         checkVol.assertEqualsSleep(
                 volMin.getVolumeIndex() /*expected*/,
                 () -> mADVmgr.getDeviceVolume(volMid, BT_DEV).getVolumeIndex(),
@@ -228,6 +266,7 @@ public class AudioDeviceVolumeManagerTest extends CtsAndroidTestCase {
                 "android.media.AudioDeviceVolumeManager#setDeviceVolume",
                 "android.media.AudioDeviceVolumeManager#getDeviceVolume"
             })
+    @Test
     public void testSetDeviceAbsoluteVolumeBehavior_noMatchingStreamType() {
         if (mSkipRingerTests) {
             return;
@@ -239,7 +278,7 @@ public class AudioDeviceVolumeManagerTest extends CtsAndroidTestCase {
         final VolumeInfo newVolume = computeNewVolume(volMedia);
 
         mADVmgr.setDeviceAbsoluteVolumeBehavior(
-                BT_SCO_DEV, volNotif, getContext().getMainExecutor(), listener);
+                BT_SCO_DEV, volNotif, mContext.getMainExecutor(), listener);
         mADVmgr.setDeviceVolume(newVolume, BT_SCO_DEV);
 
         assertNull(listener.waitForVolumeChanged(VOLUME_UPDATE_TIME_MAX_MS, TimeUnit.MILLISECONDS));
@@ -252,11 +291,12 @@ public class AudioDeviceVolumeManagerTest extends CtsAndroidTestCase {
                 "android.media.AudioDeviceVolumeManager#setDeviceVolume",
                 "android.media.AudioDeviceVolumeManager#getDeviceVolume"
             })
+    @Test
     public void testSetDeviceAbsoluteVolumeBehavior_matchingStreamType() {
         if (mSkipRingerTests) {
             return;
         }
-        AudioManager am = getContext().getSystemService(AudioManager.class);
+        AudioManager am = mContext.getSystemService(AudioManager.class);
         final int minIndex = am.getStreamMinVolume(AudioManager.STREAM_MUSIC);
         final int maxIndex = am.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
         final VolumeInfo volMedia =
@@ -268,7 +308,7 @@ public class AudioDeviceVolumeManagerTest extends CtsAndroidTestCase {
         final VolumeInfo newVolume = computeNewVolume(volMedia);
 
         mADVmgr.setDeviceAbsoluteVolumeBehavior(
-                BT_SCO_DEV, volMedia, getContext().getMainExecutor(), listener);
+                BT_SCO_DEV, volMedia, mContext.getMainExecutor(), listener);
         mADVmgr.setDeviceVolume(newVolume, BT_SCO_DEV);
 
         assertEquals(
@@ -283,11 +323,12 @@ public class AudioDeviceVolumeManagerTest extends CtsAndroidTestCase {
                 "android.media.AudioDeviceVolumeManager#setDeviceVolume",
                 "android.media.AudioDeviceVolumeManager#getDeviceVolume"
             })
+    @Test
     public void testSetDeviceAbsoluteMultiVolumeBehavior() {
         if (mSkipRingerTests) {
             return;
         }
-        AudioManager am = getContext().getSystemService(AudioManager.class);
+        AudioManager am = mContext.getSystemService(AudioManager.class);
         final int minIndex = am.getStreamMinVolume(AudioManager.STREAM_MUSIC);
         final int maxIndex = am.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
         final VolumeInfo volMedia =
@@ -303,7 +344,7 @@ public class AudioDeviceVolumeManagerTest extends CtsAndroidTestCase {
         mADVmgr.setDeviceAbsoluteMultiVolumeBehavior(
                 BT_SCO_DEV,
                 ImmutableList.of(volNotif, volMedia),
-                getContext().getMainExecutor(),
+                mContext.getMainExecutor(),
                 listener);
         mADVmgr.setDeviceVolume(newVolume, BT_SCO_DEV);
 
@@ -319,11 +360,12 @@ public class AudioDeviceVolumeManagerTest extends CtsAndroidTestCase {
                 "android.media.AudioDeviceVolumeManager#notifyAbsoluteVolumeChanged",
                 "android.media.AudioDeviceVolumeManager#getDeviceVolume"
             })
+    @Test
     public void testNotifyAbsoluteVolumeChanged() {
         if (mSkipRingerTests) {
             return;
         }
-        AudioManager am = getContext().getSystemService(AudioManager.class);
+        AudioManager am = mContext.getSystemService(AudioManager.class);
         final int minIndex = am.getStreamMinVolume(AudioManager.STREAM_MUSIC);
         final int maxIndex = am.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
         final VolumeInfo volMedia =
@@ -335,7 +377,7 @@ public class AudioDeviceVolumeManagerTest extends CtsAndroidTestCase {
         final VolumeInfo newVolume = computeNewVolume(volMedia);
 
         mADVmgr.setDeviceAbsoluteVolumeBehavior(
-                BT_DEV, volMedia, getContext().getMainExecutor(), listener);
+                BT_DEV, volMedia, mContext.getMainExecutor(), listener);
         mADVmgr.notifyAbsoluteVolumeChanged(newVolume, BT_DEV);
 
         // no listener will be triggered since we notify that volume changed
@@ -353,11 +395,12 @@ public class AudioDeviceVolumeManagerTest extends CtsAndroidTestCase {
                 "android.media.AudioDeviceVolumeManager#setDeviceVolume",
                 "android.media.AudioDeviceVolumeManager#getDeviceVolume"
             })
+    @Test
     public void testCallbackForSameTypeDifferentVolumeBehaviour() {
         if (mSkipRingerTests) {
             return;
         }
-        AudioManager am = getContext().getSystemService(AudioManager.class);
+        AudioManager am = mContext.getSystemService(AudioManager.class);
         final int minIndex = am.getStreamMinVolume(AudioManager.STREAM_MUSIC);
         final int maxIndex = am.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
         final VolumeInfo volMedia =
@@ -368,7 +411,7 @@ public class AudioDeviceVolumeManagerTest extends CtsAndroidTestCase {
         final VolumeInfo newVolume = computeNewVolume(volMedia);
         final AudioDeviceVolumeChangedListener listener = new AudioDeviceVolumeChangedListener();
         mADVmgr.setDeviceAbsoluteVolumeBehavior(
-                BT_DEV, volMedia, getContext().getMainExecutor(), listener);
+                BT_DEV, volMedia, mContext.getMainExecutor(), listener);
 
         mADVmgr.setDeviceVolume(newVolume, BT_DEV2);
         assertNull(listener.waitForVolumeChanged(VOLUME_UPDATE_TIME_MAX_MS, TimeUnit.MILLISECONDS));
