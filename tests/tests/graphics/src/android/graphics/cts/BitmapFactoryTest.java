@@ -866,7 +866,6 @@ public class BitmapFactoryTest {
     }
 
     @Test
-    @DisabledOnRavenwood(bug = 397498134)
     public void testDecodePngFromPipe() {
         // This test verifies that we can send a PNG over a pipe and
         // successfully decode it. This behavior worked in N, so this
