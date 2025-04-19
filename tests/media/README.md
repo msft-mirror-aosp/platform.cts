@@ -87,6 +87,9 @@ Use `codec-filter` with regular expressions for more complex selection patterns:
 ```
 # Run VideoEncoderTest for mainline AVC and VP9 encoders
 atest MctsMediaV2TestCases:VideoEncoderTest -- --module-arg MctsMediaV2TestCases:instrumentation-arg:codec-filter:="c2\.android\.avc\.encoder\|c2\.android\.vp9\.encoder"
+
+# Run all mainline audio encoders
+atest MctsMediaV2TestCases -- --module-arg MctsMediaV2TestCases:instrumentation-arg:codec-filter:="^.*\.encoder$" --module-arg MctsMediaV2TestCases:instrumentation-arg:media-type-prefix:=audio
 ```
 
 ## `media-type-sel` identifiers list
