@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package android.app.stubs;
+package android.app.stubs.shared;
 
-import android.app.stubs.ICallback;
+import android.app.stubs.shared.ICallback;
 import android.os.Messenger;
 
 interface IHeartbeat {

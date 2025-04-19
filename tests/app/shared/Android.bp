@@ -28,6 +28,9 @@ android_library {
         "androidx.test.rules",
         "kotlin-test",
     ],
+    aidl: {
+        local_include_dirs: ["src"],
+    },
     srcs: [
         "src/**/*.java",
         "src/**/*.kt",
