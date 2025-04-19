@@ -33,6 +33,7 @@ java_library_host {
     java_resource_dirs: ["res"],
 
     static_libs: [
+        "apache-commons-math3",
         "compatibility-host-util",
         "smali-dexlib2",
         // This tool is not checking any dependencies or metadata, so all of the

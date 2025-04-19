@@ -41,14 +41,12 @@ import java.util.stream.Stream;
 
 record SELinuxNeverallowRule(
         String mText,
-        boolean fullTrebleOnly,
         boolean launchingWithROnly,
         boolean launchingWithSOnly,
         boolean compatiblePropertyOnly,
         boolean userOnly,
         boolean physicalDeviceOnly) {
     private static String[] sConditions = {
-        "TREBLE_ONLY",
         "COMPATIBLE_PROPERTY_ONLY",
         "LAUNCHING_WITH_R_ONLY",
         "LAUNCHING_WITH_S_ONLY",
@@ -59,7 +57,6 @@ record SELinuxNeverallowRule(
     SELinuxNeverallowRule(String text, Map<String, Integer> conditions) {
         this(
                 cleanupRule(text),
-                (conditions.getOrDefault("TREBLE_ONLY", 0) > 0),
                 (conditions.getOrDefault("LAUNCHING_WITH_R_ONLY", 0) > 0),
                 (conditions.getOrDefault("LAUNCHING_WITH_S_ONLY", 0) > 0),
                 (conditions.getOrDefault("COMPATIBLE_PROPERTY_ONLY", 0) > 0),
@@ -77,7 +74,6 @@ record SELinuxNeverallowRule(
     public String getStableId() {
         String id = mText.replaceFirst("^neverallow ", "").replaceAll("[^A-Za-z0-9_]", "_");
         byte b = 0;
-        b += (fullTrebleOnly ? 1 : 0) << 0;
         b += (compatiblePropertyOnly ? 1 : 0) << 1;
         b += (launchingWithROnly ? 1 : 0) << 2;
         b += (launchingWithSOnly ? 1 : 0) << 3;
@@ -85,10 +81,6 @@ record SELinuxNeverallowRule(
         b += (physicalDeviceOnly ? 1 : 0) << 5;
         id += String.format("%X", b);
         return id;
-    }
-
-    private boolean isFullTrebleDevice(ITestDevice device) throws Exception {
-        return SELinuxHostTest.isFullTrebleDevice(device);
     }
 
     private boolean isDeviceLaunchingWithR(ITestDevice device) throws Exception {
@@ -112,10 +104,6 @@ record SELinuxNeverallowRule(
     }
 
     public boolean isCompatible(ITestDevice device) throws Exception {
-        if ((fullTrebleOnly) && (!isFullTrebleDevice(device))) {
-            // This test applies only to Treble devices but this device isn't one
-            return false;
-        }
         if ((launchingWithROnly) && (!isDeviceLaunchingWithR(device))) {
             // This test applies only to devices launching with R or later but this device isn't one
             return false;

@@ -17,6 +17,7 @@
 package android.widget.cts;
 
 import static android.content.pm.ApplicationInfo.PRIVATE_FLAG_EXT_ENABLE_ON_BACK_INVOKED_CALLBACK;
+import static android.view.accessibility.Flags.FLAG_REQUEST_RECTANGLE_WITH_SOURCE;
 
 import static com.android.text.flags.Flags.FLAG_FIX_NULL_TYPEFACE_BOLDING;
 
@@ -6130,6 +6131,50 @@ public class TextViewTest {
 
         mTextView.layout(0, 0, 100, 100);
         assertFalse(mTextView.bringPointIntoView(2));
+    }
+
+    @Test
+    @RequiresFlagsDisabled(FLAG_REQUEST_RECTANGLE_WITH_SOURCE)
+    public void testBringPointIntoView_callsRequestRectangleOnScreenWithUndefinedSource()
+            throws Throwable {
+        mActivityRule.runOnUiThread(
+                () -> {
+                    mTextView = spy(findTextView(R.id.textview_text));
+                    mTextView.setFocusable(true);
+                    mTextView.requestFocus();
+                });
+        mInstrumentation.waitForIdleSync();
+        assertTrue(mTextView.hasFocus());
+        mActivityRule.runOnUiThread(
+                () -> {
+                    mTextView.bringPointIntoView(1);
+                });
+
+        verify(mTextView, times(1))
+                .requestRectangleOnScreen(
+                        any(), eq(false), eq(View.RECTANGLE_ON_SCREEN_REQUEST_SOURCE_UNDEFINED));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_REQUEST_RECTANGLE_WITH_SOURCE)
+    public void testBringPointIntoView_callsRequestRectangleOnScreenWithTextCursorSource()
+            throws Throwable {
+        mActivityRule.runOnUiThread(
+                () -> {
+                    mTextView = spy(findTextView(R.id.textview_text));
+                    mTextView.setFocusable(true);
+                    mTextView.requestFocus();
+                });
+        mInstrumentation.waitForIdleSync();
+        assertTrue(mTextView.hasFocus());
+        mActivityRule.runOnUiThread(
+                () -> {
+                    mTextView.bringPointIntoView(1);
+                });
+
+        verify(mTextView, times(1))
+                .requestRectangleOnScreen(
+                        any(), eq(false), eq(View.RECTANGLE_ON_SCREEN_REQUEST_SOURCE_TEXT_CURSOR));
     }
 
     @Test

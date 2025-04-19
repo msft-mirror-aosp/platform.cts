@@ -21,6 +21,7 @@ import threading
 import time
 
 import camera_properties_utils
+import gen2_rig_controller_utils
 import its_session_utils
 import sensor_fusion_utils
 import video_processing_utils
@@ -138,28 +139,35 @@ def collect_data_with_surfaces(cam, tablet_device, output_surfaces,
   """
 
   logging.debug('Starting sensor event collection')
+  # Start camera vibration
   if rot_rig['cntl'] == 'gen2_rotator':
     logging.debug('using gen2_rotator')
-    rotate_func = gen2_rig_controller_utils.rotation_rig
+    p = threading.Thread(
+        target=gen2_rig_controller_utils.rotation_rig,
+        args=(
+            rot_rig['cntl'],
+            rot_rig['ch'],
+            _NUM_ROTATIONS,
+            sensor_fusion_utils.ARDUINO_ANGLES_STABILIZATION,
+        ),
+    )
   else:
     logging.debug('using sensor_fusion rotator')
-    rotate_func = sensor_fusion_utils.rotation_rig
-  # Start camera vibration
-  if tablet_device:
-    servo_speed = sensor_fusion_utils.ARDUINO_SERVO_SPEED_STABILIZATION_TABLET
-  else:
-    servo_speed = sensor_fusion_utils.ARDUINO_SERVO_SPEED_STABILIZATION
-  p = threading.Thread(
-      target=rotate_func,
-      args=(
-          rot_rig['cntl'],
-          rot_rig['ch'],
-          _NUM_ROTATIONS,
-          sensor_fusion_utils.ARDUINO_ANGLES_STABILIZATION,
-          servo_speed,
-          sensor_fusion_utils.ARDUINO_MOVE_TIME_STABILIZATION,
-      ),
-  )
+    if tablet_device:
+      servo_speed = sensor_fusion_utils.ARDUINO_SERVO_SPEED_STABILIZATION_TABLET
+    else:
+      servo_speed = sensor_fusion_utils.ARDUINO_SERVO_SPEED_STABILIZATION
+    p = threading.Thread(
+        target=sensor_fusion_utils.rotation_rig,
+        args=(
+            rot_rig['cntl'],
+            rot_rig['ch'],
+            _NUM_ROTATIONS,
+            sensor_fusion_utils.ARDUINO_ANGLES_STABILIZATION,
+            servo_speed,
+            sensor_fusion_utils.ARDUINO_MOVE_TIME_STABILIZATION,
+        ),
+    )
   p.start()
 
   cam.start_sensor_events()

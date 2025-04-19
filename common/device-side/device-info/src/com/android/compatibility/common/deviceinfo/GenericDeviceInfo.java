@@ -16,22 +16,15 @@
 package com.android.compatibility.common.deviceinfo;
 
 import android.os.Build;
-import android.os.Bundle;
-import android.os.Environment;
 import android.os.SystemProperties;
-import android.os.UserManager;
-import android.telephony.TelephonyManager;
 import android.text.TextUtils;
 
-import java.lang.Integer;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Map.Entry;
-
-import com.android.compatibility.common.deviceinfo.DeviceInfo;
 import com.android.compatibility.common.util.ApiLevelUtil;
 import com.android.compatibility.common.util.DeviceInfoStore;
 import com.android.compatibility.common.util.ShellIdentityUtils;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Generic device info collector.
@@ -55,7 +48,7 @@ public class GenericDeviceInfo extends DeviceInfo {
     public static final String BUILD_SERIAL = "build_serial";
     public static final String BUILD_VERSION_RELEASE = "build_version_release";
     public static final String BUILD_VERSION_SDK = "build_version_sdk";
-    public static final String BUILD_VERSION_SDK_INT = "build_version_sdk_int";
+    public static final String BUILD_MINOR_VERSION_SDK = "build_minor_version_sdk";
     public static final String BUILD_VERSION_BASE_OS = "build_version_base_os";
     public static final String BUILD_VERSION_SECURITY_PATCH = "build_version_security_patch";
     public static final String BUILD_REFERENCE_FINGERPRINT = "build_reference_fingerprint";
@@ -89,6 +82,11 @@ public class GenericDeviceInfo extends DeviceInfo {
             store.addResult(BUILD_VERSION_RELEASE, Build.VERSION.RELEASE);
         }
         store.addResult(BUILD_VERSION_SDK, Build.VERSION.SDK);
+        if (ApiLevelUtil.isAtLeast(Build.VERSION_CODES.BAKLAVA)) {
+            store.addResult(
+                    BUILD_MINOR_VERSION_SDK,
+                    String.valueOf(Build.getMinorSdkVersion(Build.VERSION.SDK_INT_FULL)));
+        }
         store.addResult(BUILD_REFERENCE_FINGERPRINT,
                 SystemProperties.get("ro.build.reference.fingerprint", ""));
 

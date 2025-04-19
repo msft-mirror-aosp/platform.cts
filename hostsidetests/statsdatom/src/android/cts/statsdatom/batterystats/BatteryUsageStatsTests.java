@@ -160,6 +160,8 @@ public class BatteryUsageStatsTests extends BaseHostJUnit4Test implements IBuild
             plugInDevice();
         }
 
+        getDevice().executeShellCommand("dumpsys batterystats --sync");
+
         StatsdConfigProto.StatsdConfig.Builder config =
                 ConfigUtils.createConfigBuilder(DeviceUtils.STATSD_ATOM_TEST_PKG);
         ConfigUtils.addGaugeMetric(config, atomFieldNumber);

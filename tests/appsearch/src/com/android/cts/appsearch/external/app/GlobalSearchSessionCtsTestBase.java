@@ -624,6 +624,7 @@ public abstract class GlobalSearchSessionCtsTestBase {
                         "body",
                         new SearchSpec.Builder()
                                 .setTermMatch(SearchSpec.TERM_MATCH_EXACT_ONLY)
+                                .addFilterPackageNames(mContext.getPackageName())
                                 .addProjection(
                                         AppSearchEmail.SCHEMA_TYPE,
                                         ImmutableList.of("subject", "to"))
@@ -687,6 +688,7 @@ public abstract class GlobalSearchSessionCtsTestBase {
                         "body",
                         new SearchSpec.Builder()
                                 .setTermMatch(SearchSpec.TERM_MATCH_EXACT_ONLY)
+                                .addFilterPackageNames(mContext.getPackageName())
                                 .addProjection(AppSearchEmail.SCHEMA_TYPE, Collections.emptyList())
                                 .build());
 
@@ -743,6 +745,7 @@ public abstract class GlobalSearchSessionCtsTestBase {
                         "body",
                         new SearchSpec.Builder()
                                 .setTermMatch(SearchSpec.TERM_MATCH_EXACT_ONLY)
+                                .addFilterPackageNames(mContext.getPackageName())
                                 .addProjection("NonExistentType", Collections.emptyList())
                                 .addProjection(
                                         AppSearchEmail.SCHEMA_TYPE,
@@ -909,6 +912,7 @@ public abstract class GlobalSearchSessionCtsTestBase {
                         "body",
                         new SearchSpec.Builder()
                                 .setTermMatch(SearchSpec.TERM_MATCH_EXACT_ONLY)
+                                .addFilterPackageNames(mContext.getPackageName())
                                 .setResultGrouping(
                                         SearchSpec.GROUPING_TYPE_PER_PACKAGE, /* limit= */ 1)
                                 .build());
@@ -921,6 +925,7 @@ public abstract class GlobalSearchSessionCtsTestBase {
                         "body",
                         new SearchSpec.Builder()
                                 .setTermMatch(SearchSpec.TERM_MATCH_EXACT_ONLY)
+                                .addFilterPackageNames(mContext.getPackageName())
                                 .setResultGrouping(
                                         SearchSpec.GROUPING_TYPE_PER_NAMESPACE, /* limit= */ 1)
                                 .build());
@@ -933,6 +938,7 @@ public abstract class GlobalSearchSessionCtsTestBase {
                         "body",
                         new SearchSpec.Builder()
                                 .setTermMatch(SearchSpec.TERM_MATCH_EXACT_ONLY)
+                                .addFilterPackageNames(mContext.getPackageName())
                                 .setResultGrouping(
                                         SearchSpec.GROUPING_TYPE_PER_NAMESPACE
                                                 | SearchSpec.GROUPING_TYPE_PER_PACKAGE,

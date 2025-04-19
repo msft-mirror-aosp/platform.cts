@@ -8,9 +8,7 @@ import android.content.pm.UserInfo
 import android.os.Process
 import android.os.SystemClock
 import android.os.UserManager
-import android.permission.flags.Flags
 import android.platform.test.annotations.AppModeFull
-import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.CheckFlagsRule
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import androidx.test.platform.app.InstrumentationRegistry
@@ -97,7 +95,6 @@ class AppOpsMultiUserTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_RUNTIME_PERMISSION_APPOPS_MAPPING_ENABLED)
     fun testUninstallDoesntAffectOtherUsers() {
         installApkForAllUsers(APK)
 
@@ -149,7 +146,6 @@ class AppOpsMultiUserTest {
      * state when the whole UID hadn't been fully removed.
      */
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_DONT_REMOVE_EXISTING_UID_STATES)
     fun testSharedUidWithMultipleUsers() {
         installApkForAllUsers(SHARED_UID_APK1)
         installApkForAllUsers(SHARED_UID_APK2)

@@ -37,6 +37,7 @@ import android.telephony.CellInfoWcdma;
 import android.telephony.SubscriptionManager;
 import android.telephony.TelephonyManager;
 import android.text.TextUtils;
+import android.util.Pair;
 
 import androidx.annotation.NonNull;
 
@@ -100,6 +101,11 @@ public class DataTest {
     @Test
     @PlatinumTest(focusArea = "telephony")
     public void testCellInfoList() throws Exception {
+        Pair<Integer, Integer> networkHalVersion =
+                mTelephonyManager.getHalVersion(TelephonyManager.HAL_SERVICE_NETWORK);
+        assumeTrue("Network HAL version is not supported " + networkHalVersion,
+                networkHalVersion.first > 1
+                        || networkHalVersion.first == 1 && networkHalVersion.second > 3);
         List<CellInfo> cellInfos = new ArrayList<>();
         CountDownLatch cdl = new CountDownLatch(1);
         ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(

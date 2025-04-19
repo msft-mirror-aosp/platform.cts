@@ -46,12 +46,10 @@ public class SELinuxNeverallowRulesParserTest extends BaseHostJUnit4Test {
         List<SELinuxNeverallowRule> rules = SELinuxNeverallowRule.parsePolicy(policy);
         assertEquals(2, rules.size());
         assertEquals("neverallow d1 d2:c1 p;", rules.get(0).mText());
-        assertEquals(false, rules.get(0).fullTrebleOnly());
         assertEquals(false, rules.get(0).launchingWithROnly());
         assertEquals(false, rules.get(0).launchingWithSOnly());
         assertEquals(false, rules.get(0).compatiblePropertyOnly());
         assertEquals("neverallow d2 d3:c2 p2;", rules.get(1).mText());
-        assertEquals(false, rules.get(1).fullTrebleOnly());
         assertEquals(false, rules.get(1).launchingWithROnly());
         assertEquals(false, rules.get(1).launchingWithSOnly());
         assertEquals(false, rules.get(1).compatiblePropertyOnly());
@@ -135,14 +133,14 @@ public class SELinuxNeverallowRulesParserTest extends BaseHostJUnit4Test {
     @Test
     public void testParsingWithConditions() throws Exception {
         String policy =
-                "# BEGIN_TREBLE_ONLY\n"
+                "# BEGIN_LAUNCHING_WITH_S_ONLY\n"
                         + "neverallow d1 d2:c1 p;\n"
-                        + "# END_TREBLE_ONLY\n"
+                        + "# END_LAUNCHING_WITH_S_ONLY\n"
                         + "neverallow d2 d3:c2 p2;\n";
         List<SELinuxNeverallowRule> rules = SELinuxNeverallowRule.parsePolicy(policy);
         assertEquals(2, rules.size());
-        assertEquals(true, rules.get(0).fullTrebleOnly());
-        assertEquals(false, rules.get(1).fullTrebleOnly());
+        assertEquals(true, rules.get(0).launchingWithSOnly());
+        assertEquals(false, rules.get(1).launchingWithSOnly());
     }
 
     @Test

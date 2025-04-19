@@ -57,7 +57,6 @@ class ContentSuggestionsAnnotationExecutorTest {
         ).isTrue()
     }
 
-    // TODO(b/366175813) fix Bedstead to make this test green
     @EnsureHasAdditionalUser
     @EnsureDefaultContentSuggestionsServiceDisabled(onUser = UserType.ADDITIONAL_USER)
     @Test

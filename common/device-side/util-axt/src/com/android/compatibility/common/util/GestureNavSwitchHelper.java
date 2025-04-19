@@ -20,9 +20,11 @@ import static com.google.common.truth.Truth.assertWithMessage;
 
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.content.res.Resources;
 import android.graphics.Insets;
 import android.graphics.Rect;
 import android.os.Build;
+import android.os.SystemProperties;
 import android.util.Log;
 import android.view.WindowInsets;
 import android.view.WindowManager;
@@ -77,12 +79,34 @@ public final class GestureNavSwitchHelper {
         // No bars on embedded devices.
         // No bars on TVs and watches.
         // No bars on PCs.
-        mHasNavigationBar = !(pm.hasSystemFeature(PackageManager.FEATURE_WATCH)
-                || pm.hasSystemFeature(PackageManager.FEATURE_EMBEDDED)
-                || pm.hasSystemFeature(PackageManager.FEATURE_LEANBACK)
-                || pm.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE)
-                || (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1
-                    && pm.hasSystemFeature(PackageManager.FEATURE_PC)));
+        mHasNavigationBar =
+                !(pm.hasSystemFeature(PackageManager.FEATURE_WATCH)
+                                || pm.hasSystemFeature(PackageManager.FEATURE_EMBEDDED)
+                                || pm.hasSystemFeature(PackageManager.FEATURE_LEANBACK)
+                                || pm.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE)
+                                || (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1
+                                        && pm.hasSystemFeature(PackageManager.FEATURE_PC)))
+                        && isNavigationBarEnabledInSystem(context);
+    }
+
+    private static boolean isNavigationBarEnabledInSystem(@NonNull Context context) {
+        final String navBarOverride = SystemProperties.get("qemu.hw.mainkeys");
+        if ("1".equals(navBarOverride)) {
+            return false;
+        } else if ("0".equals(navBarOverride)) {
+            return true;
+        }
+        final Resources resources = context.getResources();
+        final boolean configShowNavi;
+        try {
+            configShowNavi =
+                    resources.getBoolean(
+                            resources.getIdentifier("config_showNavigationBar", "bool", "android"));
+        } catch (Resources.NotFoundException e) {
+            // Assume device can show navigation bar
+            return true;
+        }
+        return configShowNavi;
     }
 
     /** Whether the device supports the navigation bar. */

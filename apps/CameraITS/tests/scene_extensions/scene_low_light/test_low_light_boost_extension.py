@@ -44,6 +44,7 @@ _EXTENSION_NONE = -1  # Use Camera2 instead of a Camera Extension
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
 _NUM_FRAMES_TO_WAIT = 40  # The preview frame number to capture
 _BRIGHTNESS_SETTING_CHANGE_WAIT_SEC = 5  # Seconds
+_MAX_NUM_BRIGHTEST_SQUARES = 2
 
 _AVG_DELTA_LUMINANCE_THRESH = 18
 _AVG_DELTA_LUMINANCE_THRESH_METERED_REGION = 17
@@ -99,14 +100,15 @@ def _capture_and_analyze(cam, file_stem, camera_id, preview_size, extension,
     img_rgb = cv2.flip(img_rgb, 1)
   try:
     low_light_utils.analyze_low_light_scene_capture(
-        file_stem, img_rgb, luminance_thresh, delta_luminance_thresh
+        file_stem, img_rgb, luminance_thresh, delta_luminance_thresh,
+        _MAX_NUM_BRIGHTEST_SQUARES
     )
   except AssertionError as e:
     # On Android 15, we initially test without metered region. If it fails, we
     # fallback to test with metered region. Otherwise, for newer than
     # Android 15, we always start test with metered region.
     if (
-        first_api_level == its_session_utils.ANDROID15_API_LEVEL
+        first_api_level <= its_session_utils.ANDROID15_API_LEVEL
         and not use_metering_region
     ):
       logging.debug('Retrying with metering region: %s', e)
@@ -147,11 +149,8 @@ class LowLightBoostTest(its_base_test.ItsBaseTest):
       props = cam.override_with_hidden_physical_camera_props(props)
       test_name = os.path.join(self.log_path, _NAME)
 
-      # Check SKIP conditions
       # Determine if DUT is at least Android 15
       first_api_level = its_session_utils.get_first_api_level(self.dut.serial)
-      camera_properties_utils.skip_unless(
-          first_api_level >= its_session_utils.ANDROID15_API_LEVEL)
 
       # Determine if low light boost is available
       is_low_light_boost_supported = (

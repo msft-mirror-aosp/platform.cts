@@ -1575,11 +1575,11 @@ public class VehiclePropertyVerifier<T> {
         return Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE;
     }
 
-    private static boolean isAtLeastV() {
+    public static boolean isAtLeastV() {
         return Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM;
     }
 
-    private static boolean isAtLeastB() {
+    public static boolean isAtLeastB() {
         return Build.VERSION.SDK_INT >= Build.VERSION_CODES.BAKLAVA;
     }
 

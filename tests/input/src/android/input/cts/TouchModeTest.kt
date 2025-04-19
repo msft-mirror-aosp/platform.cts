@@ -60,7 +60,6 @@ import org.junit.Assert.fail
 import org.junit.Assume.assumeFalse
 import org.junit.Assume.assumeTrue
 import org.junit.Before
-import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -205,7 +204,6 @@ class TouchModeTest {
      * true on both the main display and the secondary display
      */
     @Test
-    @Ignore("b/371247555")
     fun testTouchModeUpdate_PerDisplayFocusDisabled() {
         assumeTrue(isRunningActivitiesOnSecondaryDisplaysSupported())
         assumeFalse(

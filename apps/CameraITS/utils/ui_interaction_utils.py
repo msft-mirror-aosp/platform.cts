@@ -493,8 +493,8 @@ def switch_default_camera(dut, facing, log_path):
       camera has been switched.
   """
   flip_camera_pattern = (
-      r'(switch to|flip camera|switch camera|camera switch|)'
-      r'(toggle_button|front_back_switcher|switch_camera_button|camera_switch_button)'
+      r'(switch to|flip camera|switch camera|camera switch|'
+      r'toggle_button|front_back_switcher|switch_camera_button|camera_switch_button)'
     )
   flash_pattern = 'flash'
   default_ui_dump = dut.ui.dump()
@@ -515,14 +515,14 @@ def switch_default_camera(dut, facing, log_path):
         logging.debug('Resource id: %s', resource_id)
         logging.debug('Flip camera content-desc: %s', content_desc)
         break
-      else:
-        if re.search(
-            flip_camera_pattern, resource_id, re.IGNORECASE
-        ):
-          logging.debug('Pattern matches')
-          logging.debug('Resource id: %s', resource_id)
-          logging.debug('Flip camera content-desc: %s', content_desc)
-          break
+    else:
+      if re.search(
+          flip_camera_pattern, resource_id, re.IGNORECASE
+      ):
+        logging.debug('Pattern matches')
+        logging.debug('Resource id: %s', resource_id)
+        logging.debug('Flip camera content-desc: %s', content_desc)
+        break
   else:
     raise AssertionError('Flip camera resource not found.')
   if facing == _get_current_camera_facing(content_desc, resource_id):
@@ -664,7 +664,7 @@ def default_camera_app_dut_setup(device_id, pkg_name):
   default_camera_app_setup(device_id, pkg_name)
   for path in CAMERA_FILES_PATHS:
     its_device_utils.run_adb_shell_command(
-        device_id, f'{REMOVE_CAMERA_FILES_CMD}{path}/*')
+        device_id, f'{REMOVE_CAMERA_FILES_CMD} {path}/*')
 
 
 def launch_jca_and_capture(dut, log_path, camera_facing, zoom_ratio=None,
@@ -900,8 +900,6 @@ def get_default_camera_video_stabilization(file_name):
   with open(file_name, 'r') as file:
     for line in file:
       if 'videoStabilizationMode' in line:
-        if _REQ_STR_PATTERN not in line:
-          continue
         logging.debug('videoStabilizationMode line: %s', line)
         values = line.split(':')
         value_str = values[-1]

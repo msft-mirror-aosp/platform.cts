@@ -22,6 +22,10 @@ java_defaults {
     defaults: ["cts_defaults"],
     sdk_version: "test_current",
 
+    test_suites: [
+        "general-tests",
+    ],
+
     static_libs: [
         "androidx.legacy_legacy-support-v4",
         "androidx.test.uiautomator_uiautomator",
@@ -32,10 +36,6 @@ java_defaults {
         "truth",
     ],
 
-    test_suites: [
-        "cts",
-        "general-tests",
-    ],
     data: [
         ":CtsInstallerCujTestApp",
         ":CtsInstallerCujTestAppV2",
@@ -47,8 +47,36 @@ java_defaults {
     per_testcase_directory: true,
 }
 
-android_test {
-    name: "CtsPackageInstallerCUJInstallationTestCases",
+genrule_defaults {
+    name: "enable_pia_v1_defaults",
+    cmd: "sed -e 's/{PIA_CONFIG_VALUE}/0/g' $(in) > $(out)",
+}
+
+genrule_defaults {
+    name: "enable_pia_v2_defaults",
+    cmd: "sed -e 's/{PIA_CONFIG_VALUE}/1/g' $(in) > $(out)",
+}
+
+genrule {
+    name: "CtsPackageInstallerCUJInstallationTestCases-test-config_v1",
+    defaults: ["enable_pia_v1_defaults"],
+    out: ["InstallationTestV1.xml"],
+    srcs: [
+        "InstallationTestTemplate.xml",
+    ],
+}
+
+genrule {
+    name: "CtsPackageInstallerCUJInstallationTestCases-test-config_v2",
+    defaults: ["enable_pia_v2_defaults"],
+    out: ["InstallationTestV2.xml"],
+    srcs: [
+        "InstallationTestTemplate.xml",
+    ],
+}
+
+java_defaults {
+    name: "cts_package_installer_cuj_installation_defaults",
     defaults: ["cts_package_installer_cuj_defaults"],
     manifest: "AndroidManifest_installation.xml",
     srcs: [
@@ -57,35 +85,121 @@ android_test {
         "src/android/packageinstaller/criticaluserjourney/cts/InstallationViaIntentTest.java",
         "src/android/packageinstaller/criticaluserjourney/cts/PackageInstallerCujTestBase.java",
     ],
-    test_config: "InstallationTest.xml",
 }
 
 android_test {
-    name: "CtsPackageInstallerCUJInstallationViaIntentForResultTestCases",
+    name: "CtsPackageInstallerCUJInstallationTestCases",
+    defaults: ["cts_package_installer_cuj_installation_defaults"],
+    test_config_template: ":CtsPackageInstallerCUJInstallationTestCases-test-config_v1",
+
+    test_suites: [
+        "cts",
+        "general-tests",
+    ],
+}
+
+android_test {
+    name: "CtsPackageInstallerCUJInstallationTestCasesV2",
+    defaults: ["cts_package_installer_cuj_installation_defaults"],
+    // Set the value of applicationId (it also applies to package_name) into Manifest.xml
+    manifest_values: {
+        applicationId: "android.packageinstaller.criticaluserjourney.cts.installation.v2",
+    },
+    test_config_template: ":CtsPackageInstallerCUJInstallationTestCases-test-config_v2",
+}
+
+java_defaults {
+    name: "cts_package_installer_cuj_installation_for_result_defaults",
     defaults: ["cts_package_installer_cuj_defaults"],
-    manifest: "AndroidManifest_installation_forResult.xml",
+    manifest: "AndroidManifest_installation.xml",
     srcs: [
         "src/android/packageinstaller/criticaluserjourney/cts/InstallationTestBase.java",
         "src/android/packageinstaller/criticaluserjourney/cts/InstallationViaIntentForResultTest.java",
         "src/android/packageinstaller/criticaluserjourney/cts/PackageInstallerCujTestBase.java",
     ],
-    test_config: "InstallationViaIntentForResultTest.xml",
 }
 
 android_test {
-    name: "CtsPackageInstallerCUJInstallationViaSessionTestCases",
+    name: "CtsPackageInstallerCUJInstallationViaIntentForResultTestCases",
+    defaults: ["cts_package_installer_cuj_installation_for_result_defaults"],
+    // Set the value of applicationId (it also applies to package_name) into Manifest.xml
+    manifest_values: {
+        applicationId: "android.packageinstaller.criticaluserjourney.cts.installation.result",
+    },
+    test_config_template: ":CtsPackageInstallerCUJInstallationTestCases-test-config_v1",
+
+    test_suites: [
+        "cts",
+        "general-tests",
+    ],
+}
+
+android_test {
+    name: "CtsPackageInstallerCUJInstallationViaIntentForResultTestCasesV2",
+    defaults: ["cts_package_installer_cuj_installation_for_result_defaults"],
+    // Set the value of applicationId (it also applies to package_name) into Manifest.xml
+    manifest_values: {
+        applicationId: "android.packageinstaller.criticaluserjourney.cts.installation.result.v2",
+    },
+    test_config_template: ":CtsPackageInstallerCUJInstallationTestCases-test-config_v2",
+}
+
+java_defaults {
+    name: "cts_package_installer_cuj_installation_via_session_defaults",
     defaults: ["cts_package_installer_cuj_defaults"],
-    manifest: "AndroidManifest_installation_viaSession.xml",
+    manifest: "AndroidManifest_installation.xml",
     srcs: [
         "src/android/packageinstaller/criticaluserjourney/cts/InstallationTestBase.java",
         "src/android/packageinstaller/criticaluserjourney/cts/InstallationViaSessionTest.java",
         "src/android/packageinstaller/criticaluserjourney/cts/PackageInstallerCujTestBase.java",
     ],
-    test_config: "InstallationViaSessionTest.xml",
 }
 
 android_test {
-    name: "CtsPackageInstallerCUJUninstallationTestCases",
+    name: "CtsPackageInstallerCUJInstallationViaSessionTestCases",
+    defaults: ["cts_package_installer_cuj_installation_via_session_defaults"],
+    // Set the value of applicationId (it also applies to package_name) into Manifest.xml
+    manifest_values: {
+        applicationId: "android.packageinstaller.criticaluserjourney.cts.installation.session",
+    },
+    test_config_template: ":CtsPackageInstallerCUJInstallationTestCases-test-config_v1",
+
+    test_suites: [
+        "cts",
+        "general-tests",
+    ],
+}
+
+android_test {
+    name: "CtsPackageInstallerCUJInstallationViaSessionTestCasesV2",
+    defaults: ["cts_package_installer_cuj_installation_via_session_defaults"],
+    // Set the value of applicationId (it also applies to package_name) into Manifest.xml
+    manifest_values: {
+        applicationId: "android.packageinstaller.criticaluserjourney.cts.installation.session.v2",
+    },
+    test_config_template: ":CtsPackageInstallerCUJInstallationTestCases-test-config_v2",
+}
+
+genrule {
+    name: "CtsPackageInstallerCUJUninstallationTestCases-test-config_v1",
+    defaults: ["enable_pia_v1_defaults"],
+    out: ["UninstallationTestV1.xml"],
+    srcs: [
+        "UninstallationTestTemplate.xml",
+    ],
+}
+
+genrule {
+    name: "CtsPackageInstallerCUJUninstallationTestCases-test-config_v2",
+    defaults: ["enable_pia_v2_defaults"],
+    out: ["UninstallationTestV2.xml"],
+    srcs: [
+        "UninstallationTestTemplate.xml",
+    ],
+}
+
+java_defaults {
+    name: "cts_package_installer_cuj_uninstallation_defaults",
     defaults: ["cts_package_installer_cuj_defaults"],
     manifest: "AndroidManifest_uninstallation.xml",
     srcs: [
@@ -95,11 +209,49 @@ android_test {
         "src/android/packageinstaller/criticaluserjourney/cts/UninstallationViaIntentActionUninstallPackageTest.java",
         "src/android/packageinstaller/criticaluserjourney/cts/UninstallationViaPackageInstallerApiTest.java",
     ],
-    test_config: "UninstallationTest.xml",
 }
 
 android_test {
-    name: "CtsPackageInstallerCUJUpdateOwnerShipTestCases",
+    name: "CtsPackageInstallerCUJUninstallationTestCases",
+    defaults: ["cts_package_installer_cuj_uninstallation_defaults"],
+    test_config_template: ":CtsPackageInstallerCUJUninstallationTestCases-test-config_v1",
+
+    test_suites: [
+        "cts",
+        "general-tests",
+    ],
+}
+
+android_test {
+    name: "CtsPackageInstallerCUJUninstallationTestCasesV2",
+    defaults: ["cts_package_installer_cuj_uninstallation_defaults"],
+    // Set the value of applicationId (it also applies to package_name) into Manifest.xml
+    manifest_values: {
+        applicationId: "android.packageinstaller.criticaluserjourney.cts.uninstallation.v2",
+    },
+    test_config_template: ":CtsPackageInstallerCUJUninstallationTestCases-test-config_v2",
+}
+
+genrule {
+    name: "CtsPackageInstallerCUJUpdateOwnerShipTestCases-test-config_v1",
+    defaults: ["enable_pia_v1_defaults"],
+    out: ["UpdateOwnerShipTestV1.xml"],
+    srcs: [
+        "UpdateOwnerShipTestTemplate.xml",
+    ],
+}
+
+genrule {
+    name: "CtsPackageInstallerCUJUpdateOwnerShipTestCases-test-config_v2",
+    defaults: ["enable_pia_v2_defaults"],
+    out: ["UpdateOwnerShipTestV2.xml"],
+    srcs: [
+        "UpdateOwnerShipTestTemplate.xml",
+    ],
+}
+
+java_defaults {
+    name: "cts_package_installer_cuj_update_ownership_defaults",
     defaults: ["cts_package_installer_cuj_defaults"],
     manifest: "AndroidManifest_updateownership.xml",
     srcs: [
@@ -110,11 +262,49 @@ android_test {
         "src/android/packageinstaller/criticaluserjourney/cts/PackageInstallerCujTestBase.java",
         "src/android/packageinstaller/criticaluserjourney/cts/UpdateOwnershipTestBase.java",
     ],
-    test_config: "UpdateOwnerShipTest.xml",
 }
 
 android_test {
-    name: "CtsPackageInstallerCUJUpdateSelfTestCases",
+    name: "CtsPackageInstallerCUJUpdateOwnerShipTestCases",
+    defaults: ["cts_package_installer_cuj_update_ownership_defaults"],
+    test_config_template: ":CtsPackageInstallerCUJUpdateOwnerShipTestCases-test-config_v1",
+
+    test_suites: [
+        "cts",
+        "general-tests",
+    ],
+}
+
+android_test {
+    name: "CtsPackageInstallerCUJUpdateOwnerShipTestCasesV2",
+    defaults: ["cts_package_installer_cuj_update_ownership_defaults"],
+    // Set the value of applicationId (it also applies to package_name) into Manifest.xml
+    manifest_values: {
+        applicationId: "android.packageinstaller.criticaluserjourney.cts.updateownership.v2",
+    },
+    test_config_template: ":CtsPackageInstallerCUJUpdateOwnerShipTestCases-test-config_v2",
+}
+
+genrule {
+    name: "CtsPackageInstallerCUJUpdateSelfTestCases-test-config_v1",
+    defaults: ["enable_pia_v1_defaults"],
+    out: ["UpdateSelfTestV1.xml"],
+    srcs: [
+        "UpdateSelfTestTemplate.xml",
+    ],
+}
+
+genrule {
+    name: "CtsPackageInstallerCUJUpdateSelfTestCases-test-config_v2",
+    defaults: ["enable_pia_v2_defaults"],
+    out: ["UpdateSelfTestV2.xml"],
+    srcs: [
+        "UpdateSelfTestTemplate.xml",
+    ],
+}
+
+java_defaults {
+    name: "cts_package_installer_cuj_update_self_defaults",
     defaults: ["cts_package_installer_cuj_defaults"],
     manifest: "AndroidManifest_updateself.xml",
     srcs: [
@@ -123,12 +313,51 @@ android_test {
         "src/android/packageinstaller/criticaluserjourney/cts/UpdateSelfViaIntentTest.java",
         "src/android/packageinstaller/criticaluserjourney/cts/UpdateSelfViaSessionTest.java",
     ],
-    test_config: "UpdateSelfTest.xml",
 }
 
 android_test {
-    name: "CtsPackageInstallerCUJDeviceAdminTestCases",
+    name: "CtsPackageInstallerCUJUpdateSelfTestCases",
+    defaults: ["cts_package_installer_cuj_update_self_defaults"],
+    test_config_template: ":CtsPackageInstallerCUJUpdateSelfTestCases-test-config_v1",
+
+    test_suites: [
+        "cts",
+        "general-tests",
+    ],
+}
+
+android_test {
+    name: "CtsPackageInstallerCUJUpdateSelfTestCasesV2",
+    defaults: ["cts_package_installer_cuj_update_self_defaults"],
+    // Set the value of applicationId (it also applies to package_name) into Manifest.xml
+    manifest_values: {
+        applicationId: "android.packageinstaller.criticaluserjourney.cts.updateself.v2",
+    },
+    test_config_template: ":CtsPackageInstallerCUJUpdateSelfTestCases-test-config_v2",
+}
+
+genrule {
+    name: "CtsPackageInstallerCUJDeviceAdminTestCases-test-config_v1",
+    defaults: ["enable_pia_v1_defaults"],
+    out: ["DeviceAdminTestV1.xml"],
+    srcs: [
+        "DeviceAdminTestTemplate.xml",
+    ],
+}
+
+genrule {
+    name: "CtsPackageInstallerCUJDeviceAdminTestCases-test-config_v2",
+    defaults: ["enable_pia_v2_defaults"],
+    out: ["DeviceAdminTestV2.xml"],
+    srcs: [
+        "DeviceAdminTestTemplate.xml",
+    ],
+}
+
+java_defaults {
+    name: "cts_package_installer_cuj_device_admin_defaults",
     defaults: ["cts_package_installer_cuj_defaults"],
+    manifest: "AndroidManifest_deviceadmin.xml",
 
     static_libs: [
         "bedstead-enterprise",
@@ -137,26 +366,61 @@ android_test {
     data: [
         ":CtsPackageInstallerDeviceAdminApp",
     ],
-    per_testcase_directory: true,
-    manifest: "AndroidManifest_deviceadmin.xml",
     srcs: [
         "src/android/packageinstaller/criticaluserjourney/cts/PackageInstallerCujTestBase.java",
         "src/android/packageinstaller/criticaluserjourney/cts/UninstallationTestBase.java",
         "src/android/packageinstaller/criticaluserjourney/cts/UninstallDeviceAdminAppTest.java",
     ],
-    test_config: "DeviceAdminTest.xml",
 }
 
 android_test {
-    name: "CtsPackageInstallerCUJMultiUsersTestCases",
+    name: "CtsPackageInstallerCUJDeviceAdminTestCases",
+    defaults: ["cts_package_installer_cuj_device_admin_defaults"],
+    test_config_template: ":CtsPackageInstallerCUJDeviceAdminTestCases-test-config_v1",
+
+    test_suites: [
+        "cts",
+        "general-tests",
+    ],
+}
+
+android_test {
+    name: "CtsPackageInstallerCUJDeviceAdminTestCasesV2",
+    defaults: ["cts_package_installer_cuj_device_admin_defaults"],
+    // Set the value of applicationId (it also applies to package_name) into Manifest.xml
+    manifest_values: {
+        applicationId: "android.packageinstaller.criticaluserjourney.cts.deviceadmin.v2",
+    },
+    test_config_template: ":CtsPackageInstallerCUJDeviceAdminTestCases-test-config_v2",
+}
+
+genrule {
+    name: "CtsPackageInstallerCUJMultiUsersTestCases-test-config_v1",
+    defaults: ["enable_pia_v1_defaults"],
+    out: ["MultiUsersTestV1.xml"],
+    srcs: [
+        "MultiUsersTestTemplate.xml",
+    ],
+}
+
+genrule {
+    name: "CtsPackageInstallerCUJMultiUsersTestCases-test-config_v2",
+    defaults: ["enable_pia_v2_defaults"],
+    out: ["MultiUsersTestV2.xml"],
+    srcs: [
+        "MultiUsersTestTemplate.xml",
+    ],
+}
+
+java_defaults {
+    name: "cts_package_installer_cuj_multi_users_defaults",
     defaults: ["cts_package_installer_cuj_defaults"],
+    manifest: "AndroidManifest_multiusers.xml",
 
     static_libs: [
         "bedstead-enterprise",
     ],
 
-    per_testcase_directory: true,
-    manifest: "AndroidManifest_multiusers.xml",
     srcs: [
         "src/android/packageinstaller/criticaluserjourney/cts/PackageInstallerCujTestBase.java",
         "src/android/packageinstaller/criticaluserjourney/cts/UninstallationWithCloneProfileTest.java",
@@ -164,5 +428,25 @@ android_test {
         "src/android/packageinstaller/criticaluserjourney/cts/UninstallationTestBase.java",
 
     ],
-    test_config: "MultiUsersTest.xml",
+}
+
+android_test {
+    name: "CtsPackageInstallerCUJMultiUsersTestCases",
+    defaults: ["cts_package_installer_cuj_multi_users_defaults"],
+    test_config_template: ":CtsPackageInstallerCUJMultiUsersTestCases-test-config_v1",
+
+    test_suites: [
+        "cts",
+        "general-tests",
+    ],
+}
+
+android_test {
+    name: "CtsPackageInstallerCUJMultiUsersTestCasesV2",
+    defaults: ["cts_package_installer_cuj_multi_users_defaults"],
+    // Set the value of applicationId (it also applies to package_name) into Manifest.xml
+    manifest_values: {
+        applicationId: "android.packageinstaller.criticaluserjourney.cts.multiusers.v2",
+    },
+    test_config_template: ":CtsPackageInstallerCUJMultiUsersTestCases-test-config_v2",
 }

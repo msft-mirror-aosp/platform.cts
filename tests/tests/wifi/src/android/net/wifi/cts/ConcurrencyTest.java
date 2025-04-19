@@ -45,6 +45,7 @@ import android.net.Network;
 import android.net.NetworkCapabilities;
 import android.net.NetworkInfo;
 import android.net.NetworkRequest;
+import android.net.TetheringManager;
 import android.net.wifi.OuiKeyedData;
 import android.net.wifi.ScanResult;
 import android.net.wifi.WifiManager;
@@ -166,6 +167,7 @@ public class ConcurrencyTest extends WifiJUnit4TestBase {
 
     private static WifiManager sWifiManager;
     private static WifiP2pManager sWifiP2pManager;
+    private static TetheringManager sTetheringManager;
     private static WifiP2pManager.Channel sWifiP2pChannel;
     private static final MySync MY_SYNC = new MySync();
     private static final MyResponse MY_RESPONSE = new MyResponse();
@@ -283,6 +285,21 @@ public class ConcurrencyTest extends WifiJUnit4TestBase {
         sShouldRunTest = true;
         sWifiManager = (WifiManager) sContext.getSystemService(Context.WIFI_SERVICE);
         assertThat(sWifiManager).isNotNull();
+
+        // Prerequisite: The P2P group owner must support Tethering.
+        // Skip this test if the prerequisite is not met.
+        sTetheringManager = sContext.getSystemService(TetheringManager.class);
+        assertThat(sTetheringManager).isNotNull();
+        UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
+        try {
+            uiAutomation.adoptShellPermissionIdentity();
+            if (!sTetheringManager.isTetheringSupported()) {
+                Log.d(TAG, "Skipping the test as tethering is not supported");
+                return;
+            }
+        } finally {
+            uiAutomation.dropShellPermissionIdentity();
+        }
 
         // turn on verbose logging for tests
         sWasVerboseLoggingEnabled = ShellIdentityUtils.invokeWithShellPermissions(

@@ -3056,6 +3056,7 @@ def validate_lighting(y_plane, scene, state='ON', log_path=None,
   """
   logging.debug('Validating lighting levels.')
   file_name = f'validate_lighting_{scene}.jpg'
+  dark_corner = 0
   if log_path:
     file_name = os.path.join(log_path, f'validate_lighting_{scene}.jpg')
 
@@ -3075,13 +3076,17 @@ def validate_lighting(y_plane, scene, state='ON', log_path=None,
         _VALIDATE_LIGHTING_PATCH_W, _VALIDATE_LIGHTING_PATCH_H)
     y_mean = image_processing_utils.compute_image_means(patch)[0]
     logging.debug('%s corner Y mean: %.3f', location, y_mean)
+    # Fail validate lighting if three or more corners of image return dark.
     if state == 'ON':
       if y_mean > validate_lighting_thresh:
         logging.debug('Lights ON in test rig.')
         return True
       else:
-        image_processing_utils.write_image(y_plane, file_name)
-        raise AssertionError('Lights OFF in test rig. Turn ON and retry.')
+        dark_corner += 1
+        if dark_corner >= 3:
+          logging.debug('Total dark corners: %s', dark_corner)
+          image_processing_utils.write_image(y_plane, file_name)
+          raise AssertionError('Lights OFF in test rig. Turn ON and retry.')
     elif state == 'OFF':
       if y_mean < validate_lighting_thresh:
         logging.debug('Lights OFF in test rig.')

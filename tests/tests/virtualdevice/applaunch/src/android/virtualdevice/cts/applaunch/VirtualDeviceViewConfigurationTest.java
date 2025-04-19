@@ -93,6 +93,11 @@ public class VirtualDeviceViewConfigurationTest {
     }
 
     @Test
+    @RequiresFlagsEnabled({
+        Flags.FLAG_VIEWCONFIGURATION_APIS,
+        android.content.res.Flags.FLAG_RRO_CONSTRAINTS,
+        android.content.res.Flags.FLAG_DIMENSION_FRRO
+    })
     public void getScrollFrictionAmount_customValueOnVirtualDevice() throws Exception {
         Activity activity =
                 mRule.startActivityOnDisplaySync(Display.DEFAULT_DISPLAY, Activity.class);
@@ -118,6 +123,11 @@ public class VirtualDeviceViewConfigurationTest {
     }
 
     @Test
+    @RequiresFlagsEnabled({
+        Flags.FLAG_VIEWCONFIGURATION_APIS,
+        android.content.res.Flags.FLAG_RRO_CONSTRAINTS,
+        android.content.res.Flags.FLAG_DIMENSION_FRRO
+    })
     public void getScaledTouchSlop_customValueOnVirtualDevice() throws Exception {
         Activity activity =
                 mRule.startActivityOnDisplaySync(Display.DEFAULT_DISPLAY, Activity.class);
@@ -143,6 +153,11 @@ public class VirtualDeviceViewConfigurationTest {
     }
 
     @Test
+    @RequiresFlagsEnabled({
+        Flags.FLAG_VIEWCONFIGURATION_APIS,
+        android.content.res.Flags.FLAG_RRO_CONSTRAINTS,
+        android.content.res.Flags.FLAG_DIMENSION_FRRO
+    })
     public void getScaledMinimumFlingVelocity_customValueOnVirtualDevice() throws Exception {
         Activity activity =
                 mRule.startActivityOnDisplaySync(Display.DEFAULT_DISPLAY, Activity.class);
@@ -171,6 +186,11 @@ public class VirtualDeviceViewConfigurationTest {
     }
 
     @Test
+    @RequiresFlagsEnabled({
+        Flags.FLAG_VIEWCONFIGURATION_APIS,
+        android.content.res.Flags.FLAG_RRO_CONSTRAINTS,
+        android.content.res.Flags.FLAG_DIMENSION_FRRO
+    })
     public void getScaledMaximumFlingVelocity_customValueOnVirtualDevice() throws Exception {
         Activity activity =
                 mRule.startActivityOnDisplaySync(Display.DEFAULT_DISPLAY, Activity.class);

@@ -466,8 +466,9 @@ def verify_zoom_results(test_data, size, z_max, z_min,
              f'range advertised min: {z_min}, max: {z_max} '
              f'THRESH: {zoom_max_thresh + ZOOM_RTOL}')
     logging.error(e_msg)
-  return test_success and verify_zoom_data(
+  verify_zoom_data_success, _ = verify_zoom_data(
       test_data, size, offset_plot_name_stem=offset_plot_name_stem)
+  return test_success and verify_zoom_data_success
 
 
 def verify_zoom_data(test_data, size, plot_name_stem=None,
@@ -617,7 +618,6 @@ def verify_zoom_data(test_data, size, plot_name_stem=None,
           offset_success = False
         offsets_while_transitioning.clear()
     else:
-      offsets_while_transitioning.append(data.aruco_offset)
       z_ratio = data.result_zoom / initial_zoom
       # Expected offset based on the current zoom ratio and initial offset
       offset_hypot_rel = data.aruco_offset / z_ratio
@@ -631,6 +631,7 @@ def verify_zoom_data(test_data, size, plot_name_stem=None,
                           rel_tol=rel_tol, abs_tol=_OFFSET_ATOL):
         e_msg += f'Offset check failed. {msg}'
         used_smooth_offset = True
+        offsets_while_transitioning.append(data.aruco_offset)
         if data.physical_id not in id_to_next_offset_and_zoom:
           offset_success = False
           e_msg += ('No physical camera is available to explain '

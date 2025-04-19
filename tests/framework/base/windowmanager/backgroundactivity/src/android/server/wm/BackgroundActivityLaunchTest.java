@@ -564,7 +564,6 @@ public class BackgroundActivityLaunchTest extends BackgroundActivityTestBase {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_BAL_REQUIRE_OPT_IN_BY_PENDING_INTENT_CREATOR)
     @RequiresFlagsDisabled(Flags.FLAG_BAL_DONT_BRING_EXISTING_BACKGROUND_TASK_STACK_TO_FG)
     public void testPI_onlyCreatorAllowsBALwithOptIn_isNotBlocked() throws Exception {
         // sender (appa) is not privileged
@@ -588,7 +587,6 @@ public class BackgroundActivityLaunchTest extends BackgroundActivityTestBase {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_BAL_REQUIRE_OPT_IN_BY_PENDING_INTENT_CREATOR)
     @RequiresFlagsDisabled(Flags.FLAG_BAL_DONT_BRING_EXISTING_BACKGROUND_TASK_STACK_TO_FG)
     public void testPI_onlyCreatorAllowsBALwithoutOptInSdk33_isNotBlocked() throws Exception {
         // A (privileged) creates PI, B (non-privileged) sends PI from BG, C is started
@@ -611,8 +609,7 @@ public class BackgroundActivityLaunchTest extends BackgroundActivityTestBase {
     }
 
     @Test
-    @RequiresFlagsEnabled({Flags.FLAG_BAL_REQUIRE_OPT_IN_BY_PENDING_INTENT_CREATOR,
-            Flags.FLAG_BAL_DONT_BRING_EXISTING_BACKGROUND_TASK_STACK_TO_FG})
+    @RequiresFlagsEnabled(Flags.FLAG_BAL_DONT_BRING_EXISTING_BACKGROUND_TASK_STACK_TO_FG)
     public void testPI_onlyCreatorAllowsBALwithOptIn_isStartedInBackground() throws Exception {
         // sender (appa) is not privileged
         grantSystemAlertWindow(APP_A, false);
@@ -650,7 +647,6 @@ public class BackgroundActivityLaunchTest extends BackgroundActivityTestBase {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_BAL_REQUIRE_OPT_IN_BY_PENDING_INTENT_CREATOR)
     public void testPI_onlyCreatorAllowsBALwithoutOptInForResult_isBlocked() throws Exception {
         // creator (appb) is privileged, and grants
         grantSystemAlertWindow(APP_B);
@@ -669,7 +665,6 @@ public class BackgroundActivityLaunchTest extends BackgroundActivityTestBase {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_BAL_REQUIRE_OPT_IN_BY_PENDING_INTENT_CREATOR)
     @RequiresFlagsDisabled(Flags.FLAG_BAL_COVER_INTENT_SENDER)
     public void testPI_onlySenderAllowsBALwithoutOptInIntentSender_isNotBlocked() throws Exception {
         startActivity(APP_A.FOREGROUND_ACTIVITY);
@@ -686,10 +681,7 @@ public class BackgroundActivityLaunchTest extends BackgroundActivityTestBase {
     }
 
     @Test
-    @RequiresFlagsEnabled({
-        Flags.FLAG_BAL_REQUIRE_OPT_IN_BY_PENDING_INTENT_CREATOR,
-        Flags.FLAG_BAL_COVER_INTENT_SENDER
-    })
+    @RequiresFlagsEnabled(Flags.FLAG_BAL_COVER_INTENT_SENDER)
     public void testPI_onlySenderAllowsBALwithoutOptInIntentSender36_isNotBlocked()
             throws Exception {
         startActivity(APP_A_36.FOREGROUND_ACTIVITY);
@@ -706,10 +698,7 @@ public class BackgroundActivityLaunchTest extends BackgroundActivityTestBase {
     }
 
     @Test
-    @RequiresFlagsEnabled({
-        Flags.FLAG_BAL_REQUIRE_OPT_IN_BY_PENDING_INTENT_CREATOR,
-        Flags.FLAG_BAL_COVER_INTENT_SENDER
-    })
+    @RequiresFlagsEnabled(Flags.FLAG_BAL_COVER_INTENT_SENDER)
     public void testPI_onlySenderAllowsBALwithoutOptInIntentSender_isBlocked() throws Exception {
         startActivity(APP_A.FOREGROUND_ACTIVITY);
 
@@ -723,10 +712,7 @@ public class BackgroundActivityLaunchTest extends BackgroundActivityTestBase {
     }
 
     @Test
-    @RequiresFlagsEnabled({
-        Flags.FLAG_BAL_REQUIRE_OPT_IN_BY_PENDING_INTENT_CREATOR,
-        Flags.FLAG_BAL_COVER_INTENT_SENDER
-    })
+    @RequiresFlagsEnabled(Flags.FLAG_BAL_COVER_INTENT_SENDER)
     public void testPI_onlySenderAllowsBALwithOptInIntentSender_isNotBlocked() throws Exception {
         startActivity(APP_A.FOREGROUND_ACTIVITY);
 
@@ -742,7 +728,6 @@ public class BackgroundActivityLaunchTest extends BackgroundActivityTestBase {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_BAL_REQUIRE_OPT_IN_BY_PENDING_INTENT_CREATOR)
     public void testPI_onlyCreatorAllowsBALwithoutOptIn_isBlocked() throws Exception {
         // sender (appa) is not privileged
         grantSystemAlertWindow(APP_A, false);
@@ -844,27 +829,6 @@ public class BackgroundActivityLaunchTest extends BackgroundActivityTestBase {
     }
 
     @Test
-    @RequiresFlagsDisabled(Flags.FLAG_BAL_REQUIRE_OPT_IN_BY_PENDING_INTENT_CREATOR)
-    public void testPendingIntentActivity_appAIsForeground_isNotBlocked() throws Exception {
-        // Start AppA foreground activity
-        Components appA = APP_A;
-        startActivity(appA.FOREGROUND_ACTIVITY);
-        assertTaskStackHasComponents(appA.FOREGROUND_ACTIVITY, appA.FOREGROUND_ACTIVITY);
-
-        // Send pendingIntent from AppA to AppB, and the AppB launch the pending intent to start
-        // activity in App A
-        TestServiceClient serviceA = getTestService(appA);
-        PendingIntent pi = generatePendingIntent(serviceA, appA.BACKGROUND_ACTIVITY);
-        TestServiceClient serviceB = getTestService(APP_B);
-        sendPendingIntent(pi, serviceB);
-
-        assertActivityFocused(appA.BACKGROUND_ACTIVITY);
-        assertTaskStackHasComponents(appA.FOREGROUND_ACTIVITY, appA.FOREGROUND_ACTIVITY);
-        assertTaskStackHasComponents(appA.BACKGROUND_ACTIVITY, appA.BACKGROUND_ACTIVITY);
-    }
-
-    @Test
-    @RequiresFlagsEnabled(Flags.FLAG_BAL_REQUIRE_OPT_IN_BY_PENDING_INTENT_CREATOR)
     public void testPendingIntentActivity_appAIsForeground_isBlocked() throws Exception {
         // Start AppA foreground activity
         Components appA = APP_A;
@@ -1506,14 +1470,15 @@ public class BackgroundActivityLaunchTest extends BackgroundActivityTestBase {
     /**
      * Start the given activity in a new task.
      *
-     * After starting the activity this method asserts that the activity is actually started and is
-     * shown as the focused activity in the foreground.
+     * <p>After starting the activity, this method waits for the activity resumed, asserts that the
+     * activity is actually started and is shown as the focused activity in the foreground.
      *
      * @param componentName activity to start
      * @param extraTrueNames (optional) names of extras that should be set to <code>true</code>
      */
     private void startActivity(ComponentName componentName, String... extraTrueNames) {
         startActivityUnchecked(componentName, extraTrueNames);
+        waitForActivityResumed(ACTIVITY_START_TIMEOUT_MS, componentName);
         assertActivityFocusedOnMainDisplay(componentName);
     }
 

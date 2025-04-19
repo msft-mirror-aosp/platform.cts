@@ -22,6 +22,17 @@ import java.io.PrintWriter;
 
 /* This class emulates a service in a supervision app that implements the SupervisionAppService */
 public class MySupervisionService extends SupervisionAppService {
+    private boolean enabled = false;
+
+    @Override
+    public void onEnabled() {
+        enabled = true;
+    }
+
+    @Override
+    public void onDisabled() {
+        enabled = false;
+    }
 
     @Override
     protected void dump(FileDescriptor fd, PrintWriter writer, String[] args) {
@@ -37,6 +48,7 @@ public class MySupervisionService extends SupervisionAppService {
             return;
         }
         writer.print(String.format("Package=[%s]", getPackageName()));
-        writer.println(String.format(" Class=[%s]", this.getClass().getName()));
+        writer.print(String.format(" Class=[%s]", this.getClass().getName()));
+        writer.println(String.format(" Enabled=[%s]", enabled));
     }
 }

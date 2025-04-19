@@ -28,7 +28,9 @@ import its_base_test
 import error_util
 import camera_properties_utils
 import capture_request_utils
+import gen2_rig_controller_utils
 import its_session_utils
+import lighting_control_utils
 import preview_processing_utils
 import video_processing_utils
 import feature_combination_info_pb2
@@ -216,6 +218,20 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
       self._handle_one_completed_future(
           verifications, future, test_failures, database)
 
+  def _setup_lighting_cntl(self):
+    if self.lighting_cntl == 'gen2_lights':
+      lights_port = gen2_rig_controller_utils.find_serial_port(
+          self.lighting_cntl)
+      lights_channel = int(self.lighting_ch)
+      gen2_rig_controller_utils.set_lighting_state(
+          lights_port, lights_channel, 'ON')
+    elif self.lighting_cntl == 'arduino':
+      lights_port = lighting_control_utils.lighting_control(
+          self.lighting_cntl, lights_channel)
+      lights_channel = int(self.lighting_ch)
+      lighting_control_utils.set_lighting_state(
+          lights_port, lights_channel, 'ON')
+
   def _test_feature_combination(self, executor):
     """Tests features using an injected ThreadPoolExecutor for analysis.
 
@@ -253,6 +269,9 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
       if rot_rig['cntl'].lower() not in _VALID_RIGS:
         raise AssertionError(
             f'You must use the arduino or gen2_rotator controller for {_NAME}.')
+
+      # Initialize lighting rig
+      self._setup_lighting_cntl()
 
       # List of queryable stream combinations
       combinations_str, combinations = cam.get_queryable_stream_combinations()

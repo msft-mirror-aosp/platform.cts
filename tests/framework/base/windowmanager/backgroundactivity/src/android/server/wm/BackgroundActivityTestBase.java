@@ -434,7 +434,7 @@ public abstract class BackgroundActivityTestBase extends ActivityManagerTestBase
                 "activity should not be focused within " + timeout);
     }
 
-    private void waitForActivityResumed(Duration timeout, ComponentName componentName) {
+    protected void waitForActivityResumed(Duration timeout, ComponentName componentName) {
         waitForActivityResumed((int) timeout.toMillis(), componentName);
     }
 

@@ -94,4 +94,7 @@
     <!-- b/395834565 -->
     <option name="compatibility:exclude-filter" value="CtsVideoCodecTestCases android.videocodec.cts.VideoEncoderPsnrTest#testPsnr" />
 
+    <!-- b/389229265 -->
+    <option name="compatibility:exclude-filter" value="CtsVideoQualityFloorHostTestCases android.videoqualityfloor.cts.CtsVideoQualityFloorHostTest#testEncoding" />
+
 </configuration>

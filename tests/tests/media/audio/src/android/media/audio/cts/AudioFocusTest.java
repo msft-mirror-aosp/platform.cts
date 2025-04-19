@@ -78,6 +78,7 @@ import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.permissions.PermissionContext;
 import com.android.compatibility.common.util.FrameworkSpecificTest;
 import com.android.compatibility.common.util.SystemUtil;
+import com.android.media.mediatestutils.CancelAllFuturesRule;
 
 import org.junit.After;
 import org.junit.Before;
@@ -140,6 +141,9 @@ public class AudioFocusTest {
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
+    @Rule
+    public final CancelAllFuturesRule mCancelRule = new CancelAllFuturesRule();
 
     @Before
     public void setUp() throws Exception {
@@ -760,6 +764,8 @@ public class AudioFocusTest {
             mAM.setRingerMode(RINGER_MODE_NORMAL);
             // TODO(b/294941884): remove this check
             assumeTrue("Ringer mode not NORMAL", mAM.getRingerMode() == RINGER_MODE_NORMAL);
+            AudioTestUtil.setAndWaitForStreamVolume(mCancelRule, mContext, mAM,
+                    streamType, mAM.getStreamMaxVolume(streamType) - 1);
             // RINGER_MODE_NORMAL + GAIN_TRANSIENT_EXCLUSIVE expect shouldNotifSoundPlay true
             assertTrue("Wrong shouldNotificationSoundPlay for ringer NORMAL + focus exclusive",
                     mAM.shouldNotificationSoundPlay(NOTIFICATION_ATTRIBUTES));
@@ -825,6 +831,8 @@ public class AudioFocusTest {
             mAM.setRingerMode(RINGER_MODE_NORMAL);
             // TODO(b/294941884): remove this check
             assumeTrue("Ringer mode not NORMAL", mAM.getRingerMode() == RINGER_MODE_NORMAL);
+            AudioTestUtil.setAndWaitForStreamVolume(mCancelRule, mContext, mAM,
+                    streamType, mAM.getStreamMaxVolume(streamType) - 1);
             // RINGER_MODE_NORMAL + GAIN_TRANSIENT_EXCLUSIVE + no more recording
             //     expect shouldNotifSoundPlay true
             assertTrue("Wrong shouldNotificationSoundPlay for focus exclusive + recording",

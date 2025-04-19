@@ -24,6 +24,7 @@ import static android.telephony.satellite.SatelliteManager.SATELLITE_MODEM_STATE
 import static android.telephony.satellite.SatelliteManager.SATELLITE_MODEM_STATE_OFF;
 
 import static com.android.internal.telephony.satellite.SatelliteController.TIMEOUT_TYPE_EVALUATE_ESOS_PROFILES_PRIORITIZATION_DURATION_MILLIS;
+import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -87,6 +88,7 @@ import android.telephony.satellite.SatelliteSubscriberProvisionStatus;
 import android.telephony.satellite.SatelliteTransmissionUpdateCallback;
 import android.telephony.satellite.SelectedNbIotSatelliteSubscriptionCallback;
 import android.telephony.satellite.SystemSelectionSpecifier;
+import android.telephony.satellite.stub.SatelliteModemState;
 import android.text.TextUtils;
 import android.util.Log;
 import android.util.Pair;
@@ -246,11 +248,13 @@ public class SatelliteManagerTestBase {
     }
 
     protected static void grantSatellitePermission() {
+        logd("grantSatellitePermission");
         InstrumentationRegistry.getInstrumentation().getUiAutomation()
                 .adoptShellPermissionIdentity(Manifest.permission.SATELLITE_COMMUNICATION);
     }
 
     protected static void revokeSatellitePermission() {
+        logd("revokeSatellitePermission");
         InstrumentationRegistry.getInstrumentation().getUiAutomation()
                 .dropShellPermissionIdentity();
     }
@@ -2000,7 +2004,6 @@ public class SatelliteManagerTestBase {
 
         Integer error = errorCode.get();
         if (error == null) {
-            assertTrue(list.get().size() > 0);
             return new Pair<>(list.get(), error);
         } else {
             assertFalse(list.get().size() > 0);
@@ -2158,31 +2161,32 @@ public class SatelliteManagerTestBase {
                 android.Manifest.permission.MODIFY_PHONE_STATE);
     }
 
-    protected static class SatelliteReceiverTest extends BroadcastReceiver {
+    protected static class SatelliteSubscriberIdListChangedReceiver extends BroadcastReceiver {
         private final Semaphore mSemaphore = new Semaphore(0);
 
         @Override
         public void onReceive(Context context, Intent intent) {
             if (SatelliteReceiver.TEST_INTENT.equals(intent.getAction())) {
-                logd("SatelliteReceiverTest: receive the "
+                logd("SatelliteReceiver: receive the "
                         + SatelliteManager.ACTION_SATELLITE_SUBSCRIBER_ID_LIST_CHANGED);
                 mSemaphore.release();
             }
         }
 
         public void clearQueue() {
-            logd("SatelliteReceiverTest: clearQueue");
+            logd("SatelliteReceiver: clearQueue");
             mSemaphore.drainPermits();
         }
 
-        boolean waitForReceive() {
+        boolean waitUntilChanged() {
             try {
-                if (!mSemaphore.tryAcquire(TimeUnit.SECONDS.toMillis(65), TimeUnit.MILLISECONDS)) {
-                    logd("SatelliteReceiverTest: Timeout to receive");
+                if (!mSemaphore.tryAcquire(
+                        TimeUnit.SECONDS.toMillis(TIMEOUT), TimeUnit.MILLISECONDS)) {
+                    logd("SatelliteReceiver: Timeout to receive");
                     return false;
                 }
             } catch (Exception ex) {
-                logd("SatelliteReceiverTest: waitForReceive: Got exception=" + ex);
+                logd("SatelliteReceiver: Got exception=" + ex);
                 return false;
             }
             return true;
@@ -2255,6 +2259,181 @@ public class SatelliteManagerTestBase {
                         configuration5));
     }
 
+    protected static class LocationSettingBroadcastReceiver extends BroadcastReceiver {
+        private final Semaphore mLocationEnabledSemaphore = new Semaphore(0);
+        private final Semaphore mLocationDisabledSemaphore = new Semaphore(0);
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (LocationManager.MODE_CHANGED_ACTION.equals(intent.getAction())) {
+                LocationManager locationManager = context.getSystemService(LocationManager.class);
+                if (locationManager == null) {
+                    loge("LocationSettingBroadcastReceiver: LocationManager is null.");
+                    return;
+                }
+                if (locationManager.isLocationEnabled()) {
+                    logd("LocationSettingBroadcastReceiver: Location is now ENABLED.");
+                    try {
+                        if (mLocationEnabledSemaphore.availablePermits() == 0) {
+                            mLocationEnabledSemaphore.release();
+                        } else {
+                            logd(
+                                    "LocationSettingBroadcastReceiver: "
+                                            + "mLocationEnabledSemaphore already released.");
+                        }
+                        logd(
+                                "LocationSettingBroadcastReceiver: "
+                                        + "mLocationDisabledSemaphore.drainPermits()");
+                        mLocationDisabledSemaphore.drainPermits();
+                    } catch (Exception e) {
+                        loge("LocationSettingBroadcastReceiver: Got exception on enable, ex=" + e);
+                    }
+                } else {
+                    logd("LocationSettingBroadcastReceiver: Location is now DISABLED.");
+                    try {
+                        if (mLocationDisabledSemaphore.availablePermits() == 0) {
+                            mLocationDisabledSemaphore.release();
+                        } else {
+                            logd(
+                                    "LocationSettingBroadcastReceiver: "
+                                            + "mLocationDisabledSemaphore already released.");
+                        }
+                        logd(
+                                "LocationSettingBroadcastReceiver: "
+                                        + "mLocationEnabledSemaphore.drainPermits()");
+                        mLocationEnabledSemaphore.drainPermits();
+                    } catch (Exception e) {
+                        loge("LocationSettingBroadcastReceiver: Got exception on disable, ex=" + e);
+                    }
+                }
+            }
+        }
+
+        public void drainAllPermits() {
+            logd("LocationSettingBroadcastReceiver: drainAllPermits");
+            mLocationEnabledSemaphore.drainPermits();
+            mLocationDisabledSemaphore.drainPermits();
+        }
+
+        public boolean waitUntilLocationEnabled(long timeoutMs) {
+            logd(
+                    "LocationSettingBroadcastReceiver: "
+                            + "Waiting for location enabled ("
+                            + timeoutMs
+                            + "ms)...");
+            try {
+                if (!mLocationEnabledSemaphore.tryAcquire(timeoutMs, TimeUnit.MILLISECONDS)) {
+                    loge(
+                            "LocationSettingBroadcastReceiver: "
+                                    + "Timeout waiting for location enabled event");
+                    return false;
+                }
+                logd("LocationSettingBroadcastReceiver: Location enabled event received.");
+            } catch (InterruptedException ex) {
+                Thread.currentThread().interrupt();
+                loge(
+                        "LocationSettingBroadcastReceiver: "
+                                + "waitUntilLocationEnabled: Interrupted! ex="
+                                + ex);
+                return false;
+            } catch (Exception ex) {
+                loge(
+                        "LocationSettingBroadcastReceiver: "
+                                + "waitUntilLocationEnabled: Got exception="
+                                + ex);
+                return false;
+            }
+            return true;
+        }
+
+        public boolean waitUntilLocationDisabled(long timeoutMs) {
+            logd(
+                    "LocationSettingBroadcastReceiver: "
+                            + "Waiting for location disabled ("
+                            + timeoutMs
+                            + "ms)...");
+            try {
+                if (!mLocationDisabledSemaphore.tryAcquire(timeoutMs, TimeUnit.MILLISECONDS)) {
+                    loge(
+                            "LocationSettingBroadcastReceiver: "
+                                    + "Timeout waiting for location disabled event");
+                    return false;
+                }
+                logd("LocationSettingBroadcastReceiver: " + "Location disabled event received.");
+            } catch (InterruptedException ex) {
+                Thread.currentThread().interrupt();
+                loge(
+                        "LocationSettingBroadcastReceiver: "
+                                + "waitUntilLocationDisabled: Interrupted! ex="
+                                + ex);
+                return false;
+            } catch (Exception ex) {
+                loge(
+                        "LocationSettingBroadcastReceiver: "
+                                + "waitUntilLocationDisabled: Got exception="
+                                + ex);
+                return false;
+            }
+            return true;
+        }
+    }
+
+    /** Register and return an instance of LocationSettingBroadcastReceiver */
+    protected static LocationSettingBroadcastReceiver registerLocationSettingReceiver(
+            Context context) {
+        LocationSettingBroadcastReceiver receiver = new LocationSettingBroadcastReceiver();
+        IntentFilter filter = new IntentFilter(LocationManager.MODE_CHANGED_ACTION);
+        context.registerReceiver(receiver, filter);
+        logd("registerLocationSettingReceiver: Receiver registered.");
+        return receiver;
+    }
+
+    /**
+     * Wait for and verify the location disabled event using the registered
+     * LocationSettingBroadcastReceiver.
+     */
+    protected static void verifyLocationEnabledEventReceived(
+            LocationSettingBroadcastReceiver receiver, long timeoutMs) {
+        logd("verifyLocationEnabledEventReceived: " + "Waiting (timeout: " + timeoutMs + "ms)...");
+        boolean eventReceived = receiver.waitUntilLocationEnabled(timeoutMs);
+        logd(
+                "verifyLocationEnabledEventReceived: "
+                        + "Wait finished. Event received: "
+                        + eventReceived);
+        assertTrue("Timed out waiting for location enabled event.", eventReceived);
+    }
+
+    /**
+     * Wait for and verify the location disabled event using the registered
+     * LocationSettingBroadcastReceiver.
+     */
+    protected static void verifyLocationDisabledEventReceived(
+            LocationSettingBroadcastReceiver receiver, long timeoutMs) {
+        logd("verifyLocationDisabledEventReceived: Waiting (timeout: " + timeoutMs + "ms)...");
+        boolean eventReceived = receiver.waitUntilLocationDisabled(timeoutMs);
+        logd(
+                "verifyLocationDisabledEventReceived: "
+                        + "Wait finished. Event received: "
+                        + eventReceived);
+        assertTrue("Timed out waiting for location disabled event.", eventReceived);
+    }
+
+    /** Unregister the registered LocationSettingBroadcastReceiver */
+    protected static void unregisterLocationSettingReceiver(
+            Context context, LocationSettingBroadcastReceiver receiver) {
+        if (receiver != null) {
+            try {
+                context.unregisterReceiver(receiver);
+                logd("unregisterLocationSettingReceiver: Receiver unregistered.");
+            } catch (IllegalArgumentException e) {
+                logd(
+                        "unregisterLocationSettingReceiver: "
+                                + "Receiver already unregistered or never registered: "
+                                + e.getMessage());
+            }
+        }
+    }
+
     protected void verifySatelliteAccessConfiguration(
             @NonNull SatelliteAccessConfiguration expectedConfiguration,
             @NonNull SystemSelectionSpecifier actualSystemSelectionSpecifier) {
@@ -2303,8 +2482,10 @@ public class SatelliteManagerTestBase {
         return major * 100 + minor;
     }
 
-    protected static SatelliteReceiverTest setUpSatelliteReceiverTest() {
-        SatelliteReceiverTest receiver = new SatelliteReceiverTest();
+    protected static SatelliteSubscriberIdListChangedReceiver
+        registerSatelliteSubscriberIdListChangedReceiver() {
+        SatelliteSubscriberIdListChangedReceiver receiver =
+            new SatelliteSubscriberIdListChangedReceiver();
         assertTrue(sMockSatelliteServiceManager.setSatelliteControllerTimeoutDuration(false,
                 TIMEOUT_TYPE_EVALUATE_ESOS_PROFILES_PRIORITIZATION_DURATION_MILLIS, 5));
         Context context = getContext();
@@ -2317,7 +2498,8 @@ public class SatelliteManagerTestBase {
         return receiver;
     }
 
-    protected static void resetSatelliteReceiverTest(Context context, SatelliteReceiverTest receiver) {
+    protected static void unregisterSatelliteSubscriberIdListChangedReceiver(
+        Context context, SatelliteSubscriberIdListChangedReceiver receiver) {
         assertTrue(sMockSatelliteServiceManager.setSatelliteControllerTimeoutDuration(true,
                 TIMEOUT_TYPE_EVALUATE_ESOS_PROFILES_PRIORITIZATION_DURATION_MILLIS, 0));
         assertTrue(sMockSatelliteServiceManager
@@ -2460,14 +2642,15 @@ public class SatelliteManagerTestBase {
                         SubscriptionManager.IS_ONLY_NTN,
                         false,
                         getContext());
-        logd("enableNtnOnlySubscription: original isNtnOnly="
-                 + isNtnOnly + ", subId=" + subId);
+        logd("enableNtnOnlySubscription: sOriginalNtnOnlyState="
+                        + isNtnOnly
+                        + ", sNtnOnlySubId="
+                        + sNtnOnlySubId);
         if (isNtnOnly) {
             logd("enableNtnOnlySubscription: subId=" + subId + " is already NTN only");
             return;
         }
 
-        // Enable NTN only subscription
         UiAutomation ui = InstrumentationRegistry.getInstrumentation().getUiAutomation();
         try {
             ui.adoptShellPermissionIdentity();
@@ -2543,34 +2726,46 @@ public class SatelliteManagerTestBase {
 
         grantSatellitePermission();
         if (!isEsosSupported) {
-            SatelliteReceiverTest satelliteSubscriberIdListChangedReceiver =
-                setUpSatelliteReceiverTest();
+            SatelliteSubscriberIdListChangedReceiver satelliteSubIdChangedReceiver =
+                registerSatelliteSubscriberIdListChangedReceiver();
             try {
-                satelliteSubscriberIdListChangedReceiver.clearQueue();
+                satelliteSubIdChangedReceiver.clearQueue();
 
                 PersistableBundle bundle = new PersistableBundle();
                 bundle.putBoolean(CarrierConfigManager.KEY_SATELLITE_ESOS_SUPPORTED_BOOL, true);
                 overrideCarrierConfig(subId, bundle);
                 waitForEsosSubscriptionAvailable(subId);
+                sEsosSubIdsToBeRestored.add(subId);
+                waitUntilSatelliteSubscriptionAvailable(satelliteSubIdChangedReceiver);
 
-                // Wait for the satellite subscriber id list changed intent to be received.
-                assertTrue(satelliteSubscriberIdListChangedReceiver.waitForReceive());
-                // Make sure there is at least one satellite subscription
-                Pair<List<SatelliteSubscriberProvisionStatus>, Integer> pairResult =
-                        requestSatelliteSubscriberProvisionStatus();
-                if (pairResult == null) {
-                    fail("enableEsosSupportForActiveSubscription "
-                            + "List<SatelliteSubscriberProvisionStatus> null");
-                } else {
-                    assertTrue(pairResult.first.size() > 0);
-                    sEsosSubIdsToBeRestored.add(subId);
-                }
             } finally {
-                resetSatelliteReceiverTest(getContext(), satelliteSubscriberIdListChangedReceiver);
+                unregisterSatelliteSubscriberIdListChangedReceiver(
+                    getContext(), satelliteSubIdChangedReceiver);
             }
         } else {
             logd("enableEsosSupportForActiveSubscription: eSOS is already supported for subId="
                      + subId);
+        }
+    }
+
+    protected static void waitUntilSatelliteSubscriptionAvailable(
+        SatelliteSubscriberIdListChangedReceiver satelliteReceiver) {
+        int i = 0;
+        for (; i < 3; i++) {
+            assertTrue(satelliteReceiver.waitUntilChanged());
+            // Make sure there is at least one satellite subscription
+            Pair<List<SatelliteSubscriberProvisionStatus>, Integer> pairResult =
+                    requestSatelliteSubscriberProvisionStatus();
+            if (pairResult == null) {
+                fail("waitUntilSatelliteSubscriptionAvailable "
+                        + "List<SatelliteSubscriberProvisionStatus> null");
+            } else if (pairResult.first.size() > 0) {
+                break;
+            }
+        }
+        if (i == 3) {
+            fail("waitUntilSatelliteSubscriptionAvailable "
+                    + "no satellite subscription available");
         }
     }
 
@@ -2737,7 +2932,9 @@ public class SatelliteManagerTestBase {
                                 SATELLITE_DISALLOWED_REASON_UNSUPPORTED_DEFAULT_MSG_APP));
             }
         } else {
-            logd("enableDefaultSmsAppSupportForNtnOnlySubscription: no need to update default SMS app");
+            logd(
+                    "enableDefaultSmsAppSupportForNtnOnlySubscription: no need to update default"
+                            + " SMS app");
         }
     }
 
@@ -3236,5 +3433,99 @@ public class SatelliteManagerTestBase {
             logd("isAppInstalled: false: " + packageName);
             return false;
         }
+    }
+
+    protected static void enableSatelliteMode() {
+        grantSatellitePermission();
+        if (isSatelliteEnabled()) {
+            logd("Satellite is already enabled");
+        } else {
+            logd("Enabling satellite");
+            SatelliteModemStateCallbackTest callback = new SatelliteModemStateCallbackTest();
+            long registerResult = sSatelliteManager.registerForModemStateChanged(
+                    getContext().getMainExecutor(), callback);
+            assertEquals(SatelliteManager.SATELLITE_RESULT_SUCCESS, registerResult);
+            assertTrue(callback.waitUntilResult(1));
+
+            int i = 0;
+            while (requestSatelliteEnabledWithResult(true, EXTERNAL_DEPENDENT_TIMEOUT)
+                    != SatelliteManager.SATELLITE_RESULT_SUCCESS && i < 3) {
+                waitFor(500);
+                i++;
+                logd("requestSatelliteEnabledWithResult failed, retrying, iteration=" + i);
+            }
+
+            assertTrue(callback.waitUntilModemIdleOrNotConnected());
+            assertTrue(isSatelliteEnabled());
+            sSatelliteManager.unregisterForModemStateChanged(callback);
+        }
+    }
+
+    protected static void moveSatelliteToOffState() {
+        grantSatellitePermission();
+        if (isSatelliteEnabled()) {
+            SatelliteModemStateCallbackTest callback = new SatelliteModemStateCallbackTest();
+            long registerResult = sSatelliteManager.registerForModemStateChanged(
+                    getContext().getMainExecutor(), callback);
+            assertEquals(SatelliteManager.SATELLITE_RESULT_SUCCESS, registerResult);
+            assertTrue(callback.waitUntilResult(1));
+
+            logd("moveSatelliteToOffState: Moving satellite to off state");
+            callback.clearModemStates();
+            sMockSatelliteServiceManager.sendOnSatelliteModemStateChanged(
+                SatelliteModemState.SATELLITE_MODEM_STATE_OFF);
+            assertTrue(callback.waitUntilModemOff());
+            sSatelliteManager.unregisterForModemStateChanged(callback);
+        } else {
+            logd("moveSatelliteToOffState: Satellite is already off");
+        }
+    }
+
+    protected static SatelliteTransmissionUpdateCallbackTest startTransmissionUpdates() {
+        LinkedBlockingQueue<Integer> resultListener = new LinkedBlockingQueue<>(1);
+        SatelliteTransmissionUpdateCallbackTest transmissionUpdateCallback =
+                new SatelliteTransmissionUpdateCallbackTest();
+        sSatelliteManager.startTransmissionUpdates(getContext().getMainExecutor(),
+                resultListener::offer, transmissionUpdateCallback);
+        Integer errorCode;
+        try {
+            errorCode = resultListener.poll(TIMEOUT, TimeUnit.MILLISECONDS);
+        } catch (InterruptedException ex) {
+            fail("SatelliteTransmissionUpdateCallbackTest: Got InterruptedException in waiting"
+                    + " for the startSatelliteTransmissionUpdates result code");
+            return null;
+        }
+        assertNotNull(errorCode);
+        assertThat(errorCode).isEqualTo(SatelliteManager.SATELLITE_RESULT_SUCCESS);
+        return transmissionUpdateCallback;
+    }
+
+    protected static void stopTransmissionUpdates(
+            SatelliteTransmissionUpdateCallbackTest transmissionUpdateCallback) {
+        LinkedBlockingQueue<Integer> resultListener = new LinkedBlockingQueue<>(1);
+        sSatelliteManager.stopTransmissionUpdates(transmissionUpdateCallback,
+                getContext().getMainExecutor(), resultListener::offer);
+    }
+
+    protected static void assertSingleSendDatagramStateChanged(
+            SatelliteTransmissionUpdateCallbackTest transmissionUpdateCallback,
+            int expectedTransferState, int expectedPendingCount, int expectedErrorCode) {
+        assertTrue(transmissionUpdateCallback.waitUntilOnSendDatagramStateChanged(1));
+        assertThat(transmissionUpdateCallback.getNumOfSendDatagramStateChanges()).isEqualTo(1);
+        assertThat(transmissionUpdateCallback.getSendDatagramStateChange(0)).isEqualTo(
+                new SatelliteTransmissionUpdateCallbackTest.DatagramStateChangeArgument(
+                        expectedTransferState, expectedPendingCount, expectedErrorCode));
+    }
+
+    protected static void assertSingleReceiveDatagramStateChanged(
+            SatelliteTransmissionUpdateCallbackTest transmissionUpdateCallback,
+            int expectedTransferState, int expectedPendingCount, int expectedErrorCode) {
+        assertTrue(transmissionUpdateCallback
+                .waitUntilOnReceiveDatagramStateChanged(1));
+        assertThat(transmissionUpdateCallback.getNumOfReceiveDatagramStateChanges())
+                .isEqualTo(1);
+        assertThat(transmissionUpdateCallback.getReceiveDatagramStateChange(0)).isEqualTo(
+                new SatelliteTransmissionUpdateCallbackTest.DatagramStateChangeArgument(
+                        expectedTransferState, expectedPendingCount, expectedErrorCode));
     }
 }

@@ -485,6 +485,32 @@ class Utils {
     }
 
     /**
+     * Compares two Bitmap objects and checks if they are exactly equal, pixel by pixel.
+     *
+     * @param bmp1 The first Bitmap.
+     * @param bmp2 The second Bitmap.
+     * @return true if both Bitmaps are the same size and all pixels match exactly; false otherwise.
+     */
+    public static boolean areBitmapsIdentical(Bitmap bmp1, Bitmap bmp2) {
+        if (bmp1.getWidth() != bmp2.getWidth() || bmp1.getHeight() != bmp2.getHeight()) {
+            return false;
+        }
+
+        for (int x = 0; x < bmp1.getWidth(); x++) {
+            for (int y = 0; y < bmp1.getHeight(); y++) {
+                int pixel1 = bmp1.getPixel(x, y);
+                int pixel2 = bmp2.getPixel(x, y);
+
+                if (pixel1 != pixel2) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
+    /**
      * Creates a file in CTS apk internal storage
      *
      * @param context  The context use for creating the file

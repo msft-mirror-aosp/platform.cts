@@ -18,17 +18,22 @@ package android.server.wm.backnavigation;
 
 import android.app.Activity;
 import android.os.Bundle;
+import android.view.MotionEvent;
 
 import androidx.annotation.Nullable;
+
+import java.util.concurrent.CountDownLatch;
 
 public class BackNavigationActivity extends Activity {
 
     boolean mOnBackPressedCalled;
     boolean mOnUserInteractionCalled;
+    CountDownLatch mReceiveMotionCancel;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        mReceiveMotionCancel = new CountDownLatch(1);
     }
 
     @Override
@@ -41,5 +46,13 @@ public class BackNavigationActivity extends Activity {
     public void onUserInteraction() {
         mOnUserInteractionCalled = true;
         super.onUserInteraction();
+    }
+
+    @Override
+    public boolean onTouchEvent(MotionEvent event) {
+        if (event.getAction() == MotionEvent.ACTION_CANCEL) {
+            mReceiveMotionCancel.countDown();
+        }
+        return super.onTouchEvent(event);
     }
 }

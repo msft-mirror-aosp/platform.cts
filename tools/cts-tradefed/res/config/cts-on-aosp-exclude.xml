@@ -33,7 +33,6 @@
     <option name="compatibility:exclude-filter" value="CtsAppTestCases android.app.cts.SystemFeaturesTest#testLocationFeatures" />
 
     <!-- Exclude telephony related testcases -->
-    <option name="compatibility:exclude-filter" value="CtsNetTestCasesLegacyApi22 android.net.cts.legacy.api22.ConnectivityManagerLegacyTest#testStartUsingNetworkFeature_enableHipri" />
     <option name="compatibility:exclude-filter" value="CtsPermissionPolicyTestCases android.permissionpolicy.cts.NoReceiveSmsPermissionTest#testAppSpecificSmsToken" />
     <option name="compatibility:exclude-filter" value="CtsPermissionPolicyTestCases android.permissionpolicy.cts.NoReceiveSmsPermissionTest#testReceiveTextMessage" />
     <option name="compatibility:exclude-filter" value="CtsNetTestCases android.net.cts.NetworkStatsManagerTest#testAppDetails" />

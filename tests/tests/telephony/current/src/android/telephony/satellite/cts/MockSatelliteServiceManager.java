@@ -1462,7 +1462,7 @@ class MockSatelliteServiceManager {
         }
     }
 
-    @NonNull private String[] readStringArrayFromOverlayConfig(@NonNull String resourceName) {
+    @NonNull public String[] readStringArrayFromOverlayConfig(@NonNull String resourceName) {
         String[] strArray = null;
         try {
             strArray = mInstrumentation.getContext().getResources().getStringArray(
@@ -1475,6 +1475,19 @@ class MockSatelliteServiceManager {
             strArray = new String[0];
         }
         return strArray;
+    }
+
+    @Nullable
+    public String readStringFromOverlayConfig(@NonNull String resourceName) {
+        String str = null;
+        try {
+            str = mInstrumentation.getContext().getResources().getString(
+                    Resources.getSystem().getIdentifier(resourceName, "string", "android"));
+        } catch (Resources.NotFoundException ex) {
+            loge("readStringFromOverlayConfig: resourceName = "
+                    + resourceName + ", ex = " + ex);
+        }
+        return str;
     }
 
     private boolean setupLocalSatelliteService() {

@@ -46,14 +46,13 @@ import java.util.Set;
 public final class XtsApiInheritGenerator extends XtsXmlGenerator {
 
     private static final String TOP_ELEMENT_NAME = "xts-api-inherit";
-    private static final List<String> API_CLASS_PREFIXES =
-            List.of("android.", "com.android.", "dalvik.", "libcore.");
 
     private final Set<String> mClassCache = new HashSet<>();
 
     XtsApiInheritGenerator(Document doc) {
         super(doc);
         addTopElement(TOP_ELEMENT_NAME);
+        getTopElement(TOP_ELEMENT_NAME).setAttribute("type", "xts");
     }
 
     @Override
@@ -63,62 +62,71 @@ public final class XtsApiInheritGenerator extends XtsXmlGenerator {
 
     private void processClass(ClassProfile classProfile) {
         mClassCache.add(classProfile.getClassSignature());
-        for (MethodProfile methodProfile : classProfile.getMethods().values()) {
-            Element methodElement = createMethodElement(methodProfile);
-            if (methodElement != null) {
-                getTopElement(TOP_ELEMENT_NAME).appendChild(methodElement);
-            }
+        if (!classProfile.getInheritedApiClasses().isEmpty()) {
+            classProfile
+                    .getMethods()
+                    .forEach(
+                            (signature, method) -> {
+                                for (Map.Entry<ClassProfile, MethodProfile> classMethod :
+                                        classProfile
+                                                .getOverriddenApiMethods(signature)
+                                                .entrySet()) {
+                                    getTopElement(TOP_ELEMENT_NAME)
+                                            .appendChild(
+                                                    createMethodElement(
+                                                            classProfile,
+                                                            method,
+                                                            classMethod.getKey(),
+                                                            classMethod.getValue(),
+                                                            "override"));
+                                }
+                            });
         }
-        for (MethodProfile api : classProfile.getInheritedApiMethods().values()) {
-            getTopElement(TOP_ELEMENT_NAME).appendChild(createMethodElement(classProfile, api));
-        }
+        classProfile
+                .getInheritedApiMethods()
+                .forEach(
+                        classMethod ->
+                                getTopElement(TOP_ELEMENT_NAME)
+                                        .appendChild(
+                                                createMethodElement(
+                                                        classProfile,
+                                                        classMethod.getSecond(),
+                                                        classMethod.getFirst(),
+                                                        classMethod.getSecond(),
+                                                        "inherit")));
     }
 
-    /**
-     * Creates an XML element representing a method and its overridden abstract API methods.
-     *
-     * @param methodProfile The profile of the method.
-     * @return The created XML element. Null if the method is not overriding any abstract APIs.
-     */
-    private Element createMethodElement(MethodProfile methodProfile) {
-        Map<String, MethodProfile> apis = methodProfile.getOverriddenApiMethods();
-        if (apis.isEmpty()) {
-            return null;
-        }
+    private Element createMethodElement(
+            ClassProfile classProfile,
+            MethodProfile methodProfile,
+            ClassProfile superClass,
+            MethodProfile superMethod,
+            String type) {
         Element methodElement =
                 createElement(
                         "method",
                         Map.of(
                                 "name", methodProfile.getMethodName(),
-                                "class", methodProfile.getClassName(),
-                                "package", methodProfile.getPackageName()));
-        for (MethodProfile api : apis.values()) {
-            methodElement.appendChild(createApiElement(api, "override"));
-        }
+                                "class", classProfile.getClassName(),
+                                "package", classProfile.getPackageName(),
+                                "abstract", methodProfile.isAbstract()));
+        methodElement.appendChild(createApiElement(superClass, type, superMethod.isAbstract()));
         addParameterTypes(methodProfile.getMethodParams(), methodElement);
         return methodElement;
     }
 
-    private Element createMethodElement(ClassProfile classProfile, MethodProfile api) {
-        Element methodElement =
-                createElement(
-                        "method",
-                        Map.of(
-                                "name", api.getMethodName(),
-                                "class", classProfile.getClassName(),
-                                "package", classProfile.getPackageName()));
-        methodElement.appendChild(createApiElement(api, "inherit"));
-        addParameterTypes(api.getMethodParams(), methodElement);
-        return methodElement;
-    }
-
-    private Element createApiElement(MethodProfile methodProfile, String type) {
+    private Element createApiElement(ClassProfile classProfile, String type, boolean isAbstract) {
         return createElement(
                 "override-api",
                 Map.of(
-                        "package", methodProfile.getPackageName(),
-                        "class", methodProfile.getClassName(),
-                        "type", type));
+                        "package",
+                        classProfile.getPackageName(),
+                        "class",
+                        classProfile.getClassName(),
+                        "type",
+                        type,
+                        "abstract",
+                        isAbstract));
     }
 
     private void addParameterTypes(List<String> params, Element parent) {
@@ -141,10 +149,6 @@ public final class XtsApiInheritGenerator extends XtsXmlGenerator {
      */
     private boolean shouldRecord(ClassProfile classProfile) {
         String classSignature = classProfile.getClassSignature();
-        if (mClassCache.contains(classSignature) || classProfile.isApiClass()) {
-            return false;
-        }
-        return classProfile.getInheritedApiClasses().keySet().stream()
-                .anyMatch(apiClass -> API_CLASS_PREFIXES.stream().anyMatch(apiClass::startsWith));
+        return !mClassCache.contains(classSignature) && !classProfile.isApiClass();
     }
 }

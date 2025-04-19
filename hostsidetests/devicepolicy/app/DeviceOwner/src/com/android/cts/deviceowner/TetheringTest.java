@@ -35,9 +35,7 @@ public class TetheringTest extends BaseDeviceOwnerTest {
     private static final String TAG = "TetheringTest";
 
     private static final SoftApConfiguration TEST_SOFT_AP_CONFIG =
-            new SoftApConfiguration.Builder()
-                    .setSsid("This AP was started by a Device Owner app.")
-                    .build();
+            new SoftApConfiguration.Builder().setSsid("started by Device Owner app").build();
     private CtsTetheringUtils mCtsTetheringUtils;
     private TestTetheringEventCallback mEventCallback;
 

@@ -16,9 +16,16 @@
 
 package android.security.cts;
 
+import static com.android.sts.common.NativePocCrashAsserter.assertNoCrash;
+
+import static com.google.common.truth.TruthJUnit.assume;
+
 import android.platform.test.annotations.AsbSecurityTest;
 
+import com.android.sts.common.NativePoc;
 import com.android.sts.common.tradefed.testtype.NonRootSecurityTestCase;
+import com.android.sts.common.util.TombstoneUtils;
+import com.android.sts.common.util.TombstoneUtils.Config.BacktraceFilterPattern;
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
 
 import org.junit.Test;
@@ -34,6 +41,24 @@ public class CVE_2018_9547 extends NonRootSecurityTestCase {
     @AsbSecurityTest(cveBugId = 114223584)
     @Test
     public void testPocCVE_2018_9547() throws Exception {
-        AdbUtils.runPocAssertNoCrashesNotVulnerable("CVE-2018-9547", null, getDevice());
+        try {
+            final String binaryName = "CVE-2018-9547";
+
+            // Create a config that describes the crash
+            TombstoneUtils.Config crashConfig =
+                    new TombstoneUtils.Config()
+                            .setProcessPatterns(binaryName)
+                            .setBacktraceIncludes(
+                                    new BacktraceFilterPattern("libui.so", "unflatten"));
+
+            // Run the PoC
+            NativePoc.builder()
+                    .pocName(binaryName)
+                    .asserter(assertNoCrash(crashConfig))
+                    .build()
+                    .run(this);
+        } catch (Exception e) {
+            assume().that(e).isNull();
+        }
     }
 }

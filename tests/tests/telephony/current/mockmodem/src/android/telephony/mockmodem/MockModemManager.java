@@ -1266,4 +1266,10 @@ public class MockModemManager {
 
         mMockModemService.getIRadioNetwork((byte) slotId).clearSatelliteEnabledForCarrier();
     }
+
+    public void setSendSmsErrorCode(int slotId, @RadioError int sendSmsErrorCode, int rilErrorCode) {
+        Log.d(TAG, "setSendSmsErrorCode: slotId=" + slotId + "sendSmsErrorCode=" + sendSmsErrorCode
+            + " rilErrorCode=" + rilErrorCode);
+        mMockModemService.getIRadioMessaging((byte) slotId).setSendSmsErrorCode(sendSmsErrorCode, rilErrorCode);
+    }
 }

@@ -15,15 +15,12 @@
   ~ limitations under the License.
   -->
 <configuration description="Config for Harrier test cases">
-    <option name="config-descriptor:metadata" key="parameter" value="multiuser" />
     <target_preparer class="com.android.tradefed.targetprep.RunOnSystemUserTargetPreparer"/>
     <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">
         <option name="cleanup-apks" value="true" />
         <option name="test-file-name" value="HarrierTest.apk" />
     </target_preparer>
     <test class="com.android.tradefed.testtype.AndroidJUnitTest" >
-        <option name="exclude-annotation" value="com.android.bedstead.enterprise.annotations.RequireRunOnWorkProfile" />
-        <option name="exclude-annotation" value="com.android.bedstead.multiuser.annotations.RequireRunOnSecondaryUser" />
         <option name="package" value="com.android.bedstead.harrier.test" />
     </test>
 </configuration>

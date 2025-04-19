@@ -20,16 +20,11 @@ import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assume.assumeTrue;
 
 import android.content.Context;
-import android.content.pm.Flags;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.SystemProperties;
 import android.platform.test.annotations.AppModeFull;
-import android.platform.test.annotations.RequiresFlagsDisabled;
-import android.platform.test.annotations.RequiresFlagsEnabled;
-import android.platform.test.flag.junit.CheckFlagsRule;
-import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.text.TextUtils;
 import android.util.ArraySet;
 
@@ -44,7 +39,6 @@ import dalvik.system.VMRuntime;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -106,9 +100,6 @@ public class PackageManagerMultiArchAppTest {
     }
 
     private PackageManager mPackageManager;
-
-    @Rule
-    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private static String[] getSupportedEmulatedAbis() throws Exception {
         if (sSupportedEmulatedAbis != null) {
@@ -300,7 +291,6 @@ public class PackageManagerMultiArchAppTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_FORCE_MULTI_ARCH_NATIVE_LIBS_MATCH)
     public void testInstallMultiArchApp32_notMatchAllNativelyAbis_fail() throws Exception {
         assumeTrue(isDeviceSupportedBothBitness());
 
@@ -311,7 +301,6 @@ public class PackageManagerMultiArchAppTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_FORCE_MULTI_ARCH_NATIVE_LIBS_MATCH)
     public void testInstallMultiArchApp64_notMatchAllNativelyAbis_fail() throws Exception {
         assumeTrue(isDeviceSupportedBothBitness());
 
@@ -322,7 +311,6 @@ public class PackageManagerMultiArchAppTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_FORCE_MULTI_ARCH_NATIVE_LIBS_MATCH)
     public void testInstallMultiArchApp32_targetSdk33_success() throws Exception {
         assumeTrue(isDeviceSupportedBothBitness());
 
@@ -332,7 +320,6 @@ public class PackageManagerMultiArchAppTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_FORCE_MULTI_ARCH_NATIVE_LIBS_MATCH)
     public void testInstallMultiArchApp64_targetSdk33_success() throws Exception {
         assumeTrue(isDeviceSupportedBothBitness());
 
@@ -342,7 +329,6 @@ public class PackageManagerMultiArchAppTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_FORCE_MULTI_ARCH_NATIVE_LIBS_MATCH)
     public void testInstallMultiArchApp_emulatedAbiNoNativelyAbi_fail() throws Exception {
         assumeTrue(isDeviceSupportsEmulatedAbi());
         final String firstEmulatedAbi = getSupportedEmulatedAbis()[0];
@@ -356,44 +342,10 @@ public class PackageManagerMultiArchAppTest {
     }
 
     @Test
-    @RequiresFlagsDisabled(Flags.FLAG_FORCE_MULTI_ARCH_NATIVE_LIBS_MATCH)
-    public void testInstallMultiArchApp_emulatedAbiNoNativelyAbi_success() throws Exception {
-        assumeTrue(isDeviceSupportsEmulatedAbi());
-        final String firstEmulatedAbi = getSupportedEmulatedAbis()[0];
-        final String baseArch = getBaseArchForAbi(firstEmulatedAbi);
-        assumeTrue(isSupportedBaseArch(baseArch));
-
-        installPackage(getTestAppPath(firstEmulatedAbi, baseArch));
-
-        assertThat(isInstalled()).isTrue();
-    }
-
-    @Test
-    @RequiresFlagsEnabled(Flags.FLAG_FORCE_MULTI_ARCH_NATIVE_LIBS_MATCH)
     public void testInstallMultiArchAppBoth_targetSdk33_success() throws Exception {
         assumeTrue(isDeviceSupportedBothBitness());
 
         installPackage(getTestApkPath(BITNESS_BOTH, /* isTargetSDK33= */ true));
-
-        assertThat(isInstalled()).isTrue();
-    }
-
-    @Test
-    @RequiresFlagsDisabled(Flags.FLAG_FORCE_MULTI_ARCH_NATIVE_LIBS_MATCH)
-    public void testInstallMultiArchApp32_success() throws Exception {
-        assumeTrue(isDeviceSupportedBothBitness());
-
-        installPackage(getTestApkPath(BITNESS_32));
-
-        assertThat(isInstalled()).isTrue();
-    }
-
-    @Test
-    @RequiresFlagsDisabled(Flags.FLAG_FORCE_MULTI_ARCH_NATIVE_LIBS_MATCH)
-    public void testInstallMultiArchApp64_success() throws Exception {
-        assumeTrue(isDeviceSupportedBothBitness());
-
-        installPackage(getTestApkPath(BITNESS_64));
 
         assertThat(isInstalled()).isTrue();
     }

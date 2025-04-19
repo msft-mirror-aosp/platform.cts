@@ -73,8 +73,7 @@ class AppOpsDeviceAwareTest {
     }
 
     @RequiresFlagsEnabled(
-        Flags.FLAG_DEVICE_AWARE_PERMISSION_APIS_ENABLED,
-        Flags.FLAG_RUNTIME_PERMISSION_APPOPS_MAPPING_ENABLED
+        Flags.FLAG_DEVICE_AWARE_PERMISSION_APIS_ENABLED
     )
     @Test
     fun virtualDeviceDefaultPolicy_opModeShouldBeFromDefaultDevicePermissionState() {
@@ -108,8 +107,7 @@ class AppOpsDeviceAwareTest {
     }
 
     @RequiresFlagsEnabled(
-        Flags.FLAG_DEVICE_AWARE_PERMISSION_APIS_ENABLED,
-        Flags.FLAG_RUNTIME_PERMISSION_APPOPS_MAPPING_ENABLED
+        Flags.FLAG_DEVICE_AWARE_PERMISSION_APIS_ENABLED
     )
     @Test
     fun getUidMode_shouldBeInferredFromPermissionState() {
@@ -153,8 +151,7 @@ class AppOpsDeviceAwareTest {
     }
 
     @RequiresFlagsEnabled(
-        Flags.FLAG_DEVICE_AWARE_PERMISSION_APIS_ENABLED,
-        Flags.FLAG_RUNTIME_PERMISSION_APPOPS_MAPPING_ENABLED
+        Flags.FLAG_DEVICE_AWARE_PERMISSION_APIS_ENABLED
     )
     @Test
     fun virtualDeviceDefaultPolicy_opAccessShouldBeAttributedToDefaultDevice() {
@@ -213,8 +210,7 @@ class AppOpsDeviceAwareTest {
     }
 
     @RequiresFlagsEnabled(
-        Flags.FLAG_DEVICE_AWARE_PERMISSION_APIS_ENABLED,
-        Flags.FLAG_RUNTIME_PERMISSION_APPOPS_MAPPING_ENABLED
+        Flags.FLAG_DEVICE_AWARE_PERMISSION_APIS_ENABLED
     )
     @Test
     fun getPackagesForOps_isDeviceAware() {
@@ -272,8 +268,7 @@ class AppOpsDeviceAwareTest {
     }
 
     @RequiresFlagsEnabled(
-        Flags.FLAG_DEVICE_AWARE_PERMISSION_APIS_ENABLED,
-        Flags.FLAG_RUNTIME_PERMISSION_APPOPS_MAPPING_ENABLED
+        Flags.FLAG_DEVICE_AWARE_PERMISSION_APIS_ENABLED
     )
     @Test
     fun getPermissionGroupUsageForPrivacyIndicator_isDeviceAware() {
