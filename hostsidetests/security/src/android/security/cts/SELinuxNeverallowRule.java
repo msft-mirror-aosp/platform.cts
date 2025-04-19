@@ -41,14 +41,12 @@ import java.util.stream.Stream;
 
 record SELinuxNeverallowRule(
         String mText,
-        boolean fullTrebleOnly,
         boolean launchingWithROnly,
         boolean launchingWithSOnly,
         boolean compatiblePropertyOnly,
         boolean userOnly,
         boolean physicalDeviceOnly) {
     private static String[] sConditions = {
-        "TREBLE_ONLY",
         "COMPATIBLE_PROPERTY_ONLY",
         "LAUNCHING_WITH_R_ONLY",
         "LAUNCHING_WITH_S_ONLY",
@@ -59,7 +57,6 @@ record SELinuxNeverallowRule(
     SELinuxNeverallowRule(String text, Map<String, Integer> conditions) {
         this(
                 cleanupRule(text),
-                (conditions.getOrDefault("TREBLE_ONLY", 0) > 0),
                 (conditions.getOrDefault("LAUNCHING_WITH_R_ONLY", 0) > 0),
                 (conditions.getOrDefault("LAUNCHING_WITH_S_ONLY", 0) > 0),
                 (conditions.getOrDefault("COMPATIBLE_PROPERTY_ONLY", 0) > 0),
@@ -77,7 +74,6 @@ record SELinuxNeverallowRule(
     public String getStableId() {
         String id = mText.replaceFirst("^neverallow ", "").replaceAll("[^A-Za-z0-9_]", "_");
         byte b = 0;
-        b += (fullTrebleOnly ? 1 : 0) << 0;
         b += (compatiblePropertyOnly ? 1 : 0) << 1;
         b += (launchingWithROnly ? 1 : 0) << 2;
         b += (launchingWithSOnly ? 1 : 0) << 3;
