@@ -73,7 +73,7 @@ public class BatterySaverAlarmTest extends BatterySavingTestBase {
     // Tweaked alarm manager constants to facilitate testing
     private static final long ALLOW_WHILE_IDLE_COMPAT_WINDOW = 12_000;
     private static final long ALLOW_WHILE_IDLE_QUOTA_PRE_S = 3;
-    private static final long MIN_FUTURITY = 1_000;
+    private static final long MIN_FUTURITY = 10;
 
     private void updateAlarmManagerConstants() {
         mAlarmManagerDeviceConfigStateHelper
@@ -178,7 +178,6 @@ public class BatterySaverAlarmTest extends BatterySavingTestBase {
         runMakeUidIdle(packageName);
         Thread.sleep(200);
         runKill(packageName, /*wait=*/ true);
-        Thread.sleep(1000);
     }
 
     @Test
@@ -210,7 +209,7 @@ public class BatterySaverAlarmTest extends BatterySavingTestBase {
         // Subsequent ones should be throttled.
         mAlarmCount.set(0);
 
-        // Check that the alarms scheduled now fireonly after
+        // Check that the alarms scheduled now fire only after
         // (now + MIN_FUTURITY + ALLOW_WHILE_IDLE_WINDOW).
         final long nextAllowedMinElapsed = now + MIN_FUTURITY + ALLOW_WHILE_IDLE_COMPAT_WINDOW;
         final long triggerElapsed2 = SystemClock.elapsedRealtime() + MIN_FUTURITY;
@@ -230,12 +229,18 @@ public class BatterySaverAlarmTest extends BatterySavingTestBase {
 
         startService(targetPackage, true);
 
-        for (int i = 0; i < 20; i++) { // 20 is much higher than the quota we've set.
+        final int overQuota = 10;
+        // Should be significantly higher than the quota we've set.
+        assertTrue(overQuota > ALLOW_WHILE_IDLE_QUOTA_PRE_S * 2);
+
+        for (int i = 0; i < overQuota; i++) {
             lastTriggerElapsed = SystemClock.elapsedRealtime() + MIN_FUTURITY + (i + 10);
             scheduleAlarm(targetPackage, AlarmManager.ELAPSED_REALTIME_WAKEUP, lastTriggerElapsed);
         }
         ThreadUtils.sleepUntilRealtime(lastTriggerElapsed);
-        PollingCheck.waitFor(POLLING_WAIT_MILLIS, () -> (20 == mAlarmCount.get()),
+        PollingCheck.waitFor(
+                POLLING_WAIT_MILLIS,
+                () -> (overQuota == mAlarmCount.get()),
                 "Allow-while-idle alarms shouldn't be throttled in battery saver "
                         + "after FG service started");
 
@@ -245,12 +250,14 @@ public class BatterySaverAlarmTest extends BatterySavingTestBase {
 
         mAlarmCount.set(0);
 
-        for (int i = 0; i < 20; i++) { // 20 is much higher than the quota we've set.
+        for (int i = 0; i < overQuota; i++) {
             lastTriggerElapsed = SystemClock.elapsedRealtime() + MIN_FUTURITY + (i + 10);
             scheduleAlarm(targetPackage, AlarmManager.ELAPSED_REALTIME_WAKEUP, lastTriggerElapsed);
         }
         ThreadUtils.sleepUntilRealtime(lastTriggerElapsed);
-        PollingCheck.waitFor(POLLING_WAIT_MILLIS, () -> (20 == mAlarmCount.get()),
+        PollingCheck.waitFor(
+                POLLING_WAIT_MILLIS,
+                () -> (overQuota == mAlarmCount.get()),
                 "Allow-while-idle alarms shouldn't be throttled when BS is off");
     }
 
