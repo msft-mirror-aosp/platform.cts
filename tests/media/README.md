@@ -1,114 +1,116 @@
-## Media V2 CTS Tests
-Current folder comprises of files necessary for testing media extractor, media muxer, media codec SDK and NDK Api. These tests aims to test all codecs advertised in MediaCodecList, available muxers and extractors.
+# MediaV2 CTS Tests
 
-The aim of these tests is not solely to verify the CDD requirements but also to test components, their plugins and their interactions with media framework.
+## Overview
 
-The test vectors used by the test suite is available at [link](https://dl.google.com/android/xts/cts/tests/media/CtsMediaV2TestCases-5.8.zip) and is downloaded automatically while running tests. Manual installation of these can be done using copy_media.sh script in this directory.
+This folder comprises of tests designed to verify MediaCodec components. The tests verify media extractors, media muxers, and media codecs functionality through both SDK and NDK APIs.
 
-All Big Buck Bunny(bbb) test vectors are of 8-bit format. They are downloaded from [link](https://peach.blender.org/download/) and resampled according to the test requirements.
-All Cosmos Laundromat(cosmat) test vectors are of 10-bit format. They are downloaded from [link](https://media.xiph.org/) and resampled according to the test requirements.
-VideoEncoderParamTest uses stefan_sif_yuv420p_30fps.yuv. This is downloaded from [link](https://media.xiph.org/).
+The test suite aims to:
+- Validate components against CDD (Compatibility Definition Document) requirements
+- Check functionality of media codec components and their plugins individually
+- Test interactions between codec components, extractors and muxers
 
-The test suite looks to cover sdk/ndk api in normal and error scenarios. Error scenarios are separated from regular usage and are placed under class *UnitTest (MuxerUnitTest, ExtractorUnitTest, ...).
+## Test Vectors
 
-### Commands
-```sh
-$ atest android.mediav2.cts
-$ atest android.mediav2.cts.CodecEncoderTest android.mediav2.cts.CodecDecoderTest
-$ atest android.mediav2.cts.MuxerTest android.mediav2.cts.MuxerUnitTest
-$ atest android.mediav2.cts.ExtractorTest android.mediav2.cts.ExtractorUnitTest
+Android TestFramework automatically downloads and copies the required resources from [url](https://dl.google.com/android/xts/cts/tests/media/CtsMediaV2TestCases-5.8.zip) while running the tests. Manual download and copy is also supported. This can be done by running the script `copy_media.sh`. All Big Buck Bunny (bbb) test vectors used by this suite are derived from [Blender Foundation](https://peach.blender.org/download/). All Cosmos Laundromat (cosmat) test vectors used by this suite are derived from [xiph.org](https://media.xiph.org/)
+
+## Test Organization
+
+The test suite covers MediaCodec API in both normal operation and error scenarios. Error cases are separated into dedicated classes with "UnitTest" suffix (e.g., `CodecUnitTest`, `MediaFormatUnitTest`).
+
+## Running Tests
+
+### Basic Commands
+
+```
+# Run all Media V2 CTS tests
+atest android.mediav2.cts
+
+# Run specific test classes
+atest MctsMediaV2TestCases:CodecDecoderTest CtsMediaV2TestCases:CodecDecoderTest
+
+# Run unit tests for error cases
+atest CtsMediaV2TestCases:CodecUnitTest CtsMediaV2TestCases:MediaFormatUnitTest
 ```
 
-### Features
-All tests accepts attributes that offer selective run of tests.
+## Test Selection Features
 
-#### Select codecs by name
-To select codecs by name, *codec-prefix* can be passed to media codec tests to select one or more codecs that start with a given prefix.
+All tests support attributes for selective execution based on various criteria:
 
-Example: To limit the tests to run for codecs whose names start with c2.android.
+### Filtering by Codec Name
 
-```sh
-atest CtsMediaV2TestCases -- --module-arg CtsMediaV2TestCases:instrumentation-arg:codec-prefix:=c2.android.
+Use `codec-prefix` to select codecs whose names begin with a specific prefix:
+
+```
+# Test only mainline MP3 codecs
+atest MctsMediaV2TestCases -- --module-arg MctsMediaV2TestCases:instrumentation-arg:codec-prefix:=c2.android.mp3
+
+# Test only mainline HEVC decoder
+atest MctsMediaV2TestCases -- --module-arg MctsMediaV2TestCases:instrumentation-arg:codec-prefix:=c2.android.hevc.decoder
+
+# Test all mainline c2 codecs
+atest MctsMediaV2TestCases -- --module-arg MctsMediaV2TestCases:instrumentation-arg:codec-prefix:=c2
+
+# Test all vendor c2 codecs
+atest CtsMediaV2TestCases -- --module-arg CtsMediaV2TestCases:instrumentation-arg:codec-prefix:=c2
 ```
 
-Example: To limit the tests to run for c2.android.hevc.decoder
+### Filtering by Media Type
 
-```sh
-atest CtsMediaV2TestCases -- --module-arg CtsMediaV2TestCases:instrumentation-arg:codec-prefix:=c2.android.hevc.decoder
+Use `media-type-prefix` to select codecs whose supported media types begin with a specific prefix:
+
+```
+# Test only AVC video codecs
+atest MctsMediaV2TestCases -- --module-arg MctsMediaV2TestCases:instrumentation-arg:media-type-prefix:=video/avc
+atest CtsMediaV2TestCases -- --module-arg CtsMediaV2TestCases:instrumentation-arg:media-type-prefix:=video/avc
+
+# Test all video codecs
+atest MctsMediaV2TestCases -- --module-arg MctsMediaV2TestCases:instrumentation-arg:media-type-prefix:=video
+atest CtsMediaV2TestCases -- --module-arg CtsMediaV2TestCases:instrumentation-arg:media-type-prefix:=video
 ```
 
-#### Select codecs using regular expressions
-To select codecs by applying regular expressions, *codec-filter* can be passed to media codec tests to select one or more codecs that match with a specified regular expression pattern.
+Use `media-type-sel` to select codecs handling specific media types:
 
-Example: To limit the tests to run for c2.android.avc.encoder and c2.exynos.hevc.encoder
+```
+# Test MP3 and Vorbis audio codecs
+atest MctsMediaV2TestCases -- --module-arg MctsMediaV2TestCases:instrumentation-arg:media-type-sel:=mp3,vorbis
+atest CtsMediaV2TestCases -- --module-arg CtsMediaV2TestCases:instrumentation-arg:media-type-sel:=mp3,vorbis
 
-```sh
-atest CtsMediaV2TestCases -- --module-arg CtsMediaV2TestCases:instrumentation-arg:codec-filter:="c2\.android\.avc\.encoder\|c2\.exynos\.hevc\.encoder"
+# Test CodecDecoderTest for codecs supporting media types video/avc and audio/mp4a-latm
+atest MctsMediaV2TestCases:CodecDecoderTest -- --module-arg MctsMediaV2TestCases:instrumentation-arg:media-type-sel:=avc,aac
+atest CtsMediaV2TestCases:CodecDecoderTest -- --module-arg CtsMediaV2TestCases:instrumentation-arg:media-type-sel:=avc,aac
 ```
 
-#### Select codecs by type
-To select codecs by type, *media-type-sel* can be passed to media codec tests to select one or more codecs.
+### Using Regular Expressions
 
-Example: To limit media codec decoder tests to mp3 and vorbis decoder
+Use `codec-filter` with regular expressions for more complex selection patterns:
 
-```sh
-atest android.mediav2.cts.CodecDecoderTest -- --module-arg  CtsMediaV2TestCases:instrumentation-arg:media-type-sel:=mp3,vorbis
+```
+# Run VideoEncoderTest for mainline AVC and VP9 encoders
+atest MctsMediaV2TestCases:VideoEncoderTest -- --module-arg MctsMediaV2TestCases:instrumentation-arg:codec-filter:="c2\.android\.avc\.encoder\|c2\.android\.vp9\.encoder"
 ```
 
-#### Select extractors by type
-To select extractors by type, *ext-sel* can be passed to extractor tests to select one or more extractors.
+## `media-type-sel` identifiers list
 
-Example: To limit extractor tests to mp4 and webm types
-```sh
-atest android.mediav2.cts.ExtractorTest -- --module-arg  CtsMediaV2TestCases:instrumentation-arg:ext-sel:=mp4,webm
-```
-
-#### Select muxers by type
-To select muxers by type, *mux-sel* can be passed to muxer tests to select one or more muxers.
-
-Example: To limit muxer tests to mp4 and webm types
-```sh
-atest android.mediav2.cts.MuxerTest -- --module-arg  CtsMediaV2TestCases:instrumentation-arg:mux-sel:=mp4,webm
-```
-
-### Appendix
-| Identifier for codec-sel | Mime |
-| ------ | ------ |
-|default|all|
-|vp8|mimetype_video_vp8|
-|vp9|mimetype_video_vp9|
-|av1|mimetype_video_av1|
-|avc|mimetype_video_avc|
-|hevc|mimetype_video_hevc|
-|mpeg4|mimetype_video_mpeg4|
-|h263|mimetype_video_h263|
-|mpeg2|mimetype_video_mpeg2|
-|vraw|mimetype_video_raw|
-|amrnb|mimetype_audio_amr_nb|
-|amrwb|mimetype_audio_amr_wb|
-|mp3|mimetype_audio_mpeg|
-|aac|mimetype_audio_aac|
-|vorbis|mimetype_audio_vorbis|
-|opus|mimetype_audio_opus|
-|g711alaw|mimetype_audio_g711_alaw|
-|g711mlaw|mimetype_audio_g711_mlaw|
-|araw|mimetype_audio_raw|
-|flac|mimetype_audio_flac|
-|gsm|mimetype_audio_msgsm|
-
-
-| Identifier for ext-sel | Extractor format |
-| ------ | ------ |
-|mp4|Mpeg4|
-|webm|Matroska|
-|3gp|Mpeg4|
-|mkv|Matroska|
-|ogg|Ogg|
-
-
-| Identifier for mux-sel | Muxer Format |
-| ------ | ------ |
-|mp4|muxer_output_mpeg4|
-|webm|muxer_output_webm|
-|3gp|muxer_output_3gpp|
-|ogg|muxer_output_ogg|
+| Identifier | Full Media Type |
+|------------|-----------------|
+| vp8 | video/x-vnd.on2.vp8 |
+| vp9 | video/x-vnd.on2.vp9 |
+| av1 | video/av01 |
+| apv | video/apv |
+| avc | video/avc |
+| hevc | video/hevc |
+| mpeg4 | video/mp4v-es |
+| h263 | video/3gpp |
+| mpeg2 | video/mpeg2 |
+| vraw | video/raw |
+| amrnb | audio/3gpp |
+| amrwb | audio/amr-wb |
+| mp3 | audio/mpeg |
+| aac | audio/mp4a-latm |
+| vorbis | audio/vorbis |
+| opus | audio/opus |
+| g711alaw | audio/g711-alaw |
+| g711mlaw | audio/g711-mlaw |
+| araw | audio/raw |
+| flac | audio/flac |
+| gsm | audio/gsm |
