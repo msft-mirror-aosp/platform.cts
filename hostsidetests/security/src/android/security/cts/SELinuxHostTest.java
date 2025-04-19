@@ -584,19 +584,6 @@ public class SELinuxHostTest extends BaseHostJUnit4Test {
     }
 
     /**
-     * Returns {@code true} if this device is required to be a full Treble device.
-     */
-    public static boolean isFullTrebleDevice(ITestDevice device)
-            throws DeviceNotAvailableException {
-        return PropertyUtil.getFirstApiLevel(device) > 26 &&
-                PropertyUtil.propertyEquals(device, "ro.treble.enabled", "true");
-    }
-
-    private boolean isFullTrebleDevice() throws DeviceNotAvailableException {
-        return isFullTrebleDevice(mDevice);
-    }
-
-    /**
      * Returns {@code true} if this device is required to enforce compatible property.
      */
     public static boolean isCompatiblePropertyEnforcedDevice(ITestDevice device)
@@ -635,10 +622,6 @@ public class SELinuxHostTest extends BaseHostJUnit4Test {
      */
     @Test
     public void testNoExemptionsForSocketsUseWithinHalServer() throws Exception {
-        if (!isFullTrebleDevice()) {
-            return;
-        }
-
         if (getDevice().hasFeature("feature:android.hardware.type.automotive")) {
             return;
         }

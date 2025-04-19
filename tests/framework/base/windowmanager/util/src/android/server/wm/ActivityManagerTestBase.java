@@ -55,6 +55,7 @@ import static android.server.wm.ActivityLauncher.KEY_LAUNCH_ACTIVITY;
 import static android.server.wm.ActivityLauncher.KEY_NEW_TASK;
 import static android.server.wm.ActivityLauncher.KEY_TARGET_COMPONENT;
 import static android.server.wm.ComponentNameUtils.getActivityName;
+import static android.server.wm.ComponentNameUtils.getWindowName;
 import static android.server.wm.ComponentNameUtils.getLogTag;
 import static android.server.wm.ShellCommandHelper.executeShellCommand;
 import static android.server.wm.ShellCommandHelper.executeShellCommandAndGetStdout;
@@ -1320,7 +1321,7 @@ public abstract class ActivityManagerTestBase {
         mWmState.waitForValidState(activityName);
         mWmState.assertValidity();
         assertTrue(message, mWmState.hasActivityState(activityName, STATE_RESUMED));
-        mWmState.assertVisibility(activityName, true /* visible */);
+        mWmState.waitForWindowSurfaceShown(getWindowName(activityName), true /* shown */);
     }
 
     /**

@@ -42,6 +42,7 @@ import android.content.pm.PackageManager.FEATURE_TELEPHONY_CALLING
 import android.devicepolicy.cts.utils.PolicyEngineUtils
 import android.devicepolicy.cts.utils.PolicySetResultUtils
 import android.os.Bundle
+import android.platform.test.annotations.RequiresFlagsEnabled
 import android.stats.devicepolicy.EventId
 import android.telecom.TelecomManager
 import com.android.bedstead.enterprise.annotations.CanSetPolicyTest
@@ -58,6 +59,7 @@ import com.android.bedstead.harrier.annotations.Postsubmit
 import com.android.bedstead.harrier.annotations.RequireFeature
 import com.android.bedstead.harrier.policies.LockTask
 import com.android.bedstead.harrier.policies.LockTaskFinance
+import com.android.bedstead.harrier.policies.LockTaskSupervision
 import com.android.bedstead.metricsrecorder.EnterpriseMetricsRecorder
 import com.android.bedstead.metricsrecorder.truth.MetricQueryBuilderSubject.assertThat
 import com.android.bedstead.nene.TestApis
@@ -66,6 +68,7 @@ import com.android.bedstead.nene.utils.Poll
 import com.android.bedstead.testapp.TestAppActivity
 import com.android.bedstead.testapps.testApps
 import com.android.compatibility.common.util.ApiTest
+import com.android.compatibility.common.util.SystemUtil
 import com.android.eventlib.truth.EventLogsSubject.assertThat
 import com.google.common.truth.Truth.assertThat
 import com.google.common.truth.Truth.assertWithMessage
@@ -360,6 +363,34 @@ class LockTaskTest {
         }
     }
 
+    @CanSetPolicyTest(policy = [LockTask::class])
+    @RequiresFlagsEnabled(
+        android.app.supervision.flags.Flags.FLAG_ENABLE_LOCK_TASK_FEATURE_QUICK_SETTINGS,
+        android.permission.flags.Flags.FLAG_ENABLE_SYSTEM_SUPERVISION_ROLE_BEHAVIOR
+    )
+    fun setLockTaskFeatures_quickSettingsFeature_throwsException() {
+        // Quick Settings can only be used in combination with Notifications
+        try {
+            deviceState.dpc().devicePolicyManager().setLockTaskPackages(
+                deviceState.dpc().componentName(),
+                arrayOf(testApp.packageName())
+            )
+            assertThrows(IllegalArgumentException::class.java) {
+                deviceState.dpc().devicePolicyManager().setLockTaskFeatures(
+                    deviceState.dpc().componentName(),
+                    DevicePolicyManager.LOCK_TASK_FEATURE_QUICK_SETTINGS
+                )
+            }
+        } finally {
+            deviceState.dpc().devicePolicyManager().setLockTaskFeatures(
+                deviceState.dpc().componentName(),
+                LOCK_TASK_FEATURE_NONE
+            )
+            deviceState.dpc().devicePolicyManager()
+                    .setLockTaskPackages(deviceState.dpc().componentName(), arrayOf())
+        }
+    }
+
     @CanSetPolicyTest(policy = [LockTask::class]) // TODO(b/188893663): Support additional parameterization for cases like this
     @Postsubmit(reason = "b/181993922 automatically marked flaky")
     fun setLockTaskFeatures_multipleFeatures_setsFeatures(
@@ -393,6 +424,77 @@ class LockTaskTest {
             deviceState.dpc().devicePolicyManager().setLockTaskFeatures(
                 deviceState.dpc().componentName(),
                 LOCK_TASK_FEATURE_OVERVIEW or LOCK_TASK_FEATURE_HOME
+            )
+        }
+    }
+
+    @CanSetPolicyTest(policy = [LockTask::class])
+    @RequiresFlagsEnabled(
+        android.app.supervision.flags.Flags.FLAG_ENABLE_LOCK_TASK_FEATURE_QUICK_SETTINGS,
+        android.permission.flags.Flags.FLAG_ENABLE_SYSTEM_SUPERVISION_ROLE_BEHAVIOR
+    )
+    fun setLockTaskFeatures_quickSettingsFeatureMissingRequiredRole_throwsException() {
+        try {
+            assertThrows(SecurityException::class.java) {
+                deviceState.dpc().devicePolicyManager().setLockTaskFeatures(
+                    deviceState.dpc().componentName(),
+                    DevicePolicyManager.LOCK_TASK_FEATURE_QUICK_SETTINGS or
+                    DevicePolicyManager.LOCK_TASK_FEATURE_NOTIFICATIONS or
+                    DevicePolicyManager.LOCK_TASK_FEATURE_HOME
+                )
+            }
+        } finally {
+            deviceState.dpc().devicePolicyManager().setLockTaskFeatures(
+                deviceState.dpc().componentName(),
+                LOCK_TASK_FEATURE_NONE
+            )
+            deviceState.dpc().devicePolicyManager().setLockTaskPackages(
+                deviceState.dpc().componentName(),
+                arrayOf()
+            )
+        }
+    }
+
+    @CanSetPolicyTest(policy = [LockTaskSupervision::class])
+    @RequiresFlagsEnabled(
+        android.app.supervision.flags.Flags.FLAG_ENABLE_LOCK_TASK_FEATURE_QUICK_SETTINGS,
+        android.permission.flags.Flags.FLAG_ENABLE_SYSTEM_SUPERVISION_ROLE_BEHAVIOR
+    )
+    fun setLockTaskFeatures_quickSettingsFeature_setsFeatures() {
+        val componentName = deviceState.dpc().componentName()
+        try {
+            SystemUtil.runShellCommand(
+                "settings put global device_policy_constants " +
+                    "use_test_admin_as_supervision_component=true"
+            )
+            deviceState.dpc().devicePolicyManager()
+                .setLockTaskPackages(componentName, arrayOf(testApp.packageName()))
+            deviceState.dpc().devicePolicyManager().setLockTaskFeatures(
+                componentName,
+                DevicePolicyManager.LOCK_TASK_FEATURE_QUICK_SETTINGS or
+                DevicePolicyManager.LOCK_TASK_FEATURE_NOTIFICATIONS or
+                DevicePolicyManager.LOCK_TASK_FEATURE_HOME
+            )
+            assertThat(
+                deviceState.dpc().devicePolicyManager()
+                        .getLockTaskFeatures(deviceState.dpc().componentName())
+            ).isEqualTo(
+                DevicePolicyManager.LOCK_TASK_FEATURE_QUICK_SETTINGS or
+                DevicePolicyManager.LOCK_TASK_FEATURE_NOTIFICATIONS or
+                DevicePolicyManager.LOCK_TASK_FEATURE_HOME
+            )
+        } finally {
+            deviceState.dpc().devicePolicyManager().setLockTaskFeatures(
+                componentName,
+                LOCK_TASK_FEATURE_NONE
+            )
+            deviceState.dpc().devicePolicyManager().setLockTaskPackages(
+                componentName,
+                arrayOf()
+            )
+            SystemUtil.runShellCommand(
+                "settings put global device_policy_constants " +
+                    "use_test_admin_as_supervision_component=false"
             )
         }
     }

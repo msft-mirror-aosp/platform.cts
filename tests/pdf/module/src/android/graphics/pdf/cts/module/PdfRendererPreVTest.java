@@ -32,6 +32,7 @@ import static android.graphics.pdf.cts.module.Utils.ONE_TEXT_PAGE_OBJECT;
 import static android.graphics.pdf.cts.module.Utils.PROTECTED_PDF;
 import static android.graphics.pdf.cts.module.Utils.SAMPLE_IMAGE;
 import static android.graphics.pdf.cts.module.Utils.SAMPLE_PDF;
+import static android.graphics.pdf.cts.module.Utils.areBitmapsIdentical;
 import static android.graphics.pdf.cts.module.Utils.assertSelectionBoundary;
 import static android.graphics.pdf.cts.module.Utils.calculateArea;
 import static android.graphics.pdf.cts.module.Utils.createPreVRenderer;
@@ -1122,13 +1123,23 @@ public class PdfRendererPreVTest {
                 PdfRendererPreV.Page firstPage = renderer.openPage(0)) {
             assertThat(firstPage.getPageObjects().size()).isEqualTo(0);
 
-            int id1 = firstPage.addPageObject(createSamplePdfPageImageObject());
+            PdfPageImageObject imageObject = createSamplePdfPageImageObject();
+            int id1 = firstPage.addPageObject(imageObject);
             assertThat(id1).isEqualTo(0);
 
-            int id2 = firstPage.addPageObject(createSamplePdfPageImageObject());
+            int id2 = firstPage.addPageObject(imageObject);
             assertThat(id2).isEqualTo(1);
 
-            assertThat(firstPage.getPageObjects().size()).isEqualTo(2);
+            PdfRendererPreV.Page firstPage1 = renderer.openPage(0);
+            List<Pair<Integer, PdfPageObject>> pageObjects = firstPage1.getPageObjects();
+            assertThat(pageObjects.size()).isEqualTo(2);
+            assertThat(pageObjects.get(0).second.getPdfObjectType())
+                    .isEqualTo(PdfPageObjectType.IMAGE);
+            assertThat(pageObjects.get(0).second.getMatrix())
+                    .isEqualTo(new float[] {1, 0, 0, 0, 1, 0, 0, 0, 1});
+            PdfPageImageObject addedImageObject = (PdfPageImageObject) pageObjects.get(0).second;
+            assertTrue(areBitmapsIdentical(imageObject.getBitmap(), addedImageObject.getBitmap()));
+            firstPage1.close();
         }
     }
 
@@ -1299,8 +1310,7 @@ public class PdfRendererPreVTest {
             assertThat(newMatrix.isAffine()).isTrue();
             pdfPageImageObject.setMatrix(newMatrix);
 
-            boolean result = firstPage.updatePageObject(0, pdfPageImageObject);
-            assertThat(result).isTrue();
+            assertTrue(firstPage.updatePageObject(0, pdfPageImageObject));
             float[] posUpdateMatrixValues = firstPage.getPageObjects().get(0).second.getMatrix();
             assertThat(posUpdateMatrixValues).isEqualTo(newMatrixValues);
         }
@@ -1361,6 +1371,25 @@ public class PdfRendererPreVTest {
                             firstPage.updatePageObject(
                                     pageObjects.get(0).first + 1, pageObjects.get(0).second));
         }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_EDIT_PDF_PAGE_OBJECTS)
+    public void testSetNonNullImageObjectParams_WithNullObject() {
+        assertThrows(NullPointerException.class, () -> new PdfPageImageObject(null));
+        PdfPageImageObject imageObject = createSamplePdfPageImageObject();
+        assertThrows(NullPointerException.class, () -> imageObject.setBitmap(null));
+        assertThrows(NullPointerException.class, () -> imageObject.setMatrix(null));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_EDIT_PDF_PAGE_OBJECTS)
+    public void testSetImageObjectBitmap_WithInvalidBitmapConfig() {
+        PdfPageImageObject imageObject = createSamplePdfPageImageObject();
+        Bitmap bitmap = Bitmap.createBitmap(200, 200, Bitmap.Config.RGB_565);
+        assertThrows(IllegalArgumentException.class, () -> imageObject.setBitmap(bitmap));
+        Bitmap bitmap1 = Bitmap.createBitmap(200, 200, Bitmap.Config.RGBA_F16);
+        assertThrows(IllegalArgumentException.class, () -> imageObject.setBitmap(bitmap1));
     }
 
     @Test
