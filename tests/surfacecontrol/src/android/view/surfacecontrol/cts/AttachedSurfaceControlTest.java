@@ -21,6 +21,8 @@ import static android.server.wm.BuildUtils.HW_TIMEOUT_MULTIPLIER;
 import static android.server.wm.CtsWindowInfoUtils.waitForWindowOnTop;
 import static android.view.cts.surfacevalidator.BitmapPixelChecker.validateScreenshot;
 
+import static com.android.compatibility.common.util.DisplayUtil.supportsAutoRotation;
+
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
@@ -51,8 +53,8 @@ import androidx.test.core.app.ActivityScenario;
 import androidx.test.filters.LargeTest;
 import androidx.test.filters.RequiresDevice;
 import androidx.test.platform.app.InstrumentationRegistry;
-import androidx.test.runner.AndroidJUnit4;
 import androidx.test.rule.ActivityTestRule;
+import androidx.test.runner.AndroidJUnit4;
 
 import com.android.compatibility.common.util.SystemUtil;
 
@@ -156,6 +158,12 @@ public class AttachedSurfaceControlTest {
 
     @Test
     public void testOnBufferTransformHintChangedListener() throws InterruptedException {
+        if (!supportsAutoRotation()) {
+            // Skip test if device doesn't support auto rotation as this is needed for rotation
+            // via UiAutomation.
+            return;
+        }
+
         supportRotationCheck();
 
         final int[] transformHintResult = new int[2];
@@ -210,6 +218,12 @@ public class AttachedSurfaceControlTest {
 
     @Test
     public void testOnBufferTransformHintChangesFromLandToSea() throws InterruptedException {
+        if (!supportsAutoRotation()) {
+            // Skip test if device doesn't support auto rotation as this is needed for rotation
+            // via UiAutomation.
+            return;
+        }
+
         supportRotationCheck();
 
         final int[] transformHintResult = new int[2];
