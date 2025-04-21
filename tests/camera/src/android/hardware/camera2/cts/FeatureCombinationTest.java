@@ -57,7 +57,6 @@ import android.mediapc.cts.common.Requirements;
 import android.mediapc.cts.common.Requirements.CameraVideoPreviewStabilizationRequirement;
 import android.os.Build;
 import android.platform.test.annotations.AppModeFull;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Log;
@@ -70,7 +69,6 @@ import androidx.annotation.Nullable;
 
 import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.MediaUtils;
-import com.android.internal.camera.flags.Flags;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -109,7 +107,6 @@ public final class FeatureCombinationTest extends Camera2AndroidTestCase {
      * This test case is for rear primary camera.
      */
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_CAMERA_DEVICE_SETUP)
     public void testIsSessionConfigurationSupportedForPrimaryRear() throws Exception {
         String primaryRearCamera = null;
         for (String id : getCameraIdsUnderTest()) {
@@ -132,7 +129,6 @@ public final class FeatureCombinationTest extends Camera2AndroidTestCase {
      * This test case is for front primary camera.
      */
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_CAMERA_DEVICE_SETUP)
     public void testIsSessionConfigurationSupportedForPrimaryFront() throws Exception {
         String primaryFrontCamera = null;
         for (String id : getCameraIdsUnderTest()) {
@@ -155,7 +151,6 @@ public final class FeatureCombinationTest extends Camera2AndroidTestCase {
      * This test case is for non-primary cameras.
      */
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_CAMERA_DEVICE_SETUP)
     public void testIsSessionConfigurationSupportedForNonPrimary() throws Exception {
         for (String id : getCameraIdsUnderTest()) {
             if (CameraTestUtils.isPrimaryRearFacingCamera(mCameraManager, id)) {
@@ -532,7 +527,6 @@ public final class FeatureCombinationTest extends Camera2AndroidTestCase {
     @Test
     @AppModeFull(reason = "Media Performance class test not applicable to instant apps")
     @CddTest(requirements = {"2.2.7.2/7.5/H-1-19"})
-    @RequiresFlagsEnabled(Flags.FLAG_CAMERA_DEVICE_SETUP)
     public void testVPerfClassRequirements() throws Exception {
         assumeFalse("Media performance class tests not applicable if shell permission is adopted",
                 mAdoptShellPerm);

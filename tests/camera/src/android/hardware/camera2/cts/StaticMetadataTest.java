@@ -32,7 +32,6 @@ import android.hardware.camera2.cts.helpers.StaticMetadata.CheckLevel;
 import android.hardware.camera2.cts.testcases.Camera2AndroidTestCase;
 import android.hardware.camera2.params.StreamConfigurationMap;
 import android.os.Build;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Log;
@@ -598,7 +597,6 @@ public class StaticMetadataTest extends Camera2AndroidTestCase {
      * Verifies that valid session characteristic keys can be fetched for a particular camera.
      */
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_CAMERA_DEVICE_SETUP)
     public void testSessionCharacteristicsKeys() throws Exception {
         String[] cameraIds = getCameraIdsUnderTest();
         for (String cameraId : cameraIds) {
