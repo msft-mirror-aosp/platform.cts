@@ -19,9 +19,16 @@ package com.android.cts.ctsprofiles;
 import org.apache.commons.math3.util.Pair;
 
 import java.util.List;
+import java.util.regex.Pattern;
 
 /** Utility for generating package, class or method information. */
 public final class Utils {
+
+    /** Matches trailing periods after vararg types, ex: 'Vararg...'. */
+    private static final Pattern VARARGS = Pattern.compile("\\.\\.\\.$");
+
+    /** Matches generic type parameters, ex: '{@code List<GenericType>}'. */
+    private static final Pattern TYPE_PARAMETER = Pattern.compile("<.*>");
 
     /** Splits a class signature and returns the (package, class) pair. */
     public static Pair<String, String> getPackageClass(String classSignature) {
@@ -61,7 +68,7 @@ public final class Utils {
 
     /** Returns a method signature in the format {method}({param1}, {param2}, ...). */
     public static String getMethodSignature(String methodName, List<String> paramTypes) {
-        return String.format("%s(%s)", methodName, String.join(", ", paramTypes));
+        return String.format("%s(%s)", methodName, String.join(", ", formatParams(paramTypes)));
     }
 
     /**
@@ -73,5 +80,14 @@ public final class Utils {
         String classSignature = getClassSignature(packageName, className);
         String methodSignature = getMethodSignature(methodName, paramTypes);
         return String.format("%s#%s", classSignature, methodSignature);
+    }
+
+    /** Formats the given parameter types. */
+    public static List<String> formatParams(List<String> paramTypes) {
+        return paramTypes.stream()
+                .map(p -> p.replace('$', '.'))
+                .map(p -> VARARGS.matcher(p).replaceAll("[]"))
+                .map(p -> TYPE_PARAMETER.matcher(p).replaceAll(""))
+                .toList();
     }
 }

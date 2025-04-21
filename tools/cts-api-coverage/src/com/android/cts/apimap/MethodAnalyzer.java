@@ -36,7 +36,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-
 /** A class for collecting method calls and method annotations. */
 public class MethodAnalyzer extends MethodVisitor {
 
@@ -106,7 +105,7 @@ public class MethodAnalyzer extends MethodVisitor {
         }
         List<String> params = new ArrayList<>();
         for (Type type : Type.getArgumentTypes(desc)) {
-            params.add(type.getClassName().replaceAll("\\$", "."));
+            params.add(type.getClassName());
         }
         ClassProfile classProfile = mModule.getOrCreateClass(
                 packageName, className, mApiCoverage);
