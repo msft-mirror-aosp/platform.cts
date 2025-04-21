@@ -1038,6 +1038,7 @@ public class SatelliteManagerTestBase {
             mSatelliteAccessConfiguration = satelliteAccessConfiguration;
 
             try {
+                logd("mSatelliteAccessConfigurationChangedSemaphore.release()");
                 mSatelliteAccessConfigurationChangedSemaphore.release();
             } catch (Exception e) {
                 loge("onAccessConfigurationChanged: Got exception, ex=" + e);
@@ -1079,6 +1080,7 @@ public class SatelliteManagerTestBase {
         }
 
         public void drainPermits() {
+            logd("SatelliteCommunicationAccessStateCallbackTest: drainPermits");
             mSemaphore.drainPermits();
             mSatelliteAccessConfigurationChangedSemaphore.drainPermits();
         }
