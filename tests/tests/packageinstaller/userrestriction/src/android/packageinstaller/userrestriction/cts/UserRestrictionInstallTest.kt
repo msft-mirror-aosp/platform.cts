@@ -455,7 +455,7 @@ class UserRestrictionInstallTest {
         val startTime = System.currentTimeMillis()
         while (startTime + TIMEOUT > System.currentTimeMillis()) {
             try {
-                button = uiDevice.wait(Until.findObject(bySelector), 1000)
+                button = uiDevice.wait(Until.findObject(bySelector), 1500)
                 if (button != null) {
                     Log.d(
                         TAG,
