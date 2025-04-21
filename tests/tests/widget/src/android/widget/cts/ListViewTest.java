@@ -1598,6 +1598,8 @@ public class ListViewTest {
     }
 
     private void showOnlyStretch() throws Throwable {
+        // Give it an opportunity to finish layout.
+        CountDownLatch latch = new CountDownLatch(1);
         mActivityRule.runOnUiThread(
                 () -> {
                     ViewGroup parent = (ViewGroup) mListViewStretch.getParent();
@@ -1609,14 +1611,10 @@ public class ListViewTest {
                     mListViewStretch.setDivider(null);
                     mListViewStretch.setDividerHeight(0);
                 });
-        // Give it an opportunity to finish layout.
-        CountDownLatch latch = new CountDownLatch(1);
-        mActivityRule.runOnUiThread(() -> {
             mListViewStretch.getViewTreeObserver().addOnPreDrawListener(() -> {
                 latch.countDown();
                 return true;
             });
-        });
         assertTrue(latch.await(1, TimeUnit.SECONDS));
     }
 
