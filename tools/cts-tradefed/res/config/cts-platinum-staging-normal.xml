@@ -380,10 +380,6 @@
     <option name="compatibility:include-filter" value="CtsAdServicesDebuggableDeviceTestCases android.adservices.debuggablects.FledgeCtsDebuggableTest#testFrequencyCapFiltering_WinEvent_FiltersAds"/>
     <option name="compatibility:include-filter" value="CtsAdServicesDebuggableDeviceTestCases android.adservices.debuggablects.FledgeCtsDebuggableTest#testGetAdSelectionData_collectsCa_success"/>
     <option name="compatibility:include-filter" value="CtsAdServicesDebuggableDeviceTestCases android.adservices.debuggablects.FledgeCtsDebuggableTest#testPersistAdSelectionData_adSelectionIdDoesntExist_failure"/>
-    <option name="compatibility:include-filter" value="CtsAdServicesDebuggableDeviceTestCases android.adservices.debuggablects.MeasurementCtsDebuggableTest#registerSourceAndTriggerAndRunAttributionAndAggregateReporting"/>
-    <option name="compatibility:include-filter" value="CtsAdServicesDebuggableDeviceTestCases android.adservices.debuggablects.MeasurementCtsDebuggableTest#registerSourceAndTriggerAndRunAttributionAndEventReporting"/>
-    <option name="compatibility:include-filter" value="CtsAdServicesDebuggableDeviceTestCases android.adservices.debuggablects.MeasurementCtsDebuggableTest#registerWebSourceAndWebTriggerAndRunAttributionAndAggregateReporting"/>
-    <option name="compatibility:include-filter" value="CtsAdServicesDebuggableDeviceTestCases android.adservices.debuggablects.MeasurementCtsDebuggableTest#registerWebSourceAndWebTriggerAndRunAttributionAndEventReporting"/>
     <option name="compatibility:include-filter" value="CtsAdServicesDebuggableDeviceTestCases android.adservices.debuggablects.ScenarioDispatcherTest#testScenarioDispatcher_withVerifyCalled_success"/>
     <option name="compatibility:include-filter" value="CtsAdServicesDebuggableDeviceTestCases android.adservices.debuggablects.SignalsCtsDebuggableTest#testUpdateSignals_badJson_failure"/>
     <!-- CtsAdServicesDeviceTestCases -->
