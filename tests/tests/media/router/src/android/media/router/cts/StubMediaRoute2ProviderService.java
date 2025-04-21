@@ -80,6 +80,9 @@ public class StubMediaRoute2ProviderService extends MediaRoute2ProviderService {
     public static final String ROUTE_ID8_SYSTEM_TYPE = "route_id8_system_type";
     public static final String ROUTE_NAME8 = "Sample Route 8 - System Type";
 
+    public static final String ROUTE_ID9_REMOTE = "route_id9_remote";
+    public static final String ROUTE_NAME9 = "Sample Route 9 - Remote playback";
+
     public static final int INITIAL_VOLUME = 30;
     public static final int VOLUME_MAX = 100;
     public static final int SESSION_VOLUME_MAX = 50;
@@ -159,6 +162,11 @@ public class StubMediaRoute2ProviderService extends MediaRoute2ProviderService {
                         .setType(MediaRoute2Info.TYPE_BLUETOOTH_A2DP)
                         .addFeature(FEATURE_SAMPLE)
                         .build();
+        MediaRoute2Info route9 =
+                new MediaRoute2Info.Builder(ROUTE_ID9_REMOTE, ROUTE_NAME9)
+                        .addFeature(MediaRoute2Info.FEATURE_REMOTE_PLAYBACK)
+                        .build();
+
         MediaRoute2Info routeSpecial =
                 new MediaRoute2Info.Builder(ROUTE_ID_SPECIAL_FEATURE, ROUTE_NAME_SPECIAL_FEATURE)
                         .addFeature(FEATURE_SAMPLE)
@@ -185,6 +193,7 @@ public class StubMediaRoute2ProviderService extends MediaRoute2ProviderService {
         mRoutes.put(route6.getId(), route6);
         mRoutes.put(route7.getId(), route7);
         mRoutes.put(route8.getId(), route8);
+        mRoutes.put(route9.getId(), route9);
         mRoutes.put(routeSpecial.getId(), routeSpecial);
         mRoutes.put(fixedVolumeRoute.getId(), fixedVolumeRoute);
         mRoutes.put(variableVolumeRoute.getId(), variableVolumeRoute);
