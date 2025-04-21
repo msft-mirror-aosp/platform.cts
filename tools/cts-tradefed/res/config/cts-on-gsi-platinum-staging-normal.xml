@@ -208,22 +208,6 @@
     <option name="compatibility:include-filter" value="CtsBiometricsTestCases android.server.biometrics.BiometricSimpleTests#testIsConfirmationRequired"/>
     <!-- CtsBluetoothTestCases -->
     <option name="compatibility:include-filter" value="CtsBluetoothTestCases android.bluetooth.cts.BluetoothLeScanTest#scanFromSourceWithFilters"/>
-    <!-- CtsCameraTestCases -->
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.CameraDeviceTest#testCameraDeviceRepeatingBurst[1]"/>
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.DngCreatorTest#testDngRenderingByBitmapFactor[1]"/>
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.ImageReaderTest#testAllOutputYUVResolutions[1]"/>
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.ImageReaderTest#testRepeatingRaw[1]"/>
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.LogicalCameraDeviceTest#testBasicPhysicalStreaming[1]"/>
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.MultiViewTest#testDualCameraPreview[1]"/>
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.MultiViewTest#testTextureViewPreviewWithMirroring[1]"/>
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.PerformanceTest#testReprocessingCaptureStall"/>
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.RobustnessTest#testMandatoryPreviewStabilizationOutputCombinations[1]"/>
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.StillCaptureTest#testAeCompensation[1]"/>
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.StillCaptureTest#testAePrecaptureTriggerCancelJpegCapture[1]"/>
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.StillCaptureTest#testAeRegions[1]"/>
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.StillCaptureTest#testAllocateBitmap[1]"/>
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.StillCaptureTest#testPreviewPersistence[1]"/>
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.cts.CameraTest#testFaceDetection"/>
     <!-- CtsCompanionDeviceManagerCoreTestCases -->
     <option name="compatibility:include-filter" value="CtsCompanionDeviceManagerCoreTestCases android.companion.cts.core.DeviceEventTest#test_ble_device_event"/>
     <option name="compatibility:include-filter" value="CtsCompanionDeviceManagerCoreTestCases android.companion.cts.core.DeviceEventTest#test_classic_bt_device_event"/>
