@@ -65,8 +65,8 @@ class IntentTest : PackageInstallerTestBase() {
         const val NO_INSTALL_APPS_RESTRICTION_TEXT_V2 ="Installing apps has been restricted"
         const val DISABLED_LAUNCHER_ACTIVITY_PKG_NAME =
                 "android.packageinstaller.disabledlauncheractivity.cts"
-        const val INSTALL_SUCCESS_TEXT = "App installed."
-        const val REINSTALL_SUCCESS_TEXT = "App reinstalled"
+        const val INSTALL_SUCCESS_TEXT = "App installed"
+        const val UPDATE_SUCCESS_TEXT = "App updated"
         const val TEST_VERIFIER_APK_NAME = "CtsSufficientVerifierReject.apk"
         const val TEST_VERIFIER_PACKAGE_NAME = "android.packageinstaller.sufficientverifierreject"
         const val TEST_REJECTED_BY_VERIFIER_APK_NAME = "CtsEmptyTestApp_RejectedByVerifier.apk"
@@ -352,7 +352,7 @@ class IntentTest : PackageInstallerTestBase() {
 
         // Wait for success dialog
         val targetString = if (usePiaV2) {
-            REINSTALL_SUCCESS_TEXT
+            UPDATE_SUCCESS_TEXT
         } else {
             INSTALL_SUCCESS_TEXT
         }

@@ -42,7 +42,7 @@ public class InstallationViaIntentActionViewTest extends InstallationTestBase {
 
         clickInstallButton(/* checkInstallingDialog= */ true);
 
-        assertInstallSuccessDialogAndLaunchTestApp();
+        assertInstallSuccessDialogAndLaunchTestApp(/* isAppUpdating= */ false);
         assertTestPackageInstalled();
     }
 
@@ -120,7 +120,7 @@ public class InstallationViaIntentActionViewTest extends InstallationTestBase {
 
         clickInstallButton(/* checkInstallingDialog= */ true);
 
-        assertInstallSuccessDialogAndLaunchTestApp();
+        assertInstallSuccessDialogAndLaunchTestApp(/* isAppUpdating= */ false);
         assertTestPackageInstalled();
     }
 
@@ -183,7 +183,7 @@ public class InstallationViaIntentActionViewTest extends InstallationTestBase {
 
         clickUpdateButton(/* checkInstallingDialog= */ true);
 
-        assertInstallSuccessDialogAndLaunchTestApp();
+        assertInstallSuccessDialogAndLaunchTestApp(/* isAppUpdating= */ true);
         assertTestPackageVersion2Installed();
     }
 
@@ -271,7 +271,7 @@ public class InstallationViaIntentActionViewTest extends InstallationTestBase {
 
         clickUpdateButton(/* checkInstallingDialog= */ true);
 
-        assertInstallSuccessDialogAndLaunchTestApp();
+        assertInstallSuccessDialogAndLaunchTestApp(/* isAppUpdating= */ true);
         assertTestPackageVersion2Installed();
     }
 

@@ -43,6 +43,7 @@ import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.test.uiautomator.By;
+import androidx.test.uiautomator.UiObject2;
 
 import org.junit.After;
 import org.junit.Before;
@@ -50,6 +51,7 @@ import org.junit.Before;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
 
 /**
  * The test base to test PackageInstaller uninstallation.
@@ -334,7 +336,13 @@ public class UninstallationTestBase extends PackageInstallerCujTestBase {
      */
     public static void clickUninstallOkButton() throws Exception {
         assertUninstallDialog();
-        clickAndWaitForNewWindow(findPackageInstallerObject(BUTTON_OK_LABEL));
+        UiObject2 uninstallButton;
+        if (sUsePiaV2) {
+            uninstallButton = findPackageInstallerObject(BUTTON_UNINSTALL_LABEL);
+        } else {
+            uninstallButton = findPackageInstallerObject(BUTTON_OK_LABEL);
+        }
+        clickAndWaitForNewWindow(uninstallButton);
     }
 
     /**
@@ -343,8 +351,18 @@ public class UninstallationTestBase extends PackageInstallerCujTestBase {
      */
     public static void clickUninstallCloneOkButton() throws Exception {
         findPackageInstallerObject(TEST_APP_LABEL + " " + CLONE_LABEL);
-        findPackageInstallerObject(By.textContains(DELETE_LABEL), /* checkNull= */ true);
-        clickAndWaitForNewWindow(findPackageInstallerObject(BUTTON_OK_LABEL));
+
+        Pattern deletePattern = Pattern.compile(".*" + DELETE_LABEL + ".*",
+            Pattern.CASE_INSENSITIVE);
+        findPackageInstallerObject(By.text(deletePattern), /* checkNull= */ true);
+
+        UiObject2 uninstallButton;
+        if (sUsePiaV2) {
+            uninstallButton = findPackageInstallerObject(BUTTON_DELETE_LABEL);
+        } else {
+            uninstallButton = findPackageInstallerObject(BUTTON_OK_LABEL);
+        }
+        clickAndWaitForNewWindow(uninstallButton);
     }
 
     /**
@@ -354,7 +372,13 @@ public class UninstallationTestBase extends PackageInstallerCujTestBase {
     public static void clickUninstallAppFromWorkProfileOkButton() throws Exception {
         assertUninstallDialog();
         findPackageInstallerObject(By.textContains(WORK_PROFILE_LABEL), /* checkNull= */ true);
-        clickAndWaitForNewWindow(findPackageInstallerObject(BUTTON_OK_LABEL));
+        UiObject2 uninstallButton;
+        if (sUsePiaV2) {
+            uninstallButton = findPackageInstallerObject(BUTTON_UNINSTALL_LABEL);
+        } else {
+            uninstallButton = findPackageInstallerObject(BUTTON_OK_LABEL);
+        }
+        clickAndWaitForNewWindow(uninstallButton);
     }
 
     /**
@@ -363,7 +387,9 @@ public class UninstallationTestBase extends PackageInstallerCujTestBase {
      */
     public static void assertUninstallDialog() throws Exception {
         assertTitleIsTestAppLabel();
-        findPackageInstallerObject(By.textContains(UNINSTALL_LABEL), /* checkNull= */ true);
+        Pattern patternToMatch =
+                Pattern.compile(".*" + UNINSTALL_LABEL + ".*", Pattern.CASE_INSENSITIVE);
+        findPackageInstallerObject(By.text(patternToMatch), /* checkNull= */ true);
     }
 
     /**
