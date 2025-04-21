@@ -120,6 +120,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -1342,28 +1343,34 @@ public class MediaRouter2Test {
 
         final CountDownLatch onTransferLatch = new CountDownLatch(1);
         final CountDownLatch onStopLatch = new CountDownLatch(1);
+        final AtomicReference<String> expectedControllerId = new AtomicReference<>();
         final List<RoutingController> controllers = new ArrayList<>();
 
-        TransferCallback transferCallback = new TransferCallback() {
-            @Override
-            public void onTransfer(RoutingController oldController,
-                    RoutingController newController) {
-                assertThat(oldController).isEqualTo(mRouter2.getSystemController());
-                assertThat(getOriginalRouteIds(newController.getSelectedRoutes()).contains(
-                        ROUTE_ID1)).isTrue();
-                controllers.add(newController);
-                onTransferLatch.countDown();
-            }
-            @Override
-            public void onStop(RoutingController controller) {
-                if (onTransferLatch.getCount() != 0
-                        || !TextUtils.equals(
-                                controllers.get(0).getId(), controller.getId())) {
-                    return;
-                }
-                onStopLatch.countDown();
-            }
-        };
+        TransferCallback transferCallback =
+                new TransferCallback() {
+                    @Override
+                    public void onTransfer(
+                            RoutingController oldController, RoutingController newController) {
+                        assertThat(oldController).isEqualTo(mRouter2.getSystemController());
+                        assertThat(
+                                        getOriginalRouteIds(newController.getSelectedRoutes())
+                                                .contains(ROUTE_ID1))
+                                .isTrue();
+                        expectedControllerId.set(newController.getId());
+                        controllers.add(newController);
+                        onTransferLatch.countDown();
+                    }
+
+                    @Override
+                    public void onStop(RoutingController controller) {
+                        if (onTransferLatch.getCount() != 0
+                                || !TextUtils.equals(
+                                        expectedControllerId.get(), controller.getId())) {
+                            return;
+                        }
+                        onStopLatch.countDown();
+                    }
+                };
 
         // We want to verify that our ControllerCallback only fires once, for the call to transferTo
         // for ROUTE_ID1. This queue stores the selected routes for any invocations of the
@@ -1374,10 +1381,10 @@ public class MediaRouter2Test {
                 new ControllerCallback() {
                     @Override
                     public void onControllerUpdated(RoutingController controller) {
-                        if (TextUtils.equals(controllers.get(0).getId(), controller.getId())) {
+                        if (TextUtils.equals(expectedControllerId.get(), controller.getId())) {
                             controllerUpdatedCalls.add(
                                     controller.getSelectedRoutes().stream()
-                                            .map(i -> i.getOriginalId())
+                                            .map(MediaRoute2Info::getOriginalId)
                                             .toList());
                         }
                     }
