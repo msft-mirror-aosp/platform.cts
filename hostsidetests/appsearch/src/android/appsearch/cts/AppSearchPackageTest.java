@@ -41,14 +41,14 @@ import org.junit.runner.RunWith;
 @RunWith(DeviceJUnit4ClassRunner.class)
 public class AppSearchPackageTest extends AppSearchHostTestBase {
 
-    private int mMainUserId;
+    private int mPrimaryUserId;
 
     @Before
     public void setUp() throws Exception {
-        mMainUserId = getDevice().getMainUserId();
-        installPackageAsUser(TARGET_APK_A, /* grantPermission= */true, mMainUserId);
-        installPackageAsUser(TARGET_APK_B, /* grantPermission= */true, mMainUserId);
-        runDeviceTestAsUserInPkgA("clearTestData", mMainUserId);
+        mPrimaryUserId = getDevice().getPrimaryUserId();
+        installPackageAsUser(TARGET_APK_A, /* grantPermission= */true, mPrimaryUserId);
+        installPackageAsUser(TARGET_APK_B, /* grantPermission= */true, mPrimaryUserId);
+        runDeviceTestAsUserInPkgA("clearTestData", mPrimaryUserId);
     }
 
     @After
@@ -60,9 +60,9 @@ public class AppSearchPackageTest extends AppSearchHostTestBase {
     @Test
     public void testPackageRemove() throws Exception {
         // package A grants visibility to package B.
-        runDeviceTestAsUserInPkgA("testPutDocuments", mMainUserId);
+        runDeviceTestAsUserInPkgA("testPutDocuments", mPrimaryUserId);
         // query the document from another package.
-        runDeviceTestAsUserInPkgB("testGlobalGetDocuments_exist", mMainUserId);
+        runDeviceTestAsUserInPkgB("testGlobalGetDocuments_exist", mPrimaryUserId);
         // remove the package. Success will return Null, otherwise return error code.
         assertThat(uninstallPackage(TARGET_PKG_A)).isNull();
 
@@ -71,7 +71,7 @@ public class AppSearchPackageTest extends AppSearchHostTestBase {
             try {
                 // query the document from another package, verify the document of package A is
                 // removed
-                runDeviceTestAsUserInPkgB("testGlobalGetDocuments_nonexist", mMainUserId);
+                runDeviceTestAsUserInPkgB("testGlobalGetDocuments_nonexist", mPrimaryUserId);
                 // The test is passed.
                 return;
             } catch (AssertionError e) {
@@ -84,9 +84,9 @@ public class AppSearchPackageTest extends AppSearchHostTestBase {
 
     @Test
     public void testPackageUninstall_immediatelyReboot() throws Exception {
-        runDeviceTestAsUserInPkgA("testPutDocuments", mMainUserId);
-        runDeviceTestAsUserInPkgA("closeAndFlush", mMainUserId);
-        runDeviceTestAsUserInPkgA("testGetDocuments_exist", mMainUserId);
+        runDeviceTestAsUserInPkgA("testPutDocuments", mPrimaryUserId);
+        runDeviceTestAsUserInPkgA("closeAndFlush", mPrimaryUserId);
+        runDeviceTestAsUserInPkgA("testGetDocuments_exist", mPrimaryUserId);
         // We won't be able to verify the uninstall is not done before we reboot the device.
         // This test is a safety that we could prune dead package data when we unlock the user. Any
         // flaky in the testGetDocuments_nonexist assert means we have a problem.
@@ -97,7 +97,7 @@ public class AppSearchPackageTest extends AppSearchHostTestBase {
         // manually unlock your device screen after it got fully rebooted. Or remove your screen
         // lock pin before the test. Otherwise it will hang.
         rebootAndWaitUntilReady();
-        installPackageAsUser(TARGET_APK_A, /* grantPermission= */true, mMainUserId);
-        runDeviceTestAsUserInPkgA("testGetDocuments_nonexist", mMainUserId);
+        installPackageAsUser(TARGET_APK_A, /* grantPermission= */true, mPrimaryUserId);
+        runDeviceTestAsUserInPkgA("testGetDocuments_nonexist", mPrimaryUserId);
     }
 }

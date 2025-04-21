@@ -55,7 +55,7 @@ public class AppSearchMultiUserTest extends AppSearchHostTestBase {
         assumeTrue("Multi-user is not supported on this device",
                 testInfo.getDevice().isMultiUserSupported());
 
-        sInitialUserId = testInfo.getDevice().getMainUserId();
+        sInitialUserId = testInfo.getDevice().getPrimaryUserId();
         sSecondaryUserId = testInfo.getDevice().createUser("Test_User");
         assertThat(testInfo.getDevice().startUser(sSecondaryUserId)).isTrue();
     }
