@@ -18,6 +18,8 @@ package android.graphics.pdf.cts.module;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import static org.junit.Assert.assertThrows;
+
 import android.graphics.Color;
 import android.graphics.pdf.component.PdfPageTextObject;
 import android.graphics.pdf.component.PdfPageTextObjectFont;
@@ -86,5 +88,57 @@ public class PdfPageTextObjectTest {
 
         pageTextObject.setFillColor(FILL_COLOR);
         assertThat(pageTextObject.getFillColor()).isEqualTo(FILL_COLOR);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_EDIT_PDF_TEXT_OBJECTS)
+    public void testCreateTextPageObjectWithNullText() {
+        String text = null;
+        PdfPageTextObjectFont font =
+                new PdfPageTextObjectFont(PdfPageTextObjectFont.FONT_FAMILY_COURIER, true, true);
+        float fontSize = 10.0f;
+
+        assertThrows(NullPointerException.class, () -> new PdfPageTextObject(text, font, fontSize));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_EDIT_PDF_TEXT_OBJECTS)
+    public void testCreateTextPageObjectWithNullFont() {
+        String text = "Null Font";
+        PdfPageTextObjectFont font = null;
+        float fontSize = 10.0f;
+
+        assertThrows(NullPointerException.class, () -> new PdfPageTextObject(text, font, fontSize));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_EDIT_PDF_TEXT_OBJECTS)
+    public void testSetTextInTextPageObjectWithNullText() {
+        PdfPageTextObject textObject = createSamplePdfPageTextObject();
+        String text = null;
+
+        assertThrows(NullPointerException.class, () -> textObject.setText(text));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_EDIT_PDF_TEXT_OBJECTS)
+    public void testSetTextPageObjectWithInvalidRenderMode() {
+        PdfPageTextObject textObject = createSamplePdfPageTextObject();
+        assertThrows(IllegalArgumentException.class, () -> textObject.setRenderMode(9));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_EDIT_PDF_TEXT_OBJECTS)
+    public void testCreateTextPageObjectFontWithInvalidFontFamily() {
+        assertThrows(
+                IllegalArgumentException.class, () -> new PdfPageTextObjectFont(5, true, true));
+    }
+
+    private PdfPageTextObject createSamplePdfPageTextObject() {
+        String text = "Text Page Object";
+        PdfPageTextObjectFont font =
+                new PdfPageTextObjectFont(PdfPageTextObjectFont.FONT_FAMILY_COURIER, true, true);
+        float fontSize = 10.0f;
+        return new PdfPageTextObject(text, font, fontSize);
     }
 }
