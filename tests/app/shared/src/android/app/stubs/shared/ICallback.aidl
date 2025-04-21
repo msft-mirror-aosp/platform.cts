@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 The Android Open Source Project
+ * Copyright (C) 2022 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,15 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.android.compatibility.common.util;
 
-import android.os.SystemClock;
+package android.app.stubs.shared;
 
-public final class ThreadUtils {
-    private ThreadUtils() {
-    }
-
-    public static void sleepUntilRealtime(long realtime) throws Exception {
-        Thread.sleep(Math.max(0, realtime - SystemClock.elapsedRealtime()));
-    }
+interface ICallback {
+    void onHeartbeat(int countdown);
 }

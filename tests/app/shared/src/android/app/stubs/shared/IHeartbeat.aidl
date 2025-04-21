@@ -14,8 +14,16 @@
  * limitations under the License.
  */
 
-package android.app.stubs;
+package android.app.stubs.shared;
 
-interface ICallback {
-    void onHeartbeat(int countdown);
+import android.app.stubs.shared.ICallback;
+import android.os.Messenger;
+
+interface IHeartbeat {
+    void trigger(int pid, int uid, String name, int countdown, long interval, in ICallback callback);
+    void monitor(in Messenger messenger);
+
+    const int DEFAULT_COUNTDOWN = 60;
+    const long DEFAULT_INTERVAL = 1000;
+    const String HEARTBEAT_DONE = "android.app.stubs.HEARTBEAT_DONE";
 }

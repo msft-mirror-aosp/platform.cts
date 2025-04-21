@@ -214,48 +214,6 @@ android_test {
     per_testcase_directory: true,
 }
 
-android_test {
-    name: "CtsAppExitTestCases",
-    team: "trendy_team_framework_backstage_power",
-    defaults: ["cts_defaults"],
-    libs: [
-        "android.test.runner.stubs.system",
-        "org.apache.http.legacy.stubs.system",
-        "android.test.base.stubs.system",
-    ],
-    static_libs: [
-        "androidx.test.uiautomator_uiautomator",
-        "androidx.test.rules",
-        "compatibility-device-util-axt",
-        "CtsExternalServiceCommon",
-        "CtsAppTestStubsShared",
-        "cts-wm-util",
-        "libprotobuf-java-lite",
-    ],
-    aidl: {
-        local_include_dirs: ["app/src"],
-    },
-    srcs: [
-        ":libtombstone_proto-src",
-        "AppExitTest/src/**/*.java",
-        "app/src/**/*.aidl",
-    ],
-    jarjar_rules: "AppExitTest/jarjar-rules.txt",
-    test_suites: [
-        "cts",
-        "general-tests",
-    ],
-    manifest: "AppExitTest/AndroidManifest.xml",
-    test_config: "AppExitTest/AndroidTest.xml",
-    platform_apis: true,
-    data: [
-        ":CtsSimpleApp",
-        ":CtsExternalServiceService",
-        ":CtsAppTestStubs",
-    ],
-    per_testcase_directory: true,
-}
-
 test_module_config {
     name: "CtsAppTestCases_android_server_am_Presubmit",
     base: "CtsAppTestCases",

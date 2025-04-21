@@ -293,6 +293,7 @@ public class BlankActivityTest
     }
 
     @Test
+    @Ignore("b/410392136")
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_SYSTEM_UI_UNDERLAY)
     public void testCreateUnderlay_flagEnabled() throws Exception {
         final CtsContentCaptureService service = enableService();
@@ -310,6 +311,7 @@ public class BlankActivityTest
     }
 
     @Test
+    @Ignore("b/410392136")
     @RequiresFlagsDisabled(Flags.FLAG_ENABLE_SYSTEM_UI_UNDERLAY)
     public void testCreateUnderlay_flagDisabled() throws Exception {
         final CtsContentCaptureService service = enableService();

@@ -93,7 +93,7 @@ public class ClassAnalyzer extends ClassVisitor {
         // Add a method in the class.
         List<String> params = new ArrayList<>();
         for (Type type: Type.getArgumentTypes(desc)) {
-            params.add(type.getClassName().replace("\\$", "."));
+            params.add(type.getClassName());
         }
         MethodProfile method = mClass.getOrCreateMethod(name, params);
         method.addMethodType(MethodType.DIRECT_MEMBER);
