@@ -49,8 +49,8 @@ public class NumberBlockingTest extends DeviceTestCase implements IBuildReceiver
     private static final String NUMBER_BLOCKING_APP_TEST_CLASS_NAME = "NumberBlockingAppTest";
     private static final String TEST_APP_CONNECTION_SERVICE_NAME = "DummyConnectionService";
     private static final String SECONDARY_USER_NAME = "NumberBlockingTest SecondaryUser";
-    private static final String FEATURE_TELEPHONY = "android.hardware.telephony";
-    private static final String FEATURE_CONNECTION_SERVICE = "android.software.connectionservice";
+    private static final String FEATURE_TELECOM = "android.software.telecom";
+    private static final String FEATURE_TELEPHONY_CALLING = "android.hardware.telephony.calling";
 
     private int mSecondaryUserId;
     private int mPrimaryUserSerialNumber;
@@ -63,19 +63,20 @@ public class NumberBlockingTest extends DeviceTestCase implements IBuildReceiver
     protected void setUp() throws Exception {
         super.setUp();
 
-        mHasFeature = getDevice().isMultiUserSupported()
-                && getDevice().hasFeature(FEATURE_TELEPHONY)
-                && getDevice().hasFeature(FEATURE_CONNECTION_SERVICE);
+        mHasFeature =
+                getDevice().isMultiUserSupported()
+                        && getDevice().hasFeature(FEATURE_TELEPHONY_CALLING)
+                        && getDevice().hasFeature(FEATURE_TELECOM);
 
         if (!mHasFeature) {
             return;
         }
 
-        installTestAppForUser(getDevice().getPrimaryUserId());
+        installTestAppForUser(getDevice().getMainUserId());
         createSecondaryUser();
         installTestAppForUser(mSecondaryUserId);
 
-        mPrimaryUserSerialNumber = getUserSerialNumber(getDevice().getPrimaryUserId());
+        mPrimaryUserSerialNumber = getUserSerialNumber(getDevice().getMainUserId());
         mSecondaryUserSerialNumber = getUserSerialNumber(mSecondaryUserId);
     }
 
@@ -103,16 +104,14 @@ public class NumberBlockingTest extends DeviceTestCase implements IBuildReceiver
         try {
             // First run tests for primary user.
             // Cleanup state prior to running tests.
-            setTestAppAsDefaultSmsAppForUser(
-                    true /* setToSmsApp */, getDevice().getPrimaryUserId());
+            setTestAppAsDefaultSmsAppForUser(true /* setToSmsApp */, getDevice().getMainUserId());
             runTestAsPrimaryUser(NUMBER_BLOCKING_APP_TEST_CLASS_NAME,
                     "testCleanupBlockedNumberAsPrimaryUserSucceeds");
 
             // Block a number as a privileged app that can block numbers.
             runTestAsPrimaryUser(
                     NUMBER_BLOCKING_APP_TEST_CLASS_NAME, "testBlockNumberAsPrimaryUserSucceeds");
-            setTestAppAsDefaultSmsAppForUser(
-                    false /* setToSmsApp */, getDevice().getPrimaryUserId());
+            setTestAppAsDefaultSmsAppForUser(false /* setToSmsApp */, getDevice().getMainUserId());
 
             // Ensure incoming call from blocked number is rejected, and unregister the phone
             // account.
@@ -133,14 +132,16 @@ public class NumberBlockingTest extends DeviceTestCase implements IBuildReceiver
             setTestAppAsDefaultSmsAppForUser(false /* setToSmsApp */, mSecondaryUserId);
 
             // Calls should be blocked by Telecom for secondary users as well.
-            runTestAsSecondaryUser(CALL_BLOCKING_TEST_CLASS_NAME, "testRegisterPhoneAccount");
-            enablePhoneAccountForUser(mSecondaryUserSerialNumber);
-            runTestAsSecondaryUser(CALL_BLOCKING_TEST_CLASS_NAME,
-                    "testIncomingCallFromBlockedNumberIsRejected");
+            // TODO: this test is not structured correctly to block calls across users; the test
+            // registers a phone account that is not multi-user capable, and hence the blocking is
+            // not going to work.
+            // runTestAsSecondaryUser(CALL_BLOCKING_TEST_CLASS_NAME, "testRegisterPhoneAccount");
+            // enablePhoneAccountForUser(mSecondaryUserSerialNumber);
+            // runTestAsSecondaryUser(CALL_BLOCKING_TEST_CLASS_NAME,
+            //        "testIncomingCallFromBlockedNumberIsRejected");
         } finally {
             // Cleanup state by unblocking the blocked number.
-            setTestAppAsDefaultSmsAppForUser(
-                    true /* setToSmsApp */, getDevice().getPrimaryUserId());
+            setTestAppAsDefaultSmsAppForUser(true /* setToSmsApp */, getDevice().getMainUserId());
             runTestAsPrimaryUser(
                     NUMBER_BLOCKING_APP_TEST_CLASS_NAME, "testUnblockNumberAsPrimaryUserSucceeds");
         }
@@ -190,7 +191,7 @@ public class NumberBlockingTest extends DeviceTestCase implements IBuildReceiver
     }
 
     private void runTestAsPrimaryUser(String className, String methodName) throws Exception {
-        runTestAsUser(className, methodName, getDevice().getPrimaryUserId());
+        runTestAsUser(className, methodName, getDevice().getMainUserId());
     }
 
     private void runTestAsSecondaryUser(String className, String methodName) throws Exception {
