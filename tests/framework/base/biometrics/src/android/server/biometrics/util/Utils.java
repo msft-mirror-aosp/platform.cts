@@ -21,6 +21,7 @@ import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentat
 import android.content.ComponentName;
 import android.hardware.biometrics.BiometricManager;
 import android.hardware.biometrics.BiometricPrompt;
+import android.hardware.biometrics.Flags;
 import android.hardware.biometrics.SensorProperties;
 import android.os.ParcelFileDescriptor;
 import android.os.Process;
@@ -277,6 +278,17 @@ public class Utils {
     }
 
     public static boolean isPublicAuthenticatorConstant(int authenticator) {
+        if (Flags.identityCheckApi()) {
+            switch (authenticator) {
+                case BiometricManager.Authenticators.BIOMETRIC_STRONG:
+                case BiometricManager.Authenticators.BIOMETRIC_WEAK:
+                case BiometricManager.Authenticators.DEVICE_CREDENTIAL:
+                case BiometricManager.Authenticators.IDENTITY_CHECK:
+                    return true;
+                default:
+                    return false;
+            }
+        }
         switch (authenticator) {
             case BiometricManager.Authenticators.BIOMETRIC_STRONG:
             case BiometricManager.Authenticators.BIOMETRIC_WEAK:

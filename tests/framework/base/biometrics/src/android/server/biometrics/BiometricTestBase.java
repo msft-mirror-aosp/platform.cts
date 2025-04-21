@@ -545,6 +545,24 @@ abstract class BiometricTestBase implements TestSessionList.Idler {
     }
 
     protected BiometricPrompt showBiometricPromptWithAuthenticators(int authenticators) {
+        return showBiometricPromptWithAuthenticators(
+                authenticators,
+                new BiometricPrompt.AuthenticationCallback() {
+                    @Override
+                    public void onAuthenticationError(int errorCode, CharSequence errString) {
+                        Log.d(TAG, "onAuthenticationError: " + errorCode);
+                    }
+
+                    @Override
+                    public void onAuthenticationSucceeded(
+                            BiometricPrompt.AuthenticationResult result) {
+                        Log.d(TAG, "onAuthenticationSucceeded");
+                    }
+                });
+    }
+
+    protected BiometricPrompt showBiometricPromptWithAuthenticators(
+            int authenticators, BiometricPrompt.AuthenticationCallback authenticationCallback) {
         final Handler handler = new Handler(Looper.getMainLooper());
         final Executor executor = handler::post;
         final BiometricPrompt.Builder promptBuilder = new BiometricPrompt.Builder(mContext)
@@ -560,19 +578,7 @@ abstract class BiometricTestBase implements TestSessionList.Idler {
         }
 
         final BiometricPrompt prompt = promptBuilder.build();
-        prompt.authenticate(new CancellationSignal(), executor,
-                new BiometricPrompt.AuthenticationCallback() {
-                    @Override
-                    public void onAuthenticationError(int errorCode, CharSequence errString) {
-                        Log.d(TAG, "onAuthenticationError: " + errorCode);
-                    }
-
-                    @Override
-                    public void onAuthenticationSucceeded(
-                            BiometricPrompt.AuthenticationResult result) {
-                        Log.d(TAG, "onAuthenticationSucceeded");
-                    }
-                });
+        prompt.authenticate(new CancellationSignal(), executor, authenticationCallback);
         return prompt;
     }
 

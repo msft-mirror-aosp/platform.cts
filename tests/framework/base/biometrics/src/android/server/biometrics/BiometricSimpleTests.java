@@ -16,9 +16,17 @@
 
 package android.server.biometrics;
 
+import static android.hardware.biometrics.BiometricManager.Authenticators.BIOMETRIC_STRONG;
+import static android.hardware.biometrics.BiometricManager.Authenticators.BIOMETRIC_WEAK;
 import static android.hardware.biometrics.BiometricManager.Authenticators.DEVICE_CREDENTIAL;
+import static android.hardware.biometrics.BiometricManager.Authenticators.IDENTITY_CHECK;
 import static android.hardware.biometrics.BiometricManager.TYPE_FACE;
 import static android.hardware.biometrics.BiometricManager.TYPE_FINGERPRINT;
+import static android.hardware.biometrics.SensorProperties.STRENGTH_STRONG;
+import static android.hardware.biometrics.SensorProperties.STRENGTH_WEAK;
+
+import static com.android.server.biometrics.nano.BiometricServiceStateProto.STATE_AUTH_IDLE;
+import static com.android.server.biometrics.nano.BiometricServiceStateProto.STATE_AUTH_STARTED_UI_SHOWING;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -42,12 +50,14 @@ import android.hardware.biometrics.BiometricManager.Authenticators;
 import android.hardware.biometrics.BiometricPrompt;
 import android.hardware.biometrics.BiometricTestSession;
 import android.hardware.biometrics.Flags;
+import android.hardware.biometrics.IdentityCheckStatus;
 import android.hardware.biometrics.SensorProperties;
 import android.os.CancellationSignal;
 import android.os.SystemClock;
 import android.platform.test.annotations.Presubmit;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.server.biometrics.util.BiometricServiceState;
+import android.server.biometrics.util.TestSessionList;
 import android.server.biometrics.util.Utils;
 import android.util.Log;
 
@@ -57,6 +67,7 @@ import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.CddTest;
 import com.android.server.biometrics.nano.SensorStateProto;
 
+import org.junit.After;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -307,6 +318,295 @@ public class BiometricSimpleTests extends BiometricTestBase {
                 Authenticators.BIOMETRIC_STRONG | Authenticators.DEVICE_CREDENTIAL);
     }
 
+    @ApiTest(
+            apis = {
+                "android.hardware.biometrics.BiometricPrompt.Builder#setAllowedAuthenticators",
+                "android.hardware.biometrics.BiometricPrompt#authenticate",
+            })
+    @RequiresFlagsEnabled(Flags.FLAG_IDENTITY_CHECK_API)
+    @Test
+    public void testSetAllowedAuthenticators_identityCheck() {
+        testSetAllowedAuthenticators(IDENTITY_CHECK);
+    }
+
+    @ApiTest(
+            apis = {
+                "android.hardware.biometrics.BiometricPrompt.Builder#setAllowedAuthenticators",
+                "android.hardware.biometrics.BiometricPrompt#authenticate",
+            })
+    @RequiresFlagsEnabled(Flags.FLAG_IDENTITY_CHECK_API)
+    @Test
+    public void testSetAllowedAuthenticators_identityCheckAndDeviceCredential() {
+        testSetAllowedAuthenticators(IDENTITY_CHECK | DEVICE_CREDENTIAL);
+    }
+
+    @ApiTest(
+            apis = {
+                "android.hardware.biometrics.BiometricPrompt.Builder#setAllowedAuthenticators",
+                "android.hardware.biometrics.BiometricPrompt#authenticate",
+            })
+    @RequiresFlagsEnabled(Flags.FLAG_IDENTITY_CHECK_API)
+    @Test
+    public void testSetAllowedAuthenticators_identityCheckAndBiometricStrong() {
+        testSetAllowedAuthenticators(IDENTITY_CHECK | BIOMETRIC_STRONG);
+    }
+
+    @ApiTest(
+            apis = {
+                "android.hardware.biometrics.BiometricPrompt.Builder#setAllowedAuthenticators",
+                "android.hardware.biometrics.BiometricPrompt#authenticate",
+            })
+    @RequiresFlagsEnabled(Flags.FLAG_IDENTITY_CHECK_API)
+    @Test
+    public void testSetAllowedAuthenticators_identityCheckAndBiometricWeak() {
+        testSetAllowedAuthenticators(IDENTITY_CHECK | BIOMETRIC_WEAK);
+    }
+
+    @ApiTest(
+            apis = {
+                "android.hardware.biometrics.BiometricPrompt.Builder#setAllowedAuthenticators",
+                "android.hardware.biometrics.BiometricPrompt#authenticate",
+            })
+    @RequiresFlagsEnabled({Flags.FLAG_IDENTITY_CHECK_API, Flags.FLAG_IDENTITY_CHECK_TEST_API})
+    @Test
+    public void
+            testBiometricAuth_identityCheckAndDeviceCredential_identityCheckActive_strongSensorAuthenticates()
+                    throws Exception {
+        assumeTrue(Utils.isFirstApiLevel29orGreater());
+
+        for (SensorProperties props : mSensorProperties) {
+            if (props.getSensorStrength() != STRENGTH_STRONG) {
+                continue;
+            }
+
+            try (BiometricTestSession session =
+                            mBiometricManager.createTestSession(props.getSensorId());
+                    CredentialSession credentialSession = new CredentialSession()) {
+                enableIdentityCheck();
+
+                final BiometricPrompt.AuthenticationCallback authenticationCallback =
+                        mock(BiometricPrompt.AuthenticationCallback.class);
+                credentialSession.setCredential();
+                enrollForSensor(session, props.getSensorId());
+                showBiometricPromptWithAuthenticators(
+                        IDENTITY_CHECK | DEVICE_CREDENTIAL, authenticationCallback);
+
+                waitForState(STATE_AUTH_STARTED_UI_SHOWING);
+
+                successfullyAuthenticate(session, Utils.getUserId(), authenticationCallback);
+            }
+        }
+    }
+
+    @ApiTest(
+            apis = {
+                "android.hardware.biometrics.BiometricPrompt.Builder#setAllowedAuthenticators",
+                "android.hardware.biometrics.BiometricPrompt#authenticate",
+            })
+    @RequiresFlagsEnabled({Flags.FLAG_IDENTITY_CHECK_API, Flags.FLAG_IDENTITY_CHECK_TEST_API})
+    @Test
+    public void
+            testBiometricAuth_identityCheckAndDeviceCredential_identityCheckActive_negativeButtonClicked()
+                    throws Exception {
+        assumeTrue(Utils.isFirstApiLevel29orGreater());
+
+        for (SensorProperties props : mSensorProperties) {
+            if (props.getSensorStrength() != STRENGTH_STRONG) {
+                continue;
+            }
+
+            try (BiometricTestSession session =
+                            mBiometricManager.createTestSession(props.getSensorId());
+                    CredentialSession credentialSession = new CredentialSession()) {
+                enableIdentityCheck();
+
+                final BiometricPrompt.AuthenticationCallback authenticationCallback =
+                        mock(BiometricPrompt.AuthenticationCallback.class);
+                credentialSession.setCredential();
+                enrollForSensor(session, props.getSensorId());
+                showBiometricPromptWithAuthenticators(
+                        IDENTITY_CHECK | DEVICE_CREDENTIAL, authenticationCallback);
+
+                waitForState(STATE_AUTH_STARTED_UI_SHOWING);
+                findAndPressButton(BUTTON_ID_NEGATIVE);
+                waitForState(STATE_AUTH_IDLE);
+
+                verify(authenticationCallback)
+                        .onAuthenticationError(
+                                eq(BiometricPrompt.BIOMETRIC_ERROR_USER_CANCELED), any());
+                verifyNoMoreInteractions(authenticationCallback);
+            }
+        }
+    }
+
+    @ApiTest(
+            apis = {
+                "android.hardware.biometrics.BiometricPrompt.Builder#setAllowedAuthenticators",
+                "android.hardware.biometrics.BiometricPrompt#authenticate",
+            })
+    @RequiresFlagsEnabled({Flags.FLAG_IDENTITY_CHECK_API, Flags.FLAG_IDENTITY_CHECK_TEST_API})
+    @Test
+    public void testBiometricAuth_identityCheckAndDeviceCredential_identityCheckInactive()
+            throws Exception {
+        assumeTrue(Utils.isFirstApiLevel29orGreater());
+
+        for (SensorProperties props : mSensorProperties) {
+            if (props.getSensorStrength() != STRENGTH_STRONG) {
+                continue;
+            }
+
+            try (BiometricTestSession session =
+                            mBiometricManager.createTestSession(props.getSensorId());
+                    CredentialSession credentialSession = new CredentialSession()) {
+                disableIdentityCheck();
+
+                final BiometricPrompt.AuthenticationCallback authenticationCallback =
+                        mock(BiometricPrompt.AuthenticationCallback.class);
+                credentialSession.setCredential();
+                enrollForSensor(session, props.getSensorId());
+                showBiometricPromptWithAuthenticators(
+                        IDENTITY_CHECK | DEVICE_CREDENTIAL, authenticationCallback);
+
+                waitForState(STATE_AUTH_STARTED_UI_SHOWING);
+
+                successfullyEnterCredential();
+
+                verify(authenticationCallback).onAuthenticationSucceeded(any());
+            }
+        }
+    }
+
+    @ApiTest(
+            apis = {
+                "android.hardware.biometrics.BiometricPrompt.Builder#setAllowedAuthenticators",
+                "android.hardware.biometrics.BiometricPrompt#authenticate",
+            })
+    @RequiresFlagsEnabled({Flags.FLAG_IDENTITY_CHECK_API, Flags.FLAG_IDENTITY_CHECK_TEST_API})
+    @Test
+    public void testBiometricAuth_identityCheckAndBiometricWeak_identityCheckActive()
+            throws Exception {
+        if (!hasWeakAndStrongSensor()) {
+            Log.d(TAG, "Skipping test as device does not have weak and strong sensor");
+            return;
+        }
+
+        assumeTrue(Utils.isFirstApiLevel29orGreater());
+
+        try (CredentialSession credentialSession = new CredentialSession();
+                TestSessionList sessionList = new TestSessionList(this)) {
+            enableIdentityCheck();
+
+            final BiometricPrompt.AuthenticationCallback authenticationCallback =
+                    mock(BiometricPrompt.AuthenticationCallback.class);
+            final int weakSensorId = getWeakSensorProperties().getSensorId();
+            final int strongSensorId = getStrongSensorProperties().getSensorId();
+            final BiometricTestSession weakSensorSession =
+                    mBiometricManager.createTestSession(weakSensorId);
+            final BiometricTestSession strongSensorSession =
+                    mBiometricManager.createTestSession(strongSensorId);
+            sessionList.add(weakSensorSession);
+            sessionList.add(strongSensorSession);
+
+            credentialSession.setCredential();
+            enrollForSensor(weakSensorSession, weakSensorId);
+            enrollForSensor(strongSensorSession, strongSensorId);
+
+            showBiometricPromptWithAuthenticators(
+                    IDENTITY_CHECK | BIOMETRIC_WEAK, authenticationCallback);
+            waitForState(STATE_AUTH_STARTED_UI_SHOWING);
+
+            assertThat(getSensorStates().sensorStates.get(weakSensorId).isBusy()).isFalse();
+            assertThat(getSensorStates().sensorStates.get(strongSensorId).isBusy()).isTrue();
+
+            successfullyAuthenticate(
+                    strongSensorSession, Utils.getUserId(), authenticationCallback);
+        }
+    }
+
+    @ApiTest(
+            apis = {
+                "android.hardware.biometrics.BiometricPrompt.Builder#setAllowedAuthenticators",
+                "android.hardware.biometrics.BiometricPrompt#authenticate",
+            })
+    @RequiresFlagsEnabled({Flags.FLAG_IDENTITY_CHECK_API, Flags.FLAG_IDENTITY_CHECK_TEST_API})
+    @Test
+    public void testBiometricAuth_identityCheckAndBiometricWeak_identityCheckInactive()
+            throws Exception {
+        if (!hasWeakAndStrongSensor()) {
+            Log.d(TAG, "Skipping test as device does not have weak and strong sensor");
+            return;
+        }
+
+        assumeTrue(Utils.isFirstApiLevel29orGreater());
+
+        try (CredentialSession credentialSession = new CredentialSession();
+                TestSessionList sessionList = new TestSessionList(this)) {
+            disableIdentityCheck();
+
+            final BiometricPrompt.AuthenticationCallback authenticationCallback =
+                    mock(BiometricPrompt.AuthenticationCallback.class);
+            final int weakSensorId = getWeakSensorProperties().getSensorId();
+            final int strongSensorId = getStrongSensorProperties().getSensorId();
+            final BiometricTestSession weakSensorSession =
+                    mBiometricManager.createTestSession(weakSensorId);
+            final BiometricTestSession strongSensorSession =
+                    mBiometricManager.createTestSession(strongSensorId);
+            sessionList.add(weakSensorSession);
+            sessionList.add(strongSensorSession);
+
+            credentialSession.setCredential();
+            enrollForSensor(weakSensorSession, weakSensorId);
+            enrollForSensor(strongSensorSession, strongSensorId);
+
+            showBiometricPromptWithAuthenticators(
+                    IDENTITY_CHECK | BIOMETRIC_WEAK, authenticationCallback);
+            waitForState(STATE_AUTH_STARTED_UI_SHOWING);
+
+            successfullyAuthenticate(weakSensorSession, Utils.getUserId(), authenticationCallback);
+        }
+    }
+
+    private SensorProperties getWeakSensorProperties() {
+        return mSensorProperties.stream()
+                .filter(sensorProperties -> sensorProperties.getSensorStrength() == STRENGTH_WEAK)
+                .findFirst()
+                .orElse(null);
+    }
+
+    private SensorProperties getStrongSensorProperties() {
+        return mSensorProperties.stream()
+                .filter(sensorProperties -> sensorProperties.getSensorStrength() == STRENGTH_STRONG)
+                .findFirst()
+                .orElse(null);
+    }
+
+    private boolean hasWeakAndStrongSensor() {
+        return mSensorProperties.stream()
+                        .anyMatch(
+                                sensorProperties ->
+                                        sensorProperties.getSensorStrength() == STRENGTH_STRONG)
+                && mSensorProperties.stream()
+                        .anyMatch(
+                                sensorProperties ->
+                                        sensorProperties.getSensorStrength() == STRENGTH_WEAK);
+    }
+
+    private void enableIdentityCheck() {
+        mBiometricManager.setIdentityCheckTestStatus(
+                new IdentityCheckStatus.Builder()
+                        .setIdentityCheckValueForTestAvailable(true)
+                        .setIdentityCheckActive(true)
+                        .build());
+    }
+
+    private void disableIdentityCheck() {
+        mBiometricManager.setIdentityCheckTestStatus(
+                new IdentityCheckStatus.Builder()
+                        .setIdentityCheckValueForTestAvailable(true)
+                        .setIdentityCheckActive(false)
+                        .build());
+    }
+
     private void testSetAllowedAuthenticators(int authenticators) {
         assumeTrue(Utils.isFirstApiLevel29orGreater());
         BiometricPrompt prompt = showBiometricPromptWithAuthenticators(authenticators);
@@ -333,7 +633,7 @@ public class BiometricSimpleTests extends BiometricTestBase {
                 continue;
             }
 
-            if (authenticator == mandatoryBiometricsBit) {
+            if (authenticator == mandatoryBiometricsBit && !Flags.identityCheckApi()) {
                 continue;
             }
 
