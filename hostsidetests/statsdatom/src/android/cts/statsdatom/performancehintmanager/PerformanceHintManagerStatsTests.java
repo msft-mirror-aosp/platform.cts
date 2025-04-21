@@ -90,6 +90,13 @@ public class PerformanceHintManagerStatsTests extends BaseHostJUnit4Test impleme
     private static final int SESSION_TAG_GAME = AdpfSessionTag.GAME_VALUE;
     private static final int SESSION_TAG_HWUI = AdpfSessionTag.HWUI_VALUE;
 
+    private static final List<String> ALL_TESTS_UNSUPPORTED_HARDWARE_FEATURES =
+            Arrays.asList(
+                    "android.hardware.type.television",
+                    "android.hardware.type.watch",
+                    "android.hardware.type.automotive");
+    private static final String LOW_RAM_HARDWARE_FEATURE = "android.hardware.ram.low";
+
     private IBuildInfo mCtsBuild;
 
     @Rule
@@ -98,7 +105,7 @@ public class PerformanceHintManagerStatsTests extends BaseHostJUnit4Test impleme
 
     @Before
     public void setUp() throws Exception {
-        checkSupportedHardware();
+        checkUnsupportedHardwareFeatures(ALL_TESTS_UNSUPPORTED_HARDWARE_FEATURES);
         checkVirtualDevice();
         assertThat(mCtsBuild).isNotNull();
         ConfigUtils.removeConfig(getDevice());
@@ -118,13 +125,13 @@ public class PerformanceHintManagerStatsTests extends BaseHostJUnit4Test impleme
         DeviceUtils.uninstallTestApp(getDevice(), ADPF_ATOM_APP2_PKG);
     }
 
-    private void checkSupportedHardware() throws DeviceNotAvailableException {
+    private void checkUnsupportedHardwareFeatures(List<String> unsupportedFeatures)
+            throws DeviceNotAvailableException {
         String features = getDevice().executeShellCommand("pm list features");
-        assumeTrue(
-                "Unsupported hardware features: " + features,
-                !features.contains("android.hardware.type.television")
-                        && !features.contains("android.hardware.type.watch")
-                        && !features.contains("android.hardware.type.automotive"));
+        for (String unsupportedFeature : unsupportedFeatures) {
+            assumeTrue("Unsupported hardware feature: " + unsupportedFeature,
+                    !features.contains(unsupportedFeature));
+        }
     }
 
     private String getProperty(String prop) throws Exception {
@@ -351,6 +358,7 @@ public class PerformanceHintManagerStatsTests extends BaseHostJUnit4Test impleme
     @Test
     @RequiresFlagsEnabled(FLAG_ADPF_SESSION_TAG)
     public void testAdpfSessionSnapshotTwoAppsOnThenRestore() throws Exception {
+        checkUnsupportedHardwareFeatures(List.of(LOW_RAM_HARDWARE_FEATURE));
         final String testMethod = "testAdpfSessionSnapshotTwoAppsOn";
         final TestDescription desc = TestDescription.fromString(
                 DEVICE_TEST_PKG + DEVICE_TEST_CLASS + "#" + testMethod);
