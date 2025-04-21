@@ -732,6 +732,7 @@ public abstract class GlobalSearchSessionCtsTestBase {
                                 .addProjection(
                                         AppSearchEmail.SCHEMA_TYPE,
                                         ImmutableList.of("subject", "to"))
+                                .addFilterPackageNames(mContext.getPackageName())
                                 .build());
 
         // The two email documents should have been returned with only the "subject" and "to"
@@ -816,7 +817,6 @@ public abstract class GlobalSearchSessionCtsTestBase {
                                 .setResultGrouping(
                                         SearchSpec.GROUPING_TYPE_PER_PACKAGE, /*resultLimit=*/ 1)
                                 .build());
-
         assertThat(documents).containsExactly(inEmail4);
 
         // Query with per namespace result grouping. Only the last document in each namespace should
