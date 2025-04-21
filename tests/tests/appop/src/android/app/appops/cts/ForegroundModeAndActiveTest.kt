@@ -39,11 +39,8 @@ import android.content.pm.PackageManager
 import android.location.LocationManager
 import android.os.IBinder
 import android.os.Process
-import android.permission.flags.Flags
 import android.platform.test.annotations.AppModeFull
 import android.platform.test.annotations.AsbSecurityTest
-import android.platform.test.annotations.RequiresFlagsEnabled
-import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import android.provider.Settings
 import android.provider.Settings.Global.APP_OPS_CONSTANTS
 import android.support.test.uiautomator.UiDevice
@@ -60,7 +57,6 @@ import java.util.concurrent.TimeoutException
 import org.junit.After
 import org.junit.Assert
 import org.junit.Before
-import org.junit.Rule
 import org.junit.Test
 
 private const val TEST_SERVICE_PKG = "android.app.appops.cts.appthatcanbeforcedintoforegroundstates"
@@ -69,8 +65,6 @@ private const val EXPECTED_TIMEOUT_MILLIS = 5000L
 
 @AppModeFull(reason = "This test connects to other test app")
 class ForegroundModeAndActiveTest {
-    @get:Rule
-    val checkFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
 
     private var previousAppOpsConstants: String? = null
 
@@ -504,7 +498,6 @@ class ForegroundModeAndActiveTest {
 
     @Test
     @Throws(PackageManager.NameNotFoundException::class)
-    @RequiresFlagsEnabled(Flags.FLAG_FINISH_RUNNING_OPS_FOR_KILLED_PACKAGES)
     fun opFinishedWhenUidProcessKilled() {
         makeTop()
 
