@@ -17,6 +17,8 @@
 package android.app.stubs;
 
 import android.app.Activity;
+import android.app.stubs.shared.ICallback;
+import android.app.stubs.shared.IHeartbeat;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;

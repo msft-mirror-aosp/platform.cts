@@ -33,7 +33,7 @@ import android.app.ActivityManager;
 import android.app.ActivityManager.RunningAppProcessInfo;
 import android.app.ApplicationExitInfo;
 import android.app.Instrumentation;
-import android.app.stubs.IHeartbeat;
+import android.app.stubs.shared.IHeartbeat;
 import android.app.tools.WatchUidRunner;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
