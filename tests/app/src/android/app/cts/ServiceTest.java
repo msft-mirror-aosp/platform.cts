@@ -19,10 +19,10 @@ package android.app.cts;
 import static android.Manifest.permission.POST_NOTIFICATIONS;
 import static android.Manifest.permission.REVOKE_POST_NOTIFICATIONS_WITHOUT_KILL;
 import static android.Manifest.permission.REVOKE_RUNTIME_PERMISSIONS;
-import static android.app.stubs.LocalForegroundService.COMMAND_START_FOREGROUND;
-import static android.app.stubs.LocalForegroundService.COMMAND_START_FOREGROUND_DEFER_NOTIFICATION;
-import static android.app.stubs.LocalForegroundService.COMMAND_STOP_FOREGROUND_DETACH_NOTIFICATION;
-import static android.app.stubs.LocalForegroundService.COMMAND_STOP_FOREGROUND_DONT_REMOVE_NOTIFICATION;
+import static android.app.stubs.shared.LocalForegroundService.COMMAND_START_FOREGROUND;
+import static android.app.stubs.shared.LocalForegroundService.COMMAND_START_FOREGROUND_DEFER_NOTIFICATION;
+import static android.app.stubs.shared.LocalForegroundService.COMMAND_STOP_FOREGROUND_DETACH_NOTIFICATION;
+import static android.app.stubs.shared.LocalForegroundService.COMMAND_STOP_FOREGROUND_DONT_REMOVE_NOTIFICATION;
 
 import android.app.Activity;
 import android.app.ActivityManager;
@@ -34,13 +34,13 @@ import android.app.stubs.ActivityTestsBase;
 import android.app.stubs.IsolatedService;
 import android.app.stubs.LaunchpadActivity;
 import android.app.stubs.LocalDeniedService;
-import android.app.stubs.LocalForegroundService;
 import android.app.stubs.LocalGrantedService;
 import android.app.stubs.LocalPhoneCallService;
-import android.app.stubs.LocalService;
 import android.app.stubs.LocalStoppedService;
 import android.app.stubs.NullService;
 import android.app.stubs.R;
+import android.app.stubs.shared.LocalForegroundService;
+import android.app.stubs.shared.LocalService;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -106,10 +106,10 @@ public class ServiceTest extends ActivityTestsBase {
     private static final String EXIST_CONN_TO_LOSE_SERVICE = "existing connection to lose service";
     private static final String EXTERNAL_SERVICE_PACKAGE = "com.android.app2";
     private static final String EXTERNAL_SERVICE_COMPONENT =
-            EXTERNAL_SERVICE_PACKAGE + "/android.app.stubs.LocalService";
+            EXTERNAL_SERVICE_PACKAGE + "/android.app.stubs.shared.LocalService";
     private static final String DELAYED_SERVICE_PACKAGE = "com.android.delayed_start";
     private static final String DELAYED_SERVICE_COMPONENT =
-            DELAYED_SERVICE_PACKAGE + "/android.app.stubs.LocalService";
+            DELAYED_SERVICE_PACKAGE + "/android.app.stubs.shared.LocalService";
     private static final String APP_ZYGOTE_PROCESS_NAME = "android.app.stubs_zygote";
     private static final String KEY_MAX_SERVICE_CONNECTIONS_PER_PROCESS =
             "max_service_connections_per_process";
@@ -2289,8 +2289,10 @@ public class ServiceTest extends ActivityTestsBase {
             assertTrue(mContext.bindService(mLocalService, connection,
                     Context.BindServiceFlags.of(flags)));
             assertTrue(latch.await(5, TimeUnit.SECONDS));
-            final String dumpCommand = "dumpsys activity services " + "android.app.stubs"
-                    + "/android.app.stubs.LocalService";
+            final String dumpCommand =
+                    "dumpsys activity services "
+                            + "android.app.stubs"
+                            + "/android.app.stubs.shared.LocalService";
             String[] dumpLines = CtsAppTestUtils.executeShellCmd(
                     InstrumentationRegistry.getInstrumentation(), dumpCommand).split("\n");
             assertNotNull(CtsAppTestUtils.findLine(dumpLines,

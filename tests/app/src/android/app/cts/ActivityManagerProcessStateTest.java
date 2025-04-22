@@ -29,8 +29,8 @@ import static android.app.ActivityManager.RunningAppProcessInfo.IMPORTANCE_GONE;
 import static android.app.ActivityManager.RunningAppProcessInfo.IMPORTANCE_VISIBLE;
 import static android.app.WindowConfiguration.WINDOWING_MODE_FULLSCREEN;
 import static android.app.cts.ActivityManagerFgsBgStartTest.toggleBgFgsTypeStartPermissionEnforcement;
-import static android.app.stubs.LocalForegroundService.ACTION_START_FGS_RESULT;
 import static android.app.stubs.LocalForegroundServiceSticky.ACTION_RESTART_FGS_STICKY_RESULT;
+import static android.app.stubs.shared.LocalForegroundService.ACTION_START_FGS_RESULT;
 import static android.content.ContentResolver.SCHEME_CONTENT;
 
 import static com.android.compatibility.common.util.SystemUtil.runShellCommand;
@@ -51,11 +51,11 @@ import android.app.cts.android.app.cts.tools.ServiceProcessController;
 import android.app.cts.android.app.cts.tools.SyncOrderedBroadcast;
 import android.app.cts.android.app.cts.tools.UidImportanceListener;
 import android.app.cts.android.app.cts.tools.WaitForBroadcast;
-import android.app.stubs.CommandReceiver;
-import android.app.stubs.LocalForegroundServiceLocation;
 import android.app.stubs.LocalForegroundServiceSticky;
 import android.app.stubs.ScreenOnActivity;
-import android.app.stubs.TestProvider;
+import android.app.stubs.shared.CommandReceiver;
+import android.app.stubs.shared.LocalForegroundServiceLocation;
+import android.app.stubs.shared.TestProvider;
 import android.app.tools.WatchUidRunner;
 import android.app.tools.WatchUidRunner.WatchUidPredicate;
 import android.content.BroadcastReceiver;
@@ -106,6 +106,7 @@ public class ActivityManagerProcessStateTest {
     private static final String TAG = ActivityManagerProcessStateTest.class.getName();
 
     private static final String STUB_PACKAGE_NAME = "android.app.stubs";
+    private static final String SHARED_STUB_PACKAGE_NAME = "android.app.stubs.shared";
     private static final String PACKAGE_NAME_APP1 = "com.android.app1";
     private static final String PACKAGE_NAME_APP2 = "com.android.app2";
     private static final String PACKAGE_NAME_APP3 = "com.android.app3";
@@ -2664,8 +2665,13 @@ public class ActivityManagerProcessStateTest {
 
         try {
             // Start a FGS and bind to service and provider.
-            CommandReceiver.sendCommand(mContext, CommandReceiver.COMMAND_START_FOREGROUND_SERVICE,
-                    STUB_PACKAGE_NAME, STUB_PACKAGE_NAME, 0, null);
+            CommandReceiver.sendCommand(
+                    mContext,
+                    CommandReceiver.COMMAND_START_FOREGROUND_SERVICE,
+                    STUB_PACKAGE_NAME,
+                    SHARED_STUB_PACKAGE_NAME,
+                    0,
+                    null);
             CommandReceiver.sendCommand(mContext, CommandReceiver.COMMAND_BIND_SERVICE,
                     STUB_PACKAGE_NAME, serviceAppInfo.packageName, 0, null);
             serviceWatcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_FG_SERVICE);
@@ -2698,8 +2704,13 @@ public class ActivityManagerProcessStateTest {
 
         } finally {
             // Clean up: unbind services to avoid from interferences with other tests
-            CommandReceiver.sendCommand(mContext, CommandReceiver.COMMAND_STOP_FOREGROUND_SERVICE,
-                    STUB_PACKAGE_NAME, STUB_PACKAGE_NAME, 0, null);
+            CommandReceiver.sendCommand(
+                    mContext,
+                    CommandReceiver.COMMAND_STOP_FOREGROUND_SERVICE,
+                    STUB_PACKAGE_NAME,
+                    SHARED_STUB_PACKAGE_NAME,
+                    0,
+                    null);
             CommandReceiver.sendCommand(mContext, CommandReceiver.COMMAND_UNBIND_SERVICE,
                     STUB_PACKAGE_NAME, serviceAppInfo.packageName, 0, null);
             CommandReceiver.sendCommand(mContext, CommandReceiver.COMMAND_RELEASE_CONTENT_PROVIDER,

@@ -16,6 +16,8 @@
 
 package android.app.stubs;
 
+import android.app.stubs.shared.LocalForegroundService;
+
 /**
  * Derived class solely for supporting distinct behavioral expectations
  * based solely on manifest-level declarations.

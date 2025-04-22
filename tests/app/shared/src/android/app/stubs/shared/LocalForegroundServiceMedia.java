@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package android.app.stubs;
+package android.app.stubs.shared;
 
 import android.app.ForegroundServiceStartNotAllowedException;
 import android.app.Notification;
@@ -27,9 +27,7 @@ import android.media.session.MediaSession;
 import android.media.session.PlaybackState;
 import android.util.Log;
 
-/**
- * Foreground Service with media type.
- */
+/** Foreground Service with media type. */
 public class LocalForegroundServiceMedia extends LocalForegroundService {
 
     private static final String TAG = "LocalForegroundServiceMedia";
@@ -42,9 +40,9 @@ public class LocalForegroundServiceMedia extends LocalForegroundService {
     public static final int COMMAND_RELEASE_MEDIA_SESSION = 103;
     public static final int COMMAND_STOP_MEDIA = 104;
     public static String ACTION_START_FGSM_RESULT =
-            "android.app.stubs.LocalForegroundServiceMedia.RESULT";
+            "android.app.stubs.shared.LocalForegroundServiceMedia.RESULT";
     public static String FGSM_NOTIFICATION_ID =
-            "android.app.stubs.LocalForegroundServiceMedia.NOTIFICATION_ID";
+            "android.app.stubs.shared.LocalForegroundServiceMedia.NOTIFICATION_ID";
     private int mNotificationId = 1000;
 
     private MediaSession mMediaSession = null;
@@ -122,23 +120,27 @@ public class LocalForegroundServiceMedia extends LocalForegroundService {
     public int onStartCommand(Intent intent, int flags, int startId) {
         String notificationChannelId = getNotificationChannelId();
         NotificationManager notificationManager = getSystemService(NotificationManager.class);
-        notificationManager.createNotificationChannel(new NotificationChannel(
-                notificationChannelId, notificationChannelId,
-                NotificationManager.IMPORTANCE_DEFAULT));
+        notificationManager.createNotificationChannel(
+                new NotificationChannel(
+                        notificationChannelId,
+                        notificationChannelId,
+                        NotificationManager.IMPORTANCE_DEFAULT));
 
         Context context = getApplicationContext();
         int command = intent.getIntExtra(EXTRA_COMMAND, -1);
-        Intent reply = new Intent(ACTION_START_FGSM_RESULT).setFlags(
-                Intent.FLAG_RECEIVER_FOREGROUND);
+        Intent reply =
+                new Intent(ACTION_START_FGSM_RESULT).setFlags(Intent.FLAG_RECEIVER_FOREGROUND);
         switch (command) {
             case COMMAND_START_FOREGROUND_WITH_TYPE:
-                final int type = intent.getIntExtra(EXTRA_FOREGROUND_SERVICE_TYPE,
-                        ServiceInfo.FOREGROUND_SERVICE_TYPE_MANIFEST);
+                final int type =
+                        intent.getIntExtra(
+                                EXTRA_FOREGROUND_SERVICE_TYPE,
+                                ServiceInfo.FOREGROUND_SERVICE_TYPE_MANIFEST);
                 mNotificationId++;
                 final Notification notification =
                         new Notification.Builder(context, NOTIFICATION_CHANNEL_ID)
                                 .setContentTitle(getNotificationTitle(mNotificationId))
-                                .setSmallIcon(R.drawable.black)
+                                .setSmallIcon(R.drawable.icon_black)
                                 .setStyle(
                                         new Notification.MediaStyle()
                                                 .setMediaSession(mMediaSession.getSessionToken()))
@@ -147,8 +149,11 @@ public class LocalForegroundServiceMedia extends LocalForegroundService {
                     startForeground(mNotificationId, notification, type);
                     reply.putExtra(FGSM_NOTIFICATION_ID, mNotificationId);
                 } catch (ForegroundServiceStartNotAllowedException e) {
-                    Log.d(TAG, "startForeground gets an "
-                            + " ForegroundServiceStartNotAllowedException", e);
+                    Log.d(
+                            TAG,
+                            "startForeground gets an "
+                                    + " ForegroundServiceStartNotAllowedException",
+                            e);
                 }
                 break;
             case COMMAND_STOP_FOREGROUND_REMOVE_NOTIFICATION:
@@ -163,7 +168,7 @@ public class LocalForegroundServiceMedia extends LocalForegroundService {
                 final Notification notification1 =
                         new Notification.Builder(context, NOTIFICATION_CHANNEL_ID)
                                 .setContentTitle(getNotificationTitle(mNotificationId))
-                                .setSmallIcon(R.drawable.black)
+                                .setSmallIcon(R.drawable.icon_black)
                                 .setStyle(
                                         new Notification.MediaStyle()
                                                 .setMediaSession(mMediaSession.getSessionToken()))

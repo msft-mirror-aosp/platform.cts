@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package android.app.stubs;
+package android.app.stubs.shared;
 
 import android.content.pm.ApplicationInfo;
 
@@ -23,12 +23,12 @@ public class ZygotePreload implements android.app.ZygotePreload {
 
     static boolean sPreloadCalled = false;
 
-    static synchronized public boolean preloadCalled() {
+    public static synchronized boolean preloadCalled() {
         return sPreloadCalled;
     }
 
     @Override
-    synchronized public void doPreload(ApplicationInfo appInfo) {
+    public synchronized void doPreload(ApplicationInfo appInfo) {
         sPreloadCalled = true;
     }
 }

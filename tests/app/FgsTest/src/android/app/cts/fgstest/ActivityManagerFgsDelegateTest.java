@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package android.app.cts;
+package android.app.cts.fgstest;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
@@ -22,8 +22,9 @@ import static com.google.common.truth.Truth.assertWithMessage;
 import android.accessibilityservice.AccessibilityService;
 import android.app.ActivityManager;
 import android.app.Instrumentation;
-import android.app.stubs.CommandReceiver;
-import android.app.stubs.LocalForegroundService;
+import android.app.cts.CtsAppTestUtils;
+import android.app.stubs.shared.CommandReceiver;
+import android.app.stubs.shared.LocalForegroundService;
 import android.app.tools.WatchUidRunner;
 import android.content.Context;
 import android.content.pm.ApplicationInfo;
@@ -53,20 +54,17 @@ public final class ActivityManagerFgsDelegateTest {
 
     private static final int WAITFOR_MSEC = 10000;
 
-    private static final String[] PACKAGE_NAMES = {
-            PACKAGE_NAME_APP1
-    };
+    private static final String[] PACKAGE_NAMES = {PACKAGE_NAME_APP1};
 
-    private static final String DUMP_COMMAND = "dumpsys activity services " + PACKAGE_NAME_APP1
-            + "/SPECIAL_USE:FgsDelegate";
+    private static final String DUMP_COMMAND =
+            "dumpsys activity services " + PACKAGE_NAME_APP1 + "/SPECIAL_USE:FgsDelegate";
 
     private Context mContext;
     private Instrumentation mInstrumentation;
     private ActivityManager mActivityManager;
 
     @Rule
-    public final CheckFlagsRule mCheckFlagsRule =
-            DeviceFlagsValueProvider.createCheckFlagsRule();
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Before
     public void setUp() throws Exception {
@@ -97,22 +95,29 @@ public final class ActivityManagerFgsDelegateTest {
                     pkgName, android.Manifest.permission.SYSTEM_ALERT_WINDOW);
         }
         // Make sure we are in Home screen
-        mInstrumentation.getUiAutomation().performGlobalAction(
-                AccessibilityService.GLOBAL_ACTION_HOME);
+        mInstrumentation
+                .getUiAutomation()
+                .performGlobalAction(AccessibilityService.GLOBAL_ACTION_HOME);
     }
 
     private void prepareProcess(WatchUidRunner uidWatcher) throws Exception {
         // Bypass bg-service-start restriction.
-        CtsAppTestUtils.executeShellCmd(mInstrumentation,
-                "dumpsys deviceidle whitelist +" + PACKAGE_NAME_APP1);
+        CtsAppTestUtils.executeShellCmd(
+                mInstrumentation, "dumpsys deviceidle whitelist +" + PACKAGE_NAME_APP1);
         // start background service.
-        Bundle extras = LocalForegroundService.newCommand(
-                LocalForegroundService.COMMAND_START_NO_FOREGROUND);
-        CommandReceiver.sendCommand(mContext, CommandReceiver.COMMAND_START_SERVICE,
-                PACKAGE_NAME_APP1, PACKAGE_NAME_APP1, 0, extras);
+        Bundle extras =
+                LocalForegroundService.newCommand(
+                        LocalForegroundService.COMMAND_START_NO_FOREGROUND);
+        CommandReceiver.sendCommand(
+                mContext,
+                CommandReceiver.COMMAND_START_SERVICE,
+                PACKAGE_NAME_APP1,
+                PACKAGE_NAME_APP1,
+                0,
+                extras);
         uidWatcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_SERVICE);
-        CtsAppTestUtils.executeShellCmd(mInstrumentation,
-                "dumpsys deviceidle whitelist -" + PACKAGE_NAME_APP1);
+        CtsAppTestUtils.executeShellCmd(
+                mInstrumentation, "dumpsys deviceidle whitelist -" + PACKAGE_NAME_APP1);
     }
 
     @Test
@@ -126,37 +131,38 @@ public final class ActivityManagerFgsDelegateTest {
             allowBgFgsStart(true);
             setForegroundServiceDelegate(true);
             uidWatcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_FG_SERVICE);
-            dumpLines = CtsAppTestUtils.executeShellCmd(
-                    mInstrumentation, DUMP_COMMAND).split("\n");
+            dumpLines = CtsAppTestUtils.executeShellCmd(mInstrumentation, DUMP_COMMAND).split("\n");
             assertThat(CtsAppTestUtils.findLine(dumpLines, "isForeground=true")).isNotNull();
             assertThat(CtsAppTestUtils.findLine(dumpLines, "isFgsDelegate=true")).isNotNull();
 
             setForegroundServiceDelegate(false);
             // The delegated foreground service is stopped, go back to background service state.
             uidWatcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_SERVICE);
-            dumpLines = CtsAppTestUtils.executeShellCmd(
-                    mInstrumentation, DUMP_COMMAND).split("\n");
+            dumpLines = CtsAppTestUtils.executeShellCmd(mInstrumentation, DUMP_COMMAND).split("\n");
             assertThat(CtsAppTestUtils.findLine(dumpLines, "isForeground=true")).isNull();
             assertThat(CtsAppTestUtils.findLine(dumpLines, "isFgsDelegate=true")).isNull();
 
             // Start delegated foreground service again, the app goes to FGS state.
             setForegroundServiceDelegate(true);
             uidWatcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_FG_SERVICE);
-            dumpLines = CtsAppTestUtils.executeShellCmd(
-                    mInstrumentation, DUMP_COMMAND).split("\n");
+            dumpLines = CtsAppTestUtils.executeShellCmd(mInstrumentation, DUMP_COMMAND).split("\n");
             assertThat(CtsAppTestUtils.findLine(dumpLines, "isForeground=true")).isNotNull();
             assertThat(CtsAppTestUtils.findLine(dumpLines, "isFgsDelegate=true")).isNotNull();
 
             // Stop foreground service delegate again, the app goes to background service state.
             setForegroundServiceDelegate(false);
             uidWatcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_SERVICE);
-            dumpLines = CtsAppTestUtils.executeShellCmd(
-                    mInstrumentation, DUMP_COMMAND).split("\n");
+            dumpLines = CtsAppTestUtils.executeShellCmd(mInstrumentation, DUMP_COMMAND).split("\n");
             assertThat(CtsAppTestUtils.findLine(dumpLines, "isForeground=true")).isNull();
             assertThat(CtsAppTestUtils.findLine(dumpLines, "isFgsDelegate=true")).isNull();
 
-            CommandReceiver.sendCommand(mContext, CommandReceiver.COMMAND_STOP_SERVICE,
-                    PACKAGE_NAME_APP1, PACKAGE_NAME_APP1, 0, null);
+            CommandReceiver.sendCommand(
+                    mContext,
+                    CommandReceiver.COMMAND_STOP_SERVICE,
+                    PACKAGE_NAME_APP1,
+                    PACKAGE_NAME_APP1,
+                    0,
+                    null);
             uidWatcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_CACHED_EMPTY);
         } finally {
             uidWatcher.finish();
@@ -188,8 +194,7 @@ public final class ActivityManagerFgsDelegateTest {
             // Now it can start FGS delegate.
             setForegroundServiceDelegate(true);
             uidWatcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_FG_SERVICE);
-            dumpLines = CtsAppTestUtils.executeShellCmd(
-                    mInstrumentation, DUMP_COMMAND).split("\n");
+            dumpLines = CtsAppTestUtils.executeShellCmd(mInstrumentation, DUMP_COMMAND).split("\n");
             assertThat(CtsAppTestUtils.findLine(dumpLines, "isForeground=true")).isNotNull();
             assertThat(CtsAppTestUtils.findLine(dumpLines, "isFgsDelegate=true")).isNotNull();
 
@@ -197,13 +202,17 @@ public final class ActivityManagerFgsDelegateTest {
             setForegroundServiceDelegate(false);
             // The delegated foreground service is stopped, go back to background service state.
             uidWatcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_SERVICE);
-            dumpLines = CtsAppTestUtils.executeShellCmd(
-                    mInstrumentation, DUMP_COMMAND).split("\n");
+            dumpLines = CtsAppTestUtils.executeShellCmd(mInstrumentation, DUMP_COMMAND).split("\n");
             assertThat(CtsAppTestUtils.findLine(dumpLines, "isForeground=true")).isNull();
             assertThat(CtsAppTestUtils.findLine(dumpLines, "isFgsDelegate=true")).isNull();
             // Stop the background service.
-            CommandReceiver.sendCommand(mContext, CommandReceiver.COMMAND_STOP_SERVICE,
-                    PACKAGE_NAME_APP1, PACKAGE_NAME_APP1, 0, null);
+            CommandReceiver.sendCommand(
+                    mContext,
+                    CommandReceiver.COMMAND_STOP_SERVICE,
+                    PACKAGE_NAME_APP1,
+                    PACKAGE_NAME_APP1,
+                    0,
+                    null);
             uidWatcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_CACHED_EMPTY);
         } finally {
             uidWatcher.finish();
@@ -228,16 +237,14 @@ public final class ActivityManagerFgsDelegateTest {
 
             setForegroundServiceDelegate(true);
             uidWatcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_FG_SERVICE);
-            dumpLines = CtsAppTestUtils.executeShellCmd(
-                    mInstrumentation, DUMP_COMMAND).split("\n");
+            dumpLines = CtsAppTestUtils.executeShellCmd(mInstrumentation, DUMP_COMMAND).split("\n");
             assertThat(CtsAppTestUtils.findLine(dumpLines, "isForeground=true")).isNotNull();
             assertThat(CtsAppTestUtils.findLine(dumpLines, "isFgsDelegate=true")).isNotNull();
 
             SystemUtil.runWithShellPermissionIdentity(
                     () -> mActivityManager.forceStopPackage(PACKAGE_NAME_APP1));
 
-            dumpLines = CtsAppTestUtils.executeShellCmd(
-                    mInstrumentation, DUMP_COMMAND).split("\n");
+            dumpLines = CtsAppTestUtils.executeShellCmd(mInstrumentation, DUMP_COMMAND).split("\n");
             assertThat(CtsAppTestUtils.findLine(dumpLines, "isForeground=true")).isNull();
             assertThat(CtsAppTestUtils.findLine(dumpLines, "isFgsDelegate=true")).isNull();
         } finally {

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package android.app.stubs;
+package android.app.stubs.shared;
 
 import android.app.ForegroundServiceStartNotAllowedException;
 import android.app.Notification;
@@ -25,9 +25,7 @@ import android.content.Intent;
 import android.content.pm.ServiceInfo;
 import android.util.Log;
 
-/**
- * Foreground Service with location type.
- */
+/** Foreground Service with location type. */
 public class LocalForegroundServiceLocation extends LocalForegroundService {
 
     private static final String TAG = "LocalForegroundServiceLocation";
@@ -35,7 +33,7 @@ public class LocalForegroundServiceLocation extends LocalForegroundService {
     public static final String EXTRA_FOREGROUND_SERVICE_TYPE = "ForegroundService.type";
     public static final int COMMAND_START_FOREGROUND_WITH_TYPE = 1;
     public static String ACTION_START_FGSL_RESULT =
-            "android.app.stubs.LocalForegroundServiceLocation.RESULT";
+            "android.app.stubs.shared.LocalForegroundServiceLocation.RESULT";
     private int mNotificationId = 10;
 
     /** Returns the channel id for this service */
@@ -47,29 +45,36 @@ public class LocalForegroundServiceLocation extends LocalForegroundService {
     public int onStartCommand(Intent intent, int flags, int startId) {
         String notificationChannelId = getNotificationChannelId();
         NotificationManager notificationManager = getSystemService(NotificationManager.class);
-        notificationManager.createNotificationChannel(new NotificationChannel(
-            notificationChannelId, notificationChannelId,
-            NotificationManager.IMPORTANCE_DEFAULT));
+        notificationManager.createNotificationChannel(
+                new NotificationChannel(
+                        notificationChannelId,
+                        notificationChannelId,
+                        NotificationManager.IMPORTANCE_DEFAULT));
 
         Context context = getApplicationContext();
         int command = intent.getIntExtra(EXTRA_COMMAND, -1);
         switch (command) {
             case COMMAND_START_FOREGROUND_WITH_TYPE:
-                final int type = intent.getIntExtra(EXTRA_FOREGROUND_SERVICE_TYPE,
-                        ServiceInfo.FOREGROUND_SERVICE_TYPE_MANIFEST);
-                mNotificationId ++;
+                final int type =
+                        intent.getIntExtra(
+                                EXTRA_FOREGROUND_SERVICE_TYPE,
+                                ServiceInfo.FOREGROUND_SERVICE_TYPE_MANIFEST);
+                mNotificationId++;
                 final Notification notification =
-                    new Notification.Builder(context, NOTIFICATION_CHANNEL_ID)
-                        .setContentTitle(getNotificationTitle(mNotificationId))
-                        .setSmallIcon(R.drawable.black)
-                        .build();
+                        new Notification.Builder(context, NOTIFICATION_CHANNEL_ID)
+                                .setContentTitle(getNotificationTitle(mNotificationId))
+                                .setSmallIcon(R.drawable.icon_black)
+                                .build();
                 try {
                     startForeground(mNotificationId, notification, type);
                 } catch (ForegroundServiceStartNotAllowedException e) {
-                    Log.d(TAG, "startForeground gets an "
-                            + " ForegroundServiceStartNotAllowedException", e);
+                    Log.d(
+                            TAG,
+                            "startForeground gets an "
+                                    + " ForegroundServiceStartNotAllowedException",
+                            e);
                 }
-                //assertEquals(type, getForegroundServiceType());
+                // assertEquals(type, getForegroundServiceType());
                 break;
             case COMMAND_STOP_FOREGROUND_REMOVE_NOTIFICATION:
                 Log.d(TAG, "Stopping foreground removing notification");
@@ -82,8 +87,8 @@ public class LocalForegroundServiceLocation extends LocalForegroundService {
                 Log.e(TAG, "Unknown command: " + command);
         }
 
-        sendBroadcast(new Intent(ACTION_START_FGSL_RESULT)
-                .setFlags(Intent.FLAG_RECEIVER_FOREGROUND));
+        sendBroadcast(
+                new Intent(ACTION_START_FGSL_RESULT).setFlags(Intent.FLAG_RECEIVER_FOREGROUND));
         return START_NOT_STICKY;
     }
 }

@@ -22,8 +22,8 @@ import static android.app.ActivityManager.PROCESS_CAPABILITY_FOREGROUND_MICROPHO
 import static android.app.ActivityManager.PROCESS_CAPABILITY_NONE;
 import static android.app.ActivityManager.PROCESS_CAPABILITY_POWER_RESTRICTED_NETWORK;
 import static android.app.ActivityManager.PROCESS_CAPABILITY_USER_RESTRICTED_NETWORK;
-import static android.app.stubs.LocalForegroundService.ACTION_START_FGS_RESULT;
-import static android.app.stubs.LocalForegroundServiceLocation.ACTION_START_FGSL_RESULT;
+import static android.app.stubs.shared.LocalForegroundService.ACTION_START_FGS_RESULT;
+import static android.app.stubs.shared.LocalForegroundServiceLocation.ACTION_START_FGSL_RESULT;
 import static android.os.PowerExemptionManager.REASON_PUSH_MESSAGING;
 import static android.os.PowerExemptionManager.REASON_PUSH_MESSAGING_OVER_QUOTA;
 import static android.os.PowerExemptionManager.REASON_UNKNOWN;
@@ -47,9 +47,9 @@ import android.app.BroadcastOptions;
 import android.app.ForegroundServiceStartNotAllowedException;
 import android.app.Instrumentation;
 import android.app.cts.android.app.cts.tools.WaitForBroadcast;
-import android.app.stubs.CommandReceiver;
-import android.app.stubs.LocalForegroundService;
-import android.app.stubs.LocalForegroundServiceLocation;
+import android.app.stubs.shared.CommandReceiver;
+import android.app.stubs.shared.LocalForegroundService;
+import android.app.stubs.shared.LocalForegroundServiceLocation;
 import android.app.stubs.shared.NotificationHelper;
 import android.app.stubs.shared.TestNotificationListener;
 import android.app.tools.WatchUidRunner;
@@ -1030,8 +1030,10 @@ public class ActivityManagerFgsBgStartTest {
 
             // testapp is in background.
             // testapp binds to service in APP2, APP2 still in background state.
-            final Intent intent = new Intent().setClassName(
-                    PACKAGE_NAME_APP2, "android.app.stubs.LocalService");
+            final Intent intent =
+                    new Intent()
+                            .setClassName(
+                                    PACKAGE_NAME_APP2, "android.app.stubs.shared.LocalService");
 
             /*
             final ServiceConnection connection = new ServiceConnection() {
@@ -1257,8 +1259,11 @@ public class ActivityManagerFgsBgStartTest {
     @Ignore("The instrumentation is allowed to star FGS, it does not throw the exception")
     public void testFgsStartFromBGException() throws Exception {
         ForegroundServiceStartNotAllowedException expectedException = null;
-        final Intent intent = new Intent().setClassName(
-                PACKAGE_NAME_APP1, "android.app.stubs.LocalForegroundService");
+        final Intent intent =
+                new Intent()
+                        .setClassName(
+                                PACKAGE_NAME_APP1,
+                                "android.app.stubs.shared.LocalForegroundService");
         try {
             allowBgActivityStart("android.app.stubs", false);
             enableFgsRestriction(true, true, null);
@@ -1900,8 +1905,10 @@ public class ActivityManagerFgsBgStartTest {
                 PACKAGE_NAME_APP1, 0);
         WatchUidRunner uid1Watcher = new WatchUidRunner(mInstrumentation, app1Info.uid,
                 WAITFOR_MSEC);
-        final String dumpCommand = "dumpsys activity services " + PACKAGE_NAME_APP1
-                + "/android.app.stubs.LocalForegroundService";
+        final String dumpCommand =
+                "dumpsys activity services "
+                        + PACKAGE_NAME_APP1
+                        + "/android.app.stubs.shared.LocalForegroundService";
         try {
             // Set APP1 to be background-restricted.
             setAppOp(PACKAGE_NAME_APP1, "RUN_ANY_IN_BACKGROUND", false);
@@ -1973,8 +1980,10 @@ public class ActivityManagerFgsBgStartTest {
                 PACKAGE_NAME_APP1, 0);
         WatchUidRunner uid1Watcher = new WatchUidRunner(mInstrumentation, app1Info.uid,
                 WAITFOR_MSEC);
-        final String dumpCommand = "dumpsys activity services " + PACKAGE_NAME_APP1
-                + "/android.app.stubs.LocalForegroundService";
+        final String dumpCommand =
+                "dumpsys activity services "
+                        + PACKAGE_NAME_APP1
+                        + "/android.app.stubs.shared.LocalForegroundService";
         final long shortWaitMsec = 5_000;
         try {
             // Enable the FGS background startForeground() restriction.
@@ -2098,8 +2107,10 @@ public class ActivityManagerFgsBgStartTest {
         WatchUidRunner uid2Watcher = new WatchUidRunner(mInstrumentation, app2Info.uid,
                 WAITFOR_MSEC);
         WaitForBroadcast waiter = new WaitForBroadcast(mInstrumentation.getTargetContext());
-        final String dumpCommand = "dumpsys activity services " + PACKAGE_NAME_APP2
-                + "/android.app.stubs.LocalForegroundService";
+        final String dumpCommand =
+                "dumpsys activity services "
+                        + PACKAGE_NAME_APP2
+                        + "/android.app.stubs.shared.LocalForegroundService";
         final long shortWaitMsec = 5_000;
         try {
             // Enable the FGS background startForeground() restriction.
