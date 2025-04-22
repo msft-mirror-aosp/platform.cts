@@ -75,7 +75,8 @@ class ZoomTestData:
   physical_id: int = dataclasses.field(default=None)
 
 
-def get_test_tols_and_cap_size(cam, props, chart_distance, debug):
+def get_test_tols_and_cap_size(cam, props, chart_distance, debug,
+                               use_preview_size=False):
   """Determine the tolerance per camera based on test rig and camera params.
 
   Cameras are pre-filtered to only include supportable cameras.
@@ -86,6 +87,7 @@ def get_test_tols_and_cap_size(cam, props, chart_distance, debug):
     props: dict; physical camera properties dictionary
     chart_distance: float; distance to chart in cm
     debug: boolean; log additional data
+    use_preview_size: boolean; whether to pick preview size
 
   Returns:
     dict of TOLs with camera focal length as key
@@ -105,8 +107,13 @@ def get_test_tols_and_cap_size(cam, props, chart_distance, debug):
   test_tols = {}
   test_yuv_sizes = []
   for i in physical_ids:
-    yuv_sizes = capture_request_utils.get_available_output_sizes(
-        'yuv', physical_props[i])
+    if use_preview_size:
+      yuv_sizes_str = cam.get_supported_preview_sizes(cam.get_camera_name())
+      yuv_sizes = [tuple(map(int, size_str.split('x')))
+                   for size_str in yuv_sizes_str]
+    else:
+      yuv_sizes = capture_request_utils.get_available_output_sizes(
+          'yuv', physical_props[i])
     test_yuv_sizes.append(yuv_sizes)
     if debug:
       logging.debug('cam[%s] yuv sizes: %s', i, str(yuv_sizes))
