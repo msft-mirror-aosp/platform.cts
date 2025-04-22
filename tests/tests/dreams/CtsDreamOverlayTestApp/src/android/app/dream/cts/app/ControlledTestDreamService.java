@@ -127,6 +127,19 @@ public class ControlledTestDreamService extends DreamService {
         frameLayout.setBackgroundColor(Color.YELLOW);
         frameLayout.setOnKeyListener((v, keyCode, event) -> mConsumedKeys.contains(keyCode));
         frameLayout.setFocusable(true);
+        frameLayout.setOnFocusChangeListener(
+                (v, hasFocus) ->
+                        mDreamLifecycleListeners.forEach(
+                                listener -> {
+                                    try {
+                                        listener.onContentViewFocusChanged(mProxy, hasFocus);
+                                    } catch (RemoteException e) {
+                                        Log.e(
+                                                TAG,
+                                                "could not inform listeners of onAttachedToWindow",
+                                                e);
+                                    }
+                                }));
         setContentView(frameLayout);
     }
 

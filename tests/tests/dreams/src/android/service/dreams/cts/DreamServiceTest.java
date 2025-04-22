@@ -98,7 +98,9 @@ public class DreamServiceTest extends ActivityManagerTestBase {
     }
 
     @Before
-    public void setup() {
+    @Override
+    public void setUp() throws Exception {
+        super.setUp();
         mDreamCoordinator.setup();
         InstrumentationRegistry.getInstrumentation().setInTouchMode(false);
     }
@@ -257,7 +259,8 @@ public class DreamServiceTest extends ActivityManagerTestBase {
         dreamSession.start();
         waitAndAssertResumedActivity(mDreamCoordinator.getDreamActivityName(dreamComponent),
                 "Dream activity should be resumed");
-        dreamSession.awaitLifecycle(ControlledDreamSession.DREAM_LIFECYCLE_ON_FOCUS_GAINED);
+        dreamSession.awaitLifecycle(
+                ControlledDreamSession.DREAM_LIFECYCLE_ON_CONTENT_VIEW_FOCUS_GAINED);
         return dreamSession;
     }
 
@@ -306,10 +309,8 @@ public class DreamServiceTest extends ActivityManagerTestBase {
 
         // Confirm and enter credentials
         injectKey(KeyEvent.KEYCODE_SPACE, true, true);
-        dreamSession.awaitLifecycle(ControlledDreamSession.DREAM_LIFECYCLE_ON_FOCUS_LOST);
-
         // Ensure keyguard is still visible
-        mWmState.assertKeyguardShowingAndOccluded();
+        mWmState.waitAndAssertKeyguardShowingAndOccluded();
         lockScreenSession.enterAndConfirmLockCredential();
 
         mWmState.waitForHomeActivityVisible();
@@ -375,10 +376,9 @@ public class DreamServiceTest extends ActivityManagerTestBase {
 
         // Confirm and enter credentials
         injectKey(KeyEvent.KEYCODE_SPACE, true, true);
-        dreamSession.awaitLifecycle(ControlledDreamSession.DREAM_LIFECYCLE_ON_FOCUS_LOST);
 
         // Ensure keyguard is still visible
-        mWmState.assertKeyguardShowingAndOccluded();
+        mWmState.waitAndAssertKeyguardShowingAndOccluded();
         lockScreenSession.enterAndConfirmLockCredential();
 
         mWmState.waitForHomeActivityVisible();

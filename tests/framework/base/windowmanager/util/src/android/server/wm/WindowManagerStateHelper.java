@@ -47,7 +47,6 @@ import android.graphics.Rect;
 import android.text.TextUtils;
 import android.util.SparseArray;
 
-import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -896,6 +895,22 @@ public class WindowManagerStateHelper extends WindowManagerState {
         if (Math.max(displayRect.width(), displayRect.height()) < minDisplaySizePx) {
             fail(errorMessage);
         }
+    }
+
+    /**
+     * Waits for and then asserts that the keyguard is showing and occluded, such as the bouncer
+     * appearing.
+     */
+    public void waitAndAssertKeyguardShowingAndOccluded() {
+        assertTrue(
+                "Keyguard must be showing, not going away, and occluded",
+                waitForWithAmState(
+                        state ->
+                                state.getKeyguardControllerState().keyguardShowing
+                                        && !state.getKeyguardControllerState().mKeyguardGoingAway
+                                        && state.getKeyguardControllerState()
+                                                .isKeyguardOccluded(DEFAULT_DISPLAY),
+                        "Keyguard showing, not going away, and occluded"));
     }
 
     public void assertKeyguardShowingAndOccluded() {
