@@ -175,45 +175,6 @@ android_test {
     },
 }
 
-android_test {
-    name: "CtsAppStartTestCases",
-    team: "trendy_team_system_performance",
-    defaults: ["cts_defaults"],
-    libs: [
-        "android.test.runner.stubs.system",
-        "org.apache.http.legacy.stubs.system",
-        "android.test.base.stubs.system",
-    ],
-    static_libs: [
-        "androidx.test.uiautomator_uiautomator",
-        "androidx.test.rules",
-        "compatibility-device-util-axt",
-        "CtsExternalServiceCommon",
-        "cts-wm-util",
-        "libprotobuf-java-lite",
-    ],
-    aidl: {
-        local_include_dirs: ["app/src"],
-    },
-    srcs: [
-        "AppStartTest/src/**/*.java",
-        "app/src/**/*.aidl",
-    ],
-    test_suites: [
-        "cts",
-        "general-tests",
-    ],
-    manifest: "AppStartTest/AndroidManifest.xml",
-    test_config: "AppStartTest/AndroidTest.xml",
-    platform_apis: true,
-    data: [
-        ":CtsAppStartInfoApp",
-        ":CtsExternalServiceService",
-        ":CtsAppTestStubs",
-    ],
-    per_testcase_directory: true,
-}
-
 test_module_config {
     name: "CtsAppTestCases_android_server_am_Presubmit",
     base: "CtsAppTestCases",
