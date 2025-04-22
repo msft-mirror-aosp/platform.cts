@@ -232,28 +232,45 @@ public class CallSequencingMultiCallEmergencyCallTest extends BaseAppVerifier {
         @Override
         public String toString() {
             StringBuilder nameBuilder = new StringBuilder();
-            nameBuilder.append("\nTelecom test apps for 1st + 2nd + 3rd call: ");
-            for (TelecomTestApp testApp : mTestApps) {
-                nameBuilder.append(testApp);
-                nameBuilder.append(", ");
+            nameBuilder.append("[");
+            for (int i = 0; i < mTestApps.length; i++) {
+                TelecomTestApp testApp = mTestApps[i];
+                nameBuilder.append(getTestAppAbbreviation(testApp));
+                nameBuilder.append(i == mTestApps.length - 1 ? "], " : ",");
             }
-            nameBuilder.append(
-                    "\nFirst and second call holdability and second " + "call is outgoing: ");
-            for (boolean holdabilityOrOutgoingState : mCallsHoldableAndSecondCallOutgoing) {
+            nameBuilder.append("1st + 2nd call holdable and is 2nd call outgoing: [");
+            for (int i = 0; i < mCallsHoldableAndSecondCallOutgoing.length; i++) {
+                boolean holdabilityOrOutgoingState = mCallsHoldableAndSecondCallOutgoing[i];
                 nameBuilder.append(holdabilityOrOutgoingState);
-                nameBuilder.append(", ");
+                nameBuilder.append(
+                    i == mCallsHoldableAndSecondCallOutgoing.length - 1 ? "], " : ",");
             }
-            nameBuilder.append(
-                    "\n"
-                        + "Expected call states of 1st + 2nd call after placing 2nd call, 1st + 2nd"
-                        + " call after placing the ECC, and expected number of calls disconnected"
-                        + " as a result of placing the ECC: ");
-            for (int expectedCallStateOrNumsCallsDisconnected :
-                    mExpectedCallStatesAndNumCallsDisconnected) {
+            nameBuilder.append("1st + 2nd call states after placing 2nd call, 1st + 2nd "
+                    + "call states after placing ECC, and expected number of calls "
+                    + "disconnected: [");
+            for (int i = 0; i < mExpectedCallStatesAndNumCallsDisconnected.length; i++) {
+                int expectedCallStateOrNumsCallsDisconnected =
+                        mExpectedCallStatesAndNumCallsDisconnected[i];
                 nameBuilder.append(expectedCallStateOrNumsCallsDisconnected);
-                nameBuilder.append(", ");
+                nameBuilder.append(
+                    i == mExpectedCallStatesAndNumCallsDisconnected.length - 1
+                        ? "]" : ",");
             }
             return nameBuilder.toString();
+        }
+
+        private String getTestAppAbbreviation(TelecomTestApp testApp) {
+            if (testApp == ManagedConnectionServiceApp) {
+                return "MC";
+            } else if (testApp == ManagedConnectionServiceAppClone) {
+                return "MCC";
+            } else if (testApp == TransactionalVoipAppMain) {
+                return "TC";
+            } else if (testApp == ConnectionServiceVoipAppMain) {
+                return "SMC";
+            } else {
+                return "";
+            }
         }
     }
 
