@@ -332,6 +332,14 @@
 
         <activity android:name="android.security.cts.BUG_293602970.PocActivity" />
 
+        <service android:name="android.security.cts.CVE_2024_40655.PocService"
+            android:exported="false"
+            android:permission="android.permission.BIND_SCREENING_SERVICE">
+            <intent-filter>
+                <action android:name="android.telecom.CallScreeningService" />
+            </intent-filter>
+        </service>
+
         <!-- CVE-2024-31316 -->
         <service android:name="android.security.cts.CVE_2024_31316.PocService"
             android:exported="true">
