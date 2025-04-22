@@ -1168,6 +1168,20 @@ public class PdfRendererPreVTest {
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_EDIT_PDF_PAGE_OBJECTS)
+    public void testAddPathPageObjectWithNegativeStrokeWidth() throws IOException {
+        try (PdfRendererPreV renderer = createPreVRenderer(EMPTY_PDF, mContext, null);
+                PdfRendererPreV.Page firstPage = renderer.openPage(0)) {
+            assertThat(firstPage.getPageObjects().size()).isEqualTo(0);
+
+            Path path = new Path();
+            PdfPagePathObject pathObject = new PdfPagePathObject(path);
+            pathObject.setStrokeWidth(-1.0f);
+            assertThrows(IllegalArgumentException.class, () -> firstPage.addPageObject(pathObject));
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_EDIT_PDF_PAGE_OBJECTS)
     public void testAddImagePageObject() throws IOException {
         try (PdfRendererPreV renderer = createPreVRenderer(EMPTY_PDF, mContext, null);
                 PdfRendererPreV.Page firstPage = renderer.openPage(0)) {
