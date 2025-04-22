@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package android.app.cts.android.app.cts.tools;
+package android.app.tools;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -28,9 +28,7 @@ import com.android.compatibility.common.util.SystemUtil;
 
 import java.io.IOException;
 
-/**
- * Helper to wait for a broadcast to be sent.
- */
+/** Helper to wait for a broadcast to be sent. */
 public class WaitForBroadcast {
     final Context mContext;
 
@@ -38,15 +36,17 @@ public class WaitForBroadcast {
     boolean mHasResult;
     Intent mReceivedIntent;
 
-    final BroadcastReceiver mReceiver = new BroadcastReceiver() {
-        @Override public void onReceive(Context context, Intent intent) {
-            synchronized (WaitForBroadcast.this) {
-                mReceivedIntent = intent;
-                mHasResult = true;
-                WaitForBroadcast.this.notifyAll();
-            }
-        }
-    };
+    final BroadcastReceiver mReceiver =
+            new BroadcastReceiver() {
+                @Override
+                public void onReceive(Context context, Intent intent) {
+                    synchronized (WaitForBroadcast.this) {
+                        mReceivedIntent = intent;
+                        mHasResult = true;
+                        WaitForBroadcast.this.notifyAll();
+                    }
+                }
+            };
 
     public WaitForBroadcast(Context context) {
         mContext = context;
@@ -64,8 +64,8 @@ public class WaitForBroadcast {
 
     public Intent doWait(long timeout) {
         try {
-            SystemUtil.runShellCommand(InstrumentationRegistry.getInstrumentation(),
-                    "am wait-for-broadcast-barrier");
+            SystemUtil.runShellCommand(
+                    InstrumentationRegistry.getInstrumentation(), "am wait-for-broadcast-barrier");
         } catch (IOException e) {
             throw new IllegalStateException(e);
         }

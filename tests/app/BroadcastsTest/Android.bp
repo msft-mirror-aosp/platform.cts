@@ -25,6 +25,7 @@ android_test {
         "androidx.test.ext.junit",
         "androidx.test.rules",
         "compatibility-device-util-axt",
+        "CtsAppTestStubsShared",
         "guava",
         "platformprotosnano",
         "truth",
@@ -40,6 +41,8 @@ android_test {
     ],
     platform_apis: true,
     data: [
+        ":CtsAppTestStubsApp1",
+        ":CtsAppTestStubsApp2",
         ":CtsBroadcastsTestHelper",
         ":CtsBroadcastsTestHelper2",
     ],

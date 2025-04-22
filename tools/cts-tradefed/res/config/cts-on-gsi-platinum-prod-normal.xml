@@ -70,7 +70,6 @@
     <!-- CtsAppTestCases -->
     <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.AlertDialogTest#testAlertDialogTheme"/>
     <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.AlertDialog_BuilderTest#testSetViewById"/>
-    <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.BroadcastOptionsIntegrationTest#testRequireCompatChange_enabled_success"/>
     <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.CloseSystemDialogsTest#testCloseSystemDialogsViaActivityManager_whenTargetSdk30_isBlockedButDoesNotThrow"/>
     <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.CloseSystemDialogsTest#testCloseSystemDialogs_whenTargetSdk30_isBlockedButDoesNotThrow"/>
     <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.ServiceTest#testMaxServiceConnections"/>
@@ -81,6 +80,8 @@
     <option name="compatibility:include-filter" value="CtsAutoFillServiceTestCases android.autofillservice.cts.unittests.AutofillIdTest#testGetViewId"/>
     <option name="compatibility:include-filter" value="CtsAutoFillServiceTestCases android.autofillservice.cts.unittests.AutofillIdTest#testInSession"/>
     <option name="compatibility:include-filter" value="CtsAutoFillServiceTestCases android.autofillservice.cts.unittests.AutofillIdTest#testIsVirtual"/>
+    <!-- CtsBroadcastTestCases -->
+    <option name="compatibility:include-filter" value="CtsBroadcastTestCases android.app.cts.broadcasts.BroadcastOptionsIntegrationTest#testRequireCompatChange_enabled_success"/>
     <!-- CtsCompanionDeviceManagerCoreTestCases -->
     <option name="compatibility:include-filter" value="CtsCompanionDeviceManagerCoreTestCases android.companion.cts.core.DeviceEventTest#test_classic_bt_device_event"/>
     <option name="compatibility:include-filter" value="CtsCompanionDeviceManagerCoreTestCases android.companion.cts.core.DeviceProfilesTest#test_nullProfile"/>
