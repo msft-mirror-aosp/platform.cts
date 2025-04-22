@@ -41,6 +41,7 @@ import android.net.Uri;
 import android.os.Environment;
 import android.os.FileUtils;
 import android.os.ParcelFileDescriptor;
+import android.os.SystemClock;
 import android.os.storage.StorageManager;
 import android.os.storage.StorageVolume;
 import android.provider.DocumentsContract;
@@ -413,9 +414,9 @@ public class MediaStoreUiTest {
                     + "--eu android.provider.extra.INITIAL_URI content://com.android"
                     + ".externalstorage.documents/tree/" + root + "%3AAndroid%2Fmedia/document/"
                     + root + "%3AAndroid%2Fmedia");
+            SystemClock.sleep(3000);
 
             assertTrue(findSaveButton().isEnabled());
-
         } finally {
             clearDocumentsUi();
         }

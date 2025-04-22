@@ -34,6 +34,7 @@ _CONTINUOUS_PICTURE_MODE = 4  # continuous picture AF mode
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
 _NUM_STEPS = 10
 _SMOOTH_ZOOM_STEP = 1.1  # [1.0, 1.1] as a reference smooth zoom step
+_CAPTURE_INTENT_PREVIEW = 1
 
 
 class LowLatencyZoomTest(its_base_test.ItsBaseTest):
@@ -94,15 +95,16 @@ class LowLatencyZoomTest(its_base_test.ItsBaseTest):
       # set TOLs based on camera and test rig params
       if camera_properties_utils.logical_multi_camera(props):
         test_tols, size = zoom_capture_utils.get_test_tols_and_cap_size(
-            cam, props, self.chart_distance, debug)
+            cam, props, self.chart_distance, debug, use_preview_size=True)
       else:
         test_tols = {}
         fls = props['android.lens.info.availableFocalLengths']
         for fl in fls:
           test_tols[fl] = (zoom_capture_utils.RADIUS_RTOL,
                            zoom_capture_utils.OFFSET_RTOL)
-        yuv_size = capture_request_utils.get_largest_format('yuv', props)
-        size = [yuv_size['width'], yuv_size['height']]
+        yuv_size_str = cam.get_supported_preview_sizes(self.camera_id)[-1]
+        w_x_h = yuv_size_str.split('x')
+        size = [int(w_x_h[0]), int(w_x_h[1])]
       logging.debug('capture size: %s', str(size))
       logging.debug('test TOLs: %s', str(test_tols))
 
@@ -130,6 +132,7 @@ class LowLatencyZoomTest(its_base_test.ItsBaseTest):
           camera_properties_utils.SETTINGS_OVERRIDE_ZOOM
       )
       req['android.control.enableZsl'] = False
+      req['android.control.captureIntent'] = _CAPTURE_INTENT_PREVIEW
       if not camera_properties_utils.fixed_focus(props):
         req['android.control.afMode'] = _CONTINUOUS_PICTURE_MODE
       for z in z_list:

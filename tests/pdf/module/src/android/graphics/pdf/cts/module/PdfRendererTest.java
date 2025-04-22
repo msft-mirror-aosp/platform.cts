@@ -1518,6 +1518,62 @@ public class PdfRendererTest {
             minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM,
             codeName = "VanillaIceCream")
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_EDIT_PDF_TEXT_OBJECTS)
+    public void testAddTextPageObjectWithNegativeStrokeWidth() throws IOException {
+        try (PdfRenderer renderer = createRenderer(EMPTY_PDF, mContext);
+                PdfRenderer.Page firstPage = renderer.openPage(0)) {
+            assertThat(firstPage.getPageObjects().size()).isEqualTo(0);
+
+            PdfPageTextObject textObject = createSamplePdfPageTextObject();
+            textObject.setStrokeWidth(-1.0f);
+            assertThrows(IllegalArgumentException.class, () -> firstPage.addPageObject(textObject));
+        }
+    }
+
+    @SdkSuppress(
+            minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM,
+            codeName = "VanillaIceCream")
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_EDIT_PDF_TEXT_OBJECTS)
+    public void testAddTextPageObjectFontWithSymbolBoldItalicFont() throws IOException {
+        try (PdfRenderer renderer = createRenderer(EMPTY_PDF, mContext);
+                PdfRenderer.Page firstPage = renderer.openPage(0)) {
+            assertThat(firstPage.getPageObjects().size()).isEqualTo(0);
+
+            String text = "!#@";
+            PdfPageTextObjectFont font =
+                    new PdfPageTextObjectFont(
+                            PdfPageTextObjectFont.FONT_FAMILY_SYMBOL, true, false);
+            float fontSize = 10.0f;
+            PdfPageTextObject textObjectBold = new PdfPageTextObject(text, font, fontSize);
+            /*
+             * The Symbol font in Pdfium does not support bold, italic or boldItalic mode.
+             */
+            assertThrows(
+                    IllegalArgumentException.class, () -> firstPage.addPageObject(textObjectBold));
+
+            font.setBold(false);
+            font.setItalic(true);
+            PdfPageTextObject textObjectItalic = new PdfPageTextObject(text, font, fontSize);
+
+            assertThrows(
+                    IllegalArgumentException.class,
+                    () -> firstPage.addPageObject(textObjectItalic));
+
+            font.setBold(true);
+            font.setItalic(true);
+            PdfPageTextObject textObjectBoldItalic = new PdfPageTextObject(text, font, fontSize);
+
+            assertThrows(
+                    IllegalArgumentException.class,
+                    () -> firstPage.addPageObject(textObjectBoldItalic));
+        }
+    }
+
+    @SdkSuppress(
+            minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM,
+            codeName = "VanillaIceCream")
+    @Test
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_EDIT_PDF_PAGE_OBJECTS)
     public void testAddPathPageObject() throws IOException {
         try (PdfRenderer renderer = createRenderer(ONE_PATH_PAGE_OBJECT, mContext);
@@ -1543,6 +1599,23 @@ public class PdfRendererTest {
                     .isEqualTo(PdfPageObjectType.PATH);
             PdfPagePathObject pathObject = (PdfPagePathObject) pageObjects.get(0).second;
             assertThat(pathObject.getStrokeColor()).isEqualTo(Color.BLACK);
+        }
+    }
+
+    @SdkSuppress(
+            minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM,
+            codeName = "VanillaIceCream")
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_EDIT_PDF_PAGE_OBJECTS)
+    public void testAddPathPageObjectWithNegativeStrokeWidth() throws IOException {
+        try (PdfRenderer renderer = createRenderer(EMPTY_PDF, mContext);
+                PdfRenderer.Page firstPage = renderer.openPage(0)) {
+            assertThat(firstPage.getPageObjects().size()).isEqualTo(0);
+
+            Path path = new Path();
+            PdfPagePathObject pathObject = new PdfPagePathObject(path);
+            pathObject.setStrokeWidth(-1.0f);
+            assertThrows(IllegalArgumentException.class, () -> firstPage.addPageObject(pathObject));
         }
     }
 

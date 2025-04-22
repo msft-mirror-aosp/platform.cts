@@ -17,6 +17,7 @@
 package android.app.stubs;
 
 import android.app.Activity;
+import android.app.stubs.shared.CommandReceiver;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.IBinder;

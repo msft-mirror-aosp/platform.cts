@@ -26,6 +26,7 @@ import android.util.Log;
 
 import androidx.annotation.Nullable;
 import androidx.test.uiautomator.By;
+import androidx.test.uiautomator.UiObject2;
 
 import com.android.bedstead.accounts.annotations.EnsureHasNoAccounts;
 import com.android.bedstead.enterprise.annotations.EnsureHasNoDeviceOwner;
@@ -47,6 +48,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.time.Duration;
+import java.util.regex.Pattern;
 
 /** Tests for PackageInstaller CUJs to uninstall a device admin app. */
 @RunWith(BedsteadJUnit4.class)
@@ -236,7 +238,17 @@ public class UninstallDeviceAdminAppTest extends UninstallationTestBase {
      */
     private static void clickUninstallDeviceAdminAppOkButton() throws Exception {
         findPackageInstallerObject(DEVICE_ADMIN_APP_PACKAGE_LABEL);
-        findPackageInstallerObject(By.textContains(UNINSTALL_LABEL), /* checkNull= */ true);
-        clickAndWaitForNewWindow(findPackageInstallerObject(BUTTON_OK_LABEL));
+
+        final Pattern uninstallPattern = Pattern.compile(".*" + UNINSTALL_LABEL + ".*",
+            Pattern.CASE_INSENSITIVE);
+        findPackageInstallerObject(By.text(uninstallPattern), /* checkNull= */ true);
+
+        UiObject2 uninstallButton;
+        if (sUsePiaV2) {
+            uninstallButton = findPackageInstallerObject(BUTTON_UNINSTALL_LABEL);
+        } else {
+            uninstallButton = findPackageInstallerObject(BUTTON_OK_LABEL);
+        }
+        clickAndWaitForNewWindow(uninstallButton);
     }
 }

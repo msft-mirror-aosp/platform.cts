@@ -74,9 +74,9 @@ void android_main(struct android_app *app) {
             }
         }
 
-        appState.renderer.render();
-        if (++frame % 10 == 0) {
-            std::this_thread::sleep_for(std::chrono::milliseconds(200));
+        appState.renderer.render(3 + (frame / 2) % 10);
+        if (++frame % 20 == 0) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(1000));
         }
     }
 }

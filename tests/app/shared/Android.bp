@@ -36,6 +36,7 @@ android_library {
         "src/**/*.kt",
         "src/**/*.aidl",
     ],
+    resource_dirs: ["src/android/app/res"],
     platform_apis: true,
     min_sdk_version: "21",
     lint: {

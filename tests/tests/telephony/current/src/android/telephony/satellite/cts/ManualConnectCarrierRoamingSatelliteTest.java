@@ -22,7 +22,9 @@ import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 
 import android.app.Activity;
@@ -30,8 +32,8 @@ import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.pm.PackageManager;
 import android.hardware.radio.RadioError;
+import android.os.PersistableBundle;
 import android.os.SystemClock;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
@@ -39,15 +41,13 @@ import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.Telephony;
 import android.telephony.CarrierConfigManager;
 import android.telephony.SmsManager;
-import android.telephony.SmsMessage;
-import android.telephony.cts.AsyncSmsMessageListener;
-import android.telephony.cts.SmsReceiverHelper;
+import android.telephony.SubscriptionManager;
 import android.telephony.cts.util.DefaultSmsAppHelper;
-import android.telephony.cts.util.TelephonyUtils;
 import android.telephony.satellite.SatelliteManager;
 import android.telephony.satellite.stub.SatelliteModemState;
 import android.telephony.satellite.stub.SatelliteResult;
-import android.util.Base64;
+import android.text.TextUtils;
+import android.util.Pair;
 
 import com.android.internal.telephony.RILConstants;
 import com.android.internal.telephony.flags.Flags;
@@ -56,11 +56,8 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
-
-import java.util.concurrent.TimeUnit;
 
 public class ManualConnectCarrierRoamingSatelliteTest extends CarrierRoamingSatelliteTestBase {
     @Rule
@@ -226,6 +223,40 @@ public class ManualConnectCarrierRoamingSatelliteTest extends CarrierRoamingSate
             // Reset the SMS error code and RIL error code
             sMockModemManager.setSendSmsErrorCode(
                 ESOS_SLOT_ID, RadioError.NONE, RILConstants.SUCCESS);
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ROAMING_NB_IOT_NTN)
+    public void testRequestSatelliteDisplayName() {
+        logd("testRequestSatelliteDisplayName: sEsosSubId=" + sEsosSubId);
+        if (!shouldTestManualConnectCarrierRoaming()) return;
+
+        grantSatellitePermission();
+        try {
+            Pair<CharSequence, Integer> pairResult = requestSatelliteDisplayName();
+            if (pairResult == null) {
+                fail("requestSatelliteDisplayName: null");
+            }
+            assertNull(pairResult.second);
+            if (TextUtils.isEmpty(pairResult.first)) {
+                assumeTrue(sEsosSubId != SubscriptionManager.INVALID_SUBSCRIPTION_ID);
+
+                String displayName = "Satellite";
+                PersistableBundle bundle = new PersistableBundle();
+                bundle.putString(
+                        CarrierConfigManager.KEY_SATELLITE_DISPLAY_NAME_STRING, displayName);
+                overrideCarrierConfig(sEsosSubId, bundle);
+
+                pairResult = requestSatelliteDisplayName();
+                if (pairResult == null) {
+                    fail("requestSatelliteDisplayName: null");
+                }
+                assertTrue(TextUtils.equals(displayName, (CharSequence) pairResult.first));
+                assertNull(pairResult.second);
+            }
+        } finally {
+            revokeSatellitePermission();
         }
     }
 

@@ -24,7 +24,7 @@
     <application android:label="Android TestCase"
          android:name="android.app.stubs.DelayedApplication">
 
-        <service android:name="android.app.stubs.LocalService"
+        <service android:name="android.app.stubs.shared.LocalService"
              android:attributionTags="localService"
              android:exported="true">
             <meta-data android:name="android.app.stubs.string"

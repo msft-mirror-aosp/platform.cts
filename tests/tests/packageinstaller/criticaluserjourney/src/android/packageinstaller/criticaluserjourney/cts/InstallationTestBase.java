@@ -548,7 +548,11 @@ public class InstallationTestBase extends PackageInstallerCujTestBase {
      * Assert the install dialog for installing the test app.
      */
     public static void assertTestAppInstallDialog() throws Exception {
-        assertTitleIsTestAppLabel();
+        if (sUsePiaV2) {
+            assertTitleIncludes(APP_INSTALL_CONFIRM_LABEL);
+        } else {
+            assertTitleIsTestAppLabel();
+        }
         assertInstallButton();
     }
 
@@ -556,7 +560,11 @@ public class InstallationTestBase extends PackageInstallerCujTestBase {
      * Assert the update dialog for installing the test app.
      */
     public static void assertTestAppUpdateDialog() throws Exception {
-        assertTitleIsTestAppLabel();
+        if (sUsePiaV2) {
+            assertTitleIncludes(APP_UPDATE_CONFIRM_LABEL);
+        } else {
+            assertTitleIsTestAppLabel();
+        }
         assertUpdateButton();
     }
 
@@ -578,25 +586,36 @@ public class InstallationTestBase extends PackageInstallerCujTestBase {
     }
 
     /**
-     * Assert the install success dialog and launch the test app. Assert the label of the test
-     * app is {@link #TEST_APP_LABEL}.
+     * Assert the install success dialog and launch the test app. Assert the label of the test app
+     * is {@link #TEST_APP_LABEL}.
      */
-    public static void assertInstallSuccessDialogAndLaunchTestApp() throws Exception {
-        assertInstallSuccessDialogAndLaunchApp(TEST_APP_PACKAGE_NAME, TEST_APP_LABEL);
+    public static void assertInstallSuccessDialogAndLaunchTestApp(boolean isAppUpdating)
+            throws Exception {
+        assertInstallSuccessDialogAndLaunchApp(TEST_APP_PACKAGE_NAME, TEST_APP_LABEL, isAppUpdating);
     }
 
     /**
-     * Assert the install success dialog and launch the app. Assert the label of the app
-     * is {@link #INSTALLER_LABEL}.
+     * Assert the install success dialog and launch the app. Assert the label of the app is {@link
+     * #INSTALLER_LABEL}.
      */
-    public static void assertInstallSuccessDialogAndLaunchInstallerApp() throws Exception {
-        assertInstallSuccessDialogAndLaunchApp(INSTALLER_PACKAGE_NAME, INSTALLER_LABEL);
+    public static void assertInstallSuccessDialogAndLaunchInstallerApp(boolean isAppUpdating)
+            throws Exception {
+        assertInstallSuccessDialogAndLaunchApp(
+                INSTALLER_PACKAGE_NAME, INSTALLER_LABEL, isAppUpdating);
     }
 
-    private static void assertInstallSuccessDialogAndLaunchApp(@NonNull String packageName,
-            @NonNull String label) throws Exception {
+    private static void assertInstallSuccessDialogAndLaunchApp(
+            @NonNull String packageName, @NonNull String label, boolean isAppUpdating) throws Exception {
         // Assert the label and Done button exists
-        findPackageInstallerObject(By.textContains(APP_INSTALLED_LABEL), /* checkNull= */ true);
+        if (sUsePiaV2) {
+            if (isAppUpdating) {
+                assertTitleIncludes(APP_UPDATED_LABEL);
+            } else {
+                assertTitleIncludes(APP_INSTALLED_LABEL);
+            }
+        } else {
+            findPackageInstallerObject(By.textContains(APP_INSTALLED_LABEL), /* checkNull= */ true);
+        }
         findPackageInstallerObject(BUTTON_DONE_LABEL);
 
         // Click the Open button to launch the app
@@ -612,9 +631,18 @@ public class InstallationTestBase extends PackageInstallerCujTestBase {
     /**
      * Assert the install success dialog for no launcher activity app. There is no OPEN button.
      */
-    public static void assertInstallSuccessDialogForNoLauncherActivity() throws Exception {
+    public static void assertInstallSuccessDialogForNoLauncherActivity(boolean isAppUpdating)
+            throws Exception {
         // Assert the label and Done button exists
-        findPackageInstallerObject(By.textContains(APP_INSTALLED_LABEL), /* checkNull= */ true);
+        if (sUsePiaV2) {
+            if (isAppUpdating) {
+                assertTitleIncludes(APP_UPDATED_LABEL);
+            } else {
+                assertTitleIncludes(APP_INSTALLED_LABEL);
+            }
+        } else {
+            findPackageInstallerObject(By.textContains(APP_INSTALLED_LABEL), /* checkNull= */ true);
+        }
         findPackageInstallerObject(BUTTON_DONE_LABEL);
 
         final Pattern namePattern = Pattern.compile(BUTTON_OPEN_LABEL, Pattern.CASE_INSENSITIVE);
@@ -755,7 +783,11 @@ public class InstallationTestBase extends PackageInstallerCujTestBase {
      * the dialog is {@link #INSTALLER_LABEL}.
      */
     public static void clickSettingsButton() throws Exception {
-        assertTitleIsInstallerLabel();
+        if (sUsePiaV2) {
+            assertContentIncludesInstallerLabel();
+        } else {
+            assertTitleIsInstallerLabel();
+        }
         clickAndWaitForNewWindow(findPackageInstallerObject(BUTTON_SETTINGS_LABEL));
     }
 

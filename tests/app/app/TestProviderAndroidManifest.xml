@@ -19,7 +19,7 @@
         package="android.app.stubs">
 
     <application>
-        <provider android:name="android.app.stubs.TestProvider"
+        <provider android:name="android.app.stubs.shared.TestProvider"
                 android:attributionTags="testProvider"
                 android:authorities="android.app.cts.provider"
                 android:exported="true" />

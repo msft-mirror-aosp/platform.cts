@@ -16,8 +16,6 @@
 
 package android.content.pm.cts;
 
-import static android.content.pm.Flags.FLAG_REMOVE_CROSS_USER_PERMISSION_HACK;
-
 import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.workProfile;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -36,10 +34,6 @@ import android.os.RemoteCallback;
 import android.os.UserManager;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.AppModeNonSdkSandbox;
-import android.platform.test.annotations.RequiresFlagsDisabled;
-import android.platform.test.annotations.RequiresFlagsEnabled;
-import android.platform.test.flag.junit.CheckFlagsRule;
-import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Log;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -86,9 +80,6 @@ public class QueryPackagesCrossUserTest {
     @Rule
     public static final DeviceState sDeviceState = new DeviceState();
 
-    @Rule
-    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
-
     private Context mContext;
     private UserReference mPrimaryUser;
     private UserReference mSecondaryUser;
@@ -108,7 +99,6 @@ public class QueryPackagesCrossUserTest {
         uninstallPackage(QUERY_PACKAGES_TEST_APP_PACKAGE_NAME);
     }
 
-    @RequiresFlagsEnabled(FLAG_REMOVE_CROSS_USER_PERMISSION_HACK)
     @Test
     public void queryPackagesCrossUser_hasWorkProfile_withoutCrossUserPermission()
             throws Exception {
@@ -116,17 +106,6 @@ public class QueryPackagesCrossUserTest {
 
         assertNotNull(bundle);
         assertThat(bundle.getString(EXTRA_REMOTE_CALLBACK_RESULT, "")).isEqualTo("NOT FOUND");
-    }
-
-    @RequiresFlagsDisabled(FLAG_REMOVE_CROSS_USER_PERMISSION_HACK)
-    @Test
-    public void queryPackagesCrossUser_hasWorkProfile_withoutCrossUserPermission_useHackCode()
-            throws Exception {
-        Bundle bundle = queryPackagesCrossUserHasWorkProfileWithoutCrossUserPermission();
-
-        assertNotNull(bundle);
-        assertThat(bundle.getString(EXTRA_REMOTE_CALLBACK_RESULT, "")).isEqualTo(
-                EMPTY_APP_PACKAGE_NAME);
     }
 
     private Bundle queryPackagesCrossUserHasWorkProfileWithoutCrossUserPermission()

@@ -21,7 +21,7 @@ import static org.junit.Assert.assertEquals;
 import android.app.stubs.LocalActivity;
 import android.app.stubs.LocalProvider;
 import android.app.stubs.LocalReceiver;
-import android.app.stubs.LocalService;
+import android.app.stubs.shared.LocalService;
 import android.content.ComponentName;
 import android.content.ContentProviderClient;
 import android.content.Context;

@@ -21,7 +21,7 @@ import static android.app.cts.ActivityManagerFgsBgStartTest.PACKAGE_NAME_APP2;
 import static android.app.cts.ActivityManagerFgsBgStartTest.WAITFOR_MSEC;
 import static android.app.cts.CtsAppTestUtils.clearBadProcess;
 import static android.app.cts.CtsAppTestUtils.unstopApp;
-import static android.app.stubs.LocalForegroundService.ACTION_START_FGS_RESULT;
+import static android.app.stubs.shared.LocalForegroundService.ACTION_START_FGS_RESULT;
 
 import static junit.framework.Assert.assertFalse;
 import static junit.framework.Assert.assertTrue;
@@ -31,7 +31,7 @@ import static org.junit.Assert.assertThrows;
 import android.app.BroadcastOptions;
 import android.app.Instrumentation;
 import android.app.cts.android.app.cts.tools.WaitForBroadcast;
-import android.app.stubs.CommandReceiver;
+import android.app.stubs.shared.CommandReceiver;
 
 import androidx.test.InstrumentationRegistry;
 import androidx.test.ext.junit.runners.AndroidJUnit4;

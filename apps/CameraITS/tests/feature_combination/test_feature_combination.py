@@ -226,9 +226,9 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
       gen2_rig_controller_utils.set_lighting_state(
           lights_port, lights_channel, 'ON')
     elif self.lighting_cntl == 'arduino':
+      lights_channel = int(self.lighting_ch)
       lights_port = lighting_control_utils.lighting_control(
           self.lighting_cntl, lights_channel)
-      lights_channel = int(self.lighting_ch)
       lighting_control_utils.set_lighting_state(
           lights_port, lights_channel, 'ON')
 

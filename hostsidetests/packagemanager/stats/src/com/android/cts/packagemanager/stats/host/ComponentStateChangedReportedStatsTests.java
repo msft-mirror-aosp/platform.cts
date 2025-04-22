@@ -16,8 +16,6 @@
 
 package com.android.cts.packagemanager.stats.host;
 
-import static android.content.pm.Flags.FLAG_COMPONENT_STATE_CHANGED_METRICS;
-
 import static com.android.os.packagemanager.ComponentStateChangedReported.ComponentState.COMPONENT_STATE_DEFAULT;
 import static com.android.os.packagemanager.ComponentStateChangedReported.ComponentState.COMPONENT_STATE_DISABLED;
 import static com.android.os.packagemanager.ComponentStateChangedReported.ComponentState.COMPONENT_STATE_ENABLED;
@@ -29,9 +27,6 @@ import android.cts.statsdatom.lib.ConfigUtils;
 import android.cts.statsdatom.lib.DeviceUtils;
 import android.cts.statsdatom.lib.ReportUtils;
 import android.platform.test.annotations.AppModeFull;
-import android.platform.test.annotations.RequiresFlagsEnabled;
-import android.platform.test.flag.junit.CheckFlagsRule;
-import android.platform.test.flag.junit.host.HostFlagsValueProvider;
 
 import com.android.os.StatsLog;
 import com.android.os.packagemanager.ComponentStateChangedReported;
@@ -44,7 +39,6 @@ import com.google.protobuf.ExtensionRegistry;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -76,10 +70,6 @@ public class ComponentStateChangedReportedStatsTests extends BaseHostJUnit4Test 
     private static final String TEST_METHOD_SET_APPLICATION_ENABLED_THEN_DISABLED =
             "testComponentStateChangedReportedEnabledThenDisabledWholeApp";
 
-    @Rule
-    public final CheckFlagsRule mCheckFlagsRule =
-            HostFlagsValueProvider.createCheckFlagsRule(this::getDevice);
-
     @Before
     public void setUp() throws Exception {
         installPackage("CtsStatsdAtomApp.apk");
@@ -95,7 +85,6 @@ public class ComponentStateChangedReportedStatsTests extends BaseHostJUnit4Test 
         ReportUtils.clearReports(getDevice());
     }
 
-    @RequiresFlagsEnabled(FLAG_COMPONENT_STATE_CHANGED_METRICS)
     @Test
     public void testComponentStateChangedReportedForWholeApp() throws Throwable {
         ConfigUtils.uploadConfigForPushedAtom(getDevice(), DeviceUtils.STATSD_ATOM_TEST_PKG,
@@ -131,7 +120,6 @@ public class ComponentStateChangedReportedStatsTests extends BaseHostJUnit4Test 
                 PackageManagerStatsTestsBase.getAppUid(getDevice(), HELPER_PACKAGE));
     }
 
-    @RequiresFlagsEnabled(FLAG_COMPONENT_STATE_CHANGED_METRICS)
     @Test
     public void testComponentStateChangedReportedForLauncherActivity() throws Throwable {
         ConfigUtils.uploadConfigForPushedAtom(getDevice(), DeviceUtils.STATSD_ATOM_TEST_PKG,
@@ -167,7 +155,6 @@ public class ComponentStateChangedReportedStatsTests extends BaseHostJUnit4Test 
                 PackageManagerStatsTestsBase.getAppUid(getDevice(), HELPER_PACKAGE));
     }
 
-    @RequiresFlagsEnabled(FLAG_COMPONENT_STATE_CHANGED_METRICS)
     @Test
     public void testComponentStateChangedReportedForNoLauncherActivity() throws Throwable {
         ConfigUtils.uploadConfigForPushedAtom(getDevice(), DeviceUtils.STATSD_ATOM_TEST_PKG,
@@ -203,7 +190,6 @@ public class ComponentStateChangedReportedStatsTests extends BaseHostJUnit4Test 
                 PackageManagerStatsTestsBase.getAppUid(getDevice(), HELPER_PACKAGE));
     }
 
-    @RequiresFlagsEnabled(FLAG_COMPONENT_STATE_CHANGED_METRICS)
     @Test
     public void testComponentStateChangedReportedEnabledThenDisabled() throws Throwable {
         ConfigUtils.uploadConfigForPushedAtom(getDevice(), DeviceUtils.STATSD_ATOM_TEST_PKG,
@@ -250,7 +236,6 @@ public class ComponentStateChangedReportedStatsTests extends BaseHostJUnit4Test 
                 PackageManagerStatsTestsBase.getAppUid(getDevice(), HELPER_PACKAGE));
     }
 
-    @RequiresFlagsEnabled(FLAG_COMPONENT_STATE_CHANGED_METRICS)
     @Test
     public void testComponentStateChangedReportedEnabledThenDisabledWholeApp() throws Throwable {
         ConfigUtils.uploadConfigForPushedAtom(getDevice(), DeviceUtils.STATSD_ATOM_TEST_PKG,
@@ -297,7 +282,6 @@ public class ComponentStateChangedReportedStatsTests extends BaseHostJUnit4Test 
                 PackageManagerStatsTestsBase.getAppUid(getDevice(), HELPER_PACKAGE));
     }
 
-    @RequiresFlagsEnabled(FLAG_COMPONENT_STATE_CHANGED_METRICS)
     @Test
     public void testComponentStateChangedReportedForTwoDifferentStateLauncherActivities()
             throws Throwable {

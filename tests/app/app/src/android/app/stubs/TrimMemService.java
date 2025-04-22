@@ -17,6 +17,7 @@
 package android.app.stubs;
 
 import android.app.Service;
+import android.app.stubs.shared.CommandReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
