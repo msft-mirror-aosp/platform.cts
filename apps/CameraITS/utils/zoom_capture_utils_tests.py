@@ -19,12 +19,11 @@ import unittest
 import zoom_capture_utils
 
 
-_ARUCO_MARKER_CENTER = (320, 240)
+_ARUCO_MARKER_CENTER = (640, 480)
 _FOCAL_LENGTH = 1
-_IMG_SIZE = (640, 480)
+_IMG_SIZE = (1280, 960)
 _OFFSET_RTOL = 0.1
 _RADIUS_RTOL = 0.1
-_WRONG_ARUCO_OFFSET = 200
 
 
 def _generate_aruco_markers(center, side_length):
@@ -74,6 +73,43 @@ def _generate_valid_zoom_results():
   ]
 
 
+def _generate_backtracking_zoom_results():
+  return [
+      zoom_capture_utils.ZoomTestData(
+          result_zoom=1,
+          radius_tol=_RADIUS_RTOL,
+          offset_tol=_OFFSET_RTOL,
+          focal_length=_FOCAL_LENGTH,
+          aruco_corners=_generate_aruco_markers(_ARUCO_MARKER_CENTER, 10),
+          aruco_offset=1
+      ),
+      zoom_capture_utils.ZoomTestData(
+          result_zoom=2,
+          radius_tol=_RADIUS_RTOL,
+          offset_tol=_OFFSET_RTOL,
+          focal_length=_FOCAL_LENGTH,
+          aruco_corners=_generate_aruco_markers(_ARUCO_MARKER_CENTER, 20),
+          aruco_offset=200
+      ),
+      zoom_capture_utils.ZoomTestData(
+          result_zoom=3,
+          radius_tol=_RADIUS_RTOL,
+          offset_tol=_OFFSET_RTOL,
+          focal_length=_FOCAL_LENGTH,
+          aruco_corners=_generate_aruco_markers(_ARUCO_MARKER_CENTER, 30),
+          aruco_offset=100
+      ),
+      zoom_capture_utils.ZoomTestData(
+          result_zoom=4,
+          radius_tol=_RADIUS_RTOL,
+          offset_tol=_OFFSET_RTOL,
+          focal_length=_FOCAL_LENGTH,
+          aruco_corners=_generate_aruco_markers(_ARUCO_MARKER_CENTER, 40),
+          aruco_offset=300
+      ),
+  ]
+
+
 class ZoomCaptureUtilsTest(unittest.TestCase):
   """Unit tests for this module."""
 
@@ -104,7 +140,7 @@ class ZoomCaptureUtilsTest(unittest.TestCase):
     )
 
   def test_verify_zoom_results_wrong_offset(self):
-    self.zoom_results[-1].aruco_offset = _WRONG_ARUCO_OFFSET
+    self.zoom_results = _generate_backtracking_zoom_results()
     self.assertFalse(
         zoom_capture_utils.verify_zoom_results(
             self.zoom_results, _IMG_SIZE, 4, 1
