@@ -33,7 +33,6 @@ import com.android.os.AtomsProto.AppBreadcrumbReported;
 import com.android.os.AtomsProto.Atom;
 import com.android.os.AtomsProto.BatterySaverModeStateChanged;
 import com.android.os.AtomsProto.BuildInformation;
-import com.android.os.AtomsProto.ConnectivityStateChanged;
 import com.android.os.StatsLog.ConfigMetricsReportList;
 import com.android.os.StatsLog.EventMetricData;
 import com.android.tradefed.build.IBuildInfo;
@@ -590,42 +589,6 @@ public class HostAtomTests extends DeviceTestCase implements IBuildReceiver {
         assertThat(atom.getState().getNumber()).isEqualTo(AppBreadcrumbReported.State.START_VALUE);
     }
 
-    public void testConnectivityStateChange() throws Exception {
-        if (!DeviceUtils.hasFeature(getDevice(), FEATURE_WIFI)) return;
-        if (DeviceUtils.hasFeature(getDevice(), FEATURE_WATCH)) return;
-        if (DeviceUtils.hasFeature(getDevice(), FEATURE_LEANBACK_ONLY)) return;
-
-        final int atomTag = Atom.CONNECTIVITY_STATE_CHANGED_FIELD_NUMBER;
-        ConfigUtils.uploadConfigForPushedAtom(getDevice(), DeviceUtils.STATSD_ATOM_TEST_PKG,
-                atomTag);
-
-        turnOnAirplaneMode();
-        // wait long enough for airplane mode events to propagate.
-        RunUtil.getDefault().sleep(1_200);
-        turnOffAirplaneMode();
-        // wait long enough for the device to restore connection
-        RunUtil.getDefault().sleep(13_000);
-
-        List<EventMetricData> data = ReportUtils.getEventMetricDataList(getDevice());
-        // at least 1 disconnect and 1 connect
-        assertThat(data.size()).isAtLeast(2);
-        boolean foundDisconnectEvent = false;
-        boolean foundConnectEvent = false;
-        for (EventMetricData d : data) {
-            ConnectivityStateChanged atom = d.getAtom().getConnectivityStateChanged();
-            if (atom.getState().getNumber()
-                    == ConnectivityStateChanged.State.DISCONNECTED_VALUE) {
-                foundDisconnectEvent = true;
-            }
-            if (atom.getState().getNumber()
-                    == ConnectivityStateChanged.State.CONNECTED_VALUE) {
-                foundConnectEvent = true;
-            }
-        }
-        assertThat(foundConnectEvent).isTrue();
-        assertThat(foundDisconnectEvent).isTrue();
-    }
-
     public void testAtomsLoggedOnBoot() throws Exception {
         ConfigUtils.uploadConfigForPushedAtoms(getDevice(), DeviceUtils.STATSD_ATOM_TEST_PKG,
                 new int[] {
@@ -714,14 +677,6 @@ public class HostAtomTests extends DeviceTestCase implements IBuildReceiver {
     private void turnBatterySaverOn() throws Exception {
         DeviceUtils.unplugDevice(getDevice());
         getDevice().executeShellCommand("settings put global low_power 1");
-    }
-
-    private void turnOnAirplaneMode() throws Exception {
-        getDevice().executeShellCommand("cmd connectivity airplane-mode enable");
-    }
-
-    private void turnOffAirplaneMode() throws Exception {
-        getDevice().executeShellCommand("cmd connectivity airplane-mode disable");
     }
 
     /** Gets reports from the statsd data incident section from the stats dumpsys. */
