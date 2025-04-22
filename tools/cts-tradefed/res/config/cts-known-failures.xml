@@ -527,4 +527,10 @@
     <option name="compatibility:exclude-filter" value="CtsPerfettoTestCases PerfettoCmdlineTest#TriggerCloneSnapshot" />
     <option name="compatibility:exclude-filter" value="CtsPerfettoTestCases PerfettoFtraceIntegrationTest#KernelAddressSymbolization" />
     <option name="compatibility:exclude-filter" value="CtsPerfettoTestCases TracedPerfCtsTest#ProfileKernelCallstack" />
+
+    <!-- b/409230510 -->
+    <option name="compatibility:exclude-filter" value="CtsSdkSandboxInprocessTests com.android.sdksandbox.tests.cts.inprocess.SdkSandboxRestrictionsTest#testNoImplicitIntents" />
+    <option name="compatibility:exclude-filter" value="CtsSdkSandboxInprocessTests com.android.sdksandbox.tests.cts.inprocess.SdkSandboxRestrictionsTest#testSandboxCannotAccess_MediaStoreApi" />
+    <option name="compatibility:exclude-filter" value="CtsSdkSandboxInprocessTests com.android.sdksandbox.tests.cts.inprocess.SdkSandboxRestrictionsTest#testSandboxCannotAccess_StorageAccessFramework" />
+    <option name="compatibility:exclude-filter" value="CtsSdkSandboxInprocessTests com.android.sdksandbox.tests.cts.inprocess.SdkSandboxRestrictionsTest#testCannotRequestPermissions" />
 </configuration>
