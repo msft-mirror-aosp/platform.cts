@@ -30,22 +30,22 @@ import android.os.Handler
 import android.os.Looper
 import android.os.Process
 import android.provider.DeviceConfig
-import android.support.test.uiautomator.By
-import android.support.test.uiautomator.BySelector
-import android.support.test.uiautomator.UiDevice
-import android.support.test.uiautomator.UiObject2
-import android.support.test.uiautomator.UiScrollable
-import android.support.test.uiautomator.UiSelector
-import android.support.test.uiautomator.Until
 import android.util.Log
 import androidx.test.InstrumentationRegistry
+import androidx.test.uiautomator.By
+import androidx.test.uiautomator.BySelector
+import androidx.test.uiautomator.UiDevice
+import androidx.test.uiautomator.UiObject2
+import androidx.test.uiautomator.UiScrollable
+import androidx.test.uiautomator.UiSelector
+import androidx.test.uiautomator.Until
 import com.android.compatibility.common.util.ExceptionUtils.wrappingExceptions
 import com.android.compatibility.common.util.FeatureUtil
 import com.android.compatibility.common.util.SystemUtil.eventually
 import com.android.compatibility.common.util.SystemUtil.runShellCommandOrThrow
 import com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity
 import com.android.compatibility.common.util.ThrowingSupplier
-import com.android.compatibility.common.util.UiAutomatorUtils
+import com.android.compatibility.common.util.UiAutomatorUtils2
 import com.android.compatibility.common.util.UiDumpUtils
 import com.android.compatibility.common.util.click
 import com.android.compatibility.common.util.depthFirstSearch
@@ -300,7 +300,7 @@ fun openUnusedAppsNotification() {
                 waitFindObject(uiAutomation, notifSelector).click()
             }
         }
-        expandAndClickNotificationWatch(UiAutomatorUtils.getUiDevice(), clickRunnable)
+        expandAndClickNotificationWatch(UiAutomatorUtils2.getUiDevice(), clickRunnable)
         // In wear os, notification has one additional button to open it
         waitFindObject(uiAutomation, By.textContains("Open")).click()
     } else {
@@ -319,7 +319,7 @@ fun openUnusedAppsNotification() {
             wrappingExceptions({ cause: Throwable? -> UiDumpUtils.wrapWithUiDump(cause) }) {
                 assertTrue(
                     "Unused apps page did not open after tapping notification.",
-                    UiAutomatorUtils.getUiDevice().wait(
+                    UiAutomatorUtils2.getUiDevice().wait(
                         Until.hasObject(By.pkg(permissionPkg).depth(0)), VIEW_WAIT_TIMEOUT
                     )
                 )
@@ -335,9 +335,9 @@ fun hasFeatureWatch(): Boolean {
 
 fun hasFeatureTV(): Boolean {
     return InstrumentationRegistry.getTargetContext().packageManager.hasSystemFeature(
-            PackageManager.FEATURE_LEANBACK) ||
+        PackageManager.FEATURE_LEANBACK) ||
             InstrumentationRegistry.getTargetContext().packageManager.hasSystemFeature(
-                    PackageManager.FEATURE_TELEVISION)
+                PackageManager.FEATURE_TELEVISION)
 }
 
 fun hasFeatureAutomotive(): Boolean {
@@ -378,10 +378,10 @@ private fun resetNotifications(notificationList: UiScrollable) {
 }
 
 private fun waitFindNotification(selector: BySelector, timeoutMs: Long):
-    UiObject2 {
+        UiObject2 {
     var view: UiObject2? = null
     val start = System.currentTimeMillis()
-    val uiDevice = UiAutomatorUtils.getUiDevice()
+    val uiDevice = UiAutomatorUtils2.getUiDevice()
 
     var isAtEnd = false
     var wasScrolledUpAlready = false
@@ -426,7 +426,7 @@ private fun waitFindNotification(selector: BySelector, timeoutMs: Long):
 
 fun waitFindObject(uiAutomation: UiAutomation, selector: BySelector): UiObject2 {
     try {
-        return UiAutomatorUtils.waitFindObject(selector)
+        return UiAutomatorUtils2.waitFindObject(selector)
     } catch (e: RuntimeException) {
         val ui = uiAutomation.rootInActiveWindow
 
@@ -435,17 +435,17 @@ fun waitFindObject(uiAutomation: UiAutomation, selector: BySelector): UiObject2 
         }
         val okCloseButton = ui.depthFirstSearch { node ->
             (node.textAsString?.equals("OK", ignoreCase = true) ?: false) ||
-            (node.textAsString?.equals("Close app", ignoreCase = true) ?: false)
+                    (node.textAsString?.equals("Close app", ignoreCase = true) ?: false)
         }
         val titleString = title?.text?.toString()
         if (okCloseButton != null &&
             titleString != null &&
             (titleString == "Android System" ||
-                titleString.endsWith("keeps stopping"))) {
+                    titleString.endsWith("keeps stopping"))) {
             // Auto dismiss occasional system dialogs to prevent interfering with the test
             android.util.Log.w(AutoRevokeTest.LOG_TAG, "Ignoring exception", e)
             okCloseButton.click()
-            return UiAutomatorUtils.waitFindObject(selector)
+            return UiAutomatorUtils2.waitFindObject(selector)
         } else {
             throw e
         }
@@ -453,7 +453,7 @@ fun waitFindObject(uiAutomation: UiAutomation, selector: BySelector): UiObject2 
 }
 
 fun scrollToLabel(label: String) {
-    val uiDevice = UiAutomatorUtils.getUiDevice()
+    val uiDevice = UiAutomatorUtils2.getUiDevice()
 
     if (!uiDevice.hasObject(By.text(label))) {
         var scrollableObject = UiScrollable(UiSelector().scrollable(true))
