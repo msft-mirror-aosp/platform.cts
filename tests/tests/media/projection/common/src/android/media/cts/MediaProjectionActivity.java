@@ -49,6 +49,7 @@ import com.android.compatibility.common.util.UiAutomatorUtils2;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.regex.Pattern;
 
 // This is a partial copy of android.view.cts.surfacevalidator.CapturedActivity.
@@ -58,6 +59,7 @@ import java.util.regex.Pattern;
 public class MediaProjectionActivity extends Activity {
     private static final int PERMISSION_CODE = 1;
     private static final int PERMISSION_DIALOG_WAIT_MS = 1000;
+    private static final int TIMEOUT_MS = 10000;
     private static final String TAG = "MediaProjectionActivity";
     private static final String SYSTEM_UI_PACKAGE = "com.android.systemui";
 
@@ -71,6 +73,7 @@ public class MediaProjectionActivity extends Activity {
     public static final String EXTRA_FOREGROUND_SERVICE_CLASS = "extra_foreground_service_class";
     public static final String EXTRA_MP_CONFIG = "extra_mp_config";
     public static final String EXTRA_LAUNCH_COOKIE = "extra_launch_cookie";
+    public static final String EXTRA_SKIP_CONSENT = "extra_skip_consent";
     public static final String ACCEPT_RESOURCE_ID = "android:id/button1";
     public static final String CANCEL_RESOURCE_ID = "android:id/button2";
     public static final Pattern SCREEN_SHARE_OPTIONS_RES_PATTERN =
@@ -97,6 +100,10 @@ public class MediaProjectionActivity extends Activity {
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         mProjectionManager = getSystemService(MediaProjectionManager.class);
         mCountDownLatch = new CountDownLatch(1);
+
+        if (getIntent().hasExtra(EXTRA_SKIP_CONSENT)) {
+            mHandleActivityResult = true;
+        }
 
         startActivityForResult(createRequestIntent(), PERMISSION_CODE);
     }
@@ -135,9 +142,18 @@ public class MediaProjectionActivity extends Activity {
      * the same process or a different process in the package; passing a messenger object to send
      * signal back when the foreground service is up.
      */
-    private void startMediaProjectionService() {
+    public MediaProjection startMediaProjection() throws InterruptedException, TimeoutException {
+        CountDownLatch latch = new CountDownLatch(1);
         ForegroundServiceUtil.requestStartForegroundService(
-                this, getForegroundServiceComponentName(), this::createMediaProjection, null);
+                this, getForegroundServiceComponentName(), () -> {
+                    createMediaProjection();
+                    latch.countDown();
+                }, null);
+
+        if (!latch.await(TIMEOUT_MS, TimeUnit.MILLISECONDS)) {
+            throw new TimeoutException("Timed out starting MediaProjection");
+        }
+        return mMediaProjection;
     }
 
     /**
@@ -175,18 +191,21 @@ public class MediaProjectionActivity extends Activity {
         Log.d(TAG, "onActivityResult");
         mResultCode = resultCode;
         mResultData = data;
-        startMediaProjectionService();
+        mCountDownLatch.countDown();
     }
 
     private void createMediaProjection() {
         mMediaProjection = mProjectionManager.getMediaProjection(mResultCode, mResultData);
-        mCountDownLatch.countDown();
     }
 
     /** Perform the steps required to pass the MediaProjection consent flow */
-    public MediaProjection waitForMediaProjection() throws InterruptedException {
+    public void performMediaProjectionConsent() throws InterruptedException {
+        // If MediaProjection consent was skipped, instantly return
+        if (mCountDownLatch.getCount() == 0) {
+            return;
+        }
+
         mHandleActivityResult = true;
-        final long timeOutMs = 10000;
         final int retryCount = 5;
         int count = 0;
         // Sometimes system decides to rotate the permission activity to another orientation
@@ -201,12 +220,11 @@ public class MediaProjectionActivity extends Activity {
                             .hasSystemFeature(PackageManager.FEATURE_WATCH),
                     getResourceString(this, ENTIRE_SCREEN_STRING_RES_NAME));
             count++;
-        } while (!mCountDownLatch.await(timeOutMs, TimeUnit.MILLISECONDS));
-        return mMediaProjection;
+        } while (!mCountDownLatch.await(TIMEOUT_MS, TimeUnit.MILLISECONDS));
     }
 
     /** The permission dialog will be auto-opened by the activity - find it and accept */
-    public static void dismissPermissionDialog(
+    private static void dismissPermissionDialog(
             boolean isWatch, @Nullable String entireScreenString) {
         // Ensure the device is initialized before interacting with any UI elements.
         UiDevice.getInstance(getInstrumentation());
