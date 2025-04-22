@@ -67,7 +67,6 @@ cc_defaults {
         "sts",
         "general-tests",
     ],
-    cpp_std: "gnu++20",
     cflags: [
         "-Wall",
         "-Werror",
