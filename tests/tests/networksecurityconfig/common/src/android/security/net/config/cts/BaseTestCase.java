@@ -17,6 +17,7 @@
 package android.security.net.config.cts;
 
 import static android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET;
+import static android.net.NetworkCapabilities.NET_CAPABILITY_VALIDATED;
 
 import static org.junit.Assume.assumeTrue;
 
@@ -46,7 +47,9 @@ public abstract class BaseTestCase {
         }
 
         NetworkCapabilities caps = connectivityManager.getNetworkCapabilities(activeNetwork);
-        return caps != null && caps.hasCapability(NET_CAPABILITY_INTERNET);
+        return caps != null
+                && caps.hasCapability(NET_CAPABILITY_INTERNET)
+                && caps.hasCapability(NET_CAPABILITY_VALIDATED);
     }
 
     @Before
