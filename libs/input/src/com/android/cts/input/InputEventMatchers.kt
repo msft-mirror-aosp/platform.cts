@@ -63,8 +63,8 @@ fun withCoordsForPointerIndex(index: Int, pt: PointF, epsilon: Float = EPSILON):
     }
 
     override fun matchesSafely(event: MotionEvent): Boolean {
-        return (abs(event.getX(index)) - pt.x < epsilon) &&
-                (abs(event.getY(index)) - pt.y < epsilon)
+        return (abs(event.getX(index) - pt.x) < epsilon) &&
+                (abs(event.getY(index) - pt.y) < epsilon)
     }
 }
 
@@ -75,8 +75,8 @@ fun withRawCoords(pt: PointF, epsilon: Float = EPSILON):
     }
 
     override fun matchesSafely(event: MotionEvent): Boolean {
-        return (abs(event.rawX) - pt.x < epsilon) &&
-                (abs(event.rawY) - pt.y < epsilon)
+        return (abs(event.rawX - pt.x) < epsilon) &&
+                (abs(event.rawY - pt.y) < epsilon)
     }
 
     override fun describeMismatchSafely(event: MotionEvent, mismatchDescription: Description) {
