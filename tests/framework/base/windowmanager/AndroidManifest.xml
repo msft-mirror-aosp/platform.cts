@@ -470,7 +470,11 @@
             android:theme="@style/Theme.EdgeExtensions"
             android:exported="true"
             android:colorMode="wideColorGamut"
-            android:fitsSystemWindows="true" />
+            android:fitsSystemWindows="true" >
+            <property
+                android:name="android.window.PROPERTY_COMPAT_ALLOW_SAFE_REGION_LETTERBOXING"
+                android:value="false" />
+        </activity>
 
         <activity android:name="android.server.wm.animations.ActivityTransitionTests$CustomWindowAnimationActivity"
             android:theme="@style/window_task_animation"
@@ -549,19 +553,35 @@
         <activity android:name="android.server.wm.animations.BlurTests$BackgroundActivity"
              android:theme="@style/BackgroundImage"
              android:colorMode="wideColorGamut"
-             android:exported="true"/>
+             android:exported="true">
+            <property
+                android:name="android.window.PROPERTY_COMPAT_ALLOW_SAFE_REGION_LETTERBOXING"
+                android:value="false" />
+        </activity>
         <activity android:name="android.server.wm.animations.BlurTests$BlurActivity"
              android:exported="true"
              android:colorMode="wideColorGamut"
-             android:theme="@style/BlurTestTheme"/>
+             android:theme="@style/BlurTestTheme">
+            <property
+                android:name="android.window.PROPERTY_COMPAT_ALLOW_SAFE_REGION_LETTERBOXING"
+                android:value="false" />
+        </activity>
         <activity android:name="android.server.wm.animations.BlurTests$BlurAttributesActivity"
              android:exported="true"
              android:colorMode="wideColorGamut"
-             android:theme="@style/BlurryDialog"/>
+             android:theme="@style/BlurryDialog">
+            <property
+                android:name="android.window.PROPERTY_COMPAT_ALLOW_SAFE_REGION_LETTERBOXING"
+                android:value="false" />
+        </activity>
         <activity android:name="android.server.wm.animations.BlurTests$BadBlurActivity"
              android:exported="true"
              android:colorMode="wideColorGamut"
-             android:theme="@style/BadBlurryDialog"/>
+             android:theme="@style/BadBlurryDialog">
+            <property
+                android:name="android.window.PROPERTY_COMPAT_ALLOW_SAFE_REGION_LETTERBOXING"
+                android:value="false" />
+        </activity>
 
         <!-- Overrides the activity declaration in AndroidX test library to remove the starting
              animation. -->
