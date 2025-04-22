@@ -42,7 +42,6 @@ import android.hardware.camera2.params.OutputConfiguration;
 import android.hardware.camera2.params.SessionConfiguration;
 import android.media.ImageReader;
 import android.os.Build;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Log;
@@ -51,7 +50,6 @@ import android.util.Size;
 
 import com.android.ex.camera2.blocking.BlockingSessionCallback;
 import com.android.ex.camera2.blocking.BlockingStateCallback;
-import com.android.internal.camera.flags.Flags;
 
 import org.junit.Assert;
 import org.junit.Rule;
@@ -87,7 +85,6 @@ public class CameraDeviceSetupTest extends Camera2AndroidTestCase {
     public final CheckFlagsRule mFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_CAMERA_DEVICE_SETUP)
     public void testCameraDeviceSetupSupport() throws Exception {
         for (String cameraId : getCameraIdsUnderTest()) {
             CameraCharacteristics chars = mCameraManager.getCameraCharacteristics(cameraId);
@@ -112,7 +109,6 @@ public class CameraDeviceSetupTest extends Camera2AndroidTestCase {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_CAMERA_DEVICE_SETUP)
     public void testCameraDeviceSetupCreationSuccessful() throws Exception {
         for (String cameraId : getCameraIdsUnderTest()) {
             if (!mCameraManager.isCameraDeviceSetupSupported(cameraId)) {
@@ -129,7 +125,6 @@ public class CameraDeviceSetupTest extends Camera2AndroidTestCase {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_CAMERA_DEVICE_SETUP)
     public void testCameraDeviceSetupCreationFailure() throws Exception {
         try {
             mCameraManager.getCameraDeviceSetup(/*cameraId=*/ null);
@@ -164,7 +159,6 @@ public class CameraDeviceSetupTest extends Camera2AndroidTestCase {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_CAMERA_DEVICE_SETUP)
     public void testOpenSuccessful() throws Exception {
         ExecutorService callbackExecutor = Executors.newCachedThreadPool();
         for (String cameraId : getCameraIdsUnderTest()) {
@@ -198,7 +192,6 @@ public class CameraDeviceSetupTest extends Camera2AndroidTestCase {
      * Verify if valid session characteristics can be fetched for a particular camera.
      */
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_CAMERA_DEVICE_SETUP)
     public void testSessionCharacteristics() throws Exception {
         String[] cameraIdsUnderTest = getCameraIdsUnderTest();
         for (String cameraId : cameraIdsUnderTest) {
@@ -343,7 +336,6 @@ public class CameraDeviceSetupTest extends Camera2AndroidTestCase {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_CAMERA_DEVICE_SETUP)
     public void testOutputConfigurationForCameraSetup() throws Exception {
         Size size = new Size(640, 480);
         int fmt = ImageFormat.YUV_420_888;
@@ -384,7 +376,6 @@ public class CameraDeviceSetupTest extends Camera2AndroidTestCase {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_CAMERA_DEVICE_SETUP)
     public void testCameraDeviceSetupTemplates() throws Exception {
         for (String cameraId : getCameraIdsUnderTest()) {
             if (!mCameraManager.isCameraDeviceSetupSupported(cameraId)) {
@@ -459,7 +450,6 @@ public class CameraDeviceSetupTest extends Camera2AndroidTestCase {
      * Verify if valid session characteristics can be fetched for a particular camera.
      */
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_CAMERA_DEVICE_SETUP)
     public void testFeatureCombinationQueryConsistency() throws Exception {
         for (String cameraId : getCameraIdsUnderTest()) {
             if (!mCameraManager.isCameraDeviceSetupSupported(cameraId)) {

@@ -448,26 +448,28 @@ public class MultiResolutionImageReaderTest extends Camera2AndroidTestCase {
             ArrayList<OutputConfiguration> outputConfigsList = new ArrayList<OutputConfiguration>(
                     outputConfigs);
 
-            if (Flags.cameraDeviceSetup()) {
-                // Create OutputConfigurations without surfaces
-                List<OutputConfiguration> outputConfigs2Steps =
-                        OutputConfiguration.createInstancesForMultiResolutionOutput(
-                                multiResolutionStreams, format);
-                // Check both OutputConfiguration lists created directly from
-                // MultiResolutionImageReader and from MultiResolutionStreamInfo are the same.
-                OutputConfiguration.setSurfacesForMultiResolutionOutput(
-                        outputConfigs2Steps, mMultiResolutionImageReader);
-                // outputConfigs2Steps and outputConfigsList are not equal because their
-                // surfaceGenerationId, surfaceGroupdId will not be the same.
-                assertEquals("OutputConfiguration list creates from MultiResolutionImageReader "
-                        + "must match the one from MultiResolutionStreamInfo",
-                        outputConfigs2Steps.size(), outputConfigsList.size());
-                for (int i = 0; i < outputConfigsList.size(); i++) {
-                    OutputConfiguration outputConfig2Step = outputConfigs2Steps.get(i);
-                    OutputConfiguration outputConfig = outputConfigsList.get(i);
-                    assertEquals("OutputConfigurations' surfaces don't match",
-                            outputConfig2Step.getSurfaces(), outputConfig.getSurfaces());
-                }
+            // Create OutputConfigurations without surfaces
+            List<OutputConfiguration> outputConfigs2Steps =
+                    OutputConfiguration.createInstancesForMultiResolutionOutput(
+                            multiResolutionStreams, format);
+            // Check both OutputConfiguration lists created directly from
+            // MultiResolutionImageReader and from MultiResolutionStreamInfo are the same.
+            OutputConfiguration.setSurfacesForMultiResolutionOutput(
+                    outputConfigs2Steps, mMultiResolutionImageReader);
+            // outputConfigs2Steps and outputConfigsList are not equal because their
+            // surfaceGenerationId, surfaceGroupdId will not be the same.
+            assertEquals(
+                    "OutputConfiguration list creates from MultiResolutionImageReader "
+                            + "must match the one from MultiResolutionStreamInfo",
+                    outputConfigs2Steps.size(),
+                    outputConfigsList.size());
+            for (int i = 0; i < outputConfigsList.size(); i++) {
+                OutputConfiguration outputConfig2Step = outputConfigs2Steps.get(i);
+                OutputConfiguration outputConfig = outputConfigsList.get(i);
+                assertEquals(
+                        "OutputConfigurations' surfaces don't match",
+                        outputConfig2Step.getSurfaces(),
+                        outputConfig.getSurfaces());
             }
 
             // Create session
