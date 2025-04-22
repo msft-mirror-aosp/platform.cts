@@ -43,8 +43,8 @@ AGREE_BUTTON = 'Agree'
 AGREE_AND_CONTINUE_BUTTON = 'Agree and continue'
 CANCEL_BUTTON_TXT = 'Cancel'
 CAMERA_FILES_PATHS = ('/sdcard/DCIM/Camera',
-                      '/storage/emulated/0/Pictures',
-                      '/sdcard/DCIM',)
+                      '/sdcard/DCIM',
+                      '/storage/emulated/0/Pictures',)
 CAPTURE_BUTTON_RESOURCE_ID = 'CaptureButton'
 DEFAULT_CAMERA_APP_DUMPSYS_PATH = '/sdcard/default_camera_dumpsys.txt'
 DEFAULT_CAMERA_CONTENT_DESC_SEPARATOR = ','
