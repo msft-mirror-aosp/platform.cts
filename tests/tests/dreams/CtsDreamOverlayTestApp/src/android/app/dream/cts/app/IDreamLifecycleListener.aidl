@@ -34,6 +34,11 @@ interface IDreamLifecycleListener {
     void onDreamingStarted(IControlledDream dream);
 
     /**
+     * invoked when content view focus changes.
+     */
+    void onContentViewFocusChanged(IControlledDream dream, boolean hasFocus);
+
+    /**
      * invoked when focus changes.
      */
     void onFocusChanged(IControlledDream dream, boolean hasFocus);
