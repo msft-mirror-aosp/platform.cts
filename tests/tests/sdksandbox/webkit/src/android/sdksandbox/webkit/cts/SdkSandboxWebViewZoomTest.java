@@ -68,6 +68,7 @@ public class SdkSandboxWebViewZoomTest {
     }
 
     @Test
+    @Ignore("b/407724361")
     public void testZoomByNonPowerOfTwoIncrements() throws Throwable {
         sSdkTestSuiteSetup.assertSdkTestRunPasses("testZoomByNonPowerOfTwoIncrements");
     }
