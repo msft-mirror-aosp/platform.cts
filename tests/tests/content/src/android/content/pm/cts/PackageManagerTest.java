@@ -145,6 +145,7 @@ import android.os.Process;
 import android.os.RemoteException;
 import android.os.SystemClock;
 import android.os.UserHandle;
+import android.os.UserManager;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
@@ -2067,6 +2068,26 @@ public class PackageManagerTest {
         SystemUtil.runShellCommand("pm install-existing --user " + userId + " " + packageName);
     }
 
+    private int[] installTestPackageForAllUsersIfNeeded() {
+        final UserManager userManager = mContext.getSystemService(UserManager.class);
+        final List<Integer> nonInstalledUserIdList = new ArrayList<>();
+        SystemUtil.runWithShellPermissionIdentity(() -> {
+            List<UserHandle> userHandleList = userManager.getUserHandles(/* excludeDying= */true);
+            for (int i = 0, size = userHandleList.size(); i < size; i++) {
+                if (!mContext.getUser().equals(userHandleList.get(i))) {
+                    final int userId = userHandleList.get(i).getIdentifier();
+                    if (!isAppInstalledForUser(mContext.getPackageName(), userId)) {
+                        nonInstalledUserIdList.add(userId);
+                    }
+                }
+            }
+        });
+        for (int i = 0, size = nonInstalledUserIdList.size(); i < size; i++) {
+            installExistingPackageForUser(mContext.getPackageName(), nonInstalledUserIdList.get(i));
+        }
+        return nonInstalledUserIdList.stream().mapToInt(i -> i).toArray();
+    }
+
     private void uninstallPackageKeepData(String packageName) {
         SystemUtil.runShellCommand("pm uninstall -k " + packageName);
     }
@@ -2077,6 +2098,13 @@ public class PackageManagerTest {
 
     private static boolean isAppInstalled(String packageName) {
         return isPackagePresent(packageName, /*matchAllPackages=*/false);
+    }
+
+    private static boolean isAppInstalledForUser(String packageName, int userId) {
+        return Arrays.stream(SystemUtil.runShellCommand(
+                                String.format("pm list packages --user %s %s", userId, packageName))
+                        .split("\\r?\\n"))
+                .anyMatch(pkg -> pkg.equals(String.format("package:%s", packageName)));
     }
 
     private static boolean isPackagePresent(String packageName) {
@@ -2107,7 +2135,6 @@ public class PackageManagerTest {
             return new String(FileUtils.readInputStreamFully(inputStream));
         }
     }
-
 
     private void installArchived(ArchivedPackageInfo archivedPackageInfo)
             throws Exception {
@@ -2992,18 +3019,31 @@ victim $UID 1 /data/user/0 default:targetSdkVersion=28 none 0 0 1 @null
         assertEquals("Success\n", SystemUtil.runShellCommand(
                 String.format("pm install -r -i %s -t -g %s", mContext.getPackageName(),
                         HELLO_WORLD_V2_APK)));
-        assertThat(SystemUtil.runShellCommand(String.format(
-                "pm archive %s", HELLO_WORLD_PACKAGE_NAME))).isEqualTo("Success\n");
-        // Check "installed" flag.
-        var applicationInfo = mPackageManager.getPackageInfo(HELLO_WORLD_PACKAGE_NAME,
-                PackageManager.PackageInfoFlags.of(MATCH_ARCHIVED_PACKAGES)).applicationInfo;
-        assertEquals(applicationInfo.flags & ApplicationInfo.FLAG_INSTALLED, 0);
-        // Check archive state.
-        assertTrue(applicationInfo.isArchived);
 
-        installPackage(HELLO_WORLD_V1_APK,
-                "Failure [INSTALL_FAILED_VERSION_DOWNGRADE: Downgrade detected on app uninstalled"
-                        + " with DELETE_KEEP_DATA:");
+        // When we use the shell command to archive the app without the userId, the
+        // system checks the installer info for all users. Check the test app is installed
+        // on all users. If it is not installed on some users, install it on these users.
+        final int[] nonInstalledUserIds = installTestPackageForAllUsersIfNeeded();
+
+        try {
+            assertThat(SystemUtil.runShellCommand(String.format(
+                    "pm archive %s", HELLO_WORLD_PACKAGE_NAME))).isEqualTo("Success\n");
+            // Check "installed" flag.
+            var applicationInfo = mPackageManager.getPackageInfo(HELLO_WORLD_PACKAGE_NAME,
+                    PackageManager.PackageInfoFlags.of(MATCH_ARCHIVED_PACKAGES)).applicationInfo;
+            assertEquals(applicationInfo.flags & ApplicationInfo.FLAG_INSTALLED, 0);
+            // Check archive state.
+            assertTrue(applicationInfo.isArchived);
+
+            installPackage(HELLO_WORLD_V1_APK,
+                    "Failure [INSTALL_FAILED_VERSION_DOWNGRADE: Downgrade detected on app"
+                            + " uninstalled with DELETE_KEEP_DATA:");
+        } finally {
+            // Uninstall the test app on the users that we installed during the test case
+            for (int i = 0; i < nonInstalledUserIds.length; i++) {
+                uninstallPackageForUser(mContext.getPackageName(), nonInstalledUserIds[i]);
+            }
+        }
     }
 
     @Test
@@ -3013,41 +3053,57 @@ victim $UID 1 /data/user/0 default:targetSdkVersion=28 none 0 0 1 @null
         assertEquals("Success\n", SystemUtil.runShellCommand(
                 String.format("pm install -r -i %s -t -g %s", mContext.getPackageName(),
                         HELLO_WORLD_APK)));
-        assertThat(SystemUtil.runShellCommand(
-                String.format("pm archive %s", HELLO_WORLD_PACKAGE_NAME))).isEqualTo("Success\n");
-        // Check "installed" flag.
-        var applicationInfo = mPackageManager.getPackageInfo(HELLO_WORLD_PACKAGE_NAME,
-                PackageManager.PackageInfoFlags.of(MATCH_ARCHIVED_PACKAGES)).applicationInfo;
-        assertEquals(applicationInfo.flags & ApplicationInfo.FLAG_INSTALLED, 0);
-        // Check archive state.
-        assertTrue(applicationInfo.isArchived);
-        // Not pending restore.
-        String pendingRestore = parsePackageDump(HELLO_WORLD_PACKAGE_NAME,
-                "    pendingRestore=");
-        assertThat(pendingRestore).isNull();
 
-        byte[] archivedPackage = SystemUtil.runShellCommandByteOutput(
-                mInstrumentation.getUiAutomation(),
-                "pm get-archived-package-metadata " + HELLO_WORLD_PACKAGE_NAME);
-        uninstallPackage(HELLO_WORLD_PACKAGE_NAME);
+        // When we use the shell command to archive the app without the userId, the
+        // system checks the installer info for all users. Check the test app is installed
+        // on all users. If it is not installed on some users, install it on these users.
+        final int[] nonInstalledUserIds = installTestPackageForAllUsersIfNeeded();
 
-        // Install archived APK.
-        assertEquals("Success\n", executeShellCommand(
-                String.format("pm install-archived -r -i %s -t -S %s", mContext.getPackageName(),
-                        archivedPackage.length), archivedPackage));
-        assertTrue(isPackagePresent(HELLO_WORLD_PACKAGE_NAME));
-        // Check "installed" flag once again.
-        applicationInfo = mPackageManager.getPackageInfo(HELLO_WORLD_PACKAGE_NAME,
-                PackageManager.PackageInfoFlags.of(MATCH_ARCHIVED_PACKAGES)).applicationInfo;
-        assertEquals(applicationInfo.flags & ApplicationInfo.FLAG_INSTALLED, 0);
-        // Check archive state once again.
-        assertTrue(applicationInfo.isArchived);
-        uninstallPackage(HELLO_WORLD_PACKAGE_NAME);
+        try {
+            assertThat(SystemUtil.runShellCommand(
+                    String.format("pm archive %s", HELLO_WORLD_PACKAGE_NAME))).isEqualTo(
+                    "Success\n");
+            // Check "installed" flag.
+            var applicationInfo = mPackageManager.getPackageInfo(HELLO_WORLD_PACKAGE_NAME,
+                    PackageManager.PackageInfoFlags.of(MATCH_ARCHIVED_PACKAGES)).applicationInfo;
+            assertEquals(applicationInfo.flags & ApplicationInfo.FLAG_INSTALLED, 0);
+            // Check archive state.
+            assertTrue(applicationInfo.isArchived);
+            // Not pending restore.
+            String pendingRestore = parsePackageDump(HELLO_WORLD_PACKAGE_NAME,
+                    "    pendingRestore=");
+            assertThat(pendingRestore).isNull();
 
-        // Try to install archived without installer.
-        assertThat(executeShellCommand(
-                String.format("pm install-archived -t -S %s", archivedPackage.length),
-                archivedPackage)).startsWith("Failure [INSTALL_FAILED_SESSION_INVALID: Installer");
+            byte[] archivedPackage = SystemUtil.runShellCommandByteOutput(
+                    mInstrumentation.getUiAutomation(),
+                    "pm get-archived-package-metadata " + HELLO_WORLD_PACKAGE_NAME);
+            uninstallPackage(HELLO_WORLD_PACKAGE_NAME);
+
+            // Install archived APK.
+            assertEquals("Success\n", executeShellCommand(
+                    String.format("pm install-archived -r -i %s -t -S %s",
+                            mContext.getPackageName(),
+                            archivedPackage.length), archivedPackage));
+            assertTrue(isPackagePresent(HELLO_WORLD_PACKAGE_NAME));
+            // Check "installed" flag once again.
+            applicationInfo = mPackageManager.getPackageInfo(HELLO_WORLD_PACKAGE_NAME,
+                    PackageManager.PackageInfoFlags.of(MATCH_ARCHIVED_PACKAGES)).applicationInfo;
+            assertEquals(applicationInfo.flags & ApplicationInfo.FLAG_INSTALLED, 0);
+            // Check archive state once again.
+            assertTrue(applicationInfo.isArchived);
+            uninstallPackage(HELLO_WORLD_PACKAGE_NAME);
+
+            // Try to install archived without installer.
+            assertThat(executeShellCommand(
+                    String.format("pm install-archived -t -S %s", archivedPackage.length),
+                    archivedPackage)).startsWith(
+                    "Failure [INSTALL_FAILED_SESSION_INVALID: Installer");
+        } finally {
+            // Uninstall the test app on the users that we installed during the test case
+            for (int i = 0; i < nonInstalledUserIds.length; i++) {
+                uninstallPackageForUser(mContext.getPackageName(), nonInstalledUserIds[i]);
+            }
+        }
     }
 
     @Test
@@ -3285,23 +3341,37 @@ victim $UID 1 /data/user/0 default:targetSdkVersion=28 none 0 0 1 @null
         assertEquals("Success\n", SystemUtil.runShellCommand(
                 String.format("pm install -r -i %s -t -g %s", mContext.getPackageName(),
                         HELLO_WORLD_APK)));
-        assertThat(SystemUtil.runShellCommand(
-                String.format("pm archive %s", HELLO_WORLD_PACKAGE_NAME))).isEqualTo("Success\n");
 
-        var packageManager = mContext.getPackageManager();
-        var archivedPackage = packageManager.getArchivedPackage(HELLO_WORLD_PACKAGE_NAME);
-        uninstallPackage(HELLO_WORLD_PACKAGE_NAME);
+        // When we use the shell command to archive the app without the userId, the
+        // system checks the installer info for all users. Check the test app is installed
+        // on all users. If it is not installed on some users, install it on these users.
+        final int[] nonInstalledUserIds = installTestPackageForAllUsersIfNeeded();
 
-        // Install a default APK.
-        installArchived(archivedPackage);
-        assertTrue(isPackagePresent(HELLO_WORLD_PACKAGE_NAME));
-        // Check "installed" flag.
-        var applicationInfo = mPackageManager.getPackageInfo(HELLO_WORLD_PACKAGE_NAME,
-                PackageManager.PackageInfoFlags.of(MATCH_ARCHIVED_PACKAGES)).applicationInfo;
-        assertEquals(applicationInfo.flags & ApplicationInfo.FLAG_INSTALLED, 0);
-        // Check archive state.
-        assertTrue(applicationInfo.isArchived);
-        uninstallPackage(HELLO_WORLD_PACKAGE_NAME);
+        try {
+            assertThat(SystemUtil.runShellCommand(
+                    String.format("pm archive %s", HELLO_WORLD_PACKAGE_NAME))).isEqualTo(
+                    "Success\n");
+
+            var packageManager = mContext.getPackageManager();
+            var archivedPackage = packageManager.getArchivedPackage(HELLO_WORLD_PACKAGE_NAME);
+            uninstallPackage(HELLO_WORLD_PACKAGE_NAME);
+
+            // Install a default APK.
+            installArchived(archivedPackage);
+            assertTrue(isPackagePresent(HELLO_WORLD_PACKAGE_NAME));
+            // Check "installed" flag.
+            var applicationInfo = mPackageManager.getPackageInfo(HELLO_WORLD_PACKAGE_NAME,
+                    PackageManager.PackageInfoFlags.of(MATCH_ARCHIVED_PACKAGES)).applicationInfo;
+            assertEquals(applicationInfo.flags & ApplicationInfo.FLAG_INSTALLED, 0);
+            // Check archive state.
+            assertTrue(applicationInfo.isArchived);
+            uninstallPackage(HELLO_WORLD_PACKAGE_NAME);
+        } finally {
+            // Uninstall the test app on the users that we installed during the test case
+            for (int i = 0; i < nonInstalledUserIds.length; i++) {
+                uninstallPackageForUser(mContext.getPackageName(), nonInstalledUserIds[i]);
+            }
+        }
     }
 
     @Test
