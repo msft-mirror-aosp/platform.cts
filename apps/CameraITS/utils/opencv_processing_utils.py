@@ -84,6 +84,9 @@ FACE_CENTER_MATCH_TOL_Y = 20  # 20 pixels or ~4% in 640x480 image
 FACE_CENTER_MIN_LOGGING_DIST = 50
 FACE_MIN_CENTER_DELTA = 15
 
+FILL_MATCHING_CENTER = 1.0
+FILL_NOT_MATCHING_CENTER = 0.0
+
 EPSILON = 0.01  # degrees
 FOV_ZERO = 0  # degrees
 FOV_THRESH_TELE13 = 13  # degrees
@@ -548,11 +551,21 @@ def find_circle(img, img_name, min_area, color, use_adaptive_threshold=False):
       logging.debug('Potential circle found. radius: %.2f, color: %d, '
                     'circlish: %.3f, ar: %.3f, pts: %d, fill metric: %.3f',
                     radius, colour, circlish, aspect_ratio, num_pts, fill)
-      if (colour == color and
-          math.isclose(1.0, circlish, abs_tol=circlish_atol) and
+      same_color_and_fill = (
+          colour == color and
+          math.isclose(FILL_MATCHING_CENTER, fill, abs_tol=CIRCLE_COLOR_ATOL)
+      )
+      # Handle cases where circle center is binarized to the opposite color.
+      opposite_color_and_fill = (
+          colour == CH_FULL_SCALE-color and
+          math.isclose(
+              FILL_NOT_MATCHING_CENTER, fill, abs_tol=CIRCLE_COLOR_ATOL)
+      )
+      color_check_passed = same_color_and_fill or opposite_color_and_fill
+      if (math.isclose(1.0, circlish, abs_tol=circlish_atol) and
           math.isclose(1.0, aspect_ratio, abs_tol=CIRCLE_AR_ATOL) and
           num_pts/radius >= CIRCLE_RADIUS_NUMPTS_THRESH and
-          math.isclose(1.0, fill, abs_tol=CIRCLE_COLOR_ATOL)):
+          color_check_passed):
         radii = [
             image_processing_utils.distance(
                 (shape['ctx'], shape['cty']), numpy.squeeze(point))
@@ -571,18 +584,38 @@ def find_circle(img, img_name, min_area, color, use_adaptive_threshold=False):
                   old_circle_center, new_circle_center),
               0,
               abs_tol=center_distance_atol
-          ) and maximum_radius - minimum_radius < circle['radius_spread']:
-            logging.debug('Replacing the previously found circle. '
-                          'Circle located at %s has a smaller radius spread '
-                          'than the previously found circle at %s. '
-                          'Current radius spread: %.2f, '
-                          'previous radius spread: %.2f',
-                          new_circle_center, old_circle_center,
-                          maximum_radius - minimum_radius,
-                          circle['radius_spread'])
-            circle_contours.pop()
-            circle = {}
-            num_circles -= 1
+          ):
+            logging.debug('Found a circle with a similar center to the '
+                          'previously found circle. '
+                          'New circle center: %s, '
+                          'Center distance: %.2f, '
+                          'center distance threshold: %.2f',
+                          new_circle_center,
+                          image_processing_utils.distance(
+                              old_circle_center, new_circle_center),
+                          center_distance_atol)
+            if maximum_radius - minimum_radius < circle['radius_spread']:
+              logging.debug('Replacing the previously found circle. '
+                            'Circle located at %s has a smaller radius spread '
+                            'than the previously found circle at %s. '
+                            'Current radius spread: %.2f, '
+                            'previous radius spread: %.2f',
+                            new_circle_center, old_circle_center,
+                            maximum_radius - minimum_radius,
+                            circle['radius_spread'])
+              circle_contours.pop()
+              circle = {}
+              num_circles -= 1
+            else:
+              logging.debug('Not replacing the previously found circle. '
+                            'Circle located at %s has a larger radius spread '
+                            'than the previously found circle at %s. '
+                            'Current radius spread: %.2f, '
+                            'previous radius spread: %.2f',
+                            new_circle_center, old_circle_center,
+                            maximum_radius - minimum_radius,
+                            circle['radius_spread'])
+              continue
         circle_contours.append(contour)
 
         # Populate circle dictionary
