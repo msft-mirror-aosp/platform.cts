@@ -14,11 +14,8 @@
  * limitations under the License.
  */
 
-package android.app.cts;
+package android.app.cts.broadcasts;
 
-import static android.app.cts.ActivityManagerFgsBgStartTest.PACKAGE_NAME_APP1;
-import static android.app.cts.ActivityManagerFgsBgStartTest.PACKAGE_NAME_APP2;
-import static android.app.cts.ActivityManagerFgsBgStartTest.WAITFOR_MSEC;
 import static android.app.cts.CtsAppTestUtils.clearBadProcess;
 import static android.app.cts.CtsAppTestUtils.unstopApp;
 import static android.app.stubs.shared.LocalForegroundService.ACTION_START_FGS_RESULT;
@@ -30,11 +27,12 @@ import static org.junit.Assert.assertThrows;
 
 import android.app.BroadcastOptions;
 import android.app.Instrumentation;
-import android.app.cts.android.app.cts.tools.WaitForBroadcast;
+import android.app.cts.CtsAppTestUtils;
 import android.app.stubs.shared.CommandReceiver;
+import android.app.tools.WaitForBroadcast;
 
-import androidx.test.InstrumentationRegistry;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.SystemUtil;
 
@@ -44,14 +42,18 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 @RunWith(AndroidJUnit4.class)
-public class BroadcastOptionsIntegrationTest {
+public final class BroadcastOptionsIntegrationTest {
+    private static final String PACKAGE_NAME_APP1 = "com.android.app1";
+    private static final String PACKAGE_NAME_APP2 = "com.android.app2";
+    private static final int WAIT_FOR_MSEC = 10000;
+
     @Before
     public void setUp() throws Exception {
         final Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
-        CtsAppTestUtils.executeShellCmd(instrumentation,
-                "cmd deviceidle whitelist +" + PACKAGE_NAME_APP1);
+        CtsAppTestUtils.executeShellCmd(
+                instrumentation, "cmd deviceidle whitelist +" + PACKAGE_NAME_APP1);
         final int userId = instrumentation.getTargetContext().getUserId();
-        for (String pkg : new String[] { PACKAGE_NAME_APP1, PACKAGE_NAME_APP2 }) {
+        for (String pkg : new String[] {PACKAGE_NAME_APP1, PACKAGE_NAME_APP2}) {
             unstopApp(pkg, userId);
             clearBadProcess(pkg, userId);
         }
@@ -60,55 +62,64 @@ public class BroadcastOptionsIntegrationTest {
     @After
     public void tearDown() throws Exception {
         final Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
-        CtsAppTestUtils.executeShellCmd(instrumentation,
-                "cmd deviceidle whitelist -" + PACKAGE_NAME_APP1);
+        CtsAppTestUtils.executeShellCmd(
+                instrumentation, "cmd deviceidle whitelist -" + PACKAGE_NAME_APP1);
     }
 
     private void assertBroadcastSuccess(BroadcastOptions options) {
         final Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
         final WaitForBroadcast waiter = new WaitForBroadcast(instrumentation.getTargetContext());
         waiter.prepare(ACTION_START_FGS_RESULT);
-        CommandReceiver.sendCommandWithBroadcastOptions(instrumentation.getContext(),
+        CommandReceiver.sendCommandWithBroadcastOptions(
+                instrumentation.getContext(),
                 CommandReceiver.COMMAND_START_FOREGROUND_SERVICE,
-                PACKAGE_NAME_APP1, PACKAGE_NAME_APP2, 0, null,
+                PACKAGE_NAME_APP1,
+                PACKAGE_NAME_APP2,
+                0,
+                null,
                 options);
-        waiter.doWait(WAITFOR_MSEC);
+        waiter.doWait(WAIT_FOR_MSEC);
     }
 
     private void assertBroadcastFailure(BroadcastOptions options) {
         final Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
         final WaitForBroadcast waiter = new WaitForBroadcast(instrumentation.getTargetContext());
         waiter.prepare(ACTION_START_FGS_RESULT);
-        CommandReceiver.sendCommandWithBroadcastOptions(instrumentation.getContext(),
+        CommandReceiver.sendCommandWithBroadcastOptions(
+                instrumentation.getContext(),
                 CommandReceiver.COMMAND_START_FOREGROUND_SERVICE,
-                PACKAGE_NAME_APP1, PACKAGE_NAME_APP2, 0, null,
+                PACKAGE_NAME_APP1,
+                PACKAGE_NAME_APP2,
+                0,
+                null,
                 options);
-        assertThrows(Exception.class, () -> waiter.doWait(WAITFOR_MSEC));
+        assertThrows(Exception.class, () -> waiter.doWait(WAIT_FOR_MSEC));
     }
 
     @Test
     public void testRequireCompatChange_simple() {
-        SystemUtil.runWithShellPermissionIdentity(() -> {
-            final int uid = android.os.Process.myUid();
-            final BroadcastOptions options = BroadcastOptions.makeBasic();
+        SystemUtil.runWithShellPermissionIdentity(
+                () -> {
+                    final int uid = android.os.Process.myUid();
+                    final BroadcastOptions options = BroadcastOptions.makeBasic();
 
-            // Default passes
-            assertTrue(options.testRequireCompatChange(uid));
-            assertTrue(cloneViaBundle(options).testRequireCompatChange(uid));
+                    // Default passes
+                    assertTrue(options.testRequireCompatChange(uid));
+                    assertTrue(cloneViaBundle(options).testRequireCompatChange(uid));
 
-            // Verify both enabled and disabled
-            options.setRequireCompatChange(BroadcastOptions.CHANGE_ALWAYS_ENABLED, true);
-            assertTrue(options.testRequireCompatChange(uid));
-            assertTrue(cloneViaBundle(options).testRequireCompatChange(uid));
-            options.setRequireCompatChange(BroadcastOptions.CHANGE_ALWAYS_ENABLED, false);
-            assertFalse(options.testRequireCompatChange(uid));
-            assertFalse(cloneViaBundle(options).testRequireCompatChange(uid));
+                    // Verify both enabled and disabled
+                    options.setRequireCompatChange(BroadcastOptions.CHANGE_ALWAYS_ENABLED, true);
+                    assertTrue(options.testRequireCompatChange(uid));
+                    assertTrue(cloneViaBundle(options).testRequireCompatChange(uid));
+                    options.setRequireCompatChange(BroadcastOptions.CHANGE_ALWAYS_ENABLED, false);
+                    assertFalse(options.testRequireCompatChange(uid));
+                    assertFalse(cloneViaBundle(options).testRequireCompatChange(uid));
 
-            // And back to default passes
-            options.clearRequireCompatChange();
-            assertTrue(options.testRequireCompatChange(uid));
-            assertTrue(cloneViaBundle(options).testRequireCompatChange(uid));
-        });
+                    // And back to default passes
+                    options.clearRequireCompatChange();
+                    assertTrue(options.testRequireCompatChange(uid));
+                    assertTrue(cloneViaBundle(options).testRequireCompatChange(uid));
+                });
     }
 
     @Test

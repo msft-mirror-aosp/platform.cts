@@ -526,7 +526,6 @@
   <option name="compatibility:exclude-filter" value="CtsAppTestCases android.app.cts.ActivityManagerTest#testIsRunningInTestHarness"/>
   <option name="compatibility:exclude-filter" value="CtsAppTestCases android.app.cts.ActivityManagerTest#testServiceDoneLRUPosition"/>
   <option name="compatibility:exclude-filter" value="CtsAppTestCases android.app.cts.ActivityManagerTest#testTrimAppChildProcess"/>
-  <option name="compatibility:exclude-filter" value="CtsAppTestCases android.app.cts.BroadcastOptionsIntegrationTest#testRequireCompatChange_disabled_success"/>
   <option name="compatibility:exclude-filter" value="CtsAppTestCases android.app.cts.ForceStopTest#testPendingIntentCancellation"/>
   <option name="compatibility:exclude-filter" value="CtsAppTestCases android.app.cts.ServiceTest#testMaxServiceConnections"/>
   <option name="compatibility:exclude-filter" value="CtsAppTestCases android.app.cts.SystemFeaturesTest#testSensorFeatures"/>
@@ -631,6 +630,7 @@
   <option name="compatibility:exclude-filter" value="CtsBackupHostTestCases android.cts.backup.SyncAdapterSettingsHostSideTest#testIsSyncableChanged_ifTurnOnSyncEnabled"/>
   <option name="compatibility:exclude-filter" value="CtsBackupHostTestCases android.cts.backup.SyncAdapterSettingsHostSideTest#testIsSyncableIsZero_ifTurnOffSyncEnabled"/>
   <option name="compatibility:exclude-filter" value="CtsBackupHostTestCases android.cts.backup.SyncAdapterSettingsHostSideTest#testMasterSyncAutomatically_whenOn_isRestored"/>
+  <option name="compatibility:exclude-filter" value="CtsBroadcastTestCases android.app.cts.broadcasts.BroadcastOptionsIntegrationTest#testRequireCompatChange_disabled_success"/>
   <option name="compatibility:exclude-filter" value="CtsCompanionDeviceManagerUiAutomationTestCases android.companion.cts.uiautomation.AssociationEndToEndSingleDeviceTest#test_userConfirmed[profile=WATCH]"/>
   <option name="compatibility:exclude-filter" value="CtsCompanionDeviceManagerUiAutomationTestCases android.companion.cts.uiautomation.AssociationRevokedTest#test_disassociate_app_should_not_crash"/>
   <option name="compatibility:exclude-filter" value="CtsCompilationTestCases android.compilation.cts.PreRebootDexoptTest#test"/>
