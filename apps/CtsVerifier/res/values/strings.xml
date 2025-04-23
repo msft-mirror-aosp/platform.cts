@@ -1271,6 +1271,7 @@
     <string name="nfc_hce">Host-based card emulation</string>
     <string name="nfc_hce_emulator_polling_loop_annotations">Polling Loop Emulator Annotations</string>
     <string name="nfc_hce_reader_polling_loop_annotations">Polling Loop Reader Annotations</string>
+    <string name="nfc_hce_polling_loop_help_text">Launch the \"%s\" test on the other device and tap the two devices back to back.</string>
 
     <string name="nfc_hce_f">Host-based Felica card emulation</string>
     <string name="nfc_hce_f_reader_tests">HCE Felica reader tests</string>

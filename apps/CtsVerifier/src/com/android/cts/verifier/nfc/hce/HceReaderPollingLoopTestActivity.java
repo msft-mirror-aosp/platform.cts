@@ -21,6 +21,7 @@ import android.nfc.Tag;
 import android.nfc.tech.IsoDep;
 import android.os.Bundle;
 import android.util.Log;
+import android.widget.TextView;
 
 import com.android.cts.verifier.PassFailButtons;
 import com.android.cts.verifier.R;
@@ -44,6 +45,10 @@ public class HceReaderPollingLoopTestActivity extends PassFailButtons.Activity
         setContentView(R.layout.pass_fail_text);
         setPassFailButtonClickListeners();
         getPassButton().setEnabled(false);
+        TextView textView = (TextView) findViewById(R.id.text);
+        textView.setText(
+                getString(R.string.nfc_hce_polling_loop_help_text,
+                getString(R.string.nfc_hce_emulator_polling_loop_annotations)));
         mAdapter = NfcAdapter.getDefaultAdapter(this);
     }
 

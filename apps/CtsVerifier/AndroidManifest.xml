@@ -2324,7 +2324,7 @@
         </activity>
 
         <activity android:name="com.android.cts.verifier.nfc.hce.HceReaderPollingLoopTestActivity"
-                android:label="@string/nfc_hce_f_reader_tests"
+                android:label="@string/nfc_hce_reader_polling_loop_annotations"
                 android:configChanges="keyboardHidden|orientation|screenSize">
             <meta-data android:name="display_mode"
                        android:value="multi_display_mode" />
@@ -2332,7 +2332,7 @@
         </activity>
 
         <activity android:name="com.android.cts.verifier.nfc.hce.HceEmulatorPollingLoopTestActivity"
-                android:label="@string/nfc_hce_f_emulator_tests"
+                android:label="@string/nfc_hce_emulator_polling_loop_annotations"
                 android:configChanges="keyboardHidden|orientation|screenSize">
             <meta-data android:name="display_mode"
                        android:value="multi_display_mode" />

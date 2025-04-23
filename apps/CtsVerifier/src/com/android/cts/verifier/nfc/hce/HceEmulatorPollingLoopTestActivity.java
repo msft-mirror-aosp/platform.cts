@@ -23,11 +23,12 @@ import android.content.IntentFilter;
 import android.nfc.NfcAdapter;
 import android.nfc.cardemulation.CardEmulation;
 import android.os.Bundle;
+import android.widget.TextView;
 
 import com.android.cts.verifier.PassFailButtons;
 import com.android.cts.verifier.R;
 
-public class HceEmulatorPollingLoopTestActivity extends PassFailButtons.TestListActivity {
+public class HceEmulatorPollingLoopTestActivity extends PassFailButtons.Activity {
     static final String TAG = "HceEmulatorPollingLoopTestActivity";
 
     final BroadcastReceiver mFieldStateReceiver =
@@ -50,9 +51,14 @@ public class HceEmulatorPollingLoopTestActivity extends PassFailButtons.TestList
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.pass_fail_list);
+        setContentView(R.layout.pass_fail_text);
         setInfoResources(R.string.nfc_test, R.string.nfc_hce_emulator_test_info, 0);
         setPassFailButtonClickListeners();
+        getPassButton().setEnabled(false);
+        TextView textView = (TextView) findViewById(R.id.text);
+        textView.setText(
+            getString(R.string.nfc_hce_polling_loop_help_text,
+            getString(R.string.nfc_hce_reader_polling_loop_annotations)));
         IntentFilter filter = new IntentFilter(PollingLoopService.POLLING_FRAME_ACTION);
         registerReceiver(mFieldStateReceiver, filter, RECEIVER_EXPORTED);
         CardEmulation cardemulation = CardEmulation.getInstance(NfcAdapter.getDefaultAdapter(this));
