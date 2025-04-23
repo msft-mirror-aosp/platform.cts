@@ -270,10 +270,12 @@ public class LoginActivity extends AbstractAutoFillActivity {
     }
 
     public void forceAutofillOnUsername() {
+        Log.d(TAG, "forceAutofillOnUsername()");
         syncRunOnUiThread(() -> getAutofillManager().requestAutofill(mUsernameEditText));
     }
 
     public void forceAutofillOnPassword() {
+        Log.d(TAG, "forceAutofillOnPassword()");
         syncRunOnUiThread(() -> getAutofillManager().requestAutofill(mPasswordEditText));
     }
 
@@ -281,6 +283,7 @@ public class LoginActivity extends AbstractAutoFillActivity {
      * Visits the {@code username_label} in the UiThread.
      */
     public void onUsernameLabel(Visitor<TextView> v) {
+        Log.d(TAG, "onUsernameLabel()");
         syncRunOnUiThread(() -> v.visit(mUsernameLabel));
     }
 
@@ -288,11 +291,13 @@ public class LoginActivity extends AbstractAutoFillActivity {
      * Visits the {@code username} in the UiThread.
      */
     public void onUsername(Visitor<EditText> v) {
+        Log.d(TAG, "onUsername()");
         syncRunOnUiThread(() -> v.visit(mUsernameEditText));
     }
 
     @Override
     public void clearFocus() {
+        Log.d(TAG, "clearFocus()");
         syncRunOnUiThread(() -> ((View) mUsernameContainer.getParent()).requestFocus());
     }
 
@@ -314,6 +319,7 @@ public class LoginActivity extends AbstractAutoFillActivity {
      * Visits the {@code password_label} in the UiThread.
      */
     public void onPasswordLabel(Visitor<TextView> v) {
+        Log.d(TAG, "onPasswordLabel()");
         syncRunOnUiThread(() -> v.visit(mPasswordLabel));
     }
 
@@ -321,6 +327,7 @@ public class LoginActivity extends AbstractAutoFillActivity {
      * Visits the {@code password} in the UiThread.
      */
     public void onPassword(Visitor<EditText> v) {
+        Log.d(TAG, "onPassword()");
         syncRunOnUiThread(() -> v.visit(mPasswordEditText));
     }
 
@@ -328,6 +335,7 @@ public class LoginActivity extends AbstractAutoFillActivity {
      * Visits the {@code login} button in the UiThread.
      */
     public void onLogin(Visitor<Button> v) {
+        Log.d(TAG, "onLogin()");
         syncRunOnUiThread(() -> v.visit(mLoginButton));
     }
 
@@ -335,6 +343,7 @@ public class LoginActivity extends AbstractAutoFillActivity {
      * Visits the {@code cancel} button in the UiThread.
      */
     public void onCancel(Visitor<Button> v) {
+        Log.d(TAG, "onCancel()");
         syncRunOnUiThread(() -> v.visit(mCancelButton));
     }
 
@@ -349,6 +358,7 @@ public class LoginActivity extends AbstractAutoFillActivity {
      * Taps the login button in the UI thread.
      */
     public String tapLogin() throws Exception {
+        Log.d(TAG, "tapLogin()");
         mLoginLatch = new CountDownLatch(1);
         syncRunOnUiThread(() -> mLoginButton.performClick());
         boolean called = mLoginLatch.await(LOGIN_TIMEOUT_MS, TimeUnit.MILLISECONDS);
@@ -361,6 +371,7 @@ public class LoginActivity extends AbstractAutoFillActivity {
      * Taps the save button in the UI thread.
      */
     public void tapSave() throws Exception {
+        Log.d(TAG, "tapSave()");
         syncRunOnUiThread(() -> mSaveButton.performClick());
     }
 
@@ -368,6 +379,7 @@ public class LoginActivity extends AbstractAutoFillActivity {
      * Taps the clear button in the UI thread.
      */
     public void tapClear() {
+        Log.d(TAG, "tapClear()");
         syncRunOnUiThread(() -> mClearButton.performClick());
     }
 
@@ -392,6 +404,7 @@ public class LoginActivity extends AbstractAutoFillActivity {
      * Set the EditText input or password value and wait until text change.
      */
     public void setTextAndWaitTextChange(String username, String password) throws Exception {
+        Log.d(TAG, "setTextAndWaitTextChange(): " + username + " " + password);
         expectTextChange(username, password);
 
         syncRunOnUiThread(() -> {
