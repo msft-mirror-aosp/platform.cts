@@ -76,6 +76,8 @@ public class ImsCallingBase {
     protected static final int WAIT_IN_CURRENT_STATE = 100;
     // The timeout to wait in current state after conference call merge failed in milliseconds
     protected static final int WAIT_IN_CURRENT_STATE_MERGE_FAILED = 500;
+    // The timeout to wait in current state after multiparty state change
+    protected static final int WAIT_IN_CURRENT_STATE_MULTIPARTY_STATE_CHANGED = 2000;
 
     public static final int WAIT_FOR_SERVICE_TO_UNBOUND = 40000;
     public static final int WAIT_FOR_CONDITION = 3000;
