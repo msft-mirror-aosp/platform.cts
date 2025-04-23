@@ -47,7 +47,6 @@ import android.os.Bundle;
 import android.os.IBinder;
 import android.os.Process;
 import android.platform.test.annotations.AppModeNonSdkSandbox;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.service.media.MediaBrowserService;
@@ -60,7 +59,6 @@ import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.UserType;
 import com.android.bedstead.harrier.annotations.UserTest;
 import com.android.compatibility.common.util.FrameworkSpecificTest;
-import com.android.media.flags.Flags;
 
 import org.junit.After;
 import org.junit.Before;
@@ -354,7 +352,6 @@ public class MediaBrowserServiceTest {
         mMediaBrowserService.removeChildrenFromMap(parentMediaId);
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_NULL_SESSION_IN_MEDIA_BROWSER_SERVICE)
     @Test
     @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testSetNullSessionToken() {
