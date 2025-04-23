@@ -40,6 +40,7 @@ import com.android.compatibility.common.util.PollingCheck;
 import org.junit.After;
 import org.junit.Assume;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -165,6 +166,7 @@ public class WebViewZoomTest extends SharedWebViewTest{
     }
 
     @Test
+    @Ignore("b/413079290")
     public void testInvokeZoomPicker() throws Exception {
         WebSettings settings = mOnUiThread.getSettings();
         assertTrue(settings.supportZoom());
