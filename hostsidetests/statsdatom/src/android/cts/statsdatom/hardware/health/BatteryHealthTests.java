@@ -23,10 +23,12 @@ import android.cts.statsdatom.lib.ConfigUtils;
 import android.cts.statsdatom.lib.DeviceUtils;
 import android.cts.statsdatom.lib.ReportUtils;
 
+import com.android.compatibility.common.util.PropertyUtil;
 import com.android.os.AtomsProto;
 import com.android.os.hardware.health.BatteryExtensionAtoms;
 import com.android.os.hardware.health.BatteryHealth;
 import com.android.tradefed.build.IBuildInfo;
+import com.android.tradefed.device.ITestDevice;
 import com.android.tradefed.testtype.DeviceTestCase;
 import com.android.tradefed.testtype.IBuildReceiver;
 import com.android.tradefed.util.RunUtil;
@@ -39,23 +41,25 @@ import java.util.GregorianCalendar;
 import java.util.List;
 
 public class BatteryHealthTests extends DeviceTestCase implements IBuildReceiver {
+    private ITestDevice mDevice;
     private IBuildInfo mCtsBuild;
 
     @Override
     protected void setUp() throws Exception {
         super.setUp();
+        mDevice = getDevice();
         assertThat(mCtsBuild).isNotNull();
-        ConfigUtils.removeConfig(getDevice());
-        ReportUtils.clearReports(getDevice());
-        DeviceUtils.installStatsdTestApp(getDevice(), mCtsBuild);
+        ConfigUtils.removeConfig(mDevice);
+        ReportUtils.clearReports(mDevice);
+        DeviceUtils.installStatsdTestApp(mDevice, mCtsBuild);
         RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
     }
 
     @Override
     protected void tearDown() throws Exception {
-        ConfigUtils.removeConfig(getDevice());
-        ReportUtils.clearReports(getDevice());
-        DeviceUtils.uninstallStatsdTestApp(getDevice());
+        ConfigUtils.removeConfig(mDevice);
+        ReportUtils.clearReports(mDevice);
+        DeviceUtils.uninstallStatsdTestApp(mDevice);
         super.tearDown();
     }
 
@@ -66,9 +70,11 @@ public class BatteryHealthTests extends DeviceTestCase implements IBuildReceiver
 
     public void testBatteryHealthAtomValid() throws Exception {
         List<AtomsProto.Atom> atoms = pullBatteryHealthAsGaugeMetric();
+        if (atoms.size() == 0) {
+            assertThat(PropertyUtil.getVendorApiLevel(mDevice)).isLessThan(202604);
+            return;
+        }
 
-        // Not all devices will report a BatteryHealthAtom
-        if (atoms.size() == 0) return;
         assertThat(atoms.size()).isEqualTo(1);
 
         BatteryHealth bh = atoms.get(0).getExtension(BatteryExtensionAtoms.batteryHealth);
@@ -87,16 +93,18 @@ public class BatteryHealthTests extends DeviceTestCase implements IBuildReceiver
     }
 
     private List<AtomsProto.Atom> pullBatteryHealthAsGaugeMetric() throws Exception {
-        ConfigUtils.uploadConfigForPulledAtom(getDevice(), DeviceUtils.STATSD_ATOM_TEST_PKG,
+        ConfigUtils.uploadConfigForPulledAtom(
+                mDevice,
+                DeviceUtils.STATSD_ATOM_TEST_PKG,
                 BatteryExtensionAtoms.BATTERY_HEALTH_FIELD_NUMBER);
 
-        AtomTestUtils.sendAppBreadcrumbReportedAtom(getDevice());
+        AtomTestUtils.sendAppBreadcrumbReportedAtom(mDevice);
         RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
 
         ExtensionRegistry registry = ExtensionRegistry.newInstance();
         BatteryExtensionAtoms.registerAllExtensions(registry);
 
-        List<AtomsProto.Atom> atoms = ReportUtils.getGaugeMetricAtoms(getDevice(), registry, false);
+        List<AtomsProto.Atom> atoms = ReportUtils.getGaugeMetricAtoms(mDevice, registry, false);
 
         return atoms;
     }
