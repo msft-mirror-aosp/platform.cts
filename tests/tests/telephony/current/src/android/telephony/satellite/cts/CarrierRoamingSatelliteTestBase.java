@@ -527,6 +527,18 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
         overrideCarrierConfig(subId, bundle);
     }
 
+    protected static void disableSatellitePlmns(int slotId) {
+        int subId = SubscriptionManager.getSubscriptionId(slotId);
+        logd(TAG, "disableSatellitePlmns slotId:" + slotId + " subId:" + subId);
+
+        PersistableBundle bundle = new PersistableBundle();
+        PersistableBundle plmnBundle = new PersistableBundle();
+        bundle.putPersistableBundle(
+                CarrierConfigManager.KEY_CARRIER_SUPPORTED_SATELLITE_SERVICES_PER_PROVIDER_BUNDLE,
+                plmnBundle);
+        overrideCarrierConfig(subId, bundle);
+    }
+
     private static void setPhoneNumber(
         int subId, String carrierPhoneNumber) throws Exception {
         logd(TAG, "setPhoneNumber: subId=" + subId
@@ -636,8 +648,8 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
         }
     }
 
-    protected static void setUpManualConnectTestEnvironment(
-        int eSosSlotId, int eSosSimProfileId, String phoneNumber) throws Exception {
+    protected static void setUpManualConnectTestEnvironment(int eSosSlotId, int eSosSimProfileId,
+        String phoneNumber, boolean supportCtsSmsApp) throws Exception {
         // Insert sim card
         assertTrue(sMockModemManager.insertSimCard(eSosSlotId, eSosSimProfileId));
         TimeUnit.MILLISECONDS.sleep(TIMEOUT);
@@ -662,7 +674,7 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
         sSatelliteManager.setNtnSmsSupported(true);
         setUpSatelliteAccessAllowedAtDefaultTestLocation();
 
-        setUpEsosSubscription();
+        setUpEsosSubscription(supportCtsSmsApp);
         enableCarrierRoamingSatelliteConfigs(
             eSosSlotId, CarrierConfigManager.CARRIER_ROAMING_NTN_CONNECT_MANUAL);
     }

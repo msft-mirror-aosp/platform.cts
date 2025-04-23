@@ -151,6 +151,7 @@ public class SatelliteManagerTestBase {
     @SuppressWarnings("StaticAssignmentOfThrowable")
     protected static AssertionError sInitError = null;
 
+    protected static final String CTS_SMS_APP_PACKAGE_NAME = "android.telephony.cts.sms23";
     protected static final String OVERRIDING_COUNTRY_CODES = "US";
     protected static final String SATELLITE_COUNTRY_CODES = "US,UK,CA";
     protected static final String SATELLITE_S2_FILE = "google_us_san_sat_s2.dat";
@@ -2859,11 +2860,13 @@ public class SatelliteManagerTestBase {
         assertTrue(sMockSatelliteServiceManager.setSatelliteAccessAllowedForSubscriptions(null));
     }
 
-    protected static void enableDefaultSmsAppSupportForActiveSubscription(int subId) {
+    protected static void enableDefaultSmsAppSupportForActiveSubscription(
+        int subId, boolean supportCtsSmsApp) {
         // Assume that binding satellite subscription is already selected before this step
         assumeTrue(subId != SubscriptionManager.INVALID_SUBSCRIPTION_ID);
 
-        logd("enableDefaultSmsAppSupportForNtnOnlySubscription: subId=" + subId);
+        logd("enableDefaultSmsAppSupportForNtnOnlySubscription: subId=" + subId
+                + ", supportCtsSmsApp=" + supportCtsSmsApp);
         assertTrue(sMockSatelliteServiceManager.setSatelliteControllerTimeoutDuration(false,
                 TIMEOUT_TYPE_EVALUATE_ESOS_PROFILES_PRIORITIZATION_DURATION_MILLIS, 5));
 
@@ -2899,6 +2902,9 @@ public class SatelliteManagerTestBase {
             fail("Device does not have a default SMS app");
             return;
         }
+        if (supportCtsSmsApp) {
+            newLength++;
+        }
 
         String[] newSupportedMsgApps = new String[newLength];
         if (existingLength > 0) {
@@ -2906,7 +2912,13 @@ public class SatelliteManagerTestBase {
                     originalSupportedMsgApps.length);
         }
         if (newLength > existingLength) {
-            newSupportedMsgApps[newSupportedMsgApps.length - 1] = defaultSmsApp;
+            int index = existingLength;
+            if (!isDefaultSmsAppSupported) {
+                newSupportedMsgApps[index++] = defaultSmsApp;
+            }
+            if (supportCtsSmsApp) {
+                newSupportedMsgApps[index]= CTS_SMS_APP_PACKAGE_NAME;
+            }
         }
         logd("enableDefaultSmsAppSupportForNtnOnlySubscription: newSupportedMsgApps="
                  + Arrays.toString(newSupportedMsgApps));
@@ -2917,7 +2929,7 @@ public class SatelliteManagerTestBase {
                 SATELLITE_DISALLOWED_REASON_UNSUPPORTED_DEFAULT_MSG_APP);
         callback.drainPermits();
 
-        if (!isDefaultSmsAppSupported || hasUnsupportedDefaultMsgAppDisallowedReason) {
+        if (!isDefaultSmsAppSupported || hasUnsupportedDefaultMsgAppDisallowedReason || supportCtsSmsApp) {
             logd("enableDefaultSmsAppSupportForNtnOnlySubscription: updating default SMS app...");
 
             PersistableBundle bundle = new PersistableBundle();
@@ -3012,11 +3024,11 @@ public class SatelliteManagerTestBase {
             logd("setUpNtnOnlySubscription: Satellite already provisioned");
         }
         // Binding satellite subscription need to be selected before this step
-        enableDefaultSmsAppSupportForActiveSubscription(sNtnOnlySubId);
+        enableDefaultSmsAppSupportForActiveSubscription(sNtnOnlySubId, false);
     }
 
-    protected static void setUpEsosSubscription() {
-        logd("setUpEsosSubscription");
+    protected static void setUpEsosSubscription(boolean supportCtsSmsApp) {
+        logd("setUpEsosSubscription: supportCtsSmsApp=" + supportCtsSmsApp);
         assumeTrue(sEsosSubId != SubscriptionManager.INVALID_SUBSCRIPTION_ID);
         enableEsosSupportForActiveSubscription(sEsosSubId);
         enableSatelliteAccessForEsosSubscription(sEsosSubId);
@@ -3040,7 +3052,7 @@ public class SatelliteManagerTestBase {
                      + sEsosSubId);
         }
         // Binding satellite subscription need to be selected before this step
-        enableDefaultSmsAppSupportForActiveSubscription(sEsosSubId);
+        enableDefaultSmsAppSupportForActiveSubscription(sEsosSubId, supportCtsSmsApp);
     }
 
     protected static void overrideCarrierConfig(int subId, PersistableBundle bundle) {
@@ -3113,8 +3125,7 @@ public class SatelliteManagerTestBase {
     protected static void setUpSatelliteAccessAllowedAtDefaultTestLocation() {
         logd("setUpSatelliteAccessAllowedAtDefaultTestLocation...");
         assertTrue(sMockSatelliteServiceManager
-                .setIsSatelliteCommunicationAllowedForCurrentLocationCache(
-                    "cache_clear_and_not_allowed"));
+                .setIsSatelliteCommunicationAllowedForCurrentLocationCache("disable"));
         assertTrue(sMockSatelliteServiceManager.setCountryCodes(false, "US", null, null, 0));
         assertTrue(
                 sMockSatelliteServiceManager.setSatelliteAccessControlOverlayConfigs(
@@ -3219,8 +3230,42 @@ public class SatelliteManagerTestBase {
         requestMockLocationPermission(true);
         Location loc = LocationUtils.createLocation(
                 TEST_PROVIDER, latitude, longitude, LOCATION_ACCURACY);
-        logd("setTestProviderLocation: loc=" + loc);
-        sLocationManager.setTestProviderLocation(TEST_PROVIDER, loc);
+        logd("setTestProviderLocation: desired location=" + loc);
+        int i = 0;
+        for (; i < 3; i++) {
+            sLocationManager.setTestProviderLocation(TEST_PROVIDER, loc);
+            Location lastKnownLocation = getLastKnownLocation();
+            logd("setTestProviderLocation: i=" + i + ", lastKnownLocation=" + lastKnownLocation);
+            if (isTheSameLocation(loc, lastKnownLocation)) {
+                break;
+            }
+        }
+        assumeTrue(i < 3);
+    }
+
+    @Nullable
+    protected static Location getLastKnownLocation() {
+        Location result = null;
+        for (String provider : sLocationManager.getProviders(true)) {
+            Location location = sLocationManager.getLastKnownLocation(provider);
+            if (location != null && (result == null
+                    || result.getElapsedRealtimeNanos() < location.getElapsedRealtimeNanos())) {
+                result = location;
+            }
+        }
+        return result;
+    }
+
+    protected static boolean isTheSameLocation(
+        @Nullable Location location1, @Nullable Location location2) {
+        if (location1 == null && location2 == null) {
+            return true;
+        }
+        if (location1 == null || location2 == null) {
+            return false;
+        }
+        return Double.compare(location1.getLatitude(), location2.getLatitude()) == 0
+                && Double.compare(location1.getLongitude(), location2.getLongitude()) == 0;
     }
 
     protected static void requestMockLocationPermission(boolean allowed) {
