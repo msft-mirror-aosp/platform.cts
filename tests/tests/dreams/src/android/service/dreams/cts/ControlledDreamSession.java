@@ -50,7 +50,7 @@ public class ControlledDreamSession {
 
     // Timeout that is used for waiting on various steps to complete, such as connecting to the
     // proxy service and starting the dream.
-    private static final int TIMEOUT_SECONDS = 2;
+    private static final int TIMEOUT_SECONDS = 5;
 
     // The test app's proxy service component.
     private static final String DREAM_CONTROL_COMPONENT =
@@ -60,25 +60,32 @@ public class ControlledDreamSession {
     public static final int DREAM_LIFECYCLE_UNKNOWN = 0;
     public static final int DREAM_LIFECYCLE_ON_ATTACHED_TO_WINDOW = 1;
     public static final int DREAM_LIFECYCLE_ON_DREAMING_STARTED = 2;
-    public static final int DREAM_LIFECYCLE_ON_FOCUS_GAINED = 3;
-    public static final int DREAM_LIFECYCLE_ON_FOCUS_LOST = 4;
-    public static final int DREAM_LIFECYCLE_ON_WAKEUP = 5;
-    public static final int DREAM_LIFECYCLE_ON_DREAMING_STOPPED = 6;
-    public static final int DREAM_LIFECYCLE_ON_DETACHED_FROM_WINDOW = 7;
-    public static final int DREAM_LIFECYCLE_ON_DESTROYED = 8;
+    public static final int DREAM_LIFECYCLE_ON_CONTENT_VIEW_FOCUS_GAINED = 3;
+    public static final int DREAM_LIFECYCLE_ON_CONTENT_VIEW_FOCUS_LOST = 4;
+    public static final int DREAM_LIFECYCLE_ON_FOCUS_GAINED = 5;
+    public static final int DREAM_LIFECYCLE_ON_FOCUS_LOST = 6;
+    public static final int DREAM_LIFECYCLE_ON_WAKEUP = 7;
+    public static final int DREAM_LIFECYCLE_ON_DREAMING_STOPPED = 8;
+    public static final int DREAM_LIFECYCLE_ON_DETACHED_FROM_WINDOW = 9;
+    public static final int DREAM_LIFECYCLE_ON_DESTROYED = 10;
 
-    @IntDef(prefix = { "DREAM_LIFECYCLE_" }, value = {
-            DREAM_LIFECYCLE_UNKNOWN,
-            DREAM_LIFECYCLE_ON_ATTACHED_TO_WINDOW,
-            DREAM_LIFECYCLE_ON_DREAMING_STARTED,
-            DREAM_LIFECYCLE_ON_FOCUS_GAINED,
-            DREAM_LIFECYCLE_ON_WAKEUP,
-            DREAM_LIFECYCLE_ON_DREAMING_STOPPED,
-            DREAM_LIFECYCLE_ON_DETACHED_FROM_WINDOW,
-            DREAM_LIFECYCLE_ON_DESTROYED,
-    })
+    @IntDef(
+            prefix = {"DREAM_LIFECYCLE_"},
+            value = {
+                DREAM_LIFECYCLE_UNKNOWN,
+                DREAM_LIFECYCLE_ON_ATTACHED_TO_WINDOW,
+                DREAM_LIFECYCLE_ON_DREAMING_STARTED,
+                DREAM_LIFECYCLE_ON_CONTENT_VIEW_FOCUS_GAINED,
+                DREAM_LIFECYCLE_ON_CONTENT_VIEW_FOCUS_LOST,
+                DREAM_LIFECYCLE_ON_FOCUS_GAINED,
+                DREAM_LIFECYCLE_ON_FOCUS_LOST,
+                DREAM_LIFECYCLE_ON_WAKEUP,
+                DREAM_LIFECYCLE_ON_DREAMING_STOPPED,
+                DREAM_LIFECYCLE_ON_DETACHED_FROM_WINDOW,
+                DREAM_LIFECYCLE_ON_DESTROYED,
+            })
     @Retention(RetentionPolicy.SOURCE)
-    public @interface Dreamlifecycle{}
+    public @interface Dreamlifecycle {}
 
     /**
      * Returns a string description for the lifecycle.
@@ -88,7 +95,10 @@ public class ControlledDreamSession {
             case DREAM_LIFECYCLE_UNKNOWN -> "unknown";
             case DREAM_LIFECYCLE_ON_ATTACHED_TO_WINDOW -> "attached_to_window";
             case DREAM_LIFECYCLE_ON_DREAMING_STARTED -> "on_dream_started";
+            case DREAM_LIFECYCLE_ON_CONTENT_VIEW_FOCUS_GAINED -> "on_focus_gained";
+            case DREAM_LIFECYCLE_ON_CONTENT_VIEW_FOCUS_LOST -> "on_focus_lost";
             case DREAM_LIFECYCLE_ON_FOCUS_GAINED -> "on_focus_gained";
+            case DREAM_LIFECYCLE_ON_FOCUS_LOST -> "on_focus_lost";
             case DREAM_LIFECYCLE_ON_WAKEUP -> "on_wake_up";
             case DREAM_LIFECYCLE_ON_DREAMING_STOPPED -> "on_dreaming_stopped";
             case DREAM_LIFECYCLE_ON_DETACHED_FROM_WINDOW -> "on_detached_from_window";
@@ -149,36 +159,46 @@ public class ControlledDreamSession {
         mDreamCoordinator = coordinator;
     }
 
-    private IDreamLifecycleListener mLifecycleListener = new IDreamLifecycleListener.Stub() {
-        public void onAttachedToWindow(IControlledDream dream) {
-            pushLifecycle(DREAM_LIFECYCLE_ON_ATTACHED_TO_WINDOW);
-        }
+    private IDreamLifecycleListener mLifecycleListener =
+            new IDreamLifecycleListener.Stub() {
+                public void onAttachedToWindow(IControlledDream dream) {
+                    pushLifecycle(DREAM_LIFECYCLE_ON_ATTACHED_TO_WINDOW);
+                }
 
-        public void onDreamingStarted(IControlledDream dream) {
-            pushLifecycle(DREAM_LIFECYCLE_ON_DREAMING_STARTED);
-        }
+                public void onDreamingStarted(IControlledDream dream) {
+                    pushLifecycle(DREAM_LIFECYCLE_ON_DREAMING_STARTED);
+                }
 
-        public void onFocusChanged(IControlledDream dream, boolean hasFocus) {
-            pushLifecycle(
-                    hasFocus ? DREAM_LIFECYCLE_ON_FOCUS_GAINED : DREAM_LIFECYCLE_ON_FOCUS_LOST);
-        }
+                public void onContentViewFocusChanged(IControlledDream dream, boolean hasFocus) {
+                    pushLifecycle(
+                            hasFocus
+                                    ? DREAM_LIFECYCLE_ON_CONTENT_VIEW_FOCUS_GAINED
+                                    : DREAM_LIFECYCLE_ON_CONTENT_VIEW_FOCUS_LOST);
+                }
 
-        public void onDreamingStopped(IControlledDream dream) {
-            pushLifecycle(DREAM_LIFECYCLE_ON_DREAMING_STOPPED);
-        }
+                public void onFocusChanged(IControlledDream dream, boolean hasFocus) {
+                    pushLifecycle(
+                            hasFocus
+                                    ? DREAM_LIFECYCLE_ON_FOCUS_GAINED
+                                    : DREAM_LIFECYCLE_ON_FOCUS_LOST);
+                }
 
-        public void onWakeUp(IControlledDream dream) {
-            pushLifecycle(DREAM_LIFECYCLE_ON_WAKEUP);
-        }
+                public void onDreamingStopped(IControlledDream dream) {
+                    pushLifecycle(DREAM_LIFECYCLE_ON_DREAMING_STOPPED);
+                }
 
-        public void onDetachedFromWindow(IControlledDream dream) {
-            pushLifecycle(DREAM_LIFECYCLE_ON_DETACHED_FROM_WINDOW);
-        }
+                public void onWakeUp(IControlledDream dream) {
+                    pushLifecycle(DREAM_LIFECYCLE_ON_WAKEUP);
+                }
 
-        public void onDreamDestroyed(IControlledDream dream) {
-            pushLifecycle(DREAM_LIFECYCLE_ON_DESTROYED);
-        }
-    };
+                public void onDetachedFromWindow(IControlledDream dream) {
+                    pushLifecycle(DREAM_LIFECYCLE_ON_DETACHED_FROM_WINDOW);
+                }
+
+                public void onDreamDestroyed(IControlledDream dream) {
+                    pushLifecycle(DREAM_LIFECYCLE_ON_DESTROYED);
+                }
+            };
 
     private void pushLifecycle(@Dreamlifecycle int lifecycle) {
         mSeenLifecycles.add(lifecycle);

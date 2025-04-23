@@ -85,6 +85,7 @@ import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.server.wm.CtsWindowInfoUtils;
 import android.server.wm.WindowManagerState;
+import android.server.wm.WindowManagerStateHelper;
 import android.text.TextUtils;
 import android.util.Log;
 import android.util.Pair;
@@ -1791,6 +1792,7 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
     @FlakyTest
     public void testIMEVisibleInSplitScreenWithWindowInsetsApi() throws Throwable {
         assumeTrue(TestUtils.supportsSplitScreenMultiWindow());
+        final var wmState = new WindowManagerStateHelper();
 
         try (MockImeSession imeSession = MockImeSession.create(
                 mInstrumentation.getContext(),
@@ -1874,10 +1876,14 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
 
                 // Finish the primary activity to exit split-screen mode.
                 splitPrimaryActivity.runOnUiThread(splitPrimaryActivity::finish);
+
+                wmState.waitForAppTransitionIdleOnDisplay(display.getDisplayId());
                 TestUtils.waitOnMainUntil(() -> {
                     final View decorView = testActivity2.getWindow().getDecorView();
                     return decorView.hasWindowFocus() && decorView.getVisibility() == VISIBLE;
                 }, TIMEOUT, "Activity should visible & focused when exiting split-screen mode");
+                // TestActivity2 doesn't handle config change and gets re-created, so IME is hidden.
+                expectImeInvisible(TIMEOUT);
 
                 // Rerun the test procedure to ensure it passes after exiting split-screen mode.
                 testProcedureForTestActivity2.run();

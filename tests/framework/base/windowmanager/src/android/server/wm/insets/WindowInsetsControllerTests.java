@@ -103,7 +103,6 @@ import com.android.cts.mockime.ImeSettings;
 import com.android.cts.mockime.MockImePackageNames;
 import com.android.cts.mockime.MockImeSession;
 
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ErrorCollector;
@@ -869,7 +868,6 @@ public class WindowInsetsControllerTests extends WindowManagerTestBase {
      * to the app. This shows MockIme2, then switches to and shows MockIme1, and quickly switches
      * back to MockIme2, to verify the scenario with a previously showing IME window.
      */
-    @Ignore("b/411039238")
     @Test
     public void testImeInsetsFinalSizeIsMaximumSize() throws Exception {
         assumeFalse("Automotive is to skip this test until showing and hiding certain insets "

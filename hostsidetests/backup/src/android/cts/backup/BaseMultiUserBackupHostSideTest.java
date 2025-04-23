@@ -18,8 +18,8 @@ package android.cts.backup;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import static org.junit.Assume.assumeTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeTrue;
 
 import android.platform.test.annotations.AppModeFull;
 
@@ -59,6 +59,9 @@ public abstract class BaseMultiUserBackupHostSideTest extends BaseBackupHostSide
     static final String FULL_BACKUP_DEVICE_TEST_NAME =
             FULL_BACKUP_TEST_PACKAGE + ".ProfileFullBackupRestoreTest";
 
+    /** Flag value for full user from android/content/pm/UserInfo.java */
+    private static final int FLAG_FULL = 0x00000400;
+
     protected final BackupUtils mBackupUtils = getBackupUtils();
     private ITestDevice mDevice;
 
@@ -79,10 +82,13 @@ public abstract class BaseMultiUserBackupHostSideTest extends BaseBackupHostSide
         int currentUserId = mDevice.getCurrentUser();
         mInitialUser = Optional.of(currentUserId);
 
-        // Switch to primary user.
-        int primaryUserId = mDevice.getPrimaryUserId();
-        if (currentUserId != primaryUserId) {
-            mDevice.switchUser(primaryUserId);
+        // Switch to the main user, or the first full user.
+        Integer userIdToSwitch = mDevice.getMainUserId();
+        if (userIdToSwitch == null) {
+            userIdToSwitch = getFirstFullUserId();
+        }
+        if (userIdToSwitch != null && userIdToSwitch != currentUserId) {
+            mDevice.switchUser(userIdToSwitch);
         }
     }
 
@@ -159,6 +165,16 @@ public abstract class BaseMultiUserBackupHostSideTest extends BaseBackupHostSide
         assertThat(mBackupUtils.isLocalTransportSelectedForUser(userId)).isTrue();
 
         return localTransport;
+    }
+
+    /** Returns the first user found with the full user flag. Returns null if not found. */
+    private Integer getFirstFullUserId() throws DeviceNotAvailableException {
+        for (int userId : getDevice().listUsers()) {
+            if ((getDevice().getUserFlags(userId) & FLAG_FULL) != 0) {
+                return userId;
+            }
+        }
+        return null;
     }
 
     // TODO(b/139652329): Move to backup utils.

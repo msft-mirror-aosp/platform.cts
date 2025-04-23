@@ -145,6 +145,7 @@ public class RoundedCornerTests extends ActivityManagerTestBase {
             PollingCheck.waitFor(TIMEOUT_IN_MILLISECONDS,
                     () -> activity.getDispatchedInsets() != null);
             final WindowInsets insets = activity.getDispatchedInsets();
+            Log.d(TAG, "Received insets: " + insets);
 
             if (excludedRoundedCorners) {
                 for (int i = 0; i < POSITION_LENGTH; i++) {

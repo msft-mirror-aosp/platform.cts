@@ -900,6 +900,7 @@ public final class InputMethodServiceTest extends EndToEndImeTestBase {
             try {
                 activity.setRequestedOrientation(SCREEN_ORIENTATION_LANDSCAPE);
                 mInstrumentation.waitForIdleSync();
+                android.util.Log.d(TAG, "Expecting visible IME");
                 expectImeVisible(TIMEOUT);
 
                 activity.setRequestedOrientation(SCREEN_ORIENTATION_PORTRAIT);

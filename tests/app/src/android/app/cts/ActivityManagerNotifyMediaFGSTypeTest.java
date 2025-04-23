@@ -22,7 +22,7 @@ import static android.os.SystemClock.sleep;
 import static com.android.compatibility.common.util.SystemUtil.runShellCommand;
 import static com.android.server.am.ActiveServices.MEDIA_FGS_STATE_TRANSITION;
 
-import static org.junit.Assert.assertTrue;
+import static com.google.common.truth.Truth.assertWithMessage;
 
 import android.Manifest;
 import android.accessibilityservice.AccessibilityService;
@@ -30,9 +30,9 @@ import android.app.ActivityManager;
 import android.app.Instrumentation;
 import android.app.compat.CompatChanges;
 import android.app.compat.PackageOverride;
-import android.app.cts.android.app.cts.tools.WaitForBroadcast;
 import android.app.stubs.shared.CommandReceiver;
 import android.app.stubs.shared.LocalForegroundServiceMedia;
+import android.app.tools.WaitForBroadcast;
 import android.app.tools.WatchUidRunner;
 import android.content.Context;
 import android.content.Intent;
@@ -46,8 +46,8 @@ import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.DeviceConfig;
 
-import androidx.test.InstrumentationRegistry;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.DeviceConfigStateHelper;
 import com.android.compatibility.common.util.SystemUtil;
@@ -64,9 +64,7 @@ import java.util.Map;
 import java.util.Set;
 
 @RunWith(AndroidJUnit4.class)
-public class ActivityManagerNotifyMediaFGSTypeTest {
-    private static final String TAG = ActivityManagerNotifyMediaFGSTypeTest.class.getName();
-    private static final String STUB_PACKAGE_NAME = "android.app.stubs";
+public final class ActivityManagerNotifyMediaFGSTypeTest {
     private static final String PACKAGE_NAME_APP1 = "com.android.app1";
     private static final int WAITFOR_MSEC = 10000;
     private static final int USER_ENGAGED_TIMEOUT_MSEC = 2000;
@@ -125,8 +123,9 @@ public class ActivityManagerNotifyMediaFGSTypeTest {
         final String dumpLines = runShellCommand("dumpsys media_session");
         final String expectedLine =
                 String.format("%s: [cur: %d", USER_ENGAGED_TIMEOUT_KEY, USER_ENGAGED_TIMEOUT_MSEC);
-        assertTrue(
-                "Failed to configure temp user engaged timeout", dumpLines.contains(expectedLine));
+        assertWithMessage("Failed to configure temp user engaged timeout")
+                .that(dumpLines.contains(expectedLine))
+                .isTrue();
 
         // Ensure we can remote control media sessions from the test.
         mInstrumentation
@@ -136,7 +135,7 @@ public class ActivityManagerNotifyMediaFGSTypeTest {
                         Manifest.permission.WRITE_ALLOWLISTED_DEVICE_CONFIG,
                         Manifest.permission.OVERRIDE_COMPAT_CHANGE_CONFIG_ON_RELEASE_BUILD);
 
-        setCompatOverride(MEDIA_FGS_STATE_TRANSITION, true);
+        setMediaFgsStateTransitionCompatOverride(true);
     }
 
     @After
@@ -263,8 +262,11 @@ public class ActivityManagerNotifyMediaFGSTypeTest {
         return null;
     }
 
-    private static void setCompatOverride(long changeId, boolean enable) {
-        var override = Map.of(changeId, new PackageOverride.Builder().setEnabled(enable).build());
+    private static void setMediaFgsStateTransitionCompatOverride(boolean enable) {
+        var override =
+                Map.of(
+                        MEDIA_FGS_STATE_TRANSITION,
+                        new PackageOverride.Builder().setEnabled(enable).build());
         CompatChanges.putPackageOverrides(PACKAGE_NAME_APP1, override);
     }
 
@@ -275,12 +277,13 @@ public class ActivityManagerNotifyMediaFGSTypeTest {
     public void testNotifyInactiveMediaForegroundServiceInternal() throws Exception {
         ApplicationInfo app1Info = mContext.getPackageManager().getApplicationInfo(
                 PACKAGE_NAME_APP1, 0);
-        WatchUidRunner uid1Watcher = new WatchUidRunner(mInstrumentation, app1Info.uid,
-                WAITFOR_MSEC);
+        WatchUidRunner uid1Watcher =
+                new WatchUidRunner(mInstrumentation, app1Info.uid, WAITFOR_MSEC);
         // start a media fgs
         final int notificationId = setupMediaForegroundService();
-        assertTrue("Failed to start media foreground service with notification",
-                notificationId > 0);
+        assertWithMessage("Failed to start media foreground service with notification")
+                .that(notificationId > 0)
+                .isTrue();
         runShellCommand(mInstrumentation,
                 String.format("am set-media-foreground-service inactive --user %d %s %d",
                         mContext.getUserId(), PACKAGE_NAME_APP1, notificationId));
@@ -298,12 +301,13 @@ public class ActivityManagerNotifyMediaFGSTypeTest {
     public void testNotifyMediaServiceInternal() throws Exception {
         ApplicationInfo app1Info = mContext.getPackageManager().getApplicationInfo(
                 PACKAGE_NAME_APP1, 0);
-        WatchUidRunner uid1Watcher = new WatchUidRunner(mInstrumentation, app1Info.uid,
-                WAITFOR_MSEC);
+        WatchUidRunner uid1Watcher =
+                new WatchUidRunner(mInstrumentation, app1Info.uid, WAITFOR_MSEC);
         // start a media fgs
         final int notificationId = setupMediaForegroundService();
-        assertTrue("Failed to start media foreground service with notification",
-                notificationId > 0);
+        assertWithMessage("Failed to start media foreground service with notification")
+                .that(notificationId > 0)
+                .isTrue();
         runShellCommand(mInstrumentation,
                 String.format("am set-media-foreground-service inactive --user %d %s %d",
                         mContext.getUserId(), PACKAGE_NAME_APP1, notificationId));
@@ -328,8 +332,9 @@ public class ActivityManagerNotifyMediaFGSTypeTest {
         WaitForBroadcast waiter = new WaitForBroadcast(mTargetContext);
         // start a media fgs
         final int notificationId = setupMediaForegroundService();
-        assertTrue(
-                "Failed to start media foreground service with notification", notificationId > 0);
+        assertWithMessage("Failed to start media foreground service with notification")
+                .that(notificationId > 0)
+                .isTrue();
         waiter.prepare(ACTION_START_FGSM_RESULT);
         Bundle extras =
                 LocalForegroundServiceMedia.newCommand(
@@ -365,11 +370,12 @@ public class ActivityManagerNotifyMediaFGSTypeTest {
         WatchUidRunner uid1Watcher =
                 new WatchUidRunner(mInstrumentation, app1Info.uid, WAITFOR_MSEC);
         // disable compat change.
-        setCompatOverride(MEDIA_FGS_STATE_TRANSITION, false);
+        setMediaFgsStateTransitionCompatOverride(false);
         // start a media fgs
         final int notificationId = setupMediaForegroundService();
-        assertTrue(
-                "Failed to start media foreground service with notification", notificationId > 0);
+        assertWithMessage("Failed to start media foreground service with notification")
+                .that(notificationId > 0)
+                .isTrue();
         runShellCommand(
                 mInstrumentation,
                 String.format(
@@ -393,8 +399,9 @@ public class ActivityManagerNotifyMediaFGSTypeTest {
                 new WatchUidRunner(mInstrumentation, app1Info.uid, WAITFOR_MSEC);
         // start a media fgs
         final int notificationId = setupMediaForegroundService();
-        assertTrue(
-                "Failed to start media foreground service with notification", notificationId > 0);
+        assertWithMessage("Failed to start media foreground service with notification")
+                .that(notificationId > 0)
+                .isTrue();
         runShellCommand(
                 mInstrumentation,
                 String.format(
@@ -403,7 +410,7 @@ public class ActivityManagerNotifyMediaFGSTypeTest {
 
         uid1Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_SERVICE);
         // disable compat change.
-        setCompatOverride(MEDIA_FGS_STATE_TRANSITION, false);
+        setMediaFgsStateTransitionCompatOverride(false);
         runShellCommand(
                 mInstrumentation,
                 String.format(
@@ -679,8 +686,9 @@ public class ActivityManagerNotifyMediaFGSTypeTest {
 
         // Start the media service in foreground state.
         final int notificationId = setupMediaForegroundService();
-        assertTrue(
-                "Failed to start media foreground service with notification", notificationId > 0);
+        assertWithMessage("Failed to start media foreground service with notification")
+                .that(notificationId > 0)
+                .isTrue();
 
         // Let the media session move from USER_TEMPORARY_DISENGAGED to USER_DISENGAGED state.
         sleep(USER_ENGAGED_TIMEOUT_MSEC);
@@ -705,8 +713,9 @@ public class ActivityManagerNotifyMediaFGSTypeTest {
 
         // Start the media service in foreground state.
         final int notificationId = setupMediaForegroundService();
-        assertTrue(
-                "Failed to start media foreground service with notification", notificationId > 0);
+        assertWithMessage("Failed to start media foreground service with notification")
+                .that(notificationId > 0)
+                .isTrue();
         // Get the controller and press play.
         MediaController controller = getMediaControllerForActiveSession();
         controller.getTransportControls().play();
@@ -727,8 +736,9 @@ public class ActivityManagerNotifyMediaFGSTypeTest {
 
         // Start the media service in foreground state.
         final int notificationId = setupMediaForegroundService();
-        assertTrue(
-                "Failed to start media foreground service with notification", notificationId > 0);
+        assertWithMessage("Failed to start media foreground service with notification")
+                .that(notificationId > 0)
+                .isTrue();
         // Get the controller and press play.
         MediaController controller = getMediaControllerForActiveSession();
         controller.getTransportControls().play();
@@ -749,8 +759,9 @@ public class ActivityManagerNotifyMediaFGSTypeTest {
         WaitForBroadcast waiter = new WaitForBroadcast(mTargetContext);
         // Start the media service in foreground state.
         final int notificationId = setupMediaForegroundService();
-        assertTrue(
-                "Failed to start media foreground service with notification", notificationId > 0);
+        assertWithMessage("Failed to start media foreground service with notification")
+                .that(notificationId > 0)
+                .isTrue();
         // Get the controller and press play.
         MediaController controller = getMediaControllerForActiveSession();
         controller.getTransportControls().play();
@@ -783,8 +794,9 @@ public class ActivityManagerNotifyMediaFGSTypeTest {
         WaitForBroadcast waiter = new WaitForBroadcast(mTargetContext);
         // Start the media service in foreground state.
         final int notificationId = setupMediaForegroundService();
-        assertTrue(
-                "Failed to start media foreground service with notification", notificationId > 0);
+        assertWithMessage("Failed to start media foreground service with notification")
+                .that(notificationId > 0)
+                .isTrue();
         // Get the controller and press play.
         MediaController controller = getMediaControllerForActiveSession();
         controller.getTransportControls().play();
@@ -818,8 +830,9 @@ public class ActivityManagerNotifyMediaFGSTypeTest {
         WaitForBroadcast waiter = new WaitForBroadcast(mTargetContext);
         // Start the media service in foreground state.
         final int notificationId = setupMediaForegroundService();
-        assertTrue(
-                "Failed to start media foreground service with notification", notificationId > 0);
+        assertWithMessage("Failed to start media foreground service with notification")
+                .that(notificationId > 0)
+                .isTrue();
         // Get the controller for active session before deactivating.
         MediaController controller = getMediaControllerForActiveSession();
         // Wait for some time and deactivate the media session.
@@ -852,8 +865,9 @@ public class ActivityManagerNotifyMediaFGSTypeTest {
                 new WatchUidRunner(mInstrumentation, app1Info.uid, WAITFOR_MSEC);
         // Start the media service in foreground state.
         final int notificationId = setupMediaForegroundService();
-        assertTrue(
-                "Failed to start media foreground service with notification", notificationId > 0);
+        assertWithMessage("Failed to start media foreground service with notification")
+                .that(notificationId > 0)
+                .isTrue();
         // Get the controller for active session before deactivating.
         MediaController controller = getMediaControllerForActiveSession();
         controller.getTransportControls().play();
@@ -865,8 +879,9 @@ public class ActivityManagerNotifyMediaFGSTypeTest {
         final String dumpLines = runShellCommand("dumpsys media_session");
         final String expectedLine =
                 String.format("%s: [cur: %d", USER_ENGAGED_TIMEOUT_KEY, USER_ENGAGED_TIMEOUT_MSEC);
-        assertTrue(
-                "Failed to configure temp user engaged timeout", dumpLines.contains(expectedLine));
+        assertWithMessage("Failed to configure temp user engaged timeout")
+                .that(dumpLines.contains(expectedLine))
+                .isTrue();
 
         controller.getTransportControls().stop();
         uid1Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_SERVICE);
@@ -900,8 +915,9 @@ public class ActivityManagerNotifyMediaFGSTypeTest {
                 new WatchUidRunner(mInstrumentation, app1Info.uid, WAITFOR_MSEC);
         // Start the media service in foreground state.
         final int notificationId = setupMediaForegroundService();
-        assertTrue(
-                "Failed to start media foreground service with notification", notificationId > 0);
+        assertWithMessage("Failed to start media foreground service with notification")
+                .that(notificationId > 0)
+                .isTrue();
 
         // Stop media to allow media session service to mark fgs inactive.
         Bundle extras =

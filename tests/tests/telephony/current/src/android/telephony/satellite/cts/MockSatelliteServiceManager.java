@@ -1569,22 +1569,11 @@ class MockSatelliteServiceManager {
     }
 
     boolean setIsSatelliteCommunicationAllowedForCurrentLocationCache(String state) {
-        String option;
-        if ("cache_allowed".equalsIgnoreCase(state)) {
-            option = "-a";
-        } else if ("cache_clear_and_not_allowed".equalsIgnoreCase(state)) {
-            option = "-n";
-        } else if ("clear_cache_only".equalsIgnoreCase(state)) {
-            option = "-c";
-        } else {
-            return false;
-        }
-
         try {
             String result = TelephonyUtils.executeShellCommand(mInstrumentation,
                     SET_IS_SATELLITE_COMMUNICATION_ALLOWED_FOR_CURRENT_LOCATION_CACHE
-                            + option);
-            logd("setIsSatelliteCommunicationAllowedForCurrentLocationCache(" + option
+                            + state);
+            logd("setIsSatelliteCommunicationAllowedForCurrentLocationCache(" + state
                     + "): result = " + result);
             return true;
         } catch (Exception e) {

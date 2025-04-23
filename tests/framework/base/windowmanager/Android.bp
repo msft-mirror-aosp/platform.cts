@@ -70,6 +70,7 @@ java_defaults {
         "hamcrest-library",
         "platform-test-annotations",
         "cts-input-lib",
+        "android.companion.flags-aconfig-java",
         "cts-wm-util",
         "CtsSurfaceValidatorLib",
         "CtsMockInputMethodLib",

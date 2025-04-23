@@ -1202,11 +1202,6 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
             return;
         }
 
-        // TODO(b/307582301): Convert this to assume once we support Junit4
-        if (!Flags.rankingUpdateAshmem()) {
-            return;
-        }
-
         int notificationsPerApp = 40;
         int totalNotificationsSent = notificationsPerApp * 8; // 8 apps total
 

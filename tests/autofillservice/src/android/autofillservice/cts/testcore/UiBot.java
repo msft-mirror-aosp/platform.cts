@@ -1089,12 +1089,22 @@ public class UiBot {
             boolean dumpOnError) throws Exception {
         // NOTE: mDevice.wait does not work for the save snackbar, so we need a polling approach.
         try {
-            return timeout.run("waitForObject(" + selector + ")", () -> {
-                return parent != null
-                        ? parent.findObject(selector)
-                        : mDevice.findObject(selector);
-
-            });
+            Log.v(TAG, "waitForObject() start for selector: " + selector);
+            UiObject2 result =
+                    timeout.run(
+                            "waitForObject(" + selector + ")",
+                            () -> {
+                                return parent != null
+                                        ? parent.findObject(selector)
+                                        : mDevice.findObject(selector);
+                            });
+            Log.v(
+                    TAG,
+                    "waitForObject(): object for selector "
+                            + selector
+                            + " found, result: "
+                            + result);
+            return result;
         } catch (RetryableException e) {
             if (dumpOnError) {
                 dumpScreen("waitForObject() for " + selector + "on "

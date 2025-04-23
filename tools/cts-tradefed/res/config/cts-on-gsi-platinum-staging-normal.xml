@@ -163,7 +163,6 @@
     <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.AlertDialogTest#testAlertDialogTheme"/>
     <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.AlertDialogTest#testCallback"/>
     <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.AlertDialog_BuilderTest#testSetViewById"/>
-    <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.BroadcastOptionsIntegrationTest#testRequireCompatChange_enabled_success"/>
     <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.CloseSystemDialogsTest#testCloseSystemDialogsViaActivityManager_whenTargetSdk30_isBlockedButDoesNotThrow"/>
     <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.CloseSystemDialogsTest#testCloseSystemDialogs_whenTargetSdk30_isBlockedButDoesNotThrow"/>
     <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.DownloadManagerTest#testMinimumDownload"/>
@@ -208,6 +207,8 @@
     <option name="compatibility:include-filter" value="CtsBiometricsTestCases android.server.biometrics.BiometricSimpleTests#testIsConfirmationRequired"/>
     <!-- CtsBluetoothTestCases -->
     <option name="compatibility:include-filter" value="CtsBluetoothTestCases android.bluetooth.cts.BluetoothLeScanTest#scanFromSourceWithFilters"/>
+    <!-- CtsBroadcastTestCases -->
+    <option name="compatibility:include-filter" value="CtsBroadcastTestCases android.app.cts.broadcasts.BroadcastOptionsIntegrationTest#testRequireCompatChange_enabled_success"/>
     <!-- CtsCompanionDeviceManagerCoreTestCases -->
     <option name="compatibility:include-filter" value="CtsCompanionDeviceManagerCoreTestCases android.companion.cts.core.DeviceEventTest#test_ble_device_event"/>
     <option name="compatibility:include-filter" value="CtsCompanionDeviceManagerCoreTestCases android.companion.cts.core.DeviceEventTest#test_classic_bt_device_event"/>

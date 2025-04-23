@@ -83,7 +83,7 @@ public class ManualConnectCarrierRoamingSatelliteTest extends CarrierRoamingSate
 
         beforeAllCarrierRoamingTestsBase();
         setUpManualConnectTestEnvironment(
-            ESOS_SLOT_ID, ESOS_SIM_PROFILE_ID, ESOS_PHONE_NUMBER);
+            ESOS_SLOT_ID, ESOS_SIM_PROFILE_ID, ESOS_PHONE_NUMBER, true);
     }
 
     /**
@@ -142,8 +142,19 @@ public class ManualConnectCarrierRoamingSatelliteTest extends CarrierRoamingSate
         ServiceStateListenerTest serviceStateListener = registerServiceStateListener();
         adoptShellIdentity();
         boolean originalWifiState = sWifiManager.isWifiEnabled();
+        logd(TAG, "originalWifiState: " + originalWifiState);
 
         try {
+            // Make the device is connected to a TN cell
+            // Disable satellite PLMNs so that the network is considered as a TN network
+            disableSatellitePlmns(ESOS_SLOT_ID);
+            // Move device to out of service state
+            sMockModemManager.changeNetworkService(ESOS_SLOT_ID, ESOS_SIM_PROFILE_ID, false);
+            assertTrue(serviceStateListener.waitUntilOutOfService());
+            // Move device to in service state
+            sMockModemManager.changeNetworkService(ESOS_SLOT_ID, ESOS_SIM_PROFILE_ID, true);
+            assertTrue(serviceStateListener.waitUntilInService());
+
             // Get NTN eligibility immediately after registering
             sTelephonyManager.registerTelephonyCallback(
                 getContext().getMainExecutor(), carrierRoamingNtnListener);
@@ -151,13 +162,17 @@ public class ManualConnectCarrierRoamingSatelliteTest extends CarrierRoamingSate
             assertFalse(carrierRoamingNtnListener.getNtnEligible());
             carrierRoamingNtnListener.clearModeChanges();
 
+            // Enable satellite PLMNs to make sure the device is registered to a NTN
+            enableCarrierRoamingSatelliteConfigs(ESOS_SLOT_ID,
+                CarrierConfigManager.CARRIER_ROAMING_NTN_CONNECT_MANUAL);
+
             if (originalWifiState) {
-                logd(TAG, "Disable wifi");
+                logd(TAG, "Disabling wifi");
                 sWifiManager.setWifiEnabled(false);
                 sWifiStateReceiver.setWifiExpectedState(false);
                 assertTrue(sWifiStateReceiver.waitUntilWifiStateChanged());
+                carrierRoamingNtnListener.clearModeChanges();
             }
-            carrierRoamingNtnListener.clearModeChanges();
 
             // Network is lost
             logd(TAG, "Move device to out of service state");
@@ -171,7 +186,12 @@ public class ManualConnectCarrierRoamingSatelliteTest extends CarrierRoamingSate
             assertTrue(carrierRoamingNtnListener.waitForNtnEligible(1));
             assertTrue(carrierRoamingNtnListener.getNtnEligible());
         } finally {
-            sWifiManager.setWifiEnabled(originalWifiState);
+            if (originalWifiState) {
+                logd(TAG, "Restroing wifi enabled state");
+                sWifiManager.setWifiEnabled(true);
+                sWifiStateReceiver.setWifiExpectedState(true);
+                assertTrue(sWifiStateReceiver.waitUntilWifiStateChanged());
+            }
             sTelephonyManager.unregisterTelephonyCallback(carrierRoamingNtnListener);
             sTelephonyManager.unregisterTelephonyCallback(serviceStateListener);
             dropShellIdentity();

@@ -52,14 +52,11 @@ import android.content.AutofillOptions;
 import android.graphics.Rect;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.Presubmit;
-import android.platform.test.annotations.RequiresFlagsDisabled;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.service.autofill.SaveInfo;
 import android.text.InputType;
 import android.view.ViewGroup;
 import android.view.WindowInsets;
 import android.view.autofill.AutofillManager;
-import android.view.flags.Flags;
 
 import androidx.test.filters.FlakyTest;
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -174,16 +171,7 @@ public class VirtualContainerActivityTest
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_CALCULATE_BOUNDS_IN_PARENT_FROM_BOUNDS_IN_SCREEN)
-    public void testAutofill_calculateBoundsInParentFromBoundsInScreenFlagOn_BoundsSet()
-                throws Exception {
-        autofillTest(false);
-    }
-
-    @Test
-    @RequiresFlagsDisabled(Flags.FLAG_CALCULATE_BOUNDS_IN_PARENT_FROM_BOUNDS_IN_SCREEN)
-    public void testAutofill_calculateBoundsInParentFromBoundsInScreenFlagOff_BoundsSet()
-                throws Exception {
+    public void testAutofill_BoundsSet() throws Exception {
         autofillTest(false);
     }
 
