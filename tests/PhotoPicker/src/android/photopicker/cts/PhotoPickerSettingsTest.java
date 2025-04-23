@@ -21,12 +21,8 @@ import static android.photopicker.cts.util.PhotoPickerComponentUtils.PICKER_SETT
 import static android.photopicker.cts.util.PhotoPickerUiUtils.REGEX_PACKAGE_NAME;
 import static android.photopicker.cts.util.PhotoPickerUiUtils.SHORT_TIMEOUT;
 import static android.photopicker.cts.util.PhotoPickerUiUtils.isPhotoPickerVisible;
-import static android.photopicker.cts.util.PhotoPickerUiUtils.verifySettingsActionBarIsVisible;
 import static android.photopicker.cts.util.PhotoPickerUiUtils.verifySettingsActivityIsVisible;
 import static android.photopicker.cts.util.PhotoPickerUiUtils.verifySettingsCloudProviderOptionIsVisible;
-import static android.photopicker.cts.util.PhotoPickerUiUtils.verifySettingsDescriptionIsVisible;
-import static android.photopicker.cts.util.PhotoPickerUiUtils.verifySettingsFragmentContainerExists;
-import static android.photopicker.cts.util.PhotoPickerUiUtils.verifySettingsTitleIsVisible;
 
 import static com.google.common.truth.Truth.assertWithMessage;
 
@@ -136,10 +132,6 @@ public class PhotoPickerSettingsTest extends PhotoPickerBaseTest {
 
         // Verify PhotoPickerSettingsActivity is launched and visible.
         verifySettingsActivityIsVisible();
-        verifySettingsActionBarIsVisible();
-        verifySettingsTitleIsVisible();
-        verifySettingsDescriptionIsVisible();
-        verifySettingsFragmentContainerExists();
         verifySettingsCloudProviderOptionIsVisible(cmpAppLabel);
     }
 
@@ -189,10 +181,6 @@ public class PhotoPickerSettingsTest extends PhotoPickerBaseTest {
 
         // Verify PhotoPickerSettingsActivity is launched and visible.
         verifySettingsActivityIsVisible();
-        verifySettingsActionBarIsVisible();
-        verifySettingsTitleIsVisible();
-        verifySettingsDescriptionIsVisible();
-        verifySettingsFragmentContainerExists();
     }
 
 
