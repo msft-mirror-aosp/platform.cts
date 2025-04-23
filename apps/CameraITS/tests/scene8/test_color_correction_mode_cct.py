@@ -146,11 +146,11 @@ def validate_r_b_ratios(blue_ratios, yellow_ratios):
   Returns:
     bool: True if the ratios are increasing or decreasing as expected
   """
-  # Validate blue region: R/B ratios should decrease
+  # Validate blue region: R/B ratios should increase
   for i in range(len(blue_ratios) - 1):
-    if blue_ratios[i] <= blue_ratios[i + 1]:
+    if blue_ratios[i] >= blue_ratios[i + 1]:
       raise AssertionError(
-          f'R/B ratio for blue region did not decrease as expected: '
+          f'R/B ratio for blue region did not increase as expected: '
           f'{blue_ratios} ')
 
   # Validate yellow region: R/B ratios should increase
@@ -185,7 +185,7 @@ class ColorCorrectionModeCct(its_base_test.ItsBaseTest):
 
       camera_properties_utils.skip_unless(
           (_COLOR_CORRECTION_MODE_CCT in
-           camera_properties_utils.color_correction_aberration_modes(props)))
+           camera_properties_utils.color_correction_modes(props)))
 
       # Load chart for scene
       its_session_utils.load_scene(
@@ -250,6 +250,8 @@ class ColorCorrectionModeCct(its_base_test.ItsBaseTest):
       image_processing_utils.write_image(img, img_path)
       img = image_processing_utils.convert_image_to_uint8(img)
 
+      # Captures at idx 0-2 were for testing color temp, therefore captures
+      # at idx 3 and 4 are the first two images for testing color tint
       if i <= 4:
         # First two images were captured with color tint -50 and -25,
         # towards the magenta on the magenta-green spectrum.
@@ -268,9 +270,9 @@ class ColorCorrectionModeCct(its_base_test.ItsBaseTest):
             match_ar[1], _RED_CHANNEL, _GREEN_CHANNEL)
         r_g_ratios.append(ratio)
 
-    if b_g_ratios[0] < b_g_ratios[1]:
+    if b_g_ratios[0] > b_g_ratios[1]:
       raise AssertionError(
-          f'B/G ratio did not decrease as expected. First ratio: '
+          f'B/G ratio did not increase as expected. First ratio: '
           f'{b_g_ratios[0]}, Second ratio: {b_g_ratios[1]}')
 
     if r_g_ratios[0] > r_g_ratios[1]:
