@@ -16,7 +16,6 @@
 
 package android.input.cts
 
-import android.cts.input.EventVerifier
 import android.graphics.Point
 import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
@@ -32,6 +31,7 @@ import android.view.MotionEvent.TOOL_TYPE_STYLUS
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
 import androidx.test.platform.app.InstrumentationRegistry
+import com.android.cts.input.BlockingQueueEventVerifier
 import com.android.cts.input.UinputStylus
 import com.android.cts.input.UinputTouchDevice
 import com.android.cts.input.UinputTouchScreen
@@ -68,8 +68,8 @@ class SimultaneousTouchAndStylusTest {
     private val instrumentation = InstrumentationRegistry.getInstrumentation()
     private lateinit var touchScreen: UinputTouchDevice
     private lateinit var stylus: UinputTouchDevice
-    private lateinit var leftWindowVerifier: EventVerifier
-    private lateinit var rightWindowVerifier: EventVerifier
+    private lateinit var leftWindowVerifier: BlockingQueueEventVerifier
+    private lateinit var rightWindowVerifier: BlockingQueueEventVerifier
 
     @get:Rule
     val testName = TestName()
@@ -83,8 +83,8 @@ class SimultaneousTouchAndStylusTest {
         touchScreen = UinputTouchScreen(instrumentation, virtualDisplayRule.virtualDisplay.display)
         stylus = UinputStylus(instrumentation, virtualDisplayRule.virtualDisplay.display)
         virtualDisplayRule.activity.launchTwoWindows()
-        leftWindowVerifier = EventVerifier(virtualDisplayRule.activity::getLeftWindowInputEvent)
-        rightWindowVerifier = EventVerifier(virtualDisplayRule.activity::getRightWindowInputEvent)
+        leftWindowVerifier = virtualDisplayRule.activity.leftWindowVerifier
+        rightWindowVerifier = virtualDisplayRule.activity.rightWindowVerifier
     }
 
     @After

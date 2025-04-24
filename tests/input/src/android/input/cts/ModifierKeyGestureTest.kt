@@ -16,7 +16,6 @@
 
 package android.input.cts
 
-import android.cts.input.EventVerifier
 import android.hardware.input.InputManager
 import android.view.KeyEvent
 import androidx.test.ext.junit.rules.ActivityScenarioRule
@@ -24,6 +23,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.MediumTest
 import androidx.test.platform.app.InstrumentationRegistry
 import com.android.compatibility.common.util.PollingCheck
+import com.android.cts.input.BlockingQueueEventVerifier
 import com.android.cts.input.CaptureEventActivity
 import com.android.cts.input.EvdevInputEventCodes.Companion.KEY_LEFTALT
 import com.android.cts.input.EvdevInputEventCodes.Companion.KEY_LEFTMETA
@@ -53,7 +53,7 @@ class ModifierKeyGestureTest {
     val rule = ActivityScenarioRule<CaptureEventActivity>(CaptureEventActivity::class.java)
 
     private lateinit var activity: CaptureEventActivity
-    private lateinit var verifier: EventVerifier
+    private lateinit var verifier: BlockingQueueEventVerifier
     private lateinit var inputManager: InputManager
 
     @Before
@@ -61,7 +61,7 @@ class ModifierKeyGestureTest {
         rule.getScenario().onActivity {
             inputManager = it.getSystemService(InputManager::class.java)
             activity = it
-            verifier = EventVerifier(activity::getInputEvent)
+            verifier = activity.verifier
         }
         inputManager.resetLockedModifierState()
         PollingCheck.waitFor { activity.hasWindowFocus() }

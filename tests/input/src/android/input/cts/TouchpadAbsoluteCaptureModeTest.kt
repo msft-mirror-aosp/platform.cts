@@ -58,7 +58,7 @@ class TouchpadAbsoluteCaptureModeTest {
         rule.scenario.onActivity { activity = it }
 
         touchpad = UinputTouchPad(InstrumentationRegistry.getInstrumentation(), activity.display)
-        verifier = activity.makeVerifier()
+        verifier = activity.verifier
 
         PollingCheck.waitFor { activity.hasWindowFocus() }
         activity.ensurePointerCaptured()

@@ -16,7 +16,6 @@
 
 package android.input.cts
 
-import android.cts.input.EventVerifier
 import android.graphics.Point
 import android.hardware.input.InputManager
 import android.platform.test.annotations.RequiresFlagsEnabled
@@ -25,6 +24,7 @@ import android.view.MotionEvent.ACTION_MOVE
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.MediumTest
 import androidx.test.platform.app.InstrumentationRegistry
+import com.android.cts.input.BlockingQueueEventVerifier
 import com.android.cts.input.CaptureEventActivity
 import com.android.cts.input.DebugInputRule
 import com.android.cts.input.UinputTouchDevice
@@ -58,7 +58,7 @@ import org.junit.runner.RunWith
 class TouchScreenTest {
     private val instrumentation = InstrumentationRegistry.getInstrumentation()
     private lateinit var touchScreen: UinputTouchDevice
-    private lateinit var verifier: EventVerifier
+    private lateinit var verifier: BlockingQueueEventVerifier
 
     @get:Rule
     val debugInputRule = DebugInputRule()
@@ -70,7 +70,7 @@ class TouchScreenTest {
     @Before
     fun setUp() {
         touchScreen = UinputTouchScreen(instrumentation, virtualDisplayRule.virtualDisplay.display)
-        verifier = EventVerifier(virtualDisplayRule.activity::getInputEvent)
+        verifier = virtualDisplayRule.activity.verifier
     }
 
     @After

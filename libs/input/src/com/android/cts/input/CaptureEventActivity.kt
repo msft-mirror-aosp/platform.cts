@@ -27,7 +27,9 @@ import org.junit.Assert.assertNull
 
 open class CaptureEventActivity : Activity() {
     private val events = LinkedBlockingQueue<InputEvent>()
+    val verifier = BlockingQueueEventVerifier(events)
     var shouldHandleKeyEvents = true
+    var shouldSplitBatchedEvents = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -45,13 +47,21 @@ open class CaptureEventActivity : Activity() {
         }
     }
 
+    private fun addMotionEvent(event: MotionEvent?) {
+        if (shouldSplitBatchedEvents && event != null) {
+            events.addAll(splitBatchedMotionEvent(event))
+        } else {
+            events.add(MotionEvent.obtain(event))
+        }
+    }
+
     override fun dispatchGenericMotionEvent(ev: MotionEvent?): Boolean {
-        events.add(MotionEvent.obtain(ev))
+        addMotionEvent(ev)
         return true
     }
 
     override fun dispatchTouchEvent(ev: MotionEvent?): Boolean {
-        events.add(MotionEvent.obtain(ev))
+        addMotionEvent(ev)
         return true
     }
 
@@ -61,7 +71,7 @@ open class CaptureEventActivity : Activity() {
     }
 
     override fun dispatchTrackballEvent(ev: MotionEvent?): Boolean {
-        events.add(MotionEvent.obtain(ev))
+        addMotionEvent(ev)
         return true
     }
 
@@ -76,10 +86,6 @@ open class CaptureEventActivity : Activity() {
     fun assertNoEvents() {
         val event = events.poll(100, TimeUnit.MILLISECONDS)
         assertNull("Expected no events, but received $event", event)
-    }
-
-    fun makeVerifier(): BlockingQueueEventVerifier {
-        return BlockingQueueEventVerifier(events)
     }
 
     companion object {
