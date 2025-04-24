@@ -24,6 +24,7 @@ import android.content.pm.verify.domain.DomainVerificationUserState
 import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.CheckFlagsRule
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
+import android.util.Log
 import androidx.test.platform.app.InstrumentationRegistry
 import com.android.compatibility.common.util.SystemUtil
 import com.android.cts.packagemanager.verify.domain.android.DomainUtils.DECLARING_PKG_1_COMPONENT
@@ -42,6 +43,10 @@ import org.junit.runners.Parameterized
 
 @RunWith(Parameterized::class)
 class PreVerifiedDomainsTests : DomainVerificationIntentTestBase(DOMAIN_1) {
+    companion object {
+        private const val TAG = "PreVerifiedDomainsTests"
+    }
+
     var deviceDomainVerificationAgent: ComponentName? = null
         private set
 
@@ -122,6 +127,7 @@ class PreVerifiedDomainsTests : DomainVerificationIntentTestBase(DOMAIN_1) {
         val agentComponentName: String = SystemUtil.runShellCommand(
             "pm get-domain-verification-agent --user " + userId
         ).trim()
+        Log.d(TAG, "get-domain-verification-agent returned: $agentComponentName for user $userId")
         if (agentComponentName.startsWith("Failure") ||
             agentComponentName.startsWith("No Domain Verifier")) {
             return null
@@ -148,6 +154,7 @@ class PreVerifiedDomainsTests : DomainVerificationIntentTestBase(DOMAIN_1) {
                     enabledState,
                     PackageManager.DONT_KILL_APP
                 )
+                Log.d(TAG, "Changed $deviceDomainVerificationAgent state to: $enabledState")
             } finally {
                 InstrumentationRegistry.getInstrumentation().getUiAutomation()
                         .dropShellPermissionIdentity()
