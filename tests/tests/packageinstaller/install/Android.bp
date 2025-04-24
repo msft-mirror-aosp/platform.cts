@@ -32,7 +32,6 @@ android_test {
     ],
     static_libs: [
         // go/keep-sorted start
-        "TestParameterInjector",
         "android.security.flags-aconfig-java",
         "androidx.test.rules",
         "androidx.test.uiautomator_uiautomator",
@@ -78,7 +77,6 @@ android_test {
     ],
 
     static_libs: [
-        "TestParameterInjector",
         "android.content.pm.flags-aconfig-java",
         "android.security.flags-aconfig-java",
         "androidx.legacy_legacy-support-v4",
@@ -130,7 +128,6 @@ android_test {
     ],
 
     static_libs: [
-        "TestParameterInjector",
         "android.content.pm.flags-aconfig-java",
         "android.security.flags-aconfig-java",
         "androidx.legacy_legacy-support-v4",
