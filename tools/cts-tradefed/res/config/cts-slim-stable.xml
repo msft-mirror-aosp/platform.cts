@@ -121,7 +121,7 @@
 
   <!-- documentsui dependent tests -->
   <option name="compatibility:exclude-filter"
-      value="CtsAppTestCases android.app.cts.DownloadManagerTest#testDownload_onMediaStoreDownloadsDeleted"/>
+      value="CtsDownloadManagerTestCases android.app.cts.downloadmanager.DownloadManagerTest#testDownload_onMediaStoreDownloadsDeleted"/>
   <option name="compatibility:exclude-filter"
       value="CtsOsTestCases android.os.cts.StrictModeTest#testVmPenaltyListener" />
   <option name="compatibility:exclude-filter"

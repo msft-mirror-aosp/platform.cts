@@ -20,6 +20,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import android.app.DownloadManager;
+import android.app.cts.downloadmanager.DownloadManagerTestBase;
 import android.content.Context;
 import android.content.IntentFilter;
 import android.net.Uri;
