@@ -27,6 +27,7 @@ import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeFalse;
 
 import android.app.Activity;
 import android.app.Instrumentation;
@@ -206,6 +207,8 @@ public final class InputMethodStatsTest extends EndToEndImeTestBase {
     @Test
     @RequiresFlagsDisabled(Flags.FLAG_REFACTOR_INSETS_CONTROLLER)
     public void testClientShowImeRequestFinished() throws Throwable {
+        assumeFalse(isAutomotiveScalableUIWithLegacyInsetsController());
+
         verifyLogging(true /* show */,
                 List.of(ImeProtoEnums.ORIGIN_CLIENT, ImeProtoEnums.ORIGIN_CLIENT_SHOW_SOFT_INPUT),
                 false /* fromUser */, (imeSession, activity) -> {
@@ -227,6 +230,8 @@ public final class InputMethodStatsTest extends EndToEndImeTestBase {
     @Test
     @RequiresFlagsDisabled(Flags.FLAG_REFACTOR_INSETS_CONTROLLER)
     public void testClientHideImeRequestFinished() throws Exception {
+        assumeFalse(isAutomotiveScalableUIWithLegacyInsetsController());
+
         verifyLogging(false /* show */,
                 List.of(ImeProtoEnums.ORIGIN_CLIENT, ImeProtoEnums.ORIGIN_CLIENT_HIDE_SOFT_INPUT),
                 false /* fromUser */, (imeSession, activity) -> {
@@ -400,6 +405,8 @@ public final class InputMethodStatsTest extends EndToEndImeTestBase {
     @Test
     @RequiresFlagsDisabled(Flags.FLAG_REFACTOR_INSETS_CONTROLLER)
     public void testFromUser_withWic_hideImeRequestFinished() throws Exception {
+        assumeFalse(isAutomotiveScalableUIWithLegacyInsetsController());
+
         verifyLogging(false /* show */,
                 List.of(ImeProtoEnums.ORIGIN_CLIENT, ImeProtoEnums.ORIGIN_CLIENT_HIDE_SOFT_INPUT),
                 true /* fromUser */, (imeSession, activity) -> {
