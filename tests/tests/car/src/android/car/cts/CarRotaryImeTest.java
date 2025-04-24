@@ -92,12 +92,12 @@ public final class CarRotaryImeTest {
 
         String defaultTouchInputMethod = getStringValueFromDumpsys("defaultTouchInputMethod");
         assertWithMessage("rotary IME(" + rotaryInputMethod + ") must be different"
-                + "from default touch IME(" + defaultTouchInputMethod + ")")
+                + " from default touch IME(" + defaultTouchInputMethod + ")")
                 .that(rotaryInputMethod.equals(defaultTouchInputMethod)).isFalse();
 
         String touchInputMethod = getStringValueFromDumpsys("touchInputMethod");
         assertWithMessage("rotary IME(" + rotaryInputMethod + ") must be different"
-                + "from touch IME(" + touchInputMethod + ")")
+                + " from touch IME(" + touchInputMethod + ")")
                 .that(rotaryInputMethod.equals(touchInputMethod)).isFalse();
     }
 
@@ -141,16 +141,17 @@ public final class CarRotaryImeTest {
     }
 
     /**
-     * The default touch input method must be specified via the {@code default_touch_input_method}
-     * string resource, and it must be the component name of an existing IME.
+     * The default touch input method must not be empty and must be the component name of an enabled
+     * IME.
      */
     @Test
-    public void defaultTouchInputMethodSpecifiedAndValid() {
+    public void defaultTouchInputMethodEnabled() {
         String defaultTouchInputMethod = getStringValueFromDumpsys("defaultTouchInputMethod");
 
         assertWithMessage("defaultTouchInputMethod").that(defaultTouchInputMethod).isNotEmpty();
-        assertWithMessage("isValidIme(" + defaultTouchInputMethod + ")")
-                .that(isValidIme(defaultTouchInputMethod)).isTrue();
+        assertWithMessage("isEnabledIme(" + defaultTouchInputMethod + ")")
+                .that(isEnabledIme(defaultTouchInputMethod))
+                .isTrue();
     }
 
     // TODO(b/327507413): switch to proto-based dumpsys.
@@ -211,10 +212,10 @@ public final class CarRotaryImeTest {
                                         accessibilityServiceInfo.getComponentName())));
     }
 
-    /** Returns whether {@code flattenedComponentName} is an installed input method. */
-    private boolean isValidIme(@NonNull String flattenedComponentName) {
+    /** Returns whether {@code flattenedComponentName} is an enabled input method. */
+    private boolean isEnabledIme(@NonNull String flattenedComponentName) {
         ComponentName componentName = ComponentName.unflattenFromString(flattenedComponentName);
-        return mInputMethodManager.getInputMethodList().stream()
+        return mInputMethodManager.getEnabledInputMethodList().stream()
                 .map(inputMethodInfo -> inputMethodInfo.getComponent())
                 .anyMatch(inputMethodComponent -> inputMethodComponent.equals(componentName));
     }
