@@ -18,10 +18,9 @@ package android.server.wm.jetpack.area;
 
 import static android.server.wm.UiDeviceUtils.pressUnlockButton;
 import static android.server.wm.UiDeviceUtils.pressWakeupButton;
+import static android.server.wm.jetpack.utils.WindowAreaComponentUtils.waitAndAssert;
 
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
-
-import static com.android.compatibility.common.util.PollingCheck.waitFor;
 
 import static junit.framework.Assert.assertFalse;
 
@@ -61,7 +60,6 @@ import androidx.window.extensions.area.WindowAreaComponent.WindowAreaStatus;
 import androidx.window.extensions.core.util.function.Consumer;
 
 import com.android.compatibility.common.util.ApiTest;
-import com.android.compatibility.common.util.PollingCheck;
 
 import org.junit.After;
 import org.junit.Before;
@@ -87,8 +85,6 @@ import java.util.Set;
 @RunWith(AndroidJUnit4.class)
 public class ExtensionRearDisplayTest extends WindowManagerJetpackTestBase implements
         DeviceStateManager.DeviceStateCallback {
-
-    private static final int TIMEOUT = 2000;
     private static final int INVALID_DEVICE_STATE = -1;
     private static final int INVALID_DISPLAY_ADDRESS = -1;
 
@@ -452,10 +448,6 @@ public class ExtensionRearDisplayTest extends WindowManagerJetpackTestBase imple
             pressWakeupButton();
             pressUnlockButton();
         }
-    }
-
-    private void waitAndAssert(PollingCheck.PollingCheckCondition condition) {
-        waitFor(TIMEOUT, condition);
     }
 
     /**

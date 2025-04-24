@@ -16,9 +16,9 @@
 
 package android.server.wm.jetpack.area;
 
-import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
+import static android.server.wm.jetpack.utils.WindowAreaComponentUtils.waitAndAssert;
 
-import static com.android.compatibility.common.util.PollingCheck.waitFor;
+import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -50,7 +50,6 @@ import androidx.window.extensions.area.WindowAreaComponent;
 import androidx.window.extensions.core.util.function.Consumer;
 
 import com.android.compatibility.common.util.ApiTest;
-import com.android.compatibility.common.util.PollingCheck;
 
 import org.junit.After;
 import org.junit.Before;
@@ -74,8 +73,6 @@ import java.util.List;
 @RequiresFlagsEnabled(Flags.FLAG_DEVICE_STATE_RDM_V2)
 public class ExtensionRearDisplayOuterDefaultTest extends WindowManagerJetpackTestBase
         implements DeviceStateManager.DeviceStateCallback {
-
-    private static final int TIMEOUT = 2000;
 
     private final Context mInstrumentationContext = getInstrumentation().getTargetContext();
     private final DeviceStateManager mDeviceStateManager =
@@ -218,9 +215,5 @@ public class ExtensionRearDisplayOuterDefaultTest extends WindowManagerJetpackTe
     @Override
     public void onDeviceStateChanged(@NonNull DeviceState state) {
         mCurrentDeviceState = state;
-    }
-
-    private void waitAndAssert(PollingCheck.PollingCheckCondition condition) {
-        waitFor(TIMEOUT, condition);
     }
 }
