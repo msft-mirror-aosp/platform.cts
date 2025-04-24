@@ -165,6 +165,38 @@ public class GraphicsAtomTests extends BaseHostJUnit4Test implements IBuildRecei
     }
 
     @Test
+    public void surfaceControlLutsEvents() throws Exception {
+        ExtensionRegistry registry = ExtensionRegistry.newInstance();
+        CoregraphicsExtensionAtoms.registerAllExtensions(registry);
+        ConfigUtils.uploadConfigForPushedAtomWithUid(
+                getDevice(),
+                DeviceUtils.STATSD_ATOM_TEST_PKG,
+                SURFACE_CONTROL_EVENT_FIELD_NUMBER,
+                /* uidInAttributionChain= */ false);
+        DeviceUtils.runActivity(
+                getDevice(),
+                DeviceUtils.STATSD_ATOM_TEST_PKG,
+                "SurfaceControlLutsActivity",
+                null,
+                null,
+                WAIT_TIME_MILLIS);
+
+        List<StatsLog.EventMetricData> data =
+                ReportUtils.getEventMetricDataList(getDevice(), registry);
+
+        assertThat(data.size()).isAtLeast(2);
+
+        // Just assert the atoms coming from the SurfaceView
+        SurfaceControlEvent firstAtom =
+                data.get(0).getAtom().getExtension(CoregraphicsExtensionAtoms.surfaceControlEvent);
+        assertThat(firstAtom.getPreviousUseLuts()).isEqualTo(true);
+
+        SurfaceControlEvent secondAtom =
+                data.get(1).getAtom().getExtension(CoregraphicsExtensionAtoms.surfaceControlEvent);
+        assertThat(secondAtom.getPreviousUseLuts()).isEqualTo(false);
+    }
+
+    @Test
     public void surfaceControlDataspaceEvents() throws Exception {
         ExtensionRegistry registry = ExtensionRegistry.newInstance();
         CoregraphicsExtensionAtoms.registerAllExtensions(registry);
