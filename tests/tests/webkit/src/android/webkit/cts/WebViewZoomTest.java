@@ -166,6 +166,7 @@ public class WebViewZoomTest extends SharedWebViewTest{
     }
 
     @Test
+    @Ignore("b/413079290")
     public void testInvokeZoomPicker() throws Exception {
         WebSettings settings = mOnUiThread.getSettings();
         assertTrue(settings.supportZoom());

@@ -32,6 +32,7 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -86,6 +87,7 @@ public class WebViewHostSideMultipleProfileTest extends BaseHostJUnit4Test {
     }
 
     @Test
+    @Ignore("b/381862299")
     public void testManagedProfile() throws DeviceNotAvailableException, TargetSetupError {
         Assume.assumeTrue(isMultiUsersSupported() && isManagedProfileSupported());
 

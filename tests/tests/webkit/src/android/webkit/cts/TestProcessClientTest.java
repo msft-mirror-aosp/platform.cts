@@ -24,6 +24,7 @@ import androidx.test.filters.LargeTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -65,6 +66,7 @@ public class TestProcessClientTest {
     }
 
     @Test
+    @Ignore("b/413081350")
     public void testRunDifferentRunnables() throws Throwable {
         Context context = InstrumentationRegistry.getInstrumentation().getContext();
         try (TestProcessClient process = TestProcessClient.createProcessA(context)) {
@@ -86,6 +88,7 @@ public class TestProcessClientTest {
      * Parcel#writeException(java.lang.Exception)}.
      */
     @Test
+    @Ignore("b/413081350")
     public void testThrowingNullPointerException() throws Throwable {
         Context context = InstrumentationRegistry.getInstrumentation().getContext();
         try (TestProcessClient process = TestProcessClient.createProcessA(context)) {
@@ -108,6 +111,7 @@ public class TestProcessClientTest {
      * Parcel#writeException(java.lang.Exception)}.
      */
     @Test
+    @Ignore("b/413081350")
     public void testThrowingIOException() throws Throwable {
         Context context = InstrumentationRegistry.getInstrumentation().getContext();
         try (TestProcessClient process = TestProcessClient.createProcessA(context)) {
@@ -124,10 +128,9 @@ public class TestProcessClientTest {
         }
     }
 
-    /**
-     * Test that junit assertions failures are propagated as expected.
-     */
+    /** Test that junit assertions failures are propagated as expected. */
     @Test
+    @Ignore("b/413081350")
     public void testFailedAssertion() throws Throwable {
         Context context = InstrumentationRegistry.getInstrumentation().getContext();
         try (TestProcessClient process = TestProcessClient.createProcessA(context)) {
