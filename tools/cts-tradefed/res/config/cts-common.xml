@@ -29,8 +29,8 @@
     <option name="test-tag" value="cts" />
 
     <option name="enable-root" value="false" />
-    <!-- retain 200MB of host log -->
-    <option name="max-log-size" value="200" />
+    <!-- retain 300MB of host log -->
+    <option name="max-log-size" value="300" />
     <!--  retain 200MB of logcat -->
     <option name="max-tmp-logcat-file" value="209715200" />
 
