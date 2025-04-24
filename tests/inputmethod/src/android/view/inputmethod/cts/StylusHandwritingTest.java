@@ -91,6 +91,8 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
         mContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
         assumeFalse(mContext.getPackageManager().hasSystemFeature(
                 PackageManager.FEATURE_LEANBACK_ONLY));
+        assumeFalse(mContext.getPackageManager().hasSystemFeature(
+                PackageManager.FEATURE_AUTOMOTIVE));
 
         mHwInitialState = Settings.Global.getInt(mContext.getContentResolver(),
                 STYLUS_HANDWRITING_ENABLED, SETTING_VALUE_OFF);
