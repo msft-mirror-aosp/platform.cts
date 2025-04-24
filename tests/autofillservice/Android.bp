@@ -21,6 +21,8 @@ android_test {
     name: "CtsAutoFillServiceTestCases",
     defaults: ["cts_defaults"],
     static_libs: [
+        "android.view.flags-aconfig-java",
+        "android.service.autofill.flags-aconfig-java",
         "androidx.annotation_annotation",
         "androidx.autofill_autofill",
         "androidx.test.ext.junit",
