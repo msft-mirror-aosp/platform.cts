@@ -504,6 +504,8 @@
   <option name="compatibility:exclude-filter" value="CtsAppEnumerationTestCases android.appenumeration.cts.MediaSessionEnumerationTests#queriesPackage_isTrustedForMediaControl_canSeeTarget"/>
   <option name="compatibility:exclude-filter" value="CtsAppEnumerationTestCases android.appenumeration.cts.SyncAdapterEnumerationTests#queriesPackage_getRunningServiceControlPanel_canSeeSyncAdapterTarget"/>
   <option name="compatibility:exclude-filter" value="CtsAppExitTestCases android.app.cts.ActivityManagerAppExitInfoTest#testAnr"/>
+  <option name="compatibility:exclude-filter" value="CtsAppFgsTestCases android.app.cts.fgstest.ActivityManagerFgsBgStartTest#testFgsLocationStartFromBG"/>
+  <option name="compatibility:exclude-filter" value="CtsAppFgsTestCases android.app.cts.fgstest.ActivityManagerFgsBgStartTest#testFgsStartFromBGWithBind"/>
   <option name="compatibility:exclude-filter" value="CtsAppFgsTestCases android.app.cts.fgstest.ActivityManagerForegroundServiceTypeTest#testForegroundServiceTypeSystemExemptedPermission"/>
   <option name="compatibility:exclude-filter" value="CtsAppOpsTestCases android.app.appops.cts.AppOpsLoggingTest#getCellInfo"/>
   <option name="compatibility:exclude-filter" value="CtsAppOpsTestCases android.app.appops.cts.AppOpsMultiUserTest#testSharedUidWithMultipleUsers"/>
@@ -515,8 +517,6 @@
   <option name="compatibility:exclude-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.KeyStoreManagerTest#grantAndRevokeKeyAccess_importedKeyPair"/>
   <option name="compatibility:exclude-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.KeyStoreManagerTest#grantRevokeKeyAccess_aliasDoesNotExist_throwsException"/>
   <option name="compatibility:exclude-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.ListeningPortsTest#testNoListeningLoopbackTcpPorts"/>
-  <option name="compatibility:exclude-filter" value="CtsAppTestCases android.app.cts.ActivityManagerFgsBgStartTest#testFgsLocationStartFromBG"/>
-  <option name="compatibility:exclude-filter" value="CtsAppTestCases android.app.cts.ActivityManagerFgsBgStartTest#testFgsStartFromBGWithBind"/>
   <option name="compatibility:exclude-filter" value="CtsAppTestCases android.app.cts.ActivityManagerProcessStateTest#testFgsDefaultCapabilityNone"/>
   <option name="compatibility:exclude-filter" value="CtsAppTestCases android.app.cts.ActivityManagerProcessStateTest#testFgsSticky1"/>
   <option name="compatibility:exclude-filter" value="CtsAppTestCases android.app.cts.ActivityManagerProcessStateTest#testFgsSticky2"/>

@@ -53,6 +53,8 @@ android_test {
     platform_apis: true,
     data: [
         ":CtsAppTestStubsApp1",
+        ":CtsAppTestStubsApp2",
+        ":CtsAppTestStubsApp3",
         ":CtsAppTestFgsTestHelper",
         ":CtsAppTestFgsTestHelperCurrent",
         ":CtsAppTestFgsTestHelperApi33",

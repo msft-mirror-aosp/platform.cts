@@ -543,9 +543,54 @@
     <option name="compatibility:include-filter" value="CtsAppFgsStartTestCases android.app.cts.fgsstarttest.ActivityManagerNewFgsLogicTest#testForApi34"/>
     <option name="compatibility:include-filter" value="CtsAppFgsStartTestCases android.app.cts.fgsstarttest.ActivityManagerNewFgsLogicTest#testForCurrent"/>
     <!-- CtsAppFgsTestCases -->
-    <option name="compatibility:include-filter" value="CtsAppFgsTestCases android.app.cts.fgstest.ActivityManagerForegroundServiceTypeTest#testForegroundServiceTypeLocationPermission"/>
-    <option name="compatibility:include-filter" value="CtsAppFgsTestCases android.app.cts.fgstest.ActivityManagerForegroundServiceTypeTest#testForegroundServiceTypeMediaProjectionPermission"/>
-    <option name="compatibility:include-filter" value="CtsAppFgsTestCases android.app.cts.fgstest.ActivityManagerForegroundServiceTypeTest#testForegroundServiceTypeSystemExemptedPermission"/>
+    <option name="compatibility:include-filter" value="CtsAppFgsTestCases android.app.cts.fgstest.ActivityManagerFgsBgStartTest#testAlarmClockFgsNotStoppedByBackgroundRestricted"/>
+    <option name="compatibility:include-filter" value="CtsAppFgsTestCases android.app.cts.fgstest.ActivityManagerFgsBgStartTest#testFgsBindingFlagActivity"/>
+    <option name="compatibility:include-filter" value="CtsAppFgsTestCases android.app.cts.fgstest.ActivityManagerFgsBgStartTest#testFgsBindingFlagFGS"/>
+    <option name="compatibility:include-filter" value="CtsAppFgsTestCases android.app.cts.fgstest.ActivityManagerFgsBgStartTest#testFgsBindingFlagNone"/>
+    <option name="compatibility:include-filter" value="CtsAppFgsTestCases android.app.cts.fgstest.ActivityManagerFgsBgStartTest#testFgsLocationPendingIntent"/>
+    <option name="compatibility:include-filter" value="CtsAppFgsTestCases android.app.cts.fgstest.ActivityManagerFgsBgStartTest#testFgsLocationStartFromBG"/>
+    <option name="compatibility:include-filter" value="CtsAppFgsTestCases android.app.cts.fgstest.ActivityManagerFgsBgStartTest#testFgsLocationStartFromBGTwoProcesses"/>
+    <option name="compatibility:include-filter" value="CtsAppFgsTestCases android.app.cts.fgstest.ActivityManagerFgsBgStartTest#testFgsStartAllowList"/>
+    <option name="compatibility:include-filter" value="CtsAppFgsTestCases android.app.cts.fgstest.ActivityManagerFgsBgStartTest#testFgsStartFromBG1"/>
+    <option name="compatibility:include-filter" value="CtsAppFgsTestCases android.app.cts.fgstest.ActivityManagerFgsBgStartTest#testFgsStartFromBG2"/>
+    <option name="compatibility:include-filter" value="CtsAppFgsTestCases android.app.cts.fgstest.ActivityManagerFgsBgStartTest#testFgsStartFromBGWithBind"/>
+    <option name="compatibility:include-filter" value="CtsAppFgsTestCases android.app.cts.fgstest.ActivityManagerFgsBgStartTest#testFgsStartFromBGWithBindWithRestriction"/>
+    <option name="compatibility:include-filter" value="CtsAppFgsTestCases android.app.cts.fgstest.ActivityManagerFgsBgStartTest#testFgsStartFromBoundTopState"/>
+    <option name="compatibility:include-filter" value="CtsAppFgsTestCases android.app.cts.fgstest.ActivityManagerFgsBgStartTest#testFgsStartFromFgsState"/>
+    <option name="compatibility:include-filter" value="CtsAppFgsTestCases android.app.cts.fgstest.ActivityManagerFgsBgStartTest#testFgsStartInBackgroundRestrictions"/>
+    <option name="compatibility:include-filter" value="CtsAppFgsTestCases android.app.cts.fgstest.ActivityManagerFgsBgStartTest#testFgsStartInputMethod"/>
+    <option name="compatibility:include-filter" value="CtsAppFgsTestCases android.app.cts.fgstest.ActivityManagerFgsBgStartTest#testFgsStartSystemAlertWindowDisabled"/>
+    <option name="compatibility:include-filter" value="CtsAppFgsTestCases android.app.cts.fgstest.ActivityManagerFgsBgStartTest#testFgsStartVpn"/>
+    <option name="compatibility:include-filter" value="CtsAppFgsTestCases android.app.cts.fgstest.ActivityManagerFgsBgStartTest#testFgsStoppedByBackgroundRestricted"/>
+    <option name="compatibility:include-filter" value="CtsAppFgsTestCases android.app.cts.fgstest.ActivityManagerFgsBgStartTest#testOverlappedTempAllowList"/>
+    <option name="compatibility:include-filter" value="CtsAppFgsTestCases android.app.cts.fgstest.ActivityManagerFgsBgStartTest#testOverlappedTempAllowListByBroadcastOptions"/>
+    <option name="compatibility:include-filter" value="CtsAppFgsTestCases android.app.cts.fgstest.ActivityManagerFgsBgStartTest#testSecondStartForeground"/>
+    <option name="compatibility:include-filter" value="CtsAppFgsTestCases android.app.cts.fgstest.ActivityManagerFgsBgStartTest#testSpoofPackageName"/>
+    <option name="compatibility:include-filter" value="CtsAppFgsTestCases android.app.cts.fgstest.ActivityManagerFgsBgStartTest#testStartForegroundTimeout"/>
+    <option name="compatibility:include-filter" value="CtsAppFgsTestCases android.app.cts.fgstest.ActivityManagerFgsBgStartTest#testStartMediaPlaybackFromBg"/>
+    <option name="compatibility:include-filter" value="CtsAppFgsTestCases android.app.cts.fgstest.ActivityManagerFgsBgStartTest#testTempAllowListReasonCodeAlarmClock"/>
+    <option name="compatibility:include-filter" value="CtsAppFgsTestCases android.app.cts.fgstest.ActivityManagerFgsBgStartTest#testUpdateUidProcState"/>
+    <option name="compatibility:include-filter" value="CtsAppFgsTestCases android.app.cts.fgstest.ActivityManagerFgsDelegateTest#testFgsDelegate"/>
+    <option name="compatibility:include-filter" value="CtsAppFgsTestCases android.app.cts.fgstest.ActivityManagerFgsDelegateTest#testFgsDelegateAfterForceStopPackage"/>
+    <option name="compatibility:include-filter" value="CtsAppFgsTestCases android.app.cts.fgstest.ActivityManagerFgsDelegateTest#testFgsDelegateNotAllowedWhenAppCanNotStartFGS"/>
+    <option name="compatibility:include-filter" value="CtsAppFgsTestCases android.app.cts.fgstest.ActivityManagerNotifyMediaFGSTypeTest#testAppInBgWithActiveMediaSessionMultiplePlayPauseStopCycle"/>
+    <option name="compatibility:include-filter" value="CtsAppFgsTestCases android.app.cts.fgstest.ActivityManagerNotifyMediaFGSTypeTest#testAppInBgWithActivePlayingMediaSessionAndNotificationReleaseItsSessionGoesToBg"/>
+    <option name="compatibility:include-filter" value="CtsAppFgsTestCases android.app.cts.fgstest.ActivityManagerNotifyMediaFGSTypeTest#testAppInBgWithActivePlayingMediaSessionWithMediaControllerAndNoNotificationIsStillInBg"/>
+    <option name="compatibility:include-filter" value="CtsAppFgsTestCases android.app.cts.fgstest.ActivityManagerNotifyMediaFGSTypeTest#testAppInBgWithActivePlayingMediaSessionWithMediaControllerAndNotificationGoesToFgs"/>
+    <option name="compatibility:include-filter" value="CtsAppFgsTestCases android.app.cts.fgstest.ActivityManagerNotifyMediaFGSTypeTest#testAppInBgWithNonActiveMediaSessionAndNotificationGoesToBg"/>
+    <option name="compatibility:include-filter" value="CtsAppFgsTestCases android.app.cts.fgstest.ActivityManagerNotifyMediaFGSTypeTest#testAppInBgWithNonActivePlayingMediaSessionWithMediaControllerAndNotificationIsStillInBg"/>
+    <option name="compatibility:include-filter" value="CtsAppFgsTestCases android.app.cts.fgstest.ActivityManagerNotifyMediaFGSTypeTest#testAppInBgWithStoppedMediaSessionAndNotificationGoesToBg"/>
+    <option name="compatibility:include-filter" value="CtsAppFgsTestCases android.app.cts.fgstest.ActivityManagerNotifyMediaFGSTypeTest#testAppInBgWithUserDisengagedMediaSessionAndNotificationGoesToBg"/>
+    <option name="compatibility:include-filter" value="CtsAppFgsTestCases android.app.cts.fgstest.ActivityManagerNotifyMediaFGSTypeTest#testAppInBgWithUserEngagedMediaSessionIsInBg"/>
+    <option name="compatibility:include-filter" value="CtsAppFgsTestCases android.app.cts.ActivityManagerNotifyMediaFGSTypeTest#testAppInFgWithActivePlayingMediaSessionAndNotificationGoesToBgIsStillInBg"/>
+    <option name="compatibility:include-filter" value="CtsAppFgsTestCases android.app.cts.fgstest.ActivityManagerNotifyMediaFGSTypeTest#testAppInFgWithActivePlayingMediaSessionWithMediaControllerAndNotificationGoesToFgs"/>
+    <option name="compatibility:include-filter" value="CtsAppFgsTestCases android.app.cts.fgstest.ActivityManagerNotifyMediaFGSTypeTest#testAppInFgWithActiveStoppedMediaSessionAndNotificationGoesToBgIsStillInBg"/>
+    <option name="compatibility:include-filter" value="CtsAppFgsTestCases android.app.cts.fgstest.ActivityManagerNotifyMediaFGSTypeTest#testAppInFgWithActiveStoppedMediaSessionWithMediaControllerAndNotificationGoesToBgIsStillInBg"/>
+    <option name="compatibility:include-filter" value="CtsAppFgsTestCases android.app.cts.fgstest.ActivityManagerNotifyMediaFGSTypeTest#testNotifyInactiveMediaForegroundServiceInternal"/>
+    <option name="compatibility:include-filter" value="CtsAppFgsTestCases android.app.cts.fgstest.ActivityManagerNotifyMediaFGSTypeTest#testNotifyInactiveMediaForegroundServiceInternalWithDisableCompatChanges"/>
+    <option name="compatibility:include-filter" value="CtsAppFgsTestCases android.app.cts.fgstest.ActivityManagerNotifyMediaFGSTypeTest#testNotifyMediaServiceAfterStopForegroundInternal"/>
+    <option name="compatibility:include-filter" value="CtsAppFgsTestCases android.app.cts.fgstest.ActivityManagerNotifyMediaFGSTypeTest#testNotifyMediaServiceInternal"/>
+    <option name="compatibility:include-filter" value="CtsAppFgsTestCases android.app.cts.fgstest.ActivityManagerNotifyMediaFGSTypeTest#testNotifyMediaServiceInternalWithDisableCompatChanges"/>
     <!-- CtsAppFgsTestCases[instant] -->
     <option name="compatibility:include-filter" value="CtsAppFgsTestCases[instant] android.app.cts.fgstest.ActivityManagerForegroundServiceTypeTest#testForegroundServiceTypeSystemExemptedPermission"/>
     <!-- CtsAppFunctionTestCases -->
@@ -962,33 +1007,6 @@
     <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testV4IncToV3NonIncSameKeyUpgradeSucceeds[0]"/>
     <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testV4IncToV3NonIncSameKeyUpgradeSucceeds[1]"/>
     <!-- CtsAppTestCases -->
-    <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.ActivityManagerFgsBgStartTest#testAlarmClockFgsNotStoppedByBackgroundRestricted"/>
-    <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.ActivityManagerFgsBgStartTest#testFgsBindingFlagActivity"/>
-    <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.ActivityManagerFgsBgStartTest#testFgsBindingFlagFGS"/>
-    <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.ActivityManagerFgsBgStartTest#testFgsBindingFlagNone"/>
-    <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.ActivityManagerFgsBgStartTest#testFgsLocationPendingIntent"/>
-    <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.ActivityManagerFgsBgStartTest#testFgsLocationStartFromBG"/>
-    <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.ActivityManagerFgsBgStartTest#testFgsLocationStartFromBGTwoProcesses"/>
-    <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.ActivityManagerFgsBgStartTest#testFgsStartAllowList"/>
-    <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.ActivityManagerFgsBgStartTest#testFgsStartFromBG1"/>
-    <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.ActivityManagerFgsBgStartTest#testFgsStartFromBG2"/>
-    <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.ActivityManagerFgsBgStartTest#testFgsStartFromBGWithBind"/>
-    <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.ActivityManagerFgsBgStartTest#testFgsStartFromBGWithBindWithRestriction"/>
-    <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.ActivityManagerFgsBgStartTest#testFgsStartFromBoundTopState"/>
-    <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.ActivityManagerFgsBgStartTest#testFgsStartFromFgsState"/>
-    <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.ActivityManagerFgsBgStartTest#testFgsStartInBackgroundRestrictions"/>
-    <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.ActivityManagerFgsBgStartTest#testFgsStartInputMethod"/>
-    <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.ActivityManagerFgsBgStartTest#testFgsStartSystemAlertWindowDisabled"/>
-    <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.ActivityManagerFgsBgStartTest#testFgsStartVpn"/>
-    <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.ActivityManagerFgsBgStartTest#testFgsStoppedByBackgroundRestricted"/>
-    <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.ActivityManagerFgsBgStartTest#testOverlappedTempAllowList"/>
-    <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.ActivityManagerFgsBgStartTest#testOverlappedTempAllowListByBroadcastOptions"/>
-    <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.ActivityManagerFgsBgStartTest#testSecondStartForeground"/>
-    <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.ActivityManagerFgsBgStartTest#testSpoofPackageName"/>
-    <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.ActivityManagerFgsBgStartTest#testStartForegroundTimeout"/>
-    <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.ActivityManagerFgsBgStartTest#testStartMediaPlaybackFromBg"/>
-    <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.ActivityManagerFgsBgStartTest#testTempAllowListReasonCodeAlarmClock"/>
-    <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.ActivityManagerFgsBgStartTest#testUpdateUidProcState"/>
     <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.ActivityManagerProcessStateTest#testBackgroundCheckActivityService"/>
     <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.ActivityManagerProcessStateTest#testBackgroundCheckBroadcastService"/>
     <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.ActivityManagerProcessStateTest#testBackgroundCheckService"/>

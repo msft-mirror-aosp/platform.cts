@@ -182,7 +182,6 @@ test_module_config {
         "android.app.cts.ActivityManagerProcessStateTest",
         "android.app.cts.ServiceTest",
         "android.app.cts.ActivityManagerTest",
-        "android.app.cts.ActivityManagerFgsBgStartTest",
         "android.app.cts.TaskDescriptionTest",
     ],
     include_annotations: ["android.platform.test.annotations.Presubmit"],
@@ -197,7 +196,6 @@ test_module_config {
         "android.app.cts.ActivityManagerProcessStateTest",
         "android.app.cts.ServiceTest",
         "android.app.cts.ActivityManagerTest",
-        "android.app.cts.ActivityManagerFgsBgStartTest",
         "android.app.cts.TaskDescriptionTest",
     ],
 }
