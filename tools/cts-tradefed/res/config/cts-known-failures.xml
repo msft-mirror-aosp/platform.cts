@@ -540,6 +540,10 @@
     <!-- b/404971162 -->
     <option name="compatibility:exclude-filter" value="CtsHealthFitnessDeviceTestCases android.healthconnect.cts.SharedMemoryTest#getChangeLogs_viaSharedMemory_recordsMatch" />
 
+    <!-- b/413226715 -->
+    <option name="compatibility:exclude-filter" value="CtsJvmtiRunTest906HostTestCases" />
+    <option name="compatibility:exclude-filter" value="CtsJvmtiRunTest913HostTestCases" />
+
     <!-- b/414237959 -->
     <option name="compatibility:exclude-filter" value="CtsInputTestCases android.input.cts.AppKeyCombinationsTest#testCtrlSpace" />
 </configuration>
