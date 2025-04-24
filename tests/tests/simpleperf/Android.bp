@@ -18,11 +18,12 @@ cc_test {
         },
     },
     whole_static_libs: ["libsimpleperf_cts_test"],
-    static_libs: [
-        "libdexfile_static",
-        "libgtest",
-    ],
+    static_libs: ["libgtest"],
     target: {
+        linux: {
+            static_libs: ["libdexfile_support"],
+            runtime_libs: ["libdexfile"], // libdexfile_support dependency
+        },
         windows: {
             enabled: false,
         },

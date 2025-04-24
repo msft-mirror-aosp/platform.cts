@@ -16,7 +16,6 @@
 
 package android.input.cts
 
-import android.cts.input.EventVerifier
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
@@ -28,6 +27,7 @@ import android.view.PointerIcon
 import android.virtualdevice.cts.common.VirtualDeviceRule
 import androidx.test.filters.MediumTest
 import androidx.test.platform.app.InstrumentationRegistry
+import com.android.cts.input.BlockingQueueEventVerifier
 import com.android.cts.input.CaptureEventActivity
 import com.android.cts.input.DefaultPointerSpeedRule
 import com.android.cts.input.TestPointerDevice
@@ -66,7 +66,7 @@ import platform.test.screenshot.matchers.BitmapMatcher
 @RequiresFlagsEnabled(FLAG_DEVICE_ASSOCIATIONS)
 class PointerIconTest {
     private lateinit var activity: CaptureEventActivity
-    private lateinit var verifier: EventVerifier
+    private lateinit var verifier: BlockingQueueEventVerifier
     private lateinit var exactScreenshotMatcher: BitmapMatcher
     private lateinit var similarScreenshotMatcher: BitmapMatcher
 
@@ -110,7 +110,7 @@ class PointerIconTest {
             virtualDisplayRule.virtualDisplay.display,
         )
 
-        verifier = EventVerifier(activity::getInputEvent)
+        verifier = activity.verifier
 
         exactScreenshotMatcher =
             AlmostPerfectMatcher(acceptableThresholdCount = MAX_PIXELS_DIFFERENT)

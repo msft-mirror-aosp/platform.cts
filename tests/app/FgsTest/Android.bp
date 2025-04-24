@@ -37,6 +37,7 @@ android_test {
         "flag-junit",
         "android.content.pm.flags-aconfig-java",
         "com.android.media.flags.bettertogether-aconfig-java",
+        "services.core",
     ],
     srcs: [
         "src/**/*.java",

@@ -24,6 +24,7 @@ import android.nfc.cardemulation.PollingFrame;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.util.Log;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -67,10 +68,12 @@ public class PollingLoopService extends HostApduService {
 
     @Override
     public void processPollingFrames(List<PollingFrame> frames) {
+	Log.d(TAG, "Polling frames: " + frames);
         for (PollingFrame frame : frames) {
             mFrameCounter++;
             if (frame.getType() == PollingFrame.POLLING_LOOP_TYPE_UNKNOWN) {
                 if (Arrays.equals(frame.getData(), mAnnotation)) {
+                    Log.d(TAG, "Polling frame matched: " + frame);
                     mSeenAnnotation = true;
                     setObserveMode(false);
                     Intent pollingFrameIntent = new Intent(POLLING_FRAME_ACTION);

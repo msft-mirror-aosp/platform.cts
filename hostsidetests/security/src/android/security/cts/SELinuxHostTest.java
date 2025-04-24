@@ -249,6 +249,7 @@ public class SELinuxHostTest extends BaseHostJUnit4Test {
                 "true",
                 "-c",
                 "30",
+                "-N",
                 "-o",
                 builtPolicyFile.getAbsolutePath(),
                 "-f",

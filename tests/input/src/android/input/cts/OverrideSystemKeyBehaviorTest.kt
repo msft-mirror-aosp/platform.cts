@@ -18,7 +18,6 @@ package android.input.cts
 
 import android.Manifest.permission.OVERRIDE_SYSTEM_KEY_BEHAVIOR_IN_FOCUSED_WINDOW
 import android.content.pm.PackageManager
-import android.cts.input.EventVerifier
 import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import android.view.KeyEvent
@@ -29,6 +28,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.android.compatibility.common.util.PollingCheck
 import com.android.compatibility.common.util.SystemUtil
 import com.android.compatibility.common.util.WindowUtil
+import com.android.cts.input.BlockingQueueEventVerifier
 import com.android.cts.input.CaptureEventActivity
 import com.android.cts.input.inputeventmatchers.withKeyCode
 import com.android.input.flags.Flags
@@ -55,13 +55,13 @@ class OverrideSystemKeyBehaviorTest {
     @get:Rule val checkFlagRule = DeviceFlagsValueProvider.createCheckFlagsRule()
 
     private lateinit var activity: CaptureEventActivity
-    private lateinit var verifier: EventVerifier
+    private lateinit var verifier: BlockingQueueEventVerifier
 
     @Before
     fun setUp() {
         activityScenarioRule.getScenario().onActivity {
             activity = it
-            verifier = EventVerifier(activity::getInputEvent)
+            verifier = activity.verifier
         }
         PollingCheck.waitFor { activity.hasWindowFocus() }
     }

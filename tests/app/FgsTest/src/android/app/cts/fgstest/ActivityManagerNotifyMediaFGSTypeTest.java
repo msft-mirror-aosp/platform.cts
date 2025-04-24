@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package android.app.cts;
+package android.app.cts.fgstest;
 
 import static android.app.stubs.shared.LocalForegroundServiceMedia.ACTION_START_FGSM_RESULT;
 import static android.os.SystemClock.sleep;
@@ -30,6 +30,7 @@ import android.app.ActivityManager;
 import android.app.Instrumentation;
 import android.app.compat.CompatChanges;
 import android.app.compat.PackageOverride;
+import android.app.cts.CtsAppTestUtils;
 import android.app.stubs.shared.CommandReceiver;
 import android.app.stubs.shared.LocalForegroundServiceMedia;
 import android.app.tools.WaitForBroadcast;
@@ -85,8 +86,8 @@ public final class ActivityManagerNotifyMediaFGSTypeTest {
     private static final long PLAY_TIMEOUT_MS = 1000;
 
     @Rule
-    public final CheckFlagsRule mCheckFlagsRule =
-            DeviceFlagsValueProvider.createCheckFlagsRule();
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
     private Context mContext;
     private Context mTargetContext;
     private Instrumentation mInstrumentation;
@@ -153,35 +154,51 @@ public final class ActivityManagerNotifyMediaFGSTypeTest {
                             PACKAGE_NAME_APP1, Set.of(MEDIA_FGS_STATE_TRANSITION));
                 });
         // Make sure we are in Home screen.
-        mInstrumentation.getUiAutomation().performGlobalAction(
-                AccessibilityService.GLOBAL_ACTION_HOME);
+        mInstrumentation
+                .getUiAutomation()
+                .performGlobalAction(AccessibilityService.GLOBAL_ACTION_HOME);
     }
 
     private int setupMediaForegroundService() throws Exception {
-        ApplicationInfo app1Info = mContext.getPackageManager().getApplicationInfo(
-                PACKAGE_NAME_APP1, 0);
-        WatchUidRunner uid1Watcher = new WatchUidRunner(mInstrumentation, app1Info.uid,
-                WAITFOR_MSEC);
+        ApplicationInfo app1Info =
+                mContext.getPackageManager().getApplicationInfo(PACKAGE_NAME_APP1, 0);
+        WatchUidRunner uid1Watcher =
+                new WatchUidRunner(mInstrumentation, app1Info.uid, WAITFOR_MSEC);
         try {
             WaitForBroadcast waiter = new WaitForBroadcast(mTargetContext);
 
             // Put APP1 in TOP state.
-            CommandReceiver.sendCommand(mContext, CommandReceiver.COMMAND_START_ACTIVITY,
-                    PACKAGE_NAME_APP1, PACKAGE_NAME_APP1, 0, null);
+            CommandReceiver.sendCommand(
+                    mContext,
+                    CommandReceiver.COMMAND_START_ACTIVITY,
+                    PACKAGE_NAME_APP1,
+                    PACKAGE_NAME_APP1,
+                    0,
+                    null);
             uid1Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_TOP);
 
             // Start the media foreground service in APP1.
             waiter.prepare(ACTION_START_FGSM_RESULT);
             Bundle bundle = new Bundle();
-            bundle.putInt(LocalForegroundServiceMedia.EXTRA_FOREGROUND_SERVICE_TYPE,
+            bundle.putInt(
+                    LocalForegroundServiceMedia.EXTRA_FOREGROUND_SERVICE_TYPE,
                     ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK);
-            CommandReceiver.sendCommand(mContext,
-                    CommandReceiver.COMMAND_START_FOREGROUND_SERVICE_MEDIA, PACKAGE_NAME_APP1,
-                    PACKAGE_NAME_APP1, 0, bundle);
+            CommandReceiver.sendCommand(
+                    mContext,
+                    CommandReceiver.COMMAND_START_FOREGROUND_SERVICE_MEDIA,
+                    PACKAGE_NAME_APP1,
+                    PACKAGE_NAME_APP1,
+                    0,
+                    bundle);
 
             // Stop the activity.
-            CommandReceiver.sendCommand(mContext, CommandReceiver.COMMAND_STOP_ACTIVITY,
-                    PACKAGE_NAME_APP1, PACKAGE_NAME_APP1, 0, null);
+            CommandReceiver.sendCommand(
+                    mContext,
+                    CommandReceiver.COMMAND_STOP_ACTIVITY,
+                    PACKAGE_NAME_APP1,
+                    PACKAGE_NAME_APP1,
+                    0,
+                    null);
 
             uid1Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_FG_SERVICE);
             Intent resultIntent = waiter.doWait(WAITFOR_MSEC);
@@ -192,15 +209,19 @@ public final class ActivityManagerNotifyMediaFGSTypeTest {
     }
 
     private void cleanUpMediaForegroundService() throws Exception {
-        ApplicationInfo app1Info = mContext.getPackageManager().getApplicationInfo(
-                PACKAGE_NAME_APP1, 0);
-        WatchUidRunner uid1Watcher = new WatchUidRunner(mInstrumentation, app1Info.uid,
-                WAITFOR_MSEC);
+        ApplicationInfo app1Info =
+                mContext.getPackageManager().getApplicationInfo(PACKAGE_NAME_APP1, 0);
+        WatchUidRunner uid1Watcher =
+                new WatchUidRunner(mInstrumentation, app1Info.uid, WAITFOR_MSEC);
         try {
             // Stop the media foreground service in APP1.
-            CommandReceiver.sendCommand(mContext,
-                    CommandReceiver.COMMAND_STOP_FOREGROUND_SERVICE_MEDIA, PACKAGE_NAME_APP1,
-                    PACKAGE_NAME_APP1, 0, null);
+            CommandReceiver.sendCommand(
+                    mContext,
+                    CommandReceiver.COMMAND_STOP_FOREGROUND_SERVICE_MEDIA,
+                    PACKAGE_NAME_APP1,
+                    PACKAGE_NAME_APP1,
+                    0,
+                    null);
             uid1Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_CACHED_EMPTY);
         } finally {
             uid1Watcher.finish();
@@ -275,8 +296,8 @@ public final class ActivityManagerNotifyMediaFGSTypeTest {
     @RequiresFlagsEnabled(
             Flags.FLAG_ENABLE_NOTIFYING_ACTIVITY_MANAGER_WITH_MEDIA_SESSION_STATUS_CHANGE)
     public void testNotifyInactiveMediaForegroundServiceInternal() throws Exception {
-        ApplicationInfo app1Info = mContext.getPackageManager().getApplicationInfo(
-                PACKAGE_NAME_APP1, 0);
+        ApplicationInfo app1Info =
+                mContext.getPackageManager().getApplicationInfo(PACKAGE_NAME_APP1, 0);
         WatchUidRunner uid1Watcher =
                 new WatchUidRunner(mInstrumentation, app1Info.uid, WAITFOR_MSEC);
         // start a media fgs
@@ -284,8 +305,10 @@ public final class ActivityManagerNotifyMediaFGSTypeTest {
         assertWithMessage("Failed to start media foreground service with notification")
                 .that(notificationId > 0)
                 .isTrue();
-        runShellCommand(mInstrumentation,
-                String.format("am set-media-foreground-service inactive --user %d %s %d",
+        runShellCommand(
+                mInstrumentation,
+                String.format(
+                        "am set-media-foreground-service inactive --user %d %s %d",
                         mContext.getUserId(), PACKAGE_NAME_APP1, notificationId));
 
         uid1Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_SERVICE);
@@ -299,8 +322,8 @@ public final class ActivityManagerNotifyMediaFGSTypeTest {
     @RequiresFlagsEnabled(
             Flags.FLAG_ENABLE_NOTIFYING_ACTIVITY_MANAGER_WITH_MEDIA_SESSION_STATUS_CHANGE)
     public void testNotifyMediaServiceInternal() throws Exception {
-        ApplicationInfo app1Info = mContext.getPackageManager().getApplicationInfo(
-                PACKAGE_NAME_APP1, 0);
+        ApplicationInfo app1Info =
+                mContext.getPackageManager().getApplicationInfo(PACKAGE_NAME_APP1, 0);
         WatchUidRunner uid1Watcher =
                 new WatchUidRunner(mInstrumentation, app1Info.uid, WAITFOR_MSEC);
         // start a media fgs
@@ -308,13 +331,17 @@ public final class ActivityManagerNotifyMediaFGSTypeTest {
         assertWithMessage("Failed to start media foreground service with notification")
                 .that(notificationId > 0)
                 .isTrue();
-        runShellCommand(mInstrumentation,
-                String.format("am set-media-foreground-service inactive --user %d %s %d",
+        runShellCommand(
+                mInstrumentation,
+                String.format(
+                        "am set-media-foreground-service inactive --user %d %s %d",
                         mContext.getUserId(), PACKAGE_NAME_APP1, notificationId));
 
         uid1Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_SERVICE);
-        runShellCommand(mInstrumentation,
-                String.format("am set-media-foreground-service active --user %d %s %d",
+        runShellCommand(
+                mInstrumentation,
+                String.format(
+                        "am set-media-foreground-service active --user %d %s %d",
                         mContext.getUserId(), PACKAGE_NAME_APP1, notificationId));
         uid1Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_FG_SERVICE);
         cleanUpMediaForegroundService();

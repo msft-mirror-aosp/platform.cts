@@ -166,6 +166,11 @@
              android:turnScreenOn="true"
              android:showWhenLocked="true" />
 
+        <activity android:name=".SurfaceControlLutsActivity"
+             android:exported="true"
+             android:turnScreenOn="true"
+             android:showWhenLocked="true" />
+
         <activity android:name=".ImageViewActivity"
              android:exported="true"
              android:turnScreenOn="true"

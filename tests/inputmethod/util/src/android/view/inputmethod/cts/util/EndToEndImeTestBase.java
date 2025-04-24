@@ -30,6 +30,7 @@ import android.content.res.Resources;
 import android.os.SystemClock;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.AppModeInstant;
+import android.view.inputmethod.Flags;
 
 import androidx.annotation.NonNull;
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -83,6 +84,25 @@ public abstract class EndToEndImeTestBase {
     protected static final String FIRST_EDIT_TEXT_TAG = "first-EditText";
     /** Tag for the second EditText. */
     protected static final String SECOND_EDIT_TEXT_TAG = "second-EditText";
+
+    /** Feature used to represent Automotive Scalable UI targets */
+    private static final String FEATURE_CAR_SPLITSCREEN_MULTITASKING =
+            "android.software.car.splitscreen_multitasking";
+
+    /**
+     * Returns {@code true} if device is Automotive Scalable UI running with legacy insets
+     * controller.
+     *
+     * <p>Tests depending on InsetsController to show or hide the IME should be skipped until
+     * b/395808159 is resolved.
+     */
+    public static boolean isAutomotiveScalableUIWithLegacyInsetsController() {
+        final var instrumentation = InstrumentationRegistry.getInstrumentation();
+        final var pm = instrumentation.getTargetContext().getPackageManager();
+        return !Flags.refactorInsetsController()
+                && pm.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE)
+                && pm.hasSystemFeature(FEATURE_CAR_SPLITSCREEN_MULTITASKING);
+    }
 
     /**
      * Skip test executions for know broken platforms.

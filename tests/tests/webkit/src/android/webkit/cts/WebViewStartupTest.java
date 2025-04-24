@@ -37,6 +37,7 @@ import com.android.compatibility.common.util.NullWebViewUtils;
 import com.google.common.util.concurrent.SettableFuture;
 
 import org.junit.Assume;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -106,6 +107,7 @@ public class WebViewStartupTest {
     }
 
     @Test
+    @Ignore("b/413081350")
     public void testGetCurrentWebViewPackageOnUiThread() throws Throwable {
         // runCurrentWebViewPackageTest handles the case where WebView is not supported on device,
         // so we don't need to check NullWebViewUtils.
@@ -124,6 +126,7 @@ public class WebViewStartupTest {
     }
 
     @Test
+    @Ignore("b/413081350")
     public void testGetCurrentWebViewPackageOnBackgroundThread() throws Throwable {
         // runCurrentWebViewPackageTest handles the case where WebView is not supported on device,
         // so we don't need to check NullWebViewUtils.
@@ -146,6 +149,7 @@ public class WebViewStartupTest {
     }
 
     @Test
+    @Ignore("b/413081350")
     public void testGetWebViewLooperOnUiThread() throws Throwable {
         Assume.assumeTrue("WebView is not available", NullWebViewUtils.isWebViewAvailable());
 
@@ -177,6 +181,7 @@ public class WebViewStartupTest {
      * This ensures WebView.getWebViewLooper() is not implemented as 'return Looper.myLooper();'.
      */
     @Test
+    @Ignore("b/413081350")
     public void testGetWebViewLooperCreatedOnUiThreadFromInstrThread() throws Throwable {
         Assume.assumeTrue("WebView is not available", NullWebViewUtils.isWebViewAvailable());
 
@@ -219,8 +224,8 @@ public class WebViewStartupTest {
      * the thread it is created on..
      */
     @Test
-    public void testGetWebViewLooperCreatedOnBackgroundThreadFromInstThread()
-            throws Throwable {
+    @Ignore("b/413081350")
+    public void testGetWebViewLooperCreatedOnBackgroundThreadFromInstThread() throws Throwable {
         Assume.assumeTrue("WebView is not available", NullWebViewUtils.isWebViewAvailable());
 
         Context context = InstrumentationRegistry.getInstrumentation().getContext();

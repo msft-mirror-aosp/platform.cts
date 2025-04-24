@@ -25,9 +25,11 @@ import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.TimeUnit
 import org.junit.Assert.assertNull
 
-class CaptureEventActivity : Activity() {
+open class CaptureEventActivity : Activity() {
     private val events = LinkedBlockingQueue<InputEvent>()
+    val verifier = BlockingQueueEventVerifier(events)
     var shouldHandleKeyEvents = true
+    var shouldSplitBatchedEvents = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -45,13 +47,21 @@ class CaptureEventActivity : Activity() {
         }
     }
 
+    private fun addMotionEvent(event: MotionEvent?) {
+        if (shouldSplitBatchedEvents && event != null) {
+            events.addAll(splitBatchedMotionEvent(event))
+        } else {
+            events.add(MotionEvent.obtain(event))
+        }
+    }
+
     override fun dispatchGenericMotionEvent(ev: MotionEvent?): Boolean {
-        events.add(MotionEvent.obtain(ev))
+        addMotionEvent(ev)
         return true
     }
 
     override fun dispatchTouchEvent(ev: MotionEvent?): Boolean {
-        events.add(MotionEvent.obtain(ev))
+        addMotionEvent(ev)
         return true
     }
 
@@ -61,7 +71,7 @@ class CaptureEventActivity : Activity() {
     }
 
     override fun dispatchTrackballEvent(ev: MotionEvent?): Boolean {
-        events.add(MotionEvent.obtain(ev))
+        addMotionEvent(ev)
         return true
     }
 

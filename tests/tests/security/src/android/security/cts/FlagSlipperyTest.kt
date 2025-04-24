@@ -19,11 +19,11 @@ package android.security.cts
 import android.app.Activity
 import android.app.ActivityOptions
 import android.app.WindowConfiguration.WINDOWING_MODE_FULLSCREEN
-import android.cts.input.EventVerifier
 import android.graphics.Rect
 import android.platform.test.annotations.AsbSecurityTest
 import android.view.Display
 import android.view.Gravity
+import android.view.InputEvent
 import android.view.MotionEvent
 import android.view.SurfaceControlViewHost
 import android.view.SurfaceHolder
@@ -38,12 +38,12 @@ import androidx.test.ext.junit.rules.ActivityScenarioRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.MediumTest
 import com.android.compatibility.common.util.PollingCheck
+import com.android.cts.input.BlockingQueueEventVerifier
 import com.android.cts.input.UinputTouchScreen
 import com.android.cts.input.inputeventmatchers.withMotionAction
 import com.android.sts.common.util.StsExtraBusinessLogicTestCase
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.LinkedBlockingQueue
-import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import org.junit.After
 import org.junit.Assert.assertNull
@@ -127,11 +127,10 @@ class FlagSlipperyTest : StsExtraBusinessLogicTestCase() {
         FLAG_NOT_TOUCH_MODAL or FLAG_SLIPPERY
     )
     private val layoutCompleted = AtomicBoolean(false)
-    private val eventsForTopWindow = LinkedBlockingQueue<MotionEvent>()
+    private val eventsForTopWindow = LinkedBlockingQueue<InputEvent>()
     private var viewToRemove: View? = null
 
-    private val topWindowEventVerifier =
-        EventVerifier { eventsForTopWindow.poll(5, TimeUnit.SECONDS) }
+    private val topWindowEventVerifier = BlockingQueueEventVerifier(eventsForTopWindow)
 
     @get:Rule
     val rule = ActivityScenarioRule(

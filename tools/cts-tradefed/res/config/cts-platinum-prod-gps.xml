@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='UTF-8'?>
-<!-- Copyright (C) 2024 The Android Open Source Project
+<!-- Copyright (C) 2025 The Android Open Source Project
 
      Licensed under the Apache License, Version 2.0 (the "License");
      you may not use this file except in compliance with the License.
@@ -15,9 +15,8 @@
 -->
 <configuration description="Run CTS platinum prod tests.">
     <include name="cts-automated"/>
-    <!-- CtsCarrierApiTestCases -->
-    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.CarrierApiTest#testIccCloseLogicalChannel"/>
-    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.CarrierApiTest#testIccTransmitApduLogicalChannelWithInvalidChannel"/>
-    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.CarrierApiTest#testImsApisAreAccessibleWithFeatureMapping"/>
-    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.CarrierApiTest#testOpportunistic"/>
+    <!-- CtsLocationGnssTestCases -->
+    <option name="compatibility:include-filter" value="CtsLocationGnssTestCases android.location.cts.gnss.GnssNavigationMessageTest#testGnssNavigationMessageMandatoryFieldRanges"/>
+    <!-- CtsLocationPrivilegedTestCases -->
+    <option name="compatibility:include-filter" value="CtsLocationPrivilegedTestCases android.location.cts.privileged.GnssAssistanceProviderBaseTest#testRequest"/>
 </configuration>

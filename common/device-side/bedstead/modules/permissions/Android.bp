@@ -41,6 +41,7 @@ android_test {
         "bedstead",
         "bedstead-root",
         "truth",
+        "flag-junit",
     ],
     manifest: "src/test/AndroidManifest.xml",
     min_sdk_version: "29",

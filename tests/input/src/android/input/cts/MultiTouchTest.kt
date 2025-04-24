@@ -19,7 +19,6 @@ import android.app.ActivityOptions
 import android.content.ComponentName
 import android.content.Intent
 import android.content.pm.ActivityInfo
-import android.cts.input.EventVerifier
 import android.graphics.PointF
 import android.server.wm.WindowManagerStateHelper
 import android.view.MotionEvent
@@ -29,6 +28,7 @@ import androidx.test.filters.MediumTest
 import androidx.test.platform.app.InstrumentationRegistry
 import com.android.compatibility.common.util.PollingCheck
 import com.android.compatibility.common.util.UserHelper
+import com.android.cts.input.BlockingQueueEventVerifier
 import com.android.cts.input.CaptureEventActivity
 import com.android.cts.input.inputeventmatchers.withCoords
 import com.android.cts.input.inputeventmatchers.withCoordsForPointerIndex
@@ -44,7 +44,7 @@ import org.junit.runners.Parameterized
 class MultiTouchTest {
     private lateinit var activity: CaptureEventActivity
     private val instrumentation = InstrumentationRegistry.getInstrumentation()
-    private lateinit var verifier: EventVerifier
+    private lateinit var verifier: BlockingQueueEventVerifier
     private val touchInjector = TouchInjector(instrumentation)
     private val activityName =
         ComponentName(instrumentation.targetContext, CaptureEventActivity::class.java)
@@ -75,7 +75,7 @@ class MultiTouchTest {
         activity = instrumentation.startActivitySync(intent, bundle) as CaptureEventActivity
 
         PollingCheck.waitFor { activity.hasWindowFocus() }
-        verifier = EventVerifier(activity::getInputEvent)
+        verifier = activity.verifier
 
         val wmState = WindowManagerStateHelper()
         wmState.waitForAppTransitionIdleOnDisplay(displayId)
