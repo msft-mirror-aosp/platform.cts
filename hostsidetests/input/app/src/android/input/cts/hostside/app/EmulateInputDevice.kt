@@ -15,7 +15,6 @@
  */
 package android.input.cts.hostside.app
 
-import android.cts.input.EventVerifier
 import android.graphics.Point
 import android.server.wm.CtsWindowInfoUtils.waitForWindowOnTop
 import android.util.DisplayMetrics
@@ -24,6 +23,7 @@ import android.view.MotionEvent
 import androidx.test.ext.junit.rules.ActivityScenarioRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import com.android.cts.input.BlockingQueueEventVerifier
 import com.android.cts.input.CaptureEventActivity
 import com.android.cts.input.DebugInputRule
 import com.android.cts.input.EvdevInputEventCodes.Companion.BTN_TOOL_DOUBLETAP
@@ -52,7 +52,7 @@ class EmulateInputDevice {
     private val instrumentation = InstrumentationRegistry.getInstrumentation()
     private lateinit var activity: CaptureEventActivity
     private lateinit var screenSize: Size
-    private lateinit var verifier: EventVerifier
+    private lateinit var verifier: BlockingQueueEventVerifier
 
     @get:Rule
     val debugInputRule = DebugInputRule()
@@ -66,7 +66,7 @@ class EmulateInputDevice {
         activityRule.scenario.onActivity { activity = it }
         val dm = DisplayMetrics().also { activity.display.getRealMetrics(it) }
         screenSize = Size(dm.widthPixels, dm.heightPixels)
-        verifier = EventVerifier(activity::getInputEvent)
+        verifier = activity.verifier
         assertTrue(
             "Failed to wait for activity window to be on top",
             waitForWindowOnTop(activity.window)

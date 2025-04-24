@@ -16,7 +16,6 @@
 
 package android.input.cts
 
-import android.cts.input.EventVerifier
 import android.graphics.Point
 import android.graphics.PointF
 import android.platform.test.annotations.RequiresFlagsEnabled
@@ -25,6 +24,7 @@ import android.view.MotionEvent
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.MediumTest
 import androidx.test.platform.app.InstrumentationRegistry
+import com.android.cts.input.BlockingQueueEventVerifier
 import com.android.cts.input.CaptureEventActivity
 import com.android.cts.input.UinputDrawingTablet
 import com.android.cts.input.UinputTouchDevice
@@ -54,7 +54,7 @@ import org.junit.runner.RunWith
 @RequiresFlagsEnabled(FLAG_DEVICE_ASSOCIATIONS)
 class DrawingTabletTest {
     private lateinit var drawingTablet: UinputTouchDevice
-    private lateinit var verifier: EventVerifier
+    private lateinit var verifier: BlockingQueueEventVerifier
 
     @get:Rule
     val testName = TestName()
@@ -65,7 +65,7 @@ class DrawingTabletTest {
     fun setUp() {
         drawingTablet = UinputDrawingTablet(
             InstrumentationRegistry.getInstrumentation(), virtualDisplayRule.virtualDisplay.display)
-        verifier = EventVerifier(virtualDisplayRule.activity::getInputEvent)
+        verifier = virtualDisplayRule.activity.verifier
     }
 
     @After

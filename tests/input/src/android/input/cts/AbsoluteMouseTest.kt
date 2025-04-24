@@ -16,7 +16,6 @@
 
 package android.input.cts
 
-import android.cts.input.EventVerifier
 import android.graphics.Point
 import android.graphics.PointF
 import android.view.InputDevice
@@ -24,6 +23,7 @@ import android.view.MotionEvent
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.MediumTest
 import androidx.test.platform.app.InstrumentationRegistry
+import com.android.cts.input.BlockingQueueEventVerifier
 import com.android.cts.input.CaptureEventActivity
 import com.android.cts.input.DebugInputRule
 import com.android.cts.input.EvdevInputEventCodes.Companion.BTN_LEFT
@@ -49,7 +49,7 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class AbsoluteMouseTest {
     private lateinit var absoluteMouse: UinputTouchDevice
-    private lateinit var verifier: EventVerifier
+    private lateinit var verifier: BlockingQueueEventVerifier
 
     @get:Rule
     val testName = TestName()
@@ -62,7 +62,7 @@ class AbsoluteMouseTest {
     fun setUp() {
         absoluteMouse = UinputAbsoluteMouse(
             InstrumentationRegistry.getInstrumentation(), virtualDisplayRule.virtualDisplay.display)
-        verifier = EventVerifier(virtualDisplayRule.activity::getInputEvent)
+        verifier = virtualDisplayRule.activity.verifier
     }
 
     @After

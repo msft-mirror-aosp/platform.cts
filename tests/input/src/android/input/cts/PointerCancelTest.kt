@@ -15,7 +15,6 @@
  */
 package android.input.cts
 
-import android.cts.input.EventVerifier
 import android.graphics.PointF
 import android.server.wm.WindowManagerStateHelper
 import android.view.Gravity
@@ -29,11 +28,11 @@ import androidx.test.filters.MediumTest
 import androidx.test.platform.app.InstrumentationRegistry
 import com.android.compatibility.common.util.PollingCheck
 import com.android.compatibility.common.util.UserHelper
+import com.android.cts.input.BlockingQueueEventVerifier
 import com.android.cts.input.CaptureEventActivity
 import com.android.cts.input.inputeventmatchers.withFlags
 import com.android.cts.input.inputeventmatchers.withMotionAction
 import java.util.concurrent.LinkedBlockingQueue
-import java.util.concurrent.TimeUnit
 import org.hamcrest.Matchers.allOf
 import org.junit.Before
 import org.junit.Rule
@@ -55,7 +54,7 @@ class PointerCancelTest {
     val activityRule = ActivityScenarioRule<CaptureEventActivity>(CaptureEventActivity::class.java)
     private lateinit var activity: CaptureEventActivity
     private val instrumentation = InstrumentationRegistry.getInstrumentation()
-    private lateinit var verifier: EventVerifier
+    private lateinit var verifier: BlockingQueueEventVerifier
     private val touchInjector = TouchInjector(instrumentation)
     private val displayId = UserHelper().mainDisplayId
 
@@ -65,7 +64,7 @@ class PointerCancelTest {
             activity = it
         }
         PollingCheck.waitFor { activity.hasWindowFocus() }
-        verifier = EventVerifier(activity::getInputEvent)
+        verifier = activity.verifier
 
         WindowManagerStateHelper().waitForAppTransitionIdleOnDisplay(displayId)
         instrumentation.uiAutomation.syncInputTransactions()
@@ -110,7 +109,7 @@ class PointerCancelTest {
         view.setOnTouchListener { _, event ->
             eventsInFloating.add(MotionEvent.obtain(event))
         }
-        val verifierForFloating = EventVerifier { eventsInFloating.poll(5, TimeUnit.SECONDS) }
+        val verifierForFloating = BlockingQueueEventVerifier(eventsInFloating)
 
         touchInjector.sendMultiTouchEvent(
             arrayOf(pointerInFloating, pointerOutsideFloating),
