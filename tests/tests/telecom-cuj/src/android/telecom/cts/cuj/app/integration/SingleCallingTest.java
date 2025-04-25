@@ -97,7 +97,7 @@ public class SingleCallingTest extends BaseAppVerifier {
         AppControlWrapper managedApp = null;
         try {
             managedApp = bindToApp(ManagedConnectionServiceApp);
-            verifyOutgoingCallStateTransitions(managedApp);
+            verifyOutgoingCallStateTransitions(managedApp, null /* audioFocusRequest */);
         } finally {
             tearDownApp(managedApp);
         }
@@ -255,7 +255,7 @@ public class SingleCallingTest extends BaseAppVerifier {
 
         try {
             voipCsApp = bindToApp(ConnectionServiceVoipAppMain);
-            verifyOutgoingCallStateTransitions(voipCsApp);
+            verifyOutgoingCallStateTransitions(voipCsApp, null /* audioFocusRequest */);
         } finally {
             tearDownApp(voipCsApp);
         }
@@ -412,7 +412,7 @@ public class SingleCallingTest extends BaseAppVerifier {
 
         try {
             voipCsApp = bindToApp(ConnectionServiceVoipAppClone);
-            verifyOutgoingCallStateTransitions(voipCsApp);
+            verifyOutgoingCallStateTransitions(voipCsApp, null /* audioFocusRequest */);
         } finally {
             tearDownApp(voipCsApp);
         }
@@ -573,7 +573,7 @@ public class SingleCallingTest extends BaseAppVerifier {
 
         try {
             transactionalApp = bindToApp(TransactionalVoipAppMain);
-            verifyOutgoingCallStateTransitions(transactionalApp);
+            verifyOutgoingCallStateTransitions(transactionalApp, null /* audioFocusRequest */);
         } finally {
             tearDownApp(transactionalApp);
         }
@@ -671,7 +671,6 @@ public class SingleCallingTest extends BaseAppVerifier {
      */
     private void performFocusLockTest(TelecomTestApp appInstance) throws Exception {
         AppControlWrapper appControl = null;
-
         AudioManager audioManager = mContext.getSystemService(AudioManager.class);
 
         AudioAttributes audioAttributes = new AudioAttributes.Builder()
@@ -684,17 +683,7 @@ public class SingleCallingTest extends BaseAppVerifier {
 
         try {
             appControl = bindToApp(appInstance);
-            verifyOutgoingCallStateTransitions(appControl);
-
-            // Try to get communication focus -- this emulates another communication app which does
-            // not use the Telecom APIs trying to steal focus away.  The request should be denied if
-            // Telecom has obtained audio focus with focus lock.
-            ShellIdentityUtils.invokeWithShellPermissions(() -> {
-                int focusResult = audioManager.requestAudioFocus(audioFocusRequest);
-                assertEquals("Failed; another app should not be able to get communication focus if"
-                        + " Telecom already has it; result=" + focusResult,
-                        AudioManager.AUDIOFOCUS_REQUEST_FAILED, focusResult);
-            });
+            verifyOutgoingCallStateTransitions(appControl, audioFocusRequest);
         } finally {
             // In case we WERE franted focus, make sure we abandon it.
             audioManager.abandonAudioFocusRequest(audioFocusRequest);
@@ -874,7 +863,7 @@ public class SingleCallingTest extends BaseAppVerifier {
         AppControlWrapper transactionalApp = null;
         try {
             transactionalApp = bindToApp(TransactionalVoipAppClone);
-            verifyOutgoingCallStateTransitions(transactionalApp);
+            verifyOutgoingCallStateTransitions(transactionalApp, null /* audioFocusRequest */);
         } finally {
             tearDownApp(transactionalApp);
         }
@@ -986,7 +975,8 @@ public class SingleCallingTest extends BaseAppVerifier {
         return mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE);
     }
 
-    private void verifyOutgoingCallStateTransitions(AppControlWrapper appControlWrapper)
+    private void verifyOutgoingCallStateTransitions(
+            AppControlWrapper appControlWrapper, AudioFocusRequest audioFocusRequest)
             throws Exception {
         String mo = addOutgoingCallAndVerify(appControlWrapper);
 
@@ -997,6 +987,22 @@ public class SingleCallingTest extends BaseAppVerifier {
             verifyCallIsInState(mo, STATE_DIALING);
         }
         setCallStateAndVerify(appControlWrapper, mo, STATE_ACTIVE);
+        if (audioFocusRequest != null) {
+            AudioManager audioManager = mContext.getSystemService(AudioManager.class);
+            // Try to get communication focus -- this emulates another communication app which does
+            // not use the Telecom APIs trying to steal focus away.  The request should be denied if
+            // Telecom has obtained audio focus with focus lock.
+            ShellIdentityUtils.invokeWithShellPermissions(
+                    () -> {
+                        int focusResult = audioManager.requestAudioFocus(audioFocusRequest);
+                        assertEquals(
+                                "Failed; another app should not be able to get communication focus"
+                                        + " if Telecom already has it; result="
+                                        + focusResult,
+                                AudioManager.AUDIOFOCUS_REQUEST_FAILED,
+                                focusResult);
+                    });
+        }
         setCallStateAndVerify(appControlWrapper, mo, STATE_HOLDING);
         setCallStateAndVerify(appControlWrapper, mo, STATE_DISCONNECTED);
     }
