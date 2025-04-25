@@ -57,6 +57,7 @@ import android.app.ActivityManager.RunningAppProcessInfo;
 import android.app.ActivityManager.RunningServiceInfo;
 import android.app.ActivityManager.RunningTaskInfo;
 import android.app.ActivityOptions;
+import android.app.AppOpsManager;
 import android.app.Flags;
 import android.app.HomeVisibilityListener;
 import android.app.Instrumentation;
@@ -123,6 +124,7 @@ import androidx.test.uiautomator.UiDevice;
 
 import com.android.compatibility.common.util.AmMonitor;
 import com.android.compatibility.common.util.AmUtils;
+import com.android.compatibility.common.util.AppOpsUtils;
 import com.android.compatibility.common.util.AppStandbyUtils;
 import com.android.compatibility.common.util.PropertyUtil;
 import com.android.compatibility.common.util.ShellIdentityUtils;
@@ -2212,9 +2214,16 @@ public final class ActivityManagerTest {
                         latchHolder[0].countDown();
                     }
                 };
+        // TODO(b/414682995): Make
+        //  AppOpsManager.OPSTR_SYSTEM_EXEMPT_FROM_ACTIVITY_BG_START_RESTRICTION available to tests
+        final String OPSTR_SYSTEM_EXEMPT_FROM_ACTIVITY_BG_START_RESTRICTION =
+                "android:system_exempt_from_activity_bg_start_restriction";
         try {
             // Make sure we could start activity from background
-            runShellCommand(mInstrumentation, "cmd deviceidle whitelist +" + PACKAGE_NAME_APP1);
+            AppOpsUtils.setOpMode(
+                    PACKAGE_NAME_APP1,
+                    OPSTR_SYSTEM_EXEMPT_FROM_ACTIVITY_BG_START_RESTRICTION,
+                    AppOpsManager.MODE_ALLOWED);
 
             // If we didn't specify the target UID, we should be able to listen on all UID events.
             mActivityManager.addOnUidImportanceListener(listener,
@@ -2236,7 +2245,10 @@ public final class ActivityManagerTest {
             assertTrue("Failed to receive the UID importance changes",
                     latchHolder[0].await(WAITFOR_MSEC * 2, TimeUnit.MILLISECONDS));
         } finally {
-            runShellCommand(mInstrumentation, "cmd deviceidle whitelist -" + PACKAGE_NAME_APP1);
+            AppOpsUtils.setOpMode(
+                    PACKAGE_NAME_APP1,
+                    OPSTR_SYSTEM_EXEMPT_FROM_ACTIVITY_BG_START_RESTRICTION,
+                    AppOpsManager.MODE_DEFAULT);
 
             mActivityManager.removeOnUidImportanceListener(listener);
 
