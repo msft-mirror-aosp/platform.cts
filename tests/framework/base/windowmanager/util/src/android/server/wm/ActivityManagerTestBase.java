@@ -55,8 +55,8 @@ import static android.server.wm.ActivityLauncher.KEY_LAUNCH_ACTIVITY;
 import static android.server.wm.ActivityLauncher.KEY_NEW_TASK;
 import static android.server.wm.ActivityLauncher.KEY_TARGET_COMPONENT;
 import static android.server.wm.ComponentNameUtils.getActivityName;
-import static android.server.wm.ComponentNameUtils.getWindowName;
 import static android.server.wm.ComponentNameUtils.getLogTag;
+import static android.server.wm.ComponentNameUtils.getWindowName;
 import static android.server.wm.ShellCommandHelper.executeShellCommand;
 import static android.server.wm.ShellCommandHelper.executeShellCommandAndGetStdout;
 import static android.server.wm.StateLogger.log;
@@ -1737,12 +1737,19 @@ public abstract class ActivityManagerTestBase {
 
     protected class AodSession extends SettingsSession<Integer> {
         private AmbientDisplayConfiguration mConfig;
+        private final SettingsSession<Integer> mScreenOffUnlockUdfpsEnabled;
 
         AodSession() {
             super(Settings.Secure.getUriFor(Settings.Secure.DOZE_ALWAYS_ON),
                     Settings.Secure::getInt,
                     Settings.Secure::putInt);
             mConfig = new AmbientDisplayConfiguration(mContext);
+            mScreenOffUnlockUdfpsEnabled =
+                    new SettingsSession<>(
+                            Settings.Secure.getUriFor(
+                                    Settings.Secure.SCREEN_OFF_UNLOCK_UDFPS_ENABLED),
+                            Settings.Secure::getInt,
+                            Settings.Secure::putInt);
         }
 
         public boolean isAodAvailable() {
@@ -1751,6 +1758,13 @@ public abstract class ActivityManagerTestBase {
 
         public void setAodEnabled(boolean enabled) {
             set(enabled ? 1 : 0);
+            mScreenOffUnlockUdfpsEnabled.set(enabled ? 1 : 0);
+        }
+
+        @Override
+        public void close() {
+            super.close();
+            mScreenOffUnlockUdfpsEnabled.close();
         }
     }
 
