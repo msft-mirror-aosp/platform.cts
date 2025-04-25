@@ -31,6 +31,7 @@ import android.os.MessageQueue.OnFileDescriptorEventListener;
 import android.os.ParcelFileDescriptor;
 import android.os.ParcelFileDescriptor.AutoCloseInputStream;
 import android.os.ParcelFileDescriptor.AutoCloseOutputStream;
+import android.os.Process;
 import android.os.SystemClock;
 import android.platform.test.annotations.AppModeSdkSandbox;
 import android.platform.test.annotations.DisabledOnRavenwood;
@@ -40,6 +41,7 @@ import android.system.Os;
 import androidx.test.runner.AndroidJUnit4;
 
 import java.util.concurrent.FutureTask;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -391,6 +393,22 @@ public class MessageQueueTest {
         finally {
             enqueueingThread.interrupt();
             enqueueingTask.get(JOIN_TIMEOUT, TimeUnit.MILLISECONDS);
+        }
+    }
+
+    @Test
+    public void testEnqueueThenQuit() throws InterruptedException {
+        for (int i = 0; i < 1000; i++) {
+            final AtomicBoolean handlerRan = new AtomicBoolean();
+            final HandlerThread thread =
+                    new HandlerThread("EnqueueThenQuitHandler", Process.THREAD_PRIORITY_BACKGROUND);
+            thread.start();
+            final Handler handler = new Handler(thread.getLooper());
+            handler.post(() -> handlerRan.set(true));
+            thread.quitSafely();
+            thread.join(1_000);
+            assertFalse(thread.isAlive());
+            assertTrue(handlerRan.get());
         }
     }
 
