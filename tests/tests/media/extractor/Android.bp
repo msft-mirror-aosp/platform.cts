@@ -69,6 +69,7 @@ java_defaults {
         "libctsmediaextractor_jni",
     ],
     host_required: ["cts-dynamic-config"],
+    host_common_data: [":cts-dynamic-config"],
     min_sdk_version: "29",
     target_sdk_version: "31",
 }
