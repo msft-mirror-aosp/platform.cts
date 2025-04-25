@@ -71,4 +71,10 @@
     <!-- A text to be shown initially as a placeholder in some test -->
     <string name="placeholder_text">Text</string>
 
+    <!-- AccessibilityRequestFocus -->
+    <string name="left_top">First</string>
+    <string name="left_bottom">Second</string>
+    <string name="right_top">Third</string>
+    <string name="right_bottom">Fourth</string>
+
 </resources>
