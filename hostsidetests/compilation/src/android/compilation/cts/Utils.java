@@ -259,10 +259,11 @@ public class Utils {
         String remoteOdexFile = tempDir + "/app.odex";
         String remoteVdexFile = tempDir + "/app.vdex";
         String remoteArtFile = tempDir + "/app.art";
+        String isa = getTranslatedIsa(
+                Objects.requireNonNull(ABI_TO_INSTRUCTION_SET_MAP.get(abi.getName())));
         assertCommandSucceeds(
                 "dex2oat",
-                "--instruction-set="
-                        + Objects.requireNonNull(ABI_TO_INSTRUCTION_SET_MAP.get(abi.getName())),
+                "--instruction-set=" + isa,
                 "--dex-file=" + remoteApkFile,
                 "--dex-location=base.apk",
                 "--profile-file=" + remoteProfileFile,
@@ -328,12 +329,22 @@ public class Utils {
     }
 
     private String getSdmPath(String apkPath, IAbi abi) throws Exception {
-        return apkPath.replaceAll(
-                "\\.apk$", "." + ABI_TO_INSTRUCTION_SET_MAP.get(abi.getName()) + ".sdm");
+        String isa = getTranslatedIsa(
+                Objects.requireNonNull(ABI_TO_INSTRUCTION_SET_MAP.get(abi.getName())));
+        return apkPath.replaceAll("\\.apk$", "." + isa + ".sdm");
     }
 
     private static Pattern dexFileToPattern(String dexFile) {
         return Pattern.compile(String.format("[\\s/](%s)\\s?", Pattern.quote(dexFile)));
+    }
+
+    /**
+     * If the given ISA is not native to the device, and the native bridge exists, returns the ISA
+     * that the native bridge translates it to. Otherwise, returns the ISA as is.
+     */
+    private String getTranslatedIsa(String isa) throws Exception {
+        String translatedIsa = mTestInfo.getDevice().getProperty("ro.dalvik.vm.isa." + isa);
+        return translatedIsa != null ? translatedIsa : isa;
     }
 
     /** A {@link ZipOutputStream} wrapper that helps create uncompressed aligned entries. */
