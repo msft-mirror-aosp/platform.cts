@@ -20,7 +20,6 @@ package {
 
  cc_test_library {
      name: "libpath_checker_jni",
-     cpp_std: "c++2a",
      gtest: false,
      cflags: [
          "-Wall",
