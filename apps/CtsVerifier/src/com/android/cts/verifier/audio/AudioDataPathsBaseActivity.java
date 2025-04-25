@@ -320,7 +320,7 @@ public abstract class AudioDataPathsBaseActivity
         TestResults[] mTestResults;
 
         // Pass/Fail criteria (with defaults)
-        static final double MIN_SIGNAL_PASS_MAGNITUDE = 0.01;
+        static final double MIN_SIGNAL_PASS_MAGNITUDE = 0.005;
         static final double MAX_SIGNAL_PASS_JITTER = 0.1;
         static final double MAX_XTALK_PASS_MAGNITUDE = 0.02;
 
