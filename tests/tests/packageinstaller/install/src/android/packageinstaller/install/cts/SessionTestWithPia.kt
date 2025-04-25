@@ -21,8 +21,8 @@ import android.content.pm.PackageInstaller.STATUS_FAILURE_ABORTED
 import android.content.pm.PackageInstaller.STATUS_SUCCESS
 import android.platform.test.annotations.AppModeFull
 import android.platform.test.rule.ScreenRecordRule.ScreenRecord
+import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.compatibility.common.util.AppOpsUtils
-import com.google.testing.junit.testparameterinjector.TestParameterInjector
 import java.util.concurrent.TimeUnit
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -34,7 +34,7 @@ import org.junit.runner.RunWith
  * require user interaction to proceed with the installation.
  */
 @AppModeFull(reason = "Instant apps cannot create installer sessions")
-@RunWith(TestParameterInjector::class)
+@RunWith(AndroidJUnit4::class)
 @ScreenRecord
 class SessionTestWithPia : PackageInstallerTestBase() {
 

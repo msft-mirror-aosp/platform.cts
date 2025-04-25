@@ -28,12 +28,12 @@ import android.platform.test.annotations.AppModeFull
 import android.platform.test.rule.ScreenRecordRule.ScreenRecord
 import android.provider.DeviceConfig
 import android.util.Log
+import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.By
 import com.android.compatibility.common.util.DeviceConfigStateChangerRule
 import com.android.compatibility.common.util.FutureResultActivity
 import com.google.common.truth.Truth.assertThat
-import com.google.testing.junit.testparameterinjector.TestParameterInjector
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.regex.Pattern
 import java.util.concurrent.CountDownLatch
@@ -47,7 +47,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 @AppModeFull(reason = "Instant apps cannot create installer sessions")
-@RunWith(TestParameterInjector::class)
+@RunWith(AndroidJUnit4::class)
 @ScreenRecord
 class PreapprovalInstallTest : PackageInstallerTestBase() {
 
