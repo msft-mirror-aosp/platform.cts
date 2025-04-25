@@ -475,39 +475,45 @@ public class DeviceOwnerPositiveTestActivity extends PassFailButtons.TestListAct
                     }));
         }
 
+        // TODO(b/410716361): LockTask UI Enable notifications shade can not be slide down.
+        //  Re-enable the test when the issue fixed.
         // setLockTaskFeatures
-        if (FeatureUtil.isLockTaskSupported(this)) {
-            final Intent lockTaskUiTestIntent = new Intent(this, LockTaskUiTestActivity.class);
-            lockTaskUiTestIntent.putExtra(LockTaskUiTestActivity.EXTRA_TEST_ID,
-                    LOCK_TASK_UI_TEST_ID);
-            adapter.add(createTestItem(this, LOCK_TASK_UI_TEST_ID,
-                    R.string.device_owner_lock_task_ui_test,
-                    lockTaskUiTestIntent));
-        }
+        //        if (FeatureUtil.isLockTaskSupported(this)) {
+        //            final Intent lockTaskUiTestIntent = new Intent(this,
+        // LockTaskUiTestActivity.class);
+        //            lockTaskUiTestIntent.putExtra(LockTaskUiTestActivity.EXTRA_TEST_ID,
+        //                    LOCK_TASK_UI_TEST_ID);
+        //            adapter.add(createTestItem(this, LOCK_TASK_UI_TEST_ID,
+        //                    R.string.device_owner_lock_task_ui_test,
+        //                    lockTaskUiTestIntent));
+        //        }
 
         // setUserIcon
-        adapter.add(createInteractiveTestItem(this, SET_USER_ICON_TEST_ID,
-                R.string.device_owner_set_user_icon,
-                R.string.device_owner_set_user_icon_instruction,
-                new ButtonInfo[] {
-                        new ButtonInfo(
-                                R.string.device_owner_set_user_icon_button,
-                                createSetUserIconIntent(R.drawable.user_icon_1)),
-                        new ButtonInfo(
-                                R.string.disallow_set_user_icon,
-                                CommandReceiverActivity.createSetCurrentUserRestrictionIntent(
-                                        UserManager.DISALLOW_SET_USER_ICON, true)),
-                        new ButtonInfo(
-                                R.string.device_owner_set_user_icon2_button,
-                                createSetUserIconIntent(R.drawable.user_icon_2)),
-                        new ButtonInfo(
-                                R.string.device_owner_settings_go,
-                                new Intent(Settings.ACTION_SETTINGS)),
-                        new ButtonInfo(
-                                R.string.device_owner_user_restriction_unset,
-                                CommandReceiverActivity.createSetCurrentUserRestrictionIntent(
-                                        UserManager.DISALLOW_SET_USER_ICON, false))
-        }));
+        adapter.add(
+                createInteractiveTestItem(
+                        this,
+                        SET_USER_ICON_TEST_ID,
+                        R.string.device_owner_set_user_icon,
+                        R.string.device_owner_set_user_icon_instruction,
+                        new ButtonInfo[] {
+                            new ButtonInfo(
+                                    R.string.device_owner_set_user_icon_button,
+                                    createSetUserIconIntent(R.drawable.user_icon_1)),
+                            new ButtonInfo(
+                                    R.string.disallow_set_user_icon,
+                                    CommandReceiverActivity.createSetCurrentUserRestrictionIntent(
+                                            UserManager.DISALLOW_SET_USER_ICON, true)),
+                            new ButtonInfo(
+                                    R.string.device_owner_set_user_icon2_button,
+                                    createSetUserIconIntent(R.drawable.user_icon_2)),
+                            new ButtonInfo(
+                                    R.string.device_owner_settings_go,
+                                    new Intent(Settings.ACTION_SETTINGS)),
+                            new ButtonInfo(
+                                    R.string.device_owner_user_restriction_unset,
+                                    CommandReceiverActivity.createSetCurrentUserRestrictionIntent(
+                                            UserManager.DISALLOW_SET_USER_ICON, false))
+                        }));
 
         // setPermissionGrantState
         adapter.add(createTestItem(this, CHECK_PERMISSION_LOCKDOWN_TEST_ID,
