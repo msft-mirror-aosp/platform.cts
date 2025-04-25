@@ -282,10 +282,6 @@ public class ConcurrencyTest extends WifiJUnit4TestBase {
             Log.d(TAG, "Skipping test as location is not supported");
             return;
         }
-        sShouldRunTest = true;
-        sWifiManager = (WifiManager) sContext.getSystemService(Context.WIFI_SERVICE);
-        assertThat(sWifiManager).isNotNull();
-
         // Prerequisite: The P2P group owner must support Tethering.
         // Skip this test if the prerequisite is not met.
         sTetheringManager = sContext.getSystemService(TetheringManager.class);
@@ -300,6 +296,9 @@ public class ConcurrencyTest extends WifiJUnit4TestBase {
         } finally {
             uiAutomation.dropShellPermissionIdentity();
         }
+        sShouldRunTest = true;
+        sWifiManager = sContext.getSystemService(WifiManager.class);
+        assertThat(sWifiManager).isNotNull();
 
         // turn on verbose logging for tests
         sWasVerboseLoggingEnabled = ShellIdentityUtils.invokeWithShellPermissions(
