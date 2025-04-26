@@ -74,8 +74,9 @@ public class MultiDisplayActivityEmbeddingPlaceholderTests
 
     @After
     @Override
-    public void tearDown() {
+    public void tearDown() throws Throwable {
         mTestHelper.releaseDisplay();
+        super.tearDown();
     }
 
     @Override

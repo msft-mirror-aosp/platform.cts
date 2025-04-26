@@ -30,12 +30,14 @@ android_test {
         "androidx.test.rules",
         "compatibility-device-util-axt",
         "CtsExternalServiceCommon",
+        "CtsAppTestStubsShared",
         "cts-wm-util",
         "libprotobuf-java-lite",
-        "CtsAppTestStubsShared",
+        "permission-test-util-lib",
         "flag-junit",
         "android.content.pm.flags-aconfig-java",
         "com.android.media.flags.bettertogether-aconfig-java",
+        "services.core",
     ],
     srcs: [
         "src/**/*.java",
@@ -50,6 +52,7 @@ android_test {
     test_config: "AndroidTest.xml",
     platform_apis: true,
     data: [
+        ":CtsAppTestStubsApp1",
         ":CtsAppTestFgsTestHelper",
         ":CtsAppTestFgsTestHelperCurrent",
         ":CtsAppTestFgsTestHelperApi33",

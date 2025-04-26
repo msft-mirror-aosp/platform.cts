@@ -16,6 +16,8 @@
 
 package android.app.stubs;
 
+import android.app.stubs.shared.LocalService;
+
 public class LocalGrantedService extends LocalService
 {
 }

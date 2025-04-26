@@ -134,11 +134,12 @@ public class ClassProfile {
     }
 
     /** Creates a class method. */
-    public MethodProfile getOrCreateMethod(
-            String methodName, List<String> params) {
+    public MethodProfile getOrCreateMethod(String methodName, List<String> params) {
         String methodSignature = Utils.getMethodSignature(methodName, params);
         if (!mMethods.containsKey(methodSignature)) {
-            mMethods.put(methodSignature, new MethodProfile(this, methodName, params));
+            mMethods.put(
+                    methodSignature,
+                    new MethodProfile(this, methodName, Utils.formatParams(params)));
         }
         return mMethods.get(methodSignature);
     }

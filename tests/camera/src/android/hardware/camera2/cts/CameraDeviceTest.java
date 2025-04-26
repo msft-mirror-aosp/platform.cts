@@ -1845,10 +1845,8 @@ public class CameraDeviceTest extends Camera2AndroidTestCase {
                     mSession.captureBurst(postAbortRequests, resultCallback, mHandler);
                 }
                 // Verify that the results are returned.
-                for (int i = 0; i < postAbortRequests.size(); i++) {
-                    resultCallback.getCaptureResultForRequest(
-                            postAbortRequests.get(i), CAPTURE_RESULT_TIMEOUT_MS);
-                }
+                resultCallback.getTotalCaptureResultsForRequests(
+                        postAbortRequests, postAbortRequests.size(), CAPTURE_RESULT_TIMEOUT_MS);
 
                 // Resume the repeating, and verify that results are returned.
                 if (executor != null) {

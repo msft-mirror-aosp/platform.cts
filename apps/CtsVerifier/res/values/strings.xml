@@ -1271,6 +1271,7 @@
     <string name="nfc_hce">Host-based card emulation</string>
     <string name="nfc_hce_emulator_polling_loop_annotations">Polling Loop Emulator Annotations</string>
     <string name="nfc_hce_reader_polling_loop_annotations">Polling Loop Reader Annotations</string>
+    <string name="nfc_hce_polling_loop_help_text">Launch the \"%s\" test on the other device and tap the two devices back to back.</string>
 
     <string name="nfc_hce_f">Host-based Felica card emulation</string>
     <string name="nfc_hce_f_reader_tests">HCE Felica reader tests</string>
@@ -1352,8 +1353,8 @@
     <!-- Strings to interact with users in Sensor Tests -->
     <string name="snsr_test_play_sound">A sound will be played once the verification is complete...</string>
     <string name="snsr_no_interaction">Leave the device on top of a flat surface.</string>
-    <string name="snsr_interaction_needed">Once the test begins, you will have to wave your hand over the front of the device.</string>
-    <string name="snsr_interaction_needed_prox">Once the test begins, if possible, flip the device so it is face down on a surface, then flip back to face up after a second or two. Otherwise, wave your hand over the front of the device.</string>
+    <string name="snsr_interaction_needed">Once the test begins, wave your hand over the front of the device or wherever the proximity sensor is located.</string>
+    <string name="snsr_interaction_needed_prox">Once the test begins, if possible, flip the device so it is face down on a surface, then flip back to face up after a second or two. Otherwise, wave your hand over the front of the device or wherever the proximity sensor is located.</string>
     <string name="snsr_device_steady">Keep the device steady.</string>
     <string name="snsr_keep_device_rotating_clockwise">Once the test begins, you will have to keep rotating the device clockwise.</string>
     <string name="snsr_wait_for_user">Press \'Next\' to continue.</string>
@@ -2422,6 +2423,7 @@
          \n\u2022 Segment 2 is 30% of the bar and is filled and its color is green.
          \n\u2022 Segment 3 is 10% of the bar and is filled and its color is red.
          \n\u2022 Segment 4 is 40% of the bar and is unfilled and segment’s appearance should indicate that it is not completed yet.
+         \nImportant: On slimmer devices, the color segments may be replaced with a theme color.
     </string>
     <string name="progress_style_multiple_points" formatted="false">A progress style notification with multiple progress points was posted. Expand it (if it\'s not already expanded), and verify that:
          \n\u2022 The left 60% of the progress bar should be filled and the rest is unfilled.
@@ -2455,6 +2457,7 @@
          \n\u2022 The progress tracker icon should be a white arrow in a blue filled circle.
          \n\u2022 Segments 1, 2 and 3 should look filled with orange, green and red respectively.
          \n\u2022 Points 1, 2, 3, and 4 should look filled with  orange, green, orange and red, respectively.
+         \nImportant: On slimmer devices, the color segments may be replaced with a theme color.
     </string>
     <string name="progress_style_rtl_enabled" formatted="false">A progress style notification was posted.  Change device layout direction to RTL (Developer options > Drawing > Force RTL layout direction). Expand the notification (if it’s not already expanded), and verify that:
          \n\u2022 The progress tracker icon should be displayed, and its position should be at 60% of the progress bar\'s length.
@@ -2464,6 +2467,7 @@
          \n\u2022 The arrow on the bar should point away from the S and toward the E.
          \n\u2022 S icon should appear on the right and it is not mirrored.
          \n\u2022 E icon should appear on the left and it is not mirrored.
+         \nImportant: On slimmer devices, the color segments may be replaced with a theme color.
          \nImportant: Make sure to disable RTL mode at the end of the test.
     </string>
     <string name="progress_style_many_segments_with_same_color" formatted="false">A progress style notification with 75% progress was posted. Expand it (if it’s not already expanded), and verify that:

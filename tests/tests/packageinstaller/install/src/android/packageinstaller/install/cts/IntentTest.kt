@@ -27,6 +27,7 @@ import android.platform.test.annotations.RequiresFlagsDisabled
 import android.platform.test.flag.junit.CheckFlagsRule
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import android.platform.test.rule.ScreenRecordRule.ScreenRecord
+import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.uiautomator.By
 import androidx.test.uiautomator.Until
 import com.android.bedstead.harrier.DeviceState
@@ -35,7 +36,6 @@ import com.android.bedstead.nene.userrestrictions.CommonUserRestrictions.DISALLO
 import com.android.bedstead.nene.userrestrictions.CommonUserRestrictions.DISALLOW_INSTALL_UNKNOWN_SOURCES
 import com.android.compatibility.common.util.SystemUtil
 import com.android.xts.root.annotations.RequireAdbRoot
-import com.google.testing.junit.testparameterinjector.TestParameterInjector
 import java.util.concurrent.TimeUnit
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -47,7 +47,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
-@RunWith(TestParameterInjector::class)
+@RunWith(AndroidJUnit4::class)
 @AppModeFull(reason = "Instant apps cannot install packages")
 @ScreenRecord
 class IntentTest : PackageInstallerTestBase() {
@@ -65,8 +65,8 @@ class IntentTest : PackageInstallerTestBase() {
         const val NO_INSTALL_APPS_RESTRICTION_TEXT_V2 ="Installing apps has been restricted"
         const val DISABLED_LAUNCHER_ACTIVITY_PKG_NAME =
                 "android.packageinstaller.disabledlauncheractivity.cts"
-        const val INSTALL_SUCCESS_TEXT = "App installed."
-        const val REINSTALL_SUCCESS_TEXT = "App reinstalled"
+        const val INSTALL_SUCCESS_TEXT = "App installed"
+        const val UPDATE_SUCCESS_TEXT = "App updated"
         const val TEST_VERIFIER_APK_NAME = "CtsSufficientVerifierReject.apk"
         const val TEST_VERIFIER_PACKAGE_NAME = "android.packageinstaller.sufficientverifierreject"
         const val TEST_REJECTED_BY_VERIFIER_APK_NAME = "CtsEmptyTestApp_RejectedByVerifier.apk"
@@ -352,7 +352,7 @@ class IntentTest : PackageInstallerTestBase() {
 
         // Wait for success dialog
         val targetString = if (usePiaV2) {
-            REINSTALL_SUCCESS_TEXT
+            UPDATE_SUCCESS_TEXT
         } else {
             INSTALL_SUCCESS_TEXT
         }

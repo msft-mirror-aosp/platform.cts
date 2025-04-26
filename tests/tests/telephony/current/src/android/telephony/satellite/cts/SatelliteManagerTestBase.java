@@ -18,6 +18,7 @@ package android.telephony.satellite.cts;
 
 import static android.telephony.SubscriptionManager.INVALID_SUBSCRIPTION_ID;
 import static android.telephony.satellite.SatelliteManager.DATAGRAM_TYPE_UNKNOWN;
+import static android.telephony.satellite.SatelliteManager.SATELLITE_DISALLOWED_REASON_NOT_PROVISIONED;
 import static android.telephony.satellite.SatelliteManager.SATELLITE_DISALLOWED_REASON_UNSUPPORTED_DEFAULT_MSG_APP;
 import static android.telephony.satellite.SatelliteManager.SATELLITE_MODEM_STATE_IDLE;
 import static android.telephony.satellite.SatelliteManager.SATELLITE_MODEM_STATE_NOT_CONNECTED;
@@ -151,6 +152,7 @@ public class SatelliteManagerTestBase {
     @SuppressWarnings("StaticAssignmentOfThrowable")
     protected static AssertionError sInitError = null;
 
+    protected static final String CTS_SMS_APP_PACKAGE_NAME = "android.telephony.cts.sms23";
     protected static final String OVERRIDING_COUNTRY_CODES = "US";
     protected static final String SATELLITE_COUNTRY_CODES = "US,UK,CA";
     protected static final String SATELLITE_S2_FILE = "google_us_san_sat_s2.dat";
@@ -2859,11 +2861,20 @@ public class SatelliteManagerTestBase {
         assertTrue(sMockSatelliteServiceManager.setSatelliteAccessAllowedForSubscriptions(null));
     }
 
-    protected static void enableDefaultSmsAppSupportForActiveSubscription(int subId) {
-        // Assume that binding satellite subscription is already selected before this step
+    /**
+     * Enables the default SMS app support for an active subscription.
+     *
+     * <p> This method should be called only after the binding satellite subscription is selected.
+     *
+     * @param subId The subscription ID of the active subscription.
+     * @param supportCtsSmsApp Whether to support the CTS SMS app.
+     */
+    protected static void enableDefaultSmsAppSupportForActiveSubscription(
+        int subId, boolean supportCtsSmsApp) {
         assumeTrue(subId != SubscriptionManager.INVALID_SUBSCRIPTION_ID);
 
-        logd("enableDefaultSmsAppSupportForNtnOnlySubscription: subId=" + subId);
+        logd("enableDefaultSmsAppSupportForActiveSubscription: subId=" + subId
+                + ", supportCtsSmsApp=" + supportCtsSmsApp);
         assertTrue(sMockSatelliteServiceManager.setSatelliteControllerTimeoutDuration(false,
                 TIMEOUT_TYPE_EVALUATE_ESOS_PROFILES_PRIORITIZATION_DURATION_MILLIS, 5));
 
@@ -2878,7 +2889,7 @@ public class SatelliteManagerTestBase {
         if (defaultSmsAppComp != null) {
             defaultSmsApp = defaultSmsAppComp.getPackageName();
         }
-        logd("enableDefaultSmsAppSupportForNtnOnlySubscription: defaultSmsApp=" + defaultSmsApp
+        logd("enableDefaultSmsAppSupportForActiveSubscription: defaultSmsApp=" + defaultSmsApp
                  + ", originalSupportedMsgApps=" + (originalSupportedMsgApps == null
                      ? "null" : Arrays.toString(originalSupportedMsgApps)));
 
@@ -2891,13 +2902,16 @@ public class SatelliteManagerTestBase {
                     || !containString(originalSupportedMsgApps, defaultSmsApp)) {
                 newLength++;
             } else {
-                logd("enableDefaultSmsAppSupportForNtnOnlySubscription: defaultSmsApp="
+                logd("enableDefaultSmsAppSupportForActiveSubscription: defaultSmsApp="
                         + defaultSmsApp + " is already supported");
                 isDefaultSmsAppSupported = true;
             }
         } else {
             fail("Device does not have a default SMS app");
             return;
+        }
+        if (supportCtsSmsApp) {
+            newLength++;
         }
 
         String[] newSupportedMsgApps = new String[newLength];
@@ -2906,35 +2920,49 @@ public class SatelliteManagerTestBase {
                     originalSupportedMsgApps.length);
         }
         if (newLength > existingLength) {
-            newSupportedMsgApps[newSupportedMsgApps.length - 1] = defaultSmsApp;
+            int index = existingLength;
+            if (!isDefaultSmsAppSupported) {
+                newSupportedMsgApps[index++] = defaultSmsApp;
+            }
+            if (supportCtsSmsApp) {
+                newSupportedMsgApps[index]= CTS_SMS_APP_PACKAGE_NAME;
+            }
         }
-        logd("enableDefaultSmsAppSupportForNtnOnlySubscription: newSupportedMsgApps="
+        logd("enableDefaultSmsAppSupportForActiveSubscription: newSupportedMsgApps="
                  + Arrays.toString(newSupportedMsgApps));
 
-        SatelliteDisallowedReasonsCallbackTest callback =
+        SatelliteDisallowedReasonsCallbackTest disallowedReasonsCallback =
                 registerForSatelliteDisallowedReasonsChanged();
-        boolean hasUnsupportedDefaultMsgAppDisallowedReason = callback.hasSatelliteDisabledReason(
+        boolean hasUnsupportedDefaultMsgAppDisallowedReason =
+            disallowedReasonsCallback.hasSatelliteDisabledReason(
                 SATELLITE_DISALLOWED_REASON_UNSUPPORTED_DEFAULT_MSG_APP);
-        callback.drainPermits();
+        disallowedReasonsCallback.drainPermits();
 
-        if (!isDefaultSmsAppSupported || hasUnsupportedDefaultMsgAppDisallowedReason) {
-            logd("enableDefaultSmsAppSupportForNtnOnlySubscription: updating default SMS app...");
+        try {
+            if (!isDefaultSmsAppSupported || hasUnsupportedDefaultMsgAppDisallowedReason
+                    || supportCtsSmsApp) {
+                logd("enableDefaultSmsAppSupportForActiveSubscription: "
+                        + "updating default SMS app...");
 
-            PersistableBundle bundle = new PersistableBundle();
-            bundle.putStringArray(CarrierConfigManager.KEY_SATELLITE_SUPPORTED_MSG_APPS_STRING_ARRAY,
+                PersistableBundle bundle = new PersistableBundle();
+                bundle.putStringArray(
+                    CarrierConfigManager.KEY_SATELLITE_SUPPORTED_MSG_APPS_STRING_ARRAY,
                     newSupportedMsgApps);
-            overrideCarrierConfig(subId, bundle);
-            sOriginalSupportedMsgAppsPerSubId.put(subId, originalSupportedMsgApps);
+                overrideCarrierConfig(subId, bundle);
+                sOriginalSupportedMsgAppsPerSubId.put(subId, originalSupportedMsgApps);
 
-            if (hasUnsupportedDefaultMsgAppDisallowedReason) {
-                assertTrue(callback.waitUntilResult(1));
-                assertFalse(callback.hasSatelliteDisabledReason(
-                                SATELLITE_DISALLOWED_REASON_UNSUPPORTED_DEFAULT_MSG_APP));
+                if (hasUnsupportedDefaultMsgAppDisallowedReason) {
+                    assertTrue(disallowedReasonsCallback.waitUntilResult(1));
+                    assertFalse(disallowedReasonsCallback.hasSatelliteDisabledReason(
+                                    SATELLITE_DISALLOWED_REASON_UNSUPPORTED_DEFAULT_MSG_APP));
+                }
+            } else {
+                logd("enableDefaultSmsAppSupportForActiveSubscription: no need to update default"
+                                + " SMS app");
             }
-        } else {
-            logd(
-                    "enableDefaultSmsAppSupportForNtnOnlySubscription: no need to update default"
-                            + " SMS app");
+        } finally {
+            sSatelliteManager.unregisterForSatelliteDisallowedReasonsChanged(
+                disallowedReasonsCallback);
         }
     }
 
@@ -2994,29 +3022,49 @@ public class SatelliteManagerTestBase {
             // Enabling NTN only subscription and overrding satellite access for this subscription
             // should trigger the selected satellite subscription changed event.
             assertNotNull(selectedNbIotSatelliteSubCallback);
-            assertTrue(selectedNbIotSatelliteSubCallback.waitUntilResult(1));
-            logd("setUpNtnOnlySubscription: selectedSatelliteSubId="
-                    + selectedNbIotSatelliteSubCallback.mSelectedSubId);
-            assertNotEquals(SubscriptionManager.INVALID_SUBSCRIPTION_ID,
-                selectedNbIotSatelliteSubCallback.mSelectedSubId);
-
-            // Unregister the callback
-            sSatelliteManager.unregisterForSelectedNbIotSatelliteSubscriptionChanged(
-                    selectedNbIotSatelliteSubCallback);
+            try {
+                assertTrue(selectedNbIotSatelliteSubCallback.waitUntilResult(1));
+                logd("setUpNtnOnlySubscription: selectedSatelliteSubId="
+                        + selectedNbIotSatelliteSubCallback.mSelectedSubId);
+                assertNotEquals(SubscriptionManager.INVALID_SUBSCRIPTION_ID,
+                    selectedNbIotSatelliteSubCallback.mSelectedSubId);
+            } finally {
+                // Unregister the callback
+                sSatelliteManager.unregisterForSelectedNbIotSatelliteSubscriptionChanged(
+                        selectedNbIotSatelliteSubCallback);
+            }
         }
 
         if (!isSatelliteProvisioned()) {
+            SatelliteDisallowedReasonsCallbackTest disallowedReasonsCallback =
+                    registerForSatelliteDisallowedReasonsChanged();
+            boolean hasNotProvisionedDisallowedReason =
+                disallowedReasonsCallback.hasSatelliteDisabledReason(
+                    SATELLITE_DISALLOWED_REASON_NOT_PROVISIONED);
+            disallowedReasonsCallback.drainPermits();
+
             logd("setUpNtnOnlySubscription: Provision satellite");
             assertTrue(provisionSatellite());
+
+            try {
+                if (hasNotProvisionedDisallowedReason) {
+                    assertTrue(disallowedReasonsCallback.waitUntilResult(1));
+                    assertFalse(disallowedReasonsCallback.hasSatelliteDisabledReason(
+                                    SATELLITE_DISALLOWED_REASON_NOT_PROVISIONED));
+                }
+            } finally {
+                sSatelliteManager.unregisterForSatelliteDisallowedReasonsChanged(
+                    disallowedReasonsCallback);
+            }
         } else {
             logd("setUpNtnOnlySubscription: Satellite already provisioned");
         }
         // Binding satellite subscription need to be selected before this step
-        enableDefaultSmsAppSupportForActiveSubscription(sNtnOnlySubId);
+        enableDefaultSmsAppSupportForActiveSubscription(sNtnOnlySubId, false);
     }
 
-    protected static void setUpEsosSubscription() {
-        logd("setUpEsosSubscription");
+    protected static void setUpEsosSubscription(boolean supportCtsSmsApp) {
+        logd("setUpEsosSubscription: supportCtsSmsApp=" + supportCtsSmsApp);
         assumeTrue(sEsosSubId != SubscriptionManager.INVALID_SUBSCRIPTION_ID);
         enableEsosSupportForActiveSubscription(sEsosSubId);
         enableSatelliteAccessForEsosSubscription(sEsosSubId);
@@ -3024,23 +3072,37 @@ public class SatelliteManagerTestBase {
             logd("setUpEsosSubscription: Provision satellite for subId=" + sEsosSubId);
             SelectedNbIotSatelliteSubscriptionCallbackTest selectedNbIotSatelliteSubCallback =
                 registerForSelectedNbIotSatelliteSubscriptionChanged();
-            assertTrue(provisionSatelliteForSubId(sEsosSubId));
+            SatelliteDisallowedReasonsCallbackTest disallowedReasonsCallback =
+                    registerForSatelliteDisallowedReasonsChanged();
+            boolean hasNotProvisionedDisallowedReason =
+                disallowedReasonsCallback.hasSatelliteDisabledReason(
+                    SATELLITE_DISALLOWED_REASON_NOT_PROVISIONED);
+            disallowedReasonsCallback.drainPermits();
 
-            assertTrue(selectedNbIotSatelliteSubCallback.waitUntilResult(1));
+            try {
+                assertTrue(provisionSatelliteForSubId(sEsosSubId));
+                assertTrue(selectedNbIotSatelliteSubCallback.waitUntilResult(1));
+                logd("setUpEsosSubscription: selectedSatelliteSubId="
+                        + selectedNbIotSatelliteSubCallback.mSelectedSubId);
+                assertEquals(sEsosSubId, selectedNbIotSatelliteSubCallback.mSelectedSubId);
 
-            logd("setUpEsosSubscription: selectedSatelliteSubId="
-                    + selectedNbIotSatelliteSubCallback.mSelectedSubId);
-            assertEquals(sEsosSubId, selectedNbIotSatelliteSubCallback.mSelectedSubId);
-
-            // Unregister the callback
-            sSatelliteManager.unregisterForSelectedNbIotSatelliteSubscriptionChanged(
-                selectedNbIotSatelliteSubCallback);
+                if (hasNotProvisionedDisallowedReason) {
+                    assertTrue(disallowedReasonsCallback.waitUntilResult(1));
+                    assertFalse(disallowedReasonsCallback.hasSatelliteDisabledReason(
+                                    SATELLITE_DISALLOWED_REASON_NOT_PROVISIONED));
+                }
+            } finally {
+                sSatelliteManager.unregisterForSelectedNbIotSatelliteSubscriptionChanged(
+                    selectedNbIotSatelliteSubCallback);
+                sSatelliteManager.unregisterForSatelliteDisallowedReasonsChanged(
+                    disallowedReasonsCallback);
+            }
         } else {
             logd("setUpEsosSubscription: Satellite already provisioned for subId="
                      + sEsosSubId);
         }
         // Binding satellite subscription need to be selected before this step
-        enableDefaultSmsAppSupportForActiveSubscription(sEsosSubId);
+        enableDefaultSmsAppSupportForActiveSubscription(sEsosSubId, supportCtsSmsApp);
     }
 
     protected static void overrideCarrierConfig(int subId, PersistableBundle bundle) {
@@ -3113,8 +3175,7 @@ public class SatelliteManagerTestBase {
     protected static void setUpSatelliteAccessAllowedAtDefaultTestLocation() {
         logd("setUpSatelliteAccessAllowedAtDefaultTestLocation...");
         assertTrue(sMockSatelliteServiceManager
-                .setIsSatelliteCommunicationAllowedForCurrentLocationCache(
-                    "cache_clear_and_not_allowed"));
+                .setIsSatelliteCommunicationAllowedForCurrentLocationCache("disable"));
         assertTrue(sMockSatelliteServiceManager.setCountryCodes(false, "US", null, null, 0));
         assertTrue(
                 sMockSatelliteServiceManager.setSatelliteAccessControlOverlayConfigs(
@@ -3219,8 +3280,42 @@ public class SatelliteManagerTestBase {
         requestMockLocationPermission(true);
         Location loc = LocationUtils.createLocation(
                 TEST_PROVIDER, latitude, longitude, LOCATION_ACCURACY);
-        logd("setTestProviderLocation: loc=" + loc);
-        sLocationManager.setTestProviderLocation(TEST_PROVIDER, loc);
+        logd("setTestProviderLocation: desired location=" + loc);
+        int i = 0;
+        for (; i < 3; i++) {
+            sLocationManager.setTestProviderLocation(TEST_PROVIDER, loc);
+            Location lastKnownLocation = getLastKnownLocation();
+            logd("setTestProviderLocation: i=" + i + ", lastKnownLocation=" + lastKnownLocation);
+            if (isTheSameLocation(loc, lastKnownLocation)) {
+                break;
+            }
+        }
+        assumeTrue(i < 3);
+    }
+
+    @Nullable
+    protected static Location getLastKnownLocation() {
+        Location result = null;
+        for (String provider : sLocationManager.getProviders(true)) {
+            Location location = sLocationManager.getLastKnownLocation(provider);
+            if (location != null && (result == null
+                    || result.getElapsedRealtimeNanos() < location.getElapsedRealtimeNanos())) {
+                result = location;
+            }
+        }
+        return result;
+    }
+
+    protected static boolean isTheSameLocation(
+        @Nullable Location location1, @Nullable Location location2) {
+        if (location1 == null && location2 == null) {
+            return true;
+        }
+        if (location1 == null || location2 == null) {
+            return false;
+        }
+        return Double.compare(location1.getLatitude(), location2.getLatitude()) == 0
+                && Double.compare(location1.getLongitude(), location2.getLongitude()) == 0;
     }
 
     protected static void requestMockLocationPermission(boolean allowed) {

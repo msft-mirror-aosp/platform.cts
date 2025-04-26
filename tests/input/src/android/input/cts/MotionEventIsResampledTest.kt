@@ -16,13 +16,13 @@
 
 package android.input.cts
 
-import android.cts.input.EventVerifier
 import android.platform.test.annotations.RequiresFlagsEnabled
 import android.util.Log
 import android.view.MotionEvent
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
 import androidx.test.platform.app.InstrumentationRegistry
+import com.android.cts.input.BlockingQueueEventVerifier
 import com.android.cts.input.CaptureEventActivity
 import com.android.cts.input.UinputTouchScreen
 import com.android.cts.input.VirtualDisplayActivityScenario
@@ -54,7 +54,7 @@ import org.junit.runner.RunWith
 class MotionEventIsResampledTest {
     private val instrumentation = InstrumentationRegistry.getInstrumentation()
     private lateinit var touchScreen: UinputTouchScreen
-    private lateinit var verifier: EventVerifier
+    private lateinit var verifier: BlockingQueueEventVerifier
 
     @get:Rule
     val testName = TestName()
@@ -64,7 +64,7 @@ class MotionEventIsResampledTest {
     @Before
     fun setUp() {
         touchScreen = UinputTouchScreen(instrumentation, virtualDisplayRule.virtualDisplay.display)
-        verifier = EventVerifier(virtualDisplayRule.activity::getInputEvent)
+        verifier = virtualDisplayRule.activity.verifier
     }
 
     @After

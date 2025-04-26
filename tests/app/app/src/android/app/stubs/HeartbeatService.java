@@ -17,6 +17,8 @@
 package android.app.stubs;
 
 import android.app.Service;
+import android.app.stubs.shared.ICallback;
+import android.app.stubs.shared.IHeartbeat;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -43,7 +45,7 @@ public class HeartbeatService extends Service {
     private int mUid;
     private String mName;
     private boolean mDead;
-    private CountDownLatch mLatch = new CountDownLatch(1);
+    private final CountDownLatch mLatch = new CountDownLatch(1);
 
     private final IHeartbeat.Stub mHeartbeat = new IHeartbeat.Stub() {
         @Override

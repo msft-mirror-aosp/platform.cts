@@ -290,9 +290,7 @@ public class ExtensionRearDisplayTest extends WindowManagerJetpackTestBase imple
     @FlakyTest(bugId = 295869141)
     public void testGetRearDisplayMetrics() throws Throwable {
         assumeTrue(mRearDisplayAddress != INVALID_DISPLAY_ADDRESS);
-
         DisplayMetrics originalMetrics = mWindowAreaComponent.getRearDisplayMetrics();
-
         // Enable rear display mode to get the expected display metrics for the rear display
         // Running with CONTROL_DEVICE_STATE permission to bypass educational overlay
         DeviceStateUtils.runWithControlDeviceStatePermission(() ->
@@ -373,7 +371,9 @@ public class ExtensionRearDisplayTest extends WindowManagerJetpackTestBase imple
 
         // Verify that the metrics returned from the activity do not equal after rotation
         assertNotEquals(windowMetrics, postRotationWindowMetrics);
-        assertNotEquals(originalMetricsApi, postRotationMetricsApi);
+        // Because cuttlefish can be slow, we have to give it a chance to update everything.
+        waitAndAssert(
+                () -> !originalMetricsApi.equals(mWindowAreaComponent.getRearDisplayMetrics()));
     }
 
     /**

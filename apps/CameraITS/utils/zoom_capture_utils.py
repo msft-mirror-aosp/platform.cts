@@ -75,7 +75,8 @@ class ZoomTestData:
   physical_id: int = dataclasses.field(default=None)
 
 
-def get_test_tols_and_cap_size(cam, props, chart_distance, debug):
+def get_test_tols_and_cap_size(cam, props, chart_distance, debug,
+                               use_preview_size=False):
   """Determine the tolerance per camera based on test rig and camera params.
 
   Cameras are pre-filtered to only include supportable cameras.
@@ -86,6 +87,7 @@ def get_test_tols_and_cap_size(cam, props, chart_distance, debug):
     props: dict; physical camera properties dictionary
     chart_distance: float; distance to chart in cm
     debug: boolean; log additional data
+    use_preview_size: boolean; whether to pick preview size
 
   Returns:
     dict of TOLs with camera focal length as key
@@ -105,8 +107,13 @@ def get_test_tols_and_cap_size(cam, props, chart_distance, debug):
   test_tols = {}
   test_yuv_sizes = []
   for i in physical_ids:
-    yuv_sizes = capture_request_utils.get_available_output_sizes(
-        'yuv', physical_props[i])
+    if use_preview_size:
+      yuv_sizes_str = cam.get_supported_preview_sizes(cam.get_camera_name())
+      yuv_sizes = [tuple(map(int, size_str.split('x')))
+                   for size_str in yuv_sizes_str]
+    else:
+      yuv_sizes = capture_request_utils.get_available_output_sizes(
+          'yuv', physical_props[i])
     test_yuv_sizes.append(yuv_sizes)
     if debug:
       logging.debug('cam[%s] yuv sizes: %s', i, str(yuv_sizes))
@@ -502,6 +509,7 @@ def verify_zoom_data(test_data, size, plot_name_stem=None,
   side_success = True
   offset_success = True
   used_smooth_offset = False
+  check_final_monotonicity = False
   e_msg = ''
   # assert that multiple cameras were tested where applicable
   ids_tested = set([v.physical_id for v in test_data])
@@ -633,9 +641,9 @@ def verify_zoom_data(test_data, size, plot_name_stem=None,
         used_smooth_offset = True
         offsets_while_transitioning.append(data.aruco_offset)
         if data.physical_id not in id_to_next_offset_and_zoom:
-          offset_success = False
-          e_msg += ('No physical camera is available to explain '
-                    'offset changes!')
+          check_final_monotonicity = True
+          logging.warning(
+              'No physical camera is available to explain offset changes!')
         else:
           next_initial_offset, next_initial_zoom = (
               id_to_next_offset_and_zoom[data.physical_id]
@@ -670,6 +678,13 @@ def verify_zoom_data(test_data, size, plot_name_stem=None,
       if not logged_data:
         logging.debug(msg)
 
+  if check_final_monotonicity and offsets_while_transitioning:
+    if not _verify_offset_monotonicity(
+        offsets_while_transitioning, monotonicity_atol):
+      logging.error('Final offsets %s are not monotonic',
+                    offsets_while_transitioning)
+      offset_success = False
+    offsets_while_transitioning.clear()
   if plot_name_stem:
     plot_name = plot_name_stem.split('/')[-1].split('.')[0]
     # Don't change print to logging. Used for KPI.

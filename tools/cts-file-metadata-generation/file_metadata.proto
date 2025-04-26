@@ -1,0 +1,86 @@
+/*
+ * Copyright (C) 2025 The Android Open Source Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+// Proto definition for camera feature combination query results
+
+syntax = "proto3";
+
+package cts_tools_file_metadata_proto;
+
+// Summary information for an AndroidTest.xml file.
+message ConfigFileSummary {
+  // The component of the test module. For example, "framework".
+  string component = 1;
+
+  // Test runners used to execute the test module.
+  // For example, "com.android.tradefed.testtype.AndroidJUnitTest".
+  repeated string test_runner = 2;
+
+  // The sim card type required by the test module. For example, "UICC_SIM_CARD".
+  string sim_card_token = 3;
+
+  // The mainline package that the test module depends on.
+  repeated string mainline_module_package_name = 4;
+}
+
+// Summary information for an APK file.
+message ApkFileSummary {
+  // The target SDK version of this APK file.
+  int64 target_sdk_version = 1;
+
+  // The minimal SDK version of this APK file.
+  int64 min_sdk_version = 2;
+}
+
+// Metadata for a single file under the "testcases" directory.
+message FileMetadata {
+  // Enumeration defining the different types of files.
+  enum FileType {
+    TYPE_UNSPECIFIED = 0;
+    // Represents an APK file.
+    TYPE_APK = 1;
+    // Represents a configuration file used for testing.
+    TYPE_CONFIG = 2;
+  }
+
+  // The path to the file. This path is relative to the "testcases" directory.
+  string file_path = 1;
+
+  // The name of the file excluding the extension.
+  string file_name = 2;
+
+  // The test module this file belongs to..
+  string test_module = 3;
+
+  // The type of the file.
+  FileType file_type = 4;
+
+  oneof summary {
+    // Summary information for a configuration file.
+    ConfigFileSummary config_summary = 5;
+    // Summary information for an APK file..
+    ApkFileSummary apk_summary = 6;
+  }
+
+  // The size of the file in kB.
+  double file_size = 7;
+}
+
+// Root message containing a list of metadata for CTS test files.
+message CtsTestFilesMetadata {
+  // Metadata for all CTS files under the "testcases" directory.
+  repeated FileMetadata file_metadata = 1;
+}

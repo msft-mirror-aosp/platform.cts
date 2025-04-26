@@ -70,7 +70,6 @@
     <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.AlertDialog_BuilderCursorTest#testSetSingleChoiceItemsWithParamCursor"/>
     <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.AlertDialog_BuilderTest#testDisableCancelable"/>
     <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.AppTaskTests#testMoveToFront"/>
-    <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.BroadcastOptionsIntegrationTest#testRequireCompatChange_enabled_success"/>
     <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.DialogTest#testConstructor_protectedNotCancellable"/>
     <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.DialogTest#testOnContentChanged"/>
     <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.DialogTest#testOnSaveInstanceState"/>
@@ -117,6 +116,8 @@
     <option name="compatibility:include-filter" value="CtsBiometricsTestCases android.server.biometrics.BiometricSimpleTests#testWhenCredentialEnrolled"/>
     <!-- CtsBionicTestCases -->
     <option name="compatibility:include-filter" value="CtsBionicTestCases dlfcn#dlopen_invalid_rw_load_segment"/>
+    <!-- CtsBroadcastTestCases -->
+    <option name="compatibility:include-filter" value="CtsBroadcastTestCases android.app.cts.broadcasts.BroadcastOptionsIntegrationTest#testRequireCompatChange_enabled_success"/>
     <!-- CtsCameraTestCases -->
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.multiprocess.camera.cts.SharedSessionConfigurationTest#testConstructorAndGetters_multipleOutputs"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.multiprocess.camera.cts.SharedSessionConfigurationTest#testConstructorAndGetters_validInput"/>

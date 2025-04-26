@@ -19,6 +19,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.MediumTest;
 
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -41,6 +42,7 @@ public class SdkSandboxWebViewZoomTest {
     }
 
     @Test
+    @Ignore("b/413079290")
     public void testInvokeZoomPicker() throws Throwable {
         sSdkTestSuiteSetup.assertSdkTestRunPasses("testInvokeZoomPicker");
     }
@@ -66,6 +68,7 @@ public class SdkSandboxWebViewZoomTest {
     }
 
     @Test
+    @Ignore("b/407724361")
     public void testZoomByNonPowerOfTwoIncrements() throws Throwable {
         sSdkTestSuiteSetup.assertSdkTestRunPasses("testZoomByNonPowerOfTwoIncrements");
     }

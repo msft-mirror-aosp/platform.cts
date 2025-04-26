@@ -15,6 +15,8 @@
  */
 package com.android.compatibility.common.util;
 
+import android.os.Process;
+
 public class AmUtils {
     private static final String TAG = "CtsAmUtils";
 
@@ -37,8 +39,7 @@ public class AmUtils {
 
     public static void runKill(String packageName, boolean wait) throws Exception {
         SystemUtil.runShellCommandForNoOutput(
-                "am kill --user " + android.os.Process.myUserHandle().getIdentifier() + " "
-                        + packageName);
+                "am kill --user " + Process.myUserHandle().getIdentifier() + " " + packageName);
 
         if (!wait) {
             return;
@@ -95,6 +96,35 @@ public class AmUtils {
             return Integer.parseInt(value.trim());
         } catch (NumberFormatException nfe) {
             return STANDBY_BUCKET_DOES_NOT_EXIST;
+        }
+    }
+
+    /**
+     * Run "adb shell am stop-app" for the given package and the current user. This should force
+     * kill the package even if it has active components.
+     *
+     * @param packageName The package to kill
+     * @param wait whether to wait until the package process has gone.
+     */
+    public static void runStopApp(String packageName, boolean wait) throws Exception {
+        runStopApp(packageName, wait, Process.myUserHandle().getIdentifier());
+    }
+
+    /**
+     * Run "adb shell am stop-app --user" for the given package and user. This should force kill the
+     * package even if it has active components.
+     *
+     * @param packageName The package to kill
+     * @param wait whether to wait until the package process has gone.
+     * @param userId the userId on which to kill the package.
+     */
+    public static void runStopApp(String packageName, boolean wait, int userId) throws Exception {
+        // Explicit userId is required because it defaults to the system (not current) user.
+        SystemUtil.runShellCommandForNoOutput("am stop-app --user " + userId + " " + packageName);
+        if (wait) {
+            TestUtils.waitUntil(
+                    "package process was not killed:" + packageName,
+                    () -> !isProcessRunning(packageName));
         }
     }
 

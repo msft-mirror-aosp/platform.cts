@@ -18,7 +18,6 @@ package android.cts.backup;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeTrue;
 
 import android.platform.test.annotations.AppModeFull;
 
@@ -31,7 +30,6 @@ import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
 import com.android.tradefed.testtype.ITestInformationReceiver;
 import com.android.tradefed.testtype.junit4.BaseHostJUnit4Test;
 
-import org.junit.After;
 import org.junit.AssumptionViolatedException;
 import org.junit.Before;
 import org.junit.Rule;
@@ -82,8 +80,11 @@ public abstract class BaseBackupHostSideTest extends BaseHostJUnit4Test {
         // Check that the backup wasn't disabled and the transport wasn't switched unexpectedly.
         assertTrue("Backup was unexpectedly disabled during the module test run",
                 getBackupUtils().isBackupEnabled());
-        assertEquals("LocalTransport should be selected at this point", LOCAL_TRANSPORT,
-                getCurrentTransport());
+        int userId = getBackupUtils().getCurrentUserId();
+        assertEquals(
+                "LocalTransport should be selected at this point",
+                LOCAL_TRANSPORT,
+                getCurrentTransport(userId));
         mBackupUtils.wakeAndUnlockDevice();
     }
 
@@ -123,8 +124,15 @@ public abstract class BaseBackupHostSideTest extends BaseHostJUnit4Test {
      */
     protected void clearBackupDataInLocalTransport(String packageName)
             throws DeviceNotAvailableException {
-        getDevice().executeShellCommand(
-                String.format("bmgr wipe %s %s", LOCAL_TRANSPORT, packageName));
+        int userId = 0;
+        try {
+            userId = getBackupUtils().getCurrentUserId();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        String cmd =
+                String.format("bmgr --user %d wipe %s %s", userId, LOCAL_TRANSPORT, packageName);
+        getDevice().executeShellCommand(cmd);
     }
 
     /**
@@ -134,8 +142,9 @@ public abstract class BaseBackupHostSideTest extends BaseHostJUnit4Test {
         getDevice().executeShellCommand(String.format("pm clear %s", packageName));
     }
 
-    protected String getCurrentTransport() throws DeviceNotAvailableException {
-        String output = getDevice().executeShellCommand("bmgr list transports");
+    protected String getCurrentTransport(int userId) throws DeviceNotAvailableException {
+        String cmd = String.format("bmgr --user %d list transports", userId);
+        String output = getDevice().executeShellCommand(cmd);
         Pattern pattern = Pattern.compile("\\* (.*)");
         Matcher matcher = pattern.matcher(output);
         if (matcher.find()) {

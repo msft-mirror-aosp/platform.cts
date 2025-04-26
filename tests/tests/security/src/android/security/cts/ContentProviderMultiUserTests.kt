@@ -53,7 +53,7 @@ class ContentProviderMultiUserTests: StsExtraBusinessLogicTestCase() {
     val INITIAL_USER_CP_AUTHORITY: String = "android.packageinstaller.multiusercontentprovider"
     val SECONDARY_USER_CP_AUTHORITY: String = "0@android.packageinstaller.multiusercontentprovider"
 
-    val BASE_PATH: String = "/data/local/tmp/cts/contentprovider/"
+    val BASE_PATH: String = "/data/local/tmp/cts/security/"
     val INITIAL_USER_PROVIDER_APK_NAME: String = "CtsMultiuserContentProviderInitial.apk"
     val SECONDARY_USER_PROVIDER_APK_NAME: String = "CtsMultiuserContentProviderOther.apk"
 

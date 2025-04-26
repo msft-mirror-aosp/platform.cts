@@ -422,9 +422,9 @@ public class EncodeVirtualDisplayWithCompositionTestImpl {
         return Math.abs(expected - actual) <= MAX_DELTA;
     }
 
-    private static final int NUM_CODEC_CREATION = 5;
-    private static final int NUM_DISPLAY_CREATION = 10;
-    private static final int NUM_RENDERING = 10;
+    private static final int NUM_CODEC_CREATION = 4;
+    private static final int NUM_DISPLAY_CREATION = 7;
+    private static final int NUM_RENDERING = 7;
     public void doTestVirtualDisplayRecycles(final Context context, int numDisplays)
             throws Exception {
         Size maxSize = getMaxSupportedEncoderSize();

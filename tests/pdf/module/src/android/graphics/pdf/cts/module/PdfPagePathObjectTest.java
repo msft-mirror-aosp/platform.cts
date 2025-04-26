@@ -18,6 +18,8 @@ package android.graphics.pdf.cts.module;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import static org.junit.Assert.assertThrows;
+
 import android.graphics.Color;
 import android.graphics.Path;
 import android.graphics.pdf.component.PdfPageObjectType;
@@ -85,5 +87,20 @@ public class PdfPagePathObjectTest {
 
         mPdfPagePathObject.setRenderMode(RENDER_MODE);
         assertThat(mPdfPagePathObject.getRenderMode()).isEqualTo(RENDER_MODE);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_EDIT_PDF_PAGE_OBJECTS)
+    public void testCreatePathPageObjectWithNullText() {
+        Path path = null;
+        assertThrows(NullPointerException.class, () -> new PdfPagePathObject(path));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_EDIT_PDF_PAGE_OBJECTS)
+    public void testSetPathPageObjectWithInvalidRenderMode() {
+        Path path = new Path();
+        PdfPagePathObject pathObject = new PdfPagePathObject(path);
+        assertThrows(IllegalArgumentException.class, () -> pathObject.setRenderMode(-1));
     }
 }

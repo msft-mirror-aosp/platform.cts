@@ -18,6 +18,7 @@ package android.input.cts
 
 import android.app.Activity
 import android.graphics.Color
+import android.server.wm.CtsWindowInfoUtils.waitForStableWindowGeometry
 import android.server.wm.CtsWindowInfoUtils.waitForWindowVisible
 import android.view.Gravity
 import android.view.InputDevice.SOURCE_STYLUS
@@ -32,6 +33,8 @@ import android.view.WindowManager
 import android.view.WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL
 import android.view.WindowManager.LayoutParams.FLAG_SPLIT_TOUCH
 import android.view.WindowManager.LayoutParams.TYPE_APPLICATION
+import com.android.cts.input.BlockingQueueEventVerifier
+import java.time.Duration
 import java.util.concurrent.FutureTask
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.TimeUnit
@@ -46,6 +49,9 @@ private fun assertNoEvents(queue: LinkedBlockingQueue<InputEvent>) {
 class TwoWindowsActivity : Activity() {
     private val leftWindowEvents = LinkedBlockingQueue<InputEvent>()
     private val rightWindowEvents = LinkedBlockingQueue<InputEvent>()
+
+    val leftWindowVerifier = BlockingQueueEventVerifier(leftWindowEvents)
+    val rightWindowVerifier = BlockingQueueEventVerifier(rightWindowEvents)
 
     /**
      * Launch two windows and wait for them to be visible. Must not be called on UI thread.
@@ -113,6 +119,7 @@ class TwoWindowsActivity : Activity() {
 
         waitForWindowVisible(leftView)
         waitForWindowVisible(rightView)
+        waitForStableWindowGeometry(Duration.ofSeconds(3))
     }
 
     override fun dispatchGenericMotionEvent(ev: MotionEvent?): Boolean {

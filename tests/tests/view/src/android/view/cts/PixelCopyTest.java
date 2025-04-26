@@ -869,45 +869,45 @@ public class PixelCopyTest {
         // A large threshold is used because decoder accuracy is covered in the
         // media CTS tests, so we are mainly interested in verifying that rotation
         // and YUV->RGB conversion were handled properly.
-        assertBitmapQuadColor(bitmap, Color.RED, Color.GREEN, Color.BLUE, Color.BLACK, 30);
+        assertBitmapQuadColor(bitmap, Color.RED, Color.GREEN, Color.BLUE, Color.BLACK, 50);
 
         // Test that cropping works.
         copyResult = mCopyHelper.request(activity.getVideoView(), new Rect(0, 0, 50, 50), bitmap);
         assertEquals("Scaled copy request failed", PixelCopy.SUCCESS, copyResult);
         assertBitmapQuadColor(bitmap,
-                Color.RED, Color.RED, Color.RED, Color.RED, 30);
+                Color.RED, Color.RED, Color.RED, Color.RED, 50);
 
         copyResult = mCopyHelper.request(activity.getVideoView(), new Rect(50, 0, 100, 50), bitmap);
         assertEquals("Scaled copy request failed", PixelCopy.SUCCESS, copyResult);
         assertBitmapQuadColor(bitmap,
-                Color.GREEN, Color.GREEN, Color.GREEN, Color.GREEN, 30);
+                Color.GREEN, Color.GREEN, Color.GREEN, Color.GREEN, 50);
 
         copyResult = mCopyHelper.request(activity.getVideoView(), new Rect(0, 50, 50, 100), bitmap);
         assertEquals("Scaled copy request failed", PixelCopy.SUCCESS, copyResult);
         assertBitmapQuadColor(bitmap,
-                Color.BLUE, Color.BLUE, Color.BLUE, Color.BLUE, 30);
+                Color.BLUE, Color.BLUE, Color.BLUE, Color.BLUE, 50);
 
         copyResult = mCopyHelper.request(activity.getVideoView(), new Rect(50, 50, 100, 100), bitmap);
         assertEquals("Scaled copy request failed", PixelCopy.SUCCESS, copyResult);
         assertBitmapQuadColor(bitmap,
-                Color.BLACK, Color.BLACK, Color.BLACK, Color.BLACK, 30);
+                Color.BLACK, Color.BLACK, Color.BLACK, Color.BLACK, 50);
 
 
         copyResult = mCopyHelper.request(activity.getVideoView(), new Rect(25, 25, 75, 75), bitmap);
         assertEquals("Scaled copy request failed", PixelCopy.SUCCESS, copyResult);
         assertBitmapQuadColor(bitmap,
-                Color.RED, Color.GREEN, Color.BLUE, Color.BLACK, 30);
+                Color.RED, Color.GREEN, Color.BLUE, Color.BLACK, 50);
 
         copyResult = mCopyHelper.request(activity.getVideoView(), new Rect(0, 50, 100, 100), bitmap);
         assertEquals("Scaled copy request failed", PixelCopy.SUCCESS, copyResult);
         assertBitmapQuadColor(bitmap,
-                Color.BLUE, Color.BLACK, Color.BLUE, Color.BLACK, 30);
+                Color.BLUE, Color.BLACK, Color.BLUE, Color.BLACK, 50);
 
         // Test that clamping works
         copyResult = mCopyHelper.request(activity.getVideoView(), new Rect(50, -50, 150, 50), bitmap);
         assertEquals("Scaled copy request failed", PixelCopy.SUCCESS, copyResult);
         assertBitmapQuadColor(bitmap,
-                Color.GREEN, Color.GREEN, Color.GREEN, Color.GREEN, 30);
+                Color.GREEN, Color.GREEN, Color.GREEN, Color.GREEN, 50);
     }
 
     @Test

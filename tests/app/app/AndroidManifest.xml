@@ -96,7 +96,7 @@
          android:name="android.app.stubs.MockApplication"
          android:supportsRtl="true"
          android:networkSecurityConfig="@xml/network_security_config"
-         android:zygotePreloadName=".ZygotePreload">
+         android:zygotePreloadName="android.app.stubs.shared.ZygotePreload">
         <uses-library android:name="android.test.runner"/>
         <uses-library android:name="org.apache.http.legacy"
              android:required="false"/>
@@ -171,7 +171,7 @@
                  android:resource="@xml/searchable"/>
         </activity>
 
-        <service android:name="android.app.stubs.LocalService"
+        <service android:name="android.app.stubs.shared.LocalService"
              android:attributionTags="localService"
              android:exported="true">
             <meta-data android:name="android.app.stubs.string"
@@ -190,7 +190,7 @@
 
         <service android:name="android.app.stubs.LocalStoppedService"/>
 
-        <service android:name="android.app.stubs.LocalForegroundService"
+        <service android:name="android.app.stubs.shared.LocalForegroundService"
              android:foregroundServiceType="camera|microphone|specialUse"
              android:exported="true">
             <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE" android:value="cts" />
@@ -207,13 +207,13 @@
             <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE" android:value="cts" />
         </service>
 
-        <service android:name="android.app.stubs.LocalForegroundServiceLocation"
+        <service android:name="android.app.stubs.shared.LocalForegroundServiceLocation"
              android:foregroundServiceType="location|camera|microphone|specialUse"
              android:exported="true">
             <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE" android:value="cts" />
         </service>
 
-        <service android:name="android.app.stubs.LocalForegroundServiceMedia"
+        <service android:name="android.app.stubs.shared.LocalForegroundServiceMedia"
                  android:foregroundServiceType="mediaPlayback"
                  android:exported="true">
         </service>
@@ -505,7 +505,7 @@
                  android:value="2"/>
         </activity>
 
-        <receiver android:name="android.app.stubs.CommandReceiver"
+        <receiver android:name="android.app.stubs.shared.CommandReceiver"
              android:exported="true"/>
 
         <activity android:name="android.app.stubs.SendBubbleActivity"
@@ -530,7 +530,7 @@
             <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE" android:value="cts" />
         </service>
 
-        <service android:name="android.app.stubs.LocalAlertService"/>
+        <service android:name="android.app.stubs.shared.LocalAlertService"/>
 
         <activity android:name=".SimpleActivity"
              android:theme="@style/Theme_NoSwipeDismiss"

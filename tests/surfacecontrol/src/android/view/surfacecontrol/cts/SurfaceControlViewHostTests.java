@@ -321,30 +321,52 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
     }
 
     private void addSurfaceView(int width, int height) throws Throwable {
-        addSurfaceView(width, height, true);
+        addSurfaceView(width, height, true /* onTop */);
     }
 
     private void addSurfaceView(int width, int height, boolean onTop) throws Throwable {
-        addSurfaceView(width, height, onTop, 0 /* leftMargin */, 0 /* topMargin */);
+        addSurfaceView(
+                width,
+                height,
+                onTop,
+                0 /* leftMargin */,
+                0 /* topMargin */,
+                false /* asNewWindow */);
     }
 
-    private void addSurfaceView(int width, int height, boolean onTop, int leftMargin, int topMargin)
+    private void addSurfaceView(
+            int width,
+            int height,
+            boolean onTop,
+            int leftMargin,
+            int topMargin,
+            boolean asNewWindow)
             throws Throwable {
-        mActivityRule.runOnUiThread(() -> {
-            final FrameLayout content = new FrameLayout(mActivity);
-            mSurfaceView = new MotionConsumingSurfaceView(mActivity);
-            mSurfaceView.setBackgroundColor(Color.BLACK);
-            mSurfaceView.setZOrderOnTop(onTop);
-            final FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(
-                    width, height, Gravity.LEFT | Gravity.TOP);
-            lp.leftMargin = leftMargin;
-            lp.topMargin = topMargin;
-            content.addView(mSurfaceView, lp);
-            mViewParent = content;
-            mActivity.setContentView(content,
-                    new ViewGroup.LayoutParams(width + leftMargin, height + topMargin));
-            mSurfaceView.getHolder().addCallback(this);
-        });
+        mActivityRule.runOnUiThread(
+                () -> {
+                    final FrameLayout content = new FrameLayout(mActivity);
+                    mSurfaceView = new MotionConsumingSurfaceView(mActivity);
+                    mSurfaceView.setBackgroundColor(Color.BLACK);
+                    mSurfaceView.setZOrderOnTop(onTop);
+                    final FrameLayout.LayoutParams lp =
+                            new FrameLayout.LayoutParams(width, height, Gravity.LEFT | Gravity.TOP);
+                    lp.leftMargin = leftMargin;
+                    lp.topMargin = topMargin;
+                    content.addView(mSurfaceView, lp);
+                    mViewParent = content;
+                    if (asNewWindow) {
+                        final WindowManager.LayoutParams windowLp =
+                                new WindowManager.LayoutParams();
+                        windowLp.width = width + leftMargin;
+                        windowLp.height = height + topMargin;
+                        mActivity.getWindowManager().addView(content, windowLp);
+                    } else {
+                        mActivity.setContentView(
+                                content,
+                                new ViewGroup.LayoutParams(width + leftMargin, height + topMargin));
+                    }
+                    mSurfaceView.getHolder().addCallback(this);
+                });
     }
 
     private void addViewToSurfaceView(SurfaceView sv, View v, int width, int height) {
@@ -506,8 +528,13 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
             // Add a margin to the SurfaceView to offset the embedded view's location on the screen.
             final int leftMargin = i * 20;
             final int topMargin = i * 10;
-            addSurfaceView(DEFAULT_SURFACE_VIEW_WIDTH, DEFAULT_SURFACE_VIEW_HEIGHT, true /*onTop*/,
-                    leftMargin, topMargin);
+            addSurfaceView(
+                    DEFAULT_SURFACE_VIEW_WIDTH,
+                    DEFAULT_SURFACE_VIEW_HEIGHT,
+                    true /*onTop*/,
+                    leftMargin,
+                    topMargin,
+                    false /* asNewWindow */);
             mInstrumentation.waitForIdleSync();
             waitUntilEmbeddedViewDrawn();
             waitForStableWindowGeometry(Duration.ofSeconds(WAIT_TIMEOUT_S));
@@ -683,8 +710,13 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
 
         final int marginLeft = 20;
         final int marginTop = 20;
-        addSurfaceView(DEFAULT_SURFACE_VIEW_WIDTH, DEFAULT_SURFACE_VIEW_HEIGHT, true /*onTop*/,
-                marginLeft, marginTop);
+        addSurfaceView(
+                DEFAULT_SURFACE_VIEW_WIDTH,
+                DEFAULT_SURFACE_VIEW_HEIGHT,
+                true /*onTop*/,
+                marginLeft,
+                marginTop,
+                false /* asNewWindow */);
         mInstrumentation.waitForIdleSync();
 
         mActivityRule.runOnUiThread(() -> {
@@ -953,6 +985,56 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
                 stream,
                 editorMatcher("onStartInputView", editText.getPrivateImeOptions()),
                 TIMEOUT_MS);
+    }
+
+    // Verifies that IME is z-ordered above the embedded window when the embedded window
+    // is in a child window.
+    @Test
+    public void testImeZOrderedAboveEmbeddedWindowInChildWindow() throws Throwable {
+        assumeTrue(MSG_NO_MOCK_IME, supportsInstallableIme());
+
+        EditText editText = new EditText(mActivity);
+        editText.setBackgroundColor(Color.BLUE);
+        editText.setPrivateImeOptions(getImeTestMarker());
+        mEmbeddedView = editText;
+
+        addSurfaceView(
+                DEFAULT_SURFACE_VIEW_WIDTH,
+                DEFAULT_SURFACE_VIEW_HEIGHT,
+                true /* onTop */,
+                0 /* leftMargin */,
+                0 /* topMargin */,
+                true /* asNewWindow */);
+        mInstrumentation.waitForIdleSync();
+        waitUntilEmbeddedViewDrawn();
+
+        requestSurfaceViewFocus();
+        assertWindowFocused(mEmbeddedView, true);
+        // assert host does not have focus
+        assertWindowFocused(mSurfaceView, false);
+
+        mCtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mSurfaceView);
+
+        // Verify that IME is z-ordered above the embedded window
+        Predicate<List<WindowInfo>> imeInExpectedLocation =
+                windowInfos -> {
+                    // SurfaceView is the activity layer
+                    int surfaceViewIndex = -1;
+                    int imeIndex = -1;
+                    for (int i = 0; i < windowInfos.size(); i++) {
+                        var windowInfo = windowInfos.get(i);
+                        if (Objects.equals(windowInfo.windowToken, mSurfaceView.getWindowToken())) {
+                            surfaceViewIndex = i;
+                        } else if (windowInfo.name.contains("InputMethod")) {
+                            imeIndex = i;
+                        }
+                    }
+                    if (surfaceViewIndex == -1 || imeIndex == -1) {
+                        return false;
+                    }
+                    return imeIndex < surfaceViewIndex;
+                };
+        assertTrue(waitForWindowInfos(imeInExpectedLocation, Duration.ofSeconds(5)));
     }
 
     @Test
@@ -1848,7 +1930,7 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
 
         InputTransferToken hostInputTransferToken = Objects.requireNonNull(
                 mSurfaceView.getRootSurfaceControl()).getInputTransferToken();
-        // Ask the embedded process to request gesture transfer from the host and then 
+        // Ask the embedded process to request gesture transfer from the host and then
         // verify that the call throws a security exception. We need to do the assertion
         // in the test process to handle the assertion correctly.
         assertTrue(mTestService.requestTouchGestureTransferFromHostThrows(hostInputTransferToken));
@@ -2017,5 +2099,70 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
 
         assertTrue("Failed to receive touch event in host window", hostGotEvent[0]);
         assertTrue("Failed to receive touch event in embedded window", embeddedGotEvent[0]);
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_UPDATE_HOST_INPUT_TRANSFER_TOKEN)
+    @Test
+    public void testAddScvhToDetachedView() throws Throwable {
+        // Create a surface view and wait for its surface to be created.
+        CountDownLatch surfaceCreated = new CountDownLatch(1);
+        mActivityRule.runOnUiThread(
+                () -> {
+                    final FrameLayout content = new FrameLayout(mActivity);
+                    mSurfaceView = new SurfaceView(mActivity);
+                    mSurfaceView.setZOrderOnTop(true);
+                    content.addView(
+                            mSurfaceView,
+                            new FrameLayout.LayoutParams(
+                                    DEFAULT_SURFACE_VIEW_WIDTH,
+                                    DEFAULT_SURFACE_VIEW_HEIGHT,
+                                    Gravity.LEFT | Gravity.TOP));
+                    mActivity.setContentView(
+                            content,
+                            new ViewGroup.LayoutParams(
+                                    DEFAULT_SURFACE_VIEW_WIDTH, DEFAULT_SURFACE_VIEW_HEIGHT));
+                    mSurfaceView
+                            .getHolder()
+                            .addCallback(new SurfaceCreatedCallback(surfaceCreated));
+
+                    // Create an embedded view.
+                    mVr =
+                            new SurfaceControlViewHost(
+                                    (Context) mActivity, mActivity.getDisplay(), (IBinder) null);
+                    mEmbeddedView = new Button(mActivity);
+                    mEmbeddedView.setOnClickListener((View v) -> mClicked = true);
+                    mVr.setView(mEmbeddedView, mEmbeddedViewWidth, mEmbeddedViewHeight);
+                });
+        assertTrue(
+                "Failed to wait for SurfaceView created",
+                surfaceCreated.await(WAIT_TIMEOUT_S, TimeUnit.SECONDS));
+
+        CountDownLatch surfacePackageReparented = new CountDownLatch(1);
+        mActivityRule.runOnUiThread(
+                () -> {
+                    mSurfaceView.setChildSurfacePackage(mVr.getSurfacePackage());
+                    SurfaceControl.Transaction t = new SurfaceControl.Transaction();
+                    t.addTransactionCommittedListener(
+                            Runnable::run, surfacePackageReparented::countDown);
+                    mSurfaceView.getRootSurfaceControl().applyTransactionOnDraw(t);
+                });
+        assertTrue(
+                "Failed to wait for surface package to get reparented",
+                surfacePackageReparented.await(WAIT_TIMEOUT_S, TimeUnit.SECONDS));
+
+        mInstrumentation.waitForIdleSync();
+        waitUntilEmbeddedViewDrawn();
+
+        // When surface view is focused, it should transfer focus to the embedded view.
+        requestSurfaceViewFocus();
+        assertWindowFocused(mEmbeddedView, true);
+        // assert host does not have focus
+        assertWindowFocused(mSurfaceView, false);
+
+        // When surface view is no longer focused, it should transfer focus back to the host window.
+        mActivityRule.runOnUiThread(() -> mSurfaceView.setFocusable(false));
+        assertWindowFocused(mEmbeddedView, false);
+        // assert host has focus
+        assertWindowFocused(mSurfaceView, true);
     }
 }

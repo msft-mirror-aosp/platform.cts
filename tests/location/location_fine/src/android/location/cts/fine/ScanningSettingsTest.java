@@ -16,15 +16,11 @@
 
 package android.location.cts.fine;
 
-import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.res.Resources;
-import android.database.ContentObserver;
 import android.net.wifi.WifiManager;
-import android.os.Handler;
-import android.os.HandlerThread;
 import android.platform.test.annotations.AppModeFull;
 import android.provider.Settings;
 import android.test.AndroidTestCase;
@@ -41,7 +37,7 @@ import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.FeatureUtil;
 import com.android.compatibility.common.util.PollingCheck;
 
-import java.util.concurrent.CountDownLatch;
+import java.util.function.BooleanSupplier;
 
 /** Tests if system settings app provides scanning settings. */
 @AppModeFull(reason = "Test cases don't apply for Instant apps")
@@ -88,6 +84,16 @@ public class ScanningSettingsTest extends AndroidTestCase {
 
     @CddTest(requirement = "7.4.2/C-2-1")
     public void testWifiScanningSettings() throws Exception {
+        testScanningSettings(WIFI_SCANNING_TITLE_RES, () -> isWifiScanAlwaysAvailable());
+    }
+
+    @CddTest(requirement = "7.4.3/C-4-1")
+    public void testBleScanningSettings() throws Exception {
+        testScanningSettings(BLUETOOTH_SCANNING_TITLE_RES, () -> isBleScanAlwaysAvailable());
+    }
+
+    private void testScanningSettings(String prefTitleRes, BooleanSupplier condition)
+            throws Exception {
         if (FeatureUtil.isTV()
                 || FeatureUtil.isAutomotive()
                 || FeatureUtil.isWatch()
@@ -95,44 +101,37 @@ public class ScanningSettingsTest extends AndroidTestCase {
             return;
         }
         launchLocationServicesSettings();
-        launchScanningSettingsFragment(WIFI_SCANNING_TITLE_RES);
+        launchScanningSettingsFragment(prefTitleRes);
 
         final Resources res = mPackageManager.getResourcesForApplication(SETTINGS_PACKAGE);
-        final int resId = res.getIdentifier(WIFI_SCANNING_TITLE_RES, "string", SETTINGS_PACKAGE);
+        final int resId = res.getIdentifier(prefTitleRes, "string", SETTINGS_PACKAGE);
         final UiObject2 pref = mDevice.findObject(By.text(res.getString(resId)));
 
-        final WifiManager wifiManager = mContext.getSystemService(WifiManager.class);
-
-        final boolean checked = wifiManager.isScanAlwaysAvailable();
+        final boolean checked = condition.getAsBoolean();
 
         // Click the preference to toggle the setting.
         pref.click();
         PollingCheck.check(
                 "Scan Always Available wasn't toggled from " + checked + " to " + !checked,
                 TIMEOUT,
-                () -> !checked == wifiManager.isScanAlwaysAvailable());
+                () -> !checked == condition.getAsBoolean());
 
         // Click the preference again to toggle the setting back.
         pref.click();
         PollingCheck.check(
                 "Scan Always Available wasn't toggled from " + !checked + " to " + checked,
                 TIMEOUT,
-                () -> checked == wifiManager.isScanAlwaysAvailable());
+                () -> checked == condition.getAsBoolean());
     }
 
-    @CddTest(requirement = "7.4.3/C-4-1")
-    public void testBleScanningSettings() throws PackageManager.NameNotFoundException {
-        if (FeatureUtil.isTV()
-                || FeatureUtil.isAutomotive()
-                || FeatureUtil.isWatch()
-                || FeatureUtil.isArc()) {
-            return;
-        }
-        launchLocationServicesSettings();
-        launchScanningSettingsFragment(BLUETOOTH_SCANNING_TITLE_RES);
+    private boolean isWifiScanAlwaysAvailable() {
+        return mContext.getSystemService(WifiManager.class).isScanAlwaysAvailable();
+    }
 
-        toggleSettingAndVerify(
-                BLUETOOTH_SCANNING_TITLE_RES, Settings.Global.BLE_SCAN_ALWAYS_AVAILABLE);
+    private boolean isBleScanAlwaysAvailable() {
+        return Settings.Global.getInt(
+                        mContext.getContentResolver(), Settings.Global.BLE_SCAN_ALWAYS_AVAILABLE, 0)
+                == 1;
     }
 
     private void launchLocationServicesSettings() {
@@ -191,47 +190,5 @@ public class ScanningSettingsTest extends AndroidTestCase {
         } while (!mDevice.wait(
                 Until.hasObject(By.res("android:id/switch_widget")),
                 POLLING_INTERVAL_MILLIS));
-    }
-
-    private void clickAndWaitForSettingChange(
-            UiObject2 pref, ContentResolver resolver, String settingKey) {
-        final CountDownLatch latch = new CountDownLatch(1);
-        final HandlerThread handlerThread = new HandlerThread(TAG);
-        handlerThread.start();
-        final ContentObserver observer =
-                new ContentObserver(new Handler(handlerThread.getLooper())) {
-                    @Override
-                    public void onChange(boolean selfChange) {
-                        super.onChange(selfChange);
-                        latch.countDown();
-                    }
-                };
-        resolver.registerContentObserver(Settings.Global.getUriFor(settingKey), false, observer);
-        pref.click();
-        try {
-            latch.await();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-        handlerThread.quit();
-        resolver.unregisterContentObserver(observer);
-        assertEquals(0, latch.getCount());
-    }
-
-    private void toggleSettingAndVerify(String prefTitleRes, String settingKey)
-            throws PackageManager.NameNotFoundException {
-        final Resources res = mPackageManager.getResourcesForApplication(SETTINGS_PACKAGE);
-        final int resId = res.getIdentifier(prefTitleRes, "string", SETTINGS_PACKAGE);
-        final UiObject2 pref = mDevice.findObject(By.text(res.getString(resId)));
-        final ContentResolver resolver = mContext.getContentResolver();
-        final boolean checked = Settings.Global.getInt(resolver, settingKey, 0) == 1;
-
-        // Click the preference to toggle the setting.
-        clickAndWaitForSettingChange(pref, resolver, settingKey);
-        assertEquals(!checked, Settings.Global.getInt(resolver, settingKey, 0) == 1);
-
-        // Click the preference again to toggle the setting back.
-        clickAndWaitForSettingChange(pref, resolver, settingKey);
-        assertEquals(checked, Settings.Global.getInt(resolver, settingKey, 0) == 1);
     }
 }

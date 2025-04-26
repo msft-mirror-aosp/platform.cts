@@ -22,7 +22,9 @@ import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 
 import android.app.Activity;
@@ -30,8 +32,8 @@ import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.pm.PackageManager;
 import android.hardware.radio.RadioError;
+import android.os.PersistableBundle;
 import android.os.SystemClock;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
@@ -39,15 +41,13 @@ import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.Telephony;
 import android.telephony.CarrierConfigManager;
 import android.telephony.SmsManager;
-import android.telephony.SmsMessage;
-import android.telephony.cts.AsyncSmsMessageListener;
-import android.telephony.cts.SmsReceiverHelper;
+import android.telephony.SubscriptionManager;
 import android.telephony.cts.util.DefaultSmsAppHelper;
-import android.telephony.cts.util.TelephonyUtils;
 import android.telephony.satellite.SatelliteManager;
 import android.telephony.satellite.stub.SatelliteModemState;
 import android.telephony.satellite.stub.SatelliteResult;
-import android.util.Base64;
+import android.text.TextUtils;
+import android.util.Pair;
 
 import com.android.internal.telephony.RILConstants;
 import com.android.internal.telephony.flags.Flags;
@@ -56,11 +56,8 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
-
-import java.util.concurrent.TimeUnit;
 
 public class ManualConnectCarrierRoamingSatelliteTest extends CarrierRoamingSatelliteTestBase {
     @Rule
@@ -86,7 +83,7 @@ public class ManualConnectCarrierRoamingSatelliteTest extends CarrierRoamingSate
 
         beforeAllCarrierRoamingTestsBase();
         setUpManualConnectTestEnvironment(
-            ESOS_SLOT_ID, ESOS_SIM_PROFILE_ID, ESOS_PHONE_NUMBER);
+            ESOS_SLOT_ID, ESOS_SIM_PROFILE_ID, ESOS_PHONE_NUMBER, true);
     }
 
     /**
@@ -145,8 +142,19 @@ public class ManualConnectCarrierRoamingSatelliteTest extends CarrierRoamingSate
         ServiceStateListenerTest serviceStateListener = registerServiceStateListener();
         adoptShellIdentity();
         boolean originalWifiState = sWifiManager.isWifiEnabled();
+        logd(TAG, "originalWifiState: " + originalWifiState);
 
         try {
+            // Make the device is connected to a TN cell
+            // Disable satellite PLMNs so that the network is considered as a TN network
+            disableSatellitePlmns(ESOS_SLOT_ID);
+            // Move device to out of service state
+            sMockModemManager.changeNetworkService(ESOS_SLOT_ID, ESOS_SIM_PROFILE_ID, false);
+            assertTrue(serviceStateListener.waitUntilOutOfService());
+            // Move device to in service state
+            sMockModemManager.changeNetworkService(ESOS_SLOT_ID, ESOS_SIM_PROFILE_ID, true);
+            assertTrue(serviceStateListener.waitUntilInService());
+
             // Get NTN eligibility immediately after registering
             sTelephonyManager.registerTelephonyCallback(
                 getContext().getMainExecutor(), carrierRoamingNtnListener);
@@ -154,13 +162,17 @@ public class ManualConnectCarrierRoamingSatelliteTest extends CarrierRoamingSate
             assertFalse(carrierRoamingNtnListener.getNtnEligible());
             carrierRoamingNtnListener.clearModeChanges();
 
+            // Enable satellite PLMNs to make sure the device is registered to a NTN
+            enableCarrierRoamingSatelliteConfigs(ESOS_SLOT_ID,
+                CarrierConfigManager.CARRIER_ROAMING_NTN_CONNECT_MANUAL);
+
             if (originalWifiState) {
-                logd(TAG, "Disable wifi");
+                logd(TAG, "Disabling wifi");
                 sWifiManager.setWifiEnabled(false);
                 sWifiStateReceiver.setWifiExpectedState(false);
                 assertTrue(sWifiStateReceiver.waitUntilWifiStateChanged());
+                carrierRoamingNtnListener.clearModeChanges();
             }
-            carrierRoamingNtnListener.clearModeChanges();
 
             // Network is lost
             logd(TAG, "Move device to out of service state");
@@ -174,7 +186,12 @@ public class ManualConnectCarrierRoamingSatelliteTest extends CarrierRoamingSate
             assertTrue(carrierRoamingNtnListener.waitForNtnEligible(1));
             assertTrue(carrierRoamingNtnListener.getNtnEligible());
         } finally {
-            sWifiManager.setWifiEnabled(originalWifiState);
+            if (originalWifiState) {
+                logd(TAG, "Restroing wifi enabled state");
+                sWifiManager.setWifiEnabled(true);
+                sWifiStateReceiver.setWifiExpectedState(true);
+                assertTrue(sWifiStateReceiver.waitUntilWifiStateChanged());
+            }
             sTelephonyManager.unregisterTelephonyCallback(carrierRoamingNtnListener);
             sTelephonyManager.unregisterTelephonyCallback(serviceStateListener);
             dropShellIdentity();
@@ -226,6 +243,40 @@ public class ManualConnectCarrierRoamingSatelliteTest extends CarrierRoamingSate
             // Reset the SMS error code and RIL error code
             sMockModemManager.setSendSmsErrorCode(
                 ESOS_SLOT_ID, RadioError.NONE, RILConstants.SUCCESS);
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ROAMING_NB_IOT_NTN)
+    public void testRequestSatelliteDisplayName() {
+        logd("testRequestSatelliteDisplayName: sEsosSubId=" + sEsosSubId);
+        if (!shouldTestManualConnectCarrierRoaming()) return;
+
+        grantSatellitePermission();
+        try {
+            Pair<CharSequence, Integer> pairResult = requestSatelliteDisplayName();
+            if (pairResult == null) {
+                fail("requestSatelliteDisplayName: null");
+            }
+            assertNull(pairResult.second);
+            if (TextUtils.isEmpty(pairResult.first)) {
+                assumeTrue(sEsosSubId != SubscriptionManager.INVALID_SUBSCRIPTION_ID);
+
+                String displayName = "Satellite";
+                PersistableBundle bundle = new PersistableBundle();
+                bundle.putString(
+                        CarrierConfigManager.KEY_SATELLITE_DISPLAY_NAME_STRING, displayName);
+                overrideCarrierConfig(sEsosSubId, bundle);
+
+                pairResult = requestSatelliteDisplayName();
+                if (pairResult == null) {
+                    fail("requestSatelliteDisplayName: null");
+                }
+                assertTrue(TextUtils.equals(displayName, (CharSequence) pairResult.first));
+                assertNull(pairResult.second);
+            }
+        } finally {
+            revokeSatellitePermission();
         }
     }
 

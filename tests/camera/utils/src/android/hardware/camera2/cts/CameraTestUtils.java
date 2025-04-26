@@ -79,7 +79,6 @@ import com.android.ex.camera2.blocking.BlockingCameraManager.BlockingOpenExcepti
 import com.android.ex.camera2.blocking.BlockingSessionCallback;
 import com.android.ex.camera2.blocking.BlockingStateCallback;
 import com.android.ex.camera2.exceptions.TimeoutRuntimeException;
-import com.android.internal.camera.flags.Flags;
 
 import junit.framework.Assert;
 
@@ -4100,7 +4099,7 @@ public class CameraTestUtils extends Assert {
         boolean configSupportedByDeviceSetup = false;
         String cameraId = camera.getId();
         if (Build.VERSION.SDK_INT > Build.VERSION_CODES.UPSIDE_DOWN_CAKE
-                && Flags.cameraDeviceSetup() && manager.isCameraDeviceSetupSupported(cameraId)) {
+                && manager.isCameraDeviceSetupSupported(cameraId)) {
             CameraDeviceSetup deviceSetup = manager.getCameraDeviceSetup(cameraId);
             assertNotNull("Failed to get camera device setup for " + cameraId, deviceSetup);
             deviceSetupSupported = true;

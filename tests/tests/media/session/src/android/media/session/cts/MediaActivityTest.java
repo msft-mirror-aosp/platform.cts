@@ -30,6 +30,7 @@ import android.content.pm.PackageManager;
 import android.hardware.hdmi.HdmiControlManager;
 import android.media.AudioAttributes;
 import android.media.AudioManager;
+import android.media.cts.Utils;
 import android.media.session.MediaSession;
 import android.os.ConditionVariable;
 import android.os.Handler;
@@ -53,6 +54,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -70,6 +72,7 @@ public class MediaActivityTest {
     private static final int WAIT_TIME_MS = 5000;
     private static final int TIME_SLICE = 50;
     private static final List<Integer> ALL_VOLUME_STREAMS = new ArrayList();
+
     static {
         ALL_VOLUME_STREAMS.add(AudioManager.STREAM_ACCESSIBILITY);
         ALL_VOLUME_STREAMS.add(AudioManager.STREAM_ALARM);
@@ -93,6 +96,7 @@ public class MediaActivityTest {
 
     private HdmiControlManager mHdmiControlManager;
     private int mHdmiEnableStatus;
+    private int mOriginalRingerMode;
 
     @Before
     public void setUp() throws Exception {
@@ -116,6 +120,9 @@ public class MediaActivityTest {
         // whether the session is prioritized for volume control or not.
         mSession.setPlaybackToLocal(new AudioAttributes.Builder()
                 .setLegacyStreamType(AudioManager.STREAM_RING).build());
+
+        mOriginalRingerMode = mAudioManager.getRingerMode();
+        changeRingerMode(AudioManager.RINGER_MODE_NORMAL);
 
         Intent intent = new Intent(mContext, MediaSessionTestActivity.class);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
@@ -156,7 +163,7 @@ public class MediaActivityTest {
     }
 
     @After
-    public void cleanUp() {
+    public void cleanUp() throws Exception {
         if (mSession != null) {
             mSession.release();
             mSession = null;
@@ -182,6 +189,7 @@ public class MediaActivityTest {
                         + volume + ", currentVolume=" + mAudioManager.getStreamVolume(stream));
             }
         }
+        changeRingerMode(mOriginalRingerMode);
     }
 
     /** Tests whether volume key changes volume with the session's stream. */
@@ -306,6 +314,19 @@ public class MediaActivityTest {
                 "MediaSessionTestActivity isn't in the foreground."
                         + " Ensure no screen lock before running CTS test"
                         + ", and do not touch screen while the test is running.");
+        }
+    }
+
+    private void changeRingerMode(int ringerMode) throws IOException {
+        if (mAudioManager != null && mAudioManager.getRingerMode() != ringerMode) {
+            try {
+                Utils.toggleNotificationPolicyAccess(
+                        mContext.getPackageName(), mInstrumentation, true);
+                mAudioManager.setRingerMode(ringerMode);
+            } finally {
+                Utils.toggleNotificationPolicyAccess(
+                        mContext.getPackageName(), mInstrumentation, false);
+            }
         }
     }
 

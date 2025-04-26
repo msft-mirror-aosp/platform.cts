@@ -16,9 +16,8 @@
 <configuration description="Run CTS platinum prod tests.">
     <include name="cts-automated"/>
     <!-- CtsCarrierApiTestCases -->
-    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.BugreportManagerTest#startBugreport_invalidMode"/>
     <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.CarrierApiTest#testIccCloseLogicalChannel"/>
-    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.CarrierApiTest#testIccOpenLogicalChannel"/>
-    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.CarrierApiTest#testIccOpenLogicalChannelWithValidP2"/>
+    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.CarrierApiTest#testIccTransmitApduLogicalChannelWithInvalidChannel"/>
+    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.CarrierApiTest#testImsApisAreAccessibleWithFeatureMapping"/>
     <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.CarrierApiTest#testOpportunistic"/>
 </configuration>

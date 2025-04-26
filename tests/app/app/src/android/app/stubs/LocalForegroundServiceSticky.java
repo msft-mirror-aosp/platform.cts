@@ -32,6 +32,7 @@
 
 package android.app.stubs;
 
+import android.app.stubs.shared.LocalForegroundService;
 import android.content.Intent;
 import android.util.Log;
 

@@ -43,7 +43,7 @@ public class InstallationViaIntentTest extends InstallationTestBase {
 
         clickInstallButton(/* checkInstallingDialog= */ true);
 
-        assertInstallSuccessDialogForNoLauncherActivity();
+        assertInstallSuccessDialogForNoLauncherActivity(/* isAppUpdating= */ false);
         assertTestPackageInstalled();
     }
 
@@ -59,7 +59,7 @@ public class InstallationViaIntentTest extends InstallationTestBase {
 
         clickInstallButton(/* checkInstallingDialog= */ true);
 
-        assertInstallSuccessDialogAndLaunchTestApp();
+        assertInstallSuccessDialogAndLaunchTestApp(/* isAppUpdating= */ false);
         assertTestPackageInstalled();
     }
 
@@ -139,7 +139,7 @@ public class InstallationViaIntentTest extends InstallationTestBase {
 
         clickInstallButton(/* checkInstallingDialog= */ true);
 
-        assertInstallSuccessDialogForNoLauncherActivity();
+        assertInstallSuccessDialogForNoLauncherActivity(/* isAppUpdating= */ false);
         assertTestPackageInstalled();
     }
 
@@ -153,7 +153,7 @@ public class InstallationViaIntentTest extends InstallationTestBase {
 
         clickInstallButton(/* checkInstallingDialog= */ true);
 
-        assertInstallSuccessDialogAndLaunchTestApp();
+        assertInstallSuccessDialogAndLaunchTestApp(/* isAppUpdating= */ false);
         assertTestPackageInstalled();
     }
 
@@ -219,7 +219,7 @@ public class InstallationViaIntentTest extends InstallationTestBase {
 
         clickUpdateButton(/* checkInstallingDialog= */ true);
 
-        assertInstallSuccessDialogForNoLauncherActivity();
+        assertInstallSuccessDialogForNoLauncherActivity(/* isAppUpdating= */ true);
         assertTestPackageVersion2Installed();
     }
 
@@ -240,7 +240,7 @@ public class InstallationViaIntentTest extends InstallationTestBase {
 
         clickUpdateButton(/* checkInstallingDialog= */ true);
 
-        assertInstallSuccessDialogForNoLauncherActivity();
+        assertInstallSuccessDialogForNoLauncherActivity(/* isAppUpdating= */ true);
         assertTestPackageVersion2Installed();
     }
 
@@ -258,7 +258,7 @@ public class InstallationViaIntentTest extends InstallationTestBase {
 
         clickUpdateButton(/* checkInstallingDialog= */ true);
 
-        assertInstallSuccessDialogAndLaunchTestApp();
+        assertInstallSuccessDialogAndLaunchTestApp(/* isAppUpdating= */ true);
         assertTestPackageVersion2Installed();
     }
 
@@ -347,7 +347,7 @@ public class InstallationViaIntentTest extends InstallationTestBase {
 
         clickUpdateButton(/* checkInstallingDialog= */ true);
 
-        assertInstallSuccessDialogForNoLauncherActivity();
+        assertInstallSuccessDialogForNoLauncherActivity(/* isAppUpdating= */ true);
         assertTestPackageVersion2Installed();
     }
 
@@ -366,7 +366,7 @@ public class InstallationViaIntentTest extends InstallationTestBase {
 
         clickUpdateButton(/* checkInstallingDialog= */ true);
 
-        assertInstallSuccessDialogForNoLauncherActivity();
+        assertInstallSuccessDialogForNoLauncherActivity(/* isAppUpdating= */ true);
         assertTestPackageVersion2Installed();
     }
 
@@ -382,7 +382,7 @@ public class InstallationViaIntentTest extends InstallationTestBase {
 
         clickUpdateButton(/* checkInstallingDialog= */ true);
 
-        assertInstallSuccessDialogAndLaunchTestApp();
+        assertInstallSuccessDialogAndLaunchTestApp(/* isAppUpdating= */ true);
         assertTestPackageVersion2Installed();
     }
 
@@ -453,7 +453,7 @@ public class InstallationViaIntentTest extends InstallationTestBase {
 
         clickUpdateButton(/* checkInstallingDialog= */ false, /* isUpdatedViaPackageUri= */ true);
 
-        assertInstallSuccessDialogForNoLauncherActivity();
+        assertInstallSuccessDialogForNoLauncherActivity(/* isAppUpdating= */ true);
         assertTestPackageInstalled();
     }
 
@@ -474,7 +474,7 @@ public class InstallationViaIntentTest extends InstallationTestBase {
 
         clickUpdateButton(/* checkInstallingDialog= */ false, /* isUpdatedViaPackageUri= */ true);
 
-        assertInstallSuccessDialogForNoLauncherActivity();
+        assertInstallSuccessDialogForNoLauncherActivity(/* isAppUpdating= */ true);
         assertTestPackageInstalled();
     }
 
@@ -492,7 +492,8 @@ public class InstallationViaIntentTest extends InstallationTestBase {
 
         clickUpdateButton(/* checkInstallingDialog= */ false, /* isUpdatedViaPackageUri= */ true);
 
-        assertInstallSuccessDialogAndLaunchTestApp();
+
+        assertInstallSuccessDialogAndLaunchTestApp(/* isAppUpdating= */ true);
         assertTestPackageInstalled();
     }
 
@@ -581,7 +582,7 @@ public class InstallationViaIntentTest extends InstallationTestBase {
 
         clickUpdateButton(/* checkInstallingDialog= */ false, /* isUpdatedViaPackageUri= */ true);
 
-        assertInstallSuccessDialogForNoLauncherActivity();
+        assertInstallSuccessDialogForNoLauncherActivity(/* isAppUpdating= */ true);
         assertTestPackageInstalled();
     }
 
@@ -600,7 +601,7 @@ public class InstallationViaIntentTest extends InstallationTestBase {
 
         clickUpdateButton(/* checkInstallingDialog= */ false, /* isUpdatedViaPackageUri= */ true);
 
-        assertInstallSuccessDialogForNoLauncherActivity();
+        assertInstallSuccessDialogForNoLauncherActivity(/* isAppUpdating= */ true);
         assertTestPackageInstalled();
     }
 
@@ -617,7 +618,7 @@ public class InstallationViaIntentTest extends InstallationTestBase {
 
         clickUpdateButton(/* checkInstallingDialog= */ false, /* isUpdatedViaPackageUri= */ true);
 
-        assertInstallSuccessDialogAndLaunchTestApp();
+        assertInstallSuccessDialogAndLaunchTestApp(/* isAppUpdating= */ true);
         assertTestPackageInstalled();
     }
 

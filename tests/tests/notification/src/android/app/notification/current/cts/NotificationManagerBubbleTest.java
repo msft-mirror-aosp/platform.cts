@@ -207,6 +207,21 @@ public class NotificationManagerBubbleTest extends BaseNotificationManagerTest {
                 + " " + Integer.toString(pref)
                 + " " + userId;
         mNotificationHelper.runCommand(command, InstrumentationRegistry.getInstrumentation());
+        waitForBubblesAppPrefUpdate(pref);
+    }
+
+    private void waitForBubblesAppPrefUpdate(int pref) throws Exception {
+        for (int tries = 0; tries < 3; tries++) {
+            int bubblePref = mNotificationManager.getBubblePreference();
+            if (bubblePref == pref) {
+                return;
+            }
+            try {
+                Thread.sleep(500);
+            } catch (InterruptedException ex) {
+            }
+        }
+        throw new Exception("expected bubble preference to be updated to " + pref);
     }
 
     private void setBubblesChannelAllowed(boolean allowed) throws Exception {

@@ -47,7 +47,7 @@ public class AppSearchInstantAppTest extends BaseHostJUnit4Test {
     private static final String TEST_CLASS_A = TARGET_PKG_A + ".AppSearchInstantAppTest";
     private static final long DEFAULT_INSTRUMENTATION_TIMEOUT_MS = 600_000; // 10min
 
-    private int mMainUserId;
+    private int mPrimaryUserId;
 
     private void runDeviceTestAsUserInPkgA(@Nonnull String testMethod, int userId)
             throws Exception {
@@ -58,9 +58,9 @@ public class AppSearchInstantAppTest extends BaseHostJUnit4Test {
 
     @Before
     public void setUp() throws Exception {
-        mMainUserId = getDevice().getMainUserId();
+        mPrimaryUserId = getDevice().getPrimaryUserId();
         uninstallPackage(TARGET_PKG_A);
-        installPackageAsUser(TARGET_APK_A, /* grantPermission= */true, mMainUserId, "--instant");
+        installPackageAsUser(TARGET_APK_A, /* grantPermission= */true, mPrimaryUserId, "--instant");
     }
 
     @After
@@ -70,6 +70,6 @@ public class AppSearchInstantAppTest extends BaseHostJUnit4Test {
 
     @Test
     public void testInstantAppDoesntHaveAccess() throws Exception {
-        runDeviceTestAsUserInPkgA("testInstantAppDoesntHaveAccess", mMainUserId);
+        runDeviceTestAsUserInPkgA("testInstantAppDoesntHaveAccess", mPrimaryUserId);
     }
 }

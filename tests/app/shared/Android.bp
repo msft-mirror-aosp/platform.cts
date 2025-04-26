@@ -28,11 +28,15 @@ android_library {
         "androidx.test.rules",
         "kotlin-test",
     ],
+    aidl: {
+        local_include_dirs: ["src"],
+    },
     srcs: [
         "src/**/*.java",
         "src/**/*.kt",
         "src/**/*.aidl",
     ],
+    resource_dirs: ["src/android/app/res"],
     platform_apis: true,
     min_sdk_version: "21",
     lint: {

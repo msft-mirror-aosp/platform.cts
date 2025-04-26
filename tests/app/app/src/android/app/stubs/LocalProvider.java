@@ -16,6 +16,7 @@
 
 package android.app.stubs;
 
+import android.app.stubs.shared.LocalService;
 import android.content.ContentProvider;
 import android.content.ContentValues;
 import android.content.Intent;

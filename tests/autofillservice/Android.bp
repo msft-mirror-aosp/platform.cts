@@ -22,6 +22,7 @@ android_test {
     defaults: ["cts_defaults"],
     static_libs: [
         "android.view.flags-aconfig-java",
+        "android.service.autofill.flags-aconfig-java",
         "androidx.annotation_annotation",
         "androidx.autofill_autofill",
         "androidx.test.ext.junit",
@@ -29,7 +30,6 @@ android_test {
         "compatibility-device-util-axt",
         "ctsdeviceutillegacy-axt",
         "ctstestrunner-axt",
-        "flag-junit",
         "truth",
         "androidx.test.uiautomator_uiautomator",
         "androidx.test.espresso.core",

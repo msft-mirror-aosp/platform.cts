@@ -43,8 +43,8 @@ AGREE_BUTTON = 'Agree'
 AGREE_AND_CONTINUE_BUTTON = 'Agree and continue'
 CANCEL_BUTTON_TXT = 'Cancel'
 CAMERA_FILES_PATHS = ('/sdcard/DCIM/Camera',
-                      '/storage/emulated/0/Pictures',
-                      '/sdcard/DCIM',)
+                      '/sdcard/DCIM',
+                      '/storage/emulated/0/Pictures',)
 CAPTURE_BUTTON_RESOURCE_ID = 'CaptureButton'
 DEFAULT_CAMERA_APP_DUMPSYS_PATH = '/sdcard/default_camera_dumpsys.txt'
 DEFAULT_CAMERA_CONTENT_DESC_SEPARATOR = ','
@@ -83,6 +83,9 @@ REMOVE_CAMERA_FILES_CMD = 'rm -rf'
 SETTINGS_BACK_BUTTON_RESOURCE_ID = 'BackButton'
 SETTINGS_BUTTON_RESOURCE_ID = 'SettingsButton'
 SETTINGS_CLOSE_TEXT = 'Close'
+SETTINGS_VIDEO_STABILIZATION_RESOURCE_ID = (
+    'btn_open_dialog_setting_video_stabilization_tag'
+)
 SETTINGS_VIDEO_STABILIZATION_AUTO_TEXT = 'Stabilization Auto'
 SETTINGS_MENU_STABILIZATION_HIGH_QUALITY_TEXT = 'Stabilization High Quality'
 SETTINGS_VIDEO_STABILIZATION_MODE_TEXT = 'Set Video Stabilization'
@@ -396,7 +399,25 @@ def _set_jca_video_stabilization(dut, log_path, stabilization_mode):
         'Set Video Stabilization settings not found!'
         'Make sure you have the latest JCA app.'
     )
-  dut.ui(text=SETTINGS_VIDEO_STABILIZATION_MODE_TEXT).click()
+
+  # Ensure that the stabilzation options are enabled.
+  # They will be disabled if the camera does not support stabilization
+  if not dut.ui(res=SETTINGS_VIDEO_STABILIZATION_RESOURCE_ID).enabled:
+    logging.debug('Setting video stabilization mode is disabled on JCA.')
+    dut.take_screenshot(
+        log_path, prefix='setting_video_stabilization_disabled')
+    if stabilization_mode == JCA_VIDEO_STABILIZATION_MODE_OFF:
+      dut.ui(res=SETTINGS_BACK_BUTTON_RESOURCE_ID).click()
+      return
+    else:
+      raise AssertionError(
+          'Set Video Stabilization settings is disabled! '
+          'Default camera app is using stabilization '
+          '(such as PREVIEW, VIDEO, or OIS), but that '
+          'stabilization mode is not available to 3P apps.'
+      )
+
+  dut.ui(res=SETTINGS_VIDEO_STABILIZATION_RESOURCE_ID).click()
 
   if not dut.ui(text=JCA_STABILIZATION_MODES[stabilization_mode]).wait.exists(
       UI_OBJECT_WAIT_TIME_SECONDS):
@@ -405,11 +426,6 @@ def _set_jca_video_stabilization(dut, log_path, stabilization_mode):
     raise AssertionError(
         'Video Stabilization Mode not found!'
     )
-
-  # Ensure that the stabilzation options are enabled.
-  # They will be disabled if the camera does not support stabilization
-  if not dut.ui(text=SETTINGS_VIDEO_STABILIZATION_MODE_TEXT).enabled:
-    raise AssertionError('Set Video Stabilization not enabled.')
 
   dut.ui(text=JCA_STABILIZATION_MODES[stabilization_mode]).click()
   time.sleep(ACTIVITY_WAIT_TIME_SECONDS)
