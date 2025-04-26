@@ -82,4 +82,9 @@ public class WebViewSandboxTestRule extends SdkSandboxScenarioRule {
                 mSdkSandboxRule.isSdkSandboxSupportedOnDevice());
         super.assertSdkTestRunPasses(testMethodName, params);
     }
+
+    @Override
+    public String getLocalhostAllowedClientPackagename() {
+        return ApplicationProvider.getApplicationContext().getPackageName();
+    }
 }

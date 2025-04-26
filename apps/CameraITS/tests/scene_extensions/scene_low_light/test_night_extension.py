@@ -237,12 +237,17 @@ class NightExtensionTest(its_base_test.ItsBaseTest):
       )
       out_surfaces = {
           'format': accepted_format, 'width': width, 'height': height}
-      req = capture_request_utils.auto_capture_request()
-      metering_region = low_light_utils.get_metering_region(cam, file_stem)
       first_api_level = its_session_utils.get_first_api_level(self.dut.serial)
+
+      cam.do_3a()
+      time.sleep(_BRIGHTNESS_SETTING_CHANGE_WAIT_SEC)
+
       use_metering_region = (
           first_api_level > its_session_utils.ANDROID15_API_LEVEL
       )
+      logging.debug('use_metering_region: %s', use_metering_region)
+      metering_region = low_light_utils.get_metering_region(cam, file_stem)
+      logging.debug('metering_region: %s', metering_region)
 
       # Set tablet brightness to darken scene
       brightness = low_light_utils.TABLET_BRIGHTNESS[tablet_name.lower()]
@@ -261,6 +266,9 @@ class NightExtensionTest(its_base_test.ItsBaseTest):
       logging.debug('Taking auto capture with night mode ON')
       # Wait for tablet brightness to change
       time.sleep(_BRIGHTNESS_SETTING_CHANGE_WAIT_SEC)
+
+      req = capture_request_utils.auto_capture_request()
+
       self._take_capture_and_analyze(cam, req, out_surfaces, file_stem,
                                      metering_region, use_metering_region,
                                      first_api_level)

@@ -38,7 +38,6 @@ import android.content.pm.PackageInstaller.Session
 import android.content.pm.PackageInstaller.SessionParams.MODE_FULL_INSTALL
 import android.content.pm.PackageManager
 import android.platform.test.rule.ScreenRecordRule
-import android.platform.test.rule.SystemSettingRule
 import android.provider.DeviceConfig
 import android.provider.Settings
 import android.util.Log
@@ -55,7 +54,6 @@ import androidx.test.uiautomator.Until
 import com.android.compatibility.common.util.DisableAnimationRule
 import com.android.compatibility.common.util.FutureResultActivity
 import com.android.compatibility.common.util.SystemUtil
-import com.google.testing.junit.testparameterinjector.TestParameter
 import java.io.File
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.LinkedBlockingQueue
@@ -100,12 +98,8 @@ open class PackageInstallerTestBase {
         val context: Context = InstrumentationRegistry.getTargetContext()
         val testUserId: Int = context.user.identifier
 
-        @TestParameter
         var usePiaV2: Boolean = false
 
-        @JvmField
-        @ClassRule
-        val usePiaRule = SystemSettingRule("use_pia_v2", usePiaV2)
     }
 
     @get:Rule
@@ -178,13 +172,6 @@ open class PackageInstallerTestBase {
     fun waitForUIIdle() {
         uiDevice.waitForIdle()
     }
-
-    @Before
-    open fun setUsePiaV2() {
-        Log.i(TAG, "Using Pia V${if (usePiaV2) 2 else 1}")
-        usePiaRule.setSettingValue(usePiaV2)
-    }
-
     @After
     fun pressBack() {
         uiDevice.pressBack()

@@ -2633,10 +2633,6 @@
     <option name="compatibility:include-filter" value="CtsMediaAudioTestCases android.media.audio.cts.AudioPreProcessingTest#test2_1AecCreateAndRelease"/>
     <option name="compatibility:include-filter" value="CtsMediaAudioTestCases android.media.audio.cts.AudioPreProcessingTest#test2_2AecSetEnabledGetEnabled"/>
     <option name="compatibility:include-filter" value="CtsMediaAudioTestCases android.media.audio.cts.AudioPreProcessingTest#test3_1AgcCreateAndRelease"/>
-    <option name="compatibility:include-filter" value="CtsMediaAudioTestCases android.media.audio.cts.AudioRecordSharedAudioTest#testBadValues"/>
-    <option name="compatibility:include-filter" value="CtsMediaAudioTestCases android.media.audio.cts.AudioRecordSharedAudioTest#testCapturesMatch"/>
-    <option name="compatibility:include-filter" value="CtsMediaAudioTestCases android.media.audio.cts.AudioRecordSharedAudioTest#testPermissionFailure"/>
-    <option name="compatibility:include-filter" value="CtsMediaAudioTestCases android.media.audio.cts.AudioRecordSharedAudioTest#testPermissionSuccess"/>
     <option name="compatibility:include-filter" value="CtsMediaAudioTestCases android.media.audio.cts.AudioRecordTest#testAudioRecordBufferSize"/>
     <option name="compatibility:include-filter" value="CtsMediaAudioTestCases android.media.audio.cts.AudioRecordTest#testAudioRecordBuilderHotword"/>
     <option name="compatibility:include-filter" value="CtsMediaAudioTestCases android.media.audio.cts.AudioRecordTest#testAudioRecordBuilderParams"/>
