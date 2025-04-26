@@ -24,6 +24,7 @@ import android.companion.virtual.VirtualDeviceManager;
 import android.companion.virtual.VirtualDeviceParams;
 import android.companion.virtualdevice.flags.Flags;
 import android.hardware.display.VirtualDisplay;
+import android.os.SystemClock;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.view.Display;
@@ -225,6 +226,8 @@ public class VirtualDeviceViewConfigurationTest {
                         new VirtualDeviceParams.Builder()
                                 .setViewConfigurationParams(viewConfigurationParams)
                                 .build());
+        // Wait for the resource overlays to take effect.
+        SystemClock.sleep(2000);
         VirtualDisplay display =
                 mRule.createManagedVirtualDisplay(
                         virtualDevice,
@@ -232,7 +235,10 @@ public class VirtualDeviceViewConfigurationTest {
         return display.getDisplay().getDisplayId();
     }
 
-    private static float getPixelDimensions(float densityIndependentDimensions, Activity activity) {
-        return densityIndependentDimensions * activity.getResources().getDisplayMetrics().density;
+    private static int getPixelDimensions(float densityIndependentDimensions, Activity activity) {
+        return (int)
+                Math.ceil(
+                        densityIndependentDimensions
+                                * activity.getResources().getDisplayMetrics().density);
     }
 }
