@@ -35,10 +35,14 @@ import android.support.test.uiautomator.UiDevice;
 
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.bedstead.harrier.DeviceState;
+import com.android.bedstead.harrier.annotations.RequireNotAutomotive;
 import com.android.compatibility.common.util.SystemUtil;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 
 public class TestManageOverlayPermissionIntents {
@@ -48,6 +52,7 @@ public class TestManageOverlayPermissionIntents {
     private Context mContext;
     private PackageManager mPackageManager;
     private UiDevice mUiDevice;
+    @ClassRule @Rule public static final DeviceState sDeviceState = new DeviceState();
 
     @Before
     public void setUp() throws Exception {
@@ -95,8 +100,8 @@ public class TestManageOverlayPermissionIntents {
         assertTrue(e instanceof ActivityNotFoundException || e instanceof SecurityException);
     }
 
-
     @Test
+    @RequireNotAutomotive(reason = "Auto only shows a toast for this intent.")
     public void testManageOverlayPermissionIntentWithDataResolvesToSameIntentWithoutData() {
         Intent genericIntent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION);
         Intent appSpecificIntent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION);
