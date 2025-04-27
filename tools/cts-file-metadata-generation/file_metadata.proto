@@ -27,7 +27,8 @@ message ConfigFileSummary {
   // For example, "com.android.tradefed.testtype.AndroidJUnitTest".
   repeated string test_runner = 2;
 
-  // The sim card type required by the test module. For example, "UICC_SIM_CARD".
+  // The sim card type required by the test module. For example,
+  // "UICC_SIM_CARD".
   string sim_card_token = 3;
 
   // The mainline package that the test module depends on.
