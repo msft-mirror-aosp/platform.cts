@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-// Proto definition for camera feature combination query results
-
 syntax = "proto3";
 
 package cts_tools_file_metadata_proto;
@@ -29,7 +27,8 @@ message ConfigFileSummary {
   // For example, "com.android.tradefed.testtype.AndroidJUnitTest".
   repeated string test_runner = 2;
 
-  // The sim card type required by the test module. For example, "UICC_SIM_CARD".
+  // The sim card type required by the test module. For example,
+  // "UICC_SIM_CARD".
   string sim_card_token = 3;
 
   // The mainline package that the test module depends on.

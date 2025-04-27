@@ -2578,8 +2578,6 @@
     <option name="compatibility:include-filter" value="CtsLocalVoiceInteraction android.voiceinteraction.cts.localvoiceinteraction.LocalVoiceInteractionTest#testGrantVisibilityOnStartLocalInteraction"/>
     <!-- CtsLocationFineTestCases -->
     <option name="compatibility:include-filter" value="CtsLocationFineTestCases android.location.cts.fine.ScanningSettingsTest#testWifiScanningSettings"/>
-    <!-- CtsLocationGnssTestCases -->
-    <option name="compatibility:include-filter" value="CtsLocationGnssTestCases android.location.cts.gnss.GnssNavigationMessageTest#testGnssNavigationMessageMandatoryFieldRanges"/>
     <!-- CtsLocationPrivilegedTestCases -->
     <option name="compatibility:include-filter" value="CtsLocationPrivilegedTestCases android.location.cts.privileged.GnssAssistanceProviderBaseTest#testRequest"/>
     <!-- CtsMediaAudioTestCases -->
