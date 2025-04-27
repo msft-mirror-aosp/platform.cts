@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-// Proto definition for camera feature combination query results
-
 syntax = "proto3";
 
 package cts_tools_file_metadata_proto;
