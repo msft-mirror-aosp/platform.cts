@@ -415,6 +415,8 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
     @AppModeFull(reason = "KeyguardManager is not accessible from instant apps")
     @Test
     public void testHideImeAfterBackPressed_ScreenOffOn() throws Exception {
+        assumeFalse(isAutomotiveScalableUIWithLegacyInsetsController());
+
         verifyHideImeBackPressed(true /* appRequestsBackCallback */,
                 true /* imeRequestsBackCallback */,
                 (instrumentation, editorRef) -> {
@@ -436,6 +438,8 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
 
     @Test
     public void testHideImeAfterBackPressed_rootViewChanges() throws Exception {
+        assumeFalse(isAutomotiveScalableUIWithLegacyInsetsController());
+
         verifyHideImeBackPressed(true /* appRequestsBackCallback */,
                 true /* imeRequestsBackCallback */,
                 (instrumentation, editorRef) -> {
@@ -894,10 +898,13 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
     }
 
     private void runImeDoesntReshowAfterKeyguardTest(int softInputState) throws Exception {
-        try (MockImeSession imeSession = MockImeSession.create(
-                mInstrumentation.getContext(),
-                mInstrumentation.getUiAutomation(),
-                new ImeSettings.Builder())) {
+        assumeFalse(isAutomotiveScalableUIWithLegacyInsetsController());
+
+        try (MockImeSession imeSession =
+                MockImeSession.create(
+                        mInstrumentation.getContext(),
+                        mInstrumentation.getUiAutomation(),
+                        new ImeSettings.Builder())) {
             final ImeEventStream stream = imeSession.openEventStream();
             // Launch a simple test activity
             final TestActivity testActivity =
@@ -1035,6 +1042,8 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
      */
     @Test
     public void testNonImeFocusablePopupWindow_onTopOfIme() throws Exception {
+        assumeFalse(isAutomotiveScalableUIWithLegacyInsetsController());
+
         final Instrumentation instrumentation = mInstrumentation;
         try (MockImeSession imeSession = MockImeSession.create(
                 mInstrumentation.getContext(),
@@ -1136,6 +1145,8 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
 
     private void runRestoreImeVisibility(TestSoftInputMode mode, boolean expectImeVisible)
             throws Exception {
+        assumeFalse(isAutomotiveScalableUIWithLegacyInsetsController());
+
         final Instrumentation instrumentation = mInstrumentation;
         final WindowManager wm = instrumentation.getContext().getSystemService(WindowManager.class);
         // As restoring IME visibility behavior is only available when TaskSnapshot mechanism
@@ -1220,6 +1231,8 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
 
     private void runImeVisibilityWhenImeTransitionBetweenActivities(boolean instant)
             throws Exception {
+        assumeFalse(isAutomotiveScalableUIWithLegacyInsetsController());
+
         try (MockImeSession imeSession = MockImeSession.create(
                 mInstrumentation.getContext(),
                 mInstrumentation.getUiAutomation(),
@@ -1492,6 +1505,7 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
         + "UinputKeyboard to send KeyEvents to specific displays.")
     @Test
     public void testImeHiddenWhenImeLayeringTargetDelayedToShowInAppSwitch() throws Exception {
+        assumeFalse(isAutomotiveScalableUIWithLegacyInsetsController());
         assumeTrue(hasRecentsScreen());
 
         try (MockImeSession imeSession = MockImeSession.create(
@@ -1500,7 +1514,6 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
                 new ImeSettings.Builder())) {
             final ImeEventStream stream = imeSession.openEventStream();
             final String marker = getTestMarker();
-
             final TestActivity testActivity = TestActivity.startSync(activity -> {
                 final LinearLayout layout = new LinearLayout(activity);
                 layout.setOrientation(LinearLayout.VERTICAL);
