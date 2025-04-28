@@ -17,7 +17,6 @@
 package android.accessibilityservice.cts;
 
 import static android.accessibilityservice.cts.utils.AsyncUtils.await;
-import static android.accessibilityservice.cts.utils.AsyncUtils.waitOn;
 import static android.accessibilityservice.cts.utils.CtsTestUtils.DEFAULT_GLOBAL_TIMEOUT_MS;
 import static android.accessibilityservice.cts.utils.CtsTestUtils.DEFAULT_IDLE_TIMEOUT_MS;
 import static android.accessibilityservice.cts.utils.CtsTestUtils.isAutomotive;
@@ -40,8 +39,8 @@ import static android.view.MotionEvent.ACTION_DOWN;
 import static android.view.MotionEvent.ACTION_MOVE;
 import static android.view.MotionEvent.ACTION_UP;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static com.google.common.truth.Truth.assertThat;
+
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
@@ -54,9 +53,11 @@ import android.accessibilityservice.GestureDescription.StrokeDescription;
 import android.accessibilityservice.MagnificationConfig;
 import android.accessibilityservice.cts.AccessibilityGestureDispatchTest.GestureDispatchActivity;
 import android.accessibilityservice.cts.utils.EventCapturingMotionEventListener;
+import android.accessibilityservice.cts.utils.SettingsSession;
 import android.app.Instrumentation;
 import android.app.UiAutomation;
 import android.content.pm.PackageManager;
+import android.content.res.Resources;
 import android.graphics.Insets;
 import android.graphics.PointF;
 import android.graphics.Rect;
@@ -79,6 +80,8 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.GestureNavSwitchHelper;
 import com.android.compatibility.common.util.SettingsStateChangerRule;
+import com.android.compatibility.common.util.TestUtils;
+import com.android.compatibility.common.util.UserSettings;
 import com.android.compatibility.common.util.XrUtil;
 
 import org.junit.After;
@@ -88,6 +91,9 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.runner.RunWith;
+
+import java.io.IOException;
+import java.util.function.BooleanSupplier;
 
 /**
  * Class for testing
@@ -99,14 +105,20 @@ import org.junit.runner.RunWith;
 @Presubmit
 public class FullScreenMagnificationGestureHandlerTest {
 
-    private static final double MIN_SCALE = 1.2;
+    private static final float DEFAULT_SCALE = 1.0f;
 
+    private static final long WAIT_TIMEOUT_MS = 5000;
     // Taps with interval over than this timeout should not be detected as contiguous taps.
     private static final int CONTIGUOUS_TAPS_DETECT_TIMEOUT = 400;
 
     // See Settings.Secure.ACCESSIBILITY_SINGLE_FINGER_PANNING_ENABLED
     private static final String ACCESSIBILITY_SINGLE_FINGER_PANNING_ENABLED =
             "accessibility_single_finger_panning_enabled";
+
+    private static final String SETTING_KEY_MAGNIFICATION_ALWAYS_ON =
+            "accessibility_magnification_always_on_enabled";
+    private static final String CONFIG_KEY_MAGNIFICATION_KEEP_MAGNIFIED =
+            "config_magnification_keep_zoom_level_when_context_changed";
 
     private static UiAutomation sUiAutomation;
 
@@ -194,30 +206,40 @@ public class FullScreenMagnificationGestureHandlerTest {
                 XrUtil.supportsXrThirdPartyMagnificationServices(
                         mInstrumentation.getTargetContext()));
         mService = mServiceRule.enableService();
-        mService.getMagnificationController().addListener(
-                new AccessibilityService.MagnificationController.OnMagnificationChangedListener() {
-                    @Override
-                    public void onMagnificationChanged(
-                            @NonNull AccessibilityService.MagnificationController controller,
-                            @NonNull Region region, float scale, float centerX, float centerY) {
-                        // do nothing
-                    }
+        mService.getMagnificationController()
+                .addListener(
+                        new AccessibilityService.MagnificationController
+                                .OnMagnificationChangedListener() {
+                            @Override
+                            public void onMagnificationChanged(
+                                    @NonNull
+                                            AccessibilityService.MagnificationController controller,
+                                    @NonNull Region region,
+                                    float scale,
+                                    float centerX,
+                                    float centerY) {
+                                // do nothing
+                            }
 
-                    @Override
-                    public void onMagnificationChanged(
-                            @NonNull AccessibilityService.MagnificationController controller,
-                            @NonNull Region region, @NonNull MagnificationConfig config) {
-                        mCurrentActivated = config.isActivated();
-                        mCurrentScale = config.getScale();
-                        mCurrentZoomCenter = isZoomed()
-                                ? new PointF(config.getCenterX(), config.getCenterY())
-                                : null;
+                            @Override
+                            public void onMagnificationChanged(
+                                    @NonNull
+                                            AccessibilityService.MagnificationController controller,
+                                    @NonNull Region region,
+                                    @NonNull MagnificationConfig config) {
+                                mCurrentActivated = config.isActivated();
+                                mCurrentScale = config.getScale();
+                                mCurrentZoomCenter =
+                                        mCurrentActivated
+                                                ? new PointF(
+                                                        config.getCenterX(), config.getCenterY())
+                                                : null;
 
-                        synchronized (mZoomLock) {
-                            mZoomLock.notifyAll();
-                        }
-                    }
-                });
+                                synchronized (mZoomLock) {
+                                    mZoomLock.notifyAll();
+                                }
+                            }
+                        });
 
         mActivityRule
                 .getScenario()
@@ -228,13 +250,14 @@ public class FullScreenMagnificationGestureHandlerTest {
                             WindowMetrics windowMetrics =
                                     activity.getWindow()
                                             .getWindowManager()
-                                            .getCurrentWindowMetrics();
-                            Rect windowBounds = windowMetrics.getBounds();
+                                            .getMaximumWindowMetrics();
+                            Rect maximumWindowBounds = windowMetrics.getBounds();
                             WindowInsets insets = windowMetrics.getWindowInsets();
                             Insets navBarInsets =
                                     insets.getInsetsIgnoringVisibility(
                                             WindowInsets.Type.navigationBars());
-                            int navBarCenterY = windowBounds.bottom - (navBarInsets.bottom / 2);
+                            int navBarCenterY =
+                                    maximumWindowBounds.bottom - (navBarInsets.bottom / 2);
 
                             view.setOnTouchListener(mTouchListener);
                             int[] xy = new int[2];
@@ -252,50 +275,55 @@ public class FullScreenMagnificationGestureHandlerTest {
 
     @After
     public void tearDown() throws Exception {
-        if (isActivated()) {
-            // Sleep a timeout to prevent the triple tap events be detected as contiguous gesture
-            // events with previous testing gestures.
-            SystemClock.sleep(CONTIGUOUS_TAPS_DETECT_TIMEOUT);
-            setZoomByTripleTapping(false);
-        }
+        // Sleep a timeout to prevent the triple tap events be detected as contiguous gesture
+        // events with previous testing gestures.
+        SystemClock.sleep(CONTIGUOUS_TAPS_DETECT_TIMEOUT);
+        setZoomByTripleTapping(false);
     }
 
     @Test
     public void testZoomOnOff() {
-        assertFalse(isZoomed());
+        assertThat(mCurrentActivated).isFalse();
 
         assertGesturesPropagateToView();
-        assertFalse(isZoomed());
+        assertThat(mCurrentActivated).isFalse();
 
         setZoomByTripleTapping(true);
 
         assertGesturesPropagateToView();
-        assertTrue(isZoomed());
+        assertThat(mCurrentActivated).isTrue();
+        assertThat(mCurrentScale).isGreaterThan(DEFAULT_SCALE);
 
         setZoomByTripleTapping(false);
     }
 
     @Test
     public void testViewportDragging() {
-        assertFalse(isZoomed());
+        assertThat(mCurrentActivated).isFalse();
+
         tripleTapAndDragViewport();
-        waitOn(mZoomLock, () -> !isZoomed());
+        // Magnification was deactivated before temporarily zoom in, so it should restore
+        // deactivated after the gestures.
+        waitOn(() -> !mCurrentActivated, "magnification becomes deactivated");
 
         setZoomByTripleTapping(true);
         tripleTapAndDragViewport();
-        assertTrue(isZoomed());
+        // Magnification was zooming before temporarily zoom in, so it should keep zooming after
+        // the gestures.
+        assertThat(mCurrentScale).isGreaterThan(DEFAULT_SCALE);
 
         setZoomByTripleTapping(false);
     }
 
     @Test
     public void testPanning() {
-        //The minimum movement to transit to panningState.
-        final float minSwipeDistance = ViewConfiguration.get(
-                mInstrumentation.getContext()).getScaledTouchSlop() + 1;
+        assertThat(mCurrentActivated).isFalse();
+
+        // The minimum movement to transit to panningState.
+        final float minSwipeDistance =
+                ViewConfiguration.get(mInstrumentation.getContext()).getScaledTouchSlop() + 1;
         final boolean screenBigEnough = mPan > minSwipeDistance;
         assumeTrue(screenBigEnough);
-        assertFalse(isZoomed());
 
         setZoomByTripleTapping(true);
         final PointF oldCenter = mCurrentZoomCenter;
@@ -322,9 +350,11 @@ public class FullScreenMagnificationGestureHandlerTest {
         dispatch(builder1.build());
         dispatch(builder2.build());
 
-        waitOn(mZoomLock,
-                () -> (mCurrentZoomCenter.x - oldCenter.x
-                        >= (mPan - minSwipeDistance) / mCurrentScale * 0.9));
+        waitOn(
+                () ->
+                        (mCurrentZoomCenter.x - oldCenter.x
+                                >= (mPan - minSwipeDistance) / mCurrentScale * 0.9),
+                "magnification center moves by panning");
 
         setZoomByTripleTapping(false);
     }
@@ -333,8 +363,7 @@ public class FullScreenMagnificationGestureHandlerTest {
     public void testTapNavigationBar_zooming_keepZooming() {
         // Only test when device is in gesture navigation mode.
         assumeTrue(mIsGestureNavigationMode);
-
-        assertFalse(isZoomed());
+        assertThat(mCurrentActivated).isFalse();
 
         assertGesturesPropagateToView();
         setZoomByTripleTapping(true);
@@ -342,40 +371,90 @@ public class FullScreenMagnificationGestureHandlerTest {
         // One tap on navigation bar would trigger window transition events, but the events should
         // not cause the magnification zooming out.
         dispatch(click(mNavigationBarTapLocation));
-        assertTrue(isZoomed());
+        assertThat(mCurrentScale).isGreaterThan(DEFAULT_SCALE);
     }
 
     @Test
-    public void testSwipeUpFromNavigationBar_zooming_zoomOut() throws Exception {
+    public void testSwipeUpFromNavigationBar_alwaysOnDisabled_deactivated() throws Exception {
         // Only test when device is in gesture navigation mode.
         assumeTrue(mIsGestureNavigationMode);
 
-        assertFalse(isZoomed());
+        try (var session = getAlwaysOnSettingsSession(false)) {
+            assertThat(mCurrentActivated).isFalse();
 
-        assertGesturesPropagateToView();
-        setZoomByTripleTapping(true);
+            assertGesturesPropagateToView();
+            setZoomByTripleTapping(true);
 
-        // Swipe up from navigation bar would show the recents app or back to home screen, and the
-        // window transition events will cause the magnification zooming out.
-        dispatch(swipe(mNavigationBarTapLocation, mTapLocation));
-        waitOn(mZoomLock, () -> !isZoomed());
+            // Swipe up from navigation bar would show the recents app or back to home screen, and
+            // the window transition events will cause the magnification zooming out & deactivated.
+            dispatch(swipe(mNavigationBarTapLocation, mTapLocation));
+            waitOn(
+                    () -> mCurrentScale == DEFAULT_SCALE && !mCurrentActivated,
+                    "magnification zooms out & becomes deactivated");
+        }
+    }
+
+    @Test
+    public void testSwipeUpFromNavigationBar_alwaysOnEnabledAndKeepMagnifiedDisabled_zoomOut()
+            throws Exception {
+        // Only test when device is in gesture navigation mode.
+        assumeTrue(mIsGestureNavigationMode);
+        assumeFalse(isKeepMagnifiedEnabled());
+
+        try (var session = getAlwaysOnSettingsSession(true)) {
+            assertThat(mCurrentActivated).isFalse();
+
+            assertGesturesPropagateToView();
+            setZoomByTripleTapping(true);
+
+            // Swipe up from navigation bar would show the recents app or back to home screen, and
+            // the window transition events will cause the magnification zooming out.
+            dispatch(swipe(mNavigationBarTapLocation, mTapLocation));
+            waitOn(
+                    () -> mCurrentScale == DEFAULT_SCALE && mCurrentActivated,
+                    "magnification zooms out & keeps activated");
+        }
+    }
+
+    @Test
+    public void testSwipeUpFromNavigationBar_alwaysOnEnabledAndKeepMagnifiedEnabled_keepZooming()
+            throws Exception {
+        // Only test when device is in gesture navigation mode.
+        assumeTrue(mIsGestureNavigationMode);
+        assumeTrue(isKeepMagnifiedEnabled());
+
+        try (var session = getAlwaysOnSettingsSession(true)) {
+            assertThat(mCurrentActivated).isFalse();
+
+            assertGesturesPropagateToView();
+            setZoomByTripleTapping(true);
+
+            // Swipe up from navigation bar would show the recents app or back to home screen, but
+            // the magnification zoom level will keeps due to keepMagnified feature, regardless of
+            // the window transition events.
+            dispatch(swipe(mNavigationBarTapLocation, mTapLocation));
+            assertThat(mCurrentScale).isGreaterThan(DEFAULT_SCALE);
+        }
     }
 
     private void setZoomByTripleTapping(boolean desiredActivatedState) {
-        if (isActivated() == desiredActivatedState) return;
+        if (mCurrentActivated == desiredActivatedState) {
+            return;
+        }
+
         // Clear the cached events in mTouchListener to prevent the already cached events making
         // the assertNonePropagated fail.
         mTouchListener.clear();
         dispatch(tripleTap(mTapLocation));
-        waitOn(mZoomLock, () -> {
-            if (desiredActivatedState) {
-                // Since there may be a case the magnification is activated but not zooming in,
-                // we also need to check isZoomed here.
-                return isActivated() && isZoomed();
-            } else {
-                return !isActivated();
-            }
-        });
+        if (desiredActivatedState) {
+            waitOn(
+                    () -> mCurrentActivated && mCurrentScale > DEFAULT_SCALE,
+                    "magnification becomes activated & zooms in");
+        } else {
+            waitOn(
+                    () -> !mCurrentActivated && mCurrentScale == DEFAULT_SCALE,
+                    "magnification becomes deactivated & zooms out");
+        }
         mTouchListener.assertNonePropagated();
     }
 
@@ -386,8 +465,11 @@ public class FullScreenMagnificationGestureHandlerTest {
 
         StrokeDescription drag = drag(down, add(lastPointOf(down), mPan, 0f));
         dispatch(drag);
-        waitOn(mZoomLock, () -> distance(mCurrentZoomCenter, oldCenter) >= mPan / 5);
-        assertTrue(isZoomed());
+        waitOn(
+                () -> distance(mCurrentZoomCenter, oldCenter) >= mPan / 5,
+                "magnification center moves by dragging");
+        // Assert zooming in
+        assertThat(mCurrentScale).isGreaterThan(DEFAULT_SCALE);
         mTouchListener.assertNonePropagated();
 
         dispatch(pointerUp(drag));
@@ -399,7 +481,9 @@ public class FullScreenMagnificationGestureHandlerTest {
         StrokeDescription tap2 = startingAt(endTimeOf(tap1) + 20, click(mTapLocation2));
         StrokeDescription down = startingAt(endTimeOf(tap2) + 20, pointerDown(mTapLocation));
         dispatch(tap1, tap2, down);
-        waitOn(mZoomLock, () -> isZoomed());
+        waitOn(
+                () -> mCurrentActivated && mCurrentScale > DEFAULT_SCALE,
+                "magnification becomes activated & zooms in");
         return down;
     }
 
@@ -422,12 +506,8 @@ public class FullScreenMagnificationGestureHandlerTest {
         mTouchListener.assertPropagated(ACTION_DOWN, ACTION_MOVE, ACTION_UP);
     }
 
-    private boolean isActivated() {
-        return mCurrentActivated;
-    }
-
-    private boolean isZoomed() {
-        return mCurrentScale >= MIN_SCALE;
+    private void waitOn(BooleanSupplier condition, String conditionName) {
+        TestUtils.waitOn(mZoomLock, condition, WAIT_TIMEOUT_MS, conditionName);
     }
 
     public void dispatch(StrokeDescription firstStroke, StrokeDescription... rest) {
@@ -441,5 +521,29 @@ public class FullScreenMagnificationGestureHandlerTest {
 
     public void dispatch(GestureDescription gesture) {
         await(dispatchGesture(mService, gesture));
+    }
+
+    private boolean isKeepMagnifiedEnabled() {
+        try {
+            return mInstrumentation
+                    .getTargetContext()
+                    .getResources()
+                    .getBoolean(
+                            Resources.getSystem()
+                                    .getIdentifier(
+                                            CONFIG_KEY_MAGNIFICATION_KEEP_MAGNIFIED,
+                                            "bool",
+                                            "android"));
+        } catch (Resources.NotFoundException ignore) {
+            return false;
+        }
+    }
+
+    private SettingsSession getAlwaysOnSettingsSession(boolean enabled) throws IOException {
+        return new SettingsSession(
+                mInstrumentation,
+                UserSettings.Namespace.SECURE,
+                SETTING_KEY_MAGNIFICATION_ALWAYS_ON,
+                enabled ? "1" : "0");
     }
 }
