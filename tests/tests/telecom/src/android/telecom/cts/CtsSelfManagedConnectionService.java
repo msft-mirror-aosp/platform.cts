@@ -150,6 +150,15 @@ public class CtsSelfManagedConnectionService extends ConnectionService {
         connectionServiceFocusReleased();
     }
 
+    @Override
+    public void onCreateConnectionComplete(Connection connection) {
+        if (connection instanceof SelfManagedConnection) {
+            // Make sure we fire a latch on create connection complete so tests don't try to use a
+            // Connection before it is added to Telecom.
+            ((SelfManagedConnection) connection).fireCreateConnectionComplete();
+        }
+    }
+
     public void tearDown() {
         synchronized(mLock) {
             if (mConnections != null && mConnections.size() > 0) {
