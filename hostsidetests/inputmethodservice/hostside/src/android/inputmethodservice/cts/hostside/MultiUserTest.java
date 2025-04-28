@@ -115,7 +115,7 @@ public class MultiUserTest extends BaseHostJUnit4Test {
             return;
         }
         // Switch back to the initial user.
-        getDevice().switchUser(getDeviceMainUserId(getDevice()));
+        getDevice().switchUser(mInitialUserId);
 
         // We suspect that the optimization made for Bug 38143512 was a bit unstable.  Let's see
         // if adding a sleep improves the stability or not.
@@ -279,9 +279,14 @@ public class MultiUserTest extends BaseHostJUnit4Test {
         assertIme1ImplicitlyEnabledSubtypeNotExist(profileUserId);
     }
 
-    private static int getDeviceMainUserId(ITestDevice device) throws DeviceNotAvailableException {
-        return device.isHeadlessSystemUserMode() ? device.getPrimaryUserId() :
-                device.getMainUserId();
+    private int getDeviceMainUserId(ITestDevice device) throws Exception {
+        Integer userId = device.getMainUserId();
+
+        // Some headless surfaces like auto may not necessarily define a MAIN user.
+        if (userId == null) {
+            userId = mInitialUserId;
+        }
+        return userId;
     }
 
     private String shell(String command) {
