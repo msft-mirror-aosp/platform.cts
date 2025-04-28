@@ -24,7 +24,7 @@ import file_metadata_pb2 as metadata_pb2
 import google.protobuf.text_format as text_format
 
 """
-Generated metada for all files in the CTS testcases directory.
+Generated metadata for all files in the CTS testcases directory.
 
 Usage:
   file_metadata_generation.py
@@ -54,12 +54,12 @@ def _get_args():
     return parser.parse_args()
 
 
-def _get_test_module_name(file_path: str) -> str:
-    """Gets the test module of the given file."""
-    # The test module name is the first directory in the file path. For example,
-    # "CtsAccessibilityTestCases/arm64/xxx.apk" belongs to the test module
+def _get_module_name(file_path: str, top_directory: str) -> str:
+    """Gets the module of the given file."""
+    # The module name is the first directory in the file path. For example,
+    # "android-cts/testcases/CtsAccessibilityTestCases/arm64/xxx.apk" belongs to the module
     # "CtsAccessibilityTestCases".
-    return file_path.split('/')[0]
+    return file_path.removeprefix(top_directory + '/').split('/')[0]
 
 
 def _get_base_file_name(file_name: str) -> str:
@@ -67,9 +67,10 @@ def _get_base_file_name(file_name: str) -> str:
     return os.path.splitext(file_name)[0]
 
 
-def _get_relative_path(file_path: str, top_directory: str) -> str:
-    """Gets the relative path of a file with respect to a top directory."""
-    return file_path.removeprefix(top_directory + '/')
+def _get_test_suite_file_path(file_path: str, top_directory: str) -> str:
+    """Gets the relative path of given the file under the test suite directory."""
+    test_suite_directory = '/'.join(top_directory.split('/')[:-2])
+    return file_path.removeprefix(test_suite_directory + '/')
 
 
 def _handle_unspecified_file(metadata: metadata_pb2.FileMetadata) -> None:
@@ -99,6 +100,7 @@ def _handle_config_file(metadata: metadata_pb2.FileMetadata, file_path: str) -> 
     component = _get_values(root, 'option', {'key': 'component'}, 'value')
     sim_card_token = _get_values(root, 'option', {'key': 'token'}, 'value')
     runners = _get_values(root, 'test', {}, 'class')
+    parameters = _get_values(root, 'option', {'key': 'parameter'}, 'value')
     mainline_modules = set()
     for element in root.findall('object'):
         mainline_modules = mainline_modules.union([
@@ -107,7 +109,7 @@ def _handle_config_file(metadata: metadata_pb2.FileMetadata, file_path: str) -> 
                 element,
                 'option',
                 {'name': 'mainline-module-package-name'},
-                'value'
+                'value',
             )
         ])
 
@@ -118,7 +120,8 @@ def _handle_config_file(metadata: metadata_pb2.FileMetadata, file_path: str) -> 
         component=component[0],
         test_runner=runners,
         sim_card_token=sim_card_token[0] if sim_card_token else None,
-        mainline_module_package_name=mainline_modules if mainline_modules else None,
+        mainline_module_package_name=list(mainline_modules),
+        parameter=parameters,
     ))
 
 
@@ -168,7 +171,7 @@ def _handle_apk_file(
     metadata.apk_summary.CopyFrom(
         metadata_pb2.ApkFileSummary(
             target_sdk_version=target_sdk_version,
-            min_sdk_version=min_sdk_version
+            min_sdk_version=min_sdk_version,
         )
     )
 
@@ -191,13 +194,13 @@ def _get_default_file_metadata(
         A FileMetadata proto object.
     """
     file_path = str(os.path.join(root, file_name))
-    relevant_file_path = _get_relative_path(file_path, top_directory)
-    test_module_name = _get_test_module_name(relevant_file_path)
+    module_name = _get_module_name(file_path, top_directory)
     return metadata_pb2.FileMetadata(
-        file_path=relevant_file_path,
+        file_path=_get_test_suite_file_path(file_path, top_directory),
         file_name=_get_base_file_name(file_name),
-        test_module=test_module_name if test_module_name in test_modules else '',
-        file_size=os.path.getsize(file_path) / 1024
+        module_name=module_name,
+        is_test_module=module_name in test_modules,
+        file_size=os.path.getsize(file_path) / 1024,
     )
 
 
