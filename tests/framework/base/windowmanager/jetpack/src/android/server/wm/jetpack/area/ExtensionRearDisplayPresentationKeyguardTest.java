@@ -16,6 +16,7 @@
 
 package android.server.wm.jetpack.area;
 
+import static android.server.wm.jetpack.utils.WindowAreaComponentUtils.waitAndAssert;
 import static android.view.Display.DEFAULT_DISPLAY;
 
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
@@ -23,12 +24,11 @@ import static androidx.window.extensions.area.WindowAreaComponent.SESSION_STATE_
 import static androidx.window.extensions.area.WindowAreaComponent.SESSION_STATE_CONTENT_VISIBLE;
 import static androidx.window.extensions.area.WindowAreaComponent.SESSION_STATE_INACTIVE;
 
-import static com.android.compatibility.common.util.PollingCheck.waitFor;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.app.KeyguardManager;
@@ -53,7 +53,7 @@ import androidx.window.extensions.area.WindowAreaComponent;
 import androidx.window.extensions.core.util.function.Consumer;
 
 import com.android.compatibility.common.util.ApiTest;
-import com.android.compatibility.common.util.PollingCheck;
+import com.android.compatibility.common.util.MediaUtils;
 
 import org.junit.After;
 import org.junit.Before;
@@ -61,6 +61,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -73,8 +74,6 @@ import java.util.List;
 @RunWith(AndroidJUnit4.class)
 public class ExtensionRearDisplayPresentationKeyguardTest
         extends ActivityManagerTestBase implements DeviceStateManager.DeviceStateCallback {
-
-    private static final int TIMEOUT = 2000;
 
     private final Context mInstrumentationContext = getInstrumentation().getTargetContext();
     private final DeviceStateManager mDeviceStateManager = mInstrumentationContext
@@ -326,16 +325,21 @@ public class ExtensionRearDisplayPresentationKeyguardTest
      * presentation session on top of keyguard dismisses keyguard, that the session continues after
      * keyguard is gone.
      */
-    @ApiTest(apis = {
-            "androidx.window.extensions.area."
-                    + "WindowAreaComponent#startRearDisplayPresentationSession"})
+    @ApiTest(
+            apis = {
+                "androidx.window.extensions.area."
+                        + "WindowAreaComponent#startRearDisplayPresentationSession"
+            })
     @Test
-    public void testStartRearDisplayPresentation_persistsAfterDismissingKeyguard() {
+    public void testStartRearDisplayPresentation_persistsAfterDismissingKeyguard()
+            throws IOException {
         assumeTrue(mWindowAreaPresentationStatus.getWindowAreaStatus()
                 == WindowAreaComponent.STATUS_AVAILABLE);
         assumeTrue(
                 !mCurrentDeviceState.hasProperty(
                         DeviceState.PROPERTY_FEATURE_DUAL_DISPLAY_INTERNAL_DEFAULT));
+        // TODO(413454872) Remove when inputting the pin on cuttlefish no longer fails
+        assumeFalse(MediaUtils.onCuttlefish());
 
         final LockScreenSession lockScreenSession = createManagedLockScreenSession();
         lockScreenSession.setLockCredential();
@@ -430,10 +434,6 @@ public class ExtensionRearDisplayPresentationKeyguardTest
         lockScreenSession.sleepDevice();
         waitAndAssert(() -> mWindowAreaSessionState == SESSION_STATE_INACTIVE);
         assertNotEquals(Display.STATE_ON, presentationDisplay.getState());
-    }
-
-    private void waitAndAssert(PollingCheck.PollingCheckCondition condition) {
-        waitFor(TIMEOUT, condition);
     }
 
     @Override

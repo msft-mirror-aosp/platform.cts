@@ -18,7 +18,6 @@ package android.app.stubs;
 
 import android.app.ActivityManager;
 import android.app.ApplicationStartInfo;
-import android.app.Flags;
 import android.app.Service;
 import android.content.Intent;
 import android.os.IBinder;
@@ -53,14 +52,12 @@ public class StubRemoteService extends Service {
          * @return the start reason, if previously stopped, -1 otherwise.
          */
         public int getWasForceStoppedReason() {
-            if (Flags.appStartInfo()) {
-                List<ApplicationStartInfo> startReasons =
-                        getSystemService(ActivityManager.class).getHistoricalProcessStartReasons(1);
-                if (startReasons != null && !startReasons.isEmpty()) {
-                    ApplicationStartInfo asi = startReasons.get(0);
-                    if (asi.wasForceStopped()) {
-                        return asi.getReason();
-                    }
+            List<ApplicationStartInfo> startReasons =
+                    getSystemService(ActivityManager.class).getHistoricalProcessStartReasons(1);
+            if (startReasons != null && !startReasons.isEmpty()) {
+                ApplicationStartInfo asi = startReasons.get(0);
+                if (asi.wasForceStopped()) {
+                    return asi.getReason();
                 }
             }
             return -1; // Wasn't force-stopped or don't have ApplicationStartInfo

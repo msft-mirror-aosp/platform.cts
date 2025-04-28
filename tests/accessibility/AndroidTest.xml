@@ -21,7 +21,18 @@
     <option name="config-descriptor:metadata" key="parameter" value="secondary_user" />
     <option name="config-descriptor:metadata" key="parameter" value="no_foldable_states" />
     <option name="config-descriptor:metadata" key="parameter" value="run_on_sdk_sandbox" />
+    <target_preparer class="com.android.tradefed.targetprep.DeviceSetup">
+        <option name="force-skip-system-props" value="true" />
+        <!-- Turn off Live Caption to avoid flakiness in tests -->
+        <option name="set-secure-setting" key="odi_captions_enabled" value="0" />
+        <option name="set-secure-setting" key="odi_captions_volume_ui_enabled" value="0" />
+        <option name="restore-settings" value="true" />
+    </target_preparer>
     <target_preparer class="com.android.tradefed.targetprep.RunCommandTargetPreparer">
+        <!-- Turn off Live Caption to avoid flakiness in tests -->
+        <option name="run-command" value="settings put secure odi_captions_enabled 0" />
+        <option name="run-command" value="settings put secure odi_captions_volume_ui_enabled 0" />
+
         <option name="run-command"
             value="cmd accessibility set-bind-instant-service-allowed true" />
         <option name="teardown-command"
