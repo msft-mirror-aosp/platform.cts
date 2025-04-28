@@ -1,4 +1,4 @@
-# Bug component: 41727
+# Bug component: 155397
 include platform/frameworks/av:/camera/OWNERS
 
 per-file *ImageReader* = file:platform/frameworks/base:/graphics/java/android/graphics/OWNERS
