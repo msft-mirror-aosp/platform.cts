@@ -20,7 +20,6 @@ import static android.adpf.atom.common.ADPFAtomTestConstants.CONTENT_KEY_RESULT_
 import static android.adpf.atom.common.ADPFAtomTestConstants.CONTENT_KEY_UID;
 
 import static com.android.server.power.hint.Flags.FLAG_ADPF_SESSION_TAG;
-import static com.android.server.power.hint.Flags.FLAG_POWERHINT_THREAD_CLEANUP;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -273,7 +272,6 @@ public class PerformanceHintManagerStatsTests extends BaseHostJUnit4Test impleme
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_POWERHINT_THREAD_CLEANUP)
     public void testAdpfHintSessionTidCleanupIsPushed() throws Exception {
         final int apiLevel = Integer.parseInt(
                 DeviceUtils.getProperty(getDevice(), ("ro.vendor.api_level")));
