@@ -66,6 +66,7 @@ public class BaseBackupCtsTest {
             assertTrue("LocalTransport not selected", mBackupUtils.isLocalTransportSelected());
             getBackupUtils()
                     .executeShellCommandSync("setprop log.tag." + APP_LOG_TAG + " VERBOSE");
+            getBackupUtils().cancelBackups();
         }
     }
 
