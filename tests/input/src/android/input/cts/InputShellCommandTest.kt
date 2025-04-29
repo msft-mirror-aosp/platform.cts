@@ -15,6 +15,7 @@
  */
 package android.input.cts
 
+import android.graphics.Point
 import android.server.wm.WindowManagerStateHelper
 import android.view.InputDevice
 import android.view.MotionEvent
@@ -26,8 +27,15 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.android.compatibility.common.util.PollingCheck
 import com.android.compatibility.common.util.ShellUtils
 import com.android.compatibility.common.util.UserHelper
+import com.android.cts.input.BlockingQueueEventVerifier
 import com.android.cts.input.CaptureEventActivity
+import com.android.cts.input.inputeventmatchers.withAxisValue
+import com.android.cts.input.inputeventmatchers.withMotionAction
+import com.android.cts.input.inputeventmatchers.withRawCoords
+import com.android.cts.input.inputeventmatchers.withSource
+import com.android.cts.input.inputeventmatchers.withToolType
 import com.google.common.truth.Truth.assertThat
+import org.hamcrest.Matchers.allOf
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -52,6 +60,7 @@ class InputShellCommandTest {
     private val instrumentation = InstrumentationRegistry.getInstrumentation()
     private lateinit var activity: CaptureEventActivity
     private val displayId = UserHelper().mainDisplayId
+    private lateinit var verifier: BlockingQueueEventVerifier
 
     @Before
     fun setUp() {
@@ -65,6 +74,7 @@ class InputShellCommandTest {
             "InputShellCommandTest",
             "Waiting for activity"
         )
+        verifier = activity.verifier
     }
 
     /**
@@ -111,9 +121,10 @@ class InputShellCommandTest {
     fun testDefaultScroll() {
         ShellUtils.runShellCommand("input -d $displayId scroll")
 
-        val event = getMotionEvent()
-        assertThat(event.source).isEqualTo(InputDevice.SOURCE_ROTARY_ENCODER)
-        assertThat(event.action).isEqualTo(MotionEvent.ACTION_SCROLL)
+        verifier.assertReceivedMotion(allOf(
+            withSource(InputDevice.SOURCE_ROTARY_ENCODER),
+            withMotionAction(MotionEvent.ACTION_SCROLL)),
+        )
     }
 
     @Test
@@ -122,12 +133,12 @@ class InputShellCommandTest {
 
         ShellUtils.runShellCommand("input mouse -d $displayId scroll $x $y --axis VSCROLL,-1")
 
-        val event = getMotionEvent()
-        assertThat(event.source).isEqualTo(InputDevice.SOURCE_MOUSE)
-        assertThat(event.action).isEqualTo(MotionEvent.ACTION_SCROLL)
-        assertThat(event.getRawX()).isEqualTo(x)
-        assertThat(event.getRawY()).isEqualTo(y)
-        assertThat(event.getAxisValue(MotionEvent.AXIS_VSCROLL)).isEqualTo(-1)
+        verifier.assertReceivedMotion(allOf(
+            withSource(InputDevice.SOURCE_MOUSE),
+            withMotionAction(MotionEvent.ACTION_SCROLL),
+            withRawCoords(Point(x, y)),
+            withAxisValue(MotionEvent.AXIS_VSCROLL, -1f),
+        ))
     }
 
     @Test
@@ -136,11 +147,12 @@ class InputShellCommandTest {
             "input rotaryencoder -d $displayId scroll --axis SCROLL,-8 --axis HSCROLL,2"
         )
 
-        val event = getMotionEvent()
-        assertThat(event.source).isEqualTo(InputDevice.SOURCE_ROTARY_ENCODER)
-        assertThat(event.action).isEqualTo(MotionEvent.ACTION_SCROLL)
-        assertThat(event.getAxisValue(MotionEvent.AXIS_SCROLL)).isEqualTo(-8)
-        assertThat(event.getAxisValue(MotionEvent.AXIS_HSCROLL)).isEqualTo(2)
+        verifier.assertReceivedMotion(allOf(
+            withSource(InputDevice.SOURCE_ROTARY_ENCODER),
+            withMotionAction(MotionEvent.ACTION_SCROLL),
+            withAxisValue(MotionEvent.AXIS_SCROLL, -8f),
+            withAxisValue(MotionEvent.AXIS_HSCROLL, 2f),
+        ))
     }
 
     @Test
@@ -153,28 +165,14 @@ class InputShellCommandTest {
         assertThat(activity.getInputEvent()).isNull()
     }
 
-    private fun getMotionEvent(): MotionEvent {
-        val event = activity.getInputEvent()
-        assertThat(event).isNotNull()
-        assertThat(event).isInstanceOf(MotionEvent::class.java)
-        return event as MotionEvent
-    }
-
-    private fun assertToolType(event: MotionEvent, toolType: Int) {
-        val pointerProperties = MotionEvent.PointerProperties()
-        for (i in 0 until event.pointerCount) {
-            event.getPointerProperties(i, pointerProperties)
-            assertThat(toolType).isEqualTo(pointerProperties.toolType)
-        }
-    }
-
     private fun assertTapToolType(toolType: Int) {
-        val downEvent = getMotionEvent()
-        assertThat(downEvent.action).isEqualTo(MotionEvent.ACTION_DOWN)
-        assertToolType(downEvent, toolType)
-
-        val upEvent = getMotionEvent()
-        assertThat(upEvent.action).isEqualTo(MotionEvent.ACTION_UP)
-        assertToolType(upEvent, toolType)
+        verifier.assertReceivedMotion(allOf(
+            withMotionAction(MotionEvent.ACTION_DOWN),
+            withToolType(toolType),
+        ))
+        verifier.assertReceivedMotion(allOf(
+            withMotionAction(MotionEvent.ACTION_UP),
+            withToolType(toolType),
+        ))
     }
 }

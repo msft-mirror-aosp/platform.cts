@@ -28,6 +28,7 @@ import androidx.test.filters.MediumTest
 import androidx.test.platform.app.InstrumentationRegistry
 import com.android.compatibility.common.util.PollingCheck
 import com.android.compatibility.common.util.SystemUtil
+import com.android.cts.input.BlockingQueueEventVerifier
 import com.android.cts.input.CaptureEventActivity
 import com.android.cts.input.DebugInputRule
 import com.android.cts.input.EvdevInputEventCodes.Companion.BTN_STYLUS
@@ -41,8 +42,14 @@ import com.android.cts.input.EvdevInputEventCodes.Companion.SYN_REPORT
 import com.android.cts.input.UinputBluetoothStylus
 import com.android.cts.input.UinputStylus
 import com.android.cts.input.VirtualDisplayActivityScenario
+import com.android.cts.input.inputeventmatchers.withActionButton
+import com.android.cts.input.inputeventmatchers.withButtonState
+import com.android.cts.input.inputeventmatchers.withMotionAction
+import com.android.cts.input.inputeventmatchers.withSourceIncluding
+import com.android.cts.input.inputeventmatchers.withToolType
 import com.android.input.flags.Flags.FLAG_DEVICE_ASSOCIATIONS
 import com.google.common.truth.TruthJUnit.assume
+import org.hamcrest.Matchers.allOf
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
@@ -77,6 +84,11 @@ class StylusButtonInputEventTest {
                 BTN_STYLUS to MotionEvent.BUTTON_STYLUS_PRIMARY, // BTN_STYLUS
                 BTN_STYLUS2 to MotionEvent.BUTTON_STYLUS_SECONDARY, // BTN_STYLUS2
             )
+
+        val STYLUS_EVENT_MATCHER = allOf(
+            withToolType(MotionEvent.TOOL_TYPE_STYLUS),
+            withSourceIncluding(SOURCE_STYLUS)
+        )
     }
 
     @get:Rule val debugInputRule = DebugInputRule()
@@ -86,6 +98,7 @@ class StylusButtonInputEventTest {
     private val instrumentation = InstrumentationRegistry.getInstrumentation()
     private lateinit var statusBarManager: StatusBarManager
     private lateinit var initialStylusButtonsEnabledSetting: String
+    private lateinit var verifier: BlockingQueueEventVerifier
 
     @Before
     fun setUp() {
@@ -93,6 +106,7 @@ class StylusButtonInputEventTest {
             SystemUtil.runShellCommandOrThrow("settings get $SETTING_NAMESPACE_KEY")
         statusBarManager =
             instrumentation.targetContext.getSystemService(StatusBarManager::class.java)
+        verifier = virtualDisplayRule.activity.verifier
 
         // StatusBarManagerService#handleSystemKey rejects requests from background users
         assume().that(isBackgroundUser()).isFalse()
@@ -174,41 +188,36 @@ class StylusButtonInputEventTest {
                 uinputStylus.sendDown(0, pointer)
                 uinputStylus.sync()
 
-                assertNextMotionEventEquals(
-                        MotionEvent.ACTION_DOWN,
-                        MotionEvent.TOOL_TYPE_STYLUS,
-                        button.value,
-                        0,
-                        SOURCE_STYLUS,
-                )
-                assertNextMotionEventEquals(
-                        MotionEvent.ACTION_BUTTON_PRESS,
-                        MotionEvent.TOOL_TYPE_STYLUS,
-                        button.value,
-                        button.value,
-                        SOURCE_STYLUS,
-                )
+                verifier.assertReceivedMotion(allOf(
+                    withMotionAction(MotionEvent.ACTION_DOWN),
+                    withButtonState(button.value),
+                    withActionButton(0),
+                    STYLUS_EVENT_MATCHER,
+                ))
+                verifier.assertReceivedMotion(allOf(
+                    withMotionAction(MotionEvent.ACTION_BUTTON_PRESS),
+                    withButtonState(button.value),
+                    withActionButton(button.value),
+                    STYLUS_EVENT_MATCHER,
+                ))
 
                 uinputStylus.sendBtnTouch(false)
                 uinputStylus.sendBtn(button.key, false)
                 uinputStylus.sendPressure(0)
                 uinputStylus.sendUp(0)
                 uinputStylus.sync()
-
-                assertNextMotionEventEquals(
-                        MotionEvent.ACTION_BUTTON_RELEASE,
-                        MotionEvent.TOOL_TYPE_STYLUS,
-                        0,
-                        button.value,
-                        SOURCE_STYLUS,
-                )
-                assertNextMotionEventEquals(
-                        MotionEvent.ACTION_UP,
-                        MotionEvent.TOOL_TYPE_STYLUS,
-                        0,
-                        0,
-                        SOURCE_STYLUS,
-                )
+                verifier.assertReceivedMotion(allOf(
+                    withMotionAction(MotionEvent.ACTION_BUTTON_RELEASE),
+                    withButtonState(0),
+                    withActionButton(button.value),
+                    STYLUS_EVENT_MATCHER,
+                ))
+                verifier.assertReceivedMotion(allOf(
+                    withMotionAction(MotionEvent.ACTION_UP),
+                    withButtonState(0),
+                    withActionButton(0),
+                    STYLUS_EVENT_MATCHER,
+                ))
             }
         }
     }
@@ -229,27 +238,24 @@ class StylusButtonInputEventTest {
                 uinputStylus.sendDown(0, pointer)
                 uinputStylus.sync()
 
-                assertNextMotionEventEquals(
-                        MotionEvent.ACTION_DOWN,
-                        MotionEvent.TOOL_TYPE_STYLUS,
-                        0,
-                        0,
-                        SOURCE_STYLUS,
-                )
+                verifier.assertReceivedMotion(allOf(
+                    withMotionAction(MotionEvent.ACTION_DOWN),
+                    withButtonState(0),
+                    withActionButton(0),
+                    STYLUS_EVENT_MATCHER,
+                ))
 
                 uinputStylus.sendBtnTouch(false)
                 uinputStylus.sendPressure(0)
                 uinputStylus.sendBtn(button.key, false)
                 uinputStylus.sendUp(0)
                 uinputStylus.sync()
-
-                assertNextMotionEventEquals(
-                        MotionEvent.ACTION_UP,
-                        MotionEvent.TOOL_TYPE_STYLUS,
-                        0,
-                        0,
-                        SOURCE_STYLUS,
-                )
+                verifier.assertReceivedMotion(allOf(
+                    withMotionAction(MotionEvent.ACTION_UP),
+                    withButtonState(0),
+                    withActionButton(0),
+                    STYLUS_EVENT_MATCHER,
+                ))
             }
         }
     }
@@ -266,22 +272,6 @@ class StylusButtonInputEventTest {
         SystemUtil.runWithShellPermissionIdentity {
             assertEquals(INITIAL_SYSTEM_KEY, statusBarManager.lastSystemKey)
         }
-    }
-
-    private fun assertNextMotionEventEquals(
-        action: Int,
-        toolType: Int,
-        buttonState: Int,
-        actionButton: Int,
-        source: Int,
-    ) {
-        val event = virtualDisplayRule.activity.getInputEvent() as MotionEvent
-
-        assertEquals(action, event.action)
-        assertEquals(toolType, event.getToolType(0))
-        assertEquals(buttonState, event.buttonState)
-        assertEquals(actionButton, event.actionButton)
-        assertEquals(source and event.source, source)
     }
 
     private fun enableStylusButtons() {

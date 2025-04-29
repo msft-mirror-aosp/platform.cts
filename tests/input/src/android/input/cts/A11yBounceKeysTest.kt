@@ -28,6 +28,7 @@ import com.android.compatibility.common.util.SystemUtil
 import com.android.cts.input.CaptureEventActivity
 import com.android.cts.input.EvdevInputEventCodes.Companion.KEY_A
 import com.android.cts.input.UinputKeyboard
+import com.android.cts.input.inputeventmatchers.withKeyCode
 import org.junit.After
 import org.junit.Assert
 import org.junit.Before
@@ -88,13 +89,7 @@ class A11yBounceKeysTest {
 
     private fun assertReceivedEventsCorrectlyMapped(numEvents: Int, expectedKeyCode: Int) {
         for (i in 1..numEvents) {
-            val lastInputEvent = activity.getInputEvent() as? KeyEvent
-            Assert.assertNotNull("Failed to receive key event number $i", lastInputEvent)
-            Assert.assertEquals(
-                "Key code should be " + KeyEvent.keyCodeToString(expectedKeyCode),
-                expectedKeyCode,
-                lastInputEvent!!.keyCode
-            )
+            activity.verifier.assertReceivedKey(withKeyCode(expectedKeyCode), "Key event number $i")
         }
         activity.assertNoEvents()
     }
