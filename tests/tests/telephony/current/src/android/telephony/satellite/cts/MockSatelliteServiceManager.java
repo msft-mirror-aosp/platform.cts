@@ -1744,4 +1744,13 @@ class MockSatelliteServiceManager {
         return TextUtils.emptyIfNull(mInstrumentation.getContext().getResources().getString(
                 R.string.config_satellite_service_package));
     }
+
+    @NonNull
+    List<String> getSupportedCountryCodesFromDeviceConfig() {
+        logd("getSupportedCountryCodesFromDeviceConfig");
+        String[] countryCodes =
+                readStringArrayFromOverlayConfig("config_oem_enabled_satellite_country_codes");
+        logd("getSupportedCountryCodesFromDeviceConfig: " + Arrays.toString(countryCodes));
+        return Arrays.stream(countryCodes).toList();
+    }
 }
