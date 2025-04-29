@@ -490,7 +490,11 @@
                   android:screenOrientation="nosensor" />
 
         <activity android:name="android.server.wm.display.DisplayHashManagerTest$TestActivity"
-                   android:exported="true"/>
+                   android:exported="true">
+            <property
+                android:name="android.window.PROPERTY_COMPAT_ALLOW_SAFE_REGION_LETTERBOXING"
+                android:value="false" />
+        </activity>
 
         <activity android:name="android.server.wm.HelperActivities$ResizeableLeftActivity"
                   android:resizeableActivity="true"
