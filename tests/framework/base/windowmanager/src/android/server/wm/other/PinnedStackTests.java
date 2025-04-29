@@ -1600,7 +1600,7 @@ public class PinnedStackTests extends ActivityManagerTestBase {
         // affinity
         launchActivity(TEST_ACTIVITY_WITH_SAME_AFFINITY);
         launchActivity(PIP_ACTIVITY_WITH_SAME_AFFINITY);
-        assertPinnedStackExists();
+        waitForEnterPipAnimationComplete(PIP_ACTIVITY_WITH_SAME_AFFINITY);
 
         // Launch the root activity again...
         int rootActivityTaskId =
