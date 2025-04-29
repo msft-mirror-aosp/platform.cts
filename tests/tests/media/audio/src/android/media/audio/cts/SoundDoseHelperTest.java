@@ -21,7 +21,6 @@ import static android.media.AudioAttributes.CONTENT_TYPE_MUSIC;
 import static android.media.AudioAttributes.USAGE_MEDIA;
 import static android.media.AudioManager.CSD_WARNING_MOMENTARY_EXPOSURE;
 import static android.media.AudioManager.STREAM_MUSIC;
-import static android.media.cts.AudioHelper.hasAudioSilentProperty;
 
 import android.Manifest;
 import android.content.Context;
@@ -157,10 +156,6 @@ public class SoundDoseHelperTest extends CtsAndroidTestCase {
     public void testFrameworkMomentaryExposure() throws Exception {
         final AudioManager am = new AudioManager(mContext);
         if (!platformSupportsSoundDose("testFrameworkMomentaryExposure", am)) {
-            return;
-        }
-        if (hasAudioSilentProperty()) {
-            Log.w(TAG, "Device has ro.audio.silent set, skipping testFrameworkMomentaryExposure");
             return;
         }
 

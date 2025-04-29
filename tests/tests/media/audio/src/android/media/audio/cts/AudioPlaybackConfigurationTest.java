@@ -32,7 +32,6 @@ import static android.media.AudioPlaybackConfiguration.MUTED_BY_STREAM_VOLUME;
 import static android.media.AudioPlaybackConfiguration.MUTED_BY_VOLUME_SHAPER;
 import static android.media.AudioTrack.WRITE_NON_BLOCKING;
 import static android.media.cts.AudioHelper.createSoundDataInShortByteBuffer;
-import static android.media.cts.AudioHelper.hasAudioSilentProperty;
 
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 
@@ -175,11 +174,6 @@ public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
     // FIXME: b/402529329 create and use AudioPlaybackConfiguration test API to test serialization
     public void testParcelableWriteToParcel() throws Exception {
         if (!isValidPlatform("testParcelableWriteToParcel")) return;
-        if (hasAudioSilentProperty()) {
-            // No reasons to test since the started MediaPlayer will be muted and inactive
-            Log.w(TAG, "Device has ro.audio.silent set, skipping testParcelableWriteToParcel");
-            return;
-        }
 
         // create a player, make it play so we can get an AudioPlaybackConfiguration instance
         AudioManager am = new AudioManager(getContext());
@@ -228,11 +222,6 @@ public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
 
     public void testGetterMediaPlayer() throws Exception {
         if (!isValidPlatform("testGetterMediaPlayer")) return;
-        if (hasAudioSilentProperty()) {
-            // No reasons to test since the started MediaPlayer will be muted and inactive
-            Log.w(TAG, "Device has ro.audio.silent set, skipping testGetterMediaPlayer");
-            return;
-        }
 
         AudioManager am = new AudioManager(getContext());
         assertNotNull("Could not create AudioManager", am);
@@ -556,11 +545,6 @@ public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
             return;
         }
         if (!isValidPlatform("testAudioTrackMuteFromAppOpsNotification")) return;
-        if (hasAudioSilentProperty()) {
-            Log.w(TAG, "Device has ro.audio.silent set, skipping "
-                            + "testAudioTrackMuteFromAppOpsNotification");
-            return;
-        }
 
         final AudioAttributes aa = TEST_AUDIO_ATTRIBUTES;
         initializeAudioTrack(aa);
@@ -577,11 +561,6 @@ public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
             return;
         }
         if (!isValidPlatform("testMediaPlayerMuteFromAppOpsNotification")) return;
-        if (hasAudioSilentProperty()) {
-            Log.w(TAG, "Device has ro.audio.silent set, skipping "
-                            + "testMediaPlayerMuteFromAppOpsNotification");
-            return;
-        }
 
         final AudioAttributes aa = TEST_AUDIO_ATTRIBUTES;
         initializeMediaPlayer(aa);
@@ -626,11 +605,6 @@ public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
             return;
         }
         if (!isValidPlatform("testAudioTrackMuteFromStreamVolumeNotification")) return;
-        if (hasAudioSilentProperty()) {
-            Log.w(TAG, "Device has ro.audio.silent set, skipping "
-                            + "testAudioTrackMuteFromStreamVolumeNotification");
-            return;
-        }
 
         final AudioAttributes aa = TEST_AUDIO_ATTRIBUTES;
         initializeAudioTrack(aa);
@@ -647,11 +621,6 @@ public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
             return;
         }
         if (!isValidPlatform("testMediaPlayerMuteFromStreamVolumeNotification")) return;
-        if (hasAudioSilentProperty()) {
-            Log.w(TAG, "Device has ro.audio.silent set, skipping "
-                            + "testMediaPlayerMuteFromStreamVolumeNotification");
-            return;
-        }
 
         final AudioAttributes aa = TEST_AUDIO_ATTRIBUTES;
         initializeMediaPlayer(aa);
@@ -684,11 +653,6 @@ public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
             "android.media.AudioManager.AudioPlaybackCallback#getMutedBy"})
     public void testAudioTrackMuteFromClientVolumeNotification() throws Exception {
         if (!isValidPlatform("testAudioTrackMuteFromClientVolumeNotification")) return;
-        if (hasAudioSilentProperty()) {
-            Log.w(TAG, "Device has ro.audio.silent set, skipping "
-                            + "testAudioTrackMuteFromClientVolumeNotification");
-            return;
-        }
 
         final AudioAttributes aa = TEST_AUDIO_ATTRIBUTES;
         initializeAudioTrack(aa);
@@ -701,11 +665,6 @@ public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
             "android.media.AudioManager.AudioPlaybackCallback#getMutedBy"})
     public void testMediaPlayerMuteFromClientVolumeNotification() throws Exception {
         if (!isValidPlatform("testMediaPlayerMuteFromClientVolumeNotification")) return;
-        if (hasAudioSilentProperty()) {
-            Log.w(TAG, "Device has ro.audio.silent set, skipping "
-                            + "testMediaPlayerMuteFromClientVolumeNotification");
-            return;
-        }
 
         final AudioAttributes aa = TEST_AUDIO_ATTRIBUTES;
         initializeMediaPlayer(aa);
@@ -730,11 +689,6 @@ public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
             "android.media.AudioManager.AudioPlaybackCallback#getMutedBy"})
     public void testAudioTrackMuteFromVolumeShaperNotification() throws Exception {
         if (!isValidPlatform("testAudioTrackMuteFromVolumeShaperNotification")) return;
-        if (hasAudioSilentProperty()) {
-            Log.w(TAG, "Device has ro.audio.silent set, skipping "
-                            + "testAudioTrackMuteFromVolumeShaperNotification");
-            return;
-        }
 
         final AudioAttributes aa = TEST_AUDIO_ATTRIBUTES;
         initializeAudioTrack(aa);
@@ -747,11 +701,6 @@ public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
             "android.media.AudioManager.AudioPlaybackCallback#getMutedBy"})
     public void testMediaPlayerMuteFromVolumeShaperNotification() throws Exception {
         if (!isValidPlatform("testMediaPlayerMuteFromVolumeShaperNotification")) return;
-        if (hasAudioSilentProperty()) {
-            Log.w(TAG, "Device has ro.audio.silent set, skipping "
-                            + "testMediaPlayerMuteFromVolumeShaperNotification");
-            return;
-        }
 
         final AudioAttributes aa = TEST_AUDIO_ATTRIBUTES;
         initializeMediaPlayer(aa);
