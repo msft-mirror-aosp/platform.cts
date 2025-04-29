@@ -351,14 +351,17 @@ public class AccessibilityDisplayProxyTest {
     @Test
     @ApiTest(apis = {"android.view.accessibility.AccessibilityManager#registerDisplayProxy"})
     public void testRegisterAccessibilityProxy_withDefaultDisplay_throwsSecurityException() {
-        final MyA11yProxy invalidProxy = new MyA11yProxy(
-                Display.DEFAULT_DISPLAY, Executors.newSingleThreadExecutor(), new ArrayList<>());
-        try {
-            assertThrows(SecurityException.class, () ->
-                    mA11yManager.registerDisplayProxy(invalidProxy));
-        } finally {
-            mA11yManager.unregisterDisplayProxy(invalidProxy);
-        }
+        mVirtualDeviceRule.runWithoutPermissions(
+                () -> {
+                    final MyA11yProxy invalidProxy =
+                            new MyA11yProxy(
+                                    Display.DEFAULT_DISPLAY,
+                                    Executors.newSingleThreadExecutor(),
+                                    new ArrayList<>());
+                    assertThrows(
+                            SecurityException.class,
+                            () -> mA11yManager.registerDisplayProxy(invalidProxy));
+                });
     }
 
     @Test
@@ -382,12 +385,12 @@ public class AccessibilityDisplayProxyTest {
 
             final MyA11yProxy invalidProxy = new MyA11yProxy(
                     virtualDisplayId, Executors.newSingleThreadExecutor(), new ArrayList<>());
-            try {
-                assertThrows(SecurityException.class, () ->
-                        mA11yManager.registerDisplayProxy(invalidProxy));
-            } finally {
-                mA11yManager.unregisterDisplayProxy(invalidProxy);
-            }
+            mVirtualDeviceRule.runWithoutPermissions(
+                    () -> {
+                        assertThrows(
+                                SecurityException.class,
+                                () -> mA11yManager.registerDisplayProxy(invalidProxy));
+                    });
         } finally {
             if (activityScenario.get() != null) {
                 activityScenario.get().close();
