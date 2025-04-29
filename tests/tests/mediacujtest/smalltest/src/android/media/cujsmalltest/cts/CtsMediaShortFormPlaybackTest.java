@@ -109,9 +109,14 @@ public class CtsMediaShortFormPlaybackTest extends CujTestBase {
       "android.resource://android.media.cujsmalltest.cts/raw/tearsofsteel_ssa_subtitles_eng_fre_5sec";
   private static final String MP3_ELEPHANTSDREAM_2CH_48KHZ_URI_STRING =
       "android.resource://android.media.cujsmalltest.cts/raw/ElephantsDream_2ch_48Khz_15s";
+  private static final String MP3_ASSET_URI_STRING =
+      "android.resource://android.media.cujsmalltest.cts/raw/testmp3_2";
+
   private static final String MP3_SINE_AUDIO_OFFLOAD_TEST = "Mp3_Sine_AudioOffloadTest";
   private static final String OPUS_AUDIO_OFFLOAD_TEST = "Opus_AudioOffloadTest";
   private static final String AAC_SINE_AUDIO_OFFLOAD_TEST = "Aac_Sine_AudioOffloadTest";
+  private static final String MP3_CONSECUTIVE_AUDIO_OFFLOAD_TEST =
+                                            "Mp3_Consecutive_AudioOffloadTest";
 
   CujTestParam mCujTestParam;
   private final String mTestType;
@@ -210,6 +215,10 @@ public class CtsMediaShortFormPlaybackTest extends CujTestBase {
             .setDuration(Duration.ofSeconds(71) /* clipDuration */).setOverhead(TEST_OVERHEAD)
             .setPlayerListener(new AudioOffloadTestPlayerListener()).build(),
             AAC_SINE_AUDIO_OFFLOAD_TEST},
+        {CujTestParam.builder().setMediaUrls(prepareMp3Consecutive_65secAudioPlaylist())
+            .setDuration(Duration.ofSeconds(65) /* clipDuration */).setOverhead(TEST_OVERHEAD)
+            .setPlayerListener(new AudioOffloadTestPlayerListener()).build(),
+            MP3_CONSECUTIVE_AUDIO_OFFLOAD_TEST},
     }));
     return exhaustiveArgsList;
   }
@@ -359,6 +368,17 @@ public class CtsMediaShortFormPlaybackTest extends CujTestBase {
     return audioInput;
   }
 
+  /**
+   * Prepare mp3 audio list for Consecutive Playback Test.
+   */
+  public static List<String> prepareMp3Consecutive_65secAudioPlaylist() {
+    List<String> audioInput = Arrays.asList(
+        MP3_ELEPHANTSDREAM_2CH_48KHZ_URI_STRING,
+        MP3_ASSET_URI_STRING,
+        MP3_ELEPHANTSDREAM_2CH_48KHZ_URI_STRING);
+    return audioInput;
+  }
+
 
   // Test to Verify video playback with and without seek
   @ApiTest(apis = {"android.media.MediaCodec#configure",
@@ -407,7 +427,8 @@ public class CtsMediaShortFormPlaybackTest extends CujTestBase {
               isVisibleBackgroundNonProfileUser(mActivity));
     }
     if (mCujTestParam.getPlayerListener().isAudioOffloadTest()) {
-        if (MP3_SINE_AUDIO_OFFLOAD_TEST.equals(mTestType)) {
+        if (MP3_SINE_AUDIO_OFFLOAD_TEST.equals(mTestType)
+                || MP3_CONSECUTIVE_AUDIO_OFFLOAD_TEST.equals(mTestType)) {
             Assume.assumeTrue("Skipping " + mTestType + " as device doesn't support audio " +
                 "offloading", deviceSupportAudioOffload(AudioFormat.ENCODING_MP3));
         } else if (OPUS_AUDIO_OFFLOAD_TEST.equals(mTestType)) {
