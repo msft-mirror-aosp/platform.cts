@@ -25,7 +25,6 @@ import static org.junit.Assume.assumeTrue;
 
 import android.platform.test.annotations.RestrictedBuildTest;
 
-import com.android.compatibility.common.tradefed.build.CompatibilityBuildHelper;
 import com.android.compatibility.common.tradefed.targetprep.DeviceInfoCollector;
 import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.PropertyUtil;
@@ -102,22 +101,13 @@ public class SELinuxHostTest extends BaseHostJUnit4Test {
     private static final Map<ITestDevice, Boolean> sCachedDeviceIsSplit = new HashMap<>(1);
 
     private File mSepolicyAnalyze;
-    private File checkSeapp;
     private File checkFc;
-    private File aospFcFile;
-    private File aospPcFile;
-    private File aospSvcFile;
     private File devicePolicyFile;
     private File deviceSystemPolicyFile;
     private File devicePlatFcFile;
     private File deviceVendorFcFile;
     private File devicePcFile;
     private File deviceSvcFile;
-    private File seappNeverAllowFile;
-    private File copyLibcpp;
-    private File sepolicyTests;
-
-    private IBuildInfo mBuild;
 
     /**
      * A reference to the device under test.
@@ -155,11 +145,9 @@ public class SELinuxHostTest extends BaseHostJUnit4Test {
     @Before
     public void setUp() throws Exception {
         mDevice = getDevice();
-        mBuild = getBuild();
         // Assumes every test in this file asserts a requirement of CDD section 9.
         assumeSecurityModelCompat();
 
-        CompatibilityBuildHelper buildHelper = new CompatibilityBuildHelper(mBuild);
         mSepolicyAnalyze = copyResourceToTempFile("/sepolicy-analyze");
         mSepolicyAnalyze.setExecutable(true);
 
@@ -700,11 +688,11 @@ public class SELinuxHostTest extends BaseHostJUnit4Test {
         }
 
         /* retrieve the checkseapp executable from jar */
-        checkSeapp = copyResourceToTempFile("/checkseapp");
+        File checkSeapp = copyResourceToTempFile("/checkseapp");
         checkSeapp.setExecutable(true);
 
         /* retrieve the AOSP seapp_neverallows file from jar */
-        seappNeverAllowFile = copyResourceToTempFile("/plat_seapp_neverallows");
+        File seappNeverAllowFile = copyResourceToTempFile("/plat_seapp_neverallows");
 
         /* run checkseapp on seapp_contexts */
         String errorString = tryRunCommand(checkSeapp.getAbsolutePath(),
@@ -791,7 +779,7 @@ public class SELinuxHostTest extends BaseHostJUnit4Test {
         checkFc.setExecutable(true);
 
         /* retrieve the AOSP file_contexts file from jar */
-        aospFcFile = copyResourceToTempFile("/plat_file_contexts_cts");
+        File aospFcFile = copyResourceToTempFile("/plat_file_contexts_cts");
 
         /* run checkfc -c plat_file_contexts plat_file_contexts */
         String result = tryRunCommand(checkFc.getAbsolutePath(),
@@ -822,7 +810,7 @@ public class SELinuxHostTest extends BaseHostJUnit4Test {
         // Retrieve the AOSP property_contexts file from JAR.
         // The location of this file in the JAR has nothing to do with the location of this file on
         // Android devices. See build script of this CTS module.
-        aospPcFile = copyResourceToTempFile("/plat_property_contexts");
+        File aospPcFile = copyResourceToTempFile("/plat_property_contexts");
 
         assertContainsAllLines(aospPcFile, devicePcFile);
     }
@@ -844,7 +832,7 @@ public class SELinuxHostTest extends BaseHostJUnit4Test {
         }
 
         /* retrieve the AOSP service_contexts file from jar */
-        aospSvcFile = copyResourceToTempFile("/plat_service_contexts");
+        File aospSvcFile = copyResourceToTempFile("/plat_service_contexts");
 
         assertContainsAllLines(aospSvcFile, deviceSvcFile);
     }
@@ -935,7 +923,7 @@ public class SELinuxHostTest extends BaseHostJUnit4Test {
 
     private void assertSepolicyTests(String test, String testExecutable,
             boolean includeVendorSepolicy) throws Exception {
-        sepolicyTests = copyResourceToTempFile(testExecutable);
+        File sepolicyTests = copyResourceToTempFile(testExecutable);
         sepolicyTests.setExecutable(true);
 
         List<String> args = new ArrayList<String>();
