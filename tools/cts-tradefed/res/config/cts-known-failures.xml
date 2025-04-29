@@ -227,6 +227,8 @@
     <!-- b/195582566 -->
     <option name="compatibility:exclude-filter" value="CtsAutoFillServiceTestCases android.autofillservice.cts.inline.InlineSimpleSaveActivityTest#testAutofill_oneDatasetAndSave" />
     <option name="compatibility:exclude-filter" value="CtsAutoFillServiceTestCases[instant] android.autofillservice.cts.inline.InlineSimpleSaveActivityTest#testAutofill_oneDatasetAndSave" />
+    <!-- b/405935832 -->
+    <option name="compatibility:exclude-filter" value="CtsAutoFillServiceTestCases android.autofillservice.cts.saveui.SimpleSaveActivityTest#testTapLink_launchTrampolineActivityThenTapBackAndStartNewSession" />
 
     <!-- b/194293021 -->
     <option name="compatibility:exclude-filter" value="CtsPrintTestCases" />
