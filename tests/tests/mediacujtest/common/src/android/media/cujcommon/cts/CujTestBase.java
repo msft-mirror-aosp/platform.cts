@@ -21,16 +21,19 @@ import static com.google.common.truth.Truth.assertWithMessage;
 import android.app.Activity;
 import android.app.ActivityTaskManager;
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.media.AudioAttributes;
 import android.media.AudioFormat;
 import android.media.AudioManager;
+import android.media.cujcommon.cts.PlayerListener.TestType;
 import android.os.Build;
 import android.os.UserManager;
 import android.telephony.TelephonyManager;
 
 import androidx.test.core.app.ActivityScenario;
+import androidx.test.core.app.ApplicationProvider;
 
 import java.time.Duration;
 import java.util.List;
@@ -44,6 +47,8 @@ public class CujTestBase {
   static final String SHORTFORM_PLAYBAK_TEST_APP = "android.media.cujsmalltest.cts";
 
   protected static final Duration TEST_OVERHEAD = Duration.ofSeconds(30);
+
+  protected static final float PLAYBACK_RATE_FOR_SPEED_CHANGE_TEST = 1.5f;
 
   // A delay of about 1 to 2 seconds is observed after each seek on slower devices.
   public static final Duration OVERHEAD_PER_SEEK = Duration.ofSeconds(2);
@@ -71,8 +76,12 @@ public class CujTestBase {
       mScrollActivity.addPlayerListener(mListener);
       mListener.setScrollActivity(mScrollActivity);
     } else if (playerListener.isAudioOffloadTest()) {
-      ActivityScenario<AudioOffloadTestActivity> scenario = ActivityScenario.launch(
-          AudioOffloadTestActivity.class);
+      Intent intent =
+          new Intent(ApplicationProvider.getApplicationContext(), AudioOffloadTestActivity.class);
+      if (playerListener.getTestType().equals(TestType.AUDIO_OFFLOAD_SPEED_CHANGE_TEST)) {
+        intent.putExtra("playback_rate", PLAYBACK_RATE_FOR_SPEED_CHANGE_TEST);
+      }
+      ActivityScenario<AudioOffloadTestActivity> scenario = ActivityScenario.launch(intent);
       scenario.onActivity(activity -> {
         this.mAudioOffloadActivity = activity;
       });
@@ -211,6 +220,9 @@ public class CujTestBase {
     }
     long actualTotalTime = System.currentTimeMillis() - startTime;
     long expectedTotalTime = mListener.getExpectedTotalTime();
+    if (mListener.getTestType().equals(TestType.AUDIO_OFFLOAD_SPEED_CHANGE_TEST)) {
+      expectedTotalTime = (long) (expectedTotalTime / PLAYBACK_RATE_FOR_SPEED_CHANGE_TEST);
+    }
     mListener.onTestCompletion();
     assertWithMessage("Test did not complete within expected time").that(actualTotalTime)
         .isWithin(TEST_OVERHEAD.plus(mListener.getTotalSeekOverhead()).toMillis())
