@@ -675,6 +675,8 @@ public class ActivityVisibilityTests extends ActivityManagerTestBase {
         assumeRunNotOnVisibleBackgroundNonProfileUser(
                 "Keyguard not supported for visible background users");
 
+        final AodSession aodSession = createManagedAodSession();
+        aodSession.setAodEnabled(false);
         final LockScreenSession lockScreenSession = createManagedLockScreenSession();
         lockScreenSession.disableLockScreen().sleepDevice();
         separateTestJournal();
@@ -698,6 +700,8 @@ public class ActivityVisibilityTests extends ActivityManagerTestBase {
                 getLaunchActivityBuilder().setTargetActivity(LAUNCHING_ACTIVITY),
                 getLaunchActivityBuilder().setTargetActivity(RESIZEABLE_ACTIVITY));
 
+        final AodSession aodSession = createManagedAodSession();
+        aodSession.setAodEnabled(false);
         final LockScreenSession lockScreenSession = createManagedLockScreenSession();
         lockScreenSession.disableLockScreen().sleepDevice();
         launchActivity(TURN_SCREEN_ON_ATTR_ACTIVITY, WINDOWING_MODE_FULLSCREEN);
@@ -710,6 +714,8 @@ public class ActivityVisibilityTests extends ActivityManagerTestBase {
         assumeTrue(supportsLockScreen());
         assumeTrue(supportsFreeform());
 
+        final AodSession aodSession = createManagedAodSession();
+        aodSession.setAodEnabled(false);
         final LockScreenSession lockScreenSession = createManagedLockScreenSession();
         lockScreenSession.disableLockScreen().sleepDevice();
 
