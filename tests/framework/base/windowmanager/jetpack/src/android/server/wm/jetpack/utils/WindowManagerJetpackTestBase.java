@@ -105,8 +105,13 @@ public class WindowManagerJetpackTestBase {
     }
 
     public <T extends Activity> T startFullScreenActivityNewTask(@NonNull Class<T> activityClass) {
+        return startFullScreenActivityNewTask(activityClass, null /* activityId */);
+    }
+
+    public <T extends Activity> T startFullScreenActivityNewTask(@NonNull Class<T> activityClass,
+            @Nullable String activityId) {
         return activityClass.cast(startActivityNewTask(
-                mContext, mInstrumentation, activityClass, null /* activityId */, true));
+                mContext, mInstrumentation, activityClass, activityId, true));
     }
 
     public static Activity startActivityNewTask(@NonNull Context context,
