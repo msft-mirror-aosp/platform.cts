@@ -300,6 +300,28 @@ public class IRadioDataImpl extends IRadioData.Stub {
     }
 
     @Override
+    public void setUserDataEnabled(int serial, boolean enabled) throws RemoteException {
+        Log.d(mTag, "setUserDataEnabled");
+        RadioResponseInfo rsp = mService.makeSolRsp(serial, RadioError.REQUEST_NOT_SUPPORTED);
+        try {
+            mRadioDataResponse.setUserDataEnabledResponse(rsp);
+        } catch (RemoteException ex) {
+            Log.e(mTag, "Failed to setUserDataEnabled from AIDL. Exception" + ex);
+        }
+    }
+
+    @Override
+    public void setUserDataRoamingEnabled(int serial, boolean enabled) throws RemoteException {
+        Log.d(mTag, "setUserDataRoamingEnabled");
+        RadioResponseInfo rsp = mService.makeSolRsp(serial, RadioError.REQUEST_NOT_SUPPORTED);
+        try {
+            mRadioDataResponse.setUserDataRoamingEnabledResponse(rsp);
+        } catch (RemoteException ex) {
+            Log.e(mTag, "Failed to setUserDataRoamingEnabled from AIDL. Exception" + ex);
+        }
+    }
+
+    @Override
     public String getInterfaceHash() {
         return IRadioData.HASH;
     }
