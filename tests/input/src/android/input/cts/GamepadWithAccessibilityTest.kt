@@ -35,7 +35,10 @@ import com.android.cts.input.EvdevInputEventCodes.Companion.EV_KEY_RELEASE
 import com.android.cts.input.EvdevInputEventCodes.Companion.EV_SYN
 import com.android.cts.input.EvdevInputEventCodes.Companion.SYN_REPORT
 import com.android.cts.input.UinputGamepad
+import com.android.cts.input.inputeventmatchers.withDeviceId
+import com.android.cts.input.inputeventmatchers.withKeyFlags
 import com.android.input.flags.Flags.FLAG_DEVICE_ASSOCIATIONS
+import org.hamcrest.Matchers.allOf
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
@@ -102,6 +105,7 @@ class GamepadWithAccessibilityTest {
     @Test
     fun testDeviceId() {
         val uinputDevice = UinputGamepad(instrumentation)
+        assertNotEquals(uinputDevice.getDeviceId(), VIRTUAL_KEYBOARD)
 
         val evdevEventsDown = intArrayOf(EV_KEY, BTN_SOUTH, EV_KEY_PRESS, EV_SYN, SYN_REPORT, 0)
         uinputDevice.injectEvents(evdevEventsDown.joinToString(
@@ -117,15 +121,12 @@ class GamepadWithAccessibilityTest {
             separator = ","
         ))
 
-        val lastInputEvent = activity.getInputEvent()
-        assertNotNull(lastInputEvent)
-        assertTrue(lastInputEvent is KeyEvent)
-        val keyEvent = lastInputEvent as KeyEvent
         // The event was not modified by accessibility in any way, so it should not have
         // KeyEvent.FLAG_IS_ACCESSIBILITY_EVENT in getFlags()
-        assertEquals(KeyEvent.FLAG_FROM_SYSTEM, keyEvent.getFlags())
-        assertNotEquals(keyEvent.getDeviceId(), VIRTUAL_KEYBOARD)
-        assertEquals(keyEvent.getDeviceId(), uinputDevice.getDeviceId())
+        activity.verifier.assertReceivedKey(allOf(
+            withKeyFlags(KeyEvent.FLAG_FROM_SYSTEM),
+            withDeviceId(uinputDevice.getDeviceId()),
+        ))
 
         uinputDevice.close()
     }

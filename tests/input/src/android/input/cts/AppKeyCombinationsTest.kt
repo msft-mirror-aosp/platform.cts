@@ -23,7 +23,11 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.android.compatibility.common.util.PollingCheck
 import com.android.compatibility.common.util.ShellUtils
 import com.android.cts.input.CaptureEventActivity
-import org.junit.Assert.assertEquals
+import com.android.cts.input.inputeventmatchers.withKeyFlags
+import com.android.cts.input.inputeventmatchers.withKeyAction
+import com.android.cts.input.inputeventmatchers.withKeyCode
+import com.android.cts.input.inputeventmatchers.withModifierState
+import org.hamcrest.Matchers.allOf
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -77,11 +81,12 @@ class AppKeyCombinationsTest {
     }
 
     private fun assertKeyEvent(keyCode: Int, action: Int, metaState: Int) {
-        val event = activity.getInputEvent() as KeyEvent
-        assertEquals(keyCode, event.keyCode)
-        assertEquals(action, event.action)
-        assertEquals(0, event.flags)
-        assertEquals(metaState, event.metaState)
+        activity.verifier.assertReceivedKey(allOf(
+            withKeyCode(keyCode),
+            withKeyAction(action),
+            withKeyFlags(0),
+            withModifierState(metaState),
+        ))
     }
 
     companion object {

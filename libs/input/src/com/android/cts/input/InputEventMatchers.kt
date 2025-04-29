@@ -18,6 +18,7 @@ package com.android.cts.input.inputeventmatchers
 
 import android.graphics.Point
 import android.graphics.PointF
+import android.view.InputEvent
 import android.view.KeyEvent
 import android.view.KeyEvent.keyCodeToString
 import android.view.MotionEvent
@@ -180,13 +181,24 @@ fun withRawCoords(pt: Point, epsilon: Float = EPSILON): Matcher<MotionEvent> {
 
 fun withSource(source: Int): Matcher<MotionEvent> = object : TypeSafeMatcher<MotionEvent>() {
     override fun describeTo(description: Description) {
-        description.appendText("With source = $source")
+        description.appendText("With source = 0x${source.toString(16)}")
     }
 
     override fun matchesSafely(event: MotionEvent): Boolean {
         return event.source == source
     }
 }
+
+fun withSourceIncluding(source: Int): Matcher<MotionEvent> =
+    object : TypeSafeMatcher<MotionEvent>() {
+        override fun describeTo(description: Description) {
+            description.appendText("With source including 0x${source.toString(16)}")
+        }
+
+        override fun matchesSafely(event: MotionEvent): Boolean {
+            return (event.source and source) == source
+        }
+    }
 
 fun withButtonState(buttonState: Int): Matcher<MotionEvent> =
     object : TypeSafeMatcher<MotionEvent>() {
@@ -199,12 +211,22 @@ fun withButtonState(buttonState: Int): Matcher<MotionEvent> =
         }
     }
 
-fun withDeviceId(deviceId: Int): Matcher<MotionEvent> = object : TypeSafeMatcher<MotionEvent>() {
+fun withActionButton(actionButton: Int): Matcher<MotionEvent> =
+    object : TypeSafeMatcher<MotionEvent>() {
+        override fun describeTo(description: Description) {
+            description.appendText("With actionButton = $actionButton")
+        }
+        override fun matchesSafely(event: MotionEvent): Boolean {
+            return event.actionButton == actionButton
+        }
+    }
+
+fun withDeviceId(deviceId: Int): Matcher<InputEvent> = object : TypeSafeMatcher<InputEvent>() {
     override fun describeTo(description: Description) {
         description.appendText("With deviceId = $deviceId")
     }
 
-    override fun matchesSafely(event: MotionEvent): Boolean {
+    override fun matchesSafely(event: InputEvent): Boolean {
         return event.deviceId == deviceId
     }
 }
@@ -375,3 +397,18 @@ fun withYPrecision(yPrecision: Float):
         return abs(event.yPrecision - yPrecision) < EPSILON
     }
 }
+
+fun withAxisValue(axis: Int, value: Float, epsilon: Float = EPSILON): Matcher<MotionEvent> =
+    object : TypeSafeMatcher<MotionEvent>() {
+        override fun describeTo(description: Description) {
+            description.appendText("With axis ${MotionEvent.axisToString(axis)} = $value")
+        }
+
+        override fun matchesSafely(event: MotionEvent): Boolean {
+            return abs(event.getAxisValue(axis) - value) < epsilon
+        }
+        override fun describeMismatchSafely(event: MotionEvent, mismatchDescription: Description) {
+            mismatchDescription.appendText(
+                "Got axis ${MotionEvent.axisToString(axis)} = ${event.getAxisValue(axis)}")
+        }
+    }
