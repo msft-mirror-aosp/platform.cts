@@ -20,14 +20,14 @@ import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.DEFAULT_SPLI
 import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.UNEVEN_CONTAINERS_DEFAULT_SPLIT_RATIO;
 import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.assertValidSplit;
 import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.createSplitPairRuleBuilderWithJava8Predicate;
+import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.getTaskBounds;
 import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.startActivityAndVerifySplit;
 import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.waitAndAssertNotVisible;
-import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.waitForFillsTask;
-
-import static org.junit.Assert.assertTrue;
+import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.waitAndAssertResumedAndFillsTask;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.graphics.Rect;
 import android.platform.test.annotations.FlakyTest;
 import android.platform.test.annotations.Presubmit;
 import android.server.wm.jetpack.utils.TestActivity;
@@ -71,8 +71,9 @@ public class ActivityEmbeddingBoundsTests extends ActivityEmbeddingTestBase {
 
         // Set split pair rule such that if the parent bounds is any smaller than it is now, then
         // the parent cannot support a split.
-        final int originalTaskWidth = getTaskWidth();
-        final int originalTaskHeight = getTaskHeight();
+        final Rect taskBounds = getTaskBounds(primaryActivity, true /* shouldWaitForResume */);
+        final int originalTaskWidth = taskBounds.width();
+        final int originalTaskHeight = taskBounds.height();
         final SplitPairRule splitPairRule = createSplitPairRuleBuilderWithJava8Predicate(
                 activityActivityPair -> true /* activityPairPredicate */,
                 activityIntentPair -> true /* activityIntentPredicate */,
@@ -96,13 +97,12 @@ public class ActivityEmbeddingBoundsTests extends ActivityEmbeddingTestBase {
             // Shrink the display by 10% to make the activities stacked
             mReportedDisplayMetrics.setSize(new Size((int) (originalDisplaySize.getWidth() * 0.9),
                     (int) (originalDisplaySize.getHeight() * 0.9)));
-            waitForFillsTask(secondaryActivity);
+            waitAndAssertResumedAndFillsTask(secondaryActivity);
             waitAndAssertNotVisible(primaryActivity);
 
             // Return the display to its original size and verify that the activities are split
-            secondaryActivity.resetBoundsChangeCounter();
             mReportedDisplayMetrics.setSize(originalDisplaySize);
-            assertTrue(secondaryActivity.waitForBoundsChange());
+            mInstrumentation.waitForIdleSync();
             assertValidSplit(primaryActivity, secondaryActivity, splitPairRule);
         }
     }
