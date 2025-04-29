@@ -1129,6 +1129,8 @@ public class ItsService extends Service implements SensorEventListener {
                 } else if ("isNightModeIndicatorSupported".equals(cmdObj.getString("cmdName"))) {
                     String cameraId = cmdObj.getString("cameraId");
                     doCheckNightModeIndicatorSupported(cameraId);
+                } else if ("hasHifiSensors".equals(cmdObj.getString("cmdName"))) {
+                    doCheckHasHifiSensors();
                 } else {
                     throw new ItsException("Unknown command: " + cmd);
                 }
@@ -1853,6 +1855,13 @@ public class ItsService extends Service implements SensorEventListener {
 
         Size displaySize = new Size(width, height);
         return displaySize;
+    }
+
+    private void doCheckHasHifiSensors() throws ItsException {
+        PackageManager pkgMgr = getPackageManager();
+        boolean hasHifiSensors = pkgMgr.hasSystemFeature(PackageManager.FEATURE_HIFI_SENSORS);
+        Log.i(TAG, "Has HiFi Sensors? " + hasHifiSensors);
+        mSocketRunnableObj.sendResponse("hasHifiSensors", hasHifiSensors ? "true" : "false");
     }
 
     private void doGetMaxCamcorderProfileSize(String cameraId) throws ItsException {
