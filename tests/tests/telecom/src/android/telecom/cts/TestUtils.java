@@ -15,6 +15,8 @@
  */
 package android.telecom.cts;
 
+import static org.junit.Assert.assertTrue;
+
 import android.app.Instrumentation;
 import android.app.role.RoleManager;
 import android.bluetooth.BluetoothDevice;
@@ -822,6 +824,16 @@ public class TestUtils {
                 .filter(connection -> address.equals(connection.getAddress()))
                 .findFirst();
         assert(connectionOptional.isPresent());
+
+        // Just because we returned the connection in the ConnectionService from either
+        // onCreateOutgoingConnection or onCreateIncomingconnection, it does not mean that the
+        // ConnectionService has completed informing Telecom of the call.  We will wait on
+        // the onCreateConnectionComplete callback from Telecom so that we can be 100% sure that
+        // the connection is ready to go.  Failure to do so can cause flakes due to Connection
+        // method calls not making it back to Telecom (since the connection is not added).
+        assertTrue(
+                "Expected create connection complete",
+                connectionOptional.get().waitOnCreateConnectionComplete());
         return connectionOptional.get();
     }
 
