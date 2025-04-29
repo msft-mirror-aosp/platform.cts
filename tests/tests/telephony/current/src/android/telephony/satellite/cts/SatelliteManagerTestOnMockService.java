@@ -276,6 +276,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         resetSatelliteAccessControlOverlayConfigs();
         resetSatelliteAccessForSatelliteSubscriptions();
         restoreSupportedMsgAppsForSatelliteSubscriptions();
+        restoreDeviceProvisionedState();
         restoreNtnOnlySubscriptions();
         assertTrue(sMockSatelliteServiceManager
                 .setIsSatelliteCommunicationAllowedForCurrentLocationCache("enable"));
