@@ -70,6 +70,9 @@ public class BatterySaverAlarmTest extends BatterySavingTestBase {
     private static final long ONE_SECOND = TimeUnit.SECONDS.toMillis(1);
     private static final long WAIT_SLOP_FOR_ABSENCE = ONE_SECOND;
     private static final long POLLING_WAIT_MILLIS = 2 * ONE_SECOND;
+    // Extra long timeout to let AppSchedulingThread Looper to catch up with
+    // battery saver state.
+    private static final long POLLING_WAIT_FOR_HANDLER_FLUSH = 30 * ONE_SECOND;
 
     // Tweaked alarm manager constants to facilitate testing
     private static final long ALLOW_WHILE_IDLE_COMPAT_WINDOW = 12 * ONE_SECOND;
@@ -330,7 +333,8 @@ public class BatterySaverAlarmTest extends BatterySavingTestBase {
         // Disable EBS -> should unblock the alarm.
         enableBatterySaver(false);
         PollingCheck.waitFor(
-                POLLING_WAIT_MILLIS,
+                // TODO: b/414451922 - Change to wait for the handler flush when available.
+                POLLING_WAIT_FOR_HANDLER_FLUSH,
                 () -> mAlarmCount.get() == 1,
                 "Alarm should fire after battery saver is disabled");
     }

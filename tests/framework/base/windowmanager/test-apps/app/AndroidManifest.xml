@@ -232,8 +232,10 @@
                        android:minHeight="80dp"/>
         </activity>
         <activity android:name=".TurnScreenOnActivity"
+             android:configChanges="resourcesUnused"
              android:exported="true"/>
         <activity android:name=".TurnScreenOnDismissKeyguardActivity"
+             android:configChanges="resourcesUnused"
              android:exported="true"/>
         <activity android:name=".SingleTaskActivity"
              android:exported="true"
@@ -310,18 +312,24 @@
              android:taskAffinity="nobody.but.VirtualDisplayActivity"
              android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|keyboardHidden"/>
         <activity android:name=".ShowWhenLockedActivity"
+             android:configChanges="resourcesUnused"
              android:exported="true"/>
         <activity android:name=".ShowWhenLockedWithDialogActivity"
+             android:configChanges="resourcesUnused"
              android:exported="true"/>
         <activity android:name=".ShowWhenLockedDialogActivity"
+             android:configChanges="resourcesUnused"
              android:exported="true"
              android:theme="@android:style/Theme.Material.Dialog"/>
         <activity android:name=".ShowWhenLockedTranslucentActivity"
+             android:configChanges="resourcesUnused"
              android:exported="true"
              android:theme="@android:style/Theme.Translucent"/>
         <activity android:name=".DismissKeyguardActivity"
+             android:configChanges="resourcesUnused"
              android:exported="true"/>
         <activity android:name=".DismissKeyguardMethodActivity"
+             android:configChanges="resourcesUnused"
              android:exported="true"/>
         <activity android:name=".WallpaperActivity"
              android:exported="true"
@@ -399,17 +407,21 @@
              android:theme="@style/NoPreview"
              android:exported="true"/>
         <activity android:name=".ShowWhenLockedNoPreviewActivity"
+             android:configChanges="resourcesUnused"
              android:theme="@style/NoPreview"
              android:exported="true"/>
         <activity android:name=".ShowWhenLockedAttrNoPreviewActivity"
+             android:configChanges="resourcesUnused"
              android:showWhenLocked="true"
              android:theme="@style/NoPreview"
              android:exported="true"/>
         <activity android:name=".ShowWhenLockedAttrRemoveAttrNoPreviewActivity"
+             android:configChanges="resourcesUnused"
              android:showWhenLocked="true"
              android:theme="@style/NoPreview"
              android:exported="true"/>
         <activity android:name=".ShowWhenLockedWithDialogNoPreviewActivity"
+             android:configChanges="resourcesUnused"
              android:theme="@style/NoPreview"
              android:exported="true"/>
 
@@ -427,61 +439,74 @@
              android:exported="true"/>
 
         <activity android:name=".ShowWhenLockedAttrRemoveAttrActivity"
+             android:configChanges="resourcesUnused"
              android:showWhenLocked="true"
              android:exported="true"/>
 
         <activity android:name=".ShowWhenLockedAttrWithDialogActivity"
+             android:configChanges="resourcesUnused"
              android:showWhenLocked="true"
              android:exported="true"/>
 
         <activity android:name=".InheritShowWhenLockedAddActivity"
+             android:configChanges="resourcesUnused"
              android:exported="true"/>
 
         <activity android:name=".InheritShowWhenLockedAttrActivity"
+             android:configChanges="resourcesUnused"
              android:inheritShowWhenLocked="true"
              android:exported="true"/>
 
         <activity android:name=".InheritShowWhenLockedRemoveActivity"
+             android:configChanges="resourcesUnused"
              android:inheritShowWhenLocked="true"
              android:exported="true"/>
 
         <activity android:name=".NoInheritShowWhenLockedAttrActivity"
+             android:configChanges="resourcesUnused"
              android:exported="true"/>
 
         <activity android:name=".ShowWhenLockedAttrImeActivity"
+             android:configChanges="resourcesUnused"
              android:showWhenLocked="true"
              android:exported="true"/>
 
         <activity android:name=".ShowWhenLockedAttrRotationActivity"
              android:showWhenLocked="true"
-             android:configChanges="orientation|screenSize|screenLayout"
+             android:configChanges="resourcesUnused"
              android:exported="true"/>
 
         <activity android:name=".TurnScreenOnAttrActivity"
+             android:configChanges="resourcesUnused"
              android:turnScreenOn="true"
              android:exported="true"/>
 
         <activity android:name=".TurnScreenOnShowOnLockActivity"
+             android:configChanges="resourcesUnused"
              android:showWhenLocked="true"
              android:turnScreenOn="true"
              android:exported="true"/>
 
         <activity android:name=".TurnScreenOnAttrRemoveAttrActivity"
+             android:configChanges="resourcesUnused"
              android:turnScreenOn="true"
              android:showWhenLocked="true"
              android:exported="true"/>
 
         <activity android:name=".TurnScreenOnSingleTaskActivity"
+             android:configChanges="resourcesUnused"
              android:turnScreenOn="true"
              android:showWhenLocked="true"
              android:exported="true"
              android:launchMode="singleTask"/>
 
         <activity android:name=".TurnScreenOnAttrDismissKeyguardActivity"
+             android:configChanges="resourcesUnused"
              android:turnScreenOn="true"
              android:exported="true"/>
 
         <activity android:name=".TurnScreenOnWithRelayoutActivity"
+             android:configChanges="resourcesUnused"
              android:exported="true"/>
 
         <activity android:name=".RecursiveActivity"

@@ -75,6 +75,7 @@ import android.telephony.CarrierConfigManager;
 import android.telephony.SubscriptionInfo;
 import android.telephony.SubscriptionManager;
 import android.telephony.TelephonyManager;
+import android.telephony.cts.R;
 import android.telephony.cts.TelephonyManagerTest.ServiceStateRadioStateListener;
 import android.telephony.mockmodem.MockModemManager;
 import android.telephony.satellite.AntennaDirection;
@@ -106,6 +107,9 @@ import com.android.internal.telephony.flags.Flags;
 import com.android.internal.telephony.satellite.DatagramController;
 import com.android.internal.telephony.satellite.SatelliteServiceUtils;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -114,11 +118,17 @@ import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -276,6 +286,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         resetSatelliteAccessControlOverlayConfigs();
         resetSatelliteAccessForSatelliteSubscriptions();
         restoreSupportedMsgAppsForSatelliteSubscriptions();
+        restoreDeviceProvisionedState();
         restoreNtnOnlySubscriptions();
         assertTrue(sMockSatelliteServiceManager
                 .setIsSatelliteCommunicationAllowedForCurrentLocationCache("enable"));
@@ -4374,7 +4385,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
 
         logd(
                 "testSatelliteAccessControllerLoadSatelliteAccessData:"
-                        + "request Telephony to download config data v14 which only support KR"
+                        + "request Telephony to download config data v14 which only support KR "
                         + "also not supporting satellite access configuration");
         assertTrue(
                 sMockSatelliteServiceManager.updateTelephonyConfig(
@@ -4450,6 +4461,175 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         assertNotNull(queriedSatelliteAccessConfiguration);
         assertEquals(getV15TestConfigForUs(), notifiedSatelliteAccessConfiguration);
         assertNull(resultReceiver.second);
+    }
+
+    /**
+     * Reads country-specific coordinates from the {@code R.raw.satellite_country_coordinates} JSON
+     * resource for CTS purposes.
+     *
+     * <p>The resource file {@code R.raw.satellite_country_coordinates} should include both allowed
+     * and not-allowed countries. It's expected to be a JSON object mapping country codes (String)
+     * to arrays of location objects (each with "latitude" and "longitude" doubles).
+     *
+     * <p>Returns an empty map if context is null or if errors occur during reading/parsing.
+     *
+     * @param context The context to access resources.
+     * @return A NonNull Map of country codes to a list of their coordinate pairs (Latitude,
+     *     Longitude).
+     */
+    @NonNull
+    private Map<String, List<Pair<Double, Double>>> getLocationsPerCountryConfiguredForCts(
+            Context context) {
+        Map<String, List<Pair<Double, Double>>> locationsPerCountryMap = new HashMap<>();
+        logd("getLocationsPerCountryConfiguredForCts: Attempting to read JSON from resource");
+
+        if (context == null) {
+            loge("getLocationsPerCountryConfiguredForCts: Context is null");
+            return locationsPerCountryMap;
+        }
+
+        InputStream inputStream = null;
+        BufferedReader reader = null;
+        try {
+            // Open the raw resource file
+            inputStream =
+                    context.getResources().openRawResource(R.raw.satellite_country_coordinates);
+            reader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
+            StringBuilder stringBuilder = new StringBuilder();
+            String line;
+            while ((line = reader.readLine()) != null) {
+                stringBuilder.append(line);
+            }
+            String jsonString = stringBuilder.toString();
+            logd(
+                    "getLocationsPerCountryConfiguredForCts: JSON string read from resource: "
+                            + jsonString);
+
+            JSONObject rootObject = new JSONObject(jsonString);
+            Iterator<String> countryCodes = rootObject.keys();
+
+            while (countryCodes.hasNext()) {
+                String countryCode = countryCodes.next();
+                JSONArray locationsArray = rootObject.getJSONArray(countryCode);
+                List<Pair<Double, Double>> coordinates = new ArrayList<>();
+
+                if (locationsArray != null) {
+                    for (int i = 0; i < locationsArray.length(); i++) {
+                        try {
+                            JSONObject locationObject = locationsArray.getJSONObject(i);
+                            double latitude = locationObject.getDouble("latitude");
+                            double longitude = locationObject.getDouble("longitude");
+                            coordinates.add(new Pair<>(latitude, longitude));
+                        } catch (JSONException e) {
+                            loge(
+                                    "getLocationsPerCountryConfiguredForCts: Error parsing location"
+                                            + " object: "
+                                            + e.getMessage());
+                        }
+                    }
+                }
+                locationsPerCountryMap.put(countryCode, coordinates);
+            }
+            logd(
+                    "getLocationsPerCountryConfiguredForCts: Map population successful, final map "
+                            + "size: "
+                            + locationsPerCountryMap.size());
+        } catch (IOException e) {
+            loge(
+                    "getLocationsPerCountryConfiguredForCts: Error reading raw resource file: "
+                            + e.getMessage());
+        } catch (JSONException e) {
+            loge(
+                    "getLocationsPerCountryConfiguredForCts: Error parsing JSON string: "
+                            + e.getMessage());
+        } finally {
+            if (reader != null) {
+                try {
+                    reader.close();
+                } catch (IOException e) {
+                    loge(
+                            "getLocationsPerCountryConfiguredForCts: Error closing reader: "
+                                    + e.getMessage());
+                }
+            }
+            if (inputStream != null) {
+                try {
+                    inputStream.close();
+                } catch (IOException e) {
+                    loge(
+                            "getLocationsPerCountryConfiguredForCts: Error closing input stream: "
+                                    + e.getMessage());
+                }
+            }
+        }
+        return locationsPerCountryMap;
+    }
+
+    @Test
+    public void testSatelliteAccessControllerCheckDeviceGeofenceData() throws Exception {
+        logd("testSatelliteAccessControllerCheckDeviceConfiguration");
+        // Get rid of the overridden test satellite configs, as we are going
+        // to use actual on-device and ota'd satellite configs in this test.
+        resetSatelliteAccessControlOverlayConfigs();
+        grantSatellitePermission();
+
+        // Get all the countries and location list to verify.
+        // The location list is at res/raw/satellite_country_coordinates.json.
+        // If we updated the supported country then this json file need to be updated as well.
+        Map<String, List<Pair<Double, Double>>> locationsPerCountryConfiguredForCts =
+                getLocationsPerCountryConfiguredForCts(getContext());
+        Set<String> countryCodesConfiguredForCts = locationsPerCountryConfiguredForCts.keySet();
+
+        // Get satellite supported country list from the device config.
+        List<String> countryCodesSupportedByDevice =
+                sMockSatelliteServiceManager.getSupportedCountryCodesFromDeviceConfig();
+        logd(
+                "testSatelliteAccessControllerCheckDeviceConfiguration: "
+                        + "countryCodesSupportedByDevice count: "
+                        + countryCodesSupportedByDevice.size());
+
+        int allowedCount = 0;
+        int disallowedCount = 0;
+
+        for (String testCountry : countryCodesConfiguredForCts) {
+            List<Pair<Double, Double>> locationList =
+                    locationsPerCountryConfiguredForCts.get(testCountry);
+            if (countryCodesSupportedByDevice.contains(testCountry)) {
+                for (Pair<Double, Double> location : locationList) {
+                    logd(
+                            "Supported country: "
+                                    + testCountry
+                                    + ", lang: "
+                                    + location.first
+                                    + ", long: "
+                                    + location.second);
+                    verifySatelliteAllowedAndEnabledForLocation(
+                            location.first, location.second, testCountry);
+                }
+                allowedCount++;
+            } else {
+                for (Pair<Double, Double> location : locationList) {
+                    logd(
+                            "Non-supported country: "
+                                    + testCountry
+                                    + ", lang: "
+                                    + location.first
+                                    + ", long: "
+                                    + location.second);
+                    verifySatelliteNotAllowedAndNotEnabledForLocation(
+                            location.first, location.second, testCountry);
+                }
+                disallowedCount++;
+            }
+        }
+        logd("allowed country count: " + allowedCount);
+        assertTrue(
+                "Add supported country code and location at satellite_country_coordinates.json",
+                allowedCount > 0);
+        logd("disallowed country count: " + disallowedCount);
+        assertTrue(
+                "Add unsupported country code and location at satellite_country_coordinates.json",
+                disallowedCount > 0);
     }
 
     @Test

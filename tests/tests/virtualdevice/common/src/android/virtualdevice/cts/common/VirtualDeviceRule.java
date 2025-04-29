@@ -109,8 +109,8 @@ public class VirtualDeviceRule implements TestRule {
             new VirtualDeviceParams.Builder().build();
 
     public static final String DEFAULT_VIRTUAL_DISPLAY_NAME = "testVirtualDisplay";
-    public static final int DEFAULT_VIRTUAL_DISPLAY_WIDTH = 640;
-    public static final int DEFAULT_VIRTUAL_DISPLAY_HEIGHT = 480;
+    public static final int DEFAULT_VIRTUAL_DISPLAY_WIDTH = 960;
+    public static final int DEFAULT_VIRTUAL_DISPLAY_HEIGHT = 640;
     public static final int DEFAULT_VIRTUAL_DISPLAY_DPI = 240;
 
     public static final ComponentName BLOCKED_ACTIVITY_COMPONENT =

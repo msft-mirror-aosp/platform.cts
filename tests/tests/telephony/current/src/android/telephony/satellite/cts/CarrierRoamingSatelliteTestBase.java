@@ -52,6 +52,7 @@ import android.telephony.ims.stub.ImsFeatureConfiguration;
 import android.telephony.mockmodem.MockModemConfigBase;
 import android.telephony.mockmodem.MockModemManager;
 import android.telephony.satellite.SatelliteManager;
+import android.telephony.satellite.stub.NTRadioTechnology;
 import android.util.Log;
 
 import androidx.test.InstrumentationRegistry;
@@ -666,6 +667,8 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
 
         grantSatelliteAndSendSmsPermissions();
         setupMockSatelliteService();
+        sMockSatelliteServiceManager.setSupportedRadioTechnologies(
+            new int[]{NTRadioTechnology.NB_IOT_NTN});
         assertTrue(sMockSatelliteServiceManager.connectExternalSatelliteGatewayService());
         sMockSatelliteServiceManager.setDatagramControllerBooleanConfig(false,
                 DatagramController.BOOLEAN_TYPE_WAIT_FOR_DEVICE_ALIGNMENT_IN_DEMO_DATAGRAM, true);
@@ -707,6 +710,7 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
         resetSatelliteAccessControlOverlayConfigs();
         resetSatelliteAccessForSatelliteSubscriptions();
         restoreSupportedMsgAppsForSatelliteSubscriptions();
+        restoreProvisionedStates();
         restoreEsosSupportForActiveSubscriptions();
         assertTrue(sMockSatelliteServiceManager
                 .setIsSatelliteCommunicationAllowedForCurrentLocationCache(

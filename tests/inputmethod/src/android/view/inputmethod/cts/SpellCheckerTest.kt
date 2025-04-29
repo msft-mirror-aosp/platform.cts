@@ -22,6 +22,7 @@ import android.os.Looper
 import android.os.UserHandle
 import android.platform.test.annotations.AppModeSdkSandbox
 import android.provider.Settings
+import android.text.InputType
 import android.text.style.SuggestionSpan
 import android.text.style.SuggestionSpan.FLAG_GRAMMAR_ERROR
 import android.text.style.SuggestionSpan.FLAG_MISSPELLED
@@ -722,7 +723,10 @@ class SpellCheckerTest : EndToEndImeTestBase() {
         var editText: EditText? = null
         val activity = TestActivity.startSync { activity: TestActivity? ->
             val layout = LinearLayout(activity)
-            editText = EditText(activity)
+            editText = EditText(activity).apply {
+                // Suggestions must be enabled
+                inputType = inputType and InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS.inv()
+            }
             layout.addView(editText, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT))
             layout
         }

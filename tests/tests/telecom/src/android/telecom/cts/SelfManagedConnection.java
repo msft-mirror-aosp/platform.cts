@@ -45,6 +45,7 @@ public class SelfManagedConnection extends Connection {
     CountDownLatch mOnUnHoldLatch = new CountDownLatch(1);
     CountDownLatch mOnDisconnectLatch = new CountDownLatch(1);
     CountDownLatch mInCallServiceTrackingLatch = new CountDownLatch(1);
+    CountDownLatch mOnCreateConnectionCompleteLatch = new CountDownLatch(1);
     boolean mIsTracked = false;
     boolean mIsAlternativeUiShowing = false;
     boolean mSuppressHoldResponse = false;
@@ -207,5 +208,24 @@ public class SelfManagedConnection extends Connection {
 
     public void setSuppressHoldResponse(boolean suppressHoldResponse) {
         mSuppressHoldResponse = suppressHoldResponse;
+    }
+
+    /**
+     * Inform anyone waiting on {@link #waitOnCreateConnectionComplete()} that the connection has
+     * been created successfully.
+     */
+    public void fireCreateConnectionComplete() {
+        mOnCreateConnectionCompleteLatch.countDown();
+    }
+
+    /**
+     * Waits for {@link android.telecom.ConnectionService#onCreateConnectionComplete(Connection)} to
+     * be fired for this Connection.
+     *
+     * @return {@code true} if we heard the callback in a timely manner, or {@code false} if we did
+     *     not.
+     */
+    public boolean waitOnCreateConnectionComplete() {
+        return TestUtils.waitForLatchCountDown(mOnCreateConnectionCompleteLatch);
     }
 }
