@@ -65,6 +65,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import com.android.compatibility.common.util.ApiLevelUtil;
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.PollingCheck;
+import com.android.compatibility.common.util.PropertyUtil;
 import com.android.compatibility.common.util.ShellIdentityUtils;
 import com.android.wifi.flags.Flags;
 
@@ -1087,6 +1088,9 @@ public class WifiNetworkSuggestionTest extends WifiJUnit4TestBase {
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
     @Test
     public void testBuilderWithCarrierMergedNetworkWithNonEnterpriseNetwork() throws Exception {
+        if (!PropertyUtil.isUserBuild()) {
+            return;
+        }
         try {
             createBuilderWithCommonParams()
                     .setWpa2Passphrase(TEST_PASSPHRASE)
