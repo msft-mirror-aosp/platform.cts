@@ -164,6 +164,10 @@
         <activity android:name="android.server.wm.keyguard.KeyguardLockedTests$ShowImeAfterLockscreenActivity"
                   android:configChanges="keyboard|keyboardHidden|navigation"/>
 
+        <activity android:name="android.server.wm.keyguard.KeyguardLockedTests$ShowWhenLockedActivity"
+                  android:configChanges="resourcesUnused"
+                  android:showWhenLocked="true"/>
+
         <activity android:name="android.server.wm.keyguard.KeyguardLockedTests$ShowWhenLockedImeActivity"/>
 
         <activity android:name="android.server.wm.HelperActivities$StandardActivity"
