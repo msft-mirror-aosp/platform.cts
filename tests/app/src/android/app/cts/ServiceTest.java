@@ -2092,8 +2092,15 @@ public class ServiceTest extends ActivityTestsBase {
                     new LruOrderItem(connections[CONN_0_0_W_0], 0),
             });
 
-            // send the app to background
-            assertTrue("Failed to send the app to background", a.moveTaskToBack(true));
+            // Send the app to background by launching another activity of another process.
+            // Don't call a.moveTaskToBack(true), as it doesn't necessarily change the task's
+            // overall LRU status on builds featuring split-screen multitasking (b/410974806).
+            Intent intent = new Intent();
+            intent.setPackage("com.android.app1");
+            intent.setAction("android.intent.action.SEARCH");
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            mContext.startActivity(intent);
+
             // TODO: b/372710412 - Call a test API to force recomputation, instead of doWaitWhile.
             assertTrue("App is still at the top of the LRU list after getting moved to background",
                     doWaitWhile(() -> new LruOrderItem(Process.myUid(), 0)
