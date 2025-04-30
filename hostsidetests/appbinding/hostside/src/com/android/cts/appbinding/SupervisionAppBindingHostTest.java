@@ -296,7 +296,7 @@ public class SupervisionAppBindingHostTest extends BaseHostJUnit4Test implements
                 APK_SUP3,
                 PACKAGE_SUP,
                 mCurrentUserId,
-                "Service with android.app.action.BIND_SUPERVISION_APP_SERVICE not found");
+                "Service with android.app.action.SUPERVISION_APP_SERVICE not found");
     }
 
     /** Test calling onEnabled(). */
