@@ -19,10 +19,10 @@ package android.server.wm.keyguard;
 import static android.Manifest.permission.SUBSCRIBE_TO_KEYGUARD_LOCKED_STATE;
 import static android.app.WindowConfiguration.ACTIVITY_TYPE_STANDARD;
 import static android.app.WindowConfiguration.WINDOWING_MODE_PINNED;
-import static android.server.wm.WindowManagerStateHelper.focusedActivity;
 import static android.server.wm.CliIntentExtra.extraString;
 import static android.server.wm.MockImeHelper.createManagedMockImeSession;
 import static android.server.wm.UiDeviceUtils.pressBackButton;
+import static android.server.wm.WindowManagerStateHelper.focusedActivity;
 import static android.server.wm.app.Components.DISMISS_KEYGUARD_ACTIVITY;
 import static android.server.wm.app.Components.DISMISS_KEYGUARD_METHOD_ACTIVITY;
 import static android.server.wm.app.Components.PIP_ACTIVITY;
@@ -36,7 +36,6 @@ import static android.server.wm.app.Components.TURN_SCREEN_ON_ATTR_DISMISS_KEYGU
 import static android.view.Display.DEFAULT_DISPLAY;
 import static android.view.WindowInsets.Type.ime;
 import static android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE;
-import static android.view.WindowManager.LayoutParams.TYPE_APPLICATION;
 
 import static androidx.test.InstrumentationRegistry.getInstrumentation;
 
@@ -76,7 +75,6 @@ import com.android.compatibility.common.util.FeatureUtil;
 import com.android.compatibility.common.util.PollingCheck;
 import com.android.cts.mockime.ImeEventStream;
 import com.android.cts.mockime.MockImeSession;
-import com.android.wm.shell.Flags;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -333,9 +331,7 @@ public class KeyguardLockedTests extends KeyguardTestBase {
         mWmState.waitAndAssertNonActivityWindowFocused();
     }
 
-    // TODO (b/379758804): Re-enable for PiP2 once these keyguard CUJs are implemented there.
     @Test
-    @RequiresFlagsDisabled(Flags.FLAG_ENABLE_PIP2)
     public void testEnterPipOverKeyguard() {
         assumeTrue(supportsPip());
 
@@ -364,9 +360,7 @@ public class KeyguardLockedTests extends KeyguardTestBase {
                 ACTIVITY_TYPE_STANDARD);
     }
 
-    // TODO (b/379758804): Re-enable for PiP2 once these keyguard CUJs are implemented there.
     @Test
-    @RequiresFlagsDisabled(Flags.FLAG_ENABLE_PIP2)
     public void testShowWhenLockedActivityAndPipActivity() {
         assumeTrue(supportsPip());
 
@@ -394,9 +388,7 @@ public class KeyguardLockedTests extends KeyguardTestBase {
         mWmState.assertVisibility(PIP_ACTIVITY, false);
     }
 
-    // TODO (b/379758804): Re-enable for PiP2 once these keyguard CUJs are implemented there.
     @Test
-    @RequiresFlagsDisabled(Flags.FLAG_ENABLE_PIP2)
     public void testShowWhenLockedPipActivity() {
         assumeTrue(supportsPip());
 
@@ -418,9 +410,7 @@ public class KeyguardLockedTests extends KeyguardTestBase {
         mWmState.assertVisibility(PIP_ACTIVITY, false);
     }
 
-    // TODO (b/379758804): Re-enable for PiP2 once these keyguard CUJs are implemented there.
     @Test
-    @RequiresFlagsDisabled(Flags.FLAG_ENABLE_PIP2)
     public void testDismissKeyguardPipActivity() {
         assumeTrue(supportsPip());
 
