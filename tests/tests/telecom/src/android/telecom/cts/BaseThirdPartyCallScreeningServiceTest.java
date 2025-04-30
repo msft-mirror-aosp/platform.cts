@@ -87,7 +87,6 @@ public abstract class BaseThirdPartyCallScreeningServiceTest
                     + "android.telecom.cts.screeningtestapp.CtsCallScreeningService";
     protected static final int ASYNC_TIMEOUT = 10000;
     public static final String ROLE_CALL_SCREENING = RoleManager.ROLE_CALL_SCREENING;
-    protected static final Uri TEST_OUTGOING_NUMBER = Uri.fromParts("tel", "6505551212", null);
 
     protected ICallScreeningControl mCallScreeningControl;
     protected RoleManager mRoleManager;
@@ -318,15 +317,16 @@ public abstract class BaseThirdPartyCallScreeningServiceTest
         CountDownLatch callLogEntryLatch = getCallLogEntryLatch();
 
         Uri contactUri = null;
+        Uri testNumber = TestUtils.generateRandomPhoneNumberNotInContacts(mContentResolver);
+        Log.i(TAG, "placeOutgoingCall: using test number " + testNumber);
         if (addContact) {
             contactUri =
-                    TestUtils.insertContact(
-                            mContentResolver, TEST_OUTGOING_NUMBER.getSchemeSpecificPart());
+                    TestUtils.insertContact(mContentResolver, testNumber.getSchemeSpecificPart());
         }
 
         try {
             Bundle extras = new Bundle();
-            extras.putParcelable(TestUtils.EXTRA_PHONE_NUMBER, TEST_OUTGOING_NUMBER);
+            extras.putParcelable(TestUtils.EXTRA_PHONE_NUMBER, testNumber);
             // Create a new outgoing call.
             placeAndVerifyCall(extras);
 
