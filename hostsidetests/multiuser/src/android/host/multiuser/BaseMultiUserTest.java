@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License
  */
+
 package android.host.multiuser;
 
 import static com.google.common.truth.Truth.assertWithMessage;
@@ -78,6 +79,13 @@ public abstract class BaseMultiUserTest extends BaseHostJUnit4Test {
 
         // Test should not modify / remove any of the existing users.
         mFixedUsers = getDevice().listUsers();
+        CLog.d(
+                "setup() for %s.%s: initialUserId=%d, primaryUserId=%d, initialUsers=%s",
+                getClass().getSimpleName(),
+                getTestName(),
+                mInitialUserId,
+                mPrimaryUserId,
+                mFixedUsers);
     }
 
     @After
@@ -105,7 +113,7 @@ public abstract class BaseMultiUserTest extends BaseHostJUnit4Test {
     }
 
     protected int createRestrictedProfile(int userId)
-            throws DeviceNotAvailableException, IllegalStateException{
+            throws DeviceNotAvailableException, IllegalStateException {
         final String command = "pm create-user --profileOf " + userId + " --restricted "
                 + "TestUser_" + System.currentTimeMillis();
         final String output = getDevice().executeShellCommand(command);
@@ -168,14 +176,13 @@ public abstract class BaseMultiUserTest extends BaseHostJUnit4Test {
     }
 
     /*
-     * Waits for userId to removed or at removing state.
-     * Returns true if user is removed or at removing state.
-     * False if user is not removed by USER_SWITCH_COMPLETE_TIMEOUT_MS.
+     * Waits for userId to removed or at removing state. Returns true if user is removed or at
+     * removing state. False if user is not removed by USER_SWITCH_COMPLETE_TIMEOUT_MS.
      */
     protected boolean waitForUserRemove(int userId)
             throws DeviceNotAvailableException, InterruptedException {
         // Example output from dumpsys when user is flagged for removal:
-        // UserInfo{11:Driver:154} serialNo=50 <removing>  <partial>
+        // UserInfo{11:Driver:154} serialNo=50 <removing> <partial>
         final String userSerialPatter = "(.*\\{)(\\d+)(.*\\})(.*=)(\\d+)(.*)";
         final Pattern pattern = Pattern.compile(userSerialPatter);
         long ti = System.currentTimeMillis();
@@ -185,7 +192,7 @@ public abstract class BaseMultiUserTest extends BaseHostJUnit4Test {
             }
             String commandOutput = getDevice().executeShellCommand("dumpsys user");
             Matcher matcher = pattern.matcher(commandOutput);
-            while(matcher.find()) {
+            while (matcher.find()) {
                 if (Integer.parseInt(matcher.group(2)) == userId
                         && matcher.group(6).contains("removing")) {
                     return true;
@@ -197,8 +204,13 @@ public abstract class BaseMultiUserTest extends BaseHostJUnit4Test {
     }
 
     private void removeTestUsers() throws Exception {
-        for (int userId : getDevice().listUsers()) {
+        ArrayList<Integer> allUsers = getDevice().listUsers();
+        CLog.d(
+                "users before removeTestusers on %s.%s: %s",
+                getClass().getSimpleName(), getTestName(), allUsers);
+        for (int userId : allUsers) {
             if (!mFixedUsers.contains(userId)) {
+                CLog.i("Removing test user %d", userId);
                 getDevice().removeUser(userId);
             }
         }
