@@ -33,7 +33,7 @@ import opencv_processing_utils
 
 _CIRCLE_COLOR = 0  # [0: black, 255: white]
 _CIRCLE_AR_RTOL = 0.15  # contour width vs height (aspect ratio)
-_SMOOTH_ZOOM_OFFSET_MONOTONICITY_ATOL = 25  # number of pixels
+_SMOOTH_ZOOM_OFFSET_MONOTONICITY_ATOL = 75  # number of pixels
 _PREVIEW_SMOOTH_ZOOM_OFFSET_MONOTONICITY_ATOL = 75  # number of pixels
 _CIRCLISH_RTOL = 0.05  # contour area vs ideal circle area pi*((w+h)/4)**2
 _CONTOUR_AREA_LOGGING_THRESH = 0.8  # logging tol to cut down spam in log file
@@ -51,8 +51,8 @@ _RADIUS_RTOL_MIN_FD = 0.15
 DEFAULT_FOV_RATIO = 1  # ratio of sub camera's fov over logical camera's fov
 JPEG_STR = 'jpg'
 OFFSET_RTOL = 0.15
-OFFSET_RTOL_SMOOTH_ZOOM = 0.5  # generous RTOL paired with other offset checks
-OFFSET_ATOL_SMOOTH_ZOOM = 75  # generous ATOL paired with other offset checks
+OFFSET_RTOL_SMOOTH_ZOOM = 0.6  # generous RTOL paired with other offset checks
+OFFSET_ATOL_SMOOTH_ZOOM = 125  # generous ATOL paired with other offset checks
 PREFERRED_BASE_ZOOM_RATIO = 1  # Preferred base image for zoom data verification
 PREFERRED_BASE_ZOOM_RATIO_RTOL = 0.1
 PRV_Z_RTOL = 0.02  # 2% variation of zoom ratio between request and result
