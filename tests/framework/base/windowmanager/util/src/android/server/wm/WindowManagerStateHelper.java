@@ -213,20 +213,26 @@ public class WindowManagerStateHelper extends WindowManagerState {
     }
 
     public void waitAndAssertWindowShown(int windowType, boolean show) {
-        assertTrue(waitFor(state -> {
-            Stream<WindowState> windows = getMatchingWindows(
-                    ws -> ws.isSurfaceShown() == show && ws.getType() == windowType);
-            return windows.findAny().isPresent();
-        }, "wait for window surface " + (show ? "show" : "hide")));
+        waitAndAssert(state -> state.getMatchingWindows(
+                ws -> ws.isSurfaceShown() == show && ws.getType() == windowType)
+                        .findAny().isPresent(),
+            "window surface type=" + windowType + (show ? " shown" : " hidden"));
+    }
+
+    private static boolean nonActivityWindowFocused(WindowManagerState state) {
+        return !areFocusedStringsEqual(state.getFocusedWindow(), state.getFocusedActivity());
     }
 
     /**
      * Wait for a non-activity window to be focused by comparing the focused window to the
      * currently focused activity.
      */
-    public void waitForNonActivityWindowFocused() {
-        waitFor(state -> !areFocusedStringsEqual(state.getFocusedWindow(),
-                state.getFocusedActivity()), "wait for non activity window shown");
+    public boolean waitForNonActivityWindowFocused() {
+        return waitForWithAmState(s -> nonActivityWindowFocused(s), "non-activity window focused");
+    }
+
+    public void waitAndAssertNonActivityWindowFocused() {
+        waitAndAssert(s -> nonActivityWindowFocused(s), "non-activity window focused");
     }
 
     /**
@@ -237,7 +243,7 @@ public class WindowManagerStateHelper extends WindowManagerState {
      * Strings returned from these APIs may be in different ComponentName formats (but may also not
      * be ComponentNames at all) so this helper will help more accurately compare these strings.
      */
-    private boolean areFocusedStringsEqual(String focused1, String focused2) {
+    private static boolean areFocusedStringsEqual(String focused1, String focused2) {
         if (TextUtils.equals(focused1, focused2)) {
             return true;
         }
@@ -436,11 +442,15 @@ public class WindowManagerStateHelper extends WindowManagerState {
         }, message);
     }
 
-    public boolean waitForFocusedActivity(final String msg, final ComponentName activityName) {
+    public static Predicate<WindowManagerState> focusedActivity(final ComponentName activityName) {
         final String activityComponentName = getActivityName(activityName);
-        return waitFor(msg, wmState ->
+        return wmState ->
                 Objects.equals(activityComponentName, wmState.getFocusedActivity())
-                && Objects.equals(activityComponentName, wmState.getFocusedApp()));
+                && Objects.equals(activityComponentName, wmState.getFocusedApp());
+    }
+
+    public boolean waitForFocusedActivity(final String msg, final ComponentName activityName) {
+        return waitFor(msg, focusedActivity(activityName));
     }
 
     /** A variant of waitFor with different parameter order for better Kotlin interop. */
@@ -454,6 +464,14 @@ public class WindowManagerStateHelper extends WindowManagerState {
             computeState();
             return waitCondition.test(this);
         });
+    }
+
+    /**
+     * Throws with {@param message} as the reason if {@param waitCondition} is not met after
+     * the default amount of time.
+     */
+    public void waitAndAssert(Predicate<WindowManagerState>  waitCondition, String message) {
+        assertTrue(message, waitFor(waitCondition, message));
     }
 
     /** Waits for non-null result from {@code function} and returns it. */

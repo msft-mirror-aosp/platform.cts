@@ -19,6 +19,7 @@ import android.os.Build;
 
 import com.android.cts.backportedfixes.resolver.Status;
 import com.android.cts.backportedfixes.resolver.StatusResolver;
+import com.android.cts.backportedfixes.resolver.SystemPropertyResolver;
 
 import org.junit.AssumptionViolatedException;
 import org.junit.rules.TestRule;
@@ -37,8 +38,25 @@ import java.util.Locale;
  * Build#getBackportedFixStatus(long)} returns false.
  */
 public class BackportedFixRule implements TestRule {
+
+    /**
+     * Creates a BackportedFixRule that does not depend on the unreleased API for backported fixes.
+     */
+    public static BackportedFixRule createUsingSystemProperties() {
+        // TODO: b/308461809 remove this once the API is released.
+        return new BackportedFixRule(new SystemPropertyResolver());
+    }
+
     private final ApprovedBackportedFixes mFixes = ApprovedBackportedFixes.getInstance();
-    private final StatusResolver mStatusResolver = StatusResolver.create();
+    private final StatusResolver mStatusResolver;
+
+    public BackportedFixRule() {
+        this(StatusResolver.create());
+    }
+
+    private BackportedFixRule(StatusResolver statusResolver) {
+        mStatusResolver = statusResolver;
+    }
 
     // TODO: make host version of this.
 

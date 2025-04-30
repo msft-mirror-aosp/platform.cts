@@ -27,7 +27,9 @@ public class ComponentNameUtils {
      *     or "contextPackage/FullyClassName".
      */
     public static String getActivityName(ComponentName componentName) {
-        return componentName.flattenToShortString();
+        return componentName != null
+                ? componentName.flattenToShortString()
+                : null;
     }
 
     /**
@@ -36,7 +38,9 @@ public class ComponentNameUtils {
      * @return the window name of {@code componentName}, such that "contextPackage/FullyClassName".
      */
     public static String getWindowName(ComponentName componentName) {
-        return componentName.flattenToString();
+        return componentName != null
+                ? componentName.flattenToString()
+                : null;
     }
 
     /**
@@ -45,6 +49,9 @@ public class ComponentNameUtils {
      * @return the simple class name of {@code componentName} that has no '.'.
      */
     public static String getLogTag(ComponentName componentName) {
+        if (componentName == null) {
+            return "Null";
+        }
         final String className = componentName.getClassName();
         final int pos = className.lastIndexOf('.');
         return pos >= 0 ? className.substring(pos + 1) : className;

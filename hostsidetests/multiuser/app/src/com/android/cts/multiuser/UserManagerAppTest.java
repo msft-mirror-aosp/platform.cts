@@ -16,10 +16,12 @@
 
 package com.android.cts.multiuser;
 
-import static com.google.common.truth.Truth.assertThat;
+import static com.google.common.truth.Truth.assertWithMessage;
 
+import android.app.ActivityManager;
 import android.os.UserHandle;
 import android.os.UserManager;
+import android.util.Log;
 
 import androidx.test.InstrumentationRegistry;
 
@@ -33,6 +35,8 @@ import org.junit.runners.JUnit4;
 @RunWith(JUnit4.class)
 public final class UserManagerAppTest {
 
+    private static final String TAG = UserManagerAppTest.class.getSimpleName();
+
     private final UserManager mUserManager =
             InstrumentationRegistry.getContext().getSystemService(UserManager.class);
 
@@ -41,11 +45,28 @@ public final class UserManagerAppTest {
         final int expectedResult = Integer.parseInt(InstrumentationRegistry.getArguments()
                 .getString("expectedResult"));
 
-        InstrumentationRegistry.getInstrumentation().getUiAutomation()
-                .adoptShellPermissionIdentity(android.Manifest.permission.CREATE_USERS);
+        InstrumentationRegistry.getInstrumentation()
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(
+                        android.Manifest.permission.CREATE_USERS,
+                        // Need INTERACT_ACROSS_USERS to get current user
+                        android.Manifest.permission.INTERACT_ACROSS_USERS);
         try {
-            assertThat(mUserManager.getPreviousForegroundUser())
-                    .isEqualTo(UserHandle.of(expectedResult));
+            final UserHandle previousForegroundUser = mUserManager.getPreviousForegroundUser();
+            Log.d(
+                    TAG,
+                    "previousForegroundUser: "
+                            + previousForegroundUser
+                            + ", currentUser: "
+                            + ActivityManager.getCurrentUser()
+                            + ", expected="
+                            + expectedResult);
+            // NOTE: UserHandle.of(USER_NULL) returns UserHandle.NULL, but API returns null instead
+            final UserHandle expectedUser =
+                    expectedResult == UserHandle.USER_NULL ? null : UserHandle.of(expectedResult);
+            assertWithMessage("Result of UserManager.getPreviousForegroundUser()")
+                    .that(previousForegroundUser)
+                    .isEqualTo(expectedUser);
         } finally {
             InstrumentationRegistry.getInstrumentation().getUiAutomation()
                     .dropShellPermissionIdentity();

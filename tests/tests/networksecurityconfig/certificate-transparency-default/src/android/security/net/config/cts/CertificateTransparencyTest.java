@@ -16,8 +16,12 @@
 
 package android.security.net.config.cts;
 
-import static org.junit.Assert.assertFalse;
+import static com.android.org.conscrypt.net.flags.Flags.FLAG_CERTIFICATE_TRANSPARENCY_DEFAULT_ENABLED;
 
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
+import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -40,10 +44,20 @@ public class CertificateTransparencyTest {
     private final NetworkSecurityPolicy mInstance = NetworkSecurityPolicy.getInstance();
 
     @Test
-    public void testCertificateTransparencyVerificationRequired() throws Exception {
+    @RequiresFlagsDisabled(FLAG_CERTIFICATE_TRANSPARENCY_DEFAULT_ENABLED)
+    public void testCertificateTransparencyVerificationRequired_defaultDisabled() throws Exception {
         assertFalse(mInstance.isCertificateTransparencyVerificationRequired("foo.bar"));
         assertFalse(mInstance.isCertificateTransparencyVerificationRequired("android.com"));
         assertFalse(mInstance.isCertificateTransparencyVerificationRequired("example.com"));
         assertFalse(mInstance.isCertificateTransparencyVerificationRequired("wikipedia.org"));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_CERTIFICATE_TRANSPARENCY_DEFAULT_ENABLED)
+    public void testCertificateTransparencyVerificationRequired_defaultEnabled() throws Exception {
+        assertTrue(mInstance.isCertificateTransparencyVerificationRequired("foo.bar"));
+        assertTrue(mInstance.isCertificateTransparencyVerificationRequired("android.com"));
+        assertTrue(mInstance.isCertificateTransparencyVerificationRequired("example.com"));
+        assertTrue(mInstance.isCertificateTransparencyVerificationRequired("wikipedia.org"));
     }
 }

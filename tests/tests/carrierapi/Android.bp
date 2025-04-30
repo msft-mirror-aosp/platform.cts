@@ -44,6 +44,9 @@ android_test {
         "CtsCarrierApiTargetPrep",
         "cts-tradefed",
     ],
+    host_common_data: [
+        ":CtsCarrierApiTargetPrep",
+    ],
     data: [
         ":CtsCarrierApiTargetPrepApp",
     ],
