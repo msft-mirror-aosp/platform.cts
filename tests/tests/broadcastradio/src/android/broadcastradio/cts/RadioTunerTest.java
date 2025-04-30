@@ -273,7 +273,6 @@ public final class RadioTunerTest extends AbstractRadioTestCase {
 
     @Test
     @ApiTest(apis = {"android.hardware.radio.ProgramList#getProgramInfos"})
-    @RequiresFlagsEnabled(Flags.FLAG_HD_RADIO_IMPROVED)
     public void getProgramInfos_fromDynamicProgramList() throws Exception {
         openAmFmTuner();
         TestOnCompleteListener completeListener = new TestOnCompleteListener();
@@ -379,7 +378,6 @@ public final class RadioTunerTest extends AbstractRadioTestCase {
     @Test
     @ApiTest(apis = {"android.hardware.radio.RadioMetadata#getBitmapId",
             "android.hardware.radio.RadioTuner#getMetadataImage"})
-    @RequiresFlagsEnabled(Flags.FLAG_HD_RADIO_IMPROVED)
     public void getMetadataImage() throws Exception {
         openAmFmTuner();
         TestOnCompleteListener completeListener = new TestOnCompleteListener();
