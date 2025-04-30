@@ -2214,15 +2214,11 @@ public final class ActivityManagerTest {
                         latchHolder[0].countDown();
                     }
                 };
-        // TODO(b/414682995): Make
-        //  AppOpsManager.OPSTR_SYSTEM_EXEMPT_FROM_ACTIVITY_BG_START_RESTRICTION available to tests
-        final String OPSTR_SYSTEM_EXEMPT_FROM_ACTIVITY_BG_START_RESTRICTION =
-                "android:system_exempt_from_activity_bg_start_restriction";
         try {
             // Make sure we could start activity from background
             AppOpsUtils.setOpMode(
                     PACKAGE_NAME_APP1,
-                    OPSTR_SYSTEM_EXEMPT_FROM_ACTIVITY_BG_START_RESTRICTION,
+                    AppOpsManager.OPSTR_SYSTEM_EXEMPT_FROM_ACTIVITY_BG_START_RESTRICTION,
                     AppOpsManager.MODE_ALLOWED);
 
             // If we didn't specify the target UID, we should be able to listen on all UID events.
@@ -2247,7 +2243,7 @@ public final class ActivityManagerTest {
         } finally {
             AppOpsUtils.setOpMode(
                     PACKAGE_NAME_APP1,
-                    OPSTR_SYSTEM_EXEMPT_FROM_ACTIVITY_BG_START_RESTRICTION,
+                    AppOpsManager.OPSTR_SYSTEM_EXEMPT_FROM_ACTIVITY_BG_START_RESTRICTION,
                     AppOpsManager.MODE_DEFAULT);
 
             mActivityManager.removeOnUidImportanceListener(listener);
