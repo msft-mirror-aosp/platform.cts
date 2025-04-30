@@ -66,7 +66,6 @@ import android.os.CancellationSignal;
 import android.os.OutcomeReceiver;
 import android.os.PersistableBundle;
 import android.os.Process;
-import android.os.SystemClock;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -627,23 +626,11 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
             sLocationManager.setLocationEnabledForUser(false, Process.myUserHandle());
             verifyLocationDisabledEventReceived(locationSettingReceiver, TIMEOUT);
         }
-
         logd(
                 "testSatelliteRequestEnabled: "
                         + "Set a location inside of the geofence data (San Diego office)");
-        setTestProviderLocation(32.909808231041644, -117.18185788819781);
         verifySatelliteNotAllowedErrorReason(SATELLITE_RESULT_LOCATION_DISABLED);
-
         int result = requestSatelliteEnabledWithResult(true, TIMEOUT);
-        assertEquals(SatelliteManager.SATELLITE_RESULT_LOCATION_DISABLED, result);
-
-        logd(
-                "testSatelliteRequestEnabled: "
-                        + "Set current location outside of the geofence data (Bangalore office)");
-        setTestProviderLocation(12.997138153769894, 77.66099948612018);
-        verifySatelliteNotAllowedErrorReason(SATELLITE_RESULT_LOCATION_DISABLED);
-
-        result = requestSatelliteEnabledWithResult(true, TIMEOUT);
         assertEquals(SatelliteManager.SATELLITE_RESULT_LOCATION_DISABLED, result);
 
         /*
@@ -653,7 +640,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
          * 2) Check the result of requestIsCommunicationAllowedForCurrentLocation once more
          */
         logd("testSatelliteRequestEnabled: Enable location settings and wait for processing");
-
         sLocationManager.setLocationEnabledForUser(true, Process.myUserHandle());
         assertTrue(sMockSatelliteServiceManager
                 .setIsSatelliteCommunicationAllowedForCurrentLocationCache("enable"));
@@ -664,7 +650,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
                 "testSatelliteRequestEnabled: Set current location outside of the geofence data"
                         + " (Bangalore office), again");
         setTestProviderLocation(12.997138153769894, 77.66099948612018);
-
         grantSatellitePermission();
         result = requestSatelliteEnabledWithResult(true, TIMEOUT);
         assertEquals(SATELLITE_RESULT_ACCESS_BARRED, result);
@@ -5506,6 +5491,91 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
     }
 
     @Test
+    public void testSatelliteLocationSettingsEnabledDisabled() {
+        logd("testSatelliteLocationSettingsEnabledDisabled");
+        if (!shouldTestSatelliteWithMockService()) {
+            return;
+        }
+        assumeTrue(sMockSatelliteServiceManager != null);
+        grantSatellitePermission();
+        logd(
+                "testSatelliteLocationSettingsEnabledDisabled: "
+                        + "resetSatelliteAccessControlOverlayConfigs");
+        resetSatelliteAccessControlOverlayConfigs();
+        grantSatellitePermission();
+
+        logd("testSatelliteLocationSettingsEnabledDisabled: disable cache");
+        assertTrue(
+                sMockSatelliteServiceManager
+                        .setIsSatelliteCommunicationAllowedForCurrentLocationCache("disabled"));
+
+        SatelliteCommunicationAccessStateCallbackTest allowStateCallback =
+                new SatelliteCommunicationAccessStateCallbackTest();
+        long registerResultAllowState =
+                sSatelliteManager.registerForCommunicationAccessStateChanged(
+                        getContext().getMainExecutor(), allowStateCallback);
+
+        assertEquals(SatelliteManager.SATELLITE_RESULT_SUCCESS, registerResultAllowState);
+        assertTrue(
+                allowStateCallback.waitUntilSatelliteAccessConfigurationChangedEvent(1, TIMEOUT));
+        allowStateCallback.waitUntilResult(1);
+        SatelliteAccessConfiguration notifiedSatelliteAccessConfiguration =
+                allowStateCallback.getSatelliteAccessConfiguration();
+        assertNull(notifiedSatelliteAccessConfiguration);
+
+        String countryCodeUs = "US";
+        double latUs = 30.2279, lngUs = -97.7054;
+        String countryCodeKr = "KR";
+        double latKr = 37.5665, lngKr = 126.9780;
+
+        logd(
+                "testSatelliteLocationSettingsEnabledDisabled: verify when KR, location is not"
+                        + " allowed and access-config-data is not null");
+        verifySatelliteNotAllowedAndNotEnabledForLocation(latKr, lngKr, countryCodeKr);
+        verifySatelliteAccessConfigurationExistence(false);
+
+        logd(
+                "testSatelliteLocationSettingsEnabledDisabled: "
+                        + "verify when US, location is allowed and access-config-data is not null");
+        verifySatelliteAllowedAndEnabledForLocation(latUs, lngUs, countryCodeUs);
+        verifySatelliteAccessConfigurationExistence(true);
+
+        logd("testSatelliteLocationSettingsEnabledDisabled: enable cache");
+        assertTrue(
+                sMockSatelliteServiceManager
+                        .setIsSatelliteCommunicationAllowedForCurrentLocationCache("enabled"));
+
+        logd("testSatelliteLocationSettingsEnabledDisabled : repeat disable/enable 3 times");
+        for (int i = 0; i < 3; i++) {
+            logd(
+                    "testSatelliteLocationSettingsEnabledDisabled: "
+                            + "["
+                            + (i + 1)
+                            + "] time try: "
+                            + "verify when the location-settings disabled,"
+                            + "location query error, access-config-data is null");
+            LocationSettingBroadcastReceiver locationSettingReceiver =
+                    registerLocationSettingReceiver(getContext());
+            sLocationManager.setLocationEnabledForUser(false, Process.myUserHandle());
+            verifyLocationDisabledEventReceived(locationSettingReceiver, TIMEOUT);
+            verifySatelliteNotAllowedErrorReason(SATELLITE_RESULT_LOCATION_DISABLED);
+            verifySatelliteAccessConfigurationExistence(false);
+
+            logd(
+                    "testSatelliteLocationSettingsEnabledDisabled: "
+                            + "["
+                            + (i + 1)
+                            + "] time try: "
+                            + "verify when the location-settings enabled, "
+                            + "location is allowed and access-config-data is not null");
+            sLocationManager.setLocationEnabledForUser(true, Process.myUserHandle());
+            verifyLocationEnabledEventReceived(locationSettingReceiver, TIMEOUT);
+            verifySatelliteAllowedAndEnabledForLocation(latUs, lngUs, countryCodeUs);
+            verifySatelliteAccessConfigurationExistence(true);
+        }
+    }
+
+    @Test
     @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ROAMING_NB_IOT_NTN)
     public void testRequestSatelliteEnabled_OffToDemoToP2p_FailureResponse() {
         /*
@@ -8117,42 +8187,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
             fail(e.toString());
         }
         return new Pair<>(supported.get(), callback.get());
-    }
-
-    private Pair<SatelliteAccessConfiguration,
-            Integer> requestSatelliteAccessConfigurationForCurrentLocation() {
-        final AtomicReference<SatelliteAccessConfiguration> satelliteAccessConfiguration =
-                new AtomicReference<>();
-        final AtomicReference<Integer> callback = new AtomicReference<>();
-        CountDownLatch latch = new CountDownLatch(1);
-        OutcomeReceiver<SatelliteAccessConfiguration, SatelliteManager.SatelliteException>
-                receiver =
-                new OutcomeReceiver<>() {
-                    @Override
-                    public void onResult(SatelliteAccessConfiguration result) {
-                        logd("requestSatelliteAccessConfigurationForCurrentLocation: result="
-                                + result);
-                        satelliteAccessConfiguration.set(result);
-                        latch.countDown();
-                    }
-
-                    @Override
-                    public void onError(SatelliteManager.SatelliteException exception) {
-                        logd("requestSatelliteAccessConfigurationForCurrentLocation: onError="
-                                + exception.getErrorCode());
-                        callback.set(exception.getErrorCode());
-                        latch.countDown();
-                    }
-                };
-
-        sSatelliteManager.requestSatelliteAccessConfigurationForCurrentLocation(
-                getContext().getMainExecutor(), receiver);
-        try {
-            assertTrue(latch.await(TIMEOUT, TimeUnit.MILLISECONDS));
-        } catch (InterruptedException e) {
-            fail(e.toString());
-        }
-        return new Pair<>(satelliteAccessConfiguration.get(), callback.get());
     }
 
     private abstract static class BaseReceiver extends BroadcastReceiver {
