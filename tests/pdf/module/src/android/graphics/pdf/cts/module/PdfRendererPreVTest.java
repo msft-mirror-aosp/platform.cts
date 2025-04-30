@@ -1606,6 +1606,168 @@ public class PdfRendererPreVTest {
         }
     }
 
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_EDIT_PDF_ANNOTATIONS)
+    public void testGetPageAnnotationsThrowsIllegalStateException_WhenPageClosed()
+            throws IOException {
+        PdfRendererPreV renderer = createPreVRenderer(ONE_STAMP_ANNOTATION, mContext, null);
+        PdfRendererPreV.Page firstPage = renderer.openPage(0);
+        firstPage.close();
+        assertThrows(IllegalStateException.class, firstPage::getPageAnnotations);
+        renderer.close();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_EDIT_PDF_ANNOTATIONS)
+    public void testAddPageAnnotationThrowsIllegalStateException_WhenPageClosed()
+            throws IOException {
+        PdfRendererPreV renderer = createPreVRenderer(ONE_STAMP_ANNOTATION, mContext, null);
+        PdfRendererPreV.Page firstPage = renderer.openPage(0);
+        firstPage.close();
+        // Create a new highlight annotation
+        List<RectF> bounds = new ArrayList<>();
+        bounds.add(new RectF(10, 20, 30, 40));
+        HighlightAnnotation highlightAnnotation = new HighlightAnnotation(bounds);
+        highlightAnnotation.setColor(Color.GREEN);
+
+        assertThrows(
+                IllegalStateException.class,
+                () -> firstPage.addPageAnnotation(highlightAnnotation));
+        renderer.close();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_EDIT_PDF_ANNOTATIONS)
+    public void testAddPageAnnotationThrowsNullPointerException_OnAddingNullAnnotation()
+            throws IOException {
+        PdfRendererPreV renderer = createPreVRenderer(ONE_STAMP_ANNOTATION, mContext, null);
+        PdfRendererPreV.Page firstPage = renderer.openPage(0);
+
+        assertThrows(NullPointerException.class, () -> firstPage.addPageAnnotation(null));
+        renderer.close();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_EDIT_PDF_ANNOTATIONS)
+    public void testRemovePageAnnotationThrowsIllegalStateException_WhenPageClosed()
+            throws IOException {
+        PdfRendererPreV renderer = createPreVRenderer(ONE_STAMP_ANNOTATION, mContext, null);
+        PdfRendererPreV.Page firstPage = renderer.openPage(0);
+        firstPage.close();
+
+        assertThrows(IllegalStateException.class, () -> firstPage.removePageAnnotation(0));
+        renderer.close();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_EDIT_PDF_ANNOTATIONS)
+    public void testRemovePageAnnotationThrowsIllegalArgumentException_OnPassingInvalidId()
+            throws IOException {
+        PdfRendererPreV renderer = createPreVRenderer(ONE_STAMP_ANNOTATION, mContext, null);
+        PdfRendererPreV.Page firstPage = renderer.openPage(0);
+
+        List<Pair<Integer, PdfAnnotation>> annotations = firstPage.getPageAnnotations();
+        int annotationId = annotations.get(0).first;
+
+        // Negative id is also invalid
+        assertThrows(IllegalArgumentException.class, () -> firstPage.removePageAnnotation(-1));
+
+        // Passing an invalid id to remove
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> firstPage.removePageAnnotation(annotationId + 1));
+        renderer.close();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_EDIT_PDF_ANNOTATIONS)
+    public void testUpdatePageAnnotationThrowsIllegalStateException_WhenPageClosed()
+            throws IOException {
+        PdfRendererPreV renderer = createPreVRenderer(ONE_STAMP_ANNOTATION, mContext, null);
+        PdfRendererPreV.Page firstPage = renderer.openPage(0);
+
+        // Get the annotation
+        List<Pair<Integer, PdfAnnotation>> annotations = firstPage.getPageAnnotations();
+        int stampAnnotationId = annotations.get(0).first;
+        StampAnnotation stampAnnotation = (StampAnnotation) annotations.get(0).second;
+        List<PdfPageObject> pageObjects = stampAnnotation.getObjects();
+        assertThat(pageObjects).hasSize(2);
+
+        firstPage.close();
+
+        // Update stampAnnotation
+        stampAnnotation.removeObject(0);
+        assertThrows(
+                IllegalStateException.class,
+                () -> firstPage.updatePageAnnotation(stampAnnotationId, stampAnnotation));
+        renderer.close();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_EDIT_PDF_ANNOTATIONS)
+    public void testUpdatePageAnnotationThrowsIllegalArgumentException_OnPassingInvalidId()
+            throws IOException {
+        PdfRendererPreV renderer = createPreVRenderer(ONE_STAMP_ANNOTATION, mContext, null);
+        PdfRendererPreV.Page firstPage = renderer.openPage(0);
+
+        List<Pair<Integer, PdfAnnotation>> annotations = firstPage.getPageAnnotations();
+        int annotationId = annotations.get(0).first;
+        StampAnnotation stampAnnotation = (StampAnnotation) annotations.get(0).second;
+
+        // Passing negative id
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> firstPage.updatePageAnnotation(-1, stampAnnotation));
+
+        // Passing an invalid id to update
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> firstPage.updatePageAnnotation(annotationId + 1, stampAnnotation));
+        renderer.close();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_EDIT_PDF_ANNOTATIONS)
+    public void testUpdatePageAnnotationThrowsNullPointerException_OnPassingNullAnnotation()
+            throws IOException {
+        PdfRendererPreV renderer = createPreVRenderer(ONE_STAMP_ANNOTATION, mContext, null);
+        PdfRendererPreV.Page firstPage = renderer.openPage(0);
+
+        // Get the annotation
+        List<Pair<Integer, PdfAnnotation>> annotations = firstPage.getPageAnnotations();
+        int stampAnnotationId = annotations.get(0).first;
+
+        // Update stampAnnotation with a null value
+        assertThrows(
+                NullPointerException.class,
+                () -> firstPage.updatePageAnnotation(stampAnnotationId, null));
+        renderer.close();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_EDIT_PDF_ANNOTATIONS)
+    public void testUpdatePageAnnotationThrowsIllegalArgumentException_OnPassingDifferentTypeAnnot()
+            throws IOException {
+        PdfRendererPreV renderer = createPreVRenderer(ONE_STAMP_ANNOTATION, mContext, null);
+        PdfRendererPreV.Page firstPage = renderer.openPage(0);
+
+        // Get the annotation
+        List<Pair<Integer, PdfAnnotation>> annotations = firstPage.getPageAnnotations();
+        int stampAnnotationId = annotations.get(0).first;
+        assertThat(annotations.get(0).second.getPdfAnnotationType())
+                .isEqualTo(PdfAnnotationType.STAMP);
+
+        // Create a new highlight annotation
+        List<RectF> bounds = new ArrayList<>();
+        bounds.add(new RectF(10, 20, 30, 40));
+        HighlightAnnotation highlightAnnotation = new HighlightAnnotation(bounds);
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> firstPage.updatePageAnnotation(stampAnnotationId, highlightAnnotation));
+        renderer.close();
+    }
+
     private PdfPageImageObject createSamplePdfPageImageObject() {
         Bitmap bitmap = BitmapFactory.decodeResource(mContext.getResources(), SAMPLE_IMAGE);
         return new PdfPageImageObject(bitmap);
