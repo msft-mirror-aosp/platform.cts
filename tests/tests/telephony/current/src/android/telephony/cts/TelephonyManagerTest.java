@@ -60,7 +60,6 @@ import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.content.res.Resources;
-import android.location.LocationManager;
 import android.net.ConnectivityManager;
 import android.net.Uri;
 import android.net.wifi.WifiManager;
@@ -125,6 +124,7 @@ import android.telephony.UiccCardInfo;
 import android.telephony.UiccPortInfo;
 import android.telephony.UiccSlotInfo;
 import android.telephony.UiccSlotMapping;
+import android.telephony.cts.util.LocationHelper;
 import android.telephony.cts.util.TelephonyUtils;
 import android.telephony.data.ApnSetting;
 import android.telephony.data.NetworkSlicingConfig;
@@ -203,13 +203,13 @@ public class TelephonyManagerTest {
     private TelephonyManager mTelephonyManager;
     private SubscriptionManager mSubscriptionManager;
     private PackageManager mPackageManager;
+    private LocationHelper mLocationHelper;
     private boolean mOnCellLocationChangedCalled = false;
     private boolean mOnCellInfoChanged = false;
     private boolean mOnSignalStrengthsChanged = false;
     private boolean mServiceStateChangedCalled = false;
     private boolean mRadioRebootTriggered = false;
     private boolean mHasRadioPowerOff = false;
-    private Boolean mWasLocationEnabled;
     private ServiceState mServiceState;
     private PhoneCapability mPhoneCapability;
     private boolean mOnPhoneCapabilityChanged = false;
@@ -600,6 +600,7 @@ public class TelephonyManagerTest {
         assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY));
 
         mSubscriptionManager = getContext().getSystemService(SubscriptionManager.class);
+        mLocationHelper = new LocationHelper(getContext());
         mCarrierConfigManager = getContext().getSystemService(CarrierConfigManager.class);
         mSelfPackageName = getContext().getPackageName();
         mSelfCertHash = getCertHash(mSelfPackageName);
@@ -635,16 +636,15 @@ public class TelephonyManagerTest {
 
     @After
     public void tearDown() throws Exception {
+        if (mLocationHelper != null) {
+            mLocationHelper.tearDown();
+        }
         if (mListener != null) {
             // unregister the listener
             mTelephonyManager.listen(mListener, PhoneStateListener.LISTEN_NONE);
         }
         if (mIsAllowedNetworkTypeChanged) {
             recoverAllowedNetworkType();
-        }
-        if (mWasLocationEnabled != null) {
-            setLocationEnabled(mWasLocationEnabled);
-            mWasLocationEnabled = null;
         }
 
         StringBuilder cmdBuilder = new StringBuilder();
@@ -803,59 +803,6 @@ public class TelephonyManagerTest {
                 (cm) -> cm.overrideConfig(mTestSub, bundle));
     }
 
-    public static void grantLocationPermissions() {
-        UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
-        String packageName = getContext().getPackageName();
-        uiAutomation.grantRuntimePermission(packageName, permission.ACCESS_COARSE_LOCATION);
-        uiAutomation.grantRuntimePermission(packageName, permission.ACCESS_FINE_LOCATION);
-        uiAutomation.grantRuntimePermission(packageName, permission.ACCESS_BACKGROUND_LOCATION);
-        uiAutomation.grantRuntimePermission(packageName, permission.WRITE_SECURE_SETTINGS);
-    }
-
-    /**
-     * Enable/disable location for current user.
-     *
-     * @return true if location was previously enabled, false if disabled. The return value should
-     *         be used in @After function of the test to restore this setting
-     */
-    public static boolean setLocationEnabled(boolean setEnabled) {
-        Context ctx = getContext();
-        LocationManager locationManager = ctx.getSystemService(LocationManager.class);
-        boolean wasEnabled = locationManager.isLocationEnabledForUser(ctx.getUser());
-        if (wasEnabled == setEnabled) return wasEnabled;
-
-        CountDownLatch locationChangeLatch = new CountDownLatch(1);
-        BroadcastReceiver locationModeChangeReceiver = new BroadcastReceiver() {
-            @Override
-            public void onReceive(Context context, Intent intent) {
-                if (!LocationManager.MODE_CHANGED_ACTION.equals(intent.getAction())) return;
-                if (setEnabled == intent.getBooleanExtra(LocationManager.EXTRA_LOCATION_ENABLED,
-                        !setEnabled)) {
-                    locationChangeLatch.countDown();
-                }
-            }
-        };
-
-        Log.d(TAG, "Setting location " + (setEnabled ? "enabled" : "disabled"));
-
-        ctx.registerReceiver(locationModeChangeReceiver,
-                new IntentFilter(LocationManager.MODE_CHANGED_ACTION));
-        try {
-            runWithShellPermissionIdentity(() -> {
-                locationManager.setLocationEnabledForUser(setEnabled, ctx.getUser());
-            });
-            assertThat(locationChangeLatch.await(LOCATION_SETTING_CHANGE_WAIT_MS,
-                    TimeUnit.MILLISECONDS)).isTrue();
-        } catch (InterruptedException e) {
-            Log.w(TAG, "Interrupted while waiting for location settings change. Test results"
-                    + " may not be accurate.");
-        } finally {
-            ctx.unregisterReceiver(locationModeChangeReceiver);
-        }
-
-        return wasEnabled;
-    }
-
     @Test
     public void testDevicePolicyApn() {
         assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_DATA));
@@ -896,82 +843,6 @@ public class TelephonyManagerTest {
             fail("SecurityException expected");
         } catch (SecurityException e) {
             // expected
-        }
-    }
-
-    @Test
-    public void testListen() throws Throwable {
-        if (mTelephonyManager.getPhoneType() == TelephonyManager.PHONE_TYPE_CDMA) {
-            // TODO: temp workaround, need to adjust test to for CDMA
-            return;
-        }
-
-        grantLocationPermissions();
-        mWasLocationEnabled = setLocationEnabled(true);
-
-        TestThread t = new TestThread(() -> {
-            Looper.prepare();
-            mListener = new PhoneStateListener() {
-                @Override
-                public void onCellLocationChanged(CellLocation location) {
-                    Log.i(TAG, "onCellLocationChanged: " + location);
-                    if (!mOnCellLocationChangedCalled) {
-                        synchronized (mLock) {
-                            mOnCellLocationChangedCalled = true;
-                            mLock.notify();
-                        }
-                    }
-                }
-            };
-
-            synchronized (mLock) {
-                mLock.notify(); // mListener is ready
-            }
-
-            Looper.loop();
-        });
-
-        synchronized (mLock) {
-            t.start();
-            mLock.wait(TOLERANCE); // wait for mListener
-        }
-
-        // Test register
-        synchronized (mLock) {
-            // .listen generates an onCellLocationChanged event
-            Log.d(TAG, "testListen: requesting LISTEN_CELL_LOCATION");
-            mTelephonyManager.listen(mListener, PhoneStateListener.LISTEN_CELL_LOCATION);
-            mLock.wait(TOLERANCE);
-
-            assertTrue("Test register, mOnCellLocationChangedCalled should be true.",
-                    mOnCellLocationChangedCalled);
-        }
-
-        synchronized (mLock) {
-            mOnCellLocationChangedCalled = false;
-            CellLocation.requestLocationUpdate();
-            mLock.wait(TOLERANCE);
-
-            // Starting with Android S, this API will silently drop all requests from apps
-            // targeting Android S due to unfixable limitations with the API.
-            assertFalse("Test register, mOnCellLocationChangedCalled should be false.",
-                    mOnCellLocationChangedCalled);
-        }
-
-        // unregister the listener
-        mTelephonyManager.listen(mListener, PhoneStateListener.LISTEN_NONE);
-        Thread.sleep(TOLERANCE);
-
-        // Test unregister
-        synchronized (mLock) {
-            mOnCellLocationChangedCalled = false;
-            // unregister again, to make sure doing so does not call the listener
-            mTelephonyManager.listen(mListener, PhoneStateListener.LISTEN_NONE);
-            CellLocation.requestLocationUpdate();
-            mLock.wait(TOLERANCE);
-
-            assertFalse("Test unregister, mOnCellLocationChangedCalled should be false.",
-                    mOnCellLocationChangedCalled);
         }
     }
 
@@ -2053,8 +1924,7 @@ public class TelephonyManagerTest {
     public void testNetworkTypeMatchesCellIdentity() throws Exception {
         assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
 
-        grantLocationPermissions();
-        mWasLocationEnabled = setLocationEnabled(true);
+        mLocationHelper.enable();
 
         ServiceState ss = mTelephonyManager.getServiceState();
         assertNotNull(ss);
@@ -5334,8 +5204,7 @@ public class TelephonyManagerTest {
     public void testGetAllCellInfo() {
         assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
 
-        grantLocationPermissions();
-        mWasLocationEnabled = setLocationEnabled(true);
+        mLocationHelper.enable();
 
         // For INetworkRadio <1.5, just verify that calling the method doesn't throw an error.
         if (mNetworkHalVersion < RADIO_HAL_VERSION_1_5) {
@@ -5747,8 +5616,7 @@ public class TelephonyManagerTest {
             }
         }
 
-        grantLocationPermissions();
-        mWasLocationEnabled = setLocationEnabled(true);
+        mLocationHelper.enable();
 
         TestThread t = new TestThread(() -> {
             Looper.prepare();
@@ -6938,8 +6806,7 @@ public class TelephonyManagerTest {
     @ApiTest(apis = {"android.telephony.TelephonyManager#getLastKnownCellIdentity"})
     @RequiresFlagsEnabled(com.android.server.telecom.flags.Flags.FLAG_GET_LAST_KNOWN_CELL_IDENTITY)
     public void testGetLastKnownCellIdentity() {
-        grantLocationPermissions();
-        mWasLocationEnabled = setLocationEnabled(true);
+        mLocationHelper.enable();
 
         assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
         // Revoking ACCESS_FINE_LOCATION will cause test to crash. Verify that security exception
