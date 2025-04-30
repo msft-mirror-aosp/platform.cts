@@ -70,6 +70,7 @@ android_test {
         "libcve_2019_2213_jni",
     ],
     host_required: ["CtsBackupHostTestCases"],
+    host_common_data: [":CtsBackupHostTestCases"],
     srcs: [
         "src/**/*.java",
         "src/**/*.kt",
