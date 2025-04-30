@@ -290,7 +290,12 @@ public class PackageManagerShellCommandIncrementalTest {
 
         assertTrue(isAppInstalled(TEST_APP_PACKAGE));
 
-        final double freeSpaceExpectedDifference = ((appFileSize * 1.015) + blockSize * 8);
+        // We want to estimate how much space IncFS is supposed to preallocate for the whole file
+        // even before its all data has been streamed in. This includes the space required for
+        // the file, plus some bookkeeping overhead that is based on the internal block size.
+        // The IncFS block size is fixed but has no API constant for it, so we define it here.
+        final long incfsBlockSize = 4096;
+        final double freeSpaceExpectedDifference = ((appFileSize * 1.015) + incfsBlockSize * 8);
         assertTrue(freeSpaceDifference.get() + " >= " + freeSpaceExpectedDifference,
                 freeSpaceDifference.get() >= freeSpaceExpectedDifference);
 
