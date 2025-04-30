@@ -608,6 +608,40 @@ public class VideoDecoderAvailabilityTest extends CodecDecoderTestBase {
     }
 
     /**
+     * This method returns the maximum number of pixels that can be processed per second by the
+     * chipset under test across all components and media types.
+     * NOTE: If the device under test has hardware accelerated components from multiple vendors,
+     * the current does not differentiate between them. It combines results across all components
+     * available although this is not what is desired.
+     */
+    public static double getMaxPixelsProcessedPerSec(boolean isEncoder, boolean isHardware) {
+        double maxPixelsProcessedPerSec = 0;
+        for (MediaCodecInfo codecInfo : MEDIA_CODEC_LIST_REGULAR.getCodecInfos()) {
+            if (codecInfo.isAlias()) continue;
+            if (isEncoder && !codecInfo.isEncoder()) continue;
+            if (isHardware && !codecInfo.isHardwareAccelerated()) continue;
+            String[] types = codecInfo.getSupportedTypes();
+            for (String type : types) {
+                MediaCodecInfo.CodecCapabilities caps = codecInfo.getCapabilitiesForType(type);
+                MediaCodecInfo.VideoCapabilities vcaps = caps.getVideoCapabilities();
+                if (vcaps == null) continue;
+                List<PerformancePoint> pps = vcaps.getSupportedPerformancePoints();
+                if (pps == null || pps.isEmpty()) continue;
+                // as performance points are sorted by decreasing number of pixels, then by
+                // decreasing width, then by frame rate, the first point should indicate peak
+                // processing power
+                PerformancePoint pp = pps.get(0);
+                Size videoSize = estimateVideoSizeFromPerformancePoint(pp);
+                maxPixelsProcessedPerSec = Math.max(maxPixelsProcessedPerSec,
+                        videoSize.getWidth() * videoSize.getHeight() * pp.getMaxFrameRate());
+            }
+        }
+        Assert.assertTrue("failed to initialize maxPixelsProcessedPerSec",
+                maxPixelsProcessedPerSec > 0);
+        return maxPixelsProcessedPerSec;
+    }
+
+    /**
      * Tests the resource consumption of a codec for various advertised performance points.
      * This test iterates through the supported performance points of a given codec,
      * configures the codec with a video format corresponding to each performance point,
@@ -630,7 +664,8 @@ public class VideoDecoderAvailabilityTest extends CodecDecoderTestBase {
         Assume.assumeFalse(mCodecName + " did not advertise any performance points",
                 pps == null || pps.isEmpty());
         mActivityRule.getScenario().onActivity(activity -> mDynamicActivity = activity);
-        double maxPixelsProcessedPerSec = 0;
+        double maxPixelsProcessedPerSec =
+                getMaxPixelsProcessedPerSec(false, isHardwareAcceleratedCodec(mCodecName));
         double pixelsProcessedPerSec;
         for (int i = 0; i < pps.size(); i++) {
             PerformancePoint pp = pps.get(i);
@@ -648,12 +683,6 @@ public class VideoDecoderAvailabilityTest extends CodecDecoderTestBase {
             format.setInteger(MediaFormat.KEY_PRIORITY, 0);
             pixelsProcessedPerSec =
                     videoSize.getWidth() * videoSize.getHeight() * pp.getMaxFrameRate();
-            if (i == 0) {
-                // as performance points are sorted by decreasing number of pixels, then by
-                // decreasing width, then by frame rate, the first point should indicate peak
-                // processing power
-                maxPixelsProcessedPerSec = pixelsProcessedPerSec;
-            }
             codec.configure(format, obj.second, null, 0);
             codec.start();
             List<CodecResource> usedResources = getCurrentGlobalCodecResources();

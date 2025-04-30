@@ -137,8 +137,7 @@ public class VideoTranscoderAvailabilityTest extends CodecEncoderSurfaceTestBase
     @Test(timeout = CodecTestBase.PER_TEST_TIMEOUT_LARGE_TEST_MS)
     @RequiresFlagsEnabled(FLAG_CODEC_AVAILABILITY)
     @ApiTest(apis = {"android.media.MediaCodec#getGloballyAvailableResources",
-            "android.media.MediaCodec#getRequiredResources",
-            "android.media.MediaCodec.Callback#onRequiredResourcesChanged"})
+            "android.media.MediaCodec#getRequiredResources"})
     public void testSimpleDecodeEncodeFromSurface() throws IOException, InterruptedException {
         mOutputBuff = new OutputManager();
         mOutputBuff.reset();
