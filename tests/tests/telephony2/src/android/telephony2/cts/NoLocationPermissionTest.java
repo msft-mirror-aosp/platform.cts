@@ -25,25 +25,36 @@ import android.content.Context;
 import android.telephony.CellInfo;
 import android.telephony.PhoneStateListener;
 import android.telephony.TelephonyManager;
+import android.telephony.cts.util.LocationHelper;
 
 import androidx.test.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.util.List;
 
-
 @RunWith(AndroidJUnit4.class)
 public class NoLocationPermissionTest {
 
     private Context mContext;
+    private LocationHelper mLocationHelper;
 
     @Before
     public void setUp() throws Exception {
         mContext = InstrumentationRegistry.getContext();
+        mLocationHelper = new LocationHelper(mContext);
+        if (mContext.getPackageManager().hasSystemFeature(FEATURE_TELEPHONY)) {
+            mLocationHelper.enableWithoutPermissions();
+        }
+    }
+
+    @After
+    public void tearDown() {
+        mLocationHelper.tearDown();
     }
 
     @SuppressWarnings("deprecation")
