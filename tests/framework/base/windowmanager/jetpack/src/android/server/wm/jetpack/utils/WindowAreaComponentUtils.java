@@ -30,7 +30,7 @@ public class WindowAreaComponentUtils {
     private static final int DEVICE_TIMEOUT = 2000;
 
     /** Timeout to use on a cuttlefish device. */
-    private static final int CUTTLEFISH_TIMEOUT = 2000;
+    private static final int CUTTLEFISH_TIMEOUT = 5000;
 
     /** Checks if the provided {@code condition} is true within the timeout period. */
     public static void waitAndAssert(PollingCheck.PollingCheckCondition condition) {
