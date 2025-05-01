@@ -103,7 +103,6 @@ public final class CarRemoteAccessManagerTest extends AbstractCarTestCase {
     @ApiTest(apis = {
             "android.car.remoteaccess.CarRemoteAccessManager#setRemoteTaskClient",
     })
-    @RequiresFlagsEnabled(Flags.FLAG_CAR_DUMP_TO_PROTO)
     public void testSetRemoteTaskClient_regularClient() throws Exception {
         assumeFalse("This test requires the test package to be a regular remote task client",
                 isTestPkgServerlessClient());
@@ -119,11 +118,9 @@ public final class CarRemoteAccessManagerTest extends AbstractCarTestCase {
     }
 
     @Test
-    @ApiTest(apis = {
-            "android.car.remoteaccess.CarRemoteAccessManager#setRemoteTaskClient"
-    })
+    @ApiTest(apis = {"android.car.remoteaccess.CarRemoteAccessManager#setRemoteTaskClient"})
     @EnsureHasPermission(PERMISSION_CONTROL_REMOTE_ACCESS)
-    @RequiresFlagsEnabled({Flags.FLAG_SERVERLESS_REMOTE_ACCESS, Flags.FLAG_CAR_DUMP_TO_PROTO})
+    @RequiresFlagsEnabled(Flags.FLAG_SERVERLESS_REMOTE_ACCESS)
     public void testSetRemoteTaskClient_serverlessClient() throws Exception {
         setSelfAsServerlessClient();
 
@@ -184,12 +181,13 @@ public final class CarRemoteAccessManagerTest extends AbstractCarTestCase {
     }
 
     @Test
-    @ApiTest(apis = {
-            "android.car.remoteaccess.CarRemoteAccessManager#isTaskScheduleSupported",
-            "android.car.remoteaccess.CarRemoteAccessManager#getInVehicleTaskScheduler",
-    })
+    @ApiTest(
+            apis = {
+                "android.car.remoteaccess.CarRemoteAccessManager#isTaskScheduleSupported",
+                "android.car.remoteaccess.CarRemoteAccessManager#getInVehicleTaskScheduler",
+            })
     @EnsureHasPermission(PERMISSION_CONTROL_REMOTE_ACCESS)
-    @RequiresFlagsEnabled({Flags.FLAG_SERVERLESS_REMOTE_ACCESS, Flags.FLAG_CAR_DUMP_TO_PROTO})
+    @RequiresFlagsEnabled(Flags.FLAG_SERVERLESS_REMOTE_ACCESS)
     public void testGetInVehicleTaskScheduler_notSupported() {
         setSelfAsServerlessClient();
 
@@ -202,12 +200,13 @@ public final class CarRemoteAccessManagerTest extends AbstractCarTestCase {
     }
 
     @Test
-    @ApiTest(apis = {
-            "android.car.remoteaccess.CarRemoteAccessManager#isTaskScheduleSupported",
-            "android.car.remoteaccess.CarRemoteAccessManager#getInVehicleTaskScheduler",
-    })
+    @ApiTest(
+            apis = {
+                "android.car.remoteaccess.CarRemoteAccessManager#isTaskScheduleSupported",
+                "android.car.remoteaccess.CarRemoteAccessManager#getInVehicleTaskScheduler",
+            })
     @EnsureHasPermission(PERMISSION_CONTROL_REMOTE_ACCESS)
-    @RequiresFlagsEnabled({Flags.FLAG_SERVERLESS_REMOTE_ACCESS, Flags.FLAG_CAR_DUMP_TO_PROTO})
+    @RequiresFlagsEnabled(Flags.FLAG_SERVERLESS_REMOTE_ACCESS)
     public void testGetInVehicleTaskScheduler_isSupported() {
         setSelfAsServerlessClient();
         assumeTaskSchedulingSupported();
@@ -218,14 +217,15 @@ public final class CarRemoteAccessManagerTest extends AbstractCarTestCase {
     }
 
     @Test
-    @ApiTest(apis = {
-            "android.car.remoteaccess.CarRemoteAccessManager#isTaskScheduleSupported",
-            "android.car.remoteaccess.CarRemoteAccessManager#getInVehicleTaskScheduler",
-            "android.car.remoteaccess.CarRemoteAccessManager.InVehicleTaskScheduler#"
-                    + "getSupportedTaskTypes",
-    })
+    @ApiTest(
+            apis = {
+                "android.car.remoteaccess.CarRemoteAccessManager#isTaskScheduleSupported",
+                "android.car.remoteaccess.CarRemoteAccessManager#getInVehicleTaskScheduler",
+                "android.car.remoteaccess.CarRemoteAccessManager.InVehicleTaskScheduler#"
+                        + "getSupportedTaskTypes",
+            })
     @EnsureHasPermission(PERMISSION_CONTROL_REMOTE_ACCESS)
-    @RequiresFlagsEnabled({Flags.FLAG_SERVERLESS_REMOTE_ACCESS, Flags.FLAG_CAR_DUMP_TO_PROTO})
+    @RequiresFlagsEnabled(Flags.FLAG_SERVERLESS_REMOTE_ACCESS)
     public void testGetSupportedTaskTypes_TaskTypeMustIncludeCustom() throws Exception {
         setSelfAsServerlessClient();
         assumeTaskSchedulingSupported();
@@ -243,15 +243,17 @@ public final class CarRemoteAccessManagerTest extends AbstractCarTestCase {
     }
 
     @Test
-    @ApiTest(apis = {
-            "android.car.remoteaccess.CarRemoteAccessManager#isTaskScheduleSupported",
-            "android.car.remoteaccess.CarRemoteAccessManager#getInVehicleTaskScheduler",
-            "android.car.remoteaccess.CarRemoteAccessManager.InVehicleTaskScheduler#scheduleTask",
-            "android.car.remoteaccess.CarRemoteAccessManager.InVehicleTaskScheduler#"
-                    + "unscheduleAllTasks",
-    })
+    @ApiTest(
+            apis = {
+                "android.car.remoteaccess.CarRemoteAccessManager#isTaskScheduleSupported",
+                "android.car.remoteaccess.CarRemoteAccessManager#getInVehicleTaskScheduler",
+                "android.car.remoteaccess.CarRemoteAccessManager.InVehicleTaskScheduler#"
+                        + "scheduleTask",
+                "android.car.remoteaccess.CarRemoteAccessManager.InVehicleTaskScheduler#"
+                        + "unscheduleAllTasks",
+            })
     @EnsureHasPermission(PERMISSION_CONTROL_REMOTE_ACCESS)
-    @RequiresFlagsEnabled({Flags.FLAG_SERVERLESS_REMOTE_ACCESS, Flags.FLAG_CAR_DUMP_TO_PROTO})
+    @RequiresFlagsEnabled(Flags.FLAG_SERVERLESS_REMOTE_ACCESS)
     public void testScheduleTask_TaskTypeCustom() throws Exception {
         setSelfAsServerlessClient();
         assumeTaskSchedulingSupported();
@@ -272,21 +274,23 @@ public final class CarRemoteAccessManagerTest extends AbstractCarTestCase {
     }
 
     @Test
-    @ApiTest(apis = {
-            "android.car.remoteaccess.CarRemoteAccessManager#isTaskScheduleSupported",
-            "android.car.remoteaccess.CarRemoteAccessManager#getInVehicleTaskScheduler",
-            "android.car.remoteaccess.CarRemoteAccessManager.InVehicleTaskScheduler#scheduleTask",
-            "android.car.remoteaccess.CarRemoteAccessManager.InVehicleTaskScheduler#"
-                    + "getSupportedTaskTypes",
-            "android.car.remoteaccess.CarRemoteAccessManager.InVehicleTaskScheduler#"
-                    + "isTaskScheduled",
-            "android.car.remoteaccess.CarRemoteAccessManager.InVehicleTaskScheduler#"
-                    + "getAllPendingScheduledTasks",
-            "android.car.remoteaccess.CarRemoteAccessManager.InVehicleTaskScheduler#"
-                    + "unscheduleAllTasks",
-    })
+    @ApiTest(
+            apis = {
+                "android.car.remoteaccess.CarRemoteAccessManager#isTaskScheduleSupported",
+                "android.car.remoteaccess.CarRemoteAccessManager#getInVehicleTaskScheduler",
+                "android.car.remoteaccess.CarRemoteAccessManager.InVehicleTaskScheduler#"
+                        + "scheduleTask",
+                "android.car.remoteaccess.CarRemoteAccessManager.InVehicleTaskScheduler#"
+                        + "getSupportedTaskTypes",
+                "android.car.remoteaccess.CarRemoteAccessManager.InVehicleTaskScheduler#"
+                        + "isTaskScheduled",
+                "android.car.remoteaccess.CarRemoteAccessManager.InVehicleTaskScheduler#"
+                        + "getAllPendingScheduledTasks",
+                "android.car.remoteaccess.CarRemoteAccessManager.InVehicleTaskScheduler#"
+                        + "unscheduleAllTasks",
+            })
     @EnsureHasPermission(PERMISSION_CONTROL_REMOTE_ACCESS)
-    @RequiresFlagsEnabled({Flags.FLAG_SERVERLESS_REMOTE_ACCESS, Flags.FLAG_CAR_DUMP_TO_PROTO})
+    @RequiresFlagsEnabled(Flags.FLAG_SERVERLESS_REMOTE_ACCESS)
     public void testScheduleTask_TaskTypeEnterGarageMode() throws Exception {
         setSelfAsServerlessClient();
         assumeTaskSchedulingSupported();
@@ -335,15 +339,17 @@ public final class CarRemoteAccessManagerTest extends AbstractCarTestCase {
     }
 
     @Test
-    @ApiTest(apis = {
-            "android.car.remoteaccess.CarRemoteAccessManager#isTaskScheduleSupported",
-            "android.car.remoteaccess.CarRemoteAccessManager#getInVehicleTaskScheduler",
-            "android.car.remoteaccess.CarRemoteAccessManager.InVehicleTaskScheduler#scheduleTask",
-            "android.car.remoteaccess.CarRemoteAccessManager.InVehicleTaskScheduler#"
-                    + "unscheduleAllTasks",
-    })
+    @ApiTest(
+            apis = {
+                "android.car.remoteaccess.CarRemoteAccessManager#isTaskScheduleSupported",
+                "android.car.remoteaccess.CarRemoteAccessManager#getInVehicleTaskScheduler",
+                "android.car.remoteaccess.CarRemoteAccessManager.InVehicleTaskScheduler#"
+                        + "scheduleTask",
+                "android.car.remoteaccess.CarRemoteAccessManager.InVehicleTaskScheduler#"
+                        + "unscheduleAllTasks",
+            })
     @EnsureHasPermission(PERMISSION_CONTROL_REMOTE_ACCESS)
-    @RequiresFlagsEnabled({Flags.FLAG_SERVERLESS_REMOTE_ACCESS, Flags.FLAG_CAR_DUMP_TO_PROTO})
+    @RequiresFlagsEnabled(Flags.FLAG_SERVERLESS_REMOTE_ACCESS)
     public void testScheduleTask_duplicateScheduleIdMustThrowException() throws Exception {
         setSelfAsServerlessClient();
         assumeTaskSchedulingSupported();
@@ -370,17 +376,19 @@ public final class CarRemoteAccessManagerTest extends AbstractCarTestCase {
     }
 
     @Test
-    @ApiTest(apis = {
-            "android.car.remoteaccess.CarRemoteAccessManager#isTaskScheduleSupported",
-            "android.car.remoteaccess.CarRemoteAccessManager#getInVehicleTaskScheduler",
-            "android.car.remoteaccess.CarRemoteAccessManager.InVehicleTaskScheduler#scheduleTask",
-            "android.car.remoteaccess.CarRemoteAccessManager.InVehicleTaskScheduler#"
-                    + "unscheduleAllTasks",
-            "android.car.remoteaccess.CarRemoteAccessManager.InVehicleTaskScheduler#"
-                    + "isTaskScheduled",
-    })
+    @ApiTest(
+            apis = {
+                "android.car.remoteaccess.CarRemoteAccessManager#isTaskScheduleSupported",
+                "android.car.remoteaccess.CarRemoteAccessManager#getInVehicleTaskScheduler",
+                "android.car.remoteaccess.CarRemoteAccessManager.InVehicleTaskScheduler#"
+                        + "scheduleTask",
+                "android.car.remoteaccess.CarRemoteAccessManager.InVehicleTaskScheduler#"
+                        + "unscheduleAllTasks",
+                "android.car.remoteaccess.CarRemoteAccessManager.InVehicleTaskScheduler#"
+                        + "isTaskScheduled",
+            })
     @EnsureHasPermission(PERMISSION_CONTROL_REMOTE_ACCESS)
-    @RequiresFlagsEnabled({Flags.FLAG_SERVERLESS_REMOTE_ACCESS, Flags.FLAG_CAR_DUMP_TO_PROTO})
+    @RequiresFlagsEnabled(Flags.FLAG_SERVERLESS_REMOTE_ACCESS)
     public void testIsTaskScheduled() throws Exception {
         setSelfAsServerlessClient();
         assumeTaskSchedulingSupported();
@@ -408,17 +416,19 @@ public final class CarRemoteAccessManagerTest extends AbstractCarTestCase {
     }
 
     @Test
-    @ApiTest(apis = {
-            "android.car.remoteaccess.CarRemoteAccessManager#isTaskScheduleSupported",
-            "android.car.remoteaccess.CarRemoteAccessManager#getInVehicleTaskScheduler",
-            "android.car.remoteaccess.CarRemoteAccessManager.InVehicleTaskScheduler#scheduleTask",
-            "android.car.remoteaccess.CarRemoteAccessManager.InVehicleTaskScheduler#"
-                    + "unscheduleAllTasks",
-            "android.car.remoteaccess.CarRemoteAccessManager.InVehicleTaskScheduler#"
-                    + "getAllPendingScheduledTasks",
-    })
+    @ApiTest(
+            apis = {
+                "android.car.remoteaccess.CarRemoteAccessManager#isTaskScheduleSupported",
+                "android.car.remoteaccess.CarRemoteAccessManager#getInVehicleTaskScheduler",
+                "android.car.remoteaccess.CarRemoteAccessManager.InVehicleTaskScheduler#"
+                        + "scheduleTask",
+                "android.car.remoteaccess.CarRemoteAccessManager.InVehicleTaskScheduler#"
+                        + "unscheduleAllTasks",
+                "android.car.remoteaccess.CarRemoteAccessManager.InVehicleTaskScheduler#"
+                        + "getAllPendingScheduledTasks",
+            })
     @EnsureHasPermission(PERMISSION_CONTROL_REMOTE_ACCESS)
-    @RequiresFlagsEnabled({Flags.FLAG_SERVERLESS_REMOTE_ACCESS, Flags.FLAG_CAR_DUMP_TO_PROTO})
+    @RequiresFlagsEnabled(Flags.FLAG_SERVERLESS_REMOTE_ACCESS)
     public void testGetAllPendingScheduledTasks() throws Exception {
         setSelfAsServerlessClient();
         assumeTaskSchedulingSupported();
@@ -472,19 +482,21 @@ public final class CarRemoteAccessManagerTest extends AbstractCarTestCase {
     }
 
     @Test
-    @ApiTest(apis = {
-            "android.car.remoteaccess.CarRemoteAccessManager#isTaskScheduleSupported",
-            "android.car.remoteaccess.CarRemoteAccessManager#getInVehicleTaskScheduler",
-            "android.car.remoteaccess.CarRemoteAccessManager.InVehicleTaskScheduler#scheduleTask",
-            "android.car.remoteaccess.CarRemoteAccessManager.InVehicleTaskScheduler#"
-                    + "unscheduleAllTasks",
-            "android.car.remoteaccess.CarRemoteAccessManager.InVehicleTaskScheduler#"
-                    + "getAllPendingScheduledTasks",
-            "android.car.remoteaccess.CarRemoteAccessManager.InVehicleTaskScheduler#"
-                    + "unscheduleTask",
-    })
+    @ApiTest(
+            apis = {
+                "android.car.remoteaccess.CarRemoteAccessManager#isTaskScheduleSupported",
+                "android.car.remoteaccess.CarRemoteAccessManager#getInVehicleTaskScheduler",
+                "android.car.remoteaccess.CarRemoteAccessManager.InVehicleTaskScheduler#"
+                        + "scheduleTask",
+                "android.car.remoteaccess.CarRemoteAccessManager.InVehicleTaskScheduler#"
+                        + "unscheduleAllTasks",
+                "android.car.remoteaccess.CarRemoteAccessManager.InVehicleTaskScheduler#"
+                        + "getAllPendingScheduledTasks",
+                "android.car.remoteaccess.CarRemoteAccessManager.InVehicleTaskScheduler#"
+                        + "unscheduleTask",
+            })
     @EnsureHasPermission(PERMISSION_CONTROL_REMOTE_ACCESS)
-    @RequiresFlagsEnabled({Flags.FLAG_SERVERLESS_REMOTE_ACCESS, Flags.FLAG_CAR_DUMP_TO_PROTO})
+    @RequiresFlagsEnabled(Flags.FLAG_SERVERLESS_REMOTE_ACCESS)
     public void testUnscheduleTask() throws Exception {
         setSelfAsServerlessClient();
         assumeTaskSchedulingSupported();
@@ -532,7 +544,6 @@ public final class CarRemoteAccessManagerTest extends AbstractCarTestCase {
     @Test
     @ApiTest(apis = {"android.car.remoteaccess.CarRemoteAccessManager#isVehicleInUseSupported"})
     @EnsureHasPermission(PERMISSION_CONTROL_REMOTE_ACCESS)
-    @RequiresFlagsEnabled(Flags.FLAG_CAR_DUMP_TO_PROTO)
     public void testVehicleInUseMustBeSupported() {
         assertWithMessage("VHAL property: VEHICLE_IN_USE must be supported if remote access feature"
                 + " is enabled").that(mCarRemoteAccessManager.isVehicleInUseSupported()).isTrue();
@@ -541,7 +552,6 @@ public final class CarRemoteAccessManagerTest extends AbstractCarTestCase {
     @Test
     @ApiTest(apis = {"android.car.remoteaccess.CarRemoteAccessManager#isShutdownRequestSupported"})
     @EnsureHasPermission(PERMISSION_CONTROL_REMOTE_ACCESS)
-    @RequiresFlagsEnabled(Flags.FLAG_CAR_DUMP_TO_PROTO)
     public void testShutdownRequestMustBeSupported() {
         assertWithMessage("VHAL property: SHUTDOWN_REQUEST must be supported if remote access "
                 + "feature is enabled").that(mCarRemoteAccessManager.isShutdownRequestSupported())
