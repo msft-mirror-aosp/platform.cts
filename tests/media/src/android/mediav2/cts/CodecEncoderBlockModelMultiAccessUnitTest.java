@@ -20,14 +20,11 @@ import static android.media.MediaCodecInfo.CodecCapabilities.FEATURE_MultipleFra
 import static android.media.MediaCodecInfo.CodecProfileLevel.AACObjectELD;
 import static android.media.MediaCodecInfo.CodecProfileLevel.AACObjectHE;
 import static android.media.MediaCodecInfo.CodecProfileLevel.AACObjectLC;
-import static android.media.codec.Flags.FLAG_LARGE_AUDIO_FRAME_FINISH;
 import static android.mediav2.common.cts.CodecTestBase.SupportClass.CODEC_OPTIONAL;
 import static android.mediav2.common.cts.MuxerUtils.getMuxerFormatForMediaType;
 import static android.mediav2.common.cts.MuxerUtils.getTempFilePath;
 import static android.mediav2.cts.CodecDecoderMultiAccessUnitTest.getCompressionRatio;
 import static android.mediav2.cts.CodecEncoderBlockModelTest.flattenParams;
-
-import static com.android.media.codec.flags.Flags.FLAG_LARGE_AUDIO_FRAME;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -45,9 +42,6 @@ import android.mediav2.common.cts.EncoderConfigParams;
 import android.mediav2.common.cts.OutputManager;
 import android.os.Build;
 import android.platform.test.annotations.AppModeFull;
-import android.platform.test.annotations.RequiresFlagsEnabled;
-import android.platform.test.flag.junit.CheckFlagsRule;
-import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Log;
 import android.util.Pair;
 
@@ -58,7 +52,6 @@ import com.android.compatibility.common.util.ApiTest;
 
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -86,7 +79,6 @@ import java.util.List;
  **/
 @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM)
 @AppModeFull(reason = "Instant apps cannot access the SD card")
-@RequiresFlagsEnabled({FLAG_LARGE_AUDIO_FRAME, FLAG_LARGE_AUDIO_FRAME_FINISH})
 @RunWith(Parameterized.class)
 public class CodecEncoderBlockModelMultiAccessUnitTest extends CodecEncoderBlockModelTestBase {
     private static final String LOG_TAG =
@@ -101,9 +93,6 @@ public class CodecEncoderBlockModelMultiAccessUnitTest extends CodecEncoderBlock
 
     private CodecAsyncHandlerMultiAccessUnits mAsyncHandleMultiAccessUnits;
     private int mMaxOutputSizeBytes;
-
-    @Rule
-    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Parameterized.Parameters(name = "{index}_{0}_{1}_{3}")
     public static Collection<Object[]> input() {

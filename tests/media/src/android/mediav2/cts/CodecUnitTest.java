@@ -17,10 +17,7 @@
 package android.mediav2.cts;
 
 import static android.media.MediaCodecInfo.CodecCapabilities.FEATURE_MultipleFrames;
-import static android.media.codec.Flags.FLAG_LARGE_AUDIO_FRAME_FINISH;
 import static android.media.codec.Flags.FLAG_NUM_INPUT_SLOTS;
-
-import static com.android.media.codec.flags.Flags.FLAG_LARGE_AUDIO_FRAME;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -2055,7 +2052,6 @@ public class CodecUnitTest {
         }
 
         @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM)
-        @RequiresFlagsEnabled({FLAG_LARGE_AUDIO_FRAME, FLAG_LARGE_AUDIO_FRAME_FINISH})
         @ApiTest(apis = {"android.media.MediaCodec#queueInputBuffers"})
         @Test
         public void testQueueInputBuffersInUnInitState() throws IOException {
@@ -2075,7 +2071,6 @@ public class CodecUnitTest {
         }
 
         @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM)
-        @RequiresFlagsEnabled({FLAG_LARGE_AUDIO_FRAME, FLAG_LARGE_AUDIO_FRAME_FINISH})
         @ApiTest(apis = {"android.media.MediaCodec#queueInputBuffers"})
         @Test
         public void testQueueInputBuffersInInitState() throws IOException {
@@ -2094,7 +2089,6 @@ public class CodecUnitTest {
         }
 
         @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM)
-        @RequiresFlagsEnabled({FLAG_LARGE_AUDIO_FRAME, FLAG_LARGE_AUDIO_FRAME_FINISH})
         @ApiTest(apis = {"android.media.MediaCodec#queueInputBuffers"})
         @Test
         public void testQueueInputBuffersWithBadIndex() throws IOException {
@@ -2122,7 +2116,6 @@ public class CodecUnitTest {
         }
 
         @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM)
-        @RequiresFlagsEnabled({FLAG_LARGE_AUDIO_FRAME, FLAG_LARGE_AUDIO_FRAME_FINISH})
         @ApiTest(apis = {"android.media.MediaCodec#queueInputBuffers"})
         @Test
         public void testQueueInputBuffersWithNullInfos() throws IOException, InterruptedException {
@@ -2149,7 +2142,6 @@ public class CodecUnitTest {
         }
 
         @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM)
-        @RequiresFlagsEnabled({FLAG_LARGE_AUDIO_FRAME, FLAG_LARGE_AUDIO_FRAME_FINISH})
         @ApiTest(apis = {"android.media.MediaCodec#queueInputBuffers"})
         @Test
         public void testQueueInputBuffersWithNullInfo() throws IOException, InterruptedException {
@@ -2187,7 +2179,6 @@ public class CodecUnitTest {
         }
 
         @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM)
-        @RequiresFlagsEnabled({FLAG_LARGE_AUDIO_FRAME, FLAG_LARGE_AUDIO_FRAME_FINISH})
         @ApiTest(apis = {"android.media.MediaCodec#queueInputBuffers"})
         @Test
         public void testQueueInputBuffersWithEmptyInfo() throws IOException, InterruptedException {
@@ -2214,7 +2205,6 @@ public class CodecUnitTest {
         }
 
         @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM)
-        @RequiresFlagsEnabled({FLAG_LARGE_AUDIO_FRAME, FLAG_LARGE_AUDIO_FRAME_FINISH})
         @ApiTest(apis = {"android.media.MediaCodec#queueInputBuffers"})
         @Test
         public void testQueueInputBuffersWithBadSize() throws IOException, InterruptedException {
@@ -2255,7 +2245,6 @@ public class CodecUnitTest {
         }
 
         @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM)
-        @RequiresFlagsEnabled({FLAG_LARGE_AUDIO_FRAME, FLAG_LARGE_AUDIO_FRAME_FINISH})
         @ApiTest(apis = {"android.media.MediaCodec#queueInputBuffers"})
         @Test
         public void testQueueInputBuffersWithBadBuffInfo() throws IOException,
@@ -2290,7 +2279,6 @@ public class CodecUnitTest {
         }
 
         @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM)
-        @RequiresFlagsEnabled({FLAG_LARGE_AUDIO_FRAME, FLAG_LARGE_AUDIO_FRAME_FINISH})
         @ApiTest(apis = {"android.media.MediaCodec#queueInputBuffers"})
         @Test
         public void testQueueInputBuffersWithBadOffset() throws IOException, InterruptedException {
@@ -2321,7 +2309,6 @@ public class CodecUnitTest {
         }
 
         @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM)
-        @RequiresFlagsEnabled({FLAG_LARGE_AUDIO_FRAME, FLAG_LARGE_AUDIO_FRAME_FINISH})
         @ApiTest(apis = {"android.media.MediaCodec#queueInputBuffers"})
         @Test
         public void testQueueInputBuffersInReleaseState() throws IOException {
@@ -2442,7 +2429,6 @@ public class CodecUnitTest {
         }
 
         @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM)
-        @RequiresFlagsEnabled({FLAG_LARGE_AUDIO_FRAME, FLAG_LARGE_AUDIO_FRAME_FINISH})
         @ApiTest(apis = {"android.media.MediaCodec.QueueRequest#setMultiFrameLinearBlock"})
         @Test
         public void testSetMultiFrameLinearBlockWithNullBlock()
@@ -2475,7 +2461,6 @@ public class CodecUnitTest {
         }
 
         @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM)
-        @RequiresFlagsEnabled({FLAG_LARGE_AUDIO_FRAME, FLAG_LARGE_AUDIO_FRAME_FINISH})
         @ApiTest(apis = {"android.media.MediaCodec.QueueRequest#setMultiFrameLinearBlock"})
         @Test
         public void testSetMultiFrameLinearBlockWithNullInfos()
@@ -2505,7 +2490,6 @@ public class CodecUnitTest {
         }
 
         @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM)
-        @RequiresFlagsEnabled({FLAG_LARGE_AUDIO_FRAME, FLAG_LARGE_AUDIO_FRAME_FINISH})
         @ApiTest(apis = {"android.media.MediaCodec.QueueRequest#setMultiFrameLinearBlock"})
         @Test
         public void testSetMultiFrameLinearBlockWithNullInfo()
@@ -2547,7 +2531,6 @@ public class CodecUnitTest {
         }
 
         @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM)
-        @RequiresFlagsEnabled({FLAG_LARGE_AUDIO_FRAME, FLAG_LARGE_AUDIO_FRAME_FINISH})
         @ApiTest(apis = {"android.media.MediaCodec.QueueRequest#setMultiFrameLinearBlock"})
         @Test
         public void testSetMultiFrameLinearBlockWithEmptyInfo()
@@ -2577,7 +2560,6 @@ public class CodecUnitTest {
         }
 
         @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM)
-        @RequiresFlagsEnabled({FLAG_LARGE_AUDIO_FRAME, FLAG_LARGE_AUDIO_FRAME_FINISH})
         @ApiTest(apis = {"android.media.MediaCodec.QueueRequest#setMultiFrameLinearBlock"})
         @Test
         public void testSetMultiFrameLinearBlockWithBadOffset()
@@ -2612,7 +2594,6 @@ public class CodecUnitTest {
         }
 
         @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM)
-        @RequiresFlagsEnabled({FLAG_LARGE_AUDIO_FRAME, FLAG_LARGE_AUDIO_FRAME_FINISH})
         @ApiTest(apis = {"android.media.MediaCodec.QueueRequest#setMultiFrameLinearBlock"})
         @Test
         public void testSetMultiFrameLinearBlockWithNegativeSize()
@@ -2647,7 +2628,6 @@ public class CodecUnitTest {
         }
 
         @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM)
-        @RequiresFlagsEnabled({FLAG_LARGE_AUDIO_FRAME, FLAG_LARGE_AUDIO_FRAME_FINISH})
         @ApiTest(apis = {"android.media.MediaCodec.QueueRequest#setMultiFrameLinearBlock"})
         @Test
         public void testSetMultiFrameLinearBlockWithBadBuffInfo()
@@ -2686,7 +2666,6 @@ public class CodecUnitTest {
         }
 
         @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM)
-        @RequiresFlagsEnabled({FLAG_LARGE_AUDIO_FRAME, FLAG_LARGE_AUDIO_FRAME_FINISH})
         @ApiTest(apis = {"android.media.MediaCodec.QueueRequest#setMultiFrameLinearBlock"})
         @Test
         public void testSetMultiFrameLinearBlockWithBadSize()
@@ -2731,7 +2710,6 @@ public class CodecUnitTest {
         }
 
         @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM)
-        @RequiresFlagsEnabled({FLAG_LARGE_AUDIO_FRAME, FLAG_LARGE_AUDIO_FRAME_FINISH})
         @ApiTest(apis = {"android.media.MediaCodec.QueueRequest#setMultiFrameLinearBlock"})
         @Test
         public void testSetMultiFrameLinearBlockWithOverlappingOffsets()
