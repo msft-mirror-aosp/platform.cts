@@ -76,6 +76,7 @@ public class BackupRestrictedModeTest extends BaseBackupCtsTest {
 
     @After
     public void tearDown() throws Exception {
+        super.tearDown();
         // Delete any data that our test apps might have written to disk. Also force-stop the
         // apps to kill their process and reset their restricted mode state.
         for (String packageName : ALL_TEST_PACKAGES) {

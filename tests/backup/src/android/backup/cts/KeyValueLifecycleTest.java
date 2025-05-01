@@ -20,6 +20,7 @@ import static com.android.compatibility.common.util.BackupUtils.LOCAL_TRANSPORT_
 
 import androidx.test.runner.AndroidJUnit4;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -39,6 +40,11 @@ public class KeyValueLifecycleTest extends BaseBackupCtsTest {
     @Before
     public void setUp() throws Exception {
         super.setUp();
+    }
+
+    @After
+    public void tearDown() throws Exception {
+        super.tearDown();
     }
 
     @Test

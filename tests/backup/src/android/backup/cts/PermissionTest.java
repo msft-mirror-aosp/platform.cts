@@ -51,6 +51,7 @@ import com.android.compatibility.common.util.BackupUtils;
 import com.android.compatibility.common.util.ShellUtils;
 import com.android.modules.utils.build.SdkLevel;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -97,6 +98,11 @@ public class PermissionTest extends BaseBackupCtsTest {
 
         resetApp(APP);
         resetApp(APP22);
+    }
+
+    @After
+    public void tearDown() throws Exception {
+        super.tearDown();
     }
 
     /**

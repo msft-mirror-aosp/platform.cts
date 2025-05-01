@@ -66,7 +66,15 @@ public class BaseBackupCtsTest {
             assertTrue("LocalTransport not selected", mBackupUtils.isLocalTransportSelected());
             getBackupUtils()
                     .executeShellCommandSync("setprop log.tag." + APP_LOG_TAG + " VERBOSE");
+            getBackupUtils().setSchedulingEnabled(false);
             getBackupUtils().cancelBackups();
+        }
+    }
+
+    /** Inheritors need to call this on their @After methods. */
+    public void tearDown() throws Exception {
+        if (mIsBackupSupported) {
+            getBackupUtils().setSchedulingEnabled(true);
         }
     }
 
