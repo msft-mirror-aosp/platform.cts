@@ -35,6 +35,14 @@
     <option name="compatibility:include-filter" value="CtsAppEnumerationTestCases android.appenumeration.cts.SyncAdapterEnumerationTests#queriesPackage_getRunningServiceControlPanel_canSeeSyncAdapterTarget"/>
     <!-- CtsAppExitTestCases -->
     <option name="compatibility:include-filter" value="CtsAppExitTestCases android.app.cts.ActivityManagerAppExitInfoTest#testOther"/>
+    <!-- CtsAppFgsTestCases -->
+    <option name="compatibility:include-filter" value="CtsAppFgsTestCases android.app.cts.fgstest.ActivityManagerFgsBgStartTest#testFgsBindingFlagFGS"/>
+    <option name="compatibility:include-filter" value="CtsAppFgsTestCases android.app.cts.fgstest.ActivityManagerFgsBgStartTest#testFgsBindingFlagNone"/>
+    <option name="compatibility:include-filter" value="CtsAppFgsTestCases android.app.cts.fgstest.ActivityManagerFgsBgStartTest#testFgsStartAllowList"/>
+    <option name="compatibility:include-filter" value="CtsAppFgsTestCases android.app.cts.fgstest.ActivityManagerFgsBgStartTest#testFgsStartFromBG1"/>
+    <option name="compatibility:include-filter" value="CtsAppFgsTestCases android.app.cts.fgstest.ActivityManagerFgsBgStartTest#testFgsStartFromBGWithBindWithRestriction"/>
+    <option name="compatibility:include-filter" value="CtsAppFgsTestCases android.app.cts.fgstest.ActivityManagerFgsBgStartTest#testOverlappedTempAllowListByBroadcastOptions"/>
+    <option name="compatibility:include-filter" value="CtsAppFgsTestCases android.app.cts.fgstest.ActivityManagerFgsBgStartTest#testSecondStartForeground"/>
     <!-- CtsAppOps2TestCases -->
     <option name="compatibility:include-filter" value="CtsAppOps2TestCases android.app.appops2.cts.AppOpsLoggingTest#requestInstall"/>
     <!-- CtsAppOpsTestCases -->
@@ -51,13 +59,6 @@
     <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.KeyStoreManagerTest#grantRevokeKeyAccess_aliasDoesNotExist_throwsException"/>
     <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.ListeningPortsTest#testNoListeningLoopbackTcpPorts"/>
     <!-- CtsAppTestCases -->
-    <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.ActivityManagerFgsBgStartTest#testFgsBindingFlagFGS"/>
-    <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.ActivityManagerFgsBgStartTest#testFgsBindingFlagNone"/>
-    <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.ActivityManagerFgsBgStartTest#testFgsStartAllowList"/>
-    <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.ActivityManagerFgsBgStartTest#testFgsStartFromBG1"/>
-    <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.ActivityManagerFgsBgStartTest#testFgsStartFromBGWithBindWithRestriction"/>
-    <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.ActivityManagerFgsBgStartTest#testOverlappedTempAllowListByBroadcastOptions"/>
-    <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.ActivityManagerFgsBgStartTest#testSecondStartForeground"/>
     <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.ActivityManagerProcessStateTest#testBackgroundCheckBroadcastService"/>
     <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.ActivityManagerProcessStateTest#testCycleFgs"/>
     <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.ActivityManagerProcessStateTest#testCycleFgsTriangleBiDi"/>

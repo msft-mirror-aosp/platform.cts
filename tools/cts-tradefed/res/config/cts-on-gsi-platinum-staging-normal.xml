@@ -63,6 +63,8 @@
     <option name="compatibility:include-filter" value="CtsAppEnumerationTestCases android.appenumeration.cts.AppEnumerationTests#queriesNothing_cannotSeeAppWidgetProviderTarget[1]"/>
     <!-- CtsAppExitTestCases -->
     <option name="compatibility:include-filter" value="CtsAppExitTestCases android.app.cts.ActivityManagerAppExitInfoTest#testFreezerKillExitCode"/>
+    <!-- CtsAppFgsTestCases -->
+    <option name="compatibility:include-filter" value="CtsAppFgsTestCases android.app.cts.fgstest.ActivityManagerFgsBgStartTest#testFgsLocationStartFromBG"/>
     <!-- CtsAppFunctionTestCases -->
     <option name="compatibility:include-filter" value="CtsAppFunctionTestCases android.app.appfunctions.cts.AppFunctionManagerTest#checkManagerNotNull[IncludeRunOnPrimaryUser]"/>
     <option name="compatibility:include-filter" value="CtsAppFunctionTestCases android.app.appfunctions.cts.AppFunctionManagerTest#checkManagerNotNull[IncludeRunOnSecondaryUser]"/>
@@ -182,7 +184,6 @@
     <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV1OneSignerSHA224withECDSA"/>
     <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV4WithWithTrailingDataInMerkleTree[0]"/>
     <!-- CtsAppTestCases -->
-    <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.ActivityManagerFgsBgStartTest#testFgsLocationStartFromBG"/>
     <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.ActivityManagerFgsBgStartTest#testFgsStartFromBG1"/>
     <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.ActivityManagerFgsBgStartTest#testFgsStartFromBGWithBind"/>
     <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.ActivityManagerFgsBgStartTest#testFgsStartInBackgroundRestrictions"/>
