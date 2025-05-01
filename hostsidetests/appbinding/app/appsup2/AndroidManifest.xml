@@ -25,7 +25,7 @@
              android:exported="true"
              android:process=":persistent">
             <intent-filter>
-                <action android:name="android.app.action.BIND_SUPERVISION_APP_SERVICE"/>
+                <action android:name="android.app.action.SUPERVISION_APP_SERVICE"/>
             </intent-filter>
         </service>
 
