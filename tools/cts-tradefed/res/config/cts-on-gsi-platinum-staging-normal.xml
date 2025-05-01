@@ -221,25 +221,6 @@
     <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.DialogTest#testSetDismissMessage"/>
     <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.DialogTest#testSetOnDismissListener_noListener"/>
     <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.DialogTest#testTouchEvent"/>
-    <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.DownloadManagerTest#testAddCompletedDownload"/>
-    <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.DownloadManagerTest#testAddCompletedDownload_downloadDir"/>
-    <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.DownloadManagerTest#testAddCompletedDownload_invalidPaths"/>
-    <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.DownloadManagerTest#testDownloadManager"/>
-    <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.DownloadManagerTest#testDownloadManagerDestination"/>
-    <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.DownloadManagerTest#testDownloadManagerDestinationExtension"/>
-    <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.DownloadManagerTest#testDownloadManagerSupportsHttp"/>
-    <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.DownloadManagerTest#testDownloadManagerSupportsHttpWithExternalWebServer"/>
-    <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.DownloadManagerTest#testDownloadManagerSupportsHttpsWithExternalWebServer"/>
-    <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.DownloadManagerTest#testDownloadNotVisibleInUi"/>
-    <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.DownloadManagerTest#testDownload_mediaScanned"/>
-    <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.DownloadManagerTest#testDownload_onMediaStoreDownloadsDeleted"/>
-    <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.DownloadManagerTest#testMinimumDownload"/>
-    <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.DownloadManagerTest#testProviderAcceptsCleartext"/>
-    <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.DownloadManagerTest#testSetDestinationInExternalPublicDir_invalidRequests"/>
-    <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.DownloadManagerTest#testSetDestinationInExternalPublicDownloadDir"/>
-    <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.DownloadManagerTest#testSetDestinationUri"/>
-    <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.DownloadManagerTest#testSetDestinationUri_invalidRequests"/>
-    <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.DownloadManagerTest#testSetDestinationUri_privateAppDir"/>
     <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.InstrumentationTest#testCallActivityOnStart"/>
     <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.InstrumentationTest#testContext"/>
     <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.ServiceTest#testActivityServiceBindingLru"/>
@@ -710,6 +691,26 @@
     <option name="compatibility:include-filter" value="CtsDownloadManagerApi28 android.app.cts.DownloadManagerApi28Test#testSetDestinationUri_sdcardPath"/>
     <!-- CtsDownloadManagerInstaller -->
     <option name="compatibility:include-filter" value="CtsDownloadManagerInstaller android.app.cts.DownloadManagerInstallerTest#testSetDestinationUri_otherAppObbDir"/>
+    <!-- CtsDownloadManagerTestCases -->
+    <option name="compatibility:include-filter" value="CtsDownloadManagerTestCases android.app.cts.downloadmanager.DownloadManagerTest#testAddCompletedDownload"/>
+    <option name="compatibility:include-filter" value="CtsDownloadManagerTestCases android.app.cts.downloadmanager.DownloadManagerTest#testAddCompletedDownload_downloadDir"/>
+    <option name="compatibility:include-filter" value="CtsDownloadManagerTestCases android.app.cts.downloadmanager.DownloadManagerTest#testAddCompletedDownload_invalidPaths"/>
+    <option name="compatibility:include-filter" value="CtsDownloadManagerTestCases android.app.cts.downloadmanager.DownloadManagerTest#testDownloadManager"/>
+    <option name="compatibility:include-filter" value="CtsDownloadManagerTestCases android.app.cts.downloadmanager.DownloadManagerTest#testDownloadManagerDestination"/>
+    <option name="compatibility:include-filter" value="CtsDownloadManagerTestCases android.app.cts.downloadmanager.DownloadManagerTest#testDownloadManagerDestinationExtension"/>
+    <option name="compatibility:include-filter" value="CtsDownloadManagerTestCases android.app.cts.downloadmanager.DownloadManagerTest#testDownloadManagerSupportsHttp"/>
+    <option name="compatibility:include-filter" value="CtsDownloadManagerTestCases android.app.cts.downloadmanager.DownloadManagerTest#testDownloadManagerSupportsHttpWithExternalWebServer"/>
+    <option name="compatibility:include-filter" value="CtsDownloadManagerTestCases android.app.cts.downloadmanager.DownloadManagerTest#testDownloadManagerSupportsHttpsWithExternalWebServer"/>
+    <option name="compatibility:include-filter" value="CtsDownloadManagerTestCases android.app.cts.downloadmanager.DownloadManagerTest#testDownloadNotVisibleInUi"/>
+    <option name="compatibility:include-filter" value="CtsDownloadManagerTestCases android.app.cts.downloadmanager.DownloadManagerTest#testDownload_mediaScanned"/>
+    <option name="compatibility:include-filter" value="CtsDownloadManagerTestCases android.app.cts.downloadmanager.DownloadManagerTest#testDownload_onMediaStoreDownloadsDeleted"/>
+    <option name="compatibility:include-filter" value="CtsDownloadManagerTestCases android.app.cts.downloadmanager.DownloadManagerTest#testMinimumDownload"/>
+    <option name="compatibility:include-filter" value="CtsDownloadManagerTestCases android.app.cts.downloadmanager.DownloadManagerTest#testProviderAcceptsCleartext"/>
+    <option name="compatibility:include-filter" value="CtsDownloadManagerTestCases android.app.cts.downloadmanager.DownloadManagerTest#testSetDestinationInExternalPublicDir_invalidRequests"/>
+    <option name="compatibility:include-filter" value="CtsDownloadManagerTestCases android.app.cts.downloadmanager.DownloadManagerTest#testSetDestinationInExternalPublicDownloadDir"/>
+    <option name="compatibility:include-filter" value="CtsDownloadManagerTestCases android.app.cts.downloadmanager.DownloadManagerTest#testSetDestinationUri"/>
+    <option name="compatibility:include-filter" value="CtsDownloadManagerTestCases android.app.cts.downloadmanager.DownloadManagerTest#testSetDestinationUri_invalidRequests"/>
+    <option name="compatibility:include-filter" value="CtsDownloadManagerTestCases android.app.cts.downloadmanager.DownloadManagerTest#testSetDestinationUri_privateAppDir"/>
     <!-- CtsDumpsysHostTestCases -->
     <option name="compatibility:include-filter" value="CtsDumpsysHostTestCases android.dumpsys.cts.BatteryStatsDumpsysTest#testBatterystatsOutput"/>
     <option name="compatibility:include-filter" value="CtsDumpsysHostTestCases android.dumpsys.cts.GfxInfoDumpsysTest#testGfxinfoFramestats"/>
