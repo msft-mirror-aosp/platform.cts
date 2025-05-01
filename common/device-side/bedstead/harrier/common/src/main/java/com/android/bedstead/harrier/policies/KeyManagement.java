@@ -22,26 +22,31 @@ import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLI
 import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.CANNOT_BE_APPLIED_BY_ROLE_HOLDER;
 import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.CAN_BE_DELEGATED;
 import static com.android.bedstead.nene.devicepolicy.CommonDevicePolicy.DELEGATION_CERT_INSTALL;
-import static com.android.bedstead.permissions.CommonPermissions.MANAGE_DEVICE_POLICY_CERTIFICATES;
 
 import com.android.bedstead.enterprise.annotations.EnterprisePolicy;
 
 /**
  * Policies around key management
  *
- * The DPM role holder does not have an admin receiver. For tests that rely on the device admin
+ * <p>The DPM role holder does not have an admin receiver. For tests that rely on the device admin
  * receiver or delegated admin receiver, use the {@code KeyManagementWithAdminReceiver} policy.
  *
- * <p>This is used by methods such as
- * {@code DevicePolicyManager#installKeyPair(ComponentName, PrivateKey, Certificate, String)} and
- * {@code DevicePolicyManager#removeKeyPair(ComponentName, String)}.
+ * <p>This is used by methods such as {@code DevicePolicyManager#installKeyPair(ComponentName,
+ * PrivateKey, Certificate, String)} and {@code DevicePolicyManager#removeKeyPair(ComponentName,
+ * String)}.
  */
-@EnterprisePolicy(dpc = {APPLIED_BY_DEVICE_OWNER | APPLIES_TO_OWN_USER,
-        APPLIED_BY_PROFILE_OWNER | APPLIES_TO_OWN_USER | CAN_BE_DELEGATED
-                | CANNOT_BE_APPLIED_BY_ROLE_HOLDER},
-        delegatedScopes = DELEGATION_CERT_INSTALL,
-        permissions = @EnterprisePolicy.Permission(
-                appliedWith = MANAGE_DEVICE_POLICY_CERTIFICATES,
-                appliesTo = APPLIES_TO_OWN_USER))
-public final class KeyManagement {
-}
+@EnterprisePolicy(
+        dpc = {
+            APPLIED_BY_DEVICE_OWNER | APPLIES_TO_OWN_USER,
+            APPLIED_BY_PROFILE_OWNER
+                    | APPLIES_TO_OWN_USER
+                    | CAN_BE_DELEGATED
+                    | CANNOT_BE_APPLIED_BY_ROLE_HOLDER
+        },
+        delegatedScopes = DELEGATION_CERT_INSTALL
+        // TODO(b/415008070): re-enable once platform supports permission callers
+        // permissions = @EnterprisePolicy.Permission(
+        //         appliedWith = MANAGE_DEVICE_POLICY_CERTIFICATES,
+        //         appliesTo = APPLIES_TO_OWN_USER)
+        )
+public final class KeyManagement {}
