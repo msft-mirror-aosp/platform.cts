@@ -601,6 +601,7 @@ public class InstrumentedAutoFillService extends AutofillService {
                 throw new IllegalStateException("Interrupted", e);
             }
             if (request == null) {
+                Log.w(TAG, "getNextFillRequest(): no fill request found after retrying");
                 throw new RetryableException(FILL_TIMEOUT, "onFillRequest() not called");
             }
             return request;
