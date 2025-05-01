@@ -26,7 +26,7 @@ import android.platform.test.annotations.LargeTest;
 
 import com.android.compatibility.common.tradefed.build.CompatibilityBuildHelper;
 import com.android.incfs.install.IncrementalInstallSession;
-import com.android.incfs.install.adb.ddmlib.DeviceConnection;
+import com.android.incfs.install.adb.ddmlib.AdbDeviceConnection;
 import com.android.tradefed.device.CollectingOutputReceiver;
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
 import com.android.tradefed.testtype.junit4.BaseHostJUnit4Test;
@@ -96,7 +96,7 @@ public class IncrementalLoadingProgressTest extends BaseHostJUnit4Test {
                 .build();
 
         mSession.start(Executors.newCachedThreadPool(),
-                DeviceConnection.getFactory(getDevice().getSerialNumber()));
+                AdbDeviceConnection.getFactory(getDevice().getSerialNumber()));
         mSession.waitForInstallCompleted(30, TimeUnit.SECONDS);
         assertTrue(getDevice().isPackageInstalled(TEST_APP_PACKAGE_NAME));
     }
