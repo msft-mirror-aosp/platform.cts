@@ -31,11 +31,13 @@ import com.android.tradefed.util.RunUtil;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.util.regex.Pattern;
 
+@Ignore("This test needs to be migrated to Bedstead. See b/415023190.")
 @RunWith(DeviceJUnit4ClassRunner.class)
 @RequiresFlagsEnabled(Flags.FLAG_ENABLE_SUPERVISION_APP_SERVICE)
 public class SupervisionAppBindingHostTest extends BaseHostJUnit4Test implements IBuildReceiver {
