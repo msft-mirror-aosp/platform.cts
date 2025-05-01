@@ -33,6 +33,8 @@ import static android.net.wifi.WifiConfiguration.SECURITY_TYPE_WAPI_PSK;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import static org.junit.Assert.assertThrows;
+
 import android.content.Context;
 import android.net.wifi.OuiKeyedData;
 import android.net.wifi.WifiConfiguration;
@@ -44,6 +46,7 @@ import android.platform.test.annotations.RequiresFlagsEnabled;
 
 import androidx.test.filters.SdkSuppress;
 
+import com.android.compatibility.common.util.ApiTest;
 import com.android.wifi.flags.Flags;
 
 import java.util.Arrays;
@@ -214,5 +217,25 @@ public class WifiConfigurationTest extends WifiJUnit3TestBase {
         List<OuiKeyedData> vendorData = Arrays.asList(ouiKeyedData);
         configuration.setVendorData(vendorData);
         assertTrue(vendorData.equals(configuration.getVendorData()));
+    }
+
+    // TODO: b/394417020 - change SdkSuppress as minSdkVersion to 2026 Q2
+    @SdkSuppress(minSdkVersion = 37)
+    @RequiresFlagsEnabled(Flags.FLAG_MULTI_USER_WIFI_ENHANCEMENT)
+    @ApiTest(
+            apis = {
+                "android.net.wifi.WifiConfiguration#setAllowedToUpdateByOtherUsers",
+                "android.net.wifi.WifiConfiguration#isAllowedToUpdateByOtherUsers"
+            })
+    public void testSetAndGetAllowedToUpdateByOtherUser() {
+        WifiConfiguration config = new WifiConfiguration();
+        // Default should be allowed
+        assertTrue(config.isAllowedToUpdateByOtherUsers());
+        config.setAllowedToUpdateByOtherUsers(false);
+        assertFalse(config.isAllowedToUpdateByOtherUsers());
+        config.shared = false;
+        // IllegalArgumentException when setting true to a private configuration.
+        assertThrows(
+                IllegalArgumentException.class, () -> config.setAllowedToUpdateByOtherUsers(true));
     }
 }
