@@ -34,6 +34,11 @@
     <target_preparer class="com.android.tradefed.targetprep.RunCommandTargetPreparer">
         <option name="run-command" value="cmd sdk_sandbox set-state --enabled"/>
         <option name="run-command" value="device_config set_sync_disabled_for_tests persistent" />
+
+        <!-- Unlock and turn on the screen. -->
+        <option name="run-command" value="svc power stayon true" />
+        <option name="run-command" value="input keyevent MENU" />
+
         <option name="teardown-command" value="cmd sdk_sandbox set-state --reset"/>
         <option name="teardown-command" value="device_config set_sync_disabled_for_tests none" />
     </target_preparer>
