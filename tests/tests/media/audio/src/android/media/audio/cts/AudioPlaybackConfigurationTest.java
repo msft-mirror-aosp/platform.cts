@@ -114,8 +114,6 @@ public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
      **/
     private static final int MUTED_BY_PORT_VOLUME = (1 << 6);
 
-    private VolumeShaper mMuteShaper;
-
     // not declared inside test so it can be released in case of failure
     private MediaPlayer mMp;
     private SoundPool mSp;
@@ -706,21 +704,24 @@ public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
 
     private void checkMuteFromVolumeShaperNotification(MyPlayer player, @NonNull AudioAttributes aa,
             int sessionId) throws Exception {
-        verifyMuteUnmuteNotifications(
-                /* start= */ player.mPlay,
-                /* mute= */ () -> {
-                    mMuteShaper = player.mCreateVolumeShaper.apply(SHAPER_MUTE);
-                    mMuteShaper.apply(VolumeShaper.Operation.PLAY);
-                },
-                /* unmute= */ () -> {
-                    mMuteShaper.replace(
-                            SHAPER_MUTE, VolumeShaper.Operation.REVERSE, /* join= */ false);
-                    mMuteShaper.apply(VolumeShaper.Operation.PLAY);
-                },
-                /* muteChangesActiveState= */ true,
-                MUTED_BY_VOLUME_SHAPER,
-                player.mSessionId,
-                aa);
+        try (VolumeShaper myMuteShaper = player.mCreateVolumeShaper.apply(SHAPER_MUTE)) {
+            verifyMuteUnmuteNotifications(
+                    /* start= */ player.mPlay,
+                    /* mute= */ () -> {
+                        myMuteShaper.apply(VolumeShaper.Operation.PLAY);
+                    },
+                    /* unmute= */ () -> {
+                        myMuteShaper.replace(
+                                SHAPER_MUTE, VolumeShaper.Operation.REVERSE, /* join= */ false);
+                        myMuteShaper.apply(VolumeShaper.Operation.PLAY);
+                    },
+                    /* muteChangesActiveState= */ true,
+                    MUTED_BY_VOLUME_SHAPER,
+                    player.mSessionId,
+                    aa);
+        } catch (Exception e) {
+            fail("Exception thrown during verifyMuteUnmuteNotifications " + e);
+        }
     }
 
     private void verifyMuteUnmuteNotifications(
