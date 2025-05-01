@@ -31,10 +31,6 @@ import android.car.cts.powerpolicy.PowerPolicyTestHelper;
 import android.car.cts.powerpolicy.PowerPolicyTestResult;
 import android.car.cts.powerpolicy.SilentModeInfo;
 import android.car.cts.powerpolicy.SystemInfoParser;
-import android.car.feature.Flags;
-import android.platform.test.annotations.FlakyTest;
-import android.platform.test.annotations.RequiresFlagsDisabled;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.host.HostFlagsValueProvider;
 
@@ -78,7 +74,6 @@ public final class PowerPolicyHostTest extends CarHostJUnit4TestCase {
     };
 
     private final PowerPolicyTestAnalyzer mTestAnalyzer = new PowerPolicyTestAnalyzer(this);
-    private boolean mUseProtoDump;
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule =
@@ -99,64 +94,126 @@ public final class PowerPolicyHostTest extends CarHostJUnit4TestCase {
     }
 
     @Test
-    @RequiresFlagsDisabled(Flags.FLAG_CAR_DUMP_TO_PROTO)
-    public void testPowerPolicySilentMode_textDump() throws Exception {
-        setUseProtoDump(false);
+    public void testPowerPolicySilentMode() throws Exception {
         waitForOnState();
-        testPowerPolicySilentMode();
-    }
+        checkSilentModeSupported();
+        String testcase = "testPowerPolicySilentModeFull:";
 
-    @Test
-    @RequiresFlagsEnabled(Flags.FLAG_CAR_DUMP_TO_PROTO)
-    public void testPowerPolicySilentMode_protoDump() throws Exception {
-        setUseProtoDump(true);
-        waitForOnState();
-        testPowerPolicySilentMode();
-    }
+        String teststep = "switch to forced silent";
+        enterForcedSilentMode();
+        PowerPolicyTestHelper testHelper = getTestHelper(testcase, 1, teststep);
+        // Test starts in ON state, state shouldn't change between test start and this check
+        checkForcedSilentMode(testHelper);
 
-    /**
-     * Tests the error conditions for CPMS at the ON state.
-     *
-     * <p>All other VHAL events but {@code SHUTDOWN_PREPARE} shall not have any impact
-     * to CPMS power state. Text dump is used to get device state.
-     */
-    @Test
-    @RequiresFlagsDisabled(Flags.FLAG_CAR_DUMP_TO_PROTO)
-    public void testDefaultStateMachineAtONState_textDump() throws Exception {
-        setUseProtoDump(false);
-        waitForOnState();
-        testDefaultStateMachineAtONState();
+        teststep = "restore to normal mode";
+        leaveForcedSilentMode();
+        testHelper = getTestHelper(testcase, 2, teststep);
+        // Test starts in ON state, state shouldn't change between test start and this check
+        checkLeaveForcedSilentMode(testHelper);
     }
 
     /**
      * Tests the error conditions for CPMS at the ON state.
      *
-     * <p>All other VHAL events but {@code SHUTDOWN_PREPARE} shall not have any impact
-     * to CPMS power state. Proto dump is used to get device state.
+     * <p>All other VHAL events but {@code SHUTDOWN_PREPARE} shall not have any impact to CPMS power
+     * state.
      */
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_CAR_DUMP_TO_PROTO)
-    public void testDefaultStateMachineAtONState_protoDump() throws Exception {
-        setUseProtoDump(true);
+    public void testDefaultStateMachineAtONState() throws Exception {
         waitForOnState();
-        testDefaultStateMachineAtONState();
+        String testcase = "testDefaultStateMachineAtONState:";
+
+        for (int i = 0; i < DEFAULT_STATE_MACHINE_AT_ON_STEP_NAMES.length; i++) {
+            triggerVhalPowerStateReq(
+                    DEFAULT_STATE_MACHINE_AT_ON_VHAL_REQS[i],
+                    PowerPolicyConstants.ShutdownParam.NOT_USED);
+            PowerPolicyTestHelper testHelper =
+                    getTestHelper(testcase, i + 1, DEFAULT_STATE_MACHINE_AT_ON_STEP_NAMES[i]);
+            // power state shouldn't change
+            testHelper.checkCurrentState(PowerPolicyConstants.CarPowerState.ON);
+            // Check for enabled components, since oem can have their own policy defined.
+            testHelper.checkCurrentPowerComponents(PowerPolicyDef.PolicySet.DEFAULT_ALL_ON);
+        }
     }
 
-    @FlakyTest(bugId = 327307932)
     @Test
-    @RequiresFlagsDisabled(Flags.FLAG_CAR_DUMP_TO_PROTO)
-    public void testPowerPolicyChange_textDump() throws Exception {
-        setUseProtoDump(false);
+    public void testPowerPolicyChange() throws Exception {
         waitForOnState();
-        testPowerPolicyChange();
-    }
+        String testcase = "testPowerPolicyChange:";
+        int stepNo = 0;
 
-    @Test
-    @RequiresFlagsEnabled(Flags.FLAG_CAR_DUMP_TO_PROTO)
-    public void testPowerPolicyChange_protoDump() throws Exception {
-        setUseProtoDump(true);
+        String teststep = "check the initial power policies";
+        PowerPolicyTestHelper testHelper = getTestHelper(testcase, stepNo++, teststep);
+        // Test starts in ON state, state shouldn't change between test start and this check
+        testHelper.checkCurrentState(PowerPolicyConstants.CarPowerState.ON);
+        // save number of device power policies
+        int registeredPoliciesNumber = testHelper.getNumberOfRegisteredPolicies();
+        int expectedTotalPolicies = registeredPoliciesNumber;
+
+        // create two power policies, test1 and test2, for power policy change test
+        defineAndCheckPolicy(
+                PowerPolicyDef.PolicySet.TEST1, testcase, stepNo++, ++expectedTotalPolicies);
+        defineAndCheckPolicy(
+                PowerPolicyDef.PolicySet.TEST2, testcase, stepNo++, ++expectedTotalPolicies);
+
+        teststep = "apply power policy test1";
+        applyPowerPolicy(PowerPolicyDef.IdSet.TEST1);
+        testHelper = getTestHelper(testcase, stepNo++, teststep);
+        testHelper.checkCurrentPolicy(PowerPolicyDef.IdSet.TEST1);
+
+        teststep = "apply power policy test2";
+        applyPowerPolicy(PowerPolicyDef.IdSet.TEST2);
+        testHelper = getTestHelper(testcase, stepNo++, teststep);
+        testHelper.checkCurrentPolicy(PowerPolicyDef.IdSet.TEST2);
+
+        teststep = "revert power policy back to the default";
+        applyPowerPolicy(PowerPolicyDef.IdSet.DEFAULT_ALL_ON);
+        testHelper = getTestHelper(testcase, stepNo++, teststep);
+        testHelper.checkCurrentPolicy(PowerPolicyDef.IdSet.DEFAULT_ALL_ON);
+
+        // add "test power policy listener" here so that one reboot clears all
+        defineAndCheckPolicy(
+                PowerPolicyDef.PolicySet.LISTENER_TEST,
+                testcase,
+                stepNo++,
+                ++expectedTotalPolicies);
+        String clientTestcase = "PowerPolicyListenerTest";
+        String component = "AUDIO";
+        PowerPolicyTestResult testResult = new PowerPolicyTestResult(mTestAnalyzer);
+        String clientAction = PowerPolicyTestCommandType.DUMP_LISTENER.name();
+
+        testPowerPolicyListeners(clientTestcase, component, testResult, clientAction);
+
+        // add respect to user setting test case here to utilize a single device reboot
+        testPowerPolicyAndComponentUserSetting();
+
+        // add power policy group test here to utilize added test1 and test2 policies
+        teststep = "check default power policy group";
+        PowerPolicyGroups emptyGroups = new PowerPolicyGroups();
+        testHelper = getTestHelper(testcase, stepNo++, teststep);
+        testHelper.checkCurrentPolicyGroupId(null);
+        testHelper.checkPowerPolicyGroups(emptyGroups);
+
+        teststep = "define power policy group";
+        definePowerPolicyGroup(PowerPolicyGroups.TestSet.POLICY_GROUP_DEF1.toShellCommandString());
+        definePowerPolicyGroup(PowerPolicyGroups.TestSet.POLICY_GROUP_DEF2.toShellCommandString());
+        testHelper = getTestHelper(testcase, stepNo++, teststep);
+        // check that device policy groups, include just added groups as well
+        testHelper.checkPowerPolicyGroupsDefined(PowerPolicyGroups.TestSet.POLICY_GROUPS1);
+
+        teststep = "set power policy group";
+        setPowerPolicyGroup(PowerPolicyGroups.TestSet.GROUP_ID1);
+        testHelper = getTestHelper(testcase, stepNo++, teststep);
+        testHelper.checkCurrentPolicyGroupId(PowerPolicyGroups.TestSet.GROUP_ID1);
+
+        // reboot device to clear created TEST1 and TEST2 test cases.
+        // need to find a way to move reboot device into AfterAll
+        rebootDevice();
+        teststep = "reboot to clear added test power policies";
+        // device was restarted, need to wait for ON state
         waitForOnState();
-        testPowerPolicyChange();
+        testHelper = getTestHelper(testcase, stepNo++, teststep);
+        testHelper.checkTotalRegisteredPolicies(registeredPoliciesNumber);
     }
 
     public String fetchActivityDumpsys() throws Exception {
@@ -173,10 +230,6 @@ public final class PowerPolicyHostTest extends CarHostJUnit4TestCase {
                             && frameworkLayerStateInfo.getCurrentState()
                             == PowerPolicyConstants.CarPowerState.ON;
                 });
-    }
-
-    private void setUseProtoDump(boolean useProtoDump) {
-        mUseProtoDump = useProtoDump;
     }
 
     private PowerPolicyTestHelper getTestHelper(String testcase, int stepNo, String stepName)
@@ -199,29 +252,23 @@ public final class PowerPolicyHostTest extends CarHostJUnit4TestCase {
     }
 
     private void checkSilentModeSupported() throws Exception {
-        if (mUseProtoDump) {
-            CarPowerDumpProto proto = ProtoUtils.getProto(getDevice(), CarPowerDumpProto.parser(),
-                    CpmsFrameworkLayerStateInfo.COMMAND_PROTO);
-            CpmsFrameworkLayerStateInfo info = CpmsFrameworkLayerStateInfo.parseProto(proto);
-            assumeTrue("HW does not support silent mode. Skip the test",
-                    info.isSilentModeSupported());
-        } else {
-            SilentModeInfo smInfo = getSilentModeInfo();
-            assumeTrue("HW does not support silent mode. Skip the test",
-                    smInfo.isSilentModeSupported());
-        }
+        CarPowerDumpProto proto =
+                ProtoUtils.getProto(
+                        getDevice(),
+                        CarPowerDumpProto.parser(),
+                        CpmsFrameworkLayerStateInfo.COMMAND_PROTO);
+        CpmsFrameworkLayerStateInfo info = CpmsFrameworkLayerStateInfo.parseProto(proto);
+        assumeTrue("HW does not support silent mode. Skip the test", info.isSilentModeSupported());
     }
 
     private CpmsFrameworkLayerStateInfo getCpmsFrameworkLayerStateInfo()
             throws Exception {
-        if (mUseProtoDump) {
-            CarPowerDumpProto proto = ProtoUtils.getProto(getDevice(), CarPowerDumpProto.parser(),
-                    CpmsFrameworkLayerStateInfo.COMMAND_PROTO);
-            return CpmsFrameworkLayerStateInfo.parseProto(proto);
-        } else {
-            return executeAndParseCommand(new SystemInfoParser<CpmsFrameworkLayerStateInfo>(
-                    CpmsFrameworkLayerStateInfo.class), CpmsFrameworkLayerStateInfo.COMMAND);
-        }
+        CarPowerDumpProto proto =
+                ProtoUtils.getProto(
+                        getDevice(),
+                        CarPowerDumpProto.parser(),
+                        CpmsFrameworkLayerStateInfo.COMMAND_PROTO);
+        return CpmsFrameworkLayerStateInfo.parseProto(proto);
     }
 
     private CpmsSystemLayerStateInfo getCpmsSystemLayerStateInfo() throws Exception {
@@ -422,113 +469,6 @@ public final class PowerPolicyHostTest extends CarHostJUnit4TestCase {
         for (int i = 0; i < testHelpers.length; i++) {
             testComponent(testHelpers[i]);
         }
-    }
-
-    private void testPowerPolicySilentMode() throws Exception {
-        checkSilentModeSupported();
-        String testcase = "testPowerPolicySilentModeFull:";
-
-        String teststep = "switch to forced silent";
-        enterForcedSilentMode();
-        PowerPolicyTestHelper testHelper = getTestHelper(testcase, 1, teststep);
-        // Test starts in ON state, state shouldn't change between test start and this check
-        checkForcedSilentMode(testHelper);
-
-        teststep = "restore to normal mode";
-        leaveForcedSilentMode();
-        testHelper = getTestHelper(testcase, 2, teststep);
-        // Test starts in ON state, state shouldn't change between test start and this check
-        checkLeaveForcedSilentMode(testHelper);
-    }
-
-    private void testDefaultStateMachineAtONState() throws Exception {
-        String testcase = "testDefaultStateMachineAtONState:";
-
-        for (int i = 0; i < DEFAULT_STATE_MACHINE_AT_ON_STEP_NAMES.length; i++) {
-            triggerVhalPowerStateReq(DEFAULT_STATE_MACHINE_AT_ON_VHAL_REQS[i],
-                    PowerPolicyConstants.ShutdownParam.NOT_USED);
-            PowerPolicyTestHelper testHelper = getTestHelper(testcase, i + 1,
-                    DEFAULT_STATE_MACHINE_AT_ON_STEP_NAMES[i]);
-            // power state shouldn't change
-            testHelper.checkCurrentState(PowerPolicyConstants.CarPowerState.ON);
-            // Check for enabled components, since oem can have their own policy defined.
-            testHelper.checkCurrentPowerComponents(PowerPolicyDef.PolicySet.DEFAULT_ALL_ON);
-        }
-    }
-
-    private void testPowerPolicyChange() throws Exception {
-        String testcase = "testPowerPolicyChange:";
-        int stepNo = 0;
-
-        String teststep = "check the initial power policies";
-        PowerPolicyTestHelper testHelper = getTestHelper(testcase, stepNo++, teststep);
-        // Test starts in ON state, state shouldn't change between test start and this check
-        testHelper.checkCurrentState(PowerPolicyConstants.CarPowerState.ON);
-        // save number of device power policies
-        int registeredPoliciesNumber = testHelper.getNumberOfRegisteredPolicies();
-        int expectedTotalPolicies = registeredPoliciesNumber;
-
-        // create two power policies, test1 and test2, for power policy change test
-        defineAndCheckPolicy(PowerPolicyDef.PolicySet.TEST1, testcase, stepNo++,
-                ++expectedTotalPolicies);
-        defineAndCheckPolicy(PowerPolicyDef.PolicySet.TEST2, testcase, stepNo++,
-                ++expectedTotalPolicies);
-
-        teststep = "apply power policy test1";
-        applyPowerPolicy(PowerPolicyDef.IdSet.TEST1);
-        testHelper = getTestHelper(testcase, stepNo++, teststep);
-        testHelper.checkCurrentPolicy(PowerPolicyDef.IdSet.TEST1);
-
-        teststep = "apply power policy test2";
-        applyPowerPolicy(PowerPolicyDef.IdSet.TEST2);
-        testHelper = getTestHelper(testcase, stepNo++, teststep);
-        testHelper.checkCurrentPolicy(PowerPolicyDef.IdSet.TEST2);
-
-        teststep = "revert power policy back to the default";
-        applyPowerPolicy(PowerPolicyDef.IdSet.DEFAULT_ALL_ON);
-        testHelper = getTestHelper(testcase, stepNo++, teststep);
-        testHelper.checkCurrentPolicy(PowerPolicyDef.IdSet.DEFAULT_ALL_ON);
-
-        // add "test power policy listener" here so that one reboot clears all
-        defineAndCheckPolicy(PowerPolicyDef.PolicySet.LISTENER_TEST, testcase, stepNo++,
-                ++expectedTotalPolicies);
-        String clientTestcase = "PowerPolicyListenerTest";
-        String component = "AUDIO";
-        PowerPolicyTestResult testResult = new PowerPolicyTestResult(mTestAnalyzer);
-        String clientAction = PowerPolicyTestCommandType.DUMP_LISTENER.name();
-
-        testPowerPolicyListeners(clientTestcase, component, testResult, clientAction);
-
-        // add respect to user setting test case here to utilize a single device reboot
-        testPowerPolicyAndComponentUserSetting();
-
-        // add power policy group test here to utilize added test1 and test2 policies
-        teststep = "check default power policy group";
-        PowerPolicyGroups emptyGroups = new PowerPolicyGroups();
-        testHelper = getTestHelper(testcase, stepNo++, teststep);
-        testHelper.checkCurrentPolicyGroupId(null, mUseProtoDump);
-        testHelper.checkPowerPolicyGroups(emptyGroups);
-
-        teststep = "define power policy group";
-        definePowerPolicyGroup(PowerPolicyGroups.TestSet.POLICY_GROUP_DEF1.toShellCommandString());
-        definePowerPolicyGroup(PowerPolicyGroups.TestSet.POLICY_GROUP_DEF2.toShellCommandString());
-        testHelper = getTestHelper(testcase, stepNo++, teststep);
-        // check that device policy groups, include just added groups as well
-        testHelper.checkPowerPolicyGroupsDefined(PowerPolicyGroups.TestSet.POLICY_GROUPS1);
-
-        teststep = "set power policy group";
-        setPowerPolicyGroup(PowerPolicyGroups.TestSet.GROUP_ID1);
-        testHelper = getTestHelper(testcase, stepNo++, teststep);
-        testHelper.checkCurrentPolicyGroupId(PowerPolicyGroups.TestSet.GROUP_ID1, mUseProtoDump);
-
-        // reboot device to clear created TEST1 and TEST2 test cases.
-        // need to find a way to move reboot device into AfterAll
-        rebootDevice();
-        teststep = "reboot to clear added test power policies";
-        // device was restarted, need to wait for ON state
-        waitForOnState();
-        testHelper = getTestHelper(testcase, stepNo++, teststep);
-        testHelper.checkTotalRegisteredPolicies(registeredPoliciesNumber);
     }
 
     private static final class ComponentTestHelper<T> {

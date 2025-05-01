@@ -17,55 +17,61 @@ package {
 }
 
 android_test {
-    name: "CtsAppFgsTestCases",
-    team: "trendy_team_framework_backstage_power",
+    name: "CtsDownloadManagerTestCases",
     defaults: ["cts_defaults"],
     libs: [
-        "android.test.runner.stubs.system",
-        "org.apache.http.legacy.stubs.system",
-        "android.test.base.stubs.system",
+        "android.test.runner.stubs.test",
+        "android.test.base.stubs.test",
     ],
     static_libs: [
-        "androidx.test.uiautomator_uiautomator",
         "androidx.test.rules",
+        "bedstead",
         "compatibility-device-util-axt",
-        "CtsExternalServiceCommon",
-        "CtsAppTestStubsShared",
-        "cts-wm-util",
-        "libprotobuf-java-lite",
-        "permission-test-util-lib",
-        "flag-junit",
-        "android.content.pm.flags-aconfig-java",
-        "com.android.media.flags.bettertogether-aconfig-java",
-        "services.core",
+        "ctstestrunner-axt",
+        "ctstestserver",
+        "download_manager_lib",
+    ],
+    exclude_srcs: [
+        "src/android/app/cts/downloadmanager/DownloadManagerTestBase.java",
     ],
     srcs: [
         "src/**/*.java",
-        "app/src/**/*.aidl",
     ],
+    // Tag this module as a cts test artifact
     test_suites: [
         "cts",
         "general-tests",
     ],
-    instrumentation_for: "CtsAppTestFgsTestHelper",
+    instrumentation_for: "CtsAppTestStubs",
+    sdk_version: "test_current",
+    min_sdk_version: "29",
     manifest: "AndroidManifest.xml",
     test_config: "AndroidTest.xml",
-    platform_apis: true,
+    dxflags: ["--multi-dex"],
     data: [
-        ":CtsAppTestStubsApp1",
-        ":CtsAppTestStubsApp2",
-        ":CtsAppTestStubsApp3",
-        ":CtsAppTestFgsTestHelper",
-        ":CtsAppTestFgsTestHelperCurrent",
-        ":CtsAppTestFgsTestHelperApi33",
+        ":CtsAppTestStubs",
+        ":StorageDelegator",
     ],
     per_testcase_directory: true,
 }
 
+android_library {
+    name: "download_manager_lib",
+    srcs: [
+        "src/android/app/cts/downloadmanager/DownloadManagerTestBase.java",
+    ],
+    static_libs: [
+        "androidx.test.rules",
+        "compatibility-device-util-axt",
+        "ctstestserver",
+    ],
+    min_sdk_version: "29",
+    platform_apis: true,
+}
+
 test_module_config {
-    name: "CtsAppFgsTestCases_pm_Presubmit",
-    base: "CtsAppFgsTestCases",
+    name: "CtsDownloadManagerTestCases_cts_downloadmanagertest",
+    base: "CtsDownloadManagerTestCases",
     test_suites: ["general-tests"],
-    include_annotations: ["android.platform.test.annotations.Presubmit"],
-    exclude_annotations: ["androidx.test.filters.LargeTest"],
+    include_filters: ["android.app.cts.downloadmanager.DownloadManagerTest"],
 }

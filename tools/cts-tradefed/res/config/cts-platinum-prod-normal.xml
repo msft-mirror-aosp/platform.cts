@@ -427,6 +427,12 @@
     <option name="compatibility:include-filter" value="CtsAppFgsStartTestCases android.app.cts.fgsstarttest.ActivityManagerNewFgsLogicTest#testForApi34"/>
     <option name="compatibility:include-filter" value="CtsAppFgsStartTestCases android.app.cts.fgsstarttest.ActivityManagerNewFgsLogicTest#testForCurrent"/>
     <!-- CtsAppFgsTestCases -->
+    <option name="compatibility:include-filter" value="CtsAppFgsTestCases android.app.cts.fgstest.ActivityManagerFgsBgStartTest#testAlarmClockFgsNotStoppedByBackgroundRestricted"/>
+    <option name="compatibility:include-filter" value="CtsAppFgsTestCases android.app.cts.fgstest.ActivityManagerFgsBgStartTest#testFgsBindingFlagActivity"/>
+    <option name="compatibility:include-filter" value="CtsAppFgsTestCases android.app.cts.fgstest.ActivityManagerFgsBgStartTest#testFgsStartAllowList"/>
+    <option name="compatibility:include-filter" value="CtsAppFgsTestCases android.app.cts.fgstest.ActivityManagerFgsBgStartTest#testFgsStartFromFgsState"/>
+    <option name="compatibility:include-filter" value="CtsAppFgsTestCases android.app.cts.fgstest.ActivityManagerFgsBgStartTest#testTempAllowListReasonCodeAlarmClock"/>
+    <option name="compatibility:include-filter" value="CtsAppFgsTestCases android.app.cts.fgstest.ActivityManagerFgsBgStartTest#testUpdateUidProcState"/>
     <option name="compatibility:include-filter" value="CtsAppFgsTestCases android.app.cts.fgstest.ActivityManagerForegroundServiceTypeTest#testForegroundServiceTypeLocationPermission"/>
     <option name="compatibility:include-filter" value="CtsAppFgsTestCases android.app.cts.fgstest.ActivityManagerForegroundServiceTypeTest#testForegroundServiceTypeMediaProjectionPermission"/>
     <option name="compatibility:include-filter" value="CtsAppFgsTestCases android.app.cts.fgstest.ActivityManagerForegroundServiceTypeTest#testForegroundServiceTypeSystemExemptedPermission"/>
@@ -745,12 +751,6 @@
     <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testV4IncToV3NonIncSameKeyUpgradeSucceeds[0]"/>
     <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testV4IncToV3NonIncSameKeyUpgradeSucceeds[1]"/>
     <!-- CtsAppTestCases -->
-    <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.ActivityManagerFgsBgStartTest#testAlarmClockFgsNotStoppedByBackgroundRestricted"/>
-    <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.ActivityManagerFgsBgStartTest#testFgsBindingFlagActivity"/>
-    <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.ActivityManagerFgsBgStartTest#testFgsStartAllowList"/>
-    <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.ActivityManagerFgsBgStartTest#testFgsStartFromFgsState"/>
-    <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.ActivityManagerFgsBgStartTest#testTempAllowListReasonCodeAlarmClock"/>
-    <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.ActivityManagerFgsBgStartTest#testUpdateUidProcState"/>
     <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.ActivityManagerProcessStateTest#testBackgroundCheckActivityService"/>
     <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.ActivityManagerProcessStateTest#testBackgroundCheckBroadcastService"/>
     <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.ActivityManagerProcessStateTest#testBackgroundCheckService"/>
@@ -1086,6 +1086,9 @@
     <option name="compatibility:include-filter" value="CtsBackupHostTestCases android.cts.backup.RestoreAnyVersionHostSideTest#testRestoreAnyVersion_True"/>
     <option name="compatibility:include-filter" value="CtsBackupHostTestCases android.cts.backup.SuccessNotificationHostSideTest#testSuccessNotificationForFullBackup"/>
     <option name="compatibility:include-filter" value="CtsBackupHostTestCases android.cts.backup.SuccessNotificationHostSideTest#testSuccessNotificationForKeyValueBackup"/>
+    <!-- CtsBatteryManagerTestCases -->
+    <option name="compatibility:include-filter" value="CtsBatteryManagerTestCases com.android.cts.batterymanager.BatteryChangedBroadcastTest#batteryLevelUpdated_broadcastSentImmediately"/>
+    <option name="compatibility:include-filter" value="CtsBatteryManagerTestCases com.android.cts.batterymanager.BatteryChangedBroadcastTest#batteryStatusUpdated_broadcastSentImmediately"/>
     <!-- CtsBiometricsTestCases -->
     <option name="compatibility:include-filter" value="CtsBiometricsTestCases android.server.biometrics.BiometricActivityTests#testBiometricOnly_authenticateFromForegroundActivity"/>
     <option name="compatibility:include-filter" value="CtsBiometricsTestCases android.server.biometrics.BiometricActivityTests#testBiometricOnly_rejectThenAuthenticate"/>
@@ -3104,8 +3107,6 @@
     <option name="compatibility:include-filter" value="CtsOsHostTestCases android.os.cts.StaticSharedLibsHostTests#testStaticSharedLibInstall_incorrectInstallerPkgName_broadcastNotReceived"/>
     <option name="compatibility:include-filter" value="CtsOsHostTestCases android.os.cts.StaticSharedLibsHostTests#testStaticSharedLibUninstall_incorrectInstallerPkgName_broadcastNotReceived"/>
     <!-- CtsOsTestCases -->
-    <option name="compatibility:include-filter" value="CtsOsTestCases android.os.cts.BatteryChangedBroadcastTest#batteryLevelUpdated_broadcastSentImmediately"/>
-    <option name="compatibility:include-filter" value="CtsOsTestCases android.os.cts.BatteryChangedBroadcastTest#batteryStatusUpdated_broadcastSentImmediately"/>
     <option name="compatibility:include-filter" value="CtsOsTestCases android.os.cts.BuildTest#testBuildProperties"/>
     <option name="compatibility:include-filter" value="CtsOsTestCases android.os.cts.IpcDataCacheTest#testDisableCache"/>
     <option name="compatibility:include-filter" value="CtsOsTestCases android.os.cts.ParcelTest#testFixedArray"/>

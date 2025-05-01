@@ -29,6 +29,7 @@ import static android.mediav2.cts.CodecResourceUtils.getCurrentGlobalCodecResour
 import static android.mediav2.cts.CodecResourceUtils.validateGetCodecResources;
 import static android.mediav2.cts.VideoDecoderAvailabilityTest.MIN_UTILIZATION_THRESHOLD;
 import static android.mediav2.cts.VideoDecoderAvailabilityTest.estimateVideoSizeFromPerformancePoint;
+import static android.mediav2.cts.VideoDecoderAvailabilityTest.getMaxPixelsProcessedPerSec;
 
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -599,7 +600,8 @@ public class VideoEncoderAvailabilityTest extends CodecEncoderGLSurface {
                 vcaps.getSupportedPerformancePoints();
         Assume.assumeFalse(mCodecName + " codec did not advertise any performance points",
                 pps == null || pps.isEmpty());
-        double maxPixelsProcessedPerSec = 0;
+        double maxPixelsProcessedPerSec =
+                getMaxPixelsProcessedPerSec(true, isHardwareAcceleratedCodec(mCodecName));
         double pixelsProcessedPerSec;
         for (int i = 0; i < pps.size(); i++) {
             MediaCodecInfo.VideoCapabilities.PerformancePoint pp = pps.get(i);
@@ -610,12 +612,6 @@ public class VideoEncoderAvailabilityTest extends CodecEncoderGLSurface {
                             .setColorFormat(COLOR_FormatSurface).build();
             pixelsProcessedPerSec =
                     videoSize.getWidth() * videoSize.getHeight() * pp.getMaxFrameRate();
-            if (i == 0) {
-                // as performance points are sorted by decreasing number of pixels, then by
-                // decreasing width, then by frame rate, the first point should indicate peak
-                // processing power
-                maxPixelsProcessedPerSec = pixelsProcessedPerSec;
-            }
             CodecEncoderGLSurface codec =
                     new CodecEncoderGLSurface(mCodecName, mMediaType, configParam, mAllTestParams);
             codec.launchInstance();

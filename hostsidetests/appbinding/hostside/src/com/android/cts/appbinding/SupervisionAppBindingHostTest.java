@@ -31,11 +31,13 @@ import com.android.tradefed.util.RunUtil;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.util.regex.Pattern;
 
+@Ignore("This test needs to be migrated to Bedstead. See b/415023190.")
 @RunWith(DeviceJUnit4ClassRunner.class)
 @RequiresFlagsEnabled(Flags.FLAG_ENABLE_SUPERVISION_APP_SERVICE)
 public class SupervisionAppBindingHostTest extends BaseHostJUnit4Test implements IBuildReceiver {
@@ -296,7 +298,7 @@ public class SupervisionAppBindingHostTest extends BaseHostJUnit4Test implements
                 APK_SUP3,
                 PACKAGE_SUP,
                 mCurrentUserId,
-                "Service with android.app.action.BIND_SUPERVISION_APP_SERVICE not found");
+                "Service with android.app.action.SUPERVISION_APP_SERVICE not found");
     }
 
     /** Test calling onEnabled(). */

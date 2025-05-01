@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Copyright (C) 2015 The Android Open Source Project
+<!-- Copyright (C) 2025 The Android Open Source Project
 
      Licensed under the Apache License, Version 2.0 (the "License");
      you may not use this file except in compliance with the License.
@@ -13,25 +13,25 @@
      See the License for the specific language governing permissions and
      limitations under the License.
 -->
-<configuration description="Config for CTS WebView host test cases">
+<configuration description="Config for DownloadManagerTest">
     <option name="test-suite-tag" value="cts" />
-    <option name="config-descriptor:metadata" key="component" value="webview" />
-    <option name="config-descriptor:metadata" key="parameter" value="instant_app" />
-    <option name="config-descriptor:metadata" key="parameter" value="multi_abi" />
+    <option name="config-descriptor:metadata" key="component" value="framework" />
+    <option name="config-descriptor:metadata" key="parameter" value="not_instant_app" />
+    <option name="config-descriptor:metadata" key="parameter" value="not_multi_abi" />
     <option name="config-descriptor:metadata" key="parameter" value="secondary_user" />
     <option name="config-descriptor:metadata" key="parameter" value="secondary_user_on_secondary_display" />
     <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">
         <option name="cleanup-apks" value="true" />
-        <option name="test-file-name" value="CtsWebViewStartupApp.apk" />
+        <option name="force-install-mode" value="FULL"/>
+        <option name="test-file-name" value="CtsAppTestStubs.apk" />
+        <option name="test-file-name" value="CtsDownloadManagerTestCases.apk" />
+        <option name="test-file-name" value="StorageDelegator.apk" />
     </target_preparer>
-
     <target_preparer class="com.android.tradefed.targetprep.RunCommandTargetPreparer">
-        <!-- Unlock and turn on the screen. -->
-        <option name="run-command" value="svc power stayon true" />
-        <option name="run-command" value="input keyevent MENU" />
+        <option name="test-user-token" value="%TEST_USER%"/>
     </target_preparer>
-
-    <test class="com.android.compatibility.common.tradefed.testtype.JarHostTest" >
-        <option name="jar" value="CtsHostsideWebViewTests.jar" />
+    <test class="com.android.tradefed.testtype.AndroidJUnitTest" >
+        <option name="runner" value="androidx.test.runner.AndroidJUnitRunner" />
+        <option name="package" value="android.app.cts.downloadmanager" />
     </test>
 </configuration>

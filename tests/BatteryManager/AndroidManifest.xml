@@ -15,22 +15,13 @@
 -->
 
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-     package="com.android.cts.appbinding.supervision">
+    package="com.android.cts.batterymanager">
 
     <application>
-        <uses-library android:name="android.test.runner"/>
-
-        <!-- Target to-be-bound service. -->
-        <service android:name=".MySupervisionService"
-             android:exported="true"
-             android:process=":persistent"
-             android:permission="android.permission.BIND_SUPERVISION_APP_SERVICE">
-            <intent-filter>
-                <action android:name="android.app.action.SUPERVISION_APP_SERVICE"/>
-            </intent-filter>
-        </service>
-
+        <uses-library android:name="android.test.runner" />
     </application>
-    <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner"
-         android:targetPackage="com.android.cts.appbinding.supervision"/>
+
+    <instrumentation
+        android:name="androidx.test.runner.AndroidJUnitRunner"
+        android:targetPackage="com.android.cts.batterymanager" />
 </manifest>
