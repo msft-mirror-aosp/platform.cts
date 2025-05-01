@@ -1874,11 +1874,13 @@ public final class CarAudioManagerTest extends AbstractCarTestCase {
 
     @Test
     @EnsureHasPermission(Car.PERMISSION_CAR_CONTROL_AUDIO_VOLUME)
-    @ApiTest(apis = {"android.car.media.CarAudioManager#setVolumeGroupMute",
-            "android.car.media.CarAudioManager#isVolumeGroupMuted",
-            "android.car.media.CarVolumeGroupInfo#isMutedBySystem"})
-    @RequiresFlagsEnabled(Flags.FLAG_CAR_AUDIO_MUTE_AMBIGUITY)
-    public void setVolumeGroupMute_withMuteAmbiguityFlagEnabled() {
+    @ApiTest(
+            apis = {
+                "android.car.media.CarAudioManager#setVolumeGroupMute",
+                "android.car.media.CarAudioManager#isVolumeGroupMuted",
+                "android.car.media.CarVolumeGroupInfo#isMutedBySystem"
+            })
+    public void setVolumeGroupMute() {
         assumeDynamicRoutingIsEnabled();
         assumeVolumeGroupMutingIsEnabled();
         readFirstZoneAndVolumeGroup();
