@@ -670,20 +670,25 @@ TEST(AHardwareBufferTest, AllocateLockUnlockDeallocateStressTest) {
     constexpr int kNumThreads = 20;
     std::vector<std::thread> threads;
 
+    const AHardwareBuffer_Desc desc = {.width = 1,
+                                       .height = 1,
+                                       .layers = 1,
+                                       .format = AHARDWAREBUFFER_FORMAT_BLOB,
+                                       .usage = AHARDWAREBUFFER_USAGE_CPU_WRITE_OFTEN |
+                                               AHARDWAREBUFFER_USAGE_CPU_READ_OFTEN |
+                                               AHARDWAREBUFFER_USAGE_GPU_DATA_BUFFER};
+    if (!AHardwareBuffer_isSupported(&desc)) {
+        ALOGI("Test skipped: BLOB/GPU_DATA_BUFFER format/usage not supported");
+        return;
+    }
+
     for (int job = 0; job < kNumThreads; ++job) {
-        threads.emplace_back([]() {
+        threads.emplace_back([&desc]() {
             constexpr int kNumIterations = 10000;
             for (int i = 0; i < kNumIterations; ++i) {
                 // Allocate
                 AHardwareBuffer* ahwb = nullptr;
                 int error = 0;
-                const AHardwareBuffer_Desc desc = {.width = 1,
-                                                   .height = 1,
-                                                   .layers = 1,
-                                                   .format = AHARDWAREBUFFER_FORMAT_BLOB,
-                                                   .usage = AHARDWAREBUFFER_USAGE_CPU_WRITE_OFTEN |
-                                                           AHARDWAREBUFFER_USAGE_CPU_READ_OFTEN |
-                                                           AHARDWAREBUFFER_USAGE_GPU_DATA_BUFFER};
                 error = AHardwareBuffer_allocate(&desc, &ahwb);
                 EXPECT_EQ(NO_ERROR, error) << "AHardwareBuffer_allocate failed: " << error;
                 EXPECT_NE(nullptr, ahwb);
