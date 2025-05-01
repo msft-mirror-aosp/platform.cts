@@ -437,6 +437,9 @@
     <option name="compatibility:include-filter" value="CtsAutoFillServiceTestCases android.autofillservice.cts.unittests.AutofillIdTest#testIsVirtual"/>
     <!-- CtsBackupTestCases -->
     <option name="compatibility:include-filter" value="CtsBackupTestCases android.backup.cts.BackupTransportTest#testGetPackagesThatShouldNotUseRestrictedMode_returnsEmptyList"/>
+    <!-- CtsBatteryManagerTestCases -->
+    <option name="compatibility:include-filter" value="CtsBatteryManagerTestCases com.android.cts.batterymanager.BatteryChangedBroadcastTest#batteryLevelUpdated_broadcastSentImmediately"/>
+    <option name="compatibility:include-filter" value="CtsBatteryManagerTestCases com.android.cts.batterymanager.BatteryChangedBroadcastTest#batteryStatusUpdated_broadcastSentImmediately"/>
     <!-- CtsBatterySavingTestCases -->
     <option name="compatibility:include-filter" value="CtsBatterySavingTestCases android.os.cts.batterysaving.ActionChargingTest#testActionChargingDeferred_withApiThenReset"/>
     <option name="compatibility:include-filter" value="CtsBatterySavingTestCases android.os.cts.batterysaving.ActionChargingTest#testActionChargingDeferred_withGlobalSetting"/>
@@ -1724,8 +1727,6 @@
     <!-- CtsOsHostTestCases -->
     <option name="compatibility:include-filter" value="CtsOsHostTestCases android.os.cts.OsHostTests#testForegroundServiceBadNotification"/>
     <!-- CtsOsTestCases -->
-    <option name="compatibility:include-filter" value="CtsOsTestCases android.os.cts.BatteryChangedBroadcastTest#batteryLevelUpdated_broadcastSentImmediately"/>
-    <option name="compatibility:include-filter" value="CtsOsTestCases android.os.cts.BatteryChangedBroadcastTest#batteryStatusUpdated_broadcastSentImmediately"/>
     <option name="compatibility:include-filter" value="CtsOsTestCases android.os.cts.FileObserverTest#testFileObserverExternalStorageDirectory"/>
     <option name="compatibility:include-filter" value="CtsOsTestCases android.os.cts.IpcDataCacheTest#testBasicCache"/>
     <option name="compatibility:include-filter" value="CtsOsTestCases android.os.cts.IpcDataCacheTest#testCacheDisableState"/>

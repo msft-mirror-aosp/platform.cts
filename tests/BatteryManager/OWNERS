@@ -1,0 +1,4 @@
+# Bug component: 987260
+set noparent
+
+file:platform/frameworks/base:/BATTERY_STATS_OWNERS

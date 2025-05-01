@@ -1086,6 +1086,9 @@
     <option name="compatibility:include-filter" value="CtsBackupHostTestCases android.cts.backup.RestoreAnyVersionHostSideTest#testRestoreAnyVersion_True"/>
     <option name="compatibility:include-filter" value="CtsBackupHostTestCases android.cts.backup.SuccessNotificationHostSideTest#testSuccessNotificationForFullBackup"/>
     <option name="compatibility:include-filter" value="CtsBackupHostTestCases android.cts.backup.SuccessNotificationHostSideTest#testSuccessNotificationForKeyValueBackup"/>
+    <!-- CtsBatteryManagerTestCases -->
+    <option name="compatibility:include-filter" value="CtsBatteryManagerTestCases com.android.cts.batterymanager.BatteryChangedBroadcastTest#batteryLevelUpdated_broadcastSentImmediately"/>
+    <option name="compatibility:include-filter" value="CtsBatteryManagerTestCases com.android.cts.batterymanager.BatteryChangedBroadcastTest#batteryStatusUpdated_broadcastSentImmediately"/>
     <!-- CtsBiometricsTestCases -->
     <option name="compatibility:include-filter" value="CtsBiometricsTestCases android.server.biometrics.BiometricActivityTests#testBiometricOnly_authenticateFromForegroundActivity"/>
     <option name="compatibility:include-filter" value="CtsBiometricsTestCases android.server.biometrics.BiometricActivityTests#testBiometricOnly_rejectThenAuthenticate"/>
@@ -3104,8 +3107,6 @@
     <option name="compatibility:include-filter" value="CtsOsHostTestCases android.os.cts.StaticSharedLibsHostTests#testStaticSharedLibInstall_incorrectInstallerPkgName_broadcastNotReceived"/>
     <option name="compatibility:include-filter" value="CtsOsHostTestCases android.os.cts.StaticSharedLibsHostTests#testStaticSharedLibUninstall_incorrectInstallerPkgName_broadcastNotReceived"/>
     <!-- CtsOsTestCases -->
-    <option name="compatibility:include-filter" value="CtsOsTestCases android.os.cts.BatteryChangedBroadcastTest#batteryLevelUpdated_broadcastSentImmediately"/>
-    <option name="compatibility:include-filter" value="CtsOsTestCases android.os.cts.BatteryChangedBroadcastTest#batteryStatusUpdated_broadcastSentImmediately"/>
     <option name="compatibility:include-filter" value="CtsOsTestCases android.os.cts.BuildTest#testBuildProperties"/>
     <option name="compatibility:include-filter" value="CtsOsTestCases android.os.cts.IpcDataCacheTest#testDisableCache"/>
     <option name="compatibility:include-filter" value="CtsOsTestCases android.os.cts.ParcelTest#testFixedArray"/>
