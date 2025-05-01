@@ -53,6 +53,8 @@ import android.telecom.cts.apps.AppControlWrapper;
 import android.telecom.cts.apps.TelecomTestApp;
 import android.telecom.cts.cuj.BaseAppVerifier;
 
+import com.android.compatibility.common.util.ApiTest;
+import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.ShellIdentityUtils;
 import com.android.server.telecom.flags.Flags;
 
@@ -90,6 +92,8 @@ public class SingleCallingTest extends BaseAppVerifier {
      *  Assert the call was successfully added and transitioned to the ACTIVE state without errors
      */
     @Test
+    @CddTest(requirements = {"7.4.1.2/H-0-2"})
+    @ApiTest(apis = {"android.telecom.TelecomManager#placeCall"})
     public void testOutgoingCall_ManagedConnectionServiceApp() throws Exception {
         if (!mShouldTestTelecom) {
             return;
@@ -120,6 +124,8 @@ public class SingleCallingTest extends BaseAppVerifier {
      *  Assert the call was successfully added and transitioned to the ACTIVE state without errors
      */
     @Test
+    @CddTest(requirements = {"7.4.1.2/H-0-2"})
+    @ApiTest(apis = {"android.telecom.TelecomManager#addNewIncomingCall"})
     public void testIncomingCall_ManagedConnectionServiceApp() throws Exception {
         if (!mShouldTestTelecom) {
             return;
@@ -157,6 +163,8 @@ public class SingleCallingTest extends BaseAppVerifier {
      *  Assert the call was successfully muted and unmuted without errors.
      */
     @Test
+    @CddTest(requirements = {"7.4.1.2/H-0-2"})
+    @ApiTest(apis = {"android.telecom.TelecomManager#placeCall"})
     public void testToggleMuteState_ManagedConnectionServiceApp() throws Exception {
         if (!mShouldTestTelecom) {
             return;
@@ -185,6 +193,8 @@ public class SingleCallingTest extends BaseAppVerifier {
      *  Assert the current {@link CallEndpoint} is non-null.
      */
     @Test
+    @CddTest(requirements = {"7.4.1.2/H-0-2"})
+    @ApiTest(apis = {"android.telecom.TelecomManager#placeCall"})
     public void testGetCurrentEndpoint_ManagedConnectionServiceApp() throws Exception {
         if (!mShouldTestTelecom) {
             return;
@@ -213,6 +223,8 @@ public class SingleCallingTest extends BaseAppVerifier {
      *  Assert the available {@link CallEndpoint}s are non-null.
      */
     @Test
+    @CddTest(requirements = {"7.4.1.2/H-0-2"})
+    @ApiTest(apis = {"android.telecom.TelecomManager#placeCall"})
     public void testAvailableEndpoints_ManagedConnectionServiceApp() throws Exception {
         if (!mShouldTestTelecom) {
             return;
@@ -247,6 +259,8 @@ public class SingleCallingTest extends BaseAppVerifier {
      *  Assert the call was successfully added and transitioned to the ACTIVE state without errors
      */
     @Test
+    @CddTest(requirements = {"7.4.1.2/H-0-2"})
+    @ApiTest(apis = {"android.telecom.TelecomManager#placeCall"})
     public void testOutgoingCall_ConnectionServiceVoipAppMain() throws Exception {
         if (!mShouldTestTelecom) {
             return;
@@ -278,6 +292,8 @@ public class SingleCallingTest extends BaseAppVerifier {
      *  Assert the call was successfully added and transitioned to the ACTIVE state without errors
      */
     @Test
+    @CddTest(requirements = {"7.4.1.2/H-0-2"})
+    @ApiTest(apis = {"android.telecom.TelecomManager#addNewIncomingCall"})
     public void testIncomingCall_ConnectionServiceVoipAppMain() throws Exception {
         if (!mShouldTestTelecom) {
             return;
@@ -312,6 +328,8 @@ public class SingleCallingTest extends BaseAppVerifier {
      *  Assert the call was successfully muted and unmuted without errors.
      */
     @Test
+    @CddTest(requirements = {"7.4.1.2/H-0-2"})
+    @ApiTest(apis = {"android.telecom.TelecomManager#placeCall"})
     public void testToggleMuteState_ConnectionServiceVoipAppMain() throws Exception {
         if (!mShouldTestTelecom) {
             return;
@@ -341,6 +359,8 @@ public class SingleCallingTest extends BaseAppVerifier {
      *  Assert the current {@link CallEndpoint} is non-null.
      */
     @Test
+    @CddTest(requirements = {"7.4.1.2/H-0-2"})
+    @ApiTest(apis = {"android.telecom.TelecomManager#placeCall"})
     public void testGetCurrentEndpoint_ConnectionServiceVoipAppMain() throws Exception {
         if (!mShouldTestTelecom) {
             return;
@@ -370,6 +390,8 @@ public class SingleCallingTest extends BaseAppVerifier {
      *  Assert the available {@link CallEndpoint}s are non-null.
      */
     @Test
+    @CddTest(requirements = {"7.4.1.2/H-0-2"})
+    @ApiTest(apis = {"android.telecom.TelecomManager#placeCall"})
     public void testAvailableEndpoints_ConnectionServiceVoipAppMain() throws Exception {
         if (!mShouldTestTelecom) {
             return;
@@ -404,6 +426,8 @@ public class SingleCallingTest extends BaseAppVerifier {
      *  Assert the call was successfully added and transitioned to the ACTIVE state without errors
      */
     @Test
+    @CddTest(requirements = {"7.4.1.2/H-0-2"})
+    @ApiTest(apis = {"android.telecom.TelecomManager#placeCall"})
     public void testOutgoingCall_ConnectionServiceVoipAppClone() throws Exception {
         if (!mShouldTestTelecom) {
             return;
@@ -435,6 +459,8 @@ public class SingleCallingTest extends BaseAppVerifier {
      *  Assert the call was successfully added and transitioned to the ACTIVE state without errors
      */
     @Test
+    @CddTest(requirements = {"7.4.1.2/H-0-2"})
+    @ApiTest(apis = {"android.telecom.TelecomManager#addNewIncomingCall"})
     public void testIncomingCall_ConnectionServiceVoipAppClone() throws Exception {
         if (!mShouldTestTelecom) {
             return;
@@ -469,6 +495,8 @@ public class SingleCallingTest extends BaseAppVerifier {
      *  Assert the call was successfully muted and unmuted without errors.
      */
     @Test
+    @CddTest(requirements = {"7.4.1.2/H-0-2"})
+    @ApiTest(apis = {"android.telecom.TelecomManager#placeCall"})
     public void testToggleMuteState_ConnectionServiceVoipAppClone() throws Exception {
         if (!mShouldTestTelecom) {
             return;
@@ -498,6 +526,8 @@ public class SingleCallingTest extends BaseAppVerifier {
      *  Assert the current {@link CallEndpoint} is non-null.
      */
     @Test
+    @CddTest(requirements = {"7.4.1.2/H-0-2"})
+    @ApiTest(apis = {"android.telecom.TelecomManager#placeCall"})
     public void testGetCurrentEndpoint_ConnectionServiceVoipAppClone() throws Exception {
         if (!mShouldTestTelecom) {
             return;
@@ -527,6 +557,8 @@ public class SingleCallingTest extends BaseAppVerifier {
      *  Assert the available {@link CallEndpoint}s are non-null.
      */
     @Test
+    @CddTest(requirements = {"7.4.1.2/H-0-2"})
+    @ApiTest(apis = {"android.telecom.TelecomManager#placeCall"})
     public void testAvailableEndpoints_ConnectionServiceVoipAppClone() throws Exception {
         if (!mShouldTestTelecom) {
             return;
@@ -565,6 +597,8 @@ public class SingleCallingTest extends BaseAppVerifier {
      *  Assert the call was successfully added and transitioned to the ACTIVE state without errors
      */
     @Test
+    @CddTest(requirements = {"7.4.1.2/H-0-2"})
+    @ApiTest(apis = {"android.telecom.TelecomManager#addCall"})
     public void testOutgoingCall_TransactionalVoipAppMain() throws Exception {
         if (!mShouldTestTelecom) {
             return;
@@ -604,6 +638,8 @@ public class SingleCallingTest extends BaseAppVerifier {
      *  and that communication focus cannot be obtained outside of Telecom.
      */
     @Test
+    @CddTest(requirements = {"7.4.1.2/H-0-2"})
+    @ApiTest(apis = {"android.telecom.TelecomManager#addCall"})
     public void testTelecomLocksFocus_TransactionalVoipAppMain() throws Exception {
         if (isAutomotive() || !mShouldTestTelecom) {
             return;
@@ -630,6 +666,8 @@ public class SingleCallingTest extends BaseAppVerifier {
      * and that communication focus cannot be obtained outside of Telecom.
      */
     @Test
+    @CddTest(requirements = {"7.4.1.2/H-0-2"})
+    @ApiTest(apis = {"android.telecom.TelecomManager#placeCall"})
     public void testTelecomLocksFocus_ConnectionServiceVoipAppMain() throws Exception {
         if (isAutomotive() || !mShouldTestTelecom) {
             return;
@@ -656,6 +694,8 @@ public class SingleCallingTest extends BaseAppVerifier {
      * and that communication focus cannot be obtained outside of Telecom.
      */
     @Test
+    @CddTest(requirements = {"7.4.1.2/H-0-2"})
+    @ApiTest(apis = {"android.telecom.TelecomManager#placeCall"})
     public void testTelecomLocksFocus_ManagedConnectionServiceVoipAppMain() throws Exception {
         if (isAutomotive() || !mShouldTestTelecom) {
             return;
@@ -723,6 +763,8 @@ public class SingleCallingTest extends BaseAppVerifier {
      *  Assert the call was successfully added and transitioned to the ACTIVE state without errors
      */
     @Test
+    @CddTest(requirements = {"7.4.1.2/H-0-2"})
+    @ApiTest(apis = {"android.telecom.TelecomManager#addCall"})
     public void testIncomingCall_TransactionalVoipAppMain() throws Exception {
         if (!mShouldTestTelecom) {
             return;
@@ -758,6 +800,8 @@ public class SingleCallingTest extends BaseAppVerifier {
      *  Assert the call was successfully added and transitioned to the ACTIVE state without errors.
      */
     @Test
+    @CddTest(requirements = {"7.4.1.2/H-0-2"})
+    @ApiTest(apis = {"android.telecom.TelecomManager#addCall"})
     public void testIncomingVideoCall_TransactionalVoipAppMain() throws Exception {
         if (!mShouldTestTelecom) {
             return;
@@ -797,6 +841,8 @@ public class SingleCallingTest extends BaseAppVerifier {
      *  Assert the current {@link CallEndpoint} is non-null.
      */
     @Test
+    @CddTest(requirements = {"7.4.1.2/H-0-2"})
+    @ApiTest(apis = {"android.telecom.TelecomManager#addCall"})
     public void testGetCurrentEndpoint_TransactionalVoipAppMain() throws Exception {
         if (!mShouldTestTelecom) {
             return;
@@ -829,6 +875,8 @@ public class SingleCallingTest extends BaseAppVerifier {
      *  Assert the available {@link CallEndpoint}s are non-null.
      */
     @Test
+    @CddTest(requirements = {"7.4.1.2/H-0-2"})
+    @ApiTest(apis = {"android.telecom.TelecomManager#addCall"})
     public void testAvailableEndpoints_TransactionalVoipAppMain() throws Exception {
         if (!mShouldTestTelecom) {
             return;
@@ -867,6 +915,8 @@ public class SingleCallingTest extends BaseAppVerifier {
      *  Assert the call was successfully added and transitioned to the ACTIVE state without errors
      */
     @Test
+    @CddTest(requirements = {"7.4.1.2/H-0-2"})
+    @ApiTest(apis = {"android.telecom.TelecomManager#addCall"})
     public void testOutgoingCall_TransactionalVoipAppClone() throws Exception {
         if (!mShouldTestTelecom) {
             return;
@@ -901,6 +951,8 @@ public class SingleCallingTest extends BaseAppVerifier {
      *  Assert the call was successfully added and transitioned to the ACTIVE state without errors
      */
     @Test
+    @CddTest(requirements = {"7.4.1.2/H-0-2"})
+    @ApiTest(apis = {"android.telecom.TelecomManager#addCall"})
     public void testIncomingCall_TransactionalVoipAppClone() throws Exception {
         if (!mShouldTestTelecom) {
             return;
@@ -933,6 +985,8 @@ public class SingleCallingTest extends BaseAppVerifier {
      *  Assert the current {@link CallEndpoint} is non-null.
      */
     @Test
+    @CddTest(requirements = {"7.4.1.2/H-0-2"})
+    @ApiTest(apis = {"android.telecom.TelecomManager#addCall"})
     public void testGetCurrentEndpoint_TransactionalVoipAppClone() throws Exception {
         if (!mShouldTestTelecom) {
             return;
@@ -965,6 +1019,8 @@ public class SingleCallingTest extends BaseAppVerifier {
      *  Assert the available {@link CallEndpoint}s are non-null.
      */
     @Test
+    @CddTest(requirements = {"7.4.1.2/H-0-2"})
+    @ApiTest(apis = {"android.telecom.TelecomManager#addCall"})
     public void testAvailableEndpoints_TransactionalVoipAppClone() throws Exception {
         if (!mShouldTestTelecom) {
             return;
