@@ -41,7 +41,10 @@ public class MidiProAudioTest {
     public void testProAudioRequiresMidi() throws Exception {
         PackageManager pm = mContext.getPackageManager();
         if (pm.hasSystemFeature(PackageManager.FEATURE_AUDIO_PRO)) {
-            assertTrue("MIDI not supported", pm.hasSystemFeature(PackageManager.FEATURE_MIDI));
+            // Skipping watches because MIDI is disabled on WearOS
+            if (!pm.hasSystemFeature(PackageManager.FEATURE_WATCH)) {
+                assertTrue("MIDI not supported", pm.hasSystemFeature(PackageManager.FEATURE_MIDI));
+            }
         }
     }
 }
