@@ -15,6 +15,8 @@
 -->
 <configuration description="Run CTS-ON-GSI platinum prod tests.">
     <include name="cts-on-gsi"/>
+    <!-- CtsAppFgsTestCases -->
+    <option name="compatibility:include-filter" value="CtsAppFgsTestCases android.app.cts.fgstest.ActivityManagerFgsBgStartTest#testFgsLocationStartFromBG"/>
     <!-- CtsAppFunctionTestCases -->
     <option name="compatibility:include-filter" value="CtsAppFunctionTestCases android.app.appfunctions.cts.AppFunctionManagerTest#checkManagerNotNull[IncludeRunOnPrimaryUser]"/>
     <option name="compatibility:include-filter" value="CtsAppFunctionTestCases android.app.appfunctions.cts.AppFunctionManagerTest#executeAppFunction_cancellationSignal_cancellationTimedOut_unbind[IncludeRunOnPrimaryUser]"/>
@@ -70,7 +72,6 @@
     <option name="compatibility:include-filter" value="CtsAppSearchHostTestCases android.appsearch.cts.AppSearchMultiUserTest#testReadStorageInfoFromFile"/>
     <option name="compatibility:include-filter" value="CtsAppSearchHostTestCases android.appsearch.cts.AppSearchMultiUserTest#testStopUser_persistData"/>
     <!-- CtsAppTestCases -->
-    <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.ActivityManagerFgsBgStartTest#testFgsLocationStartFromBG"/>
     <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.ActivityManagerTest#testAddOnUidImportanceListener"/>
     <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.AlertDialogTest#testAlertDialogTheme"/>
     <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.AlertDialogTest#testCallback"/>
