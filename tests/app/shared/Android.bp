@@ -17,7 +17,7 @@ package {
 }
 
 android_library {
-    name: "CtsAppTestStubsShared",
+    name: "cts_app_test_shared_lib",
     defaults: ["cts_support_defaults"],
     libs: [
         "android.test.base.stubs.system",

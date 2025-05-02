@@ -36,7 +36,7 @@ android_test {
         "platform-test-annotations",
         "platformprotosnano",
         "permission-test-util-lib",
-        "CtsAppTestStubsShared",
+        "cts_app_test_shared_lib",
         "android.content.pm.flags-aconfig-java",
         "android.multiuser.flags-aconfig-java",
         "am_flags_lib",

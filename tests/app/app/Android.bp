@@ -34,7 +34,7 @@ android_test_helper_app {
         "androidx.legacy_legacy-support-v4",
         "androidx.test.core",
         "testng",
-        "CtsAppTestStubsShared",
+        "cts_app_test_shared_lib",
         "androidx.test.rules",
         "flag-junit",
         "platform-test-annotations",
@@ -77,7 +77,7 @@ android_test_helper_app {
         "mockito-target-minus-junit4",
         "androidx.legacy_legacy-support-v4",
         "androidx.test.core",
-        "CtsAppTestStubsShared",
+        "cts_app_test_shared_lib",
     ],
     aidl: {
         local_include_dirs: [
@@ -116,7 +116,7 @@ android_test {
         "mockito-target-minus-junit4",
         "androidx.legacy_legacy-support-v4",
         "androidx.test.core",
-        "CtsAppTestStubsShared",
+        "cts_app_test_shared_lib",
     ],
     aidl: {
         local_include_dirs: [
@@ -156,7 +156,7 @@ android_test_helper_app {
         "mockito-target-minus-junit4",
         "androidx.legacy_legacy-support-v4",
         "androidx.test.core",
-        "CtsAppTestStubsShared",
+        "cts_app_test_shared_lib",
     ],
     aidl: {
         local_include_dirs: [
@@ -195,7 +195,7 @@ android_test_helper_app {
         "mockito-target-minus-junit4",
         "androidx.legacy_legacy-support-v4",
         "androidx.test.core",
-        "CtsAppTestStubsShared",
+        "cts_app_test_shared_lib",
     ],
     aidl: {
         local_include_dirs: [
@@ -260,7 +260,7 @@ android_test_helper_app {
         "mockito-target-minus-junit4",
         "androidx.legacy_legacy-support-v4",
         "androidx.test.core",
-        "CtsAppTestStubsShared",
+        "cts_app_test_shared_lib",
     ],
     aidl: {
         local_include_dirs: [
@@ -299,7 +299,7 @@ android_test_helper_app {
         "mockito-target-minus-junit4",
         "androidx.legacy_legacy-support-v4",
         "androidx.test.core",
-        "CtsAppTestStubsShared",
+        "cts_app_test_shared_lib",
     ],
     aidl: {
         local_include_dirs: [
@@ -339,7 +339,7 @@ android_test_helper_app {
         "mockito-target-minus-junit4",
         "androidx.legacy_legacy-support-v4",
         "androidx.test.core",
-        "CtsAppTestStubsShared",
+        "cts_app_test_shared_lib",
     ],
     aidl: {
         local_include_dirs: [
