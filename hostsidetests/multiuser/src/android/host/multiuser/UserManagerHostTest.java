@@ -16,7 +16,9 @@
 
 package android.host.multiuser;
 
+import static com.android.tradefed.device.UserInfo.USER_SYSTEM;
 
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.platform.test.annotations.LargeTest;
@@ -35,15 +37,13 @@ import org.junit.runner.RunWith;
 @RunWith(DeviceJUnit4ClassRunner.class)
 public final class UserManagerHostTest extends BaseMultiUserTest {
 
-    // Copied from UserHandle, as Tradefed doesn't have it
-    private static final int USER_NULL = -10000;
-
     @Rule
     public final SupportsMultiUserRule mSupportsMultiUserRule = new SupportsMultiUserRule(this);
 
     @Test
     @ApiTest(apis = {"android.os.UserManager#getPreviousForegroundUser"})
     public void getPreviousForegroundUser_correctAfterReboot() throws Exception {
+        assumeNotInteractiveHsum();
         assumeNewUsersCanBeAdded(2);
 
         final int userId1 = getDevice().createUser("test_user_1");
@@ -64,6 +64,52 @@ public final class UserManagerHostTest extends BaseMultiUserTest {
         }
     }
 
+    @Test
+    @ApiTest(apis = {"android.os.UserManager#getPreviousForegroundUser"})
+    public void getPreviousForegroundUser_interactiveHsum_correctAfterReboot() throws Exception {
+        assumeInteractiveHsum();
+        assumeNewUsersCanBeAdded(2);
+        assertSwitchToUser(USER_SYSTEM);
+
+        int userId1 = getDevice().createUser("test_user_1");
+        assertSwitchToUser(userId1);
+        assertPreviousUserIs(USER_SYSTEM);
+
+        int userId2 = getDevice().createUser("test_user_2");
+        assertSwitchToUser(userId2);
+        assertPreviousUserIs(userId1);
+
+        // Wait to allow user xml to be written.
+        RunUtil.getDefault().sleep(5000);
+
+        getDevice().reboot();
+        assertCurrentUser("after reboot", USER_SYSTEM);
+        assertPreviousUserIs(userId2);
+
+        // Although previous user is 2, current user is system, so let's explicitly switch to 2
+        // first.
+        assertSwitchToUser(userId2);
+        assertPreviousUserIs(USER_SYSTEM);
+
+        assertSwitchToUser(userId1);
+        assertPreviousUserIs(userId2);
+
+        assertSwitchToUser(userId2);
+        assertPreviousUserIs(userId1);
+    }
+
+    private boolean isInteractiveHsum() throws DeviceNotAvailableException {
+        return getDevice().isHeadlessSystemUserMode()
+                && getDevice().canSwitchToHeadlessSystemUser();
+    }
+
+    private void assumeInteractiveHsum() throws DeviceNotAvailableException {
+        assumeTrue("device is not interactive HSUM", isInteractiveHsum());
+    }
+
+    private void assumeNotInteractiveHsum() throws DeviceNotAvailableException {
+        assumeFalse("device is interactive HSUM", isInteractiveHsum());
+    }
 
     private void assertPreviousUserIs(int expected) throws Exception {
         final DeviceTestRunOptions options = new DeviceTestRunOptions(TEST_APP_PKG_NAME)
