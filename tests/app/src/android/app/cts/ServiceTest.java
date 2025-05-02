@@ -24,6 +24,9 @@ import static android.app.stubs.shared.LocalForegroundService.COMMAND_START_FORE
 import static android.app.stubs.shared.LocalForegroundService.COMMAND_STOP_FOREGROUND_DETACH_NOTIFICATION;
 import static android.app.stubs.shared.LocalForegroundService.COMMAND_STOP_FOREGROUND_DONT_REMOVE_NOTIFICATION;
 
+import static com.google.common.truth.Truth.assertThat;
+import static com.google.common.truth.Truth.assertWithMessage;
+
 import android.app.Activity;
 import android.app.ActivityManager;
 import android.app.Notification;
@@ -65,9 +68,10 @@ import android.service.notification.StatusBarNotification;
 import android.util.Log;
 import android.util.SparseArray;
 
-import androidx.test.InstrumentationRegistry;
+import androidx.annotation.NonNull;
 import androidx.test.filters.FlakyTest;
 import androidx.test.filters.MediumTest;
+import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.DeviceConfigStateHelper;
 import com.android.compatibility.common.util.IBinderParcelable;
@@ -89,7 +93,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.BooleanSupplier;
 
 @Presubmit
-public class ServiceTest extends ActivityTestsBase {
+public final class ServiceTest extends ActivityTestsBase {
     private static final String TAG = "ServiceTest";
     private static final String NOTIFICATION_CHANNEL_ID = TAG;
     private static final int STATE_START_1 = 0;
@@ -131,7 +135,7 @@ public class ServiceTest extends ActivityTestsBase {
 
     private IBinder mStateReceiver;
 
-    private static class EmptyConnection implements ServiceConnection {
+    private static final class EmptyConnection implements ServiceConnection {
         @Override
         public void onServiceConnected(ComponentName name, IBinder service) {
         }
@@ -141,7 +145,7 @@ public class ServiceTest extends ActivityTestsBase {
         }
     }
 
-    private static class NullServiceConnection implements ServiceConnection {
+    private static final class NullServiceConnection implements ServiceConnection {
         boolean mNullBinding = false;
 
         @Override public void onServiceConnected(ComponentName name, IBinder service) {}
@@ -163,6 +167,7 @@ public class ServiceTest extends ActivityTestsBase {
                     try {
                         this.wait(end - now);
                     } catch (InterruptedException e) {
+                        // Expected
                     }
                     now = SystemClock.uptimeMillis();
                 }
@@ -176,7 +181,7 @@ public class ServiceTest extends ActivityTestsBase {
         }
     }
 
-    private static class LatchedConnection implements ServiceConnection {
+    private static final class LatchedConnection implements ServiceConnection {
         private final CountDownLatch mLatch;
 
         LatchedConnection(CountDownLatch latch) {
@@ -267,7 +272,7 @@ public class ServiceTest extends ActivityTestsBase {
         }
     }
 
-    private class TestStopSelfConnection extends TestConnection {
+    private final class TestStopSelfConnection extends TestConnection {
         private IBinder mService;
 
         public TestStopSelfConnection() {
@@ -307,7 +312,7 @@ public class ServiceTest extends ActivityTestsBase {
         }
     }
 
-    final class IsolatedConnection implements ServiceConnection {
+    private final class IsolatedConnection implements ServiceConnection {
         private IBinder mService;
         private int mUid;
         private int mPid;
@@ -496,9 +501,7 @@ public class ServiceTest extends ActivityTestsBase {
     }
 
     private NotificationManager getNotificationManager() {
-        NotificationManager notificationManager =
-                (NotificationManager) getContext().getSystemService(Context.NOTIFICATION_SERVICE);
-        return notificationManager;
+        return (NotificationManager) getContext().getSystemService(Context.NOTIFICATION_SERVICE);
     }
 
     private void sendNotification(int id, String title) {
@@ -515,8 +518,8 @@ public class ServiceTest extends ActivityTestsBase {
 
     private void assertNotification(int id, String expectedTitle, boolean shouldHaveFgsFlag) {
         String packageName = getContext().getPackageName();
-        String titleErrorMsg = null;
-        String flagErrorMsg = null;
+        String titleErrorMsg;
+        String flagErrorMsg;
         int i = 0;
         while (true) {
             titleErrorMsg = null;
@@ -528,11 +531,9 @@ public class ServiceTest extends ActivityTestsBase {
                     // check title first to make sure the update has propagated
                     String actualTitle = n.extras.getString(Notification.EXTRA_TITLE);
                     if (expectedTitle.equals(actualTitle)) {
-                        titleErrorMsg = null;
                         // make sure notification and service state is in sync
                         if (shouldHaveFgsFlag ==
                                 ((n.flags & Notification.FLAG_FOREGROUND_SERVICE) != 0)) {
-                            flagErrorMsg = null;
                             // both title and flag matches.
                             return;
                         } else {
@@ -587,8 +588,15 @@ public class ServiceTest extends ActivityTestsBase {
                 }
             }
         }
-        assertNull("Found notification with id " + id + " for package " + packageName + ": "
-                + found, found);
+        assertWithMessage(
+                        "Found notification with id "
+                                + id
+                                + " for package "
+                                + packageName
+                                + ": "
+                                + found)
+                .that(found)
+                .isNull();
     }
 
     /**
@@ -759,12 +767,7 @@ public class ServiceTest extends ActivityTestsBase {
         thread.start();
         Handler handler = new Handler(thread.getLooper());
         mBackgroundThread = thread;
-        mBackgroundThreadExecutor = new Executor() {
-            @Override
-            public void execute(Runnable runnable) {
-                handler.post(runnable);
-            }
-        };
+        mBackgroundThreadExecutor = handler::post;
     }
 
     @Override
@@ -794,10 +797,10 @@ public class ServiceTest extends ActivityTestsBase {
                 REVOKE_RUNTIME_PERMISSIONS);
     }
 
-    private class MockBinder extends Binder {
+    private final class MockBinder extends Binder {
         @Override
-        protected boolean onTransact(int code, Parcel data, Parcel reply,
-                int flags) throws RemoteException {
+        protected boolean onTransact(int code, @NonNull Parcel data, Parcel reply, int flags)
+                throws RemoteException {
             if (code == LocalService.STARTED_CODE) {
                 data.enforceInterface(LocalService.SERVICE_LOCAL);
                 int count = data.readInt();
@@ -871,7 +874,7 @@ public class ServiceTest extends ActivityTestsBase {
         }
     }
 
-    public void testStopSelf() throws Exception {
+    public void testStopSelf() {
         TestStopSelfConnection conn = new TestStopSelfConnection();
         boolean success = false;
         final Intent service = new Intent(mContext, LocalStoppedService.class);
@@ -896,7 +899,7 @@ public class ServiceTest extends ActivityTestsBase {
         mContext.unbindService(conn);
     }
 
-    public void testStopSelfResult() throws Exception {
+    public void testStopSelfResult() {
         TestStopSelfConnection conn = new TestStopSelfConnection();
         boolean success = false;
         final Intent service = new Intent(mContext, LocalStoppedService.class);
@@ -921,20 +924,20 @@ public class ServiceTest extends ActivityTestsBase {
         mContext.unbindService(conn);
     }
 
-    public void testLocalStartClass() throws Exception {
+    public void testLocalStartClass() {
         startExpectResult(mLocalService);
     }
 
-    public void testLocalStartAction() throws Exception {
+    public void testLocalStartAction() {
         startExpectResult(new Intent(
                 LocalService.SERVICE_LOCAL, null /*uri*/, mContext, LocalService.class));
     }
 
-    public void testLocalBindClass() throws Exception {
+    public void testLocalBindClass() {
         bindExpectResult(mLocalService);
     }
 
-    public void testBindServiceWithExecutor() throws Exception {
+    public void testBindServiceWithExecutor() {
       setupBackgroundThread();
 
       TestConnection conn = new TestConnection(true, false);
@@ -942,7 +945,7 @@ public class ServiceTest extends ActivityTestsBase {
       mContext.bindService(
           mLocalService, Context.BIND_AUTO_CREATE, mBackgroundThreadExecutor, conn);
       waitForResultOrThrow(DELAY, EXIST_CONN_TO_RECEIVE_SERVICE);
-      assertEquals(mBackgroundThread, conn.getOnServiceConnectedThread());
+        assertThat(conn.getOnServiceConnectedThread()).isEqualTo(mBackgroundThread);
 
       mContext.unbindService(conn);
     }
@@ -963,11 +966,6 @@ public class ServiceTest extends ActivityTestsBase {
 
     private void startForegroundService(int command) {
         mContext.startService(foregroundServiceIntent(command));
-    }
-
-    /* Start the service in a way that promises to go into the foreground */
-    private void startRequiredForegroundService(int command) {
-        mContext.startForegroundService(foregroundServiceIntent(command));
     }
 
     @MediumTest
@@ -998,7 +996,7 @@ public class ServiceTest extends ActivityTestsBase {
     }
 
     @MediumTest
-    public void testForegroundService_dontRemoveNotificationOnStop() throws Exception {
+    public void testForegroundService_dontRemoveNotificationOnStop() {
         boolean success = false;
         try {
             // Start service as foreground - it should show notification #1
@@ -1107,7 +1105,7 @@ public class ServiceTest extends ActivityTestsBase {
                 "cmd deviceidle whitelist +" + EXTERNAL_SERVICE_PACKAGE);
 
         // No services should be reported back at the beginning
-        assertEquals(0, am.getRunningServices(maxReturnedServices).size());
+        assertThat(am.getRunningServices(maxReturnedServices)).isEmpty();
         try {
             mExpectedServiceState = STATE_START_1;
             // Start external service.
@@ -1115,7 +1113,7 @@ public class ServiceTest extends ActivityTestsBase {
             waitForResultOrThrow(DELAY, "external service to start first time");
 
             // Ensure we can't see service.
-            assertEquals(0, am.getRunningServices(maxReturnedServices).size());
+            assertThat(am.getRunningServices(maxReturnedServices)).isEmpty();
 
             // Start local service.
             mContext.startService(new Intent(mLocalService).putExtras(bundle));
@@ -1124,8 +1122,8 @@ public class ServiceTest extends ActivityTestsBase {
 
             // Ensure we can see service and it is ours.
             List<ActivityManager.RunningServiceInfo> services = am.getRunningServices(maxReturnedServices);
-            assertEquals(1, services.size());
-            assertEquals(android.os.Process.myUid(), services.get(0).uid);
+            assertThat(services).hasSize(1);
+            assertThat(services.get(0).uid).isEqualTo(android.os.Process.myUid());
         } finally {
             SystemUtil.runShellCommand(InstrumentationRegistry.getInstrumentation(),
                     "cmd deviceidle whitelist -" + EXTERNAL_SERVICE_PACKAGE);
@@ -1143,13 +1141,13 @@ public class ServiceTest extends ActivityTestsBase {
         waitForResultOrThrow(DELAY, "local service to be destroyed");
 
         // Once our service has stopped, make sure we can't see any services.
-        assertEquals(0, am.getRunningServices(maxReturnedServices).size());
+        assertThat(am.getRunningServices(maxReturnedServices)).isEmpty();
     }
 
     @MediumTest
     @RequiresFlagsDisabled(Flags.FLAG_FGS_BOOT_COMPLETED)
-    public void testForegroundService_detachNotificationOnStop() throws Exception {
-        String newTitle = null;
+    public void testForegroundService_detachNotificationOnStop() {
+        String newTitle;
         boolean success = false;
         try {
 
@@ -1197,7 +1195,7 @@ public class ServiceTest extends ActivityTestsBase {
         assertNoNotification(2);
     }
 
-    public void testForegroundService_notificationChannelDeletion() throws Exception {
+    public void testForegroundService_notificationChannelDeletion() {
         NotificationManager noMan = mContext.getSystemService(NotificationManager.class);
 
         // Start service as foreground - it should show notification #1
@@ -1222,7 +1220,7 @@ public class ServiceTest extends ActivityTestsBase {
 
     }
 
-    public void testForegroundService_deferredNotificationChannelDeletion() throws Exception {
+    public void testForegroundService_deferredNotificationChannelDeletion() {
         NotificationManager noMan = mContext.getSystemService(NotificationManager.class);
 
         // Start service as foreground - it should show notification #1
@@ -1246,7 +1244,7 @@ public class ServiceTest extends ActivityTestsBase {
         waitForResultOrThrow(DELAY, "service to be destroyed");
     }
 
-    public void testForegroundService_typeImmediateNotification() throws Exception {
+    public void testForegroundService_typeImmediateNotification() {
         // expect that an FGS with phoneCall type has its notification displayed
         // immediately even without explicit request by the app
         mExpectedServiceState = STATE_START_1;
@@ -1271,7 +1269,7 @@ public class ServiceTest extends ActivityTestsBase {
         }
     }
 
-    public void testForegroundService_deferredNotification() throws Exception {
+    public void testForegroundService_deferredNotification() {
         mExpectedServiceState = STATE_START_1;
         startForegroundService(COMMAND_START_FOREGROUND_DEFER_NOTIFICATION);
         waitForResultOrThrow(DELAY, "service to start with deferred notification");
@@ -1311,7 +1309,7 @@ public class ServiceTest extends ActivityTestsBase {
         waitForResultOrThrow(DELAY, "service to be destroyed");
     }
 
-    public void testForegroundService_deferThenImmediateNotify() throws Exception {
+    public void testForegroundService_deferThenImmediateNotify() {
         final String notificationTitle = "deferThenImmediateNotify";
 
         mExpectedServiceState = STATE_START_1;
@@ -1339,7 +1337,7 @@ public class ServiceTest extends ActivityTestsBase {
         waitForResultOrThrow(DELAY, "service to be destroyed");
     }
 
-    public void testForegroundService_deferThenDeferrableNotify() throws Exception {
+    public void testForegroundService_deferThenDeferrableNotify() {
         final String notificationTitle = "deferThenDeferrableNotify";
 
         mExpectedServiceState = STATE_START_1;
@@ -1374,7 +1372,7 @@ public class ServiceTest extends ActivityTestsBase {
         waitForResultOrThrow(DELAY, "service to be destroyed");
     }
 
-    public void testForegroundService_deferThenKeepNotification() throws Exception {
+    public void testForegroundService_deferThenKeepNotification() {
         // Start FGS with deferred notification; it should not display
         mExpectedServiceState = STATE_START_1;
         startForegroundService(COMMAND_START_FOREGROUND_DEFER_NOTIFICATION);
@@ -1392,7 +1390,7 @@ public class ServiceTest extends ActivityTestsBase {
         waitForResultOrThrow(DELAY, "service to be destroyed");
     }
 
-    class TestSendCallback implements PendingIntent.OnFinished {
+    private static final class TestSendCallback implements PendingIntent.OnFinished {
         public volatile int result = -1;
 
         @Override
@@ -1416,7 +1414,7 @@ public class ServiceTest extends ActivityTestsBase {
             mExpectedServiceState = STATE_START_1;
             pi.send(5038, callback, null);
             waitForResultOrThrow(DELAY, "service to start first time");
-            assertTrue(callback.result > -1);
+            assertThat(callback.result).isGreaterThan(-1);
 
             success = true;
         } finally {
@@ -1431,13 +1429,13 @@ public class ServiceTest extends ActivityTestsBase {
     }
 
     @MediumTest
-    public void testLocalBindAction() throws Exception {
+    public void testLocalBindAction() {
         bindExpectResult(new Intent(
                 LocalService.SERVICE_LOCAL, null /*uri*/, mContext, LocalService.class));
     }
 
     @MediumTest
-    public void testLocalBindAutoClass() throws Exception {
+    public void testLocalBindAutoClass() {
         bindAutoExpectResult(mLocalService);
     }
 
@@ -1448,25 +1446,25 @@ public class ServiceTest extends ActivityTestsBase {
     }
 
     @MediumTest
-    public void testLocalStartClassPermissions() throws Exception {
+    public void testLocalStartClassPermissions() {
         startExpectResult(mLocalGrantedService);
         startExpectResult(mLocalDeniedService);
     }
 
     @MediumTest
-    public void testLocalStartActionPermissions() throws Exception {
+    public void testLocalStartActionPermissions() {
         startExpectResult(mLocalService_ApplicationHasPermission);
         startExpectResult(mLocalService_ApplicationDoesNotHavePermission);
     }
 
     @MediumTest
-    public void testLocalBindClassPermissions() throws Exception {
+    public void testLocalBindClassPermissions() {
         bindExpectResult(mLocalGrantedService);
         bindExpectResult(mLocalDeniedService);
     }
 
     @MediumTest
-    public void testLocalBindActionPermissions() throws Exception {
+    public void testLocalBindActionPermissions() {
         bindExpectResult(mLocalService_ApplicationHasPermission);
         bindExpectResult(mLocalService_ApplicationDoesNotHavePermission);
     }
@@ -1496,7 +1494,7 @@ public class ServiceTest extends ActivityTestsBase {
     }
 
     @MediumTest
-    public void testImplicitIntentFailsOnApiLevel21() throws Exception {
+    public void testImplicitIntentFailsOnApiLevel21() {
         Intent intent = new Intent(LocalService.SERVICE_LOCAL);
         EmptyConnection conn = new EmptyConnection();
         try {
@@ -1509,34 +1507,32 @@ public class ServiceTest extends ActivityTestsBase {
     }
 
     /**
-     * Verify that when the requested service's onBind() returns null,
-     * the connection's onNullBinding() method is invoked.
+     * Verify that when the requested service's onBind() returns null, the connection's
+     * onNullBinding() method is invoked.
      */
     @MediumTest
-    public void testNullServiceBinder() throws Exception {
+    public void testNullServiceBinder() {
         Intent intent = new Intent(mContext, NullService.class);
         intent.setAction("testNullServiceBinder");
         NullServiceConnection conn1 = new NullServiceConnection();
         NullServiceConnection conn2 = new NullServiceConnection();
         try {
-            assertTrue(mContext.bindService(intent, conn1, Context.BIND_AUTO_CREATE));
+            assertThat(mContext.bindService(intent, conn1, Context.BIND_AUTO_CREATE)).isTrue();
             conn1.waitForNullBinding(DELAY);
-            assertTrue(conn1.nullBindingReceived());
+            assertThat(conn1.nullBindingReceived()).isTrue();
 
-            assertTrue(mContext.bindService(intent, conn2, Context.BIND_AUTO_CREATE));
+            assertThat(mContext.bindService(intent, conn2, Context.BIND_AUTO_CREATE)).isTrue();
             conn2.waitForNullBinding(DELAY);
-            assertTrue(conn2.nullBindingReceived());
+            assertThat(conn2.nullBindingReceived()).isTrue();
         } finally {
             mContext.unbindService(conn1);
             mContext.unbindService(conn2);
         }
     }
 
-    /**
-     * Verify that we can't use bindIsolatedService() on a non-isolated service.
-     */
+    /** Verify that we can't use bindIsolatedService() on a non-isolated service. */
     @MediumTest
-    public void testFailBindNonIsolatedService() throws Exception {
+    public void testFailBindNonIsolatedService() {
         EmptyConnection conn = new EmptyConnection();
         try {
             mContext.bindIsolatedService(mLocalService, 0, "isolated", mContextMainExecutor, conn);
@@ -1547,10 +1543,8 @@ public class ServiceTest extends ActivityTestsBase {
         }
     }
 
-    /**
-     * Verify that certain characters are prohibited in instanceName.
-     */
-    public void testFailBindIsoaltedServiceWithInvalidInstanceName() throws Exception {
+    /** Verify that certain characters are prohibited in instanceName. */
+    public void testFailBindIsoaltedServiceWithInvalidInstanceName() {
         String[] badNames = {
             "t\rest",
             "test\n",
@@ -1573,11 +1567,11 @@ public class ServiceTest extends ActivityTestsBase {
     }
 
     /**
-     * Verify that bindIsolatedService() correctly makes different instances when given
-     * different instance names.
+     * Verify that bindIsolatedService() correctly makes different instances when given different
+     * instance names.
      */
     @MediumTest
-    public void testBindIsolatedServiceInstances() throws Exception {
+    public void testBindIsolatedServiceInstances() {
         IsolatedConnection conn1a = null;
         IsolatedConnection conn1b = null;
         IsolatedConnection conn2 = null;
@@ -1604,18 +1598,18 @@ public class ServiceTest extends ActivityTestsBase {
             }
 
             conn1a.setValue(1);
-            assertEquals(1, conn1a.getValue());
-            assertEquals(1, conn1b.getValue());
+            assertThat(conn1a.getValue()).isEqualTo(1);
+            assertThat(conn1b.getValue()).isEqualTo(1);
 
             conn2.setValue(2);
-            assertEquals(1, conn1a.getValue());
-            assertEquals(1, conn1b.getValue());
-            assertEquals(2, conn2.getValue());
+            assertThat(conn1a.getValue()).isEqualTo(1);
+            assertThat(conn1b.getValue()).isEqualTo(1);
+            assertThat(conn2.getValue()).isEqualTo(2);
 
             conn1b.setValue(3);
-            assertEquals(3, conn1a.getValue());
-            assertEquals(3, conn1b.getValue());
-            assertEquals(2, conn2.getValue());
+            assertThat(conn1a.getValue()).isEqualTo(3);
+            assertThat(conn1b.getValue()).isEqualTo(3);
+            assertThat(conn2.getValue()).isEqualTo(2);
         } finally {
             if (conn2 != null) {
                 mContext.unbindService(conn2);
@@ -1630,7 +1624,7 @@ public class ServiceTest extends ActivityTestsBase {
     }
 
     @MediumTest
-    public void testOnCreateCalledOnce_bindService() throws Exception {
+    public void testOnCreateCalledOnce_bindService() {
         IsolatedConnection conn = null;
 
         try {
@@ -1646,7 +1640,7 @@ public class ServiceTest extends ActivityTestsBase {
 
             conn.waitForService(DELAY);
 
-            assertEquals(1, conn.getOnCreateCalledCount());
+            assertThat(conn.getOnCreateCalledCount()).isEqualTo(1);
         } finally {
             if (conn != null) {
                 mContext.unbindService(conn);
@@ -1654,13 +1648,13 @@ public class ServiceTest extends ActivityTestsBase {
         }
     }
 
-    public void testBindIsolatedServiceOnBackgroundThread() throws Exception {
+    public void testBindIsolatedServiceOnBackgroundThread() {
         setupBackgroundThread();
         IsolatedConnection conn = new IsolatedConnection();
         mContext.bindIsolatedService(mIsolatedService, Context.BIND_AUTO_CREATE,
             "background_instance", mBackgroundThreadExecutor, conn);
         conn.waitForService(DELAY);
-        assertEquals(mBackgroundThread, conn.getOnServiceConnectedThread());
+        assertThat(conn.getOnServiceConnectedThread()).isEqualTo(mBackgroundThread);
         mContext.unbindService(conn);
     }
 
@@ -1668,7 +1662,7 @@ public class ServiceTest extends ActivityTestsBase {
     static final int BINDING_STRONG = 1;
     static final int BINDING_ANY = -1;
 
-    final class IsolatedConnectionInfo {
+    private final class IsolatedConnectionInfo {
         final int mStrong;
         final String mInstanceName;
         final String mLabel;
@@ -1742,7 +1736,7 @@ public class ServiceTest extends ActivityTestsBase {
         }
     }
 
-    final class LruOrderItem {
+    private static final class LruOrderItem {
         static final int FLAG_SKIP_UNKNOWN = 1<<0;
 
         final IsolatedConnectionInfo mInfo;
@@ -1759,10 +1753,6 @@ public class ServiceTest extends ActivityTestsBase {
             mInfo = null;
             mUid = uid;
             mFlags = flags;
-        }
-
-        IsolatedConnectionInfo getInfo() {
-            return mInfo;
         }
 
         int getUid() {
@@ -1856,12 +1846,6 @@ public class ServiceTest extends ActivityTestsBase {
         }
     }
 
-    private void doUnbind(Context context, IsolatedConnectionInfo[] connections, int[] selected) {
-        for (int i : selected) {
-            connections[i].unbind(context);
-        }
-    }
-
     List<ProcessRecordProto> getLruProcesses() {
         ActivityManagerServiceDumpProcessesProto dump = getActivityManagerProcesses();
         SparseArray<ProcessRecordProto> procs = new SparseArray<>();
@@ -1922,7 +1906,7 @@ public class ServiceTest extends ActivityTestsBase {
     }
 
     @MediumTest
-    public void testAppZygotePreload() throws Exception {
+    public void testAppZygotePreload() {
         IsolatedConnection conn = new IsolatedConnection();
         try {
             mContext.bindIsolatedService(
@@ -1931,7 +1915,7 @@ public class ServiceTest extends ActivityTestsBase {
             conn.waitForService(DELAY);
 
             // Verify application preload was done
-            assertTrue(conn.zygotePreloadCalled());
+            assertThat(conn.zygotePreloadCalled()).isTrue();
         } finally {
             if (conn != null) {
                 mContext.unbindService(conn);
@@ -1965,13 +1949,15 @@ public class ServiceTest extends ActivityTestsBase {
             int ppid1b = conn1b.getPpid();
             int ppid2 = conn2.getPpid();
 
-            assertEquals(ppid1a, ppid1b);
-            assertEquals(ppid1b, ppid2);
+            assertThat(ppid1b).isEqualTo(ppid1a);
+            assertThat(ppid2).isEqualTo(ppid1b);
             // Find the app zygote process hosting these
-            String result = SystemUtil.runShellCommand(InstrumentationRegistry.getInstrumentation(),
-                "ps -p " + Integer.toString(ppid1a) + " -o NAME=");
+            String result =
+                    SystemUtil.runShellCommand(
+                            InstrumentationRegistry.getInstrumentation(),
+                            "ps -p " + ppid1a + " -o NAME=");
             result = result.replaceAll("\\s+", "");
-            assertEquals(result, APP_ZYGOTE_PROCESS_NAME);
+            assertThat(result).isEqualTo(APP_ZYGOTE_PROCESS_NAME);
             appZygotePid = ppid1a;
         } finally {
             if (conn2 != null) {
@@ -1993,7 +1979,7 @@ public class ServiceTest extends ActivityTestsBase {
             conn1a.waitForService(DELAY);
 
             int ppid1a = conn1a.getPpid();
-            assertEquals(appZygotePid, ppid1a);
+            assertThat(ppid1a).isEqualTo(appZygotePid);
         } finally {
             if (conn1a != null) {
                 mContext.unbindService(conn1a);
@@ -2001,20 +1987,19 @@ public class ServiceTest extends ActivityTestsBase {
         }
         // Sleep for 10 seconds, verify the app_zygote is gone
         Thread.sleep(10000);
-        String result = SystemUtil.runShellCommand(InstrumentationRegistry.getInstrumentation(),
-            "ps -p " + Integer.toString(appZygotePid) + " -o NAME=");
+        String result =
+                SystemUtil.runShellCommand(
+                        InstrumentationRegistry.getInstrumentation(),
+                        "ps -p " + appZygotePid + " -o NAME=");
         result = result.replaceAll("\\s+", "");
-        assertEquals("", result);
+        assertThat(result).isEmpty();
     }
 
-    /**
-     * Test that the system properly orders processes bound by an activity within the
-     * LRU list.
-     */
+    /** Test that the system properly orders processes bound by an activity within the LRU list. */
     // TODO(b/131059432): Re-enable the test after that bug is fixed.
     @FlakyTest
     @MediumTest
-    public void testActivityServiceBindingLru() throws Exception {
+    public void testActivityServiceBindingLru() {
         // Bring up the activity we will hang services off of.
         runLaunchpad(LaunchpadActivity.ACTIVITY_PREPARE);
 
@@ -2102,16 +2087,32 @@ public class ServiceTest extends ActivityTestsBase {
             mContext.startActivity(intent);
 
             // TODO: b/372710412 - Call a test API to force recomputation, instead of doWaitWhile.
-            assertTrue("App is still at the top of the LRU list after getting moved to background",
-                    doWaitWhile(() -> new LruOrderItem(Process.myUid(), 0)
-                            .isEquivalentTo(getLruProcesses().getLast()), DELAY / 10, DELAY));
+            assertWithMessage(
+                            "App is still at the top of the LRU list after getting moved to"
+                                    + " background")
+                    .that(
+                            doWaitWhile(
+                                    () ->
+                                            new LruOrderItem(Process.myUid(), 0)
+                                                    .isEquivalentTo(getLruProcesses().getLast()),
+                                    DELAY / 10,
+                                    DELAY))
+                    .isTrue();
 
             // bring the app back to foreground
             a.startActivity(a.getIntent());
             // TODO: b/372710412 - Call a test API to force recomputation, instead of doWaitWhile.
-            assertTrue("App hasn't come to the top of LRU list after getting back to foreground",
-                    doWaitWhile(() -> !new LruOrderItem(Process.myUid(), 0)
-                            .isEquivalentTo(getLruProcesses().getLast()), DELAY / 10, DELAY));
+            assertWithMessage(
+                            "App hasn't come to the top of LRU list after getting back to"
+                                    + " foreground")
+                    .that(
+                            doWaitWhile(
+                                    () ->
+                                            !new LruOrderItem(Process.myUid(), 0)
+                                                    .isEquivalentTo(getLruProcesses().getLast()),
+                                    DELAY / 10,
+                                    DELAY))
+                    .isTrue();
 
             verifyLruOrder(new LruOrderItem[]{
                     new LruOrderItem(Process.myUid(), 0),
@@ -2227,31 +2228,33 @@ public class ServiceTest extends ActivityTestsBase {
 
     /**
      * Test per process's max outgoing bindService() service connections.
-     * @throws Exception
      */
     @FlakyTest(bugId = 329918252)
     public void testMaxServiceConnections() throws Exception {
         final ArrayList<LatchedConnection> connections = new ArrayList<>();
         final int max = 1000;
         final int extra = 10;
-        DeviceConfigStateHelper helper = new DeviceConfigStateHelper("activity_manager");
-        try {
+        try (DeviceConfigStateHelper helper = new DeviceConfigStateHelper("activity_manager")) {
             helper.set(KEY_MAX_SERVICE_CONNECTIONS_PER_PROCESS, Integer.toString(max));
             // bindService() adds max number of ServiceConnections.
             for (int i = 0; i < max; ++i) {
                 final CountDownLatch latch = new CountDownLatch(1);
                 final LatchedConnection connection = new LatchedConnection(latch);
                 connections.add(connection);
-                assertTrue(mContext.bindService(mLocalService, connection,
-                        Context.BIND_AUTO_CREATE));
-                assertTrue(latch.await(5, TimeUnit.SECONDS));
+                assertThat(
+                                mContext.bindService(
+                                        mLocalService, connection, Context.BIND_AUTO_CREATE))
+                        .isTrue();
+                assertThat(latch.await(5, TimeUnit.SECONDS)).isTrue();
             }
             // bindService() adds "extra" number of ServiceConnections, it should fail.
             for (int i = 0; i < extra; ++i) {
                 final CountDownLatch latch = new CountDownLatch(1);
                 final LatchedConnection connection = new LatchedConnection(latch);
-                assertFalse(mContext.bindService(mLocalService, connection,
-                        Context.BIND_AUTO_CREATE));
+                assertThat(
+                                mContext.bindService(
+                                        mLocalService, connection, Context.BIND_AUTO_CREATE))
+                        .isFalse();
             }
             // unbindService removes max/4 number of ServiceConnections.
             for (int i = 0; i < max / 4; ++i) {
@@ -2263,12 +2266,13 @@ public class ServiceTest extends ActivityTestsBase {
                 final CountDownLatch latch = new CountDownLatch(1);
                 final LatchedConnection connection = new LatchedConnection(latch);
                 connections.add(connection);
-                assertTrue(mContext.bindService(mLocalService, connection,
-                        Context.BIND_AUTO_CREATE));
-                assertTrue(latch.await(5, TimeUnit.SECONDS));
+                assertThat(
+                                mContext.bindService(
+                                        mLocalService, connection, Context.BIND_AUTO_CREATE))
+                        .isTrue();
+                assertThat(latch.await(5, TimeUnit.SECONDS)).isTrue();
             }
         } finally {
-            helper.restoreOriginalValues();
             for (ServiceConnection connection : connections) {
                 mContext.unbindService(connection);
             }
@@ -2278,7 +2282,6 @@ public class ServiceTest extends ActivityTestsBase {
 
     /**
      * Test bindService() flags can be 64 bits long.
-     * @throws Exception
      */
     public void testBindServiceLongFlags() throws Exception {
         long flags = Context.BIND_AUTO_CREATE;
@@ -2293,17 +2296,19 @@ public class ServiceTest extends ActivityTestsBase {
         final CountDownLatch latch = new CountDownLatch(1);
         final LatchedConnection connection = new LatchedConnection(latch);
         try {
-            assertTrue(mContext.bindService(mLocalService, connection,
-                    Context.BindServiceFlags.of(flags)));
-            assertTrue(latch.await(5, TimeUnit.SECONDS));
+            assertThat(
+                            mContext.bindService(
+                                    mLocalService, connection, Context.BindServiceFlags.of(flags)))
+                    .isTrue();
+            assertThat(latch.await(5, TimeUnit.SECONDS)).isTrue();
             final String dumpCommand =
                     "dumpsys activity services "
                             + "android.app.stubs"
                             + "/android.app.stubs.shared.LocalService";
             String[] dumpLines = CtsAppTestUtils.executeShellCmd(
                     InstrumentationRegistry.getInstrumentation(), dumpCommand).split("\n");
-            assertNotNull(CtsAppTestUtils.findLine(dumpLines,
-                    "flags=0x" + Long.toHexString(flags)));
+            assertThat(CtsAppTestUtils.findLine(dumpLines, "flags=0x" + Long.toHexString(flags)))
+                    .isNotNull();
         } finally {
             mContext.unbindService(connection);
         }
