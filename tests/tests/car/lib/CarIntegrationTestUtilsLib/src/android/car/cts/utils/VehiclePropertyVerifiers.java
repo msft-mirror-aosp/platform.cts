@@ -280,12 +280,7 @@ public class VehiclePropertyVerifiers {
     /** Gets the verifier builder for {@link VehiclePropertyIds#PERF_ODOMETER}. */
     public static VehiclePropertyVerifier.Builder<Float> getPerfOdometerVerifierBuilder() {
         VehiclePropertyVerifier.Builder<Float> verifierBuilder =
-                VehiclePropertyVerifier.newBuilder(
-                                VehiclePropertyIds.PERF_ODOMETER,
-                                CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
-                                VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
-                                CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_CONTINUOUS,
-                                Float.class)
+                VehiclePropertyVerifier.<Float>newDefaultBuilder(VehiclePropertyIds.PERF_ODOMETER)
                         .setCarPropertyValueVerifier(
                                 (verifierContext,
                                         carPropertyConfig,
@@ -298,7 +293,7 @@ public class VehiclePropertyVerifiers {
                                                                 + " than or equal 0")
                                                 .that(perfOdometer)
                                                 .isAtLeast(0))
-                        .addReadPermission(Car.PERMISSION_MILEAGE);
+                        .setReadPermission(ImmutableSet.of(Car.PERMISSION_MILEAGE));
 
         return Flags.androidBVehicleProperties()
                 ? verifierBuilder.addReadPermission(Car.PERMISSION_MILEAGE_3P)
