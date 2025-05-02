@@ -26,7 +26,6 @@ import static android.autofillservice.cts.testcore.Timeouts.FILL_EVENTS_TIMEOUT;
 import static android.autofillservice.cts.testcore.Timeouts.FILL_TIMEOUT;
 import static android.autofillservice.cts.testcore.Timeouts.IDLE_UNBIND_TIMEOUT;
 import static android.autofillservice.cts.testcore.Timeouts.SAVE_TIMEOUT;
-
 import static com.google.common.truth.Truth.assertThat;
 
 import android.app.assist.AssistStructure;
@@ -40,7 +39,6 @@ import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.SystemClock;
 import android.service.autofill.AutofillService;
-import android.service.autofill.Dataset;
 import android.service.autofill.FillCallback;
 import android.service.autofill.FillContext;
 import android.service.autofill.FillEventHistory;
@@ -50,20 +48,19 @@ import android.service.autofill.SaveCallback;
 import android.service.autofill.SavedDatasetsInfoCallback;
 import android.util.Log;
 import android.view.inputmethod.InlineSuggestionsRequest;
-
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-
 import com.android.compatibility.common.util.RetryableException;
 import com.android.compatibility.common.util.TestNameUtils;
 import com.android.compatibility.common.util.Timeout;
-
 import java.io.FileDescriptor;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -474,6 +471,28 @@ public class InstrumentedAutoFillService extends AutofillService {
     }
 
     /**
+     * Holds information needed to process a fill response that was intentionally delayed.
+     */
+    private static class DelayedFillInfo {
+        final int requestId;            // Original request ID
+        final FillCallback callback;    // Callback to use for sending the response
+        final FillResponse response;    // The FillResponse object to send
+        final FillRequest originalRequest; // Original request details for context and queuing
+
+        DelayedFillInfo(int requestId, FillCallback callback, FillResponse response, FillRequest originalRequest) {
+            this.requestId = requestId;
+            this.callback = callback;
+            this.response = response;
+            this.originalRequest = originalRequest;
+        }
+
+        @Override
+        public String toString() {
+            return "DelayedFillInfo[requestId=" + requestId + ", response=" + response + "]";
+        }
+    }
+
+    /**
      * Object used to answer a
      * {@link AutofillService#onFillRequest(android.service.autofill.FillRequest,
      * CancellationSignal, FillCallback)}
@@ -505,6 +524,7 @@ public class InstrumentedAutoFillService extends AutofillService {
         private final BlockingQueue<CannedFillResponse> mResponses = new LinkedBlockingQueue<>();
         private final BlockingQueue<FillRequest> mFillRequests = new LinkedBlockingQueue<>();
         private final BlockingQueue<SaveRequest> mSaveRequests = new LinkedBlockingQueue<>();
+        private final Map<Integer, DelayedFillInfo> mDelayedResponses = new HashMap<>();
 
         private List<Throwable> mExceptions;
         private IntentSender mOnSaveIntentSender;
@@ -516,10 +536,6 @@ public class InstrumentedAutoFillService extends AutofillService {
         private boolean mReportUnhandledSaveRequest = true;
 
         private List<FillEventHistory> mFillEventHistory = new ArrayList<>();
-
-        private @Nullable FillCallback mDelayedCallback = null;
-        private @Nullable FillResponse mDelayedResponse = null;
-        private @Nullable FillRequest mDelayedRequest = null;
 
         private Replier() {
         }
@@ -607,23 +623,51 @@ public class InstrumentedAutoFillService extends AutofillService {
             return request;
         }
 
-        /** Continue to process the delayed fill request based on the stored values. */
-        public void processDelayedResponse() {
-            if (mDelayedCallback != null && mDelayedResponse != null && mDelayedRequest != null) {
-                mDelayedCallback.onSuccess(mDelayedResponse);
-                Log.v(
-                        TAG,
-                        "onFillRequest("
-                                + mDelayedRequest.requestId
-                                + "): fillResponse = "
-                                + mDelayedResponse);
-                Helper.offer(mFillRequests, mDelayedRequest, CONNECTION_TIMEOUT.ms());
+        /**
+         * Sends a previously stored delayed response for the specified request ID.
+         * This involves invoking the original callback and queuing the original FillRequest
+         * object onto mFillRequests for test thread synchronization.
+         *
+         * @param requestId The ID of the fill request whose delayed response should be processed.
+         * @throws IllegalArgumentException if no delayed response is found for the given ID.
+         */
+        public void processDelayedResponse(int requestId) {
+            Log.d(TAG, "Attempting to process delayed response for requestId(" + requestId + ")");
+            final DelayedFillInfo delayedInfo = mDelayedResponses.remove(requestId);
+
+            if (delayedInfo != null) {
+                delayedInfo.callback.onSuccess(delayedInfo.response);
+                Helper.offer(mFillRequests, delayedInfo.originalRequest, CONNECTION_TIMEOUT.ms());
+                Log.d(TAG, "processDelayedResponse(" + requestId + ") finished. Remaining delayed: " + mDelayedResponses.size());
+            } else {
+                // This indicates a test logic error - trying to process a non-existent delayed response.
+                String errorMsg =
+                        "processDelayedResponse("
+                                + requestId
+                                + "): No delayed response found. Available IDs: "
+                                + mDelayedResponses.keySet();
+                Log.e(TAG, errorMsg);
+                throw new IllegalArgumentException(errorMsg);
             }
-            // and then reset all parameters.
-            mDelayedCallback = null;
-            mDelayedResponse = null;
-            mDelayedRequest = null;
-            Log.v(TAG, "processDelayedResponse: all stored values are resetted");
+        }
+
+        /**
+         * Clears all stored delayed responses. Helper method for test cleanup or verification.
+         */
+        public void clearDelayedResponses() {
+             int count = mDelayedResponses.size();
+             if (count > 0) {
+                 Log.d(TAG, "Clearing " + count + " delayed responses. IDs: " + mDelayedResponses.keySet());
+                 mDelayedResponses.clear();
+             }
+        }
+
+        /**
+         * Checks if there are any pending delayed responses.
+         * @return true if at least one response is waiting to be processed via processDelayedResponse.
+         */
+        public boolean hasDelayedResponses() {
+            return !mDelayedResponses.isEmpty();
         }
 
         /**
@@ -752,6 +796,7 @@ public class InstrumentedAutoFillService extends AutofillService {
             mResponses.clear();
             mFillRequests.clear();
             mSaveRequests.clear();
+            mDelayedResponses.clear();
             mExceptions = null;
             mOnSaveIntentSender = null;
             mAcceptedPackageName = null;
@@ -855,19 +900,17 @@ public class InstrumentedAutoFillService extends AutofillService {
                 }
 
                 if (response.getResponseType() == ResponseType.DELAY) {
-                    mDelayedCallback = callback;
-                    mDelayedResponse = fillResponse;
-                    mDelayedRequest =
-                            new FillRequest(
-                                    contexts,
-                                    hints,
-                                    data,
-                                    cancellationSignal,
-                                    callback,
-                                    flags,
-                                    inlineRequest,
-                                    delayFillIntentSender,
-                                    requestId);
+                    Log.v(TAG, "onFillRequest(" + requestId + "): delayed fillResponse = " + fillResponse);
+                    DelayedFillInfo delayedInfo =
+                        new DelayedFillInfo(
+                            requestId,
+                            callback,
+                            fillResponse,
+                            new FillRequest(contexts, hints, data,
+                            cancellationSignal, callback, flags, inlineRequest,
+                            delayFillIntentSender, requestId));
+                    mDelayedResponses.put(requestId, delayedInfo);
+                    Log.d(TAG, "onFillRequest(" + requestId + ") finished for delayed response. Remaining delayed: " + mDelayedResponses.size());
                 } else {
                     Log.v(TAG, "onFillRequest(" + requestId + "): fillResponse = " + fillResponse);
                     callback.onSuccess(fillResponse);
@@ -876,6 +919,7 @@ public class InstrumentedAutoFillService extends AutofillService {
                 addException(t);
             } finally {
                 if (!hasLazyResponse) {
+                    Log.v(TAG, "onFillRequest(" + requestId + "): Queuing request object for test synchronization.");
                     Helper.offer(mFillRequests, new FillRequest(contexts, hints, data,
                             cancellationSignal, callback, flags, inlineRequest,
                             delayFillIntentSender, requestId),

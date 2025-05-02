@@ -208,33 +208,50 @@ public abstract class LoginActivityCommonTestCase extends AbstractLoginActivityT
         // Set service
         enableService();
 
+        // Set expectations.
+        sReplier.addResponse(
+                        new CannedFillResponse.Builder(CannedFillResponse.ResponseType.DELAY)
+                                .addDataset(
+                                        new CannedFillResponse.CannedDataset.Builder()
+                                                .setField(ID_USERNAME, "dude")
+                                                .setPresentation("The Dude", isInlineMode())
+                                                .build())
+                                .build())
+                .addResponse(
+                        new CannedFillResponse.Builder(CannedFillResponse.ResponseType.DELAY)
+                                .addDataset(
+                                        new CannedFillResponse.CannedDataset.Builder()
+                                                .setField(ID_PASSWORD, "sweet")
+                                                .setPresentation("The Password", isInlineMode())
+                                                .build())
+                                .build());
+
         // Trigger auto-fill
         mUiBot.selectByRelativeId(ID_USERNAME);
         waitUntilConnected();
-
-        // Trigger second fill request
-        mUiBot.selectByRelativeId(ID_PASSWORD);
+        final InstrumentedAutoFillService.FillRequest request1 = sReplier.getNextFillRequest(); // Sync on arrival, get request1 obj
         mUiBot.waitForIdleSync();
 
-        // Respond for username
-        sReplier.addResponse(new CannedFillResponse.Builder()
-                .addDataset(new CannedFillResponse.CannedDataset.Builder()
-                        .setField(ID_USERNAME, "dude")
-                        .setPresentation("The Dude", isInlineMode())
-                        .build())
-                .build());
-        sReplier.getNextFillRequest();
+        // Trigger second manual fill request
+        mUiBot.selectByRelativeId(ID_PASSWORD);
+        final InstrumentedAutoFillService.FillRequest request2 = sReplier.getNextFillRequest(); // Sync on arrival, get request2 obj
+        mUiBot.waitForIdleSync();
 
+        // --- Assert Initial State (No responses shown yet) ---
         mUiBot.assertNoDatasetsEver();
 
-        // Set expectations and respond for password
-        sReplier.addResponse(new CannedFillResponse.Builder()
-                .addDataset(new CannedFillResponse.CannedDataset.Builder()
-                        .setField(ID_PASSWORD, "sweet")
-                        .setPresentation("The Password", isInlineMode())
-                        .build())
-                .build());
-        sReplier.getNextFillRequest();
+        // Process Response 1 (for Request 1)
+        sReplier.processDelayedResponse(request1.requestId);
+        sReplier.getNextFillRequest(); // Consume the re-queued request1 for sync
+        mUiBot.waitForIdleSync(); // Allow UI to update with Response 1
+
+        // --- Assert no datasets shown for username ---
+        mUiBot.assertNoDatasetsEver();
+
+        // Process Response 2 (for Request 2)
+        sReplier.processDelayedResponse(request2.requestId);
+        sReplier.getNextFillRequest(); // Consume the re-queued request2 for sync
+        mUiBot.waitForIdleSync(); // Allow UI to update with Response 2
 
         // confirm second response shown
         mUiBot.assertDatasets("The Password");
@@ -246,30 +263,47 @@ public abstract class LoginActivityCommonTestCase extends AbstractLoginActivityT
         // Set service
         enableService();
 
+        // Set expectations.
+        sReplier.addResponse(
+                        new CannedFillResponse.Builder(CannedFillResponse.ResponseType.DELAY)
+                                .addDataset(
+                                        new CannedFillResponse.CannedDataset.Builder()
+                                                .setField(ID_USERNAME, "dude")
+                                                .setPresentation("The Dude", isInlineMode())
+                                                .build())
+                                .build())
+                .addResponse(
+                        new CannedFillResponse.Builder(CannedFillResponse.ResponseType.DELAY)
+                                .addDataset(
+                                        new CannedFillResponse.CannedDataset.Builder()
+                                                .setField(ID_USERNAME, "dude2")
+                                                .setPresentation("The Dude 2", isInlineMode())
+                                                .build())
+                                .build());
+
         // Trigger auto-fill
         mUiBot.selectByRelativeId(ID_USERNAME);
         waitUntilConnected();
-
-        // Trigger second fill request
-        mActivity.forceAutofillOnUsername();
+        final InstrumentedAutoFillService.FillRequest request1 = sReplier.getNextFillRequest(); // Sync on arrival, get request1 obj
         mUiBot.waitForIdleSync();
 
-        // Respond for first request
-        sReplier.addResponse(new CannedFillResponse.Builder()
-                .addDataset(new CannedFillResponse.CannedDataset.Builder()
-                        .setField(ID_USERNAME, "dude")
-                        .setPresentation("The Dude", isInlineMode())
-                        .build())
-                .build());
-        sReplier.getNextFillRequest();
+        // Trigger second manual fill request
+        mActivity.forceAutofillOnUsername();
+        final InstrumentedAutoFillService.FillRequest request2 = sReplier.getNextFillRequest(); // Sync on arrival, get request2 obj
+        mUiBot.waitForIdleSync();
 
-        // Set expectations and respond for second request
-        sReplier.addResponse(new CannedFillResponse.Builder()
-                .addDataset(new CannedFillResponse.CannedDataset.Builder()
-                        .setField(ID_USERNAME, "dude2")
-                        .setPresentation("The Dude 2", isInlineMode())
-                        .build()).build());
-        sReplier.getNextFillRequest();
+        // --- Assert Initial State (No responses shown yet) ---
+        mUiBot.assertNoDatasetsEver();
+
+        // Process Response 1 (for Request 1)
+        sReplier.processDelayedResponse(request1.requestId);
+        sReplier.getNextFillRequest(); // Consume the re-queued request1 for sync
+        mUiBot.waitForIdleSync(); // Allow UI to update with Response 1
+
+        // Process Response 2 (for Request 2)
+        sReplier.processDelayedResponse(request2.requestId);
+        sReplier.getNextFillRequest(); // Consume the re-queued request2 for sync
+        mUiBot.waitForIdleSync(); // Allow UI to update with Response 2
 
         // confirm second response shown
         mUiBot.assertDatasets("The Dude 2");
@@ -301,7 +335,7 @@ public abstract class LoginActivityCommonTestCase extends AbstractLoginActivityT
         // Trigger auto-fill
         mUiBot.selectByRelativeId(ID_USERNAME);
         waitUntilConnected();
-        sReplier.getNextFillRequest();
+        final InstrumentedAutoFillService.FillRequest request1 = sReplier.getNextFillRequest();
         mUiBot.waitForIdleSync();
 
         // Trigger second fill request
@@ -313,7 +347,7 @@ public abstract class LoginActivityCommonTestCase extends AbstractLoginActivityT
         mUiBot.assertDatasets("The Dude 2");
 
         // Wait first response was sent
-        sReplier.processDelayedResponse();
+        sReplier.processDelayedResponse(request1.requestId);
         sReplier.getNextFillRequest();
         mUiBot.waitForIdleSync();
 
