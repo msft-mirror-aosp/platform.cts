@@ -55,6 +55,8 @@ java_defaults {
         "cts-media-common",
         "ctstestrunner-axt",
         "ctstestserver",
+        "android.media.codec-aconfig-java",
+        "android.media.extractor.flags-aconfig-java",
     ],
     jni_libs: [
         "libctscodecutils_jni",

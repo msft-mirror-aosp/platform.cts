@@ -16,38 +16,42 @@
 
 package android.media.drmframework.cts;
 
+import static org.junit.Assume.assumeTrue;
+
 import android.content.res.AssetFileDescriptor;
 import android.media.MediaDrm;
 import android.media.MediaExtractor;
 import android.media.MediaFormat;
 import android.media.cts.MediaCodecBlockModelHelper;
+import android.media.cts.TestArgs;
 import android.os.Build;
 import android.os.ParcelFileDescriptor;
 import android.platform.test.annotations.AppModeFull;
 
-import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
 
 import com.android.compatibility.common.util.ApiLevelUtil;
 import com.android.compatibility.common.util.ApiTest;
-import com.android.compatibility.common.util.FrameworkSpecificTest;
 import com.android.compatibility.common.util.MediaUtils;
 import com.android.compatibility.common.util.Preconditions;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
 import java.util.UUID;
 
 /**
  * Media DRM Codec tests with CONFIGURE_FLAG_USE_BLOCK_MODEL.
  */
-@FrameworkSpecificTest
 @AppModeFull(reason = "Instant apps cannot access the SD card")
-@RunWith(AndroidJUnit4.class)
+@RunWith(Parameterized.class)
 public class MediaDrmCodecBlockModelTest {
     private static final String TAG = "MediaDrmCodecBlockModelTest";
     private static final boolean VERBOSE = false;           // lots of logging
@@ -55,10 +59,49 @@ public class MediaDrmCodecBlockModelTest {
     private boolean mIsAtLeastR = ApiLevelUtil.isAtLeast(Build.VERSION_CODES.R);
     static final String mInpPrefix = WorkDir.getMediaDirString();
 
-    protected static AssetFileDescriptor getAssetFileDescriptorFor(final String res)
-            throws FileNotFoundException {
-        File inpFile = new File(mInpPrefix + res);
-        Preconditions.assertTestFileExists(mInpPrefix + res);
+    private String mCodecName;
+    private String mTestFile;
+
+    public MediaDrmCodecBlockModelTest(String codecName, String testFile) {
+        mCodecName = codecName;
+        mTestFile = mInpPrefix + testFile;
+    }
+
+    private static List<Object[]> prepareParamList(List<Object[]> exhaustiveArgsList) {
+        final List<Object[]> argsList = new ArrayList<>();
+        int argLength = exhaustiveArgsList.get(0).length;
+        for (Object[] arg : exhaustiveArgsList) {
+            String mediaType = (String) arg[0];
+            String testFile = (String) arg[1];
+            String[] codecs = MediaUtils.getDecoderNamesForMime(mediaType);
+            for (String codec : codecs) {
+                if (TestArgs.shouldSkipCodec(codec)) {
+                    continue;
+                }
+                Object[] testArgs = new Object[argLength];
+                testArgs[0] = codec;
+                testArgs[1] = testFile;
+                argsList.add(testArgs);
+            }
+        }
+        return argsList;
+    }
+
+    @Parameterized.Parameters(name = "{index}_{0}_{2}")
+    public static Collection<Object[]> input() {
+        final List<Object[]> exhaustiveArgsList = new ArrayList<>(Arrays.asList(new Object[][]{
+                {MediaFormat.MIMETYPE_VIDEO_AVC, "llama_h264_main_720p_8000.mp4"},
+                {MediaFormat.MIMETYPE_VIDEO_HEVC, "llama_hevc_240p_30fps_600_cenc.mp4"},
+                {MediaFormat.MIMETYPE_VIDEO_VP8, "bbb_520x390_1mbps_30fps_vp8_cenc.webm"},
+                {MediaFormat.MIMETYPE_VIDEO_VP9, "bbb_520x390_1mbps_30fps_vp9_cenc.webm"},
+                {MediaFormat.MIMETYPE_VIDEO_AV1, "bbb_640x360_512kbps_30fps_av1_cenc.webm"},
+        }));
+        return prepareParamList(exhaustiveArgsList);
+    }
+
+    protected AssetFileDescriptor getAssetFileDescriptorFor() throws FileNotFoundException {
+        File inpFile = new File(mTestFile);
+        Preconditions.assertTestFileExists(mTestFile);
         ParcelFileDescriptor parcelFD =
                 ParcelFileDescriptor.open(inpFile, ParcelFileDescriptor.MODE_READ_ONLY);
         return new AssetFileDescriptor(parcelFD, 0, parcelFD.getStatSize());
@@ -66,16 +109,28 @@ public class MediaDrmCodecBlockModelTest {
 
     /**
      * Tests whether decoding a short encrypted group-of-pictures succeeds.
-     * The test queues a few encrypted video frames
+     * The test queues a few encrypted video frames by obtaining new block for each frame
      * then signals end-of-stream. The test fails if the decoder doesn't output the queued frames.
      */
     @SmallTest
     @ApiTest(apis = "MediaCodec#CONFIGURE_FLAG_USE_BLOCK_MODEL")
     @Test
-    public void testDecodeShortEncryptedVideo() throws InterruptedException {
-        if (!MediaUtils.check(mIsAtLeastR, "test needs Android 11")) return;
+    public void testDecodeShortEncryptedVideoWithBlockPerBuffer() throws InterruptedException {
+        assumeTrue("Test needs Android 11", mIsAtLeastR);
         MediaCodecBlockModelHelper.runThread(() -> runDecodeShortEncryptedVideo(
                 true /* obtainBlockForEachBuffer */));
+    }
+
+    /**
+     * Tests whether decoding a short encrypted group-of-pictures succeeds.
+     * The test queues a few encrypted video frames by reusing the existing block
+     * then signals end-of-stream. The test fails if the decoder doesn't output the queued frames.
+     */
+    @SmallTest
+    @ApiTest(apis = "MediaCodec#CONFIGURE_FLAG_USE_BLOCK_MODEL")
+    @Test
+    public void testDecodeShortEncryptedVideoWithSharedBlock() throws InterruptedException {
+        assumeTrue("Test needs Android 11", mIsAtLeastR);
         MediaCodecBlockModelHelper.runThread(() -> runDecodeShortEncryptedVideo(
                 false /* obtainBlockForEachBuffer */));
     }
@@ -114,11 +169,12 @@ public class MediaDrmCodecBlockModelTest {
         return byteArray;
     }
 
-    private MediaCodecBlockModelHelper.Result runDecodeShortEncryptedVideo(boolean obtainBlockForEachBuffer) {
+    private MediaCodecBlockModelHelper.Result runDecodeShortEncryptedVideo(
+            boolean obtainBlockForEachBuffer) {
         MediaExtractor extractor = new MediaExtractor();
 
         try (final MediaDrm drm = new MediaDrm(CLEARKEY_SCHEME_UUID)) {
-            extractor.setDataSource(mInpPrefix + "llama_h264_main_720p_8000.mp4", null);
+            extractor.setDataSource(mTestFile, null);
             extractor.selectTrack(0);
             extractor.seekTo(ENCRYPTED_CONTENT_FIRST_BUFFER_TIMESTAMP_US,
                     MediaExtractor.SEEK_TO_CLOSEST_SYNC);
@@ -137,48 +193,13 @@ public class MediaDrmCodecBlockModelTest {
                     drm, "cenc", sessionId, DRM_INIT_DATA, MediaDrm.KEY_TYPE_STREAMING,
                     new byte[][] { CLEAR_KEY_CENC });
             MediaCodecBlockModelHelper.Result result =
-                MediaCodecBlockModelHelper.runDecodeShortVideo(
-                        extractor, ENCRYPTED_CONTENT_LAST_BUFFER_TIMESTAMP_US,
-                        obtainBlockForEachBuffer, null /* format */, null /* events */, sessionId);
+                MediaCodecBlockModelHelper.runDecodeShortVideo(mCodecName, extractor,
+                        ENCRYPTED_CONTENT_LAST_BUFFER_TIMESTAMP_US, obtainBlockForEachBuffer,
+                        null /* format */, null /* events */, sessionId);
             drm.closeSession(sessionId);
             return result;
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-    }
-
-    private MediaCodecBlockModelHelper.Result runDecodeShortVideo(
-            String inputResource,
-            long lastBufferTimestampUs,
-            boolean obtainBlockForEachBuffer) {
-        return MediaCodecBlockModelHelper.runDecodeShortVideo(
-                getMediaExtractorForMimeType(inputResource, "video/"),
-                lastBufferTimestampUs, obtainBlockForEachBuffer, null, null, null);
-    }
-
-    private static MediaExtractor getMediaExtractorForMimeType(final String resource,
-            String mimeTypePrefix) {
-        MediaExtractor mediaExtractor = new MediaExtractor();
-        try (AssetFileDescriptor afd = getAssetFileDescriptorFor(resource)) {
-            mediaExtractor.setDataSource(
-                    afd.getFileDescriptor(), afd.getStartOffset(), afd.getLength());
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-        int trackIndex;
-        for (trackIndex = 0; trackIndex < mediaExtractor.getTrackCount(); trackIndex++) {
-            MediaFormat trackMediaFormat = mediaExtractor.getTrackFormat(trackIndex);
-            if (trackMediaFormat.getString(MediaFormat.KEY_MIME).startsWith(mimeTypePrefix)) {
-                mediaExtractor.selectTrack(trackIndex);
-                break;
-            }
-        }
-        if (trackIndex == mediaExtractor.getTrackCount()) {
-            throw new IllegalStateException("couldn't get a video track");
-        }
-        mediaExtractor.seekTo(ENCRYPTED_CONTENT_FIRST_BUFFER_TIMESTAMP_US,
-            MediaExtractor.SEEK_TO_CLOSEST_SYNC);
-
-        return mediaExtractor;
     }
 }
