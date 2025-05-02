@@ -34,6 +34,7 @@ import static org.junit.Assume.assumeFalse;
 
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Rect;
 import android.support.test.uiautomator.UiObjectNotFoundException;
 import android.test.suitebuilder.annotation.LargeTest;
 import android.view.Surface;
@@ -41,6 +42,7 @@ import android.view.SurfaceHolder;
 import android.view.cts.surfacevalidator.CapturedActivity;
 import android.view.cts.surfacevalidator.MultiFramePixelChecker;
 import android.view.cts.surfacevalidator.SurfaceControlTestCase;
+import android.widget.FrameLayout;
 
 import androidx.test.rule.ActivityTestRule;
 import androidx.test.runner.AndroidJUnit4;
@@ -245,12 +247,32 @@ public class ASurfaceControlBackPressureTest {
             }
         };
 
-        mActivity.verifyTest(new SurfaceControlTestCase(callback, null /* animation factory */,
-                        PixelChecker,
-                        DEFAULT_LAYOUT_WIDTH, DEFAULT_LAYOUT_HEIGHT,
-                        DEFAULT_LAYOUT_WIDTH, DEFAULT_LAYOUT_HEIGHT,
-                        true /* checkSurfaceViewBoundsOnly */),
-                mName);
+        if (CapturedActivity.wmCanReplaceContentOnDisplay()) {
+            CapturedActivity.TestResult result = mActivity.runTest(new SurfaceControlTestCase(
+                    callback,
+                    null /* animation factory */,
+                    PixelChecker,
+                    DEFAULT_LAYOUT_WIDTH, DEFAULT_LAYOUT_HEIGHT,
+                    DEFAULT_LAYOUT_WIDTH, DEFAULT_LAYOUT_HEIGHT,
+                    true /* checkSurfaceViewBoundsOnly */) {
+                        @Override
+                        public Rect getBoundsToCheck(FrameLayout parent) {
+                            return null;
+                        }
+                    });
+            assertTrue(result.passFrames > 0);
+            float failRatio = 1.0f * result.failFrames / (result.failFrames + result.passFrames);
+            assertTrue("Error: " + failRatio
+                            + " fail ratio - extremely high, is activity obstructed?",
+                    failRatio < 0.95f);
+        } else {
+            mActivity.verifyTest(new SurfaceControlTestCase(callback, null /* animation factory */,
+                                     PixelChecker,
+                                     DEFAULT_LAYOUT_WIDTH, DEFAULT_LAYOUT_HEIGHT,
+                                     DEFAULT_LAYOUT_WIDTH, DEFAULT_LAYOUT_HEIGHT,
+                                     true /* checkSurfaceViewBoundsOnly */),
+                    mName);
+        }
     }
 
     @Test
@@ -282,7 +304,13 @@ public class ASurfaceControlBackPressureTest {
                 PixelChecker,
                 DEFAULT_LAYOUT_WIDTH, DEFAULT_LAYOUT_HEIGHT,
                 DEFAULT_LAYOUT_WIDTH, DEFAULT_LAYOUT_HEIGHT,
-                true /* checkSurfaceViewBoundsOnly */));
+                true /* checkSurfaceViewBoundsOnly */) {
+                    @Override
+                    public Rect getBoundsToCheck(FrameLayout parent) {
+                        return CapturedActivity.wmCanReplaceContentOnDisplay()
+                                ? null : super.getBoundsToCheck(parent);
+                    }
+        });
 
         assertTrue(result.passFrames > 0);
 
