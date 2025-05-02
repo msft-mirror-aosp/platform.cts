@@ -23,9 +23,9 @@ import com.android.server.appsearch.external.localstorage.stats.CallStats;
 import com.android.server.appsearch.external.localstorage.stats.InitializeStats;
 import com.android.server.appsearch.external.localstorage.stats.OptimizeStats;
 import com.android.server.appsearch.external.localstorage.stats.PutDocumentStats;
+import com.android.server.appsearch.external.localstorage.stats.QueryStats;
 import com.android.server.appsearch.external.localstorage.stats.RemoveStats;
 import com.android.server.appsearch.external.localstorage.stats.SearchSessionStats;
-import com.android.server.appsearch.external.localstorage.stats.SearchStats;
 import com.android.server.appsearch.external.localstorage.stats.SetSchemaStats;
 
 import org.jspecify.annotations.NonNull;
@@ -49,8 +49,8 @@ public final class SimpleTestLogger implements AppSearchLogger {
     /** Holds {@link InitializeStats} after logging. */
     public @Nullable InitializeStats mInitializeStats;
 
-    /** Holds {@link SearchStats} after logging. */
-    public @Nullable SearchStats mSearchStats;
+    /** Holds {@link QueryStats} after logging. */
+    public @Nullable QueryStats mQueryStats;
 
     /** Holds {@link RemoveStats} after logging. */
     public @Nullable RemoveStats mRemoveStats;
@@ -83,8 +83,8 @@ public final class SimpleTestLogger implements AppSearchLogger {
     }
 
     @Override
-    public void logStats(@NonNull SearchStats stats) {
-        mSearchStats = stats;
+    public void logStats(@NonNull QueryStats stats) {
+        mQueryStats = stats;
     }
 
     @Override
