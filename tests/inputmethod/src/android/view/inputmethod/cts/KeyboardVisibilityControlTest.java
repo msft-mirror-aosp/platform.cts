@@ -750,6 +750,10 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
 
     @Test
     public void testImeVisibilityWhenDismissingDialogWithImeFocused() throws Exception {
+        // TODO(b/391378502): Fix this test (or consider writing an equivalent test) on Automotive
+        // Scalable UI with Auto-Enhance on.
+        assumeFalse(isAutomotiveScalableUI());
+
         final Instrumentation instrumentation = mInstrumentation;
         try (MockImeSession imeSession = MockImeSession.create(
                 instrumentation.getContext(),
