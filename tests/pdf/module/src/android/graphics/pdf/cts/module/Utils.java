@@ -78,6 +78,9 @@ class Utils {
     static final int ONE_TEXT_PAGE_OBJECT =
             android.graphics.pdf.cts.module.R.raw.one_text_page_object;
 
+    static final int PAGE_OBJECT_OVERLAPS =
+            android.graphics.pdf.cts.module.R.raw.page_object_overlap;
+
     static final int EMPTY_PDF = android.graphics.pdf.cts.module.R.raw.empty;
     static final LoadParams LOAD_PARAMS = new LoadParams.Builder().setPassword("qwerty").build();
 
@@ -689,5 +692,20 @@ class Utils {
             return null;
         }
         return dir;
+    }
+
+    /**
+     * Get bounds of a image page object using the underlying matrix.
+     *
+     * @param m transformation matrix
+     * @return bounds in RectF
+     */
+    public static RectF getRectBounds(float[] m) {
+        float left = m[2];
+        float top = m[5];
+        float right = m[0] + m[1] + m[2];
+        float bottom = m[3] + m[4] + m[5];
+
+        return new RectF(left, top, right, bottom);
     }
 }
