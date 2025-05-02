@@ -16,6 +16,9 @@
 
 package android.webkit.cts;
 
+import android.content.Context;
+import android.net.ConnectivityManager;
+import android.net.Network;
 import android.os.Handler;
 import android.os.Looper;
 
@@ -188,6 +191,26 @@ public final class WebkitUtils {
             // Thread was interrupted, not this one.
             throw new RuntimeException(e);
         }
+    }
+
+    /**
+     * Asserts that the device is connected to at least one available network. This enforces CTS
+     * this setup requirement https://source.android.com/docs/compatibility/cts/setup#wifi-and-ipv6.
+     *
+     * @param ctx the {@link Context} the test is running in.
+     * @return an array of connected Networks with at least one valid connected Network.
+     * @throws CtsRequirementException if the device has no network connections.
+     */
+    public static Network[] checkNetworkAvailable(Context ctx) {
+        ConnectivityManager connectivityManager = ctx.getSystemService(ConnectivityManager.class);
+        Network[] networks = connectivityManager.getAllNetworks();
+        if (networks.length == 0) {
+            throw new CtsRequirementException(
+                    "The CTS test suite requires the device should be connected to an available"
+                        + " network. Refer to "
+                        + "https://source.android.com/docs/compatibility/cts/setup#wifi-and-ipv6");
+        }
+        return networks;
     }
 
     // Do not instantiate this class.
