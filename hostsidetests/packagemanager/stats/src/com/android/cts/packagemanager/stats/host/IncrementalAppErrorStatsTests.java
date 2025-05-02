@@ -28,7 +28,7 @@ import android.server.ErrorSource;
 
 import com.android.compatibility.common.tradefed.build.CompatibilityBuildHelper;
 import com.android.incfs.install.IncrementalInstallSession;
-import com.android.incfs.install.adb.ddmlib.DeviceConnection;
+import com.android.incfs.install.adb.ddmlib.AdbDeviceConnection;
 import com.android.os.AtomsProto;
 import com.android.os.StatsLog;
 import com.android.tradefed.build.IBuildInfo;
@@ -106,7 +106,7 @@ public final class IncrementalAppErrorStatsTests extends DeviceTestCase implemen
                 })
                 .build();
         mSession.start(Executors.newCachedThreadPool(),
-                DeviceConnection.getFactory(getDevice().getSerialNumber()));
+                AdbDeviceConnection.getFactory(getDevice().getSerialNumber()));
         mSession.waitForInstallCompleted(INSTALL_TIMEOUT_SECONDS, TimeUnit.SECONDS);
         assertTrue(getDevice().isPackageInstalled(DeviceUtils.STATSD_ATOM_TEST_PKG));
         // Preload most of the pages to make sure the test can run but it also causes pending reads
