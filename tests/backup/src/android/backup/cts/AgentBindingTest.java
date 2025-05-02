@@ -70,6 +70,7 @@ public class AgentBindingTest extends BaseBackupCtsTest {
 
     @After
     public void tearDown() throws Exception {
+        super.tearDown();
         setComponentEnabledSetting(FULL_BACKUP_AGENT_NAME, mFullBackupAgentEnabledState);
         setComponentEnabledSetting(KEY_VALUE_BACKUP_AGENT_NAME, mKeyValueBackupAgentEnabledState);
     }

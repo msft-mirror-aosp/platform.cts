@@ -81,7 +81,7 @@ public class BackupRestoreEventLoggerTest extends BaseBackupCtsTest {
 
     @After
     public void tearDown() throws Exception {
-
+        super.tearDown();
         if (mRestoreSession != null){
             mRestoreSession.endRestoreSession();
         }

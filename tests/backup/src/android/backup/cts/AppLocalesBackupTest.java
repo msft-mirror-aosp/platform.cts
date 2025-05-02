@@ -107,6 +107,7 @@ public class AppLocalesBackupTest extends BaseBackupCtsTest {
 
     @After
     public void tearDown() throws Exception {
+        super.tearDown();
         // reset auto time to its original value
         if (!mOriginalAutoTime) {
             setAutoTimeEnabled(/*enabled*/ false, mShellCommandExecutor);
