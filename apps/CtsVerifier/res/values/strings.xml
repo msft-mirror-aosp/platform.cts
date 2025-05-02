@@ -6726,23 +6726,32 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="telecom_incoming_call_confirm_button">Confirm</string>
     <string name="telecom_incoming_self_mgd_test"> Incoming Self-Managed Connection Test</string>
     <string name="telecom_incoming_self_mgd_info">
-        This test verifies that an incoming call from a Self-Managed Connection Service will trigger
-        a Telecom-managed incoming call UI when it is not possible to hold an ongoing call on the
-        device.
+        This test verifies the correct handling of an incoming call from a Self-Managed Connection
+        Service. Specifically, it checks that when there are already two ongoing SIM-based (managed)
+        calls and a new self-managed call arrives, the system displays a Telecom-managed incoming
+        call notification with "Answer" and "Decline" options. Answering the self-managed call
+        should result in the currently held SIM-based call being ended, the active SIM-based call
+        being put on hold, and the self-managed call becoming active.
     </string>
     <string name="telecom_incoming_self_mgd_step_1">
-        Click the button below to register a test self-managed ConnectionService.
+        To begin, click the button below. This will register a test self-managed account
+        which is necessary for simulating the incoming self-managed call later in this test.
     </string>
-    <string name="telecom_incoming_self_mgd_register_button">Register Self-Managed ConnectionService</string>
+    <string name="telecom_incoming_self_mgd_register_button">Register Self-Managed account</string>
     <string name="telecom_incoming_self_mgd_step_2">
-        Start two phone calls on the device under test; this generates a scenario where calls cannot
-        be held when the incoming self-managed call is received.  Click "verify calls" to confirm
-        that the calls were started.
+        Next, using the device under test and system default dialer, initiate two separate SIM-based
+        (managed) phone calls. Ensure one call is active and the other is on hold. Once this state
+        is achieved (one active call, one call on hold), click the "Verify Call States" button
+        below. The system will then check in the background to confirm the correct call states are
+        present.
     </string>
-    <string name="telecom_incoming_self_mgd_verify_call_button">Verify Calls</string>
+    <string name="telecom_incoming_self_mgd_verify_call_button">Verify Call States (1 Active, 1 Held)</string>
     <string name="telecom_incoming_self_mgd_step_3">
-        Click the button below to start a test incoming self-managed call.  Answer the call in the
-        UI when prompted.
+        Now, click the button below to trigger a simulated incoming call from the test self-managed
+        ConnectionService. You do not need to use a third-party application to place this call;
+        Telecom will simulate it. When the incoming call notification appears, tap "Answer".
+        The test will automatically pass if the call is answered and the previous call states change
+        as expected (held call ends, active call is put on hold, self-managed call becomes active).
     </string>
     <string name="telecom_incoming_self_mgd_place_call_button">Start Self-Managed Call</string>
     <string name="telecom_default_dialer_test_title">Default Dialer Test</string>
