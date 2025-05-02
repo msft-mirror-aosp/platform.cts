@@ -889,6 +889,30 @@ public class MockModemManager {
     }
 
     /**
+     * Waits for the event of data service.
+     *
+     * @param slotId the Id of logical sim slot.
+     * @param latchIndex The index of the event.
+     * @param waitMs The timeout in milliseconds.
+     */
+    public boolean waitForDataLatchCountdown(int slotId, int latchIndex, int waitMs) {
+        Log.d(TAG, "waitForDataLatchCountdown[" + slotId + "]");
+        return mMockModemService
+                .getIRadioData((byte) slotId)
+                .waitForLatchCountdown(latchIndex, waitMs);
+    }
+
+    /**
+     * Resets the CountDownLatches of voice service.
+     *
+     * @param slotId the Id of logical sim slot.
+     */
+    public void resetDataAllLatchCountdown(int slotId) {
+        Log.d(TAG, "resetDataAllLatchCountdown[" + slotId + "]");
+        mMockModemService.getIRadioData((byte) slotId).resetAllLatchCountdown();
+    }
+
+    /**
      * Stops sending default response to startImsTraffic.
      *
      * @param slotId which slot would insert.
@@ -1265,6 +1289,32 @@ public class MockModemManager {
         }
 
         mMockModemService.getIRadioNetwork((byte) slotId).clearSatelliteEnabledForCarrier();
+    }
+
+    /** Return whether user data enabled. */
+    public boolean getIsUserDataEnabled(int slotId) {
+        Log.d(TAG, "getIsUserDataEnabled: slotId=" + slotId);
+        if (mMockModemService == null) {
+            Log.e(TAG, "getIsUserDataEnabled: mMockModemService is null");
+        }
+
+        return mMockModemService
+                .getIRadioData((byte) slotId)
+                .getMockDataServiceInstance()
+                .isUserDataEnabled();
+    }
+
+    /** Return whether user data roaming enabled. */
+    public boolean getIsUserDataRoamingEnabled(int slotId) {
+        Log.d(TAG, "getIsUserDataRoamingEnabled: slotId=" + slotId);
+        if (mMockModemService == null) {
+            Log.e(TAG, "getIsUserDataRoamingEnabled: mMockModemService is null");
+        }
+
+        return mMockModemService
+                .getIRadioData((byte) slotId)
+                .getMockDataServiceInstance()
+                .isUserDataRoamingEnabled();
     }
 
     public void setSendSmsErrorCode(int slotId, @RadioError int sendSmsErrorCode, int rilErrorCode) {
