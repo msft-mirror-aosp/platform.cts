@@ -94,7 +94,7 @@ public class BlurTests extends WindowManagerTestBase {
             0f);
 
     private final ActivityTestRule<BackgroundActivity> mBackgroundActivity =
-            new ActivityTestRule<>(BackgroundActivity.class);
+            new ActivityTestRule<>(BackgroundActivity.class, false, false);
 
     @Rule
     public final TestRule methodRules = RuleChain.outerRule(mDumpOnFailure)
@@ -103,9 +103,12 @@ public class BlurTests extends WindowManagerTestBase {
             .around(mBackgroundActivity);
 
     @Before
-    public void setUp() {
+    @Override
+    public void setUp() throws Exception {
         assumeTrue(supportsBlur());
-        ComponentName cn = mBackgroundActivity.getActivity().getComponentName();
+        super.setUp();
+
+        ComponentName cn = mBackgroundActivity.launchActivity(null).getComponentName();
         waitAndAssertResumedActivity(cn, cn + " must be resumed");
         mBackgroundActivity.getActivity().waitAndAssertWindowFocusState(true);
 
