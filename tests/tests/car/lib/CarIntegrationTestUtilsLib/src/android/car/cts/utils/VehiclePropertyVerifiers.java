@@ -241,12 +241,7 @@ public class VehiclePropertyVerifiers {
     /** Gets the verifier builder for {@link VehiclePropertyIds#ENGINE_RPM}. */
     public static VehiclePropertyVerifier.Builder<Float> getEngineRpmVerifierBuilder() {
         VehiclePropertyVerifier.Builder<Float> verifierBuilder =
-                VehiclePropertyVerifier.newBuilder(
-                                VehiclePropertyIds.ENGINE_RPM,
-                                CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
-                                VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
-                                CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_CONTINUOUS,
-                                Float.class)
+                VehiclePropertyVerifier.<Float>newDefaultBuilder(VehiclePropertyIds.ENGINE_RPM)
                         .setCarPropertyValueVerifier(
                                 (verifierContext,
                                         carPropertyConfig,
@@ -259,7 +254,7 @@ public class VehiclePropertyVerifiers {
                                                                 + " than or equal 0")
                                                 .that(engineRpm)
                                                 .isAtLeast(0))
-                        .addReadPermission(Car.PERMISSION_CAR_ENGINE_DETAILED);
+                        .setReadPermission(ImmutableSet.of(Car.PERMISSION_CAR_ENGINE_DETAILED));
 
         if (VehiclePropertyVerifier.isAtLeastB() && Flags.vehicleProperty25q23pPermissions()) {
             verifierBuilder.addReadPermission(Car.PERMISSION_CAR_ENGINE_DETAILED_3P);
