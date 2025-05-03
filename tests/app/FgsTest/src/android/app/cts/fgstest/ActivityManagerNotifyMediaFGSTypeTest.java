@@ -134,7 +134,8 @@ public final class ActivityManagerNotifyMediaFGSTypeTest {
                 .adoptShellPermissionIdentity(
                         Manifest.permission.MEDIA_CONTENT_CONTROL,
                         Manifest.permission.WRITE_ALLOWLISTED_DEVICE_CONFIG,
-                        Manifest.permission.OVERRIDE_COMPAT_CHANGE_CONFIG_ON_RELEASE_BUILD);
+                        Manifest.permission.OVERRIDE_COMPAT_CHANGE_CONFIG_ON_RELEASE_BUILD,
+                        Manifest.permission.INTERACT_ACROSS_USERS);
 
         setMediaFgsStateTransitionCompatOverride(true);
     }
