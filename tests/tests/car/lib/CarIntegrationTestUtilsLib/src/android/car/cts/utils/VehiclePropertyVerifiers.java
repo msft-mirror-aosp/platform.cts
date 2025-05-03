@@ -176,12 +176,8 @@ public class VehiclePropertyVerifiers {
     /** Gets the verifier builder for {@link VehiclePropertyIds#VEHICLE_CURB_WEIGHT}. */
     public static VehiclePropertyVerifier.Builder<Integer> getVehicleCurbWeightVerifierBuilder() {
         VehiclePropertyVerifier.Builder<Integer> verifierBuilder =
-                VehiclePropertyVerifier.newBuilder(
-                                VehiclePropertyIds.VEHICLE_CURB_WEIGHT,
-                                CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
-                                VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
-                                CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_STATIC,
-                                Integer.class)
+                VehiclePropertyVerifier.<Integer>newDefaultBuilder(
+                                VehiclePropertyIds.VEHICLE_CURB_WEIGHT)
                         .setConfigArrayVerifier(
                                 (verifierContext, configArray) -> {
                                     assertWithMessage(
@@ -216,7 +212,7 @@ public class VehiclePropertyVerifiers {
                                             .that(curbWeightKg)
                                             .isLessThan(grossWeightKg);
                                 })
-                        .addReadPermission(Car.PERMISSION_PRIVILEGED_CAR_INFO);
+                        .setReadPermission(ImmutableSet.of(Car.PERMISSION_PRIVILEGED_CAR_INFO));
 
         if (VehiclePropertyVerifier.isAtLeastB() && Flags.vehicleProperty25q23pPermissions()) {
             verifierBuilder.addReadPermission(Car.PERMISSION_CAR_INFO);

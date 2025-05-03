@@ -3206,7 +3206,7 @@ public class VehiclePropertyVerifier<T> {
         private boolean mPossiblyDependentOnHvacPowerOn = false;
         private boolean mVerifyErrorStates = false;
         private int mPowerPropagationDelayMs = 2000;
-        private final ImmutableSet.Builder<String> mReadPermissionsBuilder = ImmutableSet.builder();
+        private ImmutableSet.Builder<String> mReadPermissionsBuilder = ImmutableSet.builder();
         private final ImmutableList.Builder<ImmutableSet<String>> mWritePermissionsBuilder =
                 ImmutableList.builder();
 
@@ -3385,6 +3385,12 @@ public class VehiclePropertyVerifier<T> {
         /** Adds the required read permission. */
         public Builder<T> addReadPermission(String readPermission) {
             mReadPermissionsBuilder.add(readPermission);
+            return this;
+        }
+
+        /** Sets the required read permission. This overwrites any previously added permissions. */
+        public Builder<T> setReadPermission(ImmutableSet<String> readPermissions) {
+            mReadPermissionsBuilder = ImmutableSet.<String>builder().addAll(readPermissions);
             return this;
         }
 
