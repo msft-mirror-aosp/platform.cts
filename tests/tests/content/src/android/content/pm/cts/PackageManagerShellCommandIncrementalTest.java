@@ -251,7 +251,7 @@ public class PackageManagerShellCommandIncrementalTest {
         getUiAutomation().adoptShellPermissionIdentity();
 
         final long blockSize = Os.statvfs("/data/incremental").f_bsize;
-        final long preAllocatedBlocks = Os.statvfs("/data/incremental").f_bfree;
+        final long preFreeBlocks = Os.statvfs("/data/incremental").f_bfree;
 
         final AtomicLong freeSpaceDifference = new AtomicLong(-1L);
 
@@ -267,17 +267,16 @@ public class PackageManagerShellCommandIncrementalTest {
                             }
 
                             try {
-                                final long postAllocatedBlocks =
+                                final long postFreeBlocks =
                                         Os.statvfs("/data/incremental").f_bfree;
                                 freeSpaceDifference.set(
-                                        (preAllocatedBlocks - postAllocatedBlocks) * blockSize);
+                                        (preFreeBlocks - postFreeBlocks) * blockSize);
                             } catch (Exception e) {
                                 Log.i(TAG, "ErrnoException: ", e);
                                 throw new AssertionError(e);
                             }
                             return true;
                         }))
-                        .setBlockTransformer(new CompressingBlockTransformer())
                         .build();
 
         try {
