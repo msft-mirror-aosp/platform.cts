@@ -30,7 +30,7 @@ android_test {
         "androidx.test.rules",
         "compatibility-device-util-axt",
         "CtsExternalServiceCommon",
-        "CtsAppTestStubsShared",
+        "cts_app_test_shared_lib",
         "cts-wm-util",
         "libprotobuf-java-lite",
     ],

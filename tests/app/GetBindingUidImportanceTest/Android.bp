@@ -26,7 +26,7 @@ android_test {
         "androidx.test.ext.junit",
         "androidx.test.rules",
         "platform-test-annotations",
-        "CtsAppTestStubsShared",
+        "cts_app_test_shared_lib",
         "android.app.flags-aconfig-java",
         "flag-junit",
     ],

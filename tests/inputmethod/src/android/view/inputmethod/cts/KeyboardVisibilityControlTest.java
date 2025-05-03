@@ -446,8 +446,6 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
 
     @Test
     public void testHideImeAfterBackPressed_rootViewChanges() throws Exception {
-        assumeFalse(isAutomotiveScalableUIWithLegacyInsetsController());
-
         verifyHideImeBackPressed(true /* appRequestsBackCallback */,
                 true /* imeRequestsBackCallback */,
                 (instrumentation, editorRef) -> {
@@ -752,6 +750,10 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
 
     @Test
     public void testImeVisibilityWhenDismissingDialogWithImeFocused() throws Exception {
+        // TODO(b/391378502): Fix this test (or consider writing an equivalent test) on Automotive
+        // Scalable UI with Auto-Enhance on.
+        assumeFalse(isAutomotiveScalableUI());
+
         final Instrumentation instrumentation = mInstrumentation;
         try (MockImeSession imeSession = MockImeSession.create(
                 instrumentation.getContext(),
@@ -906,13 +908,10 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
     }
 
     private void runImeDoesntReshowAfterKeyguardTest(int softInputState) throws Exception {
-        assumeFalse(isAutomotiveScalableUIWithLegacyInsetsController());
-
-        try (MockImeSession imeSession =
-                MockImeSession.create(
-                        mInstrumentation.getContext(),
-                        mInstrumentation.getUiAutomation(),
-                        new ImeSettings.Builder())) {
+        try (MockImeSession imeSession = MockImeSession.create(
+                mInstrumentation.getContext(),
+                mInstrumentation.getUiAutomation(),
+                new ImeSettings.Builder())) {
             final ImeEventStream stream = imeSession.openEventStream();
             // Launch a simple test activity
             final TestActivity testActivity =
@@ -1050,8 +1049,6 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
      */
     @Test
     public void testNonImeFocusablePopupWindow_onTopOfIme() throws Exception {
-        assumeFalse(isAutomotiveScalableUIWithLegacyInsetsController());
-
         final Instrumentation instrumentation = mInstrumentation;
         try (MockImeSession imeSession = MockImeSession.create(
                 mInstrumentation.getContext(),
@@ -1154,8 +1151,6 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
 
     private void runRestoreImeVisibility(TestSoftInputMode mode, boolean expectImeVisible)
             throws Exception {
-        assumeFalse(isAutomotiveScalableUIWithLegacyInsetsController());
-
         final Instrumentation instrumentation = mInstrumentation;
         final WindowManager wm = instrumentation.getContext().getSystemService(WindowManager.class);
         // As restoring IME visibility behavior is only available when TaskSnapshot mechanism
@@ -1240,8 +1235,6 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
 
     private void runImeVisibilityWhenImeTransitionBetweenActivities(boolean instant)
             throws Exception {
-        assumeFalse(isAutomotiveScalableUIWithLegacyInsetsController());
-
         try (MockImeSession imeSession = MockImeSession.create(
                 mInstrumentation.getContext(),
                 mInstrumentation.getUiAutomation(),
@@ -1520,7 +1513,6 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
             + "UinputKeyboard to send KeyEvents to specific displays.")
     @Test
     public void testImeHiddenWhenImeLayeringTargetDelayedToShowInAppSwitch() throws Exception {
-        assumeFalse(isAutomotiveScalableUIWithLegacyInsetsController());
         assumeTrue(hasRecentsScreen());
 
         try (MockImeSession imeSession = MockImeSession.create(

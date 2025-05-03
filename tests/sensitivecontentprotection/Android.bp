@@ -33,7 +33,7 @@ android_test {
         "androidx.test.ext.junit",
         "androidx.test.rules",
         "androidx.test.uiautomator_uiautomator",
-        "CtsAppTestStubsShared",
+        "cts_app_test_shared_lib",
         "CtsSurfaceValidatorLib",
         "compatibility-device-util-axt",
         "ctstestrunner-axt",
