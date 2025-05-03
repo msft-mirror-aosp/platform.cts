@@ -25,6 +25,7 @@ import android.content.res.Configuration;
 import android.net.Uri;
 import android.os.Build;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.provider.MediaStore;
 import android.widget.photopicker.EmbeddedPhotoPickerFeatureInfo;
 
 import androidx.annotation.ColorLong;
@@ -33,6 +34,7 @@ import androidx.test.filters.SdkSuppress;
 
 import com.android.providers.media.flags.Flags;
 
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -91,6 +93,46 @@ public class EmbeddedPhotoPickerFeatureInfoTest {
                 NullPointerException.class,
                 () -> builder.setMimeTypes(null),
                 "Expected exception when calling setMimeTypes with a null value");
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_PICKER_HIGHLIGHT_SEARCH_RESULTS_APIS)
+    public void testSetHighlightMediaQueryForValidQuery() {
+        final String highlightQuery = "android";
+        final EmbeddedPhotoPickerFeatureInfo info =
+                new EmbeddedPhotoPickerFeatureInfo.Builder()
+                        .setHighlightMediaTextQuery(highlightQuery)
+                        .build();
+
+        assertWithMessage("Expected highlight media query should be equal to input query")
+                .that(info.getHighlightMediaTextQuery())
+                .isEqualTo(highlightQuery);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_PICKER_HIGHLIGHT_SEARCH_RESULTS_APIS)
+    public void testSetHighlightMediaTextQueryForAlbumInputQuery() {
+        final EmbeddedPhotoPickerFeatureInfo info =
+                new EmbeddedPhotoPickerFeatureInfo.Builder()
+                        .setHighlightMediaTextQuery(
+                                MediaStore.PICK_IMAGES_HIGHLIGHT_ALBUM_FAVORITES)
+                        .build();
+
+        assertWithMessage("Expected highlight media query should be equal to input query")
+                .that(info.getHighlightMediaTextQuery())
+                .isEqualTo(MediaStore.PICK_IMAGES_HIGHLIGHT_ALBUM_FAVORITES);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_PICKER_HIGHLIGHT_SEARCH_RESULTS_APIS)
+    public void testSetHighlightMediaTextQueryForNullQuery() {
+        Assert.assertThrows(
+                NullPointerException.class,
+                () -> {
+                    new EmbeddedPhotoPickerFeatureInfo.Builder()
+                            .setHighlightMediaTextQuery(null)
+                            .build();
+                });
     }
 
     @Test

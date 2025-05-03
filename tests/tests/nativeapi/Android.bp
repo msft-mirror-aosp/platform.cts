@@ -32,6 +32,7 @@ android_test {
         "libnative-api-check-jni",
     ],
     host_required: ["cts-dynamic-config"],
+    host_common_data: [":cts-dynamic-config"],
     test_suites: [
         "general-tests",
         "cts",

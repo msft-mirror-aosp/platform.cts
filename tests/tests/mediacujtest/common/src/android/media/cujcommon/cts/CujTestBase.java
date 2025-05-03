@@ -52,7 +52,7 @@ public class CujTestBase {
       ActivityInfo.SCREEN_ORIENTATION_PORTRAIT,
       ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE,
   };
-  private static final int AUDIOTRACK_DEFAULT_SAMPLE_RATE = 44100;
+  private static final int AUDIOTRACK_DEFAULT_SAMPLE_RATE = 48000;
   private static final int AUDIOTRACK_DEFAULT_CHANNEL_MASK = AudioFormat.CHANNEL_OUT_STEREO;
 
   protected MainActivity mActivity;

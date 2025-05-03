@@ -40,6 +40,7 @@ java_defaults {
     // TODO(b/387500109): This test uses private APIs. Replace with sdk_version.
     platform_apis: true,
     host_required: ["cts-dynamic-config"],
+    host_common_data: [":cts-dynamic-config"],
     min_sdk_version: "29",
     target_sdk_version: "31",
 }

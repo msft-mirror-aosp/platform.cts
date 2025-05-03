@@ -103,9 +103,10 @@ public class ActivityMetricsLoggerTests extends ActivityManagerTestBase {
     private static final String LAUNCH_STATE_HOT = "HOT";
     private static final String LAUNCH_STATE_RELAUNCH = "RELAUNCH";
     private static final int EVENT_WM_ACTIVITY_LAUNCH_TIME = 30009;
-    private static final int APP_TRANSITION_STARTING_WINDOW = 1;
+    private static final int APP_TRANSITION_STARTING_WINDOW_SPLASH_SCREEN = 1;
     private static final int APP_TRANSITION_WINDOWS_DRAWN = 2;
     private static final int APP_TRANSITION_TIMEOUT = 3;
+    private static final int APP_TRANSITION_STARTING_WINDOW_SNAPSHOT = 4;
     private final MetricsReader mMetricsReader = new MetricsReader();
     private long mPreUptimeMs;
     private LogSeparator mLogSeparator;
@@ -177,7 +178,8 @@ public class ActivityMetricsLoggerTests extends ActivityManagerTestBase {
 
         final int transitionStartReason = log.getSubtype();
         switch (transitionStartReason) {
-            case APP_TRANSITION_STARTING_WINDOW:
+            case APP_TRANSITION_STARTING_WINDOW_SPLASH_SCREEN:
+            case APP_TRANSITION_STARTING_WINDOW_SNAPSHOT:
                 assertNotNull("Transition started by starting window should include delay time",
                         log.getTaggedData(APP_TRANSITION_STARTING_WINDOW_DELAY_MS));
                 break;
@@ -284,7 +286,7 @@ public class ActivityMetricsLoggerTests extends ActivityManagerTestBase {
         final int windowsDrawnDelayMs =
                 (int) metricsLog.getTaggedData(APP_TRANSITION_WINDOWS_DRAWN_DELAY_MS);
 
-        assertEquals("Expected a cold launch.", metricsLog.getType(), TYPE_TRANSITION_WARM_LAUNCH);
+        assertEquals("Expected a warm launch.", metricsLog.getType(), TYPE_TRANSITION_WARM_LAUNCH);
 
         assertLaunchComponentStateAndTime(amStartOutput, TEST_ACTIVITY, LAUNCH_STATE_WARM,
                 windowsDrawnDelayMs);
@@ -310,7 +312,7 @@ public class ActivityMetricsLoggerTests extends ActivityManagerTestBase {
         final int windowsDrawnDelayMs =
                 (int) metricsLog.getTaggedData(APP_TRANSITION_WINDOWS_DRAWN_DELAY_MS);
 
-        assertEquals("Expected a cold launch.", metricsLog.getType(), TYPE_TRANSITION_HOT_LAUNCH);
+        assertEquals("Expected a hot launch.", metricsLog.getType(), TYPE_TRANSITION_HOT_LAUNCH);
 
         assertLaunchComponentStateAndTime(amStartOutput, TEST_ACTIVITY, LAUNCH_STATE_HOT,
                 windowsDrawnDelayMs);

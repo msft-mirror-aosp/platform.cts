@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-// Proto definition for camera feature combination query results
-
 syntax = "proto3";
 
 package cts_tools_file_metadata_proto;
@@ -29,11 +27,15 @@ message ConfigFileSummary {
   // For example, "com.android.tradefed.testtype.AndroidJUnitTest".
   repeated string test_runner = 2;
 
-  // The sim card type required by the test module. For example, "UICC_SIM_CARD".
+  // The sim card type required by the test module. For example,
+  // "UICC_SIM_CARD".
   string sim_card_token = 3;
 
   // The mainline package that the test module depends on.
   repeated string mainline_module_package_name = 4;
+
+  // The parameters of the test module.
+  repeated string parameter = 5;
 }
 
 // Summary information for an APK file.
@@ -56,14 +58,15 @@ message FileMetadata {
     TYPE_CONFIG = 2;
   }
 
-  // The path to the file. This path is relative to the "testcases" directory.
+  // The path to the file.
+  // For example, "android-cts/testcases/CtsModule/xxx.jar".
   string file_path = 1;
 
   // The name of the file excluding the extension.
   string file_name = 2;
 
-  // The test module this file belongs to..
-  string test_module = 3;
+  // The module this file belongs to.
+  string module_name = 3;
 
   // The type of the file.
   FileType file_type = 4;
@@ -77,6 +80,9 @@ message FileMetadata {
 
   // The size of the file in kB.
   double file_size = 7;
+
+  // Whether the file belongs to a test module.
+  bool is_test_module = 8;
 }
 
 // Root message containing a list of metadata for CTS test files.

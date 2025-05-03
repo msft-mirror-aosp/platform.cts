@@ -17,16 +17,15 @@ package android.os.instrumentation.cts;
 
 import static android.Manifest.permission.DYNAMIC_INSTRUMENTATION;
 
-import static com.android.art.flags.Flags.FLAG_EXECUTABLE_METHOD_FILE_OFFSETS;
-
 import static com.google.common.truth.Truth.assertThat;
 
+import android.os.Build;
 import android.os.Process;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.test.filters.SdkSuppress;
 
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
@@ -68,10 +67,7 @@ public class DynamicInstrumentationManagerTest {
             DeviceFlagsValueProvider.createCheckFlagsRule()).around(sDeviceState);
 
     @Test
-    @RequiresFlagsEnabled({
-        FLAG_EXECUTABLE_METHOD_FILE_OFFSETS,
-        android.uprobestats.flags.Flags.FLAG_EXECUTABLE_METHOD_FILE_OFFSETS
-    })
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA, codeName = "Baklava")
     @EnsureHasPermission(DYNAMIC_INSTRUMENTATION)
     public void aotCompiled() {
         OffsetsWithStatusCode result = getOffsetsWithStatusCode(FQCN_IN_ART_PROFILE,
@@ -88,10 +84,7 @@ public class DynamicInstrumentationManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled({
-        FLAG_EXECUTABLE_METHOD_FILE_OFFSETS,
-        android.uprobestats.flags.Flags.FLAG_EXECUTABLE_METHOD_FILE_OFFSETS
-    })
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA, codeName = "Baklava")
     @EnsureHasPermission(DYNAMIC_INSTRUMENTATION)
     public void appAotCompiled() throws Exception {
         OffsetsWithStatusCode result = getOffsetsWithStatusCode(
@@ -107,7 +100,7 @@ public class DynamicInstrumentationManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_EXECUTABLE_METHOD_FILE_OFFSETS)
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA, codeName = "Baklava")
     @EnsureHasPermission(DYNAMIC_INSTRUMENTATION)
     public void jitCompiled_null() {
         OffsetsWithStatusCode result = getOffsetsWithStatusCode(
@@ -117,10 +110,7 @@ public class DynamicInstrumentationManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled({
-        FLAG_EXECUTABLE_METHOD_FILE_OFFSETS,
-        android.uprobestats.flags.Flags.FLAG_EXECUTABLE_METHOD_FILE_OFFSETS
-    })
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA, codeName = "Baklava")
     @EnsureDoesNotHavePermission(DYNAMIC_INSTRUMENTATION)
     public void noPermission_SecurityException() {
         OffsetsWithStatusCode result = getOffsetsWithStatusCode(FQCN_IN_ART_PROFILE,
@@ -131,10 +121,7 @@ public class DynamicInstrumentationManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled({
-        FLAG_EXECUTABLE_METHOD_FILE_OFFSETS,
-        android.uprobestats.flags.Flags.FLAG_EXECUTABLE_METHOD_FILE_OFFSETS
-    })
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA, codeName = "Baklava")
     @EnsureHasPermission(DYNAMIC_INSTRUMENTATION)
     public void appProcessNotFound() throws Exception {
         OffsetsWithStatusCode result = getOffsetsWithStatusCode(0, 0, "foo", FQCN_IN_ART_PROFILE,
@@ -143,10 +130,7 @@ public class DynamicInstrumentationManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled({
-        FLAG_EXECUTABLE_METHOD_FILE_OFFSETS,
-        android.uprobestats.flags.Flags.FLAG_EXECUTABLE_METHOD_FILE_OFFSETS
-    })
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA, codeName = "Baklava")
     @EnsureHasPermission(DYNAMIC_INSTRUMENTATION)
     public void notFound_IllegalArgumentException() {
         OffsetsWithStatusCode result = getOffsetsWithStatusCode("", "", new String[]{});

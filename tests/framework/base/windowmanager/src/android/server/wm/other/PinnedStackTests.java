@@ -397,9 +397,8 @@ public class PinnedStackTests extends ActivityManagerTestBase {
         assertPinnedStackActivityIsInDisplayBounds(PIP_ACTIVITY);
     }
 
-    // TODO (b/380030822): Wrong minimal bounds in PiP2 sometimes on first run.
     @Test
-    @RequiresFlagsDisabled(Flags.FLAG_ENABLE_PIP2)
+    @FlakyTest(bugId = 393159816)
     public void testEnterPipWithMinimalSize() throws Exception {
         // Launch a PiP activity with minimal size specified
         launchActivity(PIP_ACTIVITY_WITH_MINIMAL_SIZE, extraString(EXTRA_ENTER_PIP, "true"));
@@ -1600,7 +1599,7 @@ public class PinnedStackTests extends ActivityManagerTestBase {
         // affinity
         launchActivity(TEST_ACTIVITY_WITH_SAME_AFFINITY);
         launchActivity(PIP_ACTIVITY_WITH_SAME_AFFINITY);
-        assertPinnedStackExists();
+        waitForEnterPipAnimationComplete(PIP_ACTIVITY_WITH_SAME_AFFINITY);
 
         // Launch the root activity again...
         int rootActivityTaskId =

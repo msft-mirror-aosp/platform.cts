@@ -29,7 +29,7 @@ import its_session_utils
 
 _BAYER_COLORS = ('R', 'Gr', 'Gb', 'B')
 _BLACK_LVL_RTOL = 0.1
-_BURST_LEN = 10  # break captures into burst of BURST_LEN requests
+_BURST_LEN = 10  # request captures of burst of BURST_LEN requests
 _EXP_LONG_THRESH = 1E6  # 1ms
 _EXP_MULT_SHORT = pow(2, 1.0/3)  # Test 3 steps per 2x exposure
 _EXP_MULT_LONG = pow(10, 1.0/3)  # Test 3 steps per 10x exposure
@@ -228,26 +228,14 @@ class ExposureTimePriorityTest(its_base_test.ItsBaseTest):
       white_level = float(props['android.sensor.info.whiteLevel'])
       black_levels = image_processing_utils.get_black_levels(props)
 
-      # Break caps into bursts and do captures
-      burst_len = _BURST_LEN
       caps = []
       reqs = [ae_exposure_time_priority_capture_request(
           e) for e in e_test]
 
-      # Eliminate burst len==1. Error because returns [[]], not [{}, ...]
-      while len(reqs) % burst_len == 1:
-        burst_len -= 1
-
-      # Break caps into bursts
-      for i in range(len(reqs) // burst_len):
+      for req in reqs:
         cam.do_3a()
-        caps += cam.do_capture(reqs[i*burst_len:(i+1)*burst_len], fmt)
-      last_n = len(reqs) % burst_len
-      if last_n:
-        cam.do_3a()
-        caps += cam.do_capture(reqs[-last_n:], fmt)
-
-      sens_min, sens_max = props['android.sensor.info.sensitivityRange']
+        results = cam.do_capture([req]*_BURST_LEN, fmt, reuse_session=True)
+        caps.append(results[-1])
 
       # Extract means for each capture
       means_steady = []
@@ -257,6 +245,18 @@ class ExposureTimePriorityTest(its_base_test.ItsBaseTest):
       e_test_ms_steady = []
       e_test_ms_increasing = []
       e_test_ms_total = []  # For plot
+
+      # Find max sensitivity in captures
+      first_cap = caps[0]
+      metadata = first_cap['metadata']
+      sens_sensitivity = metadata['android.sensor.sensitivity']
+      max_sens_found_in_capture_result = sens_sensitivity
+
+      # Find min sensitivity in captures
+      last_cap = caps[-1]
+      metadata = last_cap['metadata']
+      sens_sensitivity = metadata['android.sensor.sensitivity']
+      min_sens_found_in_capture_result = sens_sensitivity
 
       for i, cap in enumerate(caps):
         mean_image, _ = image_processing_utils.unpack_rawstats_capture(cap)
@@ -268,9 +268,10 @@ class ExposureTimePriorityTest(its_base_test.ItsBaseTest):
         e_test_ms_total.append(mean)
 
         metadata = cap['metadata']
-        sens_sensitivity = metadata['android.sensor.sensitivity']
+        curr_sens_sensitivity = metadata['android.sensor.sensitivity']
 
-        if sens_min < sens_sensitivity < sens_max:
+        if (min_sens_found_in_capture_result < curr_sens_sensitivity and
+            curr_sens_sensitivity < max_sens_found_in_capture_result):
           # We assume a 'steady brightness' scenario, as the ISO is able to
           # adjust to maintain consistent exposure.
           means_steady.append(mean)

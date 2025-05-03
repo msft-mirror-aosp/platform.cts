@@ -55,8 +55,8 @@ import static android.server.wm.ActivityLauncher.KEY_LAUNCH_ACTIVITY;
 import static android.server.wm.ActivityLauncher.KEY_NEW_TASK;
 import static android.server.wm.ActivityLauncher.KEY_TARGET_COMPONENT;
 import static android.server.wm.ComponentNameUtils.getActivityName;
-import static android.server.wm.ComponentNameUtils.getWindowName;
 import static android.server.wm.ComponentNameUtils.getLogTag;
+import static android.server.wm.ComponentNameUtils.getWindowName;
 import static android.server.wm.ShellCommandHelper.executeShellCommand;
 import static android.server.wm.ShellCommandHelper.executeShellCommandAndGetStdout;
 import static android.server.wm.StateLogger.log;
@@ -558,8 +558,10 @@ public abstract class ActivityManagerTestBase {
          * @param activityClass The {@link Activity} class to be launched
          * @param displayId ID of the target display
          */
-        public void launchTestActivityOnDisplaySync(Class<T> activityClass, int displayId) {
-            launchTestActivityOnDisplaySync(activityClass, displayId, WINDOWING_MODE_UNDEFINED);
+        public TestActivitySession<T> launchTestActivityOnDisplaySync(
+                Class<T> activityClass, int displayId) {
+            return launchTestActivityOnDisplaySync(
+                    activityClass, displayId, WINDOWING_MODE_UNDEFINED);
         }
 
         /**
@@ -569,12 +571,12 @@ public abstract class ActivityManagerTestBase {
          * @param displayId ID of the target display
          * @param windowingMode Windowing mode at launch
          */
-        public void launchTestActivityOnDisplaySync(
+        public TestActivitySession<T> launchTestActivityOnDisplaySync(
                 Class<T> activityClass, int displayId, int windowingMode) {
             final Intent intent = new Intent(mContext, activityClass)
                     .addFlags(FLAG_ACTIVITY_NEW_TASK);
             final String className = intent.getComponent().getClassName();
-            launchTestActivityOnDisplaySync(className, intent, displayId, windowingMode);
+            return launchTestActivityOnDisplaySync(className, intent, displayId, windowingMode);
         }
 
         /**
@@ -585,9 +587,10 @@ public abstract class ActivityManagerTestBase {
          * @param intent Intent to launch an activity
          * @param displayId ID for the target display
          */
-        public void launchTestActivityOnDisplaySync(
+        public TestActivitySession<T> launchTestActivityOnDisplaySync(
                 @Nullable String className, Intent intent, int displayId) {
-            launchTestActivityOnDisplaySync(className, intent, displayId, WINDOWING_MODE_UNDEFINED);
+            return launchTestActivityOnDisplaySync(
+                    className, intent, displayId, WINDOWING_MODE_UNDEFINED);
         }
 
         /**
@@ -599,7 +602,7 @@ public abstract class ActivityManagerTestBase {
          * @param displayId ID for the target display
          * @param windowingMode Windowing mode at launch
          */
-        public void launchTestActivityOnDisplaySync(
+        public TestActivitySession<T> launchTestActivityOnDisplaySync(
                 @Nullable String className, Intent intent, int displayId, int windowingMode) {
             runWithShellPermission(
                     () -> {
@@ -611,6 +614,7 @@ public abstract class ActivityManagerTestBase {
                         waitAndAssertResumedAndFocusedActivityOnDisplay(
                                 testActivityName, displayId, "Activity must be resumed");
                     });
+            return this;
         }
 
         /**
@@ -618,7 +622,8 @@ public abstract class ActivityManagerTestBase {
          * @param activityClass The {@link Activity} class to be launched
          * @param displayId ID of the target display
          */
-        public void launchTestActivityOnDisplay(Class<T> activityClass, int displayId) {
+        public TestActivitySession<T> launchTestActivityOnDisplay(
+                Class<T> activityClass, int displayId) {
             final Intent intent = new Intent(mContext, activityClass)
                     .addFlags(FLAG_ACTIVITY_NEW_TASK);
             final String className = intent.getComponent().getClassName();
@@ -629,6 +634,7 @@ public abstract class ActivityManagerTestBase {
                                         className, intent, displayId, WINDOWING_MODE_UNDEFINED);
                         assertNotNull(mTestActivity);
                     });
+            return this;
         }
 
         /**
@@ -1565,6 +1571,11 @@ public abstract class ActivityManagerTestBase {
     }
 
     /** @see ObjectTracker#manage(AutoCloseable) */
+    protected <T extends Activity> TestActivitySession<T>
+            createManagedTestActivitySession(Class<T> activityClass) {
+        return mObjectTracker.manage(new TestActivitySession<T>());
+    }
+
     protected <T extends Activity> TestActivitySession<T> createManagedTestActivitySession() {
         return new TestActivitySession<T>();
     }
@@ -1737,12 +1748,19 @@ public abstract class ActivityManagerTestBase {
 
     protected class AodSession extends SettingsSession<Integer> {
         private AmbientDisplayConfiguration mConfig;
+        private final SettingsSession<Integer> mScreenOffUnlockUdfpsEnabled;
 
         AodSession() {
             super(Settings.Secure.getUriFor(Settings.Secure.DOZE_ALWAYS_ON),
                     Settings.Secure::getInt,
                     Settings.Secure::putInt);
             mConfig = new AmbientDisplayConfiguration(mContext);
+            mScreenOffUnlockUdfpsEnabled =
+                    new SettingsSession<>(
+                            Settings.Secure.getUriFor(
+                                    Settings.Secure.SCREEN_OFF_UNLOCK_UDFPS_ENABLED),
+                            Settings.Secure::getInt,
+                            Settings.Secure::putInt);
         }
 
         public boolean isAodAvailable() {
@@ -1751,6 +1769,13 @@ public abstract class ActivityManagerTestBase {
 
         public void setAodEnabled(boolean enabled) {
             set(enabled ? 1 : 0);
+            mScreenOffUnlockUdfpsEnabled.set(enabled ? 1 : 0);
+        }
+
+        @Override
+        public void close() {
+            super.close();
+            mScreenOffUnlockUdfpsEnabled.close();
         }
     }
 

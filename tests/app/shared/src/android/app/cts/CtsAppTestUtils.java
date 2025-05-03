@@ -16,6 +16,7 @@
 
 package android.app.cts;
 
+import android.app.AppOpsManager;
 import android.app.Instrumentation;
 import android.app.KeyguardManager;
 import android.content.Context;
@@ -24,8 +25,11 @@ import android.util.Log;
 
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.compatibility.common.util.AppOpsUtils;
 import com.android.compatibility.common.util.CommonTestUtils;
 import com.android.compatibility.common.util.SystemUtil;
+
+import java.io.IOException;
 
 public class CtsAppTestUtils {
     private static final String TAG = CtsAppTestUtils.class.getName();
@@ -78,6 +82,31 @@ public class CtsAppTestUtils {
         final String cmd =
                 String.format("cmd activity clear-bad-process --user %d %s", userId, processName);
         executeShellCmd(instrumentation, cmd);
+    }
+
+    /**
+     * Bypass the Background Activity Launch restriction for the provided packages as long as the
+     * returned AutoCloseable is open.
+     */
+    public static AutoCloseable allowBackgroundActivityLaunch(String... packageNames)
+            throws IOException {
+        // Allow the packages to launch activities from background via AppOp.
+        for (String packageName : packageNames) {
+            AppOpsUtils.setOpMode(
+                    packageName,
+                    AppOpsManager.OPSTR_SYSTEM_EXEMPT_FROM_ACTIVITY_BG_START_RESTRICTION,
+                    AppOpsManager.MODE_ALLOWED);
+        }
+
+        // Revoke the exemption when the AutoCloseable is closed.
+        return () -> {
+            for (String packageName : packageNames) {
+                AppOpsUtils.setOpMode(
+                        packageName,
+                        AppOpsManager.OPSTR_SYSTEM_EXEMPT_FROM_ACTIVITY_BG_START_RESTRICTION,
+                        AppOpsManager.MODE_DEFAULT);
+            }
+        };
     }
 
     /**

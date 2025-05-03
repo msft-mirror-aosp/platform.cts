@@ -22,6 +22,7 @@ import static android.app.WindowConfiguration.WINDOWING_MODE_PINNED;
 import static android.server.wm.CliIntentExtra.extraString;
 import static android.server.wm.MockImeHelper.createManagedMockImeSession;
 import static android.server.wm.UiDeviceUtils.pressBackButton;
+import static android.server.wm.WindowManagerStateHelper.focusedActivity;
 import static android.server.wm.app.Components.DISMISS_KEYGUARD_ACTIVITY;
 import static android.server.wm.app.Components.DISMISS_KEYGUARD_METHOD_ACTIVITY;
 import static android.server.wm.app.Components.PIP_ACTIVITY;
@@ -74,7 +75,6 @@ import com.android.compatibility.common.util.FeatureUtil;
 import com.android.compatibility.common.util.PollingCheck;
 import com.android.cts.mockime.ImeEventStream;
 import com.android.cts.mockime.MockImeSession;
-import com.android.wm.shell.Flags;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -306,9 +306,32 @@ public class KeyguardLockedTests extends KeyguardTestBase {
         assertTrue(ActivityManagerTestBase.isDisplayOn(DEFAULT_DISPLAY));
     }
 
-    // TODO (b/379758804): Re-enable for PiP2 once these keyguard CUJs are implemented there.
+    @RequiresFlagsEnabled(com.android.window.flags.Flags.FLAG_FIX_SHOW_WHEN_LOCKED_SYNC_TIMEOUT)
     @Test
-    @RequiresFlagsDisabled(Flags.FLAG_ENABLE_PIP2)
+    public void testShowWhenLockedActivity_removeAttr_hideImmediately() {
+        final var lockScreenSession = createManagedLockScreenSession();
+        lockScreenSession.gotoKeyguard();
+
+        // Start on Keyguard.
+        mWmState.waitForKeyguardShowingAndNotOccluded();
+        mWmState.waitAndAssertNonActivityWindowFocused();
+
+        // Add Activity with showWhenLocked="true".
+        final var activity = createManagedTestActivitySession(ShowWhenLockedActivity.class)
+                .launchTestActivityOnDisplaySync(ShowWhenLockedActivity.class, DEFAULT_DISPLAY)
+                .getActivity();
+        mWmState.waitForKeyguardShowingAndOccluded();
+        mWmState.waitAndAssert(focusedActivity(activity.getComponentName()),
+                "Activity to be focused");
+
+        // Remove showWhenLocked attribute.
+        activity.setShowWhenLocked(false);
+
+        // Activity Window should be removed within well under 5 seconds.
+        mWmState.waitAndAssertNonActivityWindowFocused();
+    }
+
+    @Test
     public void testEnterPipOverKeyguard() {
         assumeTrue(supportsPip());
 
@@ -337,9 +360,7 @@ public class KeyguardLockedTests extends KeyguardTestBase {
                 ACTIVITY_TYPE_STANDARD);
     }
 
-    // TODO (b/379758804): Re-enable for PiP2 once these keyguard CUJs are implemented there.
     @Test
-    @RequiresFlagsDisabled(Flags.FLAG_ENABLE_PIP2)
     public void testShowWhenLockedActivityAndPipActivity() {
         assumeTrue(supportsPip());
 
@@ -367,9 +388,7 @@ public class KeyguardLockedTests extends KeyguardTestBase {
         mWmState.assertVisibility(PIP_ACTIVITY, false);
     }
 
-    // TODO (b/379758804): Re-enable for PiP2 once these keyguard CUJs are implemented there.
     @Test
-    @RequiresFlagsDisabled(Flags.FLAG_ENABLE_PIP2)
     public void testShowWhenLockedPipActivity() {
         assumeTrue(supportsPip());
 
@@ -391,9 +410,7 @@ public class KeyguardLockedTests extends KeyguardTestBase {
         mWmState.assertVisibility(PIP_ACTIVITY, false);
     }
 
-    // TODO (b/379758804): Re-enable for PiP2 once these keyguard CUJs are implemented there.
     @Test
-    @RequiresFlagsDisabled(Flags.FLAG_ENABLE_PIP2)
     public void testDismissKeyguardPipActivity() {
         assumeTrue(supportsPip());
 
@@ -501,6 +518,9 @@ public class KeyguardLockedTests extends KeyguardTestBase {
         PollingCheck.waitFor(
                 TIMEOUT_IME,
                 () -> rootView.getRootWindowInsets().isVisible(ime()));
+    }
+
+    public static class ShowWhenLockedActivity extends Activity {
     }
 
     public static class ShowImeAfterLockscreenActivity extends Activity {

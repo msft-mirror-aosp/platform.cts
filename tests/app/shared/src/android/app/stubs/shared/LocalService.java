@@ -25,8 +25,11 @@ import android.os.Parcel;
 import android.os.Process;
 import android.os.RemoteException;
 
+import androidx.annotation.NonNull;
+
 import com.android.compatibility.common.util.IBinderParcelable;
 
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class LocalService extends Service {
@@ -54,10 +57,10 @@ public class LocalService extends Service {
     public static final int STOP_SELF_SUCCESS_UNBIND_CODE = 14;
     public static final int GET_ON_CREATE_CALLED_COUNT = 15;
 
-    public static Context sServiceContext = null;
+    public Context mServiceContext = null;
 
     private static final AtomicReference<String> sLastAttributionTag = new AtomicReference<>();
-    private static volatile int sOnCreateCount = 0;
+    private static final AtomicInteger sOnCreateCount = new AtomicInteger(0);
 
     private IBinder mReportObject;
     private int mStartCount = 1;
@@ -68,7 +71,8 @@ public class LocalService extends Service {
     private final IBinder mBinder =
             new Binder() {
                 @Override
-                protected boolean onTransact(int code, Parcel data, Parcel reply, int flags)
+                protected boolean onTransact(
+                        int code, @NonNull Parcel data, Parcel reply, int flags)
                         throws RemoteException {
                     switch (code) {
                         case SET_REPORTER_CODE:
@@ -109,7 +113,7 @@ public class LocalService extends Service {
                             return true;
                         case GET_ON_CREATE_CALLED_COUNT:
                             data.enforceInterface(SERVICE_LOCAL);
-                            reply.writeInt(sOnCreateCount);
+                            reply.writeInt(sOnCreateCount.get());
                             return true;
                         default:
                             return super.onTransact(code, data, reply, flags);
@@ -117,13 +121,15 @@ public class LocalService extends Service {
                 }
             };
 
-    public LocalService() {}
+    public LocalService() {
+        sOnCreateCount.set(0);
+    }
 
     @Override
     public void onCreate() {
         super.onCreate();
         sLastAttributionTag.set(getAttributionTag());
-        sOnCreateCount++;
+        sOnCreateCount.incrementAndGet();
     }
 
     public static String getAndClearLastAttributionTag() {
@@ -134,15 +140,14 @@ public class LocalService extends Service {
     public void onStart(Intent intent, int startId) {
         mStartId = startId;
         if (intent.getExtras() != null) {
-            IBinderParcelable parcelable =
-                    (IBinderParcelable) intent.getExtras().getParcelable(REPORT_OBJ_NAME);
+            IBinderParcelable parcelable = intent.getExtras().getParcelable(REPORT_OBJ_NAME);
             mReportObject = parcelable.binder;
             if (mReportObject != null) {
                 bindAction(STARTED_CODE);
             }
         }
-        if (sServiceContext == null) {
-            sServiceContext = this;
+        if (mServiceContext == null) {
+            mServiceContext = this;
         }
     }
 
@@ -155,8 +160,8 @@ public class LocalService extends Service {
 
     @Override
     public IBinder onBind(Intent intent) {
-        if (sServiceContext == null) {
-            sServiceContext = this;
+        if (mServiceContext == null) {
+            mServiceContext = this;
         }
         return mBinder;
     }

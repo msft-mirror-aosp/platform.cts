@@ -45,17 +45,19 @@ public class VideoEncoderCapabilitiesTest {
 
     @Parameterized.Parameters(name = "{index}_{0}_{1}x{2}_{3}_{4}_{5}")
     public static Collection<Object[]> input() {
+        boolean isHTTA = MediaUtils.isHandheld() || MediaUtils.isTablet() || MediaUtils.isTv()
+                || MediaUtils.isAutomotive();
         final List<Object[]> exhaustiveArgsList = Arrays.asList(new Object[][]{
                 // MediaType, width, height, frame-rate, bit-rate, optional
                 // CDD 5.2.2 C-1-2, C-2-1
-                {MediaFormat.MIMETYPE_VIDEO_AVC, 320, 240, 20, 384000, false},
-                {MediaFormat.MIMETYPE_VIDEO_AVC, 720, 480, 30, 2000000, false},
+                {MediaFormat.MIMETYPE_VIDEO_AVC, 320, 240, 20, 384000, !isHTTA},
+                {MediaFormat.MIMETYPE_VIDEO_AVC, 720, 480, 30, 2000000, !isHTTA},
                 {MediaFormat.MIMETYPE_VIDEO_AVC, 1280, 720, 30, 4000000, true},
                 {MediaFormat.MIMETYPE_VIDEO_AVC, 1920, 1080, 30, 10000000, true},
 
                 // CDD 5.2.3 C-1-1, C-2-1
-                {MediaFormat.MIMETYPE_VIDEO_VP8, 320, 180, 30, 800000, false},
-                {MediaFormat.MIMETYPE_VIDEO_VP8, 640, 360, 30, 2000000, false},
+                {MediaFormat.MIMETYPE_VIDEO_VP8, 320, 180, 30, 800000, !isHTTA},
+                {MediaFormat.MIMETYPE_VIDEO_VP8, 640, 360, 30, 2000000, !isHTTA},
                 {MediaFormat.MIMETYPE_VIDEO_VP8, 1280, 720, 30, 4000000, true},
                 {MediaFormat.MIMETYPE_VIDEO_VP8, 1920, 1080, 30, 10000000, true},
 

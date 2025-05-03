@@ -15,6 +15,8 @@
 -->
 <configuration description="Run CTS-ON-GSI platinum prod tests.">
     <include name="cts-on-gsi"/>
+    <!-- CtsAppFgsTestCases -->
+    <option name="compatibility:include-filter" value="CtsAppFgsTestCases android.app.cts.fgstest.ActivityManagerFgsBgStartTest#testFgsLocationStartFromBG"/>
     <!-- CtsAppFunctionTestCases -->
     <option name="compatibility:include-filter" value="CtsAppFunctionTestCases android.app.appfunctions.cts.AppFunctionManagerTest#checkManagerNotNull[IncludeRunOnPrimaryUser]"/>
     <option name="compatibility:include-filter" value="CtsAppFunctionTestCases android.app.appfunctions.cts.AppFunctionManagerTest#executeAppFunction_cancellationSignal_cancellationTimedOut_unbind[IncludeRunOnPrimaryUser]"/>
@@ -70,7 +72,6 @@
     <option name="compatibility:include-filter" value="CtsAppSearchHostTestCases android.appsearch.cts.AppSearchMultiUserTest#testReadStorageInfoFromFile"/>
     <option name="compatibility:include-filter" value="CtsAppSearchHostTestCases android.appsearch.cts.AppSearchMultiUserTest#testStopUser_persistData"/>
     <!-- CtsAppTestCases -->
-    <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.ActivityManagerFgsBgStartTest#testFgsLocationStartFromBG"/>
     <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.ActivityManagerTest#testAddOnUidImportanceListener"/>
     <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.AlertDialogTest#testAlertDialogTheme"/>
     <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.AlertDialogTest#testCallback"/>
@@ -85,6 +86,9 @@
     <option name="compatibility:include-filter" value="CtsAutoFillServiceTestCases android.autofillservice.cts.unittests.AutofillIdTest#testGetViewId"/>
     <option name="compatibility:include-filter" value="CtsAutoFillServiceTestCases android.autofillservice.cts.unittests.AutofillIdTest#testInSession"/>
     <option name="compatibility:include-filter" value="CtsAutoFillServiceTestCases android.autofillservice.cts.unittests.AutofillIdTest#testIsVirtual"/>
+    <!-- CtsBatteryManagerTestCases -->
+    <option name="compatibility:include-filter" value="CtsBatteryManagerTestCases com.android.cts.batterymanager.BatteryChangedBroadcastTest#batteryLevelUpdated_broadcastSentImmediately"/>
+    <option name="compatibility:include-filter" value="CtsBatteryManagerTestCases com.android.cts.batterymanager.BatteryChangedBroadcastTest#batteryStatusUpdated_broadcastSentImmediately"/>
     <!-- CtsBroadcastTestCases -->
     <option name="compatibility:include-filter" value="CtsBroadcastTestCases android.app.cts.broadcasts.BroadcastOptionsIntegrationTest#testRequireCompatChange_enabled_success"/>
     <!-- CtsCompanionDeviceManagerCoreTestCases -->
@@ -340,8 +344,6 @@
     <!-- CtsOsHostTestCases -->
     <option name="compatibility:include-filter" value="CtsOsHostTestCases android.os.cts.OsHostTests#testForegroundServiceBadNotification"/>
     <!-- CtsOsTestCases -->
-    <option name="compatibility:include-filter" value="CtsOsTestCases android.os.cts.BatteryChangedBroadcastTest#batteryLevelUpdated_broadcastSentImmediately"/>
-    <option name="compatibility:include-filter" value="CtsOsTestCases android.os.cts.BatteryChangedBroadcastTest#batteryStatusUpdated_broadcastSentImmediately"/>
     <option name="compatibility:include-filter" value="CtsOsTestCases android.os.cts.FileObserverTest#testFileObserverExternalStorageDirectory"/>
     <option name="compatibility:include-filter" value="CtsOsTestCases android.os.cts.MessengerTest#testSend"/>
     <option name="compatibility:include-filter" value="CtsOsTestCases android.os.cts.PerformanceHintManagerTest#testNativeLoadHints"/>

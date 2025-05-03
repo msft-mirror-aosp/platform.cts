@@ -879,7 +879,9 @@ public class CarrierApiTest extends BaseCarrierApiTest {
                 int channel = response.getChannel();
                 if (channel > 0) {
                     // TODO(b/375102360): CF should implement handling more than one logical channel
-                    assumeFalse(channels.contains(channel) && MediaUtils.onCuttlefish());
+                    assumeFalse(
+                            channels.contains(channel)
+                                    && (MediaUtils.onCuttlefish() || Build.IS_EMULATOR));
                     assertWithMessage("Logical channel " + channel + " was returned twice")
                             .that(channels.add(channel)).isTrue();
                 }
@@ -1237,7 +1239,7 @@ public class CarrierApiTest extends BaseCarrierApiTest {
             channel2 = channel2rsp.getChannel();
 
             // TODO(b/375102360): CF should implement handling more than one logical channel
-            assumeFalse(channel1 == channel2 && MediaUtils.onCuttlefish());
+            assumeFalse(channel1 == channel2 && (MediaUtils.onCuttlefish() || Build.IS_EMULATOR));
             assertWithMessage("Two concurrently opened channels should be different")
                     .that(channel2).isNotEqualTo(channel1);
 

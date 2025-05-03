@@ -2184,6 +2184,8 @@ public class WebViewTest extends SharedWebViewTest {
 
     @Test
     public void testSetNetworkAvailable() throws Exception {
+        WebkitUtils.checkNetworkAvailable(mContext);
+
         WebSettings settings = mOnUiThread.getSettings();
         settings.setJavaScriptEnabled(true);
         mWebServer = getTestEnvironment().getSetupWebServer(SslMode.INSECURE);

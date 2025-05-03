@@ -31,6 +31,7 @@ import com.android.sts.common.CommandUtil;
 import com.android.sts.common.tradefed.testtype.NonRootSecurityTestCase;
 import com.android.tradefed.device.ITestDevice;
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
+import com.android.tradefed.util.RunUtil;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -56,6 +57,9 @@ public class Bug_386950836 extends NonRootSecurityTestCase {
                             PACKAGE + "/" + PACKAGE + ".A11yService")) {
                 CommandUtil.runAndCheck(
                         device, "settings delete secure enabled_accessibility_services");
+                // Wait for AccessibilityManagerService to react to the settings change
+                // and disable the service.
+                RunUtil.getDefault().sleep(5_000);
 
                 // Try to trigger the BAL
                 CommandUtil.runAndCheck(

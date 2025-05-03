@@ -30,7 +30,6 @@ import static android.content.pm.Flags.FLAG_ARCHIVING;
 import static android.content.pm.Flags.FLAG_CLOUD_COMPILATION_PM;
 import static android.content.pm.Flags.FLAG_GET_PACKAGE_INFO;
 import static android.content.pm.Flags.FLAG_GET_PACKAGE_INFO_WITH_FD;
-import static android.content.pm.Flags.FLAG_IMPROVE_HOME_APP_BEHAVIOR;
 import static android.content.pm.Flags.FLAG_MIN_TARGET_SDK_24;
 import static android.content.pm.Flags.FLAG_PROVIDE_INFO_OF_APK_IN_APEX;
 import static android.content.pm.Flags.FLAG_QUARANTINED_ENABLED;
@@ -2493,7 +2492,6 @@ victim $UID 1 /data/user/0 default:targetSdkVersion=28 none 0 0 1 @null
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_IMPROVE_HOME_APP_BEHAVIOR)
     public void testEnableAndResetComponentSetting_pressHomeButton_notShowResolverActivity()
             throws Exception {
         final ComponentName componentName = new ComponentName(PACKAGE_NAME,

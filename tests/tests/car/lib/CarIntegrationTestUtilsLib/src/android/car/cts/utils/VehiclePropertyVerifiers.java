@@ -176,12 +176,8 @@ public class VehiclePropertyVerifiers {
     /** Gets the verifier builder for {@link VehiclePropertyIds#VEHICLE_CURB_WEIGHT}. */
     public static VehiclePropertyVerifier.Builder<Integer> getVehicleCurbWeightVerifierBuilder() {
         VehiclePropertyVerifier.Builder<Integer> verifierBuilder =
-                VehiclePropertyVerifier.newBuilder(
-                                VehiclePropertyIds.VEHICLE_CURB_WEIGHT,
-                                CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
-                                VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
-                                CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_STATIC,
-                                Integer.class)
+                VehiclePropertyVerifier.<Integer>newDefaultBuilder(
+                                VehiclePropertyIds.VEHICLE_CURB_WEIGHT)
                         .setConfigArrayVerifier(
                                 (verifierContext, configArray) -> {
                                     assertWithMessage(
@@ -216,11 +212,12 @@ public class VehiclePropertyVerifiers {
                                             .that(curbWeightKg)
                                             .isLessThan(grossWeightKg);
                                 })
-                        .addReadPermission(Car.PERMISSION_PRIVILEGED_CAR_INFO);
+                        .setReadPermission(ImmutableSet.of(Car.PERMISSION_PRIVILEGED_CAR_INFO));
 
-        return Flags.vehicleProperty25q23pPermissions()
-                ? verifierBuilder.addReadPermission(Car.PERMISSION_CAR_INFO)
-                : verifierBuilder;
+        if (VehiclePropertyVerifier.isAtLeastB() && Flags.vehicleProperty25q23pPermissions()) {
+            verifierBuilder.addReadPermission(Car.PERMISSION_CAR_INFO);
+        }
+        return verifierBuilder;
     }
 
     /**
@@ -239,9 +236,10 @@ public class VehiclePropertyVerifiers {
                         .setAllPossibleEnumValues(VEHICLE_AUTONOMOUS_STATES)
                         .addReadPermission(Car.PERMISSION_CAR_DRIVING_STATE);
 
-        return Flags.vehicleProperty25q23pPermissions()
-                ? verifierBuilder.addReadPermission(Car.PERMISSION_CAR_DRIVING_STATE_3P)
-                : verifierBuilder;
+        if (VehiclePropertyVerifier.isAtLeastB() && Flags.vehicleProperty25q23pPermissions()) {
+            verifierBuilder.addReadPermission(Car.PERMISSION_CAR_DRIVING_STATE_3P);
+        }
+        return verifierBuilder;
     }
 
     /** Gets the verifier builder for {@link VehiclePropertyIds#ENGINE_RPM}. */
@@ -267,9 +265,10 @@ public class VehiclePropertyVerifiers {
                                                 .isAtLeast(0))
                         .addReadPermission(Car.PERMISSION_CAR_ENGINE_DETAILED);
 
-        return Flags.vehicleProperty25q23pPermissions()
-                ? verifierBuilder.addReadPermission(Car.PERMISSION_CAR_ENGINE_DETAILED_3P)
-                : verifierBuilder;
+        if (VehiclePropertyVerifier.isAtLeastB() && Flags.vehicleProperty25q23pPermissions()) {
+            verifierBuilder.addReadPermission(Car.PERMISSION_CAR_ENGINE_DETAILED_3P);
+        }
+        return verifierBuilder;
     }
 
     /** Gets the verifier builder for {@link VehiclePropertyIds#WINDSHIELD_WIPERS_STATE}. */
@@ -285,9 +284,10 @@ public class VehiclePropertyVerifiers {
                         .setAllPossibleEnumValues(WINDSHIELD_WIPERS_STATES)
                         .addReadPermission(Car.PERMISSION_READ_WINDSHIELD_WIPERS);
 
-        return Flags.vehicleProperty25q23pPermissions()
-                ? verifierBuilder.addReadPermission(Car.PERMISSION_READ_WINDSHIELD_WIPERS_3P)
-                : verifierBuilder;
+        if (VehiclePropertyVerifier.isAtLeastB() && Flags.vehicleProperty25q23pPermissions()) {
+            verifierBuilder.addReadPermission(Car.PERMISSION_READ_WINDSHIELD_WIPERS_3P);
+        }
+        return verifierBuilder;
     }
 
     /** Gets the verifier builder for {@link VehiclePropertyIds#PERF_ODOMETER}. */
@@ -345,9 +345,10 @@ public class VehiclePropertyVerifiers {
                                                 .isAtLeast(0))
                         .addReadPermission(Car.PERMISSION_TIRES);
 
-        return Flags.vehicleProperty25q23pPermissions()
-                ? verifierBuilder.addReadPermission(Car.PERMISSION_TIRES_3P)
-                : verifierBuilder;
+        if (VehiclePropertyVerifier.isAtLeastB() && Flags.vehicleProperty25q23pPermissions()) {
+            verifierBuilder.addReadPermission(Car.PERMISSION_TIRES_3P);
+        }
+        return verifierBuilder;
     }
 
     /** Gets the verifier builder for {@link VehiclePropertyIds#SEAT_OCCUPANCY}. */
@@ -362,9 +363,10 @@ public class VehiclePropertyVerifiers {
                         .setAllPossibleEnumValues(VEHICLE_SEAT_OCCUPANCY_STATES)
                         .addReadPermission(Car.PERMISSION_CONTROL_CAR_SEATS);
 
-        return Flags.vehicleProperty25q23pPermissions()
-                ? verifierBuilder.addReadPermission(Car.PERMISSION_READ_CAR_SEATS)
-                : verifierBuilder;
+        if (VehiclePropertyVerifier.isAtLeastB() && Flags.vehicleProperty25q23pPermissions()) {
+            verifierBuilder.addReadPermission(Car.PERMISSION_READ_CAR_SEATS);
+        }
+        return verifierBuilder;
     }
 
     /** Gets the verifier builder for {@link VehiclePropertyIds#PERF_STEERING_ANGLE}. */
@@ -378,9 +380,10 @@ public class VehiclePropertyVerifiers {
                                 Float.class)
                         .addReadPermission(Car.PERMISSION_READ_STEERING_STATE);
 
-        return Flags.vehicleProperty25q23pPermissions()
-                ? verifierBuilder.addReadPermission(Car.PERMISSION_READ_STEERING_STATE_3P)
-                : verifierBuilder;
+        if (VehiclePropertyVerifier.isAtLeastB() && Flags.vehicleProperty25q23pPermissions()) {
+            verifierBuilder.addReadPermission(Car.PERMISSION_READ_STEERING_STATE_3P);
+        }
+        return verifierBuilder;
     }
 
     /**
@@ -491,18 +494,19 @@ public class VehiclePropertyVerifiers {
      */
     public static VehiclePropertyVerifier.Builder<Integer>
             getHvacTemperatureDisplayUnitsVerifierBuilder() {
-        VehiclePropertyVerifier.Builder builder = VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.HVAC_TEMPERATURE_DISPLAY_UNITS,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_ONCHANGE,
-                        Integer.class)
-                .setAllPossibleEnumValues(HVAC_TEMPERATURE_DISPLAY_UNITS)
-                .setPossibleConfigArrayValues(HVAC_TEMPERATURE_DISPLAY_UNITS)
-                .requirePropertyValueTobeInConfigArray()
-                .verifySetterWithConfigArrayValues()
-                .addReadPermission(Car.PERMISSION_CONTROL_CAR_CLIMATE)
-                .addWritePermission(Car.PERMISSION_CONTROL_CAR_CLIMATE);
+        VehiclePropertyVerifier.Builder<Integer> builder =
+                VehiclePropertyVerifier.newBuilder(
+                                VehiclePropertyIds.HVAC_TEMPERATURE_DISPLAY_UNITS,
+                                CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
+                                VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
+                                CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_ONCHANGE,
+                                Integer.class)
+                        .setAllPossibleEnumValues(HVAC_TEMPERATURE_DISPLAY_UNITS)
+                        .setPossibleConfigArrayValues(HVAC_TEMPERATURE_DISPLAY_UNITS)
+                        .requirePropertyValueTobeInConfigArray()
+                        .verifySetterWithConfigArrayValues()
+                        .addReadPermission(Car.PERMISSION_CONTROL_CAR_CLIMATE)
+                        .addWritePermission(Car.PERMISSION_CONTROL_CAR_CLIMATE);
 
         if (VehiclePropertyVerifier.isAtLeastU()) {
             builder.addReadPermission(Car.PERMISSION_READ_DISPLAY_UNITS);

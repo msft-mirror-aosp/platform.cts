@@ -17,6 +17,7 @@
 package android.telecom.cts.cuj.app.integration;
 
 import static android.telecom.Call.STATE_ACTIVE;
+import static android.telecom.Call.STATE_DIALING;
 import static android.telecom.Call.STATE_DISCONNECTED;
 import static android.telecom.Call.STATE_HOLDING;
 import static android.telecom.Call.STATE_RINGING;
@@ -147,6 +148,7 @@ public class UnholdableCallTest extends BaseAppVerifier {
         try {
             transactionalApp = bindToApp(TransactionalVoipAppMain);
             String mo = addOutgoingCallAndVerify(transactionalApp, false /* isHoldable */);
+            verifyCallIsInState(mo, STATE_DIALING);
             setCallStateAndVerify(transactionalApp, mo, STATE_ACTIVE);
             CallException e = setCallStateButExpectOnError(transactionalApp, mo, STATE_HOLDING);
             assertNotNull(e);
@@ -205,6 +207,7 @@ public class UnholdableCallTest extends BaseAppVerifier {
         try {
             transactionalApp = bindToApp(TransactionalVoipAppMain);
             String mo = addOutgoingCallAndVerify(transactionalApp, false /* isHoldable */);
+            verifyCallIsInState(mo, STATE_DIALING);
             setCallStateAndVerify(transactionalApp, mo, STATE_ACTIVE);
             String mt = addIncomingCallAndVerify(transactionalApp, false /* isHoldable */);
 
@@ -252,6 +255,7 @@ public class UnholdableCallTest extends BaseAppVerifier {
         try {
             csApp = bindToApp(ConnectionServiceVoipAppMain);
             String mo = addOutgoingCallAndVerify(csApp, false /* isHoldable */);
+            verifyCallIsInState(mo, STATE_DIALING);
             setCallStateAndVerify(csApp, mo, STATE_ACTIVE);
             String mt = addIncomingCallAndVerify(csApp, false /* isHoldable */);
 
@@ -306,6 +310,7 @@ public class UnholdableCallTest extends BaseAppVerifier {
         try {
             managedApp = bindToApp(ManagedConnectionServiceApp);
             String mo = addOutgoingCallAndVerify(managedApp, false /* isHoldable */);
+            verifyCallIsInState(mo, STATE_DIALING);
             setCallStateAndVerify(managedApp, mo, STATE_ACTIVE);
 
             transactionalApp = bindToApp(TransactionalVoipAppMain);
@@ -333,6 +338,7 @@ public class UnholdableCallTest extends BaseAppVerifier {
     private void verifyHoldFails_ConnectionService(AppControlWrapper appControlWrapper)
             throws Exception {
         String mo = addOutgoingCallAndVerify(appControlWrapper, false /* isHoldable */);
+        verifyCallIsInState(mo, STATE_DIALING);
         setCallStateAndVerify(appControlWrapper, mo, STATE_ACTIVE);
         setCallState(appControlWrapper, mo, STATE_HOLDING);
         verifyCallIsInState(mo, STATE_ACTIVE); // TODO:: b/313461258

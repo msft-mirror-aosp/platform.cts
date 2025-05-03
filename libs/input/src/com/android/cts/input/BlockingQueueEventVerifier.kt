@@ -43,7 +43,7 @@ private fun <T> peekEvent(queue: BlockingQueue<T>, timeout: Duration): T? {
 
 class BlockingQueueEventVerifier(val queue: BlockingQueue<InputEvent>) {
     fun assertReceivedMotion(matcher: Matcher<MotionEvent>, msg: String? = null) {
-        val event = getEventOfType(MotionEvent::class.java)
+        val event = getEventOfType(MotionEvent::class.java, msg)
         assertThat(msg ?: "MotionEvent checks", event, matcher)
     }
 
@@ -61,9 +61,10 @@ class BlockingQueueEventVerifier(val queue: BlockingQueue<InputEvent>) {
         }
     }
 
-    fun assertReceivedKey(matcher: Matcher<KeyEvent>) {
-        val event = getEventOfType(KeyEvent::class.java)
-        assertThat("KeyEvent checks", event, matcher)
+    @JvmOverloads
+    fun assertReceivedKey(matcher: Matcher<KeyEvent>, msg: String? = null) {
+        val event = getEventOfType(KeyEvent::class.java, msg)
+        assertThat(msg ?: "KeyEvent checks", event, matcher)
     }
 
     fun assertNoEvents() {
@@ -71,13 +72,14 @@ class BlockingQueueEventVerifier(val queue: BlockingQueue<InputEvent>) {
         assertNull(event)
     }
 
-    private fun <T : InputEvent> getEventOfType(eventType: Class<T>): T {
+    private fun <T : InputEvent> getEventOfType(eventType: Class<T>, msg: String?): T {
         val event = getEvent(queue, Duration.ofMillis(5000))
         if (event == null) {
-            fail("Did not get an event")
+            fail("${if (msg != null) msg + ": " else ""}Did not get an event")
         }
         if (!eventType.isInstance(event)) {
-            fail("Instead of ${eventType.simpleName}, got $event")
+            val prefix = if (msg != null) msg + ": " else ""
+            fail("${prefix}Instead of ${eventType.simpleName}, got $event")
         }
         return eventType.cast(event)!!
     }

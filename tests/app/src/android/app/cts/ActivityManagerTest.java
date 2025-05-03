@@ -1348,13 +1348,10 @@ public final class ActivityManagerTest {
                 .getApplicationInfo(PACKAGE_NAME_APP1, 0);
         final WatchUidRunner watcher = new WatchUidRunner(mInstrumentation, ai.uid, waitForSec);
 
-        try {
+        try (AutoCloseable unused =
+                CtsAppTestUtils.allowBackgroundActivityLaunch(PACKAGE_NAME_APP1)) {
             // Shorten the power check intervals
             amSettings.set("power_check_interval=" + powerCheckInterval);
-
-            // Make sure we could start activity from background
-            runShellCommand(mInstrumentation,
-                    "cmd deviceidle whitelist +" + PACKAGE_NAME_APP1);
 
             // Keep the device awake
             toggleScreenOn(true);
@@ -1419,9 +1416,6 @@ public final class ActivityManagerTest {
         } finally {
             amSettings.close();
 
-            runShellCommand(mInstrumentation,
-                    "cmd deviceidle whitelist -" + PACKAGE_NAME_APP1);
-
             runWithShellPermissionIdentity(() -> {
                 // force stop test package, where the whole test process group will be killed.
                 mActivityManager.forceStopPackage(PACKAGE_NAME_APP1);
@@ -1460,7 +1454,9 @@ public final class ActivityManagerTest {
         ai = mTargetContext.getPackageManager().getApplicationInfo(PACKAGE_NAME_APP3, 0);
         final WatchUidRunner watcher3 = new WatchUidRunner(mInstrumentation, ai.uid, waitForSec);
 
-        try {
+        try (AutoCloseable unused =
+                CtsAppTestUtils.allowBackgroundActivityLaunch(
+                        PACKAGE_NAME_APP1, PACKAGE_NAME_APP2, PACKAGE_NAME_APP3)) {
             // Shorten the power check intervals
             amSettings.set("power_check_interval=" + powerCheckInterval);
 
@@ -1473,14 +1469,6 @@ public final class ActivityManagerTest {
                         maxPhantomProcesses,
                         Integer.toString(maxPhantomProcessesNum), false);
             });
-
-            // Make sure we could start activity from background
-            runShellCommand(mInstrumentation,
-                    "cmd deviceidle whitelist +" + PACKAGE_NAME_APP1);
-            runShellCommand(mInstrumentation,
-                    "cmd deviceidle whitelist +" + PACKAGE_NAME_APP2);
-            runShellCommand(mInstrumentation,
-                    "cmd deviceidle whitelist +" + PACKAGE_NAME_APP3);
 
             // Keep the device awake
             toggleScreenOn(true);
@@ -1565,13 +1553,6 @@ public final class ActivityManagerTest {
                             maxPhantomProcesses, Integer.toString(current), false);
                 }
             });
-
-            runShellCommand(mInstrumentation,
-                    "cmd deviceidle whitelist -" + PACKAGE_NAME_APP1);
-            runShellCommand(mInstrumentation,
-                    "cmd deviceidle whitelist -" + PACKAGE_NAME_APP2);
-            runShellCommand(mInstrumentation,
-                    "cmd deviceidle whitelist -" + PACKAGE_NAME_APP3);
 
             runWithShellPermissionIdentity(() -> {
                 // force stop test package, where the whole test process group will be killed.
@@ -1687,11 +1668,8 @@ public final class ActivityManagerTest {
                 latchHolder[0].countDown();
             }
         });
-        try {
-            // Make sure we could start activity from background
-            runShellCommand(mInstrumentation,
-                    "cmd deviceidle whitelist +" + PACKAGE_NAME_APP1);
-
+        try (AutoCloseable unused =
+                CtsAppTestUtils.allowBackgroundActivityLaunch(PACKAGE_NAME_APP1)) {
             // Override the memory pressure level, force it staying at normal.
             runShellCommand(mInstrumentation, "am memory-factor set NORMAL");
 
@@ -1732,9 +1710,6 @@ public final class ActivityManagerTest {
                         latchHolder[0].await(waitForSec, TimeUnit.MILLISECONDS));
             }
         } finally {
-            runShellCommand(mInstrumentation,
-                    "cmd deviceidle whitelist -" + PACKAGE_NAME_APP1);
-
             runShellCommand(mInstrumentation, "am memory-factor reset");
 
             runWithShellPermissionIdentity(() -> {
@@ -1767,6 +1742,7 @@ public final class ActivityManagerTest {
     @Test
     public void testServiceDoneLRUPosition() throws Exception {
         final String[] packageNames = {PACKAGE_NAME_APP1, PACKAGE_NAME_APP2, PACKAGE_NAME_APP3};
+        final String[] otherPackages = {PACKAGE_NAME_APP2, PACKAGE_NAME_APP3};
         final WatchUidRunner[] watchers = initWatchUidRunners(packageNames, WAITFOR_MSEC);
         final HandlerThread handlerThread = new HandlerThread("worker");
         final Messenger[] controllerHolder = new Messenger[1];
@@ -1782,10 +1758,9 @@ public final class ActivityManagerTest {
             return true;
         }));
 
-        try {
-            // Make sure we could start activity from background
-            forEach(packageNames, packageName -> runShellCommand(mInstrumentation,
-                    "cmd deviceidle whitelist +" + packageName));
+        try (AutoCloseable unused = CtsAppTestUtils.allowBackgroundActivityLaunch(otherPackages)) {
+            // Make sure we could start a foreground service from background
+            runShellCommand(mInstrumentation, "cmd deviceidle whitelist +" + PACKAGE_NAME_APP1);
 
             // Keep the device awake
             toggleScreenOn(true);
@@ -1804,7 +1779,6 @@ public final class ActivityManagerTest {
             assertTrue("Failed to get the controller interface",
                     countDownLatchHolder[0].await(WAITFOR_MSEC, TimeUnit.MILLISECONDS));
 
-            final String[] otherPackages = {PACKAGE_NAME_APP2, PACKAGE_NAME_APP3};
             final WatchUidRunner[] otherWatchers = {watchers[1], watchers[2]};
             // Start an activity in another package
             forBiEach(otherPackages, otherWatchers, (packageName, watcher) -> {
@@ -1843,8 +1817,7 @@ public final class ActivityManagerTest {
         } finally {
             handlerThread.quitSafely();
 
-            forEach(packageNames, packageName -> runShellCommand(mInstrumentation,
-                    "cmd deviceidle whitelist -" + packageName));
+            runShellCommand(mInstrumentation, "cmd deviceidle whitelist -" + PACKAGE_NAME_APP1);
 
             // force stop test package, where the whole test process group will be killed.
             forEach(packageNames, packageName -> runWithShellPermissionIdentity(
@@ -1864,45 +1837,71 @@ public final class ActivityManagerTest {
         final WatchUidRunner[] watchers = initWatchUidRunners(packageNames, WAITFOR_MSEC * 2);
 
         try {
-            mInstrumentation.getUiAutomation().revokeRuntimePermission(PACKAGE_NAME_APP1,
-                    android.Manifest.permission.ACCESS_BACKGROUND_LOCATION);
-            // Set the PACKAGE_NAME_APP1 into rare bucket
-            runShellCommand(mInstrumentation, "am set-standby-bucket --user " + mTestRunningUserId
-                    + " " + PACKAGE_NAME_APP1 + " rare");
+            try (AutoCloseable unused =
+                    CtsAppTestUtils.allowBackgroundActivityLaunch(packageNames)) {
+                mInstrumentation
+                        .getUiAutomation()
+                        .revokeRuntimePermission(
+                                PACKAGE_NAME_APP1,
+                                android.Manifest.permission.ACCESS_BACKGROUND_LOCATION);
+                // Set the PACKAGE_NAME_APP1 into rare bucket
+                runShellCommand(
+                        mInstrumentation,
+                        "am set-standby-bucket --user "
+                                + mTestRunningUserId
+                                + " "
+                                + PACKAGE_NAME_APP1
+                                + " rare");
 
-            // Make sure we could start activity from background
-            forEach(packageNames, packageName -> runShellCommand(mInstrumentation,
-                    "cmd deviceidle whitelist +" + packageName));
+                // Keep the device awake
+                toggleScreenOn(true);
 
-            // Keep the device awake
-            toggleScreenOn(true);
+                // Start activities in these packages.
+                forBiEach(
+                        packageNames,
+                        watchers,
+                        (packageName, watcher) -> {
+                            CommandReceiver.sendCommand(
+                                    mTargetContext,
+                                    CommandReceiver.COMMAND_START_ACTIVITY,
+                                    packageName,
+                                    packageName,
+                                    0,
+                                    null);
+                            watcher.waitFor(
+                                    WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_TOP, null);
+                        });
 
-            // Start activities in these packages.
-            forBiEach(packageNames, watchers, (packageName, watcher) -> {
-                CommandReceiver.sendCommand(mTargetContext, CommandReceiver.COMMAND_START_ACTIVITY,
-                        packageName, packageName, 0, null);
-                watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_TOP, null);
-            });
+                // Stop all of these activities
+                forBiEach(
+                        packageNames,
+                        watchers,
+                        (packageName, watcher) -> {
+                            CommandReceiver.sendCommand(
+                                    mTargetContext,
+                                    CommandReceiver.COMMAND_STOP_ACTIVITY,
+                                    packageName,
+                                    packageName,
+                                    0,
+                                    null);
+                            watcher.waitFor(
+                                    WatchUidRunner.CMD_PROCSTATE,
+                                    WatchUidRunner.STATE_CACHED_EMPTY,
+                                    null);
+                            // Sleep a while before proceeding to next one to make sure the activity
+                            // lifecycle
+                            // transitions have completed.
+                            SystemClock.sleep(1000);
+                        });
 
-            // Stop all of these activities
-            forBiEach(packageNames, watchers, (packageName, watcher) -> {
-                CommandReceiver.sendCommand(mTargetContext, CommandReceiver.COMMAND_STOP_ACTIVITY,
-                        packageName, packageName, 0, null);
-                watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_CACHED_EMPTY,
-                        null);
-                // Sleep a while before proceeding to next one to make sure the activity lifecycle
-                // transitions have completed.
-                SystemClock.sleep(1000);
-            });
+                // Launch home so we'd have cleared these the above test activities from recents.
+                launchHome();
 
-            // Launch home so we'd have cleared these the above test activities from recents.
-            launchHome();
+                // Verify the LRU position.
+                verifyLruOrders(
+                        packageNames, 0, false, (a, b) -> a < b, "%s should be older than %s");
+            } // Close the AutoCloseable and revoke the ability to launch from background.
 
-            // Verify the LRU position.
-            verifyLruOrders(packageNames, 0, false, (a, b) -> a < b, "%s should be older than %s");
-
-            forEach(packageNames, packageName -> runShellCommand(mInstrumentation,
-                    "cmd deviceidle whitelist -" + packageName));
             // Restrict the PACKAGE_NAME_APP1
             runShellCommand(mInstrumentation, "am set-standby-bucket --user " + mTestRunningUserId
                     + " " + PACKAGE_NAME_APP1 + " restricted");
@@ -1949,9 +1948,6 @@ public final class ActivityManagerTest {
             // Now its LRU posistion should have been bumped.
             verifyLruOrders(packageNames, 0, true, (a, b) -> a > b, "%s should be newer than %s");
         } finally {
-            forEach(packageNames, packageName -> runShellCommand(mInstrumentation,
-                    "cmd deviceidle whitelist -" + packageName));
-
             runShellCommand(mInstrumentation, "am set-standby-bucket --user " + mTestRunningUserId
                     + " " + PACKAGE_NAME_APP1 + " rare");
 
@@ -2212,10 +2208,8 @@ public final class ActivityManagerTest {
                         latchHolder[0].countDown();
                     }
                 };
-        try {
-            // Make sure we could start activity from background
-            runShellCommand(mInstrumentation, "cmd deviceidle whitelist +" + PACKAGE_NAME_APP1);
-
+        try (AutoCloseable unused =
+                CtsAppTestUtils.allowBackgroundActivityLaunch(PACKAGE_NAME_APP1)) {
             // If we didn't specify the target UID, we should be able to listen on all UID events.
             mActivityManager.addOnUidImportanceListener(listener,
                     RunningAppProcessInfo.IMPORTANCE_FOREGROUND);
@@ -2236,8 +2230,6 @@ public final class ActivityManagerTest {
             assertTrue("Failed to receive the UID importance changes",
                     latchHolder[0].await(WAITFOR_MSEC * 2, TimeUnit.MILLISECONDS));
         } finally {
-            runShellCommand(mInstrumentation, "cmd deviceidle whitelist -" + PACKAGE_NAME_APP1);
-
             mActivityManager.removeOnUidImportanceListener(listener);
 
             runWithShellPermissionIdentity(
@@ -2264,10 +2256,8 @@ public final class ActivityManagerTest {
                         latchHolder[0].countDown();
                     }
                 };
-        try {
-            // Make sure we could start activity from background
-            runShellCommand(mInstrumentation, "cmd deviceidle whitelist +" + PACKAGE_NAME_APP1);
-
+        try (AutoCloseable unused =
+                CtsAppTestUtils.allowBackgroundActivityLaunch(PACKAGE_NAME_APP1)) {
             // Listen on the APP1's UID importance changes only.
             mActivityManager.addOnUidImportanceListener(listener,
                     RunningAppProcessInfo.IMPORTANCE_FOREGROUND, new int[] {ai1.uid});
@@ -2288,8 +2278,6 @@ public final class ActivityManagerTest {
             assertFalse("It should not receive the UID importance changes",
                     latchHolder[0].await(WAITFOR_MSEC, TimeUnit.MILLISECONDS));
         } finally {
-            runShellCommand(mInstrumentation, "cmd deviceidle whitelist -" + PACKAGE_NAME_APP1);
-
             mActivityManager.removeOnUidImportanceListener(listener);
 
             runWithShellPermissionIdentity(

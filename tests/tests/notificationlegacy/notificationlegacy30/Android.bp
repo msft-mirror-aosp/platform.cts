@@ -23,7 +23,7 @@ android_test {
     static_libs: [
         "androidx.test.rules",
         "ctstestrunner-axt",
-        "CtsAppTestStubsShared",
+        "cts_app_test_shared_lib",
         "bedstead",
         "junit",
         "truth",

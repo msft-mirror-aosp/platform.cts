@@ -32,7 +32,7 @@
 
   <!-- flaky tests -->
   <option name="compatibility:exclude-filter"
-          value="CtsAppTestCases android.app.cts.ActivityManagerFgsBgStartTest#testOverlappedTempAllowList"/>
+          value="CtsAppFgsTestCases android.app.cts.fgstest.ActivityManagerFgsBgStartTest#testOverlappedTempAllowList"/>
   <option name="compatibility:exclude-filter"
           value="CtsAppTestCases android.app.cts.ActivityManagerProcessStateTest#testBackgroundCheckActivityService"/>
   <option name="compatibility:exclude-filter"
@@ -121,7 +121,7 @@
 
   <!-- documentsui dependent tests -->
   <option name="compatibility:exclude-filter"
-      value="CtsAppTestCases android.app.cts.DownloadManagerTest#testDownload_onMediaStoreDownloadsDeleted"/>
+      value="CtsDownloadManagerTestCases android.app.cts.downloadmanager.DownloadManagerTest#testDownload_onMediaStoreDownloadsDeleted"/>
   <option name="compatibility:exclude-filter"
       value="CtsOsTestCases android.os.cts.StrictModeTest#testVmPenaltyListener" />
   <option name="compatibility:exclude-filter"
@@ -165,8 +165,8 @@
   <option name="compatibility:exclude-filter" value="CtsSliceTestCases android.slice.cts.SlicePermissionsTest#testPermissionIntent"/>
 
   <!-- other apps dependent tests -->
+  <option name="compatibility:exclude-filter" value="CtsAppFgsTestCases android.app.cts.fgstest.ActivityManagerFgsBgStartTest#testVisibleActivityGracePeriod"/>
   <option name="compatibility:exclude-filter" value="CtsAppTestCases android.app.cts.ActivityManagerTest#testHomeVisibilityListener"/>
-  <option name="compatibility:exclude-filter" value="CtsAppTestCases android.app.cts.ActivityManagerFgsBgStartTest#testVisibleActivityGracePeriod"/>
   <option name="compatibility:exclude-filter"
       value="CtsContentTestCases android.content.cts.AvailableIntentsTest"/>
   <option name="compatibility:exclude-filter"

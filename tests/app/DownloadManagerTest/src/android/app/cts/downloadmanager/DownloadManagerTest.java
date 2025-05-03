@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package android.app.cts;
+package android.app.cts.downloadmanager;
 
 import static android.Manifest.permission.WRITE_MEDIA_STORAGE;
 import static android.content.pm.PackageManager.PERMISSION_DENIED;
@@ -21,11 +21,8 @@ import static android.content.pm.PackageManager.PERMISSION_GRANTED;
 
 import static com.android.compatibility.common.util.SystemUtil.runShellCommand;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static com.google.common.truth.Truth.assertThat;
+import static com.google.common.truth.Truth.assertWithMessage;
 
 import android.app.DownloadManager;
 import android.app.DownloadManager.Query;
@@ -50,19 +47,15 @@ import android.util.Log;
 import android.util.LongSparseArray;
 import android.util.Pair;
 
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.FlakyTest;
-import androidx.test.runner.AndroidJUnit4;
 import androidx.test.uiautomator.UiObject;
 import androidx.test.uiautomator.UiObjectNotFoundException;
 import androidx.test.uiautomator.UiSelector;
 
-import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.multiuser.annotations.RequireRunNotOnVisibleBackgroundNonProfileUser;
 import com.android.compatibility.common.util.CddTest;
 
-import org.junit.Assert;
-import org.junit.ClassRule;
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -74,12 +67,16 @@ import java.io.InputStream;
 import java.io.OutputStream;
 
 @RunWith(AndroidJUnit4.class)
-public class DownloadManagerTest extends DownloadManagerTestBase {
-    @ClassRule @Rule
-    public static final DeviceState sDeviceState = new DeviceState();
-
+public final class DownloadManagerTest extends DownloadManagerTestBase {
     private static final String DOWNLOAD_STORAGE_PROVIDER_AUTHORITY =
             "com.android.providers.downloads.documents";
+    private static final String TEST_TITLE = "Test title";
+    private static final String TEST_DESC = "Test desc";
+    private static final boolean IS_MEDIA_SCANNER_SCANNABLE = true;
+    private static final String CONTENT_TYPE = "text/plain";
+    private static final boolean SHOW_NOTIFICATION = true;
+    private static final String ANDROID_SHELL = "com.android.shell";
+
     @FlakyTest
     @Test
     public void testDownloadManager() throws Exception {
@@ -92,7 +89,7 @@ public class DownloadManagerTest extends DownloadManagerTestBase {
             long badId = mDownloadManager.enqueue(new Request(getBadUrl()));
 
             int allDownloads = getTotalNumberDownloads();
-            assertEquals(2, allDownloads);
+            assertThat(allDownloads).isEqualTo(2);
 
             assertDownloadQueryableById(goodId);
             assertDownloadQueryableById(badId);
@@ -119,7 +116,7 @@ public class DownloadManagerTest extends DownloadManagerTestBase {
 
             long id = mDownloadManager.enqueue(new Request(getGoodUrl()));
 
-            assertEquals(1, getTotalNumberDownloads());
+            assertThat(getTotalNumberDownloads()).isEqualTo(1);
 
             assertDownloadQueryableById(id);
 
@@ -137,7 +134,10 @@ public class DownloadManagerTest extends DownloadManagerTestBase {
     @Test
     public void testDownloadManagerSupportsHttpWithExternalWebServer() throws Exception {
         if (!hasInternetConnection()) {
-            Log.i(TAG, "testDownloadManagerSupportsHttpWithExternalWebServer() ignored on device without Internet");
+            Log.i(
+                    TAG,
+                    "testDownloadManagerSupportsHttpWithExternalWebServer() ignored on device"
+                            + " without Internet");
             return;
         }
 
@@ -152,7 +152,7 @@ public class DownloadManagerTest extends DownloadManagerTestBase {
 
             long id = mDownloadManager.enqueue(new Request(Uri.parse("http://www.example.com")));
 
-            assertEquals(1, getTotalNumberDownloads());
+            assertThat(getTotalNumberDownloads()).isEqualTo(1);
 
             assertDownloadQueryableById(id);
 
@@ -169,7 +169,10 @@ public class DownloadManagerTest extends DownloadManagerTestBase {
     @Test
     public void testDownloadManagerSupportsHttpsWithExternalWebServer() throws Exception {
         if (!hasInternetConnection()) {
-            Log.i(TAG, "testDownloadManagerSupportsHttpsWithExternalWebServer() ignored on device without Internet");
+            Log.i(
+                    TAG,
+                    "testDownloadManagerSupportsHttpsWithExternalWebServer() ignored on device"
+                            + " without Internet");
             return;
         }
 
@@ -186,7 +189,7 @@ public class DownloadManagerTest extends DownloadManagerTestBase {
 
             long id = mDownloadManager.enqueue(new Request(Uri.parse("https://www.example.com")));
 
-            assertEquals(1, getTotalNumberDownloads());
+            assertThat(getTotalNumberDownloads()).isEqualTo(1);
 
             assertDownloadQueryableById(id);
 
@@ -200,7 +203,7 @@ public class DownloadManagerTest extends DownloadManagerTestBase {
         }
     }
 
-    @CddTest(requirement="7.6.1")
+    @CddTest(requirement = "7.6.1")
     @Test
     public void testMinimumDownload() throws Exception {
         final DownloadCompleteReceiver receiver = new DownloadCompleteReceiver();
@@ -211,22 +214,20 @@ public class DownloadManagerTest extends DownloadManagerTestBase {
             long id = mDownloadManager.enqueue(new Request(getMinimumDownloadUrl()));
             receiver.waitForDownloadComplete(LONG_TIMEOUT, id);
 
-            ParcelFileDescriptor fileDescriptor = mDownloadManager.openDownloadedFile(id);
-            assertEquals(MINIMUM_DOWNLOAD_BYTES, fileDescriptor.getStatSize());
+            try (ParcelFileDescriptor fileDescriptor = mDownloadManager.openDownloadedFile(id)) {
+                assertThat(fileDescriptor.getStatSize()).isEqualTo(MINIMUM_DOWNLOAD_BYTES);
+            }
 
-            Cursor cursor = null;
-            try {
-                cursor = mDownloadManager.query(new Query().setFilterById(id));
-                assertTrue(cursor.moveToNext());
-                assertEquals(DownloadManager.STATUS_SUCCESSFUL, cursor.getInt(
-                        cursor.getColumnIndex(DownloadManager.COLUMN_STATUS)));
-                assertEquals(MINIMUM_DOWNLOAD_BYTES, cursor.getInt(
-                        cursor.getColumnIndex(DownloadManager.COLUMN_TOTAL_SIZE_BYTES)));
-                assertFalse(cursor.moveToNext());
-            } finally {
-                if (cursor != null) {
-                    cursor.close();
-                }
+            try (Cursor cursor = mDownloadManager.query(new Query().setFilterById(id))) {
+                assertThat(cursor.moveToNext()).isTrue();
+                assertThat(cursor.getInt(cursor.getColumnIndex(DownloadManager.COLUMN_STATUS)))
+                        .isEqualTo(DownloadManager.STATUS_SUCCESSFUL);
+                assertThat(
+                                cursor.getInt(
+                                        cursor.getColumnIndex(
+                                                DownloadManager.COLUMN_TOTAL_SIZE_BYTES)))
+                        .isEqualTo(MINIMUM_DOWNLOAD_BYTES);
+                assertThat(cursor.moveToNext()).isFalse();
             }
 
             assertRemoveDownload(id, 0);
@@ -238,8 +239,8 @@ public class DownloadManagerTest extends DownloadManagerTestBase {
     /**
      * Set download locations and verify that file is downloaded to correct location.
      *
-     * Checks three different methods of setting location: directly via setDestinationUri, and
-     * indirectly through setDestinationInExternalFilesDir and setDestinationinExternalPublicDir.
+     * <p>Checks three different methods of setting location: directly via setDestinationUri, and
+     * indirectly through setDestinationInExternalFilesDir and setDestinationInExternalPublicDir.
      */
     @FlakyTest
     @Test
@@ -250,9 +251,11 @@ public class DownloadManagerTest extends DownloadManagerTestBase {
         File extFileLocation = new File(mContext.getExternalFilesDir(null), "extFile.bin");
         deleteFromShell(extFileLocation);
 
-        File publicLocation = new File(
-                Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
-                "publicFile.bin");
+        File publicLocation =
+                new File(
+                        Environment.getExternalStoragePublicDirectory(
+                                Environment.DIRECTORY_DOWNLOADS),
+                        "publicFile.bin");
         deleteFromShell(publicLocation);
 
         final DownloadCompleteReceiver receiver = new DownloadCompleteReceiver();
@@ -269,12 +272,12 @@ public class DownloadManagerTest extends DownloadManagerTestBase {
             long extFileId = mDownloadManager.enqueue(requestExtFile);
 
             Request requestPublic = new Request(getGoodUrl());
-            requestPublic.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS,
-                    "publicFile.bin");
+            requestPublic.setDestinationInExternalPublicDir(
+                    Environment.DIRECTORY_DOWNLOADS, "publicFile.bin");
             long publicId = mDownloadManager.enqueue(requestPublic);
 
             int allDownloads = getTotalNumberDownloads();
-            assertEquals(3, allDownloads);
+            assertThat(allDownloads).isEqualTo(3);
 
             receiver.waitForDownloadComplete(SHORT_TIMEOUT, uriId, extFileId, publicId);
 
@@ -317,7 +320,7 @@ public class DownloadManagerTest extends DownloadManagerTestBase {
             long wrongExtId = mDownloadManager.enqueue(requestWrongExt);
 
             int allDownloads = getTotalNumberDownloads();
-            assertEquals(2, allDownloads);
+            assertThat(allDownloads).isEqualTo(2);
 
             receiver.waitForDownloadComplete(SHORT_TIMEOUT, noExtId, wrongExtId);
 
@@ -335,8 +338,11 @@ public class DownloadManagerTest extends DownloadManagerTestBase {
     public void testSetDestinationUri_privateAppDir() throws Exception {
         // Make sure the private app directory exists
         runShellCommand("mkdir -p /sdcard/Android/data/com.android.shell -m 2770");
-        final File path = new File("/sdcard/Android/data/com.android.shell/"
-                + TAG + System.currentTimeMillis());
+        final File path =
+                new File(
+                        "/sdcard/Android/data/com.android.shell/"
+                                + TAG
+                                + System.currentTimeMillis());
 
         final DownloadCompleteReceiver receiver = new DownloadCompleteReceiver();
         try {
@@ -346,8 +352,9 @@ public class DownloadManagerTest extends DownloadManagerTestBase {
             DownloadManager.Request requestPublic = new DownloadManager.Request(getGoodUrl());
             requestPublic.setDestinationUri(Uri.fromFile(path));
             mDownloadManager.enqueue(requestPublic);
-            Assert.fail("Cannot download files into other app's private directories");
+            assertWithMessage("Cannot download files into other app's private directories").fail();
         } catch (SecurityException expected) {
+            // expected
         } finally {
             mContext.unregisterReceiver(receiver);
         }
@@ -355,27 +362,29 @@ public class DownloadManagerTest extends DownloadManagerTestBase {
 
     @Test
     public void testSetDestinationUri_invalidRequests() throws Exception {
-        final File documentsFile = new File(
-                Environment.getExternalStoragePublicDirectory("TestDir"),
-                "uriFile.bin");
+        final File documentsFile =
+                new File(Environment.getExternalStoragePublicDirectory("TestDir"), "uriFile.bin");
         deleteFromShell(documentsFile);
 
         final Request badRequest = new Request(getGoodUrl());
         badRequest.setDestinationUri(Uri.fromFile(documentsFile));
         try {
             mDownloadManager.enqueue(badRequest);
-            fail(documentsFile + " is not valid for setDestinationUri()");
+            assertWithMessage(documentsFile + " is not valid for setDestinationUri()").fail();
         } catch (Exception e) {
             // Expected
         }
 
-        final Uri badUri = Uri.parse("file:///sdcard/Android/data/"
-                + mContext.getPackageName() + "/../uriFile.bin");
+        final Uri badUri =
+                Uri.parse(
+                        "file:///sdcard/Android/data/"
+                                + mContext.getPackageName()
+                                + "/../uriFile.bin");
         final Request badRequest2 = new Request(getGoodUrl());
         badRequest2.setDestinationUri(badUri);
         try {
             mDownloadManager.enqueue(badRequest2);
-            fail(badUri + " is not valid for setDestinationUri()");
+            assertWithMessage(badUri + " is not valid for setDestinationUri()").fail();
         } catch (Exception e) {
             // Expected
         }
@@ -385,7 +394,7 @@ public class DownloadManagerTest extends DownloadManagerTestBase {
         badRequest3.setDestinationUri(Uri.fromFile(sdcardPath));
         try {
             mDownloadManager.enqueue(badRequest2);
-            fail(sdcardPath + " is not valid for setDestinationUri()");
+            assertWithMessage(sdcardPath + " is not valid for setDestinationUri()").fail();
         } catch (Exception e) {
             // Expected
         }
@@ -394,17 +403,19 @@ public class DownloadManagerTest extends DownloadManagerTestBase {
     @Test
     public void testSetDestinationUri() throws Exception {
         final File[] destinationFiles = {
-                new File(Environment.getExternalStoragePublicDirectory(
-                        Environment.DIRECTORY_DOWNLOADS), System.nanoTime() + "_uriFile.bin"),
-                new File(Environment.getExternalStoragePublicDirectory(
-                        Environment.DIRECTORY_DOWNLOADS), System.nanoTime() + "_file.jpg"),
+            new File(
+                    Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
+                    System.nanoTime() + "_uriFile.bin"),
+            new File(
+                    Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
+                    System.nanoTime() + "_file.jpg"),
         };
 
         for (File downloadsFile : destinationFiles) {
             final DownloadCompleteReceiver receiver = new DownloadCompleteReceiver();
             try {
-                IntentFilter intentFilter = new IntentFilter(
-                        DownloadManager.ACTION_DOWNLOAD_COMPLETE);
+                IntentFilter intentFilter =
+                        new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE);
                 mContext.registerReceiver(receiver, intentFilter, Context.RECEIVER_EXPORTED);
 
                 DownloadManager.Request request = new DownloadManager.Request(getGoodUrl());
@@ -412,7 +423,7 @@ public class DownloadManagerTest extends DownloadManagerTestBase {
                 long id = mDownloadManager.enqueue(request);
 
                 int allDownloads = getTotalNumberDownloads();
-                assertEquals(1, allDownloads);
+                assertThat(allDownloads).isEqualTo(1);
 
                 receiver.waitForDownloadComplete(SHORT_TIMEOUT, id);
                 assertSuccessfulDownload(id, downloadsFile);
@@ -427,12 +438,10 @@ public class DownloadManagerTest extends DownloadManagerTestBase {
     @Test
     public void testSetDestinationInExternalPublicDownloadDir() throws Exception {
         final String[] destinations = {
-                Environment.DIRECTORY_DOWNLOADS,
-                Environment.DIRECTORY_DCIM,
+            Environment.DIRECTORY_DOWNLOADS, Environment.DIRECTORY_DCIM,
         };
         final String[] subPaths = {
-                "testing/" + System.nanoTime() + "_publicFile.bin",
-                System.nanoTime() + "_file.jpg",
+            "testing/" + System.nanoTime() + "_publicFile.bin", System.nanoTime() + "_file.jpg",
         };
 
         for (int i = 0; i < destinations.length; ++i) {
@@ -441,7 +450,8 @@ public class DownloadManagerTest extends DownloadManagerTestBase {
 
             final DownloadCompleteReceiver receiver = new DownloadCompleteReceiver();
             try {
-                IntentFilter intentFilter = new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE);
+                IntentFilter intentFilter =
+                        new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE);
                 mContext.registerReceiver(receiver, intentFilter, Context.RECEIVER_EXPORTED);
 
                 DownloadManager.Request requestPublic = new DownloadManager.Request(getGoodUrl());
@@ -449,11 +459,14 @@ public class DownloadManagerTest extends DownloadManagerTestBase {
                 long id = mDownloadManager.enqueue(requestPublic);
 
                 int allDownloads = getTotalNumberDownloads();
-                assertEquals(1, allDownloads);
+                assertThat(allDownloads).isEqualTo(1);
 
                 receiver.waitForDownloadComplete(SHORT_TIMEOUT, id);
-                assertSuccessfulDownload(id, new File(
-                        Environment.getExternalStoragePublicDirectory(destination), subPath));
+                assertSuccessfulDownload(
+                        id,
+                        new File(
+                                Environment.getExternalStoragePublicDirectory(destination),
+                                subPath));
 
                 assertRemoveDownload(id, 0);
             } finally {
@@ -468,8 +481,10 @@ public class DownloadManagerTest extends DownloadManagerTestBase {
         try {
             badRequest2.setDestinationInExternalPublicDir("TestDir", "uriFile.bin");
             mDownloadManager.enqueue(badRequest2);
-            fail("/sdcard/TestDir/uriFile.bin"
-                    + " is not valid for setDestinationInExternalPublicDir()");
+            assertWithMessage(
+                            "/sdcard/TestDir/uriFile.bin"
+                                    + " is not valid for setDestinationInExternalPublicDir()")
+                    .fail();
         } catch (Exception e) {
             // Expected
         }
@@ -493,7 +508,7 @@ public class DownloadManagerTest extends DownloadManagerTestBase {
     private int getExternalVolumeMediaStoreFilesCount() {
         Uri rootUri = MediaStore.Files.getContentUri(MediaStore.VOLUME_EXTERNAL);
         String[] projection = {MediaStore.MediaColumns._ID};
-        int count = 0;
+        int count;
         try (Cursor cursor = mContext.getContentResolver().query(rootUri, projection, null, null)) {
             count = cursor.getCount();
         }
@@ -507,16 +522,21 @@ public class DownloadManagerTest extends DownloadManagerTestBase {
         // accept cleartext traffic. Otherwise process loading races can lead to inconsistent flags.
         final PackageManager pm = mContext.getPackageManager();
         ProviderInfo downloadInfo = pm.resolveContentProvider("downloads", 0);
-        assertNotNull(downloadInfo);
-        String downloadProcess
-                = canonicalizeProcessName(downloadInfo.processName, downloadInfo.applicationInfo);
+        assertThat(downloadInfo).isNotNull();
+        String downloadProcess =
+                canonicalizeProcessName(downloadInfo.processName, downloadInfo.applicationInfo);
 
         for (PackageInfo pi : mContext.getPackageManager().getInstalledPackages(0)) {
             if (downloadProcess.equals(canonicalizeProcessName(pi.applicationInfo))) {
-                assertTrue("package: " + pi.applicationInfo.packageName
-                        + " must set android:usesCleartextTraffic=true"
-                        ,(pi.applicationInfo.flags & ApplicationInfo.FLAG_USES_CLEARTEXT_TRAFFIC)
-                        != 0);
+                assertWithMessage(
+                                "package: "
+                                        + pi.applicationInfo.packageName
+                                        + " must set android:usesCleartextTraffic=true")
+                        .that(
+                                (pi.applicationInfo.flags
+                                                & ApplicationInfo.FLAG_USES_CLEARTEXT_TRAFFIC)
+                                        != 0)
+                        .isTrue();
             }
         }
     }
@@ -535,12 +555,11 @@ public class DownloadManagerTest extends DownloadManagerTestBase {
             mContext.registerReceiver(receiver, intentFilter, Context.RECEIVER_EXPORTED);
 
             final Request request = new Request(getGoodUrl());
-            request.setDestinationUri(Uri.fromFile(uriLocation))
-                    .setVisibleInDownloadsUi(false);
+            request.setDestinationUri(Uri.fromFile(uriLocation)).setVisibleInDownloadsUi(false);
             long uriId = mDownloadManager.enqueue(request);
 
             int allDownloads = getTotalNumberDownloads();
-            assertEquals(1, allDownloads);
+            assertThat(allDownloads).isEqualTo(1);
 
             receiver.waitForDownloadComplete(SHORT_TIMEOUT, uriId);
 
@@ -552,7 +571,7 @@ public class DownloadManagerTest extends DownloadManagerTestBase {
         }
     }
 
-    //TODO(b/130797842): Remove FlakyTest annotation after that bug is fixed.
+    // TODO(b/130797842): Remove FlakyTest annotation after that bug is fixed.
     @FlakyTest
     @Test
     public void testAddCompletedDownload() throws Exception {
@@ -561,41 +580,59 @@ public class DownloadManagerTest extends DownloadManagerTestBase {
 
         writeToFile(file, fileContents);
 
-        final long id = mDownloadManager.addCompletedDownload(file.getName(), "Test desc", true,
-                "text/plain", file.getPath(), fileContents.getBytes().length, true);
+        final long id =
+                mDownloadManager.addCompletedDownload(
+                        file.getName(),
+                        TEST_DESC,
+                        IS_MEDIA_SCANNER_SCANNABLE,
+                        CONTENT_TYPE,
+                        file.getPath(),
+                        fileContents.getBytes().length,
+                        SHOW_NOTIFICATION);
         final String actualContents = readFromFile(mDownloadManager.openDownloadedFile(id));
-        assertEquals(fileContents, actualContents);
+        assertThat(actualContents).isEqualTo(fileContents);
 
         final Uri downloadUri = mDownloadManager.getUriForDownloadedFile(id);
-        mContext.grantUriPermission("com.android.shell", downloadUri,
-                Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        mContext.grantUriPermission(
+                ANDROID_SHELL, downloadUri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
         final String rawFilePath = getRawFilePath(downloadUri);
         final String rawFileContents = readFromRawFile(rawFilePath);
-        assertEquals(fileContents, rawFileContents);
+        assertThat(rawFileContents).isEqualTo(fileContents);
         assertRemoveDownload(id, 0);
     }
 
     @Test
     public void testAddCompletedDownload_downloadDir() throws Exception {
-        final String path = createFile(Environment.getExternalStoragePublicDirectory(
-                        Environment.DIRECTORY_DOWNLOADS), "file1.txt").getPath();
+        final String path =
+                createFile(
+                                Environment.getExternalStoragePublicDirectory(
+                                        Environment.DIRECTORY_DOWNLOADS),
+                                "file1.txt")
+                        .getPath();
 
         final String fileContents = "Test content:" + path + "_" + System.nanoTime();
 
         final File file = new File(path);
         writeToFile(new File(path), fileContents);
 
-        final long id = mDownloadManager.addCompletedDownload(file.getName(), "Test desc", true,
-                "text/plain", path, fileContents.getBytes().length, true);
+        final long id =
+                mDownloadManager.addCompletedDownload(
+                        file.getName(),
+                        TEST_DESC,
+                        IS_MEDIA_SCANNER_SCANNABLE,
+                        CONTENT_TYPE,
+                        path,
+                        fileContents.getBytes().length,
+                        SHOW_NOTIFICATION);
         final String actualContents = readFromFile(mDownloadManager.openDownloadedFile(id));
-        assertEquals(fileContents, actualContents);
+        assertThat(actualContents).isEqualTo(fileContents);
 
         final Uri downloadUri = mDownloadManager.getUriForDownloadedFile(id);
-        mContext.grantUriPermission("com.android.shell", downloadUri,
-                Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        mContext.grantUriPermission(
+                ANDROID_SHELL, downloadUri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
         final String rawFilePath = getRawFilePath(downloadUri);
         final String rawFileContents = readFromRawFile(rawFilePath);
-        assertEquals(fileContents, rawFileContents);
+        assertThat(rawFileContents).isEqualTo(fileContents);
         assertRemoveDownload(id, 0);
     }
 
@@ -607,22 +644,38 @@ public class DownloadManagerTest extends DownloadManagerTestBase {
         File file = createFile(mContext.getFilesDir(), "colors.txt");
         writeToFile(file, fileContents);
         try {
-            mDownloadManager.addCompletedDownload("Test title", "Test desc", true,
-                    "text/plain", file.getPath(), fileContents.getBytes().length, true);
-            fail("addCompletedDownload should have failed for adding internal path");
+            mDownloadManager.addCompletedDownload(
+                    TEST_TITLE,
+                    TEST_DESC,
+                    IS_MEDIA_SCANNER_SCANNABLE,
+                    CONTENT_TYPE,
+                    file.getPath(),
+                    fileContents.getBytes().length,
+                    SHOW_NOTIFICATION);
+            assertWithMessage("addCompletedDownload should have failed for adding internal path")
+                    .fail();
         } catch (Exception e) {
             // expected
         }
 
         // Try adding path in top-level documents dir
-        file = new File(
-                Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS),
-                "colors.txt");
+        file =
+                new File(
+                        Environment.getExternalStoragePublicDirectory(
+                                Environment.DIRECTORY_DOCUMENTS),
+                        "colors.txt");
         writeToFileWithDelegator(file, fileContents);
         try {
-            mDownloadManager.addCompletedDownload("Test title", "Test desc", true,
-                    "text/plain", file.getPath(), fileContents.getBytes().length, true);
-            fail("addCompletedDownload should have failed for top-level download dir");
+            mDownloadManager.addCompletedDownload(
+                    TEST_TITLE,
+                    TEST_DESC,
+                    IS_MEDIA_SCANNER_SCANNABLE,
+                    CONTENT_TYPE,
+                    file.getPath(),
+                    fileContents.getBytes().length,
+                    SHOW_NOTIFICATION);
+            assertWithMessage("addCompletedDownload should have failed for top-level download dir")
+                    .fail();
         } catch (SecurityException e) {
             // expected
         }
@@ -631,39 +684,65 @@ public class DownloadManagerTest extends DownloadManagerTestBase {
         final String path = "/sdcard/test-download.txt";
         writeToFileWithDelegator(new File(path), fileContents);
         try {
-            mDownloadManager.addCompletedDownload("Test title", "Test desc", true,
-                    "text/plain", path, fileContents.getBytes().length, true);
-            fail("addCompletedDownload should have failed for top-level sdcard path");
+            mDownloadManager.addCompletedDownload(
+                    TEST_TITLE,
+                    TEST_DESC,
+                    IS_MEDIA_SCANNER_SCANNABLE,
+                    CONTENT_TYPE,
+                    path,
+                    fileContents.getBytes().length,
+                    SHOW_NOTIFICATION);
+            assertWithMessage("addCompletedDownload should have failed for top-level sdcard path")
+                    .fail();
         } catch (SecurityException e) {
             // expected
         }
 
-
-        final String path2 = "/sdcard/Android/data/" + mContext.getPackageName()
-                + "/../uriFile.bin";
+        final String path2 =
+                "/sdcard/Android/data/" + mContext.getPackageName() + "/../uriFile.bin";
         try {
-            mDownloadManager.addCompletedDownload("Test title", "Test desc", true,
-                    "text/plain", path2, fileContents.getBytes().length, true);
-            fail(path2 + " is not valid for addCompleteDownload()");
+            mDownloadManager.addCompletedDownload(
+                    TEST_TITLE,
+                    TEST_DESC,
+                    IS_MEDIA_SCANNER_SCANNABLE,
+                    CONTENT_TYPE,
+                    path2,
+                    fileContents.getBytes().length,
+                    SHOW_NOTIFICATION);
+            assertWithMessage(path2 + " is not valid for addCompleteDownload()").fail();
         } catch (Exception e) {
             // Expected
         }
 
         // Try adding non-existent path
         try {
-            mDownloadManager.addCompletedDownload("Test title", "Test desc", true, "text/plain",
+            mDownloadManager.addCompletedDownload(
+                    TEST_TITLE,
+                    TEST_DESC,
+                    IS_MEDIA_SCANNER_SCANNABLE,
+                    CONTENT_TYPE,
                     new File(mContext.getExternalFilesDir(null), "test_file.mp4").getPath(),
-                    fileContents.getBytes().length, true);
-            fail("addCompletedDownload should have failed for adding non-existent path");
+                    fileContents.getBytes().length,
+                    SHOW_NOTIFICATION);
+            assertWithMessage(
+                            "addCompletedDownload should have failed for adding non-existent path")
+                    .fail();
         } catch (Exception e) {
             // expected
         }
 
         // Try adding random string
         try {
-            mDownloadManager.addCompletedDownload("Test title", "Test desc", true,
-                    "text/plain", "RANDOM", fileContents.getBytes().length, true);
-            fail("addCompletedDownload should have failed for adding random string");
+            mDownloadManager.addCompletedDownload(
+                    TEST_TITLE,
+                    TEST_DESC,
+                    IS_MEDIA_SCANNER_SCANNABLE,
+                    CONTENT_TYPE,
+                    "RANDOM",
+                    fileContents.getBytes().length,
+                    SHOW_NOTIFICATION);
+            assertWithMessage("addCompletedDownload should have failed for adding random string")
+                    .fail();
         } catch (Exception e) {
             // expected
         }
@@ -672,17 +751,16 @@ public class DownloadManagerTest extends DownloadManagerTestBase {
     @Test
     public void testDownload_mediaScanned() throws Exception {
         final String[] destinations = {
-                Environment.DIRECTORY_MUSIC,
-                Environment.DIRECTORY_DOWNLOADS,
+            Environment.DIRECTORY_MUSIC, Environment.DIRECTORY_DOWNLOADS,
         };
         final String[] subPaths = {
-                "testmp3.mp3",
-                "testvideo.3gp",
+            "testmp3.mp3", "testvideo.3gp",
         };
-        final Pair<String, String>[] expectedMediaAttributes = new Pair[] {
-                Pair.create(MediaStore.Audio.AudioColumns.IS_MUSIC, "1"),
-                Pair.create(MediaStore.Video.VideoColumns.DURATION, "11047"),
-        };
+        final Pair<String, String>[] expectedMediaAttributes =
+                new Pair[] {
+                    Pair.create(MediaStore.Audio.AudioColumns.IS_MUSIC, "1"),
+                    Pair.create(MediaStore.Video.VideoColumns.DURATION, "11047"),
+                };
 
         for (int i = 0; i < destinations.length; ++i) {
             final String destination = destinations[i];
@@ -690,36 +768,44 @@ public class DownloadManagerTest extends DownloadManagerTestBase {
 
             final DownloadCompleteReceiver receiver = new DownloadCompleteReceiver();
             try {
-                IntentFilter intentFilter = new IntentFilter(
-                        DownloadManager.ACTION_DOWNLOAD_COMPLETE);
+                IntentFilter intentFilter =
+                        new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE);
                 mContext.registerReceiver(receiver, intentFilter, Context.RECEIVER_EXPORTED);
 
-                DownloadManager.Request requestPublic = new DownloadManager.Request(
-                        getAssetUrl(subPath));
+                DownloadManager.Request requestPublic =
+                        new DownloadManager.Request(getAssetUrl(subPath));
                 requestPublic.setDestinationInExternalPublicDir(destination, subPath);
                 long id = mDownloadManager.enqueue(requestPublic);
 
                 int allDownloads = getTotalNumberDownloads();
-                assertEquals(1, allDownloads);
+                assertThat(allDownloads).isEqualTo(1);
 
                 int countBeforeDownload = getExternalVolumeMediaStoreFilesCount();
                 receiver.waitForDownloadComplete(SHORT_TIMEOUT, id);
-                assertSuccessfulDownload(id, new File(
-                        Environment.getExternalStoragePublicDirectory(destination), subPath));
+                assertSuccessfulDownload(
+                        id,
+                        new File(
+                                Environment.getExternalStoragePublicDirectory(destination),
+                                subPath));
 
                 int countAfterDownload = getExternalVolumeMediaStoreFilesCount();
                 // Asserts that only one row entry is added for 1 download
-                assertEquals((countBeforeDownload + 1), countAfterDownload);
+                assertThat(countAfterDownload).isEqualTo((countBeforeDownload + 1));
                 final Uri downloadUri = mDownloadManager.getUriForDownloadedFile(id);
-                mContext.grantUriPermission("com.android.shell", downloadUri,
-                        Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                mContext.grantUriPermission(
+                        ANDROID_SHELL, downloadUri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
                 final Uri mediaStoreUri = getMediaStoreUri(downloadUri);
-                assertEquals(expectedMediaAttributes[i].second,
-                        getMediaStoreColumnValue(mediaStoreUri, expectedMediaAttributes[i].first));
-                final int expectedSize = getTotalBytes(
-                        mContext.getContentResolver().openInputStream(downloadUri));
-                assertEquals(expectedSize, Integer.parseInt(getMediaStoreColumnValue(
-                        mediaStoreUri, MediaStore.MediaColumns.SIZE)));
+                assertThat(
+                                getMediaStoreColumnValue(
+                                        mediaStoreUri, expectedMediaAttributes[i].first))
+                        .isEqualTo(expectedMediaAttributes[i].second);
+                final int expectedSize =
+                        getTotalBytes(mContext.getContentResolver().openInputStream(downloadUri));
+                assertThat(
+                                Integer.parseInt(
+                                        getMediaStoreColumnValue(
+                                                mediaStoreUri, MediaStore.MediaColumns.SIZE)))
+                        .isEqualTo(expectedSize);
 
                 assertRemoveDownload(id, 0);
             } finally {
@@ -729,17 +815,22 @@ public class DownloadManagerTest extends DownloadManagerTestBase {
     }
 
     // TODO(b/374851711): remove the annotation once DocumentsUI supports visible background users.
-    @RequireRunNotOnVisibleBackgroundNonProfileUser(reason = "This test uses DocumentsUI package to"
-            + " check downloaded file. On Automotive OS, the DocumentsUI does not support visible"
-            + " background users at the moment, so skipping these tests for"
-            + " secondary_user_on_secondary_display.")
+    @RequireRunNotOnVisibleBackgroundNonProfileUser(
+            reason =
+                    "This test uses DocumentsUI package to check downloaded file. On Automotive OS,"
+                            + " the DocumentsUI does not support visible background users at the"
+                            + " moment, so skipping these tests for"
+                            + " secondary_user_on_secondary_display.")
     @Test
     public void testDownload_onMediaStoreDownloadsDeleted() throws Exception {
         assumeDocumentsUiAvailableOnFormFactor();
 
         // prepare file
-        File file = new File(Environment.getExternalStoragePublicDirectory(
-                Environment.DIRECTORY_DOWNLOADS), "cts" + System.nanoTime() + ".mp3");
+        File file =
+                new File(
+                        Environment.getExternalStoragePublicDirectory(
+                                Environment.DIRECTORY_DOWNLOADS),
+                        "cts" + System.nanoTime() + ".mp3");
         try {
             stageFile("testmp3.mp3", file);
             Uri mediaStoreUri = MediaStore.scanFile(mContext.getContentResolver(), file);
@@ -752,8 +843,9 @@ public class DownloadManagerTest extends DownloadManagerTestBase {
             intent.setAction(Intent.ACTION_OPEN_DOCUMENT);
             intent.addCategory(Intent.CATEGORY_OPENABLE);
             intent.setType("*/*");
-            Uri rootUri = DocumentsContract.buildRootUri(DOWNLOAD_STORAGE_PROVIDER_AUTHORITY,
-                    "downloads");
+            Uri rootUri =
+                    DocumentsContract.buildRootUri(
+                            DOWNLOAD_STORAGE_PROVIDER_AUTHORITY, "downloads");
             intent.putExtra(DocumentsContract.EXTRA_INITIAL_URI, rootUri);
             activity.startActivityForResult(intent, REQUEST_CODE);
             mDevice.waitForIdle();
@@ -762,15 +854,17 @@ public class DownloadManagerTest extends DownloadManagerTestBase {
             final GetResultActivity.Result result = activity.getResult();
             final Uri uri = result.data.getData();
 
-            assertTrue(PERMISSION_GRANTED == checkUriPermission(uri));
+            assertThat(checkUriPermission(uri)).isEqualTo(PERMISSION_GRANTED);
 
             // onMediaStoreDownloadsDeleted API is called on MediaProvider#delete()
             // for download files. This API revokes grants on DownloadStorageProvider granted Uris
-            LongSparseArray<String> lpa = new LongSparseArray<String>();
-            final long mediaStoreId = Long.parseLong(getMediaStoreColumnValue(mediaStoreUri,
-                    MediaStore.Files.FileColumns._ID));
-            final String mimeType = getMediaStoreColumnValue(mediaStoreUri,
-                    MediaStore.Files.FileColumns.MIME_TYPE);
+            LongSparseArray<String> lpa = new LongSparseArray<>();
+            final long mediaStoreId =
+                    Long.parseLong(
+                            getMediaStoreColumnValue(
+                                    mediaStoreUri, MediaStore.Files.FileColumns._ID));
+            final String mimeType =
+                    getMediaStoreColumnValue(mediaStoreUri, MediaStore.Files.FileColumns.MIME_TYPE);
             lpa.put(mediaStoreId, mimeType);
             // This API is permission protected
             mInstrumentation.getUiAutomation().adoptShellPermissionIdentity(WRITE_MEDIA_STORAGE);
@@ -780,7 +874,7 @@ public class DownloadManagerTest extends DownloadManagerTestBase {
                 mInstrumentation.getUiAutomation().dropShellPermissionIdentity();
             }
 
-            assertTrue(PERMISSION_DENIED == checkUriPermission(uri));
+            assertThat(checkUriPermission(uri)).isEqualTo(PERMISSION_DENIED);
         } finally {
             file.delete();
         }
@@ -796,36 +890,43 @@ public class DownloadManagerTest extends DownloadManagerTestBase {
 
         final Intent intent2 = new Intent(mContext, GetResultActivity.class);
         intent2.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        GetResultActivity activity = (GetResultActivity) mInstrumentation.startActivitySync(
-                intent2);
+        GetResultActivity activity =
+                (GetResultActivity) mInstrumentation.startActivitySync(intent2);
         mInstrumentation.waitForIdleSync();
         activity.clearResult();
         return activity;
     }
 
     private int checkUriPermission(Uri uri) {
-        return mContext.checkUriPermission(uri, android.os.Process.myPid(),
-                android.os.Process.myUid(), Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        return mContext.checkUriPermission(
+                uri,
+                android.os.Process.myPid(),
+                android.os.Process.myUid(),
+                Intent.FLAG_GRANT_READ_URI_PERMISSION);
     }
 
     private UiObject findDocument(String label) throws UiObjectNotFoundException {
-        final UiSelector docList = new UiSelector().resourceId(getDocumentsUiPackageId()
-                + ":id/dir_list");
+        final UiSelector docList =
+                new UiSelector().resourceId(getDocumentsUiPackageId() + ":id/dir_list");
 
         // Wait for the first list item to appear
-        assertTrue("First list item",
-                new UiObject(docList.childSelector(new UiSelector()))
-                        .waitForExists(LONG_TIMEOUT));
+        assertWithMessage("First list item")
+                .that(
+                        new UiObject(docList.childSelector(new UiSelector()))
+                                .waitForExists(LONG_TIMEOUT))
+                .isTrue();
 
         try {
-            //Enforce to set the list mode
-            //Because UiScrollable can't reach the real bottom (when WEB_LINKABLE_FILE item)
+            // Enforce to set the list mode
+            // Because UiScrollable can't reach the real bottom (when WEB_LINKABLE_FILE item)
             // in grid mode when screen landscape mode
-            new UiObject(new UiSelector().resourceId(getDocumentsUiPackageId()
-                    + ":id/sub_menu_list")).click();
+            new UiObject(
+                            new UiSelector()
+                                    .resourceId(getDocumentsUiPackageId() + ":id/sub_menu_list"))
+                    .click();
             mDevice.waitForIdle();
         } catch (UiObjectNotFoundException e) {
-            //do nothing, already be in list mode.
+            // do nothing, already be in list mode.
         }
 
         // Repeat swipe gesture to find our item
@@ -835,15 +936,17 @@ public class DownloadManagerTest extends DownloadManagerTestBase {
         int stepLimit = 10;
         while (stepLimit-- > 0) {
             if (targetObject.exists()) {
-                boolean targetObjectFullyVisible = !saveButton.exists()
-                        || targetObject.getVisibleBounds().bottom
-                        <= saveButton.getVisibleBounds().top;
+                boolean targetObjectFullyVisible =
+                        !saveButton.exists()
+                                || targetObject.getVisibleBounds().bottom
+                                        <= saveButton.getVisibleBounds().top;
                 if (targetObjectFullyVisible) {
                     break;
                 }
             }
 
-            mDevice.swipe(/* startX= */ mDevice.getDisplayWidth() / 2,
+            mDevice.swipe(
+                    /* startX= */ mDevice.getDisplayWidth() / 2,
                     /* startY= */ mDevice.getDisplayHeight() / 2,
                     /* endX= */ mDevice.getDisplayWidth() / 2,
                     /* endY= */ 0,
@@ -852,10 +955,11 @@ public class DownloadManagerTest extends DownloadManagerTestBase {
         return targetObject;
     }
 
-    private UiObject findSaveButton() throws UiObjectNotFoundException {
-        return new UiObject(new UiSelector().resourceId(
-                getDocumentsUiPackageId() + ":id/container_save")
-                .childSelector(new UiSelector().resourceId("android:id/button1")));
+    private UiObject findSaveButton() {
+        return new UiObject(
+                new UiSelector()
+                        .resourceId(getDocumentsUiPackageId() + ":id/container_save")
+                        .childSelector(new UiSelector().resourceId("android:id/button1")));
     }
 
     private String getDocumentsUiPackageId() {
@@ -871,7 +975,7 @@ public class DownloadManagerTest extends DownloadManagerTestBase {
             throw new FileNotFoundException("Failed to create parent for " + file);
         }
         try (InputStream source = mContext.getAssets().open(resId);
-             OutputStream target = new FileOutputStream(file)) {
+                OutputStream target = new FileOutputStream(file)) {
             FileUtils.copy(source, target);
         }
         return file;

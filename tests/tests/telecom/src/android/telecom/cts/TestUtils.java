@@ -15,6 +15,8 @@
  */
 package android.telecom.cts;
 
+import static org.junit.Assert.assertTrue;
+
 import android.app.Instrumentation;
 import android.app.role.RoleManager;
 import android.bluetooth.BluetoothDevice;
@@ -23,6 +25,7 @@ import android.content.ContentProviderOperation;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.database.Cursor;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Build;
@@ -41,6 +44,7 @@ import android.telecom.PhoneAccountHandle;
 import android.telecom.TelecomManager;
 import android.telecom.VideoProfile;
 import android.telephony.SubscriptionManager;
+import android.util.Log;
 
 import androidx.test.InstrumentationRegistry;
 
@@ -53,9 +57,11 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -817,11 +823,21 @@ public class TestUtils {
         TestCase.assertTrue(connectionService.waitForUpdate(
                 CtsSelfManagedConnectionService.CONNECTION_CREATED_LOCK));
 
-        Optional<SelfManagedConnection> connectionOptional = connectionService.getConnections()
-                .stream()
-                .filter(connection -> address.equals(connection.getAddress()))
-                .findFirst();
-        assert(connectionOptional.isPresent());
+        Optional<SelfManagedConnection> connectionOptional =
+                connectionService.getConnections().stream()
+                        .filter(connection -> address.equals(connection.getAddress()))
+                        .findFirst();
+        assert (connectionOptional.isPresent());
+
+        // Just because we returned the connection in the ConnectionService from either
+        // onCreateOutgoingConnection or onCreateIncomingconnection, it does not mean that the
+        // ConnectionService has completed informing Telecom of the call.  We will wait on
+        // the onCreateConnectionComplete callback from Telecom so that we can be 100% sure that
+        // the connection is ready to go.  Failure to do so can cause flakes due to Connection
+        // method calls not making it back to Telecom (since the connection is not added).
+        assertTrue(
+                "Expected create connection complete",
+                connectionOptional.get().waitOnCreateConnectionComplete());
         return connectionOptional.get();
     }
 
@@ -991,6 +1007,65 @@ public class TestUtils {
         return contentResolver.applyBatch(ContactsContract.AUTHORITY, ops)[0].uri;
     }
 
+    /**
+     * Given a phone number, determines if any contacts have this number already.
+     *
+     * @param contentResolver the content resolver
+     * @param phoneNumber the number to check
+     * @return {@code true} if contact exists for number.
+     */
+    public static boolean doesContactExistForNumber(
+            ContentResolver contentResolver, String phoneNumber) {
+        Set<String> contactLookupKeys = new HashSet<>();
+
+        // Find Contact Lookup Keys associated with the phone number
+        // A contact can have multiple phone numbers, and a phone number might be (incorrectly)
+        // associated with multiple contacts. We want the LOOKUP_KEY of the *contact* entity.
+        Uri phoneContentUri = ContactsContract.CommonDataKinds.Phone.CONTENT_URI;
+        String[] projection = new String[] {ContactsContract.CommonDataKinds.Phone.LOOKUP_KEY};
+        String selection = ContactsContract.CommonDataKinds.Phone.NUMBER + " = ?";
+        String[] selectionArgs = new String[] {phoneNumber};
+
+        Cursor cursor = null;
+        try {
+            cursor =
+                    contentResolver.query(
+                            phoneContentUri, projection, selection, selectionArgs, null);
+            if (cursor != null) {
+                int lookupKeyColumnIndex =
+                        cursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.LOOKUP_KEY);
+                if (lookupKeyColumnIndex == -1) {
+                    Log.e(TAG, "LOOKUP_KEY column not found. This is unexpected.");
+                    return false;
+                }
+                while (cursor.moveToNext()) {
+                    String lookupKey = cursor.getString(lookupKeyColumnIndex);
+                    if (lookupKey != null) {
+                        contactLookupKeys.add(lookupKey);
+                    }
+                }
+            } else {
+                Log.w(TAG, "Query returned null cursor for phone number: " + phoneNumber);
+            }
+        } finally {
+            if (cursor != null) {
+                cursor.close();
+            }
+        }
+
+        if (contactLookupKeys.size() > 0) {
+            Log.w(
+                    TAG,
+                    "doesContactExistForNumber: cross test isolation issue; the test number "
+                            + phoneNumber
+                            + " exists for "
+                            + contactLookupKeys.size()
+                            + " entries.");
+            return true;
+        }
+        return false;
+    }
+
     public static int deleteContact(ContentResolver contentResolver, Uri deleteUri) {
         return contentResolver.delete(deleteUri, null, null);
     }
@@ -1013,6 +1088,33 @@ public class TestUtils {
                     Process.myUserHandle().getIdentifier()));
         }
         return accounts;
+    }
+
+    /**
+     * Generates a random 10-digit phone number string in country +1 which does not already exist in
+     * the contacts database for any contact. This is to avoid potential existing test data in the
+     * contacts database which could influence the test results.
+     *
+     * @return A string representing a random phone number starting with +1.
+     */
+    public static Uri generateRandomPhoneNumberNotInContacts(ContentResolver resolver) {
+        Random random = new Random();
+        String generatedNumber;
+        do {
+            StringBuilder phoneNumber = new StringBuilder();
+            phoneNumber.append("+1");
+            // Generate the first digit (1-9)
+            // This ensures the number doesn't start with 0.
+            phoneNumber.append(random.nextInt(9) + 1);
+
+            // Generate the next 9 digits (0-9)
+            for (int i = 0; i < 9; i++) {
+                phoneNumber.append(random.nextInt(10));
+            }
+            generatedNumber = phoneNumber.toString();
+        } while (doesContactExistForNumber(resolver, generatedNumber.toString()));
+
+        return Uri.fromParts(PhoneAccount.SCHEME_TEL, generatedNumber, null);
     }
 
     /**

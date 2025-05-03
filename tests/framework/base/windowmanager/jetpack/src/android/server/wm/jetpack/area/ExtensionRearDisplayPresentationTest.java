@@ -21,14 +21,13 @@ import static android.server.wm.UiDeviceUtils.pressHomeButton;
 import static android.server.wm.UiDeviceUtils.pressSleepButton;
 import static android.server.wm.UiDeviceUtils.pressUnlockButton;
 import static android.server.wm.UiDeviceUtils.pressWakeupButton;
+import static android.server.wm.jetpack.utils.WindowAreaComponentUtils.waitAndAssert;
 import static android.view.Display.DEFAULT_DISPLAY;
 
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 import static androidx.window.extensions.area.WindowAreaComponent.SESSION_STATE_ACTIVE;
 import static androidx.window.extensions.area.WindowAreaComponent.SESSION_STATE_CONTENT_VISIBLE;
 import static androidx.window.extensions.area.WindowAreaComponent.SESSION_STATE_INACTIVE;
-
-import static com.android.compatibility.common.util.PollingCheck.waitFor;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -70,7 +69,6 @@ import androidx.window.extensions.area.WindowAreaComponent.WindowAreaStatus;
 import androidx.window.extensions.core.util.function.Consumer;
 
 import com.android.compatibility.common.util.ApiTest;
-import com.android.compatibility.common.util.PollingCheck;
 
 import org.junit.After;
 import org.junit.Before;
@@ -97,8 +95,6 @@ import java.util.Set;
 @RunWith(AndroidJUnit4.class)
 public class ExtensionRearDisplayPresentationTest extends WindowManagerJetpackTestBase implements
         DeviceStateManager.DeviceStateCallback {
-
-    private static final int TIMEOUT = 3000;
     private static final int INVALID_DEVICE_STATE = -1;
 
     private static final List<@WindowAreaComponent.WindowAreaSessionState Integer>
@@ -626,9 +622,5 @@ public class ExtensionRearDisplayPresentationTest extends WindowManagerJetpackTe
             pressWakeupButton();
             pressUnlockButton();
         }
-    }
-
-    private void waitAndAssert(PollingCheck.PollingCheckCondition condition) {
-        waitFor(TIMEOUT, condition);
     }
 }

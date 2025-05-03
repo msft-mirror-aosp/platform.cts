@@ -36,7 +36,7 @@ android_test {
         "platform-test-annotations",
         "platformprotosnano",
         "permission-test-util-lib",
-        "CtsAppTestStubsShared",
+        "cts_app_test_shared_lib",
         "android.content.pm.flags-aconfig-java",
         "android.multiuser.flags-aconfig-java",
         "am_flags_lib",
@@ -103,42 +103,6 @@ android_ravenwood_test {
 }
 
 android_test {
-    name: "CtsDownloadManagerApi28",
-    defaults: ["cts_defaults"],
-    libs: [
-        "android.test.runner.stubs.test",
-        "org.apache.http.legacy.stubs.test",
-        "android.test.base.stubs.test",
-    ],
-    static_libs: [
-        "compatibility-device-util-axt",
-        "ctstestrunner-axt",
-        "ctstestserver",
-        "mockito-target-minus-junit4",
-        "androidx.test.rules",
-        "platform-test-annotations",
-    ],
-    srcs: [
-        "DownloadManagerApi28Test/src/**/*.java",
-        "src/android/app/cts/DownloadManagerTestBase.java",
-    ],
-    resource_dirs: ["app/res"],
-    asset_dirs: ["app/assets"],
-    // Tag this module as a cts test artifact
-    test_suites: [
-        "cts",
-        "general-tests",
-    ],
-    sdk_version: "test_current",
-    min_sdk_version: "21",
-    manifest: "DownloadManagerApi28Test/AndroidManifest.xml",
-    test_config: "DownloadManagerApi28Test/AndroidTest.xml",
-    lint: {
-        baseline_filename: "lint-baseline.xml",
-    },
-}
-
-android_test {
     name: "CtsDownloadManagerInstaller",
     defaults: ["cts_defaults"],
     libs: [
@@ -150,13 +114,13 @@ android_test {
         "compatibility-device-util-axt",
         "ctstestrunner-axt",
         "ctstestserver",
+        "download_manager_lib",
         "mockito-target-minus-junit4",
         "androidx.test.rules",
         "platform-test-annotations",
     ],
     srcs: [
         "DownloadManagerInstallerTest/src/**/*.java",
-        "src/android/app/cts/DownloadManagerTestBase.java",
     ],
     resource_dirs: ["app/res"],
     asset_dirs: ["app/assets"],
@@ -166,7 +130,7 @@ android_test {
         "general-tests",
     ],
     sdk_version: "test_current",
-    min_sdk_version: "21",
+    min_sdk_version: "29",
     manifest: "DownloadManagerInstallerTest/AndroidManifest.xml",
     test_config: "DownloadManagerInstallerTest/AndroidTest.xml",
     lint: {
@@ -182,7 +146,6 @@ test_module_config {
         "android.app.cts.ActivityManagerProcessStateTest",
         "android.app.cts.ServiceTest",
         "android.app.cts.ActivityManagerTest",
-        "android.app.cts.ActivityManagerFgsBgStartTest",
         "android.app.cts.TaskDescriptionTest",
     ],
     include_annotations: ["android.platform.test.annotations.Presubmit"],
@@ -197,7 +160,6 @@ test_module_config {
         "android.app.cts.ActivityManagerProcessStateTest",
         "android.app.cts.ServiceTest",
         "android.app.cts.ActivityManagerTest",
-        "android.app.cts.ActivityManagerFgsBgStartTest",
         "android.app.cts.TaskDescriptionTest",
     ],
 }
@@ -221,13 +183,6 @@ test_module_config {
     base: "CtsAppTestCases",
     test_suites: ["general-tests"],
     include_filters: ["android.app.cts.ToolbarActionBarTest"],
-}
-
-test_module_config {
-    name: "CtsAppTestCases_cts_downloadmanagertest",
-    base: "CtsAppTestCases",
-    test_suites: ["general-tests"],
-    include_filters: ["android.app.cts.DownloadManagerTest"],
 }
 
 test_module_config {

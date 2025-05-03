@@ -1524,84 +1524,150 @@ public class NotificationTest {
     }
 
     @Test
-    @Ignore("b/409811239")
-    @RequiresFlagsEnabled(Flags.FLAG_API_RICH_ONGOING)
-    public void testHasPromotableCharacteristics() {
+    @RequiresFlagsEnabled(Flags.FLAG_OPT_IN_RICH_ONGOING)
+    public void testRequestPromotedOngoing_default() {
+        Notification n = new Notification.Builder(mContext, "test")
+                .setSmallIcon(android.R.drawable.sym_def_app_icon)
+                .build();
+        assertThat(n.hasRequestedPromotedOngoing()).isFalse();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_OPT_IN_RICH_ONGOING)
+    public void testRequestPromotedOngoing_true() {
+        Notification n = new Notification.Builder(mContext, "test")
+                .setSmallIcon(android.R.drawable.sym_def_app_icon)
+                .setRequestPromotedOngoing(true)
+                .build();
+        assertThat(n.hasRequestedPromotedOngoing()).isTrue();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_OPT_IN_RICH_ONGOING)
+    public void testRequestPromotedOngoing_false() {
+        Notification n = new Notification.Builder(mContext, "test")
+                .setSmallIcon(android.R.drawable.sym_def_app_icon)
+                .setRequestPromotedOngoing(false)
+                .build();
+        assertThat(n.hasRequestedPromotedOngoing()).isFalse();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_OPT_IN_RICH_ONGOING)
+    public void testHasPromotableCharacteristics_optIn_bigText_bigTitle() {
         Notification n = new Notification.Builder(mContext, "test")
                 .setSmallIcon(android.R.drawable.sym_def_app_icon)
                 .setStyle(new Notification.BigTextStyle().setBigContentTitle("BIG"))
                 .setColor(Color.WHITE)
-                .setColorized(true)
                 .setOngoing(true)
+                .setRequestPromotedOngoing(true)
                 .build();
         assertThat(n.hasPromotableCharacteristics()).isTrue();
     }
 
     @Test
-    @Ignore("b/409811239")
-    @RequiresFlagsEnabled(Flags.FLAG_API_RICH_ONGOING)
-    public void testHasPromotableCharacteristics_notOngoing() {
+    @RequiresFlagsEnabled(Flags.FLAG_OPT_IN_RICH_ONGOING)
+    public void testHasPromotableCharacteristics_optIn_bigText_normalTitle() {
+        Notification n = new Notification.Builder(mContext, "test")
+                .setSmallIcon(android.R.drawable.sym_def_app_icon)
+                .setStyle(new Notification.BigTextStyle())
+                .setContentTitle("TITLE")
+                .setColor(Color.WHITE)
+                .setOngoing(true)
+                .setRequestPromotedOngoing(true)
+                .build();
+        assertThat(n.hasPromotableCharacteristics()).isTrue();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_OPT_IN_RICH_ONGOING)
+    public void testHasPromotableCharacteristics_optIn_notOngoing() {
         Notification n = new Notification.Builder(mContext, "test")
                 .setSmallIcon(android.R.drawable.sym_def_app_icon)
                 .setStyle(new Notification.BigTextStyle().setBigContentTitle("BIG"))
                 .setColor(Color.WHITE)
-                .setColorized(true)
+                .setRequestPromotedOngoing(true)
                 .build();
         assertThat(n.hasPromotableCharacteristics()).isFalse();
     }
 
     @Test
-    @Ignore("b/409811239")
-    @RequiresFlagsEnabled(Flags.FLAG_API_RICH_ONGOING)
-    public void testHasPromotableCharacteristics_wrongStyle() {
+    @RequiresFlagsEnabled(Flags.FLAG_OPT_IN_RICH_ONGOING)
+    public void testHasPromotableCharacteristics_optIn_noRequestPromoted() {
+        Notification n = new Notification.Builder(mContext, "test")
+                .setSmallIcon(android.R.drawable.sym_def_app_icon)
+                .setStyle(new Notification.BigTextStyle().setBigContentTitle("BIG"))
+                .setColor(Color.WHITE)
+                .setRequestPromotedOngoing(true)
+                .build();
+        assertThat(n.hasPromotableCharacteristics()).isFalse();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_OPT_IN_RICH_ONGOING)
+    public void testHasPromotableCharacteristics_optIn_wrongStyle() {
         Notification n = new Notification.Builder(mContext, "test")
                 .setSmallIcon(android.R.drawable.sym_def_app_icon)
                 .setStyle(new Notification.InboxStyle())
                 .setContentTitle("TITLE")
                 .setColor(Color.WHITE)
-                .setColorized(true)
                 .setOngoing(true)
+                .setRequestPromotedOngoing(true)
                 .build();
         assertThat(n.hasPromotableCharacteristics()).isFalse();
     }
 
     @Test
-    @Ignore("b/409811239")
-    @RequiresFlagsEnabled(Flags.FLAG_API_RICH_ONGOING)
-    public void testHasPromotableCharacteristics_notColorized() {
+    @RequiresFlagsEnabled(Flags.FLAG_OPT_IN_RICH_ONGOING)
+    public void testHasPromotableCharacteristics_optIn_colorized() {
         Notification n = new Notification.Builder(mContext, "test")
                 .setSmallIcon(android.R.drawable.sym_def_app_icon)
                 .setStyle(new Notification.BigTextStyle().setBigContentTitle("BIG"))
                 .setColor(Color.WHITE)
+                .setColorized(true)
                 .setOngoing(true)
+                .setRequestPromotedOngoing(true)
                 .build();
         assertThat(n.hasPromotableCharacteristics()).isFalse();
     }
 
     @Test
-    @Ignore("b/409811239")
-    @RequiresFlagsEnabled(Flags.FLAG_API_RICH_ONGOING)
-    public void testHasPromotableCharacteristics_noTitle() {
+    @RequiresFlagsEnabled(Flags.FLAG_OPT_IN_RICH_ONGOING)
+    public void testHasPromotableCharacteristics_optIn_noTitle() {
         Notification n = new Notification.Builder(mContext, "test")
                 .setSmallIcon(android.R.drawable.sym_def_app_icon)
                 .setStyle(new Notification.BigTextStyle())
                 .setColor(Color.WHITE)
-                .setColorized(true)
                 .setOngoing(true)
+                .setRequestPromotedOngoing(true)
                 .build();
         assertThat(n.hasPromotableCharacteristics()).isFalse();
     }
 
     @Test
-    @Ignore("b/409811239")
-    @RequiresFlagsEnabled(Flags.FLAG_API_RICH_ONGOING)
-    public void testHasPromotableCharacteristics_groupSummary() {
+    @RequiresFlagsEnabled(Flags.FLAG_OPT_IN_RICH_ONGOING)
+    public void testHasPromotableCharacteristics_optIn_noStyle_onlyBigTitle() {
+        Bundle extras = new Bundle();
+        extras.putString(Notification.EXTRA_TITLE_BIG, "BIG");
+        Notification n = new Notification.Builder(mContext, "test")
+                .setSmallIcon(android.R.drawable.sym_def_app_icon)
+                .setColor(Color.WHITE)
+                .setOngoing(true)
+                .setRequestPromotedOngoing(true)
+                .addExtras(extras)
+                .build();
+        assertThat(n.hasPromotableCharacteristics()).isFalse();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_OPT_IN_RICH_ONGOING)
+    public void testHasPromotableCharacteristics_optIn_groupSummary() {
         Notification n = new Notification.Builder(mContext, "test")
                 .setSmallIcon(android.R.drawable.sym_def_app_icon)
                 .setStyle(new Notification.BigTextStyle().setBigContentTitle("BIG"))
                 .setColor(Color.WHITE)
-                .setColorized(true)
                 .setOngoing(true)
+                .setRequestPromotedOngoing(true)
                 .setGroup("someGroup")
                 .setGroupSummary(true)
                 .build();

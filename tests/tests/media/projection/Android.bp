@@ -47,6 +47,7 @@ java_defaults {
         "general-tests",
     ],
     host_required: ["cts-dynamic-config"],
+    host_common_data: [":cts-dynamic-config"],
 }
 
 android_test {

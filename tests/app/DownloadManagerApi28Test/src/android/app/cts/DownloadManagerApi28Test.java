@@ -24,6 +24,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import android.app.DownloadManager;
+import android.app.cts.downloadmanager.DownloadManagerTestBase;
 import android.content.ContentResolver;
 import android.content.Intent;
 import android.content.IntentFilter;

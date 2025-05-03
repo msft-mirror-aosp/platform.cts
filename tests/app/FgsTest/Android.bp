@@ -30,7 +30,7 @@ android_test {
         "androidx.test.rules",
         "compatibility-device-util-axt",
         "CtsExternalServiceCommon",
-        "CtsAppTestStubsShared",
+        "cts_app_test_shared_lib",
         "cts-wm-util",
         "libprotobuf-java-lite",
         "permission-test-util-lib",
@@ -53,6 +53,8 @@ android_test {
     platform_apis: true,
     data: [
         ":CtsAppTestStubsApp1",
+        ":CtsAppTestStubsApp2",
+        ":CtsAppTestStubsApp3",
         ":CtsAppTestFgsTestHelper",
         ":CtsAppTestFgsTestHelperCurrent",
         ":CtsAppTestFgsTestHelperApi33",

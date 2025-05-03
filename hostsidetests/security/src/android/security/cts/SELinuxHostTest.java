@@ -17,6 +17,7 @@
 package android.security.cts;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -25,7 +26,6 @@ import static org.junit.Assume.assumeTrue;
 
 import android.platform.test.annotations.RestrictedBuildTest;
 
-import com.android.compatibility.common.tradefed.build.CompatibilityBuildHelper;
 import com.android.compatibility.common.tradefed.targetprep.DeviceInfoCollector;
 import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.PropertyUtil;
@@ -50,6 +50,7 @@ import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -80,6 +81,7 @@ import javax.xml.parsers.DocumentBuilderFactory;
 @RunWith(DeviceJUnit4ClassRunner.class)
 public class SELinuxHostTest extends BaseHostJUnit4Test {
 
+    private static final int CHECKFC_EXIT_FAILURE = 1;
     // Keep in sync with AndroidTest.xml
     private static final String DEVICE_INFO_DEVICE_DIR = "/sdcard/device-info-files/";
     // Keep in sync with com.android.compatibility.common.deviceinfo.VintfDeviceInfo
@@ -102,22 +104,13 @@ public class SELinuxHostTest extends BaseHostJUnit4Test {
     private static final Map<ITestDevice, Boolean> sCachedDeviceIsSplit = new HashMap<>(1);
 
     private File mSepolicyAnalyze;
-    private File checkSeapp;
     private File checkFc;
-    private File aospFcFile;
-    private File aospPcFile;
-    private File aospSvcFile;
     private File devicePolicyFile;
     private File deviceSystemPolicyFile;
     private File devicePlatFcFile;
     private File deviceVendorFcFile;
     private File devicePcFile;
     private File deviceSvcFile;
-    private File seappNeverAllowFile;
-    private File copyLibcpp;
-    private File sepolicyTests;
-
-    private IBuildInfo mBuild;
 
     /**
      * A reference to the device under test.
@@ -126,6 +119,9 @@ public class SELinuxHostTest extends BaseHostJUnit4Test {
 
     public static File copyResourceToTempFile(String resName) throws IOException {
         InputStream is = SELinuxHostTest.class.getResourceAsStream(resName);
+        if (is == null) {
+            throw new FileNotFoundException("Unable to find " + resName + " in the jar");
+        }
         String tempFileName = "SELinuxHostTest" + resName.replace("/", "_");
         File tempFile = createTempFile(tempFileName, ".tmp");
         FileOutputStream os = new FileOutputStream(tempFile);
@@ -155,11 +151,9 @@ public class SELinuxHostTest extends BaseHostJUnit4Test {
     @Before
     public void setUp() throws Exception {
         mDevice = getDevice();
-        mBuild = getBuild();
         // Assumes every test in this file asserts a requirement of CDD section 9.
         assumeSecurityModelCompat();
 
-        CompatibilityBuildHelper buildHelper = new CompatibilityBuildHelper(mBuild);
         mSepolicyAnalyze = copyResourceToTempFile("/sepolicy-analyze");
         mSepolicyAnalyze.setExecutable(true);
 
@@ -700,11 +694,11 @@ public class SELinuxHostTest extends BaseHostJUnit4Test {
         }
 
         /* retrieve the checkseapp executable from jar */
-        checkSeapp = copyResourceToTempFile("/checkseapp");
+        File checkSeapp = copyResourceToTempFile("/checkseapp");
         checkSeapp.setExecutable(true);
 
         /* retrieve the AOSP seapp_neverallows file from jar */
-        seappNeverAllowFile = copyResourceToTempFile("/plat_seapp_neverallows");
+        File seappNeverAllowFile = copyResourceToTempFile("/plat_seapp_neverallows");
 
         /* run checkseapp on seapp_contexts */
         String errorString = tryRunCommand(checkSeapp.getAbsolutePath(),
@@ -790,16 +784,26 @@ public class SELinuxHostTest extends BaseHostJUnit4Test {
         checkFc = copyResourceToTempFile("/checkfc");
         checkFc.setExecutable(true);
 
-        /* retrieve the AOSP file_contexts file from jar */
-        aospFcFile = copyResourceToTempFile("/plat_file_contexts_cts");
+        /* retrieve the AOSP file_contexts test data from jar */
+        File aospFcDataFile = copyResourceToTempFile("/file_contexts_test_data");
 
-        /* run checkfc -c plat_file_contexts plat_file_contexts */
-        String result = tryRunCommand(checkFc.getAbsolutePath(),
-                "-c", aospFcFile.getAbsolutePath(),
-                devicePlatFcFile.getAbsolutePath()).trim();
-        assertTrue("The file_contexts file did not include the AOSP entries:\n"
-                   + result + "\n",
-                   result.equals("equal") || result.equals("subset"));
+        /* run checkfc -t file_contexts file_contexts_test_data */
+        Process process =
+                tryRunProcess(
+                        checkFc.getAbsolutePath(),
+                        "-t",
+                        devicePlatFcFile.getAbsolutePath(),
+                        aospFcDataFile.getAbsolutePath()
+                );
+
+        String output = new String(process.getInputStream().readAllBytes());
+        // checkfc may exit with EXIT_SUCCESS(0) or
+        // EXIT_MISSING_TEST_ENTRIES(2), only report an issue for
+        // EXIT_FAILURE(1).
+        assertNotEquals(
+                "Fail to resolve AOSP context:\n" + output + "\n",
+                CHECKFC_EXIT_FAILURE,
+                process.exitValue());
     }
 
     /**
@@ -822,7 +826,7 @@ public class SELinuxHostTest extends BaseHostJUnit4Test {
         // Retrieve the AOSP property_contexts file from JAR.
         // The location of this file in the JAR has nothing to do with the location of this file on
         // Android devices. See build script of this CTS module.
-        aospPcFile = copyResourceToTempFile("/plat_property_contexts");
+        File aospPcFile = copyResourceToTempFile("/plat_property_contexts");
 
         assertContainsAllLines(aospPcFile, devicePcFile);
     }
@@ -844,7 +848,7 @@ public class SELinuxHostTest extends BaseHostJUnit4Test {
         }
 
         /* retrieve the AOSP service_contexts file from jar */
-        aospSvcFile = copyResourceToTempFile("/plat_service_contexts");
+        File aospSvcFile = copyResourceToTempFile("/plat_service_contexts");
 
         assertContainsAllLines(aospSvcFile, deviceSvcFile);
     }
@@ -935,7 +939,7 @@ public class SELinuxHostTest extends BaseHostJUnit4Test {
 
     private void assertSepolicyTests(String test, String testExecutable,
             boolean includeVendorSepolicy) throws Exception {
-        sepolicyTests = copyResourceToTempFile(testExecutable);
+        File sepolicyTests = copyResourceToTempFile(testExecutable);
         sepolicyTests.setExecutable(true);
 
         List<String> args = new ArrayList<String>();
@@ -1575,20 +1579,18 @@ public class SELinuxHostTest extends BaseHostJUnit4Test {
         }
     }
 
-    private static String tryRunCommand(String... command) throws Exception {
+    private static Process tryRunProcess(String... command) throws Exception {
         ProcessBuilder pb = new ProcessBuilder(command);
         pb.redirectOutput(ProcessBuilder.Redirect.PIPE);
         pb.redirectErrorStream(true);
         Process p = pb.start();
         p.waitFor();
-        BufferedReader reader = new BufferedReader(new InputStreamReader(p.getInputStream()));
-        StringBuilder result = new StringBuilder();
-        String line;
-        while ((line = reader.readLine()) != null) {
-            result.append(line);
-            result.append("\n");
-        }
-        return result.toString();
+        return p;
+    }
+
+    private static String tryRunCommand(String... command) throws Exception {
+        Process p = tryRunProcess(command);
+        return new String(p.getInputStream().readAllBytes());
     }
 
     private static File createTempFile(String name, String ext) throws IOException {

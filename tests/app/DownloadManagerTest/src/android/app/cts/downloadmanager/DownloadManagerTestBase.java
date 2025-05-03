@@ -13,17 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package android.app.cts;
+package android.app.cts.downloadmanager;
 
 import static android.content.Intent.FLAG_ACTIVITY_NEW_TASK;
 
 import static com.android.compatibility.common.util.SystemUtil.runShellCommand;
 import static com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static com.google.common.truth.Truth.assertThat;
+import static com.google.common.truth.Truth.assertWithMessage;
+
 import static org.junit.Assume.assumeFalse;
 
 import android.app.DownloadManager;
@@ -49,7 +48,7 @@ import android.text.format.DateUtils;
 import android.util.Log;
 import android.webkit.cts.CtsTestServer;
 
-import androidx.test.InstrumentationRegistry;
+import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.uiautomator.UiDevice;
 
 import com.android.compatibility.common.util.PollingCheck;
@@ -108,7 +107,7 @@ public class DownloadManagerTestBase {
 
     @Before
     public void setUp() throws Exception {
-        mContext = InstrumentationRegistry.getTargetContext();
+        mContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
         mDownloadManager = (DownloadManager) mContext.getSystemService(Context.DOWNLOAD_SERVICE);
         mWifiManager = mContext.getSystemService(WifiManager.class);
         mCm = mContext.getSystemService(ConnectivityManager.class);
@@ -126,16 +125,16 @@ public class DownloadManagerTestBase {
     }
 
     protected void updateUri(Uri uri, String column, String value) throws Exception {
-        final String cmd = String.format("content update --uri %s --bind %s:s:%s",
-                uri, column, value);
+        final String cmd =
+                String.format("content update --uri %s --bind %s:s:%s", uri, column, value);
         final String res = runShellCommand(cmd).trim();
-        assertTrue(res, TextUtils.isEmpty(res));
+        assertWithMessage(res).that(TextUtils.isEmpty(res)).isTrue();
     }
 
     protected static byte[] hash(InputStream in) throws Exception {
-        try (DigestInputStream digestIn = new DigestInputStream(in,
-                MessageDigest.getInstance("SHA-1"));
-             OutputStream out = new FileOutputStream(new File("/dev/null"))) {
+        try (DigestInputStream digestIn =
+                        new DigestInputStream(in, MessageDigest.getInstance("SHA-1"));
+                OutputStream out = new FileOutputStream("/dev/null")) {
             FileUtils.copy(digestIn, out);
             return digestIn.getMessageDigest().digest();
         } finally {
@@ -144,16 +143,17 @@ public class DownloadManagerTestBase {
     }
 
     protected static Uri getMediaStoreUri(Uri downloadUri) throws Exception {
-        final Context context = InstrumentationRegistry.getTargetContext();
-        Cursor cursor = context.getContentResolver().query(downloadUri, null, null, null);
-        if (cursor != null && cursor.moveToFirst()) {
-            // DownloadManager.COLUMN_MEDIASTORE_URI is not a column in the query result.
-            // COLUMN_MEDIAPROVIDER_URI value maybe the same as COLUMN_MEDIASTORE_URI but NOT
-            // guaranteed.
-            int index = cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_MEDIAPROVIDER_URI);
-            return Uri.parse(cursor.getString(index));
-        } else {
-            throw new FileNotFoundException("Failed to find entry for " + downloadUri);
+        final Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
+        try (Cursor cursor = context.getContentResolver().query(downloadUri, null, null, null)) {
+            if (cursor != null && cursor.moveToFirst()) {
+                // DownloadManager.COLUMN_MEDIASTORE_URI is not a column in the query result.
+                // COLUMN_MEDIAPROVIDER_URI value maybe the same as COLUMN_MEDIASTORE_URI but NOT
+                // guaranteed.
+                int index = cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_MEDIAPROVIDER_URI);
+                return Uri.parse(cursor.getString(index));
+            } else {
+                throw new FileNotFoundException("Failed to find entry for " + downloadUri);
+            }
         }
     }
 
@@ -165,41 +165,46 @@ public class DownloadManagerTestBase {
             final long id = ContentUris.parseId(mediaStoreUri);
             switch (mediaType) {
                 case MediaStore.Files.FileColumns.MEDIA_TYPE_AUDIO:
-                    mediaStoreUri = ContentUris.withAppendedId(
-                            MediaStore.Audio.Media.getContentUri(volumeName), id);
+                    mediaStoreUri =
+                            ContentUris.withAppendedId(
+                                    MediaStore.Audio.Media.getContentUri(volumeName), id);
                     break;
                 case MediaStore.Files.FileColumns.MEDIA_TYPE_IMAGE:
-                    mediaStoreUri = ContentUris.withAppendedId(
-                            MediaStore.Images.Media.getContentUri(volumeName), id);
+                    mediaStoreUri =
+                            ContentUris.withAppendedId(
+                                    MediaStore.Images.Media.getContentUri(volumeName), id);
                     break;
                 case MediaStore.Files.FileColumns.MEDIA_TYPE_VIDEO:
-                    mediaStoreUri = ContentUris.withAppendedId(
-                            MediaStore.Video.Media.getContentUri(volumeName), id);
+                    mediaStoreUri =
+                            ContentUris.withAppendedId(
+                                    MediaStore.Video.Media.getContentUri(volumeName), id);
                     break;
             }
         }
         // Need to pass in the user id to support multi-user scenarios.
         final int userId = getUserId();
-        final String cmd = String.format("content query --uri %s --projection %s --user %s",
-                mediaStoreUri, columnName, userId);
+        final String cmd =
+                String.format(
+                        "content query --uri %s --projection %s --user %s",
+                        mediaStoreUri, columnName, userId);
         final String res = runShellCommand(cmd).trim();
         final String str = columnName + "=";
         final int i = res.indexOf(str);
         if (i >= 0) {
             return res.substring(i + str.length());
         } else {
-            throw new FileNotFoundException("Failed to find "
-                    + columnName + " for "
-                    + mediaStoreUri + "; found " + res);
+            throw new FileNotFoundException(
+                    "Failed to find " + columnName + " for " + mediaStoreUri + "; found " + res);
         }
     }
 
     private int getMediaType(Uri mediaStoreUri) throws Exception {
-        final Uri filesUri = MediaStore.Files.getContentUri(
-                MediaStore.getVolumeName(mediaStoreUri),
-                ContentUris.parseId(mediaStoreUri));
-        return Integer.parseInt(getMediaStoreColumnValue(filesUri,
-                MediaStore.Files.FileColumns.MEDIA_TYPE));
+        final Uri filesUri =
+                MediaStore.Files.getContentUri(
+                        MediaStore.getVolumeName(mediaStoreUri),
+                        ContentUris.parseId(mediaStoreUri));
+        return Integer.parseInt(
+                getMediaStoreColumnValue(filesUri, MediaStore.Files.FileColumns.MEDIA_TYPE));
     }
 
     protected int getTotalBytes(InputStream in) throws Exception {
@@ -228,34 +233,35 @@ public class DownloadManagerTestBase {
         if (!hasConnectedNetwork(mCm)) {
             Log.d(TAG, "Enabling WiFi to ensure connectivity for this test");
             runShellCommand("svc wifi enable");
-            runWithShellPermissionIdentity(mWifiManager::reconnect,
-                    android.Manifest.permission.NETWORK_SETTINGS);
+            runWithShellPermissionIdentity(
+                    mWifiManager::reconnect, android.Manifest.permission.NETWORK_SETTINGS);
             final long startTime = SystemClock.elapsedRealtime();
             while (!hasConnectedNetwork(mCm)
-                && (SystemClock.elapsedRealtime() - startTime) < MEDIUM_TIMEOUT) {
+                    && (SystemClock.elapsedRealtime() - startTime) < MEDIUM_TIMEOUT) {
                 Thread.sleep(500);
             }
             if (!hasConnectedNetwork(mCm)) {
-                fail("Unable to connect to any network");
+                assertWithMessage("Unable to connect to any network").fail();
             }
         }
     }
 
     private static String getFileData(Uri uri, String projection) throws Exception {
-        final Context context = InstrumentationRegistry.getTargetContext();
-        final String[] projections =  new String[] { projection };
-        Cursor c = context.getContentResolver().query(uri, projections, null, null, null);
-        if (c != null && c.getCount() > 0) {
-            c.moveToFirst();
-            return c.getString(0);
-        } else {
-            String msg = String.format("Failed to find %s for %s", projection, uri);
-            throw new FileNotFoundException(msg);
+        final Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
+        final String[] projections = new String[] {projection};
+        try (Cursor c = context.getContentResolver().query(uri, projections, null, null, null)) {
+            if (c != null && c.getCount() > 0) {
+                c.moveToFirst();
+                return c.getString(0);
+            } else {
+                String msg = String.format("Failed to find %s for %s", projection, uri);
+                throw new FileNotFoundException(msg);
+            }
         }
     }
 
     protected static String readContentsFromUri(Uri uri) throws Exception {
-        final Context context = InstrumentationRegistry.getTargetContext();
+        final Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
         try (InputStream inputStream = context.getContentResolver().openInputStream(uri)) {
             return readFromInputStream(inputStream);
         }
@@ -264,23 +270,19 @@ public class DownloadManagerTestBase {
     protected static String readFromRawFile(String filePath) throws Exception {
         Log.d(TAG, "Reading form file: " + filePath);
         return readFromFile(
-            ParcelFileDescriptor.open(new File(filePath), ParcelFileDescriptor.MODE_READ_ONLY));
+                ParcelFileDescriptor.open(new File(filePath), ParcelFileDescriptor.MODE_READ_ONLY));
     }
 
     protected static String readFromFile(ParcelFileDescriptor pfd) throws Exception {
-        BufferedReader br = null;
-        try (final InputStream in = new FileInputStream(pfd.getFileDescriptor())) {
-            br = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8));
+        try (InputStream in = new FileInputStream(pfd.getFileDescriptor());
+                BufferedReader br =
+                        new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8))) {
             String str;
             StringBuilder out = new StringBuilder();
             while ((str = br.readLine()) != null) {
                 out.append(str);
             }
             return out.toString();
-        } finally {
-            if (br != null) {
-                br.close();
-            }
         }
     }
 
@@ -299,7 +301,7 @@ public class DownloadManagerTestBase {
         file.getParentFile().mkdirs();
         file.delete();
 
-        try (final PrintWriter out = new PrintWriter(file)) {
+        try (PrintWriter out = new PrintWriter(file)) {
             out.print(contents);
         }
 
@@ -307,28 +309,33 @@ public class DownloadManagerTestBase {
         try (FileInputStream fis = new FileInputStream(file)) {
             actual = readFromInputStream(fis);
         }
-        assertEquals(contents, actual);
+        assertThat(actual).isEqualTo(contents);
     }
 
     protected void writeToFileWithDelegator(File file, String contents) throws Exception {
         final CompletableFuture<Bundle> callbackResult = new CompletableFuture<>();
 
-        mContext.startActivity(new Intent(ACTION_CREATE_FILE_WITH_CONTENT)
-                .setPackage(STORAGE_DELEGATOR_PACKAGE)
-                .putExtra(EXTRA_PATH, file.getAbsolutePath())
-                .putExtra(EXTRA_CONTENTS, contents)
-                .setFlags(FLAG_ACTIVITY_NEW_TASK)
-                .putExtra(EXTRA_CALLBACK, new RemoteCallback(callbackResult::complete)));
+        mContext.startActivity(
+                new Intent(ACTION_CREATE_FILE_WITH_CONTENT)
+                        .setPackage(STORAGE_DELEGATOR_PACKAGE)
+                        .putExtra(EXTRA_PATH, file.getAbsolutePath())
+                        .putExtra(EXTRA_CONTENTS, contents)
+                        .setFlags(FLAG_ACTIVITY_NEW_TASK)
+                        .putExtra(EXTRA_CALLBACK, new RemoteCallback(callbackResult::complete)));
 
         final Bundle resultBundle = callbackResult.get(SHORT_TIMEOUT, TimeUnit.MILLISECONDS);
         if (resultBundle.getString(KEY_ERROR) != null) {
-            fail("Failed to create the file " + file + ", error:"
-                    + resultBundle.getString(KEY_ERROR));
+            assertWithMessage(
+                            "Failed to create the file "
+                                    + file
+                                    + ", error:"
+                                    + resultBundle.getString(KEY_ERROR))
+                    .fail();
         }
     }
 
     private static String readFromInputStream(InputStream inputStream) throws Exception {
-        final StringBuffer res = new StringBuffer();
+        final StringBuilder res = new StringBuilder();
         final byte[] buf = new byte[512];
         int bytesRead;
         while ((bytesRead = inputStream.read(buf)) != -1) {
@@ -348,8 +355,8 @@ public class DownloadManagerTestBase {
                 for (int i = 0; cursor.moveToNext(); i++) {
                     removeIds[i] = cursor.getLong(columnIndex);
                 }
-                assertEquals(removeIds.length, mDownloadManager.remove(removeIds));
-                assertEquals(0, getTotalNumberDownloads());
+                assertThat(mDownloadManager.remove(removeIds)).isEqualTo(removeIds.length);
+                assertThat(getTotalNumberDownloads()).isEqualTo(0);
             } finally {
                 if (cursor != null) {
                     cursor.close();
@@ -367,8 +374,8 @@ public class DownloadManagerTestBase {
     }
 
     protected Uri getMinimumDownloadUrl() {
-        return Uri.parse(mWebServer.getTestDownloadUrl("cts-minimum-download",
-                MINIMUM_DOWNLOAD_BYTES));
+        return Uri.parse(
+                mWebServer.getTestDownloadUrl("cts-minimum-download", MINIMUM_DOWNLOAD_BYTES));
     }
 
     protected Uri getAssetUrl(String asset) {
@@ -393,7 +400,7 @@ public class DownloadManagerTestBase {
         try {
             DownloadManager.Query query = new DownloadManager.Query().setFilterById(downloadId);
             cursor = mDownloadManager.query(query);
-            assertEquals(1, cursor.getCount());
+            assertThat(cursor.getCount()).isEqualTo(1);
         } finally {
             if (cursor != null) {
                 cursor.close();
@@ -405,9 +412,10 @@ public class DownloadManagerTestBase {
         new PollingCheck() {
             @Override
             protected boolean check() {
-                Cursor cursor= null;
+                Cursor cursor = null;
                 try {
-                    DownloadManager.Query query = new DownloadManager.Query().setFilterByStatus(status);
+                    DownloadManager.Query query =
+                            new DownloadManager.Query().setFilterByStatus(status);
                     cursor = mDownloadManager.query(query);
                     return 1 == cursor.getCount();
                 } finally {
@@ -428,18 +436,21 @@ public class DownloadManagerTestBase {
         try {
             final File expectedLocation = location.getCanonicalFile();
             cursor = mDownloadManager.query(new DownloadManager.Query().setFilterById(id));
-            assertTrue(cursor.moveToNext());
-            assertEquals(DownloadManager.STATUS_SUCCESSFUL, cursor.getInt(
-                    cursor.getColumnIndex(DownloadManager.COLUMN_STATUS)));
-            assertEquals(Uri.fromFile(expectedLocation).toString(),
-                    cursor.getString(cursor.getColumnIndex(DownloadManager.COLUMN_LOCAL_URI)));
+            assertThat(cursor.moveToNext()).isTrue();
+            assertThat(cursor.getInt(cursor.getColumnIndex(DownloadManager.COLUMN_STATUS)))
+                    .isEqualTo(DownloadManager.STATUS_SUCCESSFUL);
+            assertThat(cursor.getString(cursor.getColumnIndex(DownloadManager.COLUMN_LOCAL_URI)))
+                    .isEqualTo(Uri.fromFile(expectedLocation).toString());
 
             // Use shell to check if file is created as normal app doesn't have
             // visibility to see other packages dirs.
-            String result = SystemUtil.runShellCommand(InstrumentationRegistry.getInstrumentation(),
-                    "file " + expectedLocation.getCanonicalPath());
-            assertFalse("Cannot create file in other packages",
-                    result.contains("No such file or directory"));
+            String result =
+                    SystemUtil.runShellCommand(
+                            InstrumentationRegistry.getInstrumentation(),
+                            "file " + expectedLocation.getCanonicalPath());
+            assertWithMessage("Cannot create file in other packages")
+                    .that(result.contains("No such file or directory"))
+                    .isFalse();
         } finally {
             if (cursor != null) {
                 cursor.close();
@@ -450,10 +461,10 @@ public class DownloadManagerTestBase {
     protected void assertRemoveDownload(long removeId, int expectedNumDownloads) {
         Cursor cursor = null;
         try {
-            assertEquals(1, mDownloadManager.remove(removeId));
+            assertThat(mDownloadManager.remove(removeId)).isEqualTo(1);
             DownloadManager.Query query = new DownloadManager.Query();
             cursor = mDownloadManager.query(query);
-            assertEquals(expectedNumDownloads, cursor.getCount());
+            assertThat(cursor.getCount()).isEqualTo(expectedNumDownloads);
         } finally {
             if (cursor != null) {
                 cursor.close();
@@ -470,15 +481,16 @@ public class DownloadManagerTestBase {
 
     /**
      * Some non-mobile form factors ship a "stub" DocumentsUI package. Such stub packages may
-     * effectively declare "no-op" components similar to those in the "real" DocUI.
-     * For example, WearOS devices ship FrameworkPackageStubs that declares an Activity that should
-     * handle {@link Intent#ACTION_OPEN_DOCUMENT}, that when started will simply return
-     * {@link android.app.Activity#RESULT_CANCELED} right away.
-     * <p>
-     * This method "runs" a few {@link org.junit.Assume assumptions} to make sure we are not running
-     * on one of the form factors that ship with such stub packages.
-     * <p>
-     * For now, these form factors are: Auto (Android Automotive OS), TVs and wearables (Wear OS).
+     * effectively declare "no-op" components similar to those in the "real" DocUI. For example,
+     * WearOS devices ship FrameworkPackageStubs that declares an Activity that should handle {@link
+     * Intent#ACTION_OPEN_DOCUMENT}, that when started will simply return {@link
+     * android.app.Activity#RESULT_CANCELED} right away.
+     *
+     * <p>This method "runs" a few {@link org.junit.Assume assumptions} to make sure we are not
+     * running on one of the form factors that ship with such stub packages.
+     *
+     * <p>For now, these form factors are: Auto (Android Automotive OS), TVs and wearables (Wear
+     * OS).
      */
     protected void assumeDocumentsUiAvailableOnFormFactor() {
         final PackageManager pm = mContext.getPackageManager();
@@ -487,7 +499,7 @@ public class DownloadManagerTestBase {
     }
 
     public static class DownloadCompleteReceiver extends BroadcastReceiver {
-        private HashSet<Long> mCompleteIds = new HashSet<>();
+        private final HashSet<Long> mCompleteIds = new HashSet<>();
 
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -520,9 +532,13 @@ public class DownloadManagerTestBase {
                 }
             } while ((SystemClock.elapsedRealtime() - startTime) < timeoutMillis);
 
-            throw new InterruptedException("Timeout waiting for IDs " + Arrays.toString(waitForIds)
-                    + "; received " + mCompleteIds.toString()
-                    + ".  Make sure you have WiFi or some other connectivity for this test.");
+            throw new InterruptedException(
+                    "Timeout waiting for IDs "
+                            + Arrays.toString(waitForIds)
+                            + "; received "
+                            + mCompleteIds
+                            + ".  Make sure you have WiFi or some other connectivity for this"
+                            + " test.");
         }
     }
 }

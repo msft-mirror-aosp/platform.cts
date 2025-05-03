@@ -17,6 +17,7 @@
 package android.telecom.cts.cuj.app.integration;
 
 import static android.telecom.Call.STATE_ACTIVE;
+import static android.telecom.Call.STATE_DIALING;
 import static android.telecom.Call.STATE_DISCONNECTED;
 import static android.telecom.Call.STATE_HOLDING;
 import static android.telecom.cts.apps.TelecomTestApp.ConnectionServiceVoipAppMain;
@@ -125,6 +126,7 @@ public class CallSequencingBasicEmergencyCallTest extends BaseAppVerifier {
                                     true /* isOutgoing */,
                                     isNormalCallHoldable /* isHoldable */),
                             c1Validator);
+            verifyCallIsInState(normalCall, STATE_DIALING);
             setCallStateAndVerify(controlWrapperApp1, normalCall, STATE_ACTIVE);
 
             // Place emergency call and verify existing call is either put on hold or disconnected
@@ -143,6 +145,7 @@ public class CallSequencingBasicEmergencyCallTest extends BaseAppVerifier {
                     c1Validator.completePendingOperationOrTimeout(transitionOpType);
             assertNotNull(opString + " operation never received for first call " + normalCall, op);
             verifyCallIsInState(normalCall, expectedNormalCallState);
+            verifyCallIsInState(emergencyCall, STATE_DIALING);
             setCallStateAndVerify(controlWrapperApp2, emergencyCall, STATE_ACTIVE);
 
             // Clean up calls

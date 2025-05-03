@@ -151,6 +151,7 @@ public class SatelliteManagerTestBase {
     protected static boolean sActiveSubscriptionRequired = false;
     @SuppressWarnings("StaticAssignmentOfThrowable")
     protected static AssertionError sInitError = null;
+    protected static boolean sShouldDeprovisionDevice = false;
 
     protected static final String CTS_SMS_APP_PACKAGE_NAME = "android.telephony.cts.sms23";
     protected static final String OVERRIDING_COUNTRY_CODES = "US";
@@ -2595,6 +2596,17 @@ public class SatelliteManagerTestBase {
         return true;
     }
 
+    protected static boolean restoreDeviceProvisionedState() {
+        logd("restoreDeviceProvisionedState");
+        if (sShouldDeprovisionDevice) {
+            logd("restoreDeviceProvisionedState: deprovisioning device");
+            grantSatellitePermission();
+            assertTrue(deprovisionSatellite());
+            sShouldDeprovisionDevice = false;
+        }
+        return true;
+    }
+
     /**
      * Restore the provisioned state of the satellite subscriptions that were provisioned
      * during the test.
@@ -3019,7 +3031,7 @@ public class SatelliteManagerTestBase {
         overrideSatelliteAccessForNtnOnlySubscription(sNtnOnlySubId);
 
         if (shouldWaitForSelectedSatelliteSubChanged)  {
-            // Enabling NTN only subscription and overrding satellite access for this subscription
+            // Enabling NTN only subscription and overriding satellite access for this subscription
             // should trigger the selected satellite subscription changed event.
             assertNotNull(selectedNbIotSatelliteSubCallback);
             try {
@@ -3045,6 +3057,7 @@ public class SatelliteManagerTestBase {
 
             logd("setUpNtnOnlySubscription: Provision satellite");
             assertTrue(provisionSatellite());
+            sShouldDeprovisionDevice = true;
 
             try {
                 if (hasNotProvisionedDisallowedReason) {
@@ -3415,6 +3428,7 @@ public class SatelliteManagerTestBase {
                     provisionSatellite(toBeProvisionedSubscriberList);
             assertNotNull(pairResultForProvisionSatellite.first);
             assertTrue(pairResultForProvisionSatellite.first);
+            sSatelliteSubscriberInfosToBeDeprovisioned.add(testSubscriberInfo);
         } else {
             logd("provisionSatelliteForSubId: no satellite subscription available");
             return false;

@@ -18,6 +18,9 @@ package android.graphics.pdf.cts.module;
 
 import static android.graphics.pdf.PdfRendererPreV.DOCUMENT_LINEARIZED_TYPE_LINEARIZED;
 import static android.graphics.pdf.PdfRendererPreV.DOCUMENT_LINEARIZED_TYPE_NON_LINEARIZED;
+import static android.graphics.pdf.component.PdfPageObjectType.IMAGE;
+import static android.graphics.pdf.component.PdfPageObjectType.PATH;
+import static android.graphics.pdf.component.PdfPageObjectType.TEXT;
 import static android.graphics.pdf.cts.module.Utils.A4_HEIGHT_PTS;
 import static android.graphics.pdf.cts.module.Utils.A4_PORTRAIT;
 import static android.graphics.pdf.cts.module.Utils.A4_WIDTH_PTS;
@@ -29,6 +32,7 @@ import static android.graphics.pdf.cts.module.Utils.ONE_PATH_ONE_IMAGE_PAGE_OBJE
 import static android.graphics.pdf.cts.module.Utils.ONE_PATH_PAGE_OBJECT;
 import static android.graphics.pdf.cts.module.Utils.ONE_STAMP_ANNOTATION;
 import static android.graphics.pdf.cts.module.Utils.ONE_TEXT_PAGE_OBJECT;
+import static android.graphics.pdf.cts.module.Utils.PAGE_OBJECT_OVERLAPS;
 import static android.graphics.pdf.cts.module.Utils.PROTECTED_PDF;
 import static android.graphics.pdf.cts.module.Utils.SAMPLE_IMAGE;
 import static android.graphics.pdf.cts.module.Utils.SAMPLE_PDF;
@@ -38,10 +42,14 @@ import static android.graphics.pdf.cts.module.Utils.calculateArea;
 import static android.graphics.pdf.cts.module.Utils.createPreVRenderer;
 import static android.graphics.pdf.cts.module.Utils.getFile;
 import static android.graphics.pdf.cts.module.Utils.getParcelFileDescriptorFromResourceId;
+import static android.graphics.pdf.cts.module.Utils.getRectBounds;
 import static android.graphics.pdf.cts.module.Utils.isAcceptableError;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
@@ -52,6 +60,7 @@ import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.Path;
 import android.graphics.Point;
+import android.graphics.PointF;
 import android.graphics.RectF;
 import android.graphics.pdf.PdfRendererPreV;
 import android.graphics.pdf.RenderParams;
@@ -1464,6 +1473,137 @@ public class PdfRendererPreVTest {
         firstPage.close();
         assertThrows(IllegalStateException.class, firstPage::getPageObjects);
         renderer.close();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_GET_TOP_PDF_PAGE_OBJECT_AT_POSITION)
+    public void testGetTopPageObjectAtPosition_whenObjectsNotPresentAtPoint() throws IOException {
+        try (PdfRendererPreV renderer = createPreVRenderer(PAGE_OBJECT_OVERLAPS, mContext, null);
+                PdfRendererPreV.Page firstPage = renderer.openPage(0)) {
+            List<PointF> testPoints = new ArrayList();
+            testPoints.add(new PointF(0f, 0f));
+            testPoints.add(new PointF(500f, 500f));
+            // Empty types array will consider all known supported PdfPageObjectType
+            int[] types = {};
+            for (PointF p : testPoints) {
+                Pair<Integer, PdfPageObject> pageObject =
+                        firstPage.getTopPageObjectAtPosition(p, types);
+                assertNull(pageObject);
+            }
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_GET_TOP_PDF_PAGE_OBJECT_AT_POSITION)
+    public void testGetTopPageObjectAtPosition_whenImageIsPresentAtPoint_withAllTypes()
+            throws IOException {
+        try (PdfRendererPreV renderer = createPreVRenderer(PAGE_OBJECT_OVERLAPS, mContext, null);
+                PdfRendererPreV.Page firstPage = renderer.openPage(0)) {
+            PointF testPoint = new PointF(310f, 370f);
+            // Empty types array will consider all known supported PdfPageObjectType
+            int[] types = {};
+            Pair<Integer, PdfPageObject> pageObject =
+                    firstPage.getTopPageObjectAtPosition(testPoint, types);
+            assertNotNull(pageObject);
+            PdfPageImageObject imageObject = (PdfPageImageObject) pageObject.second;
+            assertEquals(IMAGE, imageObject.getPdfObjectType());
+            assertNotNull(imageObject.getBitmap());
+            RectF imageId1Bounds = new RectF(301f, 225f, 500f, 424f);
+            RectF actualBounds = getRectBounds(imageObject.getMatrix());
+            assertEquals(imageId1Bounds, actualBounds);
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_GET_TOP_PDF_PAGE_OBJECT_AT_POSITION)
+    public void testGetTopPageObjectAtPosition_whenImageIsPresentAtPoint_withImageType()
+            throws IOException {
+        try (PdfRendererPreV renderer = createPreVRenderer(PAGE_OBJECT_OVERLAPS, mContext, null);
+                PdfRendererPreV.Page firstPage = renderer.openPage(0)) {
+            PointF testPoint = new PointF(275f, 375f);
+            int[] types = {IMAGE};
+            Pair<Integer, PdfPageObject> pageObject =
+                    firstPage.getTopPageObjectAtPosition(testPoint, types);
+            assertNotNull(pageObject);
+            assertThat(pageObject.first).isEqualTo(0); // check id
+            PdfPageImageObject imageObject = (PdfPageImageObject) pageObject.second;
+            assertNotNull(imageObject.getBitmap());
+            RectF imageId0Bounds = new RectF(251f, 350f, 400f, 449f);
+            RectF actualBounds = getRectBounds(imageObject.getMatrix());
+            assertEquals(imageId0Bounds, actualBounds);
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_GET_TOP_PDF_PAGE_OBJECT_AT_POSITION)
+    public void testGetTopPageObjectAtPosition_textImageOverlap_withTextAndImageType()
+            throws IOException {
+        try (PdfRendererPreV renderer = createPreVRenderer(PAGE_OBJECT_OVERLAPS, mContext, null);
+                PdfRendererPreV.Page firstPage = renderer.openPage(0)) {
+            PointF testPoint = new PointF(150f, 715f);
+            int[] types = {TEXT, IMAGE};
+            Pair<Integer, PdfPageObject> pageObject =
+                    firstPage.getTopPageObjectAtPosition(testPoint, types);
+            assertNotNull(pageObject);
+            assertThat(pageObject.first).isEqualTo(0); // check id
+            // assert text object returned
+            assertThat(pageObject.second.getPdfObjectType()).isEqualTo(TEXT);
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_GET_TOP_PDF_PAGE_OBJECT_AT_POSITION)
+    public void testGetTopPageObjectAtPosition_textImageOverlap_withAllTypes() throws IOException {
+        try (PdfRendererPreV renderer = createPreVRenderer(PAGE_OBJECT_OVERLAPS, mContext, null);
+                PdfRendererPreV.Page firstPage = renderer.openPage(0)) {
+            PointF testPoint = new PointF(90f, 715f);
+            int[] types = {TEXT, IMAGE, PATH};
+            Pair<Integer, PdfPageObject> pageObject =
+                    firstPage.getTopPageObjectAtPosition(testPoint, types);
+            assertNotNull(pageObject);
+            // assert image object returned
+            assertThat(pageObject.second.getPdfObjectType()).isEqualTo(IMAGE);
+            PdfPageImageObject imageObject = (PdfPageImageObject) pageObject.second;
+            RectF imageId3Bounds = new RectF(71f, 670f, 170f, 769f);
+            RectF actualBounds = getRectBounds(imageObject.getMatrix());
+            assertEquals(imageId3Bounds, actualBounds);
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_GET_TOP_PDF_PAGE_OBJECT_AT_POSITION)
+    public void testGetTopPageObjectAtPosition_forPath_withAllTypes() throws IOException {
+        try (PdfRendererPreV renderer = createPreVRenderer(PAGE_OBJECT_OVERLAPS, mContext, null);
+                PdfRendererPreV.Page firstPage = renderer.openPage(0)) {
+            PointF testPoint = new PointF(80f, 100f);
+            // Empty types array will consider all known supported PdfPageObjectType
+            int[] types = {};
+            Pair<Integer, PdfPageObject> pageObject =
+                    firstPage.getTopPageObjectAtPosition(testPoint, types);
+            assertNotNull(pageObject);
+            assertThat(pageObject.first).isEqualTo(0); // check id
+            // assert path object returned
+            assertThat(pageObject.second.getPdfObjectType()).isEqualTo(PATH);
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_GET_TOP_PDF_PAGE_OBJECT_AT_POSITION)
+    public void testGetTopPageObjectAtPosition_forImage_withImageType() throws IOException {
+        try (PdfRendererPreV renderer = createPreVRenderer(PAGE_OBJECT_OVERLAPS, mContext, null);
+                PdfRendererPreV.Page firstPage = renderer.openPage(0)) {
+            PointF testPoint = new PointF(70f, 180f);
+            int[] types = {IMAGE};
+            Pair<Integer, PdfPageObject> pageObject =
+                    firstPage.getTopPageObjectAtPosition(testPoint, types);
+            assertNotNull(pageObject);
+            // assert image object returned
+            assertThat(pageObject.second.getPdfObjectType()).isEqualTo(IMAGE);
+            PdfPageImageObject imageObject = (PdfPageImageObject) pageObject.second;
+            RectF imageId5Bounds = new RectF(11f, 160f, 110f, 259f);
+            RectF actualBounds = getRectBounds(imageObject.getMatrix());
+            assertEquals(imageId5Bounds, actualBounds);
+        }
     }
 
     private PdfPageImageObject createSamplePdfPageImageObject() {

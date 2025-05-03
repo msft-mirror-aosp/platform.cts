@@ -251,7 +251,7 @@ public class PackageManagerShellCommandIncrementalTest {
         getUiAutomation().adoptShellPermissionIdentity();
 
         final long blockSize = Os.statvfs("/data/incremental").f_bsize;
-        final long preAllocatedBlocks = Os.statvfs("/data/incremental").f_bfree;
+        final long preFreeBlocks = Os.statvfs("/data/incremental").f_bfree;
 
         final AtomicLong freeSpaceDifference = new AtomicLong(-1L);
 
@@ -267,17 +267,16 @@ public class PackageManagerShellCommandIncrementalTest {
                             }
 
                             try {
-                                final long postAllocatedBlocks =
+                                final long postFreeBlocks =
                                         Os.statvfs("/data/incremental").f_bfree;
                                 freeSpaceDifference.set(
-                                        (preAllocatedBlocks - postAllocatedBlocks) * blockSize);
+                                        (preFreeBlocks - postFreeBlocks) * blockSize);
                             } catch (Exception e) {
                                 Log.i(TAG, "ErrnoException: ", e);
                                 throw new AssertionError(e);
                             }
                             return true;
                         }))
-                        .setBlockTransformer(new CompressingBlockTransformer())
                         .build();
 
         try {
@@ -290,7 +289,12 @@ public class PackageManagerShellCommandIncrementalTest {
 
         assertTrue(isAppInstalled(TEST_APP_PACKAGE));
 
-        final double freeSpaceExpectedDifference = ((appFileSize * 1.015) + blockSize * 8);
+        // We want to estimate how much space IncFS is supposed to preallocate for the whole file
+        // even before its all data has been streamed in. This includes the space required for
+        // the file, plus some bookkeeping overhead that is based on the internal block size.
+        // The IncFS block size is fixed but has no API constant for it, so we define it here.
+        final long incfsBlockSize = 4096;
+        final double freeSpaceExpectedDifference = ((appFileSize * 1.015) + incfsBlockSize * 8);
         assertTrue(freeSpaceDifference.get() + " >= " + freeSpaceExpectedDifference,
                 freeSpaceDifference.get() >= freeSpaceExpectedDifference);
 
