@@ -1,4 +1,4 @@
-// Copyright 2024 The Android Open Source Project
+// Copyright (C) 2025 The Android Open Source Project
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,30 +14,37 @@
 
 package {
     default_applicable_licenses: ["Android-Apache-2.0"],
-    default_team: "trendy_team_system_performance",
 }
 
 android_test {
-    name: "CtsDynamicInstrumentationManagerTest",
+    name: "CtsDownloadManagerApi28",
     defaults: ["cts_defaults"],
-    compile_multilib: "both",
-    sdk_version: "test_current",
     libs: [
         "android.test.runner.stubs.test",
+        "org.apache.http.legacy.stubs.test",
         "android.test.base.stubs.test",
     ],
     static_libs: [
-        "androidx.test.core",
-        "androidx.test.ext.junit",
         "compatibility-device-util-axt",
-        "bedstead",
-        "junit",
-        "truth",
+        "ctstestrunner-axt",
+        "ctstestserver",
+        "download_manager_lib",
+        "mockito-target-minus-junit4",
+        "androidx.test.rules",
+        "platform-test-annotations",
     ],
-    srcs: ["src/**/*.java"],
+    srcs: [
+        "src/**/*.java",
+    ],
+    resource_dirs: ["res"],
+    asset_dirs: ["assets"],
+    // Tag this module as a cts test artifact
     test_suites: [
         "cts",
-        "device-tests",
+        "general-tests",
     ],
-    jni_libs: ["libdynamic_instrumentation_manager_test_jni"],
+    sdk_version: "test_current",
+    min_sdk_version: "29",
+    manifest: "AndroidManifest.xml",
+    test_config: "AndroidTest.xml",
 }

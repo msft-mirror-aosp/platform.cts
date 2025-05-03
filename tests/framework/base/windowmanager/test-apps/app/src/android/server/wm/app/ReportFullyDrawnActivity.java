@@ -17,13 +17,21 @@
 package android.server.wm.app;
 
 import android.app.Activity;
-import android.os.Handler;
+import android.os.Bundle;
+import android.os.SystemClock;
+import android.util.Log;
 
 public class ReportFullyDrawnActivity extends Activity {
 
     @Override
-    protected void onResume() {
-        super.onResume();
-        new Handler().postDelayed(this::reportFullyDrawn, 500 /* delayMillis */);
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        // Use a new thread in case something wrong in render thread that blocks main thread later.
+        new Thread(() -> {
+            // ActivityMetricsLoggerTests#testAppFullyDrawnReportIsLogged expects a 500ms delay.
+            SystemClock.sleep(500);
+            Log.i("ReportFullyDrawnActivity", "reportFullyDrawn");
+            reportFullyDrawn();
+        }).start();
     }
 }

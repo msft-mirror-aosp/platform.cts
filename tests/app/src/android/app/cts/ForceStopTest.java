@@ -21,14 +21,10 @@ import static android.content.pm.Flags.FLAG_STAY_STOPPED;
 
 import static com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity;
 
-import static junit.framework.Assert.fail;
+import static com.google.common.truth.Truth.assertThat;
+import static com.google.common.truth.Truth.assertWithMessage;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
 
 import android.app.ActivityManager;
 import android.app.ApplicationStartInfo;
@@ -58,8 +54,8 @@ import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
-import androidx.test.runner.AndroidJUnit4;
 import androidx.test.uiautomator.UiDevice;
 
 import com.android.compatibility.common.util.AmUtils;
@@ -126,7 +122,7 @@ public final class ForceStopTest {
                 SimpleActivity.ACTION_ACTIVITY_STARTED);
         // Start an activity of another APK.
         mTargetContext.startActivity(intent);
-        assertTrue(appStartedReceiver.waitForActivity());
+        assertThat(appStartedReceiver.waitForActivity()).isTrue();
         return appStartedReceiver;
     }
 
@@ -137,14 +133,16 @@ public final class ForceStopTest {
         final String packageName = intent.getPackage();
         forceStopAndStartSimpleActivity(intent);
 
-        assertFalse("Package " + packageName + " shouldn't be in the stopped state",
-                mPackageManager.isPackageStopped(packageName));
+        assertWithMessage("Package " + packageName + " shouldn't be in the stopped state")
+                .that(mPackageManager.isPackageStopped(packageName))
+                .isFalse();
 
         // Force-stop it again
         runWithShellPermissionIdentity(
                 () -> mActivityManager.forceStopPackage(packageName));
-        assertTrue("Package " + packageName + " should be in the stopped state",
-                mPackageManager.isPackageStopped(packageName));
+        assertWithMessage("Package " + packageName + " should be in the stopped state")
+                .that(mPackageManager.isPackageStopped(packageName))
+                .isTrue();
     }
 
     @Test
@@ -183,11 +181,12 @@ public final class ForceStopTest {
                 () -> mActivityManager.forceStopPackage(packageName));
 
         if (!gotRestarted.block(DELAY_MILLIS)) {
-            fail("Didn't get ACTION_PACKAGE_RESTARTED");
+            assertWithMessage("Didn't get ACTION_PACKAGE_RESTARTED").fail();
         }
         if (Flags.stayStopped()) {
-            assertTrue("EXTRA_TIME " + mTimestampMs + " not after " + preStopTimestampMs,
-                    mTimestampMs >= preStopTimestampMs);
+            assertWithMessage("EXTRA_TIME " + mTimestampMs + " not after " + preStopTimestampMs)
+                    .that(mTimestampMs >= preStopTimestampMs)
+                    .isTrue();
         }
     }
 
@@ -223,11 +222,12 @@ public final class ForceStopTest {
 
         forceStopAndStartSimpleActivity(intent);
 
-        assertTrue("EXTRA_TIME " + mTimestampMs + " not after " + preUnstopTimestampMs,
-                mTimestampMs >= preUnstopTimestampMs);
+        assertWithMessage("EXTRA_TIME " + mTimestampMs + " not after " + preUnstopTimestampMs)
+                .that(mTimestampMs >= preUnstopTimestampMs)
+                .isTrue();
 
         if (!gotUnstopped.block(DELAY_MILLIS)) {
-            fail("Didn't get ACTION_PACKAGE_UNSTOPPED");
+            assertWithMessage("Didn't get ACTION_PACKAGE_UNSTOPPED").fail();
         }
 
         // Force-stop it again to clean up
@@ -267,15 +267,19 @@ public final class ForceStopTest {
 
         mTargetContext.startActivity(intent);
 
-        assertTrue("Activity didn't start", gotActivityStarted.block(DELAY_MILLIS));
+        assertWithMessage("Activity didn't start")
+                .that(gotActivityStarted.block(DELAY_MILLIS))
+                .isTrue();
 
         runWithShellPermissionIdentity(
                 () -> mActivityManager.forceStopPackage(APP_PACKAGE));
 
         mTargetContext.startActivity(intent);
 
-        assertTrue("Didn't get LOCKED_BOOT_COMPLETED", gotLockedBoot.block(DELAY_MILLIS));
-        assertTrue("Didn't get BOOT_COMPLETED", gotBoot.block(DELAY_MILLIS));
+        assertWithMessage("Didn't get LOCKED_BOOT_COMPLETED")
+                .that(gotLockedBoot.block(DELAY_MILLIS))
+                .isTrue();
+        assertWithMessage("Didn't get BOOT_COMPLETED").that(gotBoot.block(DELAY_MILLIS)).isTrue();
 
         runWithShellPermissionIdentity(
                 () -> mActivityManager.forceStopPackage(APP_PACKAGE));
@@ -323,10 +327,14 @@ public final class ForceStopTest {
                     }
                 });
 
-        assertTrue("App didn't start", gotAppStarted.block(DELAY_MILLIS));
+        assertWithMessage("App didn't start").that(gotAppStarted.block(DELAY_MILLIS)).isTrue();
 
-        assertFalse("Got unexpected LOCKED_BOOT_COMPLETED", gotLockedBoot.block(DELAY_MILLIS));
-        assertFalse("Got unexpected BOOT_COMPLETED", gotBoot.block(SHORT_DELAY_MILLIS));
+        assertWithMessage("Got unexpected LOCKED_BOOT_COMPLETED")
+                .that(gotLockedBoot.block(DELAY_MILLIS))
+                .isFalse();
+        assertWithMessage("Got unexpected BOOT_COMPLETED")
+                .that(gotBoot.block(SHORT_DELAY_MILLIS))
+                .isFalse();
 
         runWithShellPermissionIdentity(
                 () -> mActivityManager.forceStopPackage(APP_PACKAGE));
@@ -350,11 +358,16 @@ public final class ForceStopTest {
     @Test
     @RequiresFlagsEnabled(FLAG_USE_APP_INFO_NOT_LAUNCHED)
     public void testNoBootCompletedBroadcastsOnFirstLaunch_broadcast() throws Exception {
-        verifyNoBootCompletedBroadcastsGeneric(() -> {
-            CommandReceiver.sendCommandWithResultReceiver(mTargetContext,
-                    CommandReceiver.COMMAND_EMPTY, APP_PACKAGE, APP_PACKAGE,
-                    0, null, null);
-        });
+        verifyNoBootCompletedBroadcastsGeneric(
+                () ->
+                        CommandReceiver.sendCommandWithResultReceiver(
+                                mTargetContext,
+                                CommandReceiver.COMMAND_EMPTY,
+                                APP_PACKAGE,
+                                APP_PACKAGE,
+                                0,
+                                null,
+                                null));
     }
 
     /**
@@ -363,11 +376,13 @@ public final class ForceStopTest {
     @Test
     @RequiresFlagsEnabled(FLAG_USE_APP_INFO_NOT_LAUNCHED)
     public void testNoBootCompletedBroadcastsOnFirstLaunch_bindService() throws Exception {
-        verifyNoBootCompletedBroadcastsGeneric(() -> {
-            int startReason = getStartReasonFromAppPackageService();
-            assertNotEquals("ForceStop reason should not be returned, should be -ve",
-                    ApplicationStartInfo.START_REASON_SERVICE, startReason);
-        });
+        verifyNoBootCompletedBroadcastsGeneric(
+                () -> {
+                    int startReason = getStartReasonFromAppPackageService();
+                    assertWithMessage("ForceStop reason should not be returned, should be -ve")
+                            .that(startReason)
+                            .isNotEqualTo(ApplicationStartInfo.START_REASON_SERVICE);
+                });
     }
 
     @Test
@@ -401,7 +416,7 @@ public final class ForceStopTest {
                     }
                 });
 
-        assertTrue("App didn't start", appStarted.block(DELAY_MILLIS));
+        assertWithMessage("App didn't start").that(appStarted.block(DELAY_MILLIS)).isTrue();
 
         runWithShellPermissionIdentity(
                 () -> mActivityManager.forceStopPackage(APP_PACKAGE));
@@ -416,8 +431,10 @@ public final class ForceStopTest {
                 CommandReceiver.COMMAND_EMPTY, APP_PACKAGE, APP_PACKAGE,
                 0, null);
 
-        assertTrue("Didn't get LOCKED_BOOT_COMPLETED", gotLockedBoot.block(DELAY_MILLIS));
-        assertTrue("Didn't get BOOT_COMPLETED", gotBoot.block(DELAY_MILLIS));
+        assertWithMessage("Didn't get LOCKED_BOOT_COMPLETED")
+                .that(gotLockedBoot.block(DELAY_MILLIS))
+                .isTrue();
+        assertWithMessage("Didn't get BOOT_COMPLETED").that(gotBoot.block(DELAY_MILLIS)).isTrue();
 
         runWithShellPermissionIdentity(
                 () -> mActivityManager.forceStopPackage(APP_PACKAGE));
@@ -435,15 +452,17 @@ public final class ForceStopTest {
         runWithShellPermissionIdentity(
                 () -> mActivityManager.forceStopPackage(APP_PACKAGE));
         int startReason = getStartReasonFromAppPackageService();
-        assertEquals("ForceStop reason is not SERVICE",
-                ApplicationStartInfo.START_REASON_SERVICE, startReason);
+        assertWithMessage("ForceStop reason is not SERVICE")
+                .that(startReason)
+                .isEqualTo(ApplicationStartInfo.START_REASON_SERVICE);
 
         clearHistoricalStartInfo();
         // Check bindService after stop-app
         executeShellCommand("am stop-app --user " + mTargetContext.getUserId() + " " + APP_PACKAGE);
         startReason = getStartReasonFromAppPackageService();
-        assertNotEquals("ForceStop reason should not be returned, should be -ve",
-                ApplicationStartInfo.START_REASON_SERVICE, startReason);
+        assertWithMessage("ForceStop reason should not be returned, should be -ve")
+                .that(startReason)
+                .isNotEqualTo(ApplicationStartInfo.START_REASON_SERVICE);
 
         runWithShellPermissionIdentity(
                 () -> mActivityManager.forceStopPackage(APP_PACKAGE));
@@ -479,11 +498,14 @@ public final class ForceStopTest {
 
         // Check startActivity after a force-stop
         mTargetContext.startActivity(intent);
-        assertTrue("Activity didn't start", gotActivityStarted.block(DELAY_MILLIS));
+        assertWithMessage("Activity didn't start")
+                .that(gotActivityStarted.block(DELAY_MILLIS))
+                .isTrue();
 
         final int startReason = getStartReasonFromAppPackageService();
-        assertEquals("ForceStop reason is not ACTIVITY",
-                ApplicationStartInfo.START_REASON_START_ACTIVITY, startReason);
+        assertWithMessage("ForceStop reason is not ACTIVITY")
+                .that(startReason)
+                .isEqualTo(ApplicationStartInfo.START_REASON_START_ACTIVITY);
 
         runWithShellPermissionIdentity(
                 () -> mActivityManager.forceStopPackage(APP_PACKAGE));
@@ -498,24 +520,29 @@ public final class ForceStopTest {
         Intent serviceIntent = new Intent("android.app.stubs.ISecondaryMain");
         serviceIntent.setPackage(APP_PACKAGE);
         mUnstoppedReason = -2;
-        mTargetContext.bindService(serviceIntent, new ServiceConnection() {
-            @Override
-            public void onServiceConnected(ComponentName name, IBinder service) {
-                try {
-                    mUnstoppedReason =
-                            (ISecondary.Stub.asInterface(service)).getWasForceStoppedReason();
-                } catch (RemoteException re) {
-                }
-                serviceConnected.open();
-            }
+        mTargetContext.bindService(
+                serviceIntent,
+                new ServiceConnection() {
+                    @Override
+                    public void onServiceConnected(ComponentName name, IBinder service) {
+                        try {
+                            mUnstoppedReason =
+                                    (ISecondary.Stub.asInterface(service))
+                                            .getWasForceStoppedReason();
+                        } catch (RemoteException re) {
+                            // Expected
+                        }
+                        serviceConnected.open();
+                    }
 
-            @Override
-            public void onServiceDisconnected(ComponentName name) {
-            }
-        }, Context.BIND_AUTO_CREATE);
+                    @Override
+                    public void onServiceDisconnected(ComponentName name) {}
+                },
+                Context.BIND_AUTO_CREATE);
 
-        assertTrue("Couldn't connect to android.app.stubs.ISecondaryMain",
-                serviceConnected.block(DELAY_MILLIS));
+        assertWithMessage("Couldn't connect to android.app.stubs.ISecondaryMain")
+                .that(serviceConnected.block(DELAY_MILLIS))
+                .isTrue();
         return mUnstoppedReason;
     }
 
@@ -523,7 +550,7 @@ public final class ForceStopTest {
     @RequiresFlagsEnabled(FLAG_STAY_STOPPED)
     public void testPendingIntentCancellation() throws Exception {
         final PendingIntent pendingIntent = triggerPendingIntentCreation(APP_PACKAGE);
-        assertNotNull(pendingIntent);
+        assertThat(pendingIntent).isNotNull();
 
         final ConditionVariable pendingIntentCancelled = new ConditionVariable();
         pendingIntent.addCancelListener(mTargetContext.getMainExecutor(), pi -> {
@@ -534,18 +561,20 @@ public final class ForceStopTest {
 
         runWithShellPermissionIdentity(
                 () -> mActivityManager.forceStopPackage(APP_PACKAGE));
-        assertTrue("Package " + APP_PACKAGE + " should be in the stopped state",
-                mPackageManager.isPackageStopped(APP_PACKAGE));
+        assertWithMessage("Package " + APP_PACKAGE + " should be in the stopped state")
+                .that(mPackageManager.isPackageStopped(APP_PACKAGE))
+                .isTrue();
 
         // Verify that pending intent gets cancelled when the app that created it is force-stopped.
-        assertTrue("Did not receive PendingIntent cancellation callback",
-                pendingIntentCancelled.block(DELAY_MILLIS));
-        assertThrows(CanceledException.class, () -> pendingIntent.send());
+        assertWithMessage("Did not receive PendingIntent cancellation callback")
+                .that(pendingIntentCancelled.block(DELAY_MILLIS))
+                .isTrue();
+        assertThrows(CanceledException.class, pendingIntent::send);
 
         // Trigger the PendingIntent creation to verify the app can create new PendingIntents
         // as usual.
         final PendingIntent pendingIntent2 = triggerPendingIntentCreation(APP_PACKAGE);
-        assertNotNull(pendingIntent2);
+        assertThat(pendingIntent2).isNotNull();
 
         // Force-stop it again to clean up
         runWithShellPermissionIdentity(
@@ -556,7 +585,7 @@ public final class ForceStopTest {
     @RequiresFlagsDisabled(FLAG_STAY_STOPPED)
     public void testPendingIntentRetained() throws Exception {
         final PendingIntent pendingIntent = triggerPendingIntentCreation(APP_PACKAGE);
-        assertNotNull(pendingIntent);
+        assertThat(pendingIntent).isNotNull();
 
         final ConditionVariable pendingIntentCancelled = new ConditionVariable();
         pendingIntent.addCancelListener(mTargetContext.getMainExecutor(), pi -> {
@@ -567,20 +596,22 @@ public final class ForceStopTest {
 
         runWithShellPermissionIdentity(
                 () -> mActivityManager.forceStopPackage(APP_PACKAGE));
-        assertTrue("Package " + APP_PACKAGE + " should be in the stopped state",
-                mPackageManager.isPackageStopped(APP_PACKAGE));
+        assertWithMessage("Package " + APP_PACKAGE + " should be in the stopped state")
+                .that(mPackageManager.isPackageStopped(APP_PACKAGE))
+                .isTrue();
 
         // Verify that pending intent does not get cancelled when the app that created it
         // is force-stopped.
-        assertFalse("Received PendingIntent cancellation callback",
-                pendingIntentCancelled.block(DELAY_MILLIS));
+        assertWithMessage("Received PendingIntent cancellation callback")
+                .that(pendingIntentCancelled.block(DELAY_MILLIS))
+                .isFalse();
         // Trigger pendingIntent to verify there is no exception thrown.
         pendingIntent.send();
 
         // Trigger the PendingIntent creation to verify the app can create new PendingIntents
         // as usual.
         final PendingIntent pendingIntent2 = triggerPendingIntentCreation(APP_PACKAGE);
-        assertNotNull(pendingIntent2);
+        assertThat(pendingIntent2).isNotNull();
 
         // Force-stop it again to clean up
         runWithShellPermissionIdentity(
@@ -591,21 +622,23 @@ public final class ForceStopTest {
     public void testStickyBroadcastDispatch() throws Exception {
         final String pkg = APP_PROVIDER_PACKAGE;
         final IntentFilter intentFilter = triggerStickyBroadcastDispatch(pkg);
-        assertNotNull(intentFilter);
+        assertThat(intentFilter).isNotNull();
 
         runWithShellPermissionIdentity(
                 () -> mActivityManager.forceStopPackage(pkg));
-        assertTrue("Package " + pkg + " should be in the stopped state",
-                mPackageManager.isPackageStopped(pkg));
+        assertWithMessage("Package " + pkg + " should be in the stopped state")
+                .that(mPackageManager.isPackageStopped(pkg))
+                .isTrue();
 
         // Register a receiver which involves intent-filter resolution and then verify
         // that this intent-filter resolution does not bring the broadcast sender out of
         // force-stop state.
         final Intent stickyIntent = mTargetContext.registerReceiver(null, intentFilter);
-        assertNotNull(stickyIntent);
+        assertThat(stickyIntent).isNotNull();
 
-        assertTrue("Package " + pkg + " should still be in the stopped state",
-                mPackageManager.isPackageStopped(pkg));
+        assertWithMessage("Package " + pkg + " should still be in the stopped state")
+                .that(mPackageManager.isPackageStopped(pkg))
+                .isTrue();
     }
 
     private PendingIntent triggerPendingIntentCreation(final String packageName) throws Exception {
@@ -646,10 +679,10 @@ public final class ForceStopTest {
 
     // The receiver filter needs to be instantiated with the command to filter for before calling
     // startActivity.
-    private class ActivityReceiverFilter extends BroadcastReceiver {
+    private final class ActivityReceiverFilter extends BroadcastReceiver {
         // The activity we want to filter for.
-        private String mActivityToFilter;
-        private ConditionVariable mBroadcastCondition = new ConditionVariable();
+        private final String mActivityToFilter;
+        private final ConditionVariable mBroadcastCondition = new ConditionVariable();
 
         // Create the filter with the intent to look for.
         ActivityReceiverFilter(String activityToFilter) {
@@ -667,7 +700,7 @@ public final class ForceStopTest {
             }
         }
 
-        public boolean waitForActivity() throws Exception {
+        public boolean waitForActivity() {
             AmUtils.waitForBroadcastBarrier();
             // Wait for the broadcast
             return mBroadcastCondition.block(DELAY_MILLIS);

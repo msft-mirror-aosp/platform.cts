@@ -46,7 +46,6 @@ import android.os.PowerManager;
 import android.util.Log;
 
 import androidx.test.InstrumentationRegistry;
-import androidx.test.filters.FlakyTest;
 import androidx.test.filters.LargeTest;
 import androidx.test.runner.AndroidJUnit4;
 
@@ -61,6 +60,7 @@ import com.android.compatibility.common.util.UserSettings.Namespace;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.Description;
@@ -212,7 +212,7 @@ public class CtsSyncManagerTest {
     }
 
     @Test
-    @FlakyTest
+    @Ignore("b/415150077")
     public void testSoftErrorRetriesActiveApp() throws Exception {
         removeAllAccounts();
 
