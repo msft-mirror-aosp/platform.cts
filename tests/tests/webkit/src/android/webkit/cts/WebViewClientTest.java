@@ -22,6 +22,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
+import android.app.Activity;
 import android.graphics.Bitmap;
 import android.os.Message;
 import android.platform.test.annotations.AppModeFull;
@@ -129,12 +130,7 @@ public class WebViewClientTest extends SharedWebViewTest {
         SharedWebViewTestEnvironment environment = builder.build();
 
         if (environment.getWebView() != null) {
-            new PollingCheck(WebkitUtils.TEST_TIMEOUT_MS) {
-                @Override
-                protected boolean check() {
-                    return ((WebViewCtsActivity) environment.getContext()).hasWindowFocus();
-                }
-            }.run();
+            WebkitUtils.checkForWindowFocus((Activity) environment.getContext());
         }
 
         return environment;

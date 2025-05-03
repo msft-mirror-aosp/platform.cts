@@ -107,6 +107,7 @@ public class WebChromeClientTest extends SharedWebViewTest{
                 .onActivity(
                         activity -> {
                             WebView webView = ((WebViewCtsActivity) activity).getWebView();
+                            WebkitUtils.checkForWindowFocus(activity);
                             builder.setHostAppInvoker(
                                             SharedWebViewTestEnvironment.createHostAppInvoker(
                                                     activity))
