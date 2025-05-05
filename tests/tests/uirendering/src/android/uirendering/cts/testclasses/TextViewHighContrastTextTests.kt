@@ -238,8 +238,9 @@ class TextViewHighContrastTextTests : ActivityTestBase() {
         private const val REGULAR_THRESHOLD = 0.92
 
         // Representative characters including some from Unicode 7
+        // Avoid using emoji as the representation of those is non-standard and can vary by OEM
         private const val TEST_STRING1 = "Hambu"
-        private const val TEST_STRING2 = "🤪 \u20bd"
+        private const val TEST_STRING2 = "\u20bd"
         private const val TEST_STRING3 = "\u20b9\u0186\u0254\u1e24\u1e43"
 
         private const val ACCESSIBILITY_HIGH_TEXT_CONTRAST_ENABLED = "high_text_contrast_enabled"
