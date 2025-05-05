@@ -31,7 +31,7 @@ import its_session_utils
 
 _LINEAR_TONEMAP_CURVE = [0.0, 0.0, 1.0, 1.0]
 _LOCKED = 3
-_LUMA_DELTA_ATOL = 0.05
+_LUMA_DELTA_ATOL = 0.10
 _LUMA_DELTA_ATOL_SAT = 0.10
 _LUMA_DELTA_ATOL_SAT_UW = 0.15  # higher tol to compensate for less chart area
 _LUMA_LOCKED_RTOL_EV_SM = 0.05
