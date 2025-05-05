@@ -32,6 +32,7 @@ import static org.junit.Assume.assumeTrue;
 import android.annotation.NonNull;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.os.Build;
 import android.platform.test.annotations.AppModeNonSdkSandbox;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
@@ -73,6 +74,8 @@ public class CellularSecurityCallbackTest {
     private boolean mOnCellularIdentifierDisclosedChangedCalled;
     private PackageManager mPackageManager;
 
+    private static final boolean DEBUG = !"user".equals(Build.TYPE);
+
     @Before
     public void setUp() throws Exception {
         mPackageManager = getContext().getPackageManager();
@@ -87,7 +90,12 @@ public class CellularSecurityCallbackTest {
             assumeNoException("Skipping tests because Telephony service is null", e);
         }
 
-        MockModemManager.enforceMockModemDeveloperSetting();
+        try {
+            MockModemManager.enforceMockModemDeveloperSetting();
+        } catch (IllegalStateException ex) {
+            assumeTrue("Skip on user builds", DEBUG);
+            throw ex;
+        }
         sMockModemManager = new MockModemManager();
         assertNotNull(sMockModemManager);
         assertTrue(sMockModemManager.connectMockModemService());
