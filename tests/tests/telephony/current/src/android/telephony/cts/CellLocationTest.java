@@ -31,6 +31,7 @@ import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.telephony.CellLocation;
 import android.telephony.PhoneStateListener;
 import android.telephony.TelephonyManager;
+import android.telephony.cts.util.LocationHelper;
 import android.telephony.gsm.GsmCellLocation;
 import android.util.Log;
 
@@ -48,10 +49,10 @@ public class CellLocationTest {
             DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private boolean mOnCellLocationChangedCalled;
-    private Boolean mWasLocationEnabled;
     private final Object mLock = new Object();
     private TelephonyManager mTelephonyManager;
     private PackageManager mPackageManager;
+    private LocationHelper mLocationHelper;
     private PhoneStateListener mListener;
     private static ConnectivityManager mCm;
     private static final String TAG = "android.telephony.cts.CellLocationTest";
@@ -62,17 +63,15 @@ public class CellLocationTest {
                 (TelephonyManager)getContext().getSystemService(Context.TELEPHONY_SERVICE);
         mCm = (ConnectivityManager)getContext().getSystemService(Context.CONNECTIVITY_SERVICE);
         mPackageManager = getContext().getPackageManager();
+        mLocationHelper = new LocationHelper(getContext());
     }
 
     @After
     public void tearDown() throws Exception {
+        mLocationHelper.tearDown();
         if (mListener != null) {
             // unregister listener
             mTelephonyManager.listen(mListener, PhoneStateListener.LISTEN_NONE);
-        }
-        if (mWasLocationEnabled != null) {
-            TelephonyManagerTest.setLocationEnabled(mWasLocationEnabled);
-            mWasLocationEnabled = null;
         }
     }
 
@@ -83,8 +82,7 @@ public class CellLocationTest {
             return;
         }
 
-        TelephonyManagerTest.grantLocationPermissions();
-        mWasLocationEnabled = TelephonyManagerTest.setLocationEnabled(true);
+        mLocationHelper.enable();
 
         // getCellLocation should never return null,
         // but that is allowed if the cell network type
