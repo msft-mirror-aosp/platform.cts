@@ -64,6 +64,7 @@ public class WebViewDarkModeLightThemeTest extends WebViewDarkModeTestBase {
 
     @Test
     public void testSimplifedDarkMode_rendersLight() throws Throwable {
+        WebkitUtils.checkForWindowFocus(mActivityRule.getActivity());
         setWebViewSize(64, 64);
 
         // Set the webview non-focusable to avoid drawing the focus highlight.
