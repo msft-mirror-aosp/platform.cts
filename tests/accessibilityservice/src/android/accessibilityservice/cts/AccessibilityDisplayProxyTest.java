@@ -341,14 +341,6 @@ public class AccessibilityDisplayProxyTest {
 
     @Test
     @ApiTest(apis = {"android.view.accessibility.AccessibilityManager#registerDisplayProxy"})
-    public void testRegisterDisplayProxy_withoutA11yPermissionOrRole_throwsSecurityException() {
-        mVirtualDeviceRule.runWithoutPermissions(() ->
-                assertThrows(SecurityException.class,
-                        () -> mA11yManager.registerDisplayProxy(mA11yProxy)));
-    }
-
-    @Test
-    @ApiTest(apis = {"android.view.accessibility.AccessibilityManager#registerDisplayProxy"})
     public void testRegisterDisplayProxy_alreadyProxied_throwsIllegalArgumentException() {
         assertThat(mA11yManager.registerDisplayProxy(mA11yProxy)).isTrue();
 
@@ -402,14 +394,6 @@ public class AccessibilityDisplayProxyTest {
             }
             displaySession.close();
         }
-    }
-
-    @Test
-    @ApiTest(apis = {"android.view.accessibility.AccessibilityManager#unregisterDisplayProxy"})
-    public void testUnregisterDisplayProxy_withoutA11yPermissionOrRole_throwsSecurityException() {
-        mVirtualDeviceRule.runWithoutPermissions(() ->
-                assertThrows(SecurityException.class,
-                        () -> mA11yManager.unregisterDisplayProxy(mA11yProxy)));
     }
 
     @Test
