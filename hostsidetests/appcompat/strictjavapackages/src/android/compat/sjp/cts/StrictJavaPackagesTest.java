@@ -1021,8 +1021,8 @@ public class StrictJavaPackagesTest extends BaseHostJUnit4Test {
                     ImmutableSet.of("Landroidx/window/common/", "Landroidx/window/extensions/",
                         "Landroidx/window/util/"))
                 .put("androidx.window.sidecar",
-                    ImmutableSet.of("Landroidx/window/common/", "Landroidx/window/sidecar",
-                        "Landroidx/window/util"))
+                    ImmutableSet.of("Landroidx/window/common/", "Landroidx/window/extensions/",
+                         "Landroidx/window/sidecar", "Landroidx/window/util"))
                 .put("com.google.android.camera.experimental2019",
                     ImmutableSet.of("Landroidx/annotation"))
                 .put("com.google.android.camera.experimental2020_midyear",
