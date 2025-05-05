@@ -15,29 +15,42 @@
  */
 package android.app.cts;
 
-import java.util.List;
+import static com.google.common.truth.Truth.assertThat;
 
 import android.app.ActivityManager;
 import android.app.ActivityManager.RunningAppProcessInfo;
 import android.content.Context;
 import android.os.Parcel;
-import android.test.AndroidTestCase;
 
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
 
-public class ActivityManager_RunningAppProcessInfoTest extends AndroidTestCase {
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
-    public void testRunningAppProcessInfo() {
-        // test constructor
+import java.util.List;
+
+@RunWith(AndroidJUnit4.class)
+public final class ActivityManager_RunningAppProcessInfoTest {
+
+    @Test
+    public void testRunningAppProcessInfo_constructor() {
         new RunningAppProcessInfo();
         new RunningAppProcessInfo("test", 100, new String[]{"com.android", "com.android.test"});
+    }
 
-        final ActivityManager am = (ActivityManager)
-                    getContext().getSystemService(Context.ACTIVITY_SERVICE);
+    @Test
+    public void testRunningAppProcessInfo_parcel() {
+        final ActivityManager am =
+                (ActivityManager)
+                        InstrumentationRegistry.getInstrumentation()
+                                .getTargetContext()
+                                .getSystemService(Context.ACTIVITY_SERVICE);
         final List<RunningAppProcessInfo> list = am.getRunningAppProcesses();
         final RunningAppProcessInfo rap = list.get(0);
 
         // test describeContents function
-        assertEquals(0, rap.describeContents());
+        assertThat(rap.describeContents()).isEqualTo(0);
         final Parcel p = Parcel.obtain();
 
         // test writeToParcel function
@@ -48,13 +61,12 @@ public class ActivityManager_RunningAppProcessInfoTest extends AndroidTestCase {
         p.setDataPosition(0);
         r.readFromParcel(p);
 
-        assertEquals(rap.pid, r.pid);
-        assertEquals(rap.processName, r.processName);
-        assertEquals(rap.pkgList.length, r.pkgList.length);
+        assertThat(r.pid).isEqualTo(rap.pid);
+        assertThat(r.processName).isEqualTo(rap.processName);
+        assertThat(r.pkgList.length).isEqualTo(rap.pkgList.length);
 
         for (int i = 0; i < rap.pkgList.length; i++) {
-            assertEquals(rap.pkgList[i], r.pkgList[i]);
+            assertThat(r.pkgList[i]).isEqualTo(rap.pkgList[i]);
         }
     }
-
 }
