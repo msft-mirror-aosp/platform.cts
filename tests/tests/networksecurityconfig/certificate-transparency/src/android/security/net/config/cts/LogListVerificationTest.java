@@ -26,14 +26,11 @@ import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.net.http.X509TrustManagerExtensions;
-import android.platform.test.annotations.RequiresFlagsEnabled;
-import android.platform.test.flag.junit.CheckFlagsRule;
-import android.platform.test.flag.junit.DeviceFlagsValueProvider;
-import android.security.Flags;
+import android.os.Build;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.filters.SdkSuppress;
 
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -46,14 +43,8 @@ import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.X509TrustManager;
 
 @RunWith(AndroidJUnit4.class)
-@RequiresFlagsEnabled({
-    Flags.FLAG_CERTIFICATE_TRANSPARENCY_CONFIGURATION,
-    com.android.org.conscrypt.flags.Flags.FLAG_CERTIFICATE_TRANSPARENCY_PLATFORM
-})
+@SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA, codeName = "Baklava")
 public class LogListVerificationTest extends BaseTestCase {
-
-    @Rule
-    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Test
     public void testCTVerification_whenLogListPresent_sctDomain_connectionSucceeds()
