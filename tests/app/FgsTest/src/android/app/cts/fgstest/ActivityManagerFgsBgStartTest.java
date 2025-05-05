@@ -1425,6 +1425,7 @@ public final class ActivityManagerFgsBgStartTest {
     }
 
     /** Test a FGS cannot start from BG if the app only has the SYSTEM_ALERT_WINDOW permission. */
+    @Presubmit
     @Test
     public void testFgsStartSystemAlertWindow() throws Exception {
         ApplicationInfo app1Info =
