@@ -16,34 +16,48 @@
 
 package android.app.cts;
 
-import android.app.stubs.ActivityTestsBase;
 import android.app.stubs.LaunchpadActivity;
+import android.app.stubs.LaunchpadHelper;
 import android.app.stubs.LaunchpadTabActivity;
 import android.content.ComponentName;
+import android.content.Context;
 import android.content.Intent;
 
-public class ActivityGroupTest extends ActivityTestsBase {
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
+
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
+@RunWith(AndroidJUnit4.class)
+public final class ActivityGroupTest {
     private Intent mTabIntent;
+    private LaunchpadHelper mLaunchpadHelper;
 
-    @Override
-    protected void setUp() throws Exception {
-        super.setUp();
-        mTabIntent = new Intent(mContext, LaunchpadTabActivity.class);
-        mTabIntent.putExtra("tab", new ComponentName(mContext, LaunchpadActivity.class));
+    @Before
+    public void setUp() throws Exception {
+        Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
+        mLaunchpadHelper = new LaunchpadHelper(context);
+        mTabIntent = new Intent(context, LaunchpadTabActivity.class);
+        mTabIntent.putExtra("tab", new ComponentName(context, LaunchpadActivity.class));
     }
 
-    public void testTabBasic() throws Exception {
-        mIntent = mTabIntent;
-        runLaunchpad(LaunchpadActivity.LIFECYCLE_BASIC);
+    @Test
+    public void testTabBasic() {
+        mLaunchpadHelper.setIntent(mTabIntent);
+        mLaunchpadHelper.runLaunchpad(LaunchpadActivity.LIFECYCLE_BASIC);
     }
 
-    public void testTabScreen() throws Exception {
-        mIntent = mTabIntent;
-        runLaunchpad(LaunchpadActivity.LIFECYCLE_SCREEN);
+    @Test
+    public void testTabScreen() {
+        mLaunchpadHelper.setIntent(mTabIntent);
+        mLaunchpadHelper.runLaunchpad(LaunchpadActivity.LIFECYCLE_SCREEN);
     }
 
-    public void testTabDialog() throws Exception {
-        mIntent = mTabIntent;
-        runLaunchpad(LaunchpadActivity.LIFECYCLE_DIALOG);
+    @Test
+    public void testTabDialog() {
+        mLaunchpadHelper.setIntent(mTabIntent);
+        mLaunchpadHelper.runLaunchpad(LaunchpadActivity.LIFECYCLE_DIALOG);
     }
 }

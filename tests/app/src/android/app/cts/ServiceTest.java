@@ -33,9 +33,9 @@ import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
-import android.app.stubs.ActivityTestsBase;
 import android.app.stubs.IsolatedService;
 import android.app.stubs.LaunchpadActivity;
+import android.app.stubs.LaunchpadHelper;
 import android.app.stubs.LocalDeniedService;
 import android.app.stubs.LocalGrantedService;
 import android.app.stubs.LocalPhoneCallService;
@@ -68,6 +68,7 @@ import android.util.Log;
 import android.util.SparseArray;
 
 import androidx.annotation.NonNull;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.FlakyTest;
 import androidx.test.filters.MediumTest;
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -80,6 +81,11 @@ import com.android.server.am.nano.ProcessRecordProto;
 
 import com.google.protobuf.nano.InvalidProtocolBufferNanoException;
 
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
 import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -91,7 +97,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.BooleanSupplier;
 
 @Presubmit
-public final class ServiceTest extends ActivityTestsBase {
+@RunWith(AndroidJUnit4.class)
+public final class ServiceTest {
     private static final String TAG = "ServiceTest";
     private static final String NOTIFICATION_CHANNEL_ID = TAG;
     private static final int STATE_START_1 = 0;
@@ -132,6 +139,7 @@ public final class ServiceTest extends ActivityTestsBase {
     private Executor mBackgroundThreadExecutor;
 
     private IBinder mStateReceiver;
+    private LaunchpadHelper mLaunchpadHelper;
 
     private static final class EmptyConnection implements ServiceConnection {
         @Override
@@ -227,7 +235,7 @@ public final class ServiceTest extends ActivityTestsBase {
                 try {
                     service.transact(LocalService.SET_REPORTER_CODE, data, null, 0);
                 } catch (RemoteException e) {
-                    finishBad("DeadObjectException when sending reporting object");
+                    mLaunchpadHelper.finishBad("DeadObjectException when sending reporting object");
                 }
                 data.recycle();
             }
@@ -236,20 +244,22 @@ public final class ServiceTest extends ActivityTestsBase {
                 mCount++;
                 if (mExpectedServiceState == STATE_START_1) {
                     if (mCount == 1) {
-                        finishGood();
+                        mLaunchpadHelper.finishGood();
                     } else {
-                        finishBad("onServiceConnected() again on an object when it "
-                                + "should have been the first time");
+                        mLaunchpadHelper.finishBad(
+                                "onServiceConnected() again on an object when it "
+                                        + "should have been the first time");
                     }
                 } else if (mExpectedServiceState == STATE_START_2) {
                     if (mCount == 2) {
-                        finishGood();
+                        mLaunchpadHelper.finishGood();
                     } else {
-                        finishBad("onServiceConnected() the first time on an object "
-                                + "when it should have been the second time");
+                        mLaunchpadHelper.finishBad(
+                                "onServiceConnected() the first time on an object "
+                                        + "when it should have been the second time");
                     }
                 } else {
-                    finishBad("onServiceConnected() called unexpectedly");
+                    mLaunchpadHelper.finishBad("onServiceConnected() called unexpectedly");
                 }
             }
         }
@@ -259,12 +269,13 @@ public final class ServiceTest extends ActivityTestsBase {
             if (mMonitor) {
                 if (mExpectedServiceState == STATE_DESTROY) {
                     if (mExpectDisconnect) {
-                        finishGood();
+                        mLaunchpadHelper.finishGood();
                     } else {
-                        finishBad("onServiceDisconnected() when it shouldn't have been");
+                        mLaunchpadHelper.finishBad(
+                                "onServiceDisconnected() when it shouldn't have been");
                     }
                 } else {
-                    finishBad("onServiceDisconnected() called unexpectedly");
+                    mLaunchpadHelper.finishBad("onServiceDisconnected() called unexpectedly");
                 }
             }
         }
@@ -283,7 +294,7 @@ public final class ServiceTest extends ActivityTestsBase {
             try {
                 mService.transact(code, data, null /* reply */, 0);
             } catch (RemoteException e) {
-                finishBad("DeadObjectException when sending reporting object");
+                mLaunchpadHelper.finishBad("DeadObjectException when sending reporting object");
             }
             data.recycle();
         }
@@ -365,7 +376,7 @@ public final class ServiceTest extends ActivityTestsBase {
             try {
                 mService.transact(LocalService.GET_ZYGOTE_PRELOAD_CALLED, data, reply, 0);
             } catch (RemoteException e) {
-                finishBad("DeadObjectException when sending reporting object");
+                mLaunchpadHelper.finishBad("DeadObjectException when sending reporting object");
             }
             boolean value = reply.readBoolean();
             reply.recycle();
@@ -380,7 +391,7 @@ public final class ServiceTest extends ActivityTestsBase {
             try {
                 mService.transact(LocalService.SET_VALUE_CODE, data, null, 0);
             } catch (RemoteException e) {
-                finishBad("DeadObjectException when sending reporting object");
+                mLaunchpadHelper.finishBad("DeadObjectException when sending reporting object");
             }
             data.recycle();
         }
@@ -392,7 +403,7 @@ public final class ServiceTest extends ActivityTestsBase {
             try {
                 mService.transact(transactCode, data, reply, 0);
             } catch (RemoteException e) {
-                finishBad("DeadObjectException when sending reporting object");
+                mLaunchpadHelper.finishBad("DeadObjectException when sending reporting object");
             }
             int value = reply.readInt();
             reply.recycle();
@@ -483,10 +494,10 @@ public final class ServiceTest extends ActivityTestsBase {
         try {
             mExpectedServiceState = STATE_START_1;
             mContext.startService(new Intent(service).putExtras(bundle));
-            waitForResultOrThrow(DELAY, "service to start first time");
+            mLaunchpadHelper.waitForResultOrThrow(DELAY, "service to start first time");
             mExpectedServiceState = STATE_START_2;
             mContext.startService(new Intent(service).putExtras(bundle));
-            waitForResultOrThrow(DELAY, "service to start second time");
+            mLaunchpadHelper.waitForResultOrThrow(DELAY, "service to start second time");
             success = true;
         } finally {
             if (!success) {
@@ -495,18 +506,19 @@ public final class ServiceTest extends ActivityTestsBase {
         }
         mExpectedServiceState = STATE_DESTROY;
         mContext.stopService(service);
-        waitForResultOrThrow(DELAY, "service to be destroyed");
+        mLaunchpadHelper.waitForResultOrThrow(DELAY, "service to be destroyed");
     }
 
     private NotificationManager getNotificationManager() {
-        return (NotificationManager) getContext().getSystemService(Context.NOTIFICATION_SERVICE);
+        return mContext.getSystemService(NotificationManager.class);
     }
 
     private void sendNotification(int id, String title) {
-        Notification notification = new Notification.Builder(getContext(), NOTIFICATION_CHANNEL_ID)
-            .setContentTitle(title)
-            .setSmallIcon(R.drawable.black)
-            .build();
+        Notification notification =
+                new Notification.Builder(mContext, NOTIFICATION_CHANNEL_ID)
+                        .setContentTitle(title)
+                        .setSmallIcon(R.drawable.black)
+                        .build();
         getNotificationManager().notify(id, notification);
     }
 
@@ -515,7 +527,7 @@ public final class ServiceTest extends ActivityTestsBase {
     }
 
     private void assertNotification(int id, String expectedTitle, boolean shouldHaveFgsFlag) {
-        String packageName = getContext().getPackageName();
+        String packageName = mContext.getPackageName();
         String titleErrorMsg;
         String flagErrorMsg;
         int i = 0;
@@ -557,16 +569,16 @@ public final class ServiceTest extends ActivityTestsBase {
             SystemClock.sleep(DELAY); // 5 seconds delay
         }
         if (flagErrorMsg != null) {
-            fail(flagErrorMsg);
+            assertWithMessage(flagErrorMsg).fail();
         }
         if (titleErrorMsg != null) {
-            fail(titleErrorMsg);
+            assertWithMessage(titleErrorMsg).fail();
         }
-        fail("No notification with id " + id + " for package " + packageName);
+        assertWithMessage("No notification with id " + id + " for package " + packageName).fail();
     }
 
     private void assertNoNotification(int id) {
-        String packageName = getContext().getPackageName();
+        String packageName = mContext.getPackageName();
         StatusBarNotification found = null;
         for (int i = 1; i<=2; i++) {
             found = null;
@@ -622,11 +634,11 @@ public final class ServiceTest extends ActivityTestsBase {
             mExpectedServiceState = STATE_START_1;
             mContext.bindService(service, conn, 0);
             mContext.startService(service);
-            waitForResultOrThrow(DELAY, EXIST_CONN_TO_RECEIVE_SERVICE);
+            mLaunchpadHelper.waitForResultOrThrow(DELAY, EXIST_CONN_TO_RECEIVE_SERVICE);
 
             // Expect to see the second TestConnection connected.
             mContext.bindService(service, conn2, 0);
-            waitForResultOrThrow(DELAY, "new connection to receive service");
+            mLaunchpadHelper.waitForResultOrThrow(DELAY, "new connection to receive service");
 
             mContext.unbindService(conn2);
             success = true;
@@ -641,7 +653,7 @@ public final class ServiceTest extends ActivityTestsBase {
         // Expect to see the TestConnection disconnected.
         mExpectedServiceState = STATE_DESTROY;
         mContext.stopService(service);
-        waitForResultOrThrow(DELAY, EXIST_CONN_TO_LOSE_SERVICE);
+        mLaunchpadHelper.waitForResultOrThrow(DELAY, EXIST_CONN_TO_LOSE_SERVICE);
 
         mContext.unbindService(conn);
 
@@ -653,7 +665,7 @@ public final class ServiceTest extends ActivityTestsBase {
             mExpectedServiceState = STATE_START_1;
             mContext.bindService(service, conn, 0);
             mContext.startService(service);
-            waitForResultOrThrow(DELAY, EXIST_CONN_TO_RECEIVE_SERVICE);
+            mLaunchpadHelper.waitForResultOrThrow(DELAY, EXIST_CONN_TO_RECEIVE_SERVICE);
 
             success = true;
         } finally {
@@ -667,7 +679,7 @@ public final class ServiceTest extends ActivityTestsBase {
         conn.setMonitor(false);
         mExpectedServiceState = STATE_UNBIND;
         mContext.stopService(service);
-        waitForResultOrThrow(DELAY, EXIST_CONN_TO_LOSE_SERVICE);
+        mLaunchpadHelper.waitForResultOrThrow(DELAY, EXIST_CONN_TO_LOSE_SERVICE);
 
         mContext.unbindService(conn);
 
@@ -679,7 +691,7 @@ public final class ServiceTest extends ActivityTestsBase {
             mExpectedServiceState = STATE_START_1;
             mContext.bindService(service, conn, 0);
             mContext.startService(service);
-            waitForResultOrThrow(DELAY, EXIST_CONN_TO_RECEIVE_SERVICE);
+            mLaunchpadHelper.waitForResultOrThrow(DELAY, EXIST_CONN_TO_RECEIVE_SERVICE);
 
             success = true;
         } finally {
@@ -693,17 +705,17 @@ public final class ServiceTest extends ActivityTestsBase {
         conn.setMonitor(false);
         mExpectedServiceState = STATE_UNBIND_ONLY;
         mContext.unbindService(conn);
-        waitForResultOrThrow(DELAY, "existing connection to unbind service");
+        mLaunchpadHelper.waitForResultOrThrow(DELAY, "existing connection to unbind service");
 
         // Expect to see the service rebound.
         mExpectedServiceState = STATE_REBIND;
         mContext.bindService(service, conn, 0);
-        waitForResultOrThrow(DELAY, "existing connection to rebind service");
+        mLaunchpadHelper.waitForResultOrThrow(DELAY, "existing connection to rebind service");
 
         // Expect to see the service unbind and then destroyed.
         mExpectedServiceState = STATE_UNBIND;
         mContext.stopService(service);
-        waitForResultOrThrow(DELAY, EXIST_CONN_TO_LOSE_SERVICE);
+        mLaunchpadHelper.waitForResultOrThrow(DELAY, EXIST_CONN_TO_LOSE_SERVICE);
 
         mContext.unbindService(conn);
     }
@@ -720,7 +732,7 @@ public final class ServiceTest extends ActivityTestsBase {
             mExpectedServiceState = STATE_START_1;
             mContext.bindService(
                     service, conn, Context.BIND_AUTO_CREATE);
-            waitForResultOrThrow(DELAY, "connection to start and receive service");
+            mLaunchpadHelper.waitForResultOrThrow(DELAY, "connection to start and receive service");
             success = true;
         } finally {
             if (!success) {
@@ -729,13 +741,13 @@ public final class ServiceTest extends ActivityTestsBase {
         }
         mExpectedServiceState = STATE_UNBIND;
         mContext.unbindService(conn);
-        waitForResultOrThrow(DELAY, "disconnecting from service");
+        mLaunchpadHelper.waitForResultOrThrow(DELAY, "disconnecting from service");
     }
 
-    @Override
-    protected void setUp() throws Exception {
-        super.setUp();
-        mContext = getContext();
+    @Before
+    public void setUp() throws Exception {
+        mContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
+        mLaunchpadHelper = new LaunchpadHelper(mContext);
         PermissionUtils.grantPermission(mContext.getPackageName(), POST_NOTIFICATIONS);
         mLocalService = new Intent(mContext, LocalService.class);
         mExternalService = new Intent();
@@ -768,9 +780,8 @@ public final class ServiceTest extends ActivityTestsBase {
         mBackgroundThreadExecutor = handler::post;
     }
 
-    @Override
-    protected void tearDown() throws Exception {
-        super.tearDown();
+    @After
+    public void tearDown() throws Exception {
         executeShellCommand("cmd activity fgs-notification-rate-limit enable");
         getNotificationManager().deleteNotificationChannel(NOTIFICATION_CHANNEL_ID);
         mContext.stopService(mLocalService);
@@ -804,37 +815,44 @@ public final class ServiceTest extends ActivityTestsBase {
                 int count = data.readInt();
                 if (mExpectedServiceState == STATE_START_1) {
                     if (count == 1) {
-                        finishGood();
+                        mLaunchpadHelper.finishGood();
                     } else {
-                        finishBad("onStart() again on an object when it "
-                                + "should have been the first time");
+                        mLaunchpadHelper.finishBad(
+                                "onStart() again on an object when it "
+                                        + "should have been the first time");
                     }
                 } else if (mExpectedServiceState == STATE_START_2) {
                     if (count == 2) {
-                        finishGood();
+                        mLaunchpadHelper.finishGood();
                     } else {
-                        finishBad("onStart() the first time on an object when it "
-                                + "should have been the second time");
+                        mLaunchpadHelper.finishBad(
+                                "onStart() the first time on an object when it "
+                                        + "should have been the second time");
                     }
                 } else if (mExpectedServiceState == STATE_START_3) {
                     if (count == 3) {
-                        finishGood();
+                        mLaunchpadHelper.finishGood();
                     } else {
-                        finishBad("onStart() the first time on an object when it "
-                                + "should have been the third time");
+                        mLaunchpadHelper.finishBad(
+                                "onStart() the first time on an object when it "
+                                        + "should have been the third time");
                     }
                 } else {
-                    finishBad("onStart() was called when not expected (state="
-                            + mExpectedServiceState + ")");
+                    mLaunchpadHelper.finishBad(
+                            "onStart() was called when not expected (state="
+                                    + mExpectedServiceState
+                                    + ")");
                 }
                 return true;
             } else if (code == LocalService.DESTROYED_CODE) {
                 data.enforceInterface(LocalService.SERVICE_LOCAL);
                 if (mExpectedServiceState == STATE_DESTROY) {
-                    finishGood();
+                    mLaunchpadHelper.finishGood();
                 } else {
-                    finishBad("onDestroy() was called when not expected (state="
-                            + mExpectedServiceState + ")");
+                    mLaunchpadHelper.finishBad(
+                            "onDestroy() was called when not expected (state="
+                                    + mExpectedServiceState
+                                    + ")");
                 }
                 return true;
             } else if (code == LocalService.UNBIND_CODE) {
@@ -842,28 +860,34 @@ public final class ServiceTest extends ActivityTestsBase {
                 if (mExpectedServiceState == STATE_UNBIND) {
                     mExpectedServiceState = STATE_DESTROY;
                 } else if (mExpectedServiceState == STATE_UNBIND_ONLY) {
-                    finishGood();
+                    mLaunchpadHelper.finishGood();
                 } else {
-                    finishBad("onUnbind() was called when not expected (state="
-                            + mExpectedServiceState + ")");
+                    mLaunchpadHelper.finishBad(
+                            "onUnbind() was called when not expected (state="
+                                    + mExpectedServiceState
+                                    + ")");
                 }
                 return true;
             } else if (code == LocalService.REBIND_CODE) {
                 data.enforceInterface(LocalService.SERVICE_LOCAL);
                 if (mExpectedServiceState == STATE_REBIND) {
-                    finishGood();
+                    mLaunchpadHelper.finishGood();
                 } else {
-                    finishBad("onRebind() was called when not expected (state="
-                            + mExpectedServiceState + ")");
+                    mLaunchpadHelper.finishBad(
+                            "onRebind() was called when not expected (state="
+                                    + mExpectedServiceState
+                                    + ")");
                 }
                 return true;
             } else if (code == LocalService.STOP_SELF_SUCCESS_UNBIND_CODE) {
                 data.enforceInterface(LocalService.SERVICE_LOCAL);
                 if (mExpectedServiceState == STATE_STOP_SELF_SUCCESS_UNBIND) {
-                    finishGood();
+                    mLaunchpadHelper.finishGood();
                 } else {
-                    finishBad("onUnbind() was called when not expected (state="
-                            + mExpectedServiceState + ")");
+                    mLaunchpadHelper.finishBad(
+                            "onUnbind() was called when not expected (state="
+                                    + mExpectedServiceState
+                                    + ")");
                 }
                 return true;
             } else {
@@ -872,6 +896,7 @@ public final class ServiceTest extends ActivityTestsBase {
         }
     }
 
+    @Test
     public void testStopSelf() {
         TestStopSelfConnection conn = new TestStopSelfConnection();
         boolean success = false;
@@ -881,7 +906,7 @@ public final class ServiceTest extends ActivityTestsBase {
             mExpectedServiceState = STATE_START_1;
             mContext.bindService(service, conn, 0);
             mContext.startService(service);
-            waitForResultOrThrow(DELAY, EXIST_CONN_TO_RECEIVE_SERVICE);
+            mLaunchpadHelper.waitForResultOrThrow(DELAY, EXIST_CONN_TO_RECEIVE_SERVICE);
             success = true;
         } finally {
             if (!success) {
@@ -892,11 +917,12 @@ public final class ServiceTest extends ActivityTestsBase {
         // Expect to see the service unbind and then destroyed.
         mExpectedServiceState = STATE_UNBIND;
         conn.stopSelf();
-        waitForResultOrThrow(DELAY, EXIST_CONN_TO_LOSE_SERVICE);
+        mLaunchpadHelper.waitForResultOrThrow(DELAY, EXIST_CONN_TO_LOSE_SERVICE);
 
         mContext.unbindService(conn);
     }
 
+    @Test
     public void testStopSelfResult() {
         TestStopSelfConnection conn = new TestStopSelfConnection();
         boolean success = false;
@@ -906,7 +932,7 @@ public final class ServiceTest extends ActivityTestsBase {
             mExpectedServiceState = STATE_START_1;
             mContext.bindService(service, conn, 0);
             mContext.startService(service);
-            waitForResultOrThrow(DELAY, EXIST_CONN_TO_RECEIVE_SERVICE);
+            mLaunchpadHelper.waitForResultOrThrow(DELAY, EXIST_CONN_TO_RECEIVE_SERVICE);
             success = true;
         } finally {
             if (!success) {
@@ -917,24 +943,28 @@ public final class ServiceTest extends ActivityTestsBase {
         // Expect to see the service unbind and then destroyed.
         mExpectedServiceState = STATE_STOP_SELF_SUCCESS_UNBIND;
         conn.stopSelfResult();
-        waitForResultOrThrow(DELAY, EXIST_CONN_TO_LOSE_SERVICE);
+        mLaunchpadHelper.waitForResultOrThrow(DELAY, EXIST_CONN_TO_LOSE_SERVICE);
 
         mContext.unbindService(conn);
     }
 
+    @Test
     public void testLocalStartClass() {
         startExpectResult(mLocalService);
     }
 
+    @Test
     public void testLocalStartAction() {
         startExpectResult(new Intent(
                 LocalService.SERVICE_LOCAL, null /*uri*/, mContext, LocalService.class));
     }
 
+    @Test
     public void testLocalBindClass() {
         bindExpectResult(mLocalService);
     }
 
+    @Test
     public void testBindServiceWithExecutor() {
       setupBackgroundThread();
 
@@ -942,7 +972,7 @@ public final class ServiceTest extends ActivityTestsBase {
       mExpectedServiceState = STATE_START_1;
       mContext.bindService(
           mLocalService, Context.BIND_AUTO_CREATE, mBackgroundThreadExecutor, conn);
-      waitForResultOrThrow(DELAY, EXIST_CONN_TO_RECEIVE_SERVICE);
+        mLaunchpadHelper.waitForResultOrThrow(DELAY, EXIST_CONN_TO_RECEIVE_SERVICE);
         assertThat(conn.getOnServiceConnectedThread()).isEqualTo(mBackgroundThread);
 
       mContext.unbindService(conn);
@@ -967,13 +997,14 @@ public final class ServiceTest extends ActivityTestsBase {
     }
 
     @MediumTest
+    @Test
     public void testForegroundService_canUpdateNotification() throws Exception {
         boolean success = false;
         try {
             // Start service as foreground - it should show notification #1
             mExpectedServiceState = STATE_START_1;
             startForegroundService(COMMAND_START_FOREGROUND);
-            waitForResultOrThrow(DELAY, "service to start first time");
+            mLaunchpadHelper.waitForResultOrThrow(DELAY, "service to start first time");
             assertNotification(1, LocalForegroundService.getNotificationTitle(1), true);
 
             // Sends another notification reusing the same notification id.
@@ -989,24 +1020,25 @@ public final class ServiceTest extends ActivityTestsBase {
         }
         mExpectedServiceState = STATE_DESTROY;
         mContext.stopService(mLocalForegroundService);
-        waitForResultOrThrow(DELAY, "service to be destroyed");
+        mLaunchpadHelper.waitForResultOrThrow(DELAY, "service to be destroyed");
         assertNoNotification(1);
     }
 
     @MediumTest
+    @Test
     public void testForegroundService_dontRemoveNotificationOnStop() {
         boolean success = false;
         try {
             // Start service as foreground - it should show notification #1
             mExpectedServiceState = STATE_START_1;
             startForegroundService(COMMAND_START_FOREGROUND);
-            waitForResultOrThrow(DELAY, "service to start first time");
+            mLaunchpadHelper.waitForResultOrThrow(DELAY, "service to start first time");
             assertNotification(1, LocalForegroundService.getNotificationTitle(1), true);
 
             // Stop foreground without removing notification - it should still show notification #1
             mExpectedServiceState = STATE_START_2;
             startForegroundService(COMMAND_STOP_FOREGROUND_DONT_REMOVE_NOTIFICATION);
-            waitForResultOrThrow(DELAY, "service to stop foreground");
+            mLaunchpadHelper.waitForResultOrThrow(DELAY, "service to stop foreground");
             assertNotification(1, LocalForegroundService.getNotificationTitle(1), false);
 
             // Sends another notification reusing the same notification id.
@@ -1017,7 +1049,7 @@ public final class ServiceTest extends ActivityTestsBase {
             // Start service as foreground again - it should kill notification #1 and show #2
             mExpectedServiceState = STATE_START_3;
             startForegroundService(COMMAND_START_FOREGROUND);
-            waitForResultOrThrow(DELAY, "service to start foreground 2nd time");
+            mLaunchpadHelper.waitForResultOrThrow(DELAY, "service to start foreground 2nd time");
             assertNoNotification(1);
             assertNotification(2, LocalForegroundService.getNotificationTitle(2), true);
 
@@ -1029,17 +1061,19 @@ public final class ServiceTest extends ActivityTestsBase {
         }
         mExpectedServiceState = STATE_DESTROY;
         mContext.stopService(mLocalForegroundService);
-        waitForResultOrThrow(DELAY, "service to be destroyed");
+        mLaunchpadHelper.waitForResultOrThrow(DELAY, "service to be destroyed");
         assertNoNotification(1);
         assertNoNotification(2);
     }
 
     @MediumTest
+    @Test
     public void testForegroundService_removeNotificationOnStop() throws Exception {
         testForegroundServiceRemoveNotificationOnStop(false);
     }
 
     @MediumTest
+    @Test
     public void testForegroundService_removeNotificationOnStopUsingFlags() throws Exception {
         testForegroundServiceRemoveNotificationOnStop(true);
     }
@@ -1052,7 +1086,7 @@ public final class ServiceTest extends ActivityTestsBase {
             Log.d(TAG, "Expecting first start state...");
             mExpectedServiceState = STATE_START_1;
             startForegroundService(COMMAND_START_FOREGROUND);
-            waitForResultOrThrow(DELAY, "service to start first time");
+            mLaunchpadHelper.waitForResultOrThrow(DELAY, "service to start first time");
             assertNotification(1, LocalForegroundService.getNotificationTitle(1), true);
 
             // Stop foreground removing notification
@@ -1065,13 +1099,13 @@ public final class ServiceTest extends ActivityTestsBase {
                 startForegroundService(LocalForegroundService
                         .COMMAND_STOP_FOREGROUND_REMOVE_NOTIFICATION);
             }
-            waitForResultOrThrow(DELAY, "service to stop foreground");
+            mLaunchpadHelper.waitForResultOrThrow(DELAY, "service to stop foreground");
             assertNoNotification(1);
 
             // Start service as foreground again - it should show notification #2
             mExpectedServiceState = STATE_START_3;
             startForegroundService(COMMAND_START_FOREGROUND);
-            waitForResultOrThrow(DELAY, "service to start as foreground 2nd time");
+            mLaunchpadHelper.waitForResultOrThrow(DELAY, "service to start as foreground 2nd time");
             assertNotification(2, LocalForegroundService.getNotificationTitle(2), true);
 
             success = true;
@@ -1082,12 +1116,13 @@ public final class ServiceTest extends ActivityTestsBase {
         }
         mExpectedServiceState = STATE_DESTROY;
         mContext.stopService(mLocalForegroundService);
-        waitForResultOrThrow(DELAY, "service to be destroyed");
+        mLaunchpadHelper.waitForResultOrThrow(DELAY, "service to be destroyed");
         assertNoNotification(1);
         assertNoNotification(2);
     }
 
     @FlakyTest
+    @Test
     public void testRunningServices() throws Exception {
         final int maxReturnedServices = 10;
         final Bundle bundle = new Bundle();
@@ -1107,14 +1142,14 @@ public final class ServiceTest extends ActivityTestsBase {
             mExpectedServiceState = STATE_START_1;
             // Start external service.
             mContext.startService(new Intent(mExternalService).putExtras(bundle));
-            waitForResultOrThrow(DELAY, "external service to start first time");
+            mLaunchpadHelper.waitForResultOrThrow(DELAY, "external service to start first time");
 
             // Ensure we can't see service.
             assertThat(am.getRunningServices(maxReturnedServices)).isEmpty();
 
             // Start local service.
             mContext.startService(new Intent(mLocalService).putExtras(bundle));
-            waitForResultOrThrow(DELAY, "local service to start first time");
+            mLaunchpadHelper.waitForResultOrThrow(DELAY, "local service to start first time");
             success = true;
 
             // Ensure we can see service and it is ours.
@@ -1132,16 +1167,17 @@ public final class ServiceTest extends ActivityTestsBase {
         mExpectedServiceState = STATE_DESTROY;
 
         mContext.stopService(mExternalService);
-        waitForResultOrThrow(DELAY, "external service to be destroyed");
+        mLaunchpadHelper.waitForResultOrThrow(DELAY, "external service to be destroyed");
 
         mContext.stopService(mLocalService);
-        waitForResultOrThrow(DELAY, "local service to be destroyed");
+        mLaunchpadHelper.waitForResultOrThrow(DELAY, "local service to be destroyed");
 
         // Once our service has stopped, make sure we can't see any services.
         assertThat(am.getRunningServices(maxReturnedServices)).isEmpty();
     }
 
     @MediumTest
+    @Test
     public void testForegroundService_detachNotificationOnStop() {
         String newTitle;
         boolean success = false;
@@ -1150,13 +1186,13 @@ public final class ServiceTest extends ActivityTestsBase {
             // Start service as foreground - it should show notification #1
             mExpectedServiceState = STATE_START_1;
             startForegroundService(COMMAND_START_FOREGROUND);
-            waitForResultOrThrow(DELAY, "service to start first time");
+            mLaunchpadHelper.waitForResultOrThrow(DELAY, "service to start first time");
             assertNotification(1, LocalForegroundService.getNotificationTitle(1), true);
 
             // Detaching notification
             mExpectedServiceState = STATE_START_2;
             startForegroundService(COMMAND_STOP_FOREGROUND_DETACH_NOTIFICATION);
-            waitForResultOrThrow(DELAY, "service to stop foreground");
+            mLaunchpadHelper.waitForResultOrThrow(DELAY, "service to stop foreground");
             assertNotification(1, LocalForegroundService.getNotificationTitle(1), false);
 
             // Sends another notification reusing the same notification id.
@@ -1167,7 +1203,7 @@ public final class ServiceTest extends ActivityTestsBase {
             // Start service as foreground again - it should show notification #2..
             mExpectedServiceState = STATE_START_3;
             startForegroundService(COMMAND_START_FOREGROUND);
-            waitForResultOrThrow(DELAY, "service to start as foreground 2nd time");
+            mLaunchpadHelper.waitForResultOrThrow(DELAY, "service to start as foreground 2nd time");
             assertNotification(2, LocalForegroundService.getNotificationTitle(2), true);
             //...but keeping notification #1
             assertNotification(1, newTitle, false);
@@ -1180,7 +1216,7 @@ public final class ServiceTest extends ActivityTestsBase {
         }
         mExpectedServiceState = STATE_DESTROY;
         mContext.stopService(mLocalForegroundService);
-        waitForResultOrThrow(DELAY, "service to be destroyed");
+        mLaunchpadHelper.waitForResultOrThrow(DELAY, "service to be destroyed");
         if (newTitle == null) {
             assertNoNotification(1);
         } else {
@@ -1191,67 +1227,70 @@ public final class ServiceTest extends ActivityTestsBase {
         assertNoNotification(2);
     }
 
+    @Test
     public void testForegroundService_notificationChannelDeletion() {
         NotificationManager noMan = mContext.getSystemService(NotificationManager.class);
 
         // Start service as foreground - it should show notification #1
         mExpectedServiceState = STATE_START_1;
         startForegroundService(COMMAND_START_FOREGROUND);
-        waitForResultOrThrow(DELAY, "service to start first time");
+        mLaunchpadHelper.waitForResultOrThrow(DELAY, "service to start first time");
         assertNotification(1, LocalForegroundService.getNotificationTitle(1), true);
 
         try {
             final String channel = LocalForegroundService.NOTIFICATION_CHANNEL_ID;
             noMan.deleteNotificationChannel(channel);
-            fail("Deleting FGS notification channel did not throw");
+            assertWithMessage("Deleting FGS notification channel did not throw").fail();
         } catch (SecurityException se) {
             // Expected outcome, i.e. success case
         } catch (Exception e) {
-            fail("Deleting FGS notification threw unexpected failure " + e);
+            assertWithMessage("Deleting FGS notification threw unexpected failure " + e).fail();
         }
 
         mExpectedServiceState = STATE_DESTROY;
         mContext.stopService(mLocalForegroundService);
-        waitForResultOrThrow(DELAY, "service to be destroyed");
-
+        mLaunchpadHelper.waitForResultOrThrow(DELAY, "service to be destroyed");
     }
 
+    @Test
     public void testForegroundService_deferredNotificationChannelDeletion() {
         NotificationManager noMan = mContext.getSystemService(NotificationManager.class);
 
         // Start service as foreground - it should show notification #1
         mExpectedServiceState = STATE_START_1;
         startForegroundService(COMMAND_START_FOREGROUND_DEFER_NOTIFICATION);
-        waitForResultOrThrow(DELAY, "service to start first time");
+        mLaunchpadHelper.waitForResultOrThrow(DELAY, "service to start first time");
         assertNoNotification(1);
 
         try {
             final String channel = LocalForegroundService.NOTIFICATION_CHANNEL_ID;
             noMan.deleteNotificationChannel(channel);
-            fail("Deleting FGS deferred notification channel did not throw");
+            assertWithMessage("Deleting FGS deferred notification channel did not throw").fail();
         } catch (SecurityException se) {
             // Expected outcome
         } catch (Exception e) {
-            fail("Deleting deferred FGS notification threw unexpected failure " + e);
+            assertWithMessage("Deleting deferred FGS notification threw unexpected failure " + e)
+                    .fail();
         }
 
         mExpectedServiceState = STATE_DESTROY;
         mContext.stopService(mLocalForegroundService);
-        waitForResultOrThrow(DELAY, "service to be destroyed");
+        mLaunchpadHelper.waitForResultOrThrow(DELAY, "service to be destroyed");
     }
 
+    @Test
     public void testForegroundService_typeImmediateNotification() {
         // expect that an FGS with phoneCall type has its notification displayed
         // immediately even without explicit request by the app
         mExpectedServiceState = STATE_START_1;
         startForegroundService(mLocalPhoneCallService,
                 COMMAND_START_FOREGROUND_DEFER_NOTIFICATION);
-        waitForResultOrThrow(DELAY, "phoneCall service to start");
+        mLaunchpadHelper.waitForResultOrThrow(DELAY, "phoneCall service to start");
         assertNotification(1, LocalPhoneCallService.getNotificationTitle(1), true);
 
         mExpectedServiceState = STATE_DESTROY;
         mContext.stopService(mLocalPhoneCallService);
-        waitForResultOrThrow(DELAY, "service to be destroyed");
+        mLaunchpadHelper.waitForResultOrThrow(DELAY, "service to be destroyed");
     }
 
     private void waitMillis(long timeMillis) {
@@ -1265,10 +1304,11 @@ public final class ServiceTest extends ActivityTestsBase {
         }
     }
 
+    @Test
     public void testForegroundService_deferredNotification() {
         mExpectedServiceState = STATE_START_1;
         startForegroundService(COMMAND_START_FOREGROUND_DEFER_NOTIFICATION);
-        waitForResultOrThrow(DELAY, "service to start with deferred notification");
+        mLaunchpadHelper.waitForResultOrThrow(DELAY, "service to start with deferred notification");
         assertNoNotification(1);
 
         // Wait ten seconds and verify that the notification is now visible
@@ -1277,9 +1317,10 @@ public final class ServiceTest extends ActivityTestsBase {
 
         mExpectedServiceState = STATE_DESTROY;
         mContext.stopService(mLocalForegroundService);
-        waitForResultOrThrow(DELAY, "service to be destroyed");
+        mLaunchpadHelper.waitForResultOrThrow(DELAY, "service to be destroyed");
     }
 
+    @Test
     public void testForegroundService_deferredExistingNotification() throws Exception {
         // First, post the notification outright as not-FGS-related
         final NotificationManager nm = getNotificationManager();
@@ -1294,7 +1335,7 @@ public final class ServiceTest extends ActivityTestsBase {
 
         mExpectedServiceState = STATE_START_1;
         startForegroundService(COMMAND_START_FOREGROUND_DEFER_NOTIFICATION);
-        waitForResultOrThrow(DELAY, "service to start with existing notification");
+        mLaunchpadHelper.waitForResultOrThrow(DELAY, "service to start with existing notification");
 
         // Normally deferred but should display immediately because the notification
         // was already showing
@@ -1302,15 +1343,16 @@ public final class ServiceTest extends ActivityTestsBase {
 
         mExpectedServiceState = STATE_DESTROY;
         mContext.stopService(mLocalForegroundService);
-        waitForResultOrThrow(DELAY, "service to be destroyed");
+        mLaunchpadHelper.waitForResultOrThrow(DELAY, "service to be destroyed");
     }
 
+    @Test
     public void testForegroundService_deferThenImmediateNotify() {
         final String notificationTitle = "deferThenImmediateNotify";
 
         mExpectedServiceState = STATE_START_1;
         startForegroundService(COMMAND_START_FOREGROUND_DEFER_NOTIFICATION);
-        waitForResultOrThrow(DELAY, "service to start with deferred notification");
+        mLaunchpadHelper.waitForResultOrThrow(DELAY, "service to start with deferred notification");
         assertNoNotification(1);
 
         // Explicitly post a new Notification with the same id, still deferrable
@@ -1330,15 +1372,16 @@ public final class ServiceTest extends ActivityTestsBase {
 
         mExpectedServiceState = STATE_DESTROY;
         mContext.stopService(mLocalForegroundService);
-        waitForResultOrThrow(DELAY, "service to be destroyed");
+        mLaunchpadHelper.waitForResultOrThrow(DELAY, "service to be destroyed");
     }
 
+    @Test
     public void testForegroundService_deferThenDeferrableNotify() {
         final String notificationTitle = "deferThenDeferrableNotify";
 
         mExpectedServiceState = STATE_START_1;
         startForegroundService(COMMAND_START_FOREGROUND_DEFER_NOTIFICATION);
-        waitForResultOrThrow(DELAY, "service to start with deferred notification");
+        mLaunchpadHelper.waitForResultOrThrow(DELAY, "service to start with deferred notification");
         // Pause a moment and ensure that the notification has still not appeared
         waitMillis(1000L);
         assertNoNotification(1);
@@ -1365,25 +1408,26 @@ public final class ServiceTest extends ActivityTestsBase {
 
         mExpectedServiceState = STATE_DESTROY;
         mContext.stopService(mLocalForegroundService);
-        waitForResultOrThrow(DELAY, "service to be destroyed");
+        mLaunchpadHelper.waitForResultOrThrow(DELAY, "service to be destroyed");
     }
 
+    @Test
     public void testForegroundService_deferThenKeepNotification() {
         // Start FGS with deferred notification; it should not display
         mExpectedServiceState = STATE_START_1;
         startForegroundService(COMMAND_START_FOREGROUND_DEFER_NOTIFICATION);
-        waitForResultOrThrow(DELAY, "service to start first time");
+        mLaunchpadHelper.waitForResultOrThrow(DELAY, "service to start first time");
         assertNoNotification(1);
 
         // Exit foreground but keep notification - it should display immediately
         mExpectedServiceState = STATE_START_2;
         startForegroundService(COMMAND_STOP_FOREGROUND_DONT_REMOVE_NOTIFICATION);
-        waitForResultOrThrow(DELAY, "service to stop foreground");
+        mLaunchpadHelper.waitForResultOrThrow(DELAY, "service to stop foreground");
         assertNotification(1, LocalForegroundService.getNotificationTitle(1), false);
 
         mExpectedServiceState = STATE_DESTROY;
         mContext.stopService(mLocalForegroundService);
-        waitForResultOrThrow(DELAY, "service to be destroyed");
+        mLaunchpadHelper.waitForResultOrThrow(DELAY, "service to be destroyed");
     }
 
     private static final class TestSendCallback implements PendingIntent.OnFinished {
@@ -1398,6 +1442,7 @@ public final class ServiceTest extends ActivityTestsBase {
     }
 
     @MediumTest
+    @Test
     public void testForegroundService_pendingIntentForeground() throws Exception {
         boolean success = false;
 
@@ -1409,7 +1454,7 @@ public final class ServiceTest extends ActivityTestsBase {
         try {
             mExpectedServiceState = STATE_START_1;
             pi.send(5038, callback, null);
-            waitForResultOrThrow(DELAY, "service to start first time");
+            mLaunchpadHelper.waitForResultOrThrow(DELAY, "service to start first time");
             assertThat(callback.result).isGreaterThan(-1);
 
             success = true;
@@ -1421,61 +1466,71 @@ public final class ServiceTest extends ActivityTestsBase {
 
         mExpectedServiceState = STATE_DESTROY;
         mContext.stopService(mLocalForegroundService);
-        waitForResultOrThrow(DELAY, "pendingintent service to be destroyed");
+        mLaunchpadHelper.waitForResultOrThrow(DELAY, "pendingintent service to be destroyed");
     }
 
     @MediumTest
+    @Test
     public void testLocalBindAction() {
         bindExpectResult(new Intent(
                 LocalService.SERVICE_LOCAL, null /*uri*/, mContext, LocalService.class));
     }
 
     @MediumTest
+    @Test
     public void testLocalBindAutoClass() {
         bindAutoExpectResult(mLocalService);
     }
 
     @MediumTest
+    @Test
     public void testLocalBindAutoAction() throws Exception {
         bindAutoExpectResult(new Intent(
                 LocalService.SERVICE_LOCAL, null /*uri*/, mContext, LocalService.class));
     }
 
     @MediumTest
+    @Test
     public void testLocalStartClassPermissions() {
         startExpectResult(mLocalGrantedService);
         startExpectResult(mLocalDeniedService);
     }
 
     @MediumTest
+    @Test
     public void testLocalStartActionPermissions() {
         startExpectResult(mLocalService_ApplicationHasPermission);
         startExpectResult(mLocalService_ApplicationDoesNotHavePermission);
     }
 
     @MediumTest
+    @Test
     public void testLocalBindClassPermissions() {
         bindExpectResult(mLocalGrantedService);
         bindExpectResult(mLocalDeniedService);
     }
 
     @MediumTest
+    @Test
     public void testLocalBindActionPermissions() {
         bindExpectResult(mLocalService_ApplicationHasPermission);
         bindExpectResult(mLocalService_ApplicationDoesNotHavePermission);
     }
 
     @MediumTest
+    @Test
     public void testLocalBindAutoClassPermissionGranted() throws Exception {
         bindAutoExpectResult(mLocalGrantedService);
     }
 
     @MediumTest
+    @Test
     public void testLocalBindAutoActionPermissionGranted() throws Exception {
         bindAutoExpectResult(mLocalService_ApplicationHasPermission);
     }
 
     @MediumTest
+    @Test
     public void testLocalUnbindTwice() throws Exception {
         EmptyConnection conn = new EmptyConnection();
         mContext.bindService(
@@ -1483,20 +1538,22 @@ public final class ServiceTest extends ActivityTestsBase {
         mContext.unbindService(conn);
         try {
             mContext.unbindService(conn);
-            fail("No exception thrown on the second unbind");
+            assertWithMessage("No exception thrown on the second unbind").fail();
         } catch (IllegalArgumentException e) {
             // expected
         }
     }
 
     @MediumTest
+    @Test
     public void testImplicitIntentFailsOnApiLevel21() {
         Intent intent = new Intent(LocalService.SERVICE_LOCAL);
         EmptyConnection conn = new EmptyConnection();
         try {
             mContext.bindService(intent, conn, 0);
             mContext.unbindService(conn);
-            fail("Implicit intents should be disallowed for apps targeting API 21+");
+            assertWithMessage("Implicit intents should be disallowed for apps targeting API 21+")
+                    .fail();
         } catch (IllegalArgumentException e) {
             // expected
         }
@@ -1507,6 +1564,7 @@ public final class ServiceTest extends ActivityTestsBase {
      * onNullBinding() method is invoked.
      */
     @MediumTest
+    @Test
     public void testNullServiceBinder() {
         Intent intent = new Intent(mContext, NullService.class);
         intent.setAction("testNullServiceBinder");
@@ -1528,18 +1586,20 @@ public final class ServiceTest extends ActivityTestsBase {
 
     /** Verify that we can't use bindIsolatedService() on a non-isolated service. */
     @MediumTest
+    @Test
     public void testFailBindNonIsolatedService() {
         EmptyConnection conn = new EmptyConnection();
         try {
             mContext.bindIsolatedService(mLocalService, 0, "isolated", mContextMainExecutor, conn);
             mContext.unbindService(conn);
-            fail("Didn't get IllegalArgumentException");
+            assertWithMessage("Didn't get IllegalArgumentException").fail();
         } catch (IllegalArgumentException e) {
             // This is expected.
         }
     }
 
     /** Verify that certain characters are prohibited in instanceName. */
+    @Test
     public void testFailBindIsoaltedServiceWithInvalidInstanceName() {
         String[] badNames = {
             "t\rest",
@@ -1555,7 +1615,7 @@ public final class ServiceTest extends ActivityTestsBase {
                 mContext.bindIsolatedService(mIsolatedService, Context.BIND_AUTO_CREATE,
                         instanceName, mContextMainExecutor, conn);
                 mContext.unbindService(conn);
-                fail("Didn't get IllegalArgumentException: " + instanceName);
+                assertWithMessage("Didn't get IllegalArgumentException: " + instanceName).fail();
             } catch (IllegalArgumentException e) {
                 // This is expected.
             }
@@ -1567,6 +1627,7 @@ public final class ServiceTest extends ActivityTestsBase {
      * instance names.
      */
     @MediumTest
+    @Test
     public void testBindIsolatedServiceInstances() {
         IsolatedConnection conn1a = null;
         IsolatedConnection conn1b = null;
@@ -1587,10 +1648,10 @@ public final class ServiceTest extends ActivityTestsBase {
             conn2.waitForService(DELAY);
 
             if (conn1a.getPid() != conn1b.getPid()) {
-                fail("Connections to same service name in different pids");
+                assertWithMessage("Connections to same service name in different pids").fail();
             }
             if (conn1a.getPid() == conn2.getPid()) {
-                fail("Connections to different service names in same pids");
+                assertWithMessage("Connections to different service names in same pids").fail();
             }
 
             conn1a.setValue(1);
@@ -1620,6 +1681,7 @@ public final class ServiceTest extends ActivityTestsBase {
     }
 
     @MediumTest
+    @Test
     public void testOnCreateCalledOnce_bindService() {
         IsolatedConnection conn = null;
 
@@ -1644,6 +1706,7 @@ public final class ServiceTest extends ActivityTestsBase {
         }
     }
 
+    @Test
     public void testBindIsolatedServiceOnBackgroundThread() {
         setupBackgroundThread();
         IsolatedConnection conn = new IsolatedConnection();
@@ -1789,7 +1852,7 @@ public final class ServiceTest extends ActivityTestsBase {
         for (int i : selected) {
             boolean result = connections[i].bind(context);
             if (!result) {
-                fail("Unable to bind connection " + connections[i].mLabel);
+                assertWithMessage("Unable to bind connection " + connections[i].mLabel).fail();
             }
         }
     }
@@ -1888,10 +1951,15 @@ public final class ServiceTest extends ActivityTestsBase {
                 }
                 if (!lru.isEquivalentTo(proc)) {
                     if ((lru.getFlags() & LruOrderItem.FLAG_SKIP_UNKNOWN) != 0) {
-                        fail("Didn't find expected LRU proc uid=" + lru.getUid());
+                        assertWithMessage("Didn't find expected LRU proc uid=" + lru.getUid())
+                                .fail();
                     }
-                    fail("Expected proc uid=" + lru.getUid() + " at found proc "
-                            + printProc(i, proc));
+                    assertWithMessage(
+                                    "Expected proc uid="
+                                            + lru.getUid()
+                                            + " at found proc "
+                                            + printProc(i, proc))
+                            .fail();
                 }
             }
             orderI++;
@@ -1902,6 +1970,7 @@ public final class ServiceTest extends ActivityTestsBase {
     }
 
     @MediumTest
+    @Test
     public void testAppZygotePreload() {
         IsolatedConnection conn = new IsolatedConnection();
         try {
@@ -1920,6 +1989,7 @@ public final class ServiceTest extends ActivityTestsBase {
     }
 
     @MediumTest
+    @Test
     public void testAppZygoteServices() throws Exception {
         IsolatedConnection conn1a = null;
         IsolatedConnection conn1b = null;
@@ -1995,11 +2065,11 @@ public final class ServiceTest extends ActivityTestsBase {
     // TODO(b/131059432): Re-enable the test after that bug is fixed.
     @FlakyTest
     @MediumTest
+    @Test
     public void testActivityServiceBindingLru() {
         // Bring up the activity we will hang services off of.
-        runLaunchpad(LaunchpadActivity.ACTIVITY_PREPARE);
-
-        final Activity a = getRunningActivity();
+        mLaunchpadHelper.runLaunchpad(LaunchpadActivity.ACTIVITY_PREPARE);
+        final Activity a = mLaunchpadHelper.getRunningActivity();
 
         final int CONN_0_0_W_0 = 0;
         final int CONN_0_0_S_0 = 1;
@@ -2222,10 +2292,9 @@ public final class ServiceTest extends ActivityTestsBase {
         }
     }
 
-    /**
-     * Test per process's max outgoing bindService() service connections.
-     */
+    /** Test per process's max outgoing bindService() service connections. */
     @FlakyTest(bugId = 329918252)
+    @Test
     public void testMaxServiceConnections() throws Exception {
         final ArrayList<LatchedConnection> connections = new ArrayList<>();
         final int max = 1000;
@@ -2275,10 +2344,8 @@ public final class ServiceTest extends ActivityTestsBase {
         }
     }
 
-
-    /**
-     * Test bindService() flags can be 64 bits long.
-     */
+    /** Test bindService() flags can be 64 bits long. */
+    @Test
     public void testBindServiceLongFlags() throws Exception {
         long flags = Context.BIND_AUTO_CREATE;
         testBindServiceFlagsLongInternal(flags);
