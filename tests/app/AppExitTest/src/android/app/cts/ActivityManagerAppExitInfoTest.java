@@ -538,8 +538,9 @@ public final class ActivityManagerAppExitInfoTest {
                 memConsumers.add(p.second);
             }
             // make sure we have cached process killed
+            // TODO: b/415891136 - don't depend on dumpsys parsing here as an exit condition.
             String output = executeShellCmd("dumpsys activity lru");
-            if (output == null || output.indexOf(" cch  +") == -1) {
+            if (output == null || output.indexOf(": cch") == -1) {
                 break;
             }
         }
