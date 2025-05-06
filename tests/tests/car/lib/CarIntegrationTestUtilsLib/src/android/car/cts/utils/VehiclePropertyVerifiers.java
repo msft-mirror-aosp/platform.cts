@@ -303,12 +303,7 @@ public class VehiclePropertyVerifiers {
     /** Gets the verifier builder for {@link VehiclePropertyIds#TIRE_PRESSURE}. */
     public static VehiclePropertyVerifier.Builder<Float> getTirePressureVerifierBuilder() {
         VehiclePropertyVerifier.Builder<Float> verifierBuilder =
-                VehiclePropertyVerifier.newBuilder(
-                                VehiclePropertyIds.TIRE_PRESSURE,
-                                CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
-                                VehicleAreaType.VEHICLE_AREA_TYPE_WHEEL,
-                                CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_CONTINUOUS,
-                                Float.class)
+                VehiclePropertyVerifier.<Float>newDefaultBuilder(VehiclePropertyIds.TIRE_PRESSURE)
                         .requireMinMaxValues()
                         .setCarPropertyValueVerifier(
                                 (verifierContext,
@@ -325,7 +320,7 @@ public class VehiclePropertyVerifiers {
                                                                 + " to 0.")
                                                 .that(tirePressure)
                                                 .isAtLeast(0))
-                        .addReadPermission(Car.PERMISSION_TIRES);
+                        .setReadPermission(ImmutableSet.of(Car.PERMISSION_TIRES));
 
         if (VehiclePropertyVerifier.isAtLeastB() && Flags.vehicleProperty25q23pPermissions()) {
             verifierBuilder.addReadPermission(Car.PERMISSION_TIRES_3P);
