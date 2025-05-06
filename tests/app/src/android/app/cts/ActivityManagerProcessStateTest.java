@@ -1539,6 +1539,7 @@ public class ActivityManagerProcessStateTest {
 
             // Return to home.
             mTargetContext.startActivity(homeIntent);
+            mInstrumentation.getUiAutomation().syncInputTransactions();
             uid1Watcher.expect(WatchUidRunner.CMD_CACHED, null);
             uid1Watcher.expect(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_HEAVY_WEIGHT);
 
@@ -1582,6 +1583,7 @@ public class ActivityManagerProcessStateTest {
 
             // Return to home.
             mTargetContext.startActivity(homeIntent);
+            mInstrumentation.getUiAutomation().syncInputTransactions();
             device.waitForIdle();
             uid2Watcher.waitFor(WatchUidRunner.CMD_CACHED, null);
             uid2Watcher.expect(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_HEAVY_WEIGHT);
