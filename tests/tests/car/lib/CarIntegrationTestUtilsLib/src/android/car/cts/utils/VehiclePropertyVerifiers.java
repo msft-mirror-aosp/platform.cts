@@ -557,29 +557,18 @@ public class VehiclePropertyVerifiers {
     /**
      * Gets the verifier for {@code HVAC_FAN_DIRECTION_AVAILABLE}.
      */
-    public static VehiclePropertyVerifier<Integer[]> getHvacFanDirectionAvailableVerifier(
-            CarPropertyManager carPropertyManager) {
-        return getHvacFanDirectionAvailableVerifierBuilder()
-                .setCarPropertyManager(carPropertyManager).build();
-    }
-
-    /**
-     * Gets the verifier for {@code HVAC_FAN_DIRECTION_AVAILABLE}.
-     */
     public static VehiclePropertyVerifier.Builder<Integer[]>
             getHvacFanDirectionAvailableVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.HVAC_FAN_DIRECTION_AVAILABLE,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_SEAT,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_STATIC,
-                        Integer[].class)
+        return VehiclePropertyVerifier.<Integer[]>newDefaultBuilder(
+                        VehiclePropertyIds.HVAC_FAN_DIRECTION_AVAILABLE)
                 .setPossiblyDependentOnHvacPowerOn()
                 .setAreaIdsVerifier(
                         (verifierContext, areaIds) -> {
                             CarPropertyConfig<?> hvacFanDirectionCarPropertyConfig =
-                                    verifierContext.getCarPropertyManager().getCarPropertyConfig(
-                                            VehiclePropertyIds.HVAC_FAN_DIRECTION);
+                                    verifierContext
+                                            .getCarPropertyManager()
+                                            .getCarPropertyConfig(
+                                                    VehiclePropertyIds.HVAC_FAN_DIRECTION);
                             assertWithMessage(
                                             "HVAC_FAN_DIRECTION must be implemented if "
                                                     + "HVAC_FAN_DIRECTION_AVAILABLE is implemented")
@@ -588,7 +577,7 @@ public class VehiclePropertyVerifiers {
 
                             assertWithMessage(
                                             "HVAC_FAN_DIRECTION_AVAILABLE area IDs must match the"
-                                                + " area IDs of HVAC_FAN_DIRECTION")
+                                                    + " area IDs of HVAC_FAN_DIRECTION")
                                     .that(
                                             Arrays.stream(areaIds)
                                                     .boxed()
@@ -601,7 +590,11 @@ public class VehiclePropertyVerifiers {
                                                     .collect(Collectors.toList()));
                         })
                 .setCarPropertyValueVerifier(
-                        (verifierContext, carPropertyConfig, propertyId, areaId, timestampNanos,
+                        (verifierContext,
+                                carPropertyConfig,
+                                propertyId,
+                                areaId,
+                                timestampNanos,
                                 fanDirectionValues) -> {
                             assertWithMessage(
                                             "HVAC_FAN_DIRECTION_AVAILABLE area ID: "
@@ -626,8 +619,7 @@ public class VehiclePropertyVerifiers {
                                         .that(fanDirection)
                                         .isIn(ALL_POSSIBLE_HVAC_FAN_DIRECTIONS);
                             }
-                        })
-                .addReadPermission(Car.PERMISSION_CONTROL_CAR_CLIMATE);
+                        });
     }
 
     /**
