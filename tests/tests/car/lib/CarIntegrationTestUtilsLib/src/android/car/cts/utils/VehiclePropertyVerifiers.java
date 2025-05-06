@@ -496,39 +496,27 @@ public class VehiclePropertyVerifiers {
     }
 
     /**
-     * Gets the verifier for {@code HVAC_POWER_ON}.
-     */
-    public static VehiclePropertyVerifier<Boolean> getHvacPowerOnVerifier(
-            CarPropertyManager carPropertyManager) {
-        return getHvacPowerOnVerifierBuilder().setCarPropertyManager(carPropertyManager)
-                .build();
-    }
-
-    /**
      * Gets the verifier builder for {@code HVAC_POWER_ON}.
      */
     public static VehiclePropertyVerifier.Builder<Boolean> getHvacPowerOnVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.HVAC_POWER_ON,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_SEAT,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_ONCHANGE,
-                        Boolean.class)
+        return VehiclePropertyVerifier.<Boolean>newDefaultBuilder(VehiclePropertyIds.HVAC_POWER_ON)
                 .setConfigArrayVerifier(
                         (verifierContext, configArray) -> {
                             CarPropertyConfig<?> hvacPowerOnCarPropertyConfig =
-                                    verifierContext.getCarPropertyManager().getCarPropertyConfig(
-                                            VehiclePropertyIds.HVAC_POWER_ON);
+                                    verifierContext
+                                            .getCarPropertyManager()
+                                            .getCarPropertyConfig(VehiclePropertyIds.HVAC_POWER_ON);
                             for (int powerDependentProperty : configArray) {
                                 CarPropertyConfig<?> powerDependentCarPropertyConfig =
-                                        verifierContext.getCarPropertyManager()
+                                        verifierContext
+                                                .getCarPropertyManager()
                                                 .getCarPropertyConfig(powerDependentProperty);
                                 if (powerDependentCarPropertyConfig == null) {
                                     continue;
                                 }
                                 assertWithMessage(
                                                 "HVAC_POWER_ON configArray must only contain"
-                                                    + " VehicleAreaSeat type properties: "
+                                                        + " VehicleAreaSeat type properties: "
                                                         + VehiclePropertyIds.toString(
                                                                 powerDependentProperty))
                                         .that(powerDependentCarPropertyConfig.getAreaType())
@@ -546,16 +534,15 @@ public class VehiclePropertyVerifiers {
                                         }
                                     }
                                     assertWithMessage(
-                                            "HVAC_POWER_ON's area IDs must contain the area IDs"
-                                                    + " of power dependent property: "
-                                                    + VehiclePropertyIds.toString(
-                                                    powerDependentProperty)).that(
-                                            powerDependentAreaIdIsContained).isTrue();
+                                                    "HVAC_POWER_ON's area IDs must contain the area"
+                                                            + " IDs of power dependent property: "
+                                                            + VehiclePropertyIds.toString(
+                                                                    powerDependentProperty))
+                                            .that(powerDependentAreaIdIsContained)
+                                            .isTrue();
                                 }
                             }
-                        })
-                .addReadPermission(Car.PERMISSION_CONTROL_CAR_CLIMATE)
-                .addWritePermission(Car.PERMISSION_CONTROL_CAR_CLIMATE);
+                        });
     }
 
     /**
