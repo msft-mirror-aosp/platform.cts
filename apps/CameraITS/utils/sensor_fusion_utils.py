@@ -116,6 +116,7 @@ _NUM_GYRO_PTS_TO_AVG = 20
 
 _PRE_MASKING = 'pre'
 _POST_MASKING = 'post'
+_MAX_FRAME_WIDTH = 1920  # maximum frame width for stabilization verification
 
 
 def polynomial_from_coefficients(coefficients):
@@ -486,6 +487,8 @@ def procrustes_rotation(x, y):
 def read_frame_from_file(file, file_path):
   """Read an image from file to memory.
 
+  Scale down to at most 1080p if necessary.
+
   Args:
     file: File name string
     file_path: The path of the file
@@ -494,6 +497,9 @@ def read_frame_from_file(file, file_path):
     The cv2 RGB frame, normalized.
   """
   img_bgr = cv2.imread(os.path.join(file_path, file))
+  scale_factor = _MAX_FRAME_WIDTH / img_bgr.shape[1]
+  if scale_factor < 1.0:
+    img_bgr = cv2.resize(img_bgr, None, fx=scale_factor, fy=scale_factor)
   img_rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB) / 255
   return img_rgb
 
