@@ -4228,6 +4228,8 @@
             <meta-data
                 android:name="NonApiTest"
                 android:value="Helper class. List host-side modules." />
+            <meta-data android:name="test_excluded_user_types"
+                       android:value="visible_background_non-profile_user" />
         </activity>
 
         <activity
