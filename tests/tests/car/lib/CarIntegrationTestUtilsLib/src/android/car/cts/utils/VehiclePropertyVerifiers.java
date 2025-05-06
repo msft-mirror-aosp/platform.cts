@@ -345,13 +345,9 @@ public class VehiclePropertyVerifiers {
     /** Gets the verifier builder for {@link VehiclePropertyIds#PERF_STEERING_ANGLE}. */
     public static VehiclePropertyVerifier.Builder<Float> getPerfSteeringAngleVerifierBuilder() {
         VehiclePropertyVerifier.Builder<Float> verifierBuilder =
-                VehiclePropertyVerifier.newBuilder(
-                                VehiclePropertyIds.PERF_STEERING_ANGLE,
-                                CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
-                                VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
-                                CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_CONTINUOUS,
-                                Float.class)
-                        .addReadPermission(Car.PERMISSION_READ_STEERING_STATE);
+                VehiclePropertyVerifier.<Float>newDefaultBuilder(
+                                VehiclePropertyIds.PERF_STEERING_ANGLE)
+                        .setReadPermission(ImmutableSet.of(Car.PERMISSION_READ_STEERING_STATE));
 
         if (VehiclePropertyVerifier.isAtLeastB() && Flags.vehicleProperty25q23pPermissions()) {
             verifierBuilder.addReadPermission(Car.PERMISSION_READ_STEERING_STATE_3P);
