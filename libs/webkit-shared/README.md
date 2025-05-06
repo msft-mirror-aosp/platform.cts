@@ -41,14 +41,14 @@ SDK tests using the API method `setTestEnvironment`.
 Eg:
 ```java
 @Override
-protected SharedWebViewTestEnvironment createTestEnvironment() {
-    return new SharedWebViewTestEnvironment.Builder()
+protected WebViewTestEnvironment createTestEnvironment() {
+    return new WebViewTestEnvironment.Builder()
             .setContext(mActivity)
             .setWebView(mWebView)
             // This allows SDK methods to invoke APIs from outside the SDK.
             // The Activity based tests don't need to worry about this so you can
             // just provide the host app invoker directly to this environment.
-            .setHostAppInvoker(SharedWebViewTestEnvironment.createHostAppInvoker())
+            .setHostAppInvoker(WebViewTestEnvironment.createHostAppInvoker())
             .build();
 }
 ```
@@ -78,19 +78,19 @@ Congratulations! Your webkit tests are now shared with your SDK Runtime tests!
 ### 3. Converting a test to shared
 
 You need to do two things when you are making a test shared:
-1. Update the test suite to use the `SharedWebViewTestEnvironment`
+1. Update the test suite to use the `WebViewTestEnvironment`
 2. Update the SDK JUnit Test Suite to invoke the test
 
 We will use `WebViewTest` as an example:
 `//cts/tests/tests/webkit/src/android/webkit/cts/WebViewTest.java`
 
-Search for `getTestEnvironment()`. This method returns a `SharedWebViewTestEnvironment`.
+Search for `getTestEnvironment()`. This method returns a `WebViewTestEnvironment`.
 Whenever your test needs to refer to anything that is not available in the SDK runtime,
 or needs to be shared between the SDK runtime and the activity based tests,
 use this class.
 
-Open `SharedWebViewTestEnvironment` to familiarize yourself with what is available:
-`//cts/libs/webkit-shared/src/android/webkit/cts/SharedWebViewTestEnvironment.java`
+Open `WebViewTestEnvironment` to familiarize yourself with what is available:
+`//cts/libs/webkit-shared/src/android/webkit/cts/WebViewTestEnvironment.java`
 
 First convert any direct references to any variable that should come from the shared test
 environment.
@@ -147,5 +147,5 @@ to add this functionality.
 The activity invoker allows SDK runtime tests to initiate events in the activity driving
 the tests.
 
-Once you have added a new ActivityInvoker API, provide a wrapper API to SharedWebViewTestEnvironment
-to abstract these APIs away from test authors.
+Once you have added a new ActivityInvoker API, provide a wrapper API to
+WebViewTestEnvironment to abstract these APIs away from test authors.

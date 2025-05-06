@@ -47,11 +47,11 @@ public class DateSorterTest extends SharedWebViewTest {
     }
 
     @Override
-    protected SharedWebViewTestEnvironment createTestEnvironment() {
+    protected WebViewTestEnvironment createTestEnvironment() {
         Context context = InstrumentationRegistry.getInstrumentation().getContext();
-        return new SharedWebViewTestEnvironment.Builder()
+        return new WebViewTestEnvironment.Builder()
                 .setContext(context)
-                .setHostAppInvoker(SharedWebViewTestEnvironment.createHostAppInvoker(context))
+                .setHostAppInvoker(WebViewTestEnvironment.createHostAppInvoker(context))
                 .build();
     }
 

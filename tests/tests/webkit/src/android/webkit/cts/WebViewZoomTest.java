@@ -94,10 +94,10 @@ public class WebViewZoomTest extends SharedWebViewTest{
     }
 
     @Override
-    protected SharedWebViewTestEnvironment createTestEnvironment() {
+    protected WebViewTestEnvironment createTestEnvironment() {
         Assume.assumeTrue("WebView is not available", NullWebViewUtils.isWebViewAvailable());
 
-        SharedWebViewTestEnvironment.Builder builder = new SharedWebViewTestEnvironment.Builder();
+        WebViewTestEnvironment.Builder builder = new WebViewTestEnvironment.Builder();
 
         mActivityScenarioRule
                 .getScenario()
@@ -107,13 +107,12 @@ public class WebViewZoomTest extends SharedWebViewTest{
 
                             WebView webView = mActivity.getWebView();
                             builder.setHostAppInvoker(
-                                            SharedWebViewTestEnvironment.createHostAppInvoker(
-                                                    mActivity))
+                                            WebViewTestEnvironment.createHostAppInvoker(mActivity))
                                     .setContext(mActivity)
                                     .setWebView(webView);
                         });
 
-        SharedWebViewTestEnvironment environment = builder.build();
+        WebViewTestEnvironment environment = builder.build();
 
         // Wait for window focus and clean up the snapshot before
         // returning the test environment.

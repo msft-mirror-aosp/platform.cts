@@ -78,10 +78,10 @@ public class HttpAuthHandlerTest extends SharedWebViewTest {
     }
 
     @Override
-    protected SharedWebViewTestEnvironment createTestEnvironment() {
+    protected WebViewTestEnvironment createTestEnvironment() {
         Assume.assumeTrue("WebView is not available", NullWebViewUtils.isWebViewAvailable());
 
-        SharedWebViewTestEnvironment.Builder builder = new SharedWebViewTestEnvironment.Builder();
+        WebViewTestEnvironment.Builder builder = new WebViewTestEnvironment.Builder();
 
         mActivityScenarioRule
                 .getScenario()
@@ -89,8 +89,7 @@ public class HttpAuthHandlerTest extends SharedWebViewTest {
                         activity -> {
                             WebView webView = ((WebViewCtsActivity) activity).getWebView();
                             builder.setHostAppInvoker(
-                                            SharedWebViewTestEnvironment.createHostAppInvoker(
-                                                activity))
+                                            WebViewTestEnvironment.createHostAppInvoker(activity))
                                     .setContext(activity)
                                     .setWebView(webView);
                         });
