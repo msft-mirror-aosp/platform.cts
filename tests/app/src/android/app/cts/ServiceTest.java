@@ -48,6 +48,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.content.pm.PackageManager;
 import android.content.pm.ServiceInfo;
 import android.os.Binder;
 import android.os.Bundle;
@@ -2073,14 +2074,20 @@ public final class ServiceTest extends ActivityTestsBase {
                     new LruOrderItem(connections[CONN_0_0_W_0], 0),
             });
 
-            // Send the app to background by launching another activity of another process.
-            // Don't call a.moveTaskToBack(true), as it doesn't necessarily change the task's
-            // overall LRU status on builds featuring split-screen multitasking (b/410974806).
-            Intent intent = new Intent();
-            intent.setPackage("com.android.app1");
-            intent.setAction("android.intent.action.SEARCH");
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            mContext.startActivity(intent);
+            // Send the app to background.
+            PackageManager pm = mContext.getPackageManager();
+            if (pm.hasSystemFeature("android.software.car.splitscreen_multitasking")) {
+                // Send the app to background by launching another activity of another process.
+                // Don't call a.moveTaskToBack(true), as it doesn't necessarily change the task's
+                // overall LRU status on builds featuring split-screen multitasking (b/410974806).
+                Intent intent = new Intent();
+                intent.setPackage("com.android.app1");
+                intent.setAction("android.intent.action.SEARCH");
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                mContext.startActivity(intent);
+            } else {
+                assertTrue("Failed to send the app to background", a.moveTaskToBack(true));
+            }
 
             // TODO: b/372710412 - Call a test API to force recomputation, instead of doWaitWhile.
             assertWithMessage(
