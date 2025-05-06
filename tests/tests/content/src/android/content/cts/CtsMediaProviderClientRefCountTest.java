@@ -22,6 +22,7 @@ import android.content.ContentProviderClient;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.os.RemoteException;
+import android.platform.test.annotations.AppModeFull;
 import android.provider.MediaStore;
 
 import androidx.test.core.app.ApplicationProvider;
@@ -31,6 +32,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 @RunWith(AndroidJUnit4.class)
+@AppModeFull
 public class CtsMediaProviderClientRefCountTest {
 
     private final Context mContext = ApplicationProvider.getApplicationContext();

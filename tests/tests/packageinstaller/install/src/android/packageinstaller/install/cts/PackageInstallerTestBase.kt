@@ -54,7 +54,10 @@ import androidx.test.uiautomator.Until
 import com.android.compatibility.common.util.DisableAnimationRule
 import com.android.compatibility.common.util.FutureResultActivity
 import com.android.compatibility.common.util.SystemUtil
+import java.io.ByteArrayOutputStream
 import java.io.File
+import java.io.IOException
+import java.nio.charset.StandardCharsets
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.TimeUnit
@@ -62,7 +65,6 @@ import java.util.regex.Pattern
 import org.junit.After
 import org.junit.Assert
 import org.junit.Before
-import org.junit.ClassRule
 import org.junit.Rule
 
 open class PackageInstallerTestBase {
@@ -99,7 +101,6 @@ open class PackageInstallerTestBase {
         val testUserId: Int = context.user.identifier
 
         var usePiaV2: Boolean = false
-
     }
 
     @get:Rule
@@ -434,6 +435,16 @@ open class PackageInstallerTestBase {
      * @param bySelector The bySelector of the button to click
      */
     fun clickInstallerUIButton(bySelector: BySelector) {
+        val button = findInstallerUIButton(bySelector)
+        button?.click()
+    }
+
+    /**
+     * Find a button in the UI of the installer app
+     *
+     * @param bySelector The bySelector of the button
+     */
+    fun findInstallerUIButton(bySelector: BySelector): UiObject2? {
         // Wait for a minimum 2000ms and maximum 10000ms for the UI to become idle.
         instrumentation.uiAutomation.waitForIdle(
             (2 * FIND_OBJECT_TIMEOUT),
@@ -452,8 +463,7 @@ open class PackageInstallerTestBase {
                             " text: ${button.getText()}," +
                             " package: ${button.getApplicationPackage()}"
                     )
-                    button.click()
-                    return
+                    return button
                 } else {
                     // Maybe the screen is small. Scroll forward and attempt to click
                     scroll()
@@ -461,11 +471,27 @@ open class PackageInstallerTestBase {
             } catch (ignore: Throwable) {
             }
         }
-        Assert.fail("Failed to click the button: $bySelector")
+        dumpWindowHierarchy()
+        Assert.fail("Failed to find the button: $bySelector")
+        return null
     }
 
     private fun scroll() {
         UiScrollable(UiSelector().scrollable(true)).scrollForward()
+    }
+
+    @Throws(InterruptedException::class, IOException::class)
+    fun dumpWindowHierarchy() {
+        val outputStream = ByteArrayOutputStream()
+        uiDevice.dumpWindowHierarchy(outputStream)
+        val windowHierarchy = outputStream.toString(StandardCharsets.UTF_8.name())
+
+        Log.w(TAG, "Window hierarchy:")
+        for (line in windowHierarchy.split("\n".toRegex()).dropLastWhile { it.isEmpty() }
+            .toTypedArray()) {
+            Thread.sleep(10)
+            Log.w(TAG, line)
+        }
     }
 
     /**

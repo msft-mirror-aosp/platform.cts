@@ -16,7 +16,8 @@
 
 package android.app.cts;
 
-import android.app.stubs.ActivityTestsBase;
+import static com.google.common.truth.Truth.assertThat;
+
 import android.app.stubs.IntentServiceStub;
 import android.content.ComponentName;
 import android.content.Context;
@@ -24,29 +25,36 @@ import android.content.Intent;
 import android.content.ServiceConnection;
 import android.os.IBinder;
 
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
+
 import com.android.compatibility.common.util.PollingCheck;
 
-import java.util.concurrent.Callable;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
-public class IntentServiceTest extends ActivityTestsBase {
-
-    private Intent mIntent;
+@RunWith(AndroidJUnit4.class)
+public final class IntentServiceTest {
     private static final int TIMEOUT_MSEC = 30000;
+    private Intent mIntent;
     private boolean mConnected;
+    private Context mContext;
 
-    @Override
-    protected void setUp() throws Exception {
-        super.setUp();
+    @Before
+    public void setUp() throws Exception {
+        mContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
         IntentServiceStub.reset();
         mIntent = new Intent(mContext, IntentServiceStub.class);
     }
 
-    @Override
-    protected void tearDown() throws Exception {
-        super.tearDown();
+    @After
+    public void tearDown() throws Exception {
         mContext.stopService(mIntent);
     }
 
+    @Test
     public void testIntents() throws Throwable {
         final int value = 42;
         final int adds = 3;
@@ -60,29 +68,21 @@ public class IntentServiceTest extends ActivityTestsBase {
             mContext.startService(addIntent);
         }
 
-        PollingCheck.check("onHandleIntentCalled not called enough", TIMEOUT_MSEC,
-                new Callable<Boolean>() {
-            @Override
-            public Boolean call() throws Exception {
-                return IntentServiceStub.getOnHandleIntentCalledCount() == adds;
-            }
-        });
+        PollingCheck.check(
+                "onHandleIntentCalled not called enough",
+                TIMEOUT_MSEC,
+                () -> IntentServiceStub.getOnHandleIntentCalledCount() == adds);
 
-        PollingCheck.check("accumulator not correct", TIMEOUT_MSEC, new Callable<Boolean>() {
-            @Override
-            public Boolean call() throws Exception {
-                return IntentServiceStub.getAccumulator() == adds * value;
-            }
-        });
+        PollingCheck.check(
+                "accumulator not correct",
+                TIMEOUT_MSEC,
+                () -> IntentServiceStub.getAccumulator() == adds * value);
 
-        PollingCheck.check("onDestroyCalled not called", TIMEOUT_MSEC, new Callable<Boolean>() {
-            @Override
-            public Boolean call() throws Exception {
-                return IntentServiceStub.isOnDestroyCalled();
-            }
-        });
+        PollingCheck.check(
+                "onDestroyCalled not called", TIMEOUT_MSEC, IntentServiceStub::isOnDestroyCalled);
     }
 
+    @Test
     public void testIntentServiceLifeCycle() throws Throwable {
         // start service
         mContext.startService(mIntent);
@@ -91,8 +91,8 @@ public class IntentServiceTest extends ActivityTestsBase {
                 return IntentServiceStub.getOnHandleIntentCalledCount() > 0;
             }
         }.run();
-        assertTrue(IntentServiceStub.isOnCreateCalled());
-        assertTrue(IntentServiceStub.isOnStartCalled());
+        assertThat(IntentServiceStub.isOnCreateCalled()).isTrue();
+        assertThat(IntentServiceStub.isOnStartCalled()).isTrue();
 
         // bind service
         ServiceConnection conn = new TestConnection();
@@ -102,7 +102,7 @@ public class IntentServiceTest extends ActivityTestsBase {
                 return mConnected;
             }
         }.run();
-        assertTrue(IntentServiceStub.isOnBindCalled());
+        assertThat(IntentServiceStub.isOnBindCalled()).isTrue();
 
         // unbind service
         mContext.unbindService(conn);
@@ -111,7 +111,7 @@ public class IntentServiceTest extends ActivityTestsBase {
         IntentServiceStub.waitToFinish(TIMEOUT_MSEC);
     }
 
-    private class TestConnection implements ServiceConnection {
+    private final class TestConnection implements ServiceConnection {
 
         public void onServiceConnected(ComponentName name, IBinder service) {
             mConnected = true;

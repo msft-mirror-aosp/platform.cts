@@ -303,12 +303,7 @@ public class VehiclePropertyVerifiers {
     /** Gets the verifier builder for {@link VehiclePropertyIds#TIRE_PRESSURE}. */
     public static VehiclePropertyVerifier.Builder<Float> getTirePressureVerifierBuilder() {
         VehiclePropertyVerifier.Builder<Float> verifierBuilder =
-                VehiclePropertyVerifier.newBuilder(
-                                VehiclePropertyIds.TIRE_PRESSURE,
-                                CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
-                                VehicleAreaType.VEHICLE_AREA_TYPE_WHEEL,
-                                CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_CONTINUOUS,
-                                Float.class)
+                VehiclePropertyVerifier.<Float>newDefaultBuilder(VehiclePropertyIds.TIRE_PRESSURE)
                         .requireMinMaxValues()
                         .setCarPropertyValueVerifier(
                                 (verifierContext,
@@ -325,7 +320,7 @@ public class VehiclePropertyVerifiers {
                                                                 + " to 0.")
                                                 .that(tirePressure)
                                                 .isAtLeast(0))
-                        .addReadPermission(Car.PERMISSION_TIRES);
+                        .setReadPermission(ImmutableSet.of(Car.PERMISSION_TIRES));
 
         if (VehiclePropertyVerifier.isAtLeastB() && Flags.vehicleProperty25q23pPermissions()) {
             verifierBuilder.addReadPermission(Car.PERMISSION_TIRES_3P);
@@ -336,14 +331,10 @@ public class VehiclePropertyVerifiers {
     /** Gets the verifier builder for {@link VehiclePropertyIds#SEAT_OCCUPANCY}. */
     public static VehiclePropertyVerifier.Builder<Integer> getSeatOccupancyVerifierBuilder() {
         VehiclePropertyVerifier.Builder<Integer> verifierBuilder =
-                VehiclePropertyVerifier.newBuilder(
-                                VehiclePropertyIds.SEAT_OCCUPANCY,
-                                CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
-                                VehicleAreaType.VEHICLE_AREA_TYPE_SEAT,
-                                CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_ONCHANGE,
-                                Integer.class)
+                VehiclePropertyVerifier.<Integer>newDefaultBuilder(
+                                VehiclePropertyIds.SEAT_OCCUPANCY)
                         .setAllPossibleEnumValues(VEHICLE_SEAT_OCCUPANCY_STATES)
-                        .addReadPermission(Car.PERMISSION_CONTROL_CAR_SEATS);
+                        .setReadPermission(ImmutableSet.of(Car.PERMISSION_CONTROL_CAR_SEATS));
 
         if (VehiclePropertyVerifier.isAtLeastB() && Flags.vehicleProperty25q23pPermissions()) {
             verifierBuilder.addReadPermission(Car.PERMISSION_READ_CAR_SEATS);
@@ -354,13 +345,9 @@ public class VehiclePropertyVerifiers {
     /** Gets the verifier builder for {@link VehiclePropertyIds#PERF_STEERING_ANGLE}. */
     public static VehiclePropertyVerifier.Builder<Float> getPerfSteeringAngleVerifierBuilder() {
         VehiclePropertyVerifier.Builder<Float> verifierBuilder =
-                VehiclePropertyVerifier.newBuilder(
-                                VehiclePropertyIds.PERF_STEERING_ANGLE,
-                                CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
-                                VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
-                                CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_CONTINUOUS,
-                                Float.class)
-                        .addReadPermission(Car.PERMISSION_READ_STEERING_STATE);
+                VehiclePropertyVerifier.<Float>newDefaultBuilder(
+                                VehiclePropertyIds.PERF_STEERING_ANGLE)
+                        .setReadPermission(ImmutableSet.of(Car.PERMISSION_READ_STEERING_STATE));
 
         if (VehiclePropertyVerifier.isAtLeastB() && Flags.vehicleProperty25q23pPermissions()) {
             verifierBuilder.addReadPermission(Car.PERMISSION_READ_STEERING_STATE_3P);

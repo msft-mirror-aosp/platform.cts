@@ -110,23 +110,41 @@ public class WindowManagerTestBase extends MultiDisplayTestBase {
             }
         }
 
-        void assertWindowFocusState(boolean hasFocus) {
+        @Override
+        protected void onDestroy() {
+            StateLogger.logAlways(getLogTag() + " onDestroy");
+            super.onDestroy();
+
             synchronized (mLockWindowFocus) {
-                assertEquals(getLogTag() + " must" + (hasFocus ? "" : " not")
-                        + " have window focus.", hasFocus, mHasWindowFocus);
+                mHasWindowFocus = false;
+                mLockWindowFocus.notify();
             }
         }
 
-        public void waitAndAssertWindowFocusState(boolean hasFocus) {
+        void assertNotFinishing() {
+            assertEquals(getLogTag() + " must not be finishing", false, isFinishing());
+        }
+
+        void assertWindowFocusState(boolean wantFocus) {
+            if (wantFocus) {
+                assertNotFinishing();
+            }
             synchronized (mLockWindowFocus) {
-                if (mHasWindowFocus != hasFocus) {
+                assertEquals(getLogTag() + " must" + (wantFocus ? "" : " not")
+                        + " have window focus.", wantFocus, mHasWindowFocus);
+            }
+        }
+
+        public void waitAndAssertWindowFocusState(boolean wantFocus) {
+            synchronized (mLockWindowFocus) {
+                if (mHasWindowFocus != wantFocus) {
                     try {
                         mLockWindowFocus.wait(TIMEOUT_WINDOW_FOCUS_CHANGED);
                     } catch (InterruptedException e) {
                     }
                 }
             }
-            assertWindowFocusState(hasFocus);
+            assertWindowFocusState(wantFocus);
         }
     }
 }
