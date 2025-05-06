@@ -475,9 +475,14 @@ public class RemoteDpc extends RemotePolicyManager {
                         "RemoteDPC"
                 ).build();
         try (PermissionContext p = TestApis.permissions().withPermission(MANAGE_PROFILE_AND_DEVICE_OWNERS)) {
-            UserHandle managedProfile = sDevicePolicyManager.createManagedProfile(provisioningParams);
-            sDevicePolicyManager.finalizeWorkProfileProvisioning(managedProfile, null);
-            return managedProfile;
+            if (Versions.meetsMinimumSdkVersionRequirement(Build.VERSION_CODES.BAKLAVA)) {
+                UserHandle managedProfile = sDevicePolicyManager.createManagedProfile(
+                        provisioningParams);
+                sDevicePolicyManager.finalizeWorkProfileProvisioning(managedProfile, null);
+                return managedProfile;
+            } else {
+                return sDevicePolicyManager.createAndProvisionManagedProfile(provisioningParams);
+            }
         }
     }
 
