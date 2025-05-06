@@ -546,27 +546,12 @@ public class VehiclePropertyVerifiers {
     }
 
     /**
-     * Gets the verifier for {@code HVAC_FAN_SPEED}.
-     */
-    public static VehiclePropertyVerifier<Integer> getHvacFanSpeedVerifier(
-            CarPropertyManager carPropertyManager) {
-        return getHvacFanSpeedVerifierBuilder().setCarPropertyManager(carPropertyManager).build();
-    }
-
-    /**
      * Gets the verifier builder for {@code HVAC_FAN_SPEED}.
      */
     public static VehiclePropertyVerifier.Builder<Integer> getHvacFanSpeedVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.HVAC_FAN_SPEED,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_SEAT,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_ONCHANGE,
-                        Integer.class)
+        return VehiclePropertyVerifier.<Integer>newDefaultBuilder(VehiclePropertyIds.HVAC_FAN_SPEED)
                 .requireMinMaxValues()
-                .setPossiblyDependentOnHvacPowerOn()
-                .addReadPermission(Car.PERMISSION_CONTROL_CAR_CLIMATE)
-                .addWritePermission(Car.PERMISSION_CONTROL_CAR_CLIMATE);
+                .setPossiblyDependentOnHvacPowerOn();
     }
 
     /**
