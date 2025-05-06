@@ -61,7 +61,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 @RunWith(AndroidJUnit4.class)
 public final class PendingIntentTest {
-
     private static final int WAIT_TIME = 10000;
     private PendingIntent mPendingIntent;
     private Intent mIntent;
@@ -69,7 +68,17 @@ public final class PendingIntentTest {
     private boolean mFinishResult;
     private boolean mHandleResult;
     private String mResultAction;
-    private PendingIntent.OnFinished mFinish;
+    private final Object mFinishLock = new Object();
+    private final PendingIntent.OnFinished mFinish =
+            (pi, intent, resultCode, resultData, resultExtras) -> {
+                synchronized (mFinishLock) {
+                    mFinishResult = true;
+                    if (intent != null) {
+                        mResultAction = intent.getAction();
+                    }
+                    mFinishLock.notifyAll();
+                }
+            };
     private boolean mLooperStart;
     private Looper mLooper;
     private Handler mHandler;
@@ -77,17 +86,6 @@ public final class PendingIntentTest {
     @Before
     public void setUp() throws Exception {
         mContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
-        mFinish =
-                (pi, intent, resultCode, resultData, resultExtras) -> {
-                    synchronized (mFinish) {
-                        mFinishResult = true;
-                        if (intent != null) {
-                            mResultAction = intent.getAction();
-                        }
-                        mFinish.notifyAll();
-                    }
-                };
-
         new Thread(
                         () -> {
                             Looper.prepare();
@@ -103,7 +101,7 @@ public final class PendingIntentTest {
                 new Handler(mLooper) {
                     @Override
                     public void dispatchMessage(@NonNull Message msg) {
-                        synchronized (mFinish) {
+                        synchronized (mFinishLock) {
                             mHandleResult = true;
                         }
                         super.dispatchMessage(msg);
@@ -111,7 +109,7 @@ public final class PendingIntentTest {
 
                     @Override
                     public boolean sendMessageAtTime(@NonNull Message msg, long uptimeMillis) {
-                        synchronized (mFinish) {
+                        synchronized (mFinishLock) {
                             mHandleResult = true;
                         }
                         return super.sendMessageAtTime(msg, uptimeMillis);
@@ -119,7 +117,7 @@ public final class PendingIntentTest {
 
                     @Override
                     public void handleMessage(@NonNull Message msg) {
-                        synchronized (mFinish) {
+                        synchronized (mFinishLock) {
                             mHandleResult = true;
                         }
                         super.handleMessage(msg);
@@ -133,7 +131,7 @@ public final class PendingIntentTest {
     }
 
     private void prepareFinish() {
-        synchronized (mFinish) {
+        synchronized (mFinishLock) {
             mFinishResult = false;
             mHandleResult = false;
         }
@@ -142,10 +140,10 @@ public final class PendingIntentTest {
     public boolean waitForFinish(long timeout) {
         long now = SystemClock.elapsedRealtime();
         final long endTime = now + timeout;
-        synchronized (mFinish) {
+        synchronized (mFinishLock) {
             while (!mFinishResult && now < endTime) {
                 try {
-                    mFinish.wait(endTime - now);
+                    mFinishLock.wait(endTime - now);
                 } catch (InterruptedException e) {
                     // Expected
                 }
