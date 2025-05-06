@@ -537,10 +537,10 @@
     <option name="compatibility:exclude-filter" value="CtsSdkSandboxInprocessTests com.android.sdksandbox.tests.cts.inprocess.SdkSandboxRestrictionsTest#testCannotRequestPermissions" />
 
      <!-- b/407476872 -->
-    <option name="compatibility:exclude-filter" value="SdkSandboxMultiUserInprocessTests com.android.sdksandbox.tests.cts.inprocess.SdkSandboxRestrictionsTest#testNoImplicitIntents" />
-    <option name="compatibility:exclude-filter" value="SdkSandboxMultiUserInprocessTests com.android.sdksandbox.tests.cts.inprocess.SdkSandboxRestrictionsTest#testSandboxCannotAccess_MediaStoreApi" />
-    <option name="compatibility:exclude-filter" value="SdkSandboxMultiUserInprocessTests com.android.sdksandbox.tests.cts.inprocess.SdkSandboxRestrictionsTest#testSandboxCannotAccess_StorageAccessFramework" />
-    <option name="compatibility:exclude-filter" value="SdkSandboxMultiUserInprocessTests com.android.sdksandbox.tests.cts.inprocess.SdkSandboxRestrictionsTest#testCannotRequestPermissions" />
+    <option name="compatibility:exclude-filter" value="AndroidTest_MultiUser com.android.sdksandbox.tests.cts.inprocess.SdkSandboxRestrictionsTest#testNoImplicitIntents" />
+    <option name="compatibility:exclude-filter" value="AndroidTest_MultiUser com.android.sdksandbox.tests.cts.inprocess.SdkSandboxRestrictionsTest#testSandboxCannotAccess_MediaStoreApi" />
+    <option name="compatibility:exclude-filter" value="AndroidTest_MultiUser com.android.sdksandbox.tests.cts.inprocess.SdkSandboxRestrictionsTest#testSandboxCannotAccess_StorageAccessFramework" />
+    <option name="compatibility:exclude-filter" value="AndroidTest_MultiUser com.android.sdksandbox.tests.cts.inprocess.SdkSandboxRestrictionsTest#testCannotRequestPermissions" />
 
     <!-- b/413226715 -->
     <option name="compatibility:exclude-filter" value="CtsJvmtiRunTest906HostTestCases" />
