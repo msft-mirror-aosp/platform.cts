@@ -34,18 +34,19 @@ import android.provider.DeviceConfig;
 import android.provider.Settings;
 import android.safetycenter.SafetyCenterManager;
 import android.server.wm.WindowManagerStateHelper;
-import android.support.test.uiautomator.By;
-import android.support.test.uiautomator.BySelector;
-import android.support.test.uiautomator.UiDevice;
-import android.support.test.uiautomator.UiObject2;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.rule.ActivityTestRule;
 import androidx.test.runner.AndroidJUnit4;
+import androidx.test.uiautomator.By;
+import androidx.test.uiautomator.BySelector;
+import androidx.test.uiautomator.UiDevice;
+import androidx.test.uiautomator.UiObject2;
 
 import com.android.compatibility.common.util.CddTest;
+import com.android.compatibility.common.util.FeatureUtil;
 import com.android.compatibility.common.util.SettingsStateChangerRule;
 import com.android.compatibility.common.util.SystemUtil;
 
@@ -72,11 +73,14 @@ public final class RecognitionServiceMicIndicatorTest {
     private static final String PRIVACY_CHIP_PACKAGE_NAME = "com.android.systemui";
     private static final String PRIVACY_CHIP_ID = "privacy_chip";
     private static final String CAR_MIC_PRIVACY_CHIP_ID = "mic_privacy_chip";
+    private static final String XR_PRIVACY_CHIP_ID = "privacy_indicator_button";
     private static final String PRIVACY_DIALOG_PACKAGE_NAME = "com.android.systemui";
     private static final String PRIVACY_DIALOG_CONTENT_ID = "text";
     private static final String PRIVACY_DIALOG_CONTENT_V2_ID = "privacy_dialog_item_header_summary";
     private static final String CAR_PRIVACY_DIALOG_CONTENT_ID = "qc_title";
     private static final String CAR_PRIVACY_DIALOG_APP_LABEL_CONTENT_ID = "qc_title";
+    private static final String XR_PRIVACY_DIALOG_CONTENT_ID = "qs_privacy_tile_container";
+    private static final String XR_PRIVACY_DIALOG_APP_LABEL_CONTENT_ID = "privacy_item";
     private static final String TV_MIC_INDICATOR_WINDOW_TITLE = "MicrophoneCaptureIndicator";
     private static final String SC_PRIVACY_DIALOG_PACKAGE_NAME = "com.android.permissioncontroller";
     private static final String SC_PRIVACY_DIALOG_CONTENT_ID = "indicator_label";
@@ -268,6 +272,8 @@ public final class RecognitionServiceMicIndicatorTest {
         BySelector selector;
         if (isCar()) {
             selector = By.res(PRIVACY_DIALOG_PACKAGE_NAME, CAR_PRIVACY_DIALOG_CONTENT_ID);
+        } else if (FeatureUtil.isXrHeadset()) {
+            selector = By.res(PRIVACY_DIALOG_PACKAGE_NAME, XR_PRIVACY_DIALOG_CONTENT_ID);
         } else if (mSafetyCenterEnabled) {
             selector =
                     byEitherRes(
@@ -296,6 +302,14 @@ public final class RecognitionServiceMicIndicatorTest {
                     recognitionCallingAppLabels.get(0)
                             .findObjects(By.res(PRIVACY_DIALOG_PACKAGE_NAME,
                                     CAR_PRIVACY_DIALOG_APP_LABEL_CONTENT_ID))
+                            .stream()
+                            .map(UiObject2::getText)
+                            .collect(Collectors.joining("\n"));
+        } else if (FeatureUtil.isXrHeadset()) {
+            dialogDescription =
+                    recognitionCallingAppLabels.get(0)
+                            .findObjects(By.res(PRIVACY_DIALOG_PACKAGE_NAME,
+                                    XR_PRIVACY_DIALOG_APP_LABEL_CONTENT_ID))
                             .stream()
                             .map(UiObject2::getText)
                             .collect(Collectors.joining("\n"));
@@ -334,6 +348,12 @@ public final class RecognitionServiceMicIndicatorTest {
             mActivity.destroyRecognizerDefault();
             privacyChip.click();
             waitForNoIndicatorForCar(chipId);
+        } else if (FeatureUtil.isXrHeadset()){
+            // In XR devices, the privacy chip will continue showing while the recognizer still
+            // has a session in progress
+            mActivity.destroyRecognizerDefault();
+            privacyChip.click();
+            waitForNoIndicator(chipId);
         } else {
             // Wait for the privacy indicator to disappear to avoid the test becoming flaky.
             waitForNoIndicator(chipId);
@@ -342,7 +362,13 @@ public final class RecognitionServiceMicIndicatorTest {
 
     @NonNull
     private String chipId() {
-        return isCar() ? CAR_MIC_PRIVACY_CHIP_ID : PRIVACY_CHIP_ID;
+        if (isCar()) {
+            return CAR_MIC_PRIVACY_CHIP_ID;
+        } else if (FeatureUtil.isXrHeadset()) {
+            return XR_PRIVACY_CHIP_ID;
+        } else {
+            return PRIVACY_CHIP_ID;
+        }
     }
 
     private void waitForNoIndicator(String chipId) {
@@ -360,7 +386,7 @@ public final class RecognitionServiceMicIndicatorTest {
             assertWithMessage("Chip still visible.").that(foundChip).isNull();
         }, LONG_TIMEOUT_FOR_CAR);
     }
-    
+
 
     private boolean isTv() {
         PackageManager pm = mContext.getPackageManager();
