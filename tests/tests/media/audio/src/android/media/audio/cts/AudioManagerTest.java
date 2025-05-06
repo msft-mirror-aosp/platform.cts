@@ -40,6 +40,8 @@ import static android.media.AudioManager.VIBRATE_SETTING_ONLY_SILENT;
 import static android.media.AudioManager.VIBRATE_TYPE_NOTIFICATION;
 import static android.media.AudioManager.VIBRATE_TYPE_RINGER;
 import static android.media.audio.cts.AudioTestUtil.resetVolumeIndex;
+import static android.media.audiopolicy.AudioProductStrategy.DEFAULT_ZONE_ID;
+import static android.media.audiopolicy.AudioVolumeGroup.DEFAULT_VOLUME_GROUP;
 import static android.provider.Settings.Global.APPLY_RAMPING_RINGER;
 import static android.provider.Settings.System.SOUND_EFFECTS_ENABLED;
 
@@ -99,6 +101,8 @@ import android.os.Vibrator;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.AppModeSdkSandbox;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.Settings;
 import android.provider.Settings.System;
 import android.util.Log;
@@ -107,6 +111,8 @@ import android.view.SoundEffectConstants;
 import androidx.test.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.bedstead.nene.TestApis;
+import com.android.bedstead.permissions.PermissionContext;
 import com.android.compatibility.common.util.AmUtils;
 import com.android.compatibility.common.util.ApiLevelUtil;
 import com.android.compatibility.common.util.CddTest;
@@ -227,6 +233,9 @@ public class AudioManagerTest {
 
     @Rule
     public final CancelAllFuturesRule mCancelRule = new CancelAllFuturesRule();
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private static Instrumentation getInstrumentation() {
         return InstrumentationRegistry.getInstrumentation();
@@ -2196,8 +2205,11 @@ public class AudioManagerTest {
 
         final AudioAttributes mediaAttr = new AudioAttributes.Builder().setUsage(
                 AudioAttributes.USAGE_MEDIA).build();
-        final List<AudioProductStrategy> strategies =
-                AudioProductStrategy.getAudioProductStrategies();
+        List<AudioProductStrategy> strategies;
+        try (PermissionContext p =
+                TestApis.permissions().withPermission(Manifest.permission.MODIFY_AUDIO_ROUTING)) {
+            strategies = AudioManager.getAudioProductStrategies();
+        }
         AudioProductStrategy strategyForMedia = null;
         for (AudioProductStrategy strategy : strategies) {
             if (strategy.supportsAudioAttributes(mediaAttr)) {
@@ -2334,7 +2346,7 @@ public class AudioManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(value = Flags.FLAG_SUPPORTED_DEVICE_TYPES_API)
+    @RequiresFlagsEnabled(Flags.FLAG_SUPPORTED_DEVICE_TYPES_API)
     public void testGetSupportedDeviceTypes() {
         Set<Integer> deviceTypesOutputs =
                 mAudioManager.getSupportedDeviceTypes(AudioManager.GET_DEVICES_OUTPUTS);
@@ -2658,7 +2670,7 @@ public class AudioManagerTest {
                 .build();
         int voiceCallVolumeGroup = mAudioManager.getVolumeGroupIdForAttributes(callAa);
 
-        assertNotEquals(voiceCallVolumeGroup, AudioVolumeGroup.DEFAULT_VOLUME_GROUP);
+        assertNotEquals(voiceCallVolumeGroup, DEFAULT_VOLUME_GROUP);
 
         AudioVolumeGroupCallbackHelper vgCbReceiver = new AudioVolumeGroupCallbackHelper();
         mAudioManager.registerVolumeGroupCallback(mContext.getMainExecutor(), vgCbReceiver);
@@ -3083,6 +3095,60 @@ public class AudioManagerTest {
             mAudioManager.setLeAudioSuspended(false);
             mAudioManager.setHfpEnabled(false);
             getInstrumentation().getUiAutomation().dropShellPermissionIdentity();
+        }
+    }
+
+    @RequiresFlagsEnabled(android.media.audiopolicy.Flags.FLAG_MULTI_ZONE_AUDIO)
+    @Test
+    public void getVolumeGroupIdForAttributes() {
+        try (PermissionContext ignored =
+                TestApis.permissions()
+                        .withPermission(Manifest.permission.MODIFY_AUDIO_SETTINGS_PRIVILEGED)) {
+            var volumeGroups = AudioManager.getAudioVolumeGroups();
+            for (var volumeGroup : volumeGroups) {
+                for (var attributes : volumeGroup.getAudioAttributes()) {
+                    var productStrategy =
+                            AudioProductStrategy.getAudioProductStrategyForAudioAttributes(
+                                    attributes, DEFAULT_ZONE_ID, /* fallbackOnDefault= */ true);
+                    assertWithMessage("Product strategy volume group for audio attribute %s in "
+                            + "default zone with fallback on default", attributes)
+                            .that(AudioProductStrategy.getVolumeGroupIdForAudioAttributes(
+                                    attributes, DEFAULT_ZONE_ID, /* fallbackOnDefault= */ true))
+                            .isEqualTo(volumeGroup.getId());
+                    assertWithMessage("Volume group for audio attribute %s in default zone",
+                            attributes).that(mAudioManager.getVolumeGroupIdForAttributes(
+                                    attributes, DEFAULT_ZONE_ID)).isEqualTo(volumeGroup.getId());
+                    assertWithMessage("Product strategy volume group for audio attribute %s in "
+                                    + "default zone", attributes)
+                            .that(productStrategy.getVolumeGroupIdForAudioAttributes(
+                                    attributes, DEFAULT_ZONE_ID)).isEqualTo(volumeGroup.getId());
+                }
+            }
+        }
+    }
+
+    @RequiresFlagsEnabled(android.media.audiopolicy.Flags.FLAG_MULTI_ZONE_AUDIO)
+    @Test
+    public void getAudioProductStrategyForAudioAttributes() {
+        try (PermissionContext ignored =
+                TestApis.permissions()
+                        .withPermission(Manifest.permission.MODIFY_AUDIO_SETTINGS_PRIVILEGED)) {
+            var volumeGroups = AudioManager.getAudioVolumeGroups();
+            for (var volumeGroup : volumeGroups) {
+                for (var attributes : volumeGroup.getAudioAttributes()) {
+                    var productStrategy =
+                            AudioProductStrategy.getAudioProductStrategyForAudioAttributes(
+                                    attributes, DEFAULT_ZONE_ID, /* fallbackOnDefault= */ true);
+                    assertWithMessage("Product strategy zone id")
+                            .that(productStrategy.getZoneId()).isEqualTo(DEFAULT_ZONE_ID);
+                    assertWithMessage("Audio attributes for strategy %s", attributes)
+                            .that(productStrategy.supportsAudioAttributes(attributes)).isTrue();
+                    assertWithMessage("Product strategy zone id for volume group %s",
+                            volumeGroup.getId())
+                            .that(AudioProductStrategy.getZoneIdForAudioVolumeGroupId(
+                                    volumeGroup.getId())).isEqualTo(DEFAULT_ZONE_ID);
+                }
+            }
         }
     }
 
