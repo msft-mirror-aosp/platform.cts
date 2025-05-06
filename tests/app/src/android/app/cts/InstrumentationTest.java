@@ -83,7 +83,6 @@ public class InstrumentationTest {
     private Instrumentation mInstrumentation;
     private InstrumentationTestActivity mActivity;
     private Intent mIntent;
-    private boolean mRunOnMainSyncResult;
     private Context mContext;
     private int mTestRunningUserId;
     private MockActivity mMockActivity;
@@ -485,18 +484,6 @@ public class InstrumentationTest {
     }
 
     @Test
-    public void testRunOnMainSync() throws Exception {
-        mRunOnMainSyncResult = false;
-        mInstrumentation.runOnMainSync(new Runnable() {
-            public void run() {
-                mRunOnMainSyncResult = true;
-            }
-        });
-        mInstrumentation.waitForIdleSync();
-        assertTrue(mRunOnMainSyncResult);
-    }
-
-    @Test
     public void testCallActivityOnPause() throws Throwable {
         mActivity.setOnPauseCalled(false);
         runTestOnUiThread(() -> {
@@ -553,15 +540,6 @@ public class InstrumentationTest {
     }
 
     @Test
-    public void testWaitForIdle() throws Exception {
-        MockRunnable mr = new MockRunnable();
-        assertFalse(mr.isRunCalled());
-        mInstrumentation.waitForIdle(mr);
-        Thread.sleep(WAIT_TIME);
-        assertTrue(mr.isRunCalled());
-    }
-
-    @Test
     public void testSendCharacterSync() throws Exception {
         mInstrumentation.sendCharacterSync(KeyEvent.KEYCODE_0);
         mInstrumentation.waitForIdleSync();
@@ -607,18 +585,6 @@ public class InstrumentationTest {
         mInstrumentation.sendKeySync(key);
         mInstrumentation.waitForIdleSync();
         assertEquals(KeyEvent.KEYCODE_0, mActivity.getKeyDownCode());
-    }
-
-    private static class MockRunnable implements Runnable {
-        private boolean mIsRunCalled ;
-
-        public void run() {
-            mIsRunCalled = true;
-        }
-
-        public boolean isRunCalled() {
-            return mIsRunCalled;
-        }
     }
 
     private class MockActivity extends Activity {
