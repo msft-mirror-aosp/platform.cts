@@ -331,14 +331,10 @@ public class VehiclePropertyVerifiers {
     /** Gets the verifier builder for {@link VehiclePropertyIds#SEAT_OCCUPANCY}. */
     public static VehiclePropertyVerifier.Builder<Integer> getSeatOccupancyVerifierBuilder() {
         VehiclePropertyVerifier.Builder<Integer> verifierBuilder =
-                VehiclePropertyVerifier.newBuilder(
-                                VehiclePropertyIds.SEAT_OCCUPANCY,
-                                CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
-                                VehicleAreaType.VEHICLE_AREA_TYPE_SEAT,
-                                CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_ONCHANGE,
-                                Integer.class)
+                VehiclePropertyVerifier.<Integer>newDefaultBuilder(
+                                VehiclePropertyIds.SEAT_OCCUPANCY)
                         .setAllPossibleEnumValues(VEHICLE_SEAT_OCCUPANCY_STATES)
-                        .addReadPermission(Car.PERMISSION_CONTROL_CAR_SEATS);
+                        .setReadPermission(ImmutableSet.of(Car.PERMISSION_CONTROL_CAR_SEATS));
 
         if (VehiclePropertyVerifier.isAtLeastB() && Flags.vehicleProperty25q23pPermissions()) {
             verifierBuilder.addReadPermission(Car.PERMISSION_READ_CAR_SEATS);
