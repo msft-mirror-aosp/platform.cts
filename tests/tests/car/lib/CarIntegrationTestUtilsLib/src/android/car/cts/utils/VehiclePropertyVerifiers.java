@@ -466,25 +466,12 @@ public class VehiclePropertyVerifiers {
     }
 
     /**
-     * Gets the verifier for {@code HVAC_TEMPERATURE_VALUE_SUGGESTION}.
-     */
-    public static VehiclePropertyVerifier<Float[]> getHvacTemperatureValueSuggestionVerifier(
-            CarPropertyManager carPropertyManager) {
-        return getHvacTemperatureValueSuggestionVerifierBuilder()
-                .setCarPropertyManager(carPropertyManager).build();
-    }
-
-    /**
      * Gets the verifier builder for {@code HVAC_TEMPERATURE_VALUE_SUGGESTION}.
      */
     public static VehiclePropertyVerifier.Builder<Float[]>
             getHvacTemperatureValueSuggestionVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.HVAC_TEMPERATURE_VALUE_SUGGESTION,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_ONCHANGE,
-                        Float[].class)
+        return VehiclePropertyVerifier.<Float[]>newDefaultBuilder(
+                        VehiclePropertyIds.HVAC_TEMPERATURE_VALUE_SUGGESTION)
                 .setCarPropertyConfigVerifier(
                         (verifierContext, carPropertyConfig) -> {
                             // HVAC_TEMPERATURE_VALUE_SUGGESTION's access must be read+write.
@@ -504,10 +491,8 @@ public class VehiclePropertyVerifiers {
                                 areaId,
                                 timestampNanos,
                                 temperatureSuggestion) ->
-                                verifyHvacTemperatureValueSuggestion(verifierContext,
-                                        temperatureSuggestion))
-                .addReadPermission(Car.PERMISSION_CONTROL_CAR_CLIMATE)
-                .addWritePermission(Car.PERMISSION_CONTROL_CAR_CLIMATE);
+                                verifyHvacTemperatureValueSuggestion(
+                                        verifierContext, temperatureSuggestion));
     }
 
     /**
