@@ -6058,7 +6058,7 @@
             <meta-data android:name="test_category" android:value="@string/test_category_telephony"/>
             <meta-data
                 android:name="test_required_features"
-                android:value="android.hardware.telephony"/>
+                android:value="android.hardware.telephony.calling"/>
             <meta-data
                 android:name="test_required_configs"
                 android:value="config_voice_capable"/>
@@ -6113,7 +6113,7 @@
                 android:value="@string/test_category_telephony"/>
             <meta-data
                 android:name="test_required_features"
-                android:value="android.hardware.telephony"/>
+                android:value="android.hardware.telephony.calling"/>
             <meta-data
                 android:name="test_required_configs"
                 android:value="config_voice_capable"/>
@@ -6144,7 +6144,7 @@
                 android:value="@string/test_category_telephony"/>
             <meta-data
                 android:name="test_required_features"
-                android:value="android.hardware.telephony"/>
+                android:value="android.hardware.telephony.calling"/>
             <meta-data
                 android:name="test_required_configs"
                 android:value="config_voice_capable"/>
@@ -6341,7 +6341,7 @@
                 android:value="@string/test_category_telecom"/>
             <meta-data
                 android:name="test_required_features"
-                android:value="android.hardware.telephony"/>
+                android:value="android.hardware.telephony.calling"/>
             <meta-data
                 android:name="test_required_configs"
                 android:value="config_voice_capable"/>
