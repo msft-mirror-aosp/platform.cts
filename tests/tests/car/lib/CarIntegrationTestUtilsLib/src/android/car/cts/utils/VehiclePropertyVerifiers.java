@@ -425,28 +425,6 @@ public class VehiclePropertyVerifiers {
     }
 
     /**
-     * Gets the verifier for {@code HVAC_DEFROSTER}.
-     */
-    public static VehiclePropertyVerifier<Boolean> getHvacDefrosterVerifier(
-            CarPropertyManager carPropertyManager) {
-        return getHvacDefrosterVerifierBuilder().setCarPropertyManager(carPropertyManager).build();
-    }
-
-    /**
-     * Gets the verifier builder for {@code HVAC_DEFROSTER}.
-     */
-    public static VehiclePropertyVerifier.Builder<Boolean> getHvacDefrosterVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.HVAC_DEFROSTER,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_WINDOW,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_ONCHANGE,
-                        Boolean.class)
-                .addReadPermission(Car.PERMISSION_CONTROL_CAR_CLIMATE)
-                .addWritePermission(Car.PERMISSION_CONTROL_CAR_CLIMATE);
-    }
-
-    /**
      * Gets the verifier for {@code HVAC_SIDE_MIRROR_HEAT}.
      */
     public static VehiclePropertyVerifier<Integer> getHvacSideMirrorHeatVerifier(
