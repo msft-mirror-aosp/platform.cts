@@ -435,29 +435,14 @@ public class VehiclePropertyVerifiers {
     }
 
     /**
-     * Gets the verifier for {@code HVAC_STEERING_WHEEL_HEAT}.
-     */
-    public static VehiclePropertyVerifier<Integer> getHvacSteeringWheelHeatVerifier(
-            CarPropertyManager carPropertyManager) {
-        return getHvacSteeringWheelHeatVerifierBuilder().setCarPropertyManager(carPropertyManager)
-                .build();
-    }
-
-    /**
      * Gets the verifier builder for {@code HVAC_STEERING_WHEEL_HEAT}.
      */
     public static VehiclePropertyVerifier.Builder<Integer>
             getHvacSteeringWheelHeatVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.HVAC_STEERING_WHEEL_HEAT,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_ONCHANGE,
-                        Integer.class)
+        return VehiclePropertyVerifier.<Integer>newDefaultBuilder(
+                        VehiclePropertyIds.HVAC_STEERING_WHEEL_HEAT)
                 .requireMinMaxValues()
-                .requireZeroToBeContainedInMinMaxRanges()
-                .addReadPermission(Car.PERMISSION_CONTROL_CAR_CLIMATE)
-                .addWritePermission(Car.PERMISSION_CONTROL_CAR_CLIMATE);
+                .requireZeroToBeContainedInMinMaxRanges();
     }
 
     /**
