@@ -577,6 +577,8 @@
         <activity android:name="android.server.wm.animations.BlurTests$BackgroundActivity"
              android:theme="@style/BackgroundImage"
              android:colorMode="wideColorGamut"
+             android:configChanges="resourcesUnused"
+             android:screenOrientation="locked"
              android:exported="true">
             <property
                 android:name="android.window.PROPERTY_COMPAT_ALLOW_SAFE_REGION_LETTERBOXING"
@@ -586,6 +588,8 @@
         <activity android:name="android.server.wm.animations.BlurTests$BlurActivity"
              android:exported="true"
              android:colorMode="wideColorGamut"
+             android:configChanges="resourcesUnused"
+             android:screenOrientation="locked"
              android:theme="@style/BlurTestTheme">
             <property
                 android:name="android.window.PROPERTY_COMPAT_ALLOW_SAFE_REGION_LETTERBOXING"
@@ -594,6 +598,8 @@
         <activity android:name="android.server.wm.animations.BlurTests$BlurAttributesActivity"
              android:exported="true"
              android:colorMode="wideColorGamut"
+             android:configChanges="resourcesUnused"
+             android:screenOrientation="locked"
              android:theme="@style/BlurryDialog">
             <property
                 android:name="android.window.PROPERTY_COMPAT_ALLOW_SAFE_REGION_LETTERBOXING"
@@ -602,6 +608,8 @@
         <activity android:name="android.server.wm.animations.BlurTests$BadBlurActivity"
              android:exported="true"
              android:colorMode="wideColorGamut"
+             android:configChanges="resourcesUnused"
+             android:screenOrientation="locked"
              android:theme="@style/BadBlurryDialog">
             <property
                 android:name="android.window.PROPERTY_COMPAT_ALLOW_SAFE_REGION_LETTERBOXING"
