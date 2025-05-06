@@ -26,7 +26,8 @@ import android.content.IntentFilter;
 import android.net.Uri;
 import android.os.Environment;
 
-import androidx.test.runner.AndroidJUnit4;
+import androidx.annotation.NonNull;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -36,7 +37,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 @RunWith(AndroidJUnit4.class)
-public class DownloadManagerInstallerTest extends DownloadManagerTestBase {
+public final class DownloadManagerInstallerTest extends DownloadManagerTestBase {
     private static final long POLLING_TIMEOUT_MILLIS = TimeUnit.SECONDS.toMillis(20);
     private static final long POLLING_SLEEP_MILLIS = 100;
 
@@ -50,6 +51,9 @@ public class DownloadManagerInstallerTest extends DownloadManagerTestBase {
         String otherAppObbPath = obbDir.getPath().replace(mContext.getPackageName(),
                 "android.app.cts.some_random_package");
         File destPath = new File(otherAppObbPath);
+        if (destPath.exists()) {
+            recursiveDelete(destPath);
+        }
         assertTrue(destPath.mkdirs());
 
         File destFile = new File(destPath, "test.obb");
@@ -74,6 +78,15 @@ public class DownloadManagerInstallerTest extends DownloadManagerTestBase {
         } finally {
             mContext.unregisterReceiver(receiver);
         }
+    }
+
+    private static void recursiveDelete(@NonNull File directory) {
+        if (directory.isDirectory()) {
+            for (File file : directory.listFiles()) {
+                recursiveDelete(file);
+            }
+        }
+        boolean ignored = directory.delete();
     }
 
     /**
