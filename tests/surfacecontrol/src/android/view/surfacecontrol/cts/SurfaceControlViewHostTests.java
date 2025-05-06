@@ -35,8 +35,8 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeTrue;
 import static org.junit.Assume.assumeFalse;
+import static org.junit.Assume.assumeTrue;
 
 import android.app.Activity;
 import android.app.ActivityManager;
@@ -51,6 +51,7 @@ import android.content.pm.FeatureInfo;
 import android.content.res.Configuration;
 import android.graphics.Color;
 import android.graphics.PixelFormat;
+import android.graphics.Point;
 import android.graphics.Rect;
 import android.graphics.Region;
 import android.os.Binder;
@@ -60,9 +61,7 @@ import android.os.SystemClock;
 import android.platform.test.annotations.Presubmit;
 import android.platform.test.annotations.RequiresDevice;
 import android.server.wm.ActivityManagerTestBase;
-import android.server.wm.CtsWindowInfoUtils;
 import android.server.wm.FutureConnection;
-import android.server.wm.WindowManagerState;
 import android.server.wm.scvh.Components;
 import android.server.wm.scvh.ICrossProcessSurfaceControlViewHostTestService;
 import android.util.ArrayMap;
@@ -630,10 +629,11 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
         assertWindowFocused(mEmbeddedView, false);
         // assert host does not have focus
         assertWindowFocused(mSurfaceView, false);
-
+        // offset the tap towards the bottom-right to avoid the top-left rounded corner
+        Point offset = new Point(DEFAULT_SURFACE_VIEW_WIDTH - 1, DEFAULT_SURFACE_VIEW_HEIGHT - 1);
         assertTrue("Failed to tap on embedded parent",
                 tapOnWindow(mInstrumentation, () -> mEmbeddedView.getWindowToken(),
-                        null /* offset */, /* useGlobalInjection= */ true));
+                        offset, /* useGlobalInjection= */ true));
         // When tapping on the parent embedded window, it should gain focus.
         assertWindowFocused(mEmbeddedView, true);
         // assert child embedded window does not have focus.
@@ -1513,8 +1513,9 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
         // on-screen.
         final int[] viewOnScreenXY = new int[2];
         mSurfaceView.getLocationOnScreen(viewOnScreenXY);
-        final int injectedX = viewOnScreenXY[0] + 1;
-        final int injectedY = viewOnScreenXY[1] + 1;
+        // offset the inject towards the bottom-right to avoid the top-left rounded corner
+        final int injectedX = viewOnScreenXY[0] + DEFAULT_SURFACE_VIEW_WIDTH - 1;
+        final int injectedY = viewOnScreenXY[1] + DEFAULT_SURFACE_VIEW_HEIGHT - 1;
         long downTime = SystemClock.uptimeMillis();
 
         // We inject a down event
