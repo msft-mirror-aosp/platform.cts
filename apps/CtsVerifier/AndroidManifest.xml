@@ -4886,6 +4886,7 @@
                 <action android:name="com.android.cts.verifier.managedprovisioning.BYOD_CAPTURE_AND_CHECK_IMAGE" />
                 <action android:name="com.android.cts.verifier.managedprovisioning.BYOD_CAPTURE_AND_CHECK_VIDEO_WITH_EXTRA_OUTPUT" />
                 <action android:name="com.android.cts.verifier.managedprovisioning.BYOD_CAPTURE_AND_CHECK_VIDEO_WITHOUT_EXTRA_OUTPUT" />
+                <action android:name="com.android.cts.verifier.managedprovisioning.BYOD_CAPTURE_AND_CHECK_MOTION_PHOTO" />
                 <action android:name="com.android.cts.verifier.managedprovisioning.BYOD_CAPTURE_AND_CHECK_AUDIO" />
                 <action android:name="com.android.cts.verifier.managedprovisioning.BYOD_KEYGUARD_DISABLED_FEATURES" />
                 <action android:name="com.android.cts.verifier.managedprovisioning.BYOD_LOCKNOW" />
@@ -4907,6 +4908,8 @@
             </intent-filter>
             <meta-data android:name="display_mode"
                        android:value="single_display_mode" />
+            <meta-data android:name="ApiTest"
+                       android:value="android.provider.MediaStore#ACTION_MOTION_PHOTO_CAPTURE" />
         </activity>
 
         <activity android:name=".managedprovisioning.ByodPrimaryHelperActivity"
