@@ -332,6 +332,7 @@ public class MessageQueueTest {
     }
 
     @Test
+    @androidx.test.filters.LargeTest
     public void testStressQuit() throws Throwable {
         final AtomicReference<Handler> stressedRef = new AtomicReference<>();
         final Runnable doNothing = () -> {};
