@@ -366,14 +366,62 @@ public class VehiclePropertyVerifiers {
                 ACCESS_FINE_LOCATION);
     }
 
-    /** Gets the verifier for LOCATION_CHARACTERIZATION. */
-    public static VehiclePropertyVerifier<Integer> getLocationCharacterizationVerifier(
-            CarPropertyManager carPropertyManager) {
-        return getLocationCharacterizationVerifierBuilder(
-                        carPropertyManager,
-                        VehiclePropertyIds.LOCATION_CHARACTERIZATION,
-                        ACCESS_FINE_LOCATION)
-                .build();
+    /**
+     * Gets the verifier builder for LOCATION_CHARACTERIZATION.
+     *
+     * <p>Works for backported LOCATION_CHARACTERIZATION as well.
+     *
+     * @param carPropertyManager the car property manager instance.
+     * @param propertyId the backported property ID.
+     * @param readPermission the permission for the backported property.
+     */
+    public static VehiclePropertyVerifier.Builder<Integer>
+            getLocationCharacterizationVerifierBuilder(
+                    CarPropertyManager carPropertyManager,
+                    int locPropertyId,
+                    String readPermission) {
+        return VehiclePropertyVerifier.newBuilder(
+                        locPropertyId,
+                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
+                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
+                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_STATIC,
+                        Integer.class)
+                .setCarPropertyValueVerifier(
+                        (verifierContext,
+                                carPropertyConfig,
+                                propertyId,
+                                areaId,
+                                timestampNanos,
+                                value) -> {
+                            boolean deadReckonedIsSet =
+                                    (value & LocationCharacterization.DEAD_RECKONED)
+                                            == LocationCharacterization.DEAD_RECKONED;
+                            boolean rawGnssOnlyIsSet =
+                                    (value & LocationCharacterization.RAW_GNSS_ONLY)
+                                            == LocationCharacterization.RAW_GNSS_ONLY;
+                            assertWithMessage(
+                                            "LOCATION_CHARACTERIZATION must not be 0 "
+                                                    + "Found value: "
+                                                    + value)
+                                    .that(value)
+                                    .isNotEqualTo(0);
+                            assertWithMessage(
+                                            "LOCATION_CHARACTERIZATION must not have any bits "
+                                                    + "set outside of the bit flags defined in "
+                                                    + "LocationCharacterization. Found value: "
+                                                    + value)
+                                    .that(value & LOCATION_CHARACTERIZATION_VALID_VALUES_MASK)
+                                    .isEqualTo(value);
+                            assertWithMessage(
+                                            "LOCATION_CHARACTERIZATION must have one of"
+                                                + " DEAD_RECKONED or RAW_GNSS_ONLY set. They both"
+                                                + " cannot be set either. Found value: "
+                                                    + value)
+                                    .that(deadReckonedIsSet ^ rawGnssOnlyIsSet)
+                                    .isTrue();
+                        })
+                .setCarPropertyManager(carPropertyManager)
+                .addReadPermission(readPermission);
     }
 
     /**
@@ -1210,54 +1258,6 @@ public class VehiclePropertyVerifiers {
                         })
                 .addReadPermission(Car.PERMISSION_CONTROL_CAR_CLIMATE)
                 .addWritePermission(Car.PERMISSION_CONTROL_CAR_CLIMATE);
-    }
-
-    /**
-     * Gets the verifier builder for LOCATION_CHARACTERIZATION.
-     *
-     * <p>Works for backported LOCATION_CHARACTERIZATION as well.
-     *
-     * @param carPropertyManager the car property manager instance.
-     * @param propertyId the backported property ID.
-     * @param readPermission the permission for the backported property.
-     */
-    public static VehiclePropertyVerifier.Builder<Integer>
-            getLocationCharacterizationVerifierBuilder(
-                    CarPropertyManager carPropertyManager,
-                    int locPropertyId,
-                    String readPermission) {
-        return VehiclePropertyVerifier.newBuilder(
-                        locPropertyId,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_STATIC,
-                        Integer.class)
-                .setCarPropertyValueVerifier(
-                        (verifierContext, carPropertyConfig, propertyId, areaId, timestampNanos,
-                                value) -> {
-                            boolean deadReckonedIsSet = (value
-                                    & LocationCharacterization.DEAD_RECKONED)
-                                    == LocationCharacterization.DEAD_RECKONED;
-                            boolean rawGnssOnlyIsSet = (value
-                                    & LocationCharacterization.RAW_GNSS_ONLY)
-                                    == LocationCharacterization.RAW_GNSS_ONLY;
-                            assertWithMessage("LOCATION_CHARACTERIZATION must not be 0 "
-                                    + "Found value: " + value)
-                                    .that(value)
-                                    .isNotEqualTo(0);
-                            assertWithMessage("LOCATION_CHARACTERIZATION must not have any bits "
-                                    + "set outside of the bit flags defined in "
-                                    + "LocationCharacterization. Found value: " + value)
-                                    .that(value & LOCATION_CHARACTERIZATION_VALID_VALUES_MASK)
-                                    .isEqualTo(value);
-                            assertWithMessage("LOCATION_CHARACTERIZATION must have one of "
-                                    + "DEAD_RECKONED or RAW_GNSS_ONLY set. They both cannot be set "
-                                    + "either. Found value: " + value)
-                                    .that(deadReckonedIsSet ^ rawGnssOnlyIsSet)
-                                    .isTrue();
-                        })
-                .setCarPropertyManager(carPropertyManager)
-                .addReadPermission(readPermission);
     }
 
     private static ImmutableSet<Integer> generateAllPossibleHvacFanDirections() {
