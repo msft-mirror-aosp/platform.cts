@@ -491,7 +491,12 @@ public class WebViewSslTest extends SharedWebViewTest {
         SharedWebViewTestEnvironment environment = builder.build();
 
         if (environment.getWebView() != null) {
-            WebkitUtils.checkForWindowFocus(mActivity);
+            new PollingCheck(WebkitUtils.TEST_TIMEOUT_MS) {
+                @Override
+                protected boolean check() {
+                    return mActivity.hasWindowFocus();
+                }
+            }.run();
             File f = mActivity.getFileStreamPath("snapshot");
             if (f.exists()) {
                 f.delete();
