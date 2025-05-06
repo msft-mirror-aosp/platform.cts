@@ -42,8 +42,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.SystemClock;
-import android.platform.test.annotations.RequiresFlagsDisabled;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
@@ -51,7 +49,6 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 
 import com.android.compatibility.common.util.AmUtils;
-import com.android.server.am.Flags;
 
 import org.junit.After;
 import org.junit.Before;
@@ -138,27 +135,13 @@ public class BootCompletedFgsStartTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_FGS_BOOT_COMPLETED)
     public void fgsTypeNotAllowedStartTest() throws Exception {
         runTestOnce(TARGET_APP_CURRENT, true, "", RESULT_CODE_FAILURE);
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_FGS_BOOT_COMPLETED)
     public void fgsTypeAllowedStartTestApi34() throws Exception {
         runTestOnce(TARGET_APP_34, true, "", RESULT_CODE_SUCCESS);
-    }
-
-    @Test
-    @RequiresFlagsDisabled(Flags.FLAG_FGS_BOOT_COMPLETED)
-    public void fgsTypeAllowedStartTest_changesDisabled() throws Exception {
-        runTestOnce(TARGET_APP_CURRENT, false, "", RESULT_CODE_SUCCESS);
-    }
-
-    @Test
-    @RequiresFlagsDisabled(Flags.FLAG_FGS_BOOT_COMPLETED)
-    public void fgsTypeAllowedStartTestApi34_changesDisabled() throws Exception {
-        runTestOnce(TARGET_APP_34, false, "", RESULT_CODE_SUCCESS);
     }
 
     private static String fgsTypeToString(int types) {

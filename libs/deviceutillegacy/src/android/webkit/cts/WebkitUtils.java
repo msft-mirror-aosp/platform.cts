@@ -16,11 +16,16 @@
 
 package android.webkit.cts;
 
+import android.app.Activity;
+import android.app.KeyguardManager;
 import android.content.Context;
 import android.net.ConnectivityManager;
 import android.net.Network;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.PowerManager;
+
+import com.android.compatibility.common.util.PollingCheck;
 
 import com.google.common.util.concurrent.SettableFuture;
 
@@ -211,6 +216,44 @@ public final class WebkitUtils {
                         + "https://source.android.com/docs/compatibility/cts/setup#wifi-and-ipv6");
         }
         return networks;
+    }
+
+    /**
+     * Polling to check that the screen is on and the CTS test Activity has window focus. This is
+     * required for any tests which interact with UI elements, such as by tapping buttons.
+     *
+     * @param activity the {@link Activity} the test is running in.
+     * @throws CtsRequirementException if we cannot obtain window focus.
+     */
+    public static void checkForWindowFocus(Activity activity) {
+        PowerManager powerManager = activity.getSystemService(PowerManager.class);
+        if (!powerManager.isInteractive()) {
+            throw new CtsRequirementException(
+                    "The CTS test suite requires the device screen to be on. Please turn on the"
+                        + " device screen. Refer to "
+                        + "https://source.android.com/docs/compatibility/cts/setup#device-config");
+        }
+        KeyguardManager keyguardManager = activity.getSystemService(KeyguardManager.class);
+        if (keyguardManager.inKeyguardRestrictedInputMode()) {
+            throw new CtsRequirementException(
+                    "The CTS test suite requires the device screen to be unlocked. Please unlock"
+                        + " the device. Refer to "
+                        + "https://source.android.com/docs/compatibility/cts/setup#device-config");
+        }
+        try {
+            new PollingCheck(TEST_TIMEOUT_MS) {
+                @Override
+                protected boolean check() {
+                    return activity.hasWindowFocus();
+                }
+            }.run();
+        } catch (Throwable t) {
+            String message =
+                    "The device screen is on but the CTS test Activity does not have focus."
+                            + " Please check to make sure there is no user input dialog which is"
+                            + " stealing focus.";
+            throw new CtsRequirementException(message, t);
+        }
     }
 
     // Do not instantiate this class.

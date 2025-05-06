@@ -227,14 +227,10 @@ public class VehiclePropertyVerifiers {
     public static VehiclePropertyVerifier.Builder<Integer>
             getVehicleDrivingAutomationCurrentLevelVerifierBuilder() {
         VehiclePropertyVerifier.Builder<Integer> verifierBuilder =
-                VehiclePropertyVerifier.newBuilder(
-                                VehiclePropertyIds.VEHICLE_DRIVING_AUTOMATION_CURRENT_LEVEL,
-                                CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
-                                VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
-                                CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_ONCHANGE,
-                                Integer.class)
+                VehiclePropertyVerifier.<Integer>newDefaultBuilder(
+                                VehiclePropertyIds.VEHICLE_DRIVING_AUTOMATION_CURRENT_LEVEL)
                         .setAllPossibleEnumValues(VEHICLE_AUTONOMOUS_STATES)
-                        .addReadPermission(Car.PERMISSION_CAR_DRIVING_STATE);
+                        .setReadPermission(ImmutableSet.of(Car.PERMISSION_CAR_DRIVING_STATE));
 
         if (VehiclePropertyVerifier.isAtLeastB() && Flags.vehicleProperty25q23pPermissions()) {
             verifierBuilder.addReadPermission(Car.PERMISSION_CAR_DRIVING_STATE_3P);
@@ -245,12 +241,7 @@ public class VehiclePropertyVerifiers {
     /** Gets the verifier builder for {@link VehiclePropertyIds#ENGINE_RPM}. */
     public static VehiclePropertyVerifier.Builder<Float> getEngineRpmVerifierBuilder() {
         VehiclePropertyVerifier.Builder<Float> verifierBuilder =
-                VehiclePropertyVerifier.newBuilder(
-                                VehiclePropertyIds.ENGINE_RPM,
-                                CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
-                                VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
-                                CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_CONTINUOUS,
-                                Float.class)
+                VehiclePropertyVerifier.<Float>newDefaultBuilder(VehiclePropertyIds.ENGINE_RPM)
                         .setCarPropertyValueVerifier(
                                 (verifierContext,
                                         carPropertyConfig,
@@ -263,7 +254,7 @@ public class VehiclePropertyVerifiers {
                                                                 + " than or equal 0")
                                                 .that(engineRpm)
                                                 .isAtLeast(0))
-                        .addReadPermission(Car.PERMISSION_CAR_ENGINE_DETAILED);
+                        .setReadPermission(ImmutableSet.of(Car.PERMISSION_CAR_ENGINE_DETAILED));
 
         if (VehiclePropertyVerifier.isAtLeastB() && Flags.vehicleProperty25q23pPermissions()) {
             verifierBuilder.addReadPermission(Car.PERMISSION_CAR_ENGINE_DETAILED_3P);
@@ -275,14 +266,10 @@ public class VehiclePropertyVerifiers {
     public static VehiclePropertyVerifier.Builder<Integer>
             getWindshieldWipersStateVerifierBuilder() {
         VehiclePropertyVerifier.Builder<Integer> verifierBuilder =
-                VehiclePropertyVerifier.newBuilder(
-                                VehiclePropertyIds.WINDSHIELD_WIPERS_STATE,
-                                CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
-                                VehicleAreaType.VEHICLE_AREA_TYPE_WINDOW,
-                                CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_ONCHANGE,
-                                Integer.class)
+                VehiclePropertyVerifier.<Integer>newDefaultBuilder(
+                                VehiclePropertyIds.WINDSHIELD_WIPERS_STATE)
                         .setAllPossibleEnumValues(WINDSHIELD_WIPERS_STATES)
-                        .addReadPermission(Car.PERMISSION_READ_WINDSHIELD_WIPERS);
+                        .setReadPermission(ImmutableSet.of(Car.PERMISSION_READ_WINDSHIELD_WIPERS));
 
         if (VehiclePropertyVerifier.isAtLeastB() && Flags.vehicleProperty25q23pPermissions()) {
             verifierBuilder.addReadPermission(Car.PERMISSION_READ_WINDSHIELD_WIPERS_3P);
@@ -293,12 +280,7 @@ public class VehiclePropertyVerifiers {
     /** Gets the verifier builder for {@link VehiclePropertyIds#PERF_ODOMETER}. */
     public static VehiclePropertyVerifier.Builder<Float> getPerfOdometerVerifierBuilder() {
         VehiclePropertyVerifier.Builder<Float> verifierBuilder =
-                VehiclePropertyVerifier.newBuilder(
-                                VehiclePropertyIds.PERF_ODOMETER,
-                                CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
-                                VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
-                                CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_CONTINUOUS,
-                                Float.class)
+                VehiclePropertyVerifier.<Float>newDefaultBuilder(VehiclePropertyIds.PERF_ODOMETER)
                         .setCarPropertyValueVerifier(
                                 (verifierContext,
                                         carPropertyConfig,
@@ -311,7 +293,7 @@ public class VehiclePropertyVerifiers {
                                                                 + " than or equal 0")
                                                 .that(perfOdometer)
                                                 .isAtLeast(0))
-                        .addReadPermission(Car.PERMISSION_MILEAGE);
+                        .setReadPermission(ImmutableSet.of(Car.PERMISSION_MILEAGE));
 
         return Flags.androidBVehicleProperties()
                 ? verifierBuilder.addReadPermission(Car.PERMISSION_MILEAGE_3P)
