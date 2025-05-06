@@ -317,6 +317,8 @@ public class AudioManagerTest {
                 mDoNotCheckUnmute = true;
             }
         }
+        // Disable CEC to minimize potential CEC impacts on volume change
+        if (mIsTelevision) enableCec(false);
         // Reduce flake due to late intent delivery
         AmUtils.waitForBroadcastIdle();
     }
@@ -346,6 +348,9 @@ public class AudioManagerTest {
                                               AudioManager.FLAG_ALLOW_RINGER_MODES);
             }
             mAudioManager.setRingerMode(mOriginalRingerMode);
+
+            // Recover CEC setting
+            if (mIsTelevision) enableCec(true);
         } finally {
             Utils.toggleNotificationPolicyAccess(
                     mContext.getPackageName(), getInstrumentation(), false);
@@ -3352,6 +3357,14 @@ public class AudioManagerTest {
     private boolean isAutomotive() {
         PackageManager pm = mContext.getPackageManager();
         return pm.hasSystemFeature(pm.FEATURE_AUTOMOTIVE);
+    }
+
+    private void enableCec(boolean enable) {
+        if (enable) {
+            SystemUtil.runShellCommand("cmd hdmi_control cec_setting set hdmi_cec_enabled 1");
+        } else {
+            SystemUtil.runShellCommand("cmd hdmi_control cec_setting set hdmi_cec_enabled 0");
+        }
     }
 
     // getParameters() & setParameters() are deprecated, so don't test
