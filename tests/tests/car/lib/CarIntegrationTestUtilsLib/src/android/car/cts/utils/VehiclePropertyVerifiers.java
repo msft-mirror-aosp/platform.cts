@@ -446,32 +446,18 @@ public class VehiclePropertyVerifiers {
     }
 
     /**
-     * Gets the verifier for {@code HVAC_TEMPERATURE_DISPLAY_UNITS}.
-     */
-    public static VehiclePropertyVerifier<Integer> getHvacTemperatureDisplayUnitsVerifier(
-            CarPropertyManager carPropertyManager) {
-        return getHvacTemperatureDisplayUnitsVerifierBuilder()
-                .setCarPropertyManager(carPropertyManager).build();
-    }
-
-    /**
      * Gets the verifier builder for {@code HVAC_TEMPERATURE_DISPLAY_UNITS}.
      */
     public static VehiclePropertyVerifier.Builder<Integer>
             getHvacTemperatureDisplayUnitsVerifierBuilder() {
         VehiclePropertyVerifier.Builder<Integer> builder =
-                VehiclePropertyVerifier.newBuilder(
-                                VehiclePropertyIds.HVAC_TEMPERATURE_DISPLAY_UNITS,
-                                CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
-                                VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
-                                CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_ONCHANGE,
-                                Integer.class)
+                VehiclePropertyVerifier.<Integer>newDefaultBuilder(
+                                VehiclePropertyIds.HVAC_TEMPERATURE_DISPLAY_UNITS)
                         .setAllPossibleEnumValues(HVAC_TEMPERATURE_DISPLAY_UNITS)
                         .setPossibleConfigArrayValues(HVAC_TEMPERATURE_DISPLAY_UNITS)
                         .requirePropertyValueTobeInConfigArray()
                         .verifySetterWithConfigArrayValues()
-                        .addReadPermission(Car.PERMISSION_CONTROL_CAR_CLIMATE)
-                        .addWritePermission(Car.PERMISSION_CONTROL_CAR_CLIMATE);
+                        .setReadPermission(ImmutableSet.of(Car.PERMISSION_CONTROL_CAR_CLIMATE));
 
         if (VehiclePropertyVerifier.isAtLeastU()) {
             builder.addReadPermission(Car.PERMISSION_READ_DISPLAY_UNITS);
