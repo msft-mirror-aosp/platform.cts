@@ -339,6 +339,42 @@ public class AdaptivePlaybackTest extends CodecDecoderTestBase {
         return Pair.create(format, maxPts);
     }
 
+    static class APBTestInputData {
+        public final ByteBuffer mByteBuffer;
+        public final List<MediaCodec.BufferInfo> mInfoList;
+        public final List<MediaFormat> mFormats;
+
+        public APBTestInputData(ByteBuffer byteBuffer, List<MediaCodec.BufferInfo> infoList,
+                List<MediaFormat> formats) {
+            mByteBuffer = byteBuffer;
+            mInfoList = infoList;
+            mFormats = formats;
+        }
+    }
+
+    static APBTestInputData prepareInputList(List<String> resFiles, String mediaType)
+            throws IOException {
+        int totalSize = 0;
+        for (String filePath : resFiles) {
+            File file = new File(filePath);
+            totalSize += (int) file.length();
+        }
+        ByteBuffer buffer = ByteBuffer.allocate(totalSize);
+        ArrayList<MediaCodec.BufferInfo> list = new ArrayList<>();
+        ArrayList<MediaFormat> formats = new ArrayList<>();
+        long ptsOffset = 0;
+        int buffOffset = 0;
+        for (String file : resFiles) {
+            Pair<MediaFormat, Long> metadata =
+                    createInputList(file, mediaType, buffer, list, buffOffset, ptsOffset);
+            formats.add(metadata.first);
+            ptsOffset = metadata.second + 1000000L;
+            MediaCodec.BufferInfo lastInfo = list.get(list.size() - 1);
+            buffOffset = lastInfo.offset + lastInfo.size;
+        }
+        return new APBTestInputData(buffer, list, formats);
+    }
+
     /**
      * Test video decoder for seamless resolution changes.
      */
@@ -369,32 +405,16 @@ public class AdaptivePlaybackTest extends CodecDecoderTestBase {
                           + "selected only 1. This could be due to component limitations, raise a "
                           + "test improvement request to add more resources to the list",
                 new HashSet<>(resFiles).size() > 1);
-        ArrayList<MediaFormat> formats = new ArrayList<>();
-        int totalSize = 0;
-        for (String resFile : resFiles) {
-            File file = new File(resFile);
-            totalSize += (int) file.length();
-        }
-        long ptsOffset = 0;
-        int buffOffset = 0;
-        ArrayList<MediaCodec.BufferInfo> list = new ArrayList<>();
-        ByteBuffer buffer = ByteBuffer.allocate(totalSize);
-        for (String file : resFiles) {
-            Pair<MediaFormat, Long> metadata =
-                    createInputList(file, mMediaType, buffer, list, buffOffset, ptsOffset);
-            formats.add(metadata.first);
-            ptsOffset = metadata.second + 1000000L;
-            buffOffset = (list.get(list.size() - 1).offset) + (list.get(list.size() - 1).size);
-        }
+        APBTestInputData testInput = prepareInputList(resFiles, mMediaType);
         mOutputBuff = new OutputManager();
         {
             mCodec = MediaCodec.createByCodecName(mCodecName);
-            MediaFormat format = formats.get(0);
+            MediaFormat format = testInput.mFormats.get(0);
             mActivity.setScreenParams(getWidth(format), getHeight(format), true);
             mOutputBuff.reset();
             configureCodec(format, true, false, false);
             mCodec.start();
-            doWork(buffer, list);
+            doWork(testInput.mByteBuffer, (ArrayList<MediaCodec.BufferInfo>) testInput.mInfoList);
             queueEOS();
             waitForAllOutputs();
             mCodec.reset();
