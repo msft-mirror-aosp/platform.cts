@@ -24,6 +24,7 @@ import android.app.AppOpsManager.OP_FLAGS_ALL
 import android.os.Process
 import android.os.SystemClock
 import android.permission.flags.Flags
+import android.platform.test.annotations.RequiresFlagsDisabled
 import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.CheckFlagsRule
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
@@ -43,6 +44,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
+@RequiresFlagsDisabled(Flags.FLAG_ENABLE_ALL_SQLITE_APPOPS_ACCESSES)
 class HistoricalAppopsTest {
     private val uid = Process.myUid()
     private lateinit var appOpsManager: AppOpsManager

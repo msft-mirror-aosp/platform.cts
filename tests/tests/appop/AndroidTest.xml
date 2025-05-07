@@ -32,6 +32,7 @@
         <option name="test-file-name" value="AppInBackground.apk" />
         <option name="test-file-name" value="AppThatCanBeForcedIntoForegroundStates.apk" />
         <option name="test-file-name" value="AppForDiscreteTest.apk" />
+        <option name="test-file-name" value="AppForHistoricalRegistryTest.apk" />
     </target_preparer>
 
     <!-- Create place to store apks -->
@@ -60,6 +61,7 @@
         <option name="push-file" key="SharedUidTestApp1.apk" value="/data/local/tmp/cts/appops/SharedUidTestApp1.apk" />
         <option name="push-file" key="SharedUidTestApp2.apk" value="/data/local/tmp/cts/appops/SharedUidTestApp2.apk" />
         <option name="push-file" key="AppThatExploitsAttributionTags.apk" value="/data/local/tmp/cts/appops/AppThatExploitsAttributionTags.apk" />
+        <option name="push-file" key="AppForHistoricalRegistryTest.apk" value="/data/local/tmp/cts/appops/AppForHistoricalRegistryTest.apk" />
     </target_preparer>
 
     <!-- Remove additional apps if installed -->
