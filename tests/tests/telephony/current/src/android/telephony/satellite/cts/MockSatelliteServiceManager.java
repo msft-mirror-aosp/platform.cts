@@ -112,6 +112,8 @@ class MockSatelliteServiceManager {
     private static final String UPDATE_TELEPHONY_CONFIG_INTENT =
             "com.google.android.configupdater.TelephonyConfigUpdate.UPDATE_CONFIG";
     private static final String CONFIG_UPDATER_PACKAGE = "com.google.android.configupdater";
+    private static final String SET_SATELLITE_IGNORE_PLMN_LIST_FROM_STORAGE =
+            "cmd phone set-satellite-ignore-plmn-list-from-storage -d ";
 
     private static final long TIMEOUT = 5000;
     @NonNull private ActivityManager mActivityManager;
@@ -1664,6 +1666,20 @@ class MockSatelliteServiceManager {
             return true;
         } catch (Exception e) {
             loge("setSatelliteSubscriberIdListChangedIntentComponent: e=" + e);
+            return false;
+        }
+    }
+
+    boolean setSatelliteIgnorePlmnListFromStorage(boolean enabled) {
+        try {
+            String result =
+                    TelephonyUtils.executeShellCommand(
+                            mInstrumentation,
+                            SET_SATELLITE_IGNORE_PLMN_LIST_FROM_STORAGE + enabled);
+            logd("setSatelliteIgnorePlmnListFromStorage: result = " + result);
+            return "true".equals(result);
+        } catch (Exception e) {
+            loge("setSatelliteIgnorePlmnListFromStorage: e=" + e);
             return false;
         }
     }
