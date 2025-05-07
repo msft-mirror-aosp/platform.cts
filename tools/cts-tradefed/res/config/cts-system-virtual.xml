@@ -517,6 +517,7 @@
   <option name="compatibility:exclude-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.KeyStoreManagerTest#grantAndRevokeKeyAccess_importedKeyPair"/>
   <option name="compatibility:exclude-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.KeyStoreManagerTest#grantRevokeKeyAccess_aliasDoesNotExist_throwsException"/>
   <option name="compatibility:exclude-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.ListeningPortsTest#testNoListeningLoopbackTcpPorts"/>
+  <option name="compatibility:exclude-filter" value="CtsAppServiceTestCases android.app.cts.service.ServiceTest#testMaxServiceConnections"/>
   <option name="compatibility:exclude-filter" value="CtsAppTestCases android.app.cts.ActivityManagerProcessStateTest#testFgsDefaultCapabilityNone"/>
   <option name="compatibility:exclude-filter" value="CtsAppTestCases android.app.cts.ActivityManagerProcessStateTest#testFgsSticky1"/>
   <option name="compatibility:exclude-filter" value="CtsAppTestCases android.app.cts.ActivityManagerProcessStateTest#testFgsSticky2"/>
@@ -527,7 +528,6 @@
   <option name="compatibility:exclude-filter" value="CtsAppTestCases android.app.cts.ActivityManagerTest#testServiceDoneLRUPosition"/>
   <option name="compatibility:exclude-filter" value="CtsAppTestCases android.app.cts.ActivityManagerTest#testTrimAppChildProcess"/>
   <option name="compatibility:exclude-filter" value="CtsAppTestCases android.app.cts.ForceStopTest#testPendingIntentCancellation"/>
-  <option name="compatibility:exclude-filter" value="CtsAppTestCases android.app.cts.ServiceTest#testMaxServiceConnections"/>
   <option name="compatibility:exclude-filter" value="CtsAppTestCases android.app.cts.SystemFeaturesTest#testSensorFeatures"/>
   <option name="compatibility:exclude-filter" value="CtsAppTestCases android.app.cts.SystemFeaturesTest#testTelephonyFeatures"/>
   <option name="compatibility:exclude-filter" value="CtsAppTestCases android.app.cts.UiModeManagerTest#testSetNightModeActivatedForCustomMode_customTypeBedtime_activateAtBedtime_shouldActivateNightMode"/>

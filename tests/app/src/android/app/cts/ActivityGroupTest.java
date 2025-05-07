@@ -16,9 +16,9 @@
 
 package android.app.cts;
 
-import android.app.stubs.LaunchpadActivity;
-import android.app.stubs.LaunchpadHelper;
 import android.app.stubs.LaunchpadTabActivity;
+import android.app.stubs.shared.LaunchpadActivity;
+import android.app.stubs.shared.LaunchpadHelper;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;

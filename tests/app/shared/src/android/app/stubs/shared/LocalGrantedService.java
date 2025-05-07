@@ -14,9 +14,6 @@
  * limitations under the License.
  */
 
-package android.app.stubs;
+package android.app.stubs.shared;
 
-public class LocalScreen extends TestedScreen {
-    public LocalScreen() {
-    }
-}
+public final class LocalGrantedService extends LocalService {}

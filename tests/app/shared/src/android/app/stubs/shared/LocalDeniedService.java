@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009 The Android Open Source Project
+ * Copyright (C) 2008 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,25 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package android.app.stubs;
 
-import android.app.AliasActivity;
-import android.os.Bundle;
+package android.app.stubs.shared;
 
-public class AliasActivityStub extends AliasActivity {
-
-    public static boolean isOnCreateCalled = false;
-    public static boolean isFinished = false;
-
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        isOnCreateCalled = true;
-    }
-
-    @Override
-    public void finish() {
-        super.finish();
-        isFinished = true;
-    }
-}
+public final class LocalDeniedService extends LocalService {}

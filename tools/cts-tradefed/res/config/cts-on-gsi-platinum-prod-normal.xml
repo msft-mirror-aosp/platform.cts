@@ -71,6 +71,8 @@
     <option name="compatibility:include-filter" value="CtsAppSearchHostTestCases android.appsearch.cts.AppSearchMultiUserTest#testPackageUninstall_onLockedUser"/>
     <option name="compatibility:include-filter" value="CtsAppSearchHostTestCases android.appsearch.cts.AppSearchMultiUserTest#testReadStorageInfoFromFile"/>
     <option name="compatibility:include-filter" value="CtsAppSearchHostTestCases android.appsearch.cts.AppSearchMultiUserTest#testStopUser_persistData"/>
+    <!-- CtsAppServiceTestCases -->
+    <option name="compatibility:include-filter" value="CtsAppServiceTestCases android.app.cts.service.ServiceTest#testMaxServiceConnections"/>
     <!-- CtsAppTestCases -->
     <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.ActivityManagerTest#testAddOnUidImportanceListener"/>
     <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.AlertDialogTest#testAlertDialogTheme"/>
@@ -78,7 +80,6 @@
     <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.AlertDialog_BuilderTest#testSetViewById"/>
     <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.CloseSystemDialogsTest#testCloseSystemDialogsViaActivityManager_whenTargetSdk30_isBlockedButDoesNotThrow"/>
     <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.CloseSystemDialogsTest#testCloseSystemDialogs_whenTargetSdk30_isBlockedButDoesNotThrow"/>
-    <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.ServiceTest#testMaxServiceConnections"/>
     <!-- CtsAttributionSourceTestCases -->
     <option name="compatibility:include-filter" value="CtsAttributionSourceTestCases android.attributionsource.cts.RenouncedPermissionsTest#testCannotRequestRenouncePermissions"/>
     <!-- CtsAutoFillServiceTestCases -->
