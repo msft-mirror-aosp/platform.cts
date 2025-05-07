@@ -78,8 +78,6 @@ public class BaseSineAnalyzer implements SignalAnalyzer {
 
     MagnitudePhase mMagPhase = new MagnitudePhase();
 
-    InfiniteRecording mInfiniteRecording = new InfiniteRecording(10 * 48000);
-
     enum RESULT_CODE {
         RESULT_OK,
         ERROR_NOISY,
@@ -181,14 +179,6 @@ public class BaseSineAnalyzer implements SignalAnalyzer {
         mCosAccumulator = 0.0;
     }
 
-    /**
-     * Get the audio data recorded during the analysis.
-     * @return recorded data
-     */
-    public float[] getRecordedData() {
-        return mInfiniteRecording.readAll();
-    }
-
     class MagnitudePhase {
         public double mMagnitude;
         public double mPhase;
@@ -270,14 +260,10 @@ public class BaseSineAnalyzer implements SignalAnalyzer {
     }
 
     /**
-     * @param audioData contains microphone data with sine signal feedback
-     * @param offset in the audioData to the sample
+     * @param sample single value to be analyzed
      */
-    RESULT_CODE processInputFrame(float[] audioData, int offset) {
+    RESULT_CODE processInputSample(float sample) {
         RESULT_CODE result = RESULT_CODE.RESULT_OK;
-
-        float sample = audioData[offset];
-        mInfiniteRecording.write(sample);
 
         if (transformSample(sample, mOutputPhase)) {
             resetAccumulator();
@@ -326,15 +312,15 @@ public class BaseSineAnalyzer implements SignalAnalyzer {
 
         updatePhaseIncrement();
 
-        mInfiniteRecording.clear();
     }
 
     @Override
     public void analyzeBuffer(float[] audioData, int numChannels, int numFrames) {
         int offset = mInputChannel;
         for (int frameIndex = 0; frameIndex < numFrames; frameIndex++) {
-            // processOutputFrame(audioData, offset, numChannels);
-            processInputFrame(audioData, offset);
+            // Analyze one channel of input at a time.
+            // In the future, we should analyze all channels to reduce test time.
+            processInputSample(audioData[offset]);
             offset += numChannels;
         }
 
