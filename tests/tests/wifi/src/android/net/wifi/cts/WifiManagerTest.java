@@ -7841,4 +7841,74 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
             uiAutomation.dropShellPermissionIdentity();
         }
     }
+
+    @SdkSuppress(minSdkVersion = 37)
+    @RequiresFlagsEnabled(Flags.FLAG_MULTI_USER_WIFI_ENHANCEMENT)
+    @ApiTest(
+            apis = {
+                "android.net.wifi.WifiManager#setOpenNetworkNotifierEnabled",
+                "android.net.wifi.WifiManager#isOpenNetworkNotifierEnabled"
+            })
+    @Test
+    public void testSetAndQueryOpenNetworkNotifierEnabled() throws Exception {
+        UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
+        Boolean currState = null;
+        try {
+            long now, deadline;
+            Mutable<Boolean> isQuerySucceeded = new Mutable<Boolean>(false);
+            Mutable<Boolean> newStateWrapper = new Mutable<Boolean>(false);
+            uiAutomation.adoptShellPermissionIdentity();
+            sWifiManager.isOpenNetworkNotifierEnabled(
+                    mExecutor,
+                    new Consumer<Boolean>() {
+                        @Override
+                        public void accept(Boolean value) {
+                            synchronized (mLock) {
+                                newStateWrapper.value = value;
+                                isQuerySucceeded.value = true;
+                                mLock.notify();
+                            }
+                        }
+                    });
+            synchronized (mLock) {
+                now = System.currentTimeMillis();
+                deadline = now + TEST_WAIT_DURATION_MS;
+                while (!isQuerySucceeded.value && now < deadline) {
+                    mLock.wait(deadline - now);
+                    now = System.currentTimeMillis();
+                }
+            }
+            assertTrue(isQuerySucceeded.value);
+            // Reset for next query
+            isQuerySucceeded.value = false;
+            currState = newStateWrapper.value;
+            sWifiManager.setOpenNetworkNotifierEnabled(!currState);
+            sWifiManager.isOpenNetworkNotifierEnabled(
+                    mExecutor,
+                    new Consumer<Boolean>() {
+                        @Override
+                        public void accept(Boolean value) {
+                            synchronized (mLock) {
+                                newStateWrapper.value = value;
+                                isQuerySucceeded.value = true;
+                                mLock.notify();
+                            }
+                        }
+                    });
+            synchronized (mLock) {
+                now = System.currentTimeMillis();
+                deadline = now + TEST_WAIT_DURATION_MS;
+                while (!isQuerySucceeded.value && now < deadline) {
+                    mLock.wait(deadline - now);
+                    now = System.currentTimeMillis();
+                }
+            }
+            assertEquals(newStateWrapper.value, !currState);
+        } finally {
+            if (currState != null) {
+                sWifiManager.setOpenNetworkNotifierEnabled(currState);
+            }
+            uiAutomation.dropShellPermissionIdentity();
+        }
+    }
 }
