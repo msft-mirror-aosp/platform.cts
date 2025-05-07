@@ -237,6 +237,37 @@ def rotate(serial_port, channel, position_degree=0):
     return None
 
 
+def rotation_rig_sensor_fusion(rotate_cntl, rotate_ch, num_rotations, angles):
+  """Rotate the device for sensor fusion tests with discrete rotations.
+
+  Args:
+    rotate_cntl: str to identify 'gen2_rotator' controller.
+    rotate_ch: str to identify rotation channel number.
+    num_rotations: int number of rotations.
+    angles: tuple of ints; (starting, ending) angles to move to.
+  """
+  starting_angle, ending_angle = angles
+  logging.debug('angles: %s, %s', starting_angle, ending_angle)
+  logging.debug('Controller: %s, ch: %s', rotate_cntl, rotate_ch)
+  serial_port = find_serial_port(rotate_cntl)
+  if not serial_port:
+    raise AssertionError('Failed to find the serial port.')
+  logging.debug('found serial port')
+  channel = int(rotate_ch)
+  _check_channel(channel)
+
+  # initialize servo at starting angle
+  logging.debug('Moving servo to starting position')
+  _move_to(serial_port, channel, starting_angle * _SERVO_ANGLE_SCALE_FACTOR)
+
+  # rotate phone
+  for _ in range(num_rotations):
+    _move_to(serial_port, channel, ending_angle * _SERVO_ANGLE_SCALE_FACTOR)
+    _move_to(serial_port, channel, starting_angle * _SERVO_ANGLE_SCALE_FACTOR)
+  logging.debug('Finished rotations for sensor fusion, moving to origin')
+  _move_to(serial_port, channel, 0)
+
+
 def rotation_rig(rotate_cntl, rotate_ch, num_rotations, angles):
   """Rotate the phone n times using rotate_cntl and rotate_ch defined.
 
