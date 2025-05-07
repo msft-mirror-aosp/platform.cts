@@ -29,6 +29,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.PackageManager;
 import android.net.wifi.WifiManager;
 import android.os.PersistableBundle;
 import android.telephony.CarrierConfigManager;
@@ -36,6 +37,7 @@ import android.telephony.ServiceState;
 import android.telephony.SmsManager;
 import android.telephony.SubscriptionManager;
 import android.telephony.TelephonyCallback;
+import android.telephony.TelephonyManager;
 import android.telephony.cts.util.DefaultSmsAppHelper;
 import android.telephony.ims.ImsReasonInfo;
 import android.telephony.ims.cts.ImsServiceConnector;
@@ -51,6 +53,7 @@ import android.util.Log;
 import androidx.test.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.CarrierPrivilegeUtils;
+import com.android.compatibility.common.util.ShellIdentityUtils;
 import com.android.internal.annotations.GuardedBy;
 
 import junit.framework.Assert;
