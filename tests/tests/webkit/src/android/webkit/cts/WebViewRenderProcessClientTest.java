@@ -82,10 +82,9 @@ public class WebViewRenderProcessClientTest extends SharedWebViewTest {
                 .onActivity(
                         activity -> {
                             WebView webView = ((WebViewCtsActivity) activity).getWebView();
-                            WebkitUtils.checkForWindowFocus(activity);
                             builder.setHostAppInvoker(
                                             SharedWebViewTestEnvironment.createHostAppInvoker(
-                                                    activity))
+                                                activity))
                                     .setWebView(webView);
                         });
 

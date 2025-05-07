@@ -118,7 +118,12 @@ public class WebViewZoomTest extends SharedWebViewTest{
         // Wait for window focus and clean up the snapshot before
         // returning the test environment.
         if (environment.getWebView() != null) {
-            WebkitUtils.checkForWindowFocus(mActivity);
+            new PollingCheck(WebkitUtils.TEST_TIMEOUT_MS) {
+                @Override
+                protected boolean check() {
+                    return mActivity.hasWindowFocus();
+                }
+            }.run();
         }
 
         return environment;
