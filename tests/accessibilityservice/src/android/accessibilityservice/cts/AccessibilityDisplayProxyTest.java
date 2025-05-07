@@ -294,6 +294,7 @@ public class AccessibilityDisplayProxyTest {
                         | DisplayManager.VIRTUAL_DISPLAY_FLAG_TRUSTED
                         | DisplayManager.VIRTUAL_DISPLAY_FLAG_OWN_CONTENT_ONLY);
         mVirtualDisplayId = virtualDisplay.getDisplay().getDisplayId();
+        mVirtualDeviceRule.assumeActivityLaunchSupported(mVirtualDisplayId);
         final List<AccessibilityServiceInfo> infos = new ArrayList<>();
         final AccessibilityServiceInfo proxyInfo = new AccessibilityServiceInfo();
         proxyInfo.flags |= AccessibilityServiceInfo.FLAG_RETRIEVE_INTERACTIVE_WINDOWS;

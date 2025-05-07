@@ -64,7 +64,8 @@ public abstract class PlayerListener implements Player.Listener {
     SPLIT_SCREEN_TEST,
     DEVICE_LOCK_TEST,
     LOCK_PLAYBACK_CONTROLLER_TEST,
-    AUDIO_OFFLOAD_TEST
+    AUDIO_OFFLOAD_TEST,
+    AUDIO_OFFLOAD_SPEED_CHANGE_TEST
   }
 
   public static boolean mPlaybackEnded;
@@ -149,7 +150,8 @@ public abstract class PlayerListener implements Player.Listener {
    * Returns True for Audio Offload test.
    */
   public final boolean isAudioOffloadTest() {
-    return getTestType().equals(TestType.AUDIO_OFFLOAD_TEST);
+    return getTestType().equals(TestType.AUDIO_OFFLOAD_TEST)
+          || getTestType().equals(TestType.AUDIO_OFFLOAD_SPEED_CHANGE_TEST);
   }
 
   /**

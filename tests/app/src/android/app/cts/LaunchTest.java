@@ -16,49 +16,85 @@
 
 package android.app.cts;
 
-import android.app.stubs.ActivityTestsBase;
 import android.app.stubs.ClearTop;
 import android.app.stubs.LaunchpadActivity;
+import android.app.stubs.LaunchpadHelper;
 import android.app.stubs.LocalActivity;
 import android.app.stubs.LocalScreen;
 import android.app.stubs.TestedActivity;
 import android.app.stubs.TestedScreen;
 import android.content.ComponentName;
+import android.content.Context;
 
-public class LaunchTest extends ActivityTestsBase {
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
 
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
+@RunWith(AndroidJUnit4.class)
+public final class LaunchTest {
+    private LaunchpadHelper mLaunchpadHelper;
+    private Context mContext;
+
+    @Before
+    public void setUp() throws Exception {
+        mContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
+        mLaunchpadHelper = new LaunchpadHelper(mContext);
+    }
+
+    @Test
     public void testClearTopWhilResumed() {
-        mIntent.putExtra("component", new ComponentName(getContext(), ClearTop.class));
-        mIntent.putExtra(ClearTop.WAIT_CLEAR_TASK, true);
-        runLaunchpad(LaunchpadActivity.LAUNCH);
+        mLaunchpadHelper
+                .editIntent()
+                .putExtra("component", new ComponentName(mContext, ClearTop.class));
+        mLaunchpadHelper.editIntent().putExtra(ClearTop.WAIT_CLEAR_TASK, true);
+        mLaunchpadHelper.runLaunchpad(LaunchpadActivity.LAUNCH);
     }
 
+    @Test
     public void testClearTopInCreate() throws Exception {
-        mIntent.putExtra("component", new ComponentName(getContext(), ClearTop.class));
-        runLaunchpad(LaunchpadActivity.LAUNCH);
+        mLaunchpadHelper
+                .editIntent()
+                .putExtra("component", new ComponentName(mContext, ClearTop.class));
+        mLaunchpadHelper.runLaunchpad(LaunchpadActivity.LAUNCH);
     }
 
+    @Test
     public void testForwardResult() {
-        runLaunchpad(LaunchpadActivity.FORWARD_RESULT);
+        mLaunchpadHelper.runLaunchpad(LaunchpadActivity.FORWARD_RESULT);
     }
 
+    @Test
     public void testLocalScreen() {
-        mIntent.putExtra("component", new ComponentName(getContext(), LocalScreen.class));
-        runLaunchpad(LaunchpadActivity.LAUNCH);
+        mLaunchpadHelper
+                .editIntent()
+                .putExtra("component", new ComponentName(mContext, LocalScreen.class));
+        mLaunchpadHelper.runLaunchpad(LaunchpadActivity.LAUNCH);
     }
 
+    @Test
     public void testColdScreen() {
-        mIntent.putExtra("component", new ComponentName(getContext(), TestedScreen.class));
-        runLaunchpad(LaunchpadActivity.LAUNCH);
+        mLaunchpadHelper
+                .editIntent()
+                .putExtra("component", new ComponentName(mContext, TestedScreen.class));
+        mLaunchpadHelper.runLaunchpad(LaunchpadActivity.LAUNCH);
     }
 
+    @Test
     public void testLocalActivity() {
-        mIntent.putExtra("component", new ComponentName(getContext(), LocalActivity.class));
-        runLaunchpad(LaunchpadActivity.LAUNCH);
+        mLaunchpadHelper
+                .editIntent()
+                .putExtra("component", new ComponentName(mContext, LocalActivity.class));
+        mLaunchpadHelper.runLaunchpad(LaunchpadActivity.LAUNCH);
     }
 
+    @Test
     public void testColdActivity() {
-        mIntent.putExtra("component", new ComponentName(getContext(), TestedActivity.class));
-        runLaunchpad(LaunchpadActivity.LAUNCH);
+        mLaunchpadHelper
+                .editIntent()
+                .putExtra("component", new ComponentName(mContext, TestedActivity.class));
+        mLaunchpadHelper.runLaunchpad(LaunchpadActivity.LAUNCH);
     }
 }

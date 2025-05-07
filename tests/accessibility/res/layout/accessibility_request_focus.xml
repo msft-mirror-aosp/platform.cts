@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+/* //device/samples/SampleCode/res/layout/baseline_1.xml
+**
+** Copyright 2025, The Android Open Source Project
+**
+** Licensed under the Apache License, Version 2.0 (the "License");
+** you may not use this file except in compliance with the License.
+** You may obtain a copy of the License at
+**
+**     http://www.apache.org/licenses/LICENSE-2.0
+**
+** Unless required by applicable law or agreed to in writing, software
+** distributed under the License is distributed on an "AS IS" BASIS,
+** WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+** See the License for the specific language governing permissions and
+** limitations under the License.
+*/
+-->
+
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="horizontal"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+    <LinearLayout android:id="@+id/leftLayout"
+        android:orientation="vertical"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content">
+
+        <TextView android:id="@+id/firstTextView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="firstTextView" />
+        <Button android:id="@+id/topLeftButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginRight="3dip"
+            android:text="@string/left_top"
+            android:nextFocusDown="@+id/bottomLeftButton"
+            android:nextFocusForward="@+id/bottomLeftButton"
+            android:nextFocusRight="@+id/bottomLeftButton"
+            android:nextFocusUp="@+id/bottomRightButton"
+            android:nextFocusLeft="@+id/bottomRightButton" />
+        <TextView android:id="@+id/leftTextView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="leftTextView" />
+        <Button android:id="@+id/bottomLeftButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginRight="3dip"
+            android:text="@string/left_bottom"
+            android:nextFocusDown="@+id/topRightButton"
+            android:nextFocusForward="@+id/topRightButton"
+            android:nextFocusRight="@+id/topRightButton"
+            android:nextFocusUp="@+id/topLeftButton"
+            android:nextFocusLeft="@+id/topLeftButton" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:orientation="vertical"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content">
+
+        <Button android:id="@+id/topRightButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginRight="3dip"
+            android:text="@string/right_top"
+            android:nextFocusDown="@+id/bottomRightButton"
+            android:nextFocusForward="@+id/bottomRightButton"
+            android:nextFocusRight="@+id/bottomRightButton"
+            android:nextFocusUp="@+id/bottomLeftButton"
+            android:nextFocusLeft="@+id/bottomLeftButton" />
+        <Button android:id="@+id/bottomRightButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginRight="3dip"
+            android:text="@string/right_bottom"
+            android:nextFocusDown="@+id/topLeftButton"
+            android:nextFocusForward="@+id/topLeftButton"
+            android:nextFocusRight="@+id/topLeftButton"
+            android:nextFocusUp="@+id/topRightButton"
+            android:nextFocusLeft="@+id/topRightButton" />
+        <TextView android:id="@+id/lastTextView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="lastTextView" />
+    </LinearLayout>
+
+</LinearLayout>

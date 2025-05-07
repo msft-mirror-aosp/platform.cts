@@ -142,17 +142,13 @@ public class GeolocationTest {
     @Before
     public void setUp() throws Exception {
         Assume.assumeTrue("WebView is not available", NullWebViewUtils.isWebViewAvailable());
-        mActivityScenarioRule
-                .getScenario()
-                .onActivity(
-                        activity -> {
-                            WebkitUtils.checkForWindowFocus(activity);
-                            WebViewCtsActivity webViewCtsActivity = (WebViewCtsActivity) activity;
-                            WebView webview = webViewCtsActivity.getWebView();
-                            if (webview != null) {
-                                mOnUiThread = new WebViewOnUiThread(webview);
-                            }
-                        });
+        mActivityScenarioRule.getScenario().onActivity(activity -> {
+            WebViewCtsActivity webViewCtsActivity = (WebViewCtsActivity) activity;
+            WebView webview = webViewCtsActivity.getWebView();
+            if (webview != null) {
+                mOnUiThread = new WebViewOnUiThread(webview);
+            }
+        });
         LocationUtils.registerMockLocationProvider(
                 InstrumentationRegistry.getInstrumentation(), true);
 

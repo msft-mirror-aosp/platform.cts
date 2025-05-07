@@ -16,51 +16,68 @@
 
 package android.app.cts;
 
-import android.app.stubs.ActivityTestsBase;
 import android.app.stubs.LaunchpadActivity;
+import android.app.stubs.LaunchpadHelper;
 import android.app.stubs.LaunchpadTabActivity;
 import android.content.ComponentName;
+import android.content.Context;
 import android.content.Intent;
 
-public class LifecycleTest extends ActivityTestsBase {
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
+
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
+@RunWith(AndroidJUnit4.class)
+public final class LifecycleTest {
     private Intent mTopIntent;
     private Intent mTabIntent;
+    private LaunchpadHelper mLaunchpadHelper;
 
-    @Override
-    protected void setUp() throws Exception {
-        super.setUp();
-        mTopIntent = mIntent;
-        mTabIntent = new Intent(mContext, LaunchpadTabActivity.class);
-        mTabIntent.putExtra("tab", new ComponentName(mContext, LaunchpadActivity.class));
+    @Before
+    public void setUp() throws Exception {
+        Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
+        mLaunchpadHelper = new LaunchpadHelper(context);
+        mTopIntent = mLaunchpadHelper.editIntent();
+        mTabIntent = new Intent(context, LaunchpadTabActivity.class);
+        mTabIntent.putExtra("tab", new ComponentName(context, LaunchpadActivity.class));
     }
 
+    @Test
     public void testTabDialog() {
-        mIntent = mTabIntent;
-        runLaunchpad(LaunchpadActivity.LIFECYCLE_DIALOG);
+        mLaunchpadHelper.setIntent(mTabIntent);
+        mLaunchpadHelper.runLaunchpad(LaunchpadActivity.LIFECYCLE_DIALOG);
     }
 
+    @Test
     public void testDialog() {
-        mIntent = mTopIntent;
-        runLaunchpad(LaunchpadActivity.LIFECYCLE_DIALOG);
+        mLaunchpadHelper.setIntent(mTopIntent);
+        mLaunchpadHelper.runLaunchpad(LaunchpadActivity.LIFECYCLE_DIALOG);
     }
 
+    @Test
     public void testTabScreen() {
-        mIntent = mTabIntent;
-        runLaunchpad(LaunchpadActivity.LIFECYCLE_SCREEN);
+        mLaunchpadHelper.setIntent(mTabIntent);
+        mLaunchpadHelper.runLaunchpad(LaunchpadActivity.LIFECYCLE_SCREEN);
     }
 
+    @Test
     public void testScreen() {
-        mIntent = mTopIntent;
-        runLaunchpad(LaunchpadActivity.LIFECYCLE_SCREEN);
+        mLaunchpadHelper.setIntent(mTopIntent);
+        mLaunchpadHelper.runLaunchpad(LaunchpadActivity.LIFECYCLE_SCREEN);
     }
 
+    @Test
     public void testTabBasic() {
-        mIntent = mTabIntent;
-        runLaunchpad(LaunchpadActivity.LIFECYCLE_BASIC);
+        mLaunchpadHelper.setIntent(mTabIntent);
+        mLaunchpadHelper.runLaunchpad(LaunchpadActivity.LIFECYCLE_BASIC);
     }
 
+    @Test
     public void testBasic() {
-        mIntent = mTopIntent;
-        runLaunchpad(LaunchpadActivity.LIFECYCLE_BASIC);
+        mLaunchpadHelper.setIntent(mTopIntent);
+        mLaunchpadHelper.runLaunchpad(LaunchpadActivity.LIFECYCLE_BASIC);
     }
 }

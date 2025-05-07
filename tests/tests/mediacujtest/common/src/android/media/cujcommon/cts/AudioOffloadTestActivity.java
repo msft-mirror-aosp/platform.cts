@@ -17,6 +17,7 @@
 package android.media.cujcommon.cts;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assume.assumeTrue;
 
 import android.net.Uri;
 import android.os.Bundle;
@@ -36,18 +37,23 @@ import java.util.List;
 
 public class AudioOffloadTestActivity extends AppCompatActivity {
 
+  private static final float DEFAULT_PLAYBACK_RATE = 1f;
   protected PlayerView mExoplayerView;
   protected ExoPlayer mPlayer;
   protected static List<String> sVideoUrls = new ArrayList<>();
   protected PlayerListener mPlayerListener;
   protected boolean mIsSleepingForAudioOffloadEnabled;
   protected boolean mIsAudioOffloadEnabled;
+  protected boolean mIsAudioOffloadSpeedChangeRequired;
+  protected float mPlaybackRate;
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
     setContentView(R.layout.activity_main_audio_offload);
     getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+    mPlaybackRate = getIntent().getFloatExtra("playback_rate", DEFAULT_PLAYBACK_RATE);
+    mIsAudioOffloadSpeedChangeRequired = mPlaybackRate != DEFAULT_PLAYBACK_RATE;
     buildPlayer();
   }
 
@@ -87,11 +93,17 @@ public class AudioOffloadTestActivity extends AppCompatActivity {
     // Enable audio offloading
     AudioOffloadPreferences audioOffloadPreferences = new AudioOffloadPreferences.Builder()
         .setAudioOffloadMode(AudioOffloadPreferences.AUDIO_OFFLOAD_MODE_ENABLED)
+        .setIsSpeedChangeSupportRequired(mIsAudioOffloadSpeedChangeRequired)
         .build();
     TrackSelectionParameters currentParameters = mPlayer.getTrackSelectionParameters();
     TrackSelectionParameters newParameters = currentParameters.buildUpon()
         .setAudioOffloadPreferences(audioOffloadPreferences).build();
     mPlayer.setTrackSelectionParameters(newParameters);
+    if (mIsAudioOffloadSpeedChangeRequired) {
+      assumeTrue("Speed and pitch control is not available",
+               mPlayer.isCommandAvailable(mPlayer.COMMAND_SET_SPEED_AND_PITCH));
+      mPlayer.setPlaybackSpeed(mPlaybackRate);
+    }
     mExoplayerView = findViewById(R.id.audioOffloadExoplayer);
     mExoplayerView.setPlayer(mPlayer);
   }

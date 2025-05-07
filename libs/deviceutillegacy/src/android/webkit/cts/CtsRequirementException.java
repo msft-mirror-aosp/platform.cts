@@ -30,8 +30,4 @@ public final class CtsRequirementException extends RuntimeException {
     public CtsRequirementException(String message) {
         super(message);
     }
-
-    public CtsRequirementException(String message, Throwable cause) {
-        super(message, cause);
-    }
 }
