@@ -18,7 +18,6 @@ package android.app.stubs;
 
 import android.app.Activity;
 import android.content.BroadcastReceiver;
-import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
@@ -26,55 +25,21 @@ import android.os.Binder;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
+import android.os.Looper;
 import android.os.Message;
 import android.os.Parcel;
 import android.os.Parcelable;
-import android.test.PerformanceTestCase;
 import android.util.Log;
+
+import androidx.annotation.NonNull;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-class MyBadParcelable implements Parcelable {
-    public MyBadParcelable() {
-    }
-
-    public void writeToParcel(Parcel out, int flags) {
-        out.writeString("I am bad");
-    }
-
-    public int describeContents() {
-        return 0;
-    }
-
-    public static final Parcelable.Creator<MyBadParcelable> CREATOR =
-        new Parcelable.Creator<MyBadParcelable>() {
-        public MyBadParcelable createFromParcel(Parcel in) {
-            return new MyBadParcelable(in);
-        }
-
-        public MyBadParcelable[] newArray(int size) {
-            return new MyBadParcelable[size];
-        }
-    };
-
-    public MyBadParcelable(Parcel in) {
-        in.readString();
-    }
-}
-
-public class LaunchpadActivity extends Activity {
-    public interface CallingTest extends PerformanceTestCase.Intermediates {
-        void startTiming(boolean realTime);
-
-        void addIntermediate(String name);
-
-        void addIntermediate(String name, long timeInNS);
-
-        void finishTiming(boolean realTime);
-
+public final class LaunchpadActivity extends Activity {
+    public interface CallingTest {
         void activityRunning(Activity activity);
 
         void activityFinished(int resultCode, Intent data, RuntimeException where);
@@ -97,7 +62,8 @@ public class LaunchpadActivity extends Activity {
 
     public static final String ACTIVITY_PREPARE = "android.app.cts.activity.ACTIVITY_PREPARE";
 
-    public static final String BROADCAST_REGISTERED = "android.app.cts.activity.BROADCAST_REGISTERED";
+    public static final String BROADCAST_REGISTERED =
+            "android.app.cts.activity.BROADCAST_REGISTERED";
     public static final String BROADCAST_LOCAL = "android.app.cts.activity.BROADCAST_LOCAL";
     public static final String BROADCAST_REMOTE = "android.app.cts.activity.BROADCAST_REMOTE";
     public static final String BROADCAST_ALL = "android.app.cts.activity.BROADCAST_ALL";
@@ -124,7 +90,6 @@ public class LaunchpadActivity extends Activity {
     public static final String ON_START = "onStart";
     public static final String ON_RESTART = "onRestart";
     public static final String ON_RESUME = "onResume";
-    public static final String ON_FREEZE = "onSaveInstanceState";
     public static final String ON_PAUSE = "onPause";
 
     // ON_STOP and ON_DESTROY are not tested because they may not be called.
@@ -143,17 +108,17 @@ public class LaunchpadActivity extends Activity {
     private Intent mData = new Intent().setAction("No result received");
     private RuntimeException mResultStack = null;
 
-    /** Index into the {@link #mNextLifecycle} array. */
+    /** Index into the {@link #mExpectedLifecycle} array. */
     private int mNextLifecycle;
 
     /** Current lifecycle expected to be followed. */
     private String[] mExpectedLifecycle;
 
     /** Other possible lifecycles. Never includes the current {@link #mExpectedLifecycle}. */
-    private List<String[]> mOtherPossibleLifecycles = new ArrayList<String[]>(2);
+    private final List<String[]> mOtherPossibleLifecycles = new ArrayList<>(2);
 
     /** Map from lifecycle arrays to debugging log names. */
-    private Map<String[], String> mLifecycleNames = new HashMap<String[], String>(2);
+    private final Map<String[], String> mLifecycleNames = new HashMap<>(2);
 
     private String[] mExpectedReceivers = null;
     private int mNextReceiver;
@@ -259,7 +224,7 @@ public class LaunchpadActivity extends Activity {
 
     @Override
     protected void onRestart() {
-        super.onStart();
+        super.onRestart();
         checkLifecycle(ON_RESTART);
     }
 
@@ -276,12 +241,10 @@ public class LaunchpadActivity extends Activity {
 
             final String action = getIntent().getAction();
 
-            sCallingTest.startTiming(true);
-
             if (LAUNCH.equals(action)) {
                 final Intent intent = getIntent();
                 intent.setFlags(0);
-                intent.setComponent((ComponentName) intent.getParcelableExtra("component"));
+                intent.setComponent(intent.getParcelableExtra("component"));
                 startActivityForResult(intent, LAUNCHED_RESULT);
             } else if (ACTIVITY_PREPARE.equals(action)) {
                 sCallingTest.activityRunning(this);
@@ -301,7 +264,6 @@ public class LaunchpadActivity extends Activity {
                     RECEIVER_REG
                 });
                 registerMyReceiver(new IntentFilter(BROADCAST_REGISTERED));
-                sCallingTest.addIntermediate("after-register");
                 sendBroadcast(makeBroadcastIntent(BROADCAST_REGISTERED));
             } else if (BROADCAST_LOCAL.equals(action)) {
                 setExpectedReceivers(new String[] {
@@ -318,7 +280,6 @@ public class LaunchpadActivity extends Activity {
                         RECEIVER_REMOTE, RECEIVER_REG, RECEIVER_LOCAL
                 });
                 registerMyReceiver(new IntentFilter(BROADCAST_ALL));
-                sCallingTest.addIntermediate("after-register");
                 sendOrderedBroadcast(makeBroadcastIntent(BROADCAST_ALL), null);
             } else if (BROADCAST_MULTI.equals(action)) {
                 setExpectedReceivers(new String[] {
@@ -331,7 +292,6 @@ public class LaunchpadActivity extends Activity {
                         RECEIVER_REMOTE, RECEIVER_LOCAL
                 });
                 registerMyReceiver(new IntentFilter(BROADCAST_ALL));
-                sCallingTest.addIntermediate("after-register");
                 sendOrderedBroadcast(makeBroadcastIntent(BROADCAST_ALL), null);
                 sendOrderedBroadcast(makeBroadcastIntent(BROADCAST_ALL), null);
                 sendOrderedBroadcast(makeBroadcastIntent(BROADCAST_ALL), null);
@@ -348,7 +308,6 @@ public class LaunchpadActivity extends Activity {
                         RECEIVER_REMOTE, RECEIVER_ABORT
                 });
                 registerMyReceiver(new IntentFilter(BROADCAST_ABORT));
-                sCallingTest.addIntermediate("after-register");
                 sendOrderedBroadcast(makeBroadcastIntent(BROADCAST_ABORT), null);
             } else if (BROADCAST_STICKY1.equals(action)) {
                 setExpectedReceivers(new String[] {
@@ -358,7 +317,6 @@ public class LaunchpadActivity extends Activity {
                     DATA_1
                 });
                 registerMyReceiver(new IntentFilter(BROADCAST_STICKY1));
-                sCallingTest.addIntermediate("after-register");
             } else if (BROADCAST_STICKY2.equals(action)) {
                 setExpectedReceivers(new String[] {
                         RECEIVER_REG, RECEIVER_REG
@@ -369,7 +327,6 @@ public class LaunchpadActivity extends Activity {
                 final IntentFilter filter = new IntentFilter(BROADCAST_STICKY1);
                 filter.addAction(BROADCAST_STICKY2);
                 registerMyReceiver(filter);
-                sCallingTest.addIntermediate("after-register");
             } else if (ALIAS_ACTIVITY.equals(action)) {
                 final Intent intent = getIntent();
                 intent.setFlags(0);
@@ -379,20 +336,20 @@ public class LaunchpadActivity extends Activity {
                 final Intent intent = getIntent();
                 intent.setFlags(0);
                 intent.setAction(action);
-                intent.setComponent((ComponentName) intent.getParcelableExtra("component"));
+                intent.setComponent(intent.getParcelableExtra("component"));
                 startActivityForResult(intent, LAUNCHED_RESULT);
             } else if (EXPANDLIST_CALLBACK.equals(action)) {
                 final Intent intent = getIntent();
                 intent.setFlags(0);
                 intent.setAction(action);
-                intent.setComponent((ComponentName) intent.getParcelableExtra("component"));
+                intent.setComponent(intent.getParcelableExtra("component"));
                 startActivityForResult(intent, LAUNCHED_RESULT);
             }
         }
     }
 
     @Override
-    protected void onSaveInstanceState(Bundle icicle) {
+    protected void onSaveInstanceState(@NonNull Bundle icicle) {
         super.onSaveInstanceState(icicle);
         if (mBadParcelable) {
             icicle.putParcelable("baddy", new MyBadParcelable());
@@ -409,11 +366,9 @@ public class LaunchpadActivity extends Activity {
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         switch (requestCode) {
             case LAUNCHED_RESULT:
-                sCallingTest.finishTiming(true);
                 finishWithResult(resultCode, data);
                 break;
             case FORWARDED_RESULT:
-                sCallingTest.finishTiming(true);
                 if (RETURNED_RESULT.equals(data.getAction())) {
                     finishWithResult(resultCode, data);
                 } else {
@@ -422,7 +377,6 @@ public class LaunchpadActivity extends Activity {
                 }
                 break;
             default:
-                sCallingTest.finishTiming(true);
                 finishWithResult(RESULT_CANCELED, new Intent()
                         .setAction("Unexpected request code: " + requestCode));
                 break;
@@ -531,7 +485,7 @@ public class LaunchpadActivity extends Activity {
 
     private void registerMyReceiver(IntentFilter filter) {
         mReceiverRegistered = true;
-        registerReceiver(mReceiver, filter);
+        registerReceiver(mReceiver, filter, Context.RECEIVER_NOT_EXPORTED);
     }
 
     private void unregisterMyReceiver() {
@@ -541,11 +495,11 @@ public class LaunchpadActivity extends Activity {
         }
     }
 
-    private final Handler mHandler = new Handler() {
-        @Override
-        public void handleMessage(Message msg) {
-        }
-    };
+    private final Handler mHandler =
+            new Handler(Looper.getMainLooper()) {
+                @Override
+                public void handleMessage(@NonNull Message msg) {}
+            };
 
     static final int GOT_RECEIVE_TRANSACTION = IBinder.FIRST_CALL_TRANSACTION;
     static final int ERROR_TRANSACTION = IBinder.FIRST_CALL_TRANSACTION + 1;
@@ -567,11 +521,8 @@ public class LaunchpadActivity extends Activity {
         }
     };
 
-    private final void gotReceive(String name, Intent intent) {
+    private void gotReceive(String name, Intent intent) {
         synchronized (this) {
-
-            sCallingTest.addIntermediate(mNextReceiver + "-" + name);
-
             if (mExpectedData != null) {
                 final int n = mExpectedData.length;
                 int i;
@@ -612,16 +563,13 @@ public class LaunchpadActivity extends Activity {
         }
     }
 
-    private final Runnable mUnregister = new Runnable() {
-        public void run() {
-            if (mReceiverRegistered) {
-                sCallingTest.addIntermediate("before-unregister");
-                unregisterMyReceiver();
-            }
-            sCallingTest.finishTiming(true);
-            finishGood();
-        }
-    };
+    private final Runnable mUnregister =
+            () -> {
+                if (mReceiverRegistered) {
+                    unregisterMyReceiver();
+                }
+                finishGood();
+            };
 
     private final Runnable mTimeout = new Runnable() {
         public void run() {
@@ -640,4 +588,31 @@ public class LaunchpadActivity extends Activity {
             gotReceive(RECEIVER_REG, intent);
         }
     };
+
+    static final class MyBadParcelable implements Parcelable {
+        MyBadParcelable() {}
+
+        public void writeToParcel(Parcel out, int flags) {
+            out.writeString("I am bad");
+        }
+
+        public int describeContents() {
+            return 0;
+        }
+
+        public static final Parcelable.Creator<MyBadParcelable> CREATOR =
+                new Parcelable.Creator<>() {
+                    public MyBadParcelable createFromParcel(Parcel in) {
+                        return new MyBadParcelable(in);
+                    }
+
+                    public MyBadParcelable[] newArray(int size) {
+                        return new MyBadParcelable[size];
+                    }
+                };
+
+        MyBadParcelable(Parcel in) {
+            in.readString();
+        }
+    }
 }

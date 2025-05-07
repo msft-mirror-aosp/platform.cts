@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008 The Android Open Source Project
+ * Copyright (C) 2025 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,76 +19,32 @@ package android.app.stubs;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
-import android.test.AndroidTestCase;
-import android.test.PerformanceTestCase;
 
-public class ActivityTestsBase extends AndroidTestCase implements PerformanceTestCase,
-        LaunchpadActivity.CallingTest {
-    public static final String PERMISSION_GRANTED = "android.app.cts.permission.TEST_GRANTED";
-    public static final String PERMISSION_DENIED = "android.app.cts.permission.TEST_DENIED";
-
+/** A helper class for LaunchpadActivity. */
+public final class LaunchpadHelper implements LaunchpadActivity.CallingTest {
+    private static final String ORIGINAL_ERROR_WAS_HERE = "Original error was here";
+    private static final String UNABLE_TO_LAUNCH = "Unable to launch";
     private static final int TIMEOUT_MS = 60 * 1000;
-
-    protected Intent mIntent;
-
-    private PerformanceTestCase.Intermediates mIntermediates;
+    private final Context mContext;
+    private Intent mIntent;
     private String mExpecting;
-
-    // Synchronization of activity result.
     private boolean mFinished;
     private int mResultCode = 0;
     private Intent mData;
     private Activity mActivity;
     private RuntimeException mResultStack = null;
 
-    @Override
-    protected void setUp() throws Exception {
-        super.setUp();
+    public LaunchpadHelper(Context context) {
+        mContext = context;
         mIntent = new Intent(mContext, LaunchpadActivity.class);
-        mIntermediates = null;
     }
 
     @Override
-    protected void tearDown() throws Exception {
-        mIntermediates = null;
-        super.tearDown();
-    }
-
-    public boolean isPerformanceOnly() {
-        return false;
-    }
-
-    public void setInternalIterations(int count) {
-    }
-
-    public void startTiming(boolean realTime) {
-        if (mIntermediates != null) {
-            mIntermediates.startTiming(realTime);
-        }
-    }
-
-    public void addIntermediate(String name) {
-        if (mIntermediates != null) {
-            mIntermediates.addIntermediate(name);
-        }
-    }
-
-    public void addIntermediate(String name, long timeInNS) {
-        if (mIntermediates != null) {
-            mIntermediates.addIntermediate(name, timeInNS);
-        }
-    }
-
-    public void finishTiming(boolean realTime) {
-        if (mIntermediates != null) {
-            mIntermediates.finishTiming(realTime);
-        }
-    }
-
     public void activityRunning(Activity activity) {
         finishWithActivity(activity);
     }
 
+    @Override
     public void activityFinished(int resultCode, Intent data, RuntimeException where) {
         finishWithResult(resultCode, data, null, where);
     }
@@ -97,14 +53,8 @@ public class ActivityTestsBase extends AndroidTestCase implements PerformanceTes
         return mIntent;
     }
 
-    @Override
-    public Context getContext() {
-        return mContext;
-    }
-
-    public int startPerformance(Intermediates intermediates) {
-        mIntermediates = intermediates;
-        return 1;
+    public void setIntent(Intent intent) {
+        mIntent = intent;
     }
 
     public void finishGood() {
@@ -116,20 +66,19 @@ public class ActivityTestsBase extends AndroidTestCase implements PerformanceTes
     }
 
     public void finishWithActivity(Activity activity) {
-        final RuntimeException where = new RuntimeException("Original error was here");
+        final RuntimeException where = new RuntimeException(ORIGINAL_ERROR_WAS_HERE);
         where.fillInStackTrace();
         finishWithResult(Activity.RESULT_OK, null, activity, where);
-
     }
 
     public void finishWithResult(int resultCode, Intent data) {
-        final RuntimeException where = new RuntimeException("Original error was here");
+        final RuntimeException where = new RuntimeException(ORIGINAL_ERROR_WAS_HERE);
         where.fillInStackTrace();
         finishWithResult(resultCode, data, null, where);
     }
 
-    public void finishWithResult(int resultCode, Intent data, Activity activity,
-            RuntimeException where) {
+    public void finishWithResult(
+            int resultCode, Intent data, Activity activity, RuntimeException where) {
         synchronized (this) {
             mResultCode = resultCode;
             mData = data;
@@ -145,9 +94,8 @@ public class ActivityTestsBase extends AndroidTestCase implements PerformanceTes
         return waitForResultOrThrow(TIMEOUT_MS);
     }
 
-    private void startLaunchpadActivity(String action) {
+    public void startLaunchpadActivity(String action) {
         LaunchpadActivity.setCallingTest(this);
-
         synchronized (this) {
             mIntent.setAction(action);
             mFinished = false;
@@ -165,10 +113,10 @@ public class ActivityTestsBase extends AndroidTestCase implements PerformanceTes
 
         if (res == Activity.RESULT_CANCELED) {
             if (mResultStack != null) {
-                throw new RuntimeException(mData != null ? mData.toString() : "Unable to launch",
-                        mResultStack);
+                throw new RuntimeException(
+                        mData != null ? mData.toString() : UNABLE_TO_LAUNCH, mResultStack);
             } else {
-                throw new RuntimeException(mData != null ? mData.toString() : "Unable to launch");
+                throw new RuntimeException(mData != null ? mData.toString() : UNABLE_TO_LAUNCH);
             }
         }
         return res;
@@ -190,7 +138,7 @@ public class ActivityTestsBase extends AndroidTestCase implements PerformanceTes
 
                 try {
                     wait(delay);
-                } catch (final java.lang.InterruptedException e) {
+                } catch (final InterruptedException e) {
                     // do nothing
                 }
             }
@@ -204,7 +152,6 @@ public class ActivityTestsBase extends AndroidTestCase implements PerformanceTes
         }
         return mResultCode;
     }
-
 
     public int getResultCode() {
         return mResultCode;
