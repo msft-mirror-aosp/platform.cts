@@ -48,7 +48,6 @@ import org.junit.runner.RunWith;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 
-
 @MediumTest
 @RunWith(AndroidJUnit4.class)
 public class PostMessageTest extends SharedWebViewTest {

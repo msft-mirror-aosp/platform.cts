@@ -95,48 +95,48 @@ public class WebSettingsTest extends SharedWebViewTest {
     public static final String LOAD_EVENT_TYPE_IMAGE = "IMAGE";
     public static final String LOAD_EVENT_TYPE_PAGE = "PAGE";
 
+    private static final String TEST_IMAGE_HTML_TEMPLATE =
+            """
+            <html>
+                <head>
+                    <script>
 
-    private static final String TEST_IMAGE_HTML_TEMPLATE = """
-        <html>
-            <head>
-                <script>
+                    let imageLoadComplete;
+                    let imageLoadPromise = new Promise(res => {
+                        imageLoadComplete = res;
+                    });
 
-                let imageLoadComplete;
-                let imageLoadPromise = new Promise(res => {
-                    imageLoadComplete = res;
-                });
+                    let pageLoadComplete;
+                    let pageLoadPromise = new Promise(res => {
+                        pageLoadComplete = res;
+                    });
 
-                let pageLoadComplete;
-                let pageLoadPromise = new Promise(res => {
-                    pageLoadComplete = res;
-                });
-
-                document.onreadystatechange = () => {
-                    if (document.readyState === 'complete') {
-                        pageLoadComplete();
-                    }
-                };
-
-                onmessage = async (e) => {
-                    const port = e.ports[0];
-                    switch (e.data) {
-                        case '%s': {
-                            await imageLoadPromise;
-                            break;
+                    document.onreadystatechange = () => {
+                        if (document.readyState === 'complete') {
+                            pageLoadComplete();
                         }
-                        case '%s': {
-                            await pageLoadPromise;
-                            break;
+                    };
+
+                    onmessage = async (e) => {
+                        const port = e.ports[0];
+                        switch (e.data) {
+                            case '%s': {
+                                await imageLoadPromise;
+                                break;
+                            }
+                            case '%s': {
+                                await pageLoadPromise;
+                                break;
+                            }
                         }
-                    }
-                    port.postMessage("complete");
-                };
-                </script>
-            </head>
-            <body>
-                <img id='img' src='%s' onload='imageLoadComplete()'>
-            </body>
-        </html>""";
+                        port.postMessage("complete");
+                    };
+                    </script>
+                </head>
+                <body>
+                    <img id='img' src='%s' onload='imageLoadComplete()'>
+                </body>
+            </html>""";
 
     private static final String DATA_IMAGE_HTML = String.format(TEST_IMAGE_HTML_TEMPLATE,
             LOAD_EVENT_TYPE_IMAGE,
@@ -217,11 +217,13 @@ public class WebSettingsTest extends SharedWebViewTest {
     public void testUserAgentStringTest() {
         // All test UAs share the same prefix and suffix; only the middle part varies.
         final String prefix = "Mozilla/5.0 (Linux; Android " + Build.VERSION.RELEASE + "; ";
-        final String suffix = "wv) AppleWebKit/0.0 (KHTML, like Gecko) Version/4.0 Chrome/0.0.0.0 Safari/0.0";
+        final String suffix =
+                "wv) AppleWebKit/0.0 (KHTML, like Gecko) Version/4.0 Chrome/0.0.0.0 Safari/0.0";
 
         // Valid cases:
         // Both model and build present
-        checkUserAgentStringHelper(prefix + Build.MODEL + " Build/" + Build.ID + "; " + suffix, true);
+        checkUserAgentStringHelper(
+                prefix + Build.MODEL + " Build/" + Build.ID + "; " + suffix, true);
         // Just model
         checkUserAgentStringHelper(prefix + Build.MODEL + "; " + suffix, true);
         // Just build
@@ -231,7 +233,8 @@ public class WebSettingsTest extends SharedWebViewTest {
 
         // Invalid cases:
         // No space between model and build
-        checkUserAgentStringHelper(prefix + Build.MODEL + "Build/" + Build.ID + "; " + suffix, false);
+        checkUserAgentStringHelper(
+                prefix + Build.MODEL + "Build/" + Build.ID + "; " + suffix, false);
         // No semicolon after model and/or build
         checkUserAgentStringHelper(prefix + Build.MODEL + " Build/" + Build.ID + suffix, false);
         checkUserAgentStringHelper(prefix + Build.MODEL + suffix, false);
@@ -277,8 +280,11 @@ public class WebSettingsTest extends SharedWebViewTest {
         final Pattern userAgentExpr = Pattern.compile(patternString);
         Matcher patternMatcher = userAgentExpr.matcher(useragent);
         if (shouldMatch) {
-            assertTrue(String.format("CDD(3.4.1/C-1-3) User agent string did not match expected pattern. \n" +
-                            "Expected pattern:\n%s\nActual:\n%s", patternString, useragent),
+            assertTrue(
+                    String.format(
+                            "CDD(3.4.1/C-1-3) User agent string did not match expected pattern. \n"
+                                    + "Expected pattern:\n%s\nActual:\n%s",
+                            patternString, useragent),
                     patternMatcher.find());
         } else {
             assertFalse(String.format("Known-bad user agent string incorrectly matched. \n" +
