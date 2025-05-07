@@ -16,6 +16,7 @@
 package android.app.stubs;
 
 import android.app.ExpandableListActivity;
+import android.app.stubs.shared.LaunchpadActivity;
 import android.os.Bundle;
 import android.os.Looper;
 import android.os.MessageQueue;

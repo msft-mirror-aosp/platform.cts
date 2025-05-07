@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package android.app.cts;
+package android.app.cts.service;
 
 import static android.Manifest.permission.POST_NOTIFICATIONS;
 import static android.Manifest.permission.REVOKE_POST_NOTIFICATIONS_WITHOUT_KILL;
@@ -33,17 +33,17 @@ import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
-import android.app.stubs.IsolatedService;
-import android.app.stubs.LaunchpadActivity;
-import android.app.stubs.LaunchpadHelper;
-import android.app.stubs.LocalDeniedService;
-import android.app.stubs.LocalGrantedService;
-import android.app.stubs.LocalPhoneCallService;
-import android.app.stubs.LocalStoppedService;
-import android.app.stubs.NullService;
-import android.app.stubs.R;
+import android.app.cts.CtsAppTestUtils;
+import android.app.stubs.shared.IsolatedService;
+import android.app.stubs.shared.LaunchpadActivity;
+import android.app.stubs.shared.LaunchpadHelper;
+import android.app.stubs.shared.LocalDeniedService;
 import android.app.stubs.shared.LocalForegroundService;
+import android.app.stubs.shared.LocalGrantedService;
+import android.app.stubs.shared.LocalPhoneCallService;
 import android.app.stubs.shared.LocalService;
+import android.app.stubs.shared.LocalStoppedService;
+import android.app.stubs.shared.NullService;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -111,8 +111,8 @@ public final class ServiceTest {
     private static final int STATE_UNBIND_ONLY = 6;
     private static final int STATE_STOP_SELF_SUCCESS_UNBIND = 6;
     private static final int DELAY = 5000;
-    private static final
-        String EXIST_CONN_TO_RECEIVE_SERVICE = "existing connection to receive service";
+    private static final String EXIST_CONN_TO_RECEIVE_SERVICE =
+            "existing connection to receive service";
     private static final String EXIST_CONN_TO_LOSE_SERVICE = "existing connection to lose service";
     private static final String EXTERNAL_SERVICE_PACKAGE = "com.android.app2";
     private static final String EXTERNAL_SERVICE_COMPONENT =
@@ -144,19 +144,20 @@ public final class ServiceTest {
 
     private static final class EmptyConnection implements ServiceConnection {
         @Override
-        public void onServiceConnected(ComponentName name, IBinder service) {
-        }
+        public void onServiceConnected(ComponentName name, IBinder service) {}
 
         @Override
-        public void onServiceDisconnected(ComponentName name) {
-        }
+        public void onServiceDisconnected(ComponentName name) {}
     }
 
     private static final class NullServiceConnection implements ServiceConnection {
         boolean mNullBinding = false;
 
-        @Override public void onServiceConnected(ComponentName name, IBinder service) {}
-        @Override public void onServiceDisconnected(ComponentName name) {}
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder service) {}
+
+        @Override
+        public void onServiceDisconnected(ComponentName name) {}
 
         @Override
         public void onNullBinding(ComponentName name) {
@@ -201,8 +202,7 @@ public final class ServiceTest {
         }
 
         @Override
-        public void onServiceDisconnected(ComponentName name) {
-        }
+        public void onServiceDisconnected(ComponentName name) {}
     }
 
     private class TestConnection implements ServiceConnection {
@@ -212,7 +212,7 @@ public final class ServiceTest {
         private int mCount;
         private Thread mOnServiceConnectedThread;
 
-        public TestConnection(boolean expectDisconnect, boolean setReporter) {
+        TestConnection(boolean expectDisconnect, boolean setReporter) {
             mExpectDisconnect = expectDisconnect;
             mSetReporter = setReporter;
             mMonitor = !setReporter;
@@ -285,7 +285,7 @@ public final class ServiceTest {
     private final class TestStopSelfConnection extends TestConnection {
         private IBinder mService;
 
-        public TestStopSelfConnection() {
+        TestStopSelfConnection() {
             super(false /* expectDisconnect */, true /* setReporter */);
         }
 
@@ -329,7 +329,7 @@ public final class ServiceTest {
         private int mPpid;
         private Thread mOnServiceConnectedThread;
 
-        public IsolatedConnection() {
+        IsolatedConnection() {
             mUid = mPid = -1;
         }
 
@@ -459,7 +459,8 @@ public final class ServiceTest {
     private byte[] executeShellCommand(String cmd) {
         try {
             ParcelFileDescriptor pfd =
-                    InstrumentationRegistry.getInstrumentation().getUiAutomation()
+                    InstrumentationRegistry.getInstrumentation()
+                            .getUiAutomation()
                             .executeShellCommand(cmd);
             byte[] buf = new byte[512];
             int bytesRead;
@@ -518,7 +519,7 @@ public final class ServiceTest {
         Notification notification =
                 new Notification.Builder(mContext, NOTIFICATION_CHANNEL_ID)
                         .setContentTitle(title)
-                        .setSmallIcon(R.drawable.black)
+                        .setSmallIcon(android.R.drawable.sym_def_app_icon)
                         .build();
         getNotificationManager().notify(id, notification);
     }
@@ -543,20 +544,25 @@ public final class ServiceTest {
                     String actualTitle = n.extras.getString(Notification.EXTRA_TITLE);
                     if (expectedTitle.equals(actualTitle)) {
                         // make sure notification and service state is in sync
-                        if (shouldHaveFgsFlag ==
-                                ((n.flags & Notification.FLAG_FOREGROUND_SERVICE) != 0)) {
+                        if (shouldHaveFgsFlag
+                                == ((n.flags & Notification.FLAG_FOREGROUND_SERVICE) != 0)) {
                             // both title and flag matches.
                             return;
                         } else {
                             // title match, flag not match.
-                            flagErrorMsg = String.format("Wrong flag for notification #%d: "
-                                    + " actual '%d'", id, n.flags);
+                            flagErrorMsg =
+                                    String.format(
+                                            "Wrong flag for notification #%d: " + " actual '%d'",
+                                            id, n.flags);
                         }
                     } else {
                         // It's possible the notification hasn't been updated yet, so save the error
                         // message to only fail after retrying.
-                        titleErrorMsg = String.format("Wrong title for notification #%d: "
-                                + "expected '%s', actual '%s'", id, expectedTitle, actualTitle);
+                        titleErrorMsg =
+                                String.format(
+                                        "Wrong title for notification #%d: "
+                                                + "expected '%s', actual '%s'",
+                                        id, expectedTitle, actualTitle);
                     }
                     // id and packageName are found, break now.
                     break;
@@ -581,7 +587,7 @@ public final class ServiceTest {
     private void assertNoNotification(int id) {
         String packageName = mContext.getPackageName();
         StatusBarNotification found = null;
-        for (int i = 1; i<=2; i++) {
+        for (int i = 1; i <= 2; i++) {
             found = null;
             StatusBarNotification[] sbns = getNotificationManager().getActiveNotifications();
             for (StatusBarNotification sbn : sbns) {
@@ -722,8 +728,8 @@ public final class ServiceTest {
     }
 
     /**
-     * test automatically create the service as long as the binding exists
-     * and disconnect from an application service
+     * test automatically create the service as long as the binding exists and disconnect from an
+     * application service
      */
     private void bindAutoExpectResult(Intent service) {
         TestConnection conn = new TestConnection(false, true);
@@ -731,8 +737,7 @@ public final class ServiceTest {
         try {
             conn.setMonitor(true);
             mExpectedServiceState = STATE_START_1;
-            mContext.bindService(
-                    service, conn, Context.BIND_AUTO_CREATE);
+            mContext.bindService(service, conn, Context.BIND_AUTO_CREATE);
             mLaunchpadHelper.waitForResultOrThrow(DELAY, "connection to start and receive service");
             success = true;
         } finally {
@@ -753,28 +758,42 @@ public final class ServiceTest {
         mLocalService = new Intent(mContext, LocalService.class);
         mExternalService = new Intent();
         mDelayedService = new Intent();
-        mExternalService.setComponent(ComponentName.unflattenFromString(EXTERNAL_SERVICE_COMPONENT));
+        mExternalService.setComponent(
+                ComponentName.unflattenFromString(EXTERNAL_SERVICE_COMPONENT));
         mDelayedService.setComponent(ComponentName.unflattenFromString(DELAYED_SERVICE_COMPONENT));
         mLocalForegroundService = new Intent(mContext, LocalForegroundService.class);
         mLocalPhoneCallService = new Intent(mContext, LocalPhoneCallService.class);
-        mLocalPhoneCallService.putExtra(LocalForegroundService.EXTRA_FOREGROUND_SERVICE_TYPE,
+        mLocalPhoneCallService.putExtra(
+                LocalForegroundService.EXTRA_FOREGROUND_SERVICE_TYPE,
                 ServiceInfo.FOREGROUND_SERVICE_TYPE_PHONE_CALL);
         mLocalDeniedService = new Intent(mContext, LocalDeniedService.class);
         mLocalGrantedService = new Intent(mContext, LocalGrantedService.class);
-        mLocalService_ApplicationHasPermission = new Intent(
-                LocalService.SERVICE_LOCAL_GRANTED, null /*uri*/, mContext, LocalService.class);
-        mLocalService_ApplicationDoesNotHavePermission = new Intent(
-                LocalService.SERVICE_LOCAL_DENIED, null /*uri*/, mContext, LocalService.class);
+        mLocalService_ApplicationHasPermission =
+                new Intent(
+                        LocalService.SERVICE_LOCAL_GRANTED,
+                        null /*uri*/,
+                        mContext,
+                        LocalService.class);
+        mLocalService_ApplicationDoesNotHavePermission =
+                new Intent(
+                        LocalService.SERVICE_LOCAL_DENIED,
+                        null /*uri*/,
+                        mContext,
+                        LocalService.class);
         mIsolatedService = new Intent(mContext, IsolatedService.class);
         mStateReceiver = new MockBinder();
-        getNotificationManager().createNotificationChannel(new NotificationChannel(
-                NOTIFICATION_CHANNEL_ID, "name", NotificationManager.IMPORTANCE_DEFAULT));
+        getNotificationManager()
+                .createNotificationChannel(
+                        new NotificationChannel(
+                                NOTIFICATION_CHANNEL_ID,
+                                "name",
+                                NotificationManager.IMPORTANCE_DEFAULT));
         mContextMainExecutor = mContext.getMainExecutor();
         executeShellCommand("cmd activity fgs-notification-rate-limit disable");
     }
 
     private void setupBackgroundThread() {
-        HandlerThread thread  = new HandlerThread("ServiceTestBackgroundThread");
+        HandlerThread thread = new HandlerThread("ServiceTestBackgroundThread");
         thread.start();
         Handler handler = new Handler(thread.getLooper());
         mBackgroundThread = thread;
@@ -799,10 +818,11 @@ public final class ServiceTest {
         // Use test API to prevent PermissionManager from killing the test process when revoking
         // permission.
         SystemUtil.runWithShellPermissionIdentity(
-                () -> mContext.getSystemService(PermissionManager.class)
-                        .revokePostNotificationPermissionWithoutKillForTest(
-                                mContext.getPackageName(),
-                                Process.myUserHandle().getIdentifier()),
+                () ->
+                        mContext.getSystemService(PermissionManager.class)
+                                .revokePostNotificationPermissionWithoutKillForTest(
+                                        mContext.getPackageName(),
+                                        Process.myUserHandle().getIdentifier()),
                 REVOKE_POST_NOTIFICATIONS_WITHOUT_KILL,
                 REVOKE_RUNTIME_PERMISSIONS);
     }
@@ -956,8 +976,8 @@ public final class ServiceTest {
 
     @Test
     public void testLocalStartAction() {
-        startExpectResult(new Intent(
-                LocalService.SERVICE_LOCAL, null /*uri*/, mContext, LocalService.class));
+        startExpectResult(
+                new Intent(LocalService.SERVICE_LOCAL, null /*uri*/, mContext, LocalService.class));
     }
 
     @Test
@@ -967,16 +987,16 @@ public final class ServiceTest {
 
     @Test
     public void testBindServiceWithExecutor() {
-      setupBackgroundThread();
+        setupBackgroundThread();
 
-      TestConnection conn = new TestConnection(true, false);
-      mExpectedServiceState = STATE_START_1;
-      mContext.bindService(
-          mLocalService, Context.BIND_AUTO_CREATE, mBackgroundThreadExecutor, conn);
+        TestConnection conn = new TestConnection(true, false);
+        mExpectedServiceState = STATE_START_1;
+        mContext.bindService(
+                mLocalService, Context.BIND_AUTO_CREATE, mBackgroundThreadExecutor, conn);
         mLaunchpadHelper.waitForResultOrThrow(DELAY, EXIST_CONN_TO_RECEIVE_SERVICE);
         assertThat(conn.getOnServiceConnectedThread()).isEqualTo(mBackgroundThread);
 
-      mContext.unbindService(conn);
+        mContext.unbindService(conn);
     }
 
     private Intent foregroundServiceIntent(Intent intent, int command) {
@@ -1094,11 +1114,12 @@ public final class ServiceTest {
             Log.d(TAG, "Expecting second start state...");
             mExpectedServiceState = STATE_START_2;
             if (usingFlags) {
-                startForegroundService(LocalForegroundService
-                        .COMMAND_STOP_FOREGROUND_REMOVE_NOTIFICATION_USING_FLAGS);
+                startForegroundService(
+                        LocalForegroundService
+                                .COMMAND_STOP_FOREGROUND_REMOVE_NOTIFICATION_USING_FLAGS);
             } else {
-                startForegroundService(LocalForegroundService
-                        .COMMAND_STOP_FOREGROUND_REMOVE_NOTIFICATION);
+                startForegroundService(
+                        LocalForegroundService.COMMAND_STOP_FOREGROUND_REMOVE_NOTIFICATION);
             }
             mLaunchpadHelper.waitForResultOrThrow(DELAY, "service to stop foreground");
             assertNoNotification(1);
@@ -1134,7 +1155,8 @@ public final class ServiceTest {
         ActivityManager am = mContext.getSystemService(ActivityManager.class);
 
         // Put target app on whitelist so we can start its services.
-        SystemUtil.runShellCommand(InstrumentationRegistry.getInstrumentation(),
+        SystemUtil.runShellCommand(
+                InstrumentationRegistry.getInstrumentation(),
                 "cmd deviceidle whitelist +" + EXTERNAL_SERVICE_PACKAGE);
 
         // No services should be reported back at the beginning
@@ -1154,11 +1176,13 @@ public final class ServiceTest {
             success = true;
 
             // Ensure we can see service and it is ours.
-            List<ActivityManager.RunningServiceInfo> services = am.getRunningServices(maxReturnedServices);
+            List<ActivityManager.RunningServiceInfo> services =
+                    am.getRunningServices(maxReturnedServices);
             assertThat(services).hasSize(1);
             assertThat(services.get(0).uid).isEqualTo(android.os.Process.myUid());
         } finally {
-            SystemUtil.runShellCommand(InstrumentationRegistry.getInstrumentation(),
+            SystemUtil.runShellCommand(
+                    InstrumentationRegistry.getInstrumentation(),
                     "cmd deviceidle whitelist -" + EXTERNAL_SERVICE_PACKAGE);
             if (!success) {
                 mContext.stopService(mLocalService);
@@ -1206,7 +1230,7 @@ public final class ServiceTest {
             startForegroundService(COMMAND_START_FOREGROUND);
             mLaunchpadHelper.waitForResultOrThrow(DELAY, "service to start as foreground 2nd time");
             assertNotification(2, LocalForegroundService.getNotificationTitle(2), true);
-            //...but keeping notification #1
+            // ...but keeping notification #1
             assertNotification(1, newTitle, false);
 
             success = true;
@@ -1284,8 +1308,7 @@ public final class ServiceTest {
         // expect that an FGS with phoneCall type has its notification displayed
         // immediately even without explicit request by the app
         mExpectedServiceState = STATE_START_1;
-        startForegroundService(mLocalPhoneCallService,
-                COMMAND_START_FOREGROUND_DEFER_NOTIFICATION);
+        startForegroundService(mLocalPhoneCallService, COMMAND_START_FOREGROUND_DEFER_NOTIFICATION);
         mLaunchpadHelper.waitForResultOrThrow(DELAY, "phoneCall service to start");
         assertNotification(1, LocalPhoneCallService.getNotificationTitle(1), true);
 
@@ -1326,12 +1349,13 @@ public final class ServiceTest {
         // First, post the notification outright as not-FGS-related
         final NotificationManager nm = getNotificationManager();
         final String channelId = LocalForegroundService.getNotificationChannelId();
-        nm.createNotificationChannel(new NotificationChannel(channelId, channelId,
-                NotificationManager.IMPORTANCE_DEFAULT));
+        nm.createNotificationChannel(
+                new NotificationChannel(
+                        channelId, channelId, NotificationManager.IMPORTANCE_DEFAULT));
         Notification.Builder builder =
                 new Notification.Builder(mContext, channelId)
                         .setContentTitle("Before FGS")
-                        .setSmallIcon(R.drawable.black);
+                        .setSmallIcon(android.R.drawable.sym_def_app_icon);
         nm.notify(1, builder.build());
 
         mExpectedServiceState = STATE_START_1;
@@ -1359,12 +1383,13 @@ public final class ServiceTest {
         // Explicitly post a new Notification with the same id, still deferrable
         final NotificationManager nm = getNotificationManager();
         final String channelId = LocalForegroundService.getNotificationChannelId();
-        nm.createNotificationChannel(new NotificationChannel(channelId, channelId,
-                NotificationManager.IMPORTANCE_DEFAULT));
+        nm.createNotificationChannel(
+                new NotificationChannel(
+                        channelId, channelId, NotificationManager.IMPORTANCE_DEFAULT));
         Notification.Builder builder =
                 new Notification.Builder(mContext, channelId)
                         .setContentTitle(notificationTitle)
-                        .setSmallIcon(R.drawable.black)
+                        .setSmallIcon(android.R.drawable.sym_def_app_icon)
                         .setForegroundServiceBehavior(Notification.FOREGROUND_SERVICE_IMMEDIATE);
         nm.notify(1, builder.build());
 
@@ -1390,12 +1415,13 @@ public final class ServiceTest {
         // Explicitly post a new Notification with the same id, still deferrable
         final NotificationManager nm = getNotificationManager();
         final String channelId = LocalForegroundService.getNotificationChannelId();
-        nm.createNotificationChannel(new NotificationChannel(channelId, channelId,
-                NotificationManager.IMPORTANCE_DEFAULT));
+        nm.createNotificationChannel(
+                new NotificationChannel(
+                        channelId, channelId, NotificationManager.IMPORTANCE_DEFAULT));
         Notification.Builder builder =
                 new Notification.Builder(mContext, channelId)
                         .setContentTitle(notificationTitle)
-                        .setSmallIcon(R.drawable.black)
+                        .setSmallIcon(android.R.drawable.sym_def_app_icon)
                         .setForegroundServiceBehavior(Notification.FOREGROUND_SERVICE_DEFERRED);
         nm.notify(1, builder.build());
 
@@ -1435,8 +1461,12 @@ public final class ServiceTest {
         public volatile int result = -1;
 
         @Override
-        public void onSendFinished(PendingIntent pendingIntent, Intent intent, int resultCode,
-                String resultData, Bundle resultExtras) {
+        public void onSendFinished(
+                PendingIntent pendingIntent,
+                Intent intent,
+                int resultCode,
+                String resultData,
+                Bundle resultExtras) {
             Log.i(TAG, "foreground service PendingIntent callback got " + resultCode);
             this.result = resultCode;
         }
@@ -1447,9 +1477,12 @@ public final class ServiceTest {
     public void testForegroundService_pendingIntentForeground() throws Exception {
         boolean success = false;
 
-        PendingIntent pi = PendingIntent.getForegroundService(mContext, 1,
-                foregroundServiceIntent(COMMAND_START_FOREGROUND),
-                PendingIntent.FLAG_CANCEL_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+        PendingIntent pi =
+                PendingIntent.getForegroundService(
+                        mContext,
+                        1,
+                        foregroundServiceIntent(COMMAND_START_FOREGROUND),
+                        PendingIntent.FLAG_CANCEL_CURRENT | PendingIntent.FLAG_IMMUTABLE);
         TestSendCallback callback = new TestSendCallback();
 
         try {
@@ -1473,8 +1506,8 @@ public final class ServiceTest {
     @MediumTest
     @Test
     public void testLocalBindAction() {
-        bindExpectResult(new Intent(
-                LocalService.SERVICE_LOCAL, null /*uri*/, mContext, LocalService.class));
+        bindExpectResult(
+                new Intent(LocalService.SERVICE_LOCAL, null /*uri*/, mContext, LocalService.class));
     }
 
     @MediumTest
@@ -1486,8 +1519,8 @@ public final class ServiceTest {
     @MediumTest
     @Test
     public void testLocalBindAutoAction() throws Exception {
-        bindAutoExpectResult(new Intent(
-                LocalService.SERVICE_LOCAL, null /*uri*/, mContext, LocalService.class));
+        bindAutoExpectResult(
+                new Intent(LocalService.SERVICE_LOCAL, null /*uri*/, mContext, LocalService.class));
     }
 
     @MediumTest
@@ -1534,8 +1567,7 @@ public final class ServiceTest {
     @Test
     public void testLocalUnbindTwice() throws Exception {
         EmptyConnection conn = new EmptyConnection();
-        mContext.bindService(
-                mLocalService_ApplicationHasPermission, conn, 0);
+        mContext.bindService(mLocalService_ApplicationHasPermission, conn, 0);
         mContext.unbindService(conn);
         try {
             mContext.unbindService(conn);
@@ -1603,18 +1635,17 @@ public final class ServiceTest {
     @Test
     public void testFailBindIsoaltedServiceWithInvalidInstanceName() {
         String[] badNames = {
-            "t\rest",
-            "test\n",
-            "test-three",
-            "test four",
-            "escape\u00a9seq",
-            "\u0164est",
+            "t\rest", "test\n", "test-three", "test four", "escape\u00a9seq", "\u0164est",
         };
         for (String instanceName : badNames) {
             EmptyConnection conn = new EmptyConnection();
             try {
-                mContext.bindIsolatedService(mIsolatedService, Context.BIND_AUTO_CREATE,
-                        instanceName, mContextMainExecutor, conn);
+                mContext.bindIsolatedService(
+                        mIsolatedService,
+                        Context.BIND_AUTO_CREATE,
+                        instanceName,
+                        mContextMainExecutor,
+                        conn);
                 mContext.unbindService(conn);
                 assertWithMessage("Didn't get IllegalArgumentException: " + instanceName).fail();
             } catch (IllegalArgumentException e) {
@@ -1711,8 +1742,12 @@ public final class ServiceTest {
     public void testBindIsolatedServiceOnBackgroundThread() {
         setupBackgroundThread();
         IsolatedConnection conn = new IsolatedConnection();
-        mContext.bindIsolatedService(mIsolatedService, Context.BIND_AUTO_CREATE,
-            "background_instance", mBackgroundThreadExecutor, conn);
+        mContext.bindIsolatedService(
+                mIsolatedService,
+                Context.BIND_AUTO_CREATE,
+                "background_instance",
+                mBackgroundThreadExecutor,
+                conn);
         conn.waitForService(DELAY);
         assertThat(conn.getOnServiceConnectedThread()).isEqualTo(mBackgroundThread);
         mContext.unbindService(conn);
@@ -1760,22 +1795,26 @@ public final class ServiceTest {
         }
 
         boolean match(int group, int strong) {
-            return (group < 0 || mGroup == group)
-                    && (strong == BINDING_ANY || mStrong == strong);
+            return (group < 0 || mGroup == group) && (strong == BINDING_ANY || mStrong == strong);
         }
 
         boolean bind(Context context) {
             if (mConnection != null) {
                 return true;
             }
-            Log.i(TAG, "Binding " + mLabel + ": conn=" + mConnection
-                    + " context=" + context);
+            Log.i(TAG, "Binding " + mLabel + ": conn=" + mConnection + " context=" + context);
             mConnection = new IsolatedConnection();
-            boolean result = context.bindIsolatedService(
-                    mIsolatedService,
-                    Context.BIND_AUTO_CREATE | Context.BIND_DEBUG_UNBIND
-                            | (mStrong == BINDING_STRONG ? 0 : Context.BIND_ALLOW_OOM_MANAGEMENT),
-                    mInstanceName, mContextMainExecutor, mConnection);
+            boolean result =
+                    context.bindIsolatedService(
+                            mIsolatedService,
+                            Context.BIND_AUTO_CREATE
+                                    | Context.BIND_DEBUG_UNBIND
+                                    | (mStrong == BINDING_STRONG
+                                            ? 0
+                                            : Context.BIND_ALLOW_OOM_MANAGEMENT),
+                            mInstanceName,
+                            mContextMainExecutor,
+                            mConnection);
             if (!result) {
                 mConnection = null;
             }
@@ -1788,8 +1827,7 @@ public final class ServiceTest {
 
         void unbind(Context context) {
             if (mConnection != null) {
-                Log.i(TAG, "Unbinding " + mLabel + ": conn=" + mConnection
-                        + " context=" + context);
+                Log.i(TAG, "Unbinding " + mLabel + ": conn=" + mConnection + " context=" + context);
                 context.unbindService(mConnection);
                 mConnection = null;
             }
@@ -1797,7 +1835,7 @@ public final class ServiceTest {
     }
 
     private static final class LruOrderItem {
-        static final int FLAG_SKIP_UNKNOWN = 1<<0;
+        static final int FLAG_SKIP_UNKNOWN = 1 << 0;
 
         final IsolatedConnectionInfo mInfo;
         final int mUid;
@@ -1828,8 +1866,8 @@ public final class ServiceTest {
         }
 
         boolean isEquivalentTo(ProcessRecordProto proc) {
-            int procAppId = proc.isolatedAppId != 0 ? proc.isolatedAppId : UserHandle.getAppId(
-                    proc.uid);
+            int procAppId =
+                    proc.isolatedAppId != 0 ? proc.isolatedAppId : UserHandle.getAppId(proc.uid);
 
             // Compare appid and userid separately because UserHandle.getUid is @hide.
             return procAppId == getAppId() && proc.userId == getUserId();
@@ -1840,8 +1878,8 @@ public final class ServiceTest {
         }
     }
 
-    private void doBind(Context context, IsolatedConnectionInfo[] connections, int group,
-            int strong) {
+    private void doBind(
+            Context context, IsolatedConnectionInfo[] connections, int group, int strong) {
         for (IsolatedConnectionInfo ci : connections) {
             if (ci.match(group, strong)) {
                 ci.bind(context);
@@ -1858,8 +1896,8 @@ public final class ServiceTest {
         }
     }
 
-    private void doBindAndWaitForService(Context context, IsolatedConnectionInfo[] connections,
-            int group, int strong) {
+    private void doBindAndWaitForService(
+            Context context, IsolatedConnectionInfo[] connections, int group, int strong) {
         for (IsolatedConnectionInfo ci : connections) {
             if (ci.match(group, strong)) {
                 ci.bind(context);
@@ -1868,8 +1906,7 @@ public final class ServiceTest {
         }
     }
 
-    private void doWaitForService(IsolatedConnectionInfo[] connections, int group,
-            int strong) {
+    private void doWaitForService(IsolatedConnectionInfo[] connections, int group, int strong) {
         for (IsolatedConnectionInfo ci : connections) {
             if (ci.match(group, strong)) {
                 ci.mConnection.waitForService(DELAY);
@@ -1888,8 +1925,8 @@ public final class ServiceTest {
         return true;
     }
 
-    private void doUpdateServiceGroup(Context context, IsolatedConnectionInfo[] connections,
-            int group, int strong) {
+    private void doUpdateServiceGroup(
+            Context context, IsolatedConnectionInfo[] connections, int group, int strong) {
         for (IsolatedConnectionInfo ci : connections) {
             if (ci.match(group, strong)) {
                 context.updateServiceGroup(ci.mConnection, ci.mGroup, ci.mImportance);
@@ -1897,8 +1934,8 @@ public final class ServiceTest {
         }
     }
 
-    private void doUnbind(Context context, IsolatedConnectionInfo[] connections, int group,
-            int strong) {
+    private void doUnbind(
+            Context context, IsolatedConnectionInfo[] connections, int group, int strong) {
         for (IsolatedConnectionInfo ci : connections) {
             if (ci.match(group, strong)) {
                 ci.unbind(context);
@@ -1921,8 +1958,14 @@ public final class ServiceTest {
     }
 
     String printProc(int i, ProcessRecordProto proc) {
-        return "#" + i + ": " + proc.processName
-                + " pid=" + proc.pid + " uid=" + proc.uid
+        return "#"
+                + i
+                + ": "
+                + proc.processName
+                + " pid="
+                + proc.pid
+                + " uid="
+                + proc.uid
                 + (proc.isolatedAppId != 0 ? " isolated=" + proc.isolatedAppId : "");
     }
 
@@ -2093,38 +2136,34 @@ public final class ServiceTest {
 
         // We are going to have both weak and strong references to services, so we can allow
         // some to go down in the LRU list.
-        final IsolatedConnectionInfo[] connections = new IsolatedConnectionInfo[] {
-                new IsolatedConnectionInfo(0, 0, BINDING_WEAK, "_w0"),
-                new IsolatedConnectionInfo(0, 0, BINDING_STRONG, "_s0"),
-                new IsolatedConnectionInfo(0, 0, BINDING_WEAK, "_w1"),
-                new IsolatedConnectionInfo(0, 0, BINDING_STRONG, "_s1"),
-                new IsolatedConnectionInfo(0, 0, BINDING_WEAK, "_w2"),
-                new IsolatedConnectionInfo(0, 0, BINDING_STRONG, "_s2"),
-                new IsolatedConnectionInfo(0, 0, BINDING_WEAK, "_w3"),
-                new IsolatedConnectionInfo(0, 0, BINDING_STRONG, "_s3"),
-                new IsolatedConnectionInfo(1, 1, BINDING_WEAK),
-                new IsolatedConnectionInfo(1, 1, BINDING_STRONG),
-                new IsolatedConnectionInfo(1, 2, BINDING_WEAK),
-                new IsolatedConnectionInfo(1, 2, BINDING_STRONG),
-                new IsolatedConnectionInfo(2, 1, BINDING_WEAK),
-                new IsolatedConnectionInfo(2, 1, BINDING_STRONG),
-                new IsolatedConnectionInfo(2, 2, BINDING_WEAK),
-                new IsolatedConnectionInfo(2, 2, BINDING_STRONG),
-                new IsolatedConnectionInfo(2, 3, BINDING_WEAK),
-                new IsolatedConnectionInfo(2, 3, BINDING_STRONG),
-        };
+        final IsolatedConnectionInfo[] connections =
+                new IsolatedConnectionInfo[] {
+                    new IsolatedConnectionInfo(0, 0, BINDING_WEAK, "_w0"),
+                    new IsolatedConnectionInfo(0, 0, BINDING_STRONG, "_s0"),
+                    new IsolatedConnectionInfo(0, 0, BINDING_WEAK, "_w1"),
+                    new IsolatedConnectionInfo(0, 0, BINDING_STRONG, "_s1"),
+                    new IsolatedConnectionInfo(0, 0, BINDING_WEAK, "_w2"),
+                    new IsolatedConnectionInfo(0, 0, BINDING_STRONG, "_s2"),
+                    new IsolatedConnectionInfo(0, 0, BINDING_WEAK, "_w3"),
+                    new IsolatedConnectionInfo(0, 0, BINDING_STRONG, "_s3"),
+                    new IsolatedConnectionInfo(1, 1, BINDING_WEAK),
+                    new IsolatedConnectionInfo(1, 1, BINDING_STRONG),
+                    new IsolatedConnectionInfo(1, 2, BINDING_WEAK),
+                    new IsolatedConnectionInfo(1, 2, BINDING_STRONG),
+                    new IsolatedConnectionInfo(2, 1, BINDING_WEAK),
+                    new IsolatedConnectionInfo(2, 1, BINDING_STRONG),
+                    new IsolatedConnectionInfo(2, 2, BINDING_WEAK),
+                    new IsolatedConnectionInfo(2, 2, BINDING_STRONG),
+                    new IsolatedConnectionInfo(2, 3, BINDING_WEAK),
+                    new IsolatedConnectionInfo(2, 3, BINDING_STRONG),
+                };
 
-        final int[] REV_GROUP_1_STRONG = new int[] {
-                CONN_1_2_S, CONN_1_1_S
-        };
+        final int[] REV_GROUP_1_STRONG = new int[] {CONN_1_2_S, CONN_1_1_S};
 
-        final int[] REV_GROUP_2_STRONG = new int[] {
-                CONN_2_3_S, CONN_2_2_S, CONN_2_1_S
-        };
+        final int[] REV_GROUP_2_STRONG = new int[] {CONN_2_3_S, CONN_2_2_S, CONN_2_1_S};
 
-        final int[] MIXED_GROUP_3_STRONG = new int[] {
-                CONN_2_3_S, CONN_1_1_S, CONN_2_1_S, CONN_2_2_S
-        };
+        final int[] MIXED_GROUP_3_STRONG =
+                new int[] {CONN_2_3_S, CONN_1_1_S, CONN_2_1_S, CONN_2_2_S};
 
         boolean passed = false;
 
@@ -2132,17 +2171,18 @@ public final class ServiceTest {
             // Start the group 0 processes and wait for them to come up.
             doBindAndWaitForService(a, connections, 0, BINDING_ANY);
 
-            verifyLruOrder(new LruOrderItem[]{
-                    new LruOrderItem(Process.myUid(), 0),
-                    new LruOrderItem(connections[CONN_0_0_S_3], 0),
-                    new LruOrderItem(connections[CONN_0_0_W_3], LruOrderItem.FLAG_SKIP_UNKNOWN),
-                    new LruOrderItem(connections[CONN_0_0_S_2], 0),
-                    new LruOrderItem(connections[CONN_0_0_W_2], 0),
-                    new LruOrderItem(connections[CONN_0_0_S_1], 0),
-                    new LruOrderItem(connections[CONN_0_0_W_1], 0),
-                    new LruOrderItem(connections[CONN_0_0_S_0], 0),
-                    new LruOrderItem(connections[CONN_0_0_W_0], 0),
-            });
+            verifyLruOrder(
+                    new LruOrderItem[] {
+                        new LruOrderItem(Process.myUid(), 0),
+                        new LruOrderItem(connections[CONN_0_0_S_3], 0),
+                        new LruOrderItem(connections[CONN_0_0_W_3], LruOrderItem.FLAG_SKIP_UNKNOWN),
+                        new LruOrderItem(connections[CONN_0_0_S_2], 0),
+                        new LruOrderItem(connections[CONN_0_0_W_2], 0),
+                        new LruOrderItem(connections[CONN_0_0_S_1], 0),
+                        new LruOrderItem(connections[CONN_0_0_W_1], 0),
+                        new LruOrderItem(connections[CONN_0_0_S_0], 0),
+                        new LruOrderItem(connections[CONN_0_0_W_0], 0),
+                    });
 
             // Send the app to background.
             PackageManager pm = mContext.getPackageManager();
@@ -2189,17 +2229,18 @@ public final class ServiceTest {
                                     DELAY))
                     .isTrue();
 
-            verifyLruOrder(new LruOrderItem[]{
-                    new LruOrderItem(Process.myUid(), 0),
-                    new LruOrderItem(connections[CONN_0_0_S_3], 0),
-                    new LruOrderItem(connections[CONN_0_0_S_2], 0),
-                    new LruOrderItem(connections[CONN_0_0_S_1], 0),
-                    new LruOrderItem(connections[CONN_0_0_S_0], 0),
-                    new LruOrderItem(connections[CONN_0_0_W_3], LruOrderItem.FLAG_SKIP_UNKNOWN),
-                    new LruOrderItem(connections[CONN_0_0_W_2], 0),
-                    new LruOrderItem(connections[CONN_0_0_W_1], 0),
-                    new LruOrderItem(connections[CONN_0_0_W_0], 0),
-            });
+            verifyLruOrder(
+                    new LruOrderItem[] {
+                        new LruOrderItem(Process.myUid(), 0),
+                        new LruOrderItem(connections[CONN_0_0_S_3], 0),
+                        new LruOrderItem(connections[CONN_0_0_S_2], 0),
+                        new LruOrderItem(connections[CONN_0_0_S_1], 0),
+                        new LruOrderItem(connections[CONN_0_0_S_0], 0),
+                        new LruOrderItem(connections[CONN_0_0_W_3], LruOrderItem.FLAG_SKIP_UNKNOWN),
+                        new LruOrderItem(connections[CONN_0_0_W_2], 0),
+                        new LruOrderItem(connections[CONN_0_0_W_1], 0),
+                        new LruOrderItem(connections[CONN_0_0_W_0], 0),
+                    });
 
             // Stop the group 0 processes.
             doUnbind(a, connections, 0, BINDING_ANY);
@@ -2215,11 +2256,12 @@ public final class ServiceTest {
             doBind(a, connections, 1, BINDING_STRONG);
             doWaitForService(connections, 1, BINDING_STRONG);
 
-            verifyLruOrder(new LruOrderItem[] {
-                    new LruOrderItem(Process.myUid(), 0),
-                    new LruOrderItem(connections[CONN_1_1_W], 0),
-                    new LruOrderItem(connections[CONN_1_2_W], 0),
-            });
+            verifyLruOrder(
+                    new LruOrderItem[] {
+                        new LruOrderItem(Process.myUid(), 0),
+                        new LruOrderItem(connections[CONN_1_1_W], 0),
+                        new LruOrderItem(connections[CONN_1_2_W], 0),
+                    });
 
             // Now remove the full binding, leaving only the weak.
             doUnbind(a, connections, 1, BINDING_STRONG);
@@ -2237,26 +2279,28 @@ public final class ServiceTest {
             // Now fully bind to group 2
             doBind(a, connections, REV_GROUP_2_STRONG);
 
-            verifyLruOrder(new LruOrderItem[] {
-                    new LruOrderItem(Process.myUid(), 0),
-                    new LruOrderItem(connections[CONN_2_1_W], 0),
-                    new LruOrderItem(connections[CONN_2_2_W], 0),
-                    new LruOrderItem(connections[CONN_2_3_W], 0),
-                    new LruOrderItem(connections[CONN_1_1_W], LruOrderItem.FLAG_SKIP_UNKNOWN),
-                    new LruOrderItem(connections[CONN_1_2_W], 0),
-            });
+            verifyLruOrder(
+                    new LruOrderItem[] {
+                        new LruOrderItem(Process.myUid(), 0),
+                        new LruOrderItem(connections[CONN_2_1_W], 0),
+                        new LruOrderItem(connections[CONN_2_2_W], 0),
+                        new LruOrderItem(connections[CONN_2_3_W], 0),
+                        new LruOrderItem(connections[CONN_1_1_W], LruOrderItem.FLAG_SKIP_UNKNOWN),
+                        new LruOrderItem(connections[CONN_1_2_W], 0),
+                    });
 
             // Bring group 1 back to the foreground, but in the opposite order.
             doBind(a, connections, REV_GROUP_1_STRONG);
 
-            verifyLruOrder(new LruOrderItem[] {
-                    new LruOrderItem(Process.myUid(), 0),
-                    new LruOrderItem(connections[CONN_1_1_W], 0),
-                    new LruOrderItem(connections[CONN_1_2_W], 0),
-                    new LruOrderItem(connections[CONN_2_1_W], LruOrderItem.FLAG_SKIP_UNKNOWN),
-                    new LruOrderItem(connections[CONN_2_2_W], 0),
-                    new LruOrderItem(connections[CONN_2_3_W], 0),
-            });
+            verifyLruOrder(
+                    new LruOrderItem[] {
+                        new LruOrderItem(Process.myUid(), 0),
+                        new LruOrderItem(connections[CONN_1_1_W], 0),
+                        new LruOrderItem(connections[CONN_1_2_W], 0),
+                        new LruOrderItem(connections[CONN_2_1_W], LruOrderItem.FLAG_SKIP_UNKNOWN),
+                        new LruOrderItem(connections[CONN_2_2_W], 0),
+                        new LruOrderItem(connections[CONN_2_3_W], 0),
+                    });
 
             // Now remove all full bindings, keeping only weak.
             doUnbind(a, connections, 1, BINDING_STRONG);
@@ -2277,14 +2321,15 @@ public final class ServiceTest {
             // Now bind them back up in an interesting order.
             doBind(a, connections, MIXED_GROUP_3_STRONG);
 
-            verifyLruOrder(new LruOrderItem[] {
-                    new LruOrderItem(Process.myUid(), 0),
-                    new LruOrderItem(connections[CONN_1_1_W], 0),
-                    new LruOrderItem(connections[CONN_2_1_W], 0),
-                    new LruOrderItem(connections[CONN_2_2_W], 0),
-                    new LruOrderItem(connections[CONN_2_3_W], 0),
-                    new LruOrderItem(connections[CONN_1_2_W], LruOrderItem.FLAG_SKIP_UNKNOWN),
-            });
+            verifyLruOrder(
+                    new LruOrderItem[] {
+                        new LruOrderItem(Process.myUid(), 0),
+                        new LruOrderItem(connections[CONN_1_1_W], 0),
+                        new LruOrderItem(connections[CONN_2_1_W], 0),
+                        new LruOrderItem(connections[CONN_2_2_W], 0),
+                        new LruOrderItem(connections[CONN_2_3_W], 0),
+                        new LruOrderItem(connections[CONN_1_2_W], LruOrderItem.FLAG_SKIP_UNKNOWN),
+                    });
 
             passed = true;
 
@@ -2377,8 +2422,10 @@ public final class ServiceTest {
                     "dumpsys activity services "
                             + "android.app.stubs"
                             + "/android.app.stubs.shared.LocalService";
-            String[] dumpLines = CtsAppTestUtils.executeShellCmd(
-                    InstrumentationRegistry.getInstrumentation(), dumpCommand).split("\n");
+            String[] dumpLines =
+                    CtsAppTestUtils.executeShellCmd(
+                                    InstrumentationRegistry.getInstrumentation(), dumpCommand)
+                            .split("\n");
             assertThat(CtsAppTestUtils.findLine(dumpLines, "flags=0x" + Long.toHexString(flags)))
                     .isNotNull();
         } finally {

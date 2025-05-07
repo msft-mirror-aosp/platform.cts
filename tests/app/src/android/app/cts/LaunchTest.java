@@ -16,13 +16,13 @@
 
 package android.app.cts;
 
-import android.app.stubs.ClearTop;
-import android.app.stubs.LaunchpadActivity;
-import android.app.stubs.LaunchpadHelper;
 import android.app.stubs.LocalActivity;
-import android.app.stubs.LocalScreen;
 import android.app.stubs.TestedActivity;
-import android.app.stubs.TestedScreen;
+import android.app.stubs.shared.ClearTop;
+import android.app.stubs.shared.LaunchpadActivity;
+import android.app.stubs.shared.LaunchpadHelper;
+import android.app.stubs.shared.LocalScreen;
+import android.app.stubs.shared.TestedScreen;
 import android.content.ComponentName;
 import android.content.Context;
 

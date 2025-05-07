@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package android.app.stubs;
+package android.app.stubs.shared;
 
 import android.app.Activity;
 import android.content.Intent;
@@ -24,14 +24,16 @@ import android.util.Log;
 public class ClearTop extends Activity {
     public static final String WAIT_CLEAR_TASK = "waitClearTask";
     private static final String TAG = "ClearTop";
-    public ClearTop() {
-    }
+
+    public ClearTop() {}
 
     @Override
     public void onCreate(Bundle icicle) {
         super.onCreate(icicle);
-        final Intent intent = new Intent(getIntent()).setAction(LocalScreen.CLEAR_TASK).setClass(
-                this, LocalScreen.class);
+        final Intent intent =
+                new Intent(getIntent())
+                        .setAction(LocalScreen.CLEAR_TASK)
+                        .setClass(this, LocalScreen.class);
         startActivity(intent);
     }
 
@@ -41,8 +43,14 @@ public class ClearTop extends Activity {
         if (LocalScreen.CLEAR_TASK.equals(intent.getAction())) {
             setResult(RESULT_OK);
         } else {
-            setResult(RESULT_CANCELED, new Intent().setAction("New intent received " + intent
-                    + ", expecting action " + TestedScreen.CLEAR_TASK));
+            setResult(
+                    RESULT_CANCELED,
+                    new Intent()
+                            .setAction(
+                                    "New intent received "
+                                            + intent
+                                            + ", expecting action "
+                                            + TestedScreen.CLEAR_TASK));
         }
         finish();
     }

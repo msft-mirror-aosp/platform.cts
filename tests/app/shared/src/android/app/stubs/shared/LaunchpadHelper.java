@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package android.app.stubs;
+package android.app.stubs.shared;
 
 import android.app.Activity;
 import android.content.Context;

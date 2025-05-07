@@ -1036,6 +1036,8 @@
     <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testV4IncToV3NonIncRotatedKeyUpgradeSucceeds[1]"/>
     <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testV4IncToV3NonIncSameKeyUpgradeSucceeds[0]"/>
     <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testV4IncToV3NonIncSameKeyUpgradeSucceeds[1]"/>
+    <!-- CtsAppServiceTestCases -->
+    <option name="compatibility:include-filter" value="CtsAppServiceTestCases android.app.cts.service.ServiceTest#testMaxServiceConnections"/>
     <!-- CtsAppTestCases -->
     <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.ActivityManagerProcessStateTest#testBackgroundCheckActivityService"/>
     <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.ActivityManagerProcessStateTest#testBackgroundCheckBroadcastService"/>
@@ -1107,10 +1109,11 @@
     <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.DialogTest#testTakeKeyEvents"/>
     <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.DialogTest#testTouchEvent"/>
     <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.DialogTest#testTrackballEvent"/>
-    <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.ServiceTest#testMaxServiceConnections"/>
     <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.SystemFeaturesTest#testFeatureNamespaces"/>
     <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.UiModeManagerTest#testSetNightModeActivatedForCustomMode_modeAuto_activateAtBedtime_thenCustomTypeBedtime_shouldActivateNightMode"/>
     <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.UiModeManagerTest#testSetNightModeActivatedForCustomMode_modeYes_activateAtBedtime_thenCustomTypeBedtime_shouldActiveNightMode"/>
+    <!-- CtsAppServiceTestCases[instant] -->
+    <option name="compatibility:include-filter" value="CtsAppServiceTestCases[instant] android.app.cts.service.ServiceTest#testMaxServiceConnections"/>
     <!-- CtsAppTestCases[instant] -->
     <option name="compatibility:include-filter" value="CtsAppTestCases[instant] android.app.cts.ActivityManagerProcessStateTest#testBackgroundCheckActivityService"/>
     <option name="compatibility:include-filter" value="CtsAppTestCases[instant] android.app.cts.ActivityManagerProcessStateTest#testBackgroundCheckBroadcastService"/>
@@ -1178,7 +1181,6 @@
     <option name="compatibility:include-filter" value="CtsAppTestCases[instant] android.app.cts.DialogTest#testTakeKeyEvents"/>
     <option name="compatibility:include-filter" value="CtsAppTestCases[instant] android.app.cts.DialogTest#testTouchEvent"/>
     <option name="compatibility:include-filter" value="CtsAppTestCases[instant] android.app.cts.DialogTest#testTrackballEvent"/>
-    <option name="compatibility:include-filter" value="CtsAppTestCases[instant] android.app.cts.ServiceTest#testMaxServiceConnections"/>
     <option name="compatibility:include-filter" value="CtsAppTestCases[instant] android.app.cts.SystemFeaturesTest#testFeatureNamespaces"/>
     <!-- CtsAppWidgetTestCases -->
     <option name="compatibility:include-filter" value="CtsAppWidgetTestCases android.appwidget.cts.AppWidgetTest#testCheckRemoteViewsUri"/>

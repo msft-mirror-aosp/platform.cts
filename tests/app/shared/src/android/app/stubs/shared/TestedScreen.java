@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package android.app.stubs;
+package android.app.stubs.shared;
 
 import android.app.Activity;
 import android.content.Intent;
@@ -26,13 +26,15 @@ import android.os.MessageQueue;
 import android.os.SystemClock;
 import android.util.Log;
 
+import androidx.annotation.NonNull;
+
 public class TestedScreen extends Activity {
     public static final String WAIT_BEFORE_FINISH = "TestedScreen.WAIT_BEFORE_FINISH";
     public static final String DELIVER_RESULT = "TestedScreen.DELIVER_RESULT";
     public static final String CLEAR_TASK = "TestedScreen.CLEAR_TASK";
-    private static final String TAG = "TestedScreen" ;
-    public TestedScreen() {
-    }
+    private static final String TAG = "TestedScreen";
+
+    public TestedScreen() {}
 
     @Override
     public void onCreate(Bundle icicle) {
@@ -54,7 +56,7 @@ public class TestedScreen extends Activity {
     }
 
     @Override
-    protected void onRestoreInstanceState(Bundle state) {
+    protected void onRestoreInstanceState(@NonNull Bundle state) {
         super.onRestoreInstanceState(state);
     }
 
@@ -73,7 +75,7 @@ public class TestedScreen extends Activity {
     }
 
     @Override
-    protected void onSaveInstanceState(Bundle outState) {
+    protected void onSaveInstanceState(@NonNull Bundle outState) {
         super.onSaveInstanceState(outState);
     }
 
@@ -83,22 +85,25 @@ public class TestedScreen extends Activity {
     }
 
     private void launchClearTask() {
-        final Intent intent = new Intent(getIntent()).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
-                .setClass(this, ClearTop.class);
+        final Intent intent =
+                new Intent(getIntent())
+                        .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                        .setClass(this, ClearTop.class);
         startActivity(intent);
     }
 
-    private final Handler mHandler = new Handler() {
-        @Override
-        public void handleMessage(Message msg) {
-            if (CLEAR_TASK.equals(getIntent().getAction())) {
-                launchClearTask();
-            } else {
-                setResult(RESULT_OK);
-                finish();
-            }
-        }
-    };
+    private final Handler mHandler =
+            new Handler(Looper.getMainLooper()) {
+                @Override
+                public void handleMessage(@NonNull Message msg) {
+                    if (CLEAR_TASK.equals(getIntent().getAction())) {
+                        launchClearTask();
+                    } else {
+                        setResult(RESULT_OK);
+                        finish();
+                    }
+                }
+            };
 
     private class Idler implements MessageQueue.IdleHandler {
         public final boolean queueIdle() {
