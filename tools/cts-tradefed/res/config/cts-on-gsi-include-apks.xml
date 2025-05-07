@@ -147,4 +147,11 @@
 
       <!-- b/152359655: ResumeOnReboot can't work on GSI -->
     <option name="compatibility:include-filter" value="CtsResumeOnRebootHostTestCases android.appsecurity.cts.ResumeOnRebootHostTest" />
+
+    <!-- b/410503137 -->
+    <option name="compatibility:exclude-filter" value="CtsKeystoreTestCases android.keystore.cts.KeyAttestationTest#testRsaAttestation" />
+    <option name="compatibility:exclude-filter" value="CtsKeystoreTestCases android.keystore.cts.KeyAttestationTest#testEcAttestation" />
+    <option name="compatibility:exclude-filter" value="CtsKeystoreTestCases android.keystore.cts.KeyAttestationTest#testCurve25519Attestation" />
+    <option name="compatibility:exclude-filter" value="CtsKeystoreTestCases android.keystore.cts.performance.AttestationPerformanceTest#testEcKeyAttestation" />
+    <option name="compatibility:exclude-filter" value="CtsKeystoreTestCases android.keystore.cts.performance.AttestationPerformanceTest#testRsaKeyAttestation" />
 </configuration>
