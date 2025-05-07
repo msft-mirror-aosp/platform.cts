@@ -30,6 +30,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeNoException;
+import static org.junit.Assume.assumeNotNull;
 import static org.junit.Assume.assumeTrue;
 
 import android.Manifest;
@@ -189,6 +190,8 @@ public class TelephonyManagerTestOnMockModem extends MockModemTestBase {
     @Before
     public void beforeTest() {
         super.beforeTest();
+        assumeNotNull(
+                "Skipping tests (see logs around beforeAllTests for details)", sTelephonyManager);
         try {
             sTelephonyManager.getHalVersion(TelephonyManager.HAL_SERVICE_RADIO);
         } catch (IllegalStateException e) {
