@@ -117,6 +117,8 @@ public class CtsMediaShortFormPlaybackTest extends CujTestBase {
   private static final String AAC_SINE_AUDIO_OFFLOAD_TEST = "Aac_Sine_AudioOffloadTest";
   private static final String MP3_CONSECUTIVE_AUDIO_OFFLOAD_TEST =
                                             "Mp3_Consecutive_AudioOffloadTest";
+  private static final String OPUS_AUDIO_OFFLOAD_SPEED_CHANGE_TEST =
+                                            "Opus_AudioOffloadSpeedChangeTest";
 
   CujTestParam mCujTestParam;
   private final String mTestType;
@@ -205,20 +207,32 @@ public class CtsMediaShortFormPlaybackTest extends CujTestBase {
             "Hevc_720p_15sec_LockPlaybackTest"},
         {CujTestParam.builder().setMediaUrls(prepareSineWave_70secAudioPlaylist())
             .setDuration(Duration.ofSeconds(70) /* clipDuration */).setOverhead(TEST_OVERHEAD)
-            .setPlayerListener(new AudioOffloadTestPlayerListener()).build(),
+            .setPlayerListener(
+                new AudioOffloadTestPlayerListener(TestType.AUDIO_OFFLOAD_TEST)).build(),
             MP3_SINE_AUDIO_OFFLOAD_TEST},
         {CujTestParam.builder().setMediaUrls(prepareOpus_AudioPlaylist())
             .setDuration(Duration.ofSeconds(35) /* clipDuration */).setOverhead(TEST_OVERHEAD)
-            .setPlayerListener(new AudioOffloadTestPlayerListener()).build(),
+            .setPlayerListener(
+                new AudioOffloadTestPlayerListener(TestType.AUDIO_OFFLOAD_TEST)).build(),
             OPUS_AUDIO_OFFLOAD_TEST},
         {CujTestParam.builder().setMediaUrls(preapreAac_SineWave_AudioPlaylist())
             .setDuration(Duration.ofSeconds(71) /* clipDuration */).setOverhead(TEST_OVERHEAD)
-            .setPlayerListener(new AudioOffloadTestPlayerListener()).build(),
+            .setPlayerListener(
+                new AudioOffloadTestPlayerListener(TestType.AUDIO_OFFLOAD_TEST)).build(),
             AAC_SINE_AUDIO_OFFLOAD_TEST},
         {CujTestParam.builder().setMediaUrls(prepareMp3Consecutive_65secAudioPlaylist())
             .setDuration(Duration.ofSeconds(65) /* clipDuration */).setOverhead(TEST_OVERHEAD)
-            .setPlayerListener(new AudioOffloadTestPlayerListener()).build(),
+            .setPlayerListener(
+                new AudioOffloadTestPlayerListener(TestType.AUDIO_OFFLOAD_TEST)).build(),
             MP3_CONSECUTIVE_AUDIO_OFFLOAD_TEST},
+        {CujTestParam.builder().setMediaUrls(prepareOpus_AudioPlaylist())
+            .setDuration(Duration.ofMillis(
+                (long) (35000/PLAYBACK_RATE_FOR_SPEED_CHANGE_TEST)) /* clipDuration */)
+            .setOverhead(TEST_OVERHEAD)
+            .setPlayerListener(
+                new AudioOffloadTestPlayerListener(TestType.AUDIO_OFFLOAD_SPEED_CHANGE_TEST))
+                .build(),
+            OPUS_AUDIO_OFFLOAD_SPEED_CHANGE_TEST},
     }));
     return exhaustiveArgsList;
   }
@@ -431,7 +445,8 @@ public class CtsMediaShortFormPlaybackTest extends CujTestBase {
                 || MP3_CONSECUTIVE_AUDIO_OFFLOAD_TEST.equals(mTestType)) {
             Assume.assumeTrue("Skipping " + mTestType + " as device doesn't support audio " +
                 "offloading", deviceSupportAudioOffload(AudioFormat.ENCODING_MP3));
-        } else if (OPUS_AUDIO_OFFLOAD_TEST.equals(mTestType)) {
+        } else if (OPUS_AUDIO_OFFLOAD_TEST.equals(mTestType)
+                    || OPUS_AUDIO_OFFLOAD_SPEED_CHANGE_TEST.equals(mTestType)) {
             Assume.assumeTrue("Skipping " + mTestType + " as device doesn't support audio " +
                 "offloading", deviceSupportAudioOffload(AudioFormat.ENCODING_OPUS));
         } else if (AAC_SINE_AUDIO_OFFLOAD_TEST.equals(mTestType)) {

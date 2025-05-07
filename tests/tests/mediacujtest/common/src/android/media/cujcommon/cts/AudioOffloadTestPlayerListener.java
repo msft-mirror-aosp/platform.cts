@@ -21,13 +21,15 @@ import androidx.media3.common.Player;
 
 public class AudioOffloadTestPlayerListener extends PlayerListener {
 
-  public AudioOffloadTestPlayerListener() {
-    super();
+  private TestType mTestType;
+
+  public AudioOffloadTestPlayerListener(TestType testType) {
+    mTestType = testType;
   }
 
   @Override
   public TestType getTestType() {
-    return TestType.AUDIO_OFFLOAD_TEST;
+    return mTestType;
   }
 
   @Override
