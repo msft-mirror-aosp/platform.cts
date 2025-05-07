@@ -2156,7 +2156,9 @@ public final class ServiceTest {
                 intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                 mContext.startActivity(intent);
             } else {
-                assertTrue("Failed to send the app to background", a.moveTaskToBack(true));
+                assertWithMessage("Failed to send the app to background")
+                        .that(a.moveTaskToBack(true))
+                        .isTrue();
             }
 
             // TODO: b/372710412 - Call a test API to force recomputation, instead of doWaitWhile.
