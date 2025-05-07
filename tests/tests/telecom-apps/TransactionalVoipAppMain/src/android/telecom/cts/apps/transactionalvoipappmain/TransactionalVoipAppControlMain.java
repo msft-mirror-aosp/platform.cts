@@ -358,6 +358,11 @@ public class TransactionalVoipAppControlMain extends Service {
                 }
 
                 @Override
+                public NoDataTransaction setConnectionProperties(String callId, int properties) {
+                    return new NoDataTransaction(TestAppTransaction.Success);
+                }
+
+                @Override
                 public NoDataTransaction sendConnectionEvent(String id, String event) {
                     Log.i(
                             mTag,

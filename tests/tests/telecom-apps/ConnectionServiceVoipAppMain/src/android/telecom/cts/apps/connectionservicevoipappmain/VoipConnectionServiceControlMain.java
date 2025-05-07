@@ -344,6 +344,11 @@ public class VoipConnectionServiceControlMain extends Service {
                 }
 
                 @Override
+                public NoDataTransaction setConnectionProperties(String callId, int properties) {
+                  return new NoDataTransaction(TestAppTransaction.Success);
+                }
+
+                @Override
                 public NoDataTransaction setMuteState(String id, boolean isMuted) {
                     Log.i(mTag, String.format("setMuteState: id=[%s]", id));
                     try {

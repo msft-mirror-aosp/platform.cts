@@ -75,6 +75,14 @@ public class ManagedConnection extends Connection {
         this.setOnHold();
     }
 
+    public void setCallToAudioProcessing(int useCase) {
+        this.setAudioProcessing(useCase);
+    }
+
+    public void setCallToSimulatedRinging() {
+        this.setSimulatedRinging();
+    }
+
     public void setCallToDisconnected(Context context) {
         setCallToDisconnected(context, new DisconnectCause(DisconnectCause.LOCAL));
     }
@@ -223,6 +231,13 @@ public class ManagedConnection extends Connection {
         this.setConnectionCapabilities(finalCaps);
         Log.i(TAG, String.format("Final capabilities as list=[%s]",
                 Connection.capabilitiesToString(this.getConnectionCapabilities())));
+    }
+
+    public void updateConnectionProperties(int newProperties) {
+        int currentProperties = getConnectionProperties();
+        setConnectionProperties(currentProperties | newProperties);
+        Log.i(TAG, "Updated properties for callId " + getTelecomCallId() + " to: "
+            + Connection.propertiesToString(currentProperties));
     }
 
     private void processDestroy() {

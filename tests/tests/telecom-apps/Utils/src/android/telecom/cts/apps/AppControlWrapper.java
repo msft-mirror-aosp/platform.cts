@@ -310,6 +310,20 @@ public class AppControlWrapper {
     }
 
     /**
+     * Sets the connection properties
+     */
+    public void setConnectionProperties(String callId, int properties) throws RemoteException {
+        Log.i(TAG, "setConnectionProperties: callId=" + callId + ", properties=" + properties);
+        try {
+            NoDataTransaction transactionResult = mBinder.setConnectionProperties(callId,
+                properties);
+            maybeFailTest(transactionResult);
+        } catch (RemoteException e) {
+            handleRemoteException(e, "setConnectionProperties");
+        }
+    }
+
+    /**
      * Sets the mute state
      */
     public void setMuteState(String id, boolean isMuted) throws RemoteException {

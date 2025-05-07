@@ -82,6 +82,18 @@ public class WaitForInCallService {
         }
     }
 
+    public static void verifyAudioProcessingUseCase(InCallServiceMethods verifierMethods,
+        String id, int targetUseCase) {
+      List<Call> mCalls = verifierMethods.getOngoingCalls();
+      Call targetCall = getCallWithId(mCalls, id);
+      boolean containsCall = targetCall != null;
+
+      if (!containsCall) {
+        fail("call " + id + " is not in map - it may have been dropped");
+      }
+      assertCallAudioProcessingUseCase(targetCall, targetUseCase);
+    }
+
     public static void waitForInCallServiceBinding(InCallServiceMethods verifierMethods) {
         WaitUntil.waitUntilConditionIsTrueOrTimeout(
                 new Condition() {
@@ -194,6 +206,24 @@ public class WaitForInCallService {
                         + " actual extra("
                         + extraToVerify
                         + ")=[false]");
+    }
+
+    private static void assertCallAudioProcessingUseCase(final Call call, final int useCase) {
+      WaitUntil.waitUntilConditionIsTrueOrTimeout(
+          new Condition() {
+            @Override
+            public Object expected() {
+              return useCase;
+            }
+
+            @Override
+            public Object actual() {
+              return call.getAudioProcessingUseCase();
+            }
+          }, WaitUntil.DEFAULT_TIMEOUT_MS,
+          "Expected AudioProcessingUseCase=[" + useCase + "];"
+              + " actual AudioProcessingUseCase[" + call.getAudioProcessingUseCase() + "]"
+      );
     }
 
     private static String stateToString(int state) {

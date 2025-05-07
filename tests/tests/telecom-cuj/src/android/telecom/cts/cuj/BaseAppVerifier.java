@@ -257,6 +257,11 @@ public class BaseAppVerifier {
         return mBaseAppVerifierImpl.getRandomAttributes(name, isOutgoing, isHoldable);
     }
 
+    public void setConnectionProperties(AppControlWrapper appControl, String callId, int properties)
+        throws Exception {
+        mBaseAppVerifierImpl.setConnectionPropertiesOnCall(appControl, callId, properties);
+    }
+
     public String addOutgoingCallAndVerify(AppControlWrapper appControl)
             throws Exception {
         CallAttributes outgoingAttributes = mBaseAppVerifierImpl.getRandomAttributes(
@@ -408,6 +413,25 @@ public class BaseAppVerifier {
 
     public void selectCallPhoneAccount(String id, PhoneAccountHandle handle) throws Exception {
         mBaseAppVerifierImpl.selectCallPhoneAccount(id, handle);
+    }
+    public void enterBackgroundAudioProcessingViaInCallService(String id, int useCase) {
+        mBaseAppVerifierImpl.enterBackgroundAudioProcessingViaInCallService(id, useCase);
+    }
+
+    public void enterBackgroundAudioProcessingViaInCallServiceAndVerify(String id, int useCase)
+        throws Exception {
+        mBaseAppVerifierImpl.enterBackgroundAudioProcessingViaInCallServiceAndVerify(id, useCase);
+    }
+
+    public void exitBackgroundAudioProcessingViaInCallService(String id, boolean shouldRing,
+        int useCase) {
+        mBaseAppVerifierImpl.exitBackgroundAudioProcessingViaInCallService(id, shouldRing, useCase);
+    }
+
+    public void exitBackgroundAudioProcessingViaInCallServiceAndVerify(String id,
+        boolean shouldRing, int useCase) throws Exception {
+        mBaseAppVerifierImpl.exitBackgroundAudioProcessingViaInCallServiceAndVerify(id, shouldRing,
+            useCase);
     }
 
     public boolean isCallHoldable(String id) {
