@@ -16,17 +16,19 @@
 
 package android.security.net.config.cts;
 
-import android.net.http.AndroidHttpClient;
+import static org.junit.Assert.fail;
 
-import junit.framework.Assert;
+import android.net.http.AndroidHttpClient;
 
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpGet;
+import org.junit.AssumptionViolatedException;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.net.UnknownHostException;
 import java.security.KeyStore;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateFactory;
@@ -41,7 +43,7 @@ import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
 import javax.net.ssl.X509TrustManager;
 
-public final class TestUtils extends Assert {
+public final class TestUtils {
 
     private TestUtils() {
     }
@@ -96,15 +98,21 @@ public final class TestUtils extends Assert {
                     (SSLSocket) SSLContext.getDefault().getSocketFactory().createSocket(host, port);
             s.startHandshake();
             fail("Connection to " + host + ":" + port + " succeeded");
+        } catch (UnknownHostException e) {
+            throw new AssumptionViolatedException("Unable to resolve " + host, e);
         } catch (SSLHandshakeException expected) {
         }
     }
 
     private static void assertSslSocketSucceeds(String host, int port)
             throws Exception {
-        SSLSocket s =
-                (SSLSocket) SSLContext.getDefault().getSocketFactory().createSocket(host, port);
-        s.startHandshake();
+        try {
+            SSLSocket s =
+                    (SSLSocket) SSLContext.getDefault().getSocketFactory().createSocket(host, port);
+            s.startHandshake();
+        } catch (UnknownHostException e) {
+            throw new AssumptionViolatedException("Unable to resolve " + host, e);
+        }
     }
 
     private static void assertUrlConnectionFails(String host, int port, boolean https)
@@ -114,15 +122,21 @@ public final class TestUtils extends Assert {
         try {
             connection.getInputStream();
             fail("Connection to " + host + ":" + port + " succeeded");
+        } catch (UnknownHostException e) {
+            throw new AssumptionViolatedException("Unable to resolve " + host, e);
         } catch (IOException expected) {
         }
     }
 
     private static void assertUrlConnectionSucceeds(String host, int port, boolean https)
             throws Exception {
-        URL url = new URL((https ? "https://" : "http://") + host + ":" + port);
-        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-        connection.getInputStream();
+        try {
+            URL url = new URL((https ? "https://" : "http://") + host + ":" + port);
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            connection.getInputStream();
+        } catch (UnknownHostException e) {
+            throw new AssumptionViolatedException("Unable to resolve " + host, e);
+        }
     }
 
     private static void assertHttpClientSucceeds(String host, int port, boolean https)
@@ -131,6 +145,8 @@ public final class TestUtils extends Assert {
         AndroidHttpClient httpClient = AndroidHttpClient.newInstance(null);
         try {
             HttpResponse response = httpClient.execute(new HttpGet(url.toString()));
+        } catch (UnknownHostException e) {
+            throw new AssumptionViolatedException("Unable to resolve " + host, e);
         } finally {
             httpClient.close();
         }
@@ -143,6 +159,8 @@ public final class TestUtils extends Assert {
         try {
             HttpResponse response = httpClient.execute(new HttpGet(url.toString()));
             fail("Connection to " + host + ":" + port + " succeeded");
+        } catch (UnknownHostException e) {
+            throw new AssumptionViolatedException("Unable to resolve " + host, e);
         } catch (IOException expected) {
         } finally {
             httpClient.close();
