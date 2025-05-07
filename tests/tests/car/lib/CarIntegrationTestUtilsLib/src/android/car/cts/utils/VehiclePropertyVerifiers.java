@@ -711,24 +711,11 @@ public class VehiclePropertyVerifiers {
     }
 
     /**
-     * Gets the verifier for {@code HVAC_TEMPERATURE_SET}.
-     */
-    public static VehiclePropertyVerifier<Float> getHvacTemperatureSetVerifier(
-            CarPropertyManager carPropertyManager) {
-        return getHvacTemperatureSetVerifierBuilder().setCarPropertyManager(carPropertyManager)
-                .build();
-    }
-
-    /**
      * Gets the verifier builder for {@code HVAC_TEMPERATURE_SET}.
      */
     public static VehiclePropertyVerifier.Builder<Float> getHvacTemperatureSetVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.HVAC_TEMPERATURE_SET,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_SEAT,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_ONCHANGE,
-                        Float.class)
+        return VehiclePropertyVerifier.<Float>newDefaultBuilder(
+                        VehiclePropertyIds.HVAC_TEMPERATURE_SET)
                 .setPossiblyDependentOnHvacPowerOn()
                 .requireMinMaxValues()
                 .setCarPropertyConfigVerifier(
@@ -794,12 +781,14 @@ public class VehiclePropertyVerifiers {
                                                     % configArray.get(5))
                                     .isEqualTo(0);
                             assertWithMessage(
-                                    "HVAC_TEMPERATURE_SET number of supported values for "
-                                            + "Celsius and Fahrenheit must be equal.").that(
-                                    (configArray.get(1) - configArray.get(0))
-                                            / configArray.get(2)).isEqualTo(
-                                    (configArray.get(4) - configArray.get(3))
-                                            / configArray.get(5));
+                                            "HVAC_TEMPERATURE_SET number of supported values for "
+                                                    + "Celsius and Fahrenheit must be equal.")
+                                    .that(
+                                            (configArray.get(1) - configArray.get(0))
+                                                    / configArray.get(2))
+                                    .isEqualTo(
+                                            (configArray.get(4) - configArray.get(3))
+                                                    / configArray.get(5));
 
                             int[] supportedAreaIds = carPropertyConfig.getAreaIds();
                             int configMinValue = configArray.get(0);
@@ -809,26 +798,38 @@ public class VehiclePropertyVerifiers {
                                 Float minValueFloat = (Float) carPropertyConfig.getMinValue(areaId);
                                 Integer minValueInt = (int) (minValueFloat * 10);
                                 assertWithMessage(
-                                        "HVAC_TEMPERATURE_SET minimum value: " + minValueInt
-                                        + " at areaId: " + areaId + " must be equal to minimum"
-                                        + " value specified in config"
-                                        + " array: " + configMinValue)
+                                                "HVAC_TEMPERATURE_SET minimum value: "
+                                                        + minValueInt
+                                                        + " at areaId: "
+                                                        + areaId
+                                                        + " must be equal to minimum"
+                                                        + " value specified in config"
+                                                        + " array: "
+                                                        + configMinValue)
                                         .that(minValueInt)
                                         .isEqualTo(configMinValue);
 
                                 Float maxValueFloat = (Float) carPropertyConfig.getMaxValue(areaId);
                                 Integer maxValueInt = (int) (maxValueFloat * 10);
                                 assertWithMessage(
-                                        "HVAC_TEMPERATURE_SET maximum value: " + maxValueInt
-                                        + " at areaId: " + areaId + " must be equal to maximum"
-                                        + " value specified in config"
-                                        + " array: " + configMaxValue)
+                                                "HVAC_TEMPERATURE_SET maximum value: "
+                                                        + maxValueInt
+                                                        + " at areaId: "
+                                                        + areaId
+                                                        + " must be equal to maximum"
+                                                        + " value specified in config"
+                                                        + " array: "
+                                                        + configMaxValue)
                                         .that(maxValueInt)
                                         .isEqualTo(configMaxValue);
                             }
                         })
                 .setCarPropertyValueVerifier(
-                        (verifierContext, carPropertyConfig, propertyId, areaId, timestampNanos,
+                        (verifierContext,
+                                carPropertyConfig,
+                                propertyId,
+                                areaId,
+                                timestampNanos,
                                 tempInCelsius) -> {
                             List<Integer> configArray = carPropertyConfig.getConfigArray();
                             if (configArray.isEmpty()) {
@@ -837,11 +838,12 @@ public class VehiclePropertyVerifiers {
                             Integer minTempInCelsius = configArray.get(0);
                             Integer maxTempInCelsius = configArray.get(1);
                             Integer incrementInCelsius = configArray.get(2);
-                            VehiclePropertyVerifier.verifyHvacTemperatureIsValid(tempInCelsius,
-                                    minTempInCelsius, maxTempInCelsius, incrementInCelsius);
-                        })
-                .addReadPermission(Car.PERMISSION_CONTROL_CAR_CLIMATE)
-                .addWritePermission(Car.PERMISSION_CONTROL_CAR_CLIMATE);
+                            VehiclePropertyVerifier.verifyHvacTemperatureIsValid(
+                                    tempInCelsius,
+                                    minTempInCelsius,
+                                    maxTempInCelsius,
+                                    incrementInCelsius);
+                        });
     }
 
     /**
