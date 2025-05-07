@@ -62,7 +62,6 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
-
 @RunWith(AndroidJUnit4.class)
 @AppModeFull(reason = "Cannot get WifiManager in instant app mode")
 public class ScanResultTest extends WifiJUnit4TestBase {
@@ -381,12 +380,17 @@ public class ScanResultTest extends WifiJUnit4TestBase {
 
         try {
             synchronized (sMySync) {
+                int numRetry = 0;
                 for (int i = 0; i < SCAN_REQUEST_THROTTLE_MAX_IN_TIME_WINDOW_FG_APPS; ++i) {
                     sWifiManager.startScan();
                     // TODO(b/277663385): Increased timeout until cuttlefish's mac80211_hwsim uses
                     //  more than 1 channel.
-                    assertTrue("Iteration #" + i,
-                            waitForBroadcast(SCAN_WAIT_MSEC * 2, STATE_SCAN_RESULTS_AVAILABLE));
+                    if (!waitForBroadcast(SCAN_WAIT_MSEC * 2, STATE_SCAN_RESULTS_AVAILABLE)) {
+                        // scan is interrupted; redo a new scan
+                        i--;
+                        numRetry++;
+                    }
+                    assertTrue("Scan retries exceeded 3", numRetry <= 3);
                 }
 
                 sWifiManager.startScan();
