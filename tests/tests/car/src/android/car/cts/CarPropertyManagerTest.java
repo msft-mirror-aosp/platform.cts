@@ -32,7 +32,6 @@ import static android.car.cts.utils.VehiclePropertyVerifiers.getHvacAcOnVerifier
 import static android.car.cts.utils.VehiclePropertyVerifiers.getHvacActualFanSpeedRpmVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getHvacAutoOnVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getHvacAutoRecircOnVerifierBuilder;
-import static android.car.cts.utils.VehiclePropertyVerifiers.getHvacDefrosterVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getHvacDualOnVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getHvacFanDirectionAvailableVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getHvacFanDirectionVerifierBuilder;
@@ -1703,7 +1702,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         getSeatWalkInPosVerifierBuilder(),
                         getSeatAirbagsDeployedVerifierBuilder(),
                         getSeatOccupancyVerifierBuilder(),
-                        getHvacDefrosterVerifierBuilder(),
                         getHvacSideMirrorHeatVerifierBuilder(),
                         getHvacSteeringWheelHeatVerifierBuilder(),
                         getHvacTemperatureDisplayUnitsVerifierBuilder(),
