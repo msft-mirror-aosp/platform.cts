@@ -25,6 +25,7 @@ import static android.telephony.satellite.SatelliteManager.SATELLITE_MODEM_STATE
 import static android.telephony.satellite.SatelliteManager.SATELLITE_MODEM_STATE_OFF;
 
 import static com.android.internal.telephony.satellite.SatelliteController.TIMEOUT_TYPE_EVALUATE_ESOS_PROFILES_PRIORITIZATION_DURATION_MILLIS;
+
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertArrayEquals;
@@ -3253,6 +3254,67 @@ public class SatelliteManagerTestBase {
         assertEquals(allowed, result.first);
     }
 
+    protected static Pair<SatelliteAccessConfiguration, Integer>
+            requestSatelliteAccessConfigurationForCurrentLocation() {
+        final AtomicReference<SatelliteAccessConfiguration> satelliteAccessConfiguration =
+                new AtomicReference<>();
+        final AtomicReference<Integer> callback = new AtomicReference<>();
+        CountDownLatch latch = new CountDownLatch(1);
+        OutcomeReceiver<SatelliteAccessConfiguration, SatelliteManager.SatelliteException>
+                receiver =
+                        new OutcomeReceiver<>() {
+                            @Override
+                            public void onResult(SatelliteAccessConfiguration result) {
+                                logd(
+                                        "requestSatelliteAccessConfigurationForCurrentLocation:"
+                                                + " result="
+                                                + result);
+                                satelliteAccessConfiguration.set(result);
+                                latch.countDown();
+                            }
+
+                            @Override
+                            public void onError(SatelliteManager.SatelliteException exception) {
+                                logd(
+                                        "requestSatelliteAccessConfigurationForCurrentLocation:"
+                                                + " onError="
+                                                + exception.getErrorCode());
+                                callback.set(exception.getErrorCode());
+                                latch.countDown();
+                            }
+                        };
+
+        sSatelliteManager.requestSatelliteAccessConfigurationForCurrentLocation(
+                getContext().getMainExecutor(), receiver);
+        try {
+            assertTrue(latch.await(TIMEOUT, TimeUnit.MILLISECONDS));
+        } catch (InterruptedException e) {
+            fail(e.toString());
+        }
+        return new Pair<>(satelliteAccessConfiguration.get(), callback.get());
+    }
+
+    protected static void verifySatelliteAccessConfigurationExistence(boolean accessAllowed) {
+        grantSatellitePermission();
+        logd(
+                "verifySatelliteAccessConfigurationExistence: calling"
+                        + " requestSatelliteAccessConfigurationForCurrentLocation");
+        Pair<SatelliteAccessConfiguration, Integer> resultReceiver =
+                requestSatelliteAccessConfigurationForCurrentLocation();
+        logd(
+                "verifySatelliteAccessConfigurationExistence: result of"
+                        + " requestSatelliteAccessConfigurationForCurrentLocation: "
+                        + resultReceiver.first
+                        + ", "
+                        + resultReceiver.second);
+        SatelliteAccessConfiguration queriedSatelliteAccessConfiguration = resultReceiver.first;
+        if (accessAllowed) {
+            assertNotNull(queriedSatelliteAccessConfiguration);
+        } else {
+            assertNull(queriedSatelliteAccessConfiguration);
+        }
+    }
+
     protected static void verifySatelliteNotAllowedErrorReason(int expectedError) {
         grantSatellitePermission();
         logd(
@@ -3308,6 +3370,7 @@ public class SatelliteManagerTestBase {
 
     @Nullable
     protected static Location getLastKnownLocation() {
+        assertTrue("The location settings is disabled", sLocationManager.isLocationEnabled());
         Location result = null;
         for (String provider : sLocationManager.getProviders(true)) {
             Location location = sLocationManager.getLastKnownLocation(provider);
