@@ -701,27 +701,13 @@ public class VehiclePropertyVerifiers {
     }
 
     /**
-     * Gets the verifier for {@code HVAC_TEMPERATURE_CURRENT}.
-     */
-    public static VehiclePropertyVerifier<Float> getHvacTemperatureCurrentVerifier(
-            CarPropertyManager carPropertyManager) {
-        return getHvacTemperatureCurrentVerifierBuilder()
-                .setCarPropertyManager(carPropertyManager).build();
-    }
-
-    /**
      * Gets the verifier builder for {@code HVAC_TEMPERATURE_CURRENT}.
      */
     public static VehiclePropertyVerifier.Builder<Float>
             getHvacTemperatureCurrentVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.HVAC_TEMPERATURE_CURRENT,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_SEAT,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_ONCHANGE,
-                        Float.class)
-                .setPossiblyDependentOnHvacPowerOn()
-                .addReadPermission(Car.PERMISSION_CONTROL_CAR_CLIMATE);
+        return VehiclePropertyVerifier.<Float>newDefaultBuilder(
+                        VehiclePropertyIds.HVAC_TEMPERATURE_CURRENT)
+                .setPossiblyDependentOnHvacPowerOn();
     }
 
     /**
