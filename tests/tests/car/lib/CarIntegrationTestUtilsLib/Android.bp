@@ -37,8 +37,10 @@ java_library {
     libs: [
         "android.car",
         "android.car-test-stubs",
+        "framework-annotations-lib",
     ],
     java_resources: [
         ":CarSvcProps_JSON",
     ],
+    sdk_version: "test_current",
 }
