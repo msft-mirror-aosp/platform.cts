@@ -58,7 +58,6 @@ import android.media.AudioDeviceAttributes;
 import android.media.AudioDeviceInfo;
 import android.os.SystemClock;
 import android.platform.test.annotations.AppModeFull;
-import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.util.Log;
 import android.util.SparseArray;
@@ -440,7 +439,6 @@ public final class CarAudioManagerTest extends AbstractCarTestCase {
     @ApiTest(apis = {"android.car.media.CarAudioManager#getVolumeGroupInfosForZone",
             "android.car.media.CarVolumeGroupInfo#getAudioDeviceAttributes",
             "android.car.media.CarVolumeGroupInfo#isDefault"})
-    @RequiresFlagsEnabled(Flags.FLAG_CAR_AUDIO_DYNAMIC_DEVICES)
     public void getVolumeGroupInfosForZone_forPrimaryZone_withAudioDeviceAttributes()
             throws Exception {
         assumeDynamicRoutingIsEnabled();
@@ -1113,30 +1111,19 @@ public final class CarAudioManagerTest extends AbstractCarTestCase {
     }
 
     @Test
-    @EnsureHasPermission(Car.PERMISSION_CAR_CONTROL_AUDIO_SETTINGS)
-    @ApiTest(apis = {"android.car.media.CarAudioManager#getCurrentAudioZoneConfigInfo"})
-    public void getCurrentAudioZoneConfigInfo() {
-        assumeDynamicRoutingIsEnabled();
-        List<TestZoneConfigIdInfo> zoneConfigs = assumeSecondaryZoneConfigs();
-
-        CarAudioZoneConfigInfo currentZoneConfigInfo =
-                mCarAudioManager.getCurrentAudioZoneConfigInfo(mZoneId);
-
-        assertWithMessage("Current zone config info")
-                .that(TestZoneConfigIdInfo.getZoneConfigFromInfo(currentZoneConfigInfo))
-                .isIn(zoneConfigs);
-    }
-
-    @Test
-    @EnsureHasPermission({Car.PERMISSION_CAR_CONTROL_AUDIO_SETTINGS,
-            Car.PERMISSION_CAR_CONTROL_AUDIO_VOLUME})
-    @ApiTest(apis = {"android.car.media.CarAudioManager#getCurrentAudioZoneConfigInfo",
-            "android.car.media.CarAudioZoneConfigInfo#isActive",
-            "android.car.media.CarAudioZoneConfigInfo#isSelected",
-            "android.car.media.CarAudioZoneConfigInfo#isDefault",
-            "android.car.media.CarAudioZoneConfigInfo#getConfigVolumeGroups"})
-    @RequiresFlagsEnabled(Flags.FLAG_CAR_AUDIO_DYNAMIC_DEVICES)
-    public void getCurrentAudioZoneConfigInfo_withDynamicDevicesEnabled() throws Exception {
+    @EnsureHasPermission({
+        Car.PERMISSION_CAR_CONTROL_AUDIO_SETTINGS,
+        Car.PERMISSION_CAR_CONTROL_AUDIO_VOLUME
+    })
+    @ApiTest(
+            apis = {
+                "android.car.media.CarAudioManager#getCurrentAudioZoneConfigInfo",
+                "android.car.media.CarAudioZoneConfigInfo#isActive",
+                "android.car.media.CarAudioZoneConfigInfo#isSelected",
+                "android.car.media.CarAudioZoneConfigInfo#isDefault",
+                "android.car.media.CarAudioZoneConfigInfo#getConfigVolumeGroups"
+            })
+    public void getCurrentAudioZoneConfigInfo() throws Exception {
         assumeDynamicRoutingIsEnabled();
         List<TestZoneConfigIdInfo> zoneConfigs = assumeSecondaryZoneConfigs();
         setUpDefaultCarAudioConfigurationForZone(mZoneId);
@@ -1144,7 +1131,7 @@ public final class CarAudioManagerTest extends AbstractCarTestCase {
         CarAudioZoneConfigInfo currentZoneConfigInfo =
                 mCarAudioManager.getCurrentAudioZoneConfigInfo(mZoneId);
 
-        assertWithMessage("Current zone config info, with dynamic device enabled")
+        assertWithMessage("Current zone config info")
                 .that(TestZoneConfigIdInfo.getZoneConfigFromInfo(currentZoneConfigInfo))
                 .isIn(zoneConfigs);
         assertWithMessage("Current zone config info active status")
@@ -1217,8 +1204,13 @@ public final class CarAudioManagerTest extends AbstractCarTestCase {
 
     @Test
     @EnsureHasPermission(Car.PERMISSION_CAR_CONTROL_AUDIO_SETTINGS)
-    @ApiTest(apis = {"android.car.media.CarAudioManager#switchAudioZoneToConfig"})
-    @RequiresFlagsDisabled(Flags.FLAG_CAR_AUDIO_DYNAMIC_DEVICES)
+    @ApiTest(
+            apis = {
+                "android.car.media.CarAudioManager#switchAudioZoneToConfig",
+                "android.car.media.CarAudioZoneConfigInfo#isActive",
+                "android.car.media.CarAudioZoneConfigInfo#isSelected",
+                "android.car.media.CarAudioZoneConfigInfo#getConfigVolumeGroups"
+            })
     public void switchAudioZoneToConfig() throws Exception {
         assumeDynamicRoutingIsEnabled();
         assumeSecondaryZoneConfigs();
@@ -1233,49 +1225,24 @@ public final class CarAudioManagerTest extends AbstractCarTestCase {
 
         callback.receivedApproval();
         assertWithMessage("Zone configuration switching status")
-                .that(callback.mIsSuccessful).isTrue();
+                .that(callback.mIsSuccessful)
+                .isTrue();
         assertWithMessage("Updated zone configuration")
-                .that(callback.mZoneConfigInfo).isEqualTo(zoneConfigInfoSwitchedTo);
-        callback.reset();
-        mCarAudioManager.switchAudioZoneToConfig(zoneConfigInfoSaved, callbackExecutor, callback);
-        callback.receivedApproval();
-    }
-
-    @Test
-    @EnsureHasPermission(Car.PERMISSION_CAR_CONTROL_AUDIO_SETTINGS)
-    @ApiTest(apis = {"android.car.media.CarAudioManager#switchAudioZoneToConfig",
-            "android.car.media.CarAudioZoneConfigInfo#isActive",
-            "android.car.media.CarAudioZoneConfigInfo#isSelected",
-            "android.car.media.CarAudioZoneConfigInfo#getConfigVolumeGroups"})
-    @RequiresFlagsEnabled(Flags.FLAG_CAR_AUDIO_DYNAMIC_DEVICES)
-    public void switchAudioZoneToConfig_withDynamicDevicesEnabled() throws Exception {
-        assumeDynamicRoutingIsEnabled();
-        assumeSecondaryZoneConfigs();
-        CarAudioZoneConfigInfo zoneConfigInfoSaved =
-                mCarAudioManager.getCurrentAudioZoneConfigInfo(mZoneId);
-        CarAudioZoneConfigInfo zoneConfigInfoSwitchedTo = getNonCurrentZoneConfig(mZoneId);
-        Executor callbackExecutor = Executors.newFixedThreadPool(1);
-        TestSwitchAudioZoneConfigCallback callback = new TestSwitchAudioZoneConfigCallback();
-
-        mCarAudioManager.switchAudioZoneToConfig(zoneConfigInfoSwitchedTo, callbackExecutor,
-                callback);
-
-        callback.receivedApproval();
-        assertWithMessage("Zone configuration switching status with dynamic devices enabled")
-                .that(callback.mIsSuccessful).isTrue();
-        assertWithMessage("Updated zone configuration with dynamic devices enabled")
                 .that(callback.mZoneConfigInfo.hasSameConfigInfo(zoneConfigInfoSwitchedTo))
                 .isTrue();
-        assertWithMessage("Switched configuration active status with dynamic devices enable")
-                .that(callback.mZoneConfigInfo.isActive()).isTrue();
-        assertWithMessage("Switched configuration selected status with dynamic devices enable")
-                .that(callback.mZoneConfigInfo.isSelected()).isTrue();
+        assertWithMessage("Switched configuration active status")
+                .that(callback.mZoneConfigInfo.isActive())
+                .isTrue();
+        assertWithMessage("Switched configuration selected status")
+                .that(callback.mZoneConfigInfo.isSelected())
+                .isTrue();
         CarAudioZoneConfigInfo updatedPreviousConfig =
                 mCarAudioManager.getAudioZoneConfigInfos(mZoneId).stream()
                         .filter(info -> info.getConfigId() == zoneConfigInfoSaved.getConfigId())
                         .findFirst().orElseThrow();
-        assertWithMessage("Previous configuration selected status with dynamic devices enable")
-                .that(updatedPreviousConfig.isSelected()).isFalse();
+        assertWithMessage("Previous configuration selected status")
+                .that(updatedPreviousConfig.isSelected())
+                .isFalse();
         callback.reset();
         mCarAudioManager.switchAudioZoneToConfig(zoneConfigInfoSaved, callbackExecutor, callback);
         callback.receivedApproval();
