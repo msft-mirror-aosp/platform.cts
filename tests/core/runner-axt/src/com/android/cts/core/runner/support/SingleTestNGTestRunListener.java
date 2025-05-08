@@ -35,6 +35,8 @@ public class SingleTestNGTestRunListener implements org.testng.ITestListener {
 
     private Map<String, Throwable> failures = new LinkedHashMap<>();
 
+    private Map<String, Throwable> skippedTests = new LinkedHashMap<>();
+
     private static class Prefixes {
         @SuppressWarnings("unused")
         private static final String INFORMATIONAL_MARKER =  "[----------]";
@@ -86,8 +88,10 @@ public class SingleTestNGTestRunListener implements org.testng.ITestListener {
 
     @Override
     public void onTestSkipped(org.testng.ITestResult result) {
-        System.out.println(String.format("%s %s", Prefixes.SKIPPED_TEST_MARKER,
-              getId(result)));
+        String id = getId(result);
+        Throwable throwable = result.getThrowable();
+        System.out.println(String.format("%s %s", Prefixes.SKIPPED_TEST_MARKER, id));
+        skippedTests.put(id, throwable);
     }
 
     @Override
