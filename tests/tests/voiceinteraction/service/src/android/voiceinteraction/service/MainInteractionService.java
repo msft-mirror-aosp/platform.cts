@@ -20,6 +20,7 @@ import android.content.ComponentName;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
 import android.service.voice.VoiceInteractionService;
 import android.util.Log;
 import android.voiceinteraction.common.Utils;
@@ -42,10 +43,27 @@ public class MainInteractionService extends VoiceInteractionService {
     public int onStartCommand(Intent intent, int flags, int startId) {
         Log.i(TAG, "onStartCommand received");
         mIntent = intent;
+        if (mIntent == null) {
+            Log.wtf(TAG, "Can't start because intent is null");
+            return START_NOT_STICKY;
+        }
 
-        if (mIntent == null || !mReady) {
-            Log.wtf(TAG, "Can't start because either intent is null or onReady() "
-                    + "is not called yet. mIntent = " + mIntent + ", mReady = " + mReady);
+        if (!mReady) {
+            Log.i(TAG, "Can't start because onReady() is not called for first check, will check again after 1s");
+            new Handler(getMainLooper()).postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    Log.i(TAG, "Check again whether onReady() is called");
+                    if (!mReady) {
+                        Log.wtf(TAG, "Can't start because onReady() is not called");
+                        return;
+                    }
+                    final int testEvent = mIntent.getIntExtra(Utils.KEY_TEST_EVENT, -1);
+                    if (testEvent == Utils.VIS_NORMAL_TEST) {
+                        maybeStart();
+                    }
+                }
+            }, 1000);
             return START_NOT_STICKY;
         }
 
