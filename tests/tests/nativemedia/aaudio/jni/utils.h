@@ -33,6 +33,12 @@
 int64_t getNanoseconds(clockid_t clockId = CLOCK_MONOTONIC);
 const char* performanceModeToString(aaudio_performance_mode_t mode);
 const char* sharingModeToString(aaudio_sharing_mode_t mode);
+const char* directionToString(aaudio_direction_t direction);
+const char* formatToString(aaudio_format_t format);
+const char* usageToString(aaudio_usage_t usage);
+const char* contentTypeToString(aaudio_content_type_t type);
+const char* channelMaskToString(aaudio_channel_mask_t mask);
+const char* inputPresetToString(aaudio_input_preset_t inputPreset);
 
 static constexpr const char* FEATURE_PLAYBACK = "android.hardware.audio.output";
 static constexpr const char* FEATURE_RECORDING = "android.hardware.microphone";

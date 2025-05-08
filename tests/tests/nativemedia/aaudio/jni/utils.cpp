@@ -52,7 +52,7 @@ const char* performanceModeToString(aaudio_performance_mode_t mode) {
         case AAUDIO_PERFORMANCE_MODE_POWER_SAVING_OFFLOADED:
             return "POWER_SAVING_OFFLOAD";
     }
-    return "UNKNOWN";
+    return "PERF_UNKNOWN";
 }
 
 const char* sharingModeToString(aaudio_sharing_mode_t mode) {
@@ -60,7 +60,189 @@ const char* sharingModeToString(aaudio_sharing_mode_t mode) {
         case AAUDIO_SHARING_MODE_SHARED: return "SHARED";
         case AAUDIO_SHARING_MODE_EXCLUSIVE: return "EXCLUSIVE";
     }
-    return "UNKNOWN";
+    return "SHAR_UNKNOWN";
+}
+
+const char* directionToString(aaudio_direction_t direction) {
+    switch (direction) {
+        case AAUDIO_DIRECTION_OUTPUT:
+            return "OUTPUT";
+        case AAUDIO_DIRECTION_INPUT:
+            return "INPUT";
+    }
+    return "DIR_UNKNOWN";
+}
+
+const char* formatToString(aaudio_format_t format) {
+    switch (format) {
+        case AAUDIO_FORMAT_INVALID:
+            return "INVALID";
+        case AAUDIO_FORMAT_UNSPECIFIED:
+            return "UNSPECIFIED";
+        case AAUDIO_FORMAT_PCM_I16:
+            return "PCM_I16";
+        case AAUDIO_FORMAT_PCM_FLOAT:
+            return "PCM_FLOAT";
+        case AAUDIO_FORMAT_PCM_I24_PACKED:
+            return "PCM_I24P";
+        case AAUDIO_FORMAT_PCM_I32:
+            return "PCM_I32";
+        case AAUDIO_FORMAT_IEC61937:
+            return "IEC61937";
+        case AAUDIO_FORMAT_MP3:
+            return "MP3";
+        case AAUDIO_FORMAT_AAC_LC:
+            return "AAC_LC";
+        case AAUDIO_FORMAT_AAC_HE_V1:
+            return "AAC_HE_V1";
+        case AAUDIO_FORMAT_AAC_HE_V2:
+            return "AAC_HE_V2";
+        case AAUDIO_FORMAT_AAC_ELD:
+            return "AAC_ELD";
+        case AAUDIO_FORMAT_AAC_XHE:
+            return "AAC_XHE";
+        case AAUDIO_FORMAT_OPUS:
+            return "OPUS";
+    }
+    return "FMT_UNKNOWN";
+}
+
+const char* usageToString(aaudio_usage_t usage) {
+    switch (usage) {
+        case AAUDIO_UNSPECIFIED:
+            return "UNSPECIFIED";
+        case AAUDIO_USAGE_MEDIA:
+            return "MEDIA";
+        case AAUDIO_USAGE_VOICE_COMMUNICATION:
+            return "VOICE_COMMUNICATION";
+        case AAUDIO_USAGE_VOICE_COMMUNICATION_SIGNALLING:
+            return "VOICE_COMMUNICATION_SIGNALLING";
+        case AAUDIO_USAGE_ALARM:
+            return "ALARM";
+        case AAUDIO_USAGE_NOTIFICATION:
+            return "NOTIFICATION";
+        case AAUDIO_USAGE_NOTIFICATION_RINGTONE:
+            return "NOTIFICATION_RINGTONE";
+        case AAUDIO_USAGE_NOTIFICATION_EVENT:
+            return "NOTIFICATION_EVENT";
+        case AAUDIO_USAGE_ASSISTANCE_ACCESSIBILITY:
+            return "ASSISTANCE_ACCESSIBILITY";
+        case AAUDIO_USAGE_ASSISTANCE_NAVIGATION_GUIDANCE:
+            return "ASSISTANCE_NAVIGATION_GUIDANCE";
+        case AAUDIO_USAGE_ASSISTANCE_SONIFICATION:
+            return "ASSISTANCE_SONIFICATION";
+        case AAUDIO_USAGE_GAME:
+            return "GAME";
+        case AAUDIO_USAGE_ASSISTANT:
+            return "ASSISTANT";
+        case AAUDIO_SYSTEM_USAGE_EMERGENCY:
+            return "SYSTEM_USAGE_EMERGENCY";
+        case AAUDIO_SYSTEM_USAGE_SAFETY:
+            return "SYSTEM_USAGE_SAFETY:";
+        case AAUDIO_SYSTEM_USAGE_VEHICLE_STATUS:
+            return "SYSTEM_USAGE_VEHICLE_STATUS";
+        case AAUDIO_SYSTEM_USAGE_ANNOUNCEMENT:
+            return "SYSTEM_USAGE_ANNOUNCEMENT";
+    }
+    return "USAGE_UNKNOWN";
+}
+
+const char* contentTypeToString(aaudio_content_type_t type) {
+    switch (type) {
+        case AAUDIO_UNSPECIFIED:
+            return "UNSPECIFIED";
+        case AAUDIO_CONTENT_TYPE_SPEECH:
+            return "SPEECH";
+        case AAUDIO_CONTENT_TYPE_MUSIC:
+            return "MUSIC";
+        case AAUDIO_CONTENT_TYPE_MOVIE:
+            return "MOVIE";
+        case AAUDIO_CONTENT_TYPE_SONIFICATION:
+            return "SONIFICATION";
+    }
+    return "CT_UNKNOWN";
+}
+
+const char* channelMaskToString(aaudio_channel_mask_t mask) {
+    switch (mask) {
+        case AAUDIO_UNSPECIFIED:
+            return "UNSPECIFIED";
+        case AAUDIO_CHANNEL_MONO:
+            return "MONO";
+        case AAUDIO_CHANNEL_STEREO:
+            return "STEREO";
+        case AAUDIO_CHANNEL_FRONT_BACK:
+            return "FRONT_BACK";
+        case AAUDIO_CHANNEL_2POINT1:
+            return "2POINT1";
+        case AAUDIO_CHANNEL_TRI:
+            return "TRI";
+        case AAUDIO_CHANNEL_TRI_BACK:
+            return "TRI_BACK";
+        case AAUDIO_CHANNEL_3POINT1:
+            return "3POINT1";
+        case AAUDIO_CHANNEL_2POINT0POINT2:
+            return "2POINT0POINT2";
+        case AAUDIO_CHANNEL_2POINT1POINT2:
+            return "2POINT1POINT2";
+        case AAUDIO_CHANNEL_3POINT0POINT2:
+            return "3POINT0POINT2";
+        case AAUDIO_CHANNEL_3POINT1POINT2:
+            return "3POINT1POINT2";
+        case AAUDIO_CHANNEL_QUAD:
+            return "QUAD";
+        case AAUDIO_CHANNEL_QUAD_SIDE:
+            return "QUAD_SIDE";
+        case AAUDIO_CHANNEL_SURROUND:
+            return "SURROUND";
+        case AAUDIO_CHANNEL_PENTA:
+            return "PENTA";
+        case AAUDIO_CHANNEL_5POINT1:
+            return "5POINT1";
+        case AAUDIO_CHANNEL_5POINT1_SIDE:
+            return "5POINT1_SIDE";
+        case AAUDIO_CHANNEL_5POINT1POINT2:
+            return "5POINT1POINT2";
+        case AAUDIO_CHANNEL_5POINT1POINT4:
+            return "5POINT1POINT4";
+        case AAUDIO_CHANNEL_6POINT1:
+            return "6POINT1";
+        case AAUDIO_CHANNEL_7POINT1:
+            return "7POINT1";
+        case AAUDIO_CHANNEL_7POINT1POINT2:
+            return "7POINT1POINT2";
+        case AAUDIO_CHANNEL_7POINT1POINT4:
+            return "7POINT1POINT4";
+        case AAUDIO_CHANNEL_9POINT1POINT4:
+            return "9POINT1POINT4";
+        case AAUDIO_CHANNEL_9POINT1POINT6:
+            return "9POINT1POINT6";
+    }
+    return "CM_UNKNOWN";
+}
+
+const char* inputPresetToString(aaudio_input_preset_t inputPreset) {
+    switch (inputPreset) {
+        case AAUDIO_UNSPECIFIED:
+            return "UNSPECIFIED";
+        case AAUDIO_INPUT_PRESET_GENERIC:
+            return "GENERIC";
+        case AAUDIO_INPUT_PRESET_CAMCORDER:
+            return "CAMCORDER";
+        case AAUDIO_INPUT_PRESET_VOICE_RECOGNITION:
+            return "VOICE_RECOGNITION";
+        case AAUDIO_INPUT_PRESET_VOICE_COMMUNICATION:
+            return "VOICE_COMMUNICATION";
+        case AAUDIO_INPUT_PRESET_UNPROCESSED:
+            return "UNPROCESSED";
+        case AAUDIO_INPUT_PRESET_VOICE_PERFORMANCE:
+            return "VOICE_PERFORMANCE";
+        case AAUDIO_INPUT_PRESET_SYSTEM_ECHO_REFERENCE:
+            return "SYSTEM_ECHO_REFERENCE";
+        case AAUDIO_INPUT_PRESET_SYSTEM_HOTWORD:
+            return "SYSTEM_HOTWORD";
+    }
+    return "PRESET_UNKNOWN";
 }
 
 // Runs "pm list features" and attempts to find the specified feature in its output.
