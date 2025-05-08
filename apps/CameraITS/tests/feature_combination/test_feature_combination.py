@@ -141,7 +141,7 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
     txtpb_file_name = proto_file_name.replace('.pb', '.txtpb')
     txtpb_file_path = os.path.join(self.root_output_path, txtpb_file_name)
     with open(txtpb_file_path, 'w') as tf:
-      database_str = text_format.MessageToString(database)
+      database_str = text_format.MessageToString(database, as_one_line = True)
       tf.write(database_str)
 
     print(f'feature_query_proto:{txtpb_file_name}')
@@ -424,8 +424,7 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
                 )
                 if skip_test:
                   self._add_feature_combo_entry_to_proto(
-                      database, output_surfaces,
-                      feature_combination_info_pb2.SUPPORT_YES,
+                      database, output_surfaces, support_claimed,
                       passed, fps_range, is_stabilized)
                   continue
 
