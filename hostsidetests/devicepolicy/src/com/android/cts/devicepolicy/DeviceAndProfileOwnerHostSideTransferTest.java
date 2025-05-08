@@ -39,7 +39,7 @@ public abstract class DeviceAndProfileOwnerHostSideTransferTest extends BaseDevi
 
     @Test
     public void testTransferOwnership() throws Exception {
-        final boolean hasManagedProfile = (mUserId != mPrimaryUserId);
+        final boolean hasManagedProfile = (mUserId != mMainUserId);
         final String expectedManagementType = hasManagedProfile ? "profile-owner" : "device-owner";
         assertMetricsLogged(getDevice(), () -> {
             runDeviceTestsAsUser(TRANSFER_OWNER_OUTGOING_PKG, mOutgoingTestClassName,
@@ -105,7 +105,7 @@ public abstract class DeviceAndProfileOwnerHostSideTransferTest extends BaseDevi
 
     protected int setupManagedProfile(String apkName, String adminReceiverClassName)
             throws Exception {
-        final int userId = createManagedProfile(mPrimaryUserId);
+        final int userId = createManagedProfile(mMainUserId);
         installAppAsUser(apkName, userId);
         if (!setProfileOwner(adminReceiverClassName, userId, false)) {
             removeAdmin(TRANSFER_OWNER_OUTGOING_TEST_RECEIVER, userId);

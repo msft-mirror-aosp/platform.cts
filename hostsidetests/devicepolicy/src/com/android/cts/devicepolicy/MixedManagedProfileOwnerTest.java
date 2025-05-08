@@ -50,7 +50,7 @@ public final class MixedManagedProfileOwnerTest extends DeviceAndProfileOwnerTes
         super.setUp();
 
         removeTestUsers();
-        mParentUserId = mPrimaryUserId;
+        mParentUserId = mMainUserId;
         createManagedProfile();
     }
 
@@ -94,7 +94,7 @@ public final class MixedManagedProfileOwnerTest extends DeviceAndProfileOwnerTes
                     DEVICE_ADMIN_PKG,
                     ".AssistScreenCaptureDisabledTest",
                     "testScreenCapturePossible_assist",
-                    mPrimaryUserId);
+                    mMainUserId);
         } finally {
             // enable screen capture in profile
             executeDeviceTestMethod(
@@ -293,14 +293,14 @@ public final class MixedManagedProfileOwnerTest extends DeviceAndProfileOwnerTes
 
     @Test
     public void testNetworkLogging() throws Exception {
-        installAppAsUser(DEVICE_ADMIN_APK, mPrimaryUserId);
+        installAppAsUser(DEVICE_ADMIN_APK, mMainUserId);
         testNetworkLoggingOnWorkProfile(DEVICE_ADMIN_PKG, ".NetworkLoggingTest");
     }
 
     @Test
     public void testNetworkLoggingDelegate() throws Exception {
         installAppAsUser(DELEGATE_APP_APK, mUserId);
-        installAppAsUser(DEVICE_ADMIN_APK, mPrimaryUserId);
+        installAppAsUser(DEVICE_ADMIN_APK, mMainUserId);
         try {
             runDeviceTestsAsUser(DELEGATE_APP_PKG, ".WorkProfileNetworkLoggingDelegateTest",
                     "testCannotAccessApis", mUserId);
@@ -328,8 +328,11 @@ public final class MixedManagedProfileOwnerTest extends DeviceAndProfileOwnerTes
             runDeviceTestsAsUser(packageName, testClassName,
                     "testConnectToWebsites_shouldBeLogged", mUserId);
             // Connect to websites from personal profile, should not be logged.
-            runDeviceTestsAsUser(DEVICE_ADMIN_PKG, ".NetworkLoggingTest",
-                    "testConnectToWebsites_shouldNotBeLogged", mPrimaryUserId);
+            runDeviceTestsAsUser(
+                    DEVICE_ADMIN_PKG,
+                    ".NetworkLoggingTest",
+                    "testConnectToWebsites_shouldNotBeLogged",
+                    mMainUserId);
 
             // Verify all work profile network logs have been received.
             runDeviceTestsAsUser(packageName, testClassName,

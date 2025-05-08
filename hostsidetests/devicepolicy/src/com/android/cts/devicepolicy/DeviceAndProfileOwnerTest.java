@@ -111,11 +111,14 @@ public abstract class DeviceAndProfileOwnerTest extends BaseDevicePolicyTest {
     private static final String AUTOFILL_APP_PKG = "com.android.cts.devicepolicy.autofillapp";
     private static final String AUTOFILL_APP_APK = "CtsDevicePolicyAutofillApp.apk";
 
-    private static final String CONTENT_CAPTURE_APP_PKG = "com.android.cts.devicepolicy.contentcaptureapp";
+    private static final String CONTENT_CAPTURE_APP_PKG =
+            "com.android.cts.devicepolicy.contentcaptureapp";
     private static final String CONTENT_CAPTURE_APP_APK = "CtsDevicePolicyContentCaptureApp.apk";
 
-    private static final String CONTENT_CAPTURE_SERVICE_PKG = "com.android.cts.devicepolicy.contentcaptureservice";
-    private static final String CONTENT_CAPTURE_SERVICE_APK = "CtsDevicePolicyContentCaptureService.apk";
+    private static final String CONTENT_CAPTURE_SERVICE_PKG =
+            "com.android.cts.devicepolicy.contentcaptureservice";
+    private static final String CONTENT_CAPTURE_SERVICE_APK =
+            "CtsDevicePolicyContentCaptureService.apk";
 
     protected static final String ASSIST_APP_PKG = "com.android.cts.devicepolicy.assistapp";
     protected static final String ASSIST_APP_APK = "CtsDevicePolicyAssistApp.apk";
@@ -159,7 +162,8 @@ public abstract class DeviceAndProfileOwnerTest extends BaseDevicePolicyTest {
     private static final int PERMISSION_GRANT_STATE_GRANTED = 1;
     private static final int PERMISSION_GRANT_STATE_DENIED = 2;
     private static final String PARAM_APP_TO_ENABLE = "app_to_enable";
-    public static final String RESOLVE_ACTIVITY_CMD = "cmd package resolve-activity --brief --user %d %s | tail -n 1";
+    public static final String RESOLVE_ACTIVITY_CMD =
+            "cmd package resolve-activity --brief --user %d %s | tail -n 1";
 
     private static final String NOT_CALLED_FROM_PARENT = "notCalledFromParent";
 
@@ -436,7 +440,7 @@ public abstract class DeviceAndProfileOwnerTest extends BaseDevicePolicyTest {
         assumeFalse(isAutomotive());
         try {
             // Install and enable assistant, notice that profile can't have assistant.
-            installAppAsUser(ASSIST_APP_APK, mPrimaryUserId);
+            installAppAsUser(ASSIST_APP_APK, mMainUserId);
             waitForBroadcastIdle();
             setVoiceInteractionService(ASSIST_INTERACTION_SERVICE);
             setScreenCaptureDisabled_assist(mUserId, true /* disabled */);
@@ -518,8 +522,11 @@ public abstract class DeviceAndProfileOwnerTest extends BaseDevicePolicyTest {
             runDeviceTestsAsUser(DEVICE_ADMIN_PKG, ".DelegatedCertInstallerHelper",
                     "testManualRemoveKeyGrant", mUserId);
             // Run another test to make sure the app no longer has access to the key.
-            runDeviceTestsAsUser("com.android.cts.certinstaller",
-                    ".PreSelectedKeyAccessTest", "testAccessingPreSelectedAliasWithoutGrant", mUserId);
+            runDeviceTestsAsUser(
+                    "com.android.cts.certinstaller",
+                    ".PreSelectedKeyAccessTest",
+                    "testAccessingPreSelectedAliasWithoutGrant",
+                    mUserId);
         } finally {
             runDeviceTestsAsUser(DEVICE_ADMIN_PKG, ".DelegatedCertInstallerHelper",
                     "testManualClearGeneratedKey", mUserId);
@@ -1188,25 +1195,22 @@ public abstract class DeviceAndProfileOwnerTest extends BaseDevicePolicyTest {
                 : "testScreenCapturePossible_assist";
 
         // Check whether the VoiceInteractionService can retrieve the screenshot.
-        installAppAsUser(DEVICE_ADMIN_APK, mPrimaryUserId);
+        installAppAsUser(DEVICE_ADMIN_APK, mMainUserId);
 
-        if (userId == mPrimaryUserId) {
+        if (userId == mMainUserId) {
             // If testing for user-0, also make sure the existing screen can't be captured.
             runDeviceTestsAsUser(
                     DEVICE_ADMIN_PKG,
                     ".AssistScreenCaptureDisabledTest",
                     testMethodName,
-                    mPrimaryUserId);
+                    mMainUserId);
         }
 
         // Make sure the foreground activity is from the target user.
         startSimpleActivityAsUser(userId);
 
         runDeviceTestsAsUser(
-                DEVICE_ADMIN_PKG,
-                ".AssistScreenCaptureDisabledTest",
-                testMethodName,
-                mPrimaryUserId);
+                DEVICE_ADMIN_PKG, ".AssistScreenCaptureDisabledTest", testMethodName, mMainUserId);
     }
 
     /**
@@ -1253,10 +1257,9 @@ public abstract class DeviceAndProfileOwnerTest extends BaseDevicePolicyTest {
 
     protected void setVoiceInteractionService(String componentName)
             throws DeviceNotAvailableException {
-        getDevice().setSetting(
-                mPrimaryUserId, "secure", "voice_interaction_service", componentName);
-        getDevice().setSetting(mPrimaryUserId, "secure", "assist_structure_enabled", "1");
-        getDevice().setSetting(mPrimaryUserId, "secure", "assist_screenshot_enabled", "1");
+        getDevice().setSetting(mMainUserId, "secure", "voice_interaction_service", componentName);
+        getDevice().setSetting(mMainUserId, "secure", "assist_structure_enabled", "1");
+        getDevice().setSetting(mMainUserId, "secure", "assist_screenshot_enabled", "1");
     }
 
     protected void clearVoiceInteractionService() throws DeviceNotAvailableException {

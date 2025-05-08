@@ -463,7 +463,7 @@ public final class DeviceOwnerTest extends BaseDeviceOwnerTest {
         assumeHasWifiFeature();
 
         try (LocationModeSetter locationModeSetter = new LocationModeSetter(getDevice())) {
-            installAppAsUser(WIFI_CONFIG_CREATOR_APK, mPrimaryUserId);
+            installAppAsUser(WIFI_CONFIG_CREATOR_APK, mMainUserId);
             locationModeSetter.setLocationEnabled(true);
             executeDeviceOwnerTest("WifiConfigLockdownTest");
         } finally {
@@ -491,19 +491,23 @@ public final class DeviceOwnerTest extends BaseDeviceOwnerTest {
     @Test
     public void testCannotSetDeviceOwnerAgain() throws Exception {
         // verify that we can't set the same admin receiver as device owner again
-        assertFalse(setDeviceOwner(
-                DEVICE_OWNER_PKG + "/" + ADMIN_RECEIVER_TEST_CLASS, mPrimaryUserId,
-                /*expectFailure*/ true));
+        assertFalse(
+                setDeviceOwner(
+                        DEVICE_OWNER_PKG + "/" + ADMIN_RECEIVER_TEST_CLASS,
+                        mMainUserId,
+                        /*expectFailure*/ true));
 
         // verify that we can't set a different admin receiver as device owner
         try {
-            installAppAsUser(MANAGED_PROFILE_APK, mPrimaryUserId);
-            assertFalse(setDeviceOwner(
-                    MANAGED_PROFILE_PKG + "/" + MANAGED_PROFILE_ADMIN, mPrimaryUserId,
-                    /*expectFailure*/ true));
+            installAppAsUser(MANAGED_PROFILE_APK, mMainUserId);
+            assertFalse(
+                    setDeviceOwner(
+                            MANAGED_PROFILE_PKG + "/" + MANAGED_PROFILE_ADMIN,
+                            mMainUserId,
+                            /*expectFailure*/ true));
         } finally {
             // Remove the device owner in case the test fails.
-            removeAdmin(MANAGED_PROFILE_PKG + "/" + MANAGED_PROFILE_ADMIN, mPrimaryUserId);
+            removeAdmin(MANAGED_PROFILE_PKG + "/" + MANAGED_PROFILE_ADMIN, mMainUserId);
             getDevice().uninstallPackage(MANAGED_PROFILE_PKG);
         }
     }
@@ -599,8 +603,8 @@ public final class DeviceOwnerTest extends BaseDeviceOwnerTest {
         // NOTE: the restriction must be set on primary user as it will launch SetPolicyActivity,
         // but the admin must be installed on USER_SYSTEM, otherwise wipeData() on headless system
         // user mode would wipe the current user (instead of factory resetting the device)
-        changeUserRestrictionOrFail("no_factory_reset", true, mPrimaryUserId, DEVICE_OWNER_PKG);
-        int adminUserId = mPrimaryUserId;
+        changeUserRestrictionOrFail("no_factory_reset", true, mMainUserId, DEVICE_OWNER_PKG);
+        int adminUserId = mMainUserId;
 
         String deviceAdminPkg = DeviceAdminHelper.getDeviceAdminApkPackage(adminVersion);
         String deviceAdminReceiver = DeviceAdminHelper.getAdminReceiverComponent(adminVersion);
@@ -636,30 +640,43 @@ public final class DeviceOwnerTest extends BaseDeviceOwnerTest {
             assertTrue(getDevice().pushFile(apk, TEST_APP_LOCATION + apk.getName()));
 
             // Install the package in primary user
-            runDeviceTestsAsUser(DEVICE_OWNER_PKG, ".PackageInstallTest",
-                    "testPackageInstall", mPrimaryUserId);
-            assertMetricsLogged(getDevice(), () -> {
-                runDeviceTestsAsUser(DEVICE_OWNER_PKG, ".PackageInstallTest",
-                        "testKeepPackageCache", mPrimaryUserId);
-            }, new DevicePolicyEventWrapper.Builder(EventId.SET_KEEP_UNINSTALLED_PACKAGES_VALUE)
-                    .setAdminPackageName(DEVICE_OWNER_PKG)
-                    .setBoolean(false)
-                    .setStrings(TEST_APP_PKG)
-                    .build());
+            runDeviceTestsAsUser(
+                    DEVICE_OWNER_PKG, ".PackageInstallTest", "testPackageInstall", mMainUserId);
+            assertMetricsLogged(
+                    getDevice(),
+                    () -> {
+                        runDeviceTestsAsUser(
+                                DEVICE_OWNER_PKG,
+                                ".PackageInstallTest",
+                                "testKeepPackageCache",
+                                mMainUserId);
+                    },
+                    new DevicePolicyEventWrapper.Builder(
+                                    EventId.SET_KEEP_UNINSTALLED_PACKAGES_VALUE)
+                            .setAdminPackageName(DEVICE_OWNER_PKG)
+                            .setBoolean(false)
+                            .setStrings(TEST_APP_PKG)
+                            .build());
 
             // Remove the package in primary user
-            runDeviceTestsAsUser(DEVICE_OWNER_PKG, ".PackageInstallTest",
-                    "testPackageUninstall", mPrimaryUserId);
+            runDeviceTestsAsUser(
+                    DEVICE_OWNER_PKG, ".PackageInstallTest", "testPackageUninstall", mMainUserId);
 
-            assertMetricsLogged(getDevice(), () -> {
-                // Should be able to enable the cached package in primary user
-                runDeviceTestsAsUser(DEVICE_OWNER_PKG, ".PackageInstallTest",
-                        "testInstallExistingPackage", mPrimaryUserId);
-            }, new DevicePolicyEventWrapper.Builder(EventId.INSTALL_EXISTING_PACKAGE_VALUE)
-                    .setAdminPackageName(DEVICE_OWNER_PKG)
-                    .setBoolean(false)
-                    .setStrings(TEST_APP_PKG)
-                    .build());
+            assertMetricsLogged(
+                    getDevice(),
+                    () -> {
+                        // Should be able to enable the cached package in primary user
+                        runDeviceTestsAsUser(
+                                DEVICE_OWNER_PKG,
+                                ".PackageInstallTest",
+                                "testInstallExistingPackage",
+                                mMainUserId);
+                    },
+                    new DevicePolicyEventWrapper.Builder(EventId.INSTALL_EXISTING_PACKAGE_VALUE)
+                            .setAdminPackageName(DEVICE_OWNER_PKG)
+                            .setBoolean(false)
+                            .setStrings(TEST_APP_PKG)
+                            .build());
         } finally {
             String command = "rm " + TEST_APP_LOCATION + apk.getName();
             getDevice().executeShellCommand(command);
@@ -682,16 +699,16 @@ public final class DeviceOwnerTest extends BaseDeviceOwnerTest {
             assertTrue(getDevice().pushFile(apk, TEST_APP_LOCATION + apk.getName()));
 
             // Install the package in primary user
-            runDeviceTestsAsUser(DEVICE_OWNER_PKG, ".PackageInstallTest",
-                    "testPackageInstall", mPrimaryUserId);
+            runDeviceTestsAsUser(
+                    DEVICE_OWNER_PKG, ".PackageInstallTest", "testPackageInstall", mMainUserId);
 
             // Should be able to enable the package in secondary user
             runDeviceTestsAsUser(DEVICE_OWNER_PKG, ".PackageInstallTest",
                     "testInstallExistingPackage", userId);
 
             // Remove the package in both user
-            runDeviceTestsAsUser(DEVICE_OWNER_PKG, ".PackageInstallTest",
-                    "testPackageUninstall", mPrimaryUserId);
+            runDeviceTestsAsUser(
+                    DEVICE_OWNER_PKG, ".PackageInstallTest", "testPackageUninstall", mMainUserId);
             runDeviceTestsAsUser(DEVICE_OWNER_PKG, ".PackageInstallTest",
                     "testPackageUninstall", userId);
 
@@ -700,24 +717,30 @@ public final class DeviceOwnerTest extends BaseDeviceOwnerTest {
                     "testPackageInstall", userId);
 
             // Should be able to enable the package in primary user
-            runDeviceTestsAsUser(DEVICE_OWNER_PKG, ".PackageInstallTest",
-                    "testInstallExistingPackage", mPrimaryUserId);
+            runDeviceTestsAsUser(
+                    DEVICE_OWNER_PKG,
+                    ".PackageInstallTest",
+                    "testInstallExistingPackage",
+                    mMainUserId);
 
             // Keep the package in cache
-            runDeviceTestsAsUser(DEVICE_OWNER_PKG, ".PackageInstallTest",
-                    "testKeepPackageCache", mPrimaryUserId);
+            runDeviceTestsAsUser(
+                    DEVICE_OWNER_PKG, ".PackageInstallTest", "testKeepPackageCache", mMainUserId);
 
             // Remove the package in both user
-            runDeviceTestsAsUser(DEVICE_OWNER_PKG, ".PackageInstallTest",
-                    "testPackageUninstall", mPrimaryUserId);
+            runDeviceTestsAsUser(
+                    DEVICE_OWNER_PKG, ".PackageInstallTest", "testPackageUninstall", mMainUserId);
             runDeviceTestsAsUser(DEVICE_OWNER_PKG, ".PackageInstallTest",
                     "testPackageUninstall", userId);
 
             // Should be able to enable the cached package in both users
             runDeviceTestsAsUser(DEVICE_OWNER_PKG, ".PackageInstallTest",
                     "testInstallExistingPackage", userId);
-            runDeviceTestsAsUser(DEVICE_OWNER_PKG, ".PackageInstallTest",
-                    "testInstallExistingPackage", mPrimaryUserId);
+            runDeviceTestsAsUser(
+                    DEVICE_OWNER_PKG,
+                    ".PackageInstallTest",
+                    "testInstallExistingPackage",
+                    mMainUserId);
         } finally {
             String command = "rm " + TEST_APP_LOCATION + apk.getName();
             getDevice().executeShellCommand(command);
@@ -793,8 +816,8 @@ public final class DeviceOwnerTest extends BaseDeviceOwnerTest {
     public void testSetUserControlDisabledPackages_singleUser_reboot_verifyPackageNotStopped()
             throws Exception {
         try {
-            installAppAsUser(SIMPLE_APP_APK, mPrimaryUserId);
-            startProtectedPackage(mPrimaryUserId);
+            installAppAsUser(SIMPLE_APP_APK, mMainUserId);
+            startProtectedPackage(mMainUserId);
             // Set the package under test as a protected package.
             executeDeviceTestMethod(".UserControlDisabledPackagesTest",
                     "testSetUserControlDisabledPackages");
@@ -804,14 +827,17 @@ public final class DeviceOwnerTest extends BaseDeviceOwnerTest {
 
             // The simple app package seems to be set into stopped state on reboot.
             // Launch the activity again to get it out of stopped state on the primary user.
-            startProtectedPackage(mPrimaryUserId);
+            startProtectedPackage(mMainUserId);
             // Try to force-stop the package under test on the primary user.
-            tryForceStoppingProtectedPackage(mPrimaryUserId, /* canUserStopPackage= */ false);
+            tryForceStoppingProtectedPackage(mMainUserId, /* canUserStopPackage= */ false);
         } finally {
             // Clear the protected packages so that the package under test can be force-stopped.
-            runDeviceTestsAsUser(DEVICE_OWNER_PKG, ".UserControlDisabledPackagesTest",
-                    "testClearSetUserControlDisabledPackages", mPrimaryUserId);
-            tryForceStoppingProtectedPackage(mPrimaryUserId, /* canUserStopPackage= */ true);
+            runDeviceTestsAsUser(
+                    DEVICE_OWNER_PKG,
+                    ".UserControlDisabledPackagesTest",
+                    "testClearSetUserControlDisabledPackages",
+                    mMainUserId);
+            tryForceStoppingProtectedPackage(mMainUserId, /* canUserStopPackage= */ true);
 
             // Removal of the installed simple app on the primary user is done in tear down.
         }
@@ -821,8 +847,8 @@ public final class DeviceOwnerTest extends BaseDeviceOwnerTest {
     public void testSetUserControlDisabledPackages_singleUser_reboot_verifyPackageNotFgsStopped()
             throws Exception {
         try {
-            installAppAsUser(SIMPLE_APP_APK, mPrimaryUserId);
-            startProtectedPackage(mPrimaryUserId);
+            installAppAsUser(SIMPLE_APP_APK, mMainUserId);
+            startProtectedPackage(mMainUserId);
             // Set the package under test as a protected package.
             executeDeviceTestMethod(".UserControlDisabledPackagesTest",
                     "testSetUserControlDisabledPackages");
@@ -832,14 +858,17 @@ public final class DeviceOwnerTest extends BaseDeviceOwnerTest {
 
             // The simple app package seems to be set into stopped state on reboot.
             // Launch the activity again to get it out of stopped state on the primary user.
-            startProtectedPackage(mPrimaryUserId);
+            startProtectedPackage(mMainUserId);
             // Try to task-manager stop the package under test on the primary user.
-            tryFgsStoppingProtectedPackage(mPrimaryUserId, /* canUserStopPackage= */ false);
+            tryFgsStoppingProtectedPackage(mMainUserId, /* canUserStopPackage= */ false);
         } finally {
             // Clear the protected packages so that the package under test can be stopped.
-            runDeviceTestsAsUser(DEVICE_OWNER_PKG, ".UserControlDisabledPackagesTest",
-                    "testClearSetUserControlDisabledPackages", mPrimaryUserId);
-            tryFgsStoppingProtectedPackage(mPrimaryUserId, /* canUserStopPackage= */ true);
+            runDeviceTestsAsUser(
+                    DEVICE_OWNER_PKG,
+                    ".UserControlDisabledPackagesTest",
+                    "testClearSetUserControlDisabledPackages",
+                    mMainUserId);
+            tryFgsStoppingProtectedPackage(mMainUserId, /* canUserStopPackage= */ true);
 
             // Removal of the installed simple app on the primary user is done in tear down.
         }
@@ -861,8 +890,11 @@ public final class DeviceOwnerTest extends BaseDeviceOwnerTest {
                 switchUser(userId);
                 startProtectedPackage(userId);
                 // Set the package under test as a protected package.
-                runDeviceTestsAsUser(DEVICE_OWNER_PKG, ".UserControlDisabledPackagesTest",
-                        "testSetUserControlDisabledPackages", mPrimaryUserId);
+                runDeviceTestsAsUser(
+                        DEVICE_OWNER_PKG,
+                        ".UserControlDisabledPackagesTest",
+                        "testSetUserControlDisabledPackages",
+                        mMainUserId);
 
                 // Reboot and verify protected packages are persisted.
                 CLog.i("Reboot");
@@ -872,7 +904,7 @@ public final class DeviceOwnerTest extends BaseDeviceOwnerTest {
                 if (isHeadlessSystemUserMode()) {
                     // Device stars on last user, so we need to explicitly start the user running
                     // the tests
-                    startUser(mPrimaryUserId);
+                    startUser(mMainUserId);
                 } else {
                     // Device starts on the primary user and not on the last user (i.e. the created
                     // user) before the reboot occurred.
@@ -886,8 +918,11 @@ public final class DeviceOwnerTest extends BaseDeviceOwnerTest {
                 tryForceStoppingProtectedPackage(userId, /* canUserStopPackage= */ false);
             } finally {
                 // Clear the protected packages so that the package under test can be force-stopped.
-                runDeviceTestsAsUser(DEVICE_OWNER_PKG, ".UserControlDisabledPackagesTest",
-                        "testClearSetUserControlDisabledPackages", mPrimaryUserId);
+                runDeviceTestsAsUser(
+                        DEVICE_OWNER_PKG,
+                        ".UserControlDisabledPackagesTest",
+                        "testClearSetUserControlDisabledPackages",
+                        mMainUserId);
                 tryForceStoppingProtectedPackage(userId, /* canUserStopPackage= */ true);
 
                 // Removal of the created user and the installed simple app on the created user are
@@ -914,8 +949,11 @@ public final class DeviceOwnerTest extends BaseDeviceOwnerTest {
                 switchUser(userId);
                 startProtectedPackage(userId);
                 // Set the package under test as a protected package.
-                runDeviceTestsAsUser(DEVICE_OWNER_PKG, ".UserControlDisabledPackagesTest",
-                        "testSetUserControlDisabledPackages", mPrimaryUserId);
+                runDeviceTestsAsUser(
+                        DEVICE_OWNER_PKG,
+                        ".UserControlDisabledPackagesTest",
+                        "testSetUserControlDisabledPackages",
+                        mMainUserId);
 
                 // Reboot and verify protected packages are persisted.
                 CLog.i("Reboot");
@@ -925,7 +963,7 @@ public final class DeviceOwnerTest extends BaseDeviceOwnerTest {
                 if (isHeadlessSystemUserMode()) {
                     // Device stars on last user, so we need to explicitly start the user running
                     // the tests
-                    startUser(mPrimaryUserId);
+                    startUser(mMainUserId);
                 } else {
                     // Device starts on the primary user and not on the last user (i.e. the created
                     // user) before the reboot occurred.
@@ -939,8 +977,11 @@ public final class DeviceOwnerTest extends BaseDeviceOwnerTest {
                 tryFgsStoppingProtectedPackage(userId, /* canUserStopPackage= */ false);
             } finally {
                 // Clear the protected packages so that the package under test can be force-stopped.
-                runDeviceTestsAsUser(DEVICE_OWNER_PKG, ".UserControlDisabledPackagesTest",
-                        "testClearSetUserControlDisabledPackages", mPrimaryUserId);
+                runDeviceTestsAsUser(
+                        DEVICE_OWNER_PKG,
+                        ".UserControlDisabledPackagesTest",
+                        "testClearSetUserControlDisabledPackages",
+                        mMainUserId);
                 tryFgsStoppingProtectedPackage(userId, /* canUserStopPackage= */ true);
 
                 // Removal of the created user and the installed simple app on the created user are
@@ -1098,8 +1139,9 @@ public final class DeviceOwnerTest extends BaseDeviceOwnerTest {
 
     @Test
     public void testWifiNetworkConfigurationWithoutFineLocationPermission() throws Exception {
-        executeShellCommand("pm revoke --user %d %s android.permission.ACCESS_FINE_LOCATION",
-                mPrimaryUserId, DEVICE_OWNER_PKG);
+        executeShellCommand(
+                "pm revoke --user %d %s android.permission.ACCESS_FINE_LOCATION",
+                mMainUserId, DEVICE_OWNER_PKG);
 
         executeDeviceOwnerTest("WifiNetworkConfigurationWithoutFineLocationPermissionTest");
     }
@@ -1119,8 +1161,13 @@ public final class DeviceOwnerTest extends BaseDeviceOwnerTest {
         wakeupAndDismissKeyguard();
 
         // Setting the same affiliation ids on both users
-        CLog.d("createAffiliatedSecondaryUser(): deviceOwnerId=" + mDeviceOwnerUserId
-                + ", primaryUserId=" + mPrimaryUserId + ", newUserId=" + userId);
+        CLog.d(
+                "createAffiliatedSecondaryUser(): deviceOwnerId="
+                        + mDeviceOwnerUserId
+                        + ", primaryUserId="
+                        + mMainUserId
+                        + ", newUserId="
+                        + userId);
         affiliateUsers(DEVICE_OWNER_PKG, mDeviceOwnerUserId, userId);
 
         return userId;
@@ -1128,8 +1175,8 @@ public final class DeviceOwnerTest extends BaseDeviceOwnerTest {
 
     private void executeDeviceTestMethod(String className, String testName,
             Map<String, String> params) throws Exception {
-        runDeviceTestsAsUser(DEVICE_OWNER_PKG, className, testName,
-                /* deviceOwnerUserId */ mPrimaryUserId, params);
+        runDeviceTestsAsUser(
+                DEVICE_OWNER_PKG, className, testName, /* deviceOwnerUserId */ mMainUserId, params);
     }
 
     private void executeCreateAndManageUserTest(String testMethod) throws Exception {

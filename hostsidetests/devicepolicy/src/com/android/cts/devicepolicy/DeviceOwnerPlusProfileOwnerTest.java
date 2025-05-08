@@ -95,7 +95,8 @@ public final class DeviceOwnerPlusProfileOwnerTest extends BaseDevicePolicyTest 
 
     @Override
     public void tearDown() throws Exception {
-        assertTrue("Failed to remove device owner.", removeAdmin(COMP_DPC_ADMIN, mDeviceOwnerUserId));
+        assertTrue(
+                "Failed to remove device owner.", removeAdmin(COMP_DPC_ADMIN, mDeviceOwnerUserId));
 
         super.tearDown();
     }
@@ -106,7 +107,7 @@ public final class DeviceOwnerPlusProfileOwnerTest extends BaseDevicePolicyTest 
     @LargeTest
     @Test
     public void testCannotAddManagedProfileWithDeviceOwner() throws Exception {
-        assertCannotCreateManagedProfile(mPrimaryUserId);
+        assertCannotCreateManagedProfile(mMainUserId);
     }
 
     /**
@@ -194,7 +195,7 @@ public final class DeviceOwnerPlusProfileOwnerTest extends BaseDevicePolicyTest 
 
     private void verifyBindDeviceAdminServiceAsUser(int profileOwnerUserId) throws Exception {
         // Installing a non managing app (neither device owner nor profile owner).
-        installAppAsUser(COMP_DPC_APK2, mPrimaryUserId);
+        installAppAsUser(COMP_DPC_APK2, mMainUserId);
         installAppAsUser(COMP_DPC_APK2, profileOwnerUserId);
 
         // Testing device owner -> profile owner.
@@ -211,14 +212,11 @@ public final class DeviceOwnerPlusProfileOwnerTest extends BaseDevicePolicyTest 
 
     private void verifyBindDeviceAdminServiceAsUserFails(int profileOwnerUserId) throws Exception {
         // Installing a non managing app (neither device owner nor profile owner).
-        installAppAsUser(COMP_DPC_APK2, mPrimaryUserId);
+        installAppAsUser(COMP_DPC_APK2, mMainUserId);
         installAppAsUser(COMP_DPC_APK2, profileOwnerUserId);
 
         // Testing device owner -> profile owner.
-        runDeviceTestsAsUser(
-                COMP_DPC_PKG,
-                BIND_DEVICE_ADMIN_SERVICE_FAILS_TEST,
-                mPrimaryUserId);
+        runDeviceTestsAsUser(COMP_DPC_PKG, BIND_DEVICE_ADMIN_SERVICE_FAILS_TEST, mMainUserId);
         // Testing profile owner -> device owner.
         runDeviceTestsAsUser(
                 COMP_DPC_PKG,
@@ -246,11 +244,7 @@ public final class DeviceOwnerPlusProfileOwnerTest extends BaseDevicePolicyTest 
 
     private void setDifferentAffiliationId(
             int profileOwnerUserId, String profileOwnerPackage) throws Exception {
-        runDeviceTestsAsUser(
-                COMP_DPC_PKG,
-                AFFILIATION_TEST,
-                "testSetAffiliationId1",
-                mPrimaryUserId);
+        runDeviceTestsAsUser(COMP_DPC_PKG, AFFILIATION_TEST, "testSetAffiliationId1", mMainUserId);
         runDeviceTestsAsUser(
                 profileOwnerPackage,
                 AFFILIATION_TEST,
@@ -264,16 +258,13 @@ public final class DeviceOwnerPlusProfileOwnerTest extends BaseDevicePolicyTest 
 
     private void assertProvisionManagedProfileNotAllowed(String packageName) throws Exception {
         runDeviceTestsAsUser(
-                packageName,
-                MANAGEMENT_TEST,
-                "testProvisionManagedProfileNotAllowed",
-                mPrimaryUserId);
+                packageName, MANAGEMENT_TEST, "testProvisionManagedProfileNotAllowed", mMainUserId);
     }
 
     /** Returns the user id of the newly created managed profile */
     private int setupManagedProfile(String apkName, String packageName,
             String adminReceiverClassName) throws Exception {
-        final int userId = createManagedProfile(mPrimaryUserId);
+        final int userId = createManagedProfile(mMainUserId);
         installAppAsUser(apkName, userId);
         setProfileOwnerOrFail(adminReceiverClassName, userId);
         startUserAndWait(userId);
@@ -307,7 +298,7 @@ public final class DeviceOwnerPlusProfileOwnerTest extends BaseDevicePolicyTest 
                 COMP_DPC_PKG,
                 MANAGED_PROFILE_PROVISIONING_TEST,
                 "testProvisioningCorpOwnedManagedProfile",
-                mPrimaryUserId);
+                mMainUserId);
         return getFirstManagedProfileUserId();
     }
 
@@ -338,7 +329,7 @@ public final class DeviceOwnerPlusProfileOwnerTest extends BaseDevicePolicyTest 
                 COMP_DPC_PKG,
                 MANAGEMENT_TEST,
                 "testOtherProfilesEqualsBindTargetUsers",
-                mPrimaryUserId);
+                mMainUserId);
         runDeviceTestsAsUser(
                 COMP_DPC_PKG,
                 MANAGEMENT_TEST,
