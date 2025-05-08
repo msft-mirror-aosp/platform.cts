@@ -240,7 +240,11 @@ public class MmsTest {
         Log.i(TAG, "afterAllTests");
 
         // Ensure there are no CarrierConfig overrides.
-        overrideCarrierConfig(SmsManager.getDefaultSmsSubscriptionId(), null);
+        try {
+            overrideCarrierConfig(SmsManager.getDefaultSmsSubscriptionId(), null);
+        } catch (UnsupportedOperationException ex) {
+            // this device doesn't support messaging
+        }
         if (sCarrierConfigReceiver != null) {
             getInstrumentation().getContext().unregisterReceiver(sCarrierConfigReceiver);
             sCarrierConfigReceiver = null;
