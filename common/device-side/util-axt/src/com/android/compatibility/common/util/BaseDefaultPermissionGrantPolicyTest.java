@@ -370,7 +370,7 @@ public abstract class BaseDefaultPermissionGrantPolicyTest extends BusinessLogic
             String actualBrand = PropertyUtil.getProperty(BRAND_PROPERTY);
             if (!expectedBrand.equalsIgnoreCase(actualBrand)) {
                 Log.w(LOG_TAG, String.format("Brand %s does not match for package: %s",
-                        expectedBrand, packageName));
+                        actualBrand, packageName));
                 return;
             }
         } else {
