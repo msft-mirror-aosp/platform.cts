@@ -116,6 +116,9 @@
       "options": [
         {
           "include-filter": "android.os.cts.ParcelTest"
+        },
+        {
+          "include-filter": "android.os.cts.SeccompTest"
         }
       ]
     }
