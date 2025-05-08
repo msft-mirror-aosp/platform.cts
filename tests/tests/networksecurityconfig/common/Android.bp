@@ -34,3 +34,15 @@ java_library {
     ],
     sdk_version: "test_current",
 }
+
+filegroup {
+    name: "networksecurityconfig-cts-jarjar-rules",
+    srcs: [
+        "jarjar-rules.txt",
+    ],
+}
+
+java_defaults {
+    name: "networksecurityconfig-cts-jarjar-defaults",
+    jarjar_rules: ":networksecurityconfig-cts-jarjar-rules",
+}
