@@ -229,7 +229,8 @@ public class ClientTest {
         }
 
         // query other ephemeral application activities with a web URI
-        {
+        if (!InstrumentationRegistry.getContext().getPackageManager()
+                .hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE)) {
             final Intent queryIntent = new Intent(Intent.ACTION_VIEW);
             queryIntent.addCategory(Intent.CATEGORY_BROWSABLE);
             queryIntent.setData(Uri.parse("https://cts.google.com/other"));
