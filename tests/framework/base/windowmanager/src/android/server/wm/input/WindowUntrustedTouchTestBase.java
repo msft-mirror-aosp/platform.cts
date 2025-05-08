@@ -101,7 +101,8 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public abstract class WindowUntrustedTouchTestBase {
-    private static final String TAG = "WindowUntrustedTouchTest";
+    // Tags must not exceed 23 chars.
+    private static final String TAG = "UntrustedTouchTest";
 
     /**
      * Opacity (or alpha) is represented as a half-precision floating point number (16b) in surface
@@ -511,6 +512,10 @@ public abstract class WindowUntrustedTouchTestBase {
     private void waitForNoSawOverlays(String message) {
         if (!mWmState.waitFor("no SAW windows",
                 state -> mSawWindowsAdded.stream().allMatch(w -> !state.isWindowVisible(w)))) {
+            // Log errors if any of the SAW windows remains visible.
+            mSawWindowsAdded.stream()
+                    .filter(mWmState::isWindowVisible)
+                    .forEach(w -> Log.e(TAG, "Unexpected visible SAW " + w));
             fail(message);
         }
         mSawWindowsAdded.clear();
