@@ -678,7 +678,8 @@ public final class ActivityManagerTest {
         final SettingsSession<Integer> showBackground = new SettingsSession<>(
                 Settings.Secure.getUriFor(Settings.Secure.ANR_SHOW_BACKGROUND),
                 Settings.Secure::getInt, Settings.Secure::putInt);
-        try {
+        try (AutoCloseable unused =
+                CtsAppTestUtils.allowBackgroundActivityLaunch(PACKAGE_NAME_APP1)) {
             runWithShellPermissionIdentity(() -> {
                 showOnFirstCrash.set(1);
                 showBackground.set(1);
