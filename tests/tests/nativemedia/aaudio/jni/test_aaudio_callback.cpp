@@ -117,6 +117,7 @@ class AAudioStreamCallbackTest : public AAudioCtsBase,
         std::atomic<aaudio_result_t> callbackError;
         std::atomic<int32_t> framesProcessed;
         std::atomic<bool> returnStop;
+        int32_t callbackCount;
 
         AAudioCallbackTestData() {
             reset(0);
@@ -129,6 +130,7 @@ class AAudioStreamCallbackTest : public AAudioCtsBase,
             callbackError = AAUDIO_OK;
             framesProcessed = 0;
             returnStop = false;
+            callbackCount = 0;
         }
         void updateFrameCount(int32_t numFrames) {
             if (numFrames != expectedFramesPerCallback) {
@@ -216,8 +218,12 @@ class AAudioInputStreamCallbackTest : public AAudioStreamCallbackTest<InputStrea
   protected:
     void SetUp() override;
 
+    void runTest();
+
     static aaudio_data_callback_result_t MyDataCallbackProc(
             AAudioStream *stream, void *userData, void *audioData, int32_t numFrames);
+    static int32_t MyPartialDataCallbackProc(AAudioStream *stream, void *userData, void *audioData,
+                                             int32_t numFrames);
 };
 
 aaudio_data_callback_result_t AAudioInputStreamCallbackTest::MyDataCallbackProc(
@@ -227,6 +233,21 @@ aaudio_data_callback_result_t AAudioInputStreamCallbackTest::MyDataCallbackProc(
     // No latency measurement as there is no API for querying capture position.
     myData->framesProcessed.fetch_add(numFrames, std::memory_order_release);
     return myData->returnStop ? AAUDIO_CALLBACK_RESULT_STOP : AAUDIO_CALLBACK_RESULT_CONTINUE;
+}
+
+int32_t AAudioInputStreamCallbackTest::MyPartialDataCallbackProc(AAudioStream * /*stream*/,
+                                                                 void *userData,
+                                                                 void * /*audioData*/,
+                                                                 int32_t numFrames) {
+    AAudioCallbackTestData *myData = static_cast<AAudioCallbackTestData *>(userData);
+    myData->callbackCount += 1;
+    myData->updateFrameCount(numFrames);
+    // Alter all data consumed or half of the data consumed as the partial data callback
+    // allows apps to only partially consume the provided data.
+    const int32_t framesProcessed = (myData->callbackCount & 1) == 1 ? numFrames : numFrames / 2;
+    // No latency measurement as there is no API for querying capture position.
+    myData->framesProcessed.fetch_add(framesProcessed, std::memory_order_release);
+    return myData->returnStop ? -1 : framesProcessed;
 }
 
 void AAudioInputStreamCallbackTest::SetUp() {
@@ -242,19 +263,15 @@ void AAudioInputStreamCallbackTest::SetUp() {
                     );
     mHelper->initBuilder();
 
-    int32_t framesPerDataCallback = std::get<PARAM_FRAMES_PER_CB>(GetParam());
     mCbData.reset(new AAudioCallbackTestData());
     AAudioStreamBuilder_setErrorCallback(builder(), &MyErrorCallbackProc, mCbData.get());
-    AAudioStreamBuilder_setDataCallback(builder(), &MyDataCallbackProc, mCbData.get());
+    const int32_t framesPerDataCallback = std::get<PARAM_FRAMES_PER_CB>(GetParam());
     if (framesPerDataCallback != AAUDIO_UNSPECIFIED) {
         AAudioStreamBuilder_setFramesPerDataCallback(builder(), framesPerDataCallback);
     }
-
-    createAndVerifyHonoringMMap();
 }
 
-// Test starting and stopping an INPUT AAudioStream that uses a Callback
-TEST_P(AAudioInputStreamCallbackTest, testRecording) {
+void AAudioInputStreamCallbackTest::runTest() {
     if (!mSetupSuccessful) return;
 
     const int32_t framesPerDataCallback = std::get<PARAM_FRAMES_PER_CB>(GetParam());
@@ -316,6 +333,26 @@ TEST_P(AAudioInputStreamCallbackTest, testRecording) {
 
         ASSERT_EQ(AAUDIO_OK, mCbData->callbackError);
     }
+}
+
+// Test starting and stopping an INPUT AAudioStream that uses a Callback
+TEST_P(AAudioInputStreamCallbackTest, testRecording) {
+    AAudioStreamBuilder_setDataCallback(builder(), &MyDataCallbackProc, mCbData.get());
+    createAndVerifyHonoringMMap();
+
+    runTest();
+}
+
+TEST_P(AAudioInputStreamCallbackTest, testRecordingPartialCallback) {
+    auto result = AAudioStreamBuilder_setPartialDataCallback(builder(), &MyPartialDataCallbackProc,
+                                                             mCbData.get());
+    if (result == AAUDIO_ERROR_UNIMPLEMENTED) {
+        return;
+    }
+    ASSERT_EQ(AAUDIO_OK, result);
+    createAndVerifyHonoringMMap();
+
+    runTest();
 }
 
 INSTANTIATE_TEST_CASE_P(SPM, AAudioInputStreamCallbackTest,
@@ -382,16 +419,18 @@ class AAudioOutputStreamCallbackTest : public AAudioStreamCallbackTest<OutputStr
   protected:
     void SetUp() override;
 
+    void runTest();
+
+    static void processData(AAudioStream *stream, void *userData, void *audioData,
+                            int32_t numFrames);
     static aaudio_data_callback_result_t MyDataCallbackProc(
             AAudioStream *stream, void *userData, void *audioData, int32_t numFrames);
+    static int32_t MyPartialDataCallbackProc(AAudioStream *stream, void *userData, void *audioData,
+                                             int32_t numFrames);
 };
 
-// Callback function that fills the audio output buffer.
-aaudio_data_callback_result_t AAudioOutputStreamCallbackTest::MyDataCallbackProc(
-        AAudioStream *stream,
-        void *userData,
-        void *audioData,
-        int32_t numFrames) {
+void AAudioOutputStreamCallbackTest::processData(AAudioStream *stream, void *userData,
+                                                 void *audioData, int32_t numFrames) {
     int32_t channelCount = AAudioStream_getChannelCount(stream);
     int32_t numSamples = channelCount * numFrames;
     if (AAudioStream_getFormat(stream) == AAUDIO_FORMAT_PCM_I16) {
@@ -402,11 +441,32 @@ aaudio_data_callback_result_t AAudioOutputStreamCallbackTest::MyDataCallbackProc
         for (int i = 0; i < numSamples; i++) *floatData++ = 0.0f;
     }
 
-    AAudioCallbackTestData *myData = static_cast<AAudioCallbackTestData*>(userData);
-    myData->updateFrameCount(numFrames);
+    AAudioCallbackTestData *myData = static_cast<AAudioCallbackTestData *>(userData);
     myData->updateLatency(measureLatency(stream));
+}
+
+// Callback function that fills the audio output buffer.
+aaudio_data_callback_result_t AAudioOutputStreamCallbackTest::MyDataCallbackProc(
+        AAudioStream *stream, void *userData, void *audioData, int32_t numFrames) {
+    processData(stream, userData, audioData, numFrames);
+    AAudioCallbackTestData *myData = static_cast<AAudioCallbackTestData *>(userData);
+    myData->updateFrameCount(numFrames);
     myData->framesProcessed.fetch_add(numFrames, std::memory_order_release);
     return myData->returnStop ? AAUDIO_CALLBACK_RESULT_STOP : AAUDIO_CALLBACK_RESULT_CONTINUE;
+}
+
+int32_t AAudioOutputStreamCallbackTest::MyPartialDataCallbackProc(AAudioStream *stream,
+                                                                  void *userData, void *audioData,
+                                                                  int32_t numFrames) {
+    AAudioCallbackTestData *myData = static_cast<AAudioCallbackTestData *>(userData);
+    myData->updateFrameCount(numFrames);
+    myData->callbackCount += 1;
+    // Alter all data consumed or half of the data consumed as the partial data callback
+    // allows apps to only partially consume the provided data.
+    const int32_t framesProcessed = (myData->callbackCount & 1) == 1 ? numFrames : numFrames / 2;
+    processData(stream, userData, audioData, framesProcessed);
+    myData->framesProcessed.fetch_add(framesProcessed, std::memory_order_release);
+    return myData->returnStop ? -1 : framesProcessed;
 }
 
 void AAudioOutputStreamCallbackTest::SetUp() {
@@ -422,20 +482,15 @@ void AAudioOutputStreamCallbackTest::SetUp() {
                     );
     mHelper->initBuilder();
 
-    int32_t framesPerDataCallback = std::get<PARAM_FRAMES_PER_CB>(GetParam());
     mCbData.reset(new AAudioCallbackTestData());
     AAudioStreamBuilder_setErrorCallback(builder(), &MyErrorCallbackProc, mCbData.get());
-    AAudioStreamBuilder_setDataCallback(builder(), &MyDataCallbackProc, mCbData.get());
+    const int32_t framesPerDataCallback = std::get<PARAM_FRAMES_PER_CB>(GetParam());
     if (framesPerDataCallback != AAUDIO_UNSPECIFIED) {
         AAudioStreamBuilder_setFramesPerDataCallback(builder(), framesPerDataCallback);
     }
-
-    createAndVerifyHonoringMMap();
-
 }
 
-// Test starting and stopping an OUTPUT AAudioStream that uses a Callback
-TEST_P(AAudioOutputStreamCallbackTest, testPlayback) {
+void AAudioOutputStreamCallbackTest::runTest() {
     if (!mSetupSuccessful) return;
 
     const int32_t framesPerDataCallback = std::get<PARAM_FRAMES_PER_CB>(GetParam());
@@ -506,13 +561,33 @@ TEST_P(AAudioOutputStreamCallbackTest, testPlayback) {
         EXPECT_GE(mCbData->minLatency, 1);   // Absurdly low
         // We only issue a warning here because the CDD does not mandate a specific minimum latency
         if (mCbData->maxLatency > 300) {
-            __android_log_print(ANDROID_LOG_WARN, LOG_TAG,
-                    "Suspiciously high callback latency: %d", mCbData->maxLatency);
+            __android_log_print(ANDROID_LOG_WARN, LOG_TAG, "Suspiciously high callback latency: %d",
+                                mCbData->maxLatency);
         }
         //printf("latency: %d, %d\n", mCbData->minLatency, mCbData->maxLatency);
 
         ASSERT_EQ(AAUDIO_OK, mCbData->callbackError);
     }
+}
+
+// Test starting and stopping an OUTPUT AAudioStream that uses a Callback
+TEST_P(AAudioOutputStreamCallbackTest, testPlayback) {
+    AAudioStreamBuilder_setDataCallback(builder(), &MyDataCallbackProc, mCbData.get());
+    createAndVerifyHonoringMMap();
+
+    runTest();
+}
+
+TEST_P(AAudioOutputStreamCallbackTest, testPlaybackPartialCallback) {
+    auto result = AAudioStreamBuilder_setPartialDataCallback(builder(), &MyPartialDataCallbackProc,
+                                                             mCbData.get());
+    if (result == AAUDIO_ERROR_UNIMPLEMENTED) {
+        return;
+    }
+    ASSERT_EQ(AAUDIO_OK, result);
+    createAndVerifyHonoringMMap();
+
+    runTest();
 }
 
 INSTANTIATE_TEST_CASE_P(SPM, AAudioOutputStreamCallbackTest,
