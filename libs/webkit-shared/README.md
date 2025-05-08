@@ -32,13 +32,6 @@ Eg:
 + public class WebViewTest extends SharedWebViewTest
 ```
 
-*** aside
-**Note:**  Some WebView tests still use the JUnit 3 style, so you may need to
-first migrate the test suite from `ActivityInstrumentationTestCase2` to use
-`ActivityScenarioRule` (which is for JUnit 4 style). See
-[b/112773416](http://b/112773416) for details.
-***
-
 This abstract class requires you to implement the method `createTestEnvironment` that
 defines the test environment for your test suite. Think of the test environment as a
 concrete description of where this test suite will execute. `createTestEnvironment` should
