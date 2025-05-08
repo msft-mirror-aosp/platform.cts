@@ -145,6 +145,9 @@ public class SurfacePackageFlickerTest {
 
         @Override
         public Rect getBoundsToCheck(FrameLayout parent) {
+            if (CapturedActivity.wmCanReplaceContentOnDisplay()) {
+                return null;
+            }
             View boundsView = mParent;
             Rect boundsToCheck = new Rect(0, 0, boundsView.getWidth(), boundsView.getHeight());
             int[] topLeft = new int[2];
