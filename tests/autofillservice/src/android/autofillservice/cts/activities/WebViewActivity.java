@@ -144,6 +144,7 @@ public class WebViewActivity extends AbstractWebViewActivity {
         mPasswordInput = getInput(uiBot, mPasswordLabel);
         mLoginButton = uiBot.findRightAwayByText("Login");
 
+        Log.d(TAG, "finish loading the webview");
         return mWebView;
     }
 
@@ -155,22 +156,27 @@ public class WebViewActivity extends AbstractWebViewActivity {
     }
 
     public UiObject2 getUsernameLabel() throws Exception {
+        Log.d(TAG, "getUsernameLabel");
         return mUsernameLabel;
     }
 
     public UiObject2 getPasswordLabel() throws Exception {
+        Log.d(TAG, "getPasswordLabel");
         return mPasswordLabel;
     }
 
     public UiObject2 getUsernameInput() throws Exception {
+        Log.d(TAG, "getUsernameInput");
         return mUsernameInput;
     }
 
     public UiObject2 getPasswordInput() throws Exception {
+        Log.d(TAG, "getPasswordInput");
         return mPasswordInput;
     }
 
     public UiObject2 getLoginButton() throws Exception {
+        Log.d(TAG, "getLoginButton");
         return mLoginButton;
     }
 
