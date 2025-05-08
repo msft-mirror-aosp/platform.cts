@@ -80,7 +80,7 @@ public class MockModemTestBase {
     protected static boolean afterAllTestsBase() throws Exception {
         if (VDBG) Log.d(TAG, "afterAllTestsBase()");
 
-        if (!hasTelephonyFeature()) {
+        if (!hasTelephonyFeature() || sTelephonyManager == null) {
             return false;
         }
 
