@@ -17,8 +17,8 @@
 package android.app.cts;
 
 import android.app.AliasActivity;
-import android.app.stubs.AliasActivityStub;
 import android.app.stubs.ChildActivity;
+import android.app.stubs.shared.AliasActivityStub;
 import android.content.Context;
 import android.content.Intent;
 import android.test.InstrumentationTestCase;

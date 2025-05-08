@@ -50,9 +50,9 @@ public class DateSorterTest extends SharedWebViewTest {
     protected SharedWebViewTestEnvironment createTestEnvironment() {
         Context context = InstrumentationRegistry.getInstrumentation().getContext();
         return new SharedWebViewTestEnvironment.Builder()
-            .setContext(context)
-            .setHostAppInvoker(SharedWebViewTestEnvironment.createHostAppInvoker(context))
-            .build();
+                .setContext(context)
+                .setHostAppInvoker(SharedWebViewTestEnvironment.createHostAppInvoker(context))
+                .build();
     }
 
     @Test

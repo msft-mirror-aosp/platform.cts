@@ -97,6 +97,7 @@ android_ravenwood_test {
     ],
     srcs: [
         "src/android/app/cts/ActivityOptionsTest.java",
+        "src/android/app/cts/InstrumentationThreadingTest.java",
     ],
     auto_gen_config: true,
     team: "trendy_team_ravenwood",
@@ -108,7 +109,6 @@ test_module_config {
     test_suites: ["general-tests"],
     include_filters: [
         "android.app.cts.ActivityManagerProcessStateTest",
-        "android.app.cts.ServiceTest",
         "android.app.cts.ActivityManagerTest",
         "android.app.cts.TaskDescriptionTest",
     ],
@@ -122,7 +122,6 @@ test_module_config {
     test_suites: ["general-tests"],
     include_filters: [
         "android.app.cts.ActivityManagerProcessStateTest",
-        "android.app.cts.ServiceTest",
         "android.app.cts.ActivityManagerTest",
         "android.app.cts.TaskDescriptionTest",
     ],

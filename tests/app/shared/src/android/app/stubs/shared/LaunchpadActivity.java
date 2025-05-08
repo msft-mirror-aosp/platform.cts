@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package android.app.stubs;
+package android.app.stubs.shared;
 
 import android.app.Activity;
 import android.content.BroadcastReceiver;
@@ -144,27 +144,58 @@ public final class LaunchpadActivity extends Activity {
 
         final String action = getIntent().getAction();
         if (LIFECYCLE_BASIC.equals(action)) {
-            addPossibleLifecycle(LIFECYCLE_BASIC, new String[] {
-                    ON_START, ON_RESUME, DO_FINISH, ON_PAUSE
-            });
+            addPossibleLifecycle(
+                    LIFECYCLE_BASIC, new String[] {ON_START, ON_RESUME, DO_FINISH, ON_PAUSE});
         } else if (LIFECYCLE_SCREEN.equals(action)) {
-            addPossibleLifecycle(LIFECYCLE_SCREEN + "_RESTART", new String[] {
-                    ON_START, ON_RESUME, DO_LOCAL_SCREEN, ON_PAUSE,
-                    ON_RESTART, ON_START, ON_RESUME, DO_FINISH, ON_PAUSE
-            });
-            addPossibleLifecycle(LIFECYCLE_SCREEN + "_RESUME", new String[] {
-                    ON_START, ON_RESUME, DO_LOCAL_SCREEN, ON_PAUSE,
-                    ON_RESUME, DO_FINISH, ON_PAUSE
-            });
+            addPossibleLifecycle(
+                    LIFECYCLE_SCREEN + "_RESTART",
+                    new String[] {
+                        ON_START,
+                        ON_RESUME,
+                        DO_LOCAL_SCREEN,
+                        ON_PAUSE,
+                        ON_RESTART,
+                        ON_START,
+                        ON_RESUME,
+                        DO_FINISH,
+                        ON_PAUSE
+                    });
+            addPossibleLifecycle(
+                    LIFECYCLE_SCREEN + "_RESUME",
+                    new String[] {
+                        ON_START,
+                        ON_RESUME,
+                        DO_LOCAL_SCREEN,
+                        ON_PAUSE,
+                        ON_RESUME,
+                        DO_FINISH,
+                        ON_PAUSE
+                    });
         } else if (LIFECYCLE_DIALOG.equals(action)) {
-            addPossibleLifecycle(LIFECYCLE_DIALOG + "_RESTART", new String[] {
-                    ON_START, ON_RESUME, DO_LOCAL_DIALOG, ON_PAUSE,
-                    ON_RESTART, ON_START, ON_RESUME, DO_FINISH, ON_PAUSE
-            });
-            addPossibleLifecycle(LIFECYCLE_DIALOG + "_RESUME", new String[] {
-                    ON_START, ON_RESUME, DO_LOCAL_DIALOG, ON_PAUSE,
-                    ON_RESUME, DO_FINISH, ON_PAUSE
-            });
+            addPossibleLifecycle(
+                    LIFECYCLE_DIALOG + "_RESTART",
+                    new String[] {
+                        ON_START,
+                        ON_RESUME,
+                        DO_LOCAL_DIALOG,
+                        ON_PAUSE,
+                        ON_RESTART,
+                        ON_START,
+                        ON_RESUME,
+                        DO_FINISH,
+                        ON_PAUSE
+                    });
+            addPossibleLifecycle(
+                    LIFECYCLE_DIALOG + "_RESUME",
+                    new String[] {
+                        ON_START,
+                        ON_RESUME,
+                        DO_LOCAL_DIALOG,
+                        ON_PAUSE,
+                        ON_RESUME,
+                        DO_FINISH,
+                        ON_PAUSE
+                    });
         }
     }
 
@@ -176,10 +207,9 @@ public final class LaunchpadActivity extends Activity {
     }
 
     /**
-     * Add a potential lifecycle that this activity may follow, since there
-     * are usually multiple valid lifecycles. For instance, sometimes onPause
-     * will lead to onResume rather than onStop when another activity is
-     * raised over the current one.
+     * Add a potential lifecycle that this activity may follow, since there are usually multiple
+     * valid lifecycles. For instance, sometimes onPause will lead to onResume rather than onStop
+     * when another activity is raised over the current one.
      *
      * @param debugName for the lifecycle shown in the logs
      * @param lifecycle array containing tokens indicating the expected lifecycle
@@ -194,23 +224,25 @@ public final class LaunchpadActivity extends Activity {
     }
 
     /**
-     * Switch to the next possible lifecycle and return if switching was
-     * successful. Call this method when mExpectedLifecycle doesn't match
-     * the current lifecycle and you need to check another possible lifecycle.
+     * Switch to the next possible lifecycle and return if switching was successful. Call this
+     * method when mExpectedLifecycle doesn't match the current lifecycle and you need to check
+     * another possible lifecycle.
      *
      * @return whether on not there was a lifecycle to switch to
      */
     private boolean switchToNextPossibleLifecycle() {
         if (!mOtherPossibleLifecycles.isEmpty()) {
             String[] newLifecycle = mOtherPossibleLifecycles.remove(0);
-            Log.w(TAG, "Switching expected lifecycles from "
-                    + mLifecycleNames.get(mExpectedLifecycle) + " to "
-                    + mLifecycleNames.get(newLifecycle));
+            Log.w(
+                    TAG,
+                    "Switching expected lifecycles from "
+                            + mLifecycleNames.get(mExpectedLifecycle)
+                            + " to "
+                            + mLifecycleNames.get(newLifecycle));
             mExpectedLifecycle = newLifecycle;
             return true;
         } else {
-            Log.w(TAG, "No more lifecycles after "
-                    + mLifecycleNames.get(mExpectedLifecycle));
+            Log.w(TAG, "No more lifecycles after " + mLifecycleNames.get(mExpectedLifecycle));
             mExpectedLifecycle = null;
             return false;
         }
@@ -260,37 +292,30 @@ public final class LaunchpadActivity extends Activity {
                 intent.setClass(this, LocalScreen.class);
                 startActivityForResult(intent, LAUNCHED_RESULT);
             } else if (BROADCAST_REGISTERED.equals(action)) {
-                setExpectedReceivers(new String[] {
-                    RECEIVER_REG
-                });
+                setExpectedReceivers(new String[] {RECEIVER_REG});
                 registerMyReceiver(new IntentFilter(BROADCAST_REGISTERED));
                 sendBroadcast(makeBroadcastIntent(BROADCAST_REGISTERED));
             } else if (BROADCAST_LOCAL.equals(action)) {
-                setExpectedReceivers(new String[] {
-                    RECEIVER_LOCAL
-                });
+                setExpectedReceivers(new String[] {RECEIVER_LOCAL});
                 sendBroadcast(makeBroadcastIntent(BROADCAST_LOCAL));
             } else if (BROADCAST_REMOTE.equals(action)) {
-                setExpectedReceivers(new String[] {
-                    RECEIVER_REMOTE
-                });
+                setExpectedReceivers(new String[] {RECEIVER_REMOTE});
                 sendBroadcast(makeBroadcastIntent(BROADCAST_REMOTE));
             } else if (BROADCAST_ALL.equals(action)) {
-                setExpectedReceivers(new String[] {
-                        RECEIVER_REMOTE, RECEIVER_REG, RECEIVER_LOCAL
-                });
+                setExpectedReceivers(new String[] {RECEIVER_REMOTE, RECEIVER_REG, RECEIVER_LOCAL});
                 registerMyReceiver(new IntentFilter(BROADCAST_ALL));
                 sendOrderedBroadcast(makeBroadcastIntent(BROADCAST_ALL), null);
             } else if (BROADCAST_MULTI.equals(action)) {
-                setExpectedReceivers(new String[] {
-                        RECEIVER_REMOTE, RECEIVER_REG, RECEIVER_LOCAL, RECEIVER_REMOTE,
-                        RECEIVER_REG, RECEIVER_LOCAL, RECEIVER_REMOTE, RECEIVER_REG,
-                        RECEIVER_LOCAL, RECEIVER_LOCAL, RECEIVER_REMOTE, RECEIVER_LOCAL,
-                        RECEIVER_REMOTE, RECEIVER_REMOTE, RECEIVER_REG, RECEIVER_LOCAL,
-                        RECEIVER_REMOTE, RECEIVER_REG, RECEIVER_LOCAL, RECEIVER_REMOTE,
-                        RECEIVER_REG, RECEIVER_LOCAL, RECEIVER_REMOTE, RECEIVER_LOCAL,
-                        RECEIVER_REMOTE, RECEIVER_LOCAL
-                });
+                setExpectedReceivers(
+                        new String[] {
+                            RECEIVER_REMOTE, RECEIVER_REG, RECEIVER_LOCAL, RECEIVER_REMOTE,
+                            RECEIVER_REG, RECEIVER_LOCAL, RECEIVER_REMOTE, RECEIVER_REG,
+                            RECEIVER_LOCAL, RECEIVER_LOCAL, RECEIVER_REMOTE, RECEIVER_LOCAL,
+                            RECEIVER_REMOTE, RECEIVER_REMOTE, RECEIVER_REG, RECEIVER_LOCAL,
+                            RECEIVER_REMOTE, RECEIVER_REG, RECEIVER_LOCAL, RECEIVER_REMOTE,
+                            RECEIVER_REG, RECEIVER_LOCAL, RECEIVER_REMOTE, RECEIVER_LOCAL,
+                            RECEIVER_REMOTE, RECEIVER_LOCAL
+                        });
                 registerMyReceiver(new IntentFilter(BROADCAST_ALL));
                 sendOrderedBroadcast(makeBroadcastIntent(BROADCAST_ALL), null);
                 sendOrderedBroadcast(makeBroadcastIntent(BROADCAST_ALL), null);
@@ -304,26 +329,16 @@ public final class LaunchpadActivity extends Activity {
                 sendOrderedBroadcast(makeBroadcastIntent(BROADCAST_ALL), null);
                 sendOrderedBroadcast(makeBroadcastIntent(BROADCAST_REPEAT), null);
             } else if (BROADCAST_ABORT.equals(action)) {
-                setExpectedReceivers(new String[] {
-                        RECEIVER_REMOTE, RECEIVER_ABORT
-                });
+                setExpectedReceivers(new String[] {RECEIVER_REMOTE, RECEIVER_ABORT});
                 registerMyReceiver(new IntentFilter(BROADCAST_ABORT));
                 sendOrderedBroadcast(makeBroadcastIntent(BROADCAST_ABORT), null);
             } else if (BROADCAST_STICKY1.equals(action)) {
-                setExpectedReceivers(new String[] {
-                    RECEIVER_REG
-                });
-                setExpectedData(new String[] {
-                    DATA_1
-                });
+                setExpectedReceivers(new String[] {RECEIVER_REG});
+                setExpectedData(new String[] {DATA_1});
                 registerMyReceiver(new IntentFilter(BROADCAST_STICKY1));
             } else if (BROADCAST_STICKY2.equals(action)) {
-                setExpectedReceivers(new String[] {
-                        RECEIVER_REG, RECEIVER_REG
-                });
-                setExpectedData(new String[] {
-                        DATA_1, DATA_2
-                });
+                setExpectedReceivers(new String[] {RECEIVER_REG, RECEIVER_REG});
+                setExpectedData(new String[] {DATA_1, DATA_2});
                 final IntentFilter filter = new IntentFilter(BROADCAST_STICKY1);
                 filter.addAction(BROADCAST_STICKY2);
                 registerMyReceiver(filter);
@@ -372,13 +387,14 @@ public final class LaunchpadActivity extends Activity {
                 if (RETURNED_RESULT.equals(data.getAction())) {
                     finishWithResult(resultCode, data);
                 } else {
-                    finishWithResult(RESULT_CANCELED, new Intent().setAction("Bad data returned: "
-                            + data));
+                    finishWithResult(
+                            RESULT_CANCELED, new Intent().setAction("Bad data returned: " + data));
                 }
                 break;
             default:
-                finishWithResult(RESULT_CANCELED, new Intent()
-                        .setAction("Unexpected request code: " + requestCode));
+                finishWithResult(
+                        RESULT_CANCELED,
+                        new Intent().setAction("Unexpected request code: " + requestCode));
                 break;
         }
     }
@@ -391,8 +407,12 @@ public final class LaunchpadActivity extends Activity {
         }
 
         if (mNextLifecycle >= mExpectedLifecycle.length) {
-            finishBad("Activity lifecycle for " + action + " incorrect: received " + where
-                    + " but don't expect any more calls");
+            finishBad(
+                    "Activity lifecycle for "
+                            + action
+                            + " incorrect: received "
+                            + where
+                            + " but don't expect any more calls");
             mExpectedLifecycle = null;
             return;
         }
@@ -407,8 +427,13 @@ public final class LaunchpadActivity extends Activity {
         } while (switchToNextPossibleLifecycle());
 
         if (mExpectedLifecycle == null) {
-            finishBad("Activity lifecycle for " + action + " incorrect: received " + where
-                    + " at " + mNextLifecycle);
+            finishBad(
+                    "Activity lifecycle for "
+                            + action
+                            + " incorrect: received "
+                            + where
+                            + " at "
+                            + mNextLifecycle);
             return;
         }
 
@@ -504,22 +529,23 @@ public final class LaunchpadActivity extends Activity {
     static final int GOT_RECEIVE_TRANSACTION = IBinder.FIRST_CALL_TRANSACTION;
     static final int ERROR_TRANSACTION = IBinder.FIRST_CALL_TRANSACTION + 1;
 
-    private final Binder mCallTarget = new Binder() {
-        @Override
-        public boolean onTransact(int code, Parcel data, Parcel reply, int flags) {
-            data.setDataPosition(0);
-            data.enforceInterface(LaunchpadActivity.LAUNCH);
-            if (code == GOT_RECEIVE_TRANSACTION) {
-                final String name = data.readString();
-                gotReceive(name, null);
-                return true;
-            } else if (code == ERROR_TRANSACTION) {
-                finishBad(data.readString());
-                return true;
-            }
-            return false;
-        }
-    };
+    private final Binder mCallTarget =
+            new Binder() {
+                @Override
+                public boolean onTransact(int code, Parcel data, Parcel reply, int flags) {
+                    data.setDataPosition(0);
+                    data.enforceInterface(LaunchpadActivity.LAUNCH);
+                    if (code == GOT_RECEIVE_TRANSACTION) {
+                        final String name = data.readString();
+                        gotReceive(name, null);
+                        return true;
+                    } else if (code == ERROR_TRANSACTION) {
+                        finishBad(data.readString());
+                        return true;
+                    }
+                    return false;
+                }
+            };
 
     private void gotReceive(String name, Intent intent) {
         synchronized (this) {
@@ -539,8 +565,9 @@ public final class LaunchpadActivity extends Activity {
                 }
                 if (i >= n) {
                     if (prev) {
-                        finishBad("Receive got data too many times: "
-                                + intent.getStringExtra("test"));
+                        finishBad(
+                                "Receive got data too many times: "
+                                        + intent.getStringExtra("test"));
                     } else {
                         finishBad("Receive got unexpected data: " + intent.getStringExtra("test"));
                     }
@@ -551,15 +578,19 @@ public final class LaunchpadActivity extends Activity {
             if (mNextReceiver >= mExpectedReceivers.length) {
                 finishBad("Got too many onReceiveIntent() calls!");
             } else if (!mExpectedReceivers[mNextReceiver].equals(name)) {
-                finishBad("Receive out of order: got " + name + " but expected "
-                        + mExpectedReceivers[mNextReceiver] + " at " + mNextReceiver);
+                finishBad(
+                        "Receive out of order: got "
+                                + name
+                                + " but expected "
+                                + mExpectedReceivers[mNextReceiver]
+                                + " at "
+                                + mNextReceiver);
             } else {
                 mNextReceiver++;
                 if (mNextReceiver == mExpectedReceivers.length) {
                     mHandler.post(mUnregister);
                 }
             }
-
         }
     }
 
@@ -571,23 +602,25 @@ public final class LaunchpadActivity extends Activity {
                 finishGood();
             };
 
-    private final Runnable mTimeout = new Runnable() {
-        public void run() {
-            Log.i(TAG, "timeout");
-            String msg = "Timeout";
-            if (mExpectedReceivers != null && mNextReceiver < mExpectedReceivers.length) {
-                msg = msg + " waiting for " + mExpectedReceivers[mNextReceiver];
-            }
-            finishBad(msg);
-        }
-    };
+    private final Runnable mTimeout =
+            new Runnable() {
+                public void run() {
+                    Log.i(TAG, "timeout");
+                    String msg = "Timeout";
+                    if (mExpectedReceivers != null && mNextReceiver < mExpectedReceivers.length) {
+                        msg = msg + " waiting for " + mExpectedReceivers[mNextReceiver];
+                    }
+                    finishBad(msg);
+                }
+            };
 
-    private final BroadcastReceiver mReceiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            gotReceive(RECEIVER_REG, intent);
-        }
-    };
+    private final BroadcastReceiver mReceiver =
+            new BroadcastReceiver() {
+                @Override
+                public void onReceive(Context context, Intent intent) {
+                    gotReceive(RECEIVER_REG, intent);
+                }
+            };
 
     static final class MyBadParcelable implements Parcelable {
         MyBadParcelable() {}

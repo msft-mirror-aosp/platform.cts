@@ -15,80 +15,93 @@
  */
 package android.app.cts;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import android.app.ActivityManager;
 import android.app.stubs.MockActivity;
 import android.content.ComponentName;
+import android.content.Context;
 import android.os.Parcel;
-import android.test.AndroidTestCase;
 
-public class ActivityManager_RunningServiceInfoTest extends AndroidTestCase {
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
+
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
+@RunWith(AndroidJUnit4.class)
+public final class ActivityManager_RunningServiceInfoTest {
     private ActivityManager.RunningServiceInfo mRunningServiceInfo;
     private ComponentName mService;
     private static final String PROCESS = "process";
 
-    @Override
-    protected void setUp() throws Exception {
-        super.setUp();
+    @Before
+    public void setUp() throws Exception {
+        Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
         mRunningServiceInfo = new ActivityManager.RunningServiceInfo();
-        mService = new ComponentName(getContext(), MockActivity.class);
+        mService = new ComponentName(context, MockActivity.class);
 
         mRunningServiceInfo.service = mService;
         mRunningServiceInfo.pid = 1;
         mRunningServiceInfo.process = PROCESS;
         mRunningServiceInfo.foreground = true;
-        mRunningServiceInfo.activeSince = 1l;
+        mRunningServiceInfo.activeSince = 1L;
         mRunningServiceInfo.started = true;
         mRunningServiceInfo.clientCount = 2;
         mRunningServiceInfo.crashCount = 1;
-        mRunningServiceInfo.lastActivityTime = 1l;
-        mRunningServiceInfo.restarting = 1l;
+        mRunningServiceInfo.lastActivityTime = 1L;
+        mRunningServiceInfo.restarting = 1L;
     }
 
+    @Test
     public void testConstructor() {
         new ActivityManager.RunningServiceInfo();
     }
 
+    @Test
     public void testDescribeContents() {
-        assertEquals(0, mRunningServiceInfo.describeContents());
+        assertThat(mRunningServiceInfo.describeContents()).isEqualTo(0);
     }
 
+    @Test
     public void testWriteToParcel() throws Exception {
-
         Parcel parcel = Parcel.obtain();
         mRunningServiceInfo.writeToParcel(parcel, 0);
         parcel.setDataPosition(0);
         ActivityManager.RunningServiceInfo values =
             ActivityManager.RunningServiceInfo.CREATOR.createFromParcel(parcel);
-        assertEquals(mService, values.service);
-        assertEquals(1, values.pid);
-        assertEquals(PROCESS, values.process);
-        assertTrue(values.foreground);
-        assertEquals(1l, values.activeSince);
-        assertTrue(values.started);
-        assertEquals(2, values.clientCount);
-        assertEquals(1, values.crashCount);
-        assertEquals(1l, values.lastActivityTime);
-        assertEquals(1l, values.restarting);
+
+        assertThat(values.service).isEqualTo(mService);
+        assertThat(values.pid).isEqualTo(1);
+        assertThat(values.process).isEqualTo(PROCESS);
+        assertThat(values.foreground).isTrue();
+        assertThat(values.activeSince).isEqualTo(1L);
+        assertThat(values.started).isTrue();
+        assertThat(values.clientCount).isEqualTo(2);
+        assertThat(values.crashCount).isEqualTo(1);
+        assertThat(values.lastActivityTime).isEqualTo(1L);
+        assertThat(values.restarting).isEqualTo(1L);
     }
 
-    public void testReadFromParcel() throws Exception {
-
+    @Test
+    public void testReadFromParcel() {
         Parcel parcel = Parcel.obtain();
         mRunningServiceInfo.writeToParcel(parcel, 0);
         parcel.setDataPosition(0);
         ActivityManager.RunningServiceInfo values =
             new ActivityManager.RunningServiceInfo();
         values.readFromParcel(parcel);
-        assertEquals(mService, values.service);
-        assertEquals(1, values.pid);
-        assertEquals(PROCESS, values.process);
-        assertTrue(values.foreground);
-        assertEquals(1l, values.activeSince);
-        assertTrue(values.started);
-        assertEquals(2, values.clientCount);
-        assertEquals(1, values.crashCount);
-        assertEquals(1l, values.lastActivityTime);
-        assertEquals(1l, values.restarting);
-    }
 
+        assertThat(values.service).isEqualTo(mService);
+        assertThat(values.pid).isEqualTo(1);
+        assertThat(values.process).isEqualTo(PROCESS);
+        assertThat(values.foreground).isTrue();
+        assertThat(values.activeSince).isEqualTo(1L);
+        assertThat(values.started).isTrue();
+        assertThat(values.clientCount).isEqualTo(2);
+        assertThat(values.crashCount).isEqualTo(1);
+        assertThat(values.lastActivityTime).isEqualTo(1L);
+        assertThat(values.restarting).isEqualTo(1L);
+    }
 }

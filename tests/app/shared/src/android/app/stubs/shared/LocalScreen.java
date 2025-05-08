@@ -14,9 +14,8 @@
  * limitations under the License.
  */
 
-package android.app.stubs;
+package android.app.stubs.shared;
 
-public class LocalDialog extends TestedScreen {
-    public LocalDialog() {
-    }
+public final class LocalScreen extends TestedScreen {
+    public LocalScreen() {}
 }

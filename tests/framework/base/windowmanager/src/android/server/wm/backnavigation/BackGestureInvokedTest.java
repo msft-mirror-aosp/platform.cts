@@ -76,7 +76,6 @@ public class BackGestureInvokedTest extends ActivityManagerTestBase {
     private TestActivitySession<BackInvokedActivity> mActivitySession;
     private BackInvokedActivity mActivity;
 
-
     static final String OVERRIDE_DEFAULT_CALLBACK = "override_default_callback";
     static final int OVERRIDE_MOVE_TASK_TO_BACK = 1;
     static final int OVERRIDE_FINISH_AND_REMOVE_TASK = 2;
@@ -103,7 +102,7 @@ public class BackGestureInvokedTest extends ActivityManagerTestBase {
                 mWmState.getMatchingWindows(ws -> ws.getType() == TYPE_APPLICATION_PANEL
                                 && ws.getStackId() == taskId && ws.isSurfaceShown())
                         .findAny().isPresent(), "popup window show"));
-        triggerBackEventByGesture(DEFAULT_DISPLAY);
+        BackGestureTouchHelper.triggerBackEventByGesture(mWmState, DEFAULT_DISPLAY);
 
         assertTrue("Popup window must be removed", mWmState.waitFor(state ->
                         mWmState.getMatchingWindows(ws -> ws.getType() == TYPE_APPLICATION_PANEL
@@ -120,7 +119,7 @@ public class BackGestureInvokedTest extends ActivityManagerTestBase {
 
     @Test
     public void testBackToHome() {
-        triggerBackEventByGesture(DEFAULT_DISPLAY);
+        BackGestureTouchHelper.triggerBackEventByGesture(mWmState, DEFAULT_DISPLAY);
         mWmState.waitAndAssertActivityRemoved(mActivity.getComponentName());
 
         assertEquals(TYPE_RETURN_TO_HOME, mWmState.getBackNavigationState().getLastBackType());
@@ -135,7 +134,7 @@ public class BackGestureInvokedTest extends ActivityManagerTestBase {
         mWmState.assertVisibility(componentName, true);
         mWmState.waitForFocusedActivity("Wait for launched activity to be in front.",
                 componentName);
-        triggerBackEventByGesture(DEFAULT_DISPLAY);
+        BackGestureTouchHelper.triggerBackEventByGesture(mWmState, DEFAULT_DISPLAY);
         mWmState.waitForActivityState(mActivity.getComponentName(), STATE_RESUMED);
 
         assertEquals(TYPE_CROSS_TASK, mWmState.getBackNavigationState().getLastBackType());
@@ -149,7 +148,7 @@ public class BackGestureInvokedTest extends ActivityManagerTestBase {
         mWmState.assertVisibility(componentName, true);
         mWmState.waitForFocusedActivity("Wait for launched activity to be in front.",
                 componentName);
-        triggerBackEventByGesture(DEFAULT_DISPLAY);
+        BackGestureTouchHelper.triggerBackEventByGesture(mWmState, DEFAULT_DISPLAY);
         mWmState.waitForActivityState(mActivity.getComponentName(), STATE_RESUMED);
 
         assertEquals(TYPE_CROSS_ACTIVITY, mWmState.getBackNavigationState().getLastBackType());
@@ -169,7 +168,7 @@ public class BackGestureInvokedTest extends ActivityManagerTestBase {
             mActivity.getOnBackInvokedDispatcher().unregisterOnBackInvokedCallback(
                     SystemOnBackInvokedCallbacks.moveTaskToBackCallback(mActivity));
         });
-        triggerBackEventByGesture(DEFAULT_DISPLAY);
+        BackGestureTouchHelper.triggerBackEventByGesture(mWmState, DEFAULT_DISPLAY);
         mWmState.waitAndAssertActivityRemoved(componentName);
 
         assertEquals(TYPE_RETURN_TO_HOME, mWmState.getBackNavigationState().getLastBackType());
@@ -256,7 +255,7 @@ public class BackGestureInvokedTest extends ActivityManagerTestBase {
             }
         }
 
-        triggerBackEventByGesture(DEFAULT_DISPLAY);
+        BackGestureTouchHelper.triggerBackEventByGesture(mWmState, DEFAULT_DISPLAY);
         if (overrideTo == OVERRIDE_FINISH_AND_REMOVE_TASK) {
             mWmState.waitAndAssertActivityRemoved(componentName);
         } else {
@@ -275,7 +274,7 @@ public class BackGestureInvokedTest extends ActivityManagerTestBase {
         });
         mInstrumentation.waitForIdleSync();
 
-        triggerBackEventByGesture(DEFAULT_DISPLAY);
+        BackGestureTouchHelper.triggerBackEventByGesture(mWmState, DEFAULT_DISPLAY);
 
         // activity remain focused
         mWmState.waitForFocusedActivity("top activity to be focused",
@@ -297,7 +296,7 @@ public class BackGestureInvokedTest extends ActivityManagerTestBase {
         mWmState.assertVisibility(componentName, true);
         mWmState.waitAndAssertImeWindowShownOnDisplay(DEFAULT_DISPLAY);
 
-        triggerBackEventByGesture(DEFAULT_DISPLAY);
+        BackGestureTouchHelper.triggerBackEventByGesture(mWmState, DEFAULT_DISPLAY);
         mWmState.waitAndAssertImeWindowHiddenOnDisplay(DEFAULT_DISPLAY);
 
         assertEquals(TYPE_CALLBACK, mWmState.getBackNavigationState().getLastBackType());

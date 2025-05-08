@@ -91,29 +91,31 @@ public final class SharedWebViewTestEnvironment {
      * Use this method instead of EncodingUtils.getBytes.
      */
     public byte[] getEncodingBytes(String data, String charset) {
-        return ExceptionWrapper.unwrap(() -> {
-            return mHostAppInvoker.getEncodingBytes(data, charset);
-        });
+        return ExceptionWrapper.unwrap(
+                () -> {
+                    return mHostAppInvoker.getEncodingBytes(data, charset);
+                });
     }
 
     /** Invokes waitForIdleSync on the {@link Instrumentation} in the activity. */
     public void waitForIdleSync() {
-        ExceptionWrapper.unwrap(() -> {
-            mHostAppInvoker.waitForIdleSync();
-        });
+        ExceptionWrapper.unwrap(
+                () -> {
+                    mHostAppInvoker.waitForIdleSync();
+                });
     }
 
     /** Invokes sendKeyDownUpSync on the {@link Instrumentation} in the activity. */
     public void sendKeyDownUpSync(int keyCode) {
-        ExceptionWrapper.unwrap(() -> {
-            mHostAppInvoker.sendKeyDownUpSync(keyCode);
-        });
+        ExceptionWrapper.unwrap(
+                () -> {
+                    mHostAppInvoker.sendKeyDownUpSync(keyCode);
+                });
     }
 
     /**
-     * Invokes sendPointerSync to press down and up to either the
-     * {@link Instrumentation} or {@link UiAutomation} in the activity depending
-     * on the host app invoker configuration.
+     * Invokes sendPointerSync to press down and up to either the {@link Instrumentation} or {@link
+     * UiAutomation} in the activity depending on the host app invoker configuration.
      */
     public void sendTapSync(int x, int y) {
         ExceptionWrapper.unwrap(
@@ -124,9 +126,10 @@ public final class SharedWebViewTestEnvironment {
 
     /** Returns a web server that can be used for web based testing. */
     public SharedSdkWebServer getWebServer() {
-        return ExceptionWrapper.unwrap(() -> {
-            return new SharedSdkWebServer(mHostAppInvoker.getWebServer());
-        });
+        return ExceptionWrapper.unwrap(
+                () -> {
+                    return new SharedSdkWebServer(mHostAppInvoker.getWebServer());
+                });
     }
 
     /** Returns a web server that has been started and can be used for web based testing. */
@@ -206,6 +209,7 @@ public final class SharedWebViewTestEnvironment {
     public static IHostAppInvoker.Stub createHostAppInvoker(Context applicationContext) {
         return createHostAppInvoker(applicationContext, false);
     }
+
     /**
      * This will generate a new {@link IHostAppInvoker} binder node. This should be called from
      * wherever the activity exists for test cases.
@@ -221,16 +225,18 @@ public final class SharedWebViewTestEnvironment {
 
             @Override
             public void waitForIdleSync() {
-                ExceptionWrapper.wrap(() -> {
-                    mInstrumentation.waitForIdleSync();
-                });
+                ExceptionWrapper.wrap(
+                        () -> {
+                            mInstrumentation.waitForIdleSync();
+                        });
             }
 
             @Override
             public void sendKeyDownUpSync(int keyCode) {
-                ExceptionWrapper.wrap(() -> {
-                    mInstrumentation.sendKeyDownUpSync(keyCode);
-                });
+                ExceptionWrapper.wrap(
+                        () -> {
+                            mInstrumentation.sendKeyDownUpSync(keyCode);
+                        });
             }
 
             @Override
@@ -249,9 +255,10 @@ public final class SharedWebViewTestEnvironment {
 
             @Override
             public byte[] getEncodingBytes(String data, String charset) {
-                return ExceptionWrapper.wrap(() -> {
-                    return EncodingUtils.getBytes(data, charset);
-                });
+                return ExceptionWrapper.wrap(
+                        () -> {
+                            return EncodingUtils.getBytes(data, charset);
+                        });
             }
 
             @Override
@@ -264,175 +271,205 @@ public final class SharedWebViewTestEnvironment {
                             @Nullable byte[] acceptedIssuerDer,
                             int keyResId,
                             int certResId) {
-                        ExceptionWrapper.wrap(() -> {
-                            assertNull(mWebServer);
-                            final X509Certificate[] acceptedIssuerCerts;
-                            if (acceptedIssuerDer != null) {
-                                CertificateFactory certFactory =
-                                        CertificateFactory.getInstance("X.509");
-                                acceptedIssuerCerts = new X509Certificate[] {
-                                    (X509Certificate) certFactory.generateCertificate(
-                                            new ByteArrayInputStream(acceptedIssuerDer))
-                                };
-                            } else {
-                                acceptedIssuerCerts = null;
-                            }
-                            X509TrustManager trustManager =
-                                    new CtsTestServer.CtsTrustManager() {
-                                        @Override
-                                        public X509Certificate[] getAcceptedIssuers() {
-                                            return acceptedIssuerCerts;
-                                        }
-                                    };
-                            mWebServer = new CtsTestServer(
-                                    applicationContext, sslMode, trustManager, keyResId, certResId);
-                        });
+                        ExceptionWrapper.wrap(
+                                () -> {
+                                    assertNull(mWebServer);
+                                    final X509Certificate[] acceptedIssuerCerts;
+                                    if (acceptedIssuerDer != null) {
+                                        CertificateFactory certFactory =
+                                                CertificateFactory.getInstance("X.509");
+                                        acceptedIssuerCerts =
+                                                new X509Certificate[] {
+                                                    (X509Certificate)
+                                                            certFactory.generateCertificate(
+                                                                    new ByteArrayInputStream(
+                                                                            acceptedIssuerDer))
+                                                };
+                                    } else {
+                                        acceptedIssuerCerts = null;
+                                    }
+                                    X509TrustManager trustManager =
+                                            new CtsTestServer.CtsTrustManager() {
+                                                @Override
+                                                public X509Certificate[] getAcceptedIssuers() {
+                                                    return acceptedIssuerCerts;
+                                                }
+                                            };
+                                    mWebServer =
+                                            new CtsTestServer(
+                                                    applicationContext,
+                                                    sslMode,
+                                                    trustManager,
+                                                    keyResId,
+                                                    certResId);
+                                });
                     }
 
                     public void shutdown() {
                         if (mWebServer == null) {
                             return;
                         }
-                        ExceptionWrapper.wrap(() -> {
-                            ThreadPolicy oldPolicy = StrictMode.getThreadPolicy();
-                            ThreadPolicy tmpPolicy =
-                                    new ThreadPolicy.Builder(oldPolicy)
-                                            .permitNetwork()
-                                            .build();
-                            StrictMode.setThreadPolicy(tmpPolicy);
-                            mWebServer.shutdown();
-                            mWebServer = null;
-                            StrictMode.setThreadPolicy(oldPolicy);
-                        });
+                        ExceptionWrapper.wrap(
+                                () -> {
+                                    ThreadPolicy oldPolicy = StrictMode.getThreadPolicy();
+                                    ThreadPolicy tmpPolicy =
+                                            new ThreadPolicy.Builder(oldPolicy)
+                                                    .permitNetwork()
+                                                    .build();
+                                    StrictMode.setThreadPolicy(tmpPolicy);
+                                    mWebServer.shutdown();
+                                    mWebServer = null;
+                                    StrictMode.setThreadPolicy(oldPolicy);
+                                });
                     }
 
                     public void resetRequestState() {
-                        ExceptionWrapper.wrap(() -> {
-                            assertNotNull("The WebServer needs to be started", mWebServer);
-                            mWebServer.resetRequestState();
-                        });
+                        ExceptionWrapper.wrap(
+                                () -> {
+                                    assertNotNull("The WebServer needs to be started", mWebServer);
+                                    mWebServer.resetRequestState();
+                                });
                     }
 
                     public String setResponse(
                             String path, String responseString, List<HttpHeader> responseHeaders) {
-                        return ExceptionWrapper.wrap(() -> {
-                            assertNotNull("The WebServer needs to be started", mWebServer);
-                            return mWebServer.setResponse(
-                                    path, responseString, HttpHeader.asPairList(responseHeaders));
-                        });
+                        return ExceptionWrapper.wrap(
+                                () -> {
+                                    assertNotNull("The WebServer needs to be started", mWebServer);
+                                    return mWebServer.setResponse(
+                                            path,
+                                            responseString,
+                                            HttpHeader.asPairList(responseHeaders));
+                                });
                     }
 
                     public String getAbsoluteUrl(String path) {
-                        return ExceptionWrapper.wrap(() -> {
-                            assertNotNull("The WebServer needs to be started", mWebServer);
-                            return mWebServer.getAbsoluteUrl(path);
-                        });
+                        return ExceptionWrapper.wrap(
+                                () -> {
+                                    assertNotNull("The WebServer needs to be started", mWebServer);
+                                    return mWebServer.getAbsoluteUrl(path);
+                                });
                     }
 
                     public String getUserAgentUrl() {
-                        return ExceptionWrapper.wrap(() -> {
-                            assertNotNull("The WebServer needs to be started", mWebServer);
-                            return mWebServer.getUserAgentUrl();
-                        });
+                        return ExceptionWrapper.wrap(
+                                () -> {
+                                    assertNotNull("The WebServer needs to be started", mWebServer);
+                                    return mWebServer.getUserAgentUrl();
+                                });
                     }
 
                     public String getDelayedAssetUrl(String path) {
-                        return ExceptionWrapper.wrap(() -> {
-                            assertNotNull("The WebServer needs to be started", mWebServer);
-                            return mWebServer.getDelayedAssetUrl(path);
-                        });
+                        return ExceptionWrapper.wrap(
+                                () -> {
+                                    assertNotNull("The WebServer needs to be started", mWebServer);
+                                    return mWebServer.getDelayedAssetUrl(path);
+                                });
                     }
 
                     public String getRedirectingAssetUrl(String path) {
-                        return ExceptionWrapper.wrap(() -> {
-                            assertNotNull("The WebServer needs to be started", mWebServer);
-                            return mWebServer.getRedirectingAssetUrl(path);
-                        });
+                        return ExceptionWrapper.wrap(
+                                () -> {
+                                    assertNotNull("The WebServer needs to be started", mWebServer);
+                                    return mWebServer.getRedirectingAssetUrl(path);
+                                });
                     }
 
                     public String getAssetUrl(String path) {
-                        return ExceptionWrapper.wrap(() -> {
-                            assertNotNull("The WebServer needs to be started", mWebServer);
-                            return mWebServer.getAssetUrl(path);
-                        });
+                        return ExceptionWrapper.wrap(
+                                () -> {
+                                    assertNotNull("The WebServer needs to be started", mWebServer);
+                                    return mWebServer.getAssetUrl(path);
+                                });
                     }
 
                     public String getAuthAssetUrl(String path) {
-                        return ExceptionWrapper.wrap(() -> {
-                            assertNotNull("The WebServer needs to be started", mWebServer);
-                            return mWebServer.getAuthAssetUrl(path);
-                        });
+                        return ExceptionWrapper.wrap(
+                                () -> {
+                                    assertNotNull("The WebServer needs to be started", mWebServer);
+                                    return mWebServer.getAuthAssetUrl(path);
+                                });
                     }
 
                     public String getBinaryUrl(String mimeType, int contentLength) {
-                        return ExceptionWrapper.wrap(() -> {
-                            assertNotNull("The WebServer needs to be started", mWebServer);
-                            return mWebServer.getBinaryUrl(mimeType, contentLength);
-                        });
+                        return ExceptionWrapper.wrap(
+                                () -> {
+                                    assertNotNull("The WebServer needs to be started", mWebServer);
+                                    return mWebServer.getBinaryUrl(mimeType, contentLength);
+                                });
                     }
 
                     public String getAppCacheUrl() {
-                        return ExceptionWrapper.wrap(() -> {
-                            assertNotNull("The WebServer needs to be started", mWebServer);
-                            return mWebServer.getAppCacheUrl();
-                        });
+                        return ExceptionWrapper.wrap(
+                                () -> {
+                                    assertNotNull("The WebServer needs to be started", mWebServer);
+                                    return mWebServer.getAppCacheUrl();
+                                });
                     }
 
                     public int getRequestCount() {
-                        return ExceptionWrapper.wrap(() -> {
-                            assertNotNull("The WebServer needs to be started", mWebServer);
-                            return mWebServer.getRequestCount();
-                        });
+                        return ExceptionWrapper.wrap(
+                                () -> {
+                                    assertNotNull("The WebServer needs to be started", mWebServer);
+                                    return mWebServer.getRequestCount();
+                                });
                     }
 
                     public int getRequestCountWithPath(String path) {
-                        return ExceptionWrapper.wrap(() -> {
-                            assertNotNull("The WebServer needs to be started", mWebServer);
-                            return mWebServer.getRequestCount(path);
-                        });
+                        return ExceptionWrapper.wrap(
+                                () -> {
+                                    assertNotNull("The WebServer needs to be started", mWebServer);
+                                    return mWebServer.getRequestCount(path);
+                                });
                     }
 
                     public boolean wasResourceRequested(String url) {
-                        return ExceptionWrapper.wrap(() -> {
-                            assertNotNull("The WebServer needs to be started", mWebServer);
-                            return mWebServer.wasResourceRequested(url);
-                        });
+                        return ExceptionWrapper.wrap(
+                                () -> {
+                                    assertNotNull("The WebServer needs to be started", mWebServer);
+                                    return mWebServer.wasResourceRequested(url);
+                                });
                     }
 
                     public HttpRequest getLastRequest(String path) {
-                        return ExceptionWrapper.wrap(() -> {
-                            assertNotNull("The WebServer needs to be started", mWebServer);
-                            return toHttpRequest(path, mWebServer.getLastRequest(path));
-                        });
+                        return ExceptionWrapper.wrap(
+                                () -> {
+                                    assertNotNull("The WebServer needs to be started", mWebServer);
+                                    return toHttpRequest(path, mWebServer.getLastRequest(path));
+                                });
                     }
 
                     public HttpRequest getLastAssetRequest(String url) {
-                        return ExceptionWrapper.wrap(() -> {
-                            assertNotNull("The WebServer needs to be started", mWebServer);
-                            return toHttpRequest(url, mWebServer.getLastAssetRequest(url));
-                        });
+                        return ExceptionWrapper.wrap(
+                                () -> {
+                                    assertNotNull("The WebServer needs to be started", mWebServer);
+                                    return toHttpRequest(url, mWebServer.getLastAssetRequest(url));
+                                });
                     }
 
                     public String getCookieUrl(String path) {
-                        return ExceptionWrapper.wrap(() -> {
-                            assertNotNull("The WebServer needs to be started", mWebServer);
-                            return mWebServer.getCookieUrl(path);
-                        });
+                        return ExceptionWrapper.wrap(
+                                () -> {
+                                    assertNotNull("The WebServer needs to be started", mWebServer);
+                                    return mWebServer.getCookieUrl(path);
+                                });
                     }
 
                     public String getSetCookieUrl(
                             String path, String key, String value, String attributes) {
-                        return ExceptionWrapper.wrap(() -> {
-                            assertNotNull("The WebServer needs to be started", mWebServer);
-                            return mWebServer.getSetCookieUrl(path, key, value, attributes);
-                        });
+                        return ExceptionWrapper.wrap(
+                                () -> {
+                                    assertNotNull("The WebServer needs to be started", mWebServer);
+                                    return mWebServer.getSetCookieUrl(path, key, value, attributes);
+                                });
                     }
 
                     public String getLinkedScriptUrl(String path, String url) {
-                        return ExceptionWrapper.wrap(() -> {
-                            assertNotNull("The WebServer needs to be started", mWebServer);
-                            return mWebServer.getLinkedScriptUrl(path, url);
-                        });
+                        return ExceptionWrapper.wrap(
+                                () -> {
+                                    assertNotNull("The WebServer needs to be started", mWebServer);
+                                    return mWebServer.getLinkedScriptUrl(path, url);
+                                });
                     }
 
                     private HttpRequest toHttpRequest(
@@ -447,13 +484,14 @@ public final class SharedWebViewTestEnvironment {
             }
 
             private void sendPointerSync(MotionEvent event) {
-                ExceptionWrapper.wrap(() -> {
-                    if (allowUiAutomation) {
-                        sendPointerSyncWithUiAutomation(event);
-                    } else {
-                        sendPointerSyncWithInstrumentation(event);
-                    }
-                });
+                ExceptionWrapper.wrap(
+                        () -> {
+                            if (allowUiAutomation) {
+                                sendPointerSyncWithUiAutomation(event);
+                            } else {
+                                sendPointerSyncWithInstrumentation(event);
+                            }
+                        });
             }
 
             private void sendPointerSyncWithInstrumentation(MotionEvent event) {

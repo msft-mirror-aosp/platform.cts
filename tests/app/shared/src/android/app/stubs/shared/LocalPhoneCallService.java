@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 The Android Open Source Project
+ * Copyright (C) 2021 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,9 +14,16 @@
  * limitations under the License.
  */
 
-package android.app.stubs;
+package android.app.stubs.shared;
 
-import android.app.stubs.shared.LocalService;
+/**
+ * Derived class solely for supporting distinct behavioral expectations based solely on
+ * manifest-level declarations.
+ */
+public final class LocalPhoneCallService extends LocalForegroundService {
+    private static final String TAG = "LocalPhoneCallService";
 
-public class IsolatedService extends LocalService {
+    protected String getTag() {
+        return TAG;
+    }
 }

@@ -82,28 +82,13 @@ public final class CarRotaryImeTest {
     }
 
     /**
-     * Tests that, if a rotary input method is specified via the {@code rotary_input_method} string
-     * resource, it's the component name of an existing IME.
-     */
-    @Test
-    public void rotaryInputMethodValidIfSpecified() {
-        String rotaryInputMethod = getStringValueFromDumpsys("rotaryInputMethod");
-        assumeTrue("Rotary input method not specified, skipping test",
-                !rotaryInputMethod.isEmpty());
-
-        assertWithMessage("isValidIme(" + rotaryInputMethod + ")")
-                .that(isValidIme(rotaryInputMethod)).isTrue();
-    }
-
-    /**
-     * Tests that, if a rotary input method is specified via the {@code rotary_input_method} string
-     * resource and is not empty, the rotary IME must be different from the touch IME.
+     * Tests that, if a rotary input method is installed, it must be different from the touch IME.
      */
     @Test
     public void rotaryImeNotTouchIme() {
         String rotaryInputMethod = getStringValueFromDumpsys("rotaryInputMethod");
-        assumeTrue("Rotary input method not specified, skipping test",
-                !rotaryInputMethod.isEmpty());
+        assumeTrue(
+                "Rotary input method not installed, skipping test", !rotaryInputMethod.isEmpty());
 
         String defaultTouchInputMethod = getStringValueFromDumpsys("defaultTouchInputMethod");
         assertWithMessage("rotary IME(" + rotaryInputMethod + ") must be different"
@@ -117,14 +102,14 @@ public final class CarRotaryImeTest {
     }
 
     /**
-     * Tests that, if a rotary input method is specified via the {@code rotary_input_method} string
-     * resource and is not empty, when it is in rotary mode, the current IME must be the rotary IME.
+     * Tests that, if a rotary input method is installed, when it is in rotary mode, the current IME
+     * must be the rotary IME.
      */
     @Test
     public void rotaryImeInRotaryMode() {
         String rotaryInputMethod = getStringValueFromDumpsys("rotaryInputMethod");
-        assumeTrue("Rotary input method not specified, skipping test",
-                !rotaryInputMethod.isEmpty());
+        assumeTrue(
+                "Rotary input method not installed, skipping test", !rotaryInputMethod.isEmpty());
 
         ensureInRotaryMode();
 
@@ -137,15 +122,14 @@ public final class CarRotaryImeTest {
     }
 
     /**
-     * Tests that, if a rotary input method is specified via the {@code rotary_input_method} string
-     * resource and is not empty, when it is not in rotary mode, the current IME must not be the
-     * rotary IME.
+     * Tests that, if a rotary input method is installed, when it is not in rotary mode, the current
+     * IME must not be the rotary IME.
      */
     @Test
     public void rotaryImeNotInTouchMode() {
         String rotaryInputMethod = getStringValueFromDumpsys("rotaryInputMethod");
-        assumeTrue("Rotary input method not specified, skipping test",
-                !rotaryInputMethod.isEmpty());
+        assumeTrue(
+                "Rotary input method not installed, skipping test", !rotaryInputMethod.isEmpty());
 
         ensureInTouchMode();
 

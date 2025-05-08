@@ -188,6 +188,12 @@
     <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.AppSecurityTests#testInstallDuplicatePermission_differentPermissionGroup_fail"/>
     <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV1OneSignerSHA224withECDSA"/>
     <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV4WithWithTrailingDataInMerkleTree[0]"/>
+    <!-- CtsAppServiceTestCases -->
+    <option name="compatibility:include-filter" value="CtsAppServiceTestCases android.app.cts.service.ServiceTest#testActivityServiceBindingLru"/>
+    <option name="compatibility:include-filter" value="CtsAppServiceTestCases android.app.cts.service.ServiceTest#testForegroundService_deferThenImmediateNotify"/>
+    <option name="compatibility:include-filter" value="CtsAppServiceTestCases android.app.cts.service.ServiceTest#testForegroundService_detachNotificationOnStop"/>
+    <option name="compatibility:include-filter" value="CtsAppServiceTestCases android.app.cts.service.ServiceTest#testForegroundService_dontRemoveNotificationOnStop"/>
+    <option name="compatibility:include-filter" value="CtsAppServiceTestCases android.app.cts.service.ServiceTest#testMaxServiceConnections"/>
     <!-- CtsAppTestCases -->
     <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.ActivityManagerProcessStateTest#testBackgroundCheckBroadcastService"/>
     <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.ActivityManagerProcessStateTest#testCycleFgs"/>
@@ -224,11 +230,6 @@
     <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.DialogTest#testTouchEvent"/>
     <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.InstrumentationTest#testCallActivityOnStart"/>
     <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.InstrumentationTest#testContext"/>
-    <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.ServiceTest#testActivityServiceBindingLru"/>
-    <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.ServiceTest#testForegroundService_deferThenImmediateNotify"/>
-    <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.ServiceTest#testForegroundService_detachNotificationOnStop"/>
-    <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.ServiceTest#testForegroundService_dontRemoveNotificationOnStop"/>
-    <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.ServiceTest#testMaxServiceConnections"/>
     <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.SystemFeaturesTest#testLocationFeatures"/>
     <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.ToolbarActionBarTest#testOpenOptionsMenu"/>
     <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.ToolbarActionBarTest#testOptionsMenuKey"/>

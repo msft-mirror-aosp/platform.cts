@@ -40,6 +40,7 @@ import com.android.cts.verifier.CtsVerifierReportLog;
 import com.android.cts.verifier.PassFailButtons;
 import com.android.cts.verifier.R;
 import com.android.cts.verifier.audio.analyzers.BaseSineAnalyzer;
+import com.android.cts.verifier.audio.analyzers.FloatRecording;
 import com.android.cts.verifier.audio.audiolib.AudioDeviceUtils;
 import com.android.cts.verifier.audio.audiolib.AudioSystemFlags;
 import com.android.cts.verifier.audio.audiolib.DisplayUtils;
@@ -78,6 +79,8 @@ public abstract class AudioDataPathsBaseActivity
 
     // ReportLog Schema
     private static final String SECTION_AUDIO_DATAPATHS = "audio_datapaths";
+    public static final int TYPICAL_SAMPLE_RATE = 48000;
+    public static final int TYPICAL_CHANNEL_COUNT = 2;
 
     protected boolean mHasMic;
     protected boolean mHasSpeaker;
@@ -120,6 +123,8 @@ public abstract class AudioDataPathsBaseActivity
 
     protected AppCallback mAnalysisCallbackHandler;
     private File mRecordingDir;
+    // Enough to record several seconds of stereo data.
+    FloatRecording mRecording = new FloatRecording(8 * TYPICAL_SAMPLE_RATE * TYPICAL_CHANNEL_COUNT);
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -489,6 +494,7 @@ public abstract class AudioDataPathsBaseActivity
             mTestResults[api] = null;
             mTestHasBeenRun = false;
             mTestCanceledByUser = false;
+            mSavedFileMessage = null;
         }
 
         int getTestState(int api) {
@@ -700,6 +706,7 @@ public abstract class AudioDataPathsBaseActivity
         private int startTestModule(int api) {
             logBeginning(api);
             if (mOutDeviceInfo != null && mInDeviceInfo != null) {
+                mRecording.clear();
                 mAnalyzer.reset();
                 mAnalyzer.setSampleRate(mInSampleRate);
                 if (mAnalysisChannel < mInChannelCount) {
@@ -1234,23 +1241,24 @@ public abstract class AudioDataPathsBaseActivity
         }
 
         public void addTestModule(TestModule module) {
-            // We're going to expand each module to three, one for each transfer type
+            // Expand each module to four modules with different settings.
 
-            //
-            // BuilderBase.PERFORMANCE_MODE_NONE
-            //
-            module.setTransferType(TestModule.TRANSFER_LEGACY);
-            // Test Performance Mode None for both Output and Input
-            module.mOutPerformanceMode = module.mInPerformanceMode =
-                    BuilderBase.PERFORMANCE_MODE_NONE;
-            addIndexedTestModule(module);
-
-            //
-            // BuilderBase.PERFORMANCE_MODE_LOWLATENCY
-            //
             try {
-                // Expand out to PerformanceMode.None & PerformanceMode.LowLatency
+                // Legacy, NONE
                 TestModule clonedModule = module.clone();
+                module.setTransferType(TestModule.TRANSFER_LEGACY);
+                // Test Performance Mode LowLatency for both Output and Input
+                clonedModule.mOutPerformanceMode =
+                        clonedModule.mInPerformanceMode = BuilderBase.PERFORMANCE_MODE_NONE;
+                addIndexedTestModule(clonedModule);
+            } catch (CloneNotSupportedException ex) {
+                Log.e(TAG, "Couldn't clone TestModule - PERFORMANCE_MODE_NONE");
+            }
+
+            try {
+                // Legacy, LOW_LATENCY
+                TestModule clonedModule = module.clone();
+                module.setTransferType(TestModule.TRANSFER_LEGACY);
                 // Test Performance Mode LowLatency for both Output and Input
                 clonedModule.mOutPerformanceMode = clonedModule.mInPerformanceMode =
                         BuilderBase.PERFORMANCE_MODE_LOWLATENCY;
@@ -1260,12 +1268,11 @@ public abstract class AudioDataPathsBaseActivity
                 Log.e(TAG, "Couldn't clone TestModule - PERFORMANCE_MODE_LOWLATENCY");
             }
 
-            //
             // MMAP Modes - BuilderBase.PERFORMANCE_MODE_LOWLATENCY
             // Note: Java API doesn't support MMAP Modes
-            //
             if (mSupportsMMAP && mApi == TEST_API_NATIVE) {
                 try {
+                    // MMAP LOW_LATENCY, SHARED
                     TestModule moduleMMAP = module.clone();
                     moduleMMAP.setTransferType(TestModule.TRANSFER_MMAP_SHARED);
                     // Test Performance Mode LowLatency for both Output and Input
@@ -1281,6 +1288,7 @@ public abstract class AudioDataPathsBaseActivity
             // Note: Java API doesn't support MMAP Modes
             if (mSupportsMMAPExclusive && mApi == TEST_API_NATIVE) {
                 try {
+                    // MMAP LOW_LATENCY, EXCLUSIVE
                     TestModule moduleExclusive = module.clone();
                     moduleExclusive.setTransferType(TestModule.TRANSFER_MMAP_EXCLUSIVE);
                     // Test Performance Mode LowLatency for both Output and Input
@@ -1594,8 +1602,8 @@ public abstract class AudioDataPathsBaseActivity
                 if (testModule != null) {
                     if (testModule.canRun()) {
                         testModule.setTestResults(mApi, mAnalyzer);
+                        String message = saveWaveFile(testModule);
                         if (!testModule.hasPassed(mApi)) {
-                            String message = saveWaveFile(mAnalyzer, testModule.getModuleIndex());
                             testModule.setSavedFileMessage(message);
                         } else {
                             testModule.setSavedFileMessage(null); // erase any old messages
@@ -1707,18 +1715,24 @@ public abstract class AudioDataPathsBaseActivity
         }
     }
 
-    private String saveWaveFile(BaseSineAnalyzer mAnalyzer, int index) {
-        File waveFile = new File(mRecordingDir,
-                String.format(Locale.US, "paths_%s_%03d.wav",
-                        getRouteDescription(), index));
+    private String saveWaveFile(TestModule testModule) {
+        File waveFile =
+                new File(
+                        mRecordingDir,
+                        String.format(
+                                Locale.US,
+                                "paths_%s_%03d.wav",
+                                getRouteDescription(),
+                                testModule.getModuleIndex()));
 
-        float[] data = mAnalyzer.getRecordedData();
+        float[] data = mRecording.readAll();
         int numSamples = data.length;
         if (numSamples > 0) {
             try {
                 WaveFileWriter writer = new WaveFileWriter(waveFile);
                 writer.setFrameRate(mAnalyzer.getSampleRate());
                 writer.setBitsPerSample(24);
+                writer.setSamplesPerFrame(testModule.mInChannelCount);
                 writer.write(data);
                 writer.close();
                 return "Wrote " + numSamples + " samples to " + waveFile.getAbsolutePath();
@@ -1884,6 +1898,7 @@ public abstract class AudioDataPathsBaseActivity
     public void onDataReady(float[] audioData, int numFrames) {
         TestModule testModule = mTestManager.getActiveTestModule();
         if (testModule != null) {
+            mRecording.write(audioData, 0, testModule.mInChannelCount * numFrames);
             mAnalyzer.analyzeBuffer(audioData, testModule.mInChannelCount, numFrames);
             mWaveView.setPCMFloatBuff(audioData, testModule.mInChannelCount, numFrames);
         }
