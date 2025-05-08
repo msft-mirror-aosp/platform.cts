@@ -61,7 +61,6 @@
         <option name="flag-value" value="telephony/com.android.internal.telephony.flags.oem_enabled_satellite_flag=true" />
         <option name="flag-value" value="telephony/com.android.internal.telephony.flags.carrier_enabled_satellite_flag=true" />
         <option name="flag-value" value="telephony/com.android.internal.telephony.flags.carrier_roaming_nb_iot_ntn=true" />
-        <option name="flag-value" value="telephony/com.android.internal.telephony.flags.satellite_improve_multi_thread_design=true" />
     </target_preparer>
     <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">
         <option name="cleanup-apks" value="true" />
