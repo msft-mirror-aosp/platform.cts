@@ -110,6 +110,7 @@ abstract class BiometricTestBase implements TestSessionList.Idler {
     // Negative-side (left) buttons
     protected static final String BUTTON_ID_NEGATIVE = "button_negative";
     protected static final String BUTTON_ID_USE_CREDENTIAL = "button_use_credential";
+    protected static final String BUTTON_ID_FALLBACK = "button_fallback";
 
     // Positive-side (right) buttons
     protected static final String BUTTON_ID_CONFIRM = "button_confirm";

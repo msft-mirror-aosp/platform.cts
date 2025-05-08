@@ -67,11 +67,11 @@ import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.CddTest;
 import com.android.server.biometrics.nano.SensorStateProto;
 
-import org.junit.After;
 import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.File;
+import java.util.Objects;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -403,7 +403,11 @@ public class BiometricSimpleTests extends BiometricTestBase {
                 "android.hardware.biometrics.BiometricPrompt.Builder#setAllowedAuthenticators",
                 "android.hardware.biometrics.BiometricPrompt#authenticate",
             })
-    @RequiresFlagsEnabled({Flags.FLAG_IDENTITY_CHECK_API, Flags.FLAG_IDENTITY_CHECK_TEST_API})
+    @RequiresFlagsEnabled({
+        Flags.FLAG_IDENTITY_CHECK_API,
+        Flags.FLAG_IDENTITY_CHECK_TEST_API,
+        Flags.FLAG_BP_FALLBACK_OPTIONS
+    })
     @Test
     public void
             testBiometricAuth_identityCheckAndDeviceCredential_identityCheckActive_negativeButtonClicked()
@@ -427,13 +431,13 @@ public class BiometricSimpleTests extends BiometricTestBase {
                 showBiometricPromptWithAuthenticators(
                         IDENTITY_CHECK | DEVICE_CREDENTIAL, authenticationCallback);
 
+                assertThat(findView(BUTTON_ID_USE_CREDENTIAL)).isNull();
+
                 waitForState(STATE_AUTH_STARTED_UI_SHOWING);
-                findAndPressButton(BUTTON_ID_NEGATIVE);
+                findAndPressButton(BUTTON_ID_FALLBACK);
                 waitForState(STATE_AUTH_IDLE);
 
-                verify(authenticationCallback)
-                        .onAuthenticationError(
-                                eq(BiometricPrompt.BIOMETRIC_ERROR_USER_CANCELED), any());
+                // Clicking the negative button should not trigger the callback
                 verifyNoMoreInteractions(authenticationCallback);
             }
         }
@@ -462,6 +466,7 @@ public class BiometricSimpleTests extends BiometricTestBase {
 
                 final BiometricPrompt.AuthenticationCallback authenticationCallback =
                         mock(BiometricPrompt.AuthenticationCallback.class);
+
                 credentialSession.setCredential();
                 enrollForSensor(session, props.getSensorId());
                 showBiometricPromptWithAuthenticators(
@@ -498,28 +503,22 @@ public class BiometricSimpleTests extends BiometricTestBase {
 
             final BiometricPrompt.AuthenticationCallback authenticationCallback =
                     mock(BiometricPrompt.AuthenticationCallback.class);
-            final int weakSensorId = getWeakSensorProperties().getSensorId();
             final int strongSensorId = getStrongSensorProperties().getSensorId();
-            final BiometricTestSession weakSensorSession =
-                    mBiometricManager.createTestSession(weakSensorId);
-            final BiometricTestSession strongSensorSession =
-                    mBiometricManager.createTestSession(strongSensorId);
-            sessionList.add(weakSensorSession);
-            sessionList.add(strongSensorSession);
-
+            enrollForRequestedAuthenticators(sessionList, BIOMETRIC_WEAK | BIOMETRIC_STRONG);
             credentialSession.setCredential();
-            enrollForSensor(weakSensorSession, weakSensorId);
-            enrollForSensor(strongSensorSession, strongSensorId);
 
             showBiometricPromptWithAuthenticators(
                     IDENTITY_CHECK | BIOMETRIC_WEAK, authenticationCallback);
             waitForState(STATE_AUTH_STARTED_UI_SHOWING);
 
-            assertThat(getSensorStates().sensorStates.get(weakSensorId).isBusy()).isFalse();
+            assertThat(getSensorStates().sensorStates.get(getWeakSensorProperties().getSensorId())
+                    .isBusy()).isFalse();
             assertThat(getSensorStates().sensorStates.get(strongSensorId).isBusy()).isTrue();
 
             successfullyAuthenticate(
-                    strongSensorSession, Utils.getUserId(), authenticationCallback);
+                    Objects.requireNonNull(sessionList.find(strongSensorId)),
+                    Utils.getUserId(),
+                    authenticationCallback);
         }
     }
 
@@ -545,24 +544,167 @@ public class BiometricSimpleTests extends BiometricTestBase {
 
             final BiometricPrompt.AuthenticationCallback authenticationCallback =
                     mock(BiometricPrompt.AuthenticationCallback.class);
-            final int weakSensorId = getWeakSensorProperties().getSensorId();
-            final int strongSensorId = getStrongSensorProperties().getSensorId();
-            final BiometricTestSession weakSensorSession =
-                    mBiometricManager.createTestSession(weakSensorId);
-            final BiometricTestSession strongSensorSession =
-                    mBiometricManager.createTestSession(strongSensorId);
-            sessionList.add(weakSensorSession);
-            sessionList.add(strongSensorSession);
 
+            enrollForRequestedAuthenticators(sessionList, BIOMETRIC_WEAK | BIOMETRIC_STRONG);
             credentialSession.setCredential();
-            enrollForSensor(weakSensorSession, weakSensorId);
-            enrollForSensor(strongSensorSession, strongSensorId);
 
             showBiometricPromptWithAuthenticators(
                     IDENTITY_CHECK | BIOMETRIC_WEAK, authenticationCallback);
             waitForState(STATE_AUTH_STARTED_UI_SHOWING);
 
-            successfullyAuthenticate(weakSensorSession, Utils.getUserId(), authenticationCallback);
+            successfullyAuthenticate(
+                    Objects.requireNonNull(
+                            sessionList.find(getWeakSensorProperties().getSensorId())),
+                    Utils.getUserId(),
+                    authenticationCallback);
+        }
+    }
+
+    @ApiTest(
+            apis = {
+                "android.hardware.biometrics.BiometricPrompt.Builder#setAllowedAuthenticators",
+                "android.hardware.biometrics.BiometricPrompt#authenticate",
+            })
+    @RequiresFlagsEnabled({
+        Flags.FLAG_IDENTITY_CHECK_API,
+        Flags.FLAG_IDENTITY_CHECK_TEST_API,
+        Flags.FLAG_IDENTITY_CHECK_ALL_SURFACES,
+        Flags.FLAG_BP_FALLBACK_OPTIONS
+    })
+    @Test
+    public void testBiometricAuth_biometricWeakAndDeviceCredential_identityCheckActive()
+            throws Exception {
+        if (!hasWeakAndStrongSensor()) {
+            Log.d(TAG, "Skipping test as device does not have weak and strong sensor");
+            return;
+        }
+
+        assumeTrue(Utils.isFirstApiLevel29orGreater());
+
+        try (CredentialSession credentialSession = new CredentialSession();
+                TestSessionList sessionList = new TestSessionList(this)) {
+            enableIdentityCheck();
+
+            final BiometricPrompt.AuthenticationCallback authenticationCallback =
+                    mock(BiometricPrompt.AuthenticationCallback.class);
+            final int strongSensorId = getStrongSensorProperties().getSensorId();
+            enrollForRequestedAuthenticators(sessionList, BIOMETRIC_WEAK | BIOMETRIC_STRONG);
+            credentialSession.setCredential();
+
+            showBiometricPromptWithAuthenticators(
+                    BIOMETRIC_WEAK | DEVICE_CREDENTIAL, authenticationCallback);
+            waitForState(STATE_AUTH_STARTED_UI_SHOWING);
+
+            assertThat(getSensorStates().sensorStates.get(getWeakSensorProperties().getSensorId())
+                    .isBusy()).isFalse();
+            assertThat(getSensorStates().sensorStates.get(strongSensorId).isBusy()).isTrue();
+            assertThat(findView(BUTTON_ID_USE_CREDENTIAL)).isNull();
+
+            successfullyAuthenticate(
+                    Objects.requireNonNull(sessionList.find(strongSensorId)),
+                    Utils.getUserId(),
+                    authenticationCallback);
+        }
+    }
+
+    @ApiTest(
+            apis = {
+                "android.hardware.biometrics.BiometricPrompt.Builder#setAllowedAuthenticators",
+                "android.hardware.biometrics.BiometricPrompt#authenticate",
+            })
+    @RequiresFlagsEnabled({
+        Flags.FLAG_IDENTITY_CHECK_API,
+        Flags.FLAG_IDENTITY_CHECK_TEST_API,
+        Flags.FLAG_IDENTITY_CHECK_ALL_SURFACES,
+        Flags.FLAG_BP_FALLBACK_OPTIONS
+    })
+    @Test
+    public void testBiometricAuth_biometricStrongAndDeviceCredential_identityCheckActive()
+            throws Exception {
+        if (!hasWeakAndStrongSensor()) {
+            Log.d(TAG, "Skipping test as device does not have weak and strong sensor");
+            return;
+        }
+
+        assumeTrue(Utils.isFirstApiLevel29orGreater());
+
+        try (CredentialSession credentialSession = new CredentialSession();
+                TestSessionList sessionList = new TestSessionList(this)) {
+            enableIdentityCheck();
+
+            final BiometricPrompt.AuthenticationCallback authenticationCallback =
+                    mock(BiometricPrompt.AuthenticationCallback.class);
+            final int strongSensorId = getStrongSensorProperties().getSensorId();
+            enrollForRequestedAuthenticators(sessionList, BIOMETRIC_STRONG);
+            credentialSession.setCredential();
+
+            showBiometricPromptWithAuthenticators(
+                    BIOMETRIC_STRONG | DEVICE_CREDENTIAL, authenticationCallback);
+            waitForState(STATE_AUTH_STARTED_UI_SHOWING);
+
+            assertThat(findView(BUTTON_ID_USE_CREDENTIAL)).isNull();
+            successfullyAuthenticate(
+                    Objects.requireNonNull(sessionList.find(strongSensorId)),
+                    Utils.getUserId(),
+                    authenticationCallback);
+        }
+    }
+
+    @ApiTest(
+            apis = {
+                "android.hardware.biometrics.BiometricPrompt.Builder#setAllowedAuthenticators",
+                "android.hardware.biometrics.BiometricPrompt#authenticate",
+            })
+    @RequiresFlagsEnabled({
+        Flags.FLAG_IDENTITY_CHECK_API,
+        Flags.FLAG_IDENTITY_CHECK_TEST_API,
+        Flags.FLAG_IDENTITY_CHECK_ALL_SURFACES,
+        Flags.FLAG_BP_FALLBACK_OPTIONS
+    })
+    @Test
+    public void testBiometricAuth_deviceCredential_identityCheckActive() throws Exception {
+        if (!hasWeakAndStrongSensor()) {
+            Log.d(TAG, "Skipping test as device does not have weak and strong sensor");
+            return;
+        }
+
+        assumeTrue(Utils.isFirstApiLevel29orGreater());
+
+        try (CredentialSession credentialSession = new CredentialSession()) {
+            enableIdentityCheck();
+
+            final BiometricPrompt.AuthenticationCallback authenticationCallback =
+                    mock(BiometricPrompt.AuthenticationCallback.class);
+            credentialSession.setCredential();
+
+            showBiometricPromptWithAuthenticators(DEVICE_CREDENTIAL, authenticationCallback);
+            waitForState(STATE_AUTH_STARTED_UI_SHOWING);
+
+            successfullyEnterCredential();
+        } finally {
+            mBiometricManager.setIdentityCheckTestStatus(
+                    new IdentityCheckStatus.Builder()
+                            .setIdentityCheckValueForTestAvailable(false)
+                            .setIdentityCheckActive(false)
+                            .build());
+        }
+    }
+
+    private void enrollForRequestedAuthenticators(TestSessionList sessionList, int authenticators)
+            throws Exception {
+        if ((authenticators & BIOMETRIC_WEAK) == BIOMETRIC_WEAK) {
+            final int weakSensorId = getWeakSensorProperties().getSensorId();
+            final BiometricTestSession weakSensorSession =
+                    mBiometricManager.createTestSession(weakSensorId);
+            sessionList.put(weakSensorId, weakSensorSession);
+            enrollForSensor(weakSensorSession, weakSensorId);
+        }
+        if ((authenticators & BIOMETRIC_STRONG) == BIOMETRIC_STRONG) {
+            final int strongSensorId = getStrongSensorProperties().getSensorId();
+            final BiometricTestSession strongSensorSession =
+                    mBiometricManager.createTestSession(strongSensorId);
+            sessionList.put(strongSensorId, strongSensorSession);
+            enrollForSensor(strongSensorSession, strongSensorId);
         }
     }
 
