@@ -201,12 +201,7 @@ public class WebViewTest extends SharedWebViewTest {
         // Wait for window focus and clean up the snapshot before
         // returning the test environment.
         if (environment.getWebView() != null) {
-            new PollingCheck(WebkitUtils.TEST_TIMEOUT_MS) {
-                @Override
-                protected boolean check() {
-                    return ((Activity) environment.getContext()).hasWindowFocus();
-                }
-            }.run();
+            WebkitUtils.checkForWindowFocus((Activity) environment.getContext());
             File f = environment.getContext().getFileStreamPath("snapshot");
             if (f.exists()) {
                 f.delete();
