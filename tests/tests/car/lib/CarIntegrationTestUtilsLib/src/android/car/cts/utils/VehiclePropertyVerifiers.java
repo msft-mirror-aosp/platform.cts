@@ -871,27 +871,10 @@ public class VehiclePropertyVerifiers {
                 .setPossiblyDependentOnHvacPowerOn();
     }
 
-    /**
-     * Gets the verifier for {@code HVAC_AUTO_ON}.
-     */
-    public static VehiclePropertyVerifier<Boolean> getHvacAutoOnVerifier(
-            CarPropertyManager carPropertyManager) {
-        return getHvacAutoOnVerifierBuilder().setCarPropertyManager(carPropertyManager).build();
-    }
-
-    /**
-     * Gets the verifier builder for {@code HVAC_AUTO_ON}.
-     */
+    /** Gets the verifier builder for {@code HVAC_AUTO_ON}. */
     public static VehiclePropertyVerifier.Builder<Boolean> getHvacAutoOnVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.HVAC_AUTO_ON,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_SEAT,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_ONCHANGE,
-                        Boolean.class)
-                .setPossiblyDependentOnHvacPowerOn()
-                .addReadPermission(Car.PERMISSION_CONTROL_CAR_CLIMATE)
-                .addWritePermission(Car.PERMISSION_CONTROL_CAR_CLIMATE);
+        return VehiclePropertyVerifier.<Boolean>newDefaultBuilder(VehiclePropertyIds.HVAC_AUTO_ON)
+                .setPossiblyDependentOnHvacPowerOn();
     }
 
     /**
