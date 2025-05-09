@@ -43,8 +43,8 @@ class CloudMediaProviderTest {
     @get:Rule val checkFlagsRule: CheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
 
     @RequiresFlagsEnabled(
-      Flags.FLAG_ENABLE_CLOUD_MEDIA_PROVIDER_CAPABILITIES,
-      Flags.FLAG_CLOUD_MEDIA_PROVIDER_SEARCH,
+        Flags.FLAG_ENABLE_CLOUD_MEDIA_PROVIDER_CAPABILITIES,
+        Flags.FLAG_CLOUD_MEDIA_PROVIDER_SEARCH
     )
     @Test
     fun testCloudMediaProviderDefaultCapabilities() {
@@ -86,8 +86,46 @@ class CloudMediaProviderTest {
     }
 
     @RequiresFlagsEnabled(
-      Flags.FLAG_ENABLE_CLOUD_MEDIA_PROVIDER_CAPABILITIES,
-      Flags.FLAG_CLOUD_MEDIA_PROVIDER_SEARCH,
+        Flags.FLAG_CLOUD_PROVIDER_ALBUMS_AS_CATEGORY_API
+    )
+    @Test
+    fun testCloudMediaProviderDefaultValueForAlbumsAsCategories() {
+        val context: Context = InstrumentationRegistry.getInstrumentation().getTargetContext()
+        try {
+            val client: ContentProviderClient =
+                checkNotNull(
+                    context.contentResolver.acquireContentProviderClient(
+                        DefaultCloudMediaProvider.AUTHORITY
+                    )
+                ) {
+                    "Unable to obtain a cloud provider client."
+                }
+
+            val response: Bundle =
+                checkNotNull(client.call(METHOD_GET_CAPABILITIES, null, null)) {
+                    "Returned bundle was null"
+                }
+
+            // This test runs back to R, and the new API isn't available until T.
+            @Suppress("DEPRECATION")
+            val capabilities: CloudMediaProviderContract.Capabilities? =
+                response.getParcelable(EXTRA_PROVIDER_CAPABILITIES)
+
+            assertWithMessage("Capabilities was not present in the returned bundle")
+                .that(capabilities)
+                .isNotNull()
+
+            assertWithMessage("isMediaCategoriesEnabled had unexpected default value.")
+                .that(capabilities?.isAlbumsAsCategoryEnabled())
+                .isFalse()
+        } catch (e: RemoteException) {
+            throw AssertionError("The DefaultCloudMediaProvider threw an error.", e)
+        }
+    }
+
+    @RequiresFlagsEnabled(
+        Flags.FLAG_ENABLE_CLOUD_MEDIA_PROVIDER_CAPABILITIES,
+        Flags.FLAG_CLOUD_MEDIA_PROVIDER_SEARCH
     )
     @Test
     fun testCloudMediaProviderCapabilitiesBuilderDefaults() {
@@ -103,8 +141,20 @@ class CloudMediaProviderTest {
     }
 
     @RequiresFlagsEnabled(
-      Flags.FLAG_ENABLE_CLOUD_MEDIA_PROVIDER_CAPABILITIES,
-      Flags.FLAG_CLOUD_MEDIA_PROVIDER_SEARCH,
+        Flags.FLAG_CLOUD_PROVIDER_ALBUMS_AS_CATEGORY_API
+    )
+    @Test
+    fun testCloudMediaProviderCapabilitiesBuilderDefaultAlbumsAsCategory() {
+        val capabilities = CloudMediaProviderContract.Capabilities.Builder().build()
+
+        assertWithMessage("isMediaCategoriesEnabled had unexpected default value.")
+            .that(capabilities?.isAlbumsAsCategoryEnabled())
+            .isFalse()
+    }
+
+    @RequiresFlagsEnabled(
+        Flags.FLAG_ENABLE_CLOUD_MEDIA_PROVIDER_CAPABILITIES,
+        Flags.FLAG_CLOUD_MEDIA_PROVIDER_SEARCH
     )
     @Test
     fun testCloudMediaProviderCapabilitiesBuilderInverseDefaults() {
@@ -112,6 +162,7 @@ class CloudMediaProviderTest {
             CloudMediaProviderContract.Capabilities.Builder()
                 .setSearchEnabled(true)
                 .setMediaCategoriesEnabled(true)
+                .setAlbumsAsCategoryEnabled(true)
                 .build()
 
         assertWithMessage("isSearchEnabled had unexpected default value.")
@@ -120,6 +171,21 @@ class CloudMediaProviderTest {
 
         assertWithMessage("isMediaCategoriesEnabled had unexpected default value.")
             .that(capabilities.isMediaCategoriesEnabled())
+            .isTrue()
+    }
+
+    @RequiresFlagsEnabled(
+        Flags.FLAG_CLOUD_PROVIDER_ALBUMS_AS_CATEGORY_API
+    )
+    @Test
+    fun testCloudMediaProviderCapabilitiesBuilderInverseDefaultForAlbumsAsCategory() {
+        val capabilities =
+            CloudMediaProviderContract.Capabilities.Builder()
+                .setAlbumsAsCategoryEnabled(true)
+                .build()
+
+        assertWithMessage("isMediaCategoriesEnabled had unexpected default value.")
+            .that(capabilities?.isAlbumsAsCategoryEnabled())
             .isTrue()
     }
 }
