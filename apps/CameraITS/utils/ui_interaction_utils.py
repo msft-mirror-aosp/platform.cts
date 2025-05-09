@@ -391,6 +391,7 @@ def _set_jca_video_stabilization(dut, log_path, stabilization_mode):
     when the video stabilization mode is OFF
   """
   dut.ui(res=SETTINGS_BUTTON_RESOURCE_ID).click()
+  dut.ui(scrollable=True).scroll.down(res=SETTINGS_VIDEO_STABILIZATION_RESOURCE_ID)
   if not dut.ui(text=SETTINGS_VIDEO_STABILIZATION_MODE_TEXT).wait.exists(
       UI_OBJECT_WAIT_TIME_SECONDS):
     dut.take_screenshot(
