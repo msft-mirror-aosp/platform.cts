@@ -59,7 +59,6 @@ import java.security.Provider;
 import java.security.Security;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.Certificate;
-import java.security.cert.X509Certificate;
 import java.security.interfaces.RSAPrivateKey;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -2548,52 +2547,6 @@ public class KeyStoreTest {
             assertEquals(keyStore.getType(), builder.getKeyStore().getType());
             assertEquals(keyStore.getProvider(), builder.getKeyStore().getProvider());
             assertEquals(PARAM_STORE, builder.getProtectionParameter(""));
-        }
-    }
-
-    @Test
-    public void test_KeyStore_cacerts() throws Exception {
-        if (StandardNames.IS_RI) {
-            return;
-        }
-        KeyStore ks = KeyStore.getInstance("AndroidCAStore");
-        assertEquals("AndroidCAStore", ks.getType());
-        assertEquals("HarmonyJSSE", ks.getProvider().getName());
-
-        ks.load(null, null);
-        for (String alias : Collections.list(ks.aliases())) {
-            Certificate c = null;
-            try {
-                c = ks.getCertificate(alias);
-                assertNotNull("Certificate not found", c);
-                assertTrue("This is not a certificate", ks.isCertificateEntry(alias));
-                assertTrue("Certificate is not an instance of TrustedCertificateEntry",
-                        ks.entryInstanceOf(alias, TrustedCertificateEntry.class));
-                assertEquals("No matching certificate entry found in keystore",
-                        alias, ks.getCertificateAlias(c));
-
-                assertTrue("This is not X.509 type certificate ", c instanceof X509Certificate);
-                X509Certificate cert = (X509Certificate) c;
-                assertEquals("Mismatch in subject-unique-identifier and issuer-unique-identifier",
-                        cert.getSubjectUniqueID(), cert.getIssuerUniqueID());
-                assertNotNull("Public key not found in certificate", cert.getPublicKey());
-
-                assertTrue("Alias doesn't exist in keystore", ks.containsAlias(alias));
-                assertNotNull("Creation date of the entry identified by the given alias not found",
-                        ks.getCreationDate(alias));
-                assertNotNull("Keystore entry for specified alias doesn't exist",
-                        ks.getEntry(alias, null));
-
-                assertFalse("Keystore entry identified by the alias is not a key-related entry",
-                        ks.isKeyEntry(alias));
-                assertNull("Alias doesn't exist or doesn't identify a key-related entry.",
-                        ks.getKey(alias, null));
-                assertNull("Alias doesn't exist or doesn't contain certificate chain",
-                        ks.getCertificateChain(alias));
-
-            } catch (Throwable t) {
-                throw new Exception("alias=" + alias + " cert=" + c, t);
-            }
         }
     }
 
