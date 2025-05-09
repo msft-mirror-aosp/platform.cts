@@ -20,6 +20,7 @@ import static android.security.KeyChain.ACTION_KEYCHAIN_CHANGED;
 
 import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpc;
 import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpcOnly;
+import static com.android.bedstead.harrier.components.BroadcastReceiversComponentKt.registerBroadcastReceiver;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -360,7 +361,7 @@ public final class KeyManagementTest {
             // Install keypair
 
             try (BlockingBroadcastReceiver broadcastReceiver =
-                         sDeviceState.registerBroadcastReceiver(ACTION_KEYCHAIN_CHANGED)
+                         registerBroadcastReceiver(sDeviceState, ACTION_KEYCHAIN_CHANGED)
                                  .register()) {
                 dpc(sDeviceState).devicePolicyManager()
                         .installKeyPair(dpc(sDeviceState).componentName(),

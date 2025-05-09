@@ -20,6 +20,7 @@ import static android.os.UserManager.DISALLOW_MODIFY_ACCOUNTS;
 
 import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpc;
 import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpmRoleHolder;
+import static com.android.bedstead.harrier.components.BroadcastReceiversComponentKt.registerBroadcastReceiver;
 import static com.android.bedstead.nene.userrestrictions.CommonUserRestrictions.DISALLOW_CAMERA;
 import static com.android.bedstead.permissions.CommonPermissions.MANAGE_DEVICE_POLICY_CAMERA;
 
@@ -350,8 +351,8 @@ public final class UserRestrictionsTest {
     @Postsubmit(reason = "new test")
     public void addUserRestriction_sendsBroadcastToReceiversInUser() {
         try (BlockingBroadcastReceiver broadcastReceiver =
-                     sDeviceState.registerBroadcastReceiver(
-                             CommonUserRestrictions.ACTION_USER_RESTRICTIONS_CHANGED)) {
+                registerBroadcastReceiver(
+                        sDeviceState, CommonUserRestrictions.ACTION_USER_RESTRICTIONS_CHANGED)) {
             dpc(sDeviceState).devicePolicyManager().addUserRestriction(
                     dpc(sDeviceState).componentName(), ANY_USER_RESTRICTION);
             broadcastReceiver.awaitForBroadcastOrFail();
@@ -405,8 +406,8 @@ public final class UserRestrictionsTest {
         dpc(sDeviceState).devicePolicyManager().addUserRestriction(
                 dpc(sDeviceState).componentName(), ANY_USER_RESTRICTION);
         try (BlockingBroadcastReceiver broadcastReceiver =
-                     sDeviceState.registerBroadcastReceiver(
-                             CommonUserRestrictions.ACTION_USER_RESTRICTIONS_CHANGED)) {
+                registerBroadcastReceiver(
+                        sDeviceState, CommonUserRestrictions.ACTION_USER_RESTRICTIONS_CHANGED)) {
 
             dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
                     dpc(sDeviceState).componentName(), ANY_USER_RESTRICTION);
