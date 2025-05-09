@@ -585,13 +585,13 @@ public class NotificationManagerBubbleTest extends BaseNotificationManagerTest {
 
             InstrumentationRegistry.getInstrumentation().waitForIdleSync();
 
-            BubbledActivity activity = (BubbledActivity) monitor.waitForActivityWithTimeout(
-                    ACTIVITY_LAUNCH_TIMEOUT);
+            BubbledActivity activity = (BubbledActivity) monitor.waitForActivity();
             assertNotNull(String.format(
                     "Failed to detect BubbleActivity after %d ms", ACTIVITY_LAUNCH_TIMEOUT),
                     activity);
             assertTrue((activity.getIntent().getFlags() & FLAG_ACTIVITY_NEW_DOCUMENT) != 0);
             assertTrue((activity.getIntent().getFlags() & FLAG_ACTIVITY_MULTIPLE_TASK) != 0);
+            activity.finish();
         } finally {
             deleteShortcuts();
             cleanupSendBubbleActivity();
@@ -887,6 +887,7 @@ public class NotificationManagerBubbleTest extends BaseNotificationManagerTest {
 
             BubbledActivity activity = (BubbledActivity) monitor.waitForActivity();
             assertTrue(activity.isLaunchedFromBubble());
+            activity.finish();
         } finally {
             deleteShortcuts();
             cleanupSendBubbleActivity();
@@ -920,6 +921,7 @@ public class NotificationManagerBubbleTest extends BaseNotificationManagerTest {
 
             BubbledActivity activity = (BubbledActivity) monitor.waitForActivity();
             assertTrue(activity.isLaunchedFromBubble());
+            activity.finish();
         } finally {
             deleteShortcuts();
             cleanupSendBubbleActivity();
@@ -966,6 +968,7 @@ public class NotificationManagerBubbleTest extends BaseNotificationManagerTest {
                     SEARCH_TYPE.POSTED);
             assertTrue(sbn.getNotification().getBubbleMetadata().isBubbleSuppressable());
             assertTrue(sbn.getNotification().getBubbleMetadata().isBubbleSuppressed());
+            activity.finish();
         } finally {
             deleteShortcuts();
             cleanupSendBubbleActivity();
@@ -1011,6 +1014,7 @@ public class NotificationManagerBubbleTest extends BaseNotificationManagerTest {
                     BUBBLE_NOTIF_ID, SEARCH_TYPE.LISTENER);
             assertFalse(sbn.getNotification().getBubbleMetadata().isBubbleSuppressable());
             assertFalse(sbn.getNotification().getBubbleMetadata().isBubbleSuppressed());
+            activity.finish();
         } finally {
             deleteShortcuts();
             cleanupSendBubbleActivity();
@@ -1055,6 +1059,7 @@ public class NotificationManagerBubbleTest extends BaseNotificationManagerTest {
                     BUBBLE_NOTIF_ID, SEARCH_TYPE.LISTENER);
             assertTrue(sbn.getNotification().getBubbleMetadata().isBubbleSuppressable());
             assertFalse(sbn.getNotification().getBubbleMetadata().isBubbleSuppressed());
+            activity.finish();
         } finally {
             deleteShortcuts();
             cleanupSendBubbleActivity();
@@ -1102,6 +1107,7 @@ public class NotificationManagerBubbleTest extends BaseNotificationManagerTest {
             assertNull(sbn.getNotification().getLocusId());
             assertTrue(sbn.getNotification().getBubbleMetadata().isBubbleSuppressable());
             assertFalse(sbn.getNotification().getBubbleMetadata().isBubbleSuppressed());
+            activity.finish();
         } finally {
             deleteShortcuts();
             cleanupSendBubbleActivity();
