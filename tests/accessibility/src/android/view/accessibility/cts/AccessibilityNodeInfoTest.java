@@ -529,6 +529,22 @@ public class AccessibilityNodeInfoTest {
         assertEquals(12, receivedSpanned.getSpanEnd(span));
     }
 
+    @SmallTest
+    @Test
+    @ApiTest(apis = {
+            "android.view.accessibility.AccessibilityNodeInfo.CollectionItemInfo#getSortDirection",
+            "android.view.accessibility.AccessibilityNodeInfo.CollectionItemInfo.Builder#setSortDirection"
+    })
+    @RequiresFlagsEnabled(android.view.accessibility.Flags.FLAG_A11Y_SORT_DIRECTION_API)
+    public void testSortDirection_setInvalidExpectException() {
+        CollectionItemInfo.Builder infoBuilder = new CollectionItemInfo.Builder();
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> {
+                    infoBuilder.setSortDirection(CollectionItemInfo.SORT_DIRECTION_OTHER + 1);
+                });
+    }
+
     /**
      * Fully populates the {@link AccessibilityNodeInfo} to marshal.
      *
@@ -591,10 +607,14 @@ public class AccessibilityNodeInfoTest {
         info.setRangeInfo(RangeInfo.obtain(RangeInfo.RANGE_TYPE_FLOAT, 0.05f, 1.0f, 0.01f));
         info.setCollectionInfo(
                 CollectionInfo.obtain(2, 2, true, CollectionInfo.SELECTION_MODE_MULTIPLE));
-        info.setCollectionItemInfo(new CollectionItemInfo.Builder().setRowTitle(
+        CollectionItemInfo.Builder infoBuilder = new CollectionItemInfo.Builder().setRowTitle(
                         "RowTitle").setRowIndex(1)
                 .setRowSpan(2).setColumnTitle("ColumnTitle").setColumnIndex(3).setColumnSpan(4)
-                .setHeading(true).setSelected(true).build());
+                .setHeading(true).setSelected(true);
+        if (Flags.a11ySortDirectionApi()) {
+            infoBuilder.setSortDirection(CollectionItemInfo.SORT_DIRECTION_ASCENDING);
+        }
+        info.setCollectionItemInfo(infoBuilder.build());
         info.setParent(new View(getContext()));
         info.setSource(new View(getContext())); // Populates 2 fields: source and window id
         info.setLeashedParent(new MockBinder(), 1); // Populates 2 fields
@@ -855,6 +875,11 @@ public class AccessibilityNodeInfoTest {
             assertEquals("CollectionItemInfo#getRowSpan has incorrect value",
                     expectedItemInfo.getRowSpan(),
                     receivedItemInfo.getRowSpan());
+            if (Flags.a11ySortDirectionApi()) {
+                assertEquals("CollectionItemInfo#getSortDirection has incorrect value",
+                        expectedItemInfo.getSortDirection(),
+                        receivedItemInfo.getSortDirection());
+            }
             assertThat(expectedItemInfo.getRowTitle()).isEqualTo(receivedItemInfo.getRowTitle());
             assertThat(
                     expectedItemInfo.getColumnTitle()).isEqualTo(receivedItemInfo.getColumnTitle());
