@@ -16,6 +16,8 @@
 
 package android.apex.cts;
 
+import static org.junit.Assume.assumeTrue;
+
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
 import com.android.tradefed.testtype.junit4.BaseHostJUnit4Test;
 import com.android.tradefed.util.CommandResult;
@@ -76,6 +78,9 @@ public class ApexTest extends BaseHostJUnit4Test {
      */
     @Test
     public void testMountNamespaces() throws Exception {
+        assumeTrue(
+                "Device uses a single mount namespace",
+                getDevice().getIntProperty("ro.init.mnt_ns.count", 2) == 2);
         final int rootMountIdOfInit = getMountEntry("1", "/").mountId;
         final int rootMountIdOfVold = getMountEntry("$(pidof vold)", "/").mountId;
 
