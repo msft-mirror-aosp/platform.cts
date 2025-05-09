@@ -877,31 +877,13 @@ public class VehiclePropertyVerifiers {
                 .setPossiblyDependentOnHvacPowerOn();
     }
 
-    /**
-     * Gets the verifier for {@code HVAC_SEAT_TEMPERATURE}.
-     */
-    public static VehiclePropertyVerifier<Integer> getHvacSeatTemperatureVerifier(
-            CarPropertyManager carPropertyManager) {
-        return getHvacSeatTemperatureVerifierBuilder().setCarPropertyManager(carPropertyManager)
-                .build();
-    }
-
-    /**
-     * Gets the verifier builder for {@code HVAC_SEAT_TEMPERATURE}.
-     */
-    public static VehiclePropertyVerifier.Builder<Integer>
-            getHvacSeatTemperatureVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.HVAC_SEAT_TEMPERATURE,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_SEAT,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_ONCHANGE,
-                        Integer.class)
+    /** Gets the verifier builder for {@code HVAC_SEAT_TEMPERATURE}. */
+    public static VehiclePropertyVerifier.Builder<Integer> getHvacSeatTemperatureVerifierBuilder() {
+        return VehiclePropertyVerifier.<Integer>newDefaultBuilder(
+                        VehiclePropertyIds.HVAC_SEAT_TEMPERATURE)
                 .setPossiblyDependentOnHvacPowerOn()
                 .requireMinMaxValues()
-                .requireZeroToBeContainedInMinMaxRanges()
-                .addReadPermission(Car.PERMISSION_CONTROL_CAR_CLIMATE)
-                .addWritePermission(Car.PERMISSION_CONTROL_CAR_CLIMATE);
+                .requireZeroToBeContainedInMinMaxRanges();
     }
 
     /**
