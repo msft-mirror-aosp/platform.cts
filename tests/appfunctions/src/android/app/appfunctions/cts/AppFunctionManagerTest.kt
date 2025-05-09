@@ -62,6 +62,7 @@ import com.android.bedstead.multiuser.annotations.parameterized.IncludeRunOnSeco
 import com.android.bedstead.multiuser.secondaryUser
 import com.android.bedstead.nene.TestApis
 import com.android.bedstead.nene.users.UserReference
+import com.android.bedstead.nene.utils.ShellCommand
 import com.android.compatibility.common.util.ApiTest
 import com.android.compatibility.common.util.DeviceConfigStateChangerRule
 import com.android.compatibility.common.util.SystemUtil
@@ -71,6 +72,7 @@ import java.util.concurrent.TimeUnit
 import kotlin.test.assertFailsWith
 import kotlin.test.fail
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.suspendCancellableCoroutine
 import org.junit.After
@@ -1156,6 +1158,56 @@ class AppFunctionManagerTest {
                 assertProcessState(isBfgs = true)
             } finally {
                 cancellationSignal.cancel()
+            }
+        }
+    }
+
+    @Test
+    @IncludeRunOnSecondaryUser
+    @IncludeRunOnPrimaryUser
+    @EnsureHasNoDeviceOwner
+    fun onPackageDataCleared_enabledByDefault_disabledInRuntime_restoredToDefault() = doBlocking {
+        runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
+            val functionIdUnderTest = "add"
+            ShellCommand.builder("cmd app_function set-enabled")
+                .addOption("--package", TEST_HELPER_PKG)
+                .addOption("--function", functionIdUnderTest)
+                .addOption("--state", "disable")
+                .addOption("--user", TestApis.users().current().id())
+                .execute()
+            assertThat(isAppFunctionEnabled(TEST_HELPER_PKG, functionIdUnderTest)).isFalse()
+
+            ShellCommand.builder("pm clear --user ${TestApis.users().current().id()}"
+                    +" $TEST_HELPER_PKG")
+                .execute()
+
+            retryAssert {
+                assertThat(isAppFunctionEnabled(TEST_HELPER_PKG, functionIdUnderTest)).isTrue()
+            }
+        }
+    }
+
+    @Test
+    @IncludeRunOnSecondaryUser
+    @IncludeRunOnPrimaryUser
+    @EnsureHasNoDeviceOwner
+    fun onPackageDataCleared_disabledByDefault_enabledInRuntime_restoredToDefault() = doBlocking {
+        runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
+            val functionIdUnderTest = "add_disabledByDefault"
+            ShellCommand.builder("cmd app_function set-enabled")
+                .addOption("--package", TEST_HELPER_PKG)
+                .addOption("--function", functionIdUnderTest)
+                .addOption("--state", "enable")
+                .addOption("--user", TestApis.users().current().id())
+                .execute()
+            assertThat(isAppFunctionEnabled(TEST_HELPER_PKG, functionIdUnderTest)).isTrue()
+
+            ShellCommand.builder("pm clear --user ${TestApis.users().current().id()}"
+                +" $TEST_HELPER_PKG")
+                .execute()
+
+            retryAssert {
+                assertThat(isAppFunctionEnabled(TEST_HELPER_PKG, functionIdUnderTest)).isTrue()
             }
         }
     }
