@@ -33,4 +33,8 @@ public interface InCallServiceMethods {
     Call getLastAddedCall();
 
     int getCurrentCallCount();
+
+    void setExpectedEvent(String callId, String event);
+
+    boolean waitOnExpectedEvent(String callId);
 }
