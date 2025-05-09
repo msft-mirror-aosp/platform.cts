@@ -19,6 +19,7 @@
     <object type="module_controller" class="com.android.tradefed.testtype.suite.module.DeviceFeatureModuleController">
         <!-- Skip the test on automotive devices, as virtual camera is not supported there. -->
         <option name="forbidden-feature" value="android.hardware.type.automotive"/>
+        <option name="forbidden-feature" value="android.hardware.type.watch"/>
     </object>
     <object type="module_controller" class="com.android.tradefed.testtype.suite.module.CommandSuccessModuleController" >
         <option name="command-timeout" value="2000" />
