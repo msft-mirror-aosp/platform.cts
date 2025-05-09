@@ -846,9 +846,7 @@ public class VehiclePropertyVerifiers {
                         });
     }
 
-    /**
-     * Gets the verifier for {@code HVAC_AC_ON}.
-     */
+    /** Gets the verifier builder for {@code HVAC_AC_ON}. */
     public static VehiclePropertyVerifier.Builder<Boolean> getHvacAcOnVerifierBuilder() {
         return VehiclePropertyVerifier.<Boolean>newDefaultBuilder(VehiclePropertyIds.HVAC_AC_ON)
                 .setPossiblyDependentOnHvacPowerOn();
