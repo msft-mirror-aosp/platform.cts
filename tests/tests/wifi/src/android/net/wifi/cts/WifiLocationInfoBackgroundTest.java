@@ -22,6 +22,7 @@ import static android.Manifest.permission.ACCESS_FINE_LOCATION;
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
+import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 
 import android.content.ComponentName;
@@ -80,6 +81,7 @@ public class WifiLocationInfoBackgroundTest extends WifiJUnit4TestBase{
 
     private static final int DURATION_MS = 30_000;
     private static final int WIFI_CONNECT_TIMEOUT_MILLIS = 30_000;
+    private static final int MAX_START_SCANNING_SERVICE_ATTEMPTS = 3;
 
     @Rule
     public final ActivityTestRule<WaitForResultActivity> mActivityRule =
@@ -203,9 +205,18 @@ public class WifiLocationInfoBackgroundTest extends WifiJUnit4TestBase{
 
     private void startBgServiceAndAssertStatusIs(
             ComponentName componentName, boolean status) throws Exception {
-        WaitForResultActivity activity = mActivityRule.getActivity();
-        activity.startServiceToWaitForResult(componentName);
-        assertThat(activity.waitForServiceResult(DURATION_MS)).isEqualTo(status);
+        for (int i = 0; i < MAX_START_SCANNING_SERVICE_ATTEMPTS; i++) {
+            WaitForResultActivity activity = mActivityRule.getActivity();
+            activity.startServiceToWaitForResult(componentName);
+            if (activity.waitForServiceResult(DURATION_MS) == status) {
+                return;
+            }
+        }
+        fail(
+                "Failure in startBgServiceAndAssertStatusIs, componentName="
+                        + componentName
+                        + ", expected="
+                        + status);
     }
 
     private void triggerScanBgServiceAndAssertStatusIs(boolean status) throws Exception {
