@@ -102,7 +102,7 @@ public class ImageCaptureUriExtraToClipDataTest extends AndroidTestCase {
         intent.setComponent(new ComponentName("android.content.cts",
                         "android.content.cts.ImageCaptureActivity"));
         intent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(mTestFile));
-        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
         getContext().startActivity(intent);
     }
 
