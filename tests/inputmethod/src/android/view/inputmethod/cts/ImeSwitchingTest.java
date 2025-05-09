@@ -24,6 +24,8 @@ import static com.android.cts.mockime.ImeEventStreamTestUtils.eventMatcher;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.expectCommand;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.expectEvent;
 
+import static org.junit.Assume.assumeFalse;
+
 import android.app.AlertDialog;
 import android.view.inputmethod.InputMethodManager;
 import android.view.inputmethod.cts.util.EndToEndImeTestBase;
@@ -81,6 +83,9 @@ public final class ImeSwitchingTest extends EndToEndImeTestBase {
      */
     @Test
     public void testImeRemainsVisibleAfterSwitchingIme() throws Exception {
+        // TODO(b/416752402): Re-enable this test once this bug is fixed.
+        assumeFalse(isAutomotiveScalableUI());
+
         testWithActivityAndTwoImes((session1, session2, editText, marker) -> {
             final var stream1 = session1.openEventStream();
             final var stream2 = session2.openEventStream();
@@ -113,6 +118,9 @@ public final class ImeSwitchingTest extends EndToEndImeTestBase {
      */
     @Test
     public void testImeUnboundAfterSwitchingWithoutInputFocus() throws Exception {
+        // TODO(b/416752402): Re-enable this test once this bug is fixed.
+        assumeFalse(isAutomotiveScalableUI());
+
         testWithActivityAndTwoImes((session1, session2, editText, marker) -> {
             final var stream1 = session1.openEventStream();
             final var stream2 = session2.openEventStream();
