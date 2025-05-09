@@ -45,9 +45,9 @@
           value="CtsAppTestCases android.app.cts.AlertDialog_BuilderTest"/>
   <option name="compatibility:exclude-filter" value="CtsAppTestCases android.app.cts.NotificationManagerTest#testNotificationUriPermissionsGranted"/>
   <option name="compatibility:exclude-filter"
-      value="CtsContentTestCases android.content.cts.ContentProviderClientTest#testBulkInsertTimeout"/>
+      value="CtsContentProviderTestCases android.content.cts.contentprovider.ContentProviderClientTest#testBulkInsertTimeout"/>
   <option name="compatibility:exclude-filter"
-      value="CtsContentTestCases android.content.cts.ContentProviderClientTest#testUncanonicalizeTimeout" />
+      value="CtsContentProviderTestCases android.content.cts.contentprovider.ContentProviderClientTest#testUncanonicalizeTimeout" />
   <option name="compatibility:exclude-filter"
       value="CtsContentTestCases android.content.cts.ContentResolverSyncTestCase#testCallMultipleAccounts" />
   <option name="compatibility:exclude-filter"

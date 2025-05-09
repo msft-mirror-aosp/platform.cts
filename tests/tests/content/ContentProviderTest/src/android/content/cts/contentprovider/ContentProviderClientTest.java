@@ -14,7 +14,10 @@
  * limitations under the License.
  */
 
-package android.content.cts;
+package android.content.cts.contentprovider;
+
+import static com.google.common.truth.Truth.assertThat;
+import static com.google.common.truth.Truth.assertWithMessage;
 
 import static org.mockito.Mockito.RETURNS_DEFAULTS;
 import static org.mockito.Mockito.after;
@@ -41,10 +44,17 @@ import android.os.CancellationSignal;
 import android.os.ICancellationSignal;
 import android.os.OperationCanceledException;
 import android.os.RemoteException;
+import android.os.SystemClock;
 import android.platform.test.annotations.AppModeSdkSandbox;
-import android.test.AndroidTestCase;
 import android.test.mock.MockContentResolver;
 
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.mockito.stubbing.Answer;
 
 import java.io.FileNotFoundException;
@@ -54,18 +64,20 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * Simple delegation test for {@link ContentProviderClient}, checking the right methods are called.
- * Actual {@link ContentProvider} functionality is tested in {@link ContentProviderTest}.
+ * Actual {@link ContentProvider} functionality is tested in {@link
+ * android.content.cts.ContentProviderTest}.
  */
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
-public class ContentProviderClientTest extends AndroidTestCase {
+@RunWith(AndroidJUnit4.class)
+public final class ContentProviderClientTest {
 
-    private static final Answer ANSWER_SLEEP = invocation -> {
-        // Sleep long enough to trigger ANR
-        Thread.sleep(100);
-        return null;
-    };
+    private static final Answer<Object> ANSWER_SLEEP =
+            invocation -> {
+                // Sleep long enough to trigger ANR
+                SystemClock.sleep(100);
+                return null;
+            };
 
-    private static final String PACKAGE_NAME = "android.content.cts";
     private static final String FEATURE_ID = "testFeature";
     private static final String MODE = "mode";
     private static final String AUTHORITY = "authority";
@@ -83,70 +95,73 @@ public class ContentProviderClientTest extends AndroidTestCase {
     private ContentProviderClient mContentProviderClient;
     private AttributionSource mAttributionSource;
 
-    private CancellationSignal mCancellationSignal = new CancellationSignal();
+    private final CancellationSignal mCancellationSignal = new CancellationSignal();
     private ICancellationSignal mICancellationSignal;
     private boolean mCalledCancel = false;
 
-    @Override
+    @Before
     public void setUp() throws Exception {
-        super.setUp();
-
         mIContentProvider = mock(IContentProvider.class, RETURNS_DEFAULTS);
         mICancellationSignal = mock(ICancellationSignal.class);
 
         doReturn(mICancellationSignal).when(mIContentProvider).createCancellationSignal();
 
-        final Context attributionContext = getContext().createContext(
-                new ContextParams.Builder()
-                        .setAttributionTag(FEATURE_ID)
-                        .build());
+        final Context attributionContext =
+                InstrumentationRegistry.getInstrumentation()
+                        .getTargetContext()
+                        .createContext(
+                                new ContextParams.Builder().setAttributionTag(FEATURE_ID).build());
 
         mAttributionSource = attributionContext.getAttributionSource();
         mContentResolver = spy(new MockContentResolver(attributionContext));
-        mContentProviderClient = spy(new ContentProviderClient(mContentResolver, mIContentProvider,
-                false));
+        mContentProviderClient =
+                spy(new ContentProviderClient(mContentResolver, mIContentProvider, false));
 
         mCalledCancel = false;
     }
 
-    @Override
-    protected void tearDown() throws Exception {
-        super.tearDown();
+    @After
+    public void tearDown() throws Exception {
         if (!mCalledCancel) {
             // Client should never cancel unless the test called cancel
-            assertFalse(mCancellationSignal.isCanceled());
+            assertThat(mCancellationSignal.isCanceled()).isFalse();
             verify(mICancellationSignal, never()).cancel();
         }
     }
 
+    @Test
     public void testQuery() throws RemoteException {
         mContentProviderClient.query(URI, null, ARGS, mCancellationSignal);
-        verify(mIContentProvider).query(mAttributionSource, URI, null, ARGS,
-                mICancellationSignal);
+        verify(mIContentProvider).query(mAttributionSource, URI, null, ARGS, mICancellationSignal);
     }
 
+    @Test
     public void testQueryTimeout() throws RemoteException, InterruptedException {
-        doAnswer(ANSWER_SLEEP).when(mIContentProvider).query(mAttributionSource, URI, null,
-                ARGS, mICancellationSignal);
+        doAnswer(ANSWER_SLEEP)
+                .when(mIContentProvider)
+                .query(mAttributionSource, URI, null, ARGS, mICancellationSignal);
 
         testTimeout(() -> mContentProviderClient.query(URI, null, ARGS, mCancellationSignal));
 
-        verify(mIContentProvider, after(150)).query(mAttributionSource, URI, null, ARGS,
-                mICancellationSignal);
+        verify(mIContentProvider, after(150))
+                .query(mAttributionSource, URI, null, ARGS, mICancellationSignal);
     }
 
+    @Test
     public void testQueryAlreadyCancelled() throws Exception {
         testAlreadyCancelled(
                 () -> mContentProviderClient.query(URI, null, ARGS, mCancellationSignal));
-        verify(mIContentProvider, never()).query(mAttributionSource, URI, null, ARGS,
-                mICancellationSignal);
+        verify(mIContentProvider, never())
+                .query(mAttributionSource, URI, null, ARGS, mICancellationSignal);
     }
 
+    @Test
     public void testGetType() throws RemoteException {
         mContentProviderClient.getType(URI);
         verify(mIContentProvider).getType(mAttributionSource, URI);
     }
 
+    @Test
     public void testGetTypeTimeout() throws RemoteException, InterruptedException {
         doAnswer(ANSWER_SLEEP).when(mIContentProvider).getType(mAttributionSource, URI);
 
@@ -155,25 +170,28 @@ public class ContentProviderClientTest extends AndroidTestCase {
         verify(mIContentProvider, after(150)).getType(mAttributionSource, URI);
     }
 
+    @Test
     public void testGetStreamTypes() throws RemoteException {
         mContentProviderClient.getStreamTypes(URI, "");
         verify(mIContentProvider).getStreamTypes(mAttributionSource, URI, "");
     }
 
+    @Test
     public void testGetStreamTypesTimeout() throws RemoteException, InterruptedException {
-        doAnswer(ANSWER_SLEEP).when(mIContentProvider).getStreamTypes(mAttributionSource,
-                URI, "");
+        doAnswer(ANSWER_SLEEP).when(mIContentProvider).getStreamTypes(mAttributionSource, URI, "");
 
         testTimeout(() -> mContentProviderClient.getStreamTypes(URI, ""));
 
         verify(mIContentProvider, after(150)).getStreamTypes(mAttributionSource, URI, "");
     }
 
+    @Test
     public void testCanonicalize() throws RemoteException {
         mContentProviderClient.canonicalize(URI);
         verify(mIContentProvider).canonicalize(mAttributionSource, URI);
     }
 
+    @Test
     public void testCanonicalizeTimeout() throws RemoteException, InterruptedException {
         doAnswer(ANSWER_SLEEP).when(mIContentProvider).canonicalize(mAttributionSource, URI);
 
@@ -182,11 +200,13 @@ public class ContentProviderClientTest extends AndroidTestCase {
         verify(mIContentProvider, after(150)).canonicalize(mAttributionSource, URI);
     }
 
+    @Test
     public void testUncanonicalize() throws RemoteException {
         mContentProviderClient.uncanonicalize(URI);
         verify(mIContentProvider).uncanonicalize(mAttributionSource, URI);
     }
 
+    @Test
     public void testUncanonicalizeTimeout() throws RemoteException, InterruptedException {
         doAnswer(ANSWER_SLEEP).when(mIContentProvider).uncanonicalize(mAttributionSource, URI);
 
@@ -195,61 +215,72 @@ public class ContentProviderClientTest extends AndroidTestCase {
         verify(mIContentProvider, after(150)).uncanonicalize(mAttributionSource, URI);
     }
 
+    @Test
     public void testRefresh() throws RemoteException {
         mContentProviderClient.refresh(URI, ARGS, mCancellationSignal);
-        verify(mIContentProvider).refresh(mAttributionSource, URI, ARGS,
-                mICancellationSignal);
+        verify(mIContentProvider).refresh(mAttributionSource, URI, ARGS, mICancellationSignal);
     }
 
+    @Test
     public void testRefreshTimeout() throws RemoteException, InterruptedException {
-        doAnswer(ANSWER_SLEEP).when(mIContentProvider).refresh(mAttributionSource, URI, ARGS,
-                mICancellationSignal);
+        doAnswer(ANSWER_SLEEP)
+                .when(mIContentProvider)
+                .refresh(mAttributionSource, URI, ARGS, mICancellationSignal);
 
         testTimeout(() -> mContentProviderClient.refresh(URI, ARGS, mCancellationSignal));
 
-        verify(mIContentProvider, after(150)).refresh(mAttributionSource, URI, ARGS,
-                mICancellationSignal);
+        verify(mIContentProvider, after(150))
+                .refresh(mAttributionSource, URI, ARGS, mICancellationSignal);
     }
 
+    @Test
     public void testRefreshAlreadyCancelled() throws Exception {
         testAlreadyCancelled(() -> mContentProviderClient.refresh(URI, ARGS, mCancellationSignal));
-        verify(mIContentProvider, never()).refresh(mAttributionSource, URI, ARGS,
-                mICancellationSignal);
+        verify(mIContentProvider, never())
+                .refresh(mAttributionSource, URI, ARGS, mICancellationSignal);
     }
 
+    @Test
     public void testInsert() throws RemoteException {
         mContentProviderClient.insert(URI, VALUES, EXTRAS);
         verify(mIContentProvider).insert(mAttributionSource, URI, VALUES, EXTRAS);
     }
 
+    @Test
     public void testInsertTimeout() throws RemoteException, InterruptedException {
-        doAnswer(ANSWER_SLEEP).when(mIContentProvider).insert(mAttributionSource, URI,
-                VALUES, EXTRAS);
+        doAnswer(ANSWER_SLEEP)
+                .when(mIContentProvider)
+                .insert(mAttributionSource, URI, VALUES, EXTRAS);
 
         testTimeout(() -> mContentProviderClient.insert(URI, VALUES, EXTRAS));
 
         verify(mIContentProvider, after(150)).insert(mAttributionSource, URI, VALUES, EXTRAS);
     }
 
+    @Test
     public void testBulkInsert() throws RemoteException {
         mContentProviderClient.bulkInsert(URI, VALUES_ARRAY);
         verify(mIContentProvider).bulkInsert(mAttributionSource, URI, VALUES_ARRAY);
     }
 
+    @Test
     public void testBulkInsertTimeout() throws RemoteException, InterruptedException {
-        doAnswer(ANSWER_SLEEP).when(mIContentProvider).bulkInsert(mAttributionSource, URI,
-                VALUES_ARRAY);
+        doAnswer(ANSWER_SLEEP)
+                .when(mIContentProvider)
+                .bulkInsert(mAttributionSource, URI, VALUES_ARRAY);
 
         testTimeout(() -> mContentProviderClient.bulkInsert(URI, VALUES_ARRAY));
 
         verify(mIContentProvider, after(150)).bulkInsert(mAttributionSource, URI, VALUES_ARRAY);
     }
 
+    @Test
     public void testDelete() throws RemoteException {
         mContentProviderClient.delete(URI, EXTRAS);
         verify(mIContentProvider).delete(mAttributionSource, URI, EXTRAS);
     }
 
+    @Test
     public void testDeleteTimeout() throws RemoteException, InterruptedException {
         doAnswer(ANSWER_SLEEP).when(mIContentProvider).delete(mAttributionSource, URI, EXTRAS);
 
@@ -258,157 +289,187 @@ public class ContentProviderClientTest extends AndroidTestCase {
         verify(mIContentProvider, after(150)).delete(mAttributionSource, URI, EXTRAS);
     }
 
+    @Test
     public void testUpdate() throws RemoteException {
         mContentProviderClient.update(URI, VALUES, EXTRAS);
         verify(mIContentProvider).update(mAttributionSource, URI, VALUES, EXTRAS);
     }
 
+    @Test
     public void testUpdateTimeout() throws RemoteException, InterruptedException {
-        doAnswer(ANSWER_SLEEP).when(mIContentProvider).update(mAttributionSource, URI,
-                VALUES, EXTRAS);
+        doAnswer(ANSWER_SLEEP)
+                .when(mIContentProvider)
+                .update(mAttributionSource, URI, VALUES, EXTRAS);
 
         testTimeout(() -> mContentProviderClient.update(URI, VALUES, EXTRAS));
 
         verify(mIContentProvider, after(150)).update(mAttributionSource, URI, VALUES, EXTRAS);
     }
 
+    @Test
     public void testOpenFile() throws RemoteException, FileNotFoundException {
         mContentProviderClient.openFile(URI, MODE, mCancellationSignal);
 
         verify(mIContentProvider).openFile(mAttributionSource, URI, MODE, mICancellationSignal);
     }
 
+    @Test
     public void testOpenFileTimeout()
             throws RemoteException, InterruptedException, FileNotFoundException {
-        doAnswer(ANSWER_SLEEP).when(mIContentProvider).openFile(mAttributionSource,
-                URI, MODE, mICancellationSignal);
+        doAnswer(ANSWER_SLEEP)
+                .when(mIContentProvider)
+                .openFile(mAttributionSource, URI, MODE, mICancellationSignal);
 
         testTimeout(() -> mContentProviderClient.openFile(URI, MODE, mCancellationSignal));
 
-        verify(mIContentProvider, after(150)).openFile(mAttributionSource, URI, MODE,
-                mICancellationSignal);
+        verify(mIContentProvider, after(150))
+                .openFile(mAttributionSource, URI, MODE, mICancellationSignal);
     }
 
+    @Test
     public void testOpenFileAlreadyCancelled() throws Exception {
         testAlreadyCancelled(() -> mContentProviderClient.openFile(URI, MODE, mCancellationSignal));
 
-        verify(mIContentProvider, never()).openFile(mAttributionSource, URI, MODE,
-                mICancellationSignal);
+        verify(mIContentProvider, never())
+                .openFile(mAttributionSource, URI, MODE, mICancellationSignal);
     }
 
+    @Test
     public void testOpenAssetFile() throws RemoteException, FileNotFoundException {
         mContentProviderClient.openAssetFile(URI, MODE, mCancellationSignal);
 
-        verify(mIContentProvider).openAssetFile(mAttributionSource, URI, MODE, mICancellationSignal);
+        verify(mIContentProvider)
+                .openAssetFile(mAttributionSource, URI, MODE, mICancellationSignal);
     }
 
+    @Test
     public void testOpenAssetFileTimeout()
             throws RemoteException, InterruptedException, FileNotFoundException {
-        doAnswer(ANSWER_SLEEP).when(mIContentProvider).openAssetFile(mAttributionSource,
-                URI, MODE, mICancellationSignal);
+        doAnswer(ANSWER_SLEEP)
+                .when(mIContentProvider)
+                .openAssetFile(mAttributionSource, URI, MODE, mICancellationSignal);
 
         testTimeout(() -> mContentProviderClient.openAssetFile(URI, MODE, mCancellationSignal));
 
-        verify(mIContentProvider, after(150)).openAssetFile(mAttributionSource, URI, MODE,
-                mICancellationSignal);
+        verify(mIContentProvider, after(150))
+                .openAssetFile(mAttributionSource, URI, MODE, mICancellationSignal);
     }
 
+    @Test
     public void testOpenAssetFileAlreadyCancelled() throws Exception {
         testAlreadyCancelled(
                 () -> mContentProviderClient.openAssetFile(URI, MODE, mCancellationSignal));
 
-        verify(mIContentProvider, never()).openAssetFile(mAttributionSource, URI, MODE,
-                mICancellationSignal);
+        verify(mIContentProvider, never())
+                .openAssetFile(mAttributionSource, URI, MODE, mICancellationSignal);
     }
 
+    @Test
     public void testOpenTypedAssetFileDescriptor() throws RemoteException, FileNotFoundException {
         mContentProviderClient.openTypedAssetFileDescriptor(URI, MODE, ARGS, mCancellationSignal);
 
-        verify(mIContentProvider).openTypedAssetFile(mAttributionSource, URI, MODE, ARGS,
-                mICancellationSignal);
+        verify(mIContentProvider)
+                .openTypedAssetFile(mAttributionSource, URI, MODE, ARGS, mICancellationSignal);
     }
 
+    @Test
     public void testOpenTypedAssetFile() throws RemoteException, FileNotFoundException {
         mContentProviderClient.openTypedAssetFile(URI, MODE, ARGS, mCancellationSignal);
 
-        verify(mIContentProvider).openTypedAssetFile(mAttributionSource, URI, MODE, ARGS,
-                mICancellationSignal);
+        verify(mIContentProvider)
+                .openTypedAssetFile(mAttributionSource, URI, MODE, ARGS, mICancellationSignal);
     }
 
+    @Test
     public void testOpenTypedAssetFileTimeout()
             throws RemoteException, InterruptedException, FileNotFoundException {
-        doAnswer(ANSWER_SLEEP).when(mIContentProvider).openTypedAssetFile(mAttributionSource,
-                URI, MODE, ARGS, mICancellationSignal);
+        doAnswer(ANSWER_SLEEP)
+                .when(mIContentProvider)
+                .openTypedAssetFile(mAttributionSource, URI, MODE, ARGS, mICancellationSignal);
 
-        testTimeout(() -> mContentProviderClient.openTypedAssetFile(URI, MODE, ARGS,
-                mCancellationSignal));
+        testTimeout(
+                () ->
+                        mContentProviderClient.openTypedAssetFile(
+                                URI, MODE, ARGS, mCancellationSignal));
 
-        verify(mIContentProvider, after(150)).openTypedAssetFile(mAttributionSource, URI, MODE,
-                ARGS, mICancellationSignal);
+        verify(mIContentProvider, after(150))
+                .openTypedAssetFile(mAttributionSource, URI, MODE, ARGS, mICancellationSignal);
     }
 
+    @Test
     public void testOpenTypedAssetFileAlreadyCancelled() throws Exception {
         testAlreadyCancelled(
-                () -> mContentProviderClient.openTypedAssetFile(URI, MODE, ARGS,
-                        mCancellationSignal));
+                () ->
+                        mContentProviderClient.openTypedAssetFile(
+                                URI, MODE, ARGS, mCancellationSignal));
 
-        verify(mIContentProvider, never()).openTypedAssetFile(mAttributionSource, URI, MODE,
-                ARGS, mICancellationSignal);
+        verify(mIContentProvider, never())
+                .openTypedAssetFile(mAttributionSource, URI, MODE, ARGS, mICancellationSignal);
     }
 
+    @Test
     public void testApplyBatch() throws RemoteException, OperationApplicationException {
         mContentProviderClient.applyBatch(AUTHORITY, OPS);
 
         verify(mIContentProvider).applyBatch(mAttributionSource, AUTHORITY, OPS);
     }
 
+    @Test
     public void testApplyBatchTimeout()
             throws RemoteException, InterruptedException, OperationApplicationException {
-        doAnswer(ANSWER_SLEEP).when(mIContentProvider).applyBatch(mAttributionSource,
-                AUTHORITY, OPS);
+        doAnswer(ANSWER_SLEEP)
+                .when(mIContentProvider)
+                .applyBatch(mAttributionSource, AUTHORITY, OPS);
 
         testTimeout(() -> mContentProviderClient.applyBatch(AUTHORITY, OPS));
 
         verify(mIContentProvider, after(150)).applyBatch(mAttributionSource, AUTHORITY, OPS);
     }
 
+    @Test
     public void testCall() throws RemoteException {
         mContentProviderClient.call(AUTHORITY, METHOD, ARG, ARGS);
 
         verify(mIContentProvider).call(mAttributionSource, AUTHORITY, METHOD, ARG, ARGS);
     }
 
+    @Test
     public void testCallTimeout() throws RemoteException, InterruptedException {
-        doAnswer(ANSWER_SLEEP).when(mIContentProvider).call(mAttributionSource, AUTHORITY,
-                METHOD, ARG, ARGS);
+        doAnswer(ANSWER_SLEEP)
+                .when(mIContentProvider)
+                .call(mAttributionSource, AUTHORITY, METHOD, ARG, ARGS);
 
         testTimeout(() -> mContentProviderClient.call(AUTHORITY, METHOD, ARG, ARGS));
 
-        verify(mIContentProvider, after(150)).call(mAttributionSource, AUTHORITY, METHOD, ARG,
-                ARGS);
+        verify(mIContentProvider, after(150))
+                .call(mAttributionSource, AUTHORITY, METHOD, ARG, ARGS);
     }
 
     private void testTimeout(Function function) throws InterruptedException {
         mContentProviderClient.setDetectNotResponding(1);
         CountDownLatch latch = new CountDownLatch(1);
-        doAnswer(invocation -> {
-            latch.countDown();
-            return null;
-        })
+        doAnswer(
+                        invocation -> {
+                            latch.countDown();
+                            return null;
+                        })
                 .when(mContentResolver)
                 .appNotRespondingViaProvider(mIContentProvider);
 
-        new Thread(() -> {
-            try {
-                function.run();
-            } catch (Exception ignored) {
-            } finally {
-                latch.countDown();
-            }
-        }).start();
+        new Thread(
+                        () -> {
+                            try {
+                                function.run();
+                            } catch (Exception e) {
+                                // Ignore, we are testing timeout
+                            } finally {
+                                latch.countDown();
+                            }
+                        })
+                .start();
 
         latch.await(100, TimeUnit.MILLISECONDS);
-        assertEquals(0, latch.getCount());
+        assertThat(latch.getCount()).isEqualTo(0);
 
         verify(mContentResolver).appNotRespondingViaProvider(mIContentProvider);
     }
@@ -419,7 +480,7 @@ public class ContentProviderClientTest extends AndroidTestCase {
 
         try {
             function.run();
-            fail("Expected OperationCanceledException");
+            assertWithMessage("Expected OperationCanceledException").fail();
         } catch (OperationCanceledException expected) {
         }
     }
