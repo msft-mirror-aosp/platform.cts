@@ -679,6 +679,17 @@ public class CameraTestUtils extends Assert {
         }
 
         /**
+         * Get an image from the image reader.
+         *
+         * @param timeout Timeout value for the wait.
+         * @return The image from the image reader or null in case the timeout expires
+         */
+        public Image getImageOrNull(long timeout) throws InterruptedException {
+            Image image = mQueue.poll(timeout, TimeUnit.MILLISECONDS);
+            return image;
+        }
+
+        /**
          * Drain the pending images held by this listener currently.
          *
          */
