@@ -386,6 +386,8 @@ public class InputMethodServiceLifecycleTest extends BaseHostJUnit4Test {
     public void testImeSwitchingWithoutWindowFocusAfterDisplayOffOnFull() throws Exception {
         assumeFalse("This test is disabled on automotive with visible background users enabled",
                 isAutomotiveWithVisibleBackgroundUser());
+        // TODO(b/416752402): Re-enable this test once this bug is fixed.
+        assumeFalse(isAutomotiveScalableUI());
         testImeSwitchingWithoutWindowFocusAfterDisplayOffOn(false);
     }
 
@@ -404,6 +406,8 @@ public class InputMethodServiceLifecycleTest extends BaseHostJUnit4Test {
     public void testImeSwitchingWithoutWindowFocusAfterDisplayOffOnInstant() throws Exception {
         assumeFalse("This test is disabled on automotive with visible background users enabled",
                 isAutomotiveWithVisibleBackgroundUser());
+        // TODO(b/416752402): Re-enable this test once this bug is fixed.
+        assumeFalse(isAutomotiveScalableUI());
         testImeSwitchingWithoutWindowFocusAfterDisplayOffOn(true);
     }
 
@@ -513,5 +517,10 @@ public class InputMethodServiceLifecycleTest extends BaseHostJUnit4Test {
     private boolean isAutomotiveWithVisibleBackgroundUser() throws Exception {
         return getDevice().hasFeature("android.hardware.type.automotive")
                 && "true".equalsIgnoreCase(shell("cmd user is-visible-background-users-supported"));
+    }
+
+    private boolean isAutomotiveScalableUI() throws Exception {
+        return getDevice().hasFeature("android.hardware.type.automotive")
+                && getDevice().hasFeature("android.software.car.splitscreen_multitasking");
     }
 }

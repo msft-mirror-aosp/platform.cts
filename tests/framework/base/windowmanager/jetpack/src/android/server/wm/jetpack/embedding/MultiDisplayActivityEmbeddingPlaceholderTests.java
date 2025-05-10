@@ -150,15 +150,16 @@ public class MultiDisplayActivityEmbeddingPlaceholderTests
     })
     @Test
     public void testPlaceholderLaunchOnDefaultDisplay() {
-        // Resize the secondary display to 0.8 * display size in case the secondary display size
-        // matches the default one.
+        // Resize the secondary display to 0.8 * task size to avoid placeholder being started on the
+        // secondary display
         mWmState.computeState();
-        final Rect mainDisplayBounds = mWmState.getDisplay(getMainDisplayId()).getBounds();
-        mReportedDisplayMetrics.setSize(new Size((int) (mainDisplayBounds.width() * 0.8),
-                (int) (mainDisplayBounds.height() * 0.8)));
         final Rect defaultDisplayTaskBounds = getTaskBounds(getMainDisplayId());
         final int defaultDisplayTaskWidth = defaultDisplayTaskBounds.width();
         final int defaultDisplayTaskHeight = defaultDisplayTaskBounds.height();
+        mReportedDisplayMetrics.setSize(
+                new Size(
+                        (int) (defaultDisplayTaskWidth * 0.8),
+                        (int) (defaultDisplayTaskHeight * 0.8)));
 
         // Set embedding rules with the parent window metrics only allowing side-by-side
         // activities on a task bounds on the default display.

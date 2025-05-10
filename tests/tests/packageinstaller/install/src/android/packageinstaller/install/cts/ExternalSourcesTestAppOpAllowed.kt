@@ -22,16 +22,14 @@ import android.provider.Settings
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.MediumTest
 import androidx.test.uiautomator.By
-import androidx.test.uiautomator.BySelector
-import androidx.test.uiautomator.Until
 import com.android.compatibility.common.util.AppOpsUtils
 import com.google.common.truth.Truth.assertThat
+import java.util.regex.Pattern
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import java.util.regex.Pattern
 
 @RunWith(AndroidJUnit4::class)
 @MediumTest
@@ -39,13 +37,9 @@ import java.util.regex.Pattern
 class ExternalSourcesTestAppOpAllowed : PackageInstallerTestBase() {
     private val packageName = context.packageName
 
-    private fun assertUiObject(errorMessage: String, selector: BySelector) {
-        assertNotNull(errorMessage, uiDevice.wait(Until.findObject(selector), GLOBAL_TIMEOUT))
-    }
-
-    private fun assertInstallAllowed(errorMessage: String) {
+    private fun assertInstallAllowed() {
         val installString = Pattern.compile("install", Pattern.CASE_INSENSITIVE)
-        assertUiObject(errorMessage, By.text(installString))
+        findInstallerUIButton(By.text(installString))
         uiDevice.pressBack()
     }
 
@@ -57,7 +51,7 @@ class ExternalSourcesTestAppOpAllowed : PackageInstallerTestBase() {
         )
 
         startInstallation()
-        assertInstallAllowed("Install confirmation not shown when app op set to allowed")
+        assertInstallAllowed()
 
         assertTrue("Operation not logged", AppOpsUtils.allowedOperationLogged(
             packageName,

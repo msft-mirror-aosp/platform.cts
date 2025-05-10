@@ -37,6 +37,9 @@
           "exclude-filter": "android.keystore.cts.DESedeECBPKCS7PaddingCipherTest"
         }
       ]
+    },
+    {
+      "name": "CtsKeystoreCAStoreTestCases"
     }
   ],
   "postsubmit": [
@@ -45,6 +48,9 @@
     },
     {
       "name": "CtsKeystorePerformanceTestCases"
+    },
+    {
+      "name": "CtsKeystoreCAStoreTestCases"
     }
   ]
 }

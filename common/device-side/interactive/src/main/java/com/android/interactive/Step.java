@@ -43,6 +43,8 @@ import com.android.bedstead.nene.utils.Poll;
 import com.android.bedstead.permissions.PermissionContext;
 import com.android.interactive.annotations.CacheableStep;
 
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
+import java.lang.reflect.Field;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
@@ -105,6 +107,7 @@ public abstract class Step<E> {
      * <p>This will first try to execute the step automatically, falling back to manual interaction
      * if that fails.
      */
+    @CanIgnoreReturnValue
     public static <E> E execute(Class<? extends Step<E>> stepClass) throws Exception {
         Step<E> step;
         try {
@@ -414,8 +417,7 @@ public abstract class Step<E> {
                                                     SYSTEM_APPLICATION_OVERLAY,
                                                     INTERNAL_SYSTEM_WINDOW)) {
                                 params.setSystemApplicationOverlay(true);
-                                params.privateFlags =
-                                        WindowManager.LayoutParams.SYSTEM_FLAG_SHOW_FOR_ALL_USERS;
+                                setPrivateFlagsViaReflection();
                                 sWindowManager.addView(mInstructionView, params);
                             }
                         });
@@ -449,6 +451,21 @@ public abstract class Step<E> {
     public Optional<E> validate(E value) {
         // By default there is no validation
         return Optional.of(value);
+    }
+
+    /*
+    WindowManager.LayoutParams.privateFlags can be accessed in Gerrit, but we use reflection for
+    the sake of Google3 repository, where the field is unavailable and there is no clear way on
+    how to fix that.
+     */
+    private void setPrivateFlagsViaReflection() {
+        try {
+            Class clazz = WindowManager.LayoutParams.class;
+            Field field = clazz.getDeclaredField("privateFlags");
+            field.set(clazz.newInstance(), WindowManager.LayoutParams.SYSTEM_FLAG_SHOW_FOR_ALL_USERS);
+        } catch (IllegalAccessError | IllegalAccessException | NoSuchFieldError | NoSuchFieldException | InstantiationException ex) {
+            Log.e(LOG_TAG, "Getting hidden field through reflection failed", ex);
+        }
     }
 
     /**

@@ -15,25 +15,37 @@
  */
 package android.app.cts;
 
+import static com.google.common.truth.Truth.assertThat;
+import static com.google.common.truth.Truth.assertWithMessage;
+
 import android.app.ActivityManager;
+import android.content.Context;
 import android.os.Debug;
 import android.os.Parcel;
 import android.os.Process;
-import android.test.AndroidTestCase;
 
-public class ActivityManagerMemoryInfoTest extends AndroidTestCase {
-    protected ActivityManager.MemoryInfo mMemory;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
 
-    @Override
-    protected void setUp() throws Exception {
-        super.setUp();
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
+@RunWith(AndroidJUnit4.class)
+public final class ActivityManagerMemoryInfoTest {
+    private ActivityManager.MemoryInfo mMemory;
+
+    @Before
+    public void setUp() throws Exception {
         mMemory = new ActivityManager.MemoryInfo();
     }
 
+    @Test
     public void testDescribeContents() {
-        assertEquals(0, mMemory.describeContents());
+        assertThat(mMemory.describeContents()).isEqualTo(0);
     }
 
+    @Test
     public void testWriteToParcel() throws Exception {
         final long advertisedMem = 200000L;
         mMemory.advertisedMem = advertisedMem;
@@ -48,21 +60,25 @@ public class ActivityManagerMemoryInfoTest extends AndroidTestCase {
         parcel.setDataPosition(0);
         ActivityManager.MemoryInfo values =
             ActivityManager.MemoryInfo.CREATOR.createFromParcel(parcel);
-        assertEquals(advertisedMem, values.advertisedMem);
-        assertEquals(availMem, values.availMem);
-        assertEquals(threshold, values.threshold);
-        assertEquals(lowMemory, values.lowMemory);
+        assertThat(values.advertisedMem).isEqualTo(advertisedMem);
+        assertThat(values.availMem).isEqualTo(availMem);
+        assertThat(values.threshold).isEqualTo(threshold);
+        assertThat(values.lowMemory).isEqualTo(lowMemory);
 
         // test null condition.
         try {
             mMemory.writeToParcel(null, 0);
-            fail("writeToParcel should throw out NullPointerException when Parcel is null");
+            assertWithMessage(
+                            "writeToParcel should throw out NullPointerException when Parcel is"
+                                    + " null")
+                    .fail();
         } catch (NullPointerException e) {
             // expected
         }
     }
 
-    public void testReadFromParcel() throws Exception {
+    @Test
+    public void testReadFromParcel() {
         final long advertisedMem = 200000L;
         mMemory.advertisedMem = advertisedMem;
         final long availMem = 1000L;
@@ -76,38 +92,44 @@ public class ActivityManagerMemoryInfoTest extends AndroidTestCase {
         parcel.setDataPosition(0);
         ActivityManager.MemoryInfo result = new ActivityManager.MemoryInfo();
         result.readFromParcel(parcel);
-        assertEquals(advertisedMem, result.advertisedMem);
-        assertEquals(availMem, result.availMem);
-        assertEquals(threshold, result.threshold);
-        assertEquals(lowMemory, result.lowMemory);
+        assertThat(result.advertisedMem).isEqualTo(advertisedMem);
+        assertThat(result.availMem).isEqualTo(availMem);
+        assertThat(result.threshold).isEqualTo(threshold);
+        assertThat(result.lowMemory).isEqualTo(lowMemory);
 
         // test null condition.
         result = new ActivityManager.MemoryInfo();
         try {
             result.readFromParcel(null);
-            fail("readFromParcel should throw out NullPointerException when Parcel is null");
+            assertWithMessage(
+                            "readFromParcel should throw out NullPointerException when Parcel is"
+                                    + " null")
+                    .fail();
         } catch (NullPointerException e) {
             // expected
         }
     }
 
+    @Test
     public void testGetProcessMemoryInfo() {
         // PID == 1 is the init process.
-        Debug.MemoryInfo[] result = getContext().getSystemService(ActivityManager.class)
-                .getProcessMemoryInfo(new int[]{1, Process.myPid(), 1});
-        assertEquals(3, result.length);
+        Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
+        Debug.MemoryInfo[] result =
+                context.getSystemService(ActivityManager.class)
+                        .getProcessMemoryInfo(new int[] {1, Process.myPid(), 1});
+        assertThat(result).hasLength(3);
         isEmpty(result[0]);
         isEmpty(result[2]);
         isNotEmpty(result[1]);
     }
 
     private static void isEmpty(Debug.MemoryInfo mi) {
-        assertEquals(0, mi.dalvikPss);
-        assertEquals(0, mi.nativePss);
+        assertThat(mi.dalvikPss).isEqualTo(0);
+        assertThat(mi.nativePss).isEqualTo(0);
     }
 
     private static void isNotEmpty(Debug.MemoryInfo mi) {
-        assertTrue(mi.dalvikPss > 0);
-        assertTrue(mi.nativePss > 0);
+        assertThat(mi.dalvikPss).isGreaterThan(0);
+        assertThat(mi.nativePss).isGreaterThan(0);
     }
 }

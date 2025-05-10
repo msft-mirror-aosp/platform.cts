@@ -16,7 +16,7 @@
 
 package android.app.cts;
 
-import static junit.framework.Assert.fail;
+import static com.google.common.truth.Truth.assertWithMessage;
 
 import android.app.tools.WatchUidRunner;
 import android.content.ContentResolver;
@@ -35,12 +35,10 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-/**
- * Test system behavior of a bad provider.
- */
+/** Test system behavior of a bad provider. */
 @RunWith(AndroidJUnit4.class)
 @Presubmit
-public class BadProviderTest {
+public final class BadProviderTest {
     private static final String AUTHORITY = "com.android.cts.stubbad.badprovider";
     private static final String TEST_PACKAGE_NAME = "com.android.cts.stubbad";
     private static final int WAIT_TIME = 5000;
@@ -65,9 +63,8 @@ public class BadProviderTest {
             uidWatcher = new WatchUidRunner(InstrumentationRegistry.getInstrumentation(),
                     appInfo.uid, WAIT_TIME);
             long startTs = SystemClock.uptimeMillis();
-            handler.post(()->
-                res.query(Uri.parse("content://" + AUTHORITY), null, null, null, null)
-            );
+            handler.post(
+                    () -> res.query(Uri.parse("content://" + AUTHORITY), null, null, null, null));
             // Ensure the system will try at least 3 times for a bad content provider.
             uidWatcher.waitFor(WatchUidRunner.CMD_GONE, null);
             uidWatcher.waitFor(WatchUidRunner.CMD_GONE, null);
@@ -77,16 +74,19 @@ public class BadProviderTest {
             // Sleep for 10 seconds and initialize the watcher again
             // (content provider publish timeout is 10 seconds)
             Thread.sleep(Math.max(0, 10000 - (SystemClock.uptimeMillis() - startTs)));
-            uidWatcher = new WatchUidRunner(InstrumentationRegistry.getInstrumentation(),
-                    appInfo.uid, WAIT_TIME);
+            uidWatcher =
+                    new WatchUidRunner(
+                            InstrumentationRegistry.getInstrumentation(), appInfo.uid, WAIT_TIME);
             // By now we shouldn't see it's retrying again.
             try {
                 uidWatcher.waitFor(WatchUidRunner.CMD_GONE, null);
-                fail("Excessive attempts to bring up a provider");
+                assertWithMessage("Excessive attempts to bring up a provider").fail();
             } catch (IllegalStateException e) {
+                // Expected
             }
         } catch (Exception e) {
-            fail("Unexpected exception while query provider: " + e.getMessage());
+            assertWithMessage("Unexpected exception while query provider: " + e.getMessage())
+                    .fail();
         } finally {
             if (uidWatcher != null) {
                 uidWatcher.finish();

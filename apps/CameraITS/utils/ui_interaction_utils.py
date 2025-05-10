@@ -391,6 +391,7 @@ def _set_jca_video_stabilization(dut, log_path, stabilization_mode):
     when the video stabilization mode is OFF
   """
   dut.ui(res=SETTINGS_BUTTON_RESOURCE_ID).click()
+  dut.ui(scrollable=True).scroll.down(res=SETTINGS_VIDEO_STABILIZATION_RESOURCE_ID)
   if not dut.ui(text=SETTINGS_VIDEO_STABILIZATION_MODE_TEXT).wait.exists(
       UI_OBJECT_WAIT_TIME_SECONDS):
     dut.take_screenshot(
@@ -512,16 +513,16 @@ def switch_default_camera(dut, facing, log_path):
       r'(switch to|flip camera|switch camera|camera switch|'
       r'toggle_button|front_back_switcher|switch_camera_button|camera_switch_button)'
     )
-  flash_pattern = 'flash'
+  non_switch_pattern = r'(flash|panorama|video|photo|portrait|beauty)'
   default_ui_dump = dut.ui.dump()
   logging.debug('Default camera UI dump: %s', default_ui_dump)
   root = et.fromstring(default_ui_dump)
   for node in root.iter('node'):
     resource_id = node.get('resource-id')
     content_desc = node.get('content-desc')
-    # Ignore resource ids for flash on/off
-    if (re.search(flash_pattern, content_desc, re.IGNORECASE) or
-        re.search(flash_pattern, resource_id, re.IGNORECASE)):
+    # Ignore resource ids for flash on/off and other modes
+    if (re.search(non_switch_pattern, content_desc, re.IGNORECASE) or
+        re.search(non_switch_pattern, resource_id, re.IGNORECASE)):
       continue
     if content_desc:
       if re.search(

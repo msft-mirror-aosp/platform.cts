@@ -29,6 +29,7 @@ import android.telephony.ServiceState;
 import android.telephony.TelephonyManager;
 import android.telephony.cts.locationaccessingapp.CtsLocationAccessService;
 import android.telephony.cts.locationaccessingapp.ICtsLocationAccessControl;
+import android.telephony.cts.util.LocationHelper;
 import android.text.TextUtils;
 
 import androidx.annotation.NonNull;
@@ -56,25 +57,26 @@ public class TelephonyLocationTests {
 
     private static final long TEST_TIMEOUT = 5000;
 
-    private Boolean mWasLocationEnabled;
+    private LocationHelper mLocationHelper;
 
     @Before
     public void setUp() {
-        PackageManager pm = InstrumentationRegistry.getContext().getPackageManager();
+        Context context = InstrumentationRegistry.getContext();
+        PackageManager pm = context.getPackageManager();
         assumeTrue(pm.hasSystemFeature(PackageManager.FEATURE_TELEPHONY));
         try {
-            InstrumentationRegistry.getContext().getSystemService(TelephonyManager.class)
+            context.getSystemService(TelephonyManager.class)
                     .getHalVersion(TelephonyManager.HAL_SERVICE_RADIO);
         } catch (IllegalStateException e) {
             assumeNoException("Skipping tests because Telephony service is null", e);
         }
+        mLocationHelper = new LocationHelper(context);
     }
 
     @After
     public void tearDown() {
-        if (mWasLocationEnabled != null) {
-            TelephonyManagerTest.setLocationEnabled(mWasLocationEnabled);
-            mWasLocationEnabled = null;
+        if (mLocationHelper != null) {
+            mLocationHelper.tearDown();
         }
     }
 
@@ -132,8 +134,7 @@ public class TelephonyLocationTests {
 
     @Test
     public void testServiceStateLocationSanitizationWithRenouncedPermission() {
-        TelephonyManagerTest.grantLocationPermissions();
-        mWasLocationEnabled = TelephonyManagerTest.setLocationEnabled(true);
+        mLocationHelper.enable();
         HashSet<String> permissionsToRenounce =
                 new HashSet<>(Arrays.asList(android.Manifest.permission.ACCESS_FINE_LOCATION));
 
@@ -149,8 +150,7 @@ public class TelephonyLocationTests {
 
     @Test
     public void testServiceStateListeningWithRenouncedPermission() {
-        TelephonyManagerTest.grantLocationPermissions();
-        mWasLocationEnabled = TelephonyManagerTest.setLocationEnabled(true);
+        mLocationHelper.enable();
         HashSet<String> permissionsToRenounce =
                 new HashSet<>(Arrays.asList(android.Manifest.permission.ACCESS_FINE_LOCATION));
         ServiceState ss = CtsLocationAccessService.listenForServiceState(
@@ -191,7 +191,7 @@ public class TelephonyLocationTests {
 
     @Test
     public void testSdk28ServiceStateListeningWithoutPermissions() {
-        mWasLocationEnabled = TelephonyManagerTest.setLocationEnabled(true);
+        mLocationHelper.enableWithoutPermissions();
         withRevokedPermission(LOCATION_ACCESS_APP_SDK28_PACKAGE, () -> {
                     ServiceState ss = (ServiceState) performLocationAccessCommand(
                             CtsLocationAccessService.COMMAND_GET_SERVICE_STATE_FROM_LISTENER);

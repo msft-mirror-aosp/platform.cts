@@ -97,45 +97,10 @@ android_ravenwood_test {
     ],
     srcs: [
         "src/android/app/cts/ActivityOptionsTest.java",
+        "src/android/app/cts/InstrumentationThreadingTest.java",
     ],
     auto_gen_config: true,
     team: "trendy_team_ravenwood",
-}
-
-android_test {
-    name: "CtsDownloadManagerInstaller",
-    defaults: ["cts_defaults"],
-    libs: [
-        "android.test.runner.stubs.test",
-        "org.apache.http.legacy.stubs.test",
-        "android.test.base.stubs.test",
-    ],
-    static_libs: [
-        "compatibility-device-util-axt",
-        "ctstestrunner-axt",
-        "ctstestserver",
-        "download_manager_lib",
-        "mockito-target-minus-junit4",
-        "androidx.test.rules",
-        "platform-test-annotations",
-    ],
-    srcs: [
-        "DownloadManagerInstallerTest/src/**/*.java",
-    ],
-    resource_dirs: ["app/res"],
-    asset_dirs: ["app/assets"],
-    // Tag this module as a cts test artifact
-    test_suites: [
-        "cts",
-        "general-tests",
-    ],
-    sdk_version: "test_current",
-    min_sdk_version: "29",
-    manifest: "DownloadManagerInstallerTest/AndroidManifest.xml",
-    test_config: "DownloadManagerInstallerTest/AndroidTest.xml",
-    lint: {
-        baseline_filename: "lint-baseline.xml",
-    },
 }
 
 test_module_config {
@@ -144,7 +109,6 @@ test_module_config {
     test_suites: ["general-tests"],
     include_filters: [
         "android.app.cts.ActivityManagerProcessStateTest",
-        "android.app.cts.ServiceTest",
         "android.app.cts.ActivityManagerTest",
         "android.app.cts.TaskDescriptionTest",
     ],
@@ -158,7 +122,6 @@ test_module_config {
     test_suites: ["general-tests"],
     include_filters: [
         "android.app.cts.ActivityManagerProcessStateTest",
-        "android.app.cts.ServiceTest",
         "android.app.cts.ActivityManagerTest",
         "android.app.cts.TaskDescriptionTest",
     ],

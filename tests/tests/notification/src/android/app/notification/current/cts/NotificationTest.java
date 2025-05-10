@@ -54,6 +54,7 @@ import android.os.Bundle;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.os.StrictMode;
+import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -1550,6 +1551,42 @@ public class NotificationTest {
                 .setRequestPromotedOngoing(false)
                 .build();
         assertThat(n.hasRequestedPromotedOngoing()).isFalse();
+    }
+
+    @Nullable
+    private Notification.Style getRecoveredStyleClass(Notification n) {
+        return Notification.Builder.recoverBuilder(mContext, n).getStyle();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_API_METRIC_STYLE)
+    public void testStyleRecovery_metricStyle_withApiFlagEnabled() {
+        // FIRST -- assert that this works if you use the constructor
+        Notification n = new Notification.Builder(mContext, "test")
+                .setStyle(new Notification.MetricStyle())
+                .setSmallIcon(android.R.drawable.sym_def_app_icon)
+                .build();
+        assertThat(n.extras.getString(Notification.EXTRA_TEMPLATE))
+                .isEqualTo("android.app.Notification$MetricStyle");
+        assertThat(getRecoveredStyleClass(n)).isInstanceOf(Notification.MetricStyle.class);
+
+        // SECOND -- assert that this works if you just set the extra on the notification
+        n = new Notification.Builder(mContext, "test")
+                .setSmallIcon(android.R.drawable.sym_def_app_icon)
+                .build();
+        n.extras.putString(Notification.EXTRA_TEMPLATE, "android.app.Notification$MetricStyle");
+        assertThat(getRecoveredStyleClass(n)).isInstanceOf(Notification.MetricStyle.class);
+    }
+
+    @Test
+    @RequiresFlagsDisabled(Flags.FLAG_API_METRIC_STYLE)
+    public void testStyleRecovery_metricStyle_withApiFlagDisabled() {
+        // ALTERNATIV -- assert that this fails if the API flag is disabled
+        Notification n = new Notification.Builder(mContext, "test")
+                .setSmallIcon(android.R.drawable.sym_def_app_icon)
+                .build();
+        n.extras.putString(Notification.EXTRA_TEMPLATE, "android.app.Notification$MetricStyle");
+        assertThat(getRecoveredStyleClass(n)).isNull();
     }
 
     @Test

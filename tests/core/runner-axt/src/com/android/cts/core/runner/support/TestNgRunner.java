@@ -117,7 +117,16 @@ class TestNgRunner extends Runner implements Filterable {
       SingleTestNgTestExecutor.Result result = SingleTestNgTestExecutor.execute(klass, methodName);
       if (result.hasFailure()) {
         // TODO: get the error messages from testng somehow.
-        notifier.fireTestFailure(new Failure(child, extractException(result.getFailures())));
+        notifier.fireTestFailure(new Failure(child, extractException(result.getThrowableMap())));
+      }
+      if (result.hasSkip()) {
+        // Tolerate an empty throwable map because org.testng.SkipException isn't captured here.
+        // notifier.fireTestIgnored doesn't require a throwable, but JUnit isn't happy ignoring
+        // parameterized tests.
+        Throwable th = result.getThrowableMap().isEmpty() ? new AssertionError("")
+                : extractException(result.getThrowableMap());
+        Failure failure = new Failure(child, th);
+        notifier.fireTestAssumptionFailed(failure);
       }
 
       notifier.fireTestFinished(child);

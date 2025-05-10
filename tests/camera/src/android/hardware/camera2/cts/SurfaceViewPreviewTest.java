@@ -34,6 +34,7 @@ import android.hardware.camera2.cts.helpers.StaticMetadata;
 import android.hardware.camera2.cts.testcases.Camera2SurfaceViewTestCase;
 import android.hardware.camera2.params.OutputConfiguration;
 import android.hardware.camera2.params.SessionConfiguration;
+import android.media.ImageReader;
 import android.util.Log;
 import android.util.Pair;
 import android.util.Range;
@@ -797,60 +798,67 @@ public class SurfaceViewPreviewTest extends Camera2SurfaceViewTestCase {
                 mCamera.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
         ImageDropperListener imageListener = new ImageDropperListener();
 
-        updatePreviewSurface(maxPreviewSz);
+        ImageReader previewReader = makeImageReader(maxPreviewSz, ImageFormat.PRIVATE,
+                MAX_READER_IMAGES, imageListener, mHandler);
+        Surface previewSurface = previewReader.getSurface();
         createImageReader(maxYuvSize, ImageFormat.YUV_420_888, MAX_READER_IMAGES, imageListener);
         List<OutputConfiguration> outputConfigs = new ArrayList<OutputConfiguration>();
-        OutputConfiguration previewConfig = new OutputConfiguration(mPreviewSurface);
+        OutputConfiguration previewConfig = new OutputConfiguration(previewSurface);
         OutputConfiguration yuvConfig = new OutputConfiguration(mReaderSurface);
-        assertEquals(OutputConfiguration.SURFACE_GROUP_ID_NONE, previewConfig.getSurfaceGroupId());
-        assertEquals(OutputConfiguration.SURFACE_GROUP_ID_NONE, yuvConfig.getSurfaceGroupId());
-        assertEquals(mPreviewSurface, previewConfig.getSurface());
-        assertEquals(mReaderSurface, yuvConfig.getSurface());
-        outputConfigs.add(previewConfig);
-        outputConfigs.add(yuvConfig);
-        requestBuilder.addTarget(mPreviewSurface);
-        requestBuilder.addTarget(mReaderSurface);
-
-        // Test different stream set ID.
-        for (int surfaceGroupId = OutputConfiguration.SURFACE_GROUP_ID_NONE;
-                surfaceGroupId < MAX_SURFACE_GROUP_ID; surfaceGroupId++) {
-            if (VERBOSE) {
-                Log.v(TAG, "test preview with surface group id: ");
-            }
-
-            previewConfig = new OutputConfiguration(surfaceGroupId, mPreviewSurface);
-            yuvConfig = new OutputConfiguration(surfaceGroupId, mReaderSurface);
-            outputConfigs.clear();
+        try {
+            assertEquals(OutputConfiguration.SURFACE_GROUP_ID_NONE,
+                    previewConfig.getSurfaceGroupId());
+            assertEquals(OutputConfiguration.SURFACE_GROUP_ID_NONE, yuvConfig.getSurfaceGroupId());
+            assertEquals(previewSurface, previewConfig.getSurface());
+            assertEquals(mReaderSurface, yuvConfig.getSurface());
             outputConfigs.add(previewConfig);
             outputConfigs.add(yuvConfig);
+            requestBuilder.addTarget(previewSurface);
+            requestBuilder.addTarget(mReaderSurface);
 
-            for (OutputConfiguration config : outputConfigs) {
-                assertEquals(surfaceGroupId, config.getSurfaceGroupId());
+            // Test different stream set ID.
+            for (int surfaceGroupId = OutputConfiguration.SURFACE_GROUP_ID_NONE;
+                    surfaceGroupId < MAX_SURFACE_GROUP_ID; surfaceGroupId++) {
+                if (VERBOSE) {
+                    Log.v(TAG, "test preview with surface group id: ");
+                }
+
+                previewConfig = new OutputConfiguration(surfaceGroupId, previewSurface);
+                yuvConfig = new OutputConfiguration(surfaceGroupId, mReaderSurface);
+                outputConfigs.clear();
+                outputConfigs.add(previewConfig);
+                outputConfigs.add(yuvConfig);
+
+                for (OutputConfiguration config : outputConfigs) {
+                    assertEquals(surfaceGroupId, config.getSurfaceGroupId());
+                }
+
+                CameraCaptureSession.StateCallback mockSessionListener =
+                        mock(CameraCaptureSession.StateCallback.class);
+
+                mSession = configureCameraSessionWithConfig(mCamera, outputConfigs,
+                        mockSessionListener, mHandler);
+
+
+                mSession.prepare(previewSurface);
+                verify(mockSessionListener,
+                        timeout(PREPARE_TIMEOUT_MS).times(1)).
+                        onSurfacePrepared(eq(mSession), eq(previewSurface));
+
+                mSession.prepare(mReaderSurface);
+                verify(mockSessionListener,
+                        timeout(PREPARE_TIMEOUT_MS).times(1)).
+                        onSurfacePrepared(eq(mSession), eq(mReaderSurface));
+
+                CaptureRequest request = requestBuilder.build();
+                CaptureCallback mockCaptureCallback =
+                        mock(CameraCaptureSession.CaptureCallback.class);
+                mSession.setRepeatingRequest(request, mockCaptureCallback, mHandler);
+                verifyCaptureResults(mSession, mockCaptureCallback, NUM_FRAMES_VERIFIED,
+                        NUM_FRAMES_VERIFIED * FRAME_TIMEOUT_MS);
             }
-
-            CameraCaptureSession.StateCallback mockSessionListener =
-                    mock(CameraCaptureSession.StateCallback.class);
-
-            mSession = configureCameraSessionWithConfig(mCamera, outputConfigs,
-                    mockSessionListener, mHandler);
-
-
-            mSession.prepare(mPreviewSurface);
-            verify(mockSessionListener,
-                    timeout(PREPARE_TIMEOUT_MS).times(1)).
-                    onSurfacePrepared(eq(mSession), eq(mPreviewSurface));
-
-            mSession.prepare(mReaderSurface);
-            verify(mockSessionListener,
-                    timeout(PREPARE_TIMEOUT_MS).times(1)).
-                    onSurfacePrepared(eq(mSession), eq(mReaderSurface));
-
-            CaptureRequest request = requestBuilder.build();
-            CaptureCallback mockCaptureCallback =
-                    mock(CameraCaptureSession.CaptureCallback.class);
-            mSession.setRepeatingRequest(request, mockCaptureCallback, mHandler);
-            verifyCaptureResults(mSession, mockCaptureCallback, NUM_FRAMES_VERIFIED,
-                    NUM_FRAMES_VERIFIED * FRAME_TIMEOUT_MS);
+        } finally {
+            CameraTestUtils.closeImageReader(previewReader);
         }
     }
 

@@ -66,7 +66,7 @@ public class SingleTestNgTestExecutor {
               " had 0 tests executed. Not a test method?");
         }
 
-        return new Result(testng.hasFailure(), listener.getFailures());
+        return new Result(testng, listener);
     }
 
     private static org.testng.TestNG createTestNG(String klass, String method,
@@ -112,21 +112,31 @@ public class SingleTestNgTestExecutor {
     }
 
     public static class Result {
-        private final boolean hasFailure;
-        private final Map<String,Throwable> failures;
+
+        private static final int FAILURE = 1;
+        private static final int SKIPPED = 1 << 1;
+        private final int status;
+        private final Map<String, Throwable> throwableMap;
 
 
-        Result(boolean hasFailure, Map<String, Throwable> failures) {
-            this.hasFailure = hasFailure;
-            this.failures = Collections.unmodifiableMap(new LinkedHashMap<>(failures));
+        Result(TestNG testng, SingleTestNGTestRunListener listener) {
+            int s = testng.hasFailure() ? FAILURE : 0;
+            s |= testng.hasSkip() ? SKIPPED : 0;
+            this.status = s;
+            this.throwableMap = Collections.unmodifiableMap(new LinkedHashMap<>(listener.getFailures()));
+
         }
 
         public boolean hasFailure() {
-            return hasFailure;
+            return (status & FAILURE) != 0;
         }
 
-        public Map<String, Throwable> getFailures() {
-            return failures;
+        public boolean hasSkip() {
+            return (status & SKIPPED) != 0;
+        }
+
+        public Map<String, Throwable> getThrowableMap() {
+            return throwableMap;
         }
     }
 }

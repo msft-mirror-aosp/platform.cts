@@ -1109,7 +1109,8 @@ public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
     }
 
     @GuardedBy("mMediaPlayerLock")
-    private void pauseOrStopMediaPlayerCheck(final MyAudioPlaybackCallback callback)
+    private void pauseOrStopMediaPlayerCheck(final MyAudioPlaybackCallback callback,
+            final AudioAttributes aa)
             throws Exception {
 
         if (callback != null) {
@@ -1117,8 +1118,26 @@ public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
             assertTrue("onPlaybackConfigChanged should have been called " + callback.debugString(),
                     mMediaPlayerLock.waitFor(
                             TEST_TIMING_TOLERANCE_MS, () -> callback.getCbInvocationNumber() >= 1));
-            waitAddedPlayerInStateWithCallback(
-                    callback, 0, AudioPlaybackConfiguration.PLAYER_STATE_STARTED);
+            // predicate checks that the testId in the AudioAttributes of the player, whose
+            // state is to be checked, is either not found, or if found, that it's not in a
+            // STARTED state
+            Predicate<List<AudioPlaybackConfiguration>> verifyMediaPlayerNotStarted = l ->
+            {
+                if (l.size() == 0) {
+                    return true;
+                }
+                for (AudioPlaybackConfiguration apc : l) {
+                    if ((apc.getAudioAttributes().getTestId() == aa.getTestId())
+                            && (apc.getPlayerState()
+                                    == AudioPlaybackConfiguration.PLAYER_STATE_STARTED)) {
+                        return false;
+                    }
+                }
+                return true;
+            };
+            assertTrue("pauseOrStopMediaPlayerCheck predicate remained false",
+                        callback.waitForPredicate(verifyMediaPlayerNotStarted,
+                                TEST_TIMING_TOLERANCE_MS + PLAY_ROUTING_TIMING_TOLERANCE_MS));
         }
     }
 
@@ -1137,7 +1156,7 @@ public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
             final Set<AudioPlaybackConfiguration> oldConfigs =
                     new HashSet<AudioPlaybackConfiguration>(am.getActivePlaybackConfigurations());
             assertTrue("MediaPlayer pause failed", pauseMediaPlayer(mMp));
-            pauseOrStopMediaPlayerCheck(callback);
+            pauseOrStopMediaPlayerCheck(callback, aa);
         }
     }
 
@@ -1156,7 +1175,7 @@ public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
             final Set<AudioPlaybackConfiguration> oldConfigs =
                     new HashSet<AudioPlaybackConfiguration>(am.getActivePlaybackConfigurations());
             assertTrue("MediaPlayer stop failed", stopMediaPlayer(mMp));
-            pauseOrStopMediaPlayerCheck(callback);
+            pauseOrStopMediaPlayerCheck(callback, aa);
         }
     }
 

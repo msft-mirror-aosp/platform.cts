@@ -17,6 +17,7 @@
 package android.telecom.cts.cuj.app.integration;
 
 import static android.telecom.Call.STATE_ACTIVE;
+import static android.telecom.Call.STATE_DIALING;
 import static android.telecom.Call.STATE_DISCONNECTED;
 import static android.telecom.Call.STATE_HOLDING;
 import static android.telecom.cts.apps.TelecomTestApp.ManagedConnectionServiceApp;
@@ -51,10 +52,12 @@ public class CallSequencingMmiTest extends BaseAppVerifier {
         try {
             managedApp = bindToApp(ManagedConnectionServiceApp);
             String mo1 = addOutgoingCallAndVerify(managedApp);
+            verifyCallIsInState(mo1, STATE_DIALING);
             setCallStateAndVerify(managedApp, mo1, STATE_ACTIVE);
 
             managedAppClone = bindToApp(ManagedConnectionServiceAppClone);
             String mo2 = addOutgoingCallAndVerify(managedAppClone);
+            verifyCallIsInState(mo2, STATE_DIALING);
             setCallStateAndVerify(managedAppClone, mo2, STATE_ACTIVE);
             verifyCallIsInState(mo1, STATE_HOLDING);
 
@@ -89,6 +92,7 @@ public class CallSequencingMmiTest extends BaseAppVerifier {
         try {
             managedApp = bindToApp(ManagedConnectionServiceApp);
             String mo = addOutgoingCallAndVerify(managedApp);
+            verifyCallIsInState(mo, STATE_DIALING);
             setCallStateAndVerify(managedApp, mo, STATE_ACTIVE);
 
             // Verify that the connection was created successfully when the MMI code is dialed on
@@ -117,6 +121,7 @@ public class CallSequencingMmiTest extends BaseAppVerifier {
         try {
             managedApp = bindToApp(ManagedConnectionServiceApp);
             String mo = addOutgoingCallAndVerify(managedApp);
+            verifyCallIsInState(mo, STATE_DIALING);
             setCallStateAndVerify(managedApp, mo, STATE_ACTIVE);
 
             // Verify that the connection was created successfully when the MMI code is dialed on
@@ -146,10 +151,12 @@ public class CallSequencingMmiTest extends BaseAppVerifier {
         try {
             managedApp = bindToApp(ManagedConnectionServiceApp);
             String mo1 = addOutgoingCallAndVerify(managedApp);
+            verifyCallIsInState(mo1, STATE_DIALING);
             setCallStateAndVerify(managedApp, mo1, STATE_ACTIVE);
 
             managedAppClone = bindToApp(ManagedConnectionServiceAppClone);
             String mo2 = addOutgoingCallAndVerify(managedAppClone);
+            verifyCallIsInState(mo2, STATE_DIALING);
             setCallStateAndVerify(managedAppClone, mo2, STATE_ACTIVE);
             verifyCallIsInState(mo1, STATE_HOLDING);
 

@@ -22,7 +22,9 @@ import android.app.sdksandbox.testutils.testscenario.SdkSandboxTestScenarioRunne
 import android.content.Context;
 import android.os.Bundle;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.ViewGroup.LayoutParams;
+import android.view.ViewParent;
 import android.webkit.WebView;
 import android.webkit.cts.IHostAppInvoker;
 import android.webkit.cts.SharedWebViewTest;
@@ -30,8 +32,6 @@ import android.webkit.cts.SharedWebViewTestEnvironment;
 import android.webkit.cts.WebkitUtils;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
-import android.view.ViewGroup;
-import android.view.ViewParent;
 
 import androidx.annotation.Nullable;
 

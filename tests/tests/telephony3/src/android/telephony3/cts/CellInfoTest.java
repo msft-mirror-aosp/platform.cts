@@ -27,10 +27,12 @@ import android.content.Context;
 import android.content.pm.PackageManager;
 import android.telephony.CellInfo;
 import android.telephony.TelephonyManager;
+import android.telephony.cts.util.LocationHelper;
 import android.util.Log;
 
 import com.android.compatibility.common.util.ShellIdentityUtils;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -48,6 +50,7 @@ public class CellInfoTest {
 
     private TelephonyManager mTm;
     private PackageManager mPm;
+    private LocationHelper mLocationHelper;
 
     private boolean isCamped() {
         return (mTm.getVoiceNetworkType() != TelephonyManager.NETWORK_TYPE_UNKNOWN
@@ -58,6 +61,7 @@ public class CellInfoTest {
     public void setUp() throws Exception {
         mTm = (TelephonyManager) getContext().getSystemService(Context.TELEPHONY_SERVICE);
         mPm = getContext().getPackageManager();
+        mLocationHelper = new LocationHelper(getContext());
 
         for (String permission : sPermissions) {
             assertTrue("Something (not this test) has denied needed permission=" + permission,
@@ -66,12 +70,18 @@ public class CellInfoTest {
         }
     }
 
+    @After
+    public void tearDown() {
+        mLocationHelper.tearDown();
+    }
+
     @Test
     public void testCellInfoSdk28() {
         if (!mPm.hasSystemFeature(PackageManager.FEATURE_TELEPHONY)) {
             Log.d(TAG, "Skipping test that requires FEATURE_TELEPHONY");
             return;
         }
+        mLocationHelper.enable();
 
         if (!isCamped()) fail("Device is not camped to a cell");
 

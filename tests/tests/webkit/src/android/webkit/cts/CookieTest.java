@@ -16,21 +16,20 @@
 
 package android.webkit.cts;
 
-import android.platform.test.annotations.Presubmit;
-import android.webkit.CookieManager;
-
-import com.android.compatibility.common.util.NullWebViewUtils;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
+import android.platform.test.annotations.Presubmit;
+import android.webkit.CookieManager;
 import android.webkit.WebView;
 
 import androidx.test.ext.junit.rules.ActivityScenarioRule;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.MediumTest;
+
+import com.android.compatibility.common.util.NullWebViewUtils;
 
 import org.junit.Assume;
 import org.junit.Before;
@@ -83,11 +82,11 @@ public class CookieTest extends SharedWebViewTest {
                 .getScenario()
                 .onActivity(
                         activity -> {
-                            WebView webView = ((CookieSyncManagerCtsActivity) activity)
-                                        .getWebView();
+                            WebView webView =
+                                    ((CookieSyncManagerCtsActivity) activity).getWebView();
                             builder.setHostAppInvoker(
                                             SharedWebViewTestEnvironment.createHostAppInvoker(
-                                                activity))
+                                                    activity))
                                     .setWebView(webView);
                         });
 

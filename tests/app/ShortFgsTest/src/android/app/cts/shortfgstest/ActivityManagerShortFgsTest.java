@@ -34,6 +34,7 @@ import static android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
 import static com.android.compatibility.common.util.TestUtils.waitUntil;
 
 import static com.google.common.truth.Truth.assertThat;
+import static com.google.common.truth.Truth.assertWithMessage;
 
 import android.app.ForegroundServiceStartNotAllowedException;
 import android.app.Service;
@@ -52,8 +53,9 @@ import android.platform.test.annotations.Presubmit;
 import android.provider.DeviceConfig;
 import android.util.Log;
 
-import androidx.test.InstrumentationRegistry;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.Suppress;
+import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.AnrMonitor;
 import com.android.compatibility.common.util.DeviceConfigStateHelper;
@@ -64,66 +66,57 @@ import com.android.server.am.nano.ServiceRecordProto.ShortFgsInfo;
 
 import org.junit.After;
 import org.junit.AfterClass;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 
-/**
- * Tests for "SHORT SERVICE" foreground services.
- */
+/** Tests for "SHORT SERVICE" foreground services. */
 @Presubmit
-public class ActivityManagerShortFgsTest {
-    protected static final Context sContext = ShortFgsHelper.sContext;
+@RunWith(AndroidJUnit4.class)
+public final class ActivityManagerShortFgsTest {
+    private static final Context sContext = ShortFgsHelper.sContext;
 
-    public static DeviceConfigStateHelper sDeviceConfig;
+    private static DeviceConfigStateHelper sDeviceConfig;
 
-    /**
-     * The timeout duration documented on the
-     * {@link android.content.pm.ServiceInfo#FOREGROUND_SERVICE_TYPE_SHORT_SERVICE} javadoc.
-     */
-    public static final long SHORT_FGS_PUBLIC_TIMEOUT = 3 * 60 * 1000;
-
-    public static final long SHORT_FGS_MINIMUM_PROCSTATE_DEMOTION_GRACE_PERIOD = 5 * 1000;
-    public static final long SHORT_FGS_MINIMUM_ANR_GRACE_PERIOD = 10 * 1000;
-
-    public static final long WAIT_TIMEOUT = 10_000;
+    private static final long WAIT_TIMEOUT = 10_000;
 
     /**
      * Timeout for "short" FGS used throughout this test. It's shorter than the default value to
      * speed up the test.
      */
-    public static final long SHORTENED_TIMEOUT = 5_000;
+    private static final long SHORTENED_TIMEOUT = 5_000;
 
     /**
      * After {@link #SHORTENED_TIMEOUT} + {@link #SHORTENED_PROCSTATE_GRACE_PERIOD} ms, the
      * procstate and oom-adjustment of the short-fgs will drop.
      */
-    public static final long SHORTENED_PROCSTATE_GRACE_PERIOD = 5_000;
+    private static final long SHORTENED_PROCSTATE_GRACE_PERIOD = 5_000;
 
     /**
      * After {@link #SHORTENED_TIMEOUT} + {@link #SHORTENED_PROCSTATE_GRACE_PERIOD} + {@link
      * #EXTENDED_ANR_GRACE_PERIOD} ms, the app will be declared an ANR.
-     * <p>
-     * We don't want to trigger an ANR accidentally on a slow device, so we use a large value here.
-     * <p>
-     * (We set a smaller value when we test the ANR behavior)
+     *
+     * <p>We don't want to trigger an ANR accidentally on a slow device, so we use a large value
+     * here.
+     *
+     * <p>(We set a smaller value when we test the ANR behavior)
      */
-    public static final long EXTENDED_ANR_GRACE_PERIOD = 24 * 60 * 60 * 1000;
+    private static final long EXTENDED_ANR_GRACE_PERIOD = 24 * 60 * 60 * 1000;
 
     /**
      * This is the timeout between Context.startForegroundService() and Service.startForeground().
-     * Within this duration, the app is temp-allowlisted, so any FGS could be started.
-     * This will affect some of the tests, so we shorten this too.
+     * Within this duration, the app is temp-allowlisted, so any FGS could be started. This will
+     * affect some of the tests, so we shorten this too.
      *
-     * Here, we use the same value as SHORTENED_TIMEOUT.
+     * <p>Here, we use the same value as SHORTENED_TIMEOUT.
      */
-    public static final long SHORTENED_START_SERVICE_TIMEOUT = 5_000;
+    private static final long SHORTENED_START_SERVICE_TIMEOUT = 5_000;
 
     /***
      * TOP-started FGS will get oom-adjustment boosted within this period.
      */
-    public static final long TOP_TO_FGS_GRACE_PERIOD = 5_000;
+    private static final long TOP_TO_FGS_GRACE_PERIOD = 5_000;
 
     /**
      * We keep track of the test start time and finish time with them. Helper will use them,
@@ -201,11 +194,11 @@ public class ActivityManagerShortFgsTest {
         if (verify) {
             final var timeout = System.currentTimeMillis() + 30 * 1000;
             String lastDetectedLine = "(no config line detected)";
-            String lastWholeDumsys = null;
+            String lastWholeDumpsys = null;
             while (System.currentTimeMillis() < timeout) {
                 final String dumpsys = ShellUtils.runShellCommand(
                         "dumpsys activity settings");
-                lastWholeDumsys = dumpsys;
+                lastWholeDumpsys = dumpsys;
 
                 // Look at each line and see if it's the key we're looking for.
                 for (String line : dumpsys.split("\\n", -1)) {
@@ -229,8 +222,8 @@ public class ActivityManagerShortFgsTest {
                             + "Last detected line=%s",
                     key, value, lastDetectedLine);
             Log.e(TAG, message);
-            Log.e(TAG, "Last dumpsys output: " + lastWholeDumsys);
-            Assert.fail(message);
+            Log.e(TAG, "Last dumpsys output: " + lastWholeDumpsys);
+            assertWithMessage(message).fail();
         }
     }
 
@@ -258,7 +251,7 @@ public class ActivityManagerShortFgsTest {
     /**
      * Send a "kill self" command to the helper, and wait for the process to go away.
      *
-     * This is needed when "force-stop"'s side effects are not ideal. (e.g. force-stop will
+     * <p>This is needed when "force-stop"'s side effects are not ideal. (e.g. force-stop will
      * prevent STICKY FGS from restarting)
      */
     private static void killHelperApp() throws Exception {
@@ -296,7 +289,7 @@ public class ActivityManagerShortFgsTest {
         if (m.getActualExceptionClasss() != null) {
             return m;
         }
-        Assert.fail("Expected an exception message, but received: " + m);
+        assertWithMessage("Expected an exception message, but received: " + m).fail();
         return m;
     }
 
@@ -327,7 +320,7 @@ public class ActivityManagerShortFgsTest {
 
         String expected = flattenComponentName(cn) + "." + methodName;
         if (m.getMethodName() == null) {
-            Assert.fail("Waited for " + expected + " but received: " + m);
+            assertWithMessage("Waited for " + expected + " but received: " + m).fail();
         }
         assertThat(
                 flattenComponentName(m.getComponentName()) + "." + m.getMethodName())
@@ -357,12 +350,12 @@ public class ActivityManagerShortFgsTest {
     public static ServiceRecordProto assertFgsRunning(ComponentName cn) {
         final ServiceRecordProto srp = DumpProtoUtils.findServiceRecord(cn);
         if (srp == null) {
-            Assert.fail("Service " + cn + " is not running");
+            assertWithMessage("Service " + cn + " is not running").fail();
+            return srp;
         }
         if (srp.foreground == null) {
-            Assert.fail("Service " + cn + " is running, but is not an FGS");
+            assertWithMessage("Service " + cn + " is running, but is not an FGS").fail();
         }
-
         return srp;
     }
 
@@ -372,7 +365,7 @@ public class ActivityManagerShortFgsTest {
     public static ServiceRecordProto assertServiceRunning(ComponentName cn) {
         final ServiceRecordProto srp = DumpProtoUtils.findServiceRecord(cn);
         if (srp == null) {
-            Assert.fail("Service " + cn + " is not running");
+            assertWithMessage("Service " + cn + " is not running").fail();
         }
 
         return srp;
@@ -708,7 +701,7 @@ public class ActivityManagerShortFgsTest {
      */
     @Test
     public void testCannotMakeShortFgsIfBoundButNotStarted() throws Exception {
-        try (ServiceBinder b = ServiceBinder.bind(sContext, FGS0, Context.BIND_AUTO_CREATE)) {
+        try (ServiceBinder unused = ServiceBinder.bind(sContext, FGS0, Context.BIND_AUTO_CREATE)) {
 
             waitForMethodCall(FGS0, "onBind");
 
@@ -738,8 +731,7 @@ public class ActivityManagerShortFgsTest {
      */
     @Test
     public void testCanMakeShortFgsIfBoundAndStarted() throws Exception {
-        try (ServiceBinder b = ServiceBinder.bind(sContext, FGS0,
-                Context.BIND_AUTO_CREATE)) {
+        try (ServiceBinder unused = ServiceBinder.bind(sContext, FGS0, Context.BIND_AUTO_CREATE)) {
 
             waitForMethodCall(FGS0, "onBind");
 
@@ -943,11 +935,10 @@ public class ActivityManagerShortFgsTest {
         }
     }
 
-
     /**
      * Start a SHORT_SERVICE, using Context.startService, instead of Context.startForegroundService.
      *
-     * Then make sure onTimeout() is called.
+     * <p>Then make sure onTimeout() is called.
      */
     @Test
     public void testStartFromStartService() throws Exception {
@@ -1336,10 +1327,9 @@ public class ActivityManagerShortFgsTest {
     }
 
     /**
-     * Make sure, when an app bound (in helper2)  by a SHORT_SERVICE (in main helper) is
-     * BFSL-denied.
+     * Make sure, when an app bound (in helper2) by a SHORT_SERVICE (in main helper) is BFSL-denied.
      *
-     * (i.e. ensure negative PROCESS_CAPABILITY_BFSL is propagated.)
+     * <p>(i.e. ensure negative PROCESS_CAPABILITY_BFSL is propagated.)
      */
     @Test
     public void testBoundByShortService() throws Exception {
@@ -1359,10 +1349,10 @@ public class ActivityManagerShortFgsTest {
     }
 
     /**
-     * Same as {@ink #testBoundByShortService}, except it uses a non-short-FGS type,
-     * so helper2 should be allowed BFSL.
+     * Same as {@link #testBoundByShortService}, except it uses a non-short-FGS type, so helper2
+     * should be allowed BFSL.
      *
-     * (i.e. ensure positive PROCESS_CAPABILITY_BFSL is propagated.)
+     * <p>(i.e. ensure positive PROCESS_CAPABILITY_BFSL is propagated.)
      */
     @Test
     public void testBoundByNonShortService() throws Exception {

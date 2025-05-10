@@ -31,7 +31,6 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.pm.PackageManager;
 import android.net.wifi.WifiManager;
 import android.os.PersistableBundle;
 import android.telephony.CarrierConfigManager;
@@ -40,7 +39,6 @@ import android.telephony.ServiceState;
 import android.telephony.SmsManager;
 import android.telephony.SubscriptionManager;
 import android.telephony.TelephonyCallback;
-import android.telephony.TelephonyManager;
 import android.telephony.cts.util.DefaultSmsAppHelper;
 import android.telephony.ims.ImsReasonInfo;
 import android.telephony.ims.cts.ImsServiceConnector;
@@ -58,7 +56,6 @@ import android.util.Log;
 import androidx.test.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.CarrierPrivilegeUtils;
-import com.android.compatibility.common.util.ShellIdentityUtils;
 import com.android.internal.annotations.GuardedBy;
 import com.android.internal.telephony.satellite.DatagramController;
 
@@ -525,6 +522,7 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
             bundle.putBoolean(
                 CarrierConfigManager.KEY_SATELLITE_ROAMING_P2P_SMS_SUPPORTED_BOOL, true);
         }
+        sMockSatelliteServiceManager.setSatelliteIgnorePlmnListFromStorage(false);
         overrideCarrierConfig(subId, bundle);
     }
 
@@ -537,6 +535,7 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
         bundle.putPersistableBundle(
                 CarrierConfigManager.KEY_CARRIER_SUPPORTED_SATELLITE_SERVICES_PER_PROVIDER_BUNDLE,
                 plmnBundle);
+        sMockSatelliteServiceManager.setSatelliteIgnorePlmnListFromStorage(true);
         overrideCarrierConfig(subId, bundle);
     }
 
@@ -686,6 +685,7 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
         int slotId, int simProfileId) throws Exception {
         grantSatelliteAndSendSmsPermissions();
 
+        if (sMockSatelliteServiceManager == null) return;
         sMockSatelliteServiceManager.setDatagramControllerBooleanConfig(true,
                 DatagramController.BOOLEAN_TYPE_WAIT_FOR_DEVICE_ALIGNMENT_IN_DEMO_DATAGRAM, false);
 

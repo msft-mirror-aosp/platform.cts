@@ -914,15 +914,6 @@ public abstract class ActivityManagerTestBase {
         return mInstrumentation.getUiAutomation().takeScreenshot();
     }
 
-    /**
-     * Do a back gesture and trigger a back event from it.
-     * Attempt to simulate human behavior, so don't wait for animations.
-     */
-    protected void triggerBackEventByGesture(int displayId) {
-        mTouchHelper.triggerBackEventByGesture(
-                displayId, true /* sync */, false /* waitForAnimations */);
-    }
-
     protected void launchActivity(final ComponentName activityName,
             final CliIntentExtra... extras) {
         launchActivityNoWait(activityName, extras);

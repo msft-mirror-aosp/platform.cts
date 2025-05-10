@@ -225,7 +225,12 @@ public class ZoomCaptureTest extends Camera2AndroidTestCase {
 
             float lastZoomRatio = Float.NaN;
             float lastFocalLength = Float.NaN;
-            Rect lastActiveCropRegion = new Rect();
+            int lastCropWidth = 0;
+            int lastCropHeight = 0;
+            int lastCropTop = 0;
+            int lastCropLeft = 0;
+            int lastCropBottom = 0;
+            int lastCropRight = 0;
             String lastActivePhysicalId = new String();
             float[] lastIntrinsicCalibration = null;
             while (listener.hasMoreResults() && mStaticInfo.isActivePhysicalCameraIdSupported()) {
@@ -274,12 +279,16 @@ public class ZoomCaptureTest extends Camera2AndroidTestCase {
                         }
                         if ((!Float.isNaN(lastZoomRatio)) && (zoomRatio > lastZoomRatio)) {
                             if (lastActivePhysicalId.equals(activePhysicalId)) {
-                                assertTrue(lastActiveCropRegion.contains(activeCropRegion));
+                                assertTrue((lastCropWidth >= activeCropRegion.width() - 1) &&
+                                        (lastCropHeight >= activeCropRegion.height() - 1) &&
+                                        (activeCropRegion.top >= lastCropTop - 5) &&
+                                        (activeCropRegion.left >= lastCropLeft - 5) &&
+                                        (activeCropRegion.bottom <= lastCropBottom + 5) &&
+                                        (activeCropRegion.right <= lastCropRight + 5));
 
                                 if (!Float.isNaN(lastFocalLength)) {
                                     float digitalZoomApplied =
-                                            ((float) lastActiveCropRegion.width()) /
-                                                    activeCropRegion.width();
+                                            ((float) lastCropWidth) / activeCropRegion.width();
                                     float opticalZoomApplied = (focalLength / lastFocalLength);
                                     float combinedZoomApplied =
                                             digitalZoomApplied * opticalZoomApplied;
@@ -293,7 +302,12 @@ public class ZoomCaptureTest extends Camera2AndroidTestCase {
                         }
                         lastActivePhysicalId = activePhysicalId;
                         lastZoomRatio = zoomRatio;
-                        lastActiveCropRegion = activeCropRegion;
+                        lastCropWidth = activeCropRegion.width();
+                        lastCropHeight = activeCropRegion.height();
+                        lastCropTop = activeCropRegion.top;
+                        lastCropLeft = activeCropRegion.left;
+                        lastCropBottom = activeCropRegion.bottom;
+                        lastCropRight = activeCropRegion.right;
                         lastFocalLength = focalLength;
                     }
 

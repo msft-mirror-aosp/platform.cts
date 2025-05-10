@@ -58,6 +58,11 @@
     <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.KeyStoreManagerTest#grantAndRevokeKeyAccess_importedKeyPair"/>
     <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.KeyStoreManagerTest#grantRevokeKeyAccess_aliasDoesNotExist_throwsException"/>
     <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.ListeningPortsTest#testNoListeningLoopbackTcpPorts"/>
+    <!-- CtsAppServiceTestCases -->
+    <option name="compatibility:include-filter" value="CtsAppServiceTestCases android.app.cts.service.ServiceTest#testActivityServiceBindingLru"/>
+    <option name="compatibility:include-filter" value="CtsAppServiceTestCases android.app.cts.service.ServiceTest#testAppZygotePreload"/>
+    <option name="compatibility:include-filter" value="CtsAppServiceTestCases android.app.cts.service.ServiceTest#testAppZygoteServices"/>
+    <option name="compatibility:include-filter" value="CtsAppServiceTestCases android.app.cts.service.ServiceTest#testMaxServiceConnections"/>
     <!-- CtsAppTestCases -->
     <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.ActivityManagerProcessStateTest#testBackgroundCheckBroadcastService"/>
     <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.ActivityManagerProcessStateTest#testCycleFgs"/>
@@ -79,10 +84,6 @@
     <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.DialogTest#testSetContentView"/>
     <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.DialogTest#testSetFeatureDrawableAlpha"/>
     <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.DialogTest#testSetFeatureDrawableResource"/>
-    <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.ServiceTest#testActivityServiceBindingLru"/>
-    <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.ServiceTest#testAppZygotePreload"/>
-    <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.ServiceTest#testAppZygoteServices"/>
-    <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.ServiceTest#testMaxServiceConnections"/>
     <!-- CtsBackupHostTestCases -->
     <option name="compatibility:include-filter" value="CtsBackupHostTestCases android.cts.backup.AutoRestoreHostSideTest#testSetAutoRestore_autoRestoresDataWhenEnabled"/>
     <option name="compatibility:include-filter" value="CtsBackupHostTestCases android.cts.backup.BackupEligibilityHostSideTest#testAdbBackup_onForDebuggableApp"/>

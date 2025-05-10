@@ -16,23 +16,39 @@
 
 package android.media.audio.cts;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+
 import android.Manifest;
 import android.media.AudioManager;
 import android.media.VolumeInfo;
+import android.media.audio.Flags;
 import android.media.audiopolicy.AudioVolumeGroup;
 import android.os.Parcel;
 import android.platform.test.annotations.AppModeSdkSandbox;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Log;
 
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
+
 import com.android.compatibility.common.util.ApiTest;
-import com.android.compatibility.common.util.CtsAndroidTestCase;
 import com.android.compatibility.common.util.FrameworkSpecificTest;
+
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.util.List;
 
 @FrameworkSpecificTest
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
-public class VolumeInfoTest extends CtsAndroidTestCase {
+@RunWith(AndroidJUnit4.class)
+public class VolumeInfoTest {
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private static final String TAG = "VolumeInfoTest";
     private static final int MIN_VOL = 0;
@@ -40,12 +56,27 @@ public class VolumeInfoTest extends CtsAndroidTestCase {
     private static final int SET_VOL = 77;
 
     /**
-     * Verify marshalled VolumeInfo has the same information as the original when using
-     * stream types.
+     * Verify marshalled VolumeInfo has the same information as the original when using stream
+     * types.
+     *
      * @throws Exception
      */
-    @ApiTest(apis = {"android.media.VolumeInfo",
-            "android.media.VolumeInfo.Builder"})
+    @ApiTest(
+            apis = {
+                "android.media.VolumeInfo#getStreamType",
+                "android.media.VolumeInfo#hasStreamType",
+                "android.media.VolumeInfo#getStreamType",
+                "android.media.VolumeInfo#hasVolumeGroup",
+                "android.media.VolumeInfo#getVolumeGroup",
+                "android.media.VolumeInfo#getMinVolumeIndex",
+                "android.media.VolumeInfo#getMaxVolumeIndex",
+                "android.media.VolumeInfo#getVolumeIndex",
+                "android.media.VolumeInfo#hasMuteState",
+                "android.media.VolumeInfo#hasMuteCommand",
+                "android.media.VolumeInfo#isMuted",
+                "android.media.VolumeInfo.Builder#build"
+            })
+    @Test
     public void testStreamTypeParcelableWriteToParcelCreate() throws Exception {
         // test VolumeInfo with stream type, no mute command
         exerciseParcelableWriteToParcelCreate(AudioManager.STREAM_MUSIC, null /*AudioVolumeGroup*/,
@@ -61,13 +92,29 @@ public class VolumeInfoTest extends CtsAndroidTestCase {
     /**
      * Verify marshalled VolumeInfo has the same information as the original when using
      * AudioVolumeGroup.
+     *
      * @throws Exception
      */
-    @ApiTest(apis = {"android.media.VolumeInfo",
-            "android.media.VolumeInfo.Builder"})
+    @ApiTest(
+            apis = {
+                "android.media.VolumeInfo#getStreamType",
+                "android.media.VolumeInfo#hasStreamType",
+                "android.media.VolumeInfo#getStreamType",
+                "android.media.VolumeInfo#hasVolumeGroup",
+                "android.media.VolumeInfo#getVolumeGroup",
+                "android.media.VolumeInfo#getMinVolumeIndex",
+                "android.media.VolumeInfo#getMaxVolumeIndex",
+                "android.media.VolumeInfo#getVolumeIndex",
+                "android.media.VolumeInfo#hasMuteState",
+                "android.media.VolumeInfo#hasMuteCommand",
+                "android.media.VolumeInfo#isMuted",
+                "android.media.VolumeInfo.Builder#build"
+            })
+    @Test
     public void testVolGroupParcelableWriteToParcelCreate() throws Exception {
         try {
-            getInstrumentation().getUiAutomation()
+            InstrumentationRegistry.getInstrumentation()
+                    .getUiAutomation()
                     .adoptShellPermissionIdentity(Manifest.permission.MODIFY_AUDIO_ROUTING);
             List<AudioVolumeGroup> groups = AudioManager.getAudioVolumeGroups();
             if (groups.isEmpty()) {
@@ -85,7 +132,9 @@ public class VolumeInfoTest extends CtsAndroidTestCase {
             exerciseParcelableWriteToParcelCreate(0, group /*AudioVolumeGroup*/,
                     true /*has mute*/, false /*mute*/);
         } finally {
-            getInstrumentation().getUiAutomation().dropShellPermissionIdentity();
+            InstrumentationRegistry.getInstrumentation()
+                    .getUiAutomation()
+                    .dropShellPermissionIdentity();
         }
     }
 
@@ -134,8 +183,17 @@ public class VolumeInfoTest extends CtsAndroidTestCase {
                 srcVI.getMaxVolumeIndex(), targetVI.getMaxVolumeIndex());
         assertEquals("Marshalled/restored volume index doesn't match for " + srcVI,
                 srcVI.getVolumeIndex(), targetVI.getVolumeIndex());
-        assertEquals("Marshalled/restored has mute command doesn't match for " + srcVI,
-                srcVI.hasMuteCommand(), targetVI.hasMuteCommand());
+        if (Flags.deviceVolumeApis()) {
+            assertEquals(
+                    "Marshalled/restored has mute command doesn't match for " + srcVI,
+                    srcVI.hasMuteState(),
+                    targetVI.hasMuteState());
+        } else {
+            assertEquals(
+                    "Marshalled/restored has mute command doesn't match for " + srcVI,
+                    srcVI.hasMuteCommand(),
+                    targetVI.hasMuteCommand());
+        }
         if (hasMute) {
             assertEquals("set source mute command not as retrieved for " + srcVI,
                     mute, srcVI.isMuted());
@@ -147,8 +205,13 @@ public class VolumeInfoTest extends CtsAndroidTestCase {
         assertEquals(srcVI, targetVI);
     }
 
-    @ApiTest(apis = {"android.media.VolumeInfo",
-            "android.media.VolumeInfo#getDefaultVolumeInfo"})
+    @ApiTest(
+            apis = {
+                "android.media.VolumeInfo#getDefaultVolumeInfo",
+                "android.media.VolumeInfo#hasStreamType",
+                "android.media.VolumeInfo#hasVolumeGroup"
+            })
+    @Test
     public void testDefaultVolInfo() throws Exception {
         final VolumeInfo defaultVI = VolumeInfo.getDefaultVolumeInfo();
         assertNotNull(defaultVI);

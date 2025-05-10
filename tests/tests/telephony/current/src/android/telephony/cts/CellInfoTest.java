@@ -25,6 +25,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 
+import android.annotation.NonNull;
 import android.annotation.Nullable;
 import android.content.Context;
 import android.content.pm.PackageManager;
@@ -56,6 +57,7 @@ import android.telephony.NetworkRegistrationInfo;
 import android.telephony.PhoneStateListener;
 import android.telephony.ServiceState;
 import android.telephony.TelephonyManager;
+import android.telephony.cts.util.LocationHelper;
 import android.text.TextUtils;
 import android.util.Pair;
 
@@ -93,7 +95,6 @@ public class CellInfoTest {
     public final CheckFlagsRule mCheckFlagsRule =
             DeviceFlagsValueProvider.createCheckFlagsRule();
 
-    private static final String TAG = "android.telephony.cts.CellInfoTest";
 
     // Maximum and minimum possible RSSI values(in dbm).
     private static final int MAX_RSSI = -10;
@@ -114,12 +115,13 @@ public class CellInfoTest {
     /**
      * Maximum and minimum valid LTE RSSI values in dBm
      *
-     * The valid RSSI ASU range from current HAL is [0,31].
-     * Convert RSSI ASU to dBm: dBm = -113 + 2 * ASU, which is [-113, -51]
+     * <p>The valid RSSI ASU range from current HAL is [0,31]. Convert RSSI ASU to dBm: dBm = -113 +
+     * 2 * ASU, which is [-113, -51]
      *
-     * Reference: TS 27.007 8.5 - Signal quality +CSQ
+     * <p>Reference: TS 27.007 8.5 - Signal quality +CSQ
      */
     private static final int MAX_LTE_RSSI = -51;
+
     private static final int MIN_LTE_RSSI = -113;
 
     // The followings are parameters for testing CellIdentityLte
@@ -178,29 +180,23 @@ public class CellInfoTest {
     private static final int RADIO_HAL_VERSION_1_2 = makeRadioVersion(1, 2);
     private static final int RADIO_HAL_VERSION_1_5 = makeRadioVersion(1, 5);
 
-    private PackageManager mPm;
     private TelephonyManager mTm;
+    private LocationHelper mLocationHelper;
 
     private int mNetworkHalVersion;
-    private Boolean mWasLocationEnabled;
 
-    private static final int makeRadioVersion(int major, int minor) {
+    private static int makeRadioVersion(int major, int minor) {
         if (major < 0 || minor < 0) return 0;
         return major * 100 + minor;
     }
 
-    private Executor mSimpleExecutor = new Executor() {
-        @Override
-        public void execute(Runnable r) {
-            r.run();
-        }
-    };
+    private final Executor mSimpleExecutor = Runnable::run;
 
     private static class CellInfoResultsCallback extends TelephonyManager.CellInfoCallback {
         List<CellInfo> cellInfo;
 
         @Override
-        public synchronized void onCellInfo(List<CellInfo> cellInfo) {
+        public synchronized void onCellInfo(@NonNull List<CellInfo> cellInfo) {
             this.cellInfo = cellInfo;
             notifyAll();
         }
@@ -249,22 +245,23 @@ public class CellInfoTest {
 
     @Before
     public void setUp() throws Exception {
-        mPm = getContext().getPackageManager();
-        assumeTrue(mPm.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
+        assumeTrue(
+                getContext()
+                        .getPackageManager()
+                        .hasSystemFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
 
         mTm = (TelephonyManager) getContext().getSystemService(Context.TELEPHONY_SERVICE);
+        mLocationHelper = new LocationHelper(getContext());
         Pair<Integer, Integer> verPair =
                 mTm.getHalVersion(TelephonyManager.HAL_SERVICE_NETWORK);
         mNetworkHalVersion = makeRadioVersion(verPair.first, verPair.second);
-        TelephonyManagerTest.grantLocationPermissions();
-        mWasLocationEnabled = TelephonyManagerTest.setLocationEnabled(true);
+        mLocationHelper.enable();
     }
 
     @After
     public void tearDown() {
-        if (mWasLocationEnabled != null) {
-            TelephonyManagerTest.setLocationEnabled(mWasLocationEnabled);
-            mWasLocationEnabled = null;
+        if (mLocationHelper != null) {
+            mLocationHelper.tearDown();
         }
     }
 
@@ -330,8 +327,9 @@ public class CellInfoTest {
         List<CellInfo> allCellInfo = resultsCallback.cellInfo;
 
         assertNotNull("TelephonyManager.getAllCellInfo() returned NULL!", allCellInfo);
-        assertTrue("TelephonyManager.getAllCellInfo() returned zero-length list!",
-            allCellInfo.size() > 0);
+        assertFalse(
+                "TelephonyManager.getAllCellInfo() returned zero-length list!",
+                allCellInfo.isEmpty());
 
         int numRegisteredCells = 0;
         for (CellInfo cellInfo : allCellInfo) {
@@ -398,8 +396,10 @@ public class CellInfoTest {
 
         assertTrue("getMcc() out of range [0, 999], mcc=" + mcc, (mcc >= 0 && mcc <= 999));
         assertTrue("getMnc() out of range [0, 999], mnc=" + mnc, (mnc >= 0 && mnc <= 999));
-        assertTrue("MCC and MNC Strings must always be reported together.",
-                (mccStr == null) == (mncStr == null));
+        assertEquals(
+                "MCC and MNC Strings must always be reported together.",
+                (mccStr == null),
+                (mncStr == null));
 
         // For legacy compatibility, it's possible to have int values without valid string values
         // but not the other way around.
@@ -494,8 +494,8 @@ public class CellInfoTest {
         // If the cell is reported as registered, then all the logical cell info must be reported
         if (isRegistered) {
             assertTrue("TAC is required for registered cells", tac != CellInfo.UNAVAILABLE);
-            assertTrue("MCC is required for registered cells", nr.getMccString() != null);
-            assertTrue("MNC is required for registered cells", nr.getMncString() != null);
+            assertNotNull("MCC is required for registered cells", nr.getMccString());
+            assertNotNull("MNC is required for registered cells", nr.getMncString());
         }
 
         verifyCellIdentityNrLocationSanitation(nr);
@@ -546,8 +546,8 @@ public class CellInfoTest {
     }
 
     private void verifyCellIdentityNrBands(int[] nrBands) {
-        //Verify the registered cell reports non-null band.
-        assertTrue(nrBands != null);
+        // Verify the registered cell reports non-null band.
+        assertNotNull(nrBands);
 
         //Verify the registered cell reports at least one band.
         assertTrue(Arrays.stream(nrBands).anyMatch(band -> band > 0));
@@ -559,7 +559,7 @@ public class CellInfoTest {
         p.setDataPosition(0);
 
         CellInfoLte newCi = CellInfoLte.CREATOR.createFromParcel(p);
-        assertTrue(lte.equals(newCi));
+        assertEquals(lte, newCi);
         assertEquals("hashCode() did not get right hashCode", lte.hashCode(), newCi.hashCode());
     }
 
@@ -724,8 +724,8 @@ public class CellInfoTest {
     }
 
     private void verifyCellIdentityLteBands(int[] lteBands) {
-        //Verify the registered cell reports non-null band.
-        assertTrue(lteBands != null);
+        // Verify the registered cell reports non-null band.
+        assertNotNull(lteBands);
 
         //Verify the registered cell reports at least one band.
         assertTrue(Arrays.stream(lteBands).anyMatch(band -> band > 0));
@@ -747,7 +747,7 @@ public class CellInfoTest {
         p.setDataPosition(0);
 
         CellInfoWcdma newCi = CellInfoWcdma.CREATOR.createFromParcel(p);
-        assertTrue(wcdma.equals(newCi));
+        assertEquals(wcdma, newCi);
         assertEquals("hashCode() did not get right hashCode", wcdma.hashCode(), newCi.hashCode());
     }
 
@@ -829,8 +829,8 @@ public class CellInfoTest {
             assertTrue("getAsuLevel() out of range 0..31, 99), asuLevel=" + asuLevel,
                     asuLevel == 99 || (asuLevel >= 0 && asuLevel <= 31));
         } else {
-            assertTrue("getAsuLevel() out of range 0..96, 255), asuLevel=" + asuLevel,
-                    asuLevel == 255);
+            assertEquals(
+                    "getAsuLevel() out of range 0..96, 255), asuLevel=" + asuLevel, 255, asuLevel);
         }
 
         int level = wcdma.getLevel();
@@ -870,7 +870,7 @@ public class CellInfoTest {
         p.setDataPosition(0);
 
         CellInfoGsm newCi = CellInfoGsm.CREATOR.createFromParcel(p);
-        assertTrue(gsm.equals(newCi));
+        assertEquals(gsm, newCi);
         assertEquals("hashCode() did not get right hashCode", gsm.hashCode(), newCi.hashCode());
     }
 
@@ -980,7 +980,7 @@ public class CellInfoTest {
         p.setDataPosition(0);
 
         CellInfoTdscdma newCi = CellInfoTdscdma.CREATOR.createFromParcel(p);
-        assertTrue(tdscdma.equals(newCi));
+        assertEquals(tdscdma, newCi);
         assertEquals("hashCode() did not get right hashCode", tdscdma.hashCode(), newCi.hashCode());
     }
 
@@ -1026,8 +1026,8 @@ public class CellInfoTest {
         if (isRegistered) {
             assertTrue("LAC is required for registered cells", lac != CellInfo.UNAVAILABLE);
             assertTrue("CID is required for registered cells", cid != CellInfo.UNAVAILABLE);
-            assertTrue("MCC is required for registered cells", tdscdma.getMccString() != null);
-            assertTrue("MNC is required for registered cells", tdscdma.getMncString() != null);
+            assertNotNull("MCC is required for registered cells", tdscdma.getMccString());
+            assertNotNull("MNC is required for registered cells", tdscdma.getMncString());
             assertFalse("PLMN-ID is required for registered cells",
                     TextUtils.isEmpty(tdscdma.getMobileNetworkOperator()));
         }

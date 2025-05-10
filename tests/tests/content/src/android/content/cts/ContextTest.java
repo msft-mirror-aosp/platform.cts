@@ -31,6 +31,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -1263,6 +1264,19 @@ public class ContextTest {
     public void testRevokeUriPermission() {
         Uri uri = Uri.parse("contents://ctstest");
         mContext.revokeUriPermission(uri, Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+    }
+
+    @Test
+    public void testBindAllowFreezeProhibited() {
+        MockContextService.reset();
+        assertThrows(
+                "No SecurityException while using BIND_ALLOW_FREEZE with bindService",
+                SecurityException.class,
+                () ->
+                        mContext.bindService(
+                                new Intent(mContext, MockContextService.class),
+                                new TestConnection(false, false),
+                                Context.BindServiceFlags.of(Context.BIND_ALLOW_FREEZE)));
     }
 
     @Test

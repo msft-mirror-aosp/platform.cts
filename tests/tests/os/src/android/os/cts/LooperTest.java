@@ -30,6 +30,7 @@ import android.os.Message;
 import android.os.MessageQueue;
 import android.os.SystemClock;
 import android.platform.test.annotations.AppModeSdkSandbox;
+import android.util.Log;
 import android.util.Printer;
 import android.util.StringBuilderPrinter;
 
@@ -43,6 +44,8 @@ import org.junit.runner.RunWith;
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 @RunWith(AndroidJUnit4.class)
 public class LooperTest {
+    private static final String TAG = "LooperTest";
+
     public static final long WAIT_TIME = 1000;
 
     private boolean mHasRun;
@@ -195,6 +198,9 @@ public class LooperTest {
                 mHasQuit = true;
             }
         });
+
+        Log.i(TAG,
+                "*** \"sending message to a Handler on a dead thread\" log below is expected ***");
 
         // Here doesn't call runTest() because we don't want to wait the runTest finish.
         // Just need to handle Looper#quit();

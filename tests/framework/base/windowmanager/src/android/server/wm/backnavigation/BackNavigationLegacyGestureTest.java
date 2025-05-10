@@ -54,7 +54,7 @@ public class BackNavigationLegacyGestureTest extends ActivityManagerTestBase {
         mWmState.assertActivityDisplayed(BACK_LEGACY);
         waitAndAssertActivityState(BACK_LEGACY, STATE_RESUMED, "Activity should be resumed");
         waitForActivityFocused(ACTIVITY_FOCUS_TIMEOUT_MS, BACK_LEGACY);
-        triggerBackEventByGesture(DEFAULT_DISPLAY);
+        BackGestureTouchHelper.triggerBackEventByGesture(mWmState, DEFAULT_DISPLAY);
         final Bundle resultExtras = Condition.waitForResult(
                 new Condition<Bundle>("wait for onBackPressed")
                         .setResultSupplier(() -> TestJournalContainer.get(

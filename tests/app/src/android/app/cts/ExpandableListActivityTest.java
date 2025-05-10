@@ -16,25 +16,40 @@
 
 package android.app.cts;
 
-import android.app.stubs.ActivityTestsBase;
 import android.app.stubs.ExpandableListTestActivity;
-import android.app.stubs.LaunchpadActivity;
+import android.app.stubs.shared.LaunchpadActivity;
+import android.app.stubs.shared.LaunchpadHelper;
 import android.content.ComponentName;
+import android.content.Context;
 
-public class ExpandableListActivityTest extends ActivityTestsBase {
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
 
-    @Override
-    protected void setUp() throws Exception {
-        super.setUp();
-        mIntent.putExtra("component", new ComponentName(getContext(),
-                ExpandableListTestActivity.class));
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
+@RunWith(AndroidJUnit4.class)
+public final class ExpandableListActivityTest {
+    private LaunchpadHelper mLaunchpadHelper;
+
+    @Before
+    public void setUp() throws Exception {
+        Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
+        mLaunchpadHelper = new LaunchpadHelper(context);
+        mLaunchpadHelper
+                .editIntent()
+                .putExtra(
+                        "component", new ComponentName(context, ExpandableListTestActivity.class));
     }
 
+    @Test
     public void testView() {
-        runLaunchpad(LaunchpadActivity.EXPANDLIST_VIEW);
+        mLaunchpadHelper.runLaunchpad(LaunchpadActivity.EXPANDLIST_VIEW);
     }
 
+    @Test
     public void testCallback() {
-        runLaunchpad(LaunchpadActivity.EXPANDLIST_CALLBACK);
+        mLaunchpadHelper.runLaunchpad(LaunchpadActivity.EXPANDLIST_CALLBACK);
     }
 }

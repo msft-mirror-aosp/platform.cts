@@ -54,10 +54,12 @@ public final class InteractiveAnnotationExecutor
     @Override
     public void applyAnnotation(@NonNull Annotation annotation) {
         if (annotation instanceof RequireBooleanStepResult requireBooleanStepResultAnnotation) {
-            requireBooleanStepResult(requireBooleanStepResultAnnotation.step(),
+            requireBooleanStepResult(
+                    requireBooleanStepResultAnnotation.step(),
                     requireBooleanStepResultAnnotation.expectedResult(),
                     requireBooleanStepResultAnnotation.reason(),
-                    requireBooleanStepResultAnnotation.failureMode());
+                    requireBooleanStepResultAnnotation.failureMode()
+            );
         } else if (annotation instanceof UntetheredTest) {
             mRequiresUntethered = true;
         } else if (annotation instanceof Interactive) {

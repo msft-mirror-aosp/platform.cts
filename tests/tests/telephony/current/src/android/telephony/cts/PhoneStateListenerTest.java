@@ -50,6 +50,7 @@ import android.telephony.SmsManager;
 import android.telephony.SubscriptionManager;
 import android.telephony.TelephonyDisplayInfo;
 import android.telephony.TelephonyManager;
+import android.telephony.cts.util.LocationHelper;
 import android.telephony.cts.util.TelephonyUtils;
 import android.telephony.emergency.EmergencyNumber;
 import android.telephony.ims.ImsReasonInfo;
@@ -113,8 +114,8 @@ public class PhoneStateListenerTest {
     private PreciseDataConnectionState mPreciseDataConnectionState;
     private PreciseCallState mPreciseCallState;
     private SignalStrength mSignalStrength;
-    private Boolean mWasLocationEnabled;
     private TelephonyManager mTelephonyManager;
+    private LocationHelper mLocationHelper;
     private PhoneStateListener mListener;
     private final Object mLock = new Object();
     private static final String TAG = "android.telephony.cts.PhoneStateListenerTest";
@@ -169,6 +170,7 @@ public class PhoneStateListenerTest {
         mTelephonyManager =
                 (TelephonyManager) getContext().getSystemService(Context.TELEPHONY_SERVICE);
         mCm = (ConnectivityManager) getContext().getSystemService(Context.CONNECTIVITY_SERVICE);
+        mLocationHelper = new LocationHelper(getContext());
         mHandlerThread = new HandlerThread("PhoneStateListenerTest");
         mHandlerThread.start();
         mHandler = new Handler(mHandlerThread.getLooper());
@@ -176,13 +178,12 @@ public class PhoneStateListenerTest {
 
     @After
     public void tearDown() throws Exception {
+        if (mLocationHelper != null) {
+            mLocationHelper.tearDown();
+        }
         if (mListener != null) {
             // unregister the listener
             mTelephonyManager.listen(mListener, PhoneStateListener.LISTEN_NONE);
-        }
-        if (mWasLocationEnabled != null) {
-            TelephonyManagerTest.setLocationEnabled(mWasLocationEnabled);
-            mWasLocationEnabled = null;
         }
         if (mHandlerThread != null) {
             mHandlerThread.quitSafely();
@@ -699,8 +700,7 @@ public class PhoneStateListenerTest {
         assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
         assertFalse(mOnCellLocationChangedCalled);
 
-        TelephonyManagerTest.grantLocationPermissions();
-        mWasLocationEnabled = TelephonyManagerTest.setLocationEnabled(true);
+        mLocationHelper.enable();
         mHandler.post(() -> {
             mListener = new PhoneStateListener() {
                 @Override
@@ -825,8 +825,7 @@ public class PhoneStateListenerTest {
         assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
         assertFalse(mOnDataActivityCalled);
 
-        TelephonyManagerTest.grantLocationPermissions();
-        mWasLocationEnabled = TelephonyManagerTest.setLocationEnabled(true);
+        mLocationHelper.enable();
         mHandler.post(() -> {
             mListener = new PhoneStateListener() {
                 @Override

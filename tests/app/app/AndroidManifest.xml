@@ -141,7 +141,7 @@
         <activity android:name="android.app.stubs.ActivityMonitorTestActivity"
              android:label="ActivityMonitorTestActivity"/>
 
-        <activity android:name="android.app.stubs.AliasActivityStub">
+        <activity android:name="android.app.stubs.shared.AliasActivityStub">
             <meta-data android:name="android.app.alias"
                  android:resource="@xml/alias"/>
         </activity>
@@ -158,7 +158,7 @@
 
         <service android:name="android.app.stubs.MockService"/>
 
-        <service android:name="android.app.stubs.NullService"/>
+        <service android:name="android.app.stubs.shared.NullService"/>
 
         <activity android:name="android.app.stubs.SearchManagerStubActivity"
              android:label="SearchManagerStubActivity"
@@ -188,7 +188,7 @@
                  android:resource="@xml/metadata"/>
         </service>
 
-        <service android:name="android.app.stubs.LocalStoppedService"/>
+        <service android:name="android.app.stubs.shared.LocalStoppedService"/>
 
         <service android:name="android.app.stubs.shared.LocalForegroundService"
              android:foregroundServiceType="camera|microphone|specialUse"
@@ -201,7 +201,7 @@
                  android:exported="true">
         </service>
 
-        <service android:name="android.app.stubs.LocalPhoneCallService"
+        <service android:name="android.app.stubs.shared.LocalPhoneCallService"
              android:foregroundServiceType="microphone|phoneCall|specialUse"
              android:exported="true">
             <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE" android:value="cts" />
@@ -224,30 +224,30 @@
             <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE" android:value="cts" />
         </service>
 
-        <service android:name="android.app.stubs.LocalGrantedService"
+        <service android:name="android.app.stubs.shared.LocalGrantedService"
              android:permission="android.app.stubs.permission.TEST_GRANTED"
              android:exported="true" />
 
-        <service android:name="android.app.stubs.LocalDeniedService"
+        <service android:name="android.app.stubs.shared.LocalDeniedService"
              android:permission="android.app.stubs.permission.TEST_DENIED"
              android:exported="true" />
 
-        <service android:name="android.app.stubs.IsolatedService"
+        <service android:name="android.app.stubs.shared.IsolatedService"
              android:isolatedProcess="true"
              android:useAppZygote="true">
         </service>
 
-        <activity android:name="android.app.stubs.TestedScreen"
+        <activity android:name="android.app.stubs.shared.TestedScreen"
              android:process=":remoteScreen">
         </activity>
-        <activity android:name="android.app.stubs.LocalScreen"
+        <activity android:name="android.app.stubs.shared.LocalScreen"
              android:multiprocess="true">
         </activity>
-        <activity android:name="android.app.stubs.ClearTop"
+        <activity android:name="android.app.stubs.shared.ClearTop"
              android:multiprocess="true"
              android:launchMode="singleTop">
         </activity>
-        <activity android:name="android.app.stubs.LocalDialog"
+        <activity android:name="android.app.stubs.shared.LocalDialog"
              android:multiprocess="true"
              android:theme="@android:style/Theme.Dialog">
         </activity>
@@ -422,7 +422,7 @@
 
         <service android:name="android.app.stubs.IntentServiceStub"/>
 
-        <activity android:name="android.app.stubs.LaunchpadActivity"
+        <activity android:name="android.app.stubs.shared.LaunchpadActivity"
              android:configChanges="keyboardHidden|orientation|screenSize"
              android:multiprocess="true">
         </activity>

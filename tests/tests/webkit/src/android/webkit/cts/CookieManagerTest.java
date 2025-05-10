@@ -94,11 +94,11 @@ public class CookieManagerTest extends SharedWebViewTest {
                 .getScenario()
                 .onActivity(
                         activity -> {
-                            WebView webView = ((CookieSyncManagerCtsActivity) activity)
-                                        .getWebView();
+                            WebView webView =
+                                    ((CookieSyncManagerCtsActivity) activity).getWebView();
                             builder.setHostAppInvoker(
                                             SharedWebViewTestEnvironment.createHostAppInvoker(
-                                                activity))
+                                                    activity))
                                     .setWebView(webView);
                         });
 

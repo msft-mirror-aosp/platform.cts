@@ -107,6 +107,15 @@
                   android:screenOrientation="locked"
                   android:exported="true" />
 
+        <activity android:name=".AccessibilityRequestFocusActivity"
+            android:label="AccessibilityRequestFocusActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.FRAMEWORK_INSTRUMENTATION_TEST" />
+            </intent-filter>
+        </activity>
+
     </application>
 
     <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner"

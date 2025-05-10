@@ -294,6 +294,7 @@ public class AccessibilityDisplayProxyTest {
                         | DisplayManager.VIRTUAL_DISPLAY_FLAG_TRUSTED
                         | DisplayManager.VIRTUAL_DISPLAY_FLAG_OWN_CONTENT_ONLY);
         mVirtualDisplayId = virtualDisplay.getDisplay().getDisplayId();
+        mVirtualDeviceRule.assumeActivityLaunchSupported(mVirtualDisplayId);
         final List<AccessibilityServiceInfo> infos = new ArrayList<>();
         final AccessibilityServiceInfo proxyInfo = new AccessibilityServiceInfo();
         proxyInfo.flags |= AccessibilityServiceInfo.FLAG_RETRIEVE_INTERACTIVE_WINDOWS;
@@ -341,14 +342,6 @@ public class AccessibilityDisplayProxyTest {
 
     @Test
     @ApiTest(apis = {"android.view.accessibility.AccessibilityManager#registerDisplayProxy"})
-    public void testRegisterDisplayProxy_withoutA11yPermissionOrRole_throwsSecurityException() {
-        mVirtualDeviceRule.runWithoutPermissions(() ->
-                assertThrows(SecurityException.class,
-                        () -> mA11yManager.registerDisplayProxy(mA11yProxy)));
-    }
-
-    @Test
-    @ApiTest(apis = {"android.view.accessibility.AccessibilityManager#registerDisplayProxy"})
     public void testRegisterDisplayProxy_alreadyProxied_throwsIllegalArgumentException() {
         assertThat(mA11yManager.registerDisplayProxy(mA11yProxy)).isTrue();
 
@@ -359,14 +352,17 @@ public class AccessibilityDisplayProxyTest {
     @Test
     @ApiTest(apis = {"android.view.accessibility.AccessibilityManager#registerDisplayProxy"})
     public void testRegisterAccessibilityProxy_withDefaultDisplay_throwsSecurityException() {
-        final MyA11yProxy invalidProxy = new MyA11yProxy(
-                Display.DEFAULT_DISPLAY, Executors.newSingleThreadExecutor(), new ArrayList<>());
-        try {
-            assertThrows(SecurityException.class, () ->
-                    mA11yManager.registerDisplayProxy(invalidProxy));
-        } finally {
-            mA11yManager.unregisterDisplayProxy(invalidProxy);
-        }
+        mVirtualDeviceRule.runWithoutPermissions(
+                () -> {
+                    final MyA11yProxy invalidProxy =
+                            new MyA11yProxy(
+                                    Display.DEFAULT_DISPLAY,
+                                    Executors.newSingleThreadExecutor(),
+                                    new ArrayList<>());
+                    assertThrows(
+                            SecurityException.class,
+                            () -> mA11yManager.registerDisplayProxy(invalidProxy));
+                });
     }
 
     @Test
@@ -390,26 +386,18 @@ public class AccessibilityDisplayProxyTest {
 
             final MyA11yProxy invalidProxy = new MyA11yProxy(
                     virtualDisplayId, Executors.newSingleThreadExecutor(), new ArrayList<>());
-            try {
-                assertThrows(SecurityException.class, () ->
-                        mA11yManager.registerDisplayProxy(invalidProxy));
-            } finally {
-                mA11yManager.unregisterDisplayProxy(invalidProxy);
-            }
+            mVirtualDeviceRule.runWithoutPermissions(
+                    () -> {
+                        assertThrows(
+                                SecurityException.class,
+                                () -> mA11yManager.registerDisplayProxy(invalidProxy));
+                    });
         } finally {
             if (activityScenario.get() != null) {
                 activityScenario.get().close();
             }
             displaySession.close();
         }
-    }
-
-    @Test
-    @ApiTest(apis = {"android.view.accessibility.AccessibilityManager#unregisterDisplayProxy"})
-    public void testUnregisterDisplayProxy_withoutA11yPermissionOrRole_throwsSecurityException() {
-        mVirtualDeviceRule.runWithoutPermissions(() ->
-                assertThrows(SecurityException.class,
-                        () -> mA11yManager.unregisterDisplayProxy(mA11yProxy)));
     }
 
     @Test
