@@ -546,36 +546,12 @@ public class VehiclePropertyVerifiers {
     }
 
     /**
-     * Gets the verifier for {@code HVAC_FAN_SPEED}.
-     */
-    public static VehiclePropertyVerifier<Integer> getHvacFanSpeedVerifier(
-            CarPropertyManager carPropertyManager) {
-        return getHvacFanSpeedVerifierBuilder().setCarPropertyManager(carPropertyManager).build();
-    }
-
-    /**
      * Gets the verifier builder for {@code HVAC_FAN_SPEED}.
      */
     public static VehiclePropertyVerifier.Builder<Integer> getHvacFanSpeedVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.HVAC_FAN_SPEED,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_SEAT,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_ONCHANGE,
-                        Integer.class)
+        return VehiclePropertyVerifier.<Integer>newDefaultBuilder(VehiclePropertyIds.HVAC_FAN_SPEED)
                 .requireMinMaxValues()
-                .setPossiblyDependentOnHvacPowerOn()
-                .addReadPermission(Car.PERMISSION_CONTROL_CAR_CLIMATE)
-                .addWritePermission(Car.PERMISSION_CONTROL_CAR_CLIMATE);
-    }
-
-    /**
-     * Gets the verifier for {@code HVAC_FAN_DIRECTION_AVAILABLE}.
-     */
-    public static VehiclePropertyVerifier<Integer[]> getHvacFanDirectionAvailableVerifier(
-            CarPropertyManager carPropertyManager) {
-        return getHvacFanDirectionAvailableVerifierBuilder()
-                .setCarPropertyManager(carPropertyManager).build();
+                .setPossiblyDependentOnHvacPowerOn();
     }
 
     /**
@@ -583,18 +559,16 @@ public class VehiclePropertyVerifiers {
      */
     public static VehiclePropertyVerifier.Builder<Integer[]>
             getHvacFanDirectionAvailableVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.HVAC_FAN_DIRECTION_AVAILABLE,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_SEAT,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_STATIC,
-                        Integer[].class)
+        return VehiclePropertyVerifier.<Integer[]>newDefaultBuilder(
+                        VehiclePropertyIds.HVAC_FAN_DIRECTION_AVAILABLE)
                 .setPossiblyDependentOnHvacPowerOn()
                 .setAreaIdsVerifier(
                         (verifierContext, areaIds) -> {
                             CarPropertyConfig<?> hvacFanDirectionCarPropertyConfig =
-                                    verifierContext.getCarPropertyManager().getCarPropertyConfig(
-                                            VehiclePropertyIds.HVAC_FAN_DIRECTION);
+                                    verifierContext
+                                            .getCarPropertyManager()
+                                            .getCarPropertyConfig(
+                                                    VehiclePropertyIds.HVAC_FAN_DIRECTION);
                             assertWithMessage(
                                             "HVAC_FAN_DIRECTION must be implemented if "
                                                     + "HVAC_FAN_DIRECTION_AVAILABLE is implemented")
@@ -603,7 +577,7 @@ public class VehiclePropertyVerifiers {
 
                             assertWithMessage(
                                             "HVAC_FAN_DIRECTION_AVAILABLE area IDs must match the"
-                                                + " area IDs of HVAC_FAN_DIRECTION")
+                                                    + " area IDs of HVAC_FAN_DIRECTION")
                                     .that(
                                             Arrays.stream(areaIds)
                                                     .boxed()
@@ -616,7 +590,11 @@ public class VehiclePropertyVerifiers {
                                                     .collect(Collectors.toList()));
                         })
                 .setCarPropertyValueVerifier(
-                        (verifierContext, carPropertyConfig, propertyId, areaId, timestampNanos,
+                        (verifierContext,
+                                carPropertyConfig,
+                                propertyId,
+                                areaId,
+                                timestampNanos,
                                 fanDirectionValues) -> {
                             assertWithMessage(
                                             "HVAC_FAN_DIRECTION_AVAILABLE area ID: "
@@ -641,81 +619,80 @@ public class VehiclePropertyVerifiers {
                                         .that(fanDirection)
                                         .isIn(ALL_POSSIBLE_HVAC_FAN_DIRECTIONS);
                             }
-                        })
-                .addReadPermission(Car.PERMISSION_CONTROL_CAR_CLIMATE);
-    }
-
-    /**
-     * Gets the verifier for {@code HVAC_FAN_DIRECTION}.
-     */
-    public static VehiclePropertyVerifier<Integer> getHvacFanDirectionVerifier(
-            CarPropertyManager carPropertyManager) {
-        return getHvacFanDirectionVerifierBuilder().setCarPropertyManager(carPropertyManager)
-                .build();
+                        });
     }
 
     /**
      * Gets the verifier builder for {@code HVAC_FAN_DIRECTION}.
      */
     public static VehiclePropertyVerifier.Builder<Integer> getHvacFanDirectionVerifierBuilder() {
-        var builder = VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.HVAC_FAN_DIRECTION,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_SEAT,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_ONCHANGE,
-                        Integer.class)
-                .setPossiblyDependentOnHvacPowerOn()
-                .setAreaIdsVerifier(
-                        (verifierContext, areaIds) -> {
-                            CarPropertyConfig<?> hvacFanDirectionAvailableConfig =
-                                    verifierContext.getCarPropertyManager().getCarPropertyConfig(
-                                            VehiclePropertyIds.HVAC_FAN_DIRECTION_AVAILABLE);
-                            assertWithMessage(
-                                            "HVAC_FAN_DIRECTION_AVAILABLE must be implemented if "
-                                                    + "HVAC_FAN_DIRECTION is implemented")
-                                    .that(hvacFanDirectionAvailableConfig)
-                                    .isNotNull();
+        var builder =
+                VehiclePropertyVerifier.<Integer>newDefaultBuilder(
+                                VehiclePropertyIds.HVAC_FAN_DIRECTION)
+                        .setPossiblyDependentOnHvacPowerOn()
+                        .setAreaIdsVerifier(
+                                (verifierContext, areaIds) -> {
+                                    CarPropertyConfig<?> hvacFanDirectionAvailableConfig =
+                                            verifierContext
+                                                    .getCarPropertyManager()
+                                                    .getCarPropertyConfig(
+                                                            VehiclePropertyIds
+                                                                    .HVAC_FAN_DIRECTION_AVAILABLE);
+                                    assertWithMessage(
+                                                    "HVAC_FAN_DIRECTION_AVAILABLE must be"
+                                                        + " implemented if HVAC_FAN_DIRECTION is"
+                                                        + " implemented")
+                                            .that(hvacFanDirectionAvailableConfig)
+                                            .isNotNull();
 
-                            assertWithMessage(
-                                            "HVAC_FAN_DIRECTION area IDs must match the area IDs of"
-                                                + " HVAC_FAN_DIRECTION_AVAILABLE")
-                                    .that(
-                                            Arrays.stream(areaIds)
-                                                    .boxed()
-                                                    .collect(Collectors.toList()))
-                                    .containsExactlyElementsIn(
-                                            Arrays.stream(
-                                                            hvacFanDirectionAvailableConfig
-                                                                    .getAreaIds())
-                                                    .boxed()
-                                                    .collect(Collectors.toList()));
-                        })
-                .setCarPropertyValueVerifier(
-                        (verifierContext, carPropertyConfig, propertyId, areaId, timestampNanos,
-                                hvacFanDirection) -> {
-                            CarPropertyValue<Integer[]> hvacFanDirectionAvailableCarPropertyValue =
-                                    verifierContext.getCarPropertyManager().getProperty(
-                                            VehiclePropertyIds.HVAC_FAN_DIRECTION_AVAILABLE,
-                                            areaId);
-                            assertWithMessage(
-                                            "HVAC_FAN_DIRECTION_AVAILABLE value must be available")
-                                    .that(hvacFanDirectionAvailableCarPropertyValue)
-                                    .isNotNull();
+                                    assertWithMessage(
+                                                    "HVAC_FAN_DIRECTION area IDs must match the"
+                                                            + " area IDs of"
+                                                            + " HVAC_FAN_DIRECTION_AVAILABLE")
+                                            .that(
+                                                    Arrays.stream(areaIds)
+                                                            .boxed()
+                                                            .collect(Collectors.toList()))
+                                            .containsExactlyElementsIn(
+                                                    Arrays.stream(
+                                                                    hvacFanDirectionAvailableConfig
+                                                                            .getAreaIds())
+                                                            .boxed()
+                                                            .collect(Collectors.toList()));
+                                })
+                        .setCarPropertyValueVerifier(
+                                (verifierContext,
+                                        carPropertyConfig,
+                                        propertyId,
+                                        areaId,
+                                        timestampNanos,
+                                        hvacFanDirection) -> {
+                                    CarPropertyValue<Integer[]>
+                                            hvacFanDirectionAvailableCarPropertyValue =
+                                                    verifierContext
+                                                            .getCarPropertyManager()
+                                                            .getProperty(
+                                                                    VehiclePropertyIds
+                                                                            .HVAC_FAN_DIRECTION_AVAILABLE,
+                                                                    areaId);
+                                    assertWithMessage(
+                                                    "HVAC_FAN_DIRECTION_AVAILABLE value must be"
+                                                            + " available")
+                                            .that(hvacFanDirectionAvailableCarPropertyValue)
+                                            .isNotNull();
 
-                            assertWithMessage(
-                                            "HVAC_FAN_DIRECTION_AVAILABLE area ID: "
-                                                    + areaId
-                                                    + " must include all possible fan direction"
-                                                    + " values")
-                                    .that(hvacFanDirection)
-                                    .isIn(
-                                            Arrays.asList(
-                                                    hvacFanDirectionAvailableCarPropertyValue
-                                                            .getValue()));
-                        })
-                .setAllPossibleUnwritableValues(CAR_HVAC_FAN_DIRECTION_UNWRITABLE_STATES)
-                .addReadPermission(Car.PERMISSION_CONTROL_CAR_CLIMATE)
-                .addWritePermission(Car.PERMISSION_CONTROL_CAR_CLIMATE);
+                                    assertWithMessage(
+                                                    "HVAC_FAN_DIRECTION_AVAILABLE area ID: "
+                                                            + areaId
+                                                            + " must include all possible fan"
+                                                            + " direction values")
+                                            .that(hvacFanDirection)
+                                            .isIn(
+                                                    Arrays.asList(
+                                                            hvacFanDirectionAvailableCarPropertyValue
+                                                                    .getValue()));
+                                })
+                        .setAllPossibleUnwritableValues(CAR_HVAC_FAN_DIRECTION_UNWRITABLE_STATES);
 
         if (VehiclePropertyVerifier.isAtLeastU()) {
             builder.setAllPossibleUnwritableValues(CAR_HVAC_FAN_DIRECTION_UNWRITABLE_STATES);
@@ -724,48 +701,21 @@ public class VehiclePropertyVerifiers {
     }
 
     /**
-     * Gets the verifier for {@code HVAC_TEMPERATURE_CURRENT}.
-     */
-    public static VehiclePropertyVerifier<Float> getHvacTemperatureCurrentVerifier(
-            CarPropertyManager carPropertyManager) {
-        return getHvacTemperatureCurrentVerifierBuilder()
-                .setCarPropertyManager(carPropertyManager).build();
-    }
-
-    /**
      * Gets the verifier builder for {@code HVAC_TEMPERATURE_CURRENT}.
      */
     public static VehiclePropertyVerifier.Builder<Float>
             getHvacTemperatureCurrentVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.HVAC_TEMPERATURE_CURRENT,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_SEAT,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_ONCHANGE,
-                        Float.class)
-                .setPossiblyDependentOnHvacPowerOn()
-                .addReadPermission(Car.PERMISSION_CONTROL_CAR_CLIMATE);
-    }
-
-    /**
-     * Gets the verifier for {@code HVAC_TEMPERATURE_SET}.
-     */
-    public static VehiclePropertyVerifier<Float> getHvacTemperatureSetVerifier(
-            CarPropertyManager carPropertyManager) {
-        return getHvacTemperatureSetVerifierBuilder().setCarPropertyManager(carPropertyManager)
-                .build();
+        return VehiclePropertyVerifier.<Float>newDefaultBuilder(
+                        VehiclePropertyIds.HVAC_TEMPERATURE_CURRENT)
+                .setPossiblyDependentOnHvacPowerOn();
     }
 
     /**
      * Gets the verifier builder for {@code HVAC_TEMPERATURE_SET}.
      */
     public static VehiclePropertyVerifier.Builder<Float> getHvacTemperatureSetVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.HVAC_TEMPERATURE_SET,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_SEAT,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_ONCHANGE,
-                        Float.class)
+        return VehiclePropertyVerifier.<Float>newDefaultBuilder(
+                        VehiclePropertyIds.HVAC_TEMPERATURE_SET)
                 .setPossiblyDependentOnHvacPowerOn()
                 .requireMinMaxValues()
                 .setCarPropertyConfigVerifier(
@@ -831,12 +781,14 @@ public class VehiclePropertyVerifiers {
                                                     % configArray.get(5))
                                     .isEqualTo(0);
                             assertWithMessage(
-                                    "HVAC_TEMPERATURE_SET number of supported values for "
-                                            + "Celsius and Fahrenheit must be equal.").that(
-                                    (configArray.get(1) - configArray.get(0))
-                                            / configArray.get(2)).isEqualTo(
-                                    (configArray.get(4) - configArray.get(3))
-                                            / configArray.get(5));
+                                            "HVAC_TEMPERATURE_SET number of supported values for "
+                                                    + "Celsius and Fahrenheit must be equal.")
+                                    .that(
+                                            (configArray.get(1) - configArray.get(0))
+                                                    / configArray.get(2))
+                                    .isEqualTo(
+                                            (configArray.get(4) - configArray.get(3))
+                                                    / configArray.get(5));
 
                             int[] supportedAreaIds = carPropertyConfig.getAreaIds();
                             int configMinValue = configArray.get(0);
@@ -846,26 +798,38 @@ public class VehiclePropertyVerifiers {
                                 Float minValueFloat = (Float) carPropertyConfig.getMinValue(areaId);
                                 Integer minValueInt = (int) (minValueFloat * 10);
                                 assertWithMessage(
-                                        "HVAC_TEMPERATURE_SET minimum value: " + minValueInt
-                                        + " at areaId: " + areaId + " must be equal to minimum"
-                                        + " value specified in config"
-                                        + " array: " + configMinValue)
+                                                "HVAC_TEMPERATURE_SET minimum value: "
+                                                        + minValueInt
+                                                        + " at areaId: "
+                                                        + areaId
+                                                        + " must be equal to minimum"
+                                                        + " value specified in config"
+                                                        + " array: "
+                                                        + configMinValue)
                                         .that(minValueInt)
                                         .isEqualTo(configMinValue);
 
                                 Float maxValueFloat = (Float) carPropertyConfig.getMaxValue(areaId);
                                 Integer maxValueInt = (int) (maxValueFloat * 10);
                                 assertWithMessage(
-                                        "HVAC_TEMPERATURE_SET maximum value: " + maxValueInt
-                                        + " at areaId: " + areaId + " must be equal to maximum"
-                                        + " value specified in config"
-                                        + " array: " + configMaxValue)
+                                                "HVAC_TEMPERATURE_SET maximum value: "
+                                                        + maxValueInt
+                                                        + " at areaId: "
+                                                        + areaId
+                                                        + " must be equal to maximum"
+                                                        + " value specified in config"
+                                                        + " array: "
+                                                        + configMaxValue)
                                         .that(maxValueInt)
                                         .isEqualTo(configMaxValue);
                             }
                         })
                 .setCarPropertyValueVerifier(
-                        (verifierContext, carPropertyConfig, propertyId, areaId, timestampNanos,
+                        (verifierContext,
+                                carPropertyConfig,
+                                propertyId,
+                                areaId,
+                                timestampNanos,
                                 tempInCelsius) -> {
                             List<Integer> configArray = carPropertyConfig.getConfigArray();
                             if (configArray.isEmpty()) {
@@ -874,34 +838,20 @@ public class VehiclePropertyVerifiers {
                             Integer minTempInCelsius = configArray.get(0);
                             Integer maxTempInCelsius = configArray.get(1);
                             Integer incrementInCelsius = configArray.get(2);
-                            VehiclePropertyVerifier.verifyHvacTemperatureIsValid(tempInCelsius,
-                                    minTempInCelsius, maxTempInCelsius, incrementInCelsius);
-                        })
-                .addReadPermission(Car.PERMISSION_CONTROL_CAR_CLIMATE)
-                .addWritePermission(Car.PERMISSION_CONTROL_CAR_CLIMATE);
-    }
-
-    /**
-     * Gets the verifier for {@code HVAC_AC_ON}.
-     */
-    public static VehiclePropertyVerifier<Boolean> getHvacAcOnVerifier(
-            CarPropertyManager carPropertyManager) {
-        return getHvacAcOnVerifierBuilder().setCarPropertyManager(carPropertyManager).build();
+                            VehiclePropertyVerifier.verifyHvacTemperatureIsValid(
+                                    tempInCelsius,
+                                    minTempInCelsius,
+                                    maxTempInCelsius,
+                                    incrementInCelsius);
+                        });
     }
 
     /**
      * Gets the verifier for {@code HVAC_AC_ON}.
      */
     public static VehiclePropertyVerifier.Builder<Boolean> getHvacAcOnVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.HVAC_AC_ON,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_SEAT,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_ONCHANGE,
-                        Boolean.class)
-                .setPossiblyDependentOnHvacPowerOn()
-                .addReadPermission(Car.PERMISSION_CONTROL_CAR_CLIMATE)
-                .addWritePermission(Car.PERMISSION_CONTROL_CAR_CLIMATE);
+        return VehiclePropertyVerifier.<Boolean>newDefaultBuilder(VehiclePropertyIds.HVAC_AC_ON)
+                .setPossiblyDependentOnHvacPowerOn();
     }
 
     /**

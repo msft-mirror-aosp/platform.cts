@@ -20,13 +20,16 @@ package {
 
 android_test {
     name: "CtsNetSecConfigCertificateTransparencyDefaultTestCases",
-    defaults: ["cts_defaults"],
+    defaults: [
+        "cts_defaults",
+        "networksecurityconfig-cts-jarjar-defaults",
+    ],
     static_libs: [
         "ctstestrunner-axt",
         "compatibility-device-util-axt",
         "tests-tests-networksecurityconfig-lib",
         "android.security.flags-aconfig-java",
-        "networksecurity_exported_aconfig_flags_lib",
+        "networksecurity-aconfig-flags-lib",
     ],
     libs: [
         "org.apache.http.legacy.stubs.test",

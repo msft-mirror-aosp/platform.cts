@@ -329,6 +329,8 @@ public class VirtualDisplayTest {
      */
     @Test
     public void testSetSurface_togglesDisplayState() throws Exception {
+        assumeTrue(supportsActivitiesOnSecondaryDisplays());
+
         VirtualDisplay virtualDisplay = mDisplayManager.createVirtualDisplay(NAME,
                 WIDTH, HEIGHT, DENSITY, mSurface,
                 DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC
@@ -363,6 +365,8 @@ public class VirtualDisplayTest {
      */
     @Test
     public void testSetSurface_powerGroupOff_doesNotTurnOnDisplay() throws Exception {
+        assumeTrue(supportsActivitiesOnSecondaryDisplays());
+
         VirtualDisplay virtualDisplay = mDisplayManager.createVirtualDisplay(NAME,
                 WIDTH, HEIGHT, DENSITY, mSurface,
                 DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC
@@ -411,6 +415,7 @@ public class VirtualDisplayTest {
     @Test
     public void testCreateDisplay_nonNullSurface_powerGroupOff_displayStateIsOff() {
         assumeScreenOffSupported();
+        assumeTrue(supportsActivitiesOnSecondaryDisplays());
 
         VirtualDisplay virtualDisplay = null;
         Display display = null;
@@ -513,6 +518,7 @@ public class VirtualDisplayTest {
     @Test
     public void testVirtualDisplayRotatesWithContent() throws Exception {
         assumeTrue(supportsRotation());
+        assumeTrue(supportsActivitiesOnSecondaryDisplays());
 
         VirtualDisplay virtualDisplay = mDisplayManager.createVirtualDisplay(NAME,
                 WIDTH, HEIGHT, DENSITY, mSurface,
@@ -547,6 +553,8 @@ public class VirtualDisplayTest {
 
     @Test
     public void testVirtualDisplayDoesNotRotateWithContent() throws Exception {
+        assumeTrue(supportsActivitiesOnSecondaryDisplays());
+
         VirtualDisplay virtualDisplay = mDisplayManager.createVirtualDisplay(NAME,
                 WIDTH, HEIGHT, DENSITY, mSurface,
                 DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC
@@ -599,6 +607,8 @@ public class VirtualDisplayTest {
     @RequiresFlagsEnabled(
             android.companion.virtualdevice.flags.Flags.FLAG_VIRTUAL_DISPLAY_ROTATION_API)
     public void testRotateVirtualDisplay() throws Exception {
+        assumeTrue(supportsActivitiesOnSecondaryDisplays());
+
         VirtualDisplay virtualDisplay = mDisplayManager.createVirtualDisplay(NAME,
                 WIDTH, HEIGHT, DENSITY, mSurface,
                 DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC
@@ -744,7 +754,6 @@ public class VirtualDisplayTest {
     }
 
     private SimpleActivity launchTestActivityOnDisplay(int displayId) {
-        assumeTrue(supportsActivitiesOnSecondaryDisplays());
         Intent intent = new Intent(getApplicationContext(), SimpleActivity.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         ActivityOptions activityOptions = ActivityOptions.makeBasic();

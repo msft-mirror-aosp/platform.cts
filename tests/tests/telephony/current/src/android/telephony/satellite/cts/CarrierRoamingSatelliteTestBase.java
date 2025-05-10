@@ -685,6 +685,7 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
         int slotId, int simProfileId) throws Exception {
         grantSatelliteAndSendSmsPermissions();
 
+        if (sMockSatelliteServiceManager == null) return;
         sMockSatelliteServiceManager.setDatagramControllerBooleanConfig(true,
                 DatagramController.BOOLEAN_TYPE_WAIT_FOR_DEVICE_ALIGNMENT_IN_DEMO_DATAGRAM, false);
 

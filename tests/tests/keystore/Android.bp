@@ -99,6 +99,31 @@ android_test {
 }
 
 android_test {
+    name: "CtsKeystoreCAStoreTestCases",
+    team: "trendy_team_android_hardware_backed_security",
+    defaults: ["cts_defaults"],
+    manifest: "CtsKeystoreCAStoreTestManifest.xml",
+    test_config: "CtsKeystoreCAStoreTestConfig.xml",
+    // Tag this module as a cts test artifact
+    test_suites: [
+        "cts",
+        "general-tests",
+    ],
+    libs: [
+        "android.test.runner.stubs.system",
+        "android.test.base.stubs.system",
+    ],
+    static_libs: [
+        "androidx.test.rules",
+        "core-tests-support",
+        "junit",
+    ],
+    srcs: ["src/android/keystore/cts/certstore/*.java"],
+    platform_apis: true,
+    sdk_version: "test_current",
+}
+
+android_test {
     name: "CtsKeystorePerformanceTestCases",
     team: "trendy_team_android_hardware_backed_security",
     defaults: ["cts_defaults"],
@@ -125,7 +150,6 @@ android_test {
     srcs: [
         "src/android/keystore/cts/performance/**/*.java",
     ],
-    // sdk_version: "test_current",
     platform_apis: true,
     sdk_version: "test_current",
 }
@@ -154,7 +178,6 @@ android_test {
         "gson",
         "cts-keystore-test-util",
     ],
-    // sdk_version: "test_current",
     platform_apis: true,
     sdk_version: "test_current",
 }
