@@ -68,6 +68,7 @@ android_test {
         "mts-art",
     ],
     host_required: ["cts-dalvik-host-test-runner"],
+    host_common_data: [":cts-dalvik-host-test-runner"],
     test_config: "MtsLibcoreOkHttpTestCases.xml",
 }
 
