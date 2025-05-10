@@ -2408,7 +2408,6 @@
     <string name="progress_style_info">This test checks that ProgressStyle Notifications are rendered as expected.</string>
     <string name="progress_style_indeterminate" formatted="false">A progress style notification with an indeterminate progress was posted. Expand it (if it\'s not already expanded), and verify that:
          \n\u2022 The progress bar is animated.
-         \n\u2022 The progress bar color is orange.
          \n\u2022 The progress bar is obviously indeterminate, and would not be confused for 0% or 100% progress.
     </string>
     <string name="progress_style_progress" formatted="false">A progress style notification with 40% progress was posted. Expand it (if it\'s not already expanded), and verify that:
