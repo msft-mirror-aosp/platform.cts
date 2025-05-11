@@ -17,17 +17,11 @@ package org.hyphonate.megaaudio.recorder.sinks;
 
 import org.hyphonate.megaaudio.recorder.AudioSink;
 import org.hyphonate.megaaudio.recorder.AudioSinkProvider;
-import org.hyphonate.megaaudio.recorder.NativeAudioSink;
 
 public class NopAudioSinkProvider implements AudioSinkProvider {
     @Override
     public AudioSink allocJavaSink() {
         return new NopAudioSink();
-    }
-
-    @Override
-    public NativeAudioSink allocNativeSink() {
-        return new NativeAudioSink(allocOboeSinkN());
     }
 
     private native long allocOboeSinkN();

@@ -22,9 +22,4 @@ public interface AudioSinkProvider {
      */
     AudioSink allocJavaSink();
 
-    /**
-     * @return a native (C/C++) AudioSource subclass object corresponding to the AudioSourceProvider
-     * implementation (stored in a long).
-     */
-    NativeAudioSink allocNativeSink();
 }

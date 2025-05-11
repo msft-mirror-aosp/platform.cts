@@ -23,7 +23,11 @@ class AudioSink;
 
 class Recorder: public OboeStream {
 public:
-    Recorder(AudioSink* sink, int subtype) : OboeStream(subtype), mAudioSink(sink) {}
+    /**
+     * @param sink shared pointer to an audio sink
+     * @param subtype type of recorder
+     */
+    Recorder(std::shared_ptr<AudioSink> sink, int subtype) : OboeStream(subtype), mAudioSink(sink) {}
     virtual ~Recorder() {}
 
     //
