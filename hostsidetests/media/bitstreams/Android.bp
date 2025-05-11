@@ -36,6 +36,9 @@ java_test_host {
         "general-tests",
     ],
     java_resources: ["DynamicConfig.xml"],
+    data: [
+        ":cts-dynamic-config",
+    ],
     required: ["cts-dynamic-config"],
     device_common_data: [
         ":CtsMediaBitstreamsDeviceSideTestApp",

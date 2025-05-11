@@ -1625,7 +1625,7 @@ public class SystemMediaRouter2Test {
         try {
             // Note: The routes can be added before registering the callback,
             // therefore no assertThat.isTrue() here.
-            latch.await(WAIT_MS, TimeUnit.MILLISECONDS);
+            latch.await(TIMEOUT_MS, TimeUnit.MILLISECONDS);
             return createRouteMap(mSystemRouter2ForCts.getRoutes());
         } finally {
             mSystemRouter2ForCts.unregisterRouteCallback(routeCallback);
