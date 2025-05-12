@@ -999,13 +999,10 @@ public class VehiclePropertyVerifiers {
                                                 }));
     }
 
+    /** Gets the verifier builder for {@link VehiclePropertyIds#INFO_EV_BATTERY_CAPACITY}. */
     public static VehiclePropertyVerifier.Builder<Float> getInfoEvBatteryCapacityVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.INFO_EV_BATTERY_CAPACITY,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_STATIC,
-                        Float.class)
+        return VehiclePropertyVerifier.<Float>newDefaultBuilder(
+                        VehiclePropertyIds.INFO_EV_BATTERY_CAPACITY)
                 .setCarPropertyValueVerifier(
                         (verifierContext,
                                 carPropertyConfig,
@@ -1017,8 +1014,7 @@ public class VehiclePropertyVerifiers {
                                                 "INFO_EV_BATTERY_CAPACITY Float value must"
                                                         + " be greater than or equal to 0")
                                         .that(evBatteryCapacity)
-                                        .isAtLeast(0))
-                .addReadPermission(Car.PERMISSION_CAR_INFO);
+                                        .isAtLeast(0));
     }
 
     public static VehiclePropertyVerifier.Builder<Integer[]>
