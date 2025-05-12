@@ -81,6 +81,8 @@
         <option name="teardown-command" value="am compat reset ALLOW_TEST_API_ACCESS android.server.wm.app" />
         <!-- ensure lock screen is enabled -->
         <option name="run-command" value="locksettings set-disabled false" />
+        <!-- ensure lock screen is disabled after running tests -->
+        <option name="teardown-command" value="locksettings set-disabled true" />
         <!-- ensure user setup is completed -->
         <option name="run-command" value="settings put secure user_setup_complete 1" />
         <!-- disable DeprecatedAbi warning -->
