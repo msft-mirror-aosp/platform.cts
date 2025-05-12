@@ -50,6 +50,10 @@ public class CujTestBase {
 
   protected static final float PLAYBACK_RATE_FOR_SPEED_CHANGE_TEST = 1.5f;
 
+  protected static final Duration SEEK_POSITION_FOR_SEEK_TEST = Duration.ofMillis(40000);
+
+  protected static final Duration FIRST_PLAYBACK_DURATION_FOR_SEEK_TEST = Duration.ofMillis(69000);
+
   // A delay of about 1 to 2 seconds is observed after each seek on slower devices.
   public static final Duration OVERHEAD_PER_SEEK = Duration.ofSeconds(2);
 
