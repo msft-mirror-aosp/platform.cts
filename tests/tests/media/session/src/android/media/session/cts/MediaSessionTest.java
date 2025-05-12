@@ -61,12 +61,15 @@ import android.platform.test.annotations.AppModeFull;
 import android.text.TextUtils;
 import android.view.KeyEvent;
 
+import androidx.test.core.app.ApplicationProvider;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.UserType;
 import com.android.bedstead.harrier.annotations.UserTest;
 import com.android.compatibility.common.util.FrameworkSpecificTest;
+
+import com.google.common.collect.ImmutableList;
 
 import org.junit.After;
 import org.junit.Assume;
@@ -1156,6 +1159,37 @@ public class MediaSessionTest {
             invoker.run(STEP_CHECK);
             invoker.run(STEP_CLEAN_UP);
         }
+    }
+
+    @Test
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
+    public void release_additionalCalls_doNotThrow() {
+        mSession.release();
+
+        // None of these should throw even though the session is released.
+        MediaSession.Token unusedToken = mSession.getSessionToken();
+        mSession.setPlaybackState(new PlaybackState.Builder().build());
+        mSession.setMediaButtonBroadcastReceiver(
+                new ComponentName(ApplicationProvider.getApplicationContext(), "class"));
+        mSession.sendSessionEvent("event", Bundle.EMPTY);
+        String unusedPackageName = mSession.getCallingPackage();
+        MediaController unusedController = mSession.getController();
+        boolean unusedIsActive = mSession.isActive();
+        mSession.notifyRemoteVolumeChanged(
+                new VolumeProvider(VolumeProvider.VOLUME_CONTROL_FIXED, 0, 0) {});
+        mSession.setActive(true);
+        mSession.setCallback(null, null);
+        mSession.setExtras(Bundle.EMPTY);
+        mSession.setFlags(0);
+        mSession.setMetadata(new MediaMetadata.Builder().build());
+        mSession.setPlaybackToLocal(new AudioAttributes.Builder().build());
+        mSession.setPlaybackToRemote(
+                new VolumeProvider(VolumeProvider.VOLUME_CONTROL_FIXED, 0, 0) {});
+        mSession.setQueue(ImmutableList.of());
+        mSession.setQueueTitle("title");
+        mSession.setRatingType(Rating.RATING_3_STARS);
+        mSession.setSessionActivity(null);
+        mSession.release();
     }
 
     /**
