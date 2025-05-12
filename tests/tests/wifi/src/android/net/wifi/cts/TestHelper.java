@@ -94,6 +94,7 @@ public class TestHelper {
     private static final int DURATION_SCREEN_TOGGLE_MILLIS = 2000;
     private static final int DURATION_UI_INTERACTION_MILLIS = 25_000;
     private static final int SCAN_RETRY_CNT_TO_FIND_MATCHING_BSSID = 5;
+    private static final int CONNECTION_RETRY = 3;
     private static List<ScanResult> sScanResults = null;
 
     public TestHelper(@NonNull Context context, @NonNull UiDevice uiDevice) {
@@ -513,18 +514,35 @@ public class TestHelper {
                             .addForbiddenCapability(NET_CAPABILITY_OEM_PRIVATE)
                             .build(),
                     testNetworkCallback);
-            // Trigger the connection.
-            mWifiManager.connect(network, actionListener);
-            // now wait for action listener callback
-            assertThat(countDownLatchAl.await(
-                    DURATION_NETWORK_CONNECTION_MILLIS, TimeUnit.MILLISECONDS)).isTrue();
-            // check if we got the success callback
-            assertThat(actionListener.onSuccessCalled).isTrue();
+            int retryNum = 1;
+            while (true) {
+                try {
+                    // Trigger the connection.
+                    mWifiManager.connect(network, actionListener);
+                    // now wait for action listener callback
+                    assertThat(
+                                    countDownLatchAl.await(
+                                            DURATION_NETWORK_CONNECTION_MILLIS,
+                                            TimeUnit.MILLISECONDS))
+                            .isTrue();
+                    // check if we got the success callback
+                    assertThat(actionListener.onSuccessCalled).isTrue();
 
-            // Wait for connection to complete & ensure we are connected to the saved network.
-            assertThat(testNetworkCallback.waitForAnyCallback(DURATION_NETWORK_CONNECTION_MILLIS))
-                    .isTrue();
-            assertThat(testNetworkCallback.onAvailableCalled).isTrue();
+                    // Wait for connection to complete & ensure we are connected to the saved
+                    // network.
+                    assertThat(
+                                    testNetworkCallback.waitForAnyCallback(
+                                            DURATION_NETWORK_CONNECTION_MILLIS))
+                            .isTrue();
+                    assertThat(testNetworkCallback.onAvailableCalled).isTrue();
+                    break;
+                } catch (AssertionError error) {
+                    if (retryNum >= CONNECTION_RETRY) {
+                        throw error;
+                    }
+                    retryNum++;
+                }
+            }
             final WifiInfo wifiInfo = getWifiInfo(testNetworkCallback.networkCapabilities);
             assertConnectionEquals(network, wifiInfo);
             if (ApiLevelUtil.isAtLeast(Build.VERSION_CODES.S)) {

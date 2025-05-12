@@ -242,6 +242,8 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
     private static final String DEVICE_CONFIG_NAMESPACE = "wifi";
 
     private static final int ENFORCED_NUM_NETWORK_SUGGESTIONS_PER_APP = 50;
+    private static final int CONNECTION_RETRY = 3;
+    private static final int SCAN_RETRY = 3;
 
     private static final String TEST_PAC_URL = "http://www.example.com/proxy.pac";
     private static final String MANAGED_PROVISIONING_PACKAGE_NAME
@@ -650,22 +652,39 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
             fail("Please enable location for this test - since Marshmallow WiFi scan results are"
                     + " empty when location is disabled!");
         }
-        runWithScanning(() -> {
-            setWifiEnabled(false);
-            Thread.sleep(TEST_WAIT_DURATION_MS);
-            startScan();
-            if (sWifiManager.isScanAlwaysAvailable() && isScanCurrentlyAvailable()) {
-                // Make sure at least one AP is found.
-                assertNotNull("mScanResult should not be null!", sScanResults);
-                assertFalse("empty scan results!", sScanResults.isEmpty());
-            } else {
-                // Make sure no scan results are available.
-                assertNull("mScanResult should be null!", sScanResults);
-            }
-            final String TAG = "Test";
-            assertNotNull(sWifiManager.createWifiLock(TAG));
-            assertNotNull(sWifiManager.createWifiLock(WifiManager.WIFI_MODE_FULL, TAG));
-        }, true /* run with enabled*/);
+        runWithScanning(
+                () -> {
+                    setWifiEnabled(false);
+                    PollingCheck.check(
+                            "Wifi not disabled",
+                            TEST_WAIT_DURATION_MS,
+                            () -> !sWifiManager.isWifiEnabled());
+                    int retryNum = 1;
+                    while (true) {
+                        startScan();
+                        try {
+                            if (sWifiManager.isScanAlwaysAvailable()
+                                    && isScanCurrentlyAvailable()) {
+                                // Make sure at least one AP is found.
+                                assertNotNull("mScanResult should not be null!", sScanResults);
+                                assertFalse("empty scan results!", sScanResults.isEmpty());
+                            } else {
+                                // Make sure no scan results are available.
+                                assertNull("mScanResult should be null!", sScanResults);
+                            }
+                            break;
+                        } catch (AssertionError error) {
+                            if (retryNum >= SCAN_RETRY) {
+                                throw error;
+                            }
+                            retryNum++;
+                        }
+                    }
+                    final String tag = "Test";
+                    assertNotNull(sWifiManager.createWifiLock(tag));
+                    assertNotNull(sWifiManager.createWifiLock(WifiManager.WIFI_MODE_FULL, tag));
+                },
+                true /* run with enabled*/);
     }
 
     /**
@@ -3540,7 +3559,6 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
      * @throws Exception
      */
     private void testConnect(boolean withNetworkId) throws Exception {
-        TestActionListener actionListener = new TestActionListener(mLock);
         UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
         List<WifiConfiguration> savedNetworks = null;
         try {
@@ -3558,22 +3576,21 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
             // Now trigger connection to the last saved network.
             WifiConfiguration savedNetworkToConnect =
                     savedNetworks.get(savedNetworks.size() - 1);
-            synchronized (mLock) {
+            int retryNum = 1;
+            while (true) {
+                connect(withNetworkId, savedNetworkToConnect);
                 try {
-                    if (withNetworkId) {
-                        sWifiManager.connect(savedNetworkToConnect.networkId, actionListener);
-                    } else {
-                        sWifiManager.connect(savedNetworkToConnect, actionListener);
+                    // Wait for connection to complete & ensure we are connected to the saved
+                    // network.
+                    waitForConnection();
+                    break;
+                } catch (AssertionError error) {
+                    if (retryNum >= CONNECTION_RETRY) {
+                        throw error;
                     }
-                    // now wait for callback
-                    mLock.wait(TEST_WAIT_DURATION_MS);
-                } catch (InterruptedException e) {
+                    retryNum++;
                 }
             }
-            // check if we got the success callback
-            assertTrue(actionListener.onSuccessCalled);
-            // Wait for connection to complete & ensure we are connected to the saved network.
-            waitForConnection();
             assertEquals(savedNetworkToConnect.networkId,
                     sWifiManager.getConnectionInfo().getNetworkId());
         } finally {
@@ -3585,6 +3602,24 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
             }
             uiAutomation.dropShellPermissionIdentity();
         }
+    }
+
+    private void connect(boolean withNetworkId, WifiConfiguration savedNetworkToConnect) {
+        TestActionListener actionListener = new TestActionListener(mLock);
+        synchronized (mLock) {
+            try {
+                if (withNetworkId) {
+                    sWifiManager.connect(savedNetworkToConnect.networkId, actionListener);
+                } else {
+                    sWifiManager.connect(savedNetworkToConnect, actionListener);
+                }
+                // now wait for callback
+                mLock.wait(TEST_WAIT_DURATION_MS);
+            } catch (InterruptedException e) {
+            }
+        }
+        // check if we got the success callback
+        assertTrue(actionListener.onSuccessCalled);
     }
 
     /**

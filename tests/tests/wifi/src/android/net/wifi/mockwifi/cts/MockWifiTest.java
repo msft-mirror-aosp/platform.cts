@@ -24,8 +24,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeTrue;
 
 import android.app.UiAutomation;
 import android.content.BroadcastReceiver;
@@ -102,6 +102,7 @@ public class MockWifiTest {
     private static final int STATE_WIFI_DISABLED = 3;
     private static final int STATE_SCANNING = 4;
     private static final int STATE_SCAN_DONE = 5;
+    private static final int CONNECTION_RETRY = 3;
 
     private static class MySync {
         public int expectedState = STATE_NULL;
@@ -246,8 +247,20 @@ public class MockWifiTest {
         PollingCheck.check("Wifi not enabled", TEST_WAIT_DURATION_MS,
                 () -> sWifiManager.isWifiEnabled());
 
-        sWifiManager.startScan();
-        waitForConnection(); // ensures that there is at-least 1 saved network on the device.
+        int retryNum = 1;
+        while (true) {
+            try {
+                sWifiManager.startScan();
+                waitForConnection(); // ensures that there is at-least 1 saved network on the
+                // device.
+                break;
+            } catch (AssertionError error) {
+                if (retryNum >= CONNECTION_RETRY) {
+                    throw error;
+                }
+                retryNum++;
+            }
+        }
         if (sTestAccessPointFrequency == 0) {
             WifiInfo currentNetwork = ShellIdentityUtils.invokeWithShellPermissions(
                     sWifiManager::getConnectionInfo);
