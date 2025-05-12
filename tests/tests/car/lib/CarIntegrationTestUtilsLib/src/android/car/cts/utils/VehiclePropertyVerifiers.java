@@ -910,30 +910,17 @@ public class VehiclePropertyVerifiers {
                 .setPossiblyDependentOnHvacPowerOn();
     }
 
-    /**
-     * Gets the verifier for {@code HVAC_DUAL_ON}.
-     */
-    public static VehiclePropertyVerifier<Boolean> getHvacDualOnVerifier(
-            CarPropertyManager carPropertyManager) {
-        return getHvacDualOnVerifierBuilder().setCarPropertyManager(carPropertyManager).build();
-    }
-
-    /**
-     * Gets the verifier builder for {@code HVAC_DUAL_ON}.
-     */
+    /** Gets the verifier builder for {@link VehiclePropertyIds#HVAC_DUAL_ON}. */
     public static VehiclePropertyVerifier.Builder<Boolean> getHvacDualOnVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.HVAC_DUAL_ON,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_SEAT,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_ONCHANGE,
-                        Boolean.class)
+        return VehiclePropertyVerifier.<Boolean>newDefaultBuilder(VehiclePropertyIds.HVAC_DUAL_ON)
                 .setPossiblyDependentOnHvacPowerOn()
                 .setAreaIdsVerifier(
                         (verifierContext, areaIds) -> {
                             CarPropertyConfig<?> hvacTempSetCarPropertyConfig =
-                                    verifierContext.getCarPropertyManager().getCarPropertyConfig(
-                                            VehiclePropertyIds.HVAC_TEMPERATURE_SET);
+                                    verifierContext
+                                            .getCarPropertyManager()
+                                            .getCarPropertyConfig(
+                                                    VehiclePropertyIds.HVAC_TEMPERATURE_SET);
                             if (hvacTempSetCarPropertyConfig == null) {
                                 return;
                             }
@@ -971,9 +958,7 @@ public class VehiclePropertyVerifiers {
                                         .that(areaId)
                                         .isIn(allPossibleHvacDualOnAreaIds);
                             }
-                        })
-                .addReadPermission(Car.PERMISSION_CONTROL_CAR_CLIMATE)
-                .addWritePermission(Car.PERMISSION_CONTROL_CAR_CLIMATE);
+                        });
     }
 
     private static ImmutableSet<Integer> generateAllPossibleHvacFanDirections() {
