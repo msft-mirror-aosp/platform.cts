@@ -886,28 +886,12 @@ public class VehiclePropertyVerifiers {
                 .requireZeroToBeContainedInMinMaxRanges();
     }
 
-    /**
-     * Gets the verifier for {@code HVAC_ACTUAL_FAN_SPEED_RPM}.
-     */
-    public static VehiclePropertyVerifier<Integer> getHvacActualFanSpeedRpmVerifier(
-            CarPropertyManager carPropertyManager) {
-        return getHvacActualFanSpeedRpmVerifierBuilder().setCarPropertyManager(carPropertyManager)
-                .build();
-    }
-
-    /**
-     * Gets the verifier builder for {@code HVAC_ACTUAL_FAN_SPEED_RPM}.
-     */
+    /** Gets the verifier builder for {@link VehiclePropertyIds#HVAC_ACTUAL_FAN_SPEED_RPM}. */
     public static VehiclePropertyVerifier.Builder<Integer>
             getHvacActualFanSpeedRpmVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.HVAC_ACTUAL_FAN_SPEED_RPM,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_SEAT,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_ONCHANGE,
-                        Integer.class)
-                .setPossiblyDependentOnHvacPowerOn()
-                .addReadPermission(Car.PERMISSION_CONTROL_CAR_CLIMATE);
+        return VehiclePropertyVerifier.<Integer>newDefaultBuilder(
+                        VehiclePropertyIds.HVAC_ACTUAL_FAN_SPEED_RPM)
+                .setPossiblyDependentOnHvacPowerOn();
     }
 
     /**
