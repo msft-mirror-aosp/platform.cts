@@ -61,6 +61,9 @@
         <option name="test-file-name" value="CtsPropertyIgnoreOrientationRequestOverrideOptOutApp.apk"/>
         <option name="test-file-name" value="CtsPropertyCameraCompatAllowForceRotationApp.apk"/>
         <option name="test-file-name" value="CtsPropertyCameraCompatAllowRefreshApp.apk"/>
+        <option name="test-file-name" value="CtsPropertyCameraCompatAllowSimulateRequestedOrientationDefaultApp.apk"/>
+        <option name="test-file-name" value="CtsPropertyCameraCompatAllowSimulateRequestedOrientationOptInApp.apk"/>
+        <option name="test-file-name" value="CtsPropertyCameraCompatAllowSimulateRequestedOrientationOptOutApp.apk"/>
         <option name="test-file-name" value="CtsPropertyCameraCompatEnableRefreshViaPauseOptInApp.apk"/>
         <option name="test-file-name" value="CtsPropertyCameraCompatEnableRefreshViaPauseOptOutApp.apk"/>
         <option name="test-file-name" value="CtsDeviceServicesTestApp.apk" />
