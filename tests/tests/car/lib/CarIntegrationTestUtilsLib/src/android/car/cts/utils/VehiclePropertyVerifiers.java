@@ -893,39 +893,21 @@ public class VehiclePropertyVerifiers {
                 .requireZeroToBeContainedInMinMaxRanges();
     }
 
+    /** Gets the verifier builder for {@link VehiclePropertyIds#HVAC_SEAT_VENTILATION}. */
+    public static VehiclePropertyVerifier.Builder<Integer> getHvacSeatVentilationVerifierBuilder() {
+        return VehiclePropertyVerifier.<Integer>newDefaultBuilder(
+                        VehiclePropertyIds.HVAC_SEAT_VENTILATION)
+                .setPossiblyDependentOnHvacPowerOn()
+                .requireMinMaxValues()
+                .requireMinValuesToBeZero();
+    }
+
     /** Gets the verifier builder for {@link VehiclePropertyIds#HVAC_ACTUAL_FAN_SPEED_RPM}. */
     public static VehiclePropertyVerifier.Builder<Integer>
             getHvacActualFanSpeedRpmVerifierBuilder() {
         return VehiclePropertyVerifier.<Integer>newDefaultBuilder(
                         VehiclePropertyIds.HVAC_ACTUAL_FAN_SPEED_RPM)
                 .setPossiblyDependentOnHvacPowerOn();
-    }
-
-    /**
-     * Gets the verifier for {@code HVAC_SEAT_VENTILATION}.
-     */
-    public static VehiclePropertyVerifier<Integer> getHvacSeatVentilationVerifier(
-            CarPropertyManager carPropertyManager) {
-        return getHvacSeatVentilationVerifierBuilder().setCarPropertyManager(carPropertyManager)
-                .build();
-    }
-
-    /**
-     * Gets the verifier builder for {@code HVAC_SEAT_VENTILATION}.
-     */
-    public static VehiclePropertyVerifier.Builder<Integer>
-            getHvacSeatVentilationVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.HVAC_SEAT_VENTILATION,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_SEAT,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_ONCHANGE,
-                        Integer.class)
-                .setPossiblyDependentOnHvacPowerOn()
-                .requireMinMaxValues()
-                .requireMinValuesToBeZero()
-                .addReadPermission(Car.PERMISSION_CONTROL_CAR_CLIMATE)
-                .addWritePermission(Car.PERMISSION_CONTROL_CAR_CLIMATE);
     }
 
     /**
