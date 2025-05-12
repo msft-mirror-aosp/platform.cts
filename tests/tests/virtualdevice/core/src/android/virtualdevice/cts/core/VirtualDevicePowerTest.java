@@ -48,8 +48,6 @@ import android.view.Display;
 import android.view.WindowManager;
 import android.virtualdevice.cts.common.VirtualDeviceRule;
 
-import androidx.test.ext.junit.runners.AndroidJUnit4;
-
 import com.android.compatibility.common.util.FeatureUtil;
 import com.android.compatibility.common.util.ProtoUtils;
 import com.android.server.power.nano.PowerManagerServiceDumpProto;
@@ -60,13 +58,17 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 
 /** Tests to verify that power manager APIs behave as expected for virtual devices. */
-@RunWith(AndroidJUnit4.class)
+@RunWith(Parameterized.class)
 @AppModeFull(reason = "VirtualDeviceManager cannot be accessed by instant apps")
 public class VirtualDevicePowerTest {
 
@@ -92,6 +94,9 @@ public class VirtualDevicePowerTest {
     private final Context mContext = getInstrumentation().getContext();
     private final ContentResolver mContentResolver = mContext.getContentResolver();
 
+    private final int mAodState;
+    private int mInitialAodState;
+
     private PowerManager mDefaultDisplayPowerManager;
     private PowerManager mVirtualDisplayPowerManager;
 
@@ -107,9 +112,28 @@ public class VirtualDevicePowerTest {
     @Mock
     private VirtualDisplayConfig.BrightnessListener mBrightnessListener;
 
+    public VirtualDevicePowerTest(int aodState) {
+        mAodState = aodState;
+    }
+
+    @Parameterized.Parameters(name = "aodEnabled={0}")
+    @SuppressWarnings("unused")
+    public static Collection<Integer> getAllAodStates() {
+        List<Integer> aodStates = new ArrayList<>();
+        aodStates.add(0);
+        if (Flags.virtualPowerGroupSleepNoDoze()) {
+            aodStates.add(1);
+        }
+        return aodStates;
+    }
+
     @Before
     public void setUp() throws Exception {
         MockitoAnnotations.initMocks(this);
+
+        mInitialAodState =
+                Settings.Secure.getInt(mContentResolver, Settings.Secure.DOZE_ALWAYS_ON, 0);
+        Settings.Secure.putInt(mContentResolver, Settings.Secure.DOZE_ALWAYS_ON, mAodState);
 
         mInitialDisplayTimeout =
                 Settings.System.getString(mContentResolver, Settings.System.SCREEN_OFF_TIMEOUT);
@@ -129,6 +153,7 @@ public class VirtualDevicePowerTest {
     @After
     public void tearDown() {
         setScreenOffTimeoutMs(mInitialDisplayTimeout);
+        Settings.Secure.putInt(mContentResolver, Settings.Secure.DOZE_ALWAYS_ON, mInitialAodState);
         Settings.Global.putInt(mContentResolver, Settings.Global.STAY_ON_WHILE_PLUGGED_IN,
                 mInitialStayOnWhilePluggedInSetting);
         mVirtualDeviceRule.runWithoutPermissions(() -> {
