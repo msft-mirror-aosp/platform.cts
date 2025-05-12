@@ -1733,7 +1733,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         getElectronicStabilityControlStateVerifierBuilder(),
                         getCrossTrafficMonitoringWarningStateVerifierBuilder(),
                         getLowSpeedAutomaticEmergencyBrakingStateVerifierBuilder(),
-                        VehiclePropertyVerifiers.getInfoModelTrimVerifierBuilder(),
                         VehiclePropertyVerifiers.getInfoVehicleSizeClassVerifierBuilder(),
                         VehiclePropertyVerifiers.getTurnSignalLightStateVerifierBuilder(),
                         VehiclePropertyVerifiers.getTurnSignalSwitchVerifierBuilder(),
