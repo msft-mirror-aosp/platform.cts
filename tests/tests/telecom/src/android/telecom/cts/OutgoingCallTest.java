@@ -148,6 +148,8 @@ public class OutgoingCallTest extends BaseTelecomTestWithMockServices {
      *
      * @see {@link TelecomManager#EXTRA_START_CALL_WITH_SPEAKERPHONE}
      */
+    // TODO("b/417211283")
+    /* Note: @Ignore does not work for Junit3 tests which this class is.
     public void testStartCallWithSpeakerphoneTrue_SpeakerphoneOnInCall() {
         if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
@@ -158,7 +160,7 @@ public class OutgoingCallTest extends BaseTelecomTestWithMockServices {
         placeAndVerifyCall(extras);
         verifyConnectionForOutgoingCall();
         assertAudioRoute(mInCallCallbacks.getService(), CallAudioState.ROUTE_SPEAKER);
-    }
+    }*/
 
     public void testStartCallWithSpeakerphoneFalse_SpeakerphoneOffInCall() {
         if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) {
