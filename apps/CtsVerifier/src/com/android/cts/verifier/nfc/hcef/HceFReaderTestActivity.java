@@ -46,7 +46,7 @@ public class HceFReaderTestActivity extends PassFailButtons.TestListActivity {
                     TestListItem.newTest(
                             this,
                             R.string.nfc_hce_f_reader,
-                            HceFReaderActivity.class.getName(),
+                            HceFReaderActivity.TEST_NAME,
                             new Intent(this, HceFReaderActivity.class),
                             null));
             Intent observeModeIntent = new Intent(this, HceFReaderActivity.class);
@@ -56,7 +56,7 @@ public class HceFReaderTestActivity extends PassFailButtons.TestListActivity {
                     TestListItem.newTest(
                             this,
                             R.string.nfc_hce_f_reader_observe_mode_tests,
-                            HceFReaderActivity.class.getName(),
+                            HceFReaderActivity.OBSERVE_MODE_TEST_NAME,
                             observeModeIntent,
                             null));
         }
