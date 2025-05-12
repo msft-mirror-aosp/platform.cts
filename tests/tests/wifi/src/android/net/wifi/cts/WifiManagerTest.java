@@ -2962,6 +2962,12 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
                 assertEquals(currentConfig.isClientIsolationEnabled(),
                         testSoftApConfig.isClientIsolationEnabled());
             }
+
+            if (Flags.bandOptimizationControl()) {
+                assertEquals(
+                        currentConfig.isBandOptimizationEnabled(),
+                        testSoftApConfig.isBandOptimizationEnabled());
+            }
         }
     }
 
@@ -3312,6 +3318,10 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
             }
             if (Flags.apIsolate() && WifiBuildCompat.isAtLeastB()) {
                 softApConfigBuilder.setClientIsolationEnabled(true);
+            }
+
+            if (Flags.bandOptimizationControl()) {
+                softApConfigBuilder.setBandOptimizationEnabled(false);
             }
             // Test SoftApConfiguration set and get
             verifySetGetSoftApConfig(softApConfigBuilder.build());
