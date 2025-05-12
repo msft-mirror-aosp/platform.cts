@@ -1017,14 +1017,11 @@ public class VehiclePropertyVerifiers {
                                         .isAtLeast(0));
     }
 
+    /** Gets the verifier builder for {@link VehiclePropertyIds#INFO_EV_CONNECTOR_TYPE}. */
     public static VehiclePropertyVerifier.Builder<Integer[]>
             getInfoEvConnectorTypeVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.INFO_EV_CONNECTOR_TYPE,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_STATIC,
-                        Integer[].class)
+        return VehiclePropertyVerifier.<Integer[]>newDefaultBuilder(
+                        VehiclePropertyIds.INFO_EV_CONNECTOR_TYPE)
                 .setCarPropertyValueVerifier(
                         (verifierContext,
                                 carPropertyConfig,
@@ -1069,8 +1066,7 @@ public class VehiclePropertyVerifiers {
                                                                 EvChargingConnectorType.OTHER)
                                                         .build());
                             }
-                        })
-                .addReadPermission(Car.PERMISSION_CAR_INFO);
+                        });
     }
 
     public static VehiclePropertyVerifier.Builder<Integer> getInfoEvPortLocationVerifierBuilder() {
