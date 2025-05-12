@@ -17,7 +17,6 @@
 package android.car.cts;
 
 import static android.car.CarOccupantZoneManager.OCCUPANT_TYPE_DRIVER;
-import static android.car.feature.Flags.FLAG_MULTI_DISPLAY_BRIGHTNESS_CONTROL;
 
 import static com.android.compatibility.common.util.ShellUtils.runShellCommand;
 
@@ -29,7 +28,6 @@ import static org.junit.Assume.assumeFalse;
 import android.car.CarOccupantZoneManager;
 import android.car.CarOccupantZoneManager.OccupantZoneInfo;
 import android.os.UserHandle;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.util.ArrayMap;
 import android.util.Log;
 import android.view.Display;
@@ -60,7 +58,6 @@ public class DisplayBrightnessTest extends AbstractCarTestCase {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_MULTI_DISPLAY_BRIGHTNESS_CONTROL)
     public void testSetDisplayBrightness_fullSecondaryUserMustNotAffectOtherUser()
             throws Exception {
         Map<Integer, OccupantZoneInfo> occupantZoneInfoByDisplayId = new ArrayMap<>();

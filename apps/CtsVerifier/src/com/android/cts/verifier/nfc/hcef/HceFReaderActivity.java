@@ -15,6 +15,9 @@
  */
 package com.android.cts.verifier.nfc.hcef;
 
+import static com.android.cts.verifier.TestListActivity.sCurrentDisplayMode;
+import static com.android.cts.verifier.TestListAdapter.setTestNameSuffix;
+
 import android.annotation.TargetApi;
 import android.content.Intent;
 import android.nfc.NfcAdapter;
@@ -37,8 +40,12 @@ import java.io.IOException;
 public class HceFReaderActivity extends PassFailButtons.Activity implements ReaderCallback,
         OnItemSelectedListener {
     public static final String TAG = "HceFReaderActivity";
+    public static final String TEST_NAME = HceFReaderActivity.class.getName();
+    public static final String OBSERVE_MODE_TEST_NAME =
+            HceFReaderActivity.class.getName() + ":ObserveMode";
 
     NfcAdapter mAdapter;
+    boolean mIsTestForObserveMode;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -46,14 +53,14 @@ public class HceFReaderActivity extends PassFailButtons.Activity implements Read
         setContentView(R.layout.pass_fail_text);
 
         Intent intent = getIntent();
+        mIsTestForObserveMode = intent.hasExtra(HceFReaderTestActivity.TEST_NAME_EXTRA);
         TextView textView = (TextView) findViewById(R.id.text);
         textView.setText(
                 getString(
                         R.string.nfc_hce_f_help_text,
-                        (intent.hasExtra(HceFReaderTestActivity.TEST_NAME_EXTRA)
+                        (mIsTestForObserveMode
                                 ? getString(R.string.nfc_hce_f_emulator_observe_mode_tests)
                                 : getString(R.string.nfc_hce_f_emulator))));
-
         setPassFailButtonClickListeners();
         getPassButton().setEnabled(false);
 
@@ -70,11 +77,12 @@ public class HceFReaderActivity extends PassFailButtons.Activity implements Read
     @Override
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
+        mIsTestForObserveMode = intent.hasExtra(HceFReaderTestActivity.TEST_NAME_EXTRA);
         TextView textView = (TextView) findViewById(R.id.text);
         textView.setText(
                 getString(
                         R.string.nfc_hce_f_help_text,
-                        (intent.hasExtra(HceFReaderTestActivity.TEST_NAME_EXTRA)
+                        (mIsTestForObserveMode
                                 ? getString(R.string.nfc_hce_f_emulator_observe_mode_tests)
                                 : getString(R.string.nfc_hce_f_emulator))));
     }
@@ -146,6 +154,15 @@ public class HceFReaderActivity extends PassFailButtons.Activity implements Read
             });
         } catch (IOException e) {
             Log.e(TAG, "IOException, try again.");
+        }
+    }
+
+    @Override
+    public String getTestId() {
+        if (mIsTestForObserveMode) {
+            return setTestNameSuffix(sCurrentDisplayMode, OBSERVE_MODE_TEST_NAME);
+        } else {
+            return setTestNameSuffix(sCurrentDisplayMode, TEST_NAME);
         }
     }
 

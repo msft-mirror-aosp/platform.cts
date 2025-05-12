@@ -49,7 +49,9 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.after;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import android.companion.virtual.VirtualDeviceManager.VirtualDevice;
@@ -61,6 +63,7 @@ import android.companion.virtualdevice.flags.Flags;
 import android.content.Context;
 import android.graphics.SurfaceTexture;
 import android.hardware.Camera;
+import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraDevice;
@@ -88,6 +91,7 @@ import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 
 import java.util.ArrayList;
@@ -153,10 +157,11 @@ public class VirtualCameraTest {
     private VirtualDevice mVirtualDevice;
     private final Executor mExecutor = getApplicationContext().getMainExecutor();
 
+    private AutoCloseable mMockitoSession;
+
     @Before
     public void setUp() {
-        MockitoAnnotations.initMocks(this);
-
+        mMockitoSession = MockitoAnnotations.openMocks(this);
         mVirtualDevice = mRule.createManagedVirtualDevice(
                 new VirtualDeviceParams.Builder()
                         .setDevicePolicy(POLICY_TYPE_CAMERA, DEVICE_POLICY_CUSTOM)
@@ -165,7 +170,8 @@ public class VirtualCameraTest {
     }
 
     @After
-    public void tearDown() {
+    public void tearDown() throws Exception {
+        mMockitoSession.close();
         if (mCameraManager != null) {
             mCameraManager.unregisterAvailabilityCallback(
                     mMockDefaultContextCameraAvailabilityCallback);
@@ -616,6 +622,28 @@ public class VirtualCameraTest {
         assertThat(
                 mCameraManager.isConcurrentSessionConfigurationSupported(
                         cameraIdSessionConfigMap)).isFalse();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_CAMERA_ON_OPEN)
+    public void onOpenCamera_called() throws CameraAccessException {
+        setupVirtualDeviceCameraManager();
+        createFrontVirtualCamera();
+
+        VirtualCameraCallback otherCallback = Mockito.mock(VirtualCameraCallback.class);
+
+        VirtualCameraConfig config = createVirtualCameraConfig(CAMERA_WIDTH, CAMERA_HEIGHT,
+                CAMERA_FORMAT, CAMERA_MAX_FPS, CAMERA_SENSOR_ORIENTATION, LENS_FACING_BACK,
+                "camera2", mExecutor, otherCallback);
+
+        mVirtualDevice.createVirtualCamera(config);
+
+        mCameraManager.openCamera(FRONT_CAMERA_ID, directExecutor(), mCameraStateCallback);
+
+        verify(mCameraStateCallback, timeout(TIMEOUT_MILLIS))
+                .onOpened(mCameraDeviceCaptor.capture());
+        verify(mVirtualCameraCallback, times(1)).onOpenCamera();
+        verify(otherCallback, never()).onOpenCamera();
     }
 
     private VirtualCamera createFrontVirtualCamera() {
