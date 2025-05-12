@@ -107,8 +107,9 @@ class AccessoryTestCompanion extends TestCompanion {
         }
 
         UsbInterface iface = null;
-        for (int i = 0; i < mDevice.getConfigurationCount(); i++) {
-            if (mDevice.getInterface(i).getName().equals("Android Accessory Interface")) {
+        for (int i = 0; i < mDevice.getInterfaceCount(); i++) {
+            if (mDevice.getInterface(i).getName()
+                    .equals("Android Accessory Interface")) {
                 iface = mDevice.getInterface(i);
                 break;
             }
