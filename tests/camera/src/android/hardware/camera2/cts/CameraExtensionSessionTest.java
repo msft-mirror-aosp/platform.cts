@@ -596,7 +596,7 @@ public class CameraExtensionSessionTest extends Camera2ParameterizedTestCase {
                         mReportLog.addValue("extension_id", extension, ResultType.NEUTRAL,
                                 ResultUnit.NONE);
                         double[] captureTimes = new double[IMAGE_COUNT];
-                        double[] postviewCaptureTimes = new double[IMAGE_COUNT];
+                        double[] postviewCaptureTimes = new double[IMAGE_COUNT - 1];
                         boolean captureResultsSupported =
                                 !extensionChars.getAvailableCaptureResultKeys(extension).isEmpty();
 
@@ -613,7 +613,6 @@ public class CameraExtensionSessionTest extends Camera2ParameterizedTestCase {
                                     mTestRule.getCamera().createCaptureRequest(
                                             CameraDevice.TEMPLATE_STILL_CAPTURE);
                             captureBuilder.addTarget(imageReaderSurface);
-                            captureBuilder.addTarget(postviewImageReaderSurface);
                             CameraExtensionSession.ExtensionCaptureCallback captureMockCallback =
                                     mock(CameraExtensionSession.ExtensionCaptureCallback.class);
                             SimpleCaptureCallback captureCallback =
@@ -630,6 +629,12 @@ public class CameraExtensionSessionTest extends Camera2ParameterizedTestCase {
                                     captureBuilder.set(CaptureRequest.JPEG_ORIENTATION,
                                             jpegOrientation);
                                 }
+                                boolean postviewCapture = (i != IMAGE_COUNT - 1);
+                                if (postviewCapture) {
+                                    captureBuilder.addTarget(postviewImageReaderSurface);
+                                } else {
+                                    captureBuilder.removeTarget(postviewImageReaderSurface);
+                                }
                                 CaptureRequest request = captureBuilder.build();
                                 long startTimeMs = SystemClock.elapsedRealtime();
                                 captureCallback.resetCaptureProgress();
@@ -637,23 +642,27 @@ public class CameraExtensionSessionTest extends Camera2ParameterizedTestCase {
                                         new HandlerExecutor(mTestRule.getHandler()),
                                         captureCallback);
 
-                                Image imgPostview  =
+                                Long imgTsPostview = 0L;
+                                Image imgPostview =
                                         imageListenerPostview
-                                        .getImage(MULTI_FRAME_CAPTURE_IMAGE_TIMEOUT_MS);
-                                postviewCaptureTimes[i] =
-                                        SystemClock.elapsedRealtime() - startTimeMs;
-
-                                if (postviewFormat == ImageFormat.JPEG
-                                        || postviewFormat == ImageFormat.JPEG_R) {
-                                    verifyJpegOrientation(imgPostview, postviewSize,
-                                            jpegOrientation, postviewFormat);
+                                                .getImageOrNull(MULTI_FRAME_CAPTURE_IMAGE_TIMEOUT_MS);
+                                if(postviewCapture) {
+                                    assertNotNull(imgPostview);
+                                    postviewCaptureTimes[i] =
+                                            SystemClock.elapsedRealtime() - startTimeMs;
+                                    if (postviewFormat == ImageFormat.JPEG
+                                            || postviewFormat == ImageFormat.JPEG_R) {
+                                        verifyJpegOrientation(imgPostview, postviewSize,
+                                                jpegOrientation, postviewFormat);
+                                    } else {
+                                        validateImage(imgPostview, postviewSize.getWidth(),
+                                                postviewSize.getHeight(), postviewFormat, null);
+                                    }
+                                    imgTsPostview =  imgPostview.getTimestamp();
+                                    imgPostview.close();
                                 } else {
-                                    validateImage(imgPostview, postviewSize.getWidth(),
-                                            postviewSize.getHeight(), postviewFormat, null);
+                                    assertNull(imgPostview);
                                 }
-
-                                Long imgTsPostview = imgPostview.getTimestamp();
-                                imgPostview.close();
 
                                 Image img =
                                         imageListener.getImage(
@@ -672,8 +681,10 @@ public class CameraExtensionSessionTest extends Camera2ParameterizedTestCase {
                                 Long imgTs = img.getTimestamp();
                                 img.close();
 
-                                assertEquals("Still capture timestamp does not match its "
-                                        + "postview timestamp", imgTsPostview, imgTs);
+                                if (postviewCapture) {
+                                    assertEquals("Still capture timestamp does not match its "
+                                            + "postview timestamp", imgTsPostview, imgTs);
+                                }
 
                                 verify(captureMockCallback,
                                         timeout(MULTI_FRAME_CAPTURE_IMAGE_TIMEOUT_MS).times(1))
