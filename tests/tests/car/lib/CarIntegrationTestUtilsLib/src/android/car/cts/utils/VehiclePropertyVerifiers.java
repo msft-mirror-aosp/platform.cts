@@ -976,13 +976,10 @@ public class VehiclePropertyVerifiers {
         return allPossibleFanDirectionsBuilder.build();
     }
 
+    /** Gets the verifier builder for {@link VehiclePropertyIds#INFO_DRIVER_SEAT}. */
     public static VehiclePropertyVerifier.Builder<Integer> getInfoDriverSeatVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.INFO_DRIVER_SEAT,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_SEAT,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_STATIC,
-                        Integer.class)
+        return VehiclePropertyVerifier.<Integer>newDefaultBuilder(
+                        VehiclePropertyIds.INFO_DRIVER_SEAT)
                 .setAllPossibleEnumValues(
                         ImmutableSet.of(
                                 VehicleAreaSeat.SEAT_ROW_1_LEFT,
@@ -999,8 +996,7 @@ public class VehiclePropertyVerifiers {
                                         .isEqualTo(
                                                 new int[] {
                                                     VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL
-                                                }))
-                .addReadPermission(Car.PERMISSION_CAR_INFO);
+                                                }));
     }
 
     public static VehiclePropertyVerifier.Builder<Float> getInfoEvBatteryCapacityVerifierBuilder() {
