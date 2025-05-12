@@ -871,6 +871,13 @@ public class VehiclePropertyVerifiers {
                 .setPossiblyDependentOnHvacPowerOn();
     }
 
+    /** Gets the verifier builder for {@link VehiclePropertyIds#HVAC_AUTO_RECIRC_ON}. */
+    public static VehiclePropertyVerifier.Builder<Boolean> getHvacAutoRecircOnVerifierBuilder() {
+        return VehiclePropertyVerifier.<Boolean>newDefaultBuilder(
+                        VehiclePropertyIds.HVAC_AUTO_RECIRC_ON)
+                .setPossiblyDependentOnHvacPowerOn();
+    }
+
     /** Gets the verifier builder for {@code HVAC_AUTO_ON}. */
     public static VehiclePropertyVerifier.Builder<Boolean> getHvacAutoOnVerifierBuilder() {
         return VehiclePropertyVerifier.<Boolean>newDefaultBuilder(VehiclePropertyIds.HVAC_AUTO_ON)
@@ -892,30 +899,6 @@ public class VehiclePropertyVerifiers {
         return VehiclePropertyVerifier.<Integer>newDefaultBuilder(
                         VehiclePropertyIds.HVAC_ACTUAL_FAN_SPEED_RPM)
                 .setPossiblyDependentOnHvacPowerOn();
-    }
-
-    /**
-     * Gets the verifier for {@code HVAC_AUTO_RECIRC_ON}.
-     */
-    public static VehiclePropertyVerifier<Boolean> getHvacAutoRecircOnVerifier(
-            CarPropertyManager carPropertyManager) {
-        return getHvacAutoRecircOnVerifierBuilder().setCarPropertyManager(carPropertyManager)
-                .build();
-    }
-
-    /**
-     * Gets the verifier builder for {@code HVAC_AUTO_RECIRC_ON}.
-     */
-    public static VehiclePropertyVerifier.Builder<Boolean> getHvacAutoRecircOnVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.HVAC_AUTO_RECIRC_ON,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_SEAT,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_ONCHANGE,
-                        Boolean.class)
-                .setPossiblyDependentOnHvacPowerOn()
-                .addReadPermission(Car.PERMISSION_CONTROL_CAR_CLIMATE)
-                .addWritePermission(Car.PERMISSION_CONTROL_CAR_CLIMATE);
     }
 
     /**
