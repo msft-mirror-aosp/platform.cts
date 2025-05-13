@@ -569,7 +569,8 @@ def pull_img_files(device_id, input_path, output_path):
 
 
 def launch_and_take_capture(dut, pkg_name, camera_facing, log_path,
-                            dumpsys_path=DEFAULT_CAMERA_APP_DUMPSYS_PATH):
+                            dumpsys_path=DEFAULT_CAMERA_APP_DUMPSYS_PATH,
+                            flip_camera=True):
   """Launches the camera app and takes still capture.
 
   Args:
@@ -579,6 +580,9 @@ def launch_and_take_capture(dut, pkg_name, camera_facing, log_path,
     camera_facing: camera lens facing orientation
     log_path: str; log path to save screenshots.
     dumpsys_path: path of the file on device to store the report
+    flip_camera: Boolean; Whether to flip the camera or not.
+      Some devices will have only 1 primary camera which is opened
+      by default so we need to skip the camera_switch logic.
 
   Returns:
     img_path_on_dut: Path of the captured image on the device
@@ -613,7 +617,9 @@ def launch_and_take_capture(dut, pkg_name, camera_facing, log_path,
         timeout=WAIT_INTERVAL_FIVE_SECONDS
     ):
       dut.ui(text=LOCATION_ON_TXT).click.wait()
-    switch_default_camera(dut, camera_facing, log_path)
+    if flip_camera:
+      switch_default_camera(dut, camera_facing, log_path)
+
     take_dumpsys_report(dut, dumpsys_path)
     time.sleep(ACTIVITY_WAIT_TIME_SECONDS)
     logging.debug('Taking photo')
