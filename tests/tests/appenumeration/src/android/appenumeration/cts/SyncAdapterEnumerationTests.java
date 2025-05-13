@@ -180,6 +180,7 @@ public class SyncAdapterEnumerationTests extends AppEnumerationTestsBase {
                         TARGET_SYNCADAPTER_SHARED_USER));
     }
 
+    @FlakyTest(bugId = 406160441)
     @Test
     public void queriesPackage_getRunningServiceControlPanel_canSeeSyncAdapterTarget()
             throws Exception {
