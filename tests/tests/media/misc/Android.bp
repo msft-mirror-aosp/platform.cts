@@ -31,6 +31,7 @@ cc_test_library {
         "libandroid",
         "libcamera2ndk",
         "libnativehelper_compat_libc++",
+        "libnativewindow",
         "liblog",
         "libmediandk",
         "libEGL",
