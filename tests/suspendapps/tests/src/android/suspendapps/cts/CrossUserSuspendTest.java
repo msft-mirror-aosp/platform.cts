@@ -20,6 +20,7 @@ import static android.content.Intent.ACTION_PACKAGE_UNSUSPENDED_MANUALLY;
 import static android.content.Intent.FLAG_ACTIVITY_NEW_TASK;
 
 import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.workProfile;
+import static com.android.bedstead.harrier.components.BroadcastReceiversComponentKt.registerBroadcastReceiver;
 import static com.android.bedstead.nene.types.OptionalBoolean.TRUE;
 import static com.android.bedstead.permissions.CommonPermissions.INTERACT_ACROSS_USERS_FULL;
 import static com.android.bedstead.permissions.CommonPermissions.SUSPEND_APPS;
@@ -90,8 +91,8 @@ public class CrossUserSuspendTest {
         UserReference workProfile = workProfile(sDeviceState);
         try (TestAppInstance instance = sTestApp.install(workProfile);
                 BlockingBroadcastReceiver broadcastReceiver =
-                        sDeviceState.registerBroadcastReceiver(
-                                ACTION_PACKAGE_UNSUSPENDED_MANUALLY)) {
+                        registerBroadcastReceiver(
+                                sDeviceState, ACTION_PACKAGE_UNSUSPENDED_MANUALLY)) {
             PackageManager profilePackageManager =
                     TestApis.context().instrumentedContextAsUser(workProfile).getPackageManager();
 

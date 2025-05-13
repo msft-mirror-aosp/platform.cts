@@ -37,6 +37,7 @@ import android.net.Uri;
 import android.os.RemoteException;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
+import android.platform.test.flag.junit.SetFlagsRule;
 import android.telecom.Call;
 import android.telecom.CallAttributes;
 import android.telecom.CallEndpoint;
@@ -70,6 +71,9 @@ import java.util.function.Consumer;
 public class BaseAppVerifier {
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+    @Rule
+    public final SetFlagsRule mSetFlagsRule = new SetFlagsRule();
+
     public static final boolean S_IS_TEST_DISABLED = true;
     public boolean mShouldTestTelecom = true;
     public boolean mSupportsManagedCalls = false;
@@ -150,32 +154,44 @@ public class BaseAppVerifier {
         mSupportsManagedCalls = TestUtils.hasDialerRole(mContext)
                 && TestUtils.hasTelephonyFeature(mContext);
         assumeTrue(mShouldTestTelecom);
-        mBaseAppVerifierImpl = new BaseAppVerifierImpl(
-                InstrumentationRegistry.getInstrumentation(),
-                Arrays.asList(MANAGED_DEFAULT_ACCOUNT_1, MANAGED_DEFAULT_ACCOUNT_2),
-                Arrays.asList(MANAGED_CLONE_DEFAULT_ACCOUNT_1),
-                new InCallServiceMethods() {
+        mBaseAppVerifierImpl =
+                new BaseAppVerifierImpl(
+                        InstrumentationRegistry.getInstrumentation(),
+                        Arrays.asList(MANAGED_DEFAULT_ACCOUNT_1, MANAGED_DEFAULT_ACCOUNT_2),
+                        Arrays.asList(MANAGED_CLONE_DEFAULT_ACCOUNT_1),
+                        new InCallServiceMethods() {
 
-                    @Override
-                    public boolean isBound() {
-                        return CujInCallService.isServiceBound();
-                    }
+                            @Override
+                            public boolean isBound() {
+                                return CujInCallService.isServiceBound();
+                            }
 
-                    @Override
-                    public List<Call> getOngoingCalls() {
-                        return CujInCallService.getOngoingCalls();
-                    }
+                            @Override
+                            public List<Call> getOngoingCalls() {
+                                return CujInCallService.getOngoingCalls();
+                            }
 
-                    @Override
-                    public Call getLastAddedCall() {
-                        return CujInCallService.getLastAddedCall();
-                    }
+                            @Override
+                            public Call getLastAddedCall() {
+                                return CujInCallService.getLastAddedCall();
+                            }
 
-                    @Override
-                    public int getCurrentCallCount() {
-                        return CujInCallService.getCurrentCallCount();
-                    }
-                });
+                            @Override
+                            public int getCurrentCallCount() {
+                                return CujInCallService.getCurrentCallCount();
+                            }
+
+                            @Override
+                            public void setExpectedEvent(String callId, String event) {
+                                CujInCallService.getCallbackForCall(callId).setExpectedEvent(event);
+                            }
+
+                            @Override
+                            public boolean waitOnExpectedEvent(String callId) {
+                                return CujInCallService.getCallbackForCall(callId)
+                                        .waitOnExpectedEvent();
+                            }
+                        });
         mBaseAppVerifierImpl.setUp();
         mTelecomManager = mContext.getSystemService(TelecomManager.class);
     }
@@ -332,6 +348,14 @@ public class BaseAppVerifier {
 
     public void waitUntilExpectedCallCount(int expectedCallCount) {
         mBaseAppVerifierImpl.waitUntilExpectedCallCount(expectedCallCount);
+    }
+
+    public void setExpectedEvent(String callId, String event) {
+        mBaseAppVerifierImpl.setExpectedEvent(callId, event);
+    }
+
+    public boolean waitOnExpectedEvent(String callId) {
+        return mBaseAppVerifierImpl.waitOnExpectedEvent(callId);
     }
 
     public void setCallState(AppControlWrapper appControl, String id, int callState)
@@ -546,6 +570,16 @@ public class BaseAppVerifier {
      */
     public void acquireAudioFocusForMusic() {
         mBaseAppVerifierImpl.acquireAudioFocusForMusic();
+    }
+
+    /**
+     * Check to see if the audio focus listener for our music focus has received any focus
+     * changes or not.
+     *
+     * @return {@code true} if music focus changed, {@code false} otherwise.
+     */
+    public boolean hasMusicFocusChanged() {
+        return mBaseAppVerifierImpl.hasMusicFocusChanged();
     }
 
     /** Waits to ensure that the music audio focus was one of the expected values */

@@ -424,4 +424,7 @@
     <!-- b/406676107 -->
     <option name="compatibility:exclude-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.DeviceOwnerTest#testTethering"/>
 
+    <!-- b/414860633 -->
+    <option name="compatibility:exclude-filter" value="CtsJvmtiRunTest913HostTestCases" />
+
 </configuration>

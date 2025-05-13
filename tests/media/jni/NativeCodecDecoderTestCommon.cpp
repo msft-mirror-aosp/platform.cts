@@ -631,7 +631,7 @@ jboolean nativeTestSimpleDecode(JNIEnv* env, jobject, jstring jDecoder, jobject 
     const char* cDecoder = env->GetStringUTFChars(jDecoder, nullptr);
     const char* cMediaType = env->GetStringUTFChars(jMediaType, nullptr);
     const char* cTestFile = env->GetStringUTFChars(jtestFile, nullptr);
-    const char* cRefFile = env->GetStringUTFChars(jrefFile, nullptr);
+    const char* cRefFile = jrefFile ? env->GetStringUTFChars(jrefFile, nullptr) : nullptr;
     float cRmsError = jrmsError;
     uLong cChecksum = jChecksum;
     ANativeWindow* window = surface ? ANativeWindow_fromSurface(env, surface) : nullptr;
@@ -651,7 +651,9 @@ jboolean nativeTestSimpleDecode(JNIEnv* env, jobject, jstring jDecoder, jobject 
     env->ReleaseStringUTFChars(jDecoder, cDecoder);
     env->ReleaseStringUTFChars(jMediaType, cMediaType);
     env->ReleaseStringUTFChars(jtestFile, cTestFile);
-    env->ReleaseStringUTFChars(jrefFile, cRefFile);
+    if (cRefFile != nullptr) {
+        env->ReleaseStringUTFChars(jrefFile, cRefFile);
+    }
     return static_cast<jboolean>(isPass);
 }
 

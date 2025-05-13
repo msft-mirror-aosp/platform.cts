@@ -59,7 +59,7 @@ import android.media.AudioManager;
 import android.media.MediaRoute2Info;
 import android.media.MediaRouter2;
 import android.media.MediaRouter2.ControllerCallback;
-import android.media.MediaRouter2.DeviceSuggestionsCallback;
+import android.media.MediaRouter2.DeviceSuggestionsUpdatesCallback;
 import android.media.MediaRouter2.OnGetControllerHintsListener;
 import android.media.MediaRouter2.RouteCallback;
 import android.media.MediaRouter2.RoutingController;
@@ -1714,10 +1714,22 @@ public class MediaRouter2Test {
 
     @RequiresFlagsEnabled({FLAG_ENABLE_SUGGESTED_DEVICE_API})
     @Test
+    public void proxyRouterClearsSuggestions_callbackNotified() throws InterruptedException {
+        testRouterClearsSuggestionAndCallbackNotified(getProxyRouter());
+    }
+
+    @RequiresFlagsEnabled({FLAG_ENABLE_SUGGESTED_DEVICE_API})
+    @Test
+    public void localRouterClearsSuggestions_callbackNotified() throws InterruptedException {
+        testRouterClearsSuggestionAndCallbackNotified(mRouter2);
+    }
+
+    @RequiresFlagsEnabled({FLAG_ENABLE_SUGGESTED_DEVICE_API})
+    @Test
     public void proxyRouterRequestSuggestion_callbackNotified() throws InterruptedException {
         MediaRouter2 proxyRouter = getProxyRouter();
-        TestDeviceSuggestionsCallback callback = new TestDeviceSuggestionsCallback();
-        proxyRouter.registerDeviceSuggestionsCallback(mExecutor, callback);
+        TestDeviceSuggestionsUpdatesCallback callback = new TestDeviceSuggestionsUpdatesCallback();
+        proxyRouter.registerDeviceSuggestionsUpdatesCallback(mExecutor, callback);
 
         try {
             proxyRouter.notifyDeviceSuggestionRequested();
@@ -1725,7 +1737,7 @@ public class MediaRouter2Test {
             assertThat(callback.mSuggestionRequestedLatch.await(TIMEOUT_MS, TimeUnit.MILLISECONDS))
                     .isTrue();
         } finally {
-            proxyRouter.unregisterDeviceSuggestionsCallback(callback);
+            proxyRouter.unregisterDeviceSuggestionsUpdatesCallback(callback);
         }
     }
 
@@ -1733,10 +1745,12 @@ public class MediaRouter2Test {
     @Test
     public void localRouterRequestSuggestion_callbackNotNotified() throws InterruptedException {
         MediaRouter2 proxyRouter = getProxyRouter();
-        TestDeviceSuggestionsCallback localCallback = new TestDeviceSuggestionsCallback();
-        TestDeviceSuggestionsCallback proxyCallback = new TestDeviceSuggestionsCallback();
-        mRouter2.registerDeviceSuggestionsCallback(mExecutor, localCallback);
-        proxyRouter.registerDeviceSuggestionsCallback(mExecutor, proxyCallback);
+        TestDeviceSuggestionsUpdatesCallback localCallback =
+                new TestDeviceSuggestionsUpdatesCallback();
+        TestDeviceSuggestionsUpdatesCallback proxyCallback =
+                new TestDeviceSuggestionsUpdatesCallback();
+        mRouter2.registerDeviceSuggestionsUpdatesCallback(mExecutor, localCallback);
+        proxyRouter.registerDeviceSuggestionsUpdatesCallback(mExecutor, proxyCallback);
 
         try {
             mRouter2.notifyDeviceSuggestionRequested();
@@ -1750,8 +1764,8 @@ public class MediaRouter2Test {
                                     TIMEOUT_MS, TimeUnit.MILLISECONDS))
                     .isFalse();
         } finally {
-            mRouter2.unregisterDeviceSuggestionsCallback(localCallback);
-            proxyRouter.unregisterDeviceSuggestionsCallback(proxyCallback);
+            mRouter2.unregisterDeviceSuggestionsUpdatesCallback(localCallback);
+            proxyRouter.unregisterDeviceSuggestionsUpdatesCallback(proxyCallback);
         }
     }
 
@@ -1760,10 +1774,10 @@ public class MediaRouter2Test {
         SuggestedDeviceInfo.Builder builder =
                 new SuggestedDeviceInfo.Builder("DEVICE_DISPLAY_NAME", "ROUTE_ID", 0);
         List<SuggestedDeviceInfo> suggestedDeviceInfo = List.of(builder.build());
-        TestDeviceSuggestionsCallback callback = new TestDeviceSuggestionsCallback();
+        TestDeviceSuggestionsUpdatesCallback callback = new TestDeviceSuggestionsUpdatesCallback();
 
         try {
-            router.registerDeviceSuggestionsCallback(mExecutor, callback);
+            router.registerDeviceSuggestionsUpdatesCallback(mExecutor, callback);
 
             router.setDeviceSuggestions(suggestedDeviceInfo);
 
@@ -1772,7 +1786,29 @@ public class MediaRouter2Test {
             assertThat(callback.mLastSuggestingPackage).isEqualTo(mContext.getPackageName());
             assertThat(callback.mLastSuggestedDeviceInfo).isEqualTo(suggestedDeviceInfo);
         } finally {
-            router.unregisterDeviceSuggestionsCallback(callback);
+            router.unregisterDeviceSuggestionsUpdatesCallback(callback);
+        }
+    }
+
+    private void testRouterClearsSuggestionAndCallbackNotified(MediaRouter2 router)
+            throws InterruptedException {
+        SuggestedDeviceInfo.Builder builder =
+                new SuggestedDeviceInfo.Builder("DEVICE_DISPLAY_NAME", "ROUTE_ID", 0);
+        List<SuggestedDeviceInfo> suggestedDeviceInfo = List.of(builder.build());
+        TestDeviceSuggestionsUpdatesCallback callback = new TestDeviceSuggestionsUpdatesCallback();
+
+        try {
+            router.registerDeviceSuggestionsUpdatesCallback(mExecutor, callback);
+
+            router.setDeviceSuggestions(suggestedDeviceInfo);
+            router.clearDeviceSuggestions();
+
+            assertThat(callback.mSuggestionChangedLatch.await(TIMEOUT_MS, TimeUnit.MILLISECONDS))
+                    .isTrue();
+            assertThat(callback.mLastSuggestingPackage).isEqualTo(mContext.getPackageName());
+            assertThat(callback.mLastSuggestedDeviceInfo).isNull();
+        } finally {
+            router.unregisterDeviceSuggestionsUpdatesCallback(callback);
         }
     }
 
@@ -1792,7 +1828,7 @@ public class MediaRouter2Test {
         SuggestedDeviceInfo.Builder builder =
                 new SuggestedDeviceInfo.Builder("DEVICE_DISPLAY_NAME", "ROUTE_ID", 0);
         List<SuggestedDeviceInfo> suggestedDeviceInfo = List.of(builder.build());
-        TestDeviceSuggestionsCallback callback = new TestDeviceSuggestionsCallback();
+        TestDeviceSuggestionsUpdatesCallback callback = new TestDeviceSuggestionsUpdatesCallback();
 
         try {
             router.setDeviceSuggestions(suggestedDeviceInfo);
@@ -1801,11 +1837,12 @@ public class MediaRouter2Test {
 
             assertThat(suggestions.get(mContext.getPackageName())).isEqualTo(suggestedDeviceInfo);
         } finally {
-            router.unregisterDeviceSuggestionsCallback(callback);
+            router.unregisterDeviceSuggestionsUpdatesCallback(callback);
         }
     }
 
-    private static class TestDeviceSuggestionsCallback implements DeviceSuggestionsCallback {
+    private static class TestDeviceSuggestionsUpdatesCallback
+            implements DeviceSuggestionsUpdatesCallback {
 
         String mLastSuggestingPackage = null;
         List<SuggestedDeviceInfo> mLastSuggestedDeviceInfo = null;
@@ -1813,7 +1850,7 @@ public class MediaRouter2Test {
         CountDownLatch mSuggestionRequestedLatch = new CountDownLatch(1);
 
         @Override
-        public void onSuggestionUpdated(
+        public void onSuggestionsUpdated(
                 String suggestingPackageName, List<SuggestedDeviceInfo> suggestedDeviceInfo) {
             mLastSuggestingPackage = suggestingPackageName;
             mLastSuggestedDeviceInfo = suggestedDeviceInfo;
@@ -1821,7 +1858,14 @@ public class MediaRouter2Test {
         }
 
         @Override
-        public void onSuggestionRequested() {
+        public void onSuggestionsCleared(String suggestingPackageName) {
+            mLastSuggestingPackage = suggestingPackageName;
+            mLastSuggestedDeviceInfo = null;
+            mSuggestionChangedLatch.countDown();
+        }
+
+        @Override
+        public void onSuggestionsRequested() {
             mSuggestionRequestedLatch.countDown();
         }
     }

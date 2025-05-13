@@ -81,7 +81,6 @@ public class MediaProjectionMirroringTest {
 
     @Rule public MediaProjectionRule mMediaProjectionRule = new MediaProjectionRule();
 
-    private final ActivityOptions.LaunchCookie mLaunchCookie = new ActivityOptions.LaunchCookie();
     private final WindowManagerStateHelper mWmState = new WindowManagerStateHelper();
     /**
      * Whether to wait for the rotation to be stable state after testing. It can be set if the
@@ -188,31 +187,40 @@ public class MediaProjectionMirroringTest {
     // Validate that the mirrored hierarchy is the expected size.
     @Test
     public void testSingleAppCapture() throws Exception {
-        // Start full screen capture.
-        mMediaProjectionRule.startMediaProjection(mLaunchCookie);
-        final WindowMetrics maxWindowMetrics =
-                mMediaProjectionRule.getActivity().getWindowManager().getMaximumWindowMetrics();
-        VirtualDisplay virtualDisplay =
-                mMediaProjectionRule.createVirtualDisplay(
-                        maxWindowMetrics.getBounds().width(),
-                        maxWindowMetrics.getBounds().height());
+        final ActivityOptions.LaunchCookie launchCookie = new ActivityOptions.LaunchCookie();
+
+        // Select single app capture if supported.
+        mMediaProjectionRule.startMediaProjection(launchCookie);
 
         try (ActivityScenario<Activity> activityScenario =
                 ActivityScenario.launch(
                         new Intent(mContext, Activity.class),
-                        createActivityScenarioWithLaunchCookie(mLaunchCookie))) {
+                        createActivityScenarioWithLaunchCookie(launchCookie))) {
             activityScenario.onActivity(
                     activity -> {
+                        final WindowMetrics maxWindowMetrics =
+                                activity.getWindowManager().getMaximumWindowMetrics();
+
                         // Get the bounds of the activity on screen - use getGlobalVisibleRect to
-                        // account for
-                        // possible insets caused by DisplayCutout
+                        // account
+                        // for possible insets caused by DisplayCutout
                         final Rect activityRect = new Rect();
                         activity.getWindow().getDecorView().getGlobalVisibleRect(activityRect);
 
-                        validateMirroredHierarchy(
-                                activity,
-                                virtualDisplay.getDisplay().getDisplayId(),
-                                new Point(activityRect.width(), activityRect.height()));
+                        try {
+                            // Start capture of the single app.
+                            VirtualDisplay virtualDisplay =
+                                    mMediaProjectionRule.createVirtualDisplay(
+                                            maxWindowMetrics.getBounds().width(),
+                                            maxWindowMetrics.getBounds().height());
+
+                            validateMirroredHierarchy(
+                                    activity,
+                                    virtualDisplay.getDisplay().getDisplayId(),
+                                    new Point(activityRect.width(), activityRect.height()));
+                        } catch (Exception e) {
+                            throw new RuntimeException(e);
+                        }
                     });
         }
     }

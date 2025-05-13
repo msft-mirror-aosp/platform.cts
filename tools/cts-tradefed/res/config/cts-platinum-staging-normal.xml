@@ -2789,11 +2789,6 @@
     <option name="compatibility:include-filter" value="CtsInlineMockingTestCases com.android.dx.mockito.tests.BlacklistedApis#cannotCallBlackListedAfterSpying"/>
     <option name="compatibility:include-filter" value="CtsInlineMockingTestCases com.android.dx.mockito.tests.BlacklistedApis#mocksOfAbstractClassesCannotBeUsedToCallHiddenMethods"/>
     <option name="compatibility:include-filter" value="CtsInlineMockingTestCases com.android.dx.mockito.tests.BlacklistedApis#spiesCannotBeUsedToCallHiddenMethods"/>
-    <!-- CtsInputHostTestCases -->
-    <option name="compatibility:include-filter" value="CtsInputHostTestCases android.input.cts.hostside.InputAtomsTest#testTouchpadUsageAtom_FingerAndPalmCounts"/>
-    <option name="compatibility:include-filter" value="CtsInputHostTestCases android.input.cts.hostside.InputAtomsTest#testTouchpadUsageAtom_FourFingerSwipeCount"/>
-    <option name="compatibility:include-filter" value="CtsInputHostTestCases android.input.cts.hostside.InputAtomsTest#testTouchpadUsageAtom_ThreeFingerSwipeCount"/>
-    <option name="compatibility:include-filter" value="CtsInputHostTestCases android.input.cts.hostside.InputAtomsTest#testTouchpadUsageAtom_TwoFingerSwipeCount"/>
     <!-- CtsInputMethodInstallTestCases -->
     <option name="compatibility:include-filter" value="CtsInputMethodInstallTestCases android.view.inputmethod.cts.installtests.AdditionalSubtypeLifecycleTest#testClearAdditionalInputMethodSubtypeUponClearDataForBackgroundUser"/>
     <!-- CtsInputMethodTestCases -->

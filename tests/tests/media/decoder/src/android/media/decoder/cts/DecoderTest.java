@@ -496,9 +496,11 @@ public class DecoderTest extends MediaTestBase {
     @CddTest(requirements = {"5.1.2/C-1-1"})
     @Test
     public void testDecode51M4a() throws Exception {
-        for (String codecName : codecsFor("sinesweep51m4a.m4a")) {
-            decodeToMemory(codecName, "sinesweep51m4a.m4a", RESET_MODE_NONE, CONFIG_MODE_NONE, -1,
-                    null);
+        String[] files = {"sinesweep51m4a.m4a", "bbb_6ch_48khz_aot2_mp4.m4a"};
+        for (String file : files) {
+            for (String codecName : codecsFor(file)) {
+                decodeToMemory(codecName, file, RESET_MODE_NONE, CONFIG_MODE_NONE, -1, null);
+            }
         }
     }
 

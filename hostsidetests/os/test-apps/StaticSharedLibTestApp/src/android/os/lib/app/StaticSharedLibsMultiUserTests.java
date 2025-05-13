@@ -18,6 +18,7 @@ package android.os.lib.app;
 
 import static android.Manifest.permission.INSTALL_PACKAGES;
 
+import static com.android.bedstead.harrier.components.BroadcastReceiversComponentKt.registerBroadcastReceiverForUser;
 import static com.android.bedstead.multiuser.MultiUserDeviceStateExtensionsKt.additionalUser;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -106,9 +107,9 @@ public class StaticSharedLibsMultiUserTests {
         IntentFilter filter = new IntentFilter(Intent.ACTION_PACKAGE_ADDED);
         filter.addDataScheme("package");
         BlockingBroadcastReceiver initialReceiver =
-                sDeviceState.registerBroadcastReceiverForUser(mInitialUser, filter);
+                registerBroadcastReceiverForUser(sDeviceState, mInitialUser, filter);
         BlockingBroadcastReceiver additionalReceiver =
-                sDeviceState.registerBroadcastReceiverForUser(mAdditionalUser, filter);
+                registerBroadcastReceiverForUser(sDeviceState, mAdditionalUser, filter);
 
         assertThat(installPackageAsUser(STATIC_LIB_PROVIDER3_APK,
                 mContextAdditional.getPackageName(), mAdditionalUser)).isTrue();
@@ -137,9 +138,9 @@ public class StaticSharedLibsMultiUserTests {
         IntentFilter filter = new IntentFilter(Intent.ACTION_PACKAGE_REMOVED);
         filter.addDataScheme("package");
         BlockingBroadcastReceiver initialReceiver =
-                sDeviceState.registerBroadcastReceiverForUser(mInitialUser, filter);
+                registerBroadcastReceiverForUser(sDeviceState, mInitialUser, filter);
         BlockingBroadcastReceiver additionalReceiver =
-                sDeviceState.registerBroadcastReceiverForUser(mAdditionalUser, filter);
+                registerBroadcastReceiverForUser(sDeviceState, mAdditionalUser, filter);
 
         assertThat(installPackageAsUser(STATIC_LIB_PROVIDER3_APK,
                 mContextAdditional.getPackageName(), mAdditionalUser)).isTrue();

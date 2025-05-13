@@ -17,6 +17,7 @@
 package android.telecom.cts.cuj;
 
 import android.content.Intent;
+import android.os.Bundle;
 import android.os.IBinder;
 import android.telecom.Call;
 import android.telecom.InCallService;
@@ -24,12 +25,41 @@ import android.util.Log;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 public class CujInCallService extends InCallService {
+
+    public static class CujCallCallback extends Call.Callback {
+        private String mExpectedEvent = null;
+        private CountDownLatch mExpectedEventLatch = new CountDownLatch(1);
+
+        @Override
+        public void onConnectionEvent(Call call, String event, Bundle extras) {
+            if (Objects.equals(event, mExpectedEvent)) {
+                mExpectedEventLatch.countDown();
+            }
+        }
+
+        public void setExpectedEvent(String expectedEvent) {
+            mExpectedEvent = expectedEvent;
+        }
+
+        public boolean waitOnExpectedEvent() {
+            try {
+                return mExpectedEventLatch.await(5, TimeUnit.SECONDS);
+            } catch (InterruptedException e) {
+                return false;
+            }
+        }
+    }
+
     private static final String TAG = CujInCallService.class.getSimpleName();
     public static boolean sIsServiceBound = false;
     public static final Map<String, Call> sCallIdToCall = new ConcurrentHashMap();
+    public static final Map<String, CujCallCallback> sCallIdToCallback = new ConcurrentHashMap();
     public static Call sLastCall = null;
 
     @Override
@@ -52,6 +82,9 @@ public class CujInCallService extends InCallService {
     public void onCallAdded(Call call) {
         Log.i(TAG, String.format("onCallAdded: call=[%s]", call));
         sCallIdToCall.put(call.getDetails().getId(), call);
+        CujCallCallback cujCallCallback = new CujCallCallback();
+        call.registerCallback(cujCallCallback);
+        sCallIdToCallback.put(call.getDetails().getId(), cujCallCallback);
         if (call.getDetails().getState() == Call.STATE_SELECT_PHONE_ACCOUNT) {
             Log.w(TAG, "Call moved into STATE_SELECT_PHONE_ACCOUNT unexpectedly, disconnecting: "
                     + call);
@@ -82,6 +115,10 @@ public class CujInCallService extends InCallService {
 
     public static Call getLastAddedCall() {
         return sLastCall;
+    }
+
+    public static CujCallCallback getCallbackForCall(String callId) {
+        return sCallIdToCallback.get(callId);
     }
 }
 

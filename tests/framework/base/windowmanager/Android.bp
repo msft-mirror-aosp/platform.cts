@@ -152,6 +152,7 @@ java_defaults {
         ":CtsDragAndDropTargetAppSdk23",
         ":CtsDeviceAlertWindowTestAppSdk25",
         ":CtsWindowManagerExternalApp",
+        ":CtsDeviceDisplayCompatApp",
     ],
     per_testcase_directory: true,
 }

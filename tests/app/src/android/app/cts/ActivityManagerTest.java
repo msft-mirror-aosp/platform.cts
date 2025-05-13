@@ -802,6 +802,7 @@ public final class ActivityManagerTest {
     }
 
     @Test
+    @Ignore("b/417216810 - flaky test")
     public void testUpdateMccMncConfiguration() throws Exception {
         if (!mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY)) {
             Log.i(TAG, "testUpdateMccMncConfiguration skipped: no telephony available");

@@ -122,6 +122,7 @@ public class OnBackInvokedCallbackGestureTest extends ActivityManagerTestBase {
     public void teardown() {
         if (mSwipeHelper != null) {
             mSwipeHelper.cancelSwipe();
+            mSwipeHelper.close();
         }
     }
 

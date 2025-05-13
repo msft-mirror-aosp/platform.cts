@@ -24,6 +24,7 @@ import static android.devicepolicy.cts.utils.PolicyEngineUtils.TRUE_MORE_RESTRIC
 
 import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpc;
 import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpcOnly;
+import static com.android.bedstead.harrier.components.BroadcastReceiversComponentKt.registerBroadcastReceiverForAllUsers;
 import static com.android.bedstead.testapps.TestAppsDeviceStateExtensionsKt.testApp;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -200,9 +201,10 @@ public class ApplicationHiddenTest {
                     false);
 
             try (BlockingBroadcastReceiver broadcastReceiver =
-                         sDeviceState.registerBroadcastReceiverForAllUsers(
-                                 sPackageRemovedIntentFilter,
-                                 isSchemeSpecificPart(SYSTEM_PACKAGE.packageName()))) {
+                    registerBroadcastReceiverForAllUsers(
+                            sDeviceState,
+                            sPackageRemovedIntentFilter,
+                            isSchemeSpecificPart(SYSTEM_PACKAGE.packageName()))) {
                 boolean result = dpc(sDeviceState).devicePolicyManager().setApplicationHidden(
                         dpc(sDeviceState).componentName(), SYSTEM_PACKAGE.packageName(),
                         true);
@@ -244,9 +246,10 @@ public class ApplicationHiddenTest {
                     false);
 
             try (BlockingBroadcastReceiver broadcastReceiver =
-                         sDeviceState.registerBroadcastReceiverForAllUsers(
-                                 sPackageRemovedIntentFilter,
-                                 isSchemeSpecificPart(testApp(sDeviceState).packageName()))) {
+                    registerBroadcastReceiverForAllUsers(
+                            sDeviceState,
+                            sPackageRemovedIntentFilter,
+                            isSchemeSpecificPart(testApp(sDeviceState).packageName()))) {
 
                 boolean result = dpc(sDeviceState).devicePolicyManager().setApplicationHidden(
                         dpc(sDeviceState).componentName(), testApp(sDeviceState).packageName(),
@@ -273,9 +276,10 @@ public class ApplicationHiddenTest {
                     true);
 
             try (BlockingBroadcastReceiver broadcastReceiver =
-                         sDeviceState.registerBroadcastReceiverForAllUsers(
-                                 sPackageAddedIntentFilter,
-                                 isSchemeSpecificPart(SYSTEM_PACKAGE.packageName()))) {
+                    registerBroadcastReceiverForAllUsers(
+                            sDeviceState,
+                            sPackageAddedIntentFilter,
+                            isSchemeSpecificPart(SYSTEM_PACKAGE.packageName()))) {
 
                 boolean result = dpc(sDeviceState).devicePolicyManager().setApplicationHidden(
                         dpc(sDeviceState).componentName(), SYSTEM_PACKAGE.packageName(),
@@ -302,9 +306,10 @@ public class ApplicationHiddenTest {
                     true);
 
             try (BlockingBroadcastReceiver broadcastReceiver =
-                         sDeviceState.registerBroadcastReceiverForAllUsers(
-                                 sPackageAddedIntentFilter,
-                                 isSchemeSpecificPart(testApp(sDeviceState).packageName()))) {
+                    registerBroadcastReceiverForAllUsers(
+                            sDeviceState,
+                            sPackageAddedIntentFilter,
+                            isSchemeSpecificPart(testApp(sDeviceState).packageName()))) {
 
                 boolean result = dpc(sDeviceState).devicePolicyManager().setApplicationHidden(
                         dpc(sDeviceState).componentName(), testApp(sDeviceState).packageName(),
