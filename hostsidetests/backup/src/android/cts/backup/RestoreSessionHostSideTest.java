@@ -24,25 +24,24 @@ import android.platform.test.annotations.AppModeFull;
 import com.android.compatibility.common.tradefed.build.CompatibilityBuildHelper;
 import com.android.compatibility.common.util.BackupUtils;
 import com.android.tradefed.device.DeviceNotAvailableException;
-import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
 import com.android.tradefed.testtype.junit4.DeviceParameterizedRunner;
 import com.android.tradefed.util.FileUtil;
 import com.android.tradefed.util.RunUtil;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
+import junitparams.Parameters;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-
-import junitparams.Parameters;
 
 /**
  * Tests for system APIs in {@link RestoreSession}
@@ -52,7 +51,6 @@ import junitparams.Parameters;
 @RunWith(DeviceParameterizedRunner.class)
 @AppModeFull
 public class RestoreSessionHostSideTest extends BaseBackupHostSideTest {
-    private static final int USER_SYSTEM = 0;
     private static final String MAIN_TEST_APP_PKG = "android.cts.backup.restoresessionapp";
     private static final String DEVICE_MAIN_TEST_CLASS_NAME =
             MAIN_TEST_APP_PKG + ".RestoreSessionTest";
@@ -206,7 +204,7 @@ public class RestoreSessionHostSideTest extends BaseBackupHostSideTest {
     }
 
     private String setBackupTransport(String transport) throws IOException {
-        return mBackupUtils.setBackupTransportForUser(transport, USER_SYSTEM);
+        return mBackupUtils.setBackupTransport(transport);
     }
 
     private void installPackage(String apkFileName, boolean incremental) throws Exception {
