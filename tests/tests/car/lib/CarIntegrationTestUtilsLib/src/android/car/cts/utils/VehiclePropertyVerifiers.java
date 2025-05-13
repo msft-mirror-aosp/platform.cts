@@ -1110,9 +1110,7 @@ public class VehiclePropertyVerifiers {
                         });
     }
 
-    /**
-     * Gets the verifier for {@link VehiclePropertyIds#TURN_SIGNAL_LIGHT_STATE}.
-     */
+    /** Gets the verifier for {@link VehiclePropertyIds#TURN_SIGNAL_LIGHT_STATE}. */
     public static VehiclePropertyVerifier.Builder<Integer>
             getTurnSignalLightStateVerifierBuilder() {
         ImmutableSet<Integer> combinedCarPropertyValues = ImmutableSet.<Integer>builder()
@@ -1120,15 +1118,9 @@ public class VehiclePropertyVerifiers {
                 .add(VehicleTurnSignal.STATE_LEFT | VehicleTurnSignal.STATE_RIGHT)
                 .build();
 
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.TURN_SIGNAL_LIGHT_STATE,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_ONCHANGE,
-                        Integer.class)
-                .setAllPossibleEnumValues(combinedCarPropertyValues)
-                .addReadPermission(Car.PERMISSION_READ_EXTERIOR_LIGHTS)
-                .addReadPermission(Car.PERMISSION_CONTROL_EXTERIOR_LIGHTS);
+        return VehiclePropertyVerifier.<Integer>newDefaultBuilder(
+                        VehiclePropertyIds.TURN_SIGNAL_LIGHT_STATE)
+                .setAllPossibleEnumValues(combinedCarPropertyValues);
     }
 
     /**
