@@ -38,8 +38,6 @@ import android.annotation.Nullable;
 import android.annotation.RawRes;
 import android.app.Instrumentation;
 import android.app.NotificationManager;
-import android.car.Car;
-import android.car.media.CarAudioManager;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.content.res.AssetFileDescriptor;
@@ -304,7 +302,7 @@ public class AudioFocusTest {
     public void testAudioFocusRequestGainLoss() throws Exception {
         // TODO(b/380497573): replace the skip directive with a verification that the focus
         // policy is installed.
-        assumeOemServiceIsNotEnabled();
+        assumeCarIsNotEnabled();
         final AudioAttributes[] attributes = { ATTR_DRIVE_DIR, ATTR_MEDIA };
         doTestTwoPlayersGainLoss(AudioManager.AUDIOFOCUS_GAIN, attributes, false /*no handler*/);
     }
@@ -313,7 +311,7 @@ public class AudioFocusTest {
     public void testAudioFocusRequestGainLossHandler() throws Exception {
         // TODO(b/380497573): replace the skip directive with a verification that the focus
         // policy is installed.
-        assumeOemServiceIsNotEnabled();
+        assumeCarIsNotEnabled();
         final AudioAttributes[] attributes = { ATTR_DRIVE_DIR, ATTR_MEDIA };
         doTestTwoPlayersGainLoss(AudioManager.AUDIOFOCUS_GAIN, attributes, true /*with handler*/);
     }
@@ -322,7 +320,7 @@ public class AudioFocusTest {
     public void testAudioFocusRequestGainLossTransient() throws Exception {
         // TODO(b/380497573): replace the skip directive with a verification that the focus
         // policy is installed.
-        assumeOemServiceIsNotEnabled();
+        assumeCarIsNotEnabled();
         final AudioAttributes[] attributes = { ATTR_DRIVE_DIR, ATTR_MEDIA };
         doTestTwoPlayersGainLoss(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT, attributes,
                 false /*no handler*/);
@@ -332,7 +330,7 @@ public class AudioFocusTest {
     public void testAudioFocusRequestGainLossTransientHandler() throws Exception {
         // TODO(b/380497573): replace the skip directive with a verification that the focus
         // policy is installed.
-        assumeOemServiceIsNotEnabled();
+        assumeCarIsNotEnabled();
         final AudioAttributes[] attributes = { ATTR_DRIVE_DIR, ATTR_MEDIA };
         doTestTwoPlayersGainLoss(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT, attributes,
                 true /*with handler*/);
@@ -369,7 +367,7 @@ public class AudioFocusTest {
     public void testAudioFocusRequestA11y() throws Exception {
         // TODO(b/380497573): replace the skip directive with a verification that the focus
         // policy is installed.
-        assumeOemServiceIsNotEnabled();
+        assumeCarIsNotEnabled();
         final AudioAttributes[] attributes = {ATTR_DRIVE_DIR, ATTR_A11Y};
         doTestTwoPlayersGainLoss(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_EXCLUSIVE,
                 AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_EXCLUSIVE, attributes,
@@ -1286,21 +1284,8 @@ public class AudioFocusTest {
         return mp;
     }
 
-    private void assumeOemServiceIsNotEnabled() {
-        boolean oemAudioServiceEnabled = false;
-        if (isCar()) {
-            final Car car = Car.createCar(mContext);
-            try {
-                final CarAudioManager carAudioManager = car.getCarManager(CarAudioManager.class);
-                oemAudioServiceEnabled = carAudioManager.isAudioFeatureEnabled(
-                            CarAudioManager.AUDIO_FEATURE_OEM_AUDIO_SERVICE);
-            } finally {
-                if (car != null) {
-                    car.disconnect();
-                }
-            }
-        }
-        assumeFalse("OEM audio service is enabled", oemAudioServiceEnabled);
+    private void assumeCarIsNotEnabled() {
+        assumeFalse("Car audio service is enabled", isCar());
     }
 
     protected boolean isCar() {
