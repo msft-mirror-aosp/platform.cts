@@ -1280,6 +1280,19 @@ public class ContextTest {
     }
 
     @Test
+    public void testBindSimulateAllowFreezeProhibited() {
+        MockContextService.reset();
+        assertThrows(
+                "No SecurityException while using BIND_SIMULATE_ALLOW_FREEZE with bindService",
+                SecurityException.class,
+                () ->
+                        mContext.bindService(
+                                new Intent(mContext, MockContextService.class),
+                                new TestConnection(false, false),
+                                Context.BindServiceFlags.of(Context.BIND_SIMULATE_ALLOW_FREEZE)));
+    }
+
+    @Test
     public void testAccessService() throws InterruptedException {
         MockContextService.reset();
         bindExpectResult(mContext, new Intent(mContext, MockContextService.class));
