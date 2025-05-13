@@ -21,6 +21,7 @@ import static android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK;
 import static android.content.Intent.FLAG_ACTIVITY_NEW_TASK;
 
 import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpc;
+import static com.android.bedstead.harrier.components.BroadcastReceiversComponentKt.registerBroadcastReceiver;
 import static com.android.bedstead.testapps.TestAppsDeviceStateExtensionsKt.testApps;
 import static com.android.queryable.queries.ActivityQuery.activity;
 import static com.android.queryable.queries.IntentFilterQuery.intentFilter;
@@ -78,7 +79,7 @@ public final class PersonalAppsSuspensionTest {
     @PolicyAppliesTest(policy = SuspendPersonalApps.class)
     public void setPersonalAppsSuspended_sendsPackageSuspendedBroadcast() {
         try (BlockingBroadcastReceiver broadcastReceiver =
-                     sDeviceState.registerBroadcastReceiver(ACTION_MY_PACKAGE_SUSPENDED)) {
+                registerBroadcastReceiver(sDeviceState, ACTION_MY_PACKAGE_SUSPENDED)) {
             dpc(sDeviceState).devicePolicyManager().setPersonalAppsSuspended(
                     dpc(sDeviceState).componentName(), /* suspended= */ true);
 

@@ -21,6 +21,7 @@ import static android.os.Build.VERSION_CODES.UPSIDE_DOWN_CAKE;
 import static android.os.UserManager.DISALLOW_BLUETOOTH_SHARING;
 
 import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpc;
+import static com.android.bedstead.harrier.components.BroadcastReceiversComponentKt.registerBroadcastReceiverForUser;
 import static com.android.bedstead.nene.bluetooth.Bluetooth.OPP_LAUNCHER_CLASS;
 import static com.android.bedstead.nene.packages.CommonPackages.FEATURE_BLUETOOTH;
 import static com.android.bedstead.nene.userrestrictions.CommonUserRestrictions.DISALLOW_BLUETOOTH;
@@ -163,7 +164,7 @@ public final class BluetoothTest {
         Assume.assumeTrue("Cannot run in background",
                 TestApis.users().current().isForeground());
 
-        BlockingBroadcastReceiver r = sDeviceState.registerBroadcastReceiverForUser(
+        BlockingBroadcastReceiver r = registerBroadcastReceiverForUser(sDeviceState,
                 dpc(sDeviceState).user(), BluetoothAdapter.ACTION_STATE_CHANGED,
                 this::isStateDisabled);
 
@@ -195,7 +196,7 @@ public final class BluetoothTest {
         Assume.assumeTrue("Cannot run in background",
                 TestApis.users().current().isForeground());
 
-        BlockingBroadcastReceiver r = sDeviceState.registerBroadcastReceiverForUser(
+        BlockingBroadcastReceiver r = registerBroadcastReceiverForUser(sDeviceState,
                 dpc(sDeviceState).user(), BluetoothAdapter.ACTION_STATE_CHANGED,
                 this::isStateEnabled);
 

@@ -16,7 +16,6 @@
 
 package com.android.bedstead.harrier;
 
-import static android.Manifest.permission.INTERACT_ACROSS_USERS_FULL;
 import static android.os.Build.VERSION.SDK_INT;
 
 import static com.android.bedstead.harrier.AnnotationExecutorUtil.checkFailOrSkip;
@@ -26,9 +25,6 @@ import static com.android.bedstead.nene.utils.Versions.meetsSdkVersionRequiremen
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assume.assumeFalse;
 
-import android.content.Context;
-import android.content.Intent;
-import android.content.IntentFilter;
 import android.os.Process;
 import android.util.Log;
 
@@ -46,11 +42,9 @@ import com.android.bedstead.nene.exceptions.NeneException;
 import com.android.bedstead.nene.logcat.SystemServerException;
 import com.android.bedstead.nene.types.OptionalBoolean;
 import com.android.bedstead.nene.users.UserReference;
-import com.android.bedstead.nene.utils.BlockingBroadcastReceiver;
 import com.android.bedstead.nene.utils.FailureDumper;
 import com.android.bedstead.nene.utils.StringLinesDiff;
 import com.android.bedstead.nene.utils.Tags;
-import com.android.bedstead.permissions.PermissionContext;
 import com.android.eventlib.EventLogs;
 
 import junit.framework.AssertionFailedError;
@@ -79,7 +73,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import javax.annotation.Nonnull;
@@ -96,7 +89,6 @@ import javax.annotation.Nonnull;
  * {@code assumeTrue} will be used, so tests which do not meet preconditions will be skipped.
  */
 public final class DeviceState extends HarrierRule {
-    private final Context mContext = TestApis.context().instrumentedContext();
     private static final String SKIP_TEST_TEARDOWN_KEY = "skip-test-teardown";
     private static final String SKIP_CLASS_TEARDOWN_KEY = "skip-class-teardown";
     private static final String SKIP_TESTS_REASON_KEY = "skip-tests-reason";
@@ -158,7 +150,7 @@ public final class DeviceState extends HarrierRule {
 
     /**
      * Obtains the instance of the given [clazz] from locator
-     * This method shouldn't be used in test directly
+     * This method shouldn't be used in tests directly
      */
     @Nonnull
     public <T> T getDependency(Class<T> clazz) {
@@ -189,7 +181,6 @@ public final class DeviceState extends HarrierRule {
     protected void releaseResources() {
         Log.i(LOG_TAG, "Releasing resources");
         mLocator.clearDependencies();
-        mRegisteredBroadcastReceivers.clear();
 
         Log.i(LOG_TAG, "Shutting down test thread executor");
         mTestExecutor.shutdown();
@@ -579,7 +570,6 @@ public final class DeviceState extends HarrierRule {
     }
 
     private static final String LOG_TAG = "DeviceState";
-    private final List<BlockingBroadcastReceiver> mRegisteredBroadcastReceivers = new ArrayList<>();
 
     /**
      * Gets the user ID of the initial user.
@@ -601,162 +591,7 @@ public final class DeviceState extends HarrierRule {
         return TestApis.users().primary();
     }
 
-    /**
-     * Create and register a {@link BlockingBroadcastReceiver} which will be unregistered after the
-     * test has run.
-     */
-    public BlockingBroadcastReceiver registerBroadcastReceiver(String action) {
-        return registerBroadcastReceiver(action, /* checker= */ null);
-    }
-
-    /**
-     * Create and register a {@link BlockingBroadcastReceiver} which will be unregistered after the
-     * test has run.
-     */
-    public BlockingBroadcastReceiver registerBroadcastReceiver(IntentFilter intentFilter) {
-        return registerBroadcastReceiver(intentFilter, /* checker= */ null);
-    }
-
-    /**
-     * Create and register a {@link BlockingBroadcastReceiver} which will be unregistered after the
-     * test has run.
-     */
-    public BlockingBroadcastReceiver registerBroadcastReceiver(
-            String action, Function<Intent, Boolean> checker) {
-        BlockingBroadcastReceiver broadcastReceiver =
-                new BlockingBroadcastReceiver(mContext, action, checker);
-        broadcastReceiver.register();
-        mRegisteredBroadcastReceivers.add(broadcastReceiver);
-
-        return broadcastReceiver;
-    }
-
-    /**
-     * Create and register a {@link BlockingBroadcastReceiver} which will be unregistered after the
-     * test has run.
-     */
-    public BlockingBroadcastReceiver registerBroadcastReceiver(
-            IntentFilter intentfilter, Function<Intent, Boolean> checker) {
-        BlockingBroadcastReceiver broadcastReceiver =
-                new BlockingBroadcastReceiver(mContext, intentfilter, checker);
-        broadcastReceiver.register();
-        mRegisteredBroadcastReceivers.add(broadcastReceiver);
-
-        return broadcastReceiver;
-    }
-
-    /**
-     * Create and register a {@link BlockingBroadcastReceiver} which will be unregistered after the
-     * test has run.
-     */
-    public BlockingBroadcastReceiver registerBroadcastReceiverForUser(
-            UserReference user, String action) {
-        return registerBroadcastReceiverForUser(user, action, /* checker= */ null);
-    }
-
-    /**
-     * Create and register a {@link BlockingBroadcastReceiver} which will be unregistered after the
-     * test has run.
-     */
-    public BlockingBroadcastReceiver registerBroadcastReceiverForUser(
-            UserReference user, IntentFilter intentFilter) {
-        return registerBroadcastReceiverForUser(user, intentFilter, /* checker= */ null);
-    }
-
-    /**
-     * Create and register a {@link BlockingBroadcastReceiver} which will be unregistered after the
-     * test has run.
-     */
-    public BlockingBroadcastReceiver registerBroadcastReceiverForUser(
-            UserReference user, String action, Function<Intent, Boolean> checker) {
-        try (PermissionContext p =
-                     TestApis.permissions().withPermission(INTERACT_ACROSS_USERS_FULL)) {
-            BlockingBroadcastReceiver broadcastReceiver =
-                    new BlockingBroadcastReceiver(
-                            TestApis.context().androidContextAsUser(user), action, checker);
-            broadcastReceiver.register();
-            mRegisteredBroadcastReceivers.add(broadcastReceiver);
-
-            return broadcastReceiver;
-        }
-    }
-
-    /**
-     * Create and register a {@link BlockingBroadcastReceiver} which will be unregistered after the
-     * test has run.
-     */
-    public BlockingBroadcastReceiver registerBroadcastReceiverForUser(
-            UserReference user, IntentFilter intentFilter, Function<Intent, Boolean> checker) {
-        try (PermissionContext p =
-                     TestApis.permissions().withPermission(INTERACT_ACROSS_USERS_FULL)) {
-            BlockingBroadcastReceiver broadcastReceiver =
-                    new BlockingBroadcastReceiver(
-                            TestApis.context().androidContextAsUser(user), intentFilter, checker);
-            broadcastReceiver.register();
-            mRegisteredBroadcastReceivers.add(broadcastReceiver);
-
-            return broadcastReceiver;
-        }
-    }
-
-    /**
-     * Create and register a {@link BlockingBroadcastReceiver} which will be unregistered after the
-     * test has run.
-     */
-    public BlockingBroadcastReceiver registerBroadcastReceiverForAllUsers(String action) {
-        return registerBroadcastReceiverForAllUsers(action, /* checker= */ null);
-    }
-
-    /**
-     * Create and register a {@link BlockingBroadcastReceiver} which will be unregistered after the
-     * test has run.
-     */
-    public BlockingBroadcastReceiver registerBroadcastReceiverForAllUsers(
-            IntentFilter intentFilter) {
-        return registerBroadcastReceiverForAllUsers(intentFilter, /* checker= */ null);
-    }
-
-    /**
-     * Create and register a {@link BlockingBroadcastReceiver} which will be unregistered after the
-     * test has run.
-     */
-    public BlockingBroadcastReceiver registerBroadcastReceiverForAllUsers(
-            String action, Function<Intent, Boolean> checker) {
-        try (PermissionContext p =
-                     TestApis.permissions().withPermission(INTERACT_ACROSS_USERS_FULL)) {
-            BlockingBroadcastReceiver broadcastReceiver =
-                    new BlockingBroadcastReceiver(mContext, action, checker);
-            broadcastReceiver.registerForAllUsers();
-
-            mRegisteredBroadcastReceivers.add(broadcastReceiver);
-
-            return broadcastReceiver;
-        }
-    }
-
-    /**
-     * Create and register a {@link BlockingBroadcastReceiver} which will be unregistered after the
-     * test has run.
-     */
-    public BlockingBroadcastReceiver registerBroadcastReceiverForAllUsers(
-            IntentFilter intentFilter, Function<Intent, Boolean> checker) {
-        try (PermissionContext p =
-                     TestApis.permissions().withPermission(INTERACT_ACROSS_USERS_FULL)) {
-            BlockingBroadcastReceiver broadcastReceiver =
-                    new BlockingBroadcastReceiver(mContext, intentFilter, checker);
-            broadcastReceiver.registerForAllUsers();
-
-            mRegisteredBroadcastReceivers.add(broadcastReceiver);
-
-            return broadcastReceiver;
-        }
-    }
-
     void teardownNonShareableState() {
-        for (BlockingBroadcastReceiver broadcastReceiver : mRegisteredBroadcastReceivers) {
-            broadcastReceiver.unregisterQuietly();
-        }
-        mRegisteredBroadcastReceivers.clear();
         mLocator.teardownNonShareableState();
     }
 
