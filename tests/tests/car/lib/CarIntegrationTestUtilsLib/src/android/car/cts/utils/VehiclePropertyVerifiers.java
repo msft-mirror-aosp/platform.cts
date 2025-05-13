@@ -1076,30 +1076,38 @@ public class VehiclePropertyVerifiers {
                 .setAllPossibleEnumValues(PORT_LOCATION_TYPES);
     }
 
+    /** Gets the verifier builder for {@link VehiclePropertyIds#INFO_VEHICLE_SIZE_CLASS}. */
     public static VehiclePropertyVerifier.Builder<Integer[]>
             getInfoVehicleSizeClassVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.INFO_VEHICLE_SIZE_CLASS,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_STATIC,
-                        Integer[].class)
+        return VehiclePropertyVerifier.<Integer[]>newDefaultBuilder(
+                        VehiclePropertyIds.INFO_VEHICLE_SIZE_CLASS)
                 .setCarPropertyValueVerifier(
-                        (verifierContext, carPropertyConfig, propertyId, areaId, timestampNanos,
-                         sizeClasses) -> {
+                        (verifierContext,
+                                carPropertyConfig,
+                                propertyId,
+                                areaId,
+                                timestampNanos,
+                                sizeClasses) -> {
                             ArraySet<Integer> presentStandards = new ArraySet<>();
                             for (int sizeClass : sizeClasses) {
-                                assertWithMessage("Size class " + sizeClass + " doesn't exist in "
-                                        + "possible values: " + VEHICLE_SIZE_CLASSES)
-                                        .that(VEHICLE_SIZE_CLASSES.contains(sizeClass)).isTrue();
+                                assertWithMessage(
+                                                "Size class "
+                                                        + sizeClass
+                                                        + " doesn't exist in "
+                                                        + "possible values: "
+                                                        + VEHICLE_SIZE_CLASSES)
+                                        .that(VEHICLE_SIZE_CLASSES.contains(sizeClass))
+                                        .isTrue();
                                 int standard = sizeClass & 0xf00;
-                                assertWithMessage("Multiple values from the standard of size class "
-                                        + sizeClass + " are in use.")
-                                        .that(presentStandards.contains(standard)).isFalse();
+                                assertWithMessage(
+                                                "Multiple values from the standard of size class "
+                                                        + sizeClass
+                                                        + " are in use.")
+                                        .that(presentStandards.contains(standard))
+                                        .isFalse();
                                 presentStandards.add(standard);
                             }
-                        })
-                .addReadPermission(Car.PERMISSION_CAR_INFO);
+                        });
     }
 
     /**
