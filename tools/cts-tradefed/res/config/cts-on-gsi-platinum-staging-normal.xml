@@ -994,14 +994,6 @@
     <!-- CtsIncrementalInstallHostTestCases -->
     <option name="compatibility:include-filter" value="CtsIncrementalInstallHostTestCases android.incrementalinstall.cts.IncrementalInstallTest#testBaseApkInvalidSignatureAdbInstall"/>
     <option name="compatibility:include-filter" value="CtsIncrementalInstallHostTestCases android.incrementalinstall.cts.IncrementalInstallTest#testZeroVersionUpdateAdbInstall"/>
-    <!-- CtsInputHostTestCases -->
-    <option name="compatibility:include-filter" value="CtsInputHostTestCases android.input.cts.hostside.InputAtomsTest#testInputDeviceUsageAtom"/>
-    <option name="compatibility:include-filter" value="CtsInputHostTestCases android.input.cts.hostside.InputAtomsTest#testKeyboardConfiguredAtom"/>
-    <option name="compatibility:include-filter" value="CtsInputHostTestCases android.input.cts.hostside.InputAtomsTest#testTouchpadUsageAtom_FingerAndPalmCounts"/>
-    <option name="compatibility:include-filter" value="CtsInputHostTestCases android.input.cts.hostside.InputAtomsTest#testTouchpadUsageAtom_FourFingerSwipeCount"/>
-    <option name="compatibility:include-filter" value="CtsInputHostTestCases android.input.cts.hostside.InputAtomsTest#testTouchpadUsageAtom_PinchCount"/>
-    <option name="compatibility:include-filter" value="CtsInputHostTestCases android.input.cts.hostside.InputAtomsTest#testTouchpadUsageAtom_ThreeFingerSwipeCount"/>
-    <option name="compatibility:include-filter" value="CtsInputHostTestCases android.input.cts.hostside.InputAtomsTest#testTouchpadUsageAtom_TwoFingerSwipeCount"/>
     <!-- CtsInputMethodInstallTestCases -->
     <option name="compatibility:include-filter" value="CtsInputMethodInstallTestCases android.view.inputmethod.cts.installtests.MultiUserMockImeTest#testRemoveCurrentProfileCanStartInputOnOtherUser"/>
     <!-- CtsInputMethodServiceHostTestCases -->
