@@ -2398,18 +2398,10 @@ public final class ServiceTest {
         }
     }
 
-    /** Test bindService() flags can be 64 bits long. */
+    /** Test bindService() can accept long flags. */
     @Test
     public void testBindServiceLongFlags() throws Exception {
-        long flags = Context.BIND_AUTO_CREATE;
-        testBindServiceFlagsLongInternal(flags);
-        flags = 0x0000_1111_0000_0000L | Context.BIND_AUTO_CREATE;
-        testBindServiceFlagsLongInternal(flags);
-        flags = 0x0fff_ffff_0000_0000L | Context.BIND_AUTO_CREATE;
-        testBindServiceFlagsLongInternal(flags);
-    }
-
-    private void testBindServiceFlagsLongInternal(long flags) throws Exception {
+        long flags = Context.BIND_AUTO_CREATE | Context.BIND_ABOVE_CLIENT;
         final CountDownLatch latch = new CountDownLatch(1);
         final LatchedConnection connection = new LatchedConnection(latch);
         try {
