@@ -402,6 +402,11 @@ class ItsSession(object):
     its_device_utils.run(f'{self.adb} logcat -c')
     time.sleep(1)
 
+    # Wait until the socket is ready to accept a connection.
+    proc = subprocess.Popen(
+        self.adb.split() + ['logcat'], stdout=subprocess.PIPE)
+    logcat = proc.stdout
+
     its_device_utils.run(
         f'{self.adb} shell am force-stop --user cur {self.PACKAGE}')
     its_device_utils.run(
@@ -409,10 +414,6 @@ class ItsSession(object):
         f'-t text/plain -a {self.INTENT_START}'
     )
 
-    # Wait until the socket is ready to accept a connection.
-    proc = subprocess.Popen(
-        self.adb.split() + ['logcat'], stdout=subprocess.PIPE)
-    logcat = proc.stdout
     while True:
       line = logcat.readline().strip()
       if line.find(b'ItsService ready') >= 0:
