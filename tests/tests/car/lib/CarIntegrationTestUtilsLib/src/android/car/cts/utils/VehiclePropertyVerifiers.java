@@ -1123,20 +1123,11 @@ public class VehiclePropertyVerifiers {
                 .setAllPossibleEnumValues(combinedCarPropertyValues);
     }
 
-    /**
-     * Gets the verifier for {@link VehiclePropertyIds#TURN_SIGNAL_SWITCH}.
-     */
+    /** Gets the verifier for {@link VehiclePropertyIds#TURN_SIGNAL_SWITCH}. */
     public static VehiclePropertyVerifier.Builder<Integer> getTurnSignalSwitchVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.TURN_SIGNAL_SWITCH,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_ONCHANGE,
-                        Integer.class)
-                .setAllPossibleEnumValues(TURN_SIGNAL_STATES)
-                .addReadPermission(Car.PERMISSION_READ_EXTERIOR_LIGHTS)
-                .addReadPermission(Car.PERMISSION_CONTROL_EXTERIOR_LIGHTS)
-                .addWritePermission(Car.PERMISSION_CONTROL_EXTERIOR_LIGHTS);
+        return VehiclePropertyVerifier.<Integer>newDefaultBuilder(
+                        VehiclePropertyIds.TURN_SIGNAL_SWITCH)
+                .setAllPossibleEnumValues(TURN_SIGNAL_STATES);
     }
 
     public static VehiclePropertyVerifier.Builder<Float>
