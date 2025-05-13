@@ -32,8 +32,11 @@ import android.security.Flags.secureLockdown
 import android.security.authenticationpolicy.AuthenticationPolicyManager
 import android.security.authenticationpolicy.AuthenticationPolicyManager.ERROR_NO_BIOMETRICS_ENROLLED
 import android.security.authenticationpolicy.AuthenticationPolicyManager.SUCCESS
+import android.security.authenticationpolicy.AuthenticationPolicyManager.SecureLockDeviceStatusListener
 import android.security.authenticationpolicy.DisableSecureLockDeviceParams
 import android.security.authenticationpolicy.EnableSecureLockDeviceParams
+import android.security.cts.authenticationpolicy.AuthenticationPolicyManagerTest.Companion.TAG
+import android.security.cts.authenticationpolicy.AuthenticationPolicyManagerTest.Companion.TIMEOUT_MS
 import android.server.biometrics.util.Utils.enrollForSensor
 import android.server.biometrics.util.Utils.waitForAllUnenrolled
 import android.util.Log
@@ -50,9 +53,11 @@ import com.android.bedstead.nene.utils.Assert.assertThrows
 import com.android.bedstead.permissions.annotations.EnsureHasPermission
 import com.android.compatibility.common.util.ApiTest
 import com.google.common.truth.Truth.assertThat
+import java.util.concurrent.CountDownLatch
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicReference
 import org.junit.After
 import org.junit.Assume.assumeNotNull
 import org.junit.Assume.assumeTrue
@@ -74,6 +79,8 @@ class AuthenticationPolicyManagerTest {
     private val instrumentation: Instrumentation = InstrumentationRegistry.getInstrumentation()
     private val context: Context = instrumentation.targetContext
     private val testExecutor: ExecutorService = Executors.newSingleThreadExecutor()
+    private val testListener: TestSecureLockDeviceStatusListener =
+        TestSecureLockDeviceStatusListener()
 
     private lateinit var biometricManager: BiometricManager
     private lateinit var sensorProperties: MutableList<SensorProperties>
@@ -81,6 +88,7 @@ class AuthenticationPolicyManagerTest {
 
     companion object {
         const val TAG = "AuthenticationPolicyManagerTest"
+        const val TIMEOUT_MS = 1000L
 
         @JvmField @ClassRule @Rule val deviceState: DeviceState = DeviceState()
     }
@@ -115,6 +123,15 @@ class AuthenticationPolicyManagerTest {
             }
 
             TestApis.permissions().withPermission(MANAGE_SECURE_LOCK_DEVICE).use {
+                try {
+                    authenticationPolicyManager.unregisterSecureLockDeviceStatusListener(
+                        testListener
+                    )
+                } catch (_: IllegalArgumentException) {
+                    Log.d(TAG, "tearDown | testListener was not registered for this test.")
+                } catch (e: Exception) {
+                    Log.w(TAG, "tearDown | Exception during listener unregistration: ", e)
+                }
                 authenticationPolicyManager.disableSecureLockDevice(
                     DisableSecureLockDeviceParams("")
                 )
@@ -280,6 +297,50 @@ class AuthenticationPolicyManagerTest {
         apis =
             [
                 ("android.security.authenticationpolicy.AuthenticationPolicyManager" +
+                    "#registerSecureLockDeviceStatusListener"),
+                ("android.security.authenticationpolicy.AuthenticationPolicyManager" +
+                    "#isSecureLockDeviceAvailable"),
+            ]
+    )
+    @Test
+    @EnsureHasPermission(MANAGE_SECURE_LOCK_DEVICE)
+    fun testAvailableStatusUpdate_notifiesSecureLockDeviceStatusListeners() {
+        assumeNotNull("test requires non-null BiometricManager", biometricManager)
+        assumeNotNull("test requires non-null SensorProperties", sensorProperties)
+        val strongBiometricSensor = sensorProperties.findFirstStrongBiometricSensor()
+        assumeTrue("Requires strong sensor", strongBiometricSensor != null)
+
+        biometricManager.createTestSession(strongBiometricSensor!!.sensorId).use { session ->
+            authenticationPolicyManager.registerSecureLockDeviceStatusListener(
+                testExecutor,
+                testListener,
+            )
+
+            // Initial callbacks on registration
+            assertThat(testListener.awaitAvailableCallback()).isTrue()
+            assertThat(testListener.awaitEnabledCallback()).isTrue()
+
+            testListener.assertLastAvailableStatus(expectedAvailable = ERROR_NO_BIOMETRICS_ENROLLED)
+            testListener.assertLastEnabledStatus(expectedEnabled = false)
+
+            testListener.reset()
+
+            // Enroll biometric, verify callbacks
+            enrollForSensor(session, strongBiometricSensor.sensorId)
+
+            assertThat(testListener.awaitAvailableCallback()).isTrue()
+            testListener.assertLastAvailableStatus(expectedAvailable = SUCCESS)
+
+            authenticationPolicyManager.unregisterSecureLockDeviceStatusListener(testListener)
+            cleanupSession(session)
+        }
+        waitForAllUnenrolled()
+    }
+
+    @ApiTest(
+        apis =
+            [
+                ("android.security.authenticationpolicy.AuthenticationPolicyManager" +
                     "#isSecureLockDeviceAvailable"),
                 ("android.security.authenticationpolicy.AuthenticationPolicyManager" +
                     "#disableSecureLockDevice"),
@@ -317,6 +378,77 @@ class AuthenticationPolicyManagerTest {
             assertThat(disableStatus).isEqualTo(SUCCESS)
             assertThat(authenticationPolicyManager.isSecureLockDeviceEnabled).isFalse()
             assertThat(authenticationPolicyManager.isSecureLockDeviceAvailable()).isEqualTo(SUCCESS)
+            cleanupSession(session)
+        }
+        waitForAllUnenrolled()
+    }
+
+    @ApiTest(
+        apis =
+            [
+                ("android.security.authenticationpolicy.AuthenticationPolicyManager" +
+                    "#enableSecureLockDevice"),
+                ("android.security.authenticationpolicy.AuthenticationPolicyManager" +
+                    "#disableSecureLockDevice"),
+                ("android.security.authenticationpolicy.AuthenticationPolicyManager" +
+                    "#registerSecureLockDeviceStatusListener"),
+                ("android.security.authenticationpolicy.AuthenticationPolicyManager" +
+                    "#unregisterSecureLockDeviceStatusListener"),
+            ]
+    )
+    @Test
+    @EnsureHasPermission(MANAGE_SECURE_LOCK_DEVICE)
+    fun testEnabledStatusUpdate_notifiesSecureLockDeviceStatusListeners() {
+        assumeNotNull("test requires non-null BiometricManager", biometricManager)
+        assumeNotNull("test requires non-null SensorProperties", sensorProperties)
+        val strongBiometricSensor = sensorProperties.findFirstStrongBiometricSensor()
+        assumeTrue("Requires strong sensor", strongBiometricSensor != null)
+
+        biometricManager.createTestSession(strongBiometricSensor!!.sensorId).use { session ->
+            enrollForSensor(session, strongBiometricSensor.sensorId)
+            authenticationPolicyManager.registerSecureLockDeviceStatusListener(
+                testExecutor,
+                testListener,
+            )
+
+            // Initial callbacks on registration
+            assertThat(testListener.awaitAvailableCallback()).isTrue()
+            assertThat(testListener.awaitEnabledCallback()).isTrue()
+
+            testListener.assertLastAvailableStatus(expectedAvailable = SUCCESS)
+            testListener.assertLastEnabledStatus(expectedEnabled = false)
+
+            testListener.reset()
+
+            // Enable secure lock device, verify callbacks
+            assertThat(
+                    authenticationPolicyManager.enableSecureLockDevice(
+                        EnableSecureLockDeviceParams("")
+                    )
+                )
+                .isEqualTo(SUCCESS)
+
+            assertThat(testListener.awaitAvailableCallback()).isTrue()
+            assertThat(testListener.awaitEnabledCallback()).isTrue()
+            testListener.assertLastAvailableStatus(expectedAvailable = SUCCESS)
+            testListener.assertLastEnabledStatus(expectedEnabled = true)
+
+            testListener.reset()
+
+            // Disable secure lock device, verify callbacks
+            assertThat(
+                    authenticationPolicyManager.disableSecureLockDevice(
+                        DisableSecureLockDeviceParams("")
+                    )
+                )
+                .isEqualTo(SUCCESS)
+
+            assertThat(testListener.awaitAvailableCallback()).isTrue()
+            assertThat(testListener.awaitEnabledCallback()).isTrue()
+            testListener.assertLastAvailableStatus(expectedAvailable = SUCCESS)
+            testListener.assertLastEnabledStatus(expectedEnabled = false)
+
+            authenticationPolicyManager.unregisterSecureLockDeviceStatusListener(testListener)
             cleanupSession(session)
         }
         waitForAllUnenrolled()
@@ -473,6 +605,86 @@ class AuthenticationPolicyManagerTest {
 
     private fun cleanupSession(session: BiometricTestSession) {
         session.cleanupInternalState(context.userId)
+    }
+}
+
+private class TestSecureLockDeviceStatusListener : SecureLockDeviceStatusListener {
+    private var enabledCallbackReceivedTime: Long = 0L
+    private var availableCallbackReceivedTime: Long = 0L
+
+    private var onEnabledLatch = CountDownLatch(1)
+    private var onAvailableLatch = CountDownLatch(1)
+    private val isSecureLockDeviceAvailable = AtomicReference<Int?>(null)
+    private val isSecureLockDeviceEnabled = AtomicReference<Boolean?>(null)
+
+    override fun onSecureLockDeviceEnabledStatusChanged(enabled: Boolean) {
+        enabledCallbackReceivedTime = System.currentTimeMillis()
+        Log.d(
+            TAG,
+            "onSecureLockDeviceEnabledStatusChanged received: $enabled at " +
+                "$enabledCallbackReceivedTime",
+        )
+
+        isSecureLockDeviceEnabled.set(enabled)
+        onEnabledLatch.countDown()
+    }
+
+    override fun onSecureLockDeviceAvailableStatusChanged(available: Int) {
+        availableCallbackReceivedTime = System.currentTimeMillis()
+        Log.d(
+            TAG,
+            "onSecureLockDeviceAvailableStatusChanged received: $available at " +
+                "$availableCallbackReceivedTime",
+        )
+
+        isSecureLockDeviceAvailable.set(available)
+        onAvailableLatch.countDown()
+    }
+
+    fun reset() {
+        onEnabledLatch = CountDownLatch(1)
+        onAvailableLatch = CountDownLatch(1)
+        isSecureLockDeviceAvailable.set(null)
+        isSecureLockDeviceEnabled.set(null)
+    }
+
+    fun awaitEnabledCallback(timeoutMillis: Long = TIMEOUT_MS): Boolean {
+        val startTime = System.currentTimeMillis()
+        val result = onEnabledLatch.await(timeoutMillis, TimeUnit.MILLISECONDS)
+        val endTime = System.currentTimeMillis()
+        if (!result) {
+            Log.w(TAG, "Listener timed out waiting ${endTime - startTime}ms for enabled callback")
+        } else {
+            Log.d(TAG, "Listener callback received after ${endTime - startTime}ms")
+        }
+        return result
+    }
+
+    fun awaitAvailableCallback(timeoutMillis: Long = TIMEOUT_MS): Boolean {
+        val startTime = System.currentTimeMillis()
+        val result = onAvailableLatch.await(timeoutMillis, TimeUnit.MILLISECONDS)
+        val endTime = System.currentTimeMillis()
+        if (!result) {
+            Log.w(
+                TAG,
+                "Listener timed out waiting ${endTime - startTime}ms for available callback.",
+            )
+        } else {
+            Log.d(TAG, "Listener callback received after ${endTime - startTime}ms")
+        }
+        return result
+    }
+
+    fun assertLastAvailableStatus(expectedAvailable: Int) {
+        assertThat(isSecureLockDeviceAvailable.get()).isEqualTo(expectedAvailable)
+    }
+
+    fun assertLastEnabledStatus(expectedEnabled: Boolean) {
+        if (expectedEnabled) {
+            assertThat(isSecureLockDeviceEnabled.get()).isTrue()
+        } else {
+            assertThat(isSecureLockDeviceEnabled.get()).isFalse()
+        }
     }
 }
 
