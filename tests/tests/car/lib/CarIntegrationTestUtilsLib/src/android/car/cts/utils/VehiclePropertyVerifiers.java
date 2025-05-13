@@ -1069,15 +1069,11 @@ public class VehiclePropertyVerifiers {
                         });
     }
 
+    /** Gets the verifier builder for {@link VehiclePropertyIds#INFO_EV_PORT_LOCATION}. */
     public static VehiclePropertyVerifier.Builder<Integer> getInfoEvPortLocationVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.INFO_EV_PORT_LOCATION,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_STATIC,
-                        Integer.class)
-                .setAllPossibleEnumValues(PORT_LOCATION_TYPES)
-                .addReadPermission(Car.PERMISSION_CAR_INFO);
+        return VehiclePropertyVerifier.<Integer>newDefaultBuilder(
+                        VehiclePropertyIds.INFO_EV_PORT_LOCATION)
+                .setAllPossibleEnumValues(PORT_LOCATION_TYPES);
     }
 
     public static VehiclePropertyVerifier.Builder<Integer[]>
