@@ -122,7 +122,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.FixMethodOrder;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -523,13 +522,11 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
             PermissionUtils.setAppOp(STUB_PACKAGE_NAME,
                     Manifest.permission.USE_FULL_SCREEN_INTENT,
                     appOpState);
-
             if (canSend) {
                 assertTrue(mNotificationManager.canUseFullScreenIntent());
             } else {
                 assertFalse(mNotificationManager.canUseFullScreenIntent());
             }
-
         } finally {
             // Clean up by setting to app op to previous state.
             PermissionUtils.setAppOp(STUB_PACKAGE_NAME,
@@ -565,11 +562,7 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
             PermissionUtils.setAppOp(
                     STUB_PACKAGE_NAME, Manifest.permission.POST_PROMOTED_NOTIFICATIONS, appOpState);
 
-            if (canSend) {
-                assertTrue(mNotificationManager.canPostPromotedNotifications());
-            } else {
-                assertFalse(mNotificationManager.canPostPromotedNotifications());
-            }
+            assertThat(mNotificationManager.canPostPromotedNotifications()).isEqualTo(canSend);
 
         } finally {
             // Clean up by setting to app op to previous state.
@@ -3934,8 +3927,10 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
     }
 
     @Test
-    @Ignore("b/409850649")
-    @RequiresFlagsEnabled(android.app.Flags.FLAG_API_RICH_ONGOING)
+    @RequiresFlagsEnabled({
+        android.app.Flags.FLAG_API_RICH_ONGOING,
+        android.app.Flags.FLAG_API_RICH_ONGOING_PERMISSION
+    })
     public void testCanPostPromotedNotifications() {
         boolean initialValue = mNotificationManager.canPostPromotedNotifications();
 
