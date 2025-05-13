@@ -22,7 +22,9 @@ import static android.media.Utils.VIBRATION_URI_PARAM;
 import static android.telecom.Call.STATE_DISCONNECTED;
 import static android.telecom.Call.STATE_RINGING;
 import static android.telecom.cts.apps.ShellCommandExecutor.executeShellCommand;
+import static android.telecom.cts.apps.TelecomTestApp.ConnectionServiceVoipAppMain;
 import static android.telecom.cts.apps.TelecomTestApp.ManagedConnectionServiceApp;
+import static android.telecom.cts.apps.TelecomTestApp.TransactionalVoipAppMain;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -33,6 +35,7 @@ import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeNotNull;
 import static org.junit.Assume.assumeTrue;
 
+import android.app.NotificationManager;
 import android.media.AudioManager;
 import android.media.AudioManager.AudioPlaybackCallback;
 import android.media.AudioPlaybackConfiguration;
@@ -44,6 +47,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.Vibrator;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.Settings;
 import android.telecom.PhoneAccountHandle;
 import android.telecom.VideoProfile;
@@ -54,9 +58,12 @@ import android.util.Log;
 
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.compatibility.common.util.ApiTest;
+import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.ShellIdentityUtils;
 
 import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -74,6 +81,7 @@ import java.util.regex.Pattern;
  */
 @RunWith(JUnit4.class)
 public class RingerTest extends BaseAppVerifier {
+    private static final String EVENT_FOR_TEST = "android.telecom.event.TEST";
     private static final long WAIT_FOR_STATE_CHANGE_TIMEOUT_MS = 10000;
     private static final long WAIT_FOR_NO_RING_TIMEOUT_MS = 1000;
     private static final long WAIT_FOR_VIBRATOR_LOGS_UPDATE_TIMEOUT_MS = 10000;
@@ -103,6 +111,8 @@ public class RingerTest extends BaseAppVerifier {
      */
     @Ignore // TODO(b/393989489): Diagnose flakiness and re-enable.
     @Test
+    @CddTest(requirements = {"7.4.1.2/H-0-2"})
+    @ApiTest(apis = {"android.telecom.TelecomManager#addNewIncomingCall"})
     public void testIncomingCall_RingAndVibrate() throws Exception {
         assumeTrue(mShouldTestTelecom);
         assumeTrue(mSupportsManagedCalls);
@@ -159,6 +169,8 @@ public class RingerTest extends BaseAppVerifier {
      */
     @Ignore // TODO(b/393989489): Diagnose flakiness and re-enable.
     @Test
+    @CddTest(requirements = {"7.4.1.2/H-0-2"})
+    @ApiTest(apis = {"android.telecom.TelecomManager#addNewIncomingCall"})
     public void testIncomingCallVibrationDisabled_RingAndNoVibrate() throws Exception {
         assumeTrue(mShouldTestTelecom);
         assumeTrue(mSupportsManagedCalls);
@@ -215,6 +227,8 @@ public class RingerTest extends BaseAppVerifier {
      *  4. disconnect the call
      */
     @Test
+    @CddTest(requirements = {"7.4.1.2/H-0-2"})
+    @ApiTest(apis = {"android.telecom.TelecomManager#addNewIncomingCall"})
     public void testIncomingCallSilentMode_NoRingAndNoVibrate() throws Exception {
         assumeTrue(mShouldTestTelecom);
         assumeTrue(mSupportsManagedCalls);
@@ -271,6 +285,8 @@ public class RingerTest extends BaseAppVerifier {
      */
     @Ignore // TODO(b/393989489): Diagnose flakiness and re-enable.
     @Test
+    @CddTest(requirements = {"7.4.1.2/H-0-2"})
+    @ApiTest(apis = {"android.telecom.TelecomManager#addNewIncomingCall"})
     public void testIncomingCallVibrateMode_VibrateAndNoRing() throws Exception {
         assumeTrue(mShouldTestTelecom);
         assumeTrue(mSupportsManagedCalls);
@@ -334,6 +350,8 @@ public class RingerTest extends BaseAppVerifier {
      */
     @Ignore // TODO(b/393989489): Diagnose flakiness and re-enable.
     @Test
+    @CddTest(requirements = {"7.4.1.2/H-0-2"})
+    @ApiTest(apis = {"android.telecom.TelecomManager#addNewIncomingCall"})
     public void testIncomingCallVibrateModeEnableRinger_VibrateAndRing() throws Exception {
         assumeTrue(mShouldTestTelecom);
         assumeTrue(mSupportsManagedCalls);
@@ -405,6 +423,8 @@ public class RingerTest extends BaseAppVerifier {
      */
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_RINGTONE_HAPTICS_CUSTOMIZATION)
+    @CddTest(requirements = {"7.4.1.2/H-0-2"})
+    @ApiTest(apis = {"android.telecom.TelecomManager#addNewIncomingCall"})
     public void testIncomingCallVibrateMode_vibrationSettingsSupported_VibrateAndRing()
             throws Exception {
         Uri defaultRingtoneUri = RingtoneManager.getActualDefaultRingtoneUri(mContext,
@@ -456,6 +476,170 @@ public class RingerTest extends BaseAppVerifier {
             tearDownApp(managedApp);
             ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
                     audioManager, am -> am.unregisterAudioPlaybackCallback(callback));
+        }
+    }
+
+    /** Verify when DND is off that ringing focus is acquired when the call is in ringing state. */
+    @Test
+    @CddTest(requirements = {"7.4.1.2/H-0-2"})
+    @ApiTest(apis = {"android.telecom.TelecomManager#addNewIncomingCall"})
+    public void testIncomingSelfManagedVoipCallWithDndOffGainsFocus() throws Exception {
+        assumeTrue("This test requires Telecom to be supported", mShouldTestTelecom);
+        AppControlWrapper app = null;
+        try {
+            app = bindToApp(ConnectionServiceVoipAppMain);
+            verifyDndBehavior(app, false /* isDndOn */);
+        } finally {
+            tearDownApp(app);
+        }
+    }
+
+    /** Verify when DND is off that ringing focus is acquired when the call is in ringing state. */
+    @Test
+    @CddTest(requirements = {"7.4.1.2/H-0-2"})
+    @ApiTest(apis = {"android.telecom.TelecomManager#addCall"})
+    public void testIncomingTransactionalVoipCallWithDndOffGainsFocus() throws Exception {
+        assumeTrue("This test requires Telecom to be supported", mShouldTestTelecom);
+        AppControlWrapper app = null;
+        try {
+            app = bindToApp(TransactionalVoipAppMain);
+            verifyDndBehavior(app, false /* isDndOn */);
+        } finally {
+            tearDownApp(app);
+        }
+    }
+
+    /**
+     * Verify for a self-managed ConnectionService which adds a new incoming call that Telecom will
+     * not try to get audio focus while the call is in ringing state if the device is in DND mode.
+     */
+    @Test
+    @CddTest(requirements = {"7.4.1.2/H-0-2"})
+    @ApiTest(apis = {"android.telecom.TelecomManager#addNewIncomingCall"})
+    @RequiresFlagsEnabled(com.android.server.telecom.flags.Flags.FLAG_VOIP_DND_FOCUS)
+    public void testIncomingSelfManagedVoipCallDuringDndDoesntGainFocus() throws Exception {
+        assumeTrue("This test requires Telecom to be supported", mShouldTestTelecom);
+        AppControlWrapper app = null;
+        try {
+            app = bindToApp(ConnectionServiceVoipAppMain);
+            verifyDndBehavior(app, true /* isDndOn */);
+        } finally {
+            tearDownApp(app);
+        }
+    }
+
+    /**
+     * Verify for a transactional voip app which adds a new incoming call that Telecom will not try
+     * to get audio focus while the call is in ringing state if the device is in DND mode.
+     */
+    @Test
+    @RequiresFlagsEnabled(com.android.server.telecom.flags.Flags.FLAG_VOIP_DND_FOCUS)
+    @CddTest(requirements = {"7.4.1.2/H-0-2"})
+    @ApiTest(apis = {"android.telecom.TelecomManager#addCall"})
+    public void testIncomingTransactionalVoipCallDuringDndDoesntGainFocus() throws Exception {
+        assumeTrue("This test requires Telecom to be supported", mShouldTestTelecom);
+        AppControlWrapper app = null;
+        try {
+            app = bindToApp(TransactionalVoipAppMain);
+            verifyDndBehavior(app, true /* isDndOn */);
+        } finally {
+            tearDownApp(app);
+        }
+    }
+
+    /**
+     * Common test method to verify DND behavior.
+     *
+     * @param app App to test
+     * @param isDndOn Whether DND is on or off
+     * @throws Exception Catch-all for exceptions
+     */
+    private void verifyDndBehavior(AppControlWrapper app, boolean isDndOn) throws Exception {
+        AudioManager audioManager = mContext.getSystemService(AudioManager.class);
+        assertNotNull("AudioManager should not be null", audioManager);
+        // Configure the ringer mode to normal; we are testing DND so it can override to whatever
+        // makes sense.
+        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                audioManager, am -> am.setRingerMode(AudioManager.RINGER_MODE_NORMAL));
+
+        NotificationManager notificationManager =
+                mContext.getSystemService(NotificationManager.class);
+        assertNotNull("NotificationManager should not be null", notificationManager);
+
+        // Cache the current DND mode
+        // It's necessary to grant ACCESS_NOTIFICATION_POLICY to read the current DND state.
+        // ShellIdentityUtils handles running this with shell permissions.
+        Integer originalInterruptionFilter =
+                ShellIdentityUtils.invokeWithShellPermissions(
+                        notificationManager::getCurrentInterruptionFilter);
+        assertNotNull(
+                "Original interruption filter should not be null", originalInterruptionFilter);
+        Log.d(TAG, "Original DND mode: " + originalInterruptionFilter);
+
+        int desiredDndState =
+                isDndOn
+                        ? NotificationManager.INTERRUPTION_FILTER_NONE
+                        : NotificationManager.INTERRUPTION_FILTER_ALL;
+        try {
+            // Enable DND (e.g., priority only mode)
+            // Grant ACCESS_NOTIFICATION_POLICY to change the DND state.
+            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                    notificationManager, nm -> nm.setInterruptionFilter(desiredDndState));
+
+            int dndEnabledFilter =
+                    ShellIdentityUtils.invokeWithShellPermissions(
+                            notificationManager::getCurrentInterruptionFilter);
+            assertEquals(desiredDndState, dndEnabledFilter);
+
+            // Start pretending to play music
+            acquireAudioFocusForMusic();
+
+            // Make an incoming call with the test app and ensure it is ringing.
+            String mt = addIncomingCallAndVerify(app);
+            verifyCallIsInState(mt, STATE_RINGING);
+
+            // We will send a connection event through Telecom up to the ics just to make sure that
+            // all of the ringer focus checks have happened; the InCallController updates before the
+            // ringing focus updates; waiting on a connection event ensures that has completed and
+            // we can now rely on focus being obtained by Telecom if it was ever going to be.
+            setExpectedEvent(mt, EVENT_FOR_TEST);
+            sendConnectionEvent(app, mt, EVENT_FOR_TEST);
+            assertTrue(waitOnExpectedEvent(mt));
+
+            if (isDndOn) {
+                // Music playback should not have changed due to DND being enabled; in other words
+                // Telecom should not have tried to get audio focus because DND is suppressing the
+                // call.
+                assertFalse(
+                        "Expected no audio focus change in ringing due to DND",
+                        hasMusicFocusChanged());
+            } else {
+                // We should have gotten back an indication that focus switched to our listener.
+                waitForAndVerifyMusicFocus(
+                        true,
+                        AudioManager.AUDIOFOCUS_LOSS,
+                        AudioManager.AUDIOFOCUS_LOSS_TRANSIENT,
+                        AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK);
+            }
+
+            // Disconnect the incoming call
+            setCallStateAndVerify(app, mt, STATE_DISCONNECTED);
+        } finally {
+            // Restore the cached DND state
+            // Ensure the original DND state is restored even if the test assertions fail.
+            final int filterToRestore = originalInterruptionFilter;
+            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                    notificationManager, nm -> nm.setInterruptionFilter(filterToRestore));
+            Log.d(TAG, "Restored DND mode to: " + filterToRestore);
+
+            // Verify DND is restored
+            Integer restoredInterruptionFilter =
+                    ShellIdentityUtils.invokeWithShellPermissions(
+                            notificationManager::getCurrentInterruptionFilter);
+            assertEquals(
+                    "DND mode should be restored to the original state",
+                    originalInterruptionFilter,
+                    restoredInterruptionFilter);
         }
     }
 
