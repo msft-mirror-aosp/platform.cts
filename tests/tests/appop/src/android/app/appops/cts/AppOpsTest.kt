@@ -177,9 +177,15 @@ class AppOpsTest {
             assumeTrue("Test is skipped when device provisioning package does not exist", false)
         }
 
-        assertEquals(MODE_ALLOWED, getOpMode(deviceProvisioningPackage, OPSTR_RESERVED_FOR_TESTING))
-        setOpMode(deviceProvisioningPackage, OPSTR_RESERVED_FOR_TESTING, MODE_IGNORED)
-        assertEquals(MODE_ALLOWED, getOpMode(deviceProvisioningPackage, OPSTR_RESERVED_FOR_TESTING))
+        val originalMode = getOpMode(deviceProvisioningPackage, OPSTR_RESERVED_FOR_TESTING)
+        val newMode = if (originalMode == MODE_ALLOWED) {
+            MODE_IGNORED
+        } else {
+            MODE_ALLOWED
+        }
+
+        setOpMode(deviceProvisioningPackage, OPSTR_RESERVED_FOR_TESTING, newMode)
+        assertEquals(originalMode, getOpMode(deviceProvisioningPackage, OPSTR_RESERVED_FOR_TESTING))
     }
 
     @Test
