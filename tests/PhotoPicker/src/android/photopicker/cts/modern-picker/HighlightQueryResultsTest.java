@@ -26,6 +26,8 @@ import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.os.Bundle;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.DeviceConfig;
 import android.provider.MediaStore;
 
@@ -43,12 +45,16 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 @RunWith(AndroidJUnit4.class)
 @RequiresFlagsEnabled(Flags.FLAG_ENABLE_PICKER_HIGHLIGHT_SEARCH_RESULTS_APIS)
 public class HighlightQueryResultsTest {
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
     private final String READ_DEVICE_CONFIG_PERMISSION = "android.permission.READ_DEVICE_CONFIG";
     private Instrumentation mInstrumentation;
     private Context mContext;
