@@ -1113,7 +1113,8 @@ public class ItsService extends Service implements SensorEventListener {
                 } else if ("getMaxCamcorderProfileSize".equals(cmdObj.getString("cmdName"))) {
                     String cameraId = cmdObj.getString("cameraId");
                     doGetMaxCamcorderProfileSize(cameraId);
-                } else if ("getAvailablePhysicalCameraProperties".equals(cmdObj.getString("cmdName"))) {
+                } else if ("getAvailablePhysicalCameraProperties"
+                        .equals(cmdObj.getString("cmdName"))) {
                     doGetAvailablePhysicalCameraProperties();
                 } else if ("isLowLightBoostAvailable".equals(cmdObj.getString("cmdName"))) {
                     String cameraId = cmdObj.getString("cameraId");
@@ -1202,6 +1203,12 @@ public class ItsService extends Service implements SensorEventListener {
                         orientationVals[0] = (float) Math.toDegrees(orientationVals[0]);
                         orientationVals[1] = (float) Math.toDegrees(orientationVals[1]);
                         orientationVals[2] = (float) Math.toDegrees(orientationVals[2]);
+                        if (Float.isNaN(orientationVals[0])
+                                || Float.isNaN(orientationVals[1])
+                                || Float.isNaN(orientationVals[2])) {
+                            Logt.e(TAG, "Invalid sensor orientation values (NaN). Skip");
+                            continue;
+                        }
                         obj.put("time", event.timestamp);
                         obj.put("x", orientationVals[0]);
                         obj.put("y", orientationVals[1]);
@@ -2267,7 +2274,12 @@ public class ItsService extends Service implements SensorEventListener {
             // An EV compensation can be specified as part of AE convergence.
             int evComp = params.optInt(EVCOMP_KEY, 0);
             if (evComp != 0) {
-                Logt.i(TAG, String.format("Running 3A with AE exposure compensation value: %d", evComp));
+                Logt.i(
+                        TAG,
+                        String.format(
+                                Locale.getDefault(),
+                                "Running 3A with AE exposure compensation value: %d",
+                                evComp));
             }
 
             int flashMode = params.optInt(FLASH_MODE_KEY, CaptureRequest.FLASH_MODE_OFF);
