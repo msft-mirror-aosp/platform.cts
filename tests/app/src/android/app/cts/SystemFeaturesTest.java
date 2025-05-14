@@ -51,6 +51,7 @@ import androidx.test.filters.FlakyTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.CddTest;
+import com.android.compatibility.common.util.FeatureUtil;
 import com.android.compatibility.common.util.PropertyUtil;
 import com.android.compatibility.common.util.SystemUtil;
 
@@ -607,7 +608,8 @@ public class SystemFeaturesTest {
                 !isAndroidEmulator() &&
                 !mPackageManager.hasSystemFeature(PackageManager.FEATURE_PC) &&
                 mPackageManager.hasSystemFeature(PackageManager.FEATURE_MICROPHONE) &&
-                mPackageManager.hasSystemFeature(PackageManager.FEATURE_TOUCHSCREEN)) {
+                mPackageManager.hasSystemFeature(PackageManager.FEATURE_TOUCHSCREEN) &&
+                !FeatureUtil.isXrHeadset()) {
             // USB accessory mode is only a requirement for devices with USB ports supporting
             // peripheral mode. As there is no public API to distinguish a device with only host
             // mode support from having both peripheral and host support, the test may have
