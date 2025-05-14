@@ -642,7 +642,10 @@ public class MockSatelliteService extends SatelliteImplBase {
 
     public void setSatelliteSupport(boolean supported) {
         logd("setSatelliteSupport: supported=" + supported);
-        mIsSupported = supported;
+        if (supported != mIsSupported) {
+            mIsSupported = supported;
+            sendOnSatelliteSupportedStateChanged(supported);
+        }
     }
 
     public void setShouldRespondTelephony(boolean shouldRespondTelephony) {

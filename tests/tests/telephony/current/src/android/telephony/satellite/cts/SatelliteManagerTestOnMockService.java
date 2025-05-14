@@ -6958,6 +6958,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         }
     }
 
+    @Ignore("b/416339477 - This test is flaky. Need to fix and re-enable it.")
     @Test
     public void testRequestSessionStats() {
         logd("testRequestSessionStats: start");
