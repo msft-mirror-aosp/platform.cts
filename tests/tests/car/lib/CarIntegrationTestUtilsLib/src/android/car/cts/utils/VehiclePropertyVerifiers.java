@@ -1130,18 +1130,6 @@ public class VehiclePropertyVerifiers {
                 .setAllPossibleEnumValues(TURN_SIGNAL_STATES);
     }
 
-    public static VehiclePropertyVerifier.Builder<Boolean> getVehicleHornEngagedVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.VEHICLE_HORN_ENGAGED,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_ONCHANGE,
-                        Boolean.class)
-                .addReadPermission(Car.PERMISSION_READ_CAR_HORN)
-                .addReadPermission(Car.PERMISSION_CONTROL_CAR_HORN)
-                .addWritePermission(Car.PERMISSION_CONTROL_CAR_HORN);
-    }
-
     public static VehiclePropertyVerifier.Builder<Integer>
             getVehicleDrivingAutomationTargetLevelVerifierBuilder() {
         return VehiclePropertyVerifier.newBuilder(
