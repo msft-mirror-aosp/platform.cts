@@ -27,6 +27,9 @@ android_test {
     libs: [
         "android.test.mock.stubs.system",
     ],
+    jni_libs: [
+        "libnativecursorwindow_jni",
+    ],
     static_libs: [
         "androidx.test.rules",
         "androidx.test.ext.junit",
