@@ -1739,8 +1739,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         VehiclePropertyVerifiers
                                 .getVehicleDrivingAutomationTargetLevelVerifierBuilder(),
                         VehiclePropertyVerifiers
-                                .getAcceleratorPedalCompressionPercentageVerifierBuilder(),
-                        VehiclePropertyVerifiers
                                 .getBrakePedalCompressionPercentageVerifierBuilder(),
                         VehiclePropertyVerifiers.getBrakePadWearPercentageVerifierBuilder(),
                         VehiclePropertyVerifiers.getBrakeFluidLevelLowVerifierBuilder(),
