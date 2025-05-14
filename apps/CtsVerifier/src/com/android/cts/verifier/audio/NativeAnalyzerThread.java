@@ -18,9 +18,16 @@
 package com.android.cts.verifier.audio;
 
 import android.content.Context;
+import android.media.AudioFormat;
+import android.media.AudioManager;
+import android.media.AudioPatch;
+import android.media.AudioPortConfig;
 import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
+
+import java.util.ArrayList;
+import java.util.Arrays;
 
 /**
  * A thread that runs a native audio loopback analyzer.
@@ -215,6 +222,32 @@ public class NativeAnalyzerThread {
         }
     }
 
+    private boolean is24BitOrGreater(int format) {
+        return format == AudioFormat.ENCODING_PCM_FLOAT
+                || format == AudioFormat.ENCODING_PCM_24BIT_PACKED
+                || format == AudioFormat.ENCODING_PCM_32BIT;
+    }
+
+    private boolean isGreaterThan24BitSupportedForMixPort() {
+        ArrayList<AudioPatch> audioPatches = new ArrayList<>();
+        if (AudioManager.listAudioPatches(audioPatches) != AudioManager.SUCCESS) {
+            log("failed to query audio patches");
+            return false;
+        }
+        for (AudioPatch audioPatch : audioPatches) {
+            if (Arrays.stream(audioPatch.sinks())
+                    .noneMatch(audioPortConfig -> audioPortConfig.port().id() == mOutputDeviceId)) {
+                continue;
+            }
+            for (AudioPortConfig portConfig : audioPatch.sources()) {
+                if (Arrays.stream(portConfig.port().formats()).anyMatch(this::is24BitOrGreater)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     private Runnable mBackGroundTask =
             () -> {
                 mLatencyMillis = 0.0;
@@ -247,6 +280,11 @@ public class NativeAnalyzerThread {
                             // mHas24BitHardwareSupport is initialized as false, only set it to true
                             // when the stream has 24 bit hardware support.
                             mHas24BitHardwareSupport = true;
+                        }
+                        if (!mHas24BitHardwareSupport) {
+                            // In case of framework doesn't select best matched format, check
+                            // the supported format for the mix port that is used for the playback.
+                            mHas24BitHardwareSupport = isGreaterThan24BitSupportedForMixPort();
                         }
                         StreamBasicInfo streamBasicInfo =
                                 new StreamBasicInfo(
