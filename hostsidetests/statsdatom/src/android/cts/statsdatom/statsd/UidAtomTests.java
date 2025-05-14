@@ -601,7 +601,7 @@ public class UidAtomTests extends DeviceTestCase implements IBuildReceiver {
                 atomTag);
         DeviceUtils.runDeviceTestsOnStatsdApp(getDevice(), ".AtomTests", "testScreenBrightness");
 
-        List<Integer> expectedValues = Arrays.asList(47, 70);
+        List<Integer> expectedValues = Arrays.asList(47, 55);
 
         // Sorted list of brightness values in order in which they occurred, filtered to only
         // contain expectedValues if they are present.
