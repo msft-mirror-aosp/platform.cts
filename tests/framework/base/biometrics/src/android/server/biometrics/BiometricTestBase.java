@@ -393,15 +393,7 @@ abstract class BiometricTestBase implements TestSessionList.Idler {
     }
 
     protected void waitForAllUnenrolled() throws Exception {
-        for (int i = 0; i < 20; i++) {
-            if (anyEnrollmentsExist()) {
-                Log.d(TAG, "Enrollments still exist..");
-                Thread.sleep(300);
-            } else {
-                return;
-            }
-        }
-        fail("Some sensors still have enrollments. State: " + getCurrentState());
+        Utils.waitForAllUnenrolled();
     }
 
     /**
@@ -668,27 +660,7 @@ abstract class BiometricTestBase implements TestSessionList.Idler {
 
     protected void enrollForSensor(@NonNull BiometricTestSession session, int sensorId)
             throws Exception {
-        Log.d(TAG, "Enrolling for sensor: " + sensorId);
-        final int userId = Utils.getUserId();
-
-        session.startEnroll(userId);
-        mInstrumentation.waitForIdleSync();
-        Utils.waitForBusySensor(sensorId, this::getSensorStates);
-
-        //Wait for enrollment operation in biometrics sensor to be complete before
-        //retrieving enrollment results. The operation takes a little time especically
-        //on Cutterfish where multiple biometric operations must be completed during
-        //the enrollent
-        //TODO(b/217275524)
-        Thread.sleep(200);
-        session.finishEnroll(userId);
-        mInstrumentation.waitForIdleSync();
-        Utils.waitForIdleService(this::getSensorStates);
-
-        final BiometricServiceState state = getCurrentState();
-        assertEquals("Sensor: " + sensorId + " should have exactly one enrollment",
-                1, state.mSensorStates.sensorStates
-                        .get(sensorId).getUserStates().get(userId).numEnrolled);
+        Utils.enrollForSensor(session, sensorId);
     }
 
     protected void waitForCredentialIdle(boolean shouldShow,
