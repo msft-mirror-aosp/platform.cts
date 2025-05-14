@@ -896,6 +896,7 @@ public final class InputMethodServiceTest extends EndToEndImeTestBase {
 
             final Activity activity = createTestActivity(SOFT_INPUT_STATE_ALWAYS_VISIBLE);
             expectEvent(stream, editorMatcher("onStartInput", mMarker), TIMEOUT);
+            expectImeVisible(TIMEOUT);
             final int initialOrientation = activity.getRequestedOrientation();
             try {
                 activity.setRequestedOrientation(SCREEN_ORIENTATION_LANDSCAPE);
