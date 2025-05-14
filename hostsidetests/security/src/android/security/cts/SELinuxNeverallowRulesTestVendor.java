@@ -21,7 +21,6 @@ import static org.junit.Assume.assumeTrue;
 
 import android.cts.host.utils.DeviceJUnit4ClassRunnerWithParameters;
 import android.cts.host.utils.DeviceJUnit4Parameterized;
-import android.platform.test.annotations.RestrictedBuildTest;
 
 import com.android.tradefed.build.IBuildInfo;
 import com.android.tradefed.device.ITestDevice;
@@ -149,7 +148,6 @@ public class SELinuxNeverallowRulesTestVendor extends BaseHostJUnit4Test {
     }
 
     @Test
-    @RestrictedBuildTest
     public void testNeverallowRules() throws Exception {
         mRule.testNeverallowRule(mSepolicyAnalyze, mDeviceVendorPolicyFile);
     }

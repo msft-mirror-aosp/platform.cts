@@ -19,7 +19,10 @@ package {
 
 android_test {
     name: "CtsNetSecConfigCertificateTransparencySdk36DefaultTestCases",
-    defaults: ["cts_defaults"],
+    defaults: [
+        "cts_defaults",
+        "networksecurityconfig-cts-jarjar-defaults",
+    ],
     static_libs: [
         "ctstestrunner-axt",
         "compatibility-device-util-axt",

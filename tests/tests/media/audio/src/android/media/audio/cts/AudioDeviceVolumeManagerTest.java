@@ -275,7 +275,7 @@ public class AudioDeviceVolumeManagerTest {
         final VolumeInfo volNotif =
                 new VolumeInfo.Builder(AudioManager.STREAM_NOTIFICATION).build();
         final AudioDeviceVolumeChangedListener listener = new AudioDeviceVolumeChangedListener();
-        final VolumeInfo newVolume = computeNewVolume(volMedia);
+        final VolumeInfo newVolume = computeNewVolumeWithMute(volMedia, /* mute= */ false);
 
         mADVmgr.setDeviceAbsoluteVolumeBehavior(
                 BT_SCO_DEV, volNotif, mContext.getMainExecutor(), listener);
@@ -305,7 +305,8 @@ public class AudioDeviceVolumeManagerTest {
                         .setMinVolumeIndex(minIndex)
                         .build();
         final AudioDeviceVolumeChangedListener listener = new AudioDeviceVolumeChangedListener();
-        final VolumeInfo newVolume = computeNewVolume(volMedia);
+        // set mute to true to check the VolumeInfo callback with the new mute state
+        final VolumeInfo newVolume = computeNewVolumeWithMute(volMedia, /* mute= */ true);
 
         mADVmgr.setDeviceAbsoluteVolumeBehavior(
                 BT_SCO_DEV, volMedia, mContext.getMainExecutor(), listener);
@@ -339,7 +340,8 @@ public class AudioDeviceVolumeManagerTest {
         final VolumeInfo volNotif =
                 new VolumeInfo.Builder(AudioManager.STREAM_NOTIFICATION).build();
         final AudioDeviceVolumeChangedListener listener = new AudioDeviceVolumeChangedListener();
-        final VolumeInfo newVolume = computeNewVolume(volMedia);
+        // set mute to true to check the VolumeInfo callback with the new mute state
+        final VolumeInfo newVolume = computeNewVolumeWithMute(volMedia, /* mute= */ true);
 
         mADVmgr.setDeviceAbsoluteMultiVolumeBehavior(
                 BT_SCO_DEV,
@@ -374,7 +376,7 @@ public class AudioDeviceVolumeManagerTest {
                         .setMinVolumeIndex(minIndex)
                         .build();
         final AudioDeviceVolumeChangedListener listener = new AudioDeviceVolumeChangedListener();
-        final VolumeInfo newVolume = computeNewVolume(volMedia);
+        final VolumeInfo newVolume = computeNewVolumeWithMute(volMedia, /* mute= */ false);
 
         mADVmgr.setDeviceAbsoluteVolumeBehavior(
                 BT_DEV, volMedia, mContext.getMainExecutor(), listener);
@@ -408,7 +410,8 @@ public class AudioDeviceVolumeManagerTest {
                         .setMaxVolumeIndex(maxIndex)
                         .setMinVolumeIndex(minIndex)
                         .build();
-        final VolumeInfo newVolume = computeNewVolume(volMedia);
+        // set mute to true to check the VolumeInfo callback with the new mute state
+        final VolumeInfo newVolume = computeNewVolumeWithMute(volMedia, /* mute= */ true);
         final AudioDeviceVolumeChangedListener listener = new AudioDeviceVolumeChangedListener();
         mADVmgr.setDeviceAbsoluteVolumeBehavior(
                 BT_DEV, volMedia, mContext.getMainExecutor(), listener);
@@ -422,12 +425,16 @@ public class AudioDeviceVolumeManagerTest {
                 listener.waitForVolumeChanged(VOLUME_UPDATE_TIME_MAX_MS, TimeUnit.MILLISECONDS));
     }
 
-    private VolumeInfo computeNewVolume(VolumeInfo volumeInfo) {
+    /** Return new volume info with different volume index and passed mute state. */
+    private VolumeInfo computeNewVolumeWithMute(VolumeInfo volumeInfo, boolean mute) {
         final VolumeInfo curVolume = mADVmgr.getDeviceVolume(volumeInfo, BT_SCO_DEV);
         final int newVolumeIndex =
                 curVolume.getVolumeIndex() < curVolume.getMaxVolumeIndex()
                         ? curVolume.getVolumeIndex() + 1
                         : curVolume.getMinVolumeIndex();
-        return new VolumeInfo.Builder(volumeInfo).setVolumeIndex(newVolumeIndex).build();
+        return new VolumeInfo.Builder(volumeInfo)
+                .setVolumeIndex(newVolumeIndex)
+                .setMuted(mute)
+                .build();
     }
 }

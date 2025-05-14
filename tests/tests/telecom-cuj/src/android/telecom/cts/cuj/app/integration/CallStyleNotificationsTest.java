@@ -27,7 +27,6 @@ import android.app.NotificationManager;
 import android.os.Bundle;
 import android.os.OutcomeReceiver;
 import android.os.RemoteException;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.telecom.Call;
 import android.telecom.CallAttributes;
 import android.telecom.CallControlCallback;
@@ -38,8 +37,6 @@ import android.telecom.PhoneAccountHandle;
 import android.telecom.cts.apps.AppControlWrapper;
 import android.telecom.cts.apps.Condition;
 import android.telecom.cts.cuj.BaseAppVerifier;
-
-import com.android.server.telecom.flags.Flags;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -116,7 +113,6 @@ public class CallStyleNotificationsTest extends BaseAppVerifier {
      *   <p>
      * </ul>
      */
-    @RequiresFlagsEnabled(Flags.FLAG_VOIP_CALL_MONITOR_REFACTOR)
     @Test
     public void testCallStyleNotificationBehavior_TransactionalVoipAppMain() throws Exception {
         if (!mShouldTestTelecom) {
@@ -146,7 +142,6 @@ public class CallStyleNotificationsTest extends BaseAppVerifier {
      *
      * @throws Exception
      */
-    @RequiresFlagsEnabled(Flags.FLAG_VOIP_CALL_MONITOR_REFACTOR)
     @Test
     public void testFGS_twoCalls_TransactionalVoipAppMain() throws Exception {
         if (!mShouldTestTelecom) {

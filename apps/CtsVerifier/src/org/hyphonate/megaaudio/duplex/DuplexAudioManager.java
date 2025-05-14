@@ -322,11 +322,9 @@ public class DuplexAudioManager {
         return DUPLEX_PLAYER | DUPLEX_RECORDER | DUPLEX_ERROR_NONE | result;
     }
 
-
     /**
-     * Stops and tearsdown both streams.
-     * It's not clear we can return a useful error code, so just let StreamBase.unwind()
-     * do the work.
+     * Stops and tears down both streams. It's not clear we can return a useful error code, so just
+     * let StreamBase.unwind() do the work.
      */
     public void stop() {
         if (LOG) {
@@ -339,13 +337,15 @@ public class DuplexAudioManager {
      * Unwinds both Player and Recorder (as appropriate)
      */
     public void unwind() {
-        if (mPlayer != null) {
-            mPlayer.unwind();
-            mPlayer = null;
-        }
+        // Stop the Recorder first so that the analyzers do not see the output
+        // being stopped, which can be noisy and cause tests to fail.
         if (mRecorder != null) {
             mRecorder.unwind();
             mRecorder = null;
+        }
+        if (mPlayer != null) {
+            mPlayer.unwind();
+            mPlayer = null;
         }
     }
 
