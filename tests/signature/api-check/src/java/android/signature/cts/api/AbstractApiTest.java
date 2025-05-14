@@ -93,14 +93,31 @@ public class AbstractApiTest extends InstrumentationTestCase {
                 null,
                 getGlobalHiddenApiPolicy());
 
-
         // Prepare for a class provider that loads classes from bootclasspath but filters
         // out known inaccessible classes.
-        // Note that com.android.internal.R.* inner classes are also excluded as they are
-        // not part of API though exist in the runtime.
-        mClassProvider = new ExcludingClassProvider(
-                new BootClassPathClassesProvider(),
-                name -> name != null && name.startsWith("com.android.internal.R."));
+        mClassProvider =
+                new ExcludingClassProvider(
+                        new BootClassPathClassesProvider(),
+                        name -> {
+                            if (name == null) {
+                                return false;
+                            }
+                            // com.android.internal.R.* inner classes are also excluded as they are
+                            // not part of API though exist in the runtime.
+                            if (name.startsWith("com.android.internal.R.")) {
+                                return true;
+                            }
+                            // http://b/407596762: This class requires prior initialization which
+                            // this test does not know how to perform.
+                            // This would normally not be an issue, but this leads to a native
+                            // crash instead of a native exception; which this test is not able to
+                            // recover from.
+                            if (name.startsWith(
+                                    "android.net.connectivity.org.chromium.base.TraceEvent")) {
+                                return true;
+                            }
+                            return false;
+                        });
 
         initializeFromArgs(instrumentationArgs);
     }
