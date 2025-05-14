@@ -57,15 +57,6 @@ java_defaults {
 
 java_defaults {
     name: "cts_content_defaults",
-    defaults: ["cts_content_base_defaults"],
-
-    jni_libs: [
-        "libnativecursorwindow_jni",
-    ],
-}
-
-java_defaults {
-    name: "cts_content_base_defaults",
     defaults: [
         "cts_defaults",
         "cts_content_resources_defaults",
@@ -348,7 +339,7 @@ android_test {
 
 android_test {
     name: "CtsPackageManagerBroadcastTestCases",
-    defaults: ["cts_content_base_defaults"],
+    defaults: ["cts_content_defaults"],
 
     test_suites: [
         "cts",

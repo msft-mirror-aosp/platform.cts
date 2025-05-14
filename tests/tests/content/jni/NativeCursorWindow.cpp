@@ -16,14 +16,14 @@
 
 #define TAG "NativeCursorWindow"
 
-#include <jni.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <sys/types.h>
-#include <sys/mman.h>
-#include <errno.h>
-
 #include <android/log.h>
+#include <fcntl.h>
+#include <jni.h>
+#include <sys/mman.h>
+#include <sys/types.h>
+#include <unistd.h>
+
+#include <cerrno>
 #define ALOGI(...) __android_log_print(ANDROID_LOG_INFO, TAG, __VA_ARGS__)
 #define ALOGE(...) __android_log_print(ANDROID_LOG_ERROR, TAG, __VA_ARGS__)
 
@@ -72,11 +72,9 @@ struct FieldSlot {
 } __attribute((packed));
 
 extern "C" JNIEXPORT jint JNICALL
-Java_android_content_cts_CursorWindowContentProvider_makeNativeCursorWindowFd(
-        JNIEnv *env, jclass clazz,
-        jstring filename, jint offset, jint size, jboolean isBlob) {
-
-    const char* chars = env->GetStringUTFChars(filename, NULL);
+Java_android_content_cts_contentprovider_CursorWindowContentProvider_makeNativeCursorWindowFd(
+        JNIEnv *env, jclass clazz, jstring filename, jint offset, jint size, jboolean isBlob) {
+    const char *chars = env->GetStringUTFChars(filename, nullptr);
 
     ALOGI("opening %s", chars);
 
@@ -92,17 +90,17 @@ Java_android_content_cts_CursorWindowContentProvider_makeNativeCursorWindowFd(
 
     ftruncate(fd, FILE_SIZE);
 
-    char* data = (char*) mmap(NULL, FILE_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+    char *data = (char *)mmap(nullptr, FILE_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
     if (data == (char*) -1) {
         ALOGE("mmap(%s) failed: %d", chars, errno);
         return -1;
     }
 
-    struct Header *header = (struct Header *) data;
+    auto *header = (struct Header *)data;
     unsigned rowSlotChunkOffset = sizeof(struct Header);
-    struct RowSlotChunk *rowSlotChunk = (struct RowSlotChunk *)(data + rowSlotChunkOffset);
+    auto *rowSlotChunk = (struct RowSlotChunk *)(data + rowSlotChunkOffset);
     unsigned fieldSlotOffset = rowSlotChunkOffset + sizeof(struct RowSlotChunk);
-    struct FieldSlot *fieldSlot = (struct FieldSlot *) (data + fieldSlotOffset);
+    auto *fieldSlot = (struct FieldSlot *)(data + fieldSlotOffset);
 
     header->numRows = 1;
     header->numColumns = 1;
@@ -117,5 +115,4 @@ Java_android_content_cts_CursorWindowContentProvider_makeNativeCursorWindowFd(
     munmap(data, FILE_SIZE);
 
     return fd;
-
 }

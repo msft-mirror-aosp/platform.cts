@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 The Android Open Source Project
+ * Copyright (C) 2025 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -11,13 +11,11 @@
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
- * limitations under the License
+ * limitations under the License.
  */
 
-package android.content.cts;
+package android.content.cts.contentprovider;
 
-import android.annotation.NonNull;
-import android.annotation.Nullable;
 import android.content.ContentProvider;
 import android.content.ContentValues;
 import android.database.AbstractWindowedCursor;
@@ -28,16 +26,21 @@ import android.os.Parcel;
 import android.os.ParcelFileDescriptor;
 import android.util.Log;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+
 import java.io.File;
+import java.io.IOException;
 
 /**
- * Content provider that uses a custom {@link CursorWindow} to inject file descriptor
- * pointing to another ashmem region having window slots with references outside of allowed ranges.
+ * Content provider that uses a custom {@link CursorWindow} to inject file descriptor pointing to
+ * another ashmem region having window slots with references outside of allowed ranges.
  *
  * <p>Used in {@link ContentProviderCursorWindowTest}
  */
-public class CursorWindowContentProvider extends ContentProvider {
+public final class CursorWindowContentProvider extends ContentProvider {
     private static final String TAG = "CursorWindowContentProvider";
+
     static {
         System.loadLibrary("nativecursorwindow_jni");
     }
@@ -51,24 +54,29 @@ public class CursorWindowContentProvider extends ContentProvider {
     }
 
     @Override
-    public Cursor query(Uri uri, String[] projection, String selection,
-            String[] selectionArgs, String sortOrder) {
-        AbstractWindowedCursor cursor = new AbstractWindowedCursor() {
-            @Override
-            public int getCount() {
-                return 1;
-            }
+    public Cursor query(
+            @NonNull Uri uri,
+            String[] projection,
+            String selection,
+            String[] selectionArgs,
+            String sortOrder) {
+        AbstractWindowedCursor cursor =
+                new AbstractWindowedCursor() {
+                    @Override
+                    public int getCount() {
+                        return 1;
+                    }
 
-            @Override
-            public String[] getColumnNames() {
-                return new String[] {"a"};
-            }
-        };
+                    @Override
+                    public String[] getColumnNames() {
+                        return new String[] {"a"};
+                    }
+                };
         cursor.setWindow(new InjectingCursorWindow("TmpWindow"));
         return cursor;
     }
 
-    class InjectingCursorWindow extends CursorWindow {
+    private final class InjectingCursorWindow extends CursorWindow {
         InjectingCursorWindow(String name) {
             super(name);
         }
@@ -90,33 +98,38 @@ public class CursorWindowContentProvider extends ContentProvider {
             }
             if (fdPos == -1) {
                 tmp.recycle();
-                throw new IllegalStateException("File descriptor not found in the output of "
-                        + "CursorWindow.writeToParcel");
+                throw new IllegalStateException(
+                        "File descriptor not found in the output of "
+                                + "CursorWindow.writeToParcel");
             }
             // Write reply with replaced file descriptor
-            ParcelFileDescriptor evilFd = ParcelFileDescriptor
-                    .adoptFd(makeNativeCursorWindowFd(mTempFilename, 1000, 1000, true));
-            dest.appendFrom(tmp, 0, fdPos);
-            dest.writeFileDescriptor(evilFd.getFileDescriptor());
+            try (ParcelFileDescriptor evilFd =
+                    ParcelFileDescriptor.adoptFd(
+                            makeNativeCursorWindowFd(mTempFilename, 1000, 1000, true))) {
+                dest.appendFrom(tmp, 0, fdPos);
+                dest.writeFileDescriptor(evilFd.getFileDescriptor());
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
             tmp.setDataPosition(dest.dataPosition());
             dest.appendFrom(tmp, dest.dataPosition(), tmp.dataAvail());
             tmp.recycle();
         }
     }
 
-    private static native int makeNativeCursorWindowFd(String filename,
-            int offset, int size, boolean isBlob);
+    private static native int makeNativeCursorWindowFd(
+            String filename, int offset, int size, boolean isBlob);
 
     // Stubs
 
     @Override
-    public int delete(Uri uri, String selection, String[] selectionArgs) {
+    public int delete(@NonNull Uri uri, String selection, String[] selectionArgs) {
         Log.e(TAG, "delete() not implemented");
         return 0;
     }
 
     @Override
-    public String getType(Uri uri) {
+    public String getType(@NonNull Uri uri) {
         Log.e(TAG, "getType() not implemented");
         return "";
     }
@@ -128,10 +141,9 @@ public class CursorWindowContentProvider extends ContentProvider {
     }
 
     @Override
-    public int update(Uri uri, ContentValues values, String selection,
-            String[] selectionArgs) {
+    public int update(
+            @NonNull Uri uri, ContentValues values, String selection, String[] selectionArgs) {
         Log.e(TAG, "update() not implemented");
         return 0;
     }
-
 }

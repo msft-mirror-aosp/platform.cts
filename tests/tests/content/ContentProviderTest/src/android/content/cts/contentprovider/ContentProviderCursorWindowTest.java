@@ -11,10 +11,12 @@
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
- * limitations under the License
+ * limitations under the License.
  */
 
-package android.content.cts;
+package android.content.cts.contentprovider;
+
+import static com.google.common.truth.Truth.assertWithMessage;
 
 import android.database.Cursor;
 import android.database.CursorWindowAllocationException;
@@ -22,24 +24,36 @@ import android.database.sqlite.SQLiteException;
 import android.net.Uri;
 import android.platform.test.annotations.AppModeSdkSandbox;
 import android.platform.test.annotations.AsbSecurityTest;
-import android.test.AndroidTestCase;
 import android.util.Log;
 
-/**
- * Test {@link CursorWindowContentProvider} .
- */
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
+
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
+/** Test {@link CursorWindowContentProvider} . */
+@RunWith(AndroidJUnit4.class)
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
-public class ContentProviderCursorWindowTest extends AndroidTestCase {
+public final class ContentProviderCursorWindowTest {
     private static final String TAG = "ContentProviderCursorWindowTest";
 
     @AsbSecurityTest(cveBugId = 34128677)
+    @Test
     public void testQuery() {
         // First check if the system has a patch for enforcing protected Parcel data
         Cursor cursor;
         try {
-            cursor = getContext().getContentResolver().query(
-                    Uri.parse("content://cursorwindow.provider/hello"),
-                    null, null, null, null);
+            cursor =
+                    InstrumentationRegistry.getInstrumentation()
+                            .getTargetContext()
+                            .getContentResolver()
+                            .query(
+                                    Uri.parse("content://cursorwindow.provider/hello"),
+                                    null,
+                                    null,
+                                    null,
+                                    null);
         } catch (CursorWindowAllocationException expected) {
             Log.i(TAG, "Expected exception: " + expected);
             return;
@@ -52,11 +66,12 @@ public class ContentProviderCursorWindowTest extends AndroidTestCase {
 
             int type = cursor.getType(0);
             if (type != Cursor.FIELD_TYPE_BLOB) {
-                fail("Unexpected type " + type);
+                assertWithMessage("Unexpected type " + type).fail();
             }
             byte[] blob = cursor.getBlob(0);
-            Log.i(TAG,  "Blob length " + blob.length);
-            fail("getBlob should fail due to invalid offset used in the field slot");
+            Log.i(TAG, "Blob length " + blob.length);
+            assertWithMessage("getBlob should fail due to invalid offset used in the field slot")
+                    .fail();
         } catch (SQLiteException expected) {
             Log.i(TAG, "Expected exception: " + expected);
         } finally {
