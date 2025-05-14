@@ -68,7 +68,9 @@ import android.graphics.drawable.StateListDrawable;
 import android.os.Bundle;
 import android.os.Parcelable;
 import android.os.SystemClock;
+import android.os.VibrationAttributes;
 import android.os.Vibrator;
+import android.os.vibrator.HapticFeedbackRequest;
 import android.platform.test.annotations.AppModeSdkSandbox;
 import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
@@ -4656,13 +4658,124 @@ public class ViewTest {
         assertFalse(view.performHapticFeedback(HapticFeedbackConstants.NO_HAPTICS));
     }
 
+    @Test
+    @RequiresFlagsEnabled(android.os.vibrator.Flags.FLAG_HAPTIC_FEEDBACK_WITH_CUSTOM_USAGE)
+    public void testHapticFeedback_withValidCustomUsage() {
+        Vibrator vib = mActivity.getSystemService(Vibrator.class);
+
+        final MockView view = (MockView) mActivity.findViewById(R.id.mock_view);
+        final int NO_HAPTICS = HapticFeedbackConstants.NO_HAPTICS;
+        final int FLAG_IGNORE_VIEW_SETTING = HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING;
+        final int FLAG_IGNORE_GLOBAL_SETTING = HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING;
+        final int ALWAYS = FLAG_IGNORE_VIEW_SETTING | FLAG_IGNORE_GLOBAL_SETTING;
+        final int[] TEST_CONSTANTS = {
+            HapticFeedbackConstants.LONG_PRESS,
+            HapticFeedbackConstants.CONFIRM,
+            HapticFeedbackConstants.REJECT,
+            HapticFeedbackConstants.SEGMENT_TICK,
+        };
+        final int[] FEEDBACK_USAGES =
+                new int[] {
+                    VibrationAttributes.USAGE_HARDWARE_FEEDBACK,
+                    VibrationAttributes.USAGE_PHYSICAL_EMULATION,
+                    VibrationAttributes.USAGE_ACCESSIBILITY,
+                    VibrationAttributes.USAGE_TOUCH,
+                    VibrationAttributes.USAGE_UNKNOWN,
+                };
+
+        view.setHapticFeedbackEnabled(false);
+        for (int usage : FEEDBACK_USAGES) {
+            for (int constant : TEST_CONSTANTS) {
+                HapticFeedbackRequest request =
+                        new HapticFeedbackRequest.Builder(constant)
+                                .setUsage(usage)
+                                .setFlags(FLAG_IGNORE_GLOBAL_SETTING)
+                                .build();
+                // Expect no vibration because haptic feedback has been disabled for the View.
+                assertFalse(
+                        "Expected no vibration for constant=" + constant + " usage=" + usage,
+                        view.performHapticFeedback(request));
+                // Expect vibration. Even though haptic feedback has been disabled for the View,
+                // the FLAG_IGNORE_VIEW_SETTING flag should override that.
+                request = new HapticFeedbackRequest.Builder(request).setFlags(ALWAYS).build();
+                assertPerformHapticFeedbackTrueIfHasVibrator(
+                        "Expected vibration for constant=" + constant + " usage=" + usage,
+                        vib,
+                        view.performHapticFeedback(request));
+            }
+        }
+
+        view.setHapticFeedbackEnabled(true);
+        for (int usage : FEEDBACK_USAGES) {
+            for (int constant : TEST_CONSTANTS) {
+                HapticFeedbackRequest request =
+                        new HapticFeedbackRequest.Builder(constant)
+                                .setUsage(usage)
+                                .setFlags(FLAG_IGNORE_GLOBAL_SETTING)
+                                .build();
+                assertPerformHapticFeedbackTrueIfHasVibrator(
+                        "Expected vibration for constant=" + constant + " usage=" + usage,
+                        vib,
+                        view.performHapticFeedback(request));
+            }
+        }
+
+        HapticFeedbackRequest request =
+                new HapticFeedbackRequest.Builder(NO_HAPTICS)
+                        .setUsage(VibrationAttributes.USAGE_TOUCH)
+                        .setFlags(FLAG_IGNORE_GLOBAL_SETTING)
+                        .build();
+        assertFalse(view.performHapticFeedback(request));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(android.os.vibrator.Flags.FLAG_HAPTIC_FEEDBACK_WITH_CUSTOM_USAGE)
+    public void testHapticFeedback_withInvalidCustomUsage_noVibration() {
+        final MockView view = (MockView) mActivity.findViewById(R.id.mock_view);
+        final int FLAG_IGNORE_GLOBAL_SETTING = HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING;
+        final int[] NON_FEEDBACK_USAGES =
+                new int[] {
+                    VibrationAttributes.USAGE_UNKNOWN,
+                    VibrationAttributes.USAGE_ALARM,
+                    VibrationAttributes.USAGE_MEDIA,
+                    VibrationAttributes.USAGE_RINGTONE,
+                    VibrationAttributes.USAGE_NOTIFICATION,
+                    VibrationAttributes.USAGE_COMMUNICATION_REQUEST,
+                };
+        final int[] TEST_CONSTANTS = {
+            HapticFeedbackConstants.LONG_PRESS,
+            HapticFeedbackConstants.CONFIRM,
+            HapticFeedbackConstants.REJECT,
+            HapticFeedbackConstants.SEGMENT_TICK,
+        };
+        view.setHapticFeedbackEnabled(true);
+
+        for (int usage : NON_FEEDBACK_USAGES) {
+            for (int constant : TEST_CONSTANTS) {
+                HapticFeedbackRequest request =
+                        new HapticFeedbackRequest.Builder(constant)
+                                .setUsage(usage)
+                                .setFlags(FLAG_IGNORE_GLOBAL_SETTING)
+                                .build();
+                assertFalse(
+                        "Expected no vibration for constant=" + constant + " usage=" + usage,
+                        view.performHapticFeedback(request));
+            }
+        }
+    }
+
+    private void assertPerformHapticFeedbackTrueIfHasVibrator(Vibrator vib, boolean result) {
+        assertPerformHapticFeedbackTrueIfHasVibrator(/* assertionMessage= */ null, vib, result);
+    }
+
     /**
      * Assert that the result must be true if the device has a vibrator. If no vibrator, the method
      * may return true or false depending on whether USE_ASYNC_PERFORM_HAPTIC_FEEDBACK is active.
      */
-    private void assertPerformHapticFeedbackTrueIfHasVibrator(Vibrator vib, boolean result) {
+    private void assertPerformHapticFeedbackTrueIfHasVibrator(
+            String assertionMessage, Vibrator vib, boolean result) {
         if (vib.hasVibrator()) {
-            assertTrue(result);
+            assertTrue(assertionMessage, result);
         }
     }
 
