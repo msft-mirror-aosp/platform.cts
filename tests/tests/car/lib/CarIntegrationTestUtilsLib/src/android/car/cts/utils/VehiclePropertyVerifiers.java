@@ -1141,17 +1141,6 @@ public class VehiclePropertyVerifiers {
                 .setAllPossibleEnumValues(VEHICLE_AUTONOMOUS_STATES);
     }
 
-    public static VehiclePropertyVerifier.Builder<Float>
-            getBrakePadWearPercentageVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.BRAKE_PAD_WEAR_PERCENTAGE,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_WHEEL,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_ONCHANGE,
-                        Float.class)
-                .addReadPermission(Car.PERMISSION_READ_BRAKE_INFO);
-    }
-
     public static VehiclePropertyVerifier.Builder<Boolean> getBrakeFluidLevelLowVerifierBuilder() {
         return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.BRAKE_FLUID_LEVEL_LOW,
