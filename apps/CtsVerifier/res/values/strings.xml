@@ -5725,6 +5725,8 @@ You should be prompted to select credentials; choose the ones you just installed
 
     <string name="audio_exempt_nonhandheld">This is a non-handheld device and is exempt from this test.
         Press the \"Pass\" button (below) to continue.</string>
+    <string name="audio_exempt_emulator">This is an emulator and is exempt from this test.
+        Press the \"Pass\" button (below) to continue.</string>
 
     <string name="audio_datapaths_MMAP">MMAP:"</string>
     <string name="audio_datapaths_MMAP_exclusive">MMAP Exclusive:"</string>
@@ -5767,6 +5769,7 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="audio_datapaths_analog_headsetundetermined">Support for an Analog Headset Jack could not be determined.
         If an Analog Headset Jack is available, please insert an Analog Loopback Plug and run the test.</string>
     <string name="audio_datapaths_nonhandheld_autopass">Non-Handheld device. A PASS is automatically granted.</string>
+    <string name="audio_datapaths_emulator_autopass">Emulator device. A PASS is automatically granted.</string>
 
     <string name="audio_datapaths_usb_nosupport">This device does not have a host-mode USB port. A PASS is automatically granted.</string>
     <string name="audio_datapaths_usb_undetermined">Support for host-mode USB could not be determined.
