@@ -28,7 +28,6 @@ import android.view.View;
 import android.widget.RadioButton;
 import android.widget.TextView;
 
-// CTS Verifier
 import com.android.cts.verifier.R;
 import com.android.cts.verifier.audio.analyzers.BaseSineAnalyzer;
 import com.android.cts.verifier.audio.audiolib.AudioDeviceUtils;
@@ -40,7 +39,6 @@ import com.android.cts.verifier.libs.ui.HtmlFormatter;
 import com.android.cts.verifier.libs.ui.PlainTextFormatter;
 import com.android.cts.verifier.libs.ui.TextFormatter;
 
-// MegaAudio
 import org.hyphonate.megaaudio.common.BuilderBase;
 import org.hyphonate.megaaudio.common.StreamBase;
 import org.hyphonate.megaaudio.duplex.DuplexAudioManager;
@@ -896,15 +894,18 @@ public class AudioMultichannelMixdownActivity
 
             mAudioSource.setMask(1 << testPhase.mOutputChannel);
 
-            (mTimer = new Timer()).schedule(new TimerTask() {
-                @Override
-                public void run() {
-                    if (mTestPhase != TestManager.TESTPHASE_NONE) {
-                        completeTestPhase();
-                    }
-                    advanceTestPhase();
-                }
-            }, (int) ((TEST_TIME_IN_SECONDS  + stateChangeDelay) * MS_PER_SEC));
+            mTimer = new Timer();
+            mTimer.schedule(
+                    new TimerTask() {
+                        @Override
+                        public void run() {
+                            if (mTestPhase != TestManager.TESTPHASE_NONE) {
+                                completeTestPhase();
+                            }
+                            advanceTestPhase();
+                        }
+                    },
+                    (int) ((TEST_TIME_IN_SECONDS + stateChangeDelay) * MS_PER_SEC));
         }
     }
 
