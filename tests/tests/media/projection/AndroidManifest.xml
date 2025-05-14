@@ -45,6 +45,7 @@
         <activity android:name="android.media.projection.cts.MediaProjectionMirroringTest$TestRotationActivity"
             android:label="Rotating MediaProjection Mirroring Activity"
             android:configChanges="orientation" />
+        <activity android:name="android.server.wm.MediaProjectionHelper$MediaProjectionActivity" />
     </application>
 
     <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner"
