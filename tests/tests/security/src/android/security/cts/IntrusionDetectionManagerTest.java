@@ -16,7 +16,6 @@
 
 package android.security.cts;
 
-
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertEquals;
@@ -50,6 +49,8 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 import androidx.test.uiautomator.UiDevice;
 
+import com.android.compatibility.common.util.ConnectivityUtils;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -59,6 +60,8 @@ import org.junit.runner.RunWith;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
@@ -144,13 +147,14 @@ public class IntrusionDetectionManagerTest {
         assertTrue(commandLatch.await(1, SECONDS));
 
         var stateLatch = new CountDownLatch(1);
-        mIntrusionDetectionManager.addStateCallback(executor,
+        Consumer<Integer> scb =
                 state -> {
                     if (stateLatch.getCount() > 0) {
                         stateLatch.countDown();
                         assertEquals(IntrusionDetectionManager.STATE_DISABLED, state.intValue());
                     }
-                });
+                };
+        mIntrusionDetectionManager.addStateCallback(executor, scb);
         assertTrue(stateLatch.await(1, SECONDS));
         executor.close();
         mInstrumentation.getUiAutomation().dropShellPermissionIdentity();
@@ -200,6 +204,11 @@ public class IntrusionDetectionManagerTest {
         assertThrows(SecurityException.class,
                 () -> mIntrusionDetectionManager.removeStateCallback(scb));
         executor.close();
+        // Cleanup: remove state callback.
+        mInstrumentation
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(Manifest.permission.READ_INTRUSION_DETECTION_STATE);
+        mIntrusionDetectionManager.removeStateCallback(scb);
         mInstrumentation.getUiAutomation().dropShellPermissionIdentity();
     }
 
@@ -334,6 +343,7 @@ public class IntrusionDetectionManagerTest {
         assertThat(commandLatch1.await(1, SECONDS)).isTrue();
         assertThat(scb0Latch2.await(1, SECONDS)).isTrue();
         executor.close();
+        mIntrusionDetectionManager.removeStateCallback(scb0);
         mInstrumentation.getUiAutomation().dropShellPermissionIdentity();
     }
 
@@ -349,7 +359,8 @@ public class IntrusionDetectionManagerTest {
         var stateLatch0 = new CountDownLatch(1);
         AtomicInteger stateCounter = new AtomicInteger();
         stateCounter.set(0);
-        mIntrusionDetectionManager.addStateCallback(executor,
+
+        Consumer<Integer> scb =
                 state -> {
                     if (stateCounter.get() == 0) {
                         assertEquals(IntrusionDetectionManager.STATE_DISABLED, state.intValue());
@@ -358,7 +369,8 @@ public class IntrusionDetectionManagerTest {
                     } else {
                         fail("state callback can be called only once!");
                     }
-                });
+                };
+        mIntrusionDetectionManager.addStateCallback(executor, scb);
 
         var commandLatch0 = new CountDownLatch(1);
         mIntrusionDetectionManager.disable(executor,
@@ -378,6 +390,7 @@ public class IntrusionDetectionManagerTest {
         assertThat(commandLatch0.await(1, SECONDS)).isTrue();
 
         executor.close();
+        mIntrusionDetectionManager.removeStateCallback(scb);
         mInstrumentation.getUiAutomation().dropShellPermissionIdentity();
     }
 
@@ -398,7 +411,7 @@ public class IntrusionDetectionManagerTest {
         var stateLatch1 = new CountDownLatch(1);
         AtomicInteger stateCounter = new AtomicInteger();
         stateCounter.set(0);
-        mIntrusionDetectionManager.addStateCallback(executor,
+        Consumer<Integer> scb =
                 state -> {
                     if (stateCounter.get() == 0) {
                         assertEquals(IntrusionDetectionManager.STATE_DISABLED, state.intValue());
@@ -411,7 +424,8 @@ public class IntrusionDetectionManagerTest {
                     } else {
                         fail("state callback can only be called twice!");
                     }
-                });
+                };
+        mIntrusionDetectionManager.addStateCallback(executor, scb);
 
         var commandLatch0 = new CountDownLatch(1);
         mIntrusionDetectionManager.enable(executor,
@@ -447,11 +461,12 @@ public class IntrusionDetectionManagerTest {
 
         assertThat(commandLatch1.await(1, SECONDS)).isTrue();
         executor.close();
+        mIntrusionDetectionManager.removeStateCallback(scb);
         mInstrumentation.getUiAutomation().dropShellPermissionIdentity();
     }
 
     @Test
-    public void testEnable_verifyDataSources() throws Exception {
+    public void testEnable_verifySecurityLogSource() throws Exception {
         assumeTrue(shouldTestIntrusionDetectionEventTransportConfig());
         // TODO: b/399717716 [AIL] Drop permissions in CTS tests
         mInstrumentation
@@ -461,35 +476,21 @@ public class IntrusionDetectionManagerTest {
                         Manifest.permission.READ_INTRUSION_DETECTION_STATE,
                         Manifest.permission.MANAGE_INTRUSION_DETECTION_STATE);
         // Data source logs may only be gathered by the system server.
-        assumeTrue(isSystemUser());
+        assumeTrue("User is not system, skipping test", isSystemUser());
 
         var executor = newSingleThreadExecutor();
+
         String securityEventTag = "test_security_event_tag";
 
         // Register receiver to detect when security event was received by the test app.
         CountDownLatch securityEventLatch = new CountDownLatch(1);
         IntrusionDetectionBroadcastReceiver securityEventReceiver =
                 new IntrusionDetectionBroadcastReceiver(securityEventLatch);
-        IntentFilter filter =
+        IntentFilter securityEventFilter =
                 new IntentFilter(
                         "com.android.coretests.apps.testapp.ACTION_SECURITY_EVENT_RECEIVED");
-        mContext.registerReceiver(securityEventReceiver, filter, Context.RECEIVER_EXPORTED);
-
-        AtomicInteger stateCounter = new AtomicInteger();
-        stateCounter.set(0);
-        mIntrusionDetectionManager.addStateCallback(
-                executor,
-                state -> {
-                    if (stateCounter.get() == 0) {
-                        assertEquals(IntrusionDetectionManager.STATE_DISABLED, state.intValue());
-                        stateCounter.getAndIncrement();
-                    } else if (stateCounter.get() == 1) {
-                        assertEquals(IntrusionDetectionManager.STATE_ENABLED, state.intValue());
-                        stateCounter.getAndIncrement();
-                    } else {
-                        fail("state callback can only be called twice!");
-                    }
-                });
+        mContext.registerReceiver(
+                securityEventReceiver, securityEventFilter, Context.RECEIVER_EXPORTED);
 
         var commandLatch0 = new CountDownLatch(1);
         mIntrusionDetectionManager.enable(
@@ -508,23 +509,6 @@ public class IntrusionDetectionManagerTest {
 
         assertThat(commandLatch0.await(1, SECONDS)).isTrue();
 
-        var commandLatch1 = new CountDownLatch(1);
-        mIntrusionDetectionManager.enable(
-                executor,
-                new IntrusionDetectionManager.CommandCallback() {
-                    @Override
-                    public void onSuccess() {
-                        commandLatch1.countDown();
-                    }
-
-                    @Override
-                    public void onFailure(int error) {
-                        fail("onFailure shall not be called");
-                    }
-                });
-
-        assertThat(commandLatch1.await(1, SECONDS)).isTrue();
-
         generateSecurityEvent(securityEventTag);
 
         // Security logs are batched by the DevicePolicyManager. Force the
@@ -534,6 +518,67 @@ public class IntrusionDetectionManagerTest {
         assertThat(securityEventLatch.await(1, SECONDS)).isTrue();
 
         mContext.unregisterReceiver(securityEventReceiver);
+        executor.close();
+        mInstrumentation.getUiAutomation().dropShellPermissionIdentity();
+    }
+
+    @Test
+    public void testEnable_verifyNetworkLogSource() throws Exception {
+        assumeTrue(shouldTestIntrusionDetectionEventTransportConfig());
+        // TODO: b/399717716 [AIL] Drop permissions in CTS tests
+        mInstrumentation
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(
+                        Manifest.permission.INTERNET,
+                        Manifest.permission.ACCESS_NETWORK_STATE,
+                        Manifest.permission.BIND_INTRUSION_DETECTION_EVENT_TRANSPORT_SERVICE,
+                        Manifest.permission.READ_INTRUSION_DETECTION_STATE,
+                        Manifest.permission.MANAGE_INTRUSION_DETECTION_STATE);
+        // Data source logs may only be gathered by the system server.
+        assumeTrue("User is not system, skipping test", isSystemUser());
+        // A network connection is required to send a DNS event.
+        assumeTrue(
+                "No Network Connection, skipping test",
+                ConnectivityUtils.isNetworkConnected(mContext));
+
+        var executor = newSingleThreadExecutor();
+
+        String dnsEventTag = "google.com";
+
+        // Register receiver to detect when DNS event was received by the test app.
+        CountDownLatch dnsEventLatch = new CountDownLatch(1);
+        IntrusionDetectionBroadcastReceiver dnsEventReceiver =
+                new IntrusionDetectionBroadcastReceiver(dnsEventLatch);
+        IntentFilter dnsEventFilter =
+                new IntentFilter("com.android.coretests.apps.testapp.ACTION_DNS_EVENT_RECEIVED");
+        mContext.registerReceiver(dnsEventReceiver, dnsEventFilter, Context.RECEIVER_EXPORTED);
+
+        var commandLatch0 = new CountDownLatch(1);
+        mIntrusionDetectionManager.enable(
+                executor,
+                new IntrusionDetectionManager.CommandCallback() {
+                    @Override
+                    public void onSuccess() {
+                        commandLatch0.countDown();
+                    }
+
+                    @Override
+                    public void onFailure(int error) {
+                        fail("onFailure shall not be called");
+                    }
+                });
+
+        assertThat(commandLatch0.await(1, SECONDS)).isTrue();
+
+        try {
+            generateNetworkEvent(dnsEventTag);
+        } catch (Exception e) {
+            fail("Failed to generate network event: " + e.getMessage());
+        }
+
+        assertThat(dnsEventLatch.await(1, SECONDS)).isTrue();
+
+        mContext.unregisterReceiver(dnsEventReceiver);
         executor.close();
         mInstrumentation.getUiAutomation().dropShellPermissionIdentity();
     }
@@ -557,6 +602,28 @@ public class IntrusionDetectionManagerTest {
         ks.load(null);
         // Emit key destruction event.
         ks.deleteEntry(eventString);
+    }
+
+    /** Emits a given string into network log (if enabled). */
+    private void generateNetworkEvent(String server) throws IllegalArgumentException, IOException {
+        if (server == null || server.isEmpty()) {
+            throw new IllegalArgumentException(
+                    "Error generating network event: server must not be empty");
+        }
+
+        HttpURLConnection urlConnection = null;
+        int connectionTimeoutMS = 2_000;
+        try {
+            final URL url = new URL("http://" + server);
+            urlConnection = (HttpURLConnection) url.openConnection();
+            urlConnection.setConnectTimeout(connectionTimeoutMS);
+            urlConnection.setReadTimeout(connectionTimeoutMS);
+            urlConnection.getResponseCode();
+        } finally {
+            if (urlConnection != null) {
+                urlConnection.disconnect();
+            }
+        }
     }
 
     public static class IntrusionDetectionBroadcastReceiver extends BroadcastReceiver {
