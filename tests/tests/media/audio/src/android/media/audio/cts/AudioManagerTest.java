@@ -2012,17 +2012,29 @@ public class AudioManagerTest extends InstrumentationTestCase {
     }
 
     private void setInterruptionFilter(int filter) {
+        if (mNm.getCurrentInterruptionFilter() == filter) {
+            return;
+        }
+        final int expectedRingerMode = switch(filter) {
+            case NotificationManager.INTERRUPTION_FILTER_NONE,
+                 NotificationManager.INTERRUPTION_FILTER_PRIORITY,
+                 NotificationManager.INTERRUPTION_FILTER_ALARMS
+                    -> AudioManager.RINGER_MODE_SILENT;
+            case NotificationManager.INTERRUPTION_FILTER_ALL -> AudioManager.RINGER_MODE_NORMAL;
+            default -> throw new AssertionError("Unexpected notification type");
+        };
         mNm.setInterruptionFilter(filter);
         final long startPoll = SystemClock.uptimeMillis();
-        int currentFilter = -1;
+        int currentRingerMode = -1;
         while (SystemClock.uptimeMillis() - startPoll < POLL_TIME_UPDATE_INTERRUPTION_FILTER) {
-            currentFilter = mNm.getCurrentInterruptionFilter();
-            if (currentFilter == filter) {
+            currentRingerMode = mAudioManager.getRingerMode();
+            if (currentRingerMode == expectedRingerMode) {
                 return;
             }
         }
         Log.e(TAG, "interruption filter unsuccessfully set. wanted=" + filter
-                + " actual=" + currentFilter);
+                + " actual=" + mNm.getCurrentInterruptionFilter()
+                + " waitMillis=" + POLL_TIME_UPDATE_INTERRUPTION_FILTER);
     }
 
     private int getVolumeDelta(int volume) {
