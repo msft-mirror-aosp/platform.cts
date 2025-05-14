@@ -1130,16 +1130,15 @@ public class VehiclePropertyVerifiers {
                 .setAllPossibleEnumValues(TURN_SIGNAL_STATES);
     }
 
+    /**
+     * Gets the verifier builder for {@link
+     * VehiclePropertyIds#VEHICLE_DRIVING_AUTOMATION_TARGET_LEVEL}.
+     */
     public static VehiclePropertyVerifier.Builder<Integer>
             getVehicleDrivingAutomationTargetLevelVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.VEHICLE_DRIVING_AUTOMATION_TARGET_LEVEL,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_ONCHANGE,
-                        Integer.class)
-                .setAllPossibleEnumValues(VEHICLE_AUTONOMOUS_STATES)
-                .addReadPermission(Car.PERMISSION_CAR_DRIVING_STATE);
+        return VehiclePropertyVerifier.<Integer>newDefaultBuilder(
+                        VehiclePropertyIds.VEHICLE_DRIVING_AUTOMATION_TARGET_LEVEL)
+                .setAllPossibleEnumValues(VEHICLE_AUTONOMOUS_STATES);
     }
 
     public static VehiclePropertyVerifier.Builder<Float>
