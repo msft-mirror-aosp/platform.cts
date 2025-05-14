@@ -33,6 +33,7 @@ import static com.android.compatibility.common.util.ShellUtils.runShellCommand;
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
+import android.Manifest;
 import android.app.PendingIntent;
 import android.content.ComponentName;
 import android.content.Context;
@@ -56,6 +57,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.Parcel;
 import android.os.Process;
+import android.os.SystemClock;
 import android.os.UserManager;
 import android.platform.test.annotations.AppModeFull;
 import android.text.TextUtils;
@@ -1190,6 +1192,35 @@ public class MediaSessionTest {
         mSession.setRatingType(Rating.RATING_3_STARS);
         mSession.setSessionActivity(null);
         mSession.release();
+    }
+
+    @Test
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
+    public void garbageCollectedSession_isNoLongerRegisteredInMediaSessionService() {
+        // Ensure we can query all existing media sessions.
+        InstrumentationRegistry.getInstrumentation()
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(Manifest.permission.MEDIA_CONTENT_CONTROL);
+
+        // Create 5 sessions without explicit release and run garbage-collection.
+        for (int i = 0; i < 5; i++) {
+            MediaSession mediaSession = new MediaSession(mContext, "gc_test_" + i);
+            mediaSession.setActive(true);
+        }
+        Runtime.getRuntime().gc();
+        // Keep checking if any of these sessions remain.
+        long timeoutTimeMs = SystemClock.elapsedRealtime() + TIME_OUT_MS;
+        boolean hasGcTestSessions = true;
+        while (hasGcTestSessions && SystemClock.elapsedRealtime() < timeoutTimeMs) {
+            List<MediaController> activeSessions =
+                    new MediaSessionManager(mContext)
+                            .getActiveSessions(new ComponentName(mContext, MediaSessionTest.class));
+            hasGcTestSessions =
+                    activeSessions.stream()
+                            .anyMatch(controller -> controller.getTag().startsWith("gc_test_"));
+        }
+
+        assertThat(hasGcTestSessions).isFalse();
     }
 
     /**
