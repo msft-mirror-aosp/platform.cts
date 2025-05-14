@@ -35,6 +35,7 @@ _PATCH_W = 0.5
 _PATCH_X = 0.5 - _PATCH_W/2
 _PATCH_Y = 0.5 - _PATCH_H/2
 _TELE_CHART_HEIGHT_31CM = 6.5  # cm height of chart for 31cm distance
+_TELE_SCALE_STOP = 1.5  # extend search range for TELE cameras due to variety
 _VGA_W, _VGA_H = 640, 480
 
 
@@ -157,7 +158,7 @@ class FlipMirrorTest(its_base_test.ItsBaseTest):
         logging.debug('Initializing TELE camera chart at 31cm.')
         chart = opencv_processing_utils.Chart(
             cam, props, self.log_path, height=_TELE_CHART_HEIGHT_31CM,
-            distance=self.chart_distance)
+            distance=self.chart_distance, scale_stop=_TELE_SCALE_STOP)
       else:
         chart = opencv_processing_utils.Chart(
             cam, props, self.log_path, distance=self.chart_distance)
