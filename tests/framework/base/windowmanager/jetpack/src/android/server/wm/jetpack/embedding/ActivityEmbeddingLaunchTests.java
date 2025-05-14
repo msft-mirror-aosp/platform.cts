@@ -476,6 +476,21 @@ public class ActivityEmbeddingLaunchTests extends ActivityEmbeddingTestBase {
 
         // Finish the second activity and immediately launch the third activity.
         secondaryActivity.finish();
+
+        // There is no guarantee of the order between the completion of secondaryActivity.finish()
+        // and the corresponding TaskFragmentInfo callback. Normally, secondaryActivity.finish()
+        // completes first and then we continue creating the third activity. In this case, the split
+        // container is reused. In the rare case when the TaskFragmentInfo callback comes first, the
+        // old split container is removed and a new split is formed after the third activity is
+        // launch, which leads to an additional callback with empty SplitInfo and a single activity
+        // stack.
+        // In either case, we only need to verify that the final state is valid and the third
+        // activity is successfully launched into a split, so we ignore the empty SplitInfo and the
+        // single activity stack which may happen during the rare case.
+        mSplitInfoConsumer.setDropValuePredicate(List::isEmpty);
+        mActivityStackCallback.setDropValuePredicate(activityStacks -> activityStacks.size() == 1);
+
+        // Start the third activity
         final Activity thirdActivity =
                 startActivityAndVerifySplitAttributes(
                         primaryActivity,
@@ -484,6 +499,9 @@ public class ActivityEmbeddingLaunchTests extends ActivityEmbeddingTestBase {
                         "thirdActivity",
                         mSplitInfoConsumer,
                         mActivityStackCallback);
+
+        mSplitInfoConsumer.setDropValuePredicate(null);
+        mActivityStackCallback.setDropValuePredicate(null);
 
         // Verify that the third activity is correctly launched into the split
         final List<SplitInfo> lastReportedSplitInfoList = mSplitInfoConsumer.getLastReportedValue();
