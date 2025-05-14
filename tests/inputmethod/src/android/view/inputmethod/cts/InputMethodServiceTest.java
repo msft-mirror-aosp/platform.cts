@@ -59,6 +59,7 @@ import android.app.Instrumentation;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.content.res.Configuration;
 import android.graphics.Matrix;
 import android.graphics.Rect;
 import android.graphics.RectF;
@@ -72,6 +73,7 @@ import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.server.wm.DisplayMetricsSession;
+import android.server.wm.WindowManagerStateHelper;
 import android.text.TextUtils;
 import android.view.Display;
 import android.view.KeyCharacterMap;
@@ -887,6 +889,7 @@ public final class InputMethodServiceTest extends EndToEndImeTestBase {
     @Test
     public void testImeVisibleAfterRotation() throws Exception {
         assumeNotHideNavBarForKeyboardOrAutomotive();
+        final var wmState = new WindowManagerStateHelper();
 
         try (MockImeSession imeSession = MockImeSession.create(
                 InstrumentationRegistry.getInstrumentation().getContext(),
@@ -897,19 +900,30 @@ public final class InputMethodServiceTest extends EndToEndImeTestBase {
             final Activity activity = createTestActivity(SOFT_INPUT_STATE_ALWAYS_VISIBLE);
             expectEvent(stream, editorMatcher("onStartInput", mMarker), TIMEOUT);
             expectImeVisible(TIMEOUT);
-            final int initialOrientation = activity.getRequestedOrientation();
+            final int initialRequestedOrientation = activity.getRequestedOrientation();
+            final int initialOrientation = activity.getResources().getConfiguration().orientation;
             try {
                 activity.setRequestedOrientation(SCREEN_ORIENTATION_LANDSCAPE);
-                mInstrumentation.waitForIdleSync();
+                assertTrue(
+                        "Activity orientation was set to landscape",
+                        wmState.waitForActivityOrientation(
+                                activity.getComponentName(), Configuration.ORIENTATION_LANDSCAPE));
                 android.util.Log.d(TAG, "Expecting visible IME");
                 expectImeVisible(TIMEOUT);
 
                 activity.setRequestedOrientation(SCREEN_ORIENTATION_PORTRAIT);
-                mInstrumentation.waitForIdleSync();
+                assertTrue(
+                        "Activity orientation was set to portrait",
+                        wmState.waitForActivityOrientation(
+                                activity.getComponentName(), Configuration.ORIENTATION_PORTRAIT));
                 expectImeVisible(TIMEOUT);
             } finally {
-                if (initialOrientation != SCREEN_ORIENTATION_PORTRAIT) {
-                    activity.setRequestedOrientation(initialOrientation);
+                if (initialRequestedOrientation != SCREEN_ORIENTATION_PORTRAIT) {
+                    activity.setRequestedOrientation(initialRequestedOrientation);
+                    assertTrue(
+                            "Activity orientation was restored",
+                            wmState.waitForActivityOrientation(
+                                    activity.getComponentName(), initialOrientation));
                 }
             }
         }
