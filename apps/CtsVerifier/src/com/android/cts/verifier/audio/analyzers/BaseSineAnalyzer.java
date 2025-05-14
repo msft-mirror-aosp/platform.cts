@@ -59,7 +59,9 @@ public class BaseSineAnalyzer implements SignalAnalyzer {
     static final int DEFAULT_SAMPLERATE = 48000;
     static final int MILLIS_PER_SECOND = 1000;  // by definition
     static final int MAX_LATENCY_MILLIS = 1000;  // arbitrary and generous
-    static final int TARGET_GLITCH_FREQUENCY = 1000;
+    // Use odd frequency to avoid perfect alignment with 48 frame burst.
+    // That can hide buffer underruns that reorder bursts.
+    static final int TARGET_GLITCH_FREQUENCY = 857;
     static final double MIN_REQUIRED_MAGNITUDE = 0.001;
     static final int TYPICAL_SAMPLE_RATE = 48000;
     static final double MAX_SINE_FREQUENCY = 1000.0;
