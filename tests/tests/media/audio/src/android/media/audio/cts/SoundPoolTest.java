@@ -35,6 +35,9 @@ import androidx.test.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.ApiLevelUtil;
 
+import junitparams.JUnitParamsRunner;
+import junitparams.Parameters;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -45,10 +48,6 @@ import java.io.FileDescriptor;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.util.Arrays;
-
-import junitparams.JUnitParamsRunner;
-import junitparams.Parameters;
-
 
 //TODO(b/263104457) - Refactor SoundPoolTest to single test file. Use test parametrization instead
 // of inheritance.
@@ -278,8 +277,21 @@ abstract class SoundPoolTest {
             soundIds[i] = loadSampleSync(sounds[i], PRIORITY);
             System.out.println("load: " + soundIds[i]);
         }
+
+        // In the rare case where SoundPool is processing in all available stream threads,
+        // we do not block but return 0.
+        // SoundPool is not obligated to play the most recent initiated streams.
+        // The app is free to retry or ignore playing the sound, as the sounds are short
+        // and may be ignored due to priority or other reasons regardless.
+
+        // For the CTS test, we give three chances to play any missing sound.
+
         for (int i = 0; i < soundIds.length; i++) {
-            streamIds[i] = mSoundPool.play(soundIds[i], LOUD, LOUD, PRIORITY, -1, 1);
+            for (int tries = 0; tries < 3; ++tries) {
+                streamIds[i] = mSoundPool.play(soundIds[i], LOUD, LOUD, PRIORITY, -1, 1);
+                if (streamIds[i] != 0) break;
+                Thread.yield(); // allow the SoundPool stream worker thread to process.
+            }
         }
         Thread.sleep(3000);
         for (int stream : streamIds) {
