@@ -1214,7 +1214,8 @@ public abstract class AudioDataPathsBaseActivity
         static final int TESTSTEP_NONE = -1;
         private int mTestStep = TESTSTEP_NONE;
 
-        private Timer mTimer;
+        private volatile Timer mTimer;
+        private final Object mTimerMutex = new Object();
 
         public void initializeTests() {
             // Get the test modules from the sub-class
@@ -1459,7 +1460,22 @@ public abstract class AudioDataPathsBaseActivity
         }
 
         private static final int MS_PER_SEC = 1000;
-        private static final int TEST_TIME_IN_SECONDS = 2;
+        private static final int ANALYSIS_TIME_MILLIS = 1000;
+
+        class MyTimerTask extends TimerTask {
+            public void run() {
+                completeTestStep(); // Finish the currently running test, if any.
+                advanceTestModule(); // Start the next test, if any.
+                // Schedule the end of this test and the beginning of the next.
+                synchronized (mTimerMutex) {
+                    if (mTimer != null) {
+                        // Analyze data for the same amount of time for every test.
+                        mTimer.schedule(new MyTimerTask(), ANALYSIS_TIME_MILLIS);
+                    }
+                }
+            }
+        }
+
         public void startTest(int api) {
             showDeviceView();
 
@@ -1469,23 +1485,21 @@ public abstract class AudioDataPathsBaseActivity
             mTestCanceledByUser = false;
 
             mUtiltitiesHandler.setEnabled(false);
-
-            (mTimer = new Timer()).scheduleAtFixedRate(new TimerTask() {
-                @Override
-                public void run() {
-                    completeTestStep();
-                    advanceTestModule();
-                }
-            }, 0, TEST_TIME_IN_SECONDS * MS_PER_SEC);
+            synchronized (mTimerMutex) {
+                mTimer = new Timer();
+                mTimer.schedule(new MyTimerTask(), 0);
+            }
         }
 
         public void stopTest() {
             if (mTestStep != TESTSTEP_NONE) {
                 mTestStep = TESTSTEP_NONE;
 
-                if (mTimer != null) {
-                    mTimer.cancel();
-                    mTimer = null;
+                synchronized (mTimerMutex) {
+                    if (mTimer != null) {
+                        mTimer.cancel();
+                        mTimer = null;
+                    }
                 }
                 mDuplexAudioManager.unwind();
             }
