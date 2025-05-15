@@ -25,7 +25,6 @@ import static android.car.cts.utils.VehiclePropertyVerifiers.assertFuelPropertyN
 import static android.car.cts.utils.VehiclePropertyVerifiers.getEngineRpmVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getEvBatteryLevelVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getFuelDoorOpenVerifierBuilder;
-import static android.car.cts.utils.VehiclePropertyVerifiers.getFuelLevelLowVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getFuelLevelVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getHvacAcOnVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getHvacActualFanSpeedRpmVerifierBuilder;
@@ -1632,7 +1631,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         getEvBatteryLevelVerifierBuilder(),
                         getEvCurrentBatteryCapacityVerifierBuilder(),
                         getRangeRemainingVerifierBuilder(),
-                        getFuelLevelLowVerifierBuilder(),
                         getFuelDoorOpenVerifierBuilder(),
                         getEvChargeCurrentDrawLimitVerifierBuilder(),
                         getEvChargePercentLimitVerifierBuilder(),
