@@ -26,14 +26,19 @@ import android.graphics.BitmapFactory;
 import android.graphics.pdf.PdfRenderer;
 import android.graphics.pdf.PdfRendererPreV;
 import android.graphics.pdf.RenderParams;
+import android.graphics.pdf.flags.Flags;
 import android.os.Build;
 import android.os.Environment;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
 import androidx.annotation.DrawableRes;
 import androidx.annotation.RawRes;
 import androidx.test.filters.SdkSuppress;
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -45,7 +50,11 @@ import java.util.List;
 
 /** Tests covering compat changes in {@link PdfRenderer} */
 @RunWith(Parameterized.class)
+@RequiresFlagsEnabled(Flags.FLAG_ENABLE_RENDER_PARAMS_FORM_OPTIONS)
 public class PdfFormRenderingTest {
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
     private static final String LOCAL_DIRECTORY =
             Environment.getExternalStorageDirectory() + "/PdfFormRenderingTest";
     private static final int CLICK_FORM = R.raw.click_form;

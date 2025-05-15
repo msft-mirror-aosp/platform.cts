@@ -41,8 +41,10 @@ android_test {
         "cts-install-lib",
         "compatibility-device-util-axt",
         "ctstestrunner-axt",
+        "flag-junit",
         "junit",
         "modules-utils-native-coverage-listener",
+        "pdf_viewer_flags_java_lib",
     ],
     jni_libs: [
         "libnativecoverage",
