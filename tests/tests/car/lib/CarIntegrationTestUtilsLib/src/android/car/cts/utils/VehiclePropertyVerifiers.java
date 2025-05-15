@@ -1152,13 +1152,9 @@ public class VehiclePropertyVerifiers {
                 .requireZeroToBeContainedInMinMaxRanges();
     }
 
+    /** Gets the verifier builder for {@link VehiclePropertyIds#RANGE_REMAINING}. */
     public static VehiclePropertyVerifier.Builder<Float> getRangeRemainingVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.RANGE_REMAINING,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_CONTINUOUS,
-                        Float.class)
+        return VehiclePropertyVerifier.<Float>newDefaultBuilder(VehiclePropertyIds.RANGE_REMAINING)
                 .setCarPropertyValueVerifier(
                         (verifierContext,
                                 carPropertyConfig,
@@ -1170,10 +1166,7 @@ public class VehiclePropertyVerifiers {
                                                 "RANGE_REMAINING Float value must be greater than"
                                                         + " or equal 0")
                                         .that(rangeRemaining)
-                                        .isAtLeast(0))
-                .addReadPermission(Car.PERMISSION_ENERGY)
-                .addReadPermission(Car.PERMISSION_ADJUST_RANGE_REMAINING)
-                .addWritePermission(Car.PERMISSION_ADJUST_RANGE_REMAINING);
+                                        .isAtLeast(0));
     }
 
     public static VehiclePropertyVerifier.Builder<Float>
