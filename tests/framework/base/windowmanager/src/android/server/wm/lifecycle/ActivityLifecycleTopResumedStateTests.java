@@ -718,28 +718,27 @@ public class ActivityLifecycleTopResumedStateTests extends ActivityLifecycleClie
     public void testTopPositionRemovedBehindLockScreen() throws Exception {
         assumeTrue(supportsSecureLock());
 
-        final Activity activity = launchActivityAndWait(CallbackTrackingActivity.class);
+        final Class<NoRelaunchCallbackTrackingActivity> activityClass =
+                NoRelaunchCallbackTrackingActivity.class;
+        launchActivityAndWait(activityClass);
 
         getTransitionLog().clear();
         try (final LockScreenSession lockScreenSession = new LockScreenSession()) {
             lockScreenSession.setLockCredential().gotoKeyguard();
 
-            waitAndAssertActivityStates(state(activity, ON_STOP));
-            assertResumeToStopSequence(CallbackTrackingActivity.class,
-                    getTransitionLog());
+            waitAndAssertActivityStates(state(activityClass, ON_STOP));
+            assertResumeToStopSequence(activityClass, getTransitionLog());
 
             getTransitionLog().clear();
         }
 
         // Lock screen removed - activity should be on top now
         if (isCar()) {
-            assertStopToResumeSubSequence(CallbackTrackingActivity.class,
-                    getTransitionLog());
-            waitAndAssertActivityCurrentState(activity.getClass(), ON_TOP_POSITION_GAINED);
+            assertStopToResumeSubSequence(activityClass, getTransitionLog());
+            waitAndAssertActivityCurrentState(activityClass, ON_TOP_POSITION_GAINED);
         } else {
-            waitAndAssertActivityStates(state(activity, ON_TOP_POSITION_GAINED));
-            assertStopToResumeSequence(CallbackTrackingActivity.class,
-                    getTransitionLog());
+            waitAndAssertActivityStates(state(activityClass, ON_TOP_POSITION_GAINED));
+            assertStopToResumeSequence(activityClass, getTransitionLog());
         }
     }
 
