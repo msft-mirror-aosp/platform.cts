@@ -1180,13 +1180,9 @@ public class VehiclePropertyVerifiers {
                 .addReadPermission(Car.PERMISSION_ENERGY);
     }
 
+    /** Gets the verifier builder for {@link VehiclePropertyIds#EV_BATTERY_LEVEL}. */
     public static VehiclePropertyVerifier.Builder<Float> getEvBatteryLevelVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.EV_BATTERY_LEVEL,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_CONTINUOUS,
-                        Float.class)
+        return VehiclePropertyVerifier.<Float>newDefaultBuilder(VehiclePropertyIds.EV_BATTERY_LEVEL)
                 .setCarPropertyValueVerifier(
                         (verifierContext,
                                 carPropertyConfig,
@@ -1221,8 +1217,7 @@ public class VehiclePropertyVerifiers {
                                                     + "value")
                                     .that(evBatteryLevel)
                                     .isAtMost((Float) infoEvBatteryCapacityValue.getValue());
-                        })
-                .addReadPermission(Car.PERMISSION_ENERGY);
+                        });
     }
 
     public static VehiclePropertyVerifier.Builder<Boolean>
