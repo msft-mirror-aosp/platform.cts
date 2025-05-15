@@ -27,6 +27,7 @@ import static android.graphics.pdf.cts.module.Utils.A4_WIDTH_PTS;
 import static android.graphics.pdf.cts.module.Utils.EMPTY_PDF;
 import static android.graphics.pdf.cts.module.Utils.INCORRECT_LOAD_PARAMS;
 import static android.graphics.pdf.cts.module.Utils.LOAD_PARAMS;
+import static android.graphics.pdf.cts.module.Utils.ONE_HIGHLIGHT_ANNOTATION_ONE_FORM_WIDGET_TEXTFIELD;
 import static android.graphics.pdf.cts.module.Utils.ONE_IMAGE_PAGE_OBJECT;
 import static android.graphics.pdf.cts.module.Utils.ONE_PATH_ONE_IMAGE_PAGE_OBJECT;
 import static android.graphics.pdf.cts.module.Utils.ONE_PATH_PAGE_OBJECT;
@@ -61,6 +62,7 @@ import android.graphics.Matrix;
 import android.graphics.Path;
 import android.graphics.Point;
 import android.graphics.PointF;
+import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.pdf.PdfRendererPreV;
 import android.graphics.pdf.RenderParams;
@@ -77,6 +79,8 @@ import android.graphics.pdf.component.PdfPageTextObjectFont;
 import android.graphics.pdf.component.StampAnnotation;
 import android.graphics.pdf.content.PdfPageGotoLinkContent;
 import android.graphics.pdf.flags.Flags;
+import android.graphics.pdf.models.FormEditRecord;
+import android.graphics.pdf.models.FormWidgetInfo;
 import android.graphics.pdf.models.PageMatchBounds;
 import android.graphics.pdf.models.selection.PageSelection;
 import android.graphics.pdf.models.selection.SelectionBoundary;
@@ -1766,6 +1770,64 @@ public class PdfRendererPreVTest {
                 IllegalArgumentException.class,
                 () -> firstPage.updatePageAnnotation(stampAnnotationId, highlightAnnotation));
         renderer.close();
+    }
+
+    @Test
+    public void testRemovingAnnotationBeforeFormWidgetInAnnotsArray_DoesntImpactWidgetIndex()
+            throws IOException {
+        try (PdfRendererPreV renderer =
+                        createPreVRenderer(
+                                ONE_HIGHLIGHT_ANNOTATION_ONE_FORM_WIDGET_TEXTFIELD,
+                                mContext,
+                                null);
+                PdfRendererPreV.Page firstPage = renderer.openPage(0)) {
+
+            List<Pair<Integer, PdfAnnotation>> annotations = firstPage.getPageAnnotations();
+            assertThat(annotations.size()).isEqualTo(1);
+            assertThat(annotations.get(0).second).isNotNull();
+            assertThat(annotations.get(0).second.getPdfAnnotationType())
+                    .isEqualTo(PdfAnnotationType.HIGHLIGHT);
+
+            // Get FormWidgetInfos
+            List<FormWidgetInfo> widgetInfos = firstPage.getFormWidgetInfos();
+            assertThat(widgetInfos.size()).isEqualTo(1);
+            assertThat(widgetInfos.get(0).getWidgetType())
+                    .isEqualTo(FormWidgetInfo.WIDGET_TYPE_TEXTFIELD);
+            assertThat(widgetInfos.get(0).getWidgetIndex()).isEqualTo(0);
+
+            // Create FormEditRecord
+            FormEditRecord editRecordSetText =
+                    new FormEditRecord.Builder(
+                                    FormEditRecord.EDIT_TYPE_SET_TEXT,
+                                    /* pageNumber= */ 0,
+                                    /* widgetIndex= */ widgetInfos.get(0).getWidgetIndex())
+                            .setText("Edit Text")
+                            .build();
+
+            // Remove highlight annotation
+            firstPage.removePageAnnotation(annotations.get(0).first);
+
+            // Get FormWidgetInfos again
+            List<FormWidgetInfo> widgetInfosAfterRemovingAnnotation =
+                    firstPage.getFormWidgetInfos();
+            assertThat(widgetInfosAfterRemovingAnnotation.size()).isEqualTo(1);
+            FormWidgetInfo widgetInfoBeforeEdit = widgetInfosAfterRemovingAnnotation.get(0);
+            assertThat(widgetInfoBeforeEdit.getWidgetType())
+                    .isEqualTo(FormWidgetInfo.WIDGET_TYPE_TEXTFIELD);
+            assertThat(widgetInfoBeforeEdit.getWidgetIndex()).isEqualTo(0);
+
+            // Apply edit after removal of annotation
+            List<Rect> invalidatedRects = firstPage.applyEdit(editRecordSetText);
+            assertThat(invalidatedRects).isNotNull();
+            assertThat(invalidatedRects.size()).isGreaterThan(0);
+
+            // GetFormWidget and Index as before and validate the set text after applying edit
+            assertThat(
+                    firstPage
+                            .getFormWidgetInfoAtIndex(widgetInfoBeforeEdit.getWidgetIndex())
+                            .getTextValue())
+                    .isEqualTo("Edit Text");
+        }
     }
 
     private PdfPageImageObject createSamplePdfPageImageObject() {
