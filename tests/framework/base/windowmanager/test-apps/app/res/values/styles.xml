@@ -48,6 +48,11 @@
         <item name="android:windowSplashscreenContent">@drawable/red</item>
         <item name="android:windowSplashScreenBackground">@drawable/blue</item>
     </style>
+    <style name="BackgroundLightTheme" parent="@android:style/Theme.Material.NoActionBar">
+        <item name="android:isLightTheme">true</item>
+        <item name="android:forceDarkAllowed">false</item>
+        <item name="android:windowSplashScreenBackground">@drawable/white</item>
+    </style>
 
     <style name="ReplaceIconTheme" parent="@android:style/Theme.Material.NoActionBar">
         <item name="android:windowSplashScreenBackground">@drawable/blue</item>

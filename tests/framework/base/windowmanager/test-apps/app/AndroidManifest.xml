@@ -678,6 +678,11 @@
                   android:screenOrientation="locked"
                   android:theme="@style/SplashScreenStyleTheme"
                   android:taskAffinity="nobody.but.TestSplashScreenAffinity"/>
+        <activity android:name=".SplashScreenBackgroundLightActivity"
+            android:taskAffinity="nobody.but.SplashScreenBackgroundLightActivity"
+            android:theme="@style/BackgroundLightTheme"
+            android:screenOrientation="locked"
+            android:exported="true"/>
 
         <service android:name=".OverlayTestService"
                  android:foregroundServiceType="specialUse"
