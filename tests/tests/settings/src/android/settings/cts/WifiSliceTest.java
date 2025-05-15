@@ -19,9 +19,12 @@ package android.settings.cts;
 import static android.content.pm.PackageManager.PERMISSION_GRANTED;
 import static android.provider.Settings.Secure;
 
+import static com.android.cts.install.lib.InstallUtils.getPackageInfo;
+
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assume.assumeFalse;
+import static org.junit.Assume.assumeNotNull;
 
 import android.app.slice.Slice;
 import android.app.slice.SliceManager;
@@ -108,6 +111,10 @@ public class WifiSliceTest {
 
   @Test
   public void wifiSlice_hasCorrectUri() {
+        assumeNotNull(
+                "Skipping test: Settings application is not installed",
+                getPackageInfo("com.android.settings"));
+
     assertThat(mWifiSlice.getUri()).isEqualTo(WIFI_SLICE_URI);
   }
 
