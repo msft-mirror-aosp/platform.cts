@@ -1169,17 +1169,6 @@ public class VehiclePropertyVerifiers {
                                         .isAtLeast(0));
     }
 
-    public static VehiclePropertyVerifier.Builder<Float>
-            getEvBatteryInstantaneousChargeRateVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.EV_BATTERY_INSTANTANEOUS_CHARGE_RATE,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_CONTINUOUS,
-                        Float.class)
-                .addReadPermission(Car.PERMISSION_ENERGY);
-    }
-
     /** Gets the verifier builder for {@link VehiclePropertyIds#EV_BATTERY_LEVEL}. */
     public static VehiclePropertyVerifier.Builder<Float> getEvBatteryLevelVerifierBuilder() {
         return VehiclePropertyVerifier.<Float>newDefaultBuilder(VehiclePropertyIds.EV_BATTERY_LEVEL)
