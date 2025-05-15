@@ -689,14 +689,16 @@ public class ActivityLifecycleTopResumedStateTests extends ActivityLifecycleClie
     public void testTopPositionLaunchedBehindLockScreen() throws Exception {
         assumeTrue(supportsSecureLock());
 
+        final Class<NoRelaunchCallbackTrackingActivity> activityClass =
+                NoRelaunchCallbackTrackingActivity.class;
         try (final LockScreenSession lockScreenSession = new LockScreenSession()) {
             lockScreenSession.setLockCredential().gotoKeyguard();
 
-            new Launcher(CallbackTrackingActivity.class)
+            new Launcher(activityClass)
                     .setExpectedState(ON_STOP)
                     .setNoInstance()
                     .launch();
-            assertLaunchAndStopSequence(CallbackTrackingActivity.class, getTransitionLog(),
+            assertLaunchAndStopSequence(activityClass, getTransitionLog(),
                     true /* onTop */);
 
             getTransitionLog().clear();
@@ -704,13 +706,11 @@ public class ActivityLifecycleTopResumedStateTests extends ActivityLifecycleClie
 
         // Lock screen removed - activity should be on top now
         if (isCar()) {
-            assertStopToResumeSubSequence(CallbackTrackingActivity.class, getTransitionLog());
-            waitAndAssertActivityCurrentState(CallbackTrackingActivity.class,
-                    ON_TOP_POSITION_GAINED);
+            assertStopToResumeSubSequence(activityClass, getTransitionLog());
+            waitAndAssertActivityCurrentState(activityClass, ON_TOP_POSITION_GAINED);
         } else {
-            waitAndAssertActivityStates(
-                    state(CallbackTrackingActivity.class, ON_TOP_POSITION_GAINED));
-            assertStopToResumeSequence(CallbackTrackingActivity.class, getTransitionLog());
+            waitAndAssertActivityStates(state(activityClass, ON_TOP_POSITION_GAINED));
+            assertStopToResumeSequence(activityClass, getTransitionLog());
         }
     }
 
@@ -1215,4 +1215,6 @@ public class ActivityLifecycleTopResumedStateTests extends ActivityLifecycleClie
                 transition(CallbackTrackingActivity.class, ON_TOP_POSITION_GAINED)),
                 "finishAlwaysFocusablePip");
     }
+
+    public static class NoRelaunchCallbackTrackingActivity extends CallbackTrackingActivity {}
 }
