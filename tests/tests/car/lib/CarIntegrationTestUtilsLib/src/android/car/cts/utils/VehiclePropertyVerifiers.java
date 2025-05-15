@@ -1343,15 +1343,14 @@ public class VehiclePropertyVerifiers {
                 .addReadPermission(Car.PERMISSION_EXTERIOR_ENVIRONMENT);
     }
 
+    /**
+     * Gets the verifier builder for {@link VehiclePropertyIds#NIGHT_MODE}.
+     *
+     * <p>This property is required by CDD.
+     */
     public static VehiclePropertyVerifier.Builder<Boolean> getNightModeVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.NIGHT_MODE,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_ONCHANGE,
-                        Boolean.class)
-                .requireProperty()
-                .addReadPermission(Car.PERMISSION_EXTERIOR_ENVIRONMENT);
+        return VehiclePropertyVerifier.<Boolean>newDefaultBuilder(VehiclePropertyIds.NIGHT_MODE)
+                .requireProperty();
     }
 
     private static void verifyHvacTemperatureValueSuggestion(
