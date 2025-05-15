@@ -84,17 +84,25 @@ jboolean android_cts_CpuFeatures_isNativeBridgedCpu(JNIEnv* env, jobject thiz)
 #endif
 }
 
-jboolean android_cts_CpuFeatures_isRiscv64MisalignedFast(JNIEnv* env, jobject thiz) {
+jboolean android_cts_CpuFeatures_isRiscv64MisalignedScalarFast(JNIEnv* env, jobject) {
 #if defined(__riscv)
   // https://github.com/torvalds/linux/blob/master/arch/riscv/include/uapi/asm/hwprobe.h
-  riscv_hwprobe probes[] = {{.key = RISCV_HWPROBE_KEY_CPUPERF_0}};
+  riscv_hwprobe probes[] = {{.key = RISCV_HWPROBE_KEY_MISALIGNED_SCALAR_PERF}};
   __riscv_hwprobe(probes, 1, 0, nullptr, 0);
-  if ((probes[0].value & RISCV_HWPROBE_MISALIGNED_MASK) == RISCV_HWPROBE_MISALIGNED_FAST) {
-    return true;
-  }
+  return (probes[0].value == RISCV_HWPROBE_MISALIGNED_SCALAR_FAST);
 #endif
   return false;
 }
+
+jboolean android_cts_CpuFeatures_isRiscv64MisalignedVectorFast(JNIEnv* env, jobject) {
+  #if defined(__riscv)
+    // https://github.com/torvalds/linux/blob/master/arch/riscv/include/uapi/asm/hwprobe.h
+    riscv_hwprobe probes[] = {{.key = RISCV_HWPROBE_KEY_MISALIGNED_VECTOR_PERF}};
+    __riscv_hwprobe(probes, 1, 0, nullptr, 0);
+    return (probes[0].value == RISCV_HWPROBE_MISALIGNED_VECTOR_FAST);
+  #endif
+    return false;
+  }
 
 static JNINativeMethod gMethods[] = {
     {  "isArmCpu", "()Z",
@@ -109,8 +117,10 @@ static JNINativeMethod gMethods[] = {
             (void *) android_cts_CpuFeatures_isX86_64Cpu  },
     {  "getHwCaps", "()I",
             (void *) android_cts_CpuFeatures_getHwCaps  },
-    {  "isRiscv64MisalignedFast", "()Z",
-            (void *) android_cts_CpuFeatures_isRiscv64MisalignedFast },
+    {  "isRiscv64MisalignedScalarFast", "()Z",
+            (void *) android_cts_CpuFeatures_isRiscv64MisalignedScalarFast },
+    {  "isRiscv64MisalignedVectorFast", "()Z",
+            (void *) android_cts_CpuFeatures_isRiscv64MisalignedVectorFast },
     {  "isNativeBridgedCpu", "()Z",
             (void *) android_cts_CpuFeatures_isNativeBridgedCpu  },
 };
