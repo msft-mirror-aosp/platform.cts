@@ -18,6 +18,8 @@ package android.telephony.satellite.cts;
 
 import static android.telephony.ims.stub.ImsRegistrationImplBase.REGISTRATION_TECH_LTE;
 
+import static com.android.internal.telephony.satellite.SatelliteController.TIMEOUT_TYPE_EVALUATE_ESOS_PROFILES_PRIORITIZATION_DURATION_MILLIS;
+
 import static junit.framework.Assert.assertTrue;
 
 import static org.junit.Assert.assertEquals;
@@ -79,14 +81,13 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
     protected static WifiStateReceiver sWifiStateReceiver = null;
 
     protected static void beforeAllCarrierRoamingTestsBase() throws Exception {
+        beforeAllTestsBase();
         logd(TAG, "beforeAllCarrierRoamingTestsBase");
 
         MockModemManager.enforceMockModemDeveloperSetting();
         sMockModemManager = new MockModemManager();
         assertNotNull(sMockModemManager);
         assertTrue(sMockModemManager.connectMockModemService());
-
-        beforeAllTestsBase();
 
         sWifiStateReceiver = new WifiStateReceiver();
         IntentFilter wifiStateIntentFilter = new IntentFilter();
@@ -539,7 +540,7 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
         overrideCarrierConfig(subId, bundle);
     }
 
-    private static void setPhoneNumber(
+    protected static void setPhoneNumber(
         int subId, String carrierPhoneNumber) throws Exception {
         logd(TAG, "setPhoneNumber: subId=" + subId
             + ", carrierPhoneNumber=" + carrierPhoneNumber);
@@ -649,7 +650,10 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
     }
 
     protected static void setUpManualConnectTestEnvironment(int eSosSlotId, int eSosSimProfileId,
-        String phoneNumber, boolean supportCtsSmsApp) throws Exception {
+        String phoneNumber, boolean supportCtsSmsApp, boolean shouldSetUpMockSatelliteService)
+        throws Exception {
+        logd(TAG, "setUpManualConnectTestEnvironment: eSosSlotId=" + eSosSlotId
+            + ", eSosSimProfileId=" + eSosSimProfileId);
         // Insert sim card
         assertTrue(sMockModemManager.insertSimCard(eSosSlotId, eSosSimProfileId));
         TimeUnit.MILLISECONDS.sleep(TIMEOUT);
@@ -665,12 +669,20 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
         setPhoneNumber(sEsosSubId, phoneNumber);
 
         grantSatelliteAndSendSmsPermissions();
-        setupMockSatelliteService();
-        sMockSatelliteServiceManager.setSupportedRadioTechnologies(
-            new int[]{NTRadioTechnology.NB_IOT_NTN});
-        assertTrue(sMockSatelliteServiceManager.connectExternalSatelliteGatewayService());
-        sMockSatelliteServiceManager.setDatagramControllerBooleanConfig(false,
-                DatagramController.BOOLEAN_TYPE_WAIT_FOR_DEVICE_ALIGNMENT_IN_DEMO_DATAGRAM, true);
+        if (shouldSetUpMockSatelliteService) {
+            setupMockSatelliteService();
+            sMockSatelliteServiceManager.setSupportedRadioTechnologies(
+                new int[]{NTRadioTechnology.NB_IOT_NTN});
+            assertTrue(
+                sMockSatelliteServiceManager.connectExternalSatelliteGatewayService());
+            sMockSatelliteServiceManager.setDatagramControllerBooleanConfig(
+                false,
+                DatagramController.BOOLEAN_TYPE_WAIT_FOR_DEVICE_ALIGNMENT_IN_DEMO_DATAGRAM,
+                true);
+        }
+        assertTrue(sMockSatelliteServiceManager.setSatelliteControllerTimeoutDuration(false,
+                TIMEOUT_TYPE_EVALUATE_ESOS_PROFILES_PRIORITIZATION_DURATION_MILLIS, 5));
+
         // Enable CTS mode to ignore the requests from SG-APK and real Pointing UI app.
         assertTrue(sMockSatelliteServiceManager.setCtsMode(true));
         sSatelliteManager.setNtnSmsSupported(true);
@@ -718,6 +730,8 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
         // Disable CTS mode to accept the requests from SG-APK and real Pointing UI app.
         assertTrue(sMockSatelliteServiceManager.setCtsMode(false));
         sSatelliteManager.setNtnSmsSupported(false);
+        assertTrue(sMockSatelliteServiceManager.setSatelliteControllerTimeoutDuration(true,
+                TIMEOUT_TYPE_EVALUATE_ESOS_PROFILES_PRIORITIZATION_DURATION_MILLIS, 0));
         revokeSatellitePermission();
 
         cleanUpMockSim(slotId, simProfileId);

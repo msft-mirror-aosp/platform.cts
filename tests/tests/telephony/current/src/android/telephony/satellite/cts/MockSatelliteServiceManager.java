@@ -1584,16 +1584,19 @@ class MockSatelliteServiceManager {
         }
     }
 
-    boolean setSatelliteAccessAllowedForSubscriptions(@Nullable String subIdListStr) {
-        String args = "";
-        if (!TextUtils.isEmpty(subIdListStr)) {
-            args = " -s " + subIdListStr;
+    boolean setSatelliteAccessAllowedForSubscriptions(
+        boolean reset, @Nullable String subIdListStr) {
+        StringBuilder args = new StringBuilder();
+        if (reset) {
+            args.append(" -r");
+        } else if (!TextUtils.isEmpty(subIdListStr)) {
+            args.append(" -s " + subIdListStr);
         }
 
         try {
             String result = TelephonyUtils.executeShellCommand(mInstrumentation,
-                    SET_SATELLITE_ACCESS_ALLOWED_FOR_SUBSCRIPTIONS_CMD + args);
-            logd("setSatelliteAccessAllowedForSubscriptions(" + args
+                    SET_SATELLITE_ACCESS_ALLOWED_FOR_SUBSCRIPTIONS_CMD + args.toString());
+            logd("setSatelliteAccessAllowedForSubscriptions(" + args.toString()
                     + "): result = " + result);
             return true;
         } catch (Exception e) {
