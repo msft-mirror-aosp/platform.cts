@@ -1141,17 +1141,15 @@ public class VehiclePropertyVerifiers {
                 .setAllPossibleEnumValues(VEHICLE_AUTONOMOUS_STATES);
     }
 
+    /**
+     * Gets the verifier builder for {@link VehiclePropertyIds#VEHICLE_PASSIVE_SUSPENSION_HEIGHT}.
+     */
     public static VehiclePropertyVerifier.Builder<Integer>
             getVehiclePassiveSuspensionHeightVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.VEHICLE_PASSIVE_SUSPENSION_HEIGHT,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_WHEEL,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_CONTINUOUS,
-                        Integer.class)
+        return VehiclePropertyVerifier.<Integer>newDefaultBuilder(
+                        VehiclePropertyIds.VEHICLE_PASSIVE_SUSPENSION_HEIGHT)
                 .requireMinMaxValues()
-                .requireZeroToBeContainedInMinMaxRanges()
-                .addReadPermission(Car.PERMISSION_CAR_DYNAMICS_STATE);
+                .requireZeroToBeContainedInMinMaxRanges();
     }
 
     public static VehiclePropertyVerifier.Builder<Float> getRangeRemainingVerifierBuilder() {
