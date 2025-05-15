@@ -16,8 +16,6 @@
 
 package android.security.net.config.cts;
 
-import static android.security.net.config.cts.CertificateTransparencyTestUtils.CT_DIRECTORY_NAME;
-import static android.security.net.config.cts.CertificateTransparencyTestUtils.CT_PARENT_DIRECTORY_PATH;
 import static android.security.net.config.cts.CertificateTransparencyTestUtils.HTTP_OK_RESPONSE_CODE;
 import static android.security.net.config.cts.CertificateTransparencyTestUtils.NO_SCT_PROVIDED_DOMAIN;
 import static android.security.net.config.cts.CertificateTransparencyTestUtils.SCT_PROVIDED_DOMAIN;
@@ -35,7 +33,6 @@ import static org.junit.Assume.assumeTrue;
 
 import android.app.Instrumentation;
 import android.os.Build;
-import android.os.FileObserver;
 import android.util.Log;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -47,12 +44,9 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.security.cert.CertificateException;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLHandshakeException;
@@ -64,42 +58,27 @@ public class SctValidationLogListDownloadTest extends BaseTestCase {
     public static final Instrumentation sInstrumentation =
             InstrumentationRegistry.getInstrumentation();
 
-    private static CountDownLatch sCountDownLatch;
-    private static CTDirectoryFileObserver sFileObserver = new CTDirectoryFileObserver();
-
     private static final String TAG = "SctValidationLogListDownloadTest";
-
-    private static class CTDirectoryFileObserver extends FileObserver {
-        CTDirectoryFileObserver() {
-            super(new File(CT_PARENT_DIRECTORY_PATH), FileObserver.CREATE);
-        }
-
-        @Override
-        public void onEvent(int event, String path) {
-            if (CT_DIRECTORY_NAME.equals(path)) {
-                sCountDownLatch.countDown();
-            }
-        }
-    }
 
     @BeforeClass
     public static void setUpClass() throws Exception {
-        sFileObserver.startWatching();
         downloadLogList();
 
-        // Wait until the CT directory is created
-        sCountDownLatch = new CountDownLatch(1);
-
-        if (!sCountDownLatch.await(30L, TimeUnit.SECONDS)) {
-            // Continue onwards as the tests will be skipped
-            Log.d(TAG, "Took too long to download log list, skipping test");
+        long delay = 1000; // 1sec
+        for (int i = 0; i < 5; i++) {
+            if (isLogListFilePresent()) {
+                Log.d(TAG, "setUpClass: found the log list");
+                break;
+            }
+            Log.d(TAG, "setUpClass: waiting " + delay + "ms");
+            Thread.sleep(delay);
+            delay += 1000;
         }
     }
 
     @AfterClass
     public static void tearDownClass() throws Exception {
         deleteLogList();
-        sFileObserver.stopWatching();
     }
 
     @Test
