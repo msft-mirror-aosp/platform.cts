@@ -1289,16 +1289,6 @@ public class VehiclePropertyVerifiers {
                 Car.PERMISSION_CAR_INFO);
     }
 
-    public static VehiclePropertyVerifier.Builder<Float> getEnvOutsideTemperatureVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.ENV_OUTSIDE_TEMPERATURE,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_CONTINUOUS,
-                        Float.class)
-                .addReadPermission(Car.PERMISSION_EXTERIOR_ENVIRONMENT);
-    }
-
     /**
      * Gets the verifier builder for {@link VehiclePropertyIds#NIGHT_MODE}.
      *
