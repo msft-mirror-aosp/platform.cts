@@ -1243,13 +1243,9 @@ public class VehiclePropertyVerifiers {
                 .addWritePermission(Car.PERMISSION_CONTROL_ENERGY_PORTS);
     }
 
+    /** Gets the verifier builder for {@link VehiclePropertyIds#FUEL_LEVEL}. */
     public static VehiclePropertyVerifier.Builder<Float> getFuelLevelVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.FUEL_LEVEL,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_CONTINUOUS,
-                        Float.class)
+        return VehiclePropertyVerifier.<Float>newDefaultBuilder(VehiclePropertyIds.FUEL_LEVEL)
                 .setCarPropertyConfigVerifier(
                         (verifierContext, carPropertyConfig) -> {
                             assertFuelPropertyNotImplementedOnEv(
@@ -1289,8 +1285,7 @@ public class VehiclePropertyVerifiers {
                                                     + " INFO_FUEL_CAPACITY Float value")
                                     .that(fuelLevel)
                                     .isAtMost((Float) infoFuelCapacityValue.getValue());
-                        })
-                .addReadPermission(Car.PERMISSION_ENERGY);
+                        });
     }
 
     public static VehiclePropertyVerifier.Builder<Boolean> getFuelDoorOpenVerifierBuilder() {
