@@ -18,6 +18,11 @@
     package="android.content.cts.contentprovider">
     <application>
         <uses-library android:name="android.test.runner"/>
+        <provider android:name="android.content.cts.contentprovider.CursorWindowContentProvider"
+            android:authorities="cursorwindow.provider"
+            android:exported="true"
+            android:process=":providerProcess">
+        </provider>
     </application>
 
     <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner"

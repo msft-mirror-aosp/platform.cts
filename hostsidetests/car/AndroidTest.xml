@@ -34,4 +34,8 @@
         <option name="jar" value="CtsCarHostTestCases.jar" />
         <option name="runtime-hint" value="1m" />
     </test>
+    <object class="com.android.tradefed.testtype.suite.module.DeviceFeatureModuleController"
+            type="module_controller">
+        <option name="required-feature" value="android.hardware.type.automotive" />
+    </object>
 </configuration>

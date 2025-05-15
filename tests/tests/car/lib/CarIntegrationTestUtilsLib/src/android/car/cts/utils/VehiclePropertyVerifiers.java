@@ -1130,93 +1130,15 @@ public class VehiclePropertyVerifiers {
                 .setAllPossibleEnumValues(TURN_SIGNAL_STATES);
     }
 
-    public static VehiclePropertyVerifier.Builder<Float>
-            getInstantaneousFuelEconomyVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.INSTANTANEOUS_FUEL_ECONOMY,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_CONTINUOUS,
-                        Float.class)
-                .addReadPermission(Car.PERMISSION_MILEAGE_3P);
-    }
-
-    public static VehiclePropertyVerifier.Builder<Float>
-            getInstantaneousEvEfficiencyVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.INSTANTANEOUS_EV_EFFICIENCY,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_CONTINUOUS,
-                        Float.class)
-                .addReadPermission(Car.PERMISSION_MILEAGE_3P);
-    }
-
-    public static VehiclePropertyVerifier.Builder<Boolean> getVehicleHornEngagedVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.VEHICLE_HORN_ENGAGED,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_ONCHANGE,
-                        Boolean.class)
-                .addReadPermission(Car.PERMISSION_READ_CAR_HORN)
-                .addReadPermission(Car.PERMISSION_CONTROL_CAR_HORN)
-                .addWritePermission(Car.PERMISSION_CONTROL_CAR_HORN);
-    }
-
+    /**
+     * Gets the verifier builder for {@link
+     * VehiclePropertyIds#VEHICLE_DRIVING_AUTOMATION_TARGET_LEVEL}.
+     */
     public static VehiclePropertyVerifier.Builder<Integer>
             getVehicleDrivingAutomationTargetLevelVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.VEHICLE_DRIVING_AUTOMATION_TARGET_LEVEL,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_ONCHANGE,
-                        Integer.class)
-                .setAllPossibleEnumValues(VEHICLE_AUTONOMOUS_STATES)
-                .addReadPermission(Car.PERMISSION_CAR_DRIVING_STATE);
-    }
-
-    public static VehiclePropertyVerifier.Builder<Float>
-            getAcceleratorPedalCompressionPercentageVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.ACCELERATOR_PEDAL_COMPRESSION_PERCENTAGE,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_CONTINUOUS,
-                        Float.class)
-                .addReadPermission(Car.PERMISSION_READ_CAR_PEDALS);
-    }
-
-    public static VehiclePropertyVerifier.Builder<Float>
-            getBrakePedalCompressionPercentageVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.BRAKE_PEDAL_COMPRESSION_PERCENTAGE,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_CONTINUOUS,
-                        Float.class)
-                .addReadPermission(Car.PERMISSION_READ_CAR_PEDALS);
-    }
-
-    public static VehiclePropertyVerifier.Builder<Float>
-            getBrakePadWearPercentageVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.BRAKE_PAD_WEAR_PERCENTAGE,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_WHEEL,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_ONCHANGE,
-                        Float.class)
-                .addReadPermission(Car.PERMISSION_READ_BRAKE_INFO);
-    }
-
-    public static VehiclePropertyVerifier.Builder<Boolean> getBrakeFluidLevelLowVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.BRAKE_FLUID_LEVEL_LOW,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_ONCHANGE,
-                        Boolean.class)
-                .addReadPermission(Car.PERMISSION_READ_BRAKE_INFO);
+        return VehiclePropertyVerifier.<Integer>newDefaultBuilder(
+                        VehiclePropertyIds.VEHICLE_DRIVING_AUTOMATION_TARGET_LEVEL)
+                .setAllPossibleEnumValues(VEHICLE_AUTONOMOUS_STATES);
     }
 
     public static VehiclePropertyVerifier.Builder<Integer>

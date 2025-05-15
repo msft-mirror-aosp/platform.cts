@@ -1098,7 +1098,8 @@ public class PackageManagerTest {
         final String pkgFlags = parsePackageDump(HELLO_WORLD_PACKAGE_NAME, "    pkgFlags=[");
         assertEquals(
                 " DEBUGGABLE HAS_CODE ALLOW_TASK_REPARENTING ALLOW_CLEAR_USER_DATA TEST_ONLY "
-                        + "VM_SAFE_MODE ALLOW_BACKUP LARGE_HEAP ]",
+                        + "VM_SAFE_MODE ALLOW_BACKUP KILL_AFTER_RESTORE RESTORE_ANY_VERSION "
+                        + "LARGE_HEAP ]",
                 pkgFlags);
         final String privatePkgFlags = parsePackageDump(HELLO_WORLD_PACKAGE_NAME,
                 "    privatePkgFlags=[");

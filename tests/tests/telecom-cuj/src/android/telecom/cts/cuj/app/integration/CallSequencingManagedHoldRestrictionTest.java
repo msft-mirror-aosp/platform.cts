@@ -342,6 +342,7 @@ public class CallSequencingManagedHoldRestrictionTest extends BaseAppVerifier {
         AppControlWrapper wrapper = createOrGetAppWrapper(apps, app);
         String call = addOutgoingCallAndVerify(wrapper, false /*isHoldable*/);
         Log.i(TAG, "createHeldCall: created held call " + call + " on app " + app);
+        verifyCallIsInState(call, STATE_DIALING);
         setCallStateAndVerify(wrapper, call, Call.STATE_HOLDING);
         return call;
     }
@@ -351,6 +352,7 @@ public class CallSequencingManagedHoldRestrictionTest extends BaseAppVerifier {
         AppControlWrapper wrapper = createOrGetAppWrapper(apps, app);
         String call = addOutgoingCallAndVerify(wrapper, false /*isHoldable*/);
         Log.i(TAG, "createActiveCall: created active call " + call + " on app " + app);
+        verifyCallIsInState(call, STATE_DIALING);
         setCallStateAndVerify(wrapper, call, Call.STATE_ACTIVE);
         return call;
     }

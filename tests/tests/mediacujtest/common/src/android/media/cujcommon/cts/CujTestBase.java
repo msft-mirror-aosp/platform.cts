@@ -32,6 +32,7 @@ import android.os.Build;
 import android.os.UserManager;
 import android.telephony.TelephonyManager;
 
+import androidx.media3.common.audio.AudioManagerCompat;
 import androidx.test.core.app.ActivityScenario;
 import androidx.test.core.app.ApplicationProvider;
 
@@ -56,6 +57,9 @@ public class CujTestBase {
 
   // A delay of about 1 to 2 seconds is observed after each seek on slower devices.
   public static final Duration OVERHEAD_PER_SEEK = Duration.ofSeconds(2);
+
+  /** AudioManager parameters key for retrieving support of variable speeds during offload. */
+  private static final String OFFLOAD_VARIABLE_RATE_SUPPORTED_KEY = "offloadVariableRateSupported";
 
   static final int[] ORIENTATIONS = {
       ActivityInfo.SCREEN_ORIENTATION_PORTRAIT,
@@ -154,6 +158,19 @@ public class CujTestBase {
         .build();
     AudioAttributes defaultAudioAttributes = new AudioAttributes.Builder().build();
     return AudioManager.isOffloadedPlaybackSupported(audioFormat, defaultAudioAttributes);
+  }
+
+  /**
+   * Whether the device supports changing playback speed during offload.
+   */
+  public static boolean deviceSupportOffloadVariableRate(final Activity activity) {
+    AudioManager audioManager =
+                      AudioManagerCompat.getAudioManager(activity.getApplicationContext());
+    String offloadVariableRateSupportedKeyValue =
+          audioManager.getParameters(/* keys= */ OFFLOAD_VARIABLE_RATE_SUPPORTED_KEY);
+    return offloadVariableRateSupportedKeyValue != null
+              && offloadVariableRateSupportedKeyValue.equals(
+                  OFFLOAD_VARIABLE_RATE_SUPPORTED_KEY + "=1");
   }
 
   /**

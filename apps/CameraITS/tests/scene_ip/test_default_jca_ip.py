@@ -55,14 +55,15 @@ class DefaultJcaImageParityClassTest(its_base_test.ItsBaseTest):
     motor_channel = int(self.rotator_ch)
     lights_channel = int(self.lighting_ch)
     lights_port = gen2_rig_controller_utils.find_serial_port(self.lighting_cntl)
-    sensor_fusion_utils.establish_serial_comm(lights_port)
-    gen2_rig_controller_utils.set_lighting_state(
-        lights_port, lights_channel, 'ON')
-
+    if lights_port:
+      sensor_fusion_utils.establish_serial_comm(lights_port)
+      gen2_rig_controller_utils.set_lighting_state(
+          lights_port, lights_channel, 'ON')
     motor_port = gen2_rig_controller_utils.find_serial_port(
-        self.rotator_cntl)
-    gen2_rig_controller_utils.configure_rotator(motor_port, motor_channel)
-    gen2_rig_controller_utils.rotate(motor_port, motor_channel)
+          self.rotator_cntl)
+    if motor_port:
+      gen2_rig_controller_utils.configure_rotator(motor_port, motor_channel)
+      gen2_rig_controller_utils.rotate(motor_port, motor_channel)
 
   def setup_class(self):
     super().setup_class()
@@ -78,13 +79,15 @@ class DefaultJcaImageParityClassTest(its_base_test.ItsBaseTest):
     if self.rotator_cntl == 'gen2_rotator':
       # Release the serial ports properly after the test
       motor_port = gen2_rig_controller_utils.find_serial_port(self.rotator_cntl)
-      motor_port.close()
+      if motor_port:
+        motor_port.close()
     if self.lighting_cntl == 'gen2_lights':
       # Lights will go back to default state after the test
       lights_port = gen2_rig_controller_utils.find_serial_port(
           self.lighting_cntl
       )
-      lights_port.close()
+      if lights_port:
+        lights_port.close()
 
   def on_fail(self, record):
     super().on_fail(record)
@@ -135,6 +138,15 @@ class DefaultJcaImageParityClassTest(its_base_test.ItsBaseTest):
       # Get default camera app pkg name
       pkg_name = cam.get_default_camera_pkg()
       logging.debug('Default camera pkg name: %s', pkg_name)
+      camera_ids = cam.get_camera_ids()
+      primary_rear_cam = camera_ids.get('primaryRearCameraId')
+      primary_front_cam = camera_ids.get('primaryFrontCameraId')
+      flip_camera = True
+      logging.debug('Camera ids on device: %s', camera_ids)
+      if primary_rear_cam is None or primary_front_cam is None:
+        logging.debug('Device only has one primary camera')
+        flip_camera = False
+
       ui_interaction_utils.default_camera_app_dut_setup(device_id, pkg_name)
 
       # Launch ItsTestActivity
@@ -150,6 +162,7 @@ class DefaultJcaImageParityClassTest(its_base_test.ItsBaseTest):
           pkg_name=pkg_name,
           camera_facing=camera_facing,
           log_path=self.log_path,
+          flip_camera=flip_camera
       )
       ui_interaction_utils.pull_img_files(
           device_id, device_img_path, self.log_path

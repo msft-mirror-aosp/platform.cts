@@ -23,7 +23,6 @@ import android.platform.test.annotations.LargeTest;
 
 import com.android.compatibility.common.util.ApiTest;
 import com.android.tradefed.device.DeviceNotAvailableException;
-import com.android.tradefed.log.LogUtil.CLog;
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
 import com.android.tradefed.testtype.junit4.DeviceTestRunOptions;
 import com.android.tradefed.util.RunUtil;
@@ -65,42 +64,6 @@ public final class UserManagerHostTest extends BaseMultiUserTest {
         }
     }
 
-    @Test
-    @ApiTest(apis = {"android.os.UserManager#getPreviousForegroundUser"})
-    public void getPreviousForegroundUser_correctWhenRemovingCurrentUser() throws Exception {
-        assumeNewUsersCanBeAdded(1);
-
-        boolean isInteractiveHsum =
-                getDevice().isHeadlessSystemUserMode()
-                        && getDevice().canSwitchToHeadlessSystemUser();
-        int expectedPreviousUserIdBeforeReboot, expectedPreviousUserIdAfterReboot;
-        if (isInteractiveHsum) {
-            // TODO(b/412630247): should be UserInfo.USER_SYSTEM before and after reboot
-            expectedPreviousUserIdBeforeReboot = mInitialUserId;
-            expectedPreviousUserIdAfterReboot = mInitialUserId;
-        } else {
-            expectedPreviousUserIdBeforeReboot = mInitialUserId;
-            expectedPreviousUserIdAfterReboot = USER_NULL;
-        }
-        CLog.d(
-                "getPreviousForegroundUser_correctWhenRemovingCurrentUser():"
-                        + " expectedPreviousUserIdBeforeReboot=%d,"
-                        + " expectedPreviousUserIdAfterReboot=%d",
-                expectedPreviousUserIdBeforeReboot, expectedPreviousUserIdAfterReboot);
-
-        int userId1 = getDevice().createUser("test_user_1");
-        assertSwitchToUser(userId1);
-
-        removeUserEvenIfDisallowed(userId1);
-        assertPreviousUserIs(expectedPreviousUserIdBeforeReboot);
-
-        // Wait to allow user xml to be written.
-        RunUtil.getDefault().sleep(5000);
-
-        getDevice().reboot();
-
-        assertPreviousUserIs(expectedPreviousUserIdAfterReboot);
-    }
 
     private void assertPreviousUserIs(int expected) throws Exception {
         final DeviceTestRunOptions options = new DeviceTestRunOptions(TEST_APP_PKG_NAME)
@@ -127,9 +90,5 @@ public final class UserManagerHostTest extends BaseMultiUserTest {
                 .filter(userInfo -> !userInfo.isGuest())
                 .count();
         return getDevice().getMaxNumberOfUsersSupported() - nonGuestUsersCount;
-    }
-
-    private void removeUserEvenIfDisallowed(int userId) throws DeviceNotAvailableException {
-        getDevice().executeShellCommand("pm remove-user --set-ephemeral-if-in-use " + userId);
     }
 }

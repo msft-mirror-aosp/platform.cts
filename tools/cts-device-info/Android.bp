@@ -66,6 +66,10 @@ android_test_helper_app {
         "mcts-tzdata",
         "mcts-uwb",
         "mcts-wifi",
+        "mcts-uprobestats",
+        "mcts-nfc",
+        "mcts-crashrecovery",
+        "mcts-bt",
     ],
     static_libs: [
         "camera_platform_flags_java_lib",

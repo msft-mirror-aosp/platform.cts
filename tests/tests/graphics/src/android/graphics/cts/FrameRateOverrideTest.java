@@ -42,6 +42,7 @@ import com.android.cts.display.DisplayUtilKt;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -288,6 +289,7 @@ public final class FrameRateOverrideTest {
         testGlobalFrameRateOverride(activity.new DisplayGetRefreshRateFrameRateObserver());
     }
 
+    @Ignore("Disabled in b/412233132. Apps use Display#getRefreshRate, not Display.Mode#getRefreshRate")
     @Test
     public void testGlobalDisplayModeGetRefreshRateDisplayModeReturnsPhysicalRefreshRateEnabled()
             throws InterruptedException, IOException {

@@ -19,6 +19,7 @@ package android.server.wm.jetpack.extensions.util;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.window.extensions.core.util.function.Consumer;
+import androidx.window.extensions.core.util.function.Predicate;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -40,6 +41,7 @@ public class TestValueCountConsumer<T> implements Consumer<T> {
     private int mCount = DEFAULT_COUNT;
     private LinkedBlockingQueue<T> mLinkedBlockingQueue;
     private T mLastReportedValue;
+    @Nullable private Predicate<T> mDropValuePredicate;
 
     public TestValueCountConsumer() {
         mLinkedBlockingQueue = new LinkedBlockingQueue<>();
@@ -47,12 +49,20 @@ public class TestValueCountConsumer<T> implements Consumer<T> {
 
     @Override
     public void accept(T value) {
+        if (mDropValuePredicate != null && mDropValuePredicate.test(value)) {
+            return;
+        }
         // Asynchronously offer value to queue
         mLinkedBlockingQueue.offer(value);
     }
 
     public void setCount(int count) {
         mCount = count;
+    }
+
+    /** Values matching the {@code predicate} will be ignored. */
+    public void setDropValuePredicate(@Nullable Predicate<T> predicate) {
+        mDropValuePredicate = predicate;
     }
 
     /**

@@ -23,6 +23,7 @@
 
     <application android:label="CTS CUJ Installer">
         <activity android:name="android.packageinstaller.cts.cuj.installer.MainActivity"
+            android:configChanges="resourcesUnused"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.packageinstaller.cts.cuj.installer.action.LAUNCH_INSTALLER" />

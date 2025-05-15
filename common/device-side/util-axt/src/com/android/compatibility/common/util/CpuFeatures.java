@@ -58,7 +58,8 @@ public class CpuFeatures {
 
     public static native int getHwCaps();
 
-    public static native boolean isRiscv64MisalignedFast();
+    public static native boolean isRiscv64MisalignedScalarFast();
+    public static native boolean isRiscv64MisalignedVectorFast();
 
     public static native boolean isNativeBridgedCpu();
 

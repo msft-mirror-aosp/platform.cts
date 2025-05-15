@@ -81,6 +81,9 @@ class Utils {
     static final int PAGE_OBJECT_OVERLAPS =
             android.graphics.pdf.cts.module.R.raw.page_object_overlap;
 
+    static final int ONE_HIGHLIGHT_ANNOTATION_ONE_FORM_WIDGET_TEXTFIELD =
+            android.graphics.pdf.cts.module.R.raw.Pdf_with_highlight_annot_and_form_textfield;
+
     static final int EMPTY_PDF = android.graphics.pdf.cts.module.R.raw.empty;
     static final LoadParams LOAD_PARAMS = new LoadParams.Builder().setPassword("qwerty").build();
 

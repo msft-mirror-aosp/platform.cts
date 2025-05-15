@@ -142,6 +142,22 @@ public class ViewConfigurationTest {
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_VIEWCONFIGURATION_APIS)
+    public void testGetLongPressTimeoutMillisInstanceMethod() {
+        ViewConfiguration vc = ViewConfiguration.get(InstrumentationRegistry.getTargetContext());
+        int longPressTimeoutMillis = vc.getLongPressTimeoutMillis();
+        assertTrue(longPressTimeoutMillis > 0);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_VIEWCONFIGURATION_APIS)
+    public void testGetMultiPressTimeoutMillisInstanceMethod() {
+        ViewConfiguration vc = ViewConfiguration.get(InstrumentationRegistry.getTargetContext());
+        int multiPressTimeoutMillis = vc.getMultiPressTimeoutMillis();
+        assertTrue(multiPressTimeoutMillis > 0);
+    }
+
+    @Test
     public void testExceptionsThrown() {
         ViewConfiguration vc = new ViewConfiguration();
         boolean correctExceptionThrown = false;

@@ -507,7 +507,8 @@ public class InstallationTestBase extends PackageInstallerCujTestBase {
     private static void allowInstallIfGPPDialogExists() throws Exception {
         final Pattern morePattern = Pattern.compile(BUTTON_GPP_MORE_DETAILS_LABEL,
                 Pattern.CASE_INSENSITIVE);
-        UiObject2 more = getUiDevice().findObject(By.text(morePattern));
+        UiObject2 more =
+                findObject(By.text(morePattern), /* checkNull= */ false, /* timeoutMs= */ 2 * 1000);
         if (more != null) {
             more.click();
             waitForUiIdle();

@@ -18,9 +18,13 @@ package android.server.biometrics.util;
 
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+
 import android.content.ComponentName;
 import android.hardware.biometrics.BiometricManager;
 import android.hardware.biometrics.BiometricPrompt;
+import android.hardware.biometrics.BiometricTestSession;
 import android.hardware.biometrics.Flags;
 import android.hardware.biometrics.SensorProperties;
 import android.os.ParcelFileDescriptor;
@@ -140,6 +144,76 @@ public class Utils {
     }
 
     /**
+     * Waits for all sensors to have no enrollments.
+     *
+     * @throws Exception If any sensors still have enrollments.
+     */
+    public static void waitForAllUnenrolled() throws Exception {
+        for (int i = 0; i < 20; i++) {
+            if (anyEnrollmentsExist()) {
+                Log.d(TAG, "Enrollments still exist..");
+                Thread.sleep(300);
+            } else {
+                return;
+            }
+        }
+        fail("Some sensors still have enrollments. State: " + getBiometricServiceCurrentState());
+    }
+
+    private static boolean anyEnrollmentsExist() throws Exception {
+        final BiometricServiceState serviceState = getBiometricServiceCurrentState();
+
+        for (SensorStates.SensorState sensorState :
+                serviceState.mSensorStates.sensorStates.values()) {
+            for (SensorStates.UserState userState : sensorState.getUserStates().values()) {
+                if (userState.numEnrolled != 0) {
+                    Log.d(TAG, "Enrollments still exist: " + serviceState);
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Enrolls the specified sensor.
+     *
+     * @param session BiometricTestSession to use for enrollment.
+     * @param sensorId The sensor to enroll.
+     * @throws Exception If enrollment fails.
+     */
+    public static void enrollForSensor(@NonNull BiometricTestSession session, int sensorId)
+            throws Exception {
+        Log.d(TAG, "Enrolling for sensor: " + sensorId);
+        final int userId = getUserId();
+
+        session.startEnroll(userId);
+        getInstrumentation().waitForIdleSync();
+        waitForBusySensor(sensorId, () -> getBiometricServiceCurrentState().mSensorStates);
+
+        // Wait for enrollment operation in biometrics sensor to be complete before
+        // retrieving enrollment results. The operation takes a little time especially
+        // on Cuttlefish where multiple biometric operations must be completed during
+        // the enrollment
+        // TODO(b/217275524)
+        Thread.sleep(200);
+        session.finishEnroll(userId);
+        getInstrumentation().waitForIdleSync();
+        waitForIdleService(() -> getBiometricServiceCurrentState().mSensorStates);
+
+        final BiometricServiceState state = getBiometricServiceCurrentState();
+        assertEquals(
+                "Sensor: " + sensorId + " should have exactly one enrollment",
+                1,
+                state.mSensorStates
+                        .sensorStates
+                        .get(sensorId)
+                        .getUserStates()
+                        .get(userId)
+                        .numEnrolled);
+    }
+
+    /**
      * Retrieves the current states of all biometric sensor services (e.g. FingerprintService,
      * FaceService, etc).
      *
@@ -149,7 +223,7 @@ public class Utils {
      */
     @NonNull
     public static BiometricServiceState getBiometricServiceCurrentState() throws Exception {
-        final byte[] dump = Utils.executeShellCommand(DUMPSYS_BIOMETRIC);
+        final byte[] dump = executeShellCommand(DUMPSYS_BIOMETRIC);
         final BiometricServiceStateProto proto = BiometricServiceStateProto.parseFrom(dump);
         return BiometricServiceState.parseFrom(proto);
     }

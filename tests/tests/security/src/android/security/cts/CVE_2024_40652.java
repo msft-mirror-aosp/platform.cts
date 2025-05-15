@@ -18,8 +18,8 @@ package android.security.cts;
 
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 
-import static com.android.compatibility.common.util.UserSettings.NAMESPACE_GLOBAL;
 import static com.android.compatibility.common.util.SystemUtil.runShellCommand;
+import static com.android.compatibility.common.util.UserSettings.NAMESPACE_GLOBAL;
 import static com.android.sts.common.DumpsysUtils.isActivityVisible;
 import static com.android.sts.common.SystemUtil.poll;
 import static com.android.sts.common.SystemUtil.withSetting;
@@ -28,6 +28,7 @@ import static com.google.common.truth.Truth.assertWithMessage;
 import static com.google.common.truth.TruthJUnit.assume;
 
 import android.app.Instrumentation;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -42,11 +43,11 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 @RunWith(AndroidJUnit4.class)
-public class BUG_327749022 extends StsExtraBusinessLogicTestCase {
+public class CVE_2024_40652 extends StsExtraBusinessLogicTestCase {
 
     @Test
     @AsbSecurityTest(cveBugId = 327749022)
-    public void testPocBUG_327749022() {
+    public void testPocCVE_2024_40652() {
         final Instrumentation instrumentation = getInstrumentation();
         final Context context = instrumentation.getContext();
 
@@ -68,10 +69,22 @@ public class BUG_327749022 extends StsExtraBusinessLogicTestCase {
                 final Intent intentToLaunchSettings =
                         new Intent(Settings.ACTION_SETTINGS)
                                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                final String settingsHomepageActivity =
-                        intentToLaunchSettings
-                                .resolveActivity(context.getPackageManager())
-                                .getClassName();
+                final ComponentName componentName =
+                        intentToLaunchSettings.resolveActivity(context.getPackageManager());
+                final String settingsHomepageActivity = componentName.getClassName();
+
+                // Check if the target activity package is a part of 'packages/apps/Settings'.
+                // The 'TV' and 'Car' devices do not support 'FRP(Factory Reset Protection)'
+                // and has package 'com.android.tv.settings' and 'com.android.car.settings'
+                // respectively.
+                // Similarly avoiding the test from running on all the devices that do not
+                // have target activity package ending with 'android.settings'.
+                assume().withMessage("The device does not support 'FRP(Factory Reset Protection)'")
+                        .that(componentName.getPackageName())
+                        .endsWith("android.settings");
+
+                // Check if the target activity 'SettingsHomepageActivity' is already visible on
+                // the screen.
                 assume().withMessage(
                                 "'SettingsHomepageActivity' activity is still visible on screen")
                         .that(isActivityVisible(settingsHomepageActivity))
@@ -94,6 +107,5 @@ public class BUG_327749022 extends StsExtraBusinessLogicTestCase {
 
     private boolean isWatch(Context context) {
         return context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH);
-
     }
 }

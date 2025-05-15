@@ -456,10 +456,13 @@ public class CtsMediaShortFormPlaybackTest extends CujTestBase {
                 || MP3_SINE_AUDIO_OFFLOAD_SEEK_TEST.equals(mTestType)) {
             Assume.assumeTrue("Skipping " + mTestType + " as device doesn't support audio " +
                 "offloading", deviceSupportAudioOffload(AudioFormat.ENCODING_MP3));
-        } else if (OPUS_AUDIO_OFFLOAD_TEST.equals(mTestType)
-                    || OPUS_AUDIO_OFFLOAD_SPEED_CHANGE_TEST.equals(mTestType)) {
+        } else if (OPUS_AUDIO_OFFLOAD_TEST.equals(mTestType)) {
             Assume.assumeTrue("Skipping " + mTestType + " as device doesn't support audio " +
                 "offloading", deviceSupportAudioOffload(AudioFormat.ENCODING_OPUS));
+        } else if (OPUS_AUDIO_OFFLOAD_SPEED_CHANGE_TEST.equals(mTestType)) {
+            Assume.assumeTrue("Skipping " + mTestType + " as device doesn't support variable " +
+                "playback rate audio offloading",
+                        deviceSupportOffloadVariableRate(mAudioOffloadActivity));
         } else if (AAC_SINE_AUDIO_OFFLOAD_TEST.equals(mTestType)) {
             Assume.assumeTrue("Skipping " + mTestType + " as device doesn't support audio " +
                 "offloading", deviceSupportAudioOffload(AudioFormat.ENCODING_AAC_LC));

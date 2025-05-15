@@ -57,13 +57,18 @@ public class CpuFeaturesTest extends TestCase {
         assertHwCap("IDIVT", hwcaps, CpuFeatures.Arm64.HWCAP_IDIVT);
     }
 
-    public void testRiscv64MisalignedFast() {
+    public void testRiscv64MisalignedScalarFast() {
         if (!CpuFeatures.isRiscv64Cpu()) {
             return;
         }
+        assertTrue("Slow scalars", CpuFeatures.isRiscv64MisalignedScalarFast());
+    }
 
-        boolean fast = CpuFeatures.isRiscv64MisalignedFast();
-        assertTrue("Machine does not advertise RISCV_HWPROBE_MISALIGNED_FAST flag", fast);
+    public void testRiscv64MisalignedVectorFast() {
+        if (!CpuFeatures.isRiscv64Cpu()) {
+            return;
+        }
+        assertTrue("Slow vectors", CpuFeatures.isRiscv64MisalignedVectorFast());
     }
 
     private static String getFieldFromCpuinfo(String field) throws IOException {
