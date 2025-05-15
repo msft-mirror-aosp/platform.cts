@@ -98,6 +98,7 @@ public class VulkanFeaturesTest {
     private JSONObject mBestDevice = null;
     private boolean mIsTV = false;
     private boolean mIsWatch = false;
+    private boolean mIsAutomotive = false;
     private boolean mHasTouchscreen = false;
 
     @Before
@@ -127,6 +128,8 @@ public class VulkanFeaturesTest {
                     mIsWatch = true;
                 } else if (PackageManager.FEATURE_TOUCHSCREEN.equals(feature.name)) {
                     mHasTouchscreen = true;
+                } else if (PackageManager.FEATURE_AUTOMOTIVE.equals(feature.name)) {
+                    mIsAutomotive = true;
                 }
             }
         }
@@ -315,7 +318,7 @@ public class VulkanFeaturesTest {
 
     private boolean isHandheld() {
         // There is no PM feature for "handheld"
-        return mHasTouchscreen && !mIsTV && !mIsWatch;
+        return mHasTouchscreen && !mIsTV && !mIsWatch && !mIsAutomotive;
     }
 
     @CddTest(requirements = {"7.1.4.2/H-1-1"})
