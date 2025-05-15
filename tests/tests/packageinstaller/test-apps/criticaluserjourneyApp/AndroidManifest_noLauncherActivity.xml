@@ -20,6 +20,7 @@
 
     <application android:label="Installer CUJ Test App">
         <activity android:name="android.packageinstaller.cts.cuj.app.MainActivity"
+            android:configChanges="resourcesUnused"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
