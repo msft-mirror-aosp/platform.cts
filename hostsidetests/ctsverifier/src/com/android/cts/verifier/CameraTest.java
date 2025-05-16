@@ -106,7 +106,9 @@ public final class CameraTest extends CtsVerifierTest {
     // SingleDisplayMode
     public void CameraVideoTest() throws Exception {
         requireFeatures("android.hardware.camera.any");
-        excludeFeatures("android.hardware.type.automotive");
+        excludeFeatures(
+            "android.hardware.type.automotive",
+            "android.hardware.type.television");
 
         runTest(".camera.video.CameraVideoActivity");
     }
