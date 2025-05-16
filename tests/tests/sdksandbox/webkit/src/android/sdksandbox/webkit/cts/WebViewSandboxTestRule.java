@@ -19,7 +19,7 @@ import android.app.sdksandbox.testutils.SdkSandboxDeviceSupportedRule;
 import android.app.sdksandbox.testutils.testscenario.SdkSandboxScenarioRule;
 import android.os.Bundle;
 import android.webkit.cts.SharedWebViewTest;
-import android.webkit.cts.SharedWebViewTestEnvironment;
+import android.webkit.cts.WebViewTestEnvironment;
 
 import androidx.test.core.app.ApplicationProvider;
 
@@ -44,7 +44,7 @@ public class WebViewSandboxTestRule extends SdkSandboxScenarioRule {
         super(
                 "com.android.cts.sdk.webviewsandboxtest",
                 getSetupParams(webViewTestClassName),
-                SharedWebViewTestEnvironment.createHostAppInvoker(
+                WebViewTestEnvironment.createHostAppInvoker(
                         ApplicationProvider.getApplicationContext(), true),
                 ENABLE_LIFE_CYCLE_ANNOTATIONS);
     }
