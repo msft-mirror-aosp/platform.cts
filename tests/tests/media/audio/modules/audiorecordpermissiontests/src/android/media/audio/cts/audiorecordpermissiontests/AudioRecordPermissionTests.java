@@ -16,41 +16,31 @@
 
 package android.media.audio.cts.audiorecordpermissiontests;
 
+import static  android.media.audio.cts.audiorecordpermissiontests.Utils.getFutureForIntent;
 import static android.media.audio.cts.audiorecordpermissiontests.common.ActionsKt.*;
 
 import static org.junit.Assume.assumeTrue;
 
 import android.app.Instrumentation;
-import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.platform.test.annotations.AsbSecurityTest;
 
-import androidx.concurrent.futures.CallbackToFutureAdapter;
 import androidx.test.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 
 import com.android.compatibility.common.util.SystemUtil;
-
-import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.MoreExecutors;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import java.lang.ref.WeakReference;
-import java.util.Objects;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.function.Predicate;
 
 @RunWith(AndroidJUnit4.class)
 public class AudioRecordPermissionTests {
@@ -278,93 +268,4 @@ public class AudioRecordPermissionTests {
                         + extra);
     }
 
-    /**
-     * Return a future for an intent delivered by a broadcast receiver which matches an
-     * action and predicate.
-     * @param context - Context to register the receiver with
-     * @param action - String representing action to register receiver for
-     * @param pred - Predicate which sets the future if evaluates to true, otherwise, leaves
-     * the future unset. If the predicate throws, the future is set exceptionally
-     * @return - The future representing intent delivery matching predicate.
-     */
-    private static ListenableFuture<Intent> getFutureForIntent(
-            Context context, String action, Predicate<Intent> pred) {
-        // These are evaluated async
-        Objects.requireNonNull(action);
-        Objects.requireNonNull(pred);
-        return getFutureForListener(
-                (recv) ->
-                        context.registerReceiver(
-                                recv, new IntentFilter(action), Context.RECEIVER_EXPORTED),
-                (recv) -> {
-                    try {
-                        context.unregisterReceiver(recv);
-                    } catch (IllegalArgumentException e) {
-                        // Thrown when receiver is already unregistered, nothing to do
-                    }
-                },
-                (completer) ->
-                        new BroadcastReceiver() {
-                            @Override
-                            public void onReceive(Context context, Intent intent) {
-                                try {
-                                    if (action.equals(intent.getAction()) && pred.test(intent)) {
-                                        completer.set(intent);
-                                    }
-                                } catch (Exception e) {
-                                    completer.setException(e);
-                                }
-                            }
-                        },
-                "Intent receiver future for action: " + action);
-    }
-
-    /**
-     * Same as previous, but with no predicate.
-     */
-    private static ListenableFuture<Intent> getFutureForIntent(Context context, String action) {
-        return getFutureForIntent(context, action, i -> true);
-    }
-
-    /**
-     * Return a future for a callback registered to a listener interface.
-     * @param registerFunc - Function which consumes the callback object for registration
-     * @param unregisterFunc - Function which consumes the callback object for unregistration
-     * This function is called when the future is completed or cancelled
-     * @param instantiateCallback - Factory function for the callback object, provided a completer
-     * object (see {@code CallbackToFutureAdapter.Completer<T>}), which is a logical reference
-     * to the future returned by this function
-     * @param debug - Debug string contained in future {@code toString} representation.
-     */
-    private static <T, V> ListenableFuture<T> getFutureForListener(
-            Consumer<V> registerFunc,
-            Consumer<V> unregisterFunc,
-            Function<CallbackToFutureAdapter.Completer<T>, V> instantiateCallback,
-            String debug) {
-        // Doesn't need to be thread safe since the resolver is called inline
-        final WeakReference<V> wrapper[] = new WeakReference[1];
-        ListenableFuture<T> future =
-                CallbackToFutureAdapter.getFuture(
-                        completer -> {
-                            final V cb = instantiateCallback.apply(completer);
-                            wrapper[0] = new WeakReference(cb);
-                            registerFunc.accept(cb);
-                            return debug;
-                        });
-        if (wrapper[0] == null) {
-            throw new AssertionError("Resolver should be called inline");
-        }
-        final WeakReference<V> weakref = wrapper[0];
-        future.addListener(
-                () -> {
-                    V cb = weakref.get();
-                    // If there is no reference left, the receiver has already been unregistered
-                    if (cb != null) {
-                        unregisterFunc.accept(cb);
-                        return;
-                    }
-                },
-                MoreExecutors.directExecutor()); // Direct executor is fine since lightweight
-        return future;
-    }
 }
