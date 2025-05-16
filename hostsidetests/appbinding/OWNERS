@@ -1,5 +1,4 @@
 # Bug component: 1545643
 set noparent
 
-vtrmc@google.com
-jparks@google.com
+file:platform/frameworks/base:/core/java/android/app/supervision/OWNERS
