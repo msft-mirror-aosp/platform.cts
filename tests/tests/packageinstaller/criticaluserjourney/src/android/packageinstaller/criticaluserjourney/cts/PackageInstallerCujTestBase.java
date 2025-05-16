@@ -99,21 +99,18 @@ public class PackageInstallerCujTestBase {
             "CtsInstallerCujTestNoLauncherActivityAppV2.apk";
 
     public static final String APP_INSTALLED_LABEL = "App installed";
-    public static final String APP_REINSTALLED_LABEL = "App reinstalled";
     public static final String APP_UPDATED_LABEL = "App updated";
     public static final String APP_INSTALL_CONFIRM_LABEL = "Install this app";
-    public static final String APP_REINSTALL_CONFIRM_LABEL = "Reinstall this app";
     public static final String APP_UPDATE_CONFIRM_LABEL = "Update this app";
     public static final String BUTTON_CANCEL_LABEL = "Cancel";
     public static final String BUTTON_DELETE_LABEL = "Delete";
     public static final String BUTTON_DONE_LABEL = "Done";
-    public static final String BUTTON_GPP_MORE_DETAILS_LABEL = "More details";
-    public static final String BUTTON_GPP_INSTALL_WITHOUT_SCANNING_LABEL =
+    public static final String BUTTON_MORE_DETAILS_LABEL = "More details";
+    public static final String BUTTON_INSTALL_WITHOUT_SCANNING_LABEL =
             "Install without scanning";
     public static final String BUTTON_INSTALL_LABEL = "Install";
     public static final String BUTTON_OK_LABEL = "OK";
     public static final String BUTTON_OPEN_LABEL = "Open";
-    public static final String BUTTON_REINSTALL_LABEL = "Reinstall";
     public static final String BUTTON_SETTINGS_LABEL = "Settings";
     public static final String BUTTON_UNINSTALL_LABEL = "Uninstall";
     public static final String BUTTON_UPDATE_LABEL = "Update";
@@ -284,13 +281,6 @@ public class PackageInstallerCujTestBase {
      */
     public static void assertTitleIncludes(String content) throws Exception {
         findPackageInstallerObject(By.textContains(content), /* checkNull= */ true);
-    }
-
-    /**
-     * Assert the content includes the installer label {@link #TEST_APP_LABEL}.
-     */
-    public static void assertContentIncludesAppLabel() throws Exception {
-        findPackageInstallerObject(By.textContains(TEST_APP_LABEL), /* checkNull= */ true);
     }
 
     /**
