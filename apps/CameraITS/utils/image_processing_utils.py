@@ -854,19 +854,25 @@ def convert_y8_to_rgb_image(y_plane, w, h):
   return rgb.astype(numpy.float32) / 255.0
 
 
-def write_rgb_uint8_image(img, file_name):
+def write_uint8_image(img, file_name):
   """Save a uint8 numpy array image to a file.
 
-  Supported formats: PNG, JPEG, and others; see PIL docs for more.
+  Supported output formats: PNG, JPEG, & others; see PIL docs for more.
 
   Args:
-   img: numpy image array data.
-   file_name: path of file to save to; the extension specifies the format.
+   img: numpy.uint8 array. Can be depth 3 (RGB) or 1 (Y).
+   file_name: file name w/ path to save to; extension specifies format.
   """
-  if img.dtype != 'uint8':
-    raise AssertionError(f'Incorrect input type: {img.dtype}! Expected: uint8')
+  if img.dtype == 'uint8':
+    _, _, chans = img.shape
+    if chans == 3:  # RGB image
+      Image.fromarray(img, 'RGB').save(file_name)
+    elif chans == 1:  # B&W (luminance) image
+      Image.fromarray(img, 'Y').save(file_name)
+    else:
+      raise error_util.CameraItsError('Unsupported image type')
   else:
-    Image.fromarray(img, 'RGB').save(file_name)
+    raise AssertionError(f'Incorrect input type: {img.dtype}! Expected: uint8')
 
 
 def write_image(img, fname, apply_gamma=False, is_yuv=False):
@@ -1776,6 +1782,6 @@ def get_slanted_edge_patch(img, img_path, suffix, patch_margin):
   filename_with_path = img_path.with_name(
       f'{img_path.stem}_{suffix}_slanted_edge{img_path.suffix}'
   )
-  write_rgb_uint8_image(slanted_edge_patch, filename_with_path)
+  write_uint8_image(slanted_edge_patch, filename_with_path)
   return slanted_edge_patch
 
