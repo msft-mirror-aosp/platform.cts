@@ -124,6 +124,10 @@
 
         <activity android:name="android.server.wm.lifecycle.ActivityLifecycleClientTestBase$TrampolineActivity"/>
 
+        <activity android:name="android.server.wm.lifecycle.ActivityLifecycleTopResumedStateTests$NoRelaunchCallbackTrackingActivity"
+            android:resizeableActivity="true"
+            android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|colorMode|density|touchscreen|keyboard|keyboardHidden|navigation"/>
+
         <activity android:name="android.server.wm.MultiDisplayActivityLaunchTests$ImmediateLaunchTestActivity"
              android:allowEmbedded="true"/>
 
