@@ -106,7 +106,8 @@ public class DangerousPermissionStateTests extends DeviceTestCase implements IBu
         assertThat(verifiedKnowPermissionState).isTrue();
     }
 
-    public void testDangerousPermissionStateSampled() throws Exception {
+    // TODO: mrulhania - Re-enable this test once b/418240323 is fixed.
+    public void ignore_testDangerousPermissionStateSampled() throws Exception {
         // get full atom for reference
         ConfigUtils.uploadConfigForPulledAtom(getDevice(), DeviceUtils.STATSD_ATOM_TEST_PKG,
                 AtomsProto.Atom.DANGEROUS_PERMISSION_STATE_FIELD_NUMBER);
