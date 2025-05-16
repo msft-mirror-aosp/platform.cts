@@ -256,7 +256,7 @@ def pull_img_files(device_id, input_path, output_path):
   its_device_utils.run(pull_cmd)
 
 
-def launch_and_take_capture(dut, pkg_name, camera_facing, log_path):
+def launch_and_take_capture(dut, pkg_name, camera_facing, log_path, flip_camera=True):
   """Launches the camera app and takes still capture.
 
   Args:
@@ -265,6 +265,9 @@ def launch_and_take_capture(dut, pkg_name, camera_facing, log_path):
       be used for captures.
     camera_facing: camera lens facing orientation
     log_path: str; log path to save screenshots.
+    flip_camera: Boolean; Whether to flip the camera or not.
+     Some devices will have only 1 primary camera which is opened
+     by default so we need to skip the camera_switch logic.
 
   Returns:
     img_path_on_dut: Path of the captured image on the device
@@ -295,7 +298,8 @@ def launch_and_take_capture(dut, pkg_name, camera_facing, log_path):
         timeout=WAIT_INTERVAL_FIVE_SECONDS
     ):
       dut.ui(text=LOCATION_ON_TXT).click.wait()
-    switch_default_camera(dut, camera_facing, log_path)
+    if flip_camera:
+      switch_default_camera(dut, camera_facing, log_path)
     time.sleep(ACTIVITY_WAIT_TIME_SECONDS)
     logging.debug('Taking photo')
     its_device_utils.run_adb_shell_command(device_id, TAKE_PHOTO_CMD)

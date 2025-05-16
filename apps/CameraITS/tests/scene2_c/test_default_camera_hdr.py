@@ -73,13 +73,22 @@ class DefaultCapturePerfClassTest(its_base_test.ItsBaseTest):
       # Get default camera app pkg name
       pkg_name = cam.get_default_camera_pkg()
       logging.debug('Default camera pkg name: %s', pkg_name)
+      camera_ids = cam.get_camera_ids()
+      primary_rear_cam = camera_ids.get('primaryRearCameraId')
+      primary_front_cam = camera_ids.get('primaryFrontCameraId')
+      flip_camera = True
+      logging.debug('Camera ids on device: %s', camera_ids)
+      if primary_rear_cam is None or primary_front_cam is None:
+        logging.debug('Device only has one primary camera')
+        flip_camera = False
 
       ui_interaction_utils.default_camera_app_dut_setup(device_id, pkg_name)
 
       # Launch ItsTestActivity
       its_device_utils.start_its_test_activity(device_id)
       device_img_path = ui_interaction_utils.launch_and_take_capture(
-          self.dut, pkg_name, camera_facing, self.log_path)
+          self.dut, pkg_name, camera_facing, self.log_path,
+          flip_camera=flip_camera)
       ui_interaction_utils.pull_img_files(
           device_id, device_img_path, self.log_path)
 
