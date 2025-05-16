@@ -143,6 +143,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.CtsMouseUtil;
+import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.compatibility.common.util.TestUtils;
 import com.android.sts.common.util.StsExtraBusinessLogicTestCase;
@@ -2868,6 +2869,24 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
                         event -> equalsAccessibilityEvent(event, expected),
                         DEFAULT_TIMEOUT_MS);
         assertNotNull("Did not receive expected event: " + expected, awaitedEvent);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_IGNORE_UNIMPORTANT_ROOT)
+    public void testRootNodeImportance_notImportant_returnsNull() {
+        View rootView = mActivity.findViewById(android.R.id.content).getRootView();
+
+        rootView.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+        PollingCheck.waitFor(()-> sUiAutomation.getRootInActiveWindow() == null);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_IGNORE_UNIMPORTANT_ROOT)
+    public void testRootNodeImportance_important_returnsNotNull() {
+        View rootView = mActivity.findViewById(android.R.id.content).getRootView();
+
+        rootView.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_YES);
+        PollingCheck.waitFor(()-> sUiAutomation.getRootInActiveWindow() != null);
     }
 
     private static class LabelNodeProviderTest extends AccessibilityNodeProvider {
