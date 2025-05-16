@@ -27,12 +27,12 @@ import static org.junit.Assert.assertThrows;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothAssignedNumbers.OrganizationId;
 import android.bluetooth.BluetoothDevice;
+import android.bluetooth.BluetoothManager;
 import android.bluetooth.le.ScanFilter;
 import android.bluetooth.le.ScanResult;
 import android.bluetooth.le.TransportBlockFilter;
 import android.bluetooth.test_utils.BlockingBluetoothAdapter;
 import android.bluetooth.test_utils.Permissions;
-import android.content.Context;
 import android.content.pm.PackageManager;
 import android.os.Parcel;
 import android.os.ParcelUuid;
@@ -78,7 +78,7 @@ public class ScanFilterTest {
 
     @Before
     public void setUp() {
-        Context context = InstrumentationRegistry.getInstrumentation().getContext();
+        final var context = InstrumentationRegistry.getInstrumentation().getContext();
         Assume.assumeTrue(TestUtils.isBleSupported(context));
 
         byte[] scanRecord =
@@ -132,7 +132,7 @@ public class ScanFilterTest {
                     0x06 // resolvable set identifier
                 };
 
-        mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+        mBluetoothAdapter = context.getSystemService(BluetoothManager.class).getAdapter();
         if (mBluetoothAdapter == null) {
             // Bluetooth is not supported
             assertThat(
