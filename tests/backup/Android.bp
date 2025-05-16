@@ -41,6 +41,9 @@ android_test {
         "backup_flags_lib",
     ],
     host_required: ["CtsBackupHostTestCases"],
+    host_common_data: [
+        ":CtsBackupHostTestCases",
+    ],
     srcs: ["src/**/*.java"],
     test_suites: [
         "cts",
