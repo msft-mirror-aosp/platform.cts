@@ -352,6 +352,10 @@ public final class CarPowerManagerTest extends AbstractCarTestCase {
         for (OccupantZoneInfo zoneInfo : mCarOccupantZoneManager.getAllOccupantZones()) {
             Display display = mCarOccupantZoneManager.getDisplayForOccupant(
                     zoneInfo, DISPLAY_TYPE_MAIN);
+            // Apart from DISPLAY_TYPE_MAIN for other diplay types, 'display' will be null
+            if (display == null) {
+               continue;
+            }
             int displayPort = DisplayHelper.getPhysicalPort(display);
             if (displayPort == DisplayHelper.INVALID_PORT) {
                 continue;
