@@ -57,12 +57,12 @@ def check_face_bounding_box(rect, aw, ah, index):
       not 0 <= rect['bottom'] <= ah):
     raise AssertionError('Face top/bottom outside of image height! '
                          f"t: {rect['top']}, b: {rect['bottom']}, "
-                         f"h: {ah}")
+                         f'h: {ah}')
   if (not 0 <= rect['left'] <= aw or
       not 0 <= rect['right'] <= aw):
     raise AssertionError('Face left/right outside of image width! '
                          f"l: {rect['left']}, r: {rect['right']}, "
-                         f" w: {aw}")
+                         f' w: {aw}')
 
 
 def check_face_landmarks(face, fd_mode, index):

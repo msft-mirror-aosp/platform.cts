@@ -81,7 +81,7 @@ class EffectsTest(its_base_test.ItsBaseTest):
         # Save image of each effect
         img = image_processing_utils.convert_capture_to_rgb_image(
             cap, props=props)
-        img_name = (f'{os.path.join(self.log_path,_NAME)}_'
+        img_name = (f'{os.path.join(self.log_path, _NAME)}_'
                     f'{_EFFECTS[effect]}.jpg')
         image_processing_utils.write_image(img, img_name)
 
