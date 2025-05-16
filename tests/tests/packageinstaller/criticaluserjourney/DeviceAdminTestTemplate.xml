@@ -25,9 +25,14 @@
     <target_preparer class="com.android.tradefed.targetprep.RunCommandTargetPreparer">
         <option name="run-command" value="mkdir -p /data/local/tmp/cts/packageinstaller/cuj" />
         <option name="teardown-command" value="rm -rf /data/local/tmp/cts/packageinstaller/"/>
+        <!-- Disable the network to avoid unexpected results -->
+        <option name="run-command" value="svc wifi disable" />
+        <option name="run-command" value="svc data disable" />
+        <option name="teardown-command" value="svc wifi enable" />
+        <option name="teardown-command" value="svc data enable" />
     </target_preparer>
 
-    <!-- disable GPP UI -->
+    <!-- disable verification dialog -->
     <target_preparer class="com.android.tradefed.targetprep.DeviceSetup">
         <option name="force-skip-system-props" value="true" />
         <option name="set-global-setting" key="verifier_engprod" value="1" />
