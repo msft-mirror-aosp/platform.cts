@@ -73,6 +73,12 @@ void PrintAhbFormat(std::ostream& os, uint64_t format) {
         FORMAT_CASE(R16_UINT);
         FORMAT_CASE(R16G16_UINT);
         FORMAT_CASE(R10G10B10A10_UNORM);
+        FORMAT_CASE(R12_UINT);
+        FORMAT_CASE(R14_UINT);
+        FORMAT_CASE(R12G12_UINT);
+        FORMAT_CASE(R14G14_UINT);
+        FORMAT_CASE(R12G12B12A12_UINT);
+        FORMAT_CASE(R14G14B14A14_UINT);
         default:
             os << "unknown";
             break;
