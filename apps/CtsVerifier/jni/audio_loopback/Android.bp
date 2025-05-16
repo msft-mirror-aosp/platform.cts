@@ -11,7 +11,6 @@ cc_test_library {
         "WavFileCapture.cpp",
     ],
     include_dirs: [
-        "system/core/include/cutils",
         "cts/apps/CtsVerifier/jni/megaaudio/player",
         "cts/apps/CtsVerifier/jni/megaaudio/recorder",
         "external/oboe/include",
