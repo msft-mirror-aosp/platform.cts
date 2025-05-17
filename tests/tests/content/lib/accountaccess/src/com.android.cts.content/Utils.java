@@ -18,14 +18,14 @@ import android.os.SystemClock;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
-import androidx.test.InstrumentationRegistry;
+import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.uiautomator.UiDevice;
 
 import com.android.compatibility.common.util.SystemUtil;
 
 import java.io.IOException;
 
-public class Utils {
+public final class Utils {
     private static final String LOG_TAG = Utils.class.getSimpleName();
 
     public static final long SYNC_TIMEOUT_MILLIS = 20000; // 20 sec
@@ -33,6 +33,8 @@ public class Utils {
     public static final String SYNC_ACCOUNT_TYPE = "com.stub";
     public static final String ALWAYS_SYNCABLE_AUTHORITY = "com.android.cts.stub.provider";
     public static final String NOT_ALWAYS_SYNCABLE_AUTHORITY = "com.android.cts.stub.provider2";
+
+    private Utils() {}
 
     public static boolean hasDataConnection() {
         ConnectivityManager connectivityManager = getContext().getSystemService(
