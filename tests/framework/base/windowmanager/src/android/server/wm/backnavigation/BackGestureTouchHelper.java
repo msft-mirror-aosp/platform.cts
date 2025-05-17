@@ -29,18 +29,17 @@ import com.android.cts.input.UinputTouchDevice;
 import com.android.cts.input.UinputTouchScreen;
 
 /** Helper class for injecting a sequence of motion event to simulate a gesture swipe. */
-public class BackGestureTouchHelper {
+public class BackGestureTouchHelper implements AutoCloseable {
 
     /**
      * Do a back gesture and trigger a back event from it. Attempt to simulate human behavior, so
      * don't wait for animations.
      */
-    static void triggerBackEventByGesture(WindowManagerStateHelper wmState, int displayId) {
-        final Rect bounds = wmState.getDisplay(displayId).getDisplayRect();
+    void triggerBackEventByGesture(WindowManagerStateHelper wmState) {
+        final Rect bounds = wmState.getDisplay(mDisplayId).getDisplayRect();
         int midHeight = bounds.top + bounds.height() / 2;
         int midWidth = bounds.left + bounds.width() / 2;
-        final BackGestureTouchHelper session = new BackGestureTouchHelper(displayId);
-        session.quickSwipe(0, midHeight, midWidth, midHeight);
+        quickSwipe(0, midHeight, midWidth, midHeight);
     }
 
     private static final int INJECT_INPUT_DELAY_MILLIS = 5;
@@ -52,6 +51,7 @@ public class BackGestureTouchHelper {
     private long mNextEventTime = -1;
     private final UinputTouchScreen mTouchScreen;
     private UinputTouchDevice.Pointer mPointer;
+    final int mDisplayId;
 
     public BackGestureTouchHelper(int displayId) {
         final Instrumentation instrumentation = getInstrumentation();
@@ -59,6 +59,14 @@ public class BackGestureTouchHelper {
         final Display display =
                 context.getSystemService(DisplayManager.class).getDisplay(displayId);
         mTouchScreen = new UinputTouchScreen(instrumentation, display);
+        mDisplayId = displayId;
+    }
+
+    @Override
+    public void close() {
+        if (mTouchScreen != null) {
+            mTouchScreen.close();
+        }
     }
 
     public void beginSwipe(int startX, int startY) {

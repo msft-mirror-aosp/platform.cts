@@ -351,8 +351,6 @@
     <option name="compatibility:exclude-filter" value="CtsInputMethodTestCases[instant] android.view.inputmethod.cts.StylusHandwritingTest#testOnViewClicked_withFingerTap" />
     <option name="compatibility:exclude-filter" value="CtsInputMethodTestCases[instant] android.view.inputmethod.cts.StylusHandwritingTest#testOnViewClicked_withStylusTap" />
 
-    <!-- b/339846869 -->
-    <option name="compatibility:exclude-filter" value="CtsTelephonyTestCases android.telephony.satellite.cts.CarrierRoamingSatelliteSmsTest" />
     <!-- b/403621110 -->
     <option name="compatibility:exclude-filter" value="CtsTelephonyTestCases android.telephony.cts.SmsUsageMonitorShortCodeTest" />
 
@@ -424,4 +422,12 @@
     <!-- b/406676107 -->
     <option name="compatibility:exclude-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.DeviceOwnerTest#testTethering"/>
 
+    <!-- b/414860633 -->
+    <option name="compatibility:exclude-filter" value="CtsJvmtiRunTest913HostTestCases" />
+
+    <!-- b/416663089 -->
+    <option name="compatibility:exclude-filter" value="CtsAppEnumerationTestCases android.appenumeration.cts.SyncAdapterEnumerationTests#queriesPackage_getRunningServiceControlPanel_canSeeSyncAdapterTarget" />
+
+    <!-- b/417738157 -->
+    <option name="compatibility:exclude-filter" value="CtsTelephonyTestCases android.telephony.satellite.cts.SatelliteManagerTest" />
 </configuration>

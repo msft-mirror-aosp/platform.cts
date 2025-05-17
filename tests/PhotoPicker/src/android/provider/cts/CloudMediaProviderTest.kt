@@ -162,7 +162,6 @@ class CloudMediaProviderTest {
             CloudMediaProviderContract.Capabilities.Builder()
                 .setSearchEnabled(true)
                 .setMediaCategoriesEnabled(true)
-                .setAlbumsAsCategoryEnabled(true)
                 .build()
 
         assertWithMessage("isSearchEnabled had unexpected default value.")

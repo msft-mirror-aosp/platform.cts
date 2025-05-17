@@ -18,12 +18,15 @@ package android.compat.sjp.cts;
 
 import static android.compat.testing.Classpaths.ClasspathType.BOOTCLASSPATH;
 import static android.compat.testing.Classpaths.ClasspathType.SYSTEMSERVERCLASSPATH;
+
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
+
 import static org.junit.Assume.assumeTrue;
 
 import android.compat.testing.Classpaths;
 import android.compat.testing.SharedLibraryInfo;
+
 import com.android.compatibility.common.tradefed.build.CompatibilityBuildHelper;
 import com.android.modules.utils.build.testing.DeviceSdkLevel;
 import com.android.tools.smali.dexlib2.iface.ClassDef;
@@ -37,6 +40,7 @@ import com.android.tradefed.testtype.junit4.BaseHostJUnit4Test;
 import com.android.tradefed.testtype.junit4.BeforeClassWithInfo;
 import com.android.tradefed.testtype.junit4.DeviceTestRunOptions;
 import com.android.tradefed.util.FileUtil;
+
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableList;
@@ -46,6 +50,11 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
+
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -62,9 +71,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
 
 /**
  * Tests for detecting no duplicate class files are present on BOOTCLASSPATH and
@@ -496,38 +502,53 @@ public class StrictJavaPackagesTest extends BaseHostJUnit4Test {
             );
 
     private static final ImmutableMap<String, ImmutableSet<String>> FULL_APK_IN_APEX_BURNDOWN =
-        new ImmutableMap.Builder<String, ImmutableSet<String>>()
-            .put("/apex/com.android.permission/priv-app/PermissionController/PermissionController.apk",
-                PERMISSION_CONTROLLER_APK_IN_APEX_BURNDOWN_LIST)
-            .put("/apex/com.android.permission/priv-app/GooglePermissionController/GooglePermissionController.apk",
-                PERMISSION_CONTROLLER_APK_IN_APEX_BURNDOWN_LIST)
-            .put("/apex/com.android.tethering/priv-app/InProcessTethering/InProcessTethering.apk",
-                TETHERING_APK_IN_APEX_BURNDOWN_LIST)
-            .put("/apex/com.android.tethering/priv-app/TetheringNextGoogle/TetheringNextGoogle.apk",
-                TETHERING_APK_IN_APEX_BURNDOWN_LIST)
-            .put("/apex/com.android.tethering/priv-app/TetheringGoogle/TetheringGoogle.apk",
-                TETHERING_APK_IN_APEX_BURNDOWN_LIST)
-            .put("/apex/com.android.tethering/priv-app/TetheringNext/TetheringNext.apk",
-                TETHERING_APK_IN_APEX_BURNDOWN_LIST)
-            .put("/apex/com.android.tethering/priv-app/Tethering/Tethering.apk",
-                TETHERING_APK_IN_APEX_BURNDOWN_LIST)
-            .put("/apex/com.android.extservices/priv-app/GoogleExtServices/GoogleExtServices.apk",
-                EXTSERVICES_APK_IN_APEX_BURNDOWN_LIST)
-            .put("/apex/com.android.extservices/priv-app/ExtServices/ExtServices.apk",
-                EXTSERVICES_APK_IN_APEX_BURNDOWN_LIST)
-            .put("/apex/com.android.ondevicepersonalization/app/OnDevicePersonalizationGoogle/OnDevicePersonalizationGoogle.apk",
-                ODA_APK_IN_APEX_BURNDOWN_LIST)
-            .put("/apex/com.android.ondevicepersonalization/app/OnDevicePersonalization/OnDevicePersonalization.apk",
-                ODA_APK_IN_APEX_BURNDOWN_LIST)
-            .put("/apex/com.android.cellbroadcast/priv-app/GoogleCellBroadcastServiceModule/GoogleCellBroadcastServiceModule.apk",
-                CELLBROADCAST_APK_IN_APEX_BURNDOWN_LIST)
-            .put("/apex/com.android.cellbroadcast/priv-app/CellBroadcastServiceModule/CellBroadcastServiceModule.apk",
-                CELLBROADCAST_APK_IN_APEX_BURNDOWN_LIST)
-            .put("/apex/com.android.adservices/app/SdkSandbox/SdkSandbox.apk",
-                ADSERVICES_SANDBOX_APK_IN_APEX_BURNDOWN_LIST)
-            .put("/apex/com.android.adservices/app/SdkSandboxGoogle/SdkSandboxGoogle.apk",
-                ADSERVICES_SANDBOX_APK_IN_APEX_BURNDOWN_LIST)
-            .build();
+            new ImmutableMap.Builder<String, ImmutableSet<String>>()
+                    .put(
+                            "/apex/com.android.permission/priv-app/PermissionController/PermissionController.apk",
+                            PERMISSION_CONTROLLER_APK_IN_APEX_BURNDOWN_LIST)
+                    .put(
+                            "/apex/com.android.permission/priv-app/GooglePermissionController/GooglePermissionController.apk",
+                            PERMISSION_CONTROLLER_APK_IN_APEX_BURNDOWN_LIST)
+                    .put(
+                            "/apex/com.android.tethering/priv-app/InProcessTethering/InProcessTethering.apk",
+                            TETHERING_APK_IN_APEX_BURNDOWN_LIST)
+                    .put(
+                            "/apex/com.android.tethering/priv-app/TetheringNextGoogle/TetheringNextGoogle.apk",
+                            TETHERING_APK_IN_APEX_BURNDOWN_LIST)
+                    .put(
+                            "/apex/com.android.tethering/priv-app/TetheringGoogle/TetheringGoogle.apk",
+                            TETHERING_APK_IN_APEX_BURNDOWN_LIST)
+                    .put(
+                            "/apex/com.android.tethering/priv-app/TetheringNext/TetheringNext.apk",
+                            TETHERING_APK_IN_APEX_BURNDOWN_LIST)
+                    .put(
+                            "/apex/com.android.tethering/priv-app/Tethering/Tethering.apk",
+                            TETHERING_APK_IN_APEX_BURNDOWN_LIST)
+                    .put(
+                            "/apex/com.android.extservices/priv-app/GoogleExtServices/GoogleExtServices.apk",
+                            EXTSERVICES_APK_IN_APEX_BURNDOWN_LIST)
+                    .put(
+                            "/apex/com.android.extservices/priv-app/ExtServices/ExtServices.apk",
+                            EXTSERVICES_APK_IN_APEX_BURNDOWN_LIST)
+                    .put(
+                            "/apex/com.android.ondevicepersonalization/app/OnDevicePersonalizationGoogle/OnDevicePersonalizationGoogle.apk",
+                            ODA_APK_IN_APEX_BURNDOWN_LIST)
+                    .put(
+                            "/apex/com.android.ondevicepersonalization/app/OnDevicePersonalization/OnDevicePersonalization.apk",
+                            ODA_APK_IN_APEX_BURNDOWN_LIST)
+                    .put(
+                            "/apex/com.android.cellbroadcast/priv-app/GoogleCellBroadcastServiceModule/GoogleCellBroadcastServiceModule.apk",
+                            CELLBROADCAST_APK_IN_APEX_BURNDOWN_LIST)
+                    .put(
+                            "/apex/com.android.cellbroadcast/priv-app/CellBroadcastServiceModule/CellBroadcastServiceModule.apk",
+                            CELLBROADCAST_APK_IN_APEX_BURNDOWN_LIST)
+                    .put(
+                            "/apex/com.android.adservices/app/SdkSandbox/SdkSandbox.apk",
+                            ADSERVICES_SANDBOX_APK_IN_APEX_BURNDOWN_LIST)
+                    .put(
+                            "/apex/com.android.adservices/app/SdkSandboxGoogle/SdkSandboxGoogle.apk",
+                            ADSERVICES_SANDBOX_APK_IN_APEX_BURNDOWN_LIST)
+                    .build();
 
     // Bluetooth has not been updated on pre-u device
     private static ImmutableSet<String> PRE_U_APK_IN_APEX_BLUETOOTH_BURNDOWN_LIST =
@@ -579,14 +600,15 @@ public class StrictJavaPackagesTest extends BaseHostJUnit4Test {
      * <p>Add the new item into this list only if the failure is caused by base device image (not
      * the mainline train).
      */
-    private static final ImmutableMap<String, ImmutableSet<String>> PRE_T_APK_IN_APEX_BURNDOWN_LIST =
-        new ImmutableMap.Builder<String, ImmutableSet<String>>()
-            .put("/apex/com.android.cellbroadcast/priv-app/GoogleCellBroadcastServiceModule/GoogleCellBroadcastServiceModule.apk",
-                ImmutableSet.of(
-                    // b/303732833
-                    "Lcom/android/internal/util/Preconditions;"
-                ))
-            .build();
+    private static final ImmutableMap<String, ImmutableSet<String>>
+            PRE_T_APK_IN_APEX_BURNDOWN_LIST =
+                    new ImmutableMap.Builder<String, ImmutableSet<String>>()
+                            .put(
+                                    "/apex/com.android.cellbroadcast/priv-app/GoogleCellBroadcastServiceModule/GoogleCellBroadcastServiceModule.apk",
+                                    ImmutableSet.of(
+                                            // b/303732833
+                                            "Lcom/android/internal/util/Preconditions;"))
+                            .build();
 
     /**
      * Fetch all jar files in BCP, SSCP and shared libs and extract all the classes.
@@ -999,8 +1021,8 @@ public class StrictJavaPackagesTest extends BaseHostJUnit4Test {
                     ImmutableSet.of("Landroidx/window/common/", "Landroidx/window/extensions/",
                         "Landroidx/window/util/"))
                 .put("androidx.window.sidecar",
-                    ImmutableSet.of("Landroidx/window/common/", "Landroidx/window/sidecar",
-                        "Landroidx/window/util"))
+                    ImmutableSet.of("Landroidx/window/common/", "Landroidx/window/extensions/",
+                         "Landroidx/window/sidecar", "Landroidx/window/util"))
                 .put("com.google.android.camera.experimental2019",
                     ImmutableSet.of("Landroidx/annotation"))
                 .put("com.google.android.camera.experimental2020_midyear",
@@ -1089,16 +1111,25 @@ public class StrictJavaPackagesTest extends BaseHostJUnit4Test {
             jar = device.pullFile(remoteJarPath);
             if (jar == null) {
                 CLog.d(LOG_TAG + ": could not pull remote file a second time " + remoteJarPath);
-                throw new IllegalStateException("could not pull remote file a second time " + remoteJarPath);
+                throw new IllegalStateException(
+                        "could not pull remote file a second time " + remoteJarPath);
             }
             sha1OnHost = calculateSHA1(jar);
-            CLog.d(LOG_TAG + ": [on host] sha1sum of second attempt " + jar.getPath() + ": " + sha1OnHost);
+            CLog.d(
+                    LOG_TAG
+                            + ": [on host] sha1sum of second attempt "
+                            + jar.getPath()
+                            + ": "
+                            + sha1OnHost);
             if (!sha1OnDevice.equals(sha1OnHost)) {
                 CLog.d(LOG_TAG + ": sha1 second mismatch between on device and on host");
                 throw new IllegalStateException(
                         "sha1 mismatch between on device and on host after second attempt");
             }
-            CLog.d( LOG_TAG + ": sha1 mismatch between on device and on host, but resolved after" + " second attempt");
+            CLog.d(
+                    LOG_TAG
+                            + ": sha1 mismatch between on device and on host, but resolved after"
+                            + " second attempt");
             compareBinary(firstAttempt.getPath(), jar.getPath());
             // to help debug this, still throw an exception. In the future, we can consider
             // returning the jar from the second attempt.

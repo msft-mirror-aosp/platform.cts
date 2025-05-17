@@ -21,6 +21,7 @@ import static android.content.syncmanager.cts.common.Values.APP1_PACKAGE;
 
 import static com.android.compatibility.common.util.BundleUtils.makeBundle;
 import static com.android.compatibility.common.util.ConnectivityUtils.assertNetworkConnected;
+import static com.android.compatibility.common.util.ConnectivityUtils.isNetworkConnected;
 import static com.android.compatibility.common.util.SystemUtil.runCommandAndPrintOnLogcat;
 import static com.android.compatibility.common.util.TestUtils.waitUntil;
 
@@ -41,6 +42,9 @@ import android.content.syncmanager.cts.SyncManagerCtsProto.Payload.Request.SetRe
 import android.content.syncmanager.cts.SyncManagerCtsProto.Payload.Request.SetResult.Result;
 import android.content.syncmanager.cts.SyncManagerCtsProto.Payload.Response;
 import android.content.syncmanager.cts.SyncManagerCtsProto.Payload.SyncInvocation;
+import android.net.ConnectivityManager;
+import android.net.Network;
+import android.net.NetworkCapabilities;
 import android.os.Bundle;
 import android.os.PowerManager;
 import android.util.Log;
@@ -95,7 +99,7 @@ public class CtsSyncManagerTest {
 
     @Before
     public void setUp() throws Exception {
-        assertNetworkConnected(InstrumentationRegistry.getContext());
+        assertHasNetwork();
 
         BatteryUtils.runDumpsysBatteryUnplug();
         BatteryUtils.enableAdaptiveBatterySaver(false);
@@ -183,6 +187,17 @@ public class CtsSyncManagerTest {
                 () -> ContentResolver.getPeriodicSyncs(account, authority).size() == 1);
         assertEquals("Periodic should be 24h",
                 24 * 60 * 60, ContentResolver.getPeriodicSyncs(account, authority).get(0).period);
+    }
+
+    /** Ensure there's some network transport with INTERNET capability */
+    private void assertHasNetwork() {
+        ConnectivityManager cm = InstrumentationRegistry.getContext()
+                .getSystemService(ConnectivityManager.class);
+        Network network = cm.getActiveNetwork();
+        assertTrue("Network should be available", network != null);
+        NetworkCapabilities caps = cm.getNetworkCapabilities(network);
+        assertTrue("Network should be available",
+                caps != null && caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET));
     }
 
     @Test

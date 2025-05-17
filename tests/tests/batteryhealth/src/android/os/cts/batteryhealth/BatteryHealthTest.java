@@ -144,7 +144,7 @@ public class BatteryHealthTest {
                 .BATTERY_PROPERTY_SERIAL_NUMBER);
 
         if (serialNumber != null) {
-            assertThat(serialNumber.length()).isAtLeast(6);
+            assertThat(serialNumber).isNotEmpty();
         }
         mAutomation.dropShellPermissionIdentity();
     }

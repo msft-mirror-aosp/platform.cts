@@ -435,6 +435,9 @@ public class InstallationTestBase extends PackageInstallerCujTestBase {
         intent.putExtra(EXTRA_USE_TEST_APP, useTestApp);
         intent.putExtra(EXTRA_IS_UPDATE, update);
         intent.putExtra(EXTRA_NO_LAUNCHER_ACTIVITY_TEST_APP, isNoLauncherActivityTestApp);
+        // Reset the installer response here to avoid unexpected result being received after
+        // the previous resetting the result E.g. the test installer activity was relaunched
+        sInstallerResponseReceiver.resetResult();
         getContext().sendBroadcast(intent);
     }
 
@@ -504,7 +507,8 @@ public class InstallationTestBase extends PackageInstallerCujTestBase {
     private static void allowInstallIfGPPDialogExists() throws Exception {
         final Pattern morePattern = Pattern.compile(BUTTON_GPP_MORE_DETAILS_LABEL,
                 Pattern.CASE_INSENSITIVE);
-        UiObject2 more = getUiDevice().findObject(By.text(morePattern));
+        UiObject2 more =
+                findObject(By.text(morePattern), /* checkNull= */ false, /* timeoutMs= */ 2 * 1000);
         if (more != null) {
             more.click();
             waitForUiIdle();

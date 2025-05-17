@@ -36,6 +36,7 @@ import static android.os.UserManager.USER_TYPE_PROFILE_SUPERVISING;
 import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.workProfile;
 import static com.android.bedstead.harrier.UserType.ADDITIONAL_USER;
 import static com.android.bedstead.harrier.UserType.ANY;
+import static com.android.bedstead.harrier.components.BroadcastReceiversComponentKt.registerBroadcastReceiver;
 import static com.android.bedstead.multiuser.MultiUserDeviceStateExtensionsKt.additionalUser;
 import static com.android.bedstead.multiuser.MultiUserDeviceStateExtensionsKt.privateProfile;
 import static com.android.bedstead.nene.types.OptionalBoolean.FALSE;
@@ -520,8 +521,8 @@ public final class UserManagerTest {
     @EnsureHasPermission(CREATE_USERS)
     public void testAddCloneProfile_shouldSendProfileAddedBroadcast() {
         assumeTrue(mUserManager.supportsMultipleUsers());
-        BlockingBroadcastReceiver broadcastReceiver = sDeviceState
-                .registerBroadcastReceiver(Intent.ACTION_PROFILE_ADDED, /* checker= */null);
+        BlockingBroadcastReceiver broadcastReceiver = registerBroadcastReceiver(
+                sDeviceState, Intent.ACTION_PROFILE_ADDED, /* checker= */null);
         UserHandle userHandle = null;
             try {
                 userHandle = mUserManager.createProfile("Clone profile",
@@ -542,8 +543,8 @@ public final class UserManagerTest {
     @RequireFeature(FEATURE_MANAGED_USERS)
     @EnsureHasPermission(CREATE_USERS)
     public void testCreateManagedProfile_shouldSendProfileAddedBroadcast() {
-        BlockingBroadcastReceiver broadcastReceiver = sDeviceState
-                .registerBroadcastReceiver(Intent.ACTION_PROFILE_ADDED, /* checker= */null);
+        BlockingBroadcastReceiver broadcastReceiver = registerBroadcastReceiver(
+                sDeviceState, Intent.ACTION_PROFILE_ADDED, /* checker= */null);
         UserHandle userHandle = null;
             try {
                 userHandle = mUserManager.createProfile("Managed profile",
@@ -571,10 +572,9 @@ public final class UserManagerTest {
             userHandle = mUserManager.createProfile("Clone profile",
                     USER_TYPE_PROFILE_CLONE, new HashSet<>());
             usersCreated.push(userHandle);
-            broadcastReceiver = sDeviceState
-                    .registerBroadcastReceiver(
-                            Intent.ACTION_PROFILE_REMOVED, userIsEqual(userHandle)
-                    );
+            broadcastReceiver = registerBroadcastReceiver(
+                    sDeviceState, Intent.ACTION_PROFILE_REMOVED, userIsEqual(userHandle)
+            );
             assumeNotNull(userHandle);
             removeUser(usersCreated.pop());
             broadcastReceiver.awaitForBroadcastOrFail();
@@ -599,10 +599,9 @@ public final class UserManagerTest {
             userHandle = mUserManager.createProfile("Managed profile",
                     USER_TYPE_PROFILE_MANAGED, new HashSet<>());
             usersCreated.push(userHandle);
-            broadcastReceiver = sDeviceState
-                    .registerBroadcastReceiver(
-                            Intent.ACTION_PROFILE_REMOVED, userIsEqual(userHandle)
-                    );
+            broadcastReceiver = registerBroadcastReceiver(
+                    sDeviceState, Intent.ACTION_PROFILE_REMOVED, userIsEqual(userHandle)
+            );
             assumeNotNull(userHandle);
             removeUser(usersCreated.pop());
             broadcastReceiver.awaitForBroadcastOrFail();
@@ -1224,8 +1223,8 @@ public final class UserManagerTest {
     public void testRequestQuietModeOnPrivateProfile_shouldSendProfileUnavailableBroadcast() {
         final UserHandle profileHandle = privateProfile(sDeviceState).userHandle();
         presetQuietModeStatus(false, profileHandle);
-        BlockingBroadcastReceiver broadcastReceiver = sDeviceState
-                .registerBroadcastReceiver(Intent.ACTION_PROFILE_UNAVAILABLE, /* checker= */null);
+        BlockingBroadcastReceiver broadcastReceiver = registerBroadcastReceiver(
+                sDeviceState, Intent.ACTION_PROFILE_UNAVAILABLE, /* checker= */null);
         mUserManager.requestQuietModeEnabled(true, profileHandle);
         broadcastReceiver.awaitForBroadcastOrFail();
     }
@@ -1253,8 +1252,8 @@ public final class UserManagerTest {
     public void testRequestQuietModeOnManaged_shouldSendProfileUnavailableBroadcast() {
         final UserHandle profileHandle = workProfile(sDeviceState).userHandle();
         presetQuietModeStatus(false, profileHandle);
-        BlockingBroadcastReceiver broadcastReceiver = sDeviceState
-                .registerBroadcastReceiver(Intent.ACTION_PROFILE_UNAVAILABLE, /* checker= */
+        BlockingBroadcastReceiver broadcastReceiver = registerBroadcastReceiver(
+                sDeviceState, Intent.ACTION_PROFILE_UNAVAILABLE, /* checker= */
                         null);
         mUserManager.requestQuietModeEnabled(true, profileHandle);
         broadcastReceiver.awaitForBroadcastOrFail();
@@ -1268,8 +1267,8 @@ public final class UserManagerTest {
     public void testRequestQuietModeOnManaged_shouldSendProfileAvailableBroadcast() {
         final UserHandle profileHandle = workProfile(sDeviceState).userHandle();
         presetQuietModeStatus(true, profileHandle);
-        BlockingBroadcastReceiver broadcastReceiver = sDeviceState
-                .registerBroadcastReceiver(Intent.ACTION_PROFILE_AVAILABLE, /* checker= */
+        BlockingBroadcastReceiver broadcastReceiver = registerBroadcastReceiver(
+                sDeviceState, Intent.ACTION_PROFILE_AVAILABLE, /* checker= */
                         null);
         mUserManager.requestQuietModeEnabled(false, profileHandle);
         broadcastReceiver.awaitForBroadcastOrFail();
@@ -1281,8 +1280,8 @@ public final class UserManagerTest {
     public void testRequestQuietModeOnManaged_shouldSendManagedProfileUnavailableBroadcast() {
         final UserHandle profileHandle = workProfile(sDeviceState).userHandle();
         presetQuietModeStatus(false, profileHandle);
-        BlockingBroadcastReceiver broadcastReceiver = sDeviceState
-                .registerBroadcastReceiver(Intent.ACTION_MANAGED_PROFILE_UNAVAILABLE, /* checker= */
+        BlockingBroadcastReceiver broadcastReceiver = registerBroadcastReceiver(
+                sDeviceState, Intent.ACTION_MANAGED_PROFILE_UNAVAILABLE, /* checker= */
                         null);
         mUserManager.requestQuietModeEnabled(true, profileHandle);
         broadcastReceiver.awaitForBroadcastOrFail();
@@ -1294,8 +1293,8 @@ public final class UserManagerTest {
     public void testRequestQuietModeOnManaged_shouldSendManagedProfileAvailableBroadcast() {
         final UserHandle profileHandle = workProfile(sDeviceState).userHandle();
         presetQuietModeStatus(true, profileHandle);
-        BlockingBroadcastReceiver broadcastReceiver = sDeviceState
-                .registerBroadcastReceiver(Intent.ACTION_MANAGED_PROFILE_AVAILABLE, /* checker= */
+        BlockingBroadcastReceiver broadcastReceiver = registerBroadcastReceiver(
+                sDeviceState, Intent.ACTION_MANAGED_PROFILE_AVAILABLE, /* checker= */
                         null);
         mUserManager.requestQuietModeEnabled(false, profileHandle);
         broadcastReceiver.awaitForBroadcastOrFail();

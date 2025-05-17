@@ -50,7 +50,6 @@ import androidx.annotation.NonNull;
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.uiautomator.UiDevice;
 
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -115,14 +114,7 @@ public class OnBackInvokedCallbackGestureTest extends ActivityManagerTestBase {
         mInstrumentation.getUiAutomation().syncInputTransactions();
 
         mActivity = activitySession.getActivity();
-        mSwipeHelper = new BackGestureTouchHelper(DEFAULT_DISPLAY);
-    }
-
-    @After
-    public void teardown() {
-        if (mSwipeHelper != null) {
-            mSwipeHelper.cancelSwipe();
-        }
+        mSwipeHelper = mObjectTracker.manage(new BackGestureTouchHelper(DEFAULT_DISPLAY));
     }
 
     private Supplier<String> progressFailMessageSupplier() {

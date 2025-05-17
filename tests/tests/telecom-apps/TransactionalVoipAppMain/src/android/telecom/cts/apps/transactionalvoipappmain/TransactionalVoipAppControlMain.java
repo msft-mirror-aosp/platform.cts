@@ -360,14 +360,14 @@ public class TransactionalVoipAppControlMain extends Service {
                     Log.i(
                             mTag,
                             String.format("sendConnectionEvent: id=[%s], event=[%s]", id, event));
-                    // No-op for transactional app
-                    return new NoDataTransaction(
-                            TestAppTransaction.Failure,
-                            new TestAppException(
-                                    mPackageName,
-                                    createStackTraceList(mClassName + "sendConnectionEvent"),
-                                    "TransactionalVoipApp* does not implement "
-                                            + "sendConnectionEvent"));
+                    TransactionalCall call =
+                            getCallOrThrowError(
+                                    id,
+                                    createStackTraceList(
+                                            mClassName + ".sendConnectionEvent(" + (event) + ")"));
+                    CallControl callControl = call.getCallControl();
+                    callControl.sendEvent(event, new Bundle());
+                    return new NoDataTransaction(TestAppTransaction.Success);
                 }
 
                 @Override

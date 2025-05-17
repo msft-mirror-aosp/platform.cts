@@ -18,6 +18,8 @@ package android.devicepolicy.cts;
 
 import static android.Manifest.permission.UPDATE_DEVICE_MANAGEMENT_RESOURCES;
 
+import static com.android.bedstead.harrier.components.BroadcastReceiversComponentKt.registerBroadcastReceiver;
+
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertThrows;
@@ -34,11 +36,11 @@ import android.graphics.drawable.Icon;
 
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
-import com.android.bedstead.permissions.annotations.EnsureDoesNotHavePermission;
-import com.android.bedstead.permissions.annotations.EnsureHasPermission;
 import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.utils.BlockingBroadcastReceiver;
+import com.android.bedstead.permissions.annotations.EnsureDoesNotHavePermission;
+import com.android.bedstead.permissions.annotations.EnsureHasPermission;
 
 import org.junit.After;
 import org.junit.Before;
@@ -248,7 +250,7 @@ public class DevicePolicyResourcesTest {
     @EnsureHasPermission(UPDATE_DEVICE_MANAGEMENT_RESOURCES)
     public void setDrawables_drawableChangedFromNull_sendsBroadcast() {
         sDpm.getResources().resetDrawables(Set.of(UPDATABLE_DRAWABLE_ID_1));
-        BlockingBroadcastReceiver broadcastReceiver = sDeviceState.registerBroadcastReceiver(
+        BlockingBroadcastReceiver broadcastReceiver = registerBroadcastReceiver(sDeviceState,
                 DevicePolicyManager.ACTION_DEVICE_POLICY_RESOURCE_UPDATED);
 
         sDpm.getResources().setDrawables(createDrawable(
@@ -263,7 +265,7 @@ public class DevicePolicyResourcesTest {
     public void setDrawables_drawableChangedFromOtherDrawable_sendsBroadcast() {
         sDpm.getResources().setDrawables(createDrawable(
                 UPDATABLE_DRAWABLE_ID_1, DRAWABLE_STYLE_1, R.drawable.test_drawable_1));
-        BlockingBroadcastReceiver broadcastReceiver = sDeviceState.registerBroadcastReceiver(
+        BlockingBroadcastReceiver broadcastReceiver = registerBroadcastReceiver(sDeviceState,
                 DevicePolicyManager.ACTION_DEVICE_POLICY_RESOURCE_UPDATED);
 
         sDpm.getResources().setDrawables(createDrawable(
@@ -279,7 +281,7 @@ public class DevicePolicyResourcesTest {
     public void setDrawables_drawableNotChanged_doesNotSendBroadcast() {
         sDpm.getResources().setDrawables(createDrawable(
                 UPDATABLE_DRAWABLE_ID_1, DRAWABLE_STYLE_1, R.drawable.test_drawable_1));
-        BlockingBroadcastReceiver broadcastReceiver = sDeviceState.registerBroadcastReceiver(
+        BlockingBroadcastReceiver broadcastReceiver = registerBroadcastReceiver(sDeviceState,
                 DevicePolicyManager.ACTION_DEVICE_POLICY_RESOURCE_UPDATED);
 
         sDpm.getResources().setDrawables(createDrawable(
@@ -341,7 +343,7 @@ public class DevicePolicyResourcesTest {
     public void resetDrawables_drawableChanged_sendsBroadcast() {
         sDpm.getResources().setDrawables(createDrawable(
                 UPDATABLE_DRAWABLE_ID_1, DRAWABLE_STYLE_1, R.drawable.test_drawable_1));
-        BlockingBroadcastReceiver broadcastReceiver = sDeviceState.registerBroadcastReceiver(
+        BlockingBroadcastReceiver broadcastReceiver = registerBroadcastReceiver(sDeviceState,
                 DevicePolicyManager.ACTION_DEVICE_POLICY_RESOURCE_UPDATED);
 
         sDpm.getResources().resetDrawables(Set.of(UPDATABLE_DRAWABLE_ID_1));
@@ -355,7 +357,7 @@ public class DevicePolicyResourcesTest {
     @Ignore("b/208237942")
     public void resetDrawables_drawableNotChanged_doesNotSendBroadcast() {
         sDpm.getResources().resetDrawables(Set.of(UPDATABLE_DRAWABLE_ID_1));
-        BlockingBroadcastReceiver broadcastReceiver = sDeviceState.registerBroadcastReceiver(
+        BlockingBroadcastReceiver broadcastReceiver = registerBroadcastReceiver(sDeviceState,
                 DevicePolicyManager.ACTION_DEVICE_POLICY_RESOURCE_UPDATED);
 
         sDpm.getResources().resetDrawables(Set.of(UPDATABLE_DRAWABLE_ID_1));
@@ -635,7 +637,7 @@ public class DevicePolicyResourcesTest {
     @EnsureHasPermission(UPDATE_DEVICE_MANAGEMENT_RESOURCES)
     public void setStrings_stringChangedFromNull_sendsBroadcast() {
         sDpm.getResources().resetStrings(Set.of(UPDATABLE_STRING_ID_1));
-        BlockingBroadcastReceiver broadcastReceiver = sDeviceState.registerBroadcastReceiver(
+        BlockingBroadcastReceiver broadcastReceiver = registerBroadcastReceiver(sDeviceState,
                 DevicePolicyManager.ACTION_DEVICE_POLICY_RESOURCE_UPDATED);
 
         sDpm.getResources().setStrings(createString(UPDATABLE_STRING_ID_1, R.string.test_string_1));
@@ -648,7 +650,7 @@ public class DevicePolicyResourcesTest {
     @EnsureHasPermission(UPDATE_DEVICE_MANAGEMENT_RESOURCES)
     public void setStrings_stringChangedFromOtherString_sendsBroadcast() {
         sDpm.getResources().setStrings(createString(UPDATABLE_STRING_ID_1, R.string.test_string_1));
-        BlockingBroadcastReceiver broadcastReceiver = sDeviceState.registerBroadcastReceiver(
+        BlockingBroadcastReceiver broadcastReceiver = registerBroadcastReceiver(sDeviceState,
                 DevicePolicyManager.ACTION_DEVICE_POLICY_RESOURCE_UPDATED);
 
         sDpm.getResources().setStrings(createString(UPDATABLE_STRING_ID_1, R.string.test_string_2));
@@ -662,7 +664,7 @@ public class DevicePolicyResourcesTest {
     @Ignore("b/208237942")
     public void setStrings_stringNotChanged_doesNotSendBroadcast() {
         sDpm.getResources().setStrings(createString(UPDATABLE_STRING_ID_1, R.string.test_string_1));
-        BlockingBroadcastReceiver broadcastReceiver = sDeviceState.registerBroadcastReceiver(
+        BlockingBroadcastReceiver broadcastReceiver = registerBroadcastReceiver(sDeviceState,
                 DevicePolicyManager.ACTION_DEVICE_POLICY_RESOURCE_UPDATED);
 
         sDpm.getResources().setStrings(createString(UPDATABLE_STRING_ID_1, R.string.test_string_1));
@@ -718,7 +720,7 @@ public class DevicePolicyResourcesTest {
     @EnsureHasPermission(UPDATE_DEVICE_MANAGEMENT_RESOURCES)
     public void resetStrings_stringChanged_sendsBroadcast() {
         sDpm.getResources().setStrings(createString(UPDATABLE_STRING_ID_1, R.string.test_string_1));
-        BlockingBroadcastReceiver broadcastReceiver = sDeviceState.registerBroadcastReceiver(
+        BlockingBroadcastReceiver broadcastReceiver = registerBroadcastReceiver(sDeviceState,
                 DevicePolicyManager.ACTION_DEVICE_POLICY_RESOURCE_UPDATED);
 
         sDpm.getResources().resetStrings(Set.of(UPDATABLE_STRING_ID_1));
@@ -732,7 +734,7 @@ public class DevicePolicyResourcesTest {
     @Ignore("b/208237942")
     public void resetStrings_stringNotChanged_doesNotSendBroadcast() {
         sDpm.getResources().resetStrings(Set.of(UPDATABLE_STRING_ID_1));
-        BlockingBroadcastReceiver broadcastReceiver = sDeviceState.registerBroadcastReceiver(
+        BlockingBroadcastReceiver broadcastReceiver = registerBroadcastReceiver(sDeviceState,
                 DevicePolicyManager.ACTION_DEVICE_POLICY_RESOURCE_UPDATED);
 
         sDpm.getResources().resetStrings(Set.of(UPDATABLE_STRING_ID_1));

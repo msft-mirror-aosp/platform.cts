@@ -1733,21 +1733,11 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         getElectronicStabilityControlStateVerifierBuilder(),
                         getCrossTrafficMonitoringWarningStateVerifierBuilder(),
                         getLowSpeedAutomaticEmergencyBrakingStateVerifierBuilder(),
-                        VehiclePropertyVerifiers.getInfoModelTrimVerifierBuilder(),
                         VehiclePropertyVerifiers.getInfoVehicleSizeClassVerifierBuilder(),
                         VehiclePropertyVerifiers.getTurnSignalLightStateVerifierBuilder(),
                         VehiclePropertyVerifiers.getTurnSignalSwitchVerifierBuilder(),
-                        VehiclePropertyVerifiers.getInstantaneousFuelEconomyVerifierBuilder(),
-                        VehiclePropertyVerifiers.getInstantaneousEvEfficiencyVerifierBuilder(),
-                        VehiclePropertyVerifiers.getVehicleHornEngagedVerifierBuilder(),
                         VehiclePropertyVerifiers
                                 .getVehicleDrivingAutomationTargetLevelVerifierBuilder(),
-                        VehiclePropertyVerifiers
-                                .getAcceleratorPedalCompressionPercentageVerifierBuilder(),
-                        VehiclePropertyVerifiers
-                                .getBrakePedalCompressionPercentageVerifierBuilder(),
-                        VehiclePropertyVerifiers.getBrakePadWearPercentageVerifierBuilder(),
-                        VehiclePropertyVerifiers.getBrakeFluidLevelLowVerifierBuilder(),
                         VehiclePropertyVerifiers
                                 .getVehiclePassiveSuspensionHeightVerifierBuilder());
         Map<Integer, VehiclePropertyVerifier.Builder<?>> customBuilderByPropertyId =

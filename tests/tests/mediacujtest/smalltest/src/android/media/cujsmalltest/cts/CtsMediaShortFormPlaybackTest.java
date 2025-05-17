@@ -119,6 +119,7 @@ public class CtsMediaShortFormPlaybackTest extends CujTestBase {
                                             "Mp3_Consecutive_AudioOffloadTest";
   private static final String OPUS_AUDIO_OFFLOAD_SPEED_CHANGE_TEST =
                                             "Opus_AudioOffloadSpeedChangeTest";
+  private static final String MP3_SINE_AUDIO_OFFLOAD_SEEK_TEST = "Mp3_Sine_AudioOffloadSeekTest";
 
   CujTestParam mCujTestParam;
   private final String mTestType;
@@ -233,6 +234,15 @@ public class CtsMediaShortFormPlaybackTest extends CujTestBase {
                 new AudioOffloadTestPlayerListener(TestType.AUDIO_OFFLOAD_SPEED_CHANGE_TEST))
                 .build(),
             OPUS_AUDIO_OFFLOAD_SPEED_CHANGE_TEST},
+        {CujTestParam.builder().setMediaUrls(prepareSineWave_70secAudioPlaylist())
+            .setDuration(Duration.ofMillis(70000) /* clip Duration */)
+            .setOverhead(TEST_OVERHEAD)
+            .setPlayerListener(
+                new AudioOffloadTestPlayerListener(TestType.AUDIO_OFFLOAD_SEEK_TEST,
+                      SEEK_POSITION_FOR_SEEK_TEST /* SeekPosition */,
+                      FIRST_PLAYBACK_DURATION_FOR_SEEK_TEST /* SendMessagePosition */))
+            .build(),
+            MP3_SINE_AUDIO_OFFLOAD_SEEK_TEST},
     }));
     return exhaustiveArgsList;
   }
@@ -442,13 +452,17 @@ public class CtsMediaShortFormPlaybackTest extends CujTestBase {
     }
     if (mCujTestParam.getPlayerListener().isAudioOffloadTest()) {
         if (MP3_SINE_AUDIO_OFFLOAD_TEST.equals(mTestType)
-                || MP3_CONSECUTIVE_AUDIO_OFFLOAD_TEST.equals(mTestType)) {
+                || MP3_CONSECUTIVE_AUDIO_OFFLOAD_TEST.equals(mTestType)
+                || MP3_SINE_AUDIO_OFFLOAD_SEEK_TEST.equals(mTestType)) {
             Assume.assumeTrue("Skipping " + mTestType + " as device doesn't support audio " +
                 "offloading", deviceSupportAudioOffload(AudioFormat.ENCODING_MP3));
-        } else if (OPUS_AUDIO_OFFLOAD_TEST.equals(mTestType)
-                    || OPUS_AUDIO_OFFLOAD_SPEED_CHANGE_TEST.equals(mTestType)) {
+        } else if (OPUS_AUDIO_OFFLOAD_TEST.equals(mTestType)) {
             Assume.assumeTrue("Skipping " + mTestType + " as device doesn't support audio " +
                 "offloading", deviceSupportAudioOffload(AudioFormat.ENCODING_OPUS));
+        } else if (OPUS_AUDIO_OFFLOAD_SPEED_CHANGE_TEST.equals(mTestType)) {
+            Assume.assumeTrue("Skipping " + mTestType + " as device doesn't support variable " +
+                "playback rate audio offloading",
+                        deviceSupportOffloadVariableRate(mAudioOffloadActivity));
         } else if (AAC_SINE_AUDIO_OFFLOAD_TEST.equals(mTestType)) {
             Assume.assumeTrue("Skipping " + mTestType + " as device doesn't support audio " +
                 "offloading", deviceSupportAudioOffload(AudioFormat.ENCODING_AAC_LC));

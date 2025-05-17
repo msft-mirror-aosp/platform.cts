@@ -25,6 +25,7 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
+import android.graphics.Rect
 import android.graphics.Typeface
 import android.platform.test.annotations.DisabledOnRavenwood
 import android.provider.Settings
@@ -49,6 +50,7 @@ import com.google.common.truth.Truth.assertWithMessage
 import com.google.ux.material.libmonet.contrast.Contrast
 import com.google.ux.material.libmonet.hct.Hct
 import java.io.Serializable
+import kotlin.math.abs
 import kotlin.math.ceil
 import org.junit.AfterClass
 import org.junit.Assert
@@ -60,8 +62,13 @@ import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
 import platform.test.screenshot.GoldenPathManager
 import platform.test.screenshot.PathConfig
+import platform.test.screenshot.PathElementNoContext
 import platform.test.screenshot.ScreenshotAsserterConfig
 import platform.test.screenshot.ScreenshotTestRule
+import platform.test.screenshot.matchers.BitmapMatcher
+import platform.test.screenshot.matchers.MatchResult
+import platform.test.screenshot.matchers.PixelPerfectMatcher
+import platform.test.screenshot.proto.ScreenshotResultProto
 
 @RunWith(Parameterized::class)
 @DisabledOnRavenwood(reason = "Cannot instantiate Parameterized runner")
@@ -72,16 +79,22 @@ class SystemPaletteTest(
 ) {
     val mContext: Context = getInstrumentation().targetContext
 
+    val isOldSpec: Boolean =
+        mContext.resources.getIdentifier("system_primary_dim_light", "color", "android") == 0
+
     private val goldenPathManager = GoldenPathManager(
             appContext = mContext,
             assetsPathRelativeToBuildRoot = "cts/tests/tests/graphics/assets/",
-            pathConfig = PathConfig()
+            pathConfig = PathConfig(PathElementNoContext("spec", true){
+                if (isOldSpec) "libmonet_2021" else "libmonet_2025"
+            })
     )
 
     @get:Rule val screenshotTestRule = ScreenshotTestRule(goldenPathManager)
 
     @OptIn(ExperimentalStdlibApi::class)
     companion object {
+
         private var initialContrast: Float = 0f
 
         @JvmStatic
@@ -90,7 +103,7 @@ class SystemPaletteTest(
             val context = getInstrumentation().targetContext
             val uiModeManager = context.getSystemService(UiModeManager::class.java)
 
-  val isTestingNightMode = mode == "dark"
+            val isTestingNightMode = mode == "dark"
             val currentMode = uiModeManager.nightMode == MODE_NIGHT_YES
             val expectedMode = if (isTestingNightMode) MODE_NIGHT_YES else MODE_NIGHT_NO
 
@@ -189,7 +202,10 @@ class SystemPaletteTest(
 
         screenshotTestRule
             .createScreenshotAsserter(
-                ScreenshotAsserterConfig(captureStrategy = { generatePaletteBitmap() })
+                ScreenshotAsserterConfig(
+                    matcher = if (isOldSpec) Material2021SpecMatcher() else PixelPerfectMatcher(),
+                    captureStrategy = { generatePaletteBitmap() }
+                )
             )
             .assertGoldenImage(goldenName)
     }
@@ -638,6 +654,63 @@ class SystemPaletteTest(
             fun of(vararg testers: ContrastTester): BulkContrastTester {
                 return BulkContrastTester(*testers)
             }
+        }
+    }
+
+    private class Material2021SpecMatcher : BitmapMatcher() {
+        override fun compareBitmaps(
+            expected: IntArray,
+            given: IntArray,
+            width: Int,
+            height: Int,
+            regions: List<Rect>
+        ): MatchResult {
+            val filter = getFilter(width, height, regions)
+            var different = 0
+            var same = 0
+            var similar = 0
+            var ignored = 0
+
+            val diffArray = lazy { IntArray(width * height) { Color.TRANSPARENT } }
+
+            expected.indices.forEach { index ->
+                when {
+                    !filter[index] -> ignored++
+                    expected[index] == given[index] -> same++
+                    getHCTDiff(
+                        given[index],
+                        expected[index]
+                    ) < 3 -> diffArray.value[index] = Color.CYAN.also { similar++ }
+                    else -> diffArray.value[index] = Color.MAGENTA.also { different++ }
+                }
+            }
+
+            val stats = ScreenshotResultProto.DiffResult.ComparisonStatistics.newBuilder()
+                .setNumberPixelsCompared(width * height)
+                .setNumberPixelsIdentical(same)
+                .setNumberPixelsDifferent(different)
+                .setNumberPixelsSimilar(similar)
+                .setNumberPixelsIgnored(ignored)
+                .build()
+
+            return if (different > 0) {
+                val diff =
+                    Bitmap.createBitmap(diffArray.value, width, height, Bitmap.Config.ARGB_8888)
+                MatchResult(matches = false, diff = diff, comparisonStatistics = stats)
+            } else {
+                MatchResult(matches = true, diff = null, comparisonStatistics = stats)
+            }
+        }
+
+        private fun getHCTDiff(color1: Int, color2: Int): Double {
+            val hct1 = Hct.fromInt(color1)
+            val hct2 = Hct.fromInt(color2)
+
+            val diffTone = abs(hct1.tone - hct2.tone)
+            val diffChroma = abs(hct1.chroma - hct2.chroma)
+            val diffHue = abs(hct1.hue - hct2.hue)
+
+            return diffTone + diffChroma + diffHue
         }
     }
 }

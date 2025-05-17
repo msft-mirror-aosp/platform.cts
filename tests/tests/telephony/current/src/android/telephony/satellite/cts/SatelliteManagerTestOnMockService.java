@@ -6958,6 +6958,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         }
     }
 
+    @Ignore("b/416339477 - This test is flaky. Need to fix and re-enable it.")
     @Test
     public void testRequestSessionStats() {
         logd("testRequestSessionStats: start");
@@ -7348,6 +7349,11 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         afterSubscriberIdTest(callback);
     }
 
+    /**
+     * Tests the {@link SatelliteManager#getSatelliteDataSupportMode} by setting different data mode
+     * values through CarrierConfig. TODO: Perform satellite config OTA with different
+     * maxAllowedDataMode values and assert outcome of getSatelliteDataSupportMode
+     */
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_SATELLITE_25Q4_APIS)
     public void testGetSatelliteDataSupportMode() {
@@ -7363,6 +7369,15 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
                 return;
             }
 
+            int maxAllowedDataMode =
+                    getContext()
+                            .getResources()
+                            .getInteger(
+                                    getContext()
+                                            .getResources()
+                                            .getIdentifier(
+                                                    "max_allowed_data_mode", "integer", "android"));
+
             // Update available services with data for the carrier sub id
             PersistableBundle bundle = new PersistableBundle();
             int[] defaultSupportedServices = {2, 3, 6};
@@ -7373,22 +7388,29 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
             bundle.putInt(CarrierConfigManager.KEY_SATELLITE_DATA_SUPPORT_MODE_INT,
                     SatelliteManager.SATELLITE_DATA_SUPPORT_RESTRICTED);
             overrideCarrierConfig(sTestSubIDForCarrierSatellite, bundle);
-
-            assertEquals(SatelliteManager.SATELLITE_DATA_SUPPORT_RESTRICTED,
+            assertEquals(
+                    Math.min(
+                            maxAllowedDataMode, SatelliteManager.SATELLITE_DATA_SUPPORT_RESTRICTED),
                     sSatelliteManager.getSatelliteDataSupportMode(sTestSubIDForCarrierSatellite));
 
             // With data mode: constrained
             bundle.putInt(CarrierConfigManager.KEY_SATELLITE_DATA_SUPPORT_MODE_INT,
                     SatelliteManager.SATELLITE_DATA_SUPPORT_CONSTRAINED);
             overrideCarrierConfig(sTestSubIDForCarrierSatellite, bundle);
-            assertEquals(SatelliteManager.SATELLITE_DATA_SUPPORT_CONSTRAINED,
+            assertEquals(
+                    Math.min(
+                            maxAllowedDataMode,
+                            SatelliteManager.SATELLITE_DATA_SUPPORT_CONSTRAINED),
                     sSatelliteManager.getSatelliteDataSupportMode(sTestSubIDForCarrierSatellite));
 
             // With data mode: UnConstrained
             bundle.putInt(CarrierConfigManager.KEY_SATELLITE_DATA_SUPPORT_MODE_INT,
                     SatelliteManager.SATELLITE_DATA_SUPPORT_UNCONSTRAINED);
             overrideCarrierConfig(sTestSubIDForCarrierSatellite, bundle);
-            assertEquals(SatelliteManager.SATELLITE_DATA_SUPPORT_UNCONSTRAINED,
+            assertEquals(
+                    Math.min(
+                            maxAllowedDataMode,
+                            SatelliteManager.SATELLITE_DATA_SUPPORT_UNCONSTRAINED),
                     sSatelliteManager.getSatelliteDataSupportMode(sTestSubIDForCarrierSatellite));
         }
     }

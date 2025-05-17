@@ -18,6 +18,7 @@ package android.server.wm.display;
 
 import static android.app.WindowConfiguration.WINDOWING_MODE_FULLSCREEN;
 import static android.content.pm.ActivityInfo.FORCE_RESIZE_APP;
+import static android.content.pm.ActivityInfo.OVERRIDE_CAMERA_COMPAT_DISABLE_SIMULATE_REQUESTED_ORIENTATION;
 import static android.content.pm.ActivityInfo.OVERRIDE_ENABLE_COMPAT_FAKE_FOCUS;
 import static android.content.pm.ActivityInfo.OVERRIDE_ENABLE_COMPAT_IGNORE_ORIENTATION_REQUEST_WHEN_LOOP_DETECTED;
 import static android.content.pm.ActivityInfo.OVERRIDE_MIN_ASPECT_RATIO;
@@ -62,6 +63,9 @@ import static android.server.wm.optoutsandboxingviewboundsapis.Components.TEST_V
 import static android.server.wm.optoutsandboxingviewboundsapis.Components.TEST_VIEW_SANDBOX_OPT_OUT_TIMEOUT_MS;
 import static android.server.wm.propertycameracompatallowforcerotation.Components.CAMERA_COMPAT_ALLOW_FORCE_ROTATION_ACTIVITY;
 import static android.server.wm.propertycameracompatallowrefresh.Components.CAMERA_COMPAT_ALLOW_REFRESH_ACTIVITY;
+import static android.server.wm.propertycameracompatallowsimulaterequestedorientationdefault.Components.CAMERA_COMPAT_ALLOW_SIMULATE_REQUESTED_ORIENTATION_DEFAULT_ACTIVITY;
+import static android.server.wm.propertycameracompatallowsimulaterequestedorientationoptin.Components.CAMERA_COMPAT_ALLOW_SIMULATE_REQUESTED_ORIENTATION_OPT_IN_ACTIVITY;
+import static android.server.wm.propertycameracompatallowsimulaterequestedorientationoptout.Components.CAMERA_COMPAT_ALLOW_SIMULATE_REQUESTED_ORIENTATION_OPT_OUT_ACTIVITY;
 import static android.server.wm.propertycameracompatenablerefreshviapauseoptin.Components.CAMERA_COMPAT_ENABLE_REFRESH_VIA_PAUSE_OPT_IN_ACTIVITY;
 import static android.server.wm.propertycameracompatenablerefreshviapauseoptout.Components.CAMERA_COMPAT_ENABLE_REFRESH_VIA_PAUSE_OPT_OUT_ACTIVITY;
 import static android.view.Display.DEFAULT_DISPLAY;
@@ -162,6 +166,9 @@ public final class CompatChangeTests extends MultiDisplayTestBase {
             component(HelperActivities.ResponsiveActivity.class);
     private static final ComponentName NO_PROPERTY_CHANGE_ORIENTATION_WHILE_RELAUNCHING_ACTIVITY =
             component(HelperActivities.NoPropertyChangeOrientationWhileRelaunchingActivity.class);
+    private static final ComponentName NO_DISPLAY_CONFIG_CHANGE_SUPPORT_GAME_ACTIVITY =
+            ComponentName.createRelative(
+                    "android.server.wm.displaycompat", ".NoDisplayConfigChangeSupportGameActivity");
 
     // Fixed orientation min aspect ratio
     private static final float FIXED_ORIENTATION_MIN_ASPECT_RATIO = 1.03f;
@@ -575,7 +582,6 @@ public final class CompatChangeTests extends MultiDisplayTestBase {
         }
     }
 
-
     @Test
     public void testOptOutPropertyCameraCompatForceRotation_rotationDisabled() {
         assumeTrue("Skipping test: config_isWindowManagerCameraCompatTreatmentEnabled not enabled",
@@ -606,6 +612,173 @@ public final class CompatChangeTests extends MultiDisplayTestBase {
             waitAssertEquals("expected to not force rotate for camera compat",
                     /* expected */ false,
                     () -> session.getActivityState().getShouldForceRotateForCameraCompat());
+        }
+    }
+
+    /**
+     * Test that if camera compatibility treatment that simulates requested orientation is allowed,
+     * the app is allowed to enter camera compat mode if
+     * {@link ActivityInfo#OVERRIDE_CAMERA_COMPAT_DISABLE_SIMULATE_REQUESTED_ORIENTATION} is
+     * not set and {@link
+     * android.view.WindowManager#PROPERTY_CAMERA_COMPAT_ALLOW_SIMULATE_REQUESTED_ORIENTATION}
+     * is set to true.
+     */
+    @Test
+    @ApiTest(apis = {
+            "android.view.WindowManager#PROPERTY_CAMERA_COMPAT_ALLOW_SIMULATE_REQUESTED_ORIENTATION"
+    })
+    @RequiresFlagsEnabled({
+        Flags.FLAG_ENABLE_CAMERA_COMPAT_FOR_DESKTOP_WINDOWING,
+        Flags.FLAG_ENABLE_CAMERA_COMPAT_FOR_DESKTOP_WINDOWING_OPT_OUT_API,
+        Flags.FLAG_ENABLE_CAMERA_COMPAT_FOR_DESKTOP_WINDOWING_OPT_OUT
+    })
+    public void
+            testCameraCompatSimulateReqOrientation_propTrue_overrideNotSet_cameraCompatAllowed() {
+        try (var session = new ActivitySessionCloseable(
+                CAMERA_COMPAT_ALLOW_SIMULATE_REQUESTED_ORIENTATION_OPT_IN_ACTIVITY)) {
+            assertTrue(session.getActivityState()
+                    .getShouldAllowSimulateRequestedOrientationForCameraCompat());
+        }
+    }
+
+    /**
+     * Test that if camera compatibility treatment that simulates requested orientation is allowed,
+     * the app is not allowed to enter camera compat mode if
+     * {@link ActivityInfo#OVERRIDE_CAMERA_COMPAT_DISABLE_SIMULATE_REQUESTED_ORIENTATION} is
+     * not set but {@link
+     * android.view.WindowManager#PROPERTY_CAMERA_COMPAT_ALLOW_SIMULATE_REQUESTED_ORIENTATION}
+     * is set to false (app opted-out).
+     */
+    @Test
+    @ApiTest(apis = {
+            "android.view.WindowManager#PROPERTY_CAMERA_COMPAT_ALLOW_SIMULATE_REQUESTED_ORIENTATION"
+    })
+    @RequiresFlagsEnabled({
+        Flags.FLAG_ENABLE_CAMERA_COMPAT_FOR_DESKTOP_WINDOWING,
+        Flags.FLAG_ENABLE_CAMERA_COMPAT_FOR_DESKTOP_WINDOWING_OPT_OUT_API,
+        Flags.FLAG_ENABLE_CAMERA_COMPAT_FOR_DESKTOP_WINDOWING_OPT_OUT
+    })
+    public void
+            testCameraCompatSimReqOrientation_propFalse_overrideNotSet_cameraCompatNotAllowed() {
+        try (var session = new ActivitySessionCloseable(
+                CAMERA_COMPAT_ALLOW_SIMULATE_REQUESTED_ORIENTATION_OPT_OUT_ACTIVITY)) {
+            assertFalse(session.getActivityState()
+                    .getShouldAllowSimulateRequestedOrientationForCameraCompat());
+        }
+    }
+
+    /**
+     * Test that if camera compatibility treatment that simulates requested orientation is allowed,
+     * the app is allowed to enter camera compat mode if neither
+     * {@link ActivityInfo#OVERRIDE_CAMERA_COMPAT_DISABLE_SIMULATE_REQUESTED_ORIENTATION} or
+     * android.view.WindowManager#PROPERTY_CAMERA_COMPAT_ALLOW_SIMULATE_REQUESTED_ORIENTATION}
+     * are set.
+     */
+    @Test
+    @ApiTest(apis = {
+            "android.view.WindowManager#PROPERTY_CAMERA_COMPAT_ALLOW_SIMULATE_REQUESTED_ORIENTATION"
+    })
+    @RequiresFlagsEnabled({
+        Flags.FLAG_ENABLE_CAMERA_COMPAT_FOR_DESKTOP_WINDOWING,
+        Flags.FLAG_ENABLE_CAMERA_COMPAT_FOR_DESKTOP_WINDOWING_OPT_OUT_API,
+        Flags.FLAG_ENABLE_CAMERA_COMPAT_FOR_DESKTOP_WINDOWING_OPT_OUT
+    })
+    public void
+            testCameraCompatSimulateReqOrientation_propNotSet_overrideNotSet_camCompatAllowed() {
+        try (var session = new ActivitySessionCloseable(
+                CAMERA_COMPAT_ALLOW_SIMULATE_REQUESTED_ORIENTATION_DEFAULT_ACTIVITY)) {
+            assertTrue(session.getActivityState()
+                    .getShouldAllowSimulateRequestedOrientationForCameraCompat());
+        }
+    }
+
+    /**
+     * Test that if camera compatibility treatment that simulates requested orientation is allowed,
+     * the app is not allowed to enter camera compat mode if
+     * {@link ActivityInfo#OVERRIDE_CAMERA_COMPAT_DISABLE_SIMULATE_REQUESTED_ORIENTATION} is
+     * set to true (treatment disabled) and {@link
+     * android.view.WindowManager#PROPERTY_CAMERA_COMPAT_ALLOW_SIMULATE_REQUESTED_ORIENTATION}
+     * is not set.
+     */
+    @Test
+    @ApiTest(apis = {
+            "android.view.WindowManager#PROPERTY_CAMERA_COMPAT_ALLOW_SIMULATE_REQUESTED_ORIENTATION"
+    })
+    @RequiresFlagsEnabled({
+        Flags.FLAG_ENABLE_CAMERA_COMPAT_FOR_DESKTOP_WINDOWING,
+        Flags.FLAG_ENABLE_CAMERA_COMPAT_FOR_DESKTOP_WINDOWING_OPT_OUT_API,
+        Flags.FLAG_ENABLE_CAMERA_COMPAT_FOR_DESKTOP_WINDOWING_OPT_OUT
+    })
+    public void
+            testCameraCompatSimReqOrientation_propNotSet_disabledByOverride_camCompatNotAllowed() {
+        try (var compatChange = new CompatChangeCloseable(
+                OVERRIDE_CAMERA_COMPAT_DISABLE_SIMULATE_REQUESTED_ORIENTATION,
+                CAMERA_COMPAT_ALLOW_SIMULATE_REQUESTED_ORIENTATION_DEFAULT_ACTIVITY
+                        .getPackageName());
+                var session = new ActivitySessionCloseable(
+                        CAMERA_COMPAT_ALLOW_SIMULATE_REQUESTED_ORIENTATION_DEFAULT_ACTIVITY)) {
+            assertFalse(session.getActivityState()
+                    .getShouldAllowSimulateRequestedOrientationForCameraCompat());
+        }
+    }
+
+    /**
+     * Test that if camera compatibility treatment that simulates requested orientation is allowed,
+     * the app is not allowed to enter camera compat mode if
+     * {@link ActivityInfo#OVERRIDE_CAMERA_COMPAT_DISABLE_SIMULATE_REQUESTED_ORIENTATION} is
+     * set to true (treatment disabled) and {@link
+     * android.view.WindowManager#PROPERTY_CAMERA_COMPAT_ALLOW_SIMULATE_REQUESTED_ORIENTATION}
+     * is set to false (also disables treatment).
+     */
+    @Test
+    @ApiTest(apis = {
+            "android.view.WindowManager#PROPERTY_CAMERA_COMPAT_ALLOW_SIMULATE_REQUESTED_ORIENTATION"
+    })
+    @RequiresFlagsEnabled({
+        Flags.FLAG_ENABLE_CAMERA_COMPAT_FOR_DESKTOP_WINDOWING,
+        Flags.FLAG_ENABLE_CAMERA_COMPAT_FOR_DESKTOP_WINDOWING_OPT_OUT_API,
+        Flags.FLAG_ENABLE_CAMERA_COMPAT_FOR_DESKTOP_WINDOWING_OPT_OUT
+    })
+    public void
+            testCameraCompatSimReqOrientation_propTrue_disabledByOverride_cameraCompatNotAllowed() {
+        try (var compatChange = new CompatChangeCloseable(
+                OVERRIDE_CAMERA_COMPAT_DISABLE_SIMULATE_REQUESTED_ORIENTATION,
+                CAMERA_COMPAT_ALLOW_SIMULATE_REQUESTED_ORIENTATION_OPT_IN_ACTIVITY
+                        .getPackageName());
+                var session = new ActivitySessionCloseable(
+                        CAMERA_COMPAT_ALLOW_SIMULATE_REQUESTED_ORIENTATION_OPT_IN_ACTIVITY)) {
+            assertFalse(session.getActivityState()
+                    .getShouldAllowSimulateRequestedOrientationForCameraCompat());
+        }
+    }
+
+    /**
+     * Test that if camera compatibility treatment that simulates requested orientation is allowed,
+     * the app is not allowed to enter camera compat mode if
+     * {@link ActivityInfo#OVERRIDE_CAMERA_COMPAT_DISABLE_SIMULATE_REQUESTED_ORIENTATION} is
+     * disabled and {@link
+     * android.view.WindowManager#PROPERTY_CAMERA_COMPAT_ALLOW_SIMULATE_REQUESTED_ORIENTATION}
+     * is set to false (disables treatment).
+     */
+    @Test
+    @ApiTest(apis = {
+            "android.view.WindowManager#PROPERTY_CAMERA_COMPAT_ALLOW_SIMULATE_REQUESTED_ORIENTATION"
+    })
+    @RequiresFlagsEnabled({
+        Flags.FLAG_ENABLE_CAMERA_COMPAT_FOR_DESKTOP_WINDOWING,
+        Flags.FLAG_ENABLE_CAMERA_COMPAT_FOR_DESKTOP_WINDOWING_OPT_OUT_API,
+        Flags.FLAG_ENABLE_CAMERA_COMPAT_FOR_DESKTOP_WINDOWING_OPT_OUT
+    })
+    public void
+            testCameraCompatSimReqOrientation_propFalse_disabledOverride_cameraCompatNotAllowed() {
+        try (var compatChange = new CompatChangeCloseable(
+                OVERRIDE_CAMERA_COMPAT_DISABLE_SIMULATE_REQUESTED_ORIENTATION,
+                CAMERA_COMPAT_ALLOW_SIMULATE_REQUESTED_ORIENTATION_OPT_OUT_ACTIVITY
+                        .getPackageName());
+                var session = new ActivitySessionCloseable(
+                        CAMERA_COMPAT_ALLOW_SIMULATE_REQUESTED_ORIENTATION_OPT_OUT_ACTIVITY)) {
+            assertFalse(session.getActivityState()
+                    .getShouldAllowSimulateRequestedOrientationForCameraCompat());
         }
     }
 
@@ -942,6 +1115,39 @@ public final class CompatChangeTests extends MultiDisplayTestBase {
                         .mId;
 
         final ComponentName activity = NON_RESIZEABLE_PORTRAIT_ACTIVITY;
+        startActivityOnDisplay(DEFAULT_DISPLAY, activity);
+        waitForActivityFocused(5000, activity);
+
+        separateTestJournal();
+        startActivityOnDisplay(secondaryDisplayId, activity);
+        assertTrue(
+                mWmState.waitFor(
+                        state ->
+                                state.getDisplayByActivity(activity) == secondaryDisplayId
+                                        && state.hasActivityState(activity, STATE_RESUMED),
+                        "Waiting for the activity to move to a secondary display"));
+
+        assertRelaunchOrConfigChanged(activity, 0 /* numRelaunch */, 0 /* numConfigChange */);
+    }
+
+    /** Test that a DCM app does not relaunch with display move. */
+    @Test
+    @RequiresFlagsEnabled({
+            Flags.FLAG_ENABLE_DISPLAY_COMPAT_MODE,
+            Flags.FLAG_ENABLE_RESTART_MENU_FOR_CONNECTED_DISPLAYS
+    })
+    public void testDisplayCompatGameDoesNotRestartWithDisplayMove() {
+        assumeTrue(supportsMultiDisplay());
+        final int secondaryDisplayId =
+                createManagedVirtualDisplaySession()
+                        .setSimulateDisplay(true)
+                        .setSimulationDisplaySize(1920 /* width */, 1080 /* height */)
+                        .setDisplayImePolicy(DISPLAY_IME_POLICY_LOCAL)
+                        .setDensityDpi(123)
+                        .createDisplay()
+                        .mId;
+
+        final ComponentName activity = NO_DISPLAY_CONFIG_CHANGE_SUPPORT_GAME_ACTIVITY;
         startActivityOnDisplay(DEFAULT_DISPLAY, activity);
         waitForActivityFocused(5000, activity);
 

@@ -204,12 +204,6 @@
     <option name="compatibility:include-filter" value="CtsHealthFitnessDeviceTestCases android.healthconnect.cts.migration.DataMigrationTest#testInsertMinDataMigrationSdkExtensionVersion_noUpgradeRequired"/>
     <!-- CtsIncrementalInstallHostTestCases -->
     <option name="compatibility:include-filter" value="CtsIncrementalInstallHostTestCases android.incrementalinstall.cts.IncrementalInstallTest#testBaseApkInvalidSignatureAdbInstall"/>
-    <!-- CtsInputHostTestCases -->
-    <option name="compatibility:include-filter" value="CtsInputHostTestCases android.input.cts.hostside.InputAtomsTest#testTouchpadUsageAtom_FingerAndPalmCounts"/>
-    <option name="compatibility:include-filter" value="CtsInputHostTestCases android.input.cts.hostside.InputAtomsTest#testTouchpadUsageAtom_FourFingerSwipeCount"/>
-    <option name="compatibility:include-filter" value="CtsInputHostTestCases android.input.cts.hostside.InputAtomsTest#testTouchpadUsageAtom_PinchCount"/>
-    <option name="compatibility:include-filter" value="CtsInputHostTestCases android.input.cts.hostside.InputAtomsTest#testTouchpadUsageAtom_ThreeFingerSwipeCount"/>
-    <option name="compatibility:include-filter" value="CtsInputHostTestCases android.input.cts.hostside.InputAtomsTest#testTouchpadUsageAtom_TwoFingerSwipeCount"/>
     <!-- CtsInputMethodTestCases -->
     <option name="compatibility:include-filter" value="CtsInputMethodTestCases android.view.inputmethod.cts.EditTextImeSupportTest#testDisableImeAfterFocusChange"/>
     <option name="compatibility:include-filter" value="CtsInputMethodTestCases android.view.inputmethod.cts.FocusHandlingTest#testSoftInputStateAlwaysVisibleFocusEditorAfterLaunch"/>

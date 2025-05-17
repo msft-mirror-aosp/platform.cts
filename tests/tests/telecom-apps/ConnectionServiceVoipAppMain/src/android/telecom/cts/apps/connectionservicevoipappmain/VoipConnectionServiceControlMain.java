@@ -363,14 +363,12 @@ public class VoipConnectionServiceControlMain extends Service {
                     Log.i(
                             mTag,
                             String.format("sendConnectionEvent: id=[%s], event=[%s]", id, event));
-                    // No-op for self-managed app
-                    return new NoDataTransaction(
-                            TestAppTransaction.Failure,
-                            new TestAppException(
-                                    mPackageName,
-                                    createStackTraceList(mClassName + "sendConnectionEvent"),
-                                    "VoipConnectionService* does not implement "
-                                            + "sendConnectionEvent"));
+                    List<String> stackTrace =
+                            createStackTraceList(
+                                    mClassName + ".sendConnectionEvent(" + (event) + ")");
+                    VoipConnection connection = getConnectionOrThrow(id, stackTrace);
+                    connection.sendConnectionEvent(event, null);
+                    return new NoDataTransaction(TestAppTransaction.Success, null);
                 }
 
                 @Override

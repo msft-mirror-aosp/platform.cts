@@ -341,9 +341,8 @@ public interface Features {
 
     /**
      * Feature for {@link #isFeatureSupported(String)}. This feature covers {@link
-     * ActionAccumulator#create}.
+     * android.app.appsearch.usagereporting.ActionAccumulator#create}.
      */
-    // TODO(b/395157195): Update Javadoc and imports once ActionAccumulator class is available
     // Due to lint checks, we cannot include the word "ACTION" in this value
 
     String SEARCH_AND_CLICK_ACCUMULATOR = "SEARCH_AND_CLICK_ACCUMULATOR";

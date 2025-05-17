@@ -26,7 +26,6 @@ cc_test_library {
     ],
     include_dirs: [
         "frameworks/base/media/native/midi/include",
-        "system/core/include/cutils",
     ],
     header_libs: [
         "jni_headers",

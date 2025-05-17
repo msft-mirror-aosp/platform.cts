@@ -21,10 +21,15 @@ import static com.google.common.truth.Truth.assertWithMessage;
 
 import static org.junit.Assert.fail;
 
+import android.app.Instrumentation;
+import android.content.Context;
+import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.net.Uri;
 import android.os.Build;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.MediaStore;
 import android.widget.photopicker.EmbeddedPhotoPickerFeatureInfo;
 
@@ -35,6 +40,9 @@ import androidx.test.filters.SdkSuppress;
 import com.android.providers.media.flags.Flags;
 
 import org.junit.Assert;
+import org.junit.Assume;
+import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -46,9 +54,31 @@ import java.util.List;
 @RequiresFlagsEnabled(Flags.FLAG_ENABLE_EMBEDDED_PHOTOPICKER)
 public class EmbeddedPhotoPickerFeatureInfoTest {
 
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
     private static final long DEFAULT_ACCENT_COLOR = -1;
     private static final int DEFAULT_MAX_SELECTION_LIMIT = 100;
     private static final @ColorLong long ACCENT_COLOR = 0xFF4287F5L; // blue color
+
+    private Instrumentation mInstrumentation;
+    private Context mContext;
+    private PackageManager mPackageManager;
+
+    @Before
+    public void setUp() throws Exception {
+        mInstrumentation = androidx.test.platform.app.InstrumentationRegistry.getInstrumentation();
+        mContext = mInstrumentation.getTargetContext();
+        mPackageManager = mContext.getPackageManager();
+    }
+
+    boolean isHardwareSupported() {
+        // These UI tests are not optimised for Watches, TVs, Auto;
+        // IoT devices do not have a UI to run these UI tests
+        return !mPackageManager.hasSystemFeature(mPackageManager.FEATURE_EMBEDDED)
+                && !mPackageManager.hasSystemFeature(mPackageManager.FEATURE_WATCH)
+                && !mPackageManager.hasSystemFeature(mPackageManager.FEATURE_LEANBACK);
+    }
 
     @Test
     public void testSetMimeTypes_default_returnsAllMediaMimeTypes() {
@@ -98,6 +128,8 @@ public class EmbeddedPhotoPickerFeatureInfoTest {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_PICKER_HIGHLIGHT_SEARCH_RESULTS_APIS)
     public void testSetHighlightMediaQueryForValidQuery() {
+        // Suppress HSR tests for wearables since the APIs aren't supported in wear devices
+        Assume.assumeTrue(isHardwareSupported());
         final String highlightQuery = "android";
         final EmbeddedPhotoPickerFeatureInfo info =
                 new EmbeddedPhotoPickerFeatureInfo.Builder()
@@ -112,6 +144,8 @@ public class EmbeddedPhotoPickerFeatureInfoTest {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_PICKER_HIGHLIGHT_SEARCH_RESULTS_APIS)
     public void testSetHighlightMediaTextQueryForAlbumInputQuery() {
+        // Suppress HSR tests for wearables since the APIs aren't supported in wear devices
+        Assume.assumeTrue(isHardwareSupported());
         final EmbeddedPhotoPickerFeatureInfo info =
                 new EmbeddedPhotoPickerFeatureInfo.Builder()
                         .setHighlightMediaTextQuery(
@@ -126,6 +160,8 @@ public class EmbeddedPhotoPickerFeatureInfoTest {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_PICKER_HIGHLIGHT_SEARCH_RESULTS_APIS)
     public void testSetHighlightMediaTextQueryForNullQuery() {
+        // Suppress HSR tests for wearables since the APIs aren't supported in wear devices
+        Assume.assumeTrue(isHardwareSupported());
         Assert.assertThrows(
                 NullPointerException.class,
                 () -> {

@@ -16,15 +16,27 @@
 
 package android.media.cujcommon.cts;
 
+import android.os.Looper;
+
 import androidx.annotation.NonNull;
 import androidx.media3.common.Player;
+
+import java.time.Duration;
 
 public class AudioOffloadTestPlayerListener extends PlayerListener {
 
   private TestType mTestType;
+  private Duration mSeekPosition;
 
   public AudioOffloadTestPlayerListener(TestType testType) {
-    mTestType = testType;
+    this(testType, Duration.ofMillis(0), Duration.ofMillis(0));
+  }
+
+  public AudioOffloadTestPlayerListener(
+          TestType testType, Duration seekPosition, Duration sendMessagePosition) {
+    this.mTestType = testType;
+    this.mSeekPosition = seekPosition;
+    this.mSendMessagePosition = sendMessagePosition;
   }
 
   @Override
@@ -43,5 +55,20 @@ public class AudioOffloadTestPlayerListener extends PlayerListener {
 
   @Override
   public void onEventsMediaItemTransition(@NonNull Player player) {
+    if (mTestType.equals(TestType.AUDIO_OFFLOAD_SEEK_TEST)) {
+      seek(player);
+    }
+  }
+
+  private void seek(@NonNull Player player) {
+    mAudioOffloadActivity.mPlayer.createMessage((messageType, payload) -> {
+        mAudioOffloadActivity.mPlayer.seekTo(mSeekPosition.toMillis());
+        // Playback till mSendMessagePosition and seek back to mSeekPosition.
+        mExpectedTotalTime +=
+            mSendMessagePosition.toMillis() - mSeekPosition.toMillis();
+      }).setLooper(Looper.getMainLooper())
+        .setPosition(mSendMessagePosition.toMillis())
+        .setDeleteAfterDelivery(true)
+        .send();
   }
 }

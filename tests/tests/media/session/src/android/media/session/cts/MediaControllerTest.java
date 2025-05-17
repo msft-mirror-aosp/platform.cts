@@ -23,9 +23,11 @@ import static com.google.common.truth.Truth.assertWithMessage;
 
 import static org.junit.Assert.assertThrows;
 
+import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.media.AudioManager;
+import android.media.MediaMetadata;
 import android.media.Rating;
 import android.media.VolumeProvider;
 import android.media.session.MediaController;
@@ -35,6 +37,7 @@ import android.media.session.PlaybackState;
 import android.media.session.PlaybackState.CustomAction;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.ConditionVariable;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Looper;
@@ -53,6 +56,8 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import java.util.List;
 
 /** Test {@link android.media.session.MediaController}. */
 @FrameworkSpecificTest
@@ -640,6 +645,68 @@ public class MediaControllerTest {
 
         assertThrows(IllegalArgumentException.class,
                 () -> transportControls.sendCustomAction(/*action=*/ "", /*args=*/ new Bundle()));
+    }
+
+    @Test
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
+    public void registerCallback_afterRelease_callsOnSessionDestroyed() {
+        mSession.release();
+
+        ConditionVariable sessionDestroyedCalled = new ConditionVariable();
+        mController.registerCallback(
+                new MediaController.Callback() {
+                    @Override
+                    public void onSessionDestroyed() {
+                        sessionDestroyedCalled.open();
+                    }
+                },
+                mHandler);
+
+        assertThat(sessionDestroyedCalled.block(TIME_OUT_MS)).isTrue();
+    }
+
+    @Test
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
+    public void releaseSession_additionalCalls_doNotThrow() {
+        mSession.release();
+
+        // None of these should throw even though the session is released.
+        mController.registerCallback(new MediaController.Callback() {}, mHandler);
+        mController.adjustVolume(AudioManager.ADJUST_RAISE, 0);
+        mController.dispatchMediaButtonEvent(
+                new KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_MEDIA_PLAY));
+        Bundle unusedExtras = mController.getExtras();
+        long unusedFlags = mController.getFlags();
+        MediaMetadata unusedMetadata = mController.getMetadata();
+        String unusedPackageName = mController.getPackageName();
+        MediaController.PlaybackInfo unusedPlaybackInfo = mController.getPlaybackInfo();
+        PlaybackState unusedPlaybackState = mController.getPlaybackState();
+        List<MediaSession.QueueItem> unusedQueue = mController.getQueue();
+        CharSequence unusedTitle = mController.getQueueTitle();
+        int unusedRatingType = mController.getRatingType();
+        PendingIntent unusedSessionActivity = mController.getSessionActivity();
+        Bundle unusedSessionInfo = mController.getSessionInfo();
+        MediaSession.Token unusedToken = mController.getSessionToken();
+        String unusedTag = mController.getTag();
+        mController.getTransportControls().fastForward();
+        mController.getTransportControls().pause();
+        mController.getTransportControls().play();
+        mController.getTransportControls().prepare();
+        mController.getTransportControls().playFromMediaId("mediaId", Bundle.EMPTY);
+        mController.getTransportControls().playFromSearch("query", Bundle.EMPTY);
+        mController.getTransportControls().playFromUri(Uri.parse("http://test"), Bundle.EMPTY);
+        mController.getTransportControls().prepareFromMediaId("mediaId", Bundle.EMPTY);
+        mController.getTransportControls().prepareFromSearch("query", Bundle.EMPTY);
+        mController.getTransportControls().prepareFromUri(Uri.parse("http://test"), Bundle.EMPTY);
+        mController.getTransportControls().rewind();
+        mController.getTransportControls().seekTo(500);
+        mController.getTransportControls().setPlaybackSpeed(2f);
+        mController.getTransportControls().sendCustomAction("action", Bundle.EMPTY);
+        mController.getTransportControls().setRating(Rating.newThumbRating(true));
+        mController.getTransportControls().skipToNext();
+        mController.getTransportControls().skipToPrevious();
+        mController.getTransportControls().skipToQueueItem(1);
+        mController.getTransportControls().stop();
     }
 
     private class MediaSessionCallback extends MediaSession.Callback {

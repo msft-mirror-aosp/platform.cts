@@ -17,10 +17,12 @@
 package android.os.cts;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
+import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Looper;
 import android.os.Process;
@@ -28,6 +30,9 @@ import android.platform.test.annotations.AppModeSdkSandbox;
 
 import androidx.test.runner.AndroidJUnit4;
 
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -68,6 +73,48 @@ public class HandlerThreadTest {
             Thread.sleep(sleepTime);
         } catch (InterruptedException e) {
         }
+    }
+
+    @Test
+    public void testQuitIsIdempotent() throws InterruptedException {
+        HandlerThread ht = new HandlerThread("test");
+        ht.start();
+        Handler handler = new Handler(ht.getLooper());
+
+        final Semaphore semaphore = new Semaphore(0);
+        final AtomicInteger runCount = new AtomicInteger(0);
+        Runnable runnable = new Runnable() {
+            @Override
+            public void run() {
+                semaphore.acquireUninterruptibly();
+                runCount.incrementAndGet();
+            }
+        };
+
+        // Post two blocked tasks.
+        handler.post(runnable);
+        handler.post(runnable);
+
+        // Quit the HandlerThread safely.
+        ht.quitSafely();
+        // The first latchedRunnable may have already started.
+        // The second latchedRunnable definitely hasn't started yet, but won't
+        // be cancelled because we asked to quit safely.
+
+        // Ask to quit again, but unsafely.
+        ht.quit();
+        // If we hadn't already called quitSafely, this would have removed the
+        // second latchedRunnable from the queue.
+        // But since any calls to `quit` or `quitSafely` following the first
+        // such call is ignored, this will have no effect.
+
+        // Unblock both tasks.
+        semaphore.release(2);
+        // Wait for the thread to quit.
+        ht.join();
+        assertFalse(ht.isAlive());
+        // Both tasks should have run (the second quit had no effect).
+        assertEquals(2, runCount.get());
     }
 
     static class MockHandlerThread extends HandlerThread {

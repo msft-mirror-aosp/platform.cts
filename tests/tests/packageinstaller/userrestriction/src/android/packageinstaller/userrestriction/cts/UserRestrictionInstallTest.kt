@@ -46,6 +46,7 @@ import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.harrier.UserType
 import com.android.bedstead.harrier.annotations.enterprise.DevicePolicyRelevant
+import com.android.bedstead.harrier.components.registerBroadcastReceiverForUser
 import com.android.bedstead.nene.TestApis
 import com.android.bedstead.nene.exceptions.AdbException
 import com.android.bedstead.nene.userrestrictions.CommonUserRestrictions.DISALLOW_DEBUGGING_FEATURES

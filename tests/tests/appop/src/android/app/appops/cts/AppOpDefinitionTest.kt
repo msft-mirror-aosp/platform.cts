@@ -239,6 +239,7 @@ class AppOpDefinitionTest {
             APP_OPS[AppOpsManager.OPSTR_HEAD_TRACKING] = 160
             APP_OPS[AppOpsManager.OPSTR_SCENE_UNDERSTANDING_COARSE] = 161
             APP_OPS[AppOpsManager.OPSTR_SCENE_UNDERSTANDING_FINE] = 162
+            APP_OPS[AppOpsManager.OPSTR_POST_PROMOTED_NOTIFICATIONS] = 163
         }
     }
 }

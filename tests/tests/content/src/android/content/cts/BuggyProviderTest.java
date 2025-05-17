@@ -16,21 +16,30 @@
 
 package android.content.cts;
 
+import static com.google.common.truth.Truth.assertWithMessage;
+
 import android.app.ActivityManager;
 import android.content.ContentResolver;
 import android.os.RemoteCallback;
 import android.os.UserHandle;
 import android.platform.test.annotations.AppModeSdkSandbox;
-import android.test.AndroidTestCase;
+
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
+
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 /**
  * Test system behavior of a buggy provider.
  *
- * see @{@link MockBuggyProvider}
+ * <p>see @{@link MockBuggyProvider}
  */
+@RunWith(AndroidJUnit4.class)
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
-public class BuggyProviderTest extends AndroidTestCase {
+public final class BuggyProviderTest {
 
+    @Test
     public void testGetTypeDoesntCrashSystem() {
         // ensure the system doesn't crash when a provider takes too long to respond
         try {
@@ -38,17 +47,21 @@ public class BuggyProviderTest extends AndroidTestCase {
                     MockBuggyProvider.CONTENT_URI, UserHandle.USER_CURRENT,
                     new RemoteCallback(result -> {}));
         } catch (Exception e) {
-            fail("Unexpected exception while fetching type: " + e.getMessage());
+            assertWithMessage("Unexpected exception while fetching type: " + e.getMessage()).fail();
         }
     }
 
+    @Test
     public void testGetTypeViaResolverDoesntCrashSystem() {
         // ensure the system doesn't crash when a provider takes too long to respond
-        ContentResolver resolver = mContext.getContentResolver();
+        ContentResolver resolver =
+                InstrumentationRegistry.getInstrumentation()
+                        .getTargetContext()
+                        .getContentResolver();
         try {
             resolver.getType(MockBuggyProvider.CONTENT_URI);
         } catch (Exception e) {
-            fail("Unexpected exception while fetching type: " + e.getMessage());
+            assertWithMessage("Unexpected exception while fetching type: " + e.getMessage()).fail();
         }
     }
 }

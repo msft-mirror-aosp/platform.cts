@@ -53,6 +53,7 @@ android_test {
         "CtsSurfaceValidatorLib",
         "cts-wm-util",
         "flag-junit",
+        "android.os.vibrator.flags-aconfig-java",
         "android.view.accessibility.flags-aconfig-java",
         "android.view.inputmethod.flags-aconfig-java",
         "com.android.hardware.input-aconfig-java",

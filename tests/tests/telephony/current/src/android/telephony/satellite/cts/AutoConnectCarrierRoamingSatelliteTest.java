@@ -69,6 +69,7 @@ public class AutoConnectCarrierRoamingSatelliteTest extends CarrierRoamingSatell
     @AfterClass
     public static void afterAllTests() throws Exception {
         logd(TAG, "afterAllTests");
+        if (!shouldTestSatelliteWithMockService()) return;
 
         cleanUpMockSim(SLOT_ID_0, MOCK_SIM_PROFILE_ID_TWN_CHT);
         afterAllCarrierRoamingTestsBase();

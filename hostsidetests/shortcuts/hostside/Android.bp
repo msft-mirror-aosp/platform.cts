@@ -32,6 +32,9 @@ java_test_host {
         "cts",
         "general-tests",
     ],
+    data: [
+        ":CtsBackupHostTestCases",
+    ],
     device_common_data: [
         ":CtsShortcutBackupLauncher1",
         ":CtsShortcutBackupLauncher2",

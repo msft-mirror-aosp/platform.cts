@@ -27,6 +27,7 @@ import com.android.bedstead.enterprise.dpc
 import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.harrier.annotations.Postsubmit
+import com.android.bedstead.harrier.components.registerBroadcastReceiver
 import com.android.bedstead.harrier.policies.TransferOwnership
 import com.android.bedstead.harrier.policies.TransferOwnershipForDeviceOwner
 import com.android.bedstead.harrier.policies.TransferOwnershipForProfileOwner

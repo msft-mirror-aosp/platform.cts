@@ -108,10 +108,10 @@ public class WebViewClientTest extends SharedWebViewTest {
     }
 
     @Override
-    protected SharedWebViewTestEnvironment createTestEnvironment() {
+    protected WebViewTestEnvironment createTestEnvironment() {
         Assume.assumeTrue("WebView is not available", NullWebViewUtils.isWebViewAvailable());
 
-        SharedWebViewTestEnvironment.Builder builder = new SharedWebViewTestEnvironment.Builder();
+        WebViewTestEnvironment.Builder builder = new WebViewTestEnvironment.Builder();
 
         mActivityScenarioRule
                 .getScenario()
@@ -120,14 +120,13 @@ public class WebViewClientTest extends SharedWebViewTest {
                             WebView webView = ((WebViewCtsActivity) activity).getWebView();
 
                             builder.setHostAppInvoker(
-                                            SharedWebViewTestEnvironment.createHostAppInvoker(
-                                                activity))
+                                            WebViewTestEnvironment.createHostAppInvoker(activity))
                                     .setContext(activity)
                                     .setWebView(webView)
                                     .setRootLayout(((WebViewCtsActivity) activity).getRootLayout());
                         });
 
-        SharedWebViewTestEnvironment environment = builder.build();
+        WebViewTestEnvironment environment = builder.build();
 
         if (environment.getWebView() != null) {
             WebkitUtils.checkForWindowFocus((Activity) environment.getContext());

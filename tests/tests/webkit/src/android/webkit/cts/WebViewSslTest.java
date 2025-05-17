@@ -469,10 +469,10 @@ public class WebViewSslTest extends SharedWebViewTest {
     }
 
     @Override
-    protected SharedWebViewTestEnvironment createTestEnvironment() {
+    protected WebViewTestEnvironment createTestEnvironment() {
         Assume.assumeTrue("WebView is not available", NullWebViewUtils.isWebViewAvailable());
 
-        SharedWebViewTestEnvironment.Builder builder = new SharedWebViewTestEnvironment.Builder();
+        WebViewTestEnvironment.Builder builder = new WebViewTestEnvironment.Builder();
 
         mActivityScenarioRule
                 .getScenario()
@@ -482,13 +482,12 @@ public class WebViewSslTest extends SharedWebViewTest {
 
                             WebView webView = mActivity.getWebView();
                             builder.setHostAppInvoker(
-                                            SharedWebViewTestEnvironment.createHostAppInvoker(
-                                                    mActivity))
+                                            WebViewTestEnvironment.createHostAppInvoker(mActivity))
                                     .setContext(mActivity)
                                     .setWebView(webView);
                         });
 
-        SharedWebViewTestEnvironment environment = builder.build();
+        WebViewTestEnvironment environment = builder.build();
 
         if (environment.getWebView() != null) {
             WebkitUtils.checkForWindowFocus(mActivity);
@@ -542,7 +541,7 @@ public class WebViewSslTest extends SharedWebViewTest {
 
     @Test
     public void testSecureSiteSetsCertificate() throws Throwable {
-        SharedWebViewTestEnvironment testEnvironment = getTestEnvironment();
+        WebViewTestEnvironment testEnvironment = getTestEnvironment();
 
         final class MockWebViewClient extends WaitForLoadedClient {
             public MockWebViewClient() {

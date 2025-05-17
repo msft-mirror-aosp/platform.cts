@@ -396,7 +396,6 @@ public class PinnedStackTests extends ActivityManagerTestBase {
     }
 
     @Test
-    @FlakyTest(bugId = 393159816)
     public void testEnterPipWithMinimalSize() throws Exception {
         // Launch a PiP activity with minimal size specified
         launchActivity(PIP_ACTIVITY_WITH_MINIMAL_SIZE, extraString(EXTRA_ENTER_PIP, "true"));

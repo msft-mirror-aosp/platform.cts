@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.stream.Stream;
 
 /** Helper methods/constants for Certificate Transparency CTS & e2e tests. */
 final class CertificateTransparencyTestUtils {
@@ -38,27 +37,45 @@ final class CertificateTransparencyTestUtils {
     // testing the code in CTS instead of the device itself
     static final String CT_PARENT_DIRECTORY_PATH = "/data/misc/keychain/";
     static final String CT_DIRECTORY_NAME = "ct";
-    private static final String CT_ROOT_DIRECTORY_PATH =
-            CT_PARENT_DIRECTORY_PATH + CT_DIRECTORY_NAME;
+    static final String CT_ROOT_DIRECTORY_PATH = CT_PARENT_DIRECTORY_PATH + CT_DIRECTORY_NAME;
 
     /**
-     * Returns whether the CT root directory is empty or not. For simplicity, we do not check
-     * whether the correct log list file version is present.
+     * Returns whether the log list is ready to be used or not. There are many potential pitfalls
+     * here. The function tries to enumerate all the subdirectories starting with "v". For all these
+     * directories, if a "current" directory does not exist, fail (the list is currently being
+     * copied). Also if no subdirectories are found at all, fail.
+     *
+     * <p>Assuming that no other process is removing the log list, the only gap remaining is when
+     * one version has been created (e.g., "v1") and the newest version directory ("v2") has not
+     * been created yet.
+     *
+     * <p>TODO(b/378427150): replace with Conscrypt API once implemented
      */
     static boolean isLogListFilePresent() {
-        // TODO(b/378427150): replace with Conscrypt API once implemented
+        boolean found = false;
+        Path root = Paths.get(CT_ROOT_DIRECTORY_PATH);
         try {
-            Path ctRootDir = Paths.get(CT_ROOT_DIRECTORY_PATH);
-
-            try (Stream<Path> stream = Files.list(ctRootDir)) {
-                boolean hasFiles = stream.findAny().isPresent();
-                return Files.exists(ctRootDir) && Files.isDirectory(ctRootDir) && hasFiles;
+            for (Path version : Files.newDirectoryStream(root, "v*")) {
+                if (Files.isDirectory(version)) {
+                    found = true;
+                    boolean foundCurrent = false;
+                    for (Path dir : Files.newDirectoryStream(version)) {
+                        if (dir.getFileName().toString().equals("current")) {
+                            foundCurrent = true;
+                            break;
+                        }
+                    }
+                    if (!foundCurrent) {
+                        return false;
+                    }
+                }
             }
         } catch (IOException e) {
             // NoSuchFileException is a subclass of IOException, which is why we do not
             // specify it here in the catch statement.
             return false;
         }
+        return found;
     }
 
     static void downloadLogList() {

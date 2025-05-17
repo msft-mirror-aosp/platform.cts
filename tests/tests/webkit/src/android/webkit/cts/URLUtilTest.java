@@ -48,8 +48,8 @@ public class URLUtilTest extends SharedWebViewTest {
     private final String FILE_URL_NO_SLASH = "file:test";
 
     @Override
-    protected SharedWebViewTestEnvironment createTestEnvironment() {
-        return new SharedWebViewTestEnvironment.Builder().build();
+    protected WebViewTestEnvironment createTestEnvironment() {
+        return new WebViewTestEnvironment.Builder().build();
     }
 
     @Test

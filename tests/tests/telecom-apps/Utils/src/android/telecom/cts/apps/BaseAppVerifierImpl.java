@@ -398,6 +398,14 @@ public class BaseAppVerifierImpl {
         waitUntilExpectCallCount(mVerifierMethods, expectedCallCount);
     }
 
+    public void setExpectedEvent(String callId, String expectedEvent) {
+        mVerifierMethods.setExpectedEvent(callId, expectedEvent);
+    }
+
+    public boolean waitOnExpectedEvent(String callId) {
+        return mVerifierMethods.waitOnExpectedEvent(callId);
+    }
+
     // -- call state
     public void setCallState(AppControlWrapper appControl, String id, int callState)
             throws Exception {
@@ -683,6 +691,16 @@ public class BaseAppVerifierImpl {
                     AudioManager.AUDIOFOCUS_REQUEST_GRANTED,
                     result[0]);
         }
+    }
+
+    /**
+     * Check to see if the audio focus listener for our music focus has received any focus
+     * changes or not.
+     *
+     * @return {@code true} if music focus changed, {@code false} otherwise.
+     */
+    public boolean hasMusicFocusChanged() {
+        return !mMusicAudioFocusQueue.isEmpty();
     }
 
     /** Waits to ensure that the music audio focus was one of the expected values. */

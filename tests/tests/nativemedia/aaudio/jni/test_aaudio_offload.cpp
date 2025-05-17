@@ -86,6 +86,9 @@ TEST_P(AAudioOffloadTest, testOffload) {
                                                    &mEndOfPresentation);
     mCbData.reset(new DataCallbackUserData(sampleRate));
     AAudioStreamBuilder_setDataCallback(builder, &MyDataCallbackProc, mCbData.get());
+    // Use a small callback so that when framework is asking for a big callback data,
+    // the test can still only provide a second of data.
+    AAudioStreamBuilder_setFramesPerDataCallback(builder, sampleRate / 100);
 
     aaudio_result_t result = AAudioStreamBuilder_openStream(builder, &stream);
     AAudioStreamBuilder_delete(builder);

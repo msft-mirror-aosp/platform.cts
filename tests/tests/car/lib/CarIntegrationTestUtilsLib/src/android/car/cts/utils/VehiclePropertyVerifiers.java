@@ -871,6 +871,13 @@ public class VehiclePropertyVerifiers {
                 .setPossiblyDependentOnHvacPowerOn();
     }
 
+    /** Gets the verifier builder for {@link VehiclePropertyIds#HVAC_AUTO_RECIRC_ON}. */
+    public static VehiclePropertyVerifier.Builder<Boolean> getHvacAutoRecircOnVerifierBuilder() {
+        return VehiclePropertyVerifier.<Boolean>newDefaultBuilder(
+                        VehiclePropertyIds.HVAC_AUTO_RECIRC_ON)
+                .setPossiblyDependentOnHvacPowerOn();
+    }
+
     /** Gets the verifier builder for {@code HVAC_AUTO_ON}. */
     public static VehiclePropertyVerifier.Builder<Boolean> getHvacAutoOnVerifierBuilder() {
         return VehiclePropertyVerifier.<Boolean>newDefaultBuilder(VehiclePropertyIds.HVAC_AUTO_ON)
@@ -886,105 +893,34 @@ public class VehiclePropertyVerifiers {
                 .requireZeroToBeContainedInMinMaxRanges();
     }
 
-    /**
-     * Gets the verifier for {@code HVAC_ACTUAL_FAN_SPEED_RPM}.
-     */
-    public static VehiclePropertyVerifier<Integer> getHvacActualFanSpeedRpmVerifier(
-            CarPropertyManager carPropertyManager) {
-        return getHvacActualFanSpeedRpmVerifierBuilder().setCarPropertyManager(carPropertyManager)
-                .build();
-    }
-
-    /**
-     * Gets the verifier builder for {@code HVAC_ACTUAL_FAN_SPEED_RPM}.
-     */
-    public static VehiclePropertyVerifier.Builder<Integer>
-            getHvacActualFanSpeedRpmVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.HVAC_ACTUAL_FAN_SPEED_RPM,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_SEAT,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_ONCHANGE,
-                        Integer.class)
-                .setPossiblyDependentOnHvacPowerOn()
-                .addReadPermission(Car.PERMISSION_CONTROL_CAR_CLIMATE);
-    }
-
-    /**
-     * Gets the verifier for {@code HVAC_AUTO_RECIRC_ON}.
-     */
-    public static VehiclePropertyVerifier<Boolean> getHvacAutoRecircOnVerifier(
-            CarPropertyManager carPropertyManager) {
-        return getHvacAutoRecircOnVerifierBuilder().setCarPropertyManager(carPropertyManager)
-                .build();
-    }
-
-    /**
-     * Gets the verifier builder for {@code HVAC_AUTO_RECIRC_ON}.
-     */
-    public static VehiclePropertyVerifier.Builder<Boolean> getHvacAutoRecircOnVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.HVAC_AUTO_RECIRC_ON,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_SEAT,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_ONCHANGE,
-                        Boolean.class)
-                .setPossiblyDependentOnHvacPowerOn()
-                .addReadPermission(Car.PERMISSION_CONTROL_CAR_CLIMATE)
-                .addWritePermission(Car.PERMISSION_CONTROL_CAR_CLIMATE);
-    }
-
-    /**
-     * Gets the verifier for {@code HVAC_SEAT_VENTILATION}.
-     */
-    public static VehiclePropertyVerifier<Integer> getHvacSeatVentilationVerifier(
-            CarPropertyManager carPropertyManager) {
-        return getHvacSeatVentilationVerifierBuilder().setCarPropertyManager(carPropertyManager)
-                .build();
-    }
-
-    /**
-     * Gets the verifier builder for {@code HVAC_SEAT_VENTILATION}.
-     */
-    public static VehiclePropertyVerifier.Builder<Integer>
-            getHvacSeatVentilationVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.HVAC_SEAT_VENTILATION,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_SEAT,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_ONCHANGE,
-                        Integer.class)
+    /** Gets the verifier builder for {@link VehiclePropertyIds#HVAC_SEAT_VENTILATION}. */
+    public static VehiclePropertyVerifier.Builder<Integer> getHvacSeatVentilationVerifierBuilder() {
+        return VehiclePropertyVerifier.<Integer>newDefaultBuilder(
+                        VehiclePropertyIds.HVAC_SEAT_VENTILATION)
                 .setPossiblyDependentOnHvacPowerOn()
                 .requireMinMaxValues()
-                .requireMinValuesToBeZero()
-                .addReadPermission(Car.PERMISSION_CONTROL_CAR_CLIMATE)
-                .addWritePermission(Car.PERMISSION_CONTROL_CAR_CLIMATE);
+                .requireMinValuesToBeZero();
     }
 
-    /**
-     * Gets the verifier for {@code HVAC_DUAL_ON}.
-     */
-    public static VehiclePropertyVerifier<Boolean> getHvacDualOnVerifier(
-            CarPropertyManager carPropertyManager) {
-        return getHvacDualOnVerifierBuilder().setCarPropertyManager(carPropertyManager).build();
+    /** Gets the verifier builder for {@link VehiclePropertyIds#HVAC_ACTUAL_FAN_SPEED_RPM}. */
+    public static VehiclePropertyVerifier.Builder<Integer>
+            getHvacActualFanSpeedRpmVerifierBuilder() {
+        return VehiclePropertyVerifier.<Integer>newDefaultBuilder(
+                        VehiclePropertyIds.HVAC_ACTUAL_FAN_SPEED_RPM)
+                .setPossiblyDependentOnHvacPowerOn();
     }
 
-    /**
-     * Gets the verifier builder for {@code HVAC_DUAL_ON}.
-     */
+    /** Gets the verifier builder for {@link VehiclePropertyIds#HVAC_DUAL_ON}. */
     public static VehiclePropertyVerifier.Builder<Boolean> getHvacDualOnVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.HVAC_DUAL_ON,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_SEAT,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_ONCHANGE,
-                        Boolean.class)
+        return VehiclePropertyVerifier.<Boolean>newDefaultBuilder(VehiclePropertyIds.HVAC_DUAL_ON)
                 .setPossiblyDependentOnHvacPowerOn()
                 .setAreaIdsVerifier(
                         (verifierContext, areaIds) -> {
                             CarPropertyConfig<?> hvacTempSetCarPropertyConfig =
-                                    verifierContext.getCarPropertyManager().getCarPropertyConfig(
-                                            VehiclePropertyIds.HVAC_TEMPERATURE_SET);
+                                    verifierContext
+                                            .getCarPropertyManager()
+                                            .getCarPropertyConfig(
+                                                    VehiclePropertyIds.HVAC_TEMPERATURE_SET);
                             if (hvacTempSetCarPropertyConfig == null) {
                                 return;
                             }
@@ -1022,9 +958,7 @@ public class VehiclePropertyVerifiers {
                                         .that(areaId)
                                         .isIn(allPossibleHvacDualOnAreaIds);
                             }
-                        })
-                .addReadPermission(Car.PERMISSION_CONTROL_CAR_CLIMATE)
-                .addWritePermission(Car.PERMISSION_CONTROL_CAR_CLIMATE);
+                        });
     }
 
     private static ImmutableSet<Integer> generateAllPossibleHvacFanDirections() {
@@ -1042,24 +976,10 @@ public class VehiclePropertyVerifiers {
         return allPossibleFanDirectionsBuilder.build();
     }
 
-    /** Gets the verifier for {@link VehiclePropertyIds#INFO_MODEL_TRIM}. */
-    public static VehiclePropertyVerifier.Builder<String> getInfoModelTrimVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.INFO_MODEL_TRIM,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_STATIC,
-                        String.class)
-                .addReadPermission(Car.PERMISSION_CAR_INFO);
-    }
-
+    /** Gets the verifier builder for {@link VehiclePropertyIds#INFO_DRIVER_SEAT}. */
     public static VehiclePropertyVerifier.Builder<Integer> getInfoDriverSeatVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.INFO_DRIVER_SEAT,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_SEAT,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_STATIC,
-                        Integer.class)
+        return VehiclePropertyVerifier.<Integer>newDefaultBuilder(
+                        VehiclePropertyIds.INFO_DRIVER_SEAT)
                 .setAllPossibleEnumValues(
                         ImmutableSet.of(
                                 VehicleAreaSeat.SEAT_ROW_1_LEFT,
@@ -1076,17 +996,13 @@ public class VehiclePropertyVerifiers {
                                         .isEqualTo(
                                                 new int[] {
                                                     VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL
-                                                }))
-                .addReadPermission(Car.PERMISSION_CAR_INFO);
+                                                }));
     }
 
+    /** Gets the verifier builder for {@link VehiclePropertyIds#INFO_EV_BATTERY_CAPACITY}. */
     public static VehiclePropertyVerifier.Builder<Float> getInfoEvBatteryCapacityVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.INFO_EV_BATTERY_CAPACITY,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_STATIC,
-                        Float.class)
+        return VehiclePropertyVerifier.<Float>newDefaultBuilder(
+                        VehiclePropertyIds.INFO_EV_BATTERY_CAPACITY)
                 .setCarPropertyValueVerifier(
                         (verifierContext,
                                 carPropertyConfig,
@@ -1098,18 +1014,14 @@ public class VehiclePropertyVerifiers {
                                                 "INFO_EV_BATTERY_CAPACITY Float value must"
                                                         + " be greater than or equal to 0")
                                         .that(evBatteryCapacity)
-                                        .isAtLeast(0))
-                .addReadPermission(Car.PERMISSION_CAR_INFO);
+                                        .isAtLeast(0));
     }
 
+    /** Gets the verifier builder for {@link VehiclePropertyIds#INFO_EV_CONNECTOR_TYPE}. */
     public static VehiclePropertyVerifier.Builder<Integer[]>
             getInfoEvConnectorTypeVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.INFO_EV_CONNECTOR_TYPE,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_STATIC,
-                        Integer[].class)
+        return VehiclePropertyVerifier.<Integer[]>newDefaultBuilder(
+                        VehiclePropertyIds.INFO_EV_CONNECTOR_TYPE)
                 .setCarPropertyValueVerifier(
                         (verifierContext,
                                 carPropertyConfig,
@@ -1154,50 +1066,51 @@ public class VehiclePropertyVerifiers {
                                                                 EvChargingConnectorType.OTHER)
                                                         .build());
                             }
-                        })
-                .addReadPermission(Car.PERMISSION_CAR_INFO);
+                        });
     }
 
+    /** Gets the verifier builder for {@link VehiclePropertyIds#INFO_EV_PORT_LOCATION}. */
     public static VehiclePropertyVerifier.Builder<Integer> getInfoEvPortLocationVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.INFO_EV_PORT_LOCATION,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_STATIC,
-                        Integer.class)
-                .setAllPossibleEnumValues(PORT_LOCATION_TYPES)
-                .addReadPermission(Car.PERMISSION_CAR_INFO);
+        return VehiclePropertyVerifier.<Integer>newDefaultBuilder(
+                        VehiclePropertyIds.INFO_EV_PORT_LOCATION)
+                .setAllPossibleEnumValues(PORT_LOCATION_TYPES);
     }
 
+    /** Gets the verifier builder for {@link VehiclePropertyIds#INFO_VEHICLE_SIZE_CLASS}. */
     public static VehiclePropertyVerifier.Builder<Integer[]>
             getInfoVehicleSizeClassVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.INFO_VEHICLE_SIZE_CLASS,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_STATIC,
-                        Integer[].class)
+        return VehiclePropertyVerifier.<Integer[]>newDefaultBuilder(
+                        VehiclePropertyIds.INFO_VEHICLE_SIZE_CLASS)
                 .setCarPropertyValueVerifier(
-                        (verifierContext, carPropertyConfig, propertyId, areaId, timestampNanos,
-                         sizeClasses) -> {
+                        (verifierContext,
+                                carPropertyConfig,
+                                propertyId,
+                                areaId,
+                                timestampNanos,
+                                sizeClasses) -> {
                             ArraySet<Integer> presentStandards = new ArraySet<>();
                             for (int sizeClass : sizeClasses) {
-                                assertWithMessage("Size class " + sizeClass + " doesn't exist in "
-                                        + "possible values: " + VEHICLE_SIZE_CLASSES)
-                                        .that(VEHICLE_SIZE_CLASSES.contains(sizeClass)).isTrue();
+                                assertWithMessage(
+                                                "Size class "
+                                                        + sizeClass
+                                                        + " doesn't exist in "
+                                                        + "possible values: "
+                                                        + VEHICLE_SIZE_CLASSES)
+                                        .that(VEHICLE_SIZE_CLASSES.contains(sizeClass))
+                                        .isTrue();
                                 int standard = sizeClass & 0xf00;
-                                assertWithMessage("Multiple values from the standard of size class "
-                                        + sizeClass + " are in use.")
-                                        .that(presentStandards.contains(standard)).isFalse();
+                                assertWithMessage(
+                                                "Multiple values from the standard of size class "
+                                                        + sizeClass
+                                                        + " are in use.")
+                                        .that(presentStandards.contains(standard))
+                                        .isFalse();
                                 presentStandards.add(standard);
                             }
-                        })
-                .addReadPermission(Car.PERMISSION_CAR_INFO);
+                        });
     }
 
-    /**
-     * Gets the verifier for {@link VehiclePropertyIds#TURN_SIGNAL_LIGHT_STATE}.
-     */
+    /** Gets the verifier for {@link VehiclePropertyIds#TURN_SIGNAL_LIGHT_STATE}. */
     public static VehiclePropertyVerifier.Builder<Integer>
             getTurnSignalLightStateVerifierBuilder() {
         ImmutableSet<Integer> combinedCarPropertyValues = ImmutableSet.<Integer>builder()
@@ -1205,142 +1118,43 @@ public class VehiclePropertyVerifiers {
                 .add(VehicleTurnSignal.STATE_LEFT | VehicleTurnSignal.STATE_RIGHT)
                 .build();
 
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.TURN_SIGNAL_LIGHT_STATE,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_ONCHANGE,
-                        Integer.class)
-                .setAllPossibleEnumValues(combinedCarPropertyValues)
-                .addReadPermission(Car.PERMISSION_READ_EXTERIOR_LIGHTS)
-                .addReadPermission(Car.PERMISSION_CONTROL_EXTERIOR_LIGHTS);
+        return VehiclePropertyVerifier.<Integer>newDefaultBuilder(
+                        VehiclePropertyIds.TURN_SIGNAL_LIGHT_STATE)
+                .setAllPossibleEnumValues(combinedCarPropertyValues);
+    }
+
+    /** Gets the verifier for {@link VehiclePropertyIds#TURN_SIGNAL_SWITCH}. */
+    public static VehiclePropertyVerifier.Builder<Integer> getTurnSignalSwitchVerifierBuilder() {
+        return VehiclePropertyVerifier.<Integer>newDefaultBuilder(
+                        VehiclePropertyIds.TURN_SIGNAL_SWITCH)
+                .setAllPossibleEnumValues(TURN_SIGNAL_STATES);
     }
 
     /**
-     * Gets the verifier for {@link VehiclePropertyIds#TURN_SIGNAL_SWITCH}.
+     * Gets the verifier builder for {@link
+     * VehiclePropertyIds#VEHICLE_DRIVING_AUTOMATION_TARGET_LEVEL}.
      */
-    public static VehiclePropertyVerifier.Builder<Integer> getTurnSignalSwitchVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.TURN_SIGNAL_SWITCH,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_ONCHANGE,
-                        Integer.class)
-                .setAllPossibleEnumValues(TURN_SIGNAL_STATES)
-                .addReadPermission(Car.PERMISSION_READ_EXTERIOR_LIGHTS)
-                .addReadPermission(Car.PERMISSION_CONTROL_EXTERIOR_LIGHTS)
-                .addWritePermission(Car.PERMISSION_CONTROL_EXTERIOR_LIGHTS);
-    }
-
-    public static VehiclePropertyVerifier.Builder<Float>
-            getInstantaneousFuelEconomyVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.INSTANTANEOUS_FUEL_ECONOMY,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_CONTINUOUS,
-                        Float.class)
-                .addReadPermission(Car.PERMISSION_MILEAGE_3P);
-    }
-
-    public static VehiclePropertyVerifier.Builder<Float>
-            getInstantaneousEvEfficiencyVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.INSTANTANEOUS_EV_EFFICIENCY,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_CONTINUOUS,
-                        Float.class)
-                .addReadPermission(Car.PERMISSION_MILEAGE_3P);
-    }
-
-    public static VehiclePropertyVerifier.Builder<Boolean> getVehicleHornEngagedVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.VEHICLE_HORN_ENGAGED,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_ONCHANGE,
-                        Boolean.class)
-                .addReadPermission(Car.PERMISSION_READ_CAR_HORN)
-                .addReadPermission(Car.PERMISSION_CONTROL_CAR_HORN)
-                .addWritePermission(Car.PERMISSION_CONTROL_CAR_HORN);
-    }
-
     public static VehiclePropertyVerifier.Builder<Integer>
             getVehicleDrivingAutomationTargetLevelVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.VEHICLE_DRIVING_AUTOMATION_TARGET_LEVEL,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_ONCHANGE,
-                        Integer.class)
-                .setAllPossibleEnumValues(VEHICLE_AUTONOMOUS_STATES)
-                .addReadPermission(Car.PERMISSION_CAR_DRIVING_STATE);
+        return VehiclePropertyVerifier.<Integer>newDefaultBuilder(
+                        VehiclePropertyIds.VEHICLE_DRIVING_AUTOMATION_TARGET_LEVEL)
+                .setAllPossibleEnumValues(VEHICLE_AUTONOMOUS_STATES);
     }
 
-    public static VehiclePropertyVerifier.Builder<Float>
-            getAcceleratorPedalCompressionPercentageVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.ACCELERATOR_PEDAL_COMPRESSION_PERCENTAGE,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_CONTINUOUS,
-                        Float.class)
-                .addReadPermission(Car.PERMISSION_READ_CAR_PEDALS);
-    }
-
-    public static VehiclePropertyVerifier.Builder<Float>
-            getBrakePedalCompressionPercentageVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.BRAKE_PEDAL_COMPRESSION_PERCENTAGE,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_CONTINUOUS,
-                        Float.class)
-                .addReadPermission(Car.PERMISSION_READ_CAR_PEDALS);
-    }
-
-    public static VehiclePropertyVerifier.Builder<Float>
-            getBrakePadWearPercentageVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.BRAKE_PAD_WEAR_PERCENTAGE,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_WHEEL,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_ONCHANGE,
-                        Float.class)
-                .addReadPermission(Car.PERMISSION_READ_BRAKE_INFO);
-    }
-
-    public static VehiclePropertyVerifier.Builder<Boolean> getBrakeFluidLevelLowVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.BRAKE_FLUID_LEVEL_LOW,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_ONCHANGE,
-                        Boolean.class)
-                .addReadPermission(Car.PERMISSION_READ_BRAKE_INFO);
-    }
-
+    /**
+     * Gets the verifier builder for {@link VehiclePropertyIds#VEHICLE_PASSIVE_SUSPENSION_HEIGHT}.
+     */
     public static VehiclePropertyVerifier.Builder<Integer>
             getVehiclePassiveSuspensionHeightVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.VEHICLE_PASSIVE_SUSPENSION_HEIGHT,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_WHEEL,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_CONTINUOUS,
-                        Integer.class)
+        return VehiclePropertyVerifier.<Integer>newDefaultBuilder(
+                        VehiclePropertyIds.VEHICLE_PASSIVE_SUSPENSION_HEIGHT)
                 .requireMinMaxValues()
-                .requireZeroToBeContainedInMinMaxRanges()
-                .addReadPermission(Car.PERMISSION_CAR_DYNAMICS_STATE);
+                .requireZeroToBeContainedInMinMaxRanges();
     }
 
+    /** Gets the verifier builder for {@link VehiclePropertyIds#RANGE_REMAINING}. */
     public static VehiclePropertyVerifier.Builder<Float> getRangeRemainingVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.RANGE_REMAINING,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_CONTINUOUS,
-                        Float.class)
+        return VehiclePropertyVerifier.<Float>newDefaultBuilder(VehiclePropertyIds.RANGE_REMAINING)
                 .setCarPropertyValueVerifier(
                         (verifierContext,
                                 carPropertyConfig,
@@ -1352,10 +1166,7 @@ public class VehiclePropertyVerifiers {
                                                 "RANGE_REMAINING Float value must be greater than"
                                                         + " or equal 0")
                                         .that(rangeRemaining)
-                                        .isAtLeast(0))
-                .addReadPermission(Car.PERMISSION_ENERGY)
-                .addReadPermission(Car.PERMISSION_ADJUST_RANGE_REMAINING)
-                .addWritePermission(Car.PERMISSION_ADJUST_RANGE_REMAINING);
+                                        .isAtLeast(0));
     }
 
     public static VehiclePropertyVerifier.Builder<Float>
@@ -1369,13 +1180,9 @@ public class VehiclePropertyVerifiers {
                 .addReadPermission(Car.PERMISSION_ENERGY);
     }
 
+    /** Gets the verifier builder for {@link VehiclePropertyIds#EV_BATTERY_LEVEL}. */
     public static VehiclePropertyVerifier.Builder<Float> getEvBatteryLevelVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.EV_BATTERY_LEVEL,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_CONTINUOUS,
-                        Float.class)
+        return VehiclePropertyVerifier.<Float>newDefaultBuilder(VehiclePropertyIds.EV_BATTERY_LEVEL)
                 .setCarPropertyValueVerifier(
                         (verifierContext,
                                 carPropertyConfig,
@@ -1410,8 +1217,7 @@ public class VehiclePropertyVerifiers {
                                                     + "value")
                                     .that(evBatteryLevel)
                                     .isAtMost((Float) infoEvBatteryCapacityValue.getValue());
-                        })
-                .addReadPermission(Car.PERMISSION_ENERGY);
+                        });
     }
 
     public static VehiclePropertyVerifier.Builder<Boolean>
@@ -1437,13 +1243,9 @@ public class VehiclePropertyVerifiers {
                 .addWritePermission(Car.PERMISSION_CONTROL_ENERGY_PORTS);
     }
 
+    /** Gets the verifier builder for {@link VehiclePropertyIds#FUEL_LEVEL}. */
     public static VehiclePropertyVerifier.Builder<Float> getFuelLevelVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.FUEL_LEVEL,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_CONTINUOUS,
-                        Float.class)
+        return VehiclePropertyVerifier.<Float>newDefaultBuilder(VehiclePropertyIds.FUEL_LEVEL)
                 .setCarPropertyConfigVerifier(
                         (verifierContext, carPropertyConfig) -> {
                             assertFuelPropertyNotImplementedOnEv(
@@ -1483,26 +1285,18 @@ public class VehiclePropertyVerifiers {
                                                     + " INFO_FUEL_CAPACITY Float value")
                                     .that(fuelLevel)
                                     .isAtMost((Float) infoFuelCapacityValue.getValue());
-                        })
-                .addReadPermission(Car.PERMISSION_ENERGY);
+                        });
     }
 
+    /** Gets the verifier builder for {@link VehiclePropertyIds#FUEL_DOOR_OPEN}. */
     public static VehiclePropertyVerifier.Builder<Boolean> getFuelDoorOpenVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.FUEL_DOOR_OPEN,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_ONCHANGE,
-                        Boolean.class)
+        return VehiclePropertyVerifier.<Boolean>newDefaultBuilder(VehiclePropertyIds.FUEL_DOOR_OPEN)
                 .setCarPropertyConfigVerifier(
                         (verifierContext, config) -> {
                             assertFuelPropertyNotImplementedOnEv(
                                     verifierContext.getCarPropertyManager(),
                                     VehiclePropertyIds.FUEL_DOOR_OPEN);
-                        })
-                .addReadPermission(Car.PERMISSION_ENERGY_PORTS)
-                .addReadPermission(Car.PERMISSION_CONTROL_ENERGY_PORTS)
-                .addWritePermission(Car.PERMISSION_CONTROL_ENERGY_PORTS);
+                        });
     }
 
     /** Assert fuel property is not implement on an EV vehicle. */
@@ -1549,15 +1343,14 @@ public class VehiclePropertyVerifiers {
                 .addReadPermission(Car.PERMISSION_EXTERIOR_ENVIRONMENT);
     }
 
+    /**
+     * Gets the verifier builder for {@link VehiclePropertyIds#NIGHT_MODE}.
+     *
+     * <p>This property is required by CDD.
+     */
     public static VehiclePropertyVerifier.Builder<Boolean> getNightModeVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.NIGHT_MODE,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_ONCHANGE,
-                        Boolean.class)
-                .requireProperty()
-                .addReadPermission(Car.PERMISSION_EXTERIOR_ENVIRONMENT);
+        return VehiclePropertyVerifier.<Boolean>newDefaultBuilder(VehiclePropertyIds.NIGHT_MODE)
+                .requireProperty();
     }
 
     private static void verifyHvacTemperatureValueSuggestion(

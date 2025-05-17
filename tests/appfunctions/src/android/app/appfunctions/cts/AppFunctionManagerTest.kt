@@ -1207,7 +1207,7 @@ class AppFunctionManagerTest {
                 .execute()
 
             retryAssert {
-                assertThat(isAppFunctionEnabled(TEST_HELPER_PKG, functionIdUnderTest)).isTrue()
+                assertThat(isAppFunctionEnabled(TEST_HELPER_PKG, functionIdUnderTest)).isFalse()
             }
         }
     }

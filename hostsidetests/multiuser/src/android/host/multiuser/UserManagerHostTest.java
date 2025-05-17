@@ -16,14 +16,15 @@
 
 package android.host.multiuser;
 
+import static com.android.tradefed.device.UserInfo.USER_SYSTEM;
 
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.platform.test.annotations.LargeTest;
 
 import com.android.compatibility.common.util.ApiTest;
 import com.android.tradefed.device.DeviceNotAvailableException;
-import com.android.tradefed.log.LogUtil.CLog;
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
 import com.android.tradefed.testtype.junit4.DeviceTestRunOptions;
 import com.android.tradefed.util.RunUtil;
@@ -36,15 +37,13 @@ import org.junit.runner.RunWith;
 @RunWith(DeviceJUnit4ClassRunner.class)
 public final class UserManagerHostTest extends BaseMultiUserTest {
 
-    // Copied from UserHandle, as Tradefed doesn't have it
-    private static final int USER_NULL = -10000;
-
     @Rule
     public final SupportsMultiUserRule mSupportsMultiUserRule = new SupportsMultiUserRule(this);
 
     @Test
     @ApiTest(apis = {"android.os.UserManager#getPreviousForegroundUser"})
     public void getPreviousForegroundUser_correctAfterReboot() throws Exception {
+        assumeNotInteractiveHsum();
         assumeNewUsersCanBeAdded(2);
 
         final int userId1 = getDevice().createUser("test_user_1");
@@ -67,39 +66,49 @@ public final class UserManagerHostTest extends BaseMultiUserTest {
 
     @Test
     @ApiTest(apis = {"android.os.UserManager#getPreviousForegroundUser"})
-    public void getPreviousForegroundUser_correctWhenRemovingCurrentUser() throws Exception {
-        assumeNewUsersCanBeAdded(1);
-
-        boolean isInteractiveHsum =
-                getDevice().isHeadlessSystemUserMode()
-                        && getDevice().canSwitchToHeadlessSystemUser();
-        int expectedPreviousUserIdBeforeReboot, expectedPreviousUserIdAfterReboot;
-        if (isInteractiveHsum) {
-            // TODO(b/412630247): should be UserInfo.USER_SYSTEM before and after reboot
-            expectedPreviousUserIdBeforeReboot = mInitialUserId;
-            expectedPreviousUserIdAfterReboot = mInitialUserId;
-        } else {
-            expectedPreviousUserIdBeforeReboot = mInitialUserId;
-            expectedPreviousUserIdAfterReboot = USER_NULL;
-        }
-        CLog.d(
-                "getPreviousForegroundUser_correctWhenRemovingCurrentUser():"
-                        + " expectedPreviousUserIdBeforeReboot=%d,"
-                        + " expectedPreviousUserIdAfterReboot=%d",
-                expectedPreviousUserIdBeforeReboot, expectedPreviousUserIdAfterReboot);
+    public void getPreviousForegroundUser_interactiveHsum_correctAfterReboot() throws Exception {
+        assumeInteractiveHsum();
+        assumeNewUsersCanBeAdded(2);
+        assertSwitchToUser(USER_SYSTEM);
 
         int userId1 = getDevice().createUser("test_user_1");
         assertSwitchToUser(userId1);
+        assertPreviousUserIs(USER_SYSTEM);
 
-        removeUserEvenIfDisallowed(userId1);
-        assertPreviousUserIs(expectedPreviousUserIdBeforeReboot);
+        int userId2 = getDevice().createUser("test_user_2");
+        assertSwitchToUser(userId2);
+        assertPreviousUserIs(userId1);
 
         // Wait to allow user xml to be written.
         RunUtil.getDefault().sleep(5000);
 
         getDevice().reboot();
+        assertCurrentUser("after reboot", USER_SYSTEM);
+        assertPreviousUserIs(userId2);
 
-        assertPreviousUserIs(expectedPreviousUserIdAfterReboot);
+        // Although previous user is 2, current user is system, so let's explicitly switch to 2
+        // first.
+        assertSwitchToUser(userId2);
+        assertPreviousUserIs(USER_SYSTEM);
+
+        assertSwitchToUser(userId1);
+        assertPreviousUserIs(userId2);
+
+        assertSwitchToUser(userId2);
+        assertPreviousUserIs(userId1);
+    }
+
+    private boolean isInteractiveHsum() throws DeviceNotAvailableException {
+        return getDevice().isHeadlessSystemUserMode()
+                && getDevice().canSwitchToHeadlessSystemUser();
+    }
+
+    private void assumeInteractiveHsum() throws DeviceNotAvailableException {
+        assumeTrue("device is not interactive HSUM", isInteractiveHsum());
+    }
+
+    private void assumeNotInteractiveHsum() throws DeviceNotAvailableException {
+        assumeFalse("device is interactive HSUM", isInteractiveHsum());
     }
 
     private void assertPreviousUserIs(int expected) throws Exception {
@@ -127,9 +136,5 @@ public final class UserManagerHostTest extends BaseMultiUserTest {
                 .filter(userInfo -> !userInfo.isGuest())
                 .count();
         return getDevice().getMaxNumberOfUsersSupported() - nonGuestUsersCount;
-    }
-
-    private void removeUserEvenIfDisallowed(int userId) throws DeviceNotAvailableException {
-        getDevice().executeShellCommand("pm remove-user --set-ephemeral-if-in-use " + userId);
     }
 }
