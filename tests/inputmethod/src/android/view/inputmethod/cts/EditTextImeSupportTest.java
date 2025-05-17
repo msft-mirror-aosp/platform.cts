@@ -36,7 +36,6 @@ import static org.junit.Assert.fail;
 
 import android.graphics.Color;
 import android.platform.test.annotations.AppModeSdkSandbox;
-import android.server.wm.BuildUtils;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
@@ -71,9 +70,8 @@ import java.util.concurrent.atomic.AtomicReference;
 @MediumTest
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public final class EditTextImeSupportTest extends EndToEndImeTestBase {
-    private static final long TIMEOUT =
-            TimeUnit.SECONDS.toMillis(5) * BuildUtils.HW_TIMEOUT_MULTIPLIER;
-    private static final long NOT_EXPECT_TIMEOUT = TimeUnit.SECONDS.toMillis(1);
+    private static final long TIMEOUT = TimeUnit.SECONDS.toMillis(5);
+    private static final long NOT_EXPECT_TIMEOUT = 10;  // msec
 
     @Rule
     public final UnlockScreenRule mUnlockScreenRule = new UnlockScreenRule();

@@ -46,16 +46,18 @@ import java.util.List;
 import javax.net.ssl.X509TrustManager;
 
 /**
- * This class contains all the environmental variables that need to be configured for WebView tests
- * to either run inside the SDK Runtime or within an Activity.
+ * This class contains all the resources or functionality which is necessary for WebView CTS tests
+ * in either the "normal" runtime (WebView is embedded in an Activity) or the SDK sandbox runtime.
+ * If a variable or functionality can be accessed directly in both runtime environments, then it
+ * does not need to be in this container object.
  */
-public final class SharedWebViewTestEnvironment {
+public final class WebViewTestEnvironment {
     @Nullable private final Context mContext;
     @Nullable private final WebView mWebView;
     @Nullable private final FrameLayout mRootLayout;
     private final IHostAppInvoker mHostAppInvoker;
 
-    private SharedWebViewTestEnvironment(
+    private WebViewTestEnvironment(
             Context context,
             WebView webView,
             IHostAppInvoker hostAppInvoker,
@@ -146,8 +148,8 @@ public final class SharedWebViewTestEnvironment {
     }
 
     /**
-     * Use this builder to create a {@link SharedWebViewTestEnvironment}. The {@link
-     * SharedWebViewTestEnvironment} can not be built directly.
+     * Use this builder to create a {@link WebViewTestEnvironment}. The {@link
+     * WebViewTestEnvironment} can not be built directly.
      */
     public static final class Builder {
         private Context mContext;
@@ -186,13 +188,12 @@ public final class SharedWebViewTestEnvironment {
             return this;
         }
 
-        /** Build a new SharedWebViewTestEnvironment. */
-        public SharedWebViewTestEnvironment build() {
+        /** Build a new WebViewTestEnvironment. */
+        public WebViewTestEnvironment build() {
             if (mHostAppInvoker == null) {
                 throw new NullPointerException("The host app invoker is required");
             }
-            return new SharedWebViewTestEnvironment(
-                    mContext, mWebView, mHostAppInvoker, mRootLayout);
+            return new WebViewTestEnvironment(mContext, mWebView, mHostAppInvoker, mRootLayout);
         }
     }
 

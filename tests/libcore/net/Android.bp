@@ -1,4 +1,4 @@
-// Copyright (C) 2017 The Android Open Source Project
+// Copyright (C) 2025 The Android Open Source Project
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -13,37 +13,34 @@
 // limitations under the License.
 
 package {
+    default_team: "trendy_team_java_core_libraries",
     default_applicable_licenses: ["Android-Apache-2.0"],
-    default_team: "trendy_team_framework_android_packages",
 }
 
 android_test {
-    name: "CtsIntentSignatureTestCases",
+    name: "CtsLibcoreNetTestCases",
     defaults: ["cts_defaults"],
-
-    srcs: ["src/**/*.java"],
-    java_resources: [
-        ":cts-current-api-gz",
-        ":cts-system-current-api-gz",
-        ":cts-system-removed-api-gz",
+    srcs: [
+        "src/**/*.java",
     ],
-
+    static_libs: [
+        "core-tests-support",
+        "cts-core-test-runner-axt",
+        "junit",
+    ],
     // Tag this module as a cts test artifact
     test_suites: [
         "cts",
         "general-tests",
     ],
-
-    sdk_version: "test_current",
-
-    static_libs: [
-        // androidx.test.runner depends on android.test classes from this library.
-        "android.test.base-minus-junit",
-        "androidx.test.runner",
-        "compatibility-device-util-axt",
-        "cts-signature-common",
+    data: [
+        ":CtsLibcoreTestRunner",
     ],
-
-    host_required: ["cts-dynamic-config"],
-    host_common_data: [":cts-dynamic-config"],
+    dex_preopt: {
+        enabled: false,
+    },
+    optimize: {
+        enabled: false,
+    },
+    sdk_version: "test_current",
 }

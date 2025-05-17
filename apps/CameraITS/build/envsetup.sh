@@ -78,6 +78,7 @@ done
 echo -e "\n*****Please execute below adb command on your dut before running the tests*****\n"
 echo -e "adb -s <device_id> shell am compat enable ALLOW_TEST_API_ACCESS com.android.cts.verifier\n\n"
 echo -e "If using an environment manager, please run the command \"rename_libtinfo\" to handle cleanup.\n\n"
+echo -e "**For default camera app testing, ensure all windows appearing upon launch are cleared to prevent any interference during testing.**\n\n"
 
 # Function to rename libtinfo.so.6 (if using an environment manager)
 function rename_libtinfo() {

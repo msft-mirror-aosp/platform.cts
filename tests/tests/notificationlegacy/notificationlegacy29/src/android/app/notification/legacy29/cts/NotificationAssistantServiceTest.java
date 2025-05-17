@@ -532,6 +532,8 @@ public class NotificationAssistantServiceTest {
             CountDownLatch rankingUpdateLatch =
                     mNotificationListenerService.setRankingUpdateCountDown(1);
 
+            CountDownLatch postedLatch = mNotificationListenerService.setPostedCountDown(1);
+
             mAssistant.adjustNotification(adjustment);
 
             rankingUpdateLatch.await(1000, TimeUnit.MILLISECONDS);
@@ -539,6 +541,10 @@ public class NotificationAssistantServiceTest {
             mNotificationListenerService.mRankingMap.getRanking(sbn.getKey(), out);
 
             assertEquals(NEWS_ID, out.getChannel().getId());
+
+            // Wait for bundle aggregate summary to be posted
+            // (avoid ranking update confusion on slower devices)
+            postedLatch.await(1000, TimeUnit.MILLISECONDS);
 
             // and can move it later
             signals.putInt(KEY_TYPE, Adjustment.TYPE_PROMOTION);

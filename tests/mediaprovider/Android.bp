@@ -115,6 +115,7 @@ android_test {
     ],
 
     host_required: ["compatibility-host-provider-preconditions"],
+    host_common_data: [":compatibility-host-provider-preconditions"],
 }
 
 filegroup {

@@ -175,6 +175,12 @@ public abstract class BaseMultiUserTest extends BaseHostJUnit4Test {
                 .that(getDevice().listUsers()).contains(userId);
     }
 
+    protected void assertCurrentUser(String when, int userId) throws DeviceNotAvailableException {
+        assertWithMessage("current user %s", when)
+                .that(getDevice().getCurrentUser())
+                .isEqualTo(userId);
+    }
+
     /*
      * Waits for userId to removed or at removing state. Returns true if user is removed or at
      * removing state. False if user is not removed by USER_SWITCH_COMPLETE_TIMEOUT_MS.

@@ -83,7 +83,7 @@ public class ManualConnectCarrierRoamingSatelliteTest extends CarrierRoamingSate
 
         beforeAllCarrierRoamingTestsBase();
         setUpManualConnectTestEnvironment(
-            ESOS_SLOT_ID, ESOS_SIM_PROFILE_ID, ESOS_PHONE_NUMBER, true);
+            ESOS_SLOT_ID, ESOS_SIM_PROFILE_ID, ESOS_PHONE_NUMBER, true, true);
     }
 
     /**
@@ -93,6 +93,7 @@ public class ManualConnectCarrierRoamingSatelliteTest extends CarrierRoamingSate
     @AfterClass
     public static void afterAllTests() throws Exception {
         logd(TAG, "afterAllTests");
+        if (!shouldTestSatelliteWithMockService()) return;
         cleanUpManualConnectTestEnvironment(ESOS_SLOT_ID, ESOS_SIM_PROFILE_ID);
         afterAllCarrierRoamingTestsBase();
     }

@@ -340,7 +340,7 @@ public class GnssAssistanceTest {
                         glonassAssistance.getRealTimeIntegrityModels()));
 
         // verify satellite correction list
-        assertEquals(0, glonassAssistance.getSatelliteCorrections().size());
+        assertTrue(verifyTestGnssCorrectionList(glonassAssistance.getSatelliteCorrections()));
 
         // verify auxiliary information
         assertTrue(verifyTestAuxiliaryInformation(glonassAssistance.getAuxiliaryInformation()));
@@ -354,6 +354,7 @@ public class GnssAssistanceTest {
         assertEquals(2, almanac.getWeekNumber());
         assertEquals(463200, almanac.getToaSeconds());
         assertEquals(4, almanac.getIoda());
+        assertTrue(almanac.isCompleteAlmanacProvided());
         List<GnssSatelliteAlmanac> satelliteAlmanacList = almanac.getGnssSatelliteAlmanacs();
         assertEquals(1, satelliteAlmanacList.size());
         GnssSatelliteAlmanac gnssSatelliteAlmanac = satelliteAlmanacList.get(0);
@@ -387,6 +388,11 @@ public class GnssAssistanceTest {
         assertEquals(1, satelliteEphemerisList.size());
         GalileoSatelliteEphemeris satelliteEphemeris = satelliteEphemerisList.get(0);
         assertEquals(1, satelliteEphemeris.getSvid());
+        SatelliteEphemerisTime satelliteEphemerisTime
+            = satelliteEphemeris.getSatelliteEphemerisTime();
+        assertEquals(125, satelliteEphemerisTime.getIode());
+        assertEquals(2290, satelliteEphemerisTime.getWeekNumber());
+        assertEquals(45900, satelliteEphemerisTime.getToeSeconds());
         List<GalileoSatelliteClockModel> satelliteClockModelList =
                 satelliteEphemeris.getSatelliteClockModels();
         assertEquals(1, satelliteClockModelList.size());
@@ -672,6 +678,7 @@ public class GnssAssistanceTest {
                 .setWeekNumber(2)
                 .setToaSeconds(463200)
                 .setGnssSatelliteAlmanacs(gnssSatelliteAlmanacList)
+                .setCompleteAlmanacProvided(true)
                 .build();
     }
 
@@ -719,6 +726,7 @@ public class GnssAssistanceTest {
                 .setAlmanac(getTestGlonassAlmanac())
                 .setUtcModel(getTestUtcModel())
                 .setTimeModels(getTestTimeModelList())
+                .setSatelliteCorrections(getTestSatelliteCorrections())
                 .setSatelliteEphemeris(getTestGlonassSatelliteEphemerisList())
                 .setRealTimeIntegrityModels(getTestRealTimeIntegrityModelList())
                 .setAuxiliaryInformation(getTestAuxiliaryInformation())

@@ -18,6 +18,8 @@ package android.hardware.cts;
 
 import static android.media.codec.Flags.p210FormatSupport;
 
+import static com.android.graphics.hwui.flags.Flags.requestedFormats1214;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
@@ -37,6 +39,9 @@ import junitparams.Parameters;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import java.util.ArrayList;
+import java.util.Arrays;
 
 /**
  * Test {@link HardwareBuffer}.
@@ -79,42 +84,40 @@ public class HardwareBufferTest {
     }
 
     private static Object[] paramsForTestCreateOptionalFormats() {
+        ArrayList<Integer> formats =
+                new ArrayList<Integer>(
+                        Arrays.asList(
+                                HardwareBuffer.RGBA_FP16,
+                                HardwareBuffer.RGBA_1010102,
+                                HardwareBuffer.YCBCR_420_888,
+                                HardwareBuffer.D_16,
+                                HardwareBuffer.D_24,
+                                HardwareBuffer.DS_24UI8,
+                                HardwareBuffer.D_FP32,
+                                HardwareBuffer.DS_FP32UI8,
+                                HardwareBuffer.S_UI8,
+                                HardwareBuffer.YCBCR_P010,
+                                HardwareBuffer.R_8,
+                                HardwareBuffer.R_16,
+                                HardwareBuffer.RG_1616,
+                                HardwareBuffer.RGBA_10101010));
+
         if (p210FormatSupport()) {
-            return new Integer[]{
-                HardwareBuffer.RGBA_FP16,
-                HardwareBuffer.RGBA_1010102,
-                HardwareBuffer.YCBCR_420_888,
-                HardwareBuffer.D_16,
-                HardwareBuffer.D_24,
-                HardwareBuffer.DS_24UI8,
-                HardwareBuffer.D_FP32,
-                HardwareBuffer.DS_FP32UI8,
-                HardwareBuffer.S_UI8,
-                HardwareBuffer.YCBCR_P010,
-                HardwareBuffer.YCBCR_P210,
-                HardwareBuffer.R_8,
-                HardwareBuffer.R_16,
-                HardwareBuffer.RG_1616,
-                HardwareBuffer.RGBA_10101010
-            };
-        } else {
-            return new Integer[]{
-                HardwareBuffer.RGBA_FP16,
-                HardwareBuffer.RGBA_1010102,
-                HardwareBuffer.YCBCR_420_888,
-                HardwareBuffer.D_16,
-                HardwareBuffer.D_24,
-                HardwareBuffer.DS_24UI8,
-                HardwareBuffer.D_FP32,
-                HardwareBuffer.DS_FP32UI8,
-                HardwareBuffer.S_UI8,
-                HardwareBuffer.YCBCR_P010,
-                HardwareBuffer.R_8,
-                HardwareBuffer.R_16,
-                HardwareBuffer.RG_1616,
-                HardwareBuffer.RGBA_10101010
-            };
+            formats.add(HardwareBuffer.YCBCR_P210);
         }
+
+        if (requestedFormats1214()) {
+            formats.addAll(
+                    Arrays.asList(
+                            HardwareBuffer.R_12,
+                            HardwareBuffer.R_14,
+                            HardwareBuffer.RG_1212,
+                            HardwareBuffer.RG_1414,
+                            HardwareBuffer.RGBA_12121212,
+                            HardwareBuffer.RGBA_14141414));
+        }
+
+        return formats.toArray();
     }
 
     @Test

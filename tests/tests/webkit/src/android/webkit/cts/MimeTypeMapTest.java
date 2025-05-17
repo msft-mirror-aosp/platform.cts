@@ -43,8 +43,8 @@ public class MimeTypeMapTest extends SharedWebViewTest{
     }
 
     @Override
-    protected SharedWebViewTestEnvironment createTestEnvironment() {
-        return new SharedWebViewTestEnvironment.Builder().build();
+    protected WebViewTestEnvironment createTestEnvironment() {
+        return new WebViewTestEnvironment.Builder().build();
     }
 
     @Test

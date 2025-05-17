@@ -28,7 +28,7 @@ import android.view.ViewParent;
 import android.webkit.WebView;
 import android.webkit.cts.IHostAppInvoker;
 import android.webkit.cts.SharedWebViewTest;
-import android.webkit.cts.SharedWebViewTestEnvironment;
+import android.webkit.cts.WebViewTestEnvironment;
 import android.webkit.cts.WebkitUtils;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
@@ -64,8 +64,8 @@ public class WebViewSandboxTestSdk extends SdkSandboxTestScenarioRunner {
         FrameLayout rootLayout = wrapWebViewInLayout(webView);
 
         if (mTestInstance != null) {
-            SharedWebViewTestEnvironment testEnvironment =
-                    new SharedWebViewTestEnvironment.Builder()
+            WebViewTestEnvironment testEnvironment =
+                    new WebViewTestEnvironment.Builder()
                             .setContext(getContext())
                             .setWebView(webView)
                             .setHostAppInvoker(

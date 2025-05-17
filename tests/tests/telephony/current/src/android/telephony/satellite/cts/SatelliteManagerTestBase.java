@@ -1929,6 +1929,8 @@ public class SatelliteManagerTestBase {
         SubscriptionManager sm = context.getSystemService(SubscriptionManager.class);
         List<SubscriptionInfo> infos = ShellIdentityUtils.invokeMethodWithShellPermissions(sm,
                 SubscriptionManager::getActiveSubscriptionInfoList);
+        // Restore satellite permission
+        grantSatellitePermission();
 
         int defaultSubId = SubscriptionManager.getDefaultVoiceSubscriptionId();
         if (defaultSubId != SubscriptionManager.INVALID_SUBSCRIPTION_ID
@@ -1956,7 +1958,7 @@ public class SatelliteManagerTestBase {
         Context context = InstrumentationRegistry.getInstrumentation().getContext();
         SubscriptionManager sm = context.getSystemService(SubscriptionManager.class);
         List<SubscriptionInfo> infoList = ShellIdentityUtils.invokeMethodWithShellPermissions(sm,
-                SubscriptionManager::getAllSubscriptionInfoList);
+                SubscriptionManager::getAvailableSubscriptionInfoList);
 
         int subId = infoList.stream()
                 .filter(info -> info.isOnlyNonTerrestrialNetwork())
@@ -1967,6 +1969,8 @@ public class SatelliteManagerTestBase {
             subId = infoList.get(0).getSubscriptionId();
         }
         logd("getNtnOnlySubscriptionId: subId=" + subId);
+        // Restore satellite permission
+        grantSatellitePermission();
         return subId;
     }
 
@@ -2635,12 +2639,15 @@ public class SatelliteManagerTestBase {
         int i = 0;
         while (i < 10) {
             List<SubscriptionInfo> subscriptionInfoList =
-                sSubscriptionManager.getAllSubscriptionInfoList();
+                ShellIdentityUtils.invokeMethodWithShellPermissions(sSubscriptionManager,
+                    SubscriptionManager::getAvailableSubscriptionInfoList);
             for (SubscriptionInfo info : subscriptionInfoList) {
                 if (info.getSubscriptionId() == subId
                         && info.isOnlyNonTerrestrialNetwork()) {
                     logd("waitForNtnOnlySubscriptionAvailable: NTN only subscription  " + info
                             + " is available");
+                    // Restore satellite permission
+                    grantSatellitePermission();
                     return;
                 }
             }
@@ -2702,12 +2709,15 @@ public class SatelliteManagerTestBase {
         int i = 0;
         while (i < 10) {
             List<SubscriptionInfo> subscriptionInfoList =
-                sSubscriptionManager.getAllSubscriptionInfoList();
+                ShellIdentityUtils.invokeMethodWithShellPermissions(sSubscriptionManager,
+                    SubscriptionManager::getAvailableSubscriptionInfoList);
             for (SubscriptionInfo info : subscriptionInfoList) {
                 if (info.getSubscriptionId() == subId
                         && info.isSatelliteESOSSupported()) {
                     logd("waitForEsosSubscriptionAvailable: eSOS subscription  " + info
                             + " is available");
+                    // Restore satellite permission
+                    grantSatellitePermission();
                     return;
                 }
             }
@@ -2824,6 +2834,8 @@ public class SatelliteManagerTestBase {
         assertEquals(SatelliteManager.SATELLITE_RESULT_SUCCESS, registerError);
         assertTrue(selectedNbIotSatelliteSubscriptionCallbackTest.waitUntilResult(1));
         selectedNbIotSatelliteSubscriptionCallbackTest.drainPermits();
+        assertTrue(sMockSatelliteServiceManager.setSatelliteControllerTimeoutDuration(false,
+                TIMEOUT_TYPE_EVALUATE_ESOS_PROFILES_PRIORITIZATION_DURATION_MILLIS, 5));
         return selectedNbIotSatelliteSubscriptionCallbackTest;
     }
 
@@ -2832,7 +2844,7 @@ public class SatelliteManagerTestBase {
         String subIdListStr = String.valueOf(subId);
         logd("overrideSatelliteAccessForNtnOnlySubscription: subIdListStr=" + subIdListStr);
         assertTrue(sMockSatelliteServiceManager.setSatelliteAccessAllowedForSubscriptions(
-                subIdListStr));
+                false, subIdListStr));
     }
 
     protected static void enableSatelliteAccessForEsosSubscription(int subId) {
@@ -2852,7 +2864,7 @@ public class SatelliteManagerTestBase {
         String subIdListStr = String.valueOf(subId);
         logd("overrideSatelliteAccessForEsosSubscription: subIdListStr=" + subIdListStr);
         assertTrue(sMockSatelliteServiceManager.setSatelliteAccessAllowedForSubscriptions(
-                subIdListStr));
+                false, subIdListStr));
 
         if (shouldWaitForSelectedSatelliteSubChanged)  {
             // Overrding satellite access for a provisioned ESOS subscription should trigger the
@@ -2871,7 +2883,7 @@ public class SatelliteManagerTestBase {
 
     protected static void resetSatelliteAccessForSatelliteSubscriptions() {
         logd("resetSatelliteAccessForSatelliteSubscriptions");
-        assertTrue(sMockSatelliteServiceManager.setSatelliteAccessAllowedForSubscriptions(null));
+        assertTrue(sMockSatelliteServiceManager.setSatelliteAccessAllowedForSubscriptions(true, null));
     }
 
     /**
@@ -3578,13 +3590,10 @@ public class SatelliteManagerTestBase {
     }
 
     protected static boolean isActiveSubId(int subId) {
-        InstrumentationRegistry.getInstrumentation()
-                .getUiAutomation()
-                .adoptShellPermissionIdentity("android.permission.READ_PRIVILEGED_PHONE_STATE");
-
-        int[] allSubs = getContext()
-            .getSystemService(SubscriptionManager.class)
-            .getActiveSubscriptionIdList();
+        Context context = InstrumentationRegistry.getInstrumentation().getContext();
+        SubscriptionManager sm = context.getSystemService(SubscriptionManager.class);
+        int[] allSubs = ShellIdentityUtils.invokeMethodWithShellPermissions(
+            sm, SubscriptionManager::getActiveSubscriptionIdList);
         List<Integer> allSubsList = Arrays.stream(allSubs)
                 .boxed()
                 .collect(Collectors.toList());
@@ -3592,6 +3601,8 @@ public class SatelliteManagerTestBase {
                 + allSubsList.stream().map(String::valueOf).collect(Collectors.joining(", "))
                 + ", input subId: " + subId);
 
+        // Restore satellite permission
+        grantSatellitePermission();
         return allSubsList.contains(subId);
     }
 
@@ -3699,5 +3710,35 @@ public class SatelliteManagerTestBase {
         assertThat(transmissionUpdateCallback.getReceiveDatagramStateChange(0)).isEqualTo(
                 new SatelliteTransmissionUpdateCallbackTest.DatagramStateChangeArgument(
                         expectedTransferState, expectedPendingCount, expectedErrorCode));
+    }
+
+    protected static boolean isNtnOnlySubscription(int subId) {
+        if (subId == SubscriptionManager.INVALID_SUBSCRIPTION_ID) {
+            logd("isNtnOnlySubscription: subId is invalid");
+            return false;
+        }
+        return sSubscriptionManager.getBooleanSubscriptionProperty(subId,
+                        SubscriptionManager.IS_ONLY_NTN,
+                        false,
+                        getContext());
+    }
+
+    protected static boolean isEsosSubscription(int subId) {
+        if (subId == SubscriptionManager.INVALID_SUBSCRIPTION_ID) {
+            logd("isEsosSubscription: subId is invalid");
+            return false;
+        }
+        return getConfigForSubId(getContext(), subId,
+                    CarrierConfigManager.KEY_SATELLITE_ESOS_SUPPORTED_BOOL).getBoolean(
+                    CarrierConfigManager.KEY_SATELLITE_ESOS_SUPPORTED_BOOL, false);
+    }
+
+    protected static long getNumberOfActiveSubscriptions() {
+        List<SubscriptionInfo> subscriptionInfoList =
+            ShellIdentityUtils.invokeMethodWithShellPermissions(sSubscriptionManager,
+                    SubscriptionManager::getActiveSubscriptionInfoList);
+        // Restore satellite permission
+        grantSatellitePermission();
+        return subscriptionInfoList != null ? subscriptionInfoList.size() : 0;
     }
 }

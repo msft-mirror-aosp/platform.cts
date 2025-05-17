@@ -24,6 +24,7 @@ import static android.inputmethodservice.cts.common.DeviceEventConstants.EXTRA_E
 import static android.inputmethodservice.cts.common.DeviceEventConstants.RECEIVER_COMPONENT;
 
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
 
 import android.inputmethodservice.cts.common.EditTextAppConstants;
@@ -40,6 +41,7 @@ import com.android.tradefed.log.LogUtil;
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
 import com.android.tradefed.testtype.junit4.BaseHostJUnit4Test;
 import com.android.tradefed.testtype.junit4.DeviceTestRunOptions;
+import com.android.tradefed.util.CommandStatus;
 import com.android.tradefed.util.RunUtil;
 
 import org.junit.After;
@@ -425,7 +427,12 @@ public class InputMethodServiceLifecycleTest extends BaseHostJUnit4Test {
     }
 
     private String shell(String command) throws Exception {
-        return getDevice().executeShellCommand(command).trim();
+        final var result = getDevice().executeShellV2Command(command);
+        if (!CommandStatus.SUCCESS.equals(result.getStatus())) {
+            fail(String.format("Failed command '%s', returned:\nstdout:%s\nstderr:%s",
+                    command, result.getStdout(), result.getStderr()));
+        }
+        return result.getStdout().trim();
     }
 
     private void cleanUpTestImes() throws Exception {

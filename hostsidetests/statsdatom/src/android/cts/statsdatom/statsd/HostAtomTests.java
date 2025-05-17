@@ -67,7 +67,8 @@ public class HostAtomTests extends DeviceTestCase implements IBuildReceiver {
 
     private static final String FEATURE_AUTOMOTIVE = "android.hardware.type.automotive";
     private static final String FEATURE_WATCH = "android.hardware.type.watch";
-    private static final String FEATURE_TWM = "com.google.clockwork.hardware.traditional_watch_mode";
+    private static final String FEATURE_TWM =
+            "com.google.clockwork.hardware.traditional_watch_mode";
     private static final String FEATURE_WIFI = "android.hardware.wifi";
     private static final String FEATURE_LEANBACK_ONLY = "android.software.leanback_only";
 
@@ -246,8 +247,12 @@ public class HostAtomTests extends DeviceTestCase implements IBuildReceiver {
         DeviceUtils.resetBatteryStatus(getDevice());
         RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_SHORT);
 
-        // Assert that the events happened in the expected order.
-        AtomTestUtils.assertStatesOccurredInOrder(stateSet, data, AtomTestUtils.WAIT_TIME_LONG,
+        // Assert that the events happened in the expected order. Ignore delay because batterystats
+        // dumpsys can take a long time.
+        AtomTestUtils.assertStatesOccurredInOrder(
+                stateSet,
+                data,
+                /* wait= */ 0,
                 atom -> atom.getPluggedStateChanged().getState().getNumber());
     }
 
@@ -297,8 +302,12 @@ public class HostAtomTests extends DeviceTestCase implements IBuildReceiver {
         DeviceUtils.resetBatteryStatus(getDevice());
         RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_SHORT);
 
-        // Assert that the events happened in the expected order.
-        AtomTestUtils.assertStatesOccurredInOrder(stateSet, data, AtomTestUtils.WAIT_TIME_LONG,
+        // Assert that the events happened in the expected order. Ignore delay because batterystats
+        // dumpsys can take a long time.
+        AtomTestUtils.assertStatesOccurredInOrder(
+                stateSet,
+                data,
+                /* wait= */ 0,
                 atom -> atom.getBatteryLevelChanged().getBatteryLevel());
     }
 
@@ -368,8 +377,12 @@ public class HostAtomTests extends DeviceTestCase implements IBuildReceiver {
         // Sorted list of events in order in which they occurred.
         List<EventMetricData> data = ReportUtils.getEventMetricDataList(getDevice());
 
-        // Assert that the events happened in the expected order.
-        AtomTestUtils.assertStatesOccurredInOrder(stateSet, data, AtomTestUtils.WAIT_TIME_LONG,
+        // Assert that the events happened in the expected order. Ignore delay because batterystats
+        // dumpsys can take a long time.
+        AtomTestUtils.assertStatesOccurredInOrder(
+                stateSet,
+                data,
+                /* wait= */ 0,
                 atom -> atom.getBatterySaverModeStateChanged().getState().getNumber());
     }
 

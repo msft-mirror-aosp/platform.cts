@@ -132,7 +132,10 @@ class ExposureKeysConsistentTest(its_base_test.ItsBaseTest):
       )
       size = sizes[0]
 
-      camera_properties_utils.skip_unless(size is not None)
+      camera_properties_utils.skip_unless(
+          size is not None and
+          camera_properties_utils.manual_sensor(props)
+      )
 
       logging.info('capture width: %d', size[0])
       logging.info('capture height: %d', size[1])

@@ -43,6 +43,8 @@ import android.devicepolicy.cts.utils.PolicyEngineUtils
 import android.devicepolicy.cts.utils.PolicySetResultUtils
 import android.os.Bundle
 import android.platform.test.annotations.RequiresFlagsEnabled
+import android.platform.test.flag.junit.CheckFlagsRule
+import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import android.stats.devicepolicy.EventId
 import android.telecom.TelecomManager
 import com.android.bedstead.enterprise.annotations.CanSetPolicyTest
@@ -82,6 +84,8 @@ import org.testng.Assert.assertThrows
 
 @RunWith(BedsteadJUnit4::class)
 class LockTaskTest {
+    @get:Rule val checkFlagsRule: CheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
+
     @IntTestParameter(
         DevicePolicyManager.LOCK_TASK_FEATURE_SYSTEM_INFO,
         LOCK_TASK_FEATURE_HOME,
