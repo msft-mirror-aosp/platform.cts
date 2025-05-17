@@ -30,11 +30,14 @@ import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
 import android.content.AbstractThreadedSyncAdapter;
+import android.os.Handler;
+import android.os.HandlerThread;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.AppModeNonSdkSandbox;
 
-import androidx.test.rule.ActivityTestRule;
-import androidx.test.runner.AndroidJUnit4;
+import androidx.test.core.app.ActivityScenario;
+import androidx.test.ext.junit.rules.ActivityScenarioRule;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import com.android.cts.content.AlwaysSyncableSyncService;
 import com.android.cts.content.FlakyTestRule;
@@ -47,18 +50,18 @@ import org.junit.Test;
 import org.junit.rules.TestRule;
 import org.junit.runner.RunWith;
 
-/**
- * Tests whether a sync adapter can access accounts.
- */
+/** Tests whether a sync adapter can access accounts. */
 @RunWith(AndroidJUnit4.class)
 @AppModeFull(reason = "Sync manager not supported")
 @AppModeNonSdkSandbox(reason = "Sync adapter not supported since sandboxes cannot declare services")
-public class AccountAccessSameCertTest {
+public final class AccountAccessSameCertTest {
+    private static final String THREAD_NAME = "AccountAccessSameCertTestBackgroundThread";
     @Rule
     public final TestRule mFlakyTestTRule = new FlakyTestRule(3);
 
     @Rule
-    public final ActivityTestRule<StubActivity> activity = new ActivityTestRule(StubActivity.class);
+    public final ActivityScenarioRule<StubActivity> scenarioRule =
+            new ActivityScenarioRule<>(StubActivity.class);
 
     @Before
     public void setUp() throws Exception {
@@ -71,17 +74,32 @@ public class AccountAccessSameCertTest {
     }
 
     @Test
-    public void testAccountAccess_sameCertAsAuthenticatorCanSeeAccount() throws Exception {
+    public void testAccountAccess_sameCertAsAuthenticatorCanSeeAccount() {
         assumeTrue(hasDataConnection());
 
-        try (AutoCloseable ignored = withAccount(activity.getActivity())) {
-            AbstractThreadedSyncAdapter adapter = AlwaysSyncableSyncService.getInstance(
-                    activity.getActivity()).setNewDelegate();
+        try (ActivityScenario<StubActivity> scenario =
+                ActivityScenario.launch(StubActivity.class)) {
+            scenario.onActivity(
+                    activity -> {
+                        HandlerThread thread = new HandlerThread(THREAD_NAME);
+                        thread.start();
+                        Handler handler = new Handler(thread.getLooper());
+                        handler.post(
+                                () -> {
+                                    try (AutoCloseable ignored = withAccount(activity)) {
+                                        AbstractThreadedSyncAdapter adapter =
+                                                AlwaysSyncableSyncService.getInstance(activity)
+                                                        .setNewDelegate();
 
-            requestSync(ALWAYS_SYNCABLE_AUTHORITY);
+                                        requestSync(ALWAYS_SYNCABLE_AUTHORITY);
 
-            verify(adapter, timeout(SYNC_TIMEOUT_MILLIS)).onPerformSync(any(), any(), any(), any(),
-                    any());
+                                        verify(adapter, timeout(SYNC_TIMEOUT_MILLIS))
+                                                .onPerformSync(any(), any(), any(), any(), any());
+                                    } catch (Exception e) {
+                                        throw new RuntimeException(e);
+                                    }
+                                });
+                    });
         }
     }
 }
