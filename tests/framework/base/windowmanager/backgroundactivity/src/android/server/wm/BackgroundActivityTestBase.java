@@ -61,7 +61,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public abstract class BackgroundActivityTestBase extends ActivityManagerTestBase {
 
@@ -422,41 +421,25 @@ public abstract class BackgroundActivityTestBase extends ActivityManagerTestBase
 
     /** Asserts the activity is focused before timeout. */
     protected void assertActivityFocused(Duration timeout, ComponentName componentName) {
-        assertActivityFocused(timeout, componentName,
-                "activity should be focused within " + timeout);
-    }
-
-    /** Asserts the activity is not focused until timeout. */
-    protected void assertActivityNotFocused(Duration timeout, ComponentName componentName) {
-        assertActivityNotFocused(timeout, componentName,
-                "activity should not be focused within " + timeout);
-    }
-
-    protected void waitForActivityResumed(Duration timeout, ComponentName componentName) {
-        waitForActivityResumed((int) timeout.toMillis(), componentName);
-    }
-
-    /** Asserts the activity is focused before timeout. */
-    protected void assertActivityFocused(Duration timeout, ComponentName componentName,
-            String message) {
         String activityName = getActivityName(componentName);
         waitForCondition(timeout, wmState -> activityName.equals(mWmState.getFocusedActivity()));
+        recordTaskStateDump("assertActivityFocused " + componentName);
         assertWithMessage(
                 "activity " + activityName + " should be focused within "
-                        + timeout)
+                        + timeout
+                        + allTaskStateDumps())
                 .that(mWmState.getFocusedActivity())
                 .isEqualTo(activityName);
     }
 
     /** Asserts the activity is not focused until timeout. */
-    protected void assertActivityNotFocused(Duration timeout, ComponentName componentName,
-            String message) {
+    protected void assertActivityNotFocused(Duration timeout, ComponentName componentName) {
         String activityName = getActivityName(componentName);
-        waitForCondition(timeout, mWmState ->
+        waitForCondition(timeout, mWmState1 ->
                 // mWmState.hasActivityState(componentName, WindowManagerState.STATE_RESUMED)
-                mWmState.getFocusedActivity().equals(activityName)
+                mWmState1.getFocusedActivity().equals(activityName)
         );
-        recordTaskStateDump("Assertion");
+        recordTaskStateDump("assertActivityNotFocused " + componentName);
         assertWithMessage(
                 "activity " + activityName
                         + " should NOT be focused within " + timeout + " but was after "
@@ -466,20 +449,6 @@ public abstract class BackgroundActivityTestBase extends ActivityManagerTestBase
                 .that(mWmState.getFocusedActivity())
                 .isNotEqualTo(activityName);
     }
-
-    protected void assertActivityNotFocused(ComponentName... componentNames) {
-        List<String> activityNames = Stream.of(componentNames)
-                .map(ComponentNameUtils::getActivityName)
-                .toList();
-        waitForCondition(ACTIVITY_FOCUS_TIMEOUT, mWmState ->
-                activityNames.contains(mWmState.getFocusedActivity()));
-        assertWithMessage(
-                "activities " + activityNames + " should NOT be focused within "
-                        + ACTIVITY_FOCUS_TIMEOUT)
-                .that(mWmState.getFocusedActivity())
-                .isNotIn(activityNames);
-    }
-
 
     protected TestServiceClient getTestService(Components c) throws Exception {
         return getTestService(new ComponentName(c.APP_PACKAGE_NAME, TEST_SERVICE));
@@ -581,7 +550,7 @@ public abstract class BackgroundActivityTestBase extends ActivityManagerTestBase
      * The text representation is intended to be read by humans and the format may change.
      */
     public String allTaskStateDumps() {
-        Instant now = Instant.now();
+        recordTaskStateDump("final");
         StringBuilder sb = new StringBuilder();
         TaskStateDump lastDump = new TaskStateDump("none", Instant.EPOCH, "none", List.of());
         for (TaskStateDump dump : mTaskStateDumps) {
