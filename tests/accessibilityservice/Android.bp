@@ -39,12 +39,16 @@ android_test {
         "androidx.test.rules",
         "androidx.test.espresso.core",
         "com_android_systemui_flags_lib",
+        "NeneInternal",
     ],
     libs: [
         "android.test.runner.stubs.test",
         "android.test.base.stubs.test",
     ],
-    srcs: ["src/**/*.java"],
+    srcs: [
+        "src/**/*.java",
+        "src/**/*.kt",
+    ],
     // Tag this module as a cts test artifact
     test_suites: [
         "cts",
