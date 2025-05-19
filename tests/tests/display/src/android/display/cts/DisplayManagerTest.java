@@ -22,6 +22,7 @@ import static android.view.Display.DEFAULT_DISPLAY;
 import static android.view.WindowInsets.Type.systemBars;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
@@ -34,6 +35,7 @@ import android.graphics.Rect;
 import android.hardware.HardwareBuffer;
 import android.hardware.display.AmbientDisplayConfiguration;
 import android.hardware.display.DisplayManager;
+import android.hardware.display.DisplayTopology;
 import android.hardware.display.VirtualDisplay;
 import android.media.Image;
 import android.media.ImageReader;
@@ -223,6 +225,19 @@ public class DisplayManagerTest {
                                 displayManager.getDisplays(DISPLAY_CATEGORY_BUILT_IN_DISPLAYS)));
 
         assertEquals(expectedDisplays, builtInDisplays);
+    }
+
+    @Test
+    @RequiresFlagsEnabled({Flags.FLAG_DISPLAY_TOPOLOGY, Flags.FLAG_DISPLAY_TOPOLOGY_API})
+    public void testGetDisplayTopology() {
+        mInstrumentation.getUiAutomation().adoptShellPermissionIdentity();
+        DisplayManager displayManager =
+                Objects.requireNonNull(mActivity.getSystemService(DisplayManager.class));
+
+        DisplayTopology topology = displayManager.getDisplayTopology();
+
+        assertNotNull(topology);
+        assertTrue(topology.getAbsoluteBounds().size() >= 1);
     }
 
     private static class OnImageAvailableListener implements ImageReader.OnImageAvailableListener {
