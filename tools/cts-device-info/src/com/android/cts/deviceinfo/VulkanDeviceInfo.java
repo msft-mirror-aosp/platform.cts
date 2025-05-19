@@ -24,6 +24,10 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.HashMap;
+import java.util.Locale;
+import java.util.Map;
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 
 /**
  * Vulkan info collector.
@@ -183,7 +187,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     private static final String KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_4X8BIT_PACKED_SIGNED_ACCELERATED = "integerDotProductAccumulatingSaturating4x8BitPackedSignedAccelerated";
     private static final String KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_4X8BIT_PACKED_UNSIGNED_ACCELERATED = "integerDotProductAccumulatingSaturating4x8BitPackedUnsignedAccelerated";
     private static final String KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_64BIT_MIXED_SIGNEDNESS_ACCELERATED = "integerDotProductAccumulatingSaturating64BitMixedSignednessAccelerated";
-    private static final String KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_64BIT_SIGNEDNESS_ACCELERATED = "integerDotProductAccumulatingSaturating64BitSignedAccelerated";
+    private static final String KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_64BIT_SIGNED_ACCELERATED = "integerDotProductAccumulatingSaturating64BitSignedAccelerated";
     private static final String KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_64BIT_UNSIGNED_ACCELERATED = "integerDotProductAccumulatingSaturating64BitUnsignedAccelerated";
     private static final String KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_8BIT_MIXED_SIGNEDNESS_ACCELERATED = "integerDotProductAccumulatingSaturating8BitMixedSignednessAccelerated";
     private static final String KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_8BIT_SIGNED_ACCELERATED = "integerDotProductAccumulatingSaturating8BitSignedAccelerated";
@@ -522,7 +526,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     private static final String KEY_VK_KHR_SHADER_FLOAT16_INT8 = "VK_KHR_shader_float16_int8";
     private static final String KEY_SHADER_FLOAT16_INT8_FEATURES_KHR =
             "shaderFloat16Int8FeaturesKHR";
-  private static final String KEY_FLOAT16_INT8_FEATURES_KHR =
+    private static final String KEY_FLOAT16_INT8_FEATURES_KHR =
             "float16Int8FeaturesKHR";
     private static final String KEY_VK_KHR_SHADER_SUBGROUP_EXTENDED_TYPES =
             "VK_KHR_shader_subgroup_extended_types";
@@ -569,7 +573,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
             "VK_IMG_relaxed_line_rasterization";
     private static final String KEY_RELAXED_LINE_RASTERIZATION_FEATURES_IMG =
             "relaxedLineRasterizationFeaturesIMG";
-    private static final String RELAXED_LINE_RASTERIZATION = "relaxedLineRasterization";
+    private static final String KEY_RELAXED_LINE_RASTERIZATION = "relaxedLineRasterization";
     private static final String KEY_CORE11 = "core11";
     private static final String KEY_VULKAN_11_PROPERTIES = "vulkan_11_properties";
     private static final String KEY_VULKAN_11_FEATURES = "vulkan_11_features";
@@ -658,6 +662,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     private static final int ENUM_KEY_VK_KHR_VERTEX_ATTRIBUTE_DIVISOR = 18;
 
     private static HashMap<String, Integer> extensionNameToEnum;
+    private static Map<String, String> keyToConvertedName;
 
     static {
         System.loadLibrary("ctsdeviceinfo");
@@ -692,6 +697,8 @@ ENUM_KEY_VK_EXT_PRIMITIVE_TOPOLOGY_LIST_RESTART);
                 KEY_VK_IMG_RELAXED_LINE_RASTERIZATION, ENUM_KEY_VK_IMG_RELAXED_LINE_RASTERIZATION);
         extensionNameToEnum.put(
                 KEY_VK_KHR_VERTEX_ATTRIBUTE_DIVISOR, ENUM_KEY_VK_KHR_VERTEX_ATTRIBUTE_DIVISOR);
+
+        createKeyToConvertedNameMap();
     }
 
     @Override
@@ -716,7 +723,7 @@ ENUM_KEY_VK_EXT_PRIMITIVE_TOPOLOGY_LIST_RESTART);
     private static void emitDeviceGroups(DeviceInfoStore store, JSONObject parent)
             throws Exception {
         JSONArray deviceGroups = parent.getJSONArray(KEY_DEVICE_GROUPS);
-        store.startArray(convertName(KEY_DEVICE_GROUPS));
+        store.startArray(getConvertedName(KEY_DEVICE_GROUPS));
         for (int deviceGroupIdx = 0; deviceGroupIdx < deviceGroups.length(); deviceGroupIdx++) {
             JSONObject deviceGroup = deviceGroups.getJSONObject(deviceGroupIdx);
             store.startGroup();
@@ -732,13 +739,13 @@ ENUM_KEY_VK_EXT_PRIMITIVE_TOPOLOGY_LIST_RESTART);
     private static void emitDevices(DeviceInfoStore store, JSONObject parent)
             throws Exception {
         JSONArray devices = parent.getJSONArray(KEY_DEVICES);
-        store.startArray(convertName(KEY_DEVICES));
+        store.startArray(getConvertedName(KEY_DEVICES));
         for (int deviceIdx = 0; deviceIdx < devices.length(); deviceIdx++) {
             JSONObject device = devices.getJSONObject(deviceIdx);
             store.startGroup();
             {
                 JSONObject properties = device.getJSONObject(KEY_PROPERTIES);
-                store.startGroup(convertName(KEY_PROPERTIES));
+                store.startGroup(getConvertedName(KEY_PROPERTIES));
                 {
                     emitLong(store, properties, KEY_API_VERSION);
                     emitLong(store, properties, KEY_DRIVER_VERSION);
@@ -749,7 +756,7 @@ ENUM_KEY_VK_EXT_PRIMITIVE_TOPOLOGY_LIST_RESTART);
                     emitLongArray(store, properties, KEY_PIPELINE_CACHE_UUID);
 
                     JSONObject limits = properties.getJSONObject(KEY_LIMITS);
-                    store.startGroup(convertName(KEY_LIMITS));
+                    store.startGroup(getConvertedName(KEY_LIMITS));
                     {
                         emitLong(store, limits, KEY_MAX_IMAGE_DIMENSION_1D);
                         emitLong(store, limits, KEY_MAX_IMAGE_DIMENSION_2D);
@@ -861,7 +868,7 @@ ENUM_KEY_VK_EXT_PRIMITIVE_TOPOLOGY_LIST_RESTART);
                     store.endGroup();
 
                     JSONObject sparse = properties.getJSONObject(KEY_SPARSE_PROPERTIES);
-                    store.startGroup(convertName(KEY_SPARSE_PROPERTIES));
+                    store.startGroup(getConvertedName(KEY_SPARSE_PROPERTIES));
                     {
                         emitBoolean(store, sparse, KEY_RESIDENCY_STANDARD_2D_BLOCK_SHAPE);
                         emitBoolean(store, sparse, KEY_RESIDENCY_STANDARD_2D_MULTISAMPLE_BLOCK_SHAPE);
@@ -874,7 +881,7 @@ ENUM_KEY_VK_EXT_PRIMITIVE_TOPOLOGY_LIST_RESTART);
                     if (properties.getLong(KEY_API_VERSION) >= VK_API_VERSION_1_2) {
                         JSONObject core11 = device.getJSONObject(KEY_CORE11);
                         JSONObject vulkan11Properties = core11.getJSONObject(KEY_PROPERTIES);
-                        store.startGroup(convertName(KEY_VULKAN_11_PROPERTIES));
+                        store.startGroup(getConvertedName(KEY_VULKAN_11_PROPERTIES));
                         {
                             emitLong(store, vulkan11Properties, KEY_DEVICE_NODE_MASK);
                             emitBoolean(store, vulkan11Properties, KEY_DEVICE_LUID_VALID);
@@ -901,14 +908,14 @@ ENUM_KEY_VK_EXT_PRIMITIVE_TOPOLOGY_LIST_RESTART);
 
                         JSONObject core12 = device.getJSONObject(KEY_CORE12);
                         JSONObject vulkan12Properties = core12.getJSONObject(KEY_PROPERTIES);
-                        store.startGroup(convertName(KEY_VULKAN_12_PROPERTIES));
+                        store.startGroup(getConvertedName(KEY_VULKAN_12_PROPERTIES));
                         {
                             emitLong(store, vulkan12Properties, KEY_DRIVER_ID);
                             emitString(store, vulkan12Properties, KEY_DRIVER_NAME);
                             emitString(store, vulkan12Properties, KEY_DRIVER_INFO);
 
                             JSONObject conformanceVersion = vulkan12Properties.getJSONObject(KEY_CONFORMANCE_VERSION);
-                            store.startGroup(convertName(KEY_CONFORMANCE_VERSION));
+                            store.startGroup(getConvertedName(KEY_CONFORMANCE_VERSION));
                             {
                                 emitLong(store, conformanceVersion, KEY_MAJOR);
                                 emitLong(store, conformanceVersion, KEY_MINOR);
@@ -972,7 +979,7 @@ ENUM_KEY_VK_EXT_PRIMITIVE_TOPOLOGY_LIST_RESTART);
                     if (properties.getLong(KEY_API_VERSION) >= VK_API_VERSION_1_3) {
                         JSONObject core13 = device.getJSONObject(KEY_CORE13);
                         JSONObject vulkan13Properties = core13.getJSONObject(KEY_PROPERTIES);
-                        store.startGroup(convertName(KEY_VULKAN_13_PROPERTIES));
+                        store.startGroup(getConvertedName(KEY_VULKAN_13_PROPERTIES));
                         {
                             emitLong(store, vulkan13Properties, KEY_MIN_SUBGROUP_SIZE);
                             emitLong(store, vulkan13Properties, KEY_MAX_SUBGROUP_SIZE);
@@ -1012,7 +1019,7 @@ ENUM_KEY_VK_EXT_PRIMITIVE_TOPOLOGY_LIST_RESTART);
                             emitBoolean(store, vulkan13Properties, KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_32BIT_SIGNED_ACCELERATED);
                             emitBoolean(store, vulkan13Properties, KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_32BIT_MIXED_SIGNEDNESS_ACCELERATED);
                             emitBoolean(store, vulkan13Properties, KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_64BIT_UNSIGNED_ACCELERATED);
-                            emitBoolean(store, vulkan13Properties, KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_64BIT_SIGNEDNESS_ACCELERATED);
+                            emitBoolean(store, vulkan13Properties, KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_64BIT_SIGNED_ACCELERATED);
                             emitBoolean(store, vulkan13Properties, KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_64BIT_MIXED_SIGNEDNESS_ACCELERATED);
                             emitString(store, vulkan13Properties, KEY_STORAGE_TEXEL_BUFFER_OFFSET_ALIGNMENT_BYTES);
                             emitBoolean(store, vulkan13Properties, KEY_STORAGE_TEXEL_BUFFER_OFFSET_SINGLE_TEXEL_ALIGNMENT);
@@ -1025,7 +1032,7 @@ ENUM_KEY_VK_EXT_PRIMITIVE_TOPOLOGY_LIST_RESTART);
                     if (properties.getLong(KEY_API_VERSION) >= VK_API_VERSION_1_4) {
                         JSONObject core14 = device.getJSONObject(KEY_CORE14);
                         JSONObject vulkan14Properties = core14.getJSONObject(KEY_PROPERTIES);
-                        store.startGroup(convertName(KEY_VULKAN_14_PROPERTIES));
+                        store.startGroup(getConvertedName(KEY_VULKAN_14_PROPERTIES));
                         {
                             emitLong(store, vulkan14Properties, KEY_LINE_SUB_PIXEL_PRECISION_BITS);
                             emitLong(store, vulkan14Properties, KEY_MAX_VERTEX_ATTRIB_DIVISOR);
@@ -1059,7 +1066,7 @@ ENUM_KEY_VK_EXT_PRIMITIVE_TOPOLOGY_LIST_RESTART);
                 store.endGroup();
 
                 JSONObject features = device.getJSONObject(KEY_FEATURES);
-                store.startGroup(convertName(KEY_FEATURES));
+                store.startGroup(getConvertedName(KEY_FEATURES));
                 {
                     emitBoolean(store, features, KEY_ROBUST_BUFFER_ACCESS);
                     emitBoolean(store, features, KEY_FULL_DRAW_INDEX_UINT32);
@@ -1121,7 +1128,7 @@ ENUM_KEY_VK_EXT_PRIMITIVE_TOPOLOGY_LIST_RESTART);
                     if (properties.getLong(KEY_API_VERSION) >= VK_API_VERSION_1_2) {
                         JSONObject core11 = device.getJSONObject(KEY_CORE11);
                         JSONObject vulkan11Features = core11.getJSONObject(KEY_FEATURES);
-                        store.startGroup(convertName(KEY_VULKAN_11_FEATURES));
+                        store.startGroup(getConvertedName(KEY_VULKAN_11_FEATURES));
                         {
                             emitBoolean(store, vulkan11Features, KEY_MULTIVIEW);
                             emitBoolean(store, vulkan11Features, KEY_MULTIVIEW_GEOMETRY_SHADER);
@@ -1140,7 +1147,7 @@ ENUM_KEY_VK_EXT_PRIMITIVE_TOPOLOGY_LIST_RESTART);
 
                         JSONObject core12 = device.getJSONObject(KEY_CORE12);
                         JSONObject vulkan12Features = core12.getJSONObject(KEY_FEATURES);
-                        store.startGroup(convertName(KEY_VULKAN_12_FEATURES));
+                        store.startGroup(getConvertedName(KEY_VULKAN_12_FEATURES));
                         {
                             emitBoolean(store, vulkan12Features, KEY_SAMPLER_MIRROR_CLAMP_TO_EDGE);
                             emitBoolean(store, vulkan12Features, KEY_DRAW_INDIRECT_COUNT);
@@ -1200,7 +1207,7 @@ ENUM_KEY_VK_EXT_PRIMITIVE_TOPOLOGY_LIST_RESTART);
                     if (properties.getLong(KEY_API_VERSION) >= VK_API_VERSION_1_3) {
                         JSONObject core13 = device.getJSONObject(KEY_CORE13);
                         JSONObject vulkan13Features = core13.getJSONObject(KEY_FEATURES);
-                        store.startGroup(convertName(KEY_VULKAN_13_FEATURES));
+                        store.startGroup(getConvertedName(KEY_VULKAN_13_FEATURES));
                         {
                             emitBoolean(store, vulkan13Features, KEY_ROBUST_IMAGE_ACCESS);
                             emitBoolean(store, vulkan13Features, KEY_INLINE_UNIFORM_BLOCK);
@@ -1224,7 +1231,7 @@ ENUM_KEY_VK_EXT_PRIMITIVE_TOPOLOGY_LIST_RESTART);
                     if (properties.getLong(KEY_API_VERSION) >= VK_API_VERSION_1_4) {
                         JSONObject core14 = device.getJSONObject(KEY_CORE14);
                         JSONObject vulkan14Features = core14.getJSONObject(KEY_FEATURES);
-                        store.startGroup(convertName(KEY_VULKAN_14_FEATURES));
+                        store.startGroup(getConvertedName(KEY_VULKAN_14_FEATURES));
                         {
                             emitBoolean(store, vulkan14Features, KEY_GLOBAL_PRIORITY_QUERY);
                             emitBoolean(store, vulkan14Features, KEY_SHADER_SUBGROUP_ROTATE);
@@ -1254,11 +1261,11 @@ ENUM_KEY_VK_EXT_PRIMITIVE_TOPOLOGY_LIST_RESTART);
                 store.endGroup();
 
                 JSONObject memory = device.getJSONObject(KEY_MEMORY);
-                store.startGroup(convertName(KEY_MEMORY));
+                store.startGroup(getConvertedName(KEY_MEMORY));
                 {
                     emitLong(store, memory, KEY_MEMORY_TYPE_COUNT);
                     JSONArray memoryTypes = memory.getJSONArray(KEY_MEMORY_TYPES);
-                    store.startArray(convertName(KEY_MEMORY_TYPES));
+                    store.startArray(getConvertedName(KEY_MEMORY_TYPES));
                     for (int memoryTypeIdx = 0; memoryTypeIdx < memoryTypes.length();
                             memoryTypeIdx++) {
                         JSONObject memoryType = memoryTypes.getJSONObject(memoryTypeIdx);
@@ -1273,7 +1280,7 @@ ENUM_KEY_VK_EXT_PRIMITIVE_TOPOLOGY_LIST_RESTART);
 
                     emitLong(store, memory, KEY_MEMORY_HEAP_COUNT);
                     JSONArray memoryHeaps = memory.getJSONArray(KEY_MEMORY_HEAPS);
-                    store.startArray(convertName(KEY_MEMORY_HEAPS));
+                    store.startArray(getConvertedName(KEY_MEMORY_HEAPS));
                     for (int memoryHeapIdx = 0; memoryHeapIdx < memoryHeaps.length();
                             memoryHeapIdx++) {
                         JSONObject memoryHeap = memoryHeaps.getJSONObject(memoryHeapIdx);
@@ -1289,7 +1296,7 @@ ENUM_KEY_VK_EXT_PRIMITIVE_TOPOLOGY_LIST_RESTART);
                 store.endGroup();
 
                 JSONArray queues = device.getJSONArray(KEY_QUEUES);
-                store.startArray(convertName(KEY_QUEUES));
+                store.startArray(getConvertedName(KEY_QUEUES));
                 for (int queueIdx = 0; queueIdx < queues.length(); queueIdx++) {
                     JSONObject queue = queues.getJSONObject(queueIdx);
                     store.startGroup();
@@ -1298,7 +1305,7 @@ ENUM_KEY_VK_EXT_PRIMITIVE_TOPOLOGY_LIST_RESTART);
                         emitLong(store, queue, KEY_QUEUE_COUNT);
                         emitLong(store, queue, KEY_TIMESTAMP_VALID_BITS);
                         JSONObject extent = queue.getJSONObject(KEY_MIN_IMAGE_TRANSFER_GRANULARITY);
-                        store.startGroup(convertName(KEY_MIN_IMAGE_TRANSFER_GRANULARITY));
+                        store.startGroup(getConvertedName(KEY_MIN_IMAGE_TRANSFER_GRANULARITY));
                         {
                             emitLong(store, extent, KEY_WIDTH);
                             emitLong(store, extent, KEY_HEIGHT);
@@ -1313,7 +1320,7 @@ ENUM_KEY_VK_EXT_PRIMITIVE_TOPOLOGY_LIST_RESTART);
                 // Skip layers for now. VkJSON doesn't yet include device layer extensions, so
                 // this is entirely redundant with the instance extension information.
                 // emitLayers(store, device);
-                store.startArray(convertName(KEY_LAYERS));
+                store.startArray(getConvertedName(KEY_LAYERS));
                 store.endArray();
 
                 emitExtensions(store, device);
@@ -1338,7 +1345,7 @@ ENUM_KEY_VK_EXT_PRIMITIVE_TOPOLOGY_LIST_RESTART);
 
                 if (properties.getLong(KEY_API_VERSION) >= VK_API_VERSION_1_1) {
                     JSONObject subgroupProperties = device.getJSONObject(KEY_SUBGROUP_PROPERTIES);
-                    store.startGroup(convertName(KEY_SUBGROUP_PROPERTIES));
+                    store.startGroup(getConvertedName(KEY_SUBGROUP_PROPERTIES));
                     {
                         emitLong(store, subgroupProperties, KEY_SUBGROUP_SIZE);
                         emitLong(store, subgroupProperties, KEY_SUPPORTED_STAGES);
@@ -1348,14 +1355,14 @@ ENUM_KEY_VK_EXT_PRIMITIVE_TOPOLOGY_LIST_RESTART);
                     store.endGroup();
 
                     JSONObject pointClippingProperties = device.getJSONObject(KEY_POINT_CLIPPING_PROPERTIES);
-                    store.startGroup(convertName(KEY_POINT_CLIPPING_PROPERTIES));
+                    store.startGroup(getConvertedName(KEY_POINT_CLIPPING_PROPERTIES));
                     {
                         emitLong(store, pointClippingProperties, KEY_POINT_CLIPPING_BEHAVIOR);
                     }
                     store.endGroup();
 
                     JSONObject multiviewProperties = device.getJSONObject(KEY_MULTIVIEW_PROPERTIES);
-                    store.startGroup(convertName(KEY_MULTIVIEW_PROPERTIES));
+                    store.startGroup(getConvertedName(KEY_MULTIVIEW_PROPERTIES));
                     {
                         emitLong(store, multiviewProperties, KEY_MAX_MULTIVIEW_VIEW_COUNT);
                         emitLong(store, multiviewProperties, KEY_MAX_MULTIVIEW_INSTANCE_INDEX);
@@ -1363,7 +1370,7 @@ ENUM_KEY_VK_EXT_PRIMITIVE_TOPOLOGY_LIST_RESTART);
                     store.endGroup();
 
                     JSONObject idProperties = device.getJSONObject(KEY_ID_PROPERTIES);
-                    store.startGroup(convertName(KEY_ID_PROPERTIES));
+                    store.startGroup(getConvertedName(KEY_ID_PROPERTIES));
                     {
                         emitLongArray(store, idProperties, KEY_DEVICE_UUID);
                         emitLongArray(store, idProperties, KEY_DRIVER_UUID);
@@ -1374,7 +1381,7 @@ ENUM_KEY_VK_EXT_PRIMITIVE_TOPOLOGY_LIST_RESTART);
                     store.endGroup();
 
                     JSONObject maintenance3Properties = device.getJSONObject(KEY_MAINTENANCE_3_PROPERTIES);
-                    store.startGroup(convertName(KEY_MAINTENANCE_3_PROPERTIES));
+                    store.startGroup(getConvertedName(KEY_MAINTENANCE_3_PROPERTIES));
                     {
                         emitLong(store, maintenance3Properties, KEY_MAX_PER_SET_DESCRIPTORS);
                         emitString(store, maintenance3Properties, KEY_MAX_MEMORY_ALLOCATION_SIZE);
@@ -1382,7 +1389,7 @@ ENUM_KEY_VK_EXT_PRIMITIVE_TOPOLOGY_LIST_RESTART);
                     store.endGroup();
 
                     JSONObject bit16StorageFeatures = device.getJSONObject(KEY_BIT16_STORAGE_FEATURES);
-                    store.startGroup(convertName(KEY_BIT16_STORAGE_FEATURES));
+                    store.startGroup(getConvertedName(KEY_BIT16_STORAGE_FEATURES));
                     {
                         emitBoolean(store, bit16StorageFeatures, KEY_STORAGE_BUFFER_16BIT_ACCESS);
                         emitBoolean(store, bit16StorageFeatures, KEY_UNIFORM_AND_STORAGE_BUFFER_16BIT_ACCESS);
@@ -1392,7 +1399,7 @@ ENUM_KEY_VK_EXT_PRIMITIVE_TOPOLOGY_LIST_RESTART);
                     store.endGroup();
 
                     JSONObject multiviewFeatures = device.getJSONObject(KEY_MULTIVIEW_FEATURES);
-                    store.startGroup(convertName(KEY_MULTIVIEW_FEATURES));
+                    store.startGroup(getConvertedName(KEY_MULTIVIEW_FEATURES));
                     {
                         emitBoolean(store, multiviewFeatures, KEY_MULTIVIEW);
                         emitBoolean(store, multiviewFeatures, KEY_MULTIVIEW_GEOMETRY_SHADER);
@@ -1401,7 +1408,7 @@ ENUM_KEY_VK_EXT_PRIMITIVE_TOPOLOGY_LIST_RESTART);
                     store.endGroup();
 
                     JSONObject variablePointersFeatures = device.getJSONObject(KEY_VARIABLE_POINTERS_FEATURES);
-                    store.startGroup(convertName(KEY_VARIABLE_POINTERS_FEATURES));
+                    store.startGroup(getConvertedName(KEY_VARIABLE_POINTERS_FEATURES));
                     {
                         emitBoolean(store, variablePointersFeatures, KEY_VARIABLE_POINTERS_STORAGE_BUFFER);
                         emitBoolean(store, variablePointersFeatures, KEY_VARIABLE_POINTERS);
@@ -1409,28 +1416,28 @@ ENUM_KEY_VK_EXT_PRIMITIVE_TOPOLOGY_LIST_RESTART);
                     store.endGroup();
 
                     JSONObject protectedMemoryFeatures = device.getJSONObject(KEY_PROTECTED_MEMORY_FEATURES);
-                    store.startGroup(convertName(KEY_PROTECTED_MEMORY_FEATURES));
+                    store.startGroup(getConvertedName(KEY_PROTECTED_MEMORY_FEATURES));
                     {
                         emitBoolean(store, protectedMemoryFeatures, KEY_PROTECTED_MEMORY);
                     }
                     store.endGroup();
 
                     JSONObject samplerYcbcrConversionFeatures = device.getJSONObject(KEY_SAMPLER_YCBCR_CONVERSION_FEATURES);
-                    store.startGroup(convertName(KEY_SAMPLER_YCBCR_CONVERSION_FEATURES));
+                    store.startGroup(getConvertedName(KEY_SAMPLER_YCBCR_CONVERSION_FEATURES));
                     {
                         emitBoolean(store, samplerYcbcrConversionFeatures, KEY_SAMPLER_YCBCR_CONVERSION);
                     }
                     store.endGroup();
 
                     JSONObject shaderDrawParameterFeatures = device.getJSONObject(KEY_SHADER_DRAW_PARAMETER_FEATURES);
-                    store.startGroup(convertName(KEY_SHADER_DRAW_PARAMETER_FEATURES));
+                    store.startGroup(getConvertedName(KEY_SHADER_DRAW_PARAMETER_FEATURES));
                     {
                         emitBoolean(store, shaderDrawParameterFeatures, KEY_SHADER_DRAW_PARAMETERS);
                     }
                     store.endGroup();
 
                     JSONArray externalFences = device.getJSONArray(KEY_EXTERNAL_FENCE_PROPERTIES);
-                    store.startArray(convertName(KEY_EXTERNAL_FENCE_PROPERTIES));
+                    store.startArray(getConvertedName(KEY_EXTERNAL_FENCE_PROPERTIES));
                     for (int idx = 0; idx < externalFences.length(); ++idx) {
                         JSONArray externalFencePair = externalFences.getJSONArray(idx);
                         JSONObject externalFenceProperties = externalFencePair.getJSONObject(1);
@@ -1446,7 +1453,7 @@ ENUM_KEY_VK_EXT_PRIMITIVE_TOPOLOGY_LIST_RESTART);
                     store.endArray();
 
                     JSONArray externalSemaphores = device.getJSONArray(KEY_EXTERNAL_SEMAPHORE_PROPERTIES);
-                    store.startArray(convertName(KEY_EXTERNAL_SEMAPHORE_PROPERTIES));
+                    store.startArray(getConvertedName(KEY_EXTERNAL_SEMAPHORE_PROPERTIES));
                     for (int idx = 0; idx < externalSemaphores.length(); ++idx) {
                         JSONArray externalSemaphorePair = externalSemaphores.getJSONArray(idx);
                         JSONObject externalSemaphoreProperties = externalSemaphorePair.getJSONObject(1);
@@ -1470,13 +1477,13 @@ ENUM_KEY_VK_EXT_PRIMITIVE_TOPOLOGY_LIST_RESTART);
     private static void emitLayers(DeviceInfoStore store, JSONObject parent)
             throws Exception {
         JSONArray layers = parent.getJSONArray(KEY_LAYERS);
-        store.startArray(convertName(KEY_LAYERS));
+        store.startArray(getConvertedName(KEY_LAYERS));
         for (int i = 0; i < layers.length(); i++) {
             JSONObject layer = layers.getJSONObject(i);
             store.startGroup();
             {
                 JSONObject properties = layer.getJSONObject(KEY_PROPERTIES);
-                store.startGroup(convertName(KEY_PROPERTIES));
+                store.startGroup(getConvertedName(KEY_PROPERTIES));
                 {
                     emitString(store, properties, KEY_LAYER_NAME);
                     emitLong(store, properties, KEY_SPEC_VERSION);
@@ -1493,7 +1500,7 @@ ENUM_KEY_VK_EXT_PRIMITIVE_TOPOLOGY_LIST_RESTART);
 
     private static void emitInstanceApiVersion(DeviceInfoStore store, JSONObject parent)
             throws Exception {
-        store.addResult(convertName(KEY_INSTANCE_API_VERSION), parent.getLong(KEY_API_VERSION));
+        store.addResult(getConvertedName(KEY_INSTANCE_API_VERSION), parent.getLong(KEY_API_VERSION));
     }
 
     private static void emitDriverPropertiesKHR(DeviceInfoStore store, JSONObject parent)
@@ -1501,17 +1508,17 @@ ENUM_KEY_VK_EXT_PRIMITIVE_TOPOLOGY_LIST_RESTART);
         try {
             JSONObject extDriverProperties = parent.getJSONObject(KEY_VK_KHR_DRIVER_PROPERTIES);
             try {
-                store.startGroup(convertName(KEY_VK_KHR_DRIVER_PROPERTIES));
+                store.startGroup(getConvertedName(KEY_VK_KHR_DRIVER_PROPERTIES));
                 {
                     JSONObject driverPropertiesKHR = extDriverProperties.getJSONObject(KEY_DRIVER_PROPERTIES_KHR);
-                    store.startGroup(convertName(KEY_DRIVER_PROPERTIES_KHR));
+                    store.startGroup(getConvertedName(KEY_DRIVER_PROPERTIES_KHR));
                     {
                         emitLong(store, driverPropertiesKHR, KEY_DRIVER_ID);
                         emitString(store, driverPropertiesKHR, KEY_DRIVER_NAME);
                         emitString(store, driverPropertiesKHR, KEY_DRIVER_INFO);
 
                         JSONObject conformanceVersion = driverPropertiesKHR.getJSONObject(KEY_CONFORMANCE_VERSION);
-                        store.startGroup(convertName(KEY_CONFORMANCE_VERSION));
+                        store.startGroup(getConvertedName(KEY_CONFORMANCE_VERSION));
                         {
                             emitLong(store, conformanceVersion, KEY_MAJOR);
                             emitLong(store, conformanceVersion, KEY_MINOR);
@@ -1537,17 +1544,17 @@ ENUM_KEY_VK_EXT_PRIMITIVE_TOPOLOGY_LIST_RESTART);
         try {
             JSONObject extVariablePointerFeatures = parent.getJSONObject(KEY_VK_KHR_VARIABLE_POINTERS);
             try {
-                store.startGroup(convertName(KEY_VK_KHR_VARIABLE_POINTERS));
+                store.startGroup(getConvertedName(KEY_VK_KHR_VARIABLE_POINTERS));
                 {
                     JSONObject variablePointerFeaturesKHR = extVariablePointerFeatures.getJSONObject(KEY_VARIABLE_POINTER_FEATURES_KHR);
-                    store.startGroup(convertName(KEY_VARIABLE_POINTER_FEATURES_KHR));
+                    store.startGroup(getConvertedName(KEY_VARIABLE_POINTER_FEATURES_KHR));
                     {
                         emitBoolean(store, variablePointerFeaturesKHR, KEY_VARIABLE_POINTERS_STORAGE_BUFFER);
                         emitBoolean(store, variablePointerFeaturesKHR, KEY_VARIABLE_POINTERS);
                     }
                     store.endGroup();
                     JSONObject variablePointersFeaturesKHR = extVariablePointerFeatures.getJSONObject(KEY_VARIABLE_POINTERS_FEATURES_KHR);
-                    store.startGroup(convertName(KEY_VARIABLE_POINTERS_FEATURES_KHR));
+                    store.startGroup(getConvertedName(KEY_VARIABLE_POINTERS_FEATURES_KHR));
                     {
                         emitBoolean(store, variablePointersFeaturesKHR, KEY_VARIABLE_POINTERS_STORAGE_BUFFER);
                         emitBoolean(store, variablePointersFeaturesKHR, KEY_VARIABLE_POINTERS);
@@ -1570,10 +1577,10 @@ ENUM_KEY_VK_EXT_PRIMITIVE_TOPOLOGY_LIST_RESTART);
         try {
             JSONObject extImage2DViewOf3DFeatures = parent.getJSONObject(KEY_VK_EXT_IMAGE_2D_VIEW_OF_3D);
             try {
-                store.startGroup(convertName(KEY_VK_EXT_IMAGE_2D_VIEW_OF_3D));
+                store.startGroup(getConvertedName(KEY_VK_EXT_IMAGE_2D_VIEW_OF_3D));
                 {
                     JSONObject image2DViewOf3DFeaturesEXT = extImage2DViewOf3DFeatures.getJSONObject(KEY_IMAGE_2D_VIEW_OF_3D_FEATURES_EXT);
-                    store.startGroup(convertName(KEY_IMAGE_2D_VIEW_OF_3D_FEATURES_EXT));
+                    store.startGroup(getConvertedName(KEY_IMAGE_2D_VIEW_OF_3D_FEATURES_EXT));
                     {
                         emitBoolean(store, image2DViewOf3DFeaturesEXT, KEY_IMAGE_2D_VIEW_OF_3D);
                         emitBoolean(store, image2DViewOf3DFeaturesEXT, KEY_SAMPLER_2D_VIEW_OF_3D);
@@ -1595,10 +1602,10 @@ ENUM_KEY_VK_EXT_PRIMITIVE_TOPOLOGY_LIST_RESTART);
         try {
             JSONObject khrVertexAttributeDivisorFeatures = parent.getJSONObject(KEY_VK_KHR_VERTEX_ATTRIBUTE_DIVISOR);
             try {
-                store.startGroup(convertName(KEY_VK_KHR_VERTEX_ATTRIBUTE_DIVISOR));
+                store.startGroup(getConvertedName(KEY_VK_KHR_VERTEX_ATTRIBUTE_DIVISOR));
                 {
                     JSONObject vertexAttributeDivisorFeaturesKHR = khrVertexAttributeDivisorFeatures.getJSONObject(KEY_VERTEX_ATTRIBUTE_DIVISOR_FEATURES_KHR);
-                    store.startGroup(convertName(KEY_VERTEX_ATTRIBUTE_DIVISOR_FEATURES_KHR));
+                    store.startGroup(getConvertedName(KEY_VERTEX_ATTRIBUTE_DIVISOR_FEATURES_KHR));
                     {
                         emitBoolean(store, vertexAttributeDivisorFeaturesKHR, KEY_VERTEX_ATTRIBUTE_INSTANCE_RATE_DIVISOR);
                         emitBoolean(store, vertexAttributeDivisorFeaturesKHR, KEY_VERTEX_ATTRIBUTE_INSTANCE_RATE_ZERO_DIVISOR);
@@ -1621,12 +1628,12 @@ ENUM_KEY_VK_EXT_PRIMITIVE_TOPOLOGY_LIST_RESTART);
             JSONObject extCustomborderColorFeatures =
                     parent.getJSONObject(KEY_VK_EXT_CUSTOM_BORDER_COLOR);
             try {
-                store.startGroup(convertName(KEY_VK_EXT_CUSTOM_BORDER_COLOR));
+                store.startGroup(getConvertedName(KEY_VK_EXT_CUSTOM_BORDER_COLOR));
                 {
                     JSONObject customBorderColorFeaturesEXT =
                             extCustomborderColorFeatures.getJSONObject(
                                     KEY_CUSTOM_BORDER_COLOR_FEATURES_EXT);
-                    store.startGroup(convertName(KEY_CUSTOM_BORDER_COLOR_FEATURES_EXT));
+                    store.startGroup(getConvertedName(KEY_CUSTOM_BORDER_COLOR_FEATURES_EXT));
                     {
                         emitBoolean(
                                 store,
@@ -1652,12 +1659,12 @@ ENUM_KEY_VK_EXT_PRIMITIVE_TOPOLOGY_LIST_RESTART);
             JSONObject extPrimitiveTopologyListRestartFeatures =
                     parent.getJSONObject(KEY_VK_EXT_PRIMITIVE_TOPOLOGY_LIST_RESTART);
             try {
-                store.startGroup(convertName(KEY_VK_EXT_PRIMITIVE_TOPOLOGY_LIST_RESTART));
+                store.startGroup(getConvertedName(KEY_VK_EXT_PRIMITIVE_TOPOLOGY_LIST_RESTART));
                 {
                     JSONObject primitiveTopologyListRestartFeaturesEXT =
                             extPrimitiveTopologyListRestartFeatures.getJSONObject(
                                     KEY_PRIMITIVE_TOPOLOGY_LIST_RESTART_FEATURES_EXT);
-                    store.startGroup(convertName(KEY_PRIMITIVE_TOPOLOGY_LIST_RESTART_FEATURES_EXT));
+                    store.startGroup(getConvertedName(KEY_PRIMITIVE_TOPOLOGY_LIST_RESTART_FEATURES_EXT));
                     {
                         emitBoolean(
                                 store,
@@ -1686,12 +1693,12 @@ ENUM_KEY_VK_EXT_PRIMITIVE_TOPOLOGY_LIST_RESTART);
             JSONObject extTransformFeedbackFeatures =
                     parent.getJSONObject(KEY_VK_EXT_TRANSFORM_FEEDBACK);
             try {
-                store.startGroup(convertName(KEY_VK_EXT_TRANSFORM_FEEDBACK));
+                store.startGroup(getConvertedName(KEY_VK_EXT_TRANSFORM_FEEDBACK));
                 {
                     JSONObject transformFeedbackFeaturesEXT =
                             extTransformFeedbackFeatures.getJSONObject(
                                     KEY_TRANSFORM_FEEDBACK_FEATURES_EXT);
-                    store.startGroup(convertName(KEY_TRANSFORM_FEEDBACK_FEATURES_EXT));
+                    store.startGroup(getConvertedName(KEY_TRANSFORM_FEEDBACK_FEATURES_EXT));
                     {
                         emitBoolean(store, transformFeedbackFeaturesEXT, KEY_GEOMETRY_STREAMS);
                         emitBoolean(store, transformFeedbackFeaturesEXT, KEY_TRANSFORM_FEEDBACK);
@@ -1714,13 +1721,13 @@ ENUM_KEY_VK_EXT_PRIMITIVE_TOPOLOGY_LIST_RESTART);
             JSONObject extProvokingVertexFeatures =
                     parent.getJSONObject(KEY_VK_EXT_PROVOKING_VERTEX);
             try {
-                store.startGroup(convertName(KEY_VK_EXT_PROVOKING_VERTEX));
+                store.startGroup(getConvertedName(KEY_VK_EXT_PROVOKING_VERTEX));
                 {
                     JSONObject provokingVertexFeaturesEXT =
                             extProvokingVertexFeatures.getJSONObject(
                                     KEY_PROVOKING_VERTEX_FEATURES_EXT);
 
-                    store.startGroup(convertName(KEY_PROVOKING_VERTEX_FEATURES_EXT));
+                    store.startGroup(getConvertedName(KEY_PROVOKING_VERTEX_FEATURES_EXT));
                     {
                         emitBoolean(store, provokingVertexFeaturesEXT, KEY_PROVOKING_VERTEX_LAST);
 
@@ -1747,12 +1754,12 @@ ENUM_KEY_VK_EXT_PRIMITIVE_TOPOLOGY_LIST_RESTART);
             JSONObject extIndexTypeUint8Features =
                     parent.getJSONObject(KEY_VK_EXT_INDEX_TYPE_UINT8);
             try {
-                store.startGroup(convertName(KEY_VK_EXT_INDEX_TYPE_UINT8));
+                store.startGroup(getConvertedName(KEY_VK_EXT_INDEX_TYPE_UINT8));
                 {
                     JSONObject indexTypeUint8FeaturesEXT =
                             extIndexTypeUint8Features.getJSONObject(
                                     KEY_INDEX_TYPE_UINT8_FEATURES_EXT);
-                    store.startGroup(convertName(KEY_INDEX_TYPE_UINT8_FEATURES_EXT));
+                    store.startGroup(getConvertedName(KEY_INDEX_TYPE_UINT8_FEATURES_EXT));
                     {
                         emitBoolean(store, indexTypeUint8FeaturesEXT, KEY_INDEX_TYPE_UINT8);
                     }
@@ -1774,12 +1781,12 @@ ENUM_KEY_VK_EXT_PRIMITIVE_TOPOLOGY_LIST_RESTART);
             JSONObject khrIndexTypeUint8Features =
                     parent.getJSONObject(KEY_VK_KHR_INDEX_TYPE_UINT8);
             try {
-                store.startGroup(convertName(KEY_VK_KHR_INDEX_TYPE_UINT8));
+                store.startGroup(getConvertedName(KEY_VK_KHR_INDEX_TYPE_UINT8));
                 {
                     JSONObject indexTypeUint8FeaturesKHR =
                             khrIndexTypeUint8Features.getJSONObject(
                                     KEY_INDEX_TYPE_UINT8_FEATURES_KHR);
-                    store.startGroup(convertName(KEY_INDEX_TYPE_UINT8_FEATURES_KHR));
+                    store.startGroup(getConvertedName(KEY_INDEX_TYPE_UINT8_FEATURES_KHR));
                     {
                         emitBoolean(store, indexTypeUint8FeaturesKHR, KEY_INDEX_TYPE_UINT8);
                     }
@@ -1800,11 +1807,11 @@ ENUM_KEY_VK_EXT_PRIMITIVE_TOPOLOGY_LIST_RESTART);
         try {
             JSONObject khr8bitStorageFeatures = parent.getJSONObject(KEY_VK_KHR_8BIT_STORAGE);
             try {
-                store.startGroup(convertName(KEY_VK_KHR_8BIT_STORAGE));
+                store.startGroup(getConvertedName(KEY_VK_KHR_8BIT_STORAGE));
                 {
                     JSONObject bit8StorageFeaturesKHR=
                             khr8bitStorageFeatures.getJSONObject(KEY_BIT8_STORAGE_FEATURES_KHR);
-                    store.startGroup(convertName(KEY_BIT8_STORAGE_FEATURES_KHR));
+                    store.startGroup(getConvertedName(KEY_BIT8_STORAGE_FEATURES_KHR));
                     {
                         emitBoolean(store, bit8StorageFeaturesKHR, KEY_STORAGE_BUFFER_8BIT_ACCESS);
                         emitBoolean(store, bit8StorageFeaturesKHR, KEY_STORAGE_PUSH_CONSTANT8);
@@ -1828,12 +1835,12 @@ ENUM_KEY_VK_EXT_PRIMITIVE_TOPOLOGY_LIST_RESTART);
             JSONObject khrShaderFloat16Int8Features =
                     parent.getJSONObject(KEY_VK_KHR_SHADER_FLOAT16_INT8);
             try {
-                store.startGroup(convertName(KEY_VK_KHR_SHADER_FLOAT16_INT8));
+                store.startGroup(getConvertedName(KEY_VK_KHR_SHADER_FLOAT16_INT8));
                 {
                     JSONObject shaderFloat16Int8FeaturesKHR =
                             khrShaderFloat16Int8Features.getJSONObject(
                                     KEY_SHADER_FLOAT16_INT8_FEATURES_KHR);
-                    store.startGroup(convertName(KEY_SHADER_FLOAT16_INT8_FEATURES_KHR));
+                    store.startGroup(getConvertedName(KEY_SHADER_FLOAT16_INT8_FEATURES_KHR));
                     {
                         emitBoolean(store, shaderFloat16Int8FeaturesKHR, KEY_SHADER_FLOAT16);
                         emitBoolean(store, shaderFloat16Int8FeaturesKHR, KEY_SHADER_INT8);
@@ -1843,7 +1850,7 @@ ENUM_KEY_VK_EXT_PRIMITIVE_TOPOLOGY_LIST_RESTART);
                     JSONObject float16Int8FeaturesKHR =
                             khrShaderFloat16Int8Features.getJSONObject(
                                     KEY_FLOAT16_INT8_FEATURES_KHR);
-                    store.startGroup(convertName(KEY_FLOAT16_INT8_FEATURES_KHR));
+                    store.startGroup(getConvertedName(KEY_FLOAT16_INT8_FEATURES_KHR));
                     {
                         emitBoolean(store, float16Int8FeaturesKHR, KEY_SHADER_FLOAT16);
                         emitBoolean(store, float16Int8FeaturesKHR, KEY_SHADER_INT8);
@@ -1866,12 +1873,12 @@ ENUM_KEY_VK_EXT_PRIMITIVE_TOPOLOGY_LIST_RESTART);
             JSONObject khrShaderIntegerDotProductFeatures =
                     parent.getJSONObject(KEY_VK_KHR_SHADER_INTEGER_DOT_PRODUCT);
             try {
-                store.startGroup(convertName(KEY_VK_KHR_SHADER_INTEGER_DOT_PRODUCT));
+                store.startGroup(getConvertedName(KEY_VK_KHR_SHADER_INTEGER_DOT_PRODUCT));
                 {
                     JSONObject shaderIntegerDotProductFeaturesKHR =
                             khrShaderIntegerDotProductFeatures.getJSONObject(
                                     KEY_SHADER_INTEGER_DOT_PRODUCT_FEATURES_KHR);
-                    store.startGroup(convertName(KEY_SHADER_INTEGER_DOT_PRODUCT_FEATURES_KHR));
+                    store.startGroup(getConvertedName(KEY_SHADER_INTEGER_DOT_PRODUCT_FEATURES_KHR));
                     {
                         emitBoolean(
                                 store,
@@ -1896,12 +1903,12 @@ ENUM_KEY_VK_EXT_PRIMITIVE_TOPOLOGY_LIST_RESTART);
             JSONObject khrShaderSubgroupExtendedTypesFeatures =
                     parent.getJSONObject(KEY_VK_KHR_SHADER_SUBGROUP_EXTENDED_TYPES);
             try {
-                store.startGroup(convertName(KEY_VK_KHR_SHADER_SUBGROUP_EXTENDED_TYPES));
+                store.startGroup(getConvertedName(KEY_VK_KHR_SHADER_SUBGROUP_EXTENDED_TYPES));
                 {
                     JSONObject shaderSubgroupExtendedTypesFeaturesKHR =
                             khrShaderSubgroupExtendedTypesFeatures.getJSONObject(
                                     KEY_SHADER_SUBGROUP_EXTENDED_TYPES_FEATURES_KHR);
-                    store.startGroup(convertName(KEY_SHADER_SUBGROUP_EXTENDED_TYPES_FEATURES_KHR));
+                    store.startGroup(getConvertedName(KEY_SHADER_SUBGROUP_EXTENDED_TYPES_FEATURES_KHR));
                     {
                         emitBoolean(
                                 store,
@@ -1926,13 +1933,13 @@ ENUM_KEY_VK_EXT_PRIMITIVE_TOPOLOGY_LIST_RESTART);
             JSONObject extShaderSubgroupUniformControlFlowFeatures =
                     parent.getJSONObject(KEY_VK_KHR_SHADER_SUBGROUP_UNIFORM_CONTROL_FLOW);
             try {
-                store.startGroup(convertName(KEY_VK_KHR_SHADER_SUBGROUP_UNIFORM_CONTROL_FLOW));
+                store.startGroup(getConvertedName(KEY_VK_KHR_SHADER_SUBGROUP_UNIFORM_CONTROL_FLOW));
                 {
                     JSONObject shaderSubgroupUniformControlFlowFeaturesKHR =
                             extShaderSubgroupUniformControlFlowFeatures.getJSONObject(
                                     KEY_SHADER_SUBGROUP_UNIFORM_CONTROL_FLOW_FEATURES_KHR);
                     store.startGroup(
-                            convertName(KEY_SHADER_SUBGROUP_UNIFORM_CONTROL_FLOW_FEATURES_KHR));
+                            getConvertedName(KEY_SHADER_SUBGROUP_UNIFORM_CONTROL_FLOW_FEATURES_KHR));
                     {
                         emitBoolean(
                                 store,
@@ -1957,12 +1964,12 @@ ENUM_KEY_VK_EXT_PRIMITIVE_TOPOLOGY_LIST_RESTART);
             JSONObject extLineRasterizationFeatures =
                     parent.getJSONObject(KEY_VK_EXT_LINE_RASTERIZATION);
             try {
-                store.startGroup(convertName(KEY_VK_EXT_LINE_RASTERIZATION));
+                store.startGroup(getConvertedName(KEY_VK_EXT_LINE_RASTERIZATION));
                 {
                     JSONObject lineRasterizationFeaturesEXT =
                             extLineRasterizationFeatures.getJSONObject(
                                     KEY_LINE_RASTERIZATION_FEATURES_EXT);
-                    store.startGroup(convertName(KEY_LINE_RASTERIZATION_FEATURES_EXT));
+                    store.startGroup(getConvertedName(KEY_LINE_RASTERIZATION_FEATURES_EXT));
                     {
                         emitBoolean(store, lineRasterizationFeaturesEXT, KEY_BRESENHAM_LINES);
                         emitBoolean(store, lineRasterizationFeaturesEXT, KEY_RECTANGULAR_LINES);
@@ -1993,12 +2000,12 @@ ENUM_KEY_VK_EXT_PRIMITIVE_TOPOLOGY_LIST_RESTART);
             JSONObject extPrimitivesGeneratedQueryFeatures =
                     parent.getJSONObject(KEY_VK_EXT_PRIMITIVES_GENERATED_QUERY);
             try {
-                store.startGroup(convertName(KEY_VK_EXT_PRIMITIVES_GENERATED_QUERY));
+                store.startGroup(getConvertedName(KEY_VK_EXT_PRIMITIVES_GENERATED_QUERY));
                 {
                     JSONObject primitivesGeneratedQueryFeaturesEXT =
                             extPrimitivesGeneratedQueryFeatures.getJSONObject(
                                     KEY_PRIMITIVES_GENERATED_QUERY_FEATURES_EXT);
-                    store.startGroup(convertName(KEY_PRIMITIVES_GENERATED_QUERY_FEATURES_EXT));
+                    store.startGroup(getConvertedName(KEY_PRIMITIVES_GENERATED_QUERY_FEATURES_EXT));
                     {
                         emitBoolean(
                                 store,
@@ -2031,12 +2038,12 @@ ENUM_KEY_VK_EXT_PRIMITIVE_TOPOLOGY_LIST_RESTART);
             JSONObject khrFloatControlsProperties =
                     parent.getJSONObject(KEY_VK_KHR_SHADER_FLOAT_CONTROLS);
             try {
-                store.startGroup(convertName(KEY_VK_KHR_SHADER_FLOAT_CONTROLS));
+                store.startGroup(getConvertedName(KEY_VK_KHR_SHADER_FLOAT_CONTROLS));
                 {
                     JSONObject floatControlsPropertiesKHR =
                             khrFloatControlsProperties.getJSONObject(
                                     KEY_FLOAT_CONTROLS_PROPERTIES_KHR);
-                    store.startGroup(convertName(KEY_FLOAT_CONTROLS_PROPERTIES_KHR));
+                    store.startGroup(getConvertedName(KEY_FLOAT_CONTROLS_PROPERTIES_KHR));
                     {
                         emitLong(
                                 store,
@@ -2123,17 +2130,17 @@ ENUM_KEY_VK_EXT_PRIMITIVE_TOPOLOGY_LIST_RESTART);
             JSONObject imgRelaxedLineRasterizationFeatures =
                     parent.getJSONObject(KEY_VK_IMG_RELAXED_LINE_RASTERIZATION);
             try {
-                store.startGroup(convertName(KEY_VK_IMG_RELAXED_LINE_RASTERIZATION));
+                store.startGroup(getConvertedName(KEY_VK_IMG_RELAXED_LINE_RASTERIZATION));
                 {
                     JSONObject relaxedLineRasterizationFeaturesIMG =
                             imgRelaxedLineRasterizationFeatures.getJSONObject(
                                     KEY_RELAXED_LINE_RASTERIZATION_FEATURES_IMG);
-                    store.startGroup(convertName(KEY_RELAXED_LINE_RASTERIZATION_FEATURES_IMG));
+                    store.startGroup(getConvertedName(KEY_RELAXED_LINE_RASTERIZATION_FEATURES_IMG));
                     {
                         emitBoolean(
                                 store,
                                 relaxedLineRasterizationFeaturesIMG,
-                                RELAXED_LINE_RASTERIZATION);
+                                KEY_RELAXED_LINE_RASTERIZATION);
                     }
                     store.endGroup();
                 }
@@ -2152,17 +2159,17 @@ ENUM_KEY_VK_EXT_PRIMITIVE_TOPOLOGY_LIST_RESTART);
         if (!extensionNameToEnum.containsKey(key)) return;
         switch (extensionNameToEnum.get(key)) {
             case ENUM_VK_KHR_VARIABLE_POINTERS:
-              emitVariablePointerFeaturesKHR(store, parent);
-              break;
+                emitVariablePointerFeaturesKHR(store, parent);
+                break;
             case ENUM_VK_KHR_DRIVER_PROPERTIES:
-              emitDriverPropertiesKHR(store, parent);
-              break;
+                emitDriverPropertiesKHR(store, parent);
+                break;
             case ENUM_KEY_VK_EXT_CUSTOM_BORDER_COLOR:
                 emitCustomBorderColorFeaturesEXT(store, parent);
-              break;
+                break;
             case ENUM_KEY_VK_EXT_IMAGE_2D_VIEW_OF_3D:
                 emitImage2DViewOf3DFeaturesEXT(store, parent);
-              break;
+                break;
             case ENUM_KEY_VK_EXT_TRANSFORM_FEEDBACK:
                 emitransformFeedbackFeaturesEXT(store, parent);
                 break;
@@ -2214,7 +2221,7 @@ ENUM_KEY_VK_EXT_PRIMITIVE_TOPOLOGY_LIST_RESTART);
     private static void emitExtensions(DeviceInfoStore store, JSONObject parent)
             throws Exception {
         JSONArray extensions = parent.getJSONArray(KEY_EXTENSIONS);
-        store.startArray(convertName(KEY_EXTENSIONS));
+        store.startArray(getConvertedName(KEY_EXTENSIONS));
         for (int i = 0; i < extensions.length(); i++) {
             JSONObject extension = extensions.getJSONObject(i);
             store.startGroup();
@@ -2235,22 +2242,22 @@ ENUM_KEY_VK_EXT_PRIMITIVE_TOPOLOGY_LIST_RESTART);
 
     private static void emitBoolean(DeviceInfoStore store, JSONObject parent, String name)
             throws Exception {
-        store.addResult(convertName(name), parent.getInt(name) != 0 ? true : false);
+        store.addResult(getConvertedName(name), parent.getInt(name) != 0 ? true : false);
     }
 
     private static void emitLong(DeviceInfoStore store, JSONObject parent, String name)
             throws Exception {
-        store.addResult(convertName(name), parent.getLong(name));
+        store.addResult(getConvertedName(name), parent.getLong(name));
     }
 
     private static void emitDouble(DeviceInfoStore store, JSONObject parent, String name)
             throws Exception {
-        store.addResult(convertName(name), parent.getDouble(name));
+        store.addResult(getConvertedName(name), parent.getDouble(name));
     }
 
     private static void emitString(DeviceInfoStore store, JSONObject parent, String name)
             throws Exception {
-        store.addResult(convertName(name), parent.getString(name));
+        store.addResult(getConvertedName(name), parent.getString(name));
     }
 
     private static void emitLongArray(DeviceInfoStore store, JSONObject parent, String name)
@@ -2260,7 +2267,7 @@ ENUM_KEY_VK_EXT_PRIMITIVE_TOPOLOGY_LIST_RESTART);
         for (int i = 0; i < jsonArray.length(); i++) {
             array[i] = jsonArray.getLong(i);
         }
-        store.addArrayResult(convertName(name), array);
+        store.addArrayResult(getConvertedName(name), array);
     }
 
     private static void emitDoubleArray(DeviceInfoStore store, JSONObject parent, String name)
@@ -2270,584 +2277,39 @@ ENUM_KEY_VK_EXT_PRIMITIVE_TOPOLOGY_LIST_RESTART);
         for (int i = 0; i < jsonArray.length(); i++) {
             array[i] = jsonArray.getDouble(i);
         }
-        store.addArrayResult(convertName(name), array);
+        store.addArrayResult(getConvertedName(name), array);
     }
 
-    private static String convertName(String name) {
-        // This translation could be done algorithmically, but in this case being able to
-        // code-search for both the original and converted names is more important.
-        switch (name) {
-            case KEY_BIT16_STORAGE_FEATURES: return "bit16_storage_features";
-            case KEY_ALPHA_TO_ONE: return "alpha_to_one";
-            case KEY_API_VERSION: return "api_version";
-            case KEY_BUFFER_DEVICE_ADDRESS: return "buffer_device_address";
-            case KEY_BUFFER_DEVICE_ADDRESS_CAPTURE_REPLAY: return "buffer_device_address_capture_replay";
-            case KEY_BUFFER_DEVICE_ADDRESS_MULTI_DEVICE: return "buffer_device_address_multi_device";
-            case KEY_BUFFER_FEATURES: return "buffer_features";
-            case KEY_BUFFER_IMAGE_GRANULARITY: return "buffer_image_granularity";
-            case KEY_COMPATIBLE_HANDLE_TYPES: return "compatible_handle_types";
-            case KEY_COMPUTE_FULL_SUBGROUPS: return "compute_full_subgroups";
-            case KEY_CONFORMANCE_VERSION: return "conformance_version";
-            case KEY_DENORM_BEHAVIOR_INDEPENDENCE: return "denorm_behavior_independence";
-            case KEY_DEPTH: return "depth";
-            case KEY_DEPTH_BIAS_CLAMP: return "depth_bias_clamp";
-            case KEY_DEPTH_BOUNDS: return "depth_bounds";
-            case KEY_DEPTH_CLAMP: return "depth_clamp";
-            case KEY_DESCRIPTION: return "description";
-            case KEY_DESCRIPTOR_BINDING_INLINE_UNIFORM_BLOCK_UPDATE_AFTER_BIND: return "descriptor_binding_inline_uniform_block_update_after_bind";
-            case KEY_DESCRIPTOR_BINDING_PARTIALLY_BOUND: return "descriptor_binding_partially_bound";
-            case KEY_DESCRIPTOR_BINDING_SAMPLED_IMAGE_UPDATE_AFTER_BIND: return "descriptor_binding_sampled_image_update_after_bind";
-            case KEY_DESCRIPTOR_BINDING_STORAGE_BUFFER_UPDATE_AFTER_BIND: return "descriptor_binding_storage_buffer_update_after_bind";
-            case KEY_DESCRIPTOR_BINDING_STORAGE_IMAGE_UPDATE_AFTER_BIND: return "descriptor_binding_storage_image_update_after_bind";
-            case KEY_DESCRIPTOR_BINDING_STORAGE_TEXEL_BUFFER_UPDATE_AFTER_BIND: return "descriptor_binding_storage_texel_buffer_update_after_bind";
-            case KEY_DESCRIPTOR_BINDING_UNIFORM_BUFFER_UPDATE_AFTER_BIND: return "descriptor_binding_uniform_buffer_update_after_bind";
-            case KEY_DESCRIPTOR_BINDING_UNIFORM_TEXEL_BUFFER_UPDATE_AFTER_BIND: return "descriptor_binding_uniform_texel_buffer_update_after_bind";
-            case KEY_DESCRIPTOR_BINDING_UPDATE_UNUSED_WHILE_PENDING: return "descriptor_binding_update_unused_while_pending";
-            case KEY_DESCRIPTOR_BINDING_VARIABLE_DESCRIPTOR_COUNT: return "descriptor_binding_variable_descriptor_count";
-            case KEY_DESCRIPTOR_INDEXING: return "descriptor_indexing";
-            case KEY_DEVICES: return "devices";
-            case KEY_DEVICE_GROUPS: return "device_groups";
-            case KEY_DEVICE_ID: return "device_id";
-            case KEY_DEVICE_LUID: return "device_luid";
-            case KEY_DEVICE_LUID_VALID: return "device_luid_valid";
-            case KEY_DEVICE_NAME: return "device_name";
-            case KEY_DEVICE_NODE_MASK: return "device_node_mask";
-            case KEY_DEVICE_TYPE: return "device_type";
-            case KEY_DEVICE_UUID: return "device_uuid";
-            case KEY_DISCRETE_QUEUE_PRIORITIES: return "discrete_queue_priorities";
-            case KEY_DRAW_INDIRECT_COUNT: return "draw_indirect_count";
-            case KEY_DRAW_INDIRECT_FIRST_INSTANCE: return "draw_indirect_first_instance";
-            case KEY_DRIVER_ID: return "driver_id";
-            case KEY_DRIVER_INFO: return "driver_info";
-            case KEY_DRIVER_NAME: return "driver_name";
-            case KEY_DRIVER_PROPERTIES_KHR: return "driver_properties_khr";
-            case KEY_DRIVER_UUID: return "driver_uuid";
-            case KEY_DRIVER_VERSION: return "driver_version";
-            case KEY_DUAL_SRC_BLEND: return "dual_src_blend";
-            case KEY_DYNAMIC_RENDERING: return "dynamic_rendering";
-            case KEY_EXPORT_FROM_IMPORTED_HANDLE_TYPES: return "export_from_imported_handle_types";
-            case KEY_EXTENSIONS: return "extensions";
-            case KEY_EXTENSION_NAME: return "extension_name";
-            case KEY_EXTERNAL_FENCE_FEATURES: return "external_fence_features";
-            case KEY_EXTERNAL_FENCE_PROPERTIES: return "external_fence_properties";
-            case KEY_EXTERNAL_SEMAPHORE_FEATURES: return "external_semaphore_features";
-            case KEY_EXTERNAL_SEMAPHORE_PROPERTIES: return "external_semaphore_properties";
-            case KEY_FEATURES: return "features";
-            case KEY_FILL_MODE_NON_SOLID: return "fill_mode_non_solid";
-            case KEY_FILTER_MINMAX_IMAGE_COMPONENT_MAPPING: return "filter_minmax_image_component_mapping";
-            case KEY_FILTER_MINMAX_SINGLE_COMPONENT_FORMATS: return "filter_minmax_single_component_formats";
-            case KEY_FLAGS: return "flags";
-            case KEY_FORMATS: return "formats";
-            case KEY_FRAGMENT_STORES_AND_ATOMICS: return "fragment_stores_and_atomics";
-            case KEY_FRAMEBUFFER_COLOR_SAMPLE_COUNTS: return "framebuffer_color_sample_counts";
-            case KEY_FRAMEBUFFER_DEPTH_SAMPLE_COUNTS: return "framebuffer_depth_sample_counts";
-            case KEY_FRAMEBUFFER_INTEGER_COLOR_SAMPLE_COUNTS: return "framebuffer_integer_color_sample_counts";
-            case KEY_FRAMEBUFFER_NO_ATTACHMENTS_SAMPLE_COUNTS: return "framebuffer_no_attachments_sample_counts";
-            case KEY_FRAMEBUFFER_STENCIL_SAMPLE_COUNTS: return "framebuffer_stencil_sample_counts";
-            case KEY_FULL_DRAW_INDEX_UINT32: return "full_draw_index_uint32";
-            case KEY_GEOMETRY_SHADER: return "geometry_shader";
-            case KEY_HEAP_INDEX: return "heap_index";
-            case KEY_HEIGHT: return "height";
-            case KEY_HOST_QUERY_RESET: return "host_query_reset";
-            case KEY_ID_PROPERTIES: return "id_properties";
-            case KEY_IMAGELESS_FRAMEBUFFER: return "imageless_framebuffer";
-            case KEY_IMAGE_CUBE_ARRAY: return "image_cube_array";
-            case KEY_IMPLEMENTATION_VERSION: return "implementation_version";
-            case KEY_INDEPENDENT_BLEND: return "independent_blend";
-            case KEY_INDEPENDENT_RESOLVE: return "independent_resolve";
-            case KEY_INDEPENDENT_RESOLVE_NONE: return "independent_resolve_none";
-            case KEY_INHERITED_QUERIES: return "inherited_queries";
-            case KEY_INLINE_UNIFORM_BLOCK: return "inline_uniform_block";
-            case KEY_INSTANCE_API_VERSION: return "instance_api_version";
-            case KEY_INTEGER_DOT_PRODUCT_16BIT_MIXED_SIGNEDNESS_ACCELERATED: return "integer_dot_product_16bit_mixed_signedness_accelerated";
-            case KEY_INTEGER_DOT_PRODUCT_16BIT_SIGNED_ACCELERATED: return "integer_dot_product_16bit_signed_accelerated";
-            case KEY_INTEGER_DOT_PRODUCT_16BIT_UNSIGNED_ACCELERATED: return "integer_dot_product_16bit_unsigned_accelerated";
-            case KEY_INTEGER_DOT_PRODUCT_32BIT_MIXED_SIGNEDNESS_ACCELERATED: return "integer_dot_product_32bit_mixed_signedness_accelerated";
-            case KEY_INTEGER_DOT_PRODUCT_32BIT_SIGNED_ACCELERATED: return "integer_dot_product_32bit_signed_accelerated";
-            case KEY_INTEGER_DOT_PRODUCT_32BIT_UNSIGNED_ACCELERATED: return "integer_dot_product_32bit_unsigned_accelerated";
-            case KEY_INTEGER_DOT_PRODUCT_4X8BIT_PACKED_MIXED_SIGNEDNESS_ACCELERATED: return "integer_dot_product_4x8bit_packed_mixed_signedness_accelerated";
-            case KEY_INTEGER_DOT_PRODUCT_4X8BIT_PACKED_SIGNED_ACCELERATED: return "integer_dot_product_4x8bit_packed_signed_accelerated";
-            case KEY_INTEGER_DOT_PRODUCT_4X8BIT_PACKED_UNSIGNED_ACCELERATED: return "integer_dot_product_4x8bit_packed_unsigned_accelerated";
-            case KEY_INTEGER_DOT_PRODUCT_64BIT_MIXED_SIGNEDNESS_ACCELERATED: return "integer_dot_product_64bit_mixed_signedness_accelerated";
-            case KEY_INTEGER_DOT_PRODUCT_64BIT_SIGNED_ACCELERATED: return "integer_dot_product_64bit_signed_accelerated";
-            case KEY_INTEGER_DOT_PRODUCT_64BIT_UNSIGNED_ACCELERATED: return "integer_dot_product_64bit_unsigned_accelerated";
-            case KEY_INTEGER_DOT_PRODUCT_8BIT_MIXED_SIGNEDNESS_ACCELERATED: return "integer_dot_product_8bit_mixed_signedness_accelerated";
-            case KEY_INTEGER_DOT_PRODUCT_8BIT_SIGNED_ACCELERATED: return "integer_dot_product_8bit_signed_accelerated";
-            case KEY_INTEGER_DOT_PRODUCT_8BIT_UNSIGNED_ACCELERATED: return "integer_dot_product_8bit_unsigned_accelerated";
-            case KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_16BIT_MIXED_SIGNEDNESS_ACCELERATED: return "integer_dot_product_accumulating_saturating_16bit_mixed_signedness_accelerated";
-            case KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_16BIT_SIGNED_ACCELERATED: return "integer_dot_product_accumulating_saturating_16bit_signed_accelerated";
-            case KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_16BIT_UNSIGNED_ACCELERATED: return "integer_dot_product_accumulating_saturating_16bit_unsigned_accelerated";
-            case KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_32BIT_MIXED_SIGNEDNESS_ACCELERATED: return "integer_dot_product_accumulating_saturating_32bit_mixed_signedness_accelerated";
-            case KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_32BIT_SIGNED_ACCELERATED: return "integer_dot_product_accumulating_saturating_32bit_signed_accelerated";
-            case KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_32BIT_UNSIGNED_ACCELERATED: return "integer_dot_product_accumulating_saturating_32bit_unsigned_accelerated";
-            case KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_4X8BIT_PACKED_MIXED_SIGNEDNESS_ACCELERATED: return "integer_dot_product_accumulating_saturating_4x8bit_packed_mixed_signedness_accelerated";
-            case KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_4X8BIT_PACKED_SIGNED_ACCELERATED: return "integer_dot_product_accumulating_saturating_4x8bit_packed_signed_accelerated";
-            case KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_4X8BIT_PACKED_UNSIGNED_ACCELERATED: return "integer_dot_product_accumulating_saturating_4x8bit_packed_unsigned_accelerated";
-            case KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_64BIT_MIXED_SIGNEDNESS_ACCELERATED: return "integer_dot_product_accumulating_saturating_64bit_mixed_signedness_accelerated";
-            case KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_64BIT_SIGNEDNESS_ACCELERATED: return "integer_dot_product_accumulating_saturating_64bit_signed_accelerated";
-            case KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_64BIT_UNSIGNED_ACCELERATED: return "integer_dot_product_accumulating_saturating_64bit_unsigned_accelerated";
-            case KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_8BIT_MIXED_SIGNEDNESS_ACCELERATED: return "integer_dot_product_accumulating_saturating_8bit_mixed_signedness_accelerated";
-            case KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_8BIT_SIGNED_ACCELERATED: return "integer_dot_product_accumulating_saturating_8bit_signed_accelerated";
-            case KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_8BIT_UNSIGNED_ACCELERATED: return "integer_dot_product_accumulating_saturating_8bit_unsigned_accelerated";
-            case KEY_LARGE_POINTS: return "large_points";
-            case KEY_LAYERS: return "layers";
-            case KEY_LAYER_NAME: return "layer_name";
-            case KEY_LIMITS: return "limits";
-            case KEY_LINEAR_TILING_FEATURES: return "linear_tiling_features";
-            case KEY_LINE_WIDTH_GRANULARITY: return "line_width_granularity";
-            case KEY_LINE_WIDTH_RANGE: return "line_width_range";
-            case KEY_LOGIC_OP: return "logic_op";
-            case KEY_MAINTENANCE4: return "maintenance4";
-            case KEY_MAINTENANCE_3_PROPERTIES: return "maintenance_3_properties";
-            case KEY_MAJOR: return "major";
-            case KEY_MAX_BOUND_DESCRIPTOR_SETS: return "max_bound_descriptor_sets";
-            case KEY_MAX_BUFFER_SIZE: return "max_buffer_size";
-            case KEY_MAX_CLIP_DISTANCES: return "max_clip_distances";
-            case KEY_MAX_COLOR_ATTACHMENTS: return "max_color_attachments";
-            case KEY_MAX_COMBINED_CLIP_AND_CULL_DISTANCES: return "max_combined_clip_and_cull_distances";
-            case KEY_MAX_COMPUTE_SHARED_MEMORY_SIZE: return "max_compute_shared_memory_size";
-            case KEY_MAX_COMPUTE_WORKGROUP_SUBGROUPS: return "max_compute_workgroup_subgroups";
-            case KEY_MAX_COMPUTE_WORK_GROUP_COUNT: return "max_compute_work_group_count";
-            case KEY_MAX_COMPUTE_WORK_GROUP_INVOCATIONS: return "max_compute_work_group_invocations";
-            case KEY_MAX_COMPUTE_WORK_GROUP_SIZE: return "max_compute_work_group_size";
-            case KEY_MAX_CULL_DISTANCES: return "max_cull_distances";
-            case KEY_MAX_DESCRIPTOR_SET_INLINE_UNIFORM_BLOCKS: return "max_descriptor_set_inline_uniform_blocks";
-            case KEY_MAX_DESCRIPTOR_SET_INPUT_ATTACHMENTS: return "max_descriptor_set_input_attachments";
-            case KEY_MAX_DESCRIPTOR_SET_SAMPLED_IMAGES: return "max_descriptor_set_sampled_images";
-            case KEY_MAX_DESCRIPTOR_SET_SAMPLERS: return "max_descriptor_set_samplers";
-            case KEY_MAX_DESCRIPTOR_SET_STORAGE_BUFFERS: return "max_descriptor_set_storage_buffers";
-            case KEY_MAX_DESCRIPTOR_SET_STORAGE_BUFFERS_DYNAMIC: return "max_descriptor_set_storage_buffers_dynamic";
-            case KEY_MAX_DESCRIPTOR_SET_STORAGE_IMAGES: return "max_descriptor_set_storage_images";
-            case KEY_MAX_DESCRIPTOR_SET_UNIFORM_BUFFERS: return "max_descriptor_set_uniform_buffers";
-            case KEY_MAX_DESCRIPTOR_SET_UNIFORM_BUFFERS_DYNAMIC: return "max_descriptor_set_uniform_buffers_dynamic";
-            case KEY_MAX_DESCRIPTOR_SET_UPDATE_AFTER_BIND_INLINE_UNIFORM_BLOCKS: return "max_descriptor_set_update_after_bind_inline_uniform_blocks";
-            case KEY_MAX_DESCRIPTOR_SET_UPDATE_AFTER_BIND_INPUT_ATTACHMENTS: return "max_descriptor_set_update_after_bind_input_attachments";
-            case KEY_MAX_DESCRIPTOR_SET_UPDATE_AFTER_BIND_SAMPLED_IMAGES: return "max_descriptor_set_update_after_bind_sampled_images";
-            case KEY_MAX_DESCRIPTOR_SET_UPDATE_AFTER_BIND_SAMPLERS: return "max_descriptor_set_update_after_bind_samplers";
-            case KEY_MAX_DESCRIPTOR_SET_UPDATE_AFTER_BIND_STORAGE_BUFFERS: return "max_descriptor_set_update_after_bind_storage_buffers";
-            case KEY_MAX_DESCRIPTOR_SET_UPDATE_AFTER_BIND_STORAGE_BUFFERS_DYNAMIC: return "max_descriptor_set_update_after_bind_storage_buffers_dynamic";
-            case KEY_MAX_DESCRIPTOR_SET_UPDATE_AFTER_BIND_STORAGE_IMAGES: return "max_descriptor_set_update_after_bind_storage_images";
-            case KEY_MAX_DESCRIPTOR_SET_UPDATE_AFTER_BIND_UNIFORM_BUFFERS: return "max_descriptor_set_update_after_bind_uniform_buffers";
-            case KEY_MAX_DESCRIPTOR_SET_UPDATE_AFTER_BIND_UNIFORM_BUFFERS_DYNAMIC: return "max_descriptor_set_update_after_bind_uniform_buffers_dynamic";
-            case KEY_MAX_DRAW_INDEXED_INDEX_VALUE: return "max_draw_indexed_index_value";
-            case KEY_MAX_DRAW_INDIRECT_COUNT: return "max_draw_indirect_count";
-            case KEY_MAX_FRAGMENT_COMBINED_OUTPUT_RESOURCES: return "max_fragment_combined_output_resources";
-            case KEY_MAX_FRAGMENT_DUAL_SRC_ATTACHMENTS: return "max_fragment_dual_src_attachments";
-            case KEY_MAX_FRAGMENT_INPUT_COMPONENTS: return "max_fragment_input_components";
-            case KEY_MAX_FRAGMENT_OUTPUT_ATTACHMENTS: return "max_fragment_output_attachments";
-            case KEY_MAX_FRAMEBUFFER_HEIGHT: return "max_framebuffer_height";
-            case KEY_MAX_FRAMEBUFFER_LAYERS: return "max_framebuffer_layers";
-            case KEY_MAX_FRAMEBUFFER_WIDTH: return "max_framebuffer_width";
-            case KEY_MAX_GEOMETRY_INPUT_COMPONENTS: return "max_geometry_input_components";
-            case KEY_MAX_GEOMETRY_OUTPUT_COMPONENTS: return "max_geometry_output_components";
-            case KEY_MAX_GEOMETRY_OUTPUT_VERTICES: return "max_geometry_output_vertices";
-            case KEY_MAX_GEOMETRY_SHADER_INVOCATIONS: return "max_geometry_shader_invocations";
-            case KEY_MAX_GEOMETRY_TOTAL_OUTPUT_COMPONENTS: return "max_geometry_total_output_components";
-            case KEY_MAX_IMAGE_ARRAY_LAYERS: return "max_image_array_layers";
-            case KEY_MAX_IMAGE_DIMENSION_1D: return "max_image_dimension_1d";
-            case KEY_MAX_IMAGE_DIMENSION_2D: return "max_image_dimension_2d";
-            case KEY_MAX_IMAGE_DIMENSION_3D: return "max_image_dimension_3d";
-            case KEY_MAX_IMAGE_DIMENSION_CUBE: return "max_image_dimension_cube";
-            case KEY_MAX_INLINE_UNIFORM_BLOCK_SIZE: return "max_inline_uniform_block_size";
-            case KEY_MAX_INLINE_UNIFORM_TOTAL_SIZE: return "max_inline_uniform_total_size";
-            case KEY_MAX_INTERPOLATION_OFFSET: return "max_interpolation_offset";
-            case KEY_MAX_MEMORY_ALLOCATION_COUNT: return "max_memory_allocation_count";
-            case KEY_MAX_MEMORY_ALLOCATION_SIZE: return "max_memory_allocation_size";
-            case KEY_MAX_MULTIVIEW_INSTANCE_INDEX: return "max_multiview_instance_index";
-            case KEY_MAX_MULTIVIEW_VIEW_COUNT: return "max_multiview_view_count";
-            case KEY_MAX_PER_SET_DESCRIPTORS: return "max_per_set_descriptors";
-            case KEY_MAX_PER_STAGE_DESCRIPTOR_INLINE_UNIFORM_BLOCKS: return "max_per_stage_descriptor_inline_uniform_blocks";
-            case KEY_MAX_PER_STAGE_DESCRIPTOR_INPUT_ATTACHMENTS: return "max_per_stage_descriptor_input_attachments";
-            case KEY_MAX_PER_STAGE_DESCRIPTOR_SAMPLED_IMAGES: return "max_per_stage_descriptor_sampled_images";
-            case KEY_MAX_PER_STAGE_DESCRIPTOR_SAMPLERS: return "max_per_stage_descriptor_samplers";
-            case KEY_MAX_PER_STAGE_DESCRIPTOR_STORAGE_BUFFERS: return "max_per_stage_descriptor_storage_buffers";
-            case KEY_MAX_PER_STAGE_DESCRIPTOR_STORAGE_IMAGES: return "max_per_stage_descriptor_storage_images";
-            case KEY_MAX_PER_STAGE_DESCRIPTOR_UNIFORM_BUFFERS: return "max_per_stage_descriptor_uniform_buffers";
-            case KEY_MAX_PER_STAGE_DESCRIPTOR_UPDATE_AFTER_BIND_INLINE_UNIFORM_BLOCKS: return "max_per_stage_descriptor_update_after_bind_inline_uniform_blocks";
-            case KEY_MAX_PER_STAGE_DESCRIPTOR_UPDATE_AFTER_BIND_INPUT_ATTACHMENTS: return "max_per_stage_descriptor_update_after_bind_input_attachments";
-            case KEY_MAX_PER_STAGE_DESCRIPTOR_UPDATE_AFTER_BIND_SAMPLED_IMAGES: return "max_per_stage_descriptor_update_after_bind_sampled_images";
-            case KEY_MAX_PER_STAGE_DESCRIPTOR_UPDATE_AFTER_BIND_SAMPLERS: return "max_per_stage_descriptor_update_after_bind_samplers";
-            case KEY_MAX_PER_STAGE_DESCRIPTOR_UPDATE_AFTER_BIND_STORAGE_BUFFERS: return "max_per_stage_descriptor_update_after_bind_storage_buffers";
-            case KEY_MAX_PER_STAGE_DESCRIPTOR_UPDATE_AFTER_BIND_STORAGE_IMAGES: return "max_per_stage_descriptor_update_after_bind_storage_images";
-            case KEY_MAX_PER_STAGE_DESCRIPTOR_UPDATE_AFTER_BIND_UNIFORM_BUFFERS: return "max_per_stage_descriptor_update_after_bind_uniform_buffers";
-            case KEY_MAX_PER_STAGE_RESOURCES: return "max_per_stage_resources";
-            case KEY_MAX_PER_STAGE_UPDATE_AFTER_BIND_RESOURCES: return "max_per_stage_update_after_bind_resources";
-            case KEY_MAX_PUSH_CONSTANTS_SIZE: return "max_push_constants_size";
-            case KEY_MAX_SAMPLER_ALLOCATION_COUNT: return "max_sampler_allocation_count";
-            case KEY_MAX_SAMPLER_ANISOTROPY: return "max_sampler_anisotropy";
-            case KEY_MAX_SAMPLER_LOD_BIAS: return "max_sampler_lod_bias";
-            case KEY_MAX_SAMPLE_MASK_WORDS: return "max_sample_mask_words";
-            case KEY_MAX_STORAGE_BUFFER_RANGE: return "max_storage_buffer_range";
-            case KEY_MAX_SUBGROUP_SIZE: return "max_subgroup_size";
-            case KEY_MAX_TESSELLATION_CONTROL_PER_PATCH_OUTPUT_COMPONENTS: return "max_tessellation_control_per_patch_output_components";
-            case KEY_MAX_TESSELLATION_CONTROL_PER_VERTEX_INPUT_COMPONENTS: return "max_tessellation_control_per_vertex_input_components";
-            case KEY_MAX_TESSELLATION_CONTROL_PER_VERTEX_OUTPUT_COMPONENTS: return "max_tessellation_control_per_vertex_output_components";
-            case KEY_MAX_TESSELLATION_CONTROL_TOTAL_OUTPUT_COMPONENTS: return "max_tessellation_control_total_output_components";
-            case KEY_MAX_TESSELLATION_EVALUATION_INPUT_COMPONENTS: return "max_tessellation_evaluation_input_components";
-            case KEY_MAX_TESSELLATION_EVALUATION_OUTPUT_COMPONENTS: return "max_tessellation_evaluation_output_components";
-            case KEY_MAX_TESSELLATION_GENERATION_LEVEL: return "max_tessellation_generation_level";
-            case KEY_MAX_TESSELLATION_PATCH_SIZE: return "max_tessellation_patch_size";
-            case KEY_MAX_TEXEL_BUFFER_ELEMENTS: return "max_texel_buffer_elements";
-            case KEY_MAX_TEXEL_GATHER_OFFSET: return "max_texel_gather_offset";
-            case KEY_MAX_TEXEL_OFFSET: return "max_texel_offset";
-            case KEY_MAX_TIMELINE_SEMAPHORE_VALUE_DIFFERENCE: return "max_timeline_semaphore_value_difference";
-            case KEY_MAX_UNIFORM_BUFFER_RANGE: return "max_uniform_buffer_range";
-            case KEY_MAX_UPDATE_AFTER_BIND_DESCRIPTORS_IN_ALL_POOLS: return "max_update_after_bind_descriptors_in_all_pools";
-            case KEY_MAX_VERTEX_INPUT_ATTRIBUTES: return "max_vertex_input_attributes";
-            case KEY_MAX_VERTEX_INPUT_ATTRIBUTE_OFFSET: return "max_vertex_input_attribute_offset";
-            case KEY_MAX_VERTEX_INPUT_BINDINGS: return "max_vertex_input_bindings";
-            case KEY_MAX_VERTEX_INPUT_BINDING_STRIDE: return "max_vertex_input_binding_stride";
-            case KEY_MAX_VERTEX_OUTPUT_COMPONENTS: return "max_vertex_output_components";
-            case KEY_MAX_VIEWPORTS: return "max_viewports";
-            case KEY_MAX_VIEWPORT_DIMENSIONS: return "max_viewport_dimensions";
-            case KEY_MEMORY: return "memory";
-            case KEY_MEMORY_HEAPS: return "memory_heaps";
-            case KEY_MEMORY_HEAP_COUNT: return "memory_heap_count";
-            case KEY_MEMORY_TYPES: return "memory_types";
-            case KEY_MEMORY_TYPE_COUNT: return "memory_type_count";
-            case KEY_MINOR: return "minor";
-            case KEY_MIN_IMAGE_TRANSFER_GRANULARITY: return "min_image_transfer_granularity";
-            case KEY_MIN_INTERPOLATION_OFFSET: return "min_interpolation_offset";
-            case KEY_MIN_MEMORY_MAP_ALIGNMENT: return "min_memory_map_alignment";
-            case KEY_MIN_STORAGE_BUFFER_OFFSET_ALIGNMENT: return "min_storage_buffer_offset_alignment";
-            case KEY_MIN_SUBGROUP_SIZE: return "min_subgroup_size";
-            case KEY_MIN_TEXEL_BUFFER_OFFSET_ALIGNMENT: return "min_texel_buffer_offset_alignment";
-            case KEY_MIN_TEXEL_GATHER_OFFSET: return "min_texel_gather_offset";
-            case KEY_MIN_TEXEL_OFFSET: return "min_texel_offset";
-            case KEY_MIN_UNIFORM_BUFFER_OFFSET_ALIGNMENT: return "min_uniform_buffer_offset_alignment";
-            case KEY_MIPMAP_PRECISION_BITS: return "mipmap_precision_bits";
-            case KEY_MULTIVIEW: return "multiview";
-            case KEY_MULTIVIEW_FEATURES: return "multiview_features";
-            case KEY_MULTIVIEW_GEOMETRY_SHADER: return "multiview_geometry_shader";
-            case KEY_MULTIVIEW_PROPERTIES: return "multiview_properties";
-            case KEY_MULTIVIEW_TESSELLATION_SHADER: return "multiview_tessellation_shader";
-            case KEY_MULTI_DRAW_INDIRECT: return "multi_draw_indirect";
-            case KEY_MULTI_VIEWPORT: return "multi_viewport";
-            case KEY_NON_COHERENT_ATOM_SIZE: return "non_coherent_atom_size";
-            case KEY_OCCLUSION_QUERY_PRECISE: return "occlusion_query_precise";
-            case KEY_OPTIMAL_BUFFER_COPY_OFFSET_ALIGNMENT: return "optimal_buffer_copy_offset_alignment";
-            case KEY_OPTIMAL_BUFFER_COPY_ROW_PITCH_ALIGNMENT: return "optimal_buffer_copy_row_pitch_alignment";
-            case KEY_OPTIMAL_TILING_FEATURES: return "optimal_tiling_features";
-            case KEY_PATCH: return "patch";
-            case KEY_PIPELINE_CACHE_UUID: return "pipeline_cache_uuid";
-            case KEY_PIPELINE_CREATION_CACHE_CONTROL: return "pipeline_creation_cache_control";
-            case KEY_PIPELINE_STATISTICS_QUERY: return "pipeline_statistics_query";
-            case KEY_POINT_CLIPPING_BEHAVIOR: return "point_clipping_behavior";
-            case KEY_POINT_CLIPPING_PROPERTIES: return "point_clipping_properties";
-            case KEY_POINT_SIZE_GRANULARITY: return "point_size_granularity";
-            case KEY_POINT_SIZE_RANGE: return "point_size_range";
-            case KEY_PRIVATE_DATA: return "private_data";
-            case KEY_PROPERTIES: return "properties";
-            case KEY_PROPERTY_FLAGS: return "property_flags";
-            case KEY_PROTECTED_MEMORY: return "protected_memory";
-            case KEY_PROTECTED_MEMORY_FEATURES: return "protected_memory_features";
-            case KEY_QUAD_DIVERGENT_IMPLICIT_LOD: return "quad_divergent_implicit_lod";
-            case KEY_QUAD_OPERATIONS_IN_ALL_STAGES: return "quad_operations_in_all_stages";
-            case KEY_QUEUES: return "queues";
-            case KEY_QUEUE_COUNT: return "queue_count";
-            case KEY_QUEUE_FLAGS: return "queue_flags";
-            case KEY_REQUIRED_SUBGROUP_SIZE_STAGES: return "required_subgroup_size_stages";
-            case KEY_RESIDENCY_ALIGNED_MIP_SIZE: return "residency_aligned_mip_size";
-            case KEY_RESIDENCY_NON_RESIDENT_STRICT: return "residency_non_resident_strict";
-            case KEY_RESIDENCY_STANDARD_2D_BLOCK_SHAPE: return "residency_standard_2d_block_shape";
-            case KEY_RESIDENCY_STANDARD_2D_MULTISAMPLE_BLOCK_SHAPE: return "residency_standard_2d_multisample_block_shape";
-            case KEY_RESIDENCY_STANDARD_3D_BLOCK_SHAPE: return "residency_standard_3d_block_shape";
-            case KEY_ROBUST_BUFFER_ACCESS: return "robust_buffer_access";
-            case KEY_ROBUST_BUFFER_ACCESS_UPDATE_AFTER_BIND: return "robust_buffer_access_update_after_bind";
-            case KEY_ROBUST_IMAGE_ACCESS: return "robust_image_access";
-            case KEY_ROUNDING_MODE_INDEPENDENCE: return "rounding_mode_independence";
-            case KEY_RUNTIME_DESCRIPTOR_ARRAY: return "runtime_descriptor_array";
-            case KEY_SAMPLED_IMAGE_COLOR_SAMPLE_COUNTS: return "sampled_image_color_sample_counts";
-            case KEY_SAMPLED_IMAGE_DEPTH_SAMPLE_COUNTS: return "sampled_image_depth_sample_counts";
-            case KEY_SAMPLED_IMAGE_INTEGER_SAMPLE_COUNTS: return "sampled_image_integer_sample_counts";
-            case KEY_SAMPLED_IMAGE_STENCIL_SAMPLE_COUNTS: return "sampled_image_stencil_sample_counts";
-            case KEY_SAMPLER_ANISOTROPY: return "sampler_anisotropy";
-            case KEY_SAMPLER_FILTER_MINMAX: return "sampler_filter_minmax";
-            case KEY_SAMPLER_MIRROR_CLAMP_TO_EDGE: return "sampler_mirror_clamp_to_edge";
-            case KEY_SAMPLER_YCBCR_CONVERSION: return "sampler_ycbcr_conversion";
-            case KEY_SAMPLER_YCBCR_CONVERSION_FEATURES: return "sampler_ycbcr_conversion_features";
-            case KEY_SAMPLE_RATE_SHADING: return "sample_rate_shading";
-            case KEY_SCALAR_BLOCK_LAYOUT: return "scalar_block_layout";
-            case KEY_SEPARATE_DEPTH_STENCIL_LAYOUTS: return "separate_depth_stencil_layouts";
-            case KEY_SHADER_BUFFER_INT64_ATOMICS: return "shader_buffer_int64_atomics";
-            case KEY_SHADER_CLIP_DISTANCE: return "shader_clip_distance";
-            case KEY_SHADER_CULL_DISTANCE: return "shader_cull_distance";
-            case KEY_SHADER_DEMOTE_TO_HELPER_INVOCATION: return "shader_demote_to_helper_invocation";
-            case KEY_SHADER_DENORM_FLUSH_TO_ZERO_FLOAT16: return "shader_denorm_flush_to_zero_float16";
-            case KEY_SHADER_DENORM_FLUSH_TO_ZERO_FLOAT32: return "shader_denorm_flush_to_zero_float32";
-            case KEY_SHADER_DENORM_FLUSH_TO_ZERO_FLOAT64: return "shader_denorm_flush_to_zero_float64";
-            case KEY_SHADER_DENORM_PRESERVE_FLOAT16: return "shader_denorm_preserve_float16";
-            case KEY_SHADER_DENORM_PRESERVE_FLOAT32: return "shader_denorm_preserve_float32";
-            case KEY_SHADER_DENORM_PRESERVE_FLOAT64: return "shader_denorm_preserve_float64";
-            case KEY_SHADER_DRAW_PARAMETERS: return "shader_draw_parameters";
-            case KEY_SHADER_DRAW_PARAMETER_FEATURES: return "shader_draw_parameter_features";
-            case KEY_SHADER_FLOAT16: return "shader_float16";
-            case KEY_SHADER_FLOAT64: return "shader_float64";
-            case KEY_SHADER_IMAGE_GATHER_EXTENDED: return "shader_image_gather_extended";
-            case KEY_SHADER_INPUT_ATTACHMENT_ARRAY_DYNAMIC_INDEXING: return "shader_input_attachment_array_dynamic_indexing";
-            case KEY_SHADER_INPUT_ATTACHMENT_ARRAY_NONUNIFORM_INDEXING_NATIVE: return "shader_input_attachment_array_nonuniform_indexing_native";
-            case KEY_SHADER_INPUT_ATTACHMENT_ARRAY_NON_UNIFORM_INDEXING: return "shader_input_attachment_array_non_uniform_indexing";
-            case KEY_SHADER_INT16: return "shader_int16";
-            case KEY_SHADER_INT64: return "shader_int64";
-            case KEY_SHADER_INT8: return "shader_int8";
-            case KEY_SHADER_INTEGER_DOT_PRODUCT: return "shader_integer_dot_product";
-            case KEY_SHADER_OUTPUT_LAYER: return "shader_output_layer";
-            case KEY_SHADER_OUTPUT_VIEWPORT_INDEX: return "shader_output_viewport_index";
-            case KEY_SHADER_RESOURCE_MIN_LOD: return "shader_resource_min_lod";
-            case KEY_SHADER_RESOURCE_RESIDENCY: return "shader_resource_residency";
-            case KEY_SHADER_ROUNDING_MODE_RTE_FLOAT16: return "shader_rounding_mode_rte_float16";
-            case KEY_SHADER_ROUNDING_MODE_RTE_FLOAT32: return "shader_rounding_mode_rte_float32";
-            case KEY_SHADER_ROUNDING_MODE_RTE_FLOAT64: return "shader_rounding_mode_rte_float64";
-            case KEY_SHADER_ROUNDING_MODE_RTZ_FLOAT16: return "shader_rounding_mode_rtz_float16";
-            case KEY_SHADER_ROUNDING_MODE_RTZ_FLOAT32: return "shader_rounding_mode_rtz_float32";
-            case KEY_SHADER_ROUNDING_MODE_RTZ_FLOAT64: return "shader_rounding_mode_rtz_float64";
-            case KEY_SHADER_SAMPLED_IMAGE_ARRAY_DYNAMIC_INDEXING: return "shader_sampled_image_array_dynamic_indexing";
-            case KEY_SHADER_SAMPLED_IMAGE_ARRAY_NONUNIFORM_INDEXING_NATIVE: return "shader_sampled_image_array_nonuniform_indexing_native";
-            case KEY_SHADER_SAMPLED_IMAGE_ARRAY_NON_UNIFORM_INDEXING: return "shader_sampled_image_array_non_uniform_indexing";
-            case KEY_SHADER_SHARED_INT64_ATOMICS: return "shader_shared_int64_atomics";
-            case KEY_SHADER_SIGNED_ZERO_INF_NAN_PRESERVE_FLOAT16: return "shader_signed_zero_inf_nan_preserve_float16";
-            case KEY_SHADER_SIGNED_ZERO_INF_NAN_PRESERVE_FLOAT32: return "shader_signed_zero_inf_nan_preserve_float32";
-            case KEY_SHADER_SIGNED_ZERO_INF_NAN_PRESERVE_FLOAT64: return "shader_signed_zero_inf_nan_preserve_float64";
-            case KEY_SHADER_STORAGE_BUFFER_ARRAY_DYNAMIC_INDEXING: return "shader_storage_buffer_array_dynamic_indexing";
-            case KEY_SHADER_STORAGE_BUFFER_ARRAY_NONUNIFORM_INDEXING_NATIVE: return "shader_storage_buffer_array_nonuniform_indexing_native";
-            case KEY_SHADER_STORAGE_BUFFER_ARRAY_NON_UNIFORM_INDEXING: return "shader_storage_buffer_array_non_uniform_indexing";
-            case KEY_SHADER_STORAGE_IMAGE_ARRAY_DYNAMIC_INDEXING: return "shader_storage_image_array_dynamic_indexing";
-            case KEY_SHADER_STORAGE_IMAGE_ARRAY_NONUNIFORM_INDEXING_NATIVE: return "shader_storage_image_array_nonuniform_indexing_native";
-            case KEY_SHADER_STORAGE_IMAGE_ARRAY_NON_UNIFORM_INDEXING: return "shader_storage_image_array_non_uniform_indexing";
-            case KEY_SHADER_STORAGE_IMAGE_EXTENDED_FORMATS: return "shader_storage_image_extended_formats";
-            case KEY_SHADER_STORAGE_IMAGE_MULTISAMPLE: return "shader_storage_image_multisample";
-            case KEY_SHADER_STORAGE_IMAGE_READ_WITHOUT_FORMAT: return "shader_storage_image_read_without_format";
-            case KEY_SHADER_STORAGE_IMAGE_WRITE_WITHOUT_FORMAT: return "shader_storage_image_write_without_format";
-            case KEY_SHADER_STORAGE_TEXEL_BUFFER_ARRAY_DYNAMIC_INDEXING: return "shader_storage_texel_buffer_array_dynamic_indexing";
-            case KEY_SHADER_STORAGE_TEXEL_BUFFER_ARRAY_NON_UNIFORM_INDEXING: return "shader_storage_texel_buffer_array_non_uniform_indexing";
-            case KEY_SHADER_SUBGROUP_EXTENDED_TYPES: return "shader_subgroup_extended_types";
-            case KEY_SHADER_TERMINATE_INVOCATION: return "shader_terminate_invocation";
-            case KEY_SHADER_TESSELLATION_AND_GEOMETRY_POINT_SIZE: return "shader_tessellation_and_geometry_point_size";
-            case KEY_SHADER_UNIFORM_BUFFER_ARRAY_DYNAMIC_INDEXING: return "shader_uniform_buffer_array_dynamic_indexing";
-            case KEY_SHADER_UNIFORM_BUFFER_ARRAY_NONUNIFORM_INDEXING_NATIVE: return "shader_uniform_buffer_array_nonuniform_indexing_native";
-            case KEY_SHADER_UNIFORM_BUFFER_ARRAY_NON_UNIFORM_INDEXING: return "shader_uniform_buffer_array_non_uniform_indexing";
-            case KEY_SHADER_UNIFORM_TEXEL_BUFFER_ARRAY_DYNAMIC_INDEXING: return "shader_uniform_texel_buffer_array_dynamic_indexing";
-            case KEY_SHADER_UNIFORM_TEXEL_BUFFER_ARRAY_NON_UNIFORM_INDEXING: return "shader_uniform_texel_buffer_array_non_uniform_indexing";
-            case KEY_SHADER_ZERO_INITIALIZE_WORKGROUP_MEMORY: return "shader_zero_initialize_workgroup_memory";
-            case KEY_SIZE: return "size";
-            case KEY_SPARSE_ADDRESS_SPACE_SIZE: return "sparse_address_space_size";
-            case KEY_SPARSE_BINDING: return "sparse_binding";
-            case KEY_SPARSE_PROPERTIES: return "sparse_properties";
-            case KEY_SPARSE_RESIDENCY_16_SAMPLES: return "sparse_residency_16_samples";
-            case KEY_SPARSE_RESIDENCY_2_SAMPLES: return "sparse_residency_2_samples";
-            case KEY_SPARSE_RESIDENCY_4_SAMPLES: return "sparse_residency_4_samples";
-            case KEY_SPARSE_RESIDENCY_8_SAMPLES: return "sparse_residency_8_samples";
-            case KEY_SPARSE_RESIDENCY_ALIASED: return "sparse_residency_aliased";
-            case KEY_SPARSE_RESIDENCY_BUFFER: return "sparse_residency_buffer";
-            case KEY_SPARSE_RESIDENCY_IMAGE_2D: return "sparse_residency_image_2d";
-            case KEY_SPARSE_RESIDENCY_IMAGE_3D: return "sparse_residency_image_3d";
-            case KEY_SPEC_VERSION: return "spec_version";
-            case KEY_STANDARD_SAMPLE_LOCATIONS: return "standard_sample_locations";
-            case KEY_STORAGE_BUFFER_16BIT_ACCESS: return "storage_buffer_16bit_access";
-            case KEY_STORAGE_BUFFER_8BIT_ACCESS: return "storage_buffer_8bit_access";
-            case KEY_STORAGE_IMAGE_SAMPLE_COUNTS: return "storage_image_sample_counts";
-            case KEY_STORAGE_INPUT_OUTPUT_16: return "storage_input_output_16";
-            case KEY_STORAGE_PUSH_CONSTANT8: return "storage_push_constant8";
-            case KEY_STORAGE_PUSH_CONSTANT_16: return "storage_push_constant_16";
-            case KEY_STORAGE_TEXEL_BUFFER_OFFSET_ALIGNMENT_BYTES: return "storage_texel_buffer_offset_alignment_bytes";
-            case KEY_STORAGE_TEXEL_BUFFER_OFFSET_SINGLE_TEXEL_ALIGNMENT: return "storage_texel_buffer_offset_single_texel_alignment";
-            case KEY_STRICT_LINES: return "strict_lines";
-            case KEY_SUBGROUP_BROADCAST_DYNAMIC_ID: return "subgroup_broadcast_dynamic_id";
-            case KEY_SUBGROUP_PROPERTIES: return "subgroup_properties";
-            case KEY_SUBGROUP_SIZE: return "subgroup_size";
-            case KEY_SUBGROUP_SIZE_CONTROL: return "subgroup_size_control";
-            case KEY_SUBMINOR: return "subminor";
-            case KEY_SUBSET_ALLOCATION: return "subset_allocation";
-            case KEY_SUB_PIXEL_INTERPOLATION_OFFSET_BITS: return "sub_pixel_interpolation_offset_bits";
-            case KEY_SUB_PIXEL_PRECISION_BITS: return "sub_pixel_precision_bits";
-            case KEY_SUB_TEXEL_PRECISION_BITS: return "sub_texel_precision_bits";
-            case KEY_SUPPORTED_DEPTH_RESOLVE_MODES: return "supported_depth_resolve_modes";
-            case KEY_SUPPORTED_OPERATIONS: return "supported_operations";
-            case KEY_SUPPORTED_STAGES: return "supported_stages";
-            case KEY_SUPPORTED_STENCIL_RESOLVE_MODES: return "supported_stencil_resolve_modes";
-            case KEY_SYNCHRONIZATION2: return "synchronization2";
-            case KEY_TESSELLATION_SHADER: return "tessellation_shader";
-            case KEY_TEXTURE_COMPRESSION_ASTC_HDR: return "texture_compression_astc_hdr";
-            case KEY_TEXTURE_COMPRESSION_ASTC_LDR: return "texture_compression_astc_ldr";
-            case KEY_TEXTURE_COMPRESSION_BC: return "texture_compression_bc";
-            case KEY_TEXTURE_COMPRESSION_ETC2: return "texture_compression_etc2";
-            case KEY_TIMELINE_SEMAPHORE: return "timeline_semaphore";
-            case KEY_TIMESTAMP_COMPUTE_AND_GRAPHICS: return "timestamp_compute_and_graphics";
-            case KEY_TIMESTAMP_PERIOD: return "timestamp_period";
-            case KEY_TIMESTAMP_VALID_BITS: return "timestamp_valid_bits";
-            case KEY_UNIFORM_AND_STORAGE_BUFFER_16BIT_ACCESS: return "uniform_and_storage_buffer_16bit_access";
-            case KEY_UNIFORM_AND_STORAGE_BUFFER_8BIT_ACCESS: return "uniform_and_storage_buffer_8bit_access";
-            case KEY_UNIFORM_BUFFER_STANDARD_LAYOUT: return "uniform_buffer_standard_layout";
-            case KEY_UNIFORM_TEXEL_BUFFER_OFFSET_ALIGNMENT_BYTES: return "uniform_texel_buffer_offset_alignment_bytes";
-            case KEY_UNIFORM_TEXEL_BUFFER_OFFSET_SINGLE_TEXEL_ALIGNMENT: return "uniform_texel_buffer_offset_single_texel_alignment";
-            case KEY_VARIABLE_MULTISAMPLE_RATE: return "variable_multisample_rate";
-            case KEY_VARIABLE_POINTERS: return "variable_pointers";
-            case KEY_VARIABLE_POINTERS_STORAGE_BUFFER: return "variable_pointers_storage_buffer";
-            // Field name should ideally be `variable_pointers_features`, but renaming would cause parsing errors for older JSON reports.
-            case KEY_VARIABLE_POINTERS_FEATURES: return "variable_pointer_features";
-            case KEY_VARIABLE_POINTER_FEATURES_KHR: return "variable_pointer_features_khr";
-            case KEY_VARIABLE_POINTERS_FEATURES_KHR: return "variable_pointers_features_khr";
-            case KEY_IMAGE_2D_VIEW_OF_3D_FEATURES_EXT: return "image_2d_view_of_3d_features_ext";
-            case KEY_IMAGE_2D_VIEW_OF_3D: return "image_2d_view_of_3d";
-            case KEY_SAMPLER_2D_VIEW_OF_3D: return "sampler_2d_view_of_3d";
-            case KEY_VENDOR_ID: return "vendor_id";
-            case KEY_VERTEX_PIPELINE_STORES_AND_ATOMICS: return "vertex_pipeline_stores_and_atomics";
-            case KEY_VIEWPORT_BOUNDS_RANGE: return "viewport_bounds_range";
-            case KEY_VIEWPORT_SUB_PIXEL_BITS: return "viewport_sub_pixel_bits";
-            case KEY_VK_KHR_DRIVER_PROPERTIES: return "vk_khr_driver_properties";
-            case KEY_VK_KHR_VARIABLE_POINTERS: return "vk_khr_variable_pointers";
-            case KEY_VK_EXT_IMAGE_2D_VIEW_OF_3D: return "vk_ext_image_2d_view_of_3d";
-            case KEY_CUSTOM_BORDER_COLOR_FEATURES_EXT: return "custom_border_color_features_ext";
-            case KEY_CUSTOM_BORDER_COLOR_WITHOUT_FORMAT: return "custom_border_color_without_format";
-            case KEY_CUSTOM_BORDER_COLORS: return "custom_border_colors";
-            case KEY_VK_EXT_CUSTOM_BORDER_COLOR: return "vk_ext_custom_border_color";
-            case KEY_PRIMITIVE_TOPOLOGY_LIST_RESTART_FEATURES_EXT: return "primitive_topology_list_restart_features_ext";
-            case KEY_PRIMITIVE_TOPOLOGY_LIST_RESTART: return "primitive_topology_list_restart";
-            case KEY_PRIMITIVE_TOPOLOGY_PATCH_LIST_RESTART: return "primitive_topology_patch_list_restart";
-            case KEY_VK_EXT_PRIMITIVE_TOPOLOGY_LIST_RESTART: return "vk_ext_primitive_topology_list_restart";
-            case KEY_TRANSFORM_FEEDBACK_FEATURES_EXT: return "transform_feedback_features_ext";
-            case KEY_GEOMETRY_STREAMS: return "geometry_streams";
-            case KEY_TRANSFORM_FEEDBACK: return "transform_feedback";
-            case KEY_VK_EXT_TRANSFORM_FEEDBACK: return "vk_ext_transform_feedback";
-            case KEY_PROVOKING_VERTEX_FEATURES_EXT: return "provoking_vertex_features_ext";
-            case KEY_PROVOKING_VERTEX_LAST: return "provoking_vertex_last";
-            case KEY_TRANSFORM_FEEDBACK_PRESERVES_PROVOKING_VERTEX: return "transform_feedback_preserves_provoking_vertex";
-            case KEY_VK_EXT_PROVOKING_VERTEX: return "vk_ext_provoking_vertex";
-            case KEY_INDEX_TYPE_UINT8_FEATURES_EXT:
-                return "index_type_uint8_features_ext";
-            case KEY_INDEX_TYPE_UINT8:
-                return "index_type_uint8";
-            case KEY_VK_EXT_INDEX_TYPE_UINT8:
-                return "vk_ext_index_type_uint8";
-            case KEY_INDEX_TYPE_UINT8_FEATURES_KHR:
-                return "index_type_uint8_features_khr";
-            case KEY_VK_KHR_INDEX_TYPE_UINT8:
-                return "vk_khr_index_type_uint8";
-            case KEY_SHADER_FLOAT16_INT8_FEATURES_KHR:
-                return "shader_float16_int8_features_khr";
-            case KEY_FLOAT16_INT8_FEATURES_KHR:
-                return "float16_int8_features_khr";
-            case KEY_VK_KHR_SHADER_FLOAT16_INT8:
-                return "vk_khr_shader_float16_int8";
-            case KEY_SHADER_SUBGROUP_EXTENDED_TYPES_FEATURES_KHR:
-                return "shader_subgroup_extended_types_features_khr";
-            case KEY_VK_KHR_SHADER_SUBGROUP_EXTENDED_TYPES:
-                return "vk_khr_shader_subgroup_extended_types";
-            case KEY_SHADER_SUBGROUP_UNIFORM_CONTROL_FLOW_FEATURES_KHR:
-                return "shader_subgroup_uniform_control_flow_features_khr";
-            case KEY_SHADER_SUBGROUP_UNIFORM_CONTROL_FLOW:
-                return "shader_subgroup_uniform_control_flow";
-            case KEY_VK_KHR_SHADER_SUBGROUP_UNIFORM_CONTROL_FLOW:
-                return "vk_khr_shader_subgroup_uniform_control_flow";
-            case KEY_BIT8_STORAGE_FEATURES_KHR:
-                return "bit8_storage_features_khr";
-            case KEY_VK_KHR_8BIT_STORAGE:
-                return "vk_khr_8bit_storage";
-            case KEY_SHADER_INTEGER_DOT_PRODUCT_FEATURES_KHR:
-                return "shader_integer_dot_product_features_khr";
-            case KEY_VK_KHR_SHADER_INTEGER_DOT_PRODUCT:
-                return "vk_khr_shader_integer_dot_product";
-            case KEY_LINE_RASTERIZATION_FEATURES_EXT:
-                return "line_rasterization_features_ext";
-            case KEY_BRESENHAM_LINES:
-                return "bresenham_lines";
-            case KEY_RECTANGULAR_LINES:
-                return "rectangular_lines";
-            case KEY_SMOOTH_LINES:
-                return "smooth_lines";
-            case KEY_STIPPLED_BRESENHAM_LINES:
-                return "stippled_bresenham_lines";
-            case KEY_STIPPLED_RECTANGULAR_LINES:
-                return "stippled_rectangular_lines";
-            case KEY_STIPPLED_SMOOTH_LINES:
-                return "stippled_smooth_lines";
-            case KEY_VK_EXT_LINE_RASTERIZATION:
-                return "vk_ext_line_rasterization";
-            case KEY_PRIMITIVES_GENERATED_QUERY_FEATURES_EXT:
-                return "primitives_generated_query_features_ext";
-            case KEY_PRIMITIVES_GENERATED_QUERY:
-                return "primitives_generated_query";
-            case KEY_PRIMITIVES_GENERATED_QUERY_WITH_NON_ZERO_STREAMS:
-                return "primitives_generated_query_with_non_zero_streams";
-            case KEY_PRIMITIVES_GENERATED_QUERY_WITH_RASTERIZER_DISCARD:
-                return "primitives_generated_query_with_rasterizer_discard";
-            case KEY_VK_EXT_PRIMITIVES_GENERATED_QUERY:
-                return "vk_ext_primitives_generated_query";
-            case KEY_FLOAT_CONTROLS_PROPERTIES_KHR:
-                return "float_controls_properties_khr";
-            case KEY_VK_KHR_SHADER_FLOAT_CONTROLS:
-                return "vk_khr_shader_float_controls";
-            case KEY_RELAXED_LINE_RASTERIZATION_FEATURES_IMG:
-                return "relaxed_line_rasterization_features_img";
-            case RELAXED_LINE_RASTERIZATION:
-                return "relaxed_line_rasterization";
-            case KEY_VK_IMG_RELAXED_LINE_RASTERIZATION:
-                return "vk_img_relaxed_line_rasterization";
-            case KEY_VULKAN_11_PROPERTIES:
-                return "vulkan_11_properties";
-            case KEY_VULKAN_11_FEATURES:
-                return "vulkan_11_features";
-            case KEY_PROTECTED_NO_FAULT:
-                return "protected_no_fault";
-            case KEY_SUBGROUP_QUAD_OPERATIONS_IN_ALL_STAGES:
-                return "subgroup_quad_operations_in_all_stages";
-            case KEY_SUBGROUP_SUPPORTED_OPERATIONS:
-                return "subgroup_supported_operations";
-            case KEY_SUBGROUP_SUPPORTED_STAGES:
-                return "subgroup_supported_stages";
-            case KEY_VK_KHR_VERTEX_ATTRIBUTE_DIVISOR: return "vk_khr_vertex_attribute_divisor";
-            case KEY_VERTEX_ATTRIBUTE_DIVISOR_FEATURES_KHR: return "vertex_attribute_divisor_features_khr";
-            case KEY_VERTEX_ATTRIBUTE_INSTANCE_RATE_DIVISOR: return "vertex_attribute_instance_rate_divisor";
-            case KEY_VERTEX_ATTRIBUTE_INSTANCE_RATE_ZERO_DIVISOR: return "vertex_attribute_instance_rate_zero_divisor";
-            case KEY_VULKAN_12_FEATURES: return "vulkan_12_features";
-            case KEY_VULKAN_12_PROPERTIES: return "vulkan_12_properties";
-            case KEY_VULKAN_13_FEATURES: return "vulkan_13_features";
-            case KEY_VULKAN_13_PROPERTIES: return "vulkan_13_properties";
-            case KEY_VULKAN_MEMORY_MODEL: return "vulkan_memory_model";
-            case KEY_VULKAN_MEMORY_MODEL_AVAILABILITY_VISIBILITY_CHAINS: return "vulkan_memory_model_availability_visibility_chains";
-            case KEY_VULKAN_MEMORY_MODEL_DEVICE_SCOPE: return "vulkan_memory_model_device_scope";
-            case KEY_WIDE_LINES: return "wide_lines";
-            case KEY_WIDTH: return "width";
-            case KEY_VULKAN_14_FEATURES: return "vulkan_14_features";
-            case KEY_VULKAN_14_PROPERTIES: return "vulkan_14_properties";
-            case KEY_GLOBAL_PRIORITY_QUERY : return "global_priority_query";
-            case KEY_SHADER_SUBGROUP_ROTATE : return "shader_subgroup_rotate";
-            case KEY_SHADER_SUBGROUP_ROTATE_CLUSTERED : return "shader_subgroup_rotate_clustered";
-            case KEY_SHADER_FLOAT_CONTROLS2 : return "shader_float_controls2";
-            case KEY_SHADER_EXPECT_ASSUME : return "shader_expect_assume";
-            case KEY_DYNAMIC_RENDERING_LOCAL_READ : return "dynamic_rendering_local_read";
-            case KEY_MAINTENANCE5 : return "maintenance5";
-            case KEY_MAINTENANCE6 : return "maintenance6";
-            case KEY_PIPELINE_PROTECTED_ACCESS : return "pipeline_protected_access";
-            case KEY_PIPELINE_ROBUSTNESS : return "pipeline_robustness";
-            case KEY_HOST_IMAGE_COPY : return "host_image_copy";
-            case KEY_PUSH_DESCRIPTOR : return "push_descriptor";
-            case KEY_LINE_SUB_PIXEL_PRECISION_BITS : return "line_sub_pixel_precision_bits";
-            case KEY_MAX_VERTEX_ATTRIB_DIVISOR : return "max_vertex_attrib_divisor";
-            case KEY_SUPPORTS_NON_ZERO_FIRST_INSTANCE : return "supports_non_zero_first_instance";
-            case KEY_MAX_PUSH_DESCRIPTORS : return "max_push_descriptors";
-            case KEY_DYNAMIC_RENDERING_LOCAL_READ_DEPTH_STENCIL_ATTACHMENTS : return "dynamic_rendering_local_read_depth_stencil_attachments";
-            case KEY_DYNAMIC_RENDERING_LOCAL_READ_MULTISAMPLED_ATTACHMENTS : return "dynamic_rendering_local_read_multisampled_attachments";
-            case KEY_EARLY_FRAGMENT_MULTISAMPLE_COVERAGE_AFTER_SAMPLE_COUNTING: return "early_fragment_multisample_coverage_after_sample_counting";
-            case KEY_EARLY_FRAGMENT_SAMPLE_MASK_TEST_BEFORE_SAMPLE_COUNTING : return "early_fragment_sample_mask_test_before_sample_counting";
-            case KEY_DEPTH_STENCIL_SWIZZLE_ONE_SUPPORT : return "depth_stencil_swizzle_one_support";
-            case KEY_POLYGON_MODE_POINT_SIZE : return "polygon_mode_point_size";
-            case KEY_NON_STRICT_SINGLE_PIXEL_WIDE_LINES_USE_PARALLELOGRAM : return "non_strict_single_pixel_wide_lines_use_parallelogram";
-            case KEY_NON_STRICT_WIDE_LINES_USE_PARALLELOGRAM : return "non_strict_wide_lines_use_parallelogram";
-            case KEY_BLOCK_TEXEL_VIEW_COMPATIBLE_MULTIPLE_LAYERS : return "block_texel_view_compatible_multiple_layers";
-            case KEY_MAX_COMBINED_IMAGE_SAMPLER_DESCRIPTOR_COUNT: return "max_combined_image_sampler_descriptor_count";
-            case KEY_FRAGMENT_SHADING_RATE_CLAMP_COMBINER_INPUTS : return "fragment_shading_rate_clamp_combiner_inputs";
-            case KEY_DEFAULT_ROBUSTNESS_STORAGE_BUFFERS : return "default_robustness_storage_buffers";
-            case KEY_DEFAULT_ROBUSTNESS_UNIFORM_BUFFERS : return "default_robustness_uniform_buffers";
-            case KEY_DEFAULT_ROBUSTNESS_VERTEX_INPUTS : return "default_robustness_vertex_inputs";
-            case KEY_DEFAULT_ROBUSTNESS_IMAGES : return "default_robustness_images";
-            case KEY_COPY_SRC_LAYOUT_COUNT : return "copy_src_layout_count";
-            case KEY_P_COPY_SRC_LAYOUTS : return "p_copy_src_layouts";
-            case KEY_COPY_DST_LAYOUT_COUNT : return "copy_dst_layout_count";
-            case KEY_P_COPY_DST_LAYOUTS : return "p_copy_dst_layouts";
-            case KEY_OPTIMAL_TILING_LAYOUT_UUID : return "optimal_tiling_layout_uuid";
-            case KEY_IDENTICAL_MEMORY_TYPE_REQUIREMENTS: return "identical_memory_type_requirements";
-            default: throw new RuntimeException("unknown key name: " + name);
+
+    // Creates a map of vkjson names and VulkanDeviceInfo names
+    public static void createKeyToConvertedNameMap() {
+        keyToConvertedName = new HashMap<>();
+
+        // Loop over all the constants of VulkanDeviceInfo
+        for (Field field : VulkanDeviceInfo.class.getDeclaredFields()) {
+            if (field.getName().startsWith("KEY_")) {
+                try {
+                    String fieldName = field.getName();
+                    String value = (String) field.get(null);
+                    String convertedName = fieldName.replaceFirst("KEY_", "").toLowerCase(Locale.ROOT);
+                    keyToConvertedName.put(value, convertedName);
+                } catch (IllegalAccessException e) {
+                    e.printStackTrace();
+                    throw new RuntimeException(e);
+                }
+            }
+        }
+
+        // Special case
+        keyToConvertedName.put(KEY_VARIABLE_POINTERS_FEATURES, "variable_pointer_features");
+    }
+
+    private static String getConvertedName(String name) {
+        if (keyToConvertedName.containsKey(name)) {
+            return keyToConvertedName.get(name);
+        }
+        else {
+            throw new RuntimeException("unknown key name: " + name);
         }
     }
 
