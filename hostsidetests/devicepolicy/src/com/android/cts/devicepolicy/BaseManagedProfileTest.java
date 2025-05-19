@@ -57,7 +57,7 @@ public abstract class BaseManagedProfileTest extends BaseDevicePolicyTest {
         if (mFeaturesCheckerRule.hasRequiredFeatures()) {
 
             removeTestUsers();
-            mParentUserId = mPrimaryUserId;
+            mParentUserId = mMainUserId;
             mProfileUserId = createManagedProfile(mParentUserId);
             startUserAndWait(mProfileUserId);
 

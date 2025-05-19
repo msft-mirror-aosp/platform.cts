@@ -43,7 +43,7 @@ public final class LauncherAppsMultiUserTest extends BaseLauncherAppsTest {
 
         removeTestUsers();
         uninstallTestApps();
-        installTestApps(mPrimaryUserId);
+        installTestApps(mMainUserId);
         // Create a secondary user.
         mSecondaryUserId = createUser();
         mSecondaryUserSerialNumber = Integer.toString(getUserSerialNumber(mSecondaryUserId));
@@ -60,22 +60,24 @@ public final class LauncherAppsMultiUserTest extends BaseLauncherAppsTest {
 
     @Test
     public void testGetActivitiesForNonProfileFails() throws Exception {
-        installAppAsUser(SIMPLE_APP_APK, mPrimaryUserId);
-        runDeviceTestsAsUser(LAUNCHER_TESTS_PKG,
+        installAppAsUser(SIMPLE_APP_APK, mMainUserId);
+        runDeviceTestsAsUser(
+                LAUNCHER_TESTS_PKG,
                 LAUNCHER_TESTS_CLASS,
                 "testGetActivitiesForUserFails",
-                mPrimaryUserId,
+                mMainUserId,
                 Collections.singletonMap(PARAM_TEST_USER, mSecondaryUserSerialNumber));
     }
 
     @Test
     public void testNoLauncherCallbackPackageAddedSecondaryUser() throws Exception {
-        startCallbackService(mPrimaryUserId);
-        installAppAsUser(SIMPLE_APP_APK, mPrimaryUserId);
-        runDeviceTestsAsUser(LAUNCHER_TESTS_PKG,
+        startCallbackService(mMainUserId);
+        installAppAsUser(SIMPLE_APP_APK, mMainUserId);
+        runDeviceTestsAsUser(
+                LAUNCHER_TESTS_PKG,
                 LAUNCHER_TESTS_CLASS,
                 "testNoPackageAddedCallbackForUser",
-                mPrimaryUserId,
+                mMainUserId,
                 Collections.singletonMap(PARAM_TEST_USER, mSecondaryUserSerialNumber));
     }
 }
