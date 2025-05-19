@@ -265,7 +265,8 @@
     <string name="da_screen_lock_info">This test checks that the DevicePolicyManager\'s lockNow
         method immediately locks the screen. It should lock the screen immediately despite any
         settings that may specify a timeout.\n\nClick the \"Force Lock\" button to lock the screen.
-        Your screen should be locked and require the password to be entered.
+        Your screen should be locked and require the password to be entered. Make sure the device\'s
+        screen lock is NOT set to None.
     </string>
     <string name="da_force_lock">Force Lock</string>
     <string name="da_lock_success">It appears the screen was locked successfully!</string>
