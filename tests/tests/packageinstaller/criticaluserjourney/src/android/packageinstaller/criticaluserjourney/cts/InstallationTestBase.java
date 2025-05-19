@@ -504,8 +504,8 @@ public class InstallationTestBase extends PackageInstallerCujTestBase {
         assertThat(isInstallerInstalled()).isTrue();
     }
 
-    private static void allowInstallIfGPPDialogExists() throws Exception {
-        final Pattern morePattern = Pattern.compile(BUTTON_GPP_MORE_DETAILS_LABEL,
+    private static void allowInstallIfVerificationDialogExists() throws Exception {
+        final Pattern morePattern = Pattern.compile(BUTTON_MORE_DETAILS_LABEL,
                 Pattern.CASE_INSENSITIVE);
         UiObject2 more =
                 findObject(By.text(morePattern), /* checkNull= */ false, /* timeoutMs= */ 2 * 1000);
@@ -514,7 +514,7 @@ public class InstallationTestBase extends PackageInstallerCujTestBase {
             waitForUiIdle();
 
             BySelector installWithoutScanningSelector = By.textContains(
-                    BUTTON_GPP_INSTALL_WITHOUT_SCANNING_LABEL);
+                    BUTTON_INSTALL_WITHOUT_SCANNING_LABEL);
             UiObject2 installAnyway = findObject(installWithoutScanningSelector,
                     /* checkNull= */ false);
             if (installAnyway != null) {
@@ -680,7 +680,7 @@ public class InstallationTestBase extends PackageInstallerCujTestBase {
         }
 
         if (!isTestPackageInstalled()) {
-            allowInstallIfGPPDialogExists();
+            allowInstallIfVerificationDialogExists();
         }
     }
 
@@ -721,7 +721,7 @@ public class InstallationTestBase extends PackageInstallerCujTestBase {
         }
 
         if (!isUpdatedViaPackageUri && !isTestPackageVersion2Installed()) {
-            allowInstallIfGPPDialogExists();
+            allowInstallIfVerificationDialogExists();
         }
     }
 
@@ -749,7 +749,7 @@ public class InstallationTestBase extends PackageInstallerCujTestBase {
         }
 
         if (!isTestPackageVersion2Installed()) {
-            allowInstallIfGPPDialogExists();
+            allowInstallIfVerificationDialogExists();
         }
     }
 
@@ -778,7 +778,7 @@ public class InstallationTestBase extends PackageInstallerCujTestBase {
         }
 
         if (!isInstallerVersion2Installed()) {
-            allowInstallIfGPPDialogExists();
+            allowInstallIfVerificationDialogExists();
         }
     }
 
