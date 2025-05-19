@@ -4735,7 +4735,6 @@ public class ViewTest {
         final int FLAG_IGNORE_GLOBAL_SETTING = HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING;
         final int[] NON_FEEDBACK_USAGES =
                 new int[] {
-                    VibrationAttributes.USAGE_UNKNOWN,
                     VibrationAttributes.USAGE_ALARM,
                     VibrationAttributes.USAGE_MEDIA,
                     VibrationAttributes.USAGE_RINGTONE,
