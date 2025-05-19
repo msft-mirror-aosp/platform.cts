@@ -33,6 +33,7 @@ import com.android.compatibility.common.tradefed.build.CompatibilityBuildHelper;
 import com.android.cts.devicepolicy.DeviceAdminFeaturesCheckerRule.IgnoreOnHeadlessSystemUserMode;
 import com.android.cts.devicepolicy.metrics.DevicePolicyEventWrapper;
 import com.android.tradefed.log.LogUtil.CLog;
+import com.android.tradefed.util.RunUtil;
 
 import org.junit.Ignore;
 import org.junit.Test;
@@ -41,6 +42,8 @@ import java.io.File;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.StringTokenizer;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Set of tests for Device Owner use cases.
@@ -1146,6 +1149,43 @@ public final class DeviceOwnerTest extends BaseDeviceOwnerTest {
         executeDeviceOwnerTest("WifiNetworkConfigurationWithoutFineLocationPermissionTest");
     }
 
+    /** Install a package and wait for system to stop all processes for this package. */
+    private void installAppAndWaitForKill(String apkName, String packageName, int userId)
+            throws Exception {
+        // Record time in seconds from epoch to read only the most recent lines in logcat.
+        // Fractional digits are appended such that logcat interprets -T argument to mean starting
+        // time rather than number of last messages.
+        String lastLogTimestamp = getDevice().executeShellCommand("date +%s").trim() + ".000";
+
+        installAppAsUser(apkName, userId);
+
+        // Log message emitted when killing all processes for a installed package.
+        String expected = "Force stopping " + packageName;
+
+        long deadlineNs = System.nanoTime() + TimeUnit.SECONDS.toNanos(20);
+        while (System.nanoTime() <= deadlineNs) {
+            // Retrieve recent logcat messages.
+            String logcatOutput = getDevice().executeShellCommand(
+                            "logcat -t %s -v epoch -b system".formatted(lastLogTimestamp));
+            List<String> logLines = logcatOutput
+                    .lines()
+                    .filter(l -> !l.startsWith("-")) // Filter out "beginning of system" lines.
+                    .toList();
+            if (!logLines.isEmpty()) {
+                if (logLines.stream().anyMatch(l -> l.contains(expected))) {
+                    CLog.i("Processes were stopped following installation");
+                    return;
+                } else {
+                    // Update last log timestamp so that we only read newer messages next time.
+                    lastLogTimestamp = new StringTokenizer(logLines.getLast()).nextToken();
+                    CLog.i("Last timestamp updated to %s".formatted(lastLogTimestamp));
+                }
+            }
+            RunUtil.getDefault().sleep(200);
+        }
+        CLog.e("Failed to find expected log message: " + expected);
+    }
+
     private int createAffiliatedSecondaryUser() throws Exception {
         final int userId = createUser();
         installAppAsUser(INTENT_RECEIVER_APK, userId);
@@ -1153,7 +1193,8 @@ public final class DeviceOwnerTest extends BaseDeviceOwnerTest {
         // set on the secondary user. Meanwhile, it requires additional permission while
         // using DevicePolicyManagerWrapper while using DPM APIs from secondary user.
         if (!isHeadlessSystemUserMode()) {
-            installAppAsUser(DEVICE_OWNER_APK, userId);
+            // Wait for processes to get killed, so that it doesn't happen during tests.
+            installAppAndWaitForKill(DEVICE_OWNER_APK, DEVICE_OWNER_PKG, userId);
             setProfileOwnerOrFail(DEVICE_OWNER_COMPONENT, userId);
         } else {
             grantDpmWrapperPermissions(DEVICE_OWNER_PKG, userId);
