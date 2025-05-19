@@ -121,7 +121,6 @@ class ZoomTest(its_base_test.UiAutomatorItsBaseTest):
 
       # do captures over zoom range and find ArUco markers with cv2
       img_name_stem = f'{os.path.join(self.log_path, _NAME)}'
-      test_failed = False
 
       test_data = []
       all_aruco_ids = []
@@ -199,7 +198,7 @@ class ZoomTest(its_base_test.UiAutomatorItsBaseTest):
       # Make reporting active physical IDs optional
       if all(d.physical_id is None for d in test_data):
         number_of_cameras_to_test = 0
-      test_success, msg =  zoom_capture_utils.verify_zoom_data(
+      test_success, msg = zoom_capture_utils.verify_zoom_data(
           test_data, size,
           offset_plot_name_stem=img_name_stem,
           number_of_cameras_to_test=number_of_cameras_to_test)

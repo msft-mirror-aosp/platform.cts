@@ -38,7 +38,7 @@ public final class ManagedProfileTimeoutTest extends BaseManagedProfileTest {
 
         setUpWorkProfileTimeout();
 
-        startTestActivity(mPrimaryUserId, true);
+        startTestActivity(mMainUserId, true);
         simulateUserInteraction(PROFILE_TIMEOUT_DELAY_MS);
 
         verifyOnlyProfileLocked(true);
@@ -108,7 +108,7 @@ public final class ManagedProfileTimeoutTest extends BaseManagedProfileTest {
         final String expectedResultTest = locked ? "testDeviceLocked" : "testDeviceNotLocked";
         runProfileTimeoutTest(expectedResultTest, mProfileUserId);
         // Primary profile shouldn't be locked.
-        runProfileTimeoutTest("testDeviceNotLocked", mPrimaryUserId);
+        runProfileTimeoutTest("testDeviceNotLocked", mMainUserId);
     }
 
     private void simulateUserInteraction(int timeMs) throws Exception {

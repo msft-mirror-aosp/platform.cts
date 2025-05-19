@@ -66,7 +66,6 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -1530,7 +1529,7 @@ public class NotificationTest {
         Notification n = new Notification.Builder(mContext, "test")
                 .setSmallIcon(android.R.drawable.sym_def_app_icon)
                 .build();
-        assertThat(n.hasRequestedPromotedOngoing()).isFalse();
+        assertThat(n.isRequestPromotedOngoing()).isFalse();
     }
 
     @Test
@@ -1540,7 +1539,7 @@ public class NotificationTest {
                 .setSmallIcon(android.R.drawable.sym_def_app_icon)
                 .setRequestPromotedOngoing(true)
                 .build();
-        assertThat(n.hasRequestedPromotedOngoing()).isTrue();
+        assertThat(n.isRequestPromotedOngoing()).isTrue();
     }
 
     @Test
@@ -1550,7 +1549,7 @@ public class NotificationTest {
                 .setSmallIcon(android.R.drawable.sym_def_app_icon)
                 .setRequestPromotedOngoing(false)
                 .build();
-        assertThat(n.hasRequestedPromotedOngoing()).isFalse();
+        assertThat(n.isRequestPromotedOngoing()).isFalse();
     }
 
     @Nullable

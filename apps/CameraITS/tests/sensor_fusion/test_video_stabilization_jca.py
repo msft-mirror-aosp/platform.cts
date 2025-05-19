@@ -192,12 +192,11 @@ def _initialize_rotation_rig(rot_rig, rotator_cntl, rotator_ch):
   return rot_rig
 
 
-def _get_servo_speed(tablet_device, rot_rig):
+def _get_servo_speed(tablet_device):
   """Get servo speed.
 
   Args:
     tablet_device: bool; True if tablet device is connected.
-    rot_rig: dict with 'cntl' and 'ch' defined.
 
   Returns:
     servo_speed: int; Speed of servo motor.

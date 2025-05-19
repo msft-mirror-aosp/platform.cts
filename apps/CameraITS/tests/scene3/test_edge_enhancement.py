@@ -176,7 +176,7 @@ class EdgeEnhancementTest(its_base_test.ItsBaseTest):
         raise AssertionError(
             f"FAST: {sharpness_regular[_EDGE_MODES['FAST']]:.3f}, "
             f"OFF: {sharpness_regular[_EDGE_MODES['OFF']]:.3f}, "
-            f"RTOL: {_SHARPNESS_RTOL}")
+            f'RTOL: {_SHARPNESS_RTOL}')
 
       logging.debug('Verify FAST is not sharper than HQ')
       if (sharpness_regular[_EDGE_MODES['HQ']] <=
@@ -184,7 +184,7 @@ class EdgeEnhancementTest(its_base_test.ItsBaseTest):
         raise AssertionError(
             f"HQ: {sharpness_regular[_EDGE_MODES['HQ']]:.3f}, "
             f"FAST: {sharpness_regular[_EDGE_MODES['FAST']]:.3f}, "
-            f"RTOL: {_SHARPNESS_RTOL}")
+            f'RTOL: {_SHARPNESS_RTOL}')
 
 if __name__ == '__main__':
   test_runner.main()

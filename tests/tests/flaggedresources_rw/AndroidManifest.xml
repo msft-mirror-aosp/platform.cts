@@ -5,7 +5,7 @@
 
     <uses-sdk android:minSdkVersion="29"   android:targetSdkVersion="36" />
 
-    <application>
+    <application android:localeConfig="@xml/locales_config">
         <uses-library android:name="android.test.runner" />
     </application>
 

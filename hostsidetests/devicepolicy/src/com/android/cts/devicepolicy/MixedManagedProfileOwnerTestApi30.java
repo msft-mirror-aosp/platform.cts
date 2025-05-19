@@ -36,7 +36,7 @@ public class MixedManagedProfileOwnerTestApi30 extends DeviceAndProfileOwnerTest
         super.setUp();
 
         removeTestUsers();
-        mParentUserId = mPrimaryUserId;
+        mParentUserId = mMainUserId;
         createManagedProfile();
     }
 

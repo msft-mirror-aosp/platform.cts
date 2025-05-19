@@ -19,7 +19,6 @@ package android.companion.cts.core
 import android.companion.AssociationRequest
 import android.companion.CompanionDeviceManager.FLAG_CALL_METADATA
 import android.companion.DeviceId
-import android.companion.Flags
 import android.companion.cts.common.CUSTOM_ID_A
 import android.companion.cts.common.CUSTOM_ID_B
 import android.companion.cts.common.CUSTOM_ID_INVALID
@@ -31,7 +30,6 @@ import android.companion.cts.common.SIMPLE_EXECUTOR
 import android.companion.cts.common.getAssociationForPackage
 import android.net.MacAddress
 import android.platform.test.annotations.AppModeFull
-import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.compatibility.common.util.FeatureUtil
@@ -96,7 +94,6 @@ class AssociateTest : CoreTestBase() {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_ASSOCIATION_TAG)
     fun test_association_invalid_customized_deviceId() {
         targetApp.associate(MAC_ADDRESS_A)
         // Make sure that the length of given device id must less than 120.
@@ -106,7 +103,6 @@ class AssociateTest : CoreTestBase() {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_ASSOCIATION_TAG)
     fun test_association_deviceId_different_packages() = with(testApp) {
         associate(MAC_ADDRESS_A)
         val deviceId = createDeviceId(CUSTOM_ID_A, MAC_ADDRESS_A)
@@ -134,7 +130,6 @@ class AssociateTest : CoreTestBase() {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_ASSOCIATION_TAG)
     fun test_association_deviceId() = with(targetApp) {
         associate(MAC_ADDRESS_A)
         val deviceId = createDeviceId(CUSTOM_ID_A, MAC_ADDRESS_A)
@@ -149,23 +144,22 @@ class AssociateTest : CoreTestBase() {
 
         assertEquals(
             expected = CUSTOM_ID_A,
-            actual = associationWithDeviceId.getDeviceId()?.customId
+            actual = associationWithDeviceId.deviceId?.customId
         )
 
         assertEquals(
             expected = MAC_ADDRESS_A,
-            actual = associationWithDeviceId.getDeviceId()?.macAddress
+            actual = associationWithDeviceId.deviceId?.macAddress
         )
 
         cdm.setDeviceId(association.id, null)
 
         val associationNullDeviceId = cdm.myAssociations[0]
 
-        assertEquals(expected = null, actual = associationNullDeviceId.getDeviceId())
+        assertEquals(expected = null, actual = associationNullDeviceId.deviceId)
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_ASSOCIATION_TAG)
     fun test_association_deviceId_after_load_from_disk() = with(targetApp) {
         associate(MAC_ADDRESS_A)
         val deviceIdA = createDeviceId(CUSTOM_ID_A, MAC_ADDRESS_A)
@@ -205,7 +199,6 @@ class AssociateTest : CoreTestBase() {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_ASSOCIATION_TAG)
     fun test_at_least_one_device_id() {
         assertFailsWith(IllegalArgumentException::class) {
             createDeviceId(null, null)

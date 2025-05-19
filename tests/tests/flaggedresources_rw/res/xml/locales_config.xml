@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<locale-config xmlns:android="http://schemas.android.com/apk/res/android"  android:defaultLocale="en-US">
+    <locale android:name="en-US"/>
+    <locale android:name="en-GB"/>
+    <locale android:name="fr"  android:featureFlag="android.content.res.always_false"/>
+    <locale android:name="ja"  android:featureFlag="!android.content.res.always_false"/>
+</locale-config>

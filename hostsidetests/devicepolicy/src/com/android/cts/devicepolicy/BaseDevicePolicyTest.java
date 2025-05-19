@@ -167,7 +167,7 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
     private Set<String> mFixedPackages;
 
     protected int mDeviceOwnerUserId;
-    protected int mPrimaryUserId;
+    protected int mMainUserId;
 
     /** Is test running on a watch */
     protected boolean mIsWatch;
@@ -210,8 +210,12 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
         if (propertyValue != null && !propertyValue.isEmpty()) {
             mHasAttestation = Integer.parseInt(propertyValue) >= 26;
         }
+
+        mMainUserId = getMainUser();
+        mDeviceOwnerUserId = mMainUserId;
+
         if (hasDeviceFeature(FEATURE_SECURE_LOCK_SCREEN)) {
-            ensurePrimaryUserHasNoPassword();
+            ensureMainUserHasNoPassword();
         }
 
         // disable the package verifier to avoid the dialog when installing an app
@@ -224,20 +228,18 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
             mInitialUserId = getDevice().getCurrentUser();
         }
 
-        mDeviceOwnerUserId = mPrimaryUserId = getMainUser();
-
-        mFixedUsers.add(mPrimaryUserId);
-        if (mPrimaryUserId != USER_SYSTEM) {
+        mFixedUsers.add(mMainUserId);
+        if (mMainUserId != USER_SYSTEM) {
             mFixedUsers.add(USER_SYSTEM);
         }
 
         if (mFeaturesCheckerRule.hasRequiredFeatures()) {
             // Switching to primary is only needed when we're testing device admin features.
-            switchUser(mPrimaryUserId);
+            switchUser(mMainUserId);
         } else {
             // Otherwise, all the tests can be executed in any of the Android users, so remain in
             // current user, and don't delete it. This enables testing in secondary users.
-            if (getDevice().getCurrentUser() != mPrimaryUserId) {
+            if (getDevice().getCurrentUser() != mMainUserId) {
                 mFixedUsers.add(getDevice().getCurrentUser());
             }
         }
@@ -245,7 +247,7 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
 
         removeOwners();
 
-        switchUser(mPrimaryUserId);
+        switchUser(mMainUserId);
 
         removeTestUsers();
         // Unlock keyguard before test
@@ -255,9 +257,9 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
         executeShellCommand("input keyevent KEYCODE_HOME");
     }
 
-    private void ensurePrimaryUserHasNoPassword() throws DeviceNotAvailableException {
-        if (!verifyUserCredentialIsCorrect(null, mPrimaryUserId)) {
-            changeUserCredential(null, TEST_PASSWORD, mPrimaryUserId);
+    private void ensureMainUserHasNoPassword() throws DeviceNotAvailableException {
+        if (!verifyUserCredentialIsCorrect(null, mMainUserId)) {
+            changeUserCredential(null, TEST_PASSWORD, mMainUserId);
         }
     }
 
@@ -357,8 +359,8 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
             CLog.e("Failed to remove device owner %s on user %d", componentName,
                     mDeviceOwnerUserId);
         }
-        if (isHeadlessSystemUserMode() && !removeAdmin(componentName, mPrimaryUserId)) {
-            CLog.e("Failed to remove profile owner %s on user %d", componentName, mPrimaryUserId);
+        if (isHeadlessSystemUserMode() && !removeAdmin(componentName, mMainUserId)) {
+            CLog.e("Failed to remove profile owner %s on user %d", componentName, mMainUserId);
         }
     }
 

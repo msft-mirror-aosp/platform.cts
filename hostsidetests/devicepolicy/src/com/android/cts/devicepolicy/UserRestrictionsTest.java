@@ -60,9 +60,9 @@ public final class UserRestrictionsTest extends BaseDevicePolicyTest {
             String componentName = DEVICE_ADMIN_PKG + "/" + ADMIN_RECEIVER_TEST_CLASS;
             assertTrue("Failed to clear owner", removeAdmin(componentName, mDeviceOwnerUserId));
             if (isHeadlessSystemUserMode()) {
-                boolean removed = removeAdmin(componentName, mPrimaryUserId);
+                boolean removed = removeAdmin(componentName, mMainUserId);
                 if (!removed) {
-                    CLog.e("Failed to remove %s on user %d", componentName, mPrimaryUserId);
+                    CLog.e("Failed to remove %s on user %d", componentName, mMainUserId);
                 }
             }
         }
@@ -106,19 +106,27 @@ public final class UserRestrictionsTest extends BaseDevicePolicyTest {
     @Test
     public void testUserRestrictions_primaryProfileOwnerOnly() throws Exception {
         assumeHasMainUser();
-        setPoAsUser(mPrimaryUserId);
+        setPoAsUser(mMainUserId);
 
         try {
-            runTests("userrestrictions.PrimaryProfileOwnerUserRestrictionsTest",
-                    "testDefaultRestrictions", mPrimaryUserId);
-            runTests("userrestrictions.PrimaryProfileOwnerUserRestrictionsTest",
-                    "testSetAllRestrictions", mPrimaryUserId);
-            runTests("userrestrictions.PrimaryProfileOwnerUserRestrictionsTest",
-                    "testBroadcast", mPrimaryUserId);
+            runTests(
+                    "userrestrictions.PrimaryProfileOwnerUserRestrictionsTest",
+                    "testDefaultRestrictions",
+                    mMainUserId);
+            runTests(
+                    "userrestrictions.PrimaryProfileOwnerUserRestrictionsTest",
+                    "testSetAllRestrictions",
+                    mMainUserId);
+            runTests(
+                    "userrestrictions.PrimaryProfileOwnerUserRestrictionsTest",
+                    "testBroadcast",
+                    mMainUserId);
         } finally {
             // Clear all restrictions restrictions on the main user.
-            runTests("userrestrictions.PrimaryProfileOwnerUserRestrictionsTest",
-                    "testClearAllRestrictions", mPrimaryUserId);
+            runTests(
+                    "userrestrictions.PrimaryProfileOwnerUserRestrictionsTest",
+                    "testClearAllRestrictions",
+                    mMainUserId);
         }
     }
 
@@ -151,7 +159,7 @@ public final class UserRestrictionsTest extends BaseDevicePolicyTest {
         assumeCanCreateOneManagedUser();
 
         // Create managed profile.
-        final int profileUserId = createManagedProfile(mPrimaryUserId /* parentUserId */);
+        final int profileUserId = createManagedProfile(mMainUserId /* parentUserId */);
         // createManagedProfile doesn't start the user automatically.
         startUser(profileUserId);
         setPoAsUser(profileUserId);
@@ -232,7 +240,7 @@ public final class UserRestrictionsTest extends BaseDevicePolicyTest {
         assumeHasMainUser();
 
         // Set PO on the main user.
-        setPoAsUser(mPrimaryUserId);
+        setPoAsUser(mMainUserId);
 
         // Create another user and set PO.
         final int secondaryUserId = createUserAndWaitStart();
@@ -240,16 +248,20 @@ public final class UserRestrictionsTest extends BaseDevicePolicyTest {
 
         try {
             // Let main-user PO set all restrictions.
-            runTests("userrestrictions.PrimaryProfileOwnerUserRestrictionsTest",
-                    "testSetAllRestrictions", mPrimaryUserId);
+            runTests(
+                    "userrestrictions.PrimaryProfileOwnerUserRestrictionsTest",
+                    "testSetAllRestrictions",
+                    mMainUserId);
 
             // Secondary users shouldn't see any of them. Leaky user restrictions are excluded.
             runTests("userrestrictions.SecondaryProfileOwnerUserRestrictionsTest",
                     "testDefaultAndLeakyRestrictions", secondaryUserId);
         } finally {
             // Clear all restrictions restrictions on the main user.
-            runTests("userrestrictions.PrimaryProfileOwnerUserRestrictionsTest",
-                    "testClearAllRestrictions", mPrimaryUserId);
+            runTests(
+                    "userrestrictions.PrimaryProfileOwnerUserRestrictionsTest",
+                    "testClearAllRestrictions",
+                    mMainUserId);
             // Clear all restrictions restrictions on secondary user.
             runTests("userrestrictions.SecondaryProfileOwnerUserRestrictionsTest",
                     "testClearAllRestrictions", secondaryUserId);
@@ -271,7 +283,7 @@ public final class UserRestrictionsTest extends BaseDevicePolicyTest {
             setPoAsUser(secondaryUserId);
         } else {
             // In headless system user mode, PO is set on primary user when DO is set.
-            secondaryUserId = mPrimaryUserId;
+            secondaryUserId = mMainUserId;
         }
 
         final int[] usersToCheck = {mDeviceOwnerUserId, secondaryUserId};
@@ -290,16 +302,16 @@ public final class UserRestrictionsTest extends BaseDevicePolicyTest {
         assumeCanCreateOneManagedUser();
 
         // Set PO on the main user.
-        setPoAsUser(mPrimaryUserId);
+        setPoAsUser(mMainUserId);
 
         // Create another user with PO.
-        final int secondaryUserId = createManagedProfile(mPrimaryUserId /* parentUserId */);
+        final int secondaryUserId = createManagedProfile(mMainUserId /* parentUserId */);
         setPoAsUser(secondaryUserId);
 
-        final int[] usersToCheck = {mPrimaryUserId, secondaryUserId};
+        final int[] usersToCheck = {mMainUserId, secondaryUserId};
 
         // Check the case when primary user's PO sets the restriction.
-        setAndCheckProfileGlobalRestriction(mPrimaryUserId, usersToCheck);
+        setAndCheckProfileGlobalRestriction(mMainUserId, usersToCheck);
 
         // Check the case when managed profile owner sets the restriction.
         setAndCheckProfileGlobalRestriction(secondaryUserId, usersToCheck);

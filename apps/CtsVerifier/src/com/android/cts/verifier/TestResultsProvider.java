@@ -31,6 +31,7 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.database.sqlite.SQLiteQueryBuilder;
 import android.net.Uri;
+import android.os.Environment;
 import android.os.ParcelFileDescriptor;
 
 import androidx.annotation.NonNull;
@@ -42,10 +43,12 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.List;
 
 /**
  * {@link ContentProvider} that provides read and write access to the test results.
@@ -73,6 +76,7 @@ public class TestResultsProvider extends ContentProvider {
      */
     private static final String REPORTS_PATH = "reports";
     private static final String RESULTS_PATH = "results";
+    private static final String REPORT_LOG_PATH = "logs";
     private static final UriMatcher URI_MATCHER = new UriMatcher(UriMatcher.NO_MATCH);
     private static final int RESULTS_ALL = 1;
     private static final int RESULTS_ID = 2;
@@ -81,6 +85,7 @@ public class TestResultsProvider extends ContentProvider {
     private static final int REPORT_ROW = 5;
     private static final int REPORT_FILE_NAME = 6;
     private static final int REPORT_LATEST = 7;
+    private static final int REPORT_LOG = 8;
     private static final String TABLE_NAME = "results";
     private SQLiteOpenHelper mOpenHelper;
     private BackupManager mBackupManager;
@@ -101,7 +106,6 @@ public class TestResultsProvider extends ContentProvider {
      * Get the URI from the test name.
      *
      * @param context
-     * @param testName
      * @return Uri
      */
     public static Uri getTestNameUri(Context context) {
@@ -202,6 +206,9 @@ public class TestResultsProvider extends ContentProvider {
         URI_MATCHER.addURI(authority, REPORTS_PATH + "/latest", REPORT_LATEST);
         URI_MATCHER.addURI(authority, REPORTS_PATH + "/#", REPORT_ROW);
         URI_MATCHER.addURI(authority, REPORTS_PATH + "/*", REPORT_FILE_NAME);
+        URI_MATCHER.addURI(authority, REPORT_LOG_PATH + "/*", REPORT_LOG);
+        // Match file in a directory. Only support single level nested logs.
+        URI_MATCHER.addURI(authority, REPORT_LOG_PATH + "/*/*", REPORT_LOG);
 
         mOpenHelper = new TestResultsOpenHelper(getContext());
         mBackupManager = new BackupManager(getContext());
@@ -244,6 +251,10 @@ public class TestResultsProvider extends ContentProvider {
                 throw new IllegalArgumentException(
                         "Report query not supported. Use content read.");
 
+            case REPORT_LOG:
+                throw new IllegalArgumentException(
+                        "Report query not supported. Use content write.");
+
             default:
                 throw new IllegalArgumentException("Unknown URI: " + uri);
         }
@@ -264,6 +275,9 @@ public class TestResultsProvider extends ContentProvider {
             case REPORT_LATEST:
                 throw new IllegalArgumentException(
                         "Report insert not supported. Use content read.");
+            case REPORT_LOG:
+                throw new IllegalArgumentException(
+                        "Report query not supported. Use content write.");
             default:
                 break;
         }
@@ -307,6 +321,9 @@ public class TestResultsProvider extends ContentProvider {
             case REPORT_LATEST:
                 throw new IllegalArgumentException(
                         "Report update not supported. Use content read.");
+            case REPORT_LOG:
+                throw new IllegalArgumentException(
+                        "Report query not supported. Use content write.");
             default:
                 throw new IllegalArgumentException("Unknown URI: " + uri);
         }
@@ -332,6 +349,9 @@ public class TestResultsProvider extends ContentProvider {
             case REPORT_LATEST:
                 throw new IllegalArgumentException(
                         "Report delete not supported. Use content read.");
+            case REPORT_LOG:
+                throw new IllegalArgumentException(
+                        "Report query not supported. Use content write.");
             default:
                 break;
         }
@@ -353,36 +373,37 @@ public class TestResultsProvider extends ContentProvider {
     @Override
     public ParcelFileDescriptor openFile(@NonNull Uri uri, @NonNull String mode)
             throws FileNotFoundException {
-        String fileName;
-        String[] fileList;
-        File file;
+        return switch (mode) {
+            case "r" -> readFile(uri);
+            case "w" -> writeFile(uri);
+            default -> throw new UnsupportedOperationException("Unsupported file mode: " + mode);
+        };
+    }
+
+    private ParcelFileDescriptor readFile(@NonNull Uri uri) {
         int match = URI_MATCHER.match(uri);
-        switch (match) {
-            case REPORT_ROW:
-                int rowId = Integer.parseInt(uri.getPathSegments().get(1));
-                file = getFileByIndex(rowId);
-                break;
-
-            case REPORT_FILE_NAME:
-                fileName = uri.getPathSegments().get(1);
-                file = getFileByName(fileName);
-                break;
-
-            case REPORT_LATEST:
-                file = getLatestFile();
-                break;
-
-            case REPORT:
-                throw new IllegalArgumentException("Read not supported. Use content query.");
-
-            case RESULTS_ALL:
-            case RESULTS_ID:
-            case RESULTS_TEST_NAME:
-                throw new IllegalArgumentException("Read not supported for URI: " + uri);
-
-            default:
-                throw new IllegalArgumentException("Unknown URI: " + uri);
-        }
+        File file =
+                switch (match) {
+                    case REPORT_ROW -> {
+                        int rowId = Integer.parseInt(uri.getPathSegments().get(1));
+                        yield getFileByIndex(rowId);
+                    }
+                    case REPORT_FILE_NAME -> {
+                        String fileName = uri.getPathSegments().get(1);
+                        yield getFileByName(fileName);
+                    }
+                    case REPORT_LATEST -> getLatestFile();
+                    case REPORT ->
+                            throw new IllegalArgumentException(
+                                    "Read not supported. Use content query.");
+                    case REPORT_LOG ->
+                            throw new IllegalArgumentException(
+                                    "Read not supported. Use content write.");
+                    case RESULTS_ALL, RESULTS_ID, RESULTS_TEST_NAME ->
+                            throw new IllegalArgumentException(
+                                    "Read not supported for URI: " + uri);
+                    default -> throw new IllegalArgumentException("Unknown URI: " + uri);
+                };
         try {
             FileInputStream fis = new FileInputStream(file);
             return ParcelFileDescriptor.dup(fis.getFD());
@@ -391,6 +412,36 @@ public class TestResultsProvider extends ContentProvider {
         }
     }
 
+    private ParcelFileDescriptor writeFile(@NonNull Uri uri) {
+        int match = URI_MATCHER.match(uri);
+        File file =
+                switch (match) {
+                    case REPORT_LOG -> {
+                        List<String> pathSegments = uri.getPathSegments();
+                        String filePath =
+                                String.join(
+                                        File.separator,
+                                        pathSegments.subList(1, pathSegments.size()));
+                        yield createLogFile(filePath);
+                    }
+                    case REPORT ->
+                            throw new IllegalArgumentException(
+                                    "Write not supported. Use content query.");
+                    case REPORT_ROW, REPORT_FILE_NAME, REPORT_LATEST ->
+                            throw new IllegalArgumentException(
+                                    "Write not supported. Use content read.");
+                    case RESULTS_ALL, RESULTS_ID, RESULTS_TEST_NAME ->
+                            throw new IllegalArgumentException(
+                                    "Read not supported for URI: " + uri);
+                    default -> throw new IllegalArgumentException("Unknown URI: " + uri);
+                };
+        try {
+            FileOutputStream fos = new FileOutputStream(file);
+            return ParcelFileDescriptor.dup(fos.getFD());
+        } catch (IOException e) {
+            throw new IllegalArgumentException("Cannot open file.");
+        }
+    }
 
     private File getFileByIndex(int index) {
         File[] files = getFiles();
@@ -430,6 +481,24 @@ public class TestResultsProvider extends ContentProvider {
         File[] files = dir.listFiles();
         Arrays.sort(files, Comparator.comparingLong(File::lastModified));
         return files;
+    }
+
+    private File createLogFile(String fileName) {
+        File logFile =
+                new File(
+                        String.join(
+                                File.separator,
+                                Environment.getExternalStorageDirectory().getAbsolutePath(),
+                                ReportExporter.LOGS_DIRECTORY,
+                                fileName));
+        if (!logFile.exists()) {
+            File parentDir = logFile.getParentFile();
+            if (parentDir == null || (!parentDir.exists() && !parentDir.mkdirs())) {
+                throw new IllegalStateException(
+                        "Cannot create directory " + parentDir + " for report logs");
+            }
+        }
+        return logFile;
     }
 
     private static class TestResultsOpenHelper extends SQLiteOpenHelper {
