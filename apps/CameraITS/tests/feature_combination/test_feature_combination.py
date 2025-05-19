@@ -161,7 +161,7 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
               'passed': passed}
     if is_stabilized:
       stabilization_result = (
-          preview_processing_utils.verify_preview_stabilization(
+          preview_processing_utils.verify_stabilization(
               recording_obj, gyro_events, test_name, log_path, facing
           )
       )

@@ -192,9 +192,9 @@ def collect_data_with_surfaces(cam, tablet_device, output_surfaces,
   return recording_obj
 
 
-def verify_preview_stabilization(recording_obj, gyro_events, test_name,
-                                 log_path, facing, zoom_ratio=None,
-                                 stabilization_mode=True):
+def verify_stabilization(recording_obj, gyro_events, test_name,
+                         log_path, facing, zoom_ratio=None,
+                         stabilization_mode=True):
   """Verify the returned recording is properly stabilized.
 
   Args:
@@ -268,29 +268,29 @@ def verify_preview_stabilization(recording_obj, gyro_events, test_name,
 
   w_x_h = video_size.split('x')
   if int(w_x_h[0])/int(w_x_h[1]) > _ASPECT_RATIO_16_9:
-    preview_stabilization_factor = _PREVIEW_STABILIZATION_FACTOR * 1.1
+    stabilization_factor = _PREVIEW_STABILIZATION_FACTOR * 1.1
   else:
-    preview_stabilization_factor = _PREVIEW_STABILIZATION_FACTOR
+    stabilization_factor = _PREVIEW_STABILIZATION_FACTOR
 
   failure_msg = None
-  if max_camera_angle >= max_gyro_angle * preview_stabilization_factor:
+  if max_camera_angle >= max_gyro_angle * stabilization_factor:
     # Fail if stabilization mode is on
     if stabilization_mode:
       failure_msg = (
-          f'{video_size} preview not stabilized enough! '
-          f'Max preview angle: {max_camera_angle:.3f}, '
+          f'{video_size} not stabilized enough! '
+          f'Max camera angle: {max_camera_angle:.3f}, '
           f'Max gyro angle: {max_gyro_angle:.3f}, '
           f'ratio: {max_camera_angle/max_gyro_angle:.3f} '
-          f'THRESH: {preview_stabilization_factor}.')
+          f'THRESH: {stabilization_factor}.')
   else:
     # Fail if stabilization mode is off
     if not stabilization_mode:
       failure_msg = (
-          f'{video_size} preview is stabilized when testing stabilization=OFF! '
-          f'Max preview angle: {max_camera_angle:.3f}, '
+          f'{video_size} is stabilized when testing stabilization=OFF! '
+          f'Max camera angle: {max_camera_angle:.3f}, '
           f'Max gyro angle: {max_gyro_angle:.3f}, '
           f'ratio: {max_camera_angle/max_gyro_angle:.3f} '
-          f'THRESH: {preview_stabilization_factor}.')
+          f'THRESH: {stabilization_factor}.')
 
   # Delete saved frames if the format is a PASS
   if not failure_msg:

@@ -3813,6 +3813,16 @@ public class ItsService extends Service implements SensorEventListener {
         mCaptureRequestBuilder.addTarget(recordSurface);
         List<OutputConfiguration> configs = new ArrayList<OutputConfiguration>();
         OutputConfiguration outConfig = new OutputConfiguration(recordSurface);
+        int[] capabilities = mCameraCharacteristics.get(
+                CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES);
+        boolean supportStreamUseCase = IntStream.of(capabilities).anyMatch(x -> x ==
+                CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES_STREAM_USE_CASE);
+        boolean useStreamUseCase = (supportStreamUseCase
+                && videoStabilizationMode == CaptureRequest.CONTROL_VIDEO_STABILIZATION_MODE_ON);
+        if (useStreamUseCase) {
+            outConfig.setStreamUseCase(
+                    CameraMetadata.SCALER_AVAILABLE_STREAM_USE_CASES_VIDEO_RECORD);
+        }
         outConfig.setDynamicRangeProfile(dynamicRangeProfile);
         configs.add(outConfig);
         if (extraConfigs != null) {

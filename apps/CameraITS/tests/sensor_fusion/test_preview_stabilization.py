@@ -173,7 +173,7 @@ class PreviewStabilizationTest(its_base_test.ItsBaseTest):
             # Verify stabilization was applied to preview stream
             stabilization_result[preview_size] = (
                 executor.submit(
-                    preview_processing_utils.verify_preview_stabilization,
+                    preview_processing_utils.verify_stabilization,
                     recording_obj, gyro_events, _NAME, log_path, facing,
                     zoom_ratio, stabilization_mode
                 )
