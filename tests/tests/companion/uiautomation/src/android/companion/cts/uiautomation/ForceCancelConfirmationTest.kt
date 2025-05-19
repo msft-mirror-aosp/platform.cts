@@ -18,7 +18,6 @@ package android.companion.cts.uiautomation
 
 import android.companion.CompanionDeviceManager.REASON_CANCELED
 import android.companion.CompanionDeviceManager.RESULT_CANCELED
-import android.companion.Flags
 import android.companion.cts.common.CompanionActivity
 import android.companion.cts.common.RecordingCallback
 import android.companion.cts.common.RecordingCallback.OnFailure
@@ -26,7 +25,6 @@ import android.os.SystemClock
 import android.platform.test.annotations.AppModeFull
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.compatibility.common.util.FeatureUtil
-import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import org.junit.Assume.assumeFalse
@@ -72,17 +70,10 @@ class ForceCancelConfirmationTest : UiAutomationTestBase(null, null) {
 
         SystemClock.sleep(1000)
 
-        if (Flags.associationFailureCode()) {
-            callback.invocations.contains(OnFailure(REASON_CANCELED)) &&
-                    callback.invocations.contains(
-                        RecordingCallback.OnFailureCode(RESULT_CANCELED, REASON_CANCELED)
-                    )
-        } else {
-            assertContentEquals(
-                actual = callback.invocations,
-                expected = listOf(OnFailure(REASON_CANCELED))
-            )
-        }
+        callback.invocations.contains(OnFailure(REASON_CANCELED)) &&
+                callback.invocations.contains(
+                    RecordingCallback.OnFailureCode(RESULT_CANCELED, REASON_CANCELED)
+                )
     }
 
     @Test

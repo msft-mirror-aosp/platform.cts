@@ -18,16 +18,12 @@ package android.companion.cts.core
 
 import android.companion.AssociationInfo
 import android.companion.AssociationRequest.DEVICE_PROFILE_WATCH
-import android.companion.Flags
 import android.companion.cts.common.MAC_ADDRESS_A
 import android.companion.cts.common.MAC_ADDRESS_B
 import android.platform.test.annotations.AppModeFull
-import android.platform.test.annotations.RequiresFlagsEnabled
-import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
-import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -38,11 +34,7 @@ import org.junit.runner.RunWith
  */
 @AppModeFull(reason = "CompanionDeviceManager APIs are not available to the instant apps.")
 @RunWith(AndroidJUnit4::class)
-@RequiresFlagsEnabled(Flags.FLAG_NEW_ASSOCIATION_BUILDER)
 class AssociationInfoBuilderTest : CoreTestBase() {
-    @get:Rule
-    val checkFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
-
     @Test
     fun test_setters() = with(targetApp) {
         associate(MAC_ADDRESS_A)
