@@ -18,21 +18,29 @@ package android.companion.cts.core
 
 import android.Manifest
 import android.Manifest.permission.MANAGE_COMPANION_DEVICES
+import android.companion.DeviceId
+import android.companion.Flags
 import android.companion.cts.common.MAC_ADDRESS_A
 import android.companion.cts.common.MAC_ADDRESS_B
 import android.companion.cts.common.MAC_ADDRESS_C
 import android.companion.cts.common.assertAssociations
 import android.companion.cts.common.assertEmpty
+import android.companion.cts.common.createDeviceId
+import android.companion.cts.common.getAssociationForPackage
 import android.companion.cts.common.runShellCommand
 import android.platform.test.annotations.AppModeFull
+import android.platform.test.annotations.RequiresFlagsEnabled
+import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import org.junit.Test
-import org.junit.runner.RunWith
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNotEquals
 import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
+import org.junit.Rule
+import org.junit.Test
+import org.junit.runner.RunWith
 
 /**
  * Test CDM APIs for retrieving the list of existing associations.
@@ -45,6 +53,8 @@ import kotlin.test.assertNotNull
 @AppModeFull(reason = "CompanionDeviceManager APIs are not available to the instant apps.")
 @RunWith(AndroidJUnit4::class)
 class RetrieveAssociationsTest : CoreTestBase() {
+    @get:Rule
+    val checkFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
 
     @Test
     fun test_getMyAssociations_singleAssociation() = with(targetApp) {
@@ -55,7 +65,8 @@ class RetrieveAssociationsTest : CoreTestBase() {
                 actual = cdm.myAssociations,
                 expected = setOf(
                         packageName to MAC_ADDRESS_A
-                ))
+                )
+        )
 
         disassociate(MAC_ADDRESS_A)
         assertEmpty(cdm.myAssociations)
@@ -70,7 +81,8 @@ class RetrieveAssociationsTest : CoreTestBase() {
                 actual = cdm.myAssociations,
                 expected = setOf(
                         packageName to MAC_ADDRESS_A
-                ))
+                )
+        )
 
         associate(MAC_ADDRESS_B)
         assertAssociations(
@@ -78,7 +90,8 @@ class RetrieveAssociationsTest : CoreTestBase() {
                 expected = setOf(
                         packageName to MAC_ADDRESS_A,
                         packageName to MAC_ADDRESS_B
-                ))
+                )
+        )
 
         associate(MAC_ADDRESS_C)
         assertAssociations(
@@ -87,7 +100,8 @@ class RetrieveAssociationsTest : CoreTestBase() {
                         packageName to MAC_ADDRESS_A,
                         packageName to MAC_ADDRESS_B,
                         packageName to MAC_ADDRESS_C
-                ))
+                )
+        )
 
         disassociate(MAC_ADDRESS_A)
         assertAssociations(
@@ -95,14 +109,16 @@ class RetrieveAssociationsTest : CoreTestBase() {
                 expected = setOf(
                         packageName to MAC_ADDRESS_B,
                         packageName to MAC_ADDRESS_C
-                ))
+                )
+        )
 
         disassociate(MAC_ADDRESS_B)
         assertAssociations(
                 actual = cdm.myAssociations,
                 expected = setOf(
                         packageName to MAC_ADDRESS_C
-                ))
+                )
+        )
 
         disassociate(MAC_ADDRESS_C)
         assertEmpty(cdm.myAssociations)
@@ -116,12 +132,14 @@ class RetrieveAssociationsTest : CoreTestBase() {
         targetApp.associate(MAC_ADDRESS_B)
         assertAssociations(
                 actual = cdm.myAssociations,
-                expected = setOf(targetApp.packageName to MAC_ADDRESS_B))
+                expected = setOf(targetApp.packageName to MAC_ADDRESS_B)
+        )
 
         testApp.associate(MAC_ADDRESS_C)
         assertAssociations(
                 actual = cdm.myAssociations,
-                expected = setOf(targetApp.packageName to MAC_ADDRESS_B))
+                expected = setOf(targetApp.packageName to MAC_ADDRESS_B)
+        )
 
         targetApp.disassociate(MAC_ADDRESS_B)
         assertEmpty(cdm.myAssociations)
@@ -144,7 +162,8 @@ class RetrieveAssociationsTest : CoreTestBase() {
         assertNotNull(
                 withShellPermissionIdentity(MANAGE_COMPANION_DEVICES) {
                     cdm.allAssociations
-                })
+                }
+        )
     }
 
     @Test
@@ -154,7 +173,8 @@ class RetrieveAssociationsTest : CoreTestBase() {
                 actual = withShellPermissionIdentity { cdm.allAssociations },
                 expected = setOf(
                         packageName to MAC_ADDRESS_A
-                ))
+                )
+        )
 
         disassociate(MAC_ADDRESS_A)
         assertEmpty(withShellPermissionIdentity { cdm.allAssociations })
@@ -167,7 +187,8 @@ class RetrieveAssociationsTest : CoreTestBase() {
                 actual = withShellPermissionIdentity { cdm.allAssociations },
                 expected = setOf(
                         packageName to MAC_ADDRESS_A
-                ))
+                )
+        )
 
         disassociate(MAC_ADDRESS_A)
         assertEmpty(withShellPermissionIdentity { cdm.allAssociations })
@@ -183,7 +204,8 @@ class RetrieveAssociationsTest : CoreTestBase() {
                 expected = setOf(
                         targetApp.packageName to MAC_ADDRESS_A,
                         testApp.packageName to MAC_ADDRESS_B
-                ))
+                )
+        )
     }
 
     @Test
@@ -231,5 +253,69 @@ class RetrieveAssociationsTest : CoreTestBase() {
             actual = associationsAfterClearCache,
             expected = associationsBeforeClearCache
         )
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_ASSOCIATION_VERIFICATION)
+    @Test
+    fun test_getAssociationsByDeviceId_without_permission() {
+        var deviceId: DeviceId = createDeviceId(null, MAC_ADDRESS_A)
+
+        assertFailsWith(SecurityException::class) {
+            cdm.getAssociationByDeviceId(deviceId)
+        }
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_ASSOCIATION_VERIFICATION)
+    @Test
+    fun test_getAssociationsByDeviceId_randomId() {
+        var deviceId: DeviceId = createDeviceId(null, MAC_ADDRESS_A)
+        assertEquals(expected = null, actual = deviceId.key)
+        targetApp.associate(MAC_ADDRESS_A)
+        val association = withShellPermissionIdentity {
+            getAssociationForPackage(userId, targetPackageName, MAC_ADDRESS_A, cdm)
+        }
+
+        withShellPermissionIdentity {
+            var deviceIdWithRandomKeyA = cdm.createAndSetDeviceId(association.id, deviceId)
+            // After createAndSetDeviceId call, the 128 bit random id should be generated.
+            assertNotNull(deviceIdWithRandomKeyA?.key)
+
+            var deviceIdWithRandomKeyB = getAssociationForPackage(
+                userId,
+                targetPackageName,
+                MAC_ADDRESS_A,
+                cdm
+            ).deviceId
+            // Make sure the random key also generated when fetching the association.
+            assertNotNull(deviceIdWithRandomKeyB?.key)
+        }
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_ASSOCIATION_VERIFICATION)
+    @Test
+    fun test_getAssociationsByDeviceId_from_other_package() {
+        var deviceId: DeviceId = createDeviceId(null, MAC_ADDRESS_A)
+        testApp.associate(MAC_ADDRESS_A)
+        val association = withShellPermissionIdentity(MANAGE_COMPANION_DEVICES) {
+            getAssociationForPackage(
+                userId,
+                testApp.packageName,
+                MAC_ADDRESS_A,
+                cdm
+            )
+        }
+
+        withShellPermissionIdentity() {
+            val deviceIdWithRandomKey = cdm.createAndSetDeviceId(association.id, deviceId)
+
+            if (deviceIdWithRandomKey != null) {
+                // Other apps should be able to fetch the associations with the device id.
+                assertTrue(
+                    cdm.getAssociationByDeviceId(deviceIdWithRandomKey) != null
+                )
+            } else {
+                error(deviceIdWithRandomKey.toString() + "should not be null")
+            }
+        }
     }
 }
