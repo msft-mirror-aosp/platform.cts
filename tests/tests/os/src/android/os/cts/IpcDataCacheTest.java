@@ -17,16 +17,20 @@
 package android.os.cts;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.assertSame;
+import static org.junit.Assert.fail;
 
+import android.os.Flags;
 import android.os.IpcDataCache;
 import android.platform.test.annotations.AppModeSdkSandbox;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
 import androidx.test.filters.SmallTest;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 /**
@@ -41,6 +45,8 @@ import org.junit.Test;
 @SmallTest
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class IpcDataCacheTest {
+
+    @Rule public final CheckFlagsRule mFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     // Configuration for creating caches
     private static final String MODULE = IpcDataCache.MODULE_TEST;
@@ -340,5 +346,48 @@ public class IpcDataCacheTest {
 
         // Clean up so this test can be re-run
         cache.forgetDisableLocal();
+    }
+
+    // setCacheTestMode() is preferred over setTestMode() (the former forwards to the latter) but
+    // the API is flag-guarded and is therefore not guaranteed to be present in all builds.  This
+    // test just verifies that the two APIs are interchangeable.
+    @RequiresFlagsEnabled(Flags.FLAG_IPC_DATA_CACHE_TESTMODE_APIS)
+    @Test
+    public void testCacheTestMode() {
+        // Create a cache that will write a system nonce.
+        TestCache sysCache = new TestCache(IpcDataCache.MODULE_SYSTEM, "mode1");
+
+        // Invalidate the cache.  This must succeed because test mode is enabled in setup().
+        sysCache.invalidateCache();
+
+        // Create a cache that uses MODULE_TEST.  Invalidation succeeds regardless of test mode.
+        TestCache testCache = new TestCache(IpcDataCache.MODULE_TEST, "mode2");
+        testCache.invalidateCache();
+
+        // Clear test mode.  This fails if test mode is not enabled.
+        IpcDataCache.setCacheTestMode(false);
+        try {
+            IpcDataCache.setCacheTestMode(false);
+            fail("expected an IllegalStateException");
+        } catch (IllegalStateException e) {
+            // The expected exception.
+        }
+
+        // The system cache cannot be invalidated with test mode disabled.
+        try {
+            sysCache.invalidateCache();
+            fail("expected permission failure");
+        } catch (RuntimeException e) {
+            // The expected exception.
+        }
+
+        // The test cache can still be invalidated.
+        testCache.invalidateCache();
+
+        // Re-enable test mode (so that the cleanup for the test does not throw).
+        IpcDataCache.setCacheTestMode(true);
+
+        // Verify that system invalidation is now okay, since test mode is enabled.
+        sysCache.invalidateCache();
     }
 }
