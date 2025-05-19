@@ -805,6 +805,7 @@ public class AccessibilityDisplayProxyTest {
     @ApiTest(apis = {"android.view.accessibility.AccessibilityDisplayProxy#onAccessibilityEvent"})
     public void testOnA11yEvent_touchProxyDisplay_proxyDoesNotReceiveInteractionEvent() {
         registerProxyAndWaitForConnection();
+        assertVirtualDisplayActivityExistsToProxy();
         mA11yProxy.setEventFilter(filterForEventType(
                 AccessibilityEvent.TYPE_TOUCH_INTERACTION_START));
 
