@@ -31,6 +31,7 @@ android_test {
         "libnativecursorwindow_jni",
     ],
     static_libs: [
+        "accountaccesslib",
         "androidx.test.rules",
         "androidx.test.ext.junit",
         "junit",
