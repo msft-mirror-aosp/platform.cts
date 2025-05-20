@@ -490,8 +490,9 @@ public class VirtualDeviceRule implements TestRule {
     public void assumeActivityLaunchSupported(int displayId) {
         if (displayId != Display.DEFAULT_DISPLAY) {
             assumeTrue(FeatureUtil.hasSystemFeature(FEATURE_ACTIVITIES_ON_SECONDARY_DISPLAYS));
-            // TODO(b/261155110): Re-enable once freeform mode is supported on virtual displays.
-            assumeFalse(FeatureUtil.hasSystemFeature(FEATURE_PC));
+            if (!android.companion.virtualdevice.flags.Flags.gwpcAwareWindowingMode()) {
+                assumeFalse(FeatureUtil.hasSystemFeature(FEATURE_PC));
+            }
         }
     }
 
