@@ -158,7 +158,8 @@ public class RequestPinAppWidgetTest extends AppWidgetTestCase {
     private String getDefaultLauncher() throws Exception {
         final String PREFIX = "Launcher: ComponentInfo{";
         final String POSTFIX = "}";
-        for (String s : runShellCommand("cmd shortcut get-default-launcher")) {
+        for (String s : runShellCommand("cmd shortcut get-default-launcher --user "
+                + getInstrumentation().getContext().getUserId())) {
             if (s.startsWith(PREFIX) && s.endsWith(POSTFIX)) {
                 return s.substring(PREFIX.length(), s.length() - POSTFIX.length());
             }
@@ -171,8 +172,6 @@ public class RequestPinAppWidgetTest extends AppWidgetTestCase {
                 + getInstrumentation().getContext().getUserId() + " " + component);
         runShellCommand("cmd package set-home-activity --user "
                 + getInstrumentation().getContext().getUserId() + " " + component);
-        /*runShellCommand("cmd package set-home-activity "
-                 + component);*/
     }
 
     @Test
