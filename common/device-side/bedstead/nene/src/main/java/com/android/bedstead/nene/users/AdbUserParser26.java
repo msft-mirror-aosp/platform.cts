@@ -130,9 +130,6 @@ public class AdbUserParser26 implements AdbUserParser {
             user.mId = Integer.parseInt(userInfo[0]);
             user.mSerialNo = Integer.parseInt(
                     userString.split("serialNo=", 2)[1].split("[ \n]", 2)[0]);
-            user.mHasProfileOwner =
-                    Boolean.parseBoolean(
-                            userString.split("Has profile owner: ", 2)[1].split("\n", 2)[0]);
             user.mState =
                     AdbUser.UserState.fromDumpSysValue(
                             userString.split("State: ", 2)[1].split("\n", 2)[0]);
