@@ -18,14 +18,11 @@ package org.hyphonate.megaaudio.recorder;
 import android.media.AudioDeviceInfo;
 import android.media.AudioFormat;
 import android.media.AudioRecord;
-import android.os.Looper;
-import android.os.Message;
 import android.util.Log;
 
 import org.hyphonate.megaaudio.common.BuilderBase;
 import org.hyphonate.megaaudio.common.StreamBase;
 import org.hyphonate.megaaudio.common.StreamState;
-import org.hyphonate.megaaudio.recorder.sinks.NopAudioSinkProvider;
 
 /**
  * Implementation of abstract Recorder class implemented for the Android Java-based audio record
@@ -37,15 +34,8 @@ public class JavaRecorder extends Recorder {
     @SuppressWarnings("unused")
     private static final boolean LOG = true;
 
-    /**
-     * The buffer to receive the recorder samples
-     */
-    private float[] mRecorderBuffer;
-
     /* The AudioRecord for recording the audio stream */
     private AudioRecord mAudioRecord = null;
-
-    private AudioSink mAudioSink;
 
     @Override
     public int getRoutedDeviceId() {
@@ -57,11 +47,6 @@ public class JavaRecorder extends Recorder {
             return BuilderBase.ROUTED_DEVICE_ID_DEFAULT;
         }
     }
-
-    /**
-     * The listener to receive notifications of recording events
-     */
-    private JavaSinkHandler mListener = null;
 
     public JavaRecorder(AudioSinkProvider sinkProvider) {
         super(sinkProvider);
@@ -114,14 +99,7 @@ public class JavaRecorder extends Recorder {
             }
             mAudioRecord.setPreferredDevice(builder.getRouteDevice());
 
-            mRecorderBuffer = new float[mNumExchangeFrames * mChannelCount];
-
-            if (mSinkProvider == null) {
-                mSinkProvider = new NopAudioSinkProvider();
-            }
-            mAudioSink = mSinkProvider.allocJavaSink();
-            mAudioSink.init(mNumExchangeFrames, mChannelCount);
-            mListener = new JavaSinkHandler(this, mAudioSink, Looper.getMainLooper());
+            buildCommon();
         } catch (UnsupportedOperationException ex) {
             if (LOG) {
                 Log.e(TAG, "Couldn't open AudioRecord: " + ex);
@@ -155,9 +133,8 @@ public class JavaRecorder extends Recorder {
             }
             return ERROR_INVALID_STATE;
         }
-        if (mListener != null) {
-            mListener.sendEmptyMessage(JavaSinkHandler.MSG_START);
-        }
+
+        startSink();
 
         try {
             mAudioRecord.startRecording();
@@ -165,11 +142,7 @@ public class JavaRecorder extends Recorder {
             Log.e(TAG, "startRecording exception: " + ex);
         }
 
-        waitForStreamThreadToExit(); // just to be sure.
-
-        mStreamThread = new Thread(new RecorderRunnable(), "JavaRecorder Thread");
-        mRecording = true;
-        mStreamThread.start();
+        startRecordingThread(new JavaRecorderRunnable(), "JavaRecorder Thread");
 
         return trackStart(OK);
     }
@@ -232,13 +205,6 @@ public class JavaRecorder extends Recorder {
         return false;
     }
 
-    /**
-     * The buff to receive the recorder samples
-     */
-    public float[] getFloatBuffer() {
-        return mRecorderBuffer;
-    }
-
     // JavaRecorder-specific extension
     public AudioRecord getAudioRecord() {
         return mAudioRecord;
@@ -260,61 +226,17 @@ public class JavaRecorder extends Recorder {
         return ERROR_UNKNOWN;
     }
 
-    // @Override
-    // Used in JavaSinkHandler
-    public float[] getDataBuffer() {
-        return mRecorderBuffer;
-    }
+    private class JavaRecorderRunnable extends RecorderRunnable {
 
-    /*
-     * Recorder Thread
-     */
-    /**
-     * Implements the <code>run</code> method for the record thread.
-     * Starts the AudioRecord, then continuously reads audio data
-     * until the flag <code>mRecording</code> is set to false (in the stop() method).
-     */
-    private class RecorderRunnable implements Runnable {
         @Override
-        public void run() {
-            final int numRecordSamples = mNumExchangeFrames * mChannelCount;
-            if (LOG) {
-                Log.i(TAG, "numRecordSamples: " + numRecordSamples);
-            }
+        public int read(float[] buffer, int offsetInFloats, int numSamples) {
+            return mAudioRecord.read(buffer, offsetInFloats, numSamples, AudioRecord.READ_BLOCKING);
+        }
 
-            int numReadSamples = 0;
-            while (mRecording) {
-                numReadSamples = mAudioRecord.read(
-                        mRecorderBuffer, 0, numRecordSamples, AudioRecord.READ_BLOCKING);
-                if (numReadSamples < 0) {
-                    // error
-                    if (LOG) {
-                        Log.e(TAG, "AudioRecord write error - numReadSamples: " + numReadSamples);
-                    }
-                    stop();
-                } else if (numReadSamples < numRecordSamples) {
-                    // got less than requested?
-                    if (LOG) {
-                        Log.e(TAG, "AudioRecord Underflow: " + numReadSamples +
-                                " vs. " + numRecordSamples);
-                    }
-                    stop();
-                }
-
-                if (mListener != null) {
-                    // TODO: on error or underrun we may be send bogus data.
-                    mListener.sendEmptyMessage(JavaSinkHandler.MSG_BUFFER_FILL);
-                }
-            }
-
-            if (mListener != null) {
-                // TODO: on error or underrun we may be send bogus data.
-                Message message = new Message();
-                message.what = JavaSinkHandler.MSG_STOP;
-                message.arg1 = numReadSamples;
-                mListener.sendMessage(message);
-            }
+        @Override
+        public void onStop() {
             mAudioRecord.stop();
         }
     }
+
 }

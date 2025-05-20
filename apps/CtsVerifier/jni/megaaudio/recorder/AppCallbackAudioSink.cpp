@@ -21,84 +21,28 @@
 
 static const char * const TAG = "AppCallbackAudioSink";
 
-AppCallbackAudioSink::AppCallbackAudioSink(JNIEnv *env, jobject callbackObj) {
-    jint rs = env->GetJavaVM(&mJVM);
-    mCallbackObj = env->NewGlobalRef(callbackObj);
-
-    jclass callbackClass = env->GetObjectClass(mCallbackObj);
-    mMIDonDataReady = env->GetMethodID(callbackClass, "onDataReady", "([FI)V");
+AppCallbackAudioSink::AppCallbackAudioSink(JavaNativeFloatFifo* floatFifoPtr)
+: mFloatFifoPtr(floatFifoPtr) {
 }
 
 void AppCallbackAudioSink::init(int numFrames, int numChannels) {
-    JNIEnv * env;
-    int getEnvStat = mJVM->GetEnv((void **)&env, JNI_VERSION_1_6);
-
-    if (getEnvStat == JNI_EDETACHED) {
-        int rs = mJVM->AttachCurrentThread(&env, NULL);
-    }
-
-    mAudioDataArrayLength = numChannels * numFrames;
-    mAudioDataArray = env->NewFloatArray(mAudioDataArrayLength);
-    mAudioDataArray = (jfloatArray)env->NewGlobalRef(mAudioDataArray);
-
-    if (getEnvStat == JNI_EDETACHED) {
-        mJVM->DetachCurrentThread();
-    }
 }
 
 void AppCallbackAudioSink::start() {
 }
 
 void AppCallbackAudioSink::stop() {
-    JNIEnv * env;
-    int getEnvStat = mJVM->GetEnv((void **)&env, JNI_VERSION_1_6);
-
-    if (getEnvStat == JNI_EDETACHED) {
-        int rs = mJVM->AttachCurrentThread(&env, NULL);
-    }
-
-    releaseJNIResources(env);
-
-    if (getEnvStat == JNI_EDETACHED) {
-        mJVM->DetachCurrentThread();
-    }
 }
 
 void AppCallbackAudioSink::push(float* audioData, int numFrames, int numChannels) {
-    // Get the local JNI env
-    JNIEnv * env;
-    int getEnvStat = mJVM->GetEnv((void **)&env, JNI_VERSION_1_6);
-
-    if (getEnvStat == JNI_EDETACHED) {
-        int rs = mJVM->AttachCurrentThread(&env, NULL);
+    int numFloats = numFrames * numChannels;
+    auto room = mFloatFifoPtr->getAvailableToWrite();
+    if (room < numFloats) {
+        __android_log_print(ANDROID_LOG_ERROR,
+                            TAG,
+                            "push() dropped %d samples!",
+                            numFloats - room);
+        numFloats = room;
     }
-
-    // put the float* into a jfloatarray
-    env->SetFloatArrayRegion(mAudioDataArray, 0, numFrames * numChannels, audioData);
-    env->CallVoidMethod(mCallbackObj, mMIDonDataReady, mAudioDataArray, numFrames);
-
-    if (getEnvStat == JNI_EDETACHED) {
-        mJVM->DetachCurrentThread();
-    }
+    mFloatFifoPtr->write(audioData, numFloats);
 }
-
-void AppCallbackAudioSink::releaseJNIResources(JNIEnv *env) {
-    env->DeleteGlobalRef(mCallbackObj);
-}
-
-extern "C" {
-JNIEXPORT jlong JNICALL
-Java_org_hyphonate_megaaudio_recorder_sinks_AppCallbackAudioSinkProvider_allocOboeSinkN(
-        JNIEnv *env, jobject thiz, jobject callback_obj) {
-    AppCallbackAudioSink* sink = new AppCallbackAudioSink(env, callback_obj);
-    return (jlong)sink;
-}
-
-JNIEXPORT void JNICALL
-Java_org_hyphonate_megaaudio_recorder_sinks_AppCallbackAudioSinkProvider_releaseJNIResourcesN(
-        JNIEnv *env, jobject thiz, jlong oboe_sink) {
-    AppCallbackAudioSink* sink = (AppCallbackAudioSink*)oboe_sink;
-    sink->releaseJNIResources(env);
-}
-
-} // extern "C"

@@ -26,8 +26,9 @@ using namespace oboe;
 
 constexpr int32_t kBufferSizeInBursts = 2; // Use 2 bursts as the buffer size (double buffer)
 
-OboeRecorder::OboeRecorder(AudioSink* sink, int32_t subtype)
-        : Recorder(sink, subtype),
+OboeRecorder::OboeRecorder(JavaNativeFloatFifo* floatFifoPtr, int32_t subtype)
+        // The Recorder will delete the sink when it is deleted.
+        : Recorder(std::make_shared<AppCallbackAudioSink>(floatFifoPtr), subtype),
           mInputPreset(-1)
 {}
 
@@ -136,28 +137,37 @@ oboe::DataCallbackResult OboeRecorder::onAudioReady(
 
 extern "C" {
 JNIEXPORT jlong JNICALL
-Java_org_hyphonate_megaaudio_recorder_OboeRecorder_allocNativeRecorder(JNIEnv *env, jobject thiz, jlong native_audio_sink, jint recorderSubtype) {
-    OboeRecorder* recorder = new OboeRecorder((AudioSink*)native_audio_sink, recorderSubtype);
+Java_org_hyphonate_megaaudio_recorder_OboeRecorder_allocNativeRecorder(JNIEnv *env, jobject thiz, jlong nativeFifoPtrLong, jint recorderSubtype) {
+    auto nativeFifoPtr = reinterpret_cast<JavaNativeFloatFifo*>(nativeFifoPtrLong);
+    OboeRecorder* recorder = new OboeRecorder(nativeFifoPtr, recorderSubtype);
     return (jlong)recorder;
+}
+
+JNIEXPORT void JNICALL
+Java_org_hyphonate_megaaudio_recorder_OboeRecorder_deleteNativeRecorder(JNIEnv *env, jobject thiz, jlong native_recorder) {
+    delete reinterpret_cast<OboeRecorder*>(native_recorder);
 }
 
 JNIEXPORT jint JNICALL
 Java_org_hyphonate_megaaudio_recorder_OboeRecorder_getBufferFrameCountN(
         JNIEnv *env, jobject thiz, jlong native_recorder) {
-    return ((OboeRecorder*)native_recorder)->getNumBufferFrames();
+    auto oboeRecorder = reinterpret_cast<OboeRecorder*>(native_recorder);
+    return oboeRecorder->getNumBufferFrames();
 }
 
 JNIEXPORT void JNICALL
 Java_org_hyphonate_megaaudio_recorder_OboeRecorder_setInputPresetN(
         JNIEnv *env, jobject thiz, jlong native_recorder, jint input_preset) {
-    ((OboeRecorder*)native_recorder)->setInputPreset(input_preset);
+    auto oboeRecorder = reinterpret_cast<OboeRecorder*>(native_recorder);
+    oboeRecorder->setInputPreset(input_preset);
 }
 
 JNIEXPORT jint JNICALL
 Java_org_hyphonate_megaaudio_recorder_OboeRecorder_buildStreamN(
         JNIEnv *env, jobject thiz, jlong native_recorder, jint channel_count, jint sample_rate,
         jint performanceMode, jint sharingMode, jint route_device_id, jint input_preset) {
-    return ((OboeRecorder*)native_recorder)->buildStream(
+    auto oboeRecorder = reinterpret_cast<OboeRecorder*>(native_recorder);
+    return oboeRecorder->buildStream(
             channel_count, sample_rate, performanceMode, sharingMode, route_device_id,
             input_preset);
 }
@@ -165,81 +175,91 @@ Java_org_hyphonate_megaaudio_recorder_OboeRecorder_buildStreamN(
 JNIEXPORT jint JNICALL
         Java_org_hyphonate_megaaudio_recorder_OboeRecorder_openStreamN(
         JNIEnv *env, jobject thiz, jlong native_recorder) {
-    return ((OboeRecorder*)native_recorder)->openStream();
+    auto oboeRecorder = reinterpret_cast<OboeRecorder*>(native_recorder);
+    return oboeRecorder->openStream();
 }
 
 JNIEXPORT jint JNICALL
 Java_org_hyphonate_megaaudio_recorder_OboeRecorder_teardownStreamN(
         JNIEnv *env, jobject thiz, jlong native_recorder) {
-    return ((OboeRecorder*)native_recorder)->teardownStream();
+    auto oboeRecorder = reinterpret_cast<OboeRecorder*>(native_recorder);
+    return oboeRecorder->teardownStream();
 }
 
 JNIEXPORT jint JNICALL
 Java_org_hyphonate_megaaudio_recorder_OboeRecorder_startStreamN(
         JNIEnv *env, jobject thiz, jlong native_recorder, jint recorder_subtype) {
-    return ((OboeRecorder*)native_recorder)->startStream();
+    auto oboeRecorder = reinterpret_cast<OboeRecorder*>(native_recorder);
+    return oboeRecorder->startStream();
 }
 
 JNIEXPORT jint JNICALL
 Java_org_hyphonate_megaaudio_recorder_OboeRecorder_stopStreamN(
         JNIEnv *env, jobject thiz, jlong native_recorder) {
-    return ((OboeRecorder*)native_recorder)->stopStream();
+    auto oboeRecorder = reinterpret_cast<OboeRecorder*>(native_recorder);
+    return oboeRecorder->stopStream();
 }
 
 JNIEXPORT jint JNICALL
         Java_org_hyphonate_megaaudio_recorder_OboeRecorder_closeStreamN(
         JNIEnv *env, jobject thiz, jlong native_recorder) {
-    return ((OboeRecorder*)native_recorder)->closeStream();
+    auto oboeRecorder = reinterpret_cast<OboeRecorder*>(native_recorder);
+    return oboeRecorder->closeStream();
 }
 
 JNIEXPORT jboolean JNICALL
 Java_org_hyphonate_megaaudio_recorder_OboeRecorder_isRecordingN(
         JNIEnv *env, jobject thiz, jlong native_recorder) {
-    OboeRecorder* nativeRecorder = ((OboeRecorder*)native_recorder);
-    return nativeRecorder->isRecording();
+    auto oboeRecorder = reinterpret_cast<OboeRecorder*>(native_recorder);
+    return oboeRecorder->isRecording();
 }
 
 JNIEXPORT jint JNICALL
 Java_org_hyphonate_megaaudio_recorder_OboeRecorder_getNumBufferFramesN(
         JNIEnv *env, jobject thiz, jlong native_recorder) {
-    OboeRecorder* nativeRecorder = ((OboeRecorder*)native_recorder);
-    return nativeRecorder->getNumBufferFrames();
+    auto oboeRecorder = reinterpret_cast<OboeRecorder*>(native_recorder);
+    return oboeRecorder->getNumBufferFrames();
 }
 
-extern "C"
 JNIEXPORT jint JNICALL
 Java_org_hyphonate_megaaudio_recorder_OboeRecorder_getRoutedDeviceIdN(
         JNIEnv *env, jobject thiz, jlong native_recorder) {
-    return ((OboeRecorder*)native_recorder)->getRoutedDeviceId();
+    auto oboeRecorder = reinterpret_cast<OboeRecorder*>(native_recorder);
+    return oboeRecorder->getRoutedDeviceId();
 }
 
 JNIEXPORT jint JNICALL
 Java_org_hyphonate_megaaudio_recorder_OboeRecorder_getSharingModeN(
         JNIEnv *env, jobject thiz, jlong native_recorder) {
-    return ((OboeRecorder*)native_recorder)->getSharingMode();
+    auto oboeRecorder = reinterpret_cast<OboeRecorder*>(native_recorder);
+    return oboeRecorder->getSharingMode();
 }
 
 JNIEXPORT jint JNICALL
 Java_org_hyphonate_megaaudio_recorder_OboeRecorder_getChannelCountN(
         JNIEnv *env, jobject thiz, jlong native_recorder) {
-    return ((OboeRecorder*)native_recorder)->getChannelCount();
+    auto oboeRecorder = reinterpret_cast<OboeRecorder*>(native_recorder);
+    return oboeRecorder->getChannelCount();
 }
 
 JNIEXPORT jboolean JNICALL
 Java_org_hyphonate_megaaudio_recorder_OboeRecorder_isMMapN(
         JNIEnv *env, jobject thiz, jlong native_recorder) {
-    return ((OboeRecorder*)native_recorder)->isMMap();
+    auto oboeRecorder = reinterpret_cast<OboeRecorder*>(native_recorder);
+    return oboeRecorder->isMMap();
 }
 
 JNIEXPORT jint JNICALL Java_org_hyphonate_megaaudio_recorder_OboeRecorder_getStreamStateN(
         JNIEnv *env, jobject thiz, jlong native_recorder) {
-    return (int)((OboeRecorder*)(native_recorder))->getState();
+    auto oboeRecorder = reinterpret_cast<OboeRecorder*>(native_recorder);
+    return (int)oboeRecorder->getState();
 }
 
 JNIEXPORT jint JNICALL
 Java_org_hyphonate_megaaudio_recorder_OboeRecorder_getLastErrorCallbackResultN(
         JNIEnv *env, jobject thiz, jlong native_recorder) {
-    return (int)((OboeRecorder*)(native_recorder))->getLastErrorCallbackResult();
+    auto oboeRecorder = reinterpret_cast<OboeRecorder*>(native_recorder);
+    return (int)oboeRecorder->getLastErrorCallbackResult();
 }
 
 }   // extern "C"
