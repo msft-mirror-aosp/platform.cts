@@ -203,6 +203,18 @@ public class CodecDecoderTestBase extends CodecTestBase {
         return format.containsKey("csd-0");
     }
 
+    protected void preserveCSDBuffers(MediaFormat format) {
+        mCsdBuffers.clear();
+        for (int i = 0; ; i++) {
+            String csdKey = "csd-" + i;
+            if (!format.containsKey(csdKey)) {
+                break;
+            }
+            ByteBuffer buffer = format.getByteBuffer(csdKey);
+            mCsdBuffers.add(buffer.duplicate());
+        }
+    }
+
     protected void flattenBufferInfo(MediaCodec.BufferInfo info, boolean isAudio) {
         if (isAudio) {
             mFlatBuffer.putInt(info.size);
@@ -215,7 +227,8 @@ public class CodecDecoderTestBase extends CodecTestBase {
     void enqueueCodecConfig(int bufferIndex) {
         ByteBuffer inputBuffer = mCodec.getInputBuffer(bufferIndex);
         ByteBuffer csdBuffer = mCsdBuffers.get(mCurrCsdIdx);
-        inputBuffer.put((ByteBuffer) csdBuffer.rewind());
+        inputBuffer.put(csdBuffer);
+        csdBuffer.rewind();
         mCodec.queueInputBuffer(bufferIndex, 0, csdBuffer.limit(), 0,
                 MediaCodec.BUFFER_FLAG_CODEC_CONFIG);
         if (ENABLE_LOGS) {
