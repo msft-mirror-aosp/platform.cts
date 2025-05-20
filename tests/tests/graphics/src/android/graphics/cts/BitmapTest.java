@@ -1908,9 +1908,10 @@ public class BitmapTest {
      * to rely upon when sending bitmaps between themselves
      */
     @Test
-    @RequiresFlagsDisabled(Flags.FLAG_BITMAP_PARCEL_ASHMEM_AS_IMMUTABLE)
     public void testWriteToParcelPreserveMutability() {
-        Bitmap source = Bitmap.createBitmap(100, 100, Config.ARGB_8888);
+        // A sufficiently small Bitmap so that it's not implicitly copied to ashmem.
+        // See: testWriteToParcelImplicitAshmemCopyIsImmutable for more details.
+        Bitmap source = Bitmap.createBitmap(10, 10, Config.ARGB_8888);
         assertTrue(source.isMutable());
         Parcel p = Parcel.obtain();
         source.writeToParcel(p, 0);

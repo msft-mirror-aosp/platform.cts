@@ -20,6 +20,7 @@ import static com.google.common.truth.Truth.assertThat;
 
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
+import android.bluetooth.BluetoothManager;
 import android.bluetooth.le.ScanResult;
 import android.os.Parcel;
 
@@ -47,11 +48,13 @@ public class ScanResultTest {
     private static final int RSSI = -10;
     private static final long TIMESTAMP_NANOS = 10000L;
 
+    private BluetoothAdapter mBluetoothAdapter;
+
     @Before
     public void setUp() {
-        Assume.assumeTrue(
-                TestUtils.isBleSupported(
-                        InstrumentationRegistry.getInstrumentation().getContext()));
+        final var context = InstrumentationRegistry.getInstrumentation().getContext();
+        Assume.assumeTrue(TestUtils.isBleSupported(context));
+        mBluetoothAdapter = context.getSystemService(BluetoothManager.class).getAdapter();
     }
 
     /** Test read and write parcel of ScanResult */
@@ -59,8 +62,7 @@ public class ScanResultTest {
     @SmallTest
     @Test
     public void scanResultParceling() {
-        BluetoothDevice device =
-                BluetoothAdapter.getDefaultAdapter().getRemoteDevice(DEVICE_ADDRESS);
+        BluetoothDevice device = mBluetoothAdapter.getRemoteDevice(DEVICE_ADDRESS);
         ScanResult result =
                 new ScanResult(
                         device, TestUtils.parseScanRecord(SCAN_RECORD), RSSI, TIMESTAMP_NANOS);
@@ -80,8 +82,7 @@ public class ScanResultTest {
     @SmallTest
     @Test
     public void describeContents() {
-        BluetoothDevice device =
-                BluetoothAdapter.getDefaultAdapter().getRemoteDevice(DEVICE_ADDRESS);
+        BluetoothDevice device = mBluetoothAdapter.getRemoteDevice(DEVICE_ADDRESS);
         ScanResult result =
                 new ScanResult(
                         device, TestUtils.parseScanRecord(SCAN_RECORD), RSSI, TIMESTAMP_NANOS);
@@ -92,8 +93,7 @@ public class ScanResultTest {
     @SmallTest
     @Test
     public void constructor() {
-        BluetoothDevice device =
-                BluetoothAdapter.getDefaultAdapter().getRemoteDevice(DEVICE_ADDRESS);
+        BluetoothDevice device = mBluetoothAdapter.getRemoteDevice(DEVICE_ADDRESS);
         int eventType = 0xAAAA;
         int primaryPhy = 0xAAAB;
         int secondaryPhy = 0xAABA;

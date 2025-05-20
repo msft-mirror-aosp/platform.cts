@@ -127,7 +127,8 @@ public class PackageInstallerCujTestBase {
     public static final String TEXTVIEW_WIDGET_CLASSNAME = "android.widget.TextView";
 
     public static final long FIND_OBJECT_TIMEOUT_MS = 20 * 1000L;
-    private static final long WAIT_OBJECT_GONE_TIMEOUT_MS = 3 * 1000L;
+    private static final long WAIT_OBJECT_GONE_TIMEOUT_MS = 10 * 1000L;
+    private static final long WAIT_NEW_WINDOW_TIMEOUT_MS = 3 * 1000L;
 
     private static final long TEST_APK_VERSION = 1;
     private static final long TEST_APK_V2_VERSION = 2;
@@ -273,7 +274,7 @@ public class PackageInstallerCujTestBase {
      * Click the object and wait for the new window content is changed
      */
     public static void clickAndWaitForNewWindow(UiObject2 uiObject2) {
-        uiObject2.clickAndWait(Until.newWindow(), WAIT_OBJECT_GONE_TIMEOUT_MS);
+        uiObject2.clickAndWait(Until.newWindow(), WAIT_NEW_WINDOW_TIMEOUT_MS);
     }
 
     /**

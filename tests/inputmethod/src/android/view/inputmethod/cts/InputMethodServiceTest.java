@@ -65,9 +65,7 @@ import android.graphics.RectF;
 import android.inputmethodservice.InputMethodService;
 import android.os.Bundle;
 import android.os.SystemClock;
-import android.os.SystemProperties;
 import android.platform.test.annotations.AppModeSdkSandbox;
-import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -1266,10 +1264,7 @@ public final class InputMethodServiceTest extends EndToEndImeTestBase {
      * Verifies that the custom IME Switcher button is requested visible in gesture navigation mode,
      * when the IME navigation bar is hidden.
      */
-    @RequiresFlagsEnabled({
-            Flags.FLAG_IME_SWITCHER_REVAMP_API,
-            Flags.FLAG_DISALLOW_DISABLING_IME_NAVIGATION_BAR
-    })
+    @RequiresFlagsEnabled(Flags.FLAG_IME_SWITCHER_REVAMP_API)
     @Test
     public void testOnCustomImeSwitcherButtonRequestedVisible_gestureNav() throws Exception {
         assumeTrue("Device must support the navigation bar",
@@ -1282,7 +1277,6 @@ public final class InputMethodServiceTest extends EndToEndImeTestBase {
 
         assumeFalse("Device is not configured to hide the navigation bar for IME",
                 isHideNavBarForKeyboard());
-        assumeTrue("IME navigation bar is enabled", isImeNavigationBarEnabled());
 
         try (var ignored = mGestureNavSwitchHelper.withGestureNavigationMode();
                 var imeSession = MockImeSession.create(
@@ -1377,10 +1371,7 @@ public final class InputMethodServiceTest extends EndToEndImeTestBase {
      * navigation mode if {@code config_hideNavBarForKeyboard} is set, but not requested visible
      * in gesture navigation mode.
      */
-    @RequiresFlagsEnabled({
-            Flags.FLAG_IME_SWITCHER_REVAMP_API,
-            Flags.FLAG_DISALLOW_DISABLING_IME_NAVIGATION_BAR
-    })
+    @RequiresFlagsEnabled(Flags.FLAG_IME_SWITCHER_REVAMP_API)
     @Test
     public void testOnCustomImeSwitcherButtonRequestedVisible_hideNavBarForKeyboard()
             throws Exception {
@@ -1394,7 +1385,6 @@ public final class InputMethodServiceTest extends EndToEndImeTestBase {
 
         assumeTrue("Device is configured to hide the navigation bar for IME",
                 isHideNavBarForKeyboard());
-        assumeTrue("IME navigation bar is enabled", isImeNavigationBarEnabled());
 
         try (var ignored = mGestureNavSwitchHelper.withGestureNavigationMode();
                 var imeSession = MockImeSession.create(
@@ -1429,119 +1419,11 @@ public final class InputMethodServiceTest extends EndToEndImeTestBase {
         }
     }
 
-    /**
-     * Verifies that the custom IME Switcher button is not requested visible if the IME navigation
-     * bar is disabled. In gesture navigation mode with the IME navigation bar disabled, the system
-     * navigation bar will show the IME navigation bar buttons.
-     */
-    @RequiresFlagsEnabled(Flags.FLAG_IME_SWITCHER_REVAMP_API)
-    @RequiresFlagsDisabled(Flags.FLAG_DISALLOW_DISABLING_IME_NAVIGATION_BAR)
-    @Test
-    public void testOnCustomImeSwitcherButtonRequestedVisible_imeNavigationBarDisabled()
-            throws Exception {
-        assumeTrue("Device must support the navigation bar",
-                mGestureNavSwitchHelper.hasNavigationBar());
-
-        assertTrue("Gesture navigation mode overlay should be installed",
-                mGestureNavSwitchHelper.hasGestureNavOverlay());
-        assertTrue("Three button navigation mode overlay should be installed",
-                mGestureNavSwitchHelper.hasThreeButtonNavOverlay());
-
-        assumeFalse("Device is not configured to hide the navigation bar for IME",
-                isHideNavBarForKeyboard());
-        assumeFalse("IME navigation bar is not enabled", isImeNavigationBarEnabled());
-
-        try (var ignored = mGestureNavSwitchHelper.withThreeButtonNavigationMode();
-                var imeSession = MockImeSession.create(
-                        InstrumentationRegistry.getInstrumentation().getContext(),
-                        InstrumentationRegistry.getInstrumentation().getUiAutomation(),
-                        new ImeSettings.Builder())) {
-            final var stream = imeSession.openEventStream();
-
-            assumeTrue("IME Switcher button should be shown at the start of the test",
-                    imeSession.shouldShowImeSwitcherButtonForTest());
-
-            createTestActivity(SOFT_INPUT_STATE_ALWAYS_VISIBLE);
-            expectEvent(stream, eventMatcher("onStartInput"), TIMEOUT);
-            notExpectEvent(stream, eventMatcher("onCustomImeSwitcherButtonRequestedVisible"),
-                    EXPECTED_TIMEOUT);
-
-            try (var ignored1 = mGestureNavSwitchHelper.withGestureNavigationMode()) {
-                // IME nav bar buttons are shown in system navigation bar as it is visible and the
-                // IME nav bar is disabled.
-                notExpectEvent(stream, eventMatcher("onCustomImeSwitcherButtonRequestedVisible"),
-                        EXPECTED_TIMEOUT);
-            }
-
-            notExpectEvent(stream, eventMatcher("onCustomImeSwitcherButtonRequestedVisible"),
-                    EXPECTED_TIMEOUT);
-        }
-    }
-
-    /**
-     * Verifies that the custom IME Switcher button is requested visible if the IME navigation bar
-     * is disabled and {@code config_hideNavBarForKeyboard} is set. In gesture navigation
-     * mode with the IME navigation bar disabled, the system navigation bar would show the IME
-     * navigation bar buttons, however the bar itself is also not visible.
-     */
-    @RequiresFlagsEnabled(Flags.FLAG_IME_SWITCHER_REVAMP_API)
-    @RequiresFlagsDisabled(Flags.FLAG_DISALLOW_DISABLING_IME_NAVIGATION_BAR)
-    @Test
-    public void testOnCustomImeSwitcherButtonRequestedVisible_imeNavigationBarDisabled_hideNavBarForKeyboard()
-            throws Exception {
-        assumeTrue("Device must support the navigation bar",
-                mGestureNavSwitchHelper.hasNavigationBar());
-
-        assertTrue("Gesture navigation mode overlay should be installed",
-                mGestureNavSwitchHelper.hasGestureNavOverlay());
-        assertTrue("Three button navigation mode overlay should be installed",
-                mGestureNavSwitchHelper.hasThreeButtonNavOverlay());
-
-        assumeTrue("Device is configured to hide the navigation bar for IME",
-                isHideNavBarForKeyboard());
-        assumeFalse("IME navigation bar is not enabled", isImeNavigationBarEnabled());
-
-        try (var ignored = mGestureNavSwitchHelper.withThreeButtonNavigationMode();
-                var imeSession = MockImeSession.create(
-                        InstrumentationRegistry.getInstrumentation().getContext(),
-                        InstrumentationRegistry.getInstrumentation().getUiAutomation(),
-                        new ImeSettings.Builder())) {
-            final var stream = imeSession.openEventStream();
-
-            assumeTrue("IME Switcher button should be shown at the start of the test",
-                    imeSession.shouldShowImeSwitcherButtonForTest());
-
-            createTestActivity(SOFT_INPUT_STATE_ALWAYS_VISIBLE);
-            // onCustomImeSwitcherButtonRequestedVisible happens before onStartInput as the IME is
-            // created directly in the required state for this.
-            final var requestedVisible = expectEvent(stream,
-                    eventMatcher("onCustomImeSwitcherButtonRequestedVisible"), TIMEOUT);
-            assertWithMessage("Custom IME Switcher requested visible")
-                    .that(requestedVisible.getArguments().getBoolean("visible"))
-                    .isTrue();
-
-            expectEvent(stream, eventMatcher("onStartInput"), TIMEOUT);
-
-            try (var ignored1 = mGestureNavSwitchHelper.withGestureNavigationMode()) {
-                notExpectEvent(stream, eventMatcher("onCustomImeSwitcherButtonRequestedVisible"),
-                        EXPECTED_TIMEOUT);
-            }
-
-            notExpectEvent(stream, eventMatcher("onCustomImeSwitcherButtonRequestedVisible"),
-                    EXPECTED_TIMEOUT);
-        }
-    }
-
     /** Explicitly start-up the IME process if it would have been prevented. */
     protected void ensureImeRunning() {
         if (isPreventImeStartup()) {
             createTestActivity(SOFT_INPUT_STATE_ALWAYS_VISIBLE);
         }
-    }
-
-    /** Whether the IME navigation bar is enabled, defaults to {@code true}. */
-    private static boolean isImeNavigationBarEnabled() {
-        return SystemProperties.getBoolean(PROP_CAN_RENDER_GESTURAL_NAV_BUTTONS, true);
     }
 
     /** Whether the navigation bar will be automatically hidden when the IME is shown. */

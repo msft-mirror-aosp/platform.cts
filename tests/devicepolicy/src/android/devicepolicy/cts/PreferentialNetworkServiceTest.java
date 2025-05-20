@@ -54,8 +54,8 @@ import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.policies.PreferentialNetworkService;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.permissions.annotations.EnsureHasPermission;
-import com.android.testutils.RecorderCallback.CallbackEntry;
 import com.android.testutils.TestableNetworkCallback;
+import com.android.testutils.TestableNetworkCallback.Event;
 import com.android.testutils.TestableNetworkOfferCallback;
 
 import org.junit.After;
@@ -190,8 +190,8 @@ public final class PreferentialNetworkServiceTest {
         cb.assertNoCallback(
                 NO_CALLBACK_TIMEOUT_MS,
                 c ->
-                        !(c instanceof CallbackEntry.CapabilitiesChanged
-                                || c instanceof CallbackEntry.LinkPropertiesChanged));
+                        !(c instanceof Event.CapabilitiesChanged
+                                || c instanceof Event.LinkPropertiesChanged));
     }
 
     /**
@@ -262,7 +262,7 @@ public final class PreferentialNetworkServiceTest {
             // fallback.
             dpc(sDeviceState).devicePolicyManager().setPreferentialNetworkServiceConfigs(
                     List.of(blockConfig));
-            defaultCallback.eventuallyExpect(CallbackEntry.LOST, DEFAULT_TIMEOUT_MS);
+            defaultCallback.eventuallyExpect(Event.LOST, DEFAULT_TIMEOUT_MS);
 
             // Verify the application cannot access default network  since it is
             // a non-enterprise network.

@@ -92,7 +92,6 @@ public class NotificationManagerBubbleTest extends BaseNotificationManagerTest {
     // android.server.wm.intentLaunchRunner#ACTIVITY_LAUNCH_TIMEOUT)
     private static final int ACTIVITY_LAUNCH_TIMEOUT = 10000;
 
-    private BroadcastReceiver mBubbleBroadcastReceiver;
     private boolean mBubblesEnabledSettingToRestore;
 
     @Before
@@ -115,7 +114,6 @@ public class NotificationManagerBubbleTest extends BaseNotificationManagerTest {
 
     @After
     public void tearDown() throws Exception {
-
         // Restore bubbles setting
         setBubblesGlobal(mBubblesEnabledSettingToRestore);
 
@@ -250,14 +248,14 @@ public class NotificationManagerBubbleTest extends BaseNotificationManagerTest {
      */
     private SendBubbleActivity startSendBubbleActivity() throws Exception {
         final CountDownLatch latch = new CountDownLatch(1);
-        mBubbleBroadcastReceiver = new BroadcastReceiver() {
+        BroadcastReceiver bubbleBroadcastReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
                 latch.countDown();
             }
         };
         IntentFilter filter = new IntentFilter(SendBubbleActivity.BUBBLE_ACTIVITY_OPENED);
-        mContext.registerReceiver(mBubbleBroadcastReceiver, filter, Context.RECEIVER_EXPORTED);
+        mContext.registerReceiver(bubbleBroadcastReceiver, filter, Context.RECEIVER_EXPORTED);
 
         // Start & get the activity
         Class clazz = SendBubbleActivity.class;
@@ -278,6 +276,9 @@ public class NotificationManagerBubbleTest extends BaseNotificationManagerTest {
         // Make sure device is unlocked
         ensureDeviceUnlocked(sendBubbleActivity);
         latch.await(500, TimeUnit.MILLISECONDS);
+
+        mContext.unregisterReceiver(bubbleBroadcastReceiver);
+        InstrumentationRegistry.getInstrumentation().removeMonitor(monitor);
 
         return sendBubbleActivity;
     }
@@ -337,10 +338,6 @@ public class NotificationManagerBubbleTest extends BaseNotificationManagerTest {
             } catch (InterruptedException ignored) {
             }
         }
-    }
-
-    private void cleanupSendBubbleActivity() {
-        mContext.unregisterReceiver(mBubbleBroadcastReceiver);
     }
 
     @Test
@@ -513,8 +510,7 @@ public class NotificationManagerBubbleTest extends BaseNotificationManagerTest {
     }
 
     @Test
-    public void testNotificationManagerBubblePolicy_noFlag_phonecall()
-            throws Exception {
+    public void testNotificationManagerBubblePolicy_noFlag_phonecall() throws Exception {
         if (!isBubblesFeatureSupported()) {
             return;
         }
@@ -555,9 +551,9 @@ public class NotificationManagerBubbleTest extends BaseNotificationManagerTest {
 
             // No foreground bubbles that don't fulfill policy in R (allowed in Q)
             verifyNotificationBubbleState(BUBBLE_NOTIF_ID, false /* shouldBeBubble */);
+            a.finish();
         } finally {
             deleteShortcuts();
-            cleanupSendBubbleActivity();
         }
     }
 
@@ -592,9 +588,9 @@ public class NotificationManagerBubbleTest extends BaseNotificationManagerTest {
             assertTrue((activity.getIntent().getFlags() & FLAG_ACTIVITY_NEW_DOCUMENT) != 0);
             assertTrue((activity.getIntent().getFlags() & FLAG_ACTIVITY_MULTIPLE_TASK) != 0);
             activity.finish();
+            a.finish();
         } finally {
             deleteShortcuts();
-            cleanupSendBubbleActivity();
         }
     }
 
@@ -858,8 +854,8 @@ public class NotificationManagerBubbleTest extends BaseNotificationManagerTest {
             metadata = sbnNotSuppressed.getNotification().getBubbleMetadata();
             assertNotNull(metadata);
             assertFalse(metadata.isNotificationSuppressed());
+            a.finish();
         } finally {
-            cleanupSendBubbleActivity();
             deleteShortcuts();
         }
     }
@@ -888,9 +884,9 @@ public class NotificationManagerBubbleTest extends BaseNotificationManagerTest {
             BubbledActivity activity = (BubbledActivity) monitor.waitForActivity();
             assertTrue(activity.isLaunchedFromBubble());
             activity.finish();
+            a.finish();
         } finally {
             deleteShortcuts();
-            cleanupSendBubbleActivity();
         }
     }
 
@@ -922,9 +918,9 @@ public class NotificationManagerBubbleTest extends BaseNotificationManagerTest {
             BubbledActivity activity = (BubbledActivity) monitor.waitForActivity();
             assertTrue(activity.isLaunchedFromBubble());
             activity.finish();
+            a.finish();
         } finally {
             deleteShortcuts();
-            cleanupSendBubbleActivity();
         }
     }
 
@@ -969,9 +965,9 @@ public class NotificationManagerBubbleTest extends BaseNotificationManagerTest {
             assertTrue(sbn.getNotification().getBubbleMetadata().isBubbleSuppressable());
             assertTrue(sbn.getNotification().getBubbleMetadata().isBubbleSuppressed());
             activity.finish();
+            a.finish();
         } finally {
             deleteShortcuts();
-            cleanupSendBubbleActivity();
         }
     }
 
@@ -1015,9 +1011,9 @@ public class NotificationManagerBubbleTest extends BaseNotificationManagerTest {
             assertFalse(sbn.getNotification().getBubbleMetadata().isBubbleSuppressable());
             assertFalse(sbn.getNotification().getBubbleMetadata().isBubbleSuppressed());
             activity.finish();
+            a.finish();
         } finally {
             deleteShortcuts();
-            cleanupSendBubbleActivity();
         }
     }
 
@@ -1060,9 +1056,9 @@ public class NotificationManagerBubbleTest extends BaseNotificationManagerTest {
             assertTrue(sbn.getNotification().getBubbleMetadata().isBubbleSuppressable());
             assertFalse(sbn.getNotification().getBubbleMetadata().isBubbleSuppressed());
             activity.finish();
+            a.finish();
         } finally {
             deleteShortcuts();
-            cleanupSendBubbleActivity();
         }
     }
 
@@ -1108,9 +1104,9 @@ public class NotificationManagerBubbleTest extends BaseNotificationManagerTest {
             assertTrue(sbn.getNotification().getBubbleMetadata().isBubbleSuppressable());
             assertFalse(sbn.getNotification().getBubbleMetadata().isBubbleSuppressed());
             activity.finish();
+            a.finish();
         } finally {
             deleteShortcuts();
-            cleanupSendBubbleActivity();
         }
     }
 
@@ -1158,6 +1154,7 @@ public class NotificationManagerBubbleTest extends BaseNotificationManagerTest {
             mListener.resetData();
 
             activity.finish();
+            a.finish();
 
             // notif gets posted with update, so wait
             verifyNotificationBubbleState(notifId, true /* shouldBeBubble */);
@@ -1166,7 +1163,6 @@ public class NotificationManagerBubbleTest extends BaseNotificationManagerTest {
             assertFalse(sbn.getNotification().getBubbleMetadata().isBubbleSuppressed());
         } finally {
             deleteShortcuts();
-            cleanupSendBubbleActivity();
         }
     }
 
@@ -1178,21 +1174,18 @@ public class NotificationManagerBubbleTest extends BaseNotificationManagerTest {
         if (!isBubblesFeatureSupported()) {
             return;
         }
-        try {
-            // Start test activity
-            SendBubbleActivity activity = startSendBubbleActivity();
-            assertFalse(activity.isLaunchedFromBubble());
+        // Start test activity
+        SendBubbleActivity activity = startSendBubbleActivity();
+        assertFalse(activity.isLaunchedFromBubble());
 
-            // Should have exception
-            assertThrows(SecurityException.class, () -> {
-                Intent i = new Intent(mContext, BubbledActivity.class);
-                ActivityOptions options = ActivityOptions.makeBasic();
-                Bundle b = options.toBundle();
-                b.putBoolean("android.activity.launchTypeBubble", true);
-                activity.startActivity(i, b);
-            });
-        } finally {
-            cleanupSendBubbleActivity();
-        }
+        // Should have exception
+        assertThrows(SecurityException.class, () -> {
+            Intent i = new Intent(mContext, BubbledActivity.class);
+            ActivityOptions options = ActivityOptions.makeBasic();
+            Bundle b = options.toBundle();
+            b.putBoolean("android.activity.launchTypeBubble", true);
+            activity.startActivity(i, b);
+        });
+        activity.finish();
     }
 }

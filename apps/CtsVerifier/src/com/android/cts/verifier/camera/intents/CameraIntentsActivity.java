@@ -893,5 +893,6 @@ public class CameraIntentsActivity extends PassFailButtons.Activity
         }
 
         mActionSuccess = containsMotionPhotoMetadata;
+        updateSuccessState();
     }
 }
