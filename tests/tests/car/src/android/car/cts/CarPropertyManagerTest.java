@@ -23,10 +23,8 @@ import static android.car.cts.utils.ShellPermissionUtils.runWithShellPermissionI
 import static android.car.cts.utils.VehiclePropertyVerifiers.PORT_LOCATION_TYPES;
 import static android.car.cts.utils.VehiclePropertyVerifiers.assertFuelPropertyNotImplementedOnEv;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getEngineRpmVerifierBuilder;
-import static android.car.cts.utils.VehiclePropertyVerifiers.getEvBatteryInstantaneousChargeRateVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getEvBatteryLevelVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getFuelDoorOpenVerifierBuilder;
-import static android.car.cts.utils.VehiclePropertyVerifiers.getFuelLevelLowVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getFuelLevelVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getHvacAcOnVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getHvacActualFanSpeedRpmVerifierBuilder;
@@ -1632,9 +1630,7 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         getFuelLevelVerifierBuilder(),
                         getEvBatteryLevelVerifierBuilder(),
                         getEvCurrentBatteryCapacityVerifierBuilder(),
-                        getEvBatteryInstantaneousChargeRateVerifierBuilder(),
                         getRangeRemainingVerifierBuilder(),
-                        getFuelLevelLowVerifierBuilder(),
                         getFuelDoorOpenVerifierBuilder(),
                         getEvChargeCurrentDrawLimitVerifierBuilder(),
                         getEvChargePercentLimitVerifierBuilder(),

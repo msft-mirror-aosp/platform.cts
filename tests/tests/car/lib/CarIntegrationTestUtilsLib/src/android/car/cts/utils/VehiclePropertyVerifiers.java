@@ -1169,17 +1169,6 @@ public class VehiclePropertyVerifiers {
                                         .isAtLeast(0));
     }
 
-    public static VehiclePropertyVerifier.Builder<Float>
-            getEvBatteryInstantaneousChargeRateVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.EV_BATTERY_INSTANTANEOUS_CHARGE_RATE,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_CONTINUOUS,
-                        Float.class)
-                .addReadPermission(Car.PERMISSION_ENERGY);
-    }
-
     /** Gets the verifier builder for {@link VehiclePropertyIds#EV_BATTERY_LEVEL}. */
     public static VehiclePropertyVerifier.Builder<Float> getEvBatteryLevelVerifierBuilder() {
         return VehiclePropertyVerifier.<Float>newDefaultBuilder(VehiclePropertyIds.EV_BATTERY_LEVEL)
@@ -1218,29 +1207,6 @@ public class VehiclePropertyVerifiers {
                                     .that(evBatteryLevel)
                                     .isAtMost((Float) infoEvBatteryCapacityValue.getValue());
                         });
-    }
-
-    public static VehiclePropertyVerifier.Builder<Boolean>
-            getEvChargePortConnectedVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.EV_CHARGE_PORT_CONNECTED,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_ONCHANGE,
-                        Boolean.class)
-                .addReadPermission(Car.PERMISSION_ENERGY_PORTS);
-    }
-
-    public static VehiclePropertyVerifier.Builder<Boolean> getEvChargePortOpenVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.EV_CHARGE_PORT_OPEN,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_ONCHANGE,
-                        Boolean.class)
-                .addReadPermission(Car.PERMISSION_ENERGY_PORTS)
-                .addReadPermission(Car.PERMISSION_CONTROL_ENERGY_PORTS)
-                .addWritePermission(Car.PERMISSION_CONTROL_ENERGY_PORTS);
     }
 
     /** Gets the verifier builder for {@link VehiclePropertyIds#FUEL_LEVEL}. */
@@ -1321,26 +1287,6 @@ public class VehiclePropertyVerifiers {
                             .isNotEqualTo(new Integer[] {FuelType.ELECTRIC});
                 },
                 Car.PERMISSION_CAR_INFO);
-    }
-
-    public static VehiclePropertyVerifier.Builder<Boolean> getFuelLevelLowVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.FUEL_LEVEL_LOW,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_ONCHANGE,
-                        Boolean.class)
-                .addReadPermission(Car.PERMISSION_ENERGY);
-    }
-
-    public static VehiclePropertyVerifier.Builder<Float> getEnvOutsideTemperatureVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.ENV_OUTSIDE_TEMPERATURE,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_CONTINUOUS,
-                        Float.class)
-                .addReadPermission(Car.PERMISSION_EXTERIOR_ENVIRONMENT);
     }
 
     /**
