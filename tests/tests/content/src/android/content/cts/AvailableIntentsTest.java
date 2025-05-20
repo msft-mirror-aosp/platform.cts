@@ -179,6 +179,10 @@ public class AvailableIntentsTest extends AndroidTestCase {
      * it will open a browser window to the URL specified.
      */
     public void testViewNormalUrl() {
+        if (FeatureUtil.isAutomotive()) {
+            // Skip the test for automotive device.
+            return;
+        }
         Uri uri = Uri.parse(NORMAL_URL);
         Intent intent = new Intent(Intent.ACTION_VIEW, uri);
         assertCanBeHandled(intent);
@@ -189,6 +193,10 @@ public class AvailableIntentsTest extends AndroidTestCase {
      * it will open a browser window to the URL specified.
      */
     public void testViewSecureUrl() {
+        if (FeatureUtil.isAutomotive()) {
+            // Skip the test for automotive device.
+            return;
+        }
         Uri uri = Uri.parse(SECURE_URL);
         Intent intent = new Intent(Intent.ACTION_VIEW, uri);
         assertCanBeHandled(intent);
