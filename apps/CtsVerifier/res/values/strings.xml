@@ -2387,8 +2387,8 @@
         Unlock screen to return to this page after seeing the notification or after 5 seconds.\n
         Fail the test if the notification does not show as described.
     </string>
-    <string name="fsi_turn_on_aod">Turn on Always on Display by toggling on \"Always show time and info\" in Lockscreen Settings.</string>
-    <string name="fsi_turn_off_aod">Turn off Always on Display by toggling off \"Always show time and info\" in Lockscreen Settings.</string>
+    <string name="fsi_turn_on_aod">Turn on Always on Display by toggling on \"Always-on display\" in Display Settings.</string>
+    <string name="fsi_turn_off_aod">Turn off Always on Display by toggling off \"Always-on display\" in Display Settings.</string>
     <string name="fsi_notif_title">NotifFsiTest</string>
     <string name="fsi_mock_call_desc">This page is a full screen intent (e.g. a call).\n
         Pass the test if you see this page.\n
@@ -2499,7 +2499,7 @@
     <string name="np_start_channel_settings">Launch Channel Settings</string>
     <string name="np_start_security_settings">Launch Security Settings</string>
     <string name="np_start_notif_settings">Launch Notification Settings</string>
-    <string name="np_start_lockscreen_settings">Launch Lock Screen Settings</string>
+    <string name="np_start_display_settings">Launch Display Settings</string>
     <string name="np_when_locked_see_redacted">Lock the screen and find the NotifPrivacyTest notification.\n
         Pass the test if the notification content is REDACTED.</string>
     <string name="np_when_locked_see_private">Lock the screen and find the NotifPrivacyTest notification.\n
