@@ -240,6 +240,7 @@ class AppOpDefinitionTest {
             APP_OPS[AppOpsManager.OPSTR_SCENE_UNDERSTANDING_COARSE] = 161
             APP_OPS[AppOpsManager.OPSTR_SCENE_UNDERSTANDING_FINE] = 162
             APP_OPS[AppOpsManager.OPSTR_POST_PROMOTED_NOTIFICATIONS] = 163
+            APP_OPS[AppOpsManager.OPSTR_SYSTEM_APPLICATION_OVERLAY] = 164
         }
     }
 }
