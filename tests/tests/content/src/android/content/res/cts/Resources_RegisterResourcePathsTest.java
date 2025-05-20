@@ -24,13 +24,11 @@ import android.content.res.ApkAssets;
 import android.content.res.AssetManager;
 import android.content.res.CompatibilityInfo;
 import android.content.res.Configuration;
-import android.content.res.Flags;
 import android.content.res.Resources;
 import android.content.res.ResourcesImpl;
 import android.content.res.ResourcesKey;
 import android.platform.test.annotations.AppModeSdkSandbox;
 import android.platform.test.annotations.DisabledOnRavenwood;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.DisplayMetrics;
@@ -89,7 +87,6 @@ public class Resources_RegisterResourcePathsTest {
 
     @Test
     @SmallTest
-    @RequiresFlagsEnabled(Flags.FLAG_REGISTER_RESOURCE_PATHS)
     public void testExistingResourcesAfterRegistration()
             throws PackageManager.NameNotFoundException {
         // Create a Resources before register resources' paths for a package.
@@ -114,7 +111,6 @@ public class Resources_RegisterResourcePathsTest {
 
     @Test
     @SmallTest
-    @RequiresFlagsEnabled(Flags.FLAG_REGISTER_RESOURCE_PATHS)
     public void testNewResourcesAfterRegistration()
             throws PackageManager.NameNotFoundException {
         ApplicationInfo appInfo = mPackageManager.getApplicationInfo(TEST_LIB, 0);
@@ -136,7 +132,6 @@ public class Resources_RegisterResourcePathsTest {
 
     @Test
     @SmallTest
-    @RequiresFlagsEnabled(Flags.FLAG_REGISTER_RESOURCE_PATHS)
     public void testExistingResourcesCreatedByConstructorAfterResourcePathsRegistration()
             throws PackageManager.NameNotFoundException {
         // Create a Resources through constructor directly before register resources' paths.
@@ -164,7 +159,6 @@ public class Resources_RegisterResourcePathsTest {
 
     @Test
     @SmallTest
-    @RequiresFlagsEnabled(Flags.FLAG_REGISTER_RESOURCE_PATHS)
     public void testNewResourcesWithOutdatedImplAfterResourcePathsRegistration()
             throws PackageManager.NameNotFoundException {
         Resources old_resources = mResourcesManager.getResources(
