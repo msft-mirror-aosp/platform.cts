@@ -92,13 +92,22 @@ public final class DeviceMethodCallStats {
      * @return a csv style string with the format "{packageName}:{className}"
      */
     public static String getPackageClass(String packageClass) {
-        int lastDot = packageClass.lastIndexOf('.');
+        int lastDot = packageClass.lastIndexOf('/');
         if (lastDot < 0) {
-            return ":" + packageClass;
+            return ":" + formatClassName(packageClass);
         } else {
-            return packageClass.substring(0, lastDot) + ":"
-                    + packageClass.substring(lastDot + 1);
+            return formatPackageName(packageClass.substring(0, lastDot))
+                    + ":"
+                    + formatClassName(packageClass.substring(lastDot + 1));
         }
+    }
+
+    private static String formatPackageName(String packageName) {
+        return packageName.replaceAll("/", ".");
+    }
+
+    private static String formatClassName(String className) {
+        return className.replaceAll("\\$", ".");
     }
 
     private static String removeMethodParameters(String methodName) {
