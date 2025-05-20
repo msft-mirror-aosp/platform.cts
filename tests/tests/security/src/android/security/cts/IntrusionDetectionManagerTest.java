@@ -36,6 +36,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
+import android.os.UserManager;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -103,6 +104,10 @@ public class IntrusionDetectionManagerTest {
             return false;
         }
         return true;
+    }
+
+    private boolean isSystemUser() {
+        return mContext.getSystemService(UserManager.class).isSystemUser();
     }
 
     @After
@@ -455,6 +460,8 @@ public class IntrusionDetectionManagerTest {
                         Manifest.permission.BIND_INTRUSION_DETECTION_EVENT_TRANSPORT_SERVICE,
                         Manifest.permission.READ_INTRUSION_DETECTION_STATE,
                         Manifest.permission.MANAGE_INTRUSION_DETECTION_STATE);
+        // Data source logs may only be gathered by the system server.
+        assumeTrue(isSystemUser());
 
         var executor = newSingleThreadExecutor();
         String securityEventTag = "test_security_event_tag";
