@@ -53,7 +53,6 @@ import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.stream.Stream;
 
 /** Window Manager State helper class with assert and wait functions. */
 public class WindowManagerStateHelper extends WindowManagerState {
@@ -219,8 +218,14 @@ public class WindowManagerStateHelper extends WindowManagerState {
             "window surface type=" + windowType + (show ? " shown" : " hidden"));
     }
 
-    private static boolean nonActivityWindowFocused(WindowManagerState state) {
-        return !areFocusedStringsEqual(state.getFocusedWindow(), state.getFocusedActivity());
+    /**
+     * Checks whether an activity window is focused by comparing the focused window to the currently
+     * focused activity.
+     *
+     * @param state the current state.
+     */
+    public static boolean activityWindowFocused(WindowManagerState state) {
+        return areFocusedStringsEqual(state.getFocusedWindow(), state.getFocusedActivity());
     }
 
     /**
@@ -228,11 +233,17 @@ public class WindowManagerStateHelper extends WindowManagerState {
      * currently focused activity.
      */
     public boolean waitForNonActivityWindowFocused() {
-        return waitForWithAmState(s -> nonActivityWindowFocused(s), "non-activity window focused");
+        return waitForWithAmState(Predicate.not(WindowManagerStateHelper::activityWindowFocused),
+                "non-activity window focused");
     }
 
+    /**
+     * Waits and asserts that a non-activity window is focused by comparing the focused window to
+     * the currently focused activity.
+     */
     public void waitAndAssertNonActivityWindowFocused() {
-        waitAndAssert(s -> nonActivityWindowFocused(s), "non-activity window focused");
+        waitAndAssert(Predicate.not(WindowManagerStateHelper::activityWindowFocused),
+                "non-activity window focused");
     }
 
     /**
