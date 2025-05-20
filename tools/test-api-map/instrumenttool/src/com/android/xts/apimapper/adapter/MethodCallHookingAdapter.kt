@@ -150,7 +150,7 @@ class MethodCallHookingAdapter(
             visitor.visitLdcInsn(callerMethodName)
             visitor.visitLdcInsn(calleeMethodOpcode)
         }
-        visitor.visitLdcInsn(calleeMethodOwner.toHumanReadableClassName())
+        visitor.visitLdcInsn(calleeMethodOwner)
         visitor.visitLdcInsn(calleeMethodName)
         visitor.visitLdcInsn(calleeMethodDesc.toHumanReadableDesc())
         if (receiverIndex == null) {
