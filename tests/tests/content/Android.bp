@@ -141,6 +141,7 @@ android_test {
         ":CtsBinderPermissionTestService",
         ":CtsContentMockRestrictedApp",
         ":CtsContentUriTestApp",
+        ":CtsIntentResolutionTestApp",
     ],
     test_config: "CtsContentTest.xml",
 }
