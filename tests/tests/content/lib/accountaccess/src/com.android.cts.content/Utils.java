@@ -11,7 +11,9 @@ import android.content.SyncRequest;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.net.ConnectivityManager;
-import android.net.NetworkInfo;
+import android.net.Network;
+import android.net.NetworkCapabilities;
+import android.net.NetworkRequest;
 import android.os.Bundle;
 import android.os.Process;
 import android.os.SystemClock;
@@ -23,12 +25,16 @@ import androidx.test.uiautomator.UiDevice;
 
 import com.android.compatibility.common.util.SystemUtil;
 
+import com.google.common.util.concurrent.SettableFuture;
+
 import java.io.IOException;
+import java.util.concurrent.ExecutionException;
 
 public final class Utils {
     private static final String LOG_TAG = Utils.class.getSimpleName();
 
     public static final long SYNC_TIMEOUT_MILLIS = 20000; // 20 sec
+    private static final int NETWORK_TIMEOUT_MS = 5000; // 5 sec
     public static final String TOKEN_TYPE_REMOVE_ACCOUNTS = "TOKEN_TYPE_REMOVE_ACCOUNTS";
     public static final String SYNC_ACCOUNT_TYPE = "com.stub";
     public static final String ALWAYS_SYNCABLE_AUTHORITY = "com.android.cts.stub.provider";
@@ -37,10 +43,46 @@ public final class Utils {
     private Utils() {}
 
     public static boolean hasDataConnection() {
-        ConnectivityManager connectivityManager = getContext().getSystemService(
-                ConnectivityManager.class);
-        NetworkInfo activeNetwork = connectivityManager.getActiveNetworkInfo();
-        return activeNetwork != null && activeNetwork.isConnectedOrConnecting();
+        NetworkRequest networkRequest =
+                new NetworkRequest.Builder()
+                        .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+                        .addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
+                        .addTransportType(NetworkCapabilities.TRANSPORT_CELLULAR)
+                        .build();
+        SettableFuture<Boolean> hasInternetFuture = SettableFuture.create();
+        ConnectivityManager.NetworkCallback networkCallback =
+                new ConnectivityManager.NetworkCallback() {
+                    @Override
+                    public void onUnavailable() {
+                        super.onUnavailable();
+                        hasInternetFuture.set(false);
+                    }
+
+                    @Override
+                    public void onLost(@NonNull Network network) {
+                        super.onLost(network);
+                        hasInternetFuture.set(false);
+                    }
+
+                    @Override
+                    public void onCapabilitiesChanged(
+                            @NonNull Network network,
+                            @NonNull NetworkCapabilities networkCapabilities) {
+                        super.onCapabilitiesChanged(network, networkCapabilities);
+                        boolean hasInternet =
+                                networkCapabilities.hasCapability(
+                                        NetworkCapabilities.NET_CAPABILITY_VALIDATED);
+                        hasInternetFuture.set(hasInternet);
+                    }
+                };
+        ConnectivityManager connectivityManager =
+                getContext().getSystemService(ConnectivityManager.class);
+        connectivityManager.requestNetwork(networkRequest, networkCallback, NETWORK_TIMEOUT_MS);
+        try {
+            return hasInternetFuture.get();
+        } catch (InterruptedException | ExecutionException e) {
+            return false;
+        }
     }
 
     public static boolean hasNotificationSupport() {
@@ -104,8 +146,10 @@ public final class Utils {
     public static ClosableAccount withAccount(@NonNull Activity activity)
             throws AuthenticatorException, OperationCanceledException, IOException {
         AccountManager accountManager = getContext().getSystemService(AccountManager.class);
-        Bundle result = accountManager.addAccount(SYNC_ACCOUNT_TYPE, null, null, null,
-                activity, null, null).getResult();
+        Bundle result =
+                accountManager
+                        .addAccount(SYNC_ACCOUNT_TYPE, null, null, null, activity, null, null)
+                        .getResult();
         Account addedAccount = new Account(
                 result.getString(AccountManager.KEY_ACCOUNT_NAME),
                 result.getString(AccountManager.KEY_ACCOUNT_TYPE));
