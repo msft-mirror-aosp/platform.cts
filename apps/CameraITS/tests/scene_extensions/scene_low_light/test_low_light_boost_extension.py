@@ -205,6 +205,10 @@ class LowLightBoostTest(its_base_test.ItsBaseTest):
       its_session_utils.load_scene(
           cam, props, self.scene, self.tablet, self.chart_distance,
           lighting_check=False, log_path=self.log_path)
+
+      cam.do_3a()
+      time.sleep(_BRIGHTNESS_SETTING_CHANGE_WAIT_SEC)
+
       metering_region = low_light_utils.get_metering_region(
           cam, f'{test_name}_{self.camera_id}')
       use_metering_region = (
