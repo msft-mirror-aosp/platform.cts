@@ -53,6 +53,7 @@ public class RequestPinAppWidgetTest extends AppWidgetTestCase {
 
     private static final String LAUNCHER_CLASS = "android.appwidget.cts.packages.Launcher";
     private static final String ACTION_PIN_RESULT = "android.appwidget.cts.ACTION_PIN_RESULT";
+    private static final String APPBAL_PACKAGE = "android.appwidget.cts.appbal";
 
     private String mDefaultLauncher;
 
@@ -64,9 +65,17 @@ public class RequestPinAppWidgetTest extends AppWidgetTestCase {
     }
 
     @After
-    public void tearDownLauncher() throws Exception {
+    public void tearDown() throws Exception {
         // Set the launcher back
         setLauncher(mDefaultLauncher);
+
+        // Close the activities opened in the test.
+        SystemUtil.runWithShellPermissionIdentity(
+                () ->
+                        getInstrumentation()
+                                .getContext()
+                                .getSystemService(ActivityManager.class)
+                                .forceStopPackage(APPBAL_PACKAGE));
     }
 
     @CddTest(requirement = "3.8.2/C-2-2")
@@ -184,9 +193,10 @@ public class RequestPinAppWidgetTest extends AppWidgetTestCase {
                 .register(Constants.ACTION_SETUP_REPLY);
 
         // starts the BalActivity in the test app AppBal.
-        context.startActivity(new Intent(Intent.ACTION_MAIN)
-                .setPackage("android.appwidget.cts.appbal")
-                .addFlags(FLAG_ACTIVITY_NEW_TASK));
+        context.startActivity(
+                new Intent(Intent.ACTION_MAIN)
+                        .setPackage(APPBAL_PACKAGE)
+                        .addFlags(FLAG_ACTIVITY_NEW_TASK));
 
         setupReceiver.await();
         // Verify that the confirmation dialog was opened
