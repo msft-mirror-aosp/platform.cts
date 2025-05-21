@@ -84,6 +84,10 @@ public class AudioDataPathsAnalogActivity extends AudioDataPathsBaseActivity {
         TextView promptView = (TextView) findViewById(R.id.audio_datapaths_deviceprompt);
         if (mIsHandheld) {
             int headsetSupport = AudioDeviceUtils.supportsAnalogHeadset(this);
+            if (mIsEmulator) {
+                promptView.setText(
+                        getResources().getString(R.string.audio_datapaths_emulator_autopass));
+            }
             if (headsetSupport == AudioDeviceUtils.SUPPORTSDEVICE_YES) {
                 if (mTestManager.calculatePass()) {
                     promptView.setVisibility(View.GONE);
