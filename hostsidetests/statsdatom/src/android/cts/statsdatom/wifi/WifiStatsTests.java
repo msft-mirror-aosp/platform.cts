@@ -148,8 +148,12 @@ public class WifiStatsTests extends DeviceTestCase implements IBuildReceiver {
         //    - Screen On
         //    - Application is foreground.
 
-        // Check Wi-Fi is connected.
-        DeviceUtils.runDeviceTestsOnStatsdApp(getDevice(), ".AtomTests", "testWifiConnected");
+        // Check Wi-Fi is connected, but skip this test if it is not.
+        try {
+            DeviceUtils.runDeviceTestsOnStatsdApp(getDevice(), ".AtomTests", "testWifiConnected");
+        } catch (AssertionError e) {
+            return;
+        }
 
         // Turn screen on.
         DeviceUtils.turnScreenOn(getDevice());
@@ -199,8 +203,12 @@ public class WifiStatsTests extends DeviceTestCase implements IBuildReceiver {
         //    - Screen On
         //    - Application is foreground.
 
-        // Check Wi-Fi is connected.
-        DeviceUtils.runDeviceTestsOnStatsdApp(getDevice(), ".AtomTests", "testWifiConnected");
+        // Check Wi-Fi is connected, but skip this test if it is not.
+        try {
+            DeviceUtils.runDeviceTestsOnStatsdApp(getDevice(), ".AtomTests", "testWifiConnected");
+        } catch (AssertionError e) {
+            return;
+        }
 
         // Turn screen on.
         DeviceUtils.turnScreenOn(getDevice());
