@@ -53,6 +53,8 @@ public class ViewConfigurationParamsTest {
         final float touchSlopDp = 40f;
         final float maximumFlingVelocityDpPerSecond = 90f;
         final float minimumFlingVelocityDpPerSecond = 70f;
+        final Duration longPressTimeoutDuration = Duration.ofMillis(110L);
+        final Duration multiPressTimeoutDuration = Duration.ofMillis(120L);
         ViewConfigurationParams originalParams =
                 new ViewConfigurationParams.Builder()
                         .setTapTimeoutDuration(tapTimeoutDuration)
@@ -62,6 +64,8 @@ public class ViewConfigurationParamsTest {
                         .setMinimumFlingVelocityDpPerSecond(minimumFlingVelocityDpPerSecond)
                         .setMaximumFlingVelocityDpPerSecond(maximumFlingVelocityDpPerSecond)
                         .setTouchSlopDp(touchSlopDp)
+                        .setLongPressTimeoutDuration(longPressTimeoutDuration)
+                        .setMultiPressTimeoutDuration(multiPressTimeoutDuration)
                         .build();
 
         Parcel parcel = Parcel.obtain();
@@ -82,6 +86,10 @@ public class ViewConfigurationParamsTest {
                 .isEqualTo(minimumFlingVelocityDpPerSecond);
         assertThat(viewConfigurationParams.getMaximumFlingVelocityDpPerSecond())
                 .isEqualTo(maximumFlingVelocityDpPerSecond);
+        assertThat(viewConfigurationParams.getLongPressTimeoutDuration())
+                .isEqualTo(longPressTimeoutDuration);
+        assertThat(viewConfigurationParams.getMultiPressTimeoutDuration())
+                .isEqualTo(multiPressTimeoutDuration);
     }
 
     @Test
@@ -178,6 +186,68 @@ public class ViewConfigurationParamsTest {
                 () ->
                         new ViewConfigurationParams.Builder()
                                 .setDoubleTapMinTimeDuration(Duration.ofMillis(largeValue))
+                                .build());
+    }
+
+    @Test
+    public void nullLongPressTimeoutDuration_throwsException() throws Exception {
+        assertThrows(
+                NullPointerException.class,
+                () ->
+                        new ViewConfigurationParams.Builder()
+                                .setLongPressTimeoutDuration(null)
+                                .build());
+    }
+
+    @Test
+    public void negativeLongPressTimeoutDuration_throwsException() throws Exception {
+        assertThrows(
+                IllegalArgumentException.class,
+                () ->
+                        new ViewConfigurationParams.Builder()
+                                .setLongPressTimeoutDuration(Duration.ofMillis(-10L))
+                                .build());
+    }
+
+    @Test
+    public void tooLargeLongPressTimeoutDuration_throwsException() throws Exception {
+        long largeValue = (long) Integer.MAX_VALUE + 1;
+        assertThrows(
+                IllegalArgumentException.class,
+                () ->
+                        new ViewConfigurationParams.Builder()
+                                .setLongPressTimeoutDuration(Duration.ofMillis(largeValue))
+                                .build());
+    }
+
+    @Test
+    public void nullMultiPressTimeoutDuration_throwsException() throws Exception {
+        assertThrows(
+                NullPointerException.class,
+                () ->
+                        new ViewConfigurationParams.Builder()
+                                .setMultiPressTimeoutDuration(null)
+                                .build());
+    }
+
+    @Test
+    public void negativeMultiPressTimeoutDuration_throwsException() throws Exception {
+        assertThrows(
+                IllegalArgumentException.class,
+                () ->
+                        new ViewConfigurationParams.Builder()
+                                .setMultiPressTimeoutDuration(Duration.ofMillis(-10L))
+                                .build());
+    }
+
+    @Test
+    public void tooLargeMultiPressTimeoutDuration_throwsException() throws Exception {
+        long largeValue = (long) Integer.MAX_VALUE + 1;
+        assertThrows(
+                IllegalArgumentException.class,
+                () ->
+                        new ViewConfigurationParams.Builder()
+                                .setMultiPressTimeoutDuration(Duration.ofMillis(largeValue))
                                 .build());
     }
 

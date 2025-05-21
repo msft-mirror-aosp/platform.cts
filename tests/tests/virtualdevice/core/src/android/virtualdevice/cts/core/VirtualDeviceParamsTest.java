@@ -171,6 +171,8 @@ public class VirtualDeviceParamsTest {
         final float touchSlopDp = 40f;
         final float maximumFlingVelocityDpPerSecond = 90f;
         final float minimumFlingVelocityDpPerSecond = 70f;
+        final Duration longPressTimeoutDuration = Duration.ofMillis(110L);
+        final Duration multiPressTimeoutDuration = Duration.ofMillis(120L);
         VirtualDeviceParams originalParams =
                 new VirtualDeviceParams.Builder()
                         .setViewConfigurationParams(
@@ -184,6 +186,8 @@ public class VirtualDeviceParamsTest {
                                         .setMaximumFlingVelocityDpPerSecond(
                                                 maximumFlingVelocityDpPerSecond)
                                         .setTouchSlopDp(touchSlopDp)
+                                        .setLongPressTimeoutDuration(longPressTimeoutDuration)
+                                        .setMultiPressTimeoutDuration(multiPressTimeoutDuration)
                                         .build())
                         .build();
 
@@ -206,6 +210,10 @@ public class VirtualDeviceParamsTest {
                 .isEqualTo(minimumFlingVelocityDpPerSecond);
         assertThat(viewConfigurationParams.getMaximumFlingVelocityDpPerSecond())
                 .isEqualTo(maximumFlingVelocityDpPerSecond);
+        assertThat(viewConfigurationParams.getLongPressTimeoutDuration())
+                .isEqualTo(longPressTimeoutDuration);
+        assertThat(viewConfigurationParams.getMultiPressTimeoutDuration())
+                .isEqualTo(multiPressTimeoutDuration);
     }
 
     @Test
