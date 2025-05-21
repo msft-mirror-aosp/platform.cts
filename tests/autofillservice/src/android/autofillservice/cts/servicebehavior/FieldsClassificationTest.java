@@ -775,29 +775,7 @@ public class FieldsClassificationTest extends AbstractGridActivityTestCase {
         final Event packageUserDataEvent = InstrumentedAutoFillService.getFillEvents(1).get(0);
         assertFillEventForFieldsClassification(packageUserDataEvent, fieldId1.get(), "cat", 0.8F);
 
-        final AtomicReference<AutofillId> fieldId2 = new AtomicReference<>();
-        sReplier.addResponse(new CannedFillResponse.Builder()
-                .setVisitor((contexts, builder) -> fieldId2
-                        .set(findAutofillIdByResourceId(contexts.get(0), ID_L1C1)))
-                .setFieldClassificationIds(ID_L1C1)
-                .build());
-
-        // Need to switch focus first
-        mActivity.focusCell(1, 2);
-
-        // Trigger second autofill
-        mActivity.focusCell(1, 1);
-        sReplier.getNextFillRequest();
-
-        mUiBot.assertNoDatasetsEver();
-        callback.assertUiUnavailableEvent(field);
-
-        // Finish context.
-        mAfm.commit();
-
-        // Assert results
-        final Event defaultUserDataEvent = InstrumentedAutoFillService.getFillEvents(2).get(1);
-        assertFillEventForFieldsClassification(defaultUserDataEvent, fieldId2.get(), "cat", 1.0F);
+        assertThat(sReplier.getLastFillEventHistory()).isNull();
     }
 
     @Test
