@@ -546,4 +546,7 @@
 
     <!-- b/414237959 -->
     <option name="compatibility:exclude-filter" value="CtsInputTestCases android.input.cts.AppKeyCombinationsTest#testCtrlSpace" />
+
+    <!-- b/409501317 -->
+    <option name="compatibility:exclude-filter" value="CtsHealthConnectControllerTestCases android.healthconnect.cts.ui.newia.AllDataFragmentTest#allDataFragment_deletesAllData" />
 </configuration>
