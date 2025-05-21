@@ -16,11 +16,14 @@
 
 package android.security.cts;
 
+import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeNoException;
 
 import android.platform.test.annotations.AsbSecurityTest;
 
 import com.android.sts.common.tradefed.testtype.NonRootSecurityTestCase;
+import com.android.tradefed.device.DeviceNotAvailableException;
 import com.android.tradefed.device.ITestDevice;
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
 
@@ -29,10 +32,16 @@ import org.junit.runner.RunWith;
 
 @RunWith(DeviceJUnit4ClassRunner.class)
 public class CVE_2022_20007 extends NonRootSecurityTestCase {
-
     @AsbSecurityTest(cveBugId = 211481342)
     @Test
     public void testPocCVE_2022_20007() {
+        try {
+            assumeFalse(
+                    "Test skipped from XR for different UI policy",
+                    getDevice().hasFeature("feature:android.software.xr.api.spatial"));
+        } catch (DeviceNotAvailableException DnfException) {
+            assumeNoException(DnfException);
+        }
         final String testPkg = "android.security.cts.CVE_2022_20007";
         final String testClass = testPkg + "." + "DeviceTest";
         final String testApp = "CVE-2022-20007.apk";
