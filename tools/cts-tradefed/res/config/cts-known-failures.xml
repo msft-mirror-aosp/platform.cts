@@ -546,4 +546,14 @@
 
     <!-- b/414237959 -->
     <option name="compatibility:exclude-filter" value="CtsInputTestCases android.input.cts.AppKeyCombinationsTest#testCtrlSpace" />
+
+    <!-- b/409501317 -->
+    <option name="compatibility:exclude-filter" value="CtsHealthConnectControllerTestCases android.healthconnect.cts.ui.newia.AllDataFragmentTest#allDataFragment_deletesAllData" />
+
+    <!-- b/413586102 -->
+    <option name="compatibility:exclude-filter" value="CtsHealthConnectHostSideDeviceTestCases android.healthconnect.cts.device.HealthConnectDeviceTest#testSelfRevokePermissions_revokedOnKill" />
+
+    <!-- b/409947156 -->
+    <option name="compatibility:exclude-filter" value="CtsHealthConnectHostSideDeviceTestCases android.healthconnect.cts.device.HealthConnectDeviceTest#testAppWithManageHealthDataPermissionCanUpdatePriority" />
+    <option name="compatibility:exclude-filter" value="CtsHealthConnectHostSideDeviceTestCases android.healthconnect.cts.device.HealthConnectDeviceTest#testAggregationOutputForExerciseSessionWithDataFromTwoAppsHavingDifferentPriority" />
 </configuration>
