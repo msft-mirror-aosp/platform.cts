@@ -16,27 +16,38 @@
 
 package android.content.cts;
 
+import static com.google.common.truth.Truth.assertThat;
+import static com.google.common.truth.Truth.assertWithMessage;
+
+import static org.junit.Assert.assertThrows;
+
 import android.accounts.Account;
 import android.accounts.AccountManager;
-import android.accounts.AccountManagerCallback;
 import android.accounts.AccountManagerFuture;
 import android.accounts.AuthenticatorException;
 import android.accounts.OperationCanceledException;
 import android.content.ContentResolver;
-import android.content.Context;
 import android.content.SyncAdapterType;
 import android.os.Bundle;
 import android.os.SystemClock;
 import android.platform.test.annotations.AppModeFull;
-import android.test.AndroidTestCase;
 import android.util.Log;
+
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 @AppModeFull(reason = "Sync manager not supported")
-public class ContentResolverSyncTestCase extends AndroidTestCase {
+@RunWith(AndroidJUnit4.class)
+public final class ContentResolverSyncTestCase {
     private static final String TAG = "SyncTest";
 
     private static final String AUTHORITY = "android.content.cts.authority";
@@ -48,50 +59,44 @@ public class ContentResolverSyncTestCase extends AndroidTestCase {
     private static final int CANCEL_TIMEOUT_MS = 60 * 1000;
     private static final int LATCH_TIMEOUT_MS = 5000;
 
-    private static AccountManager sAccountManager;
+    private AccountManager mAccountManager;
 
-    @Override
-    public void setUp() throws Exception {
-        super.setUp();
+    @Before
+    public void setUp() {
         getMockSyncAdapter();
-        sAccountManager = AccountManager.get(getContext());
+        mAccountManager =
+                AccountManager.get(InstrumentationRegistry.getInstrumentation().getTargetContext());
     }
 
-    @Override
+    @After
     public void tearDown() throws Exception {
         getMockSyncAdapter().clearData();
 
         // Need to clean up created account
-        removeAccount(sAccountManager, ACCOUNT, null /* callback */);
+        removeAccount(mAccountManager);
 
         // Need to cancel any sync that was started.
-        cancelSync(null, AUTHORITY, LATCH_TIMEOUT_MS);
-
-        super.tearDown();
+        cancelSync(null);
     }
 
-    public static synchronized MockSyncAdapter getMockSyncAdapter() {
+    private static MockSyncAdapter getMockSyncAdapter() {
         return MockSyncAdapter.getMockSyncAdapter();
 
     }
 
-    public static synchronized MockAccountAuthenticator getMockAuthenticator(Context context) {
-        return MockAccountAuthenticator.getMockAuthenticator(context);
+    private void addAccountExplicitly() {
+        assertThat(
+                        mAccountManager.addAccountExplicitly(
+                                ACCOUNT, MockAccountAuthenticator.ACCOUNT_PASSWORD, null))
+                .isTrue();
     }
 
-    private void addAccountExplicitly(Account account, String password, Bundle userdata) {
-        assertTrue(sAccountManager.addAccountExplicitly(account, password, userdata));
-    }
-
-    private boolean removeAccount(AccountManager am, Account account,
-            AccountManagerCallback<Boolean> callback) throws IOException, AuthenticatorException,
-                OperationCanceledException {
-
-        AccountManagerFuture<Boolean> futureBoolean = am.removeAccount(account,
-                callback,
-                null /* handler */);
+    private boolean removeAccount(AccountManager am)
+            throws IOException, AuthenticatorException, OperationCanceledException {
+        AccountManagerFuture<Boolean> futureBoolean =
+                am.removeAccount(ACCOUNT, null, null /* handler */);
         Boolean resultBoolean = futureBoolean.getResult();
-        assertTrue(futureBoolean.isDone());
+        assertThat(futureBoolean.isDone()).isTrue();
 
         return resultBoolean;
     }
@@ -102,42 +107,40 @@ public class ContentResolverSyncTestCase extends AndroidTestCase {
         return latch;
     }
 
-    private void addAccountAndVerifyInitSync(Account account, String password,
-            String authority, int accountIndex) {
-
+    private void addAccountAndVerifyInitSync() {
         CountDownLatch latch = setNewLatch(new CountDownLatch(1));
 
-        addAccountExplicitly(account, password, null /* userData */);
+        addAccountExplicitly();
 
         // Wait with timeout for the callback to do its work
         try {
             if (!latch.await(INITIAL_SYNC_TIMEOUT_MS, TimeUnit.MILLISECONDS)) {
-                fail("should not time out waiting on latch");
+                assertWithMessage("should not time out waiting on latch").fail();
             }
         } catch (InterruptedException e) {
-            fail("should not throw an InterruptedException");
+            assertWithMessage("should not throw an InterruptedException").fail();
         }
 
-        assertFalse(getMockSyncAdapter().isStartSync());
-        assertFalse(getMockSyncAdapter().isCancelSync());
-        assertTrue(getMockSyncAdapter().isInitialized());
-        assertEquals(account, getMockSyncAdapter().getAccounts().get(accountIndex));
-        assertEquals(authority, getMockSyncAdapter().getAuthority());
+        assertThat(getMockSyncAdapter().isStartSync()).isFalse();
+        assertThat(getMockSyncAdapter().isCancelSync()).isFalse();
+        assertThat(getMockSyncAdapter().isInitialized()).isTrue();
+        assertThat(getMockSyncAdapter().getAccounts().get(0)).isEqualTo(ACCOUNT);
+        assertThat(getMockSyncAdapter().getAuthority()).isEqualTo(AUTHORITY);
     }
 
-    private void cancelSync(Account account, String authority, int latchTimeoutMillis) {
+    private void cancelSync(Account account) {
         CountDownLatch latch = setNewLatch(new CountDownLatch(1));
 
         Bundle extras = new Bundle();
         extras.putBoolean(ContentResolver.SYNC_EXTRAS_MANUAL, true);
 
-        ContentResolver.cancelSync(account, authority);
+        ContentResolver.cancelSync(account, AUTHORITY);
 
         // Wait with timeout for the callback to do its work
         try {
-            latch.await(latchTimeoutMillis, TimeUnit.MILLISECONDS);
+            latch.await(LATCH_TIMEOUT_MS, TimeUnit.MILLISECONDS);
         } catch (InterruptedException e) {
-            fail("should not throw an InterruptedException");
+            assertWithMessage("should not throw an InterruptedException").fail();
         }
         // Make sure the sync manager thinks the sync finished.
 
@@ -148,192 +151,163 @@ public class ContentResolverSyncTestCase extends AndroidTestCase {
                 break;
             }
             Log.i(TAG, "Waiting for sync to finish...");
-            try {
-                Thread.sleep(500);
-            } catch (InterruptedException e) {
-            }
+            SystemClock.sleep(300);
         }
     }
 
-    private void requestSync(Account account, String authority, int latchTimeoutMillis) {
+    private void requestSync(Account account) {
         CountDownLatch latch = setNewLatch(new CountDownLatch(1));
 
         Bundle extras = new Bundle();
         extras.putBoolean(ContentResolver.SYNC_EXTRAS_MANUAL, true);
 
-        ContentResolver.requestSync(account, authority, extras);
+        ContentResolver.requestSync(account, AUTHORITY, extras);
 
         // Wait with timeout for the callback to do its work
         try {
-            latch.await(latchTimeoutMillis, TimeUnit.MILLISECONDS);
+            latch.await(LATCH_TIMEOUT_MS, TimeUnit.MILLISECONDS);
         } catch (InterruptedException e) {
-            fail("should not throw an InterruptedException");
+            assertWithMessage("should not throw an InterruptedException").fail();
         }
     }
 
-    private void setIsSyncable(Account account, String authority, boolean b) {
-        ContentResolver.setIsSyncable(account, authority, (b) ? 1 : 0);
+    private void setIsSyncable() {
+        ContentResolver.setIsSyncable(ACCOUNT, AUTHORITY, 1);
     }
 
-    /**
-     * Test a sync request
-     */
-    public void testRequestSync() throws IOException, AuthenticatorException,
-            OperationCanceledException {
-
+    /** Test a sync request */
+    @Test
+    public void testRequestSync() {
         // Prevent auto sync
         ContentResolver.setMasterSyncAutomatically(false);
-        assertEquals(false, ContentResolver.getMasterSyncAutomatically());
+        assertThat(ContentResolver.getMasterSyncAutomatically()).isFalse();
 
-        addAccountAndVerifyInitSync(ACCOUNT,
-                MockAccountAuthenticator.ACCOUNT_PASSWORD,
-                AUTHORITY,
-                0);
+        addAccountAndVerifyInitSync();
 
         getMockSyncAdapter().clearData();
 
-        setIsSyncable(ACCOUNT, AUTHORITY, true);
-        cancelSync(ACCOUNT, AUTHORITY, LATCH_TIMEOUT_MS);
+        setIsSyncable();
+        cancelSync(ACCOUNT);
 
         getMockSyncAdapter().clearData();
 
-        requestSync(ACCOUNT, AUTHORITY, LATCH_TIMEOUT_MS);
+        requestSync(ACCOUNT);
 
-        assertTrue(getMockSyncAdapter().isStartSync());
-        assertFalse(getMockSyncAdapter().isCancelSync());
-        assertFalse(getMockSyncAdapter().isInitialized());
-        assertEquals(ACCOUNT, getMockSyncAdapter().getAccounts().get(0));
-        assertEquals(AUTHORITY, getMockSyncAdapter().getAuthority());
+        assertThat(getMockSyncAdapter().isStartSync()).isTrue();
+        assertThat(getMockSyncAdapter().isCancelSync()).isFalse();
+        assertThat(getMockSyncAdapter().isInitialized()).isFalse();
+        assertThat(getMockSyncAdapter().getAccounts().get(0)).isEqualTo(ACCOUNT);
+        assertThat(getMockSyncAdapter().getAuthority()).isEqualTo(AUTHORITY);
     }
 
-    /**
-     * Test a sync cancel
-     */
-    public void testCancelSync() throws IOException, AuthenticatorException,
-            OperationCanceledException {
-
+    /** Test a sync cancel */
+    @Test
+    public void testCancelSync() {
         // Prevent auto sync
         ContentResolver.setMasterSyncAutomatically(false);
-        assertEquals(false, ContentResolver.getMasterSyncAutomatically());
+        assertThat(ContentResolver.getMasterSyncAutomatically()).isFalse();
 
-        addAccountAndVerifyInitSync(ACCOUNT,
-                MockAccountAuthenticator.ACCOUNT_PASSWORD,
-                AUTHORITY,
-                0);
+        addAccountAndVerifyInitSync();
 
         getMockSyncAdapter().clearData();
 
-        setIsSyncable(ACCOUNT, AUTHORITY, true);
-        requestSync(ACCOUNT, AUTHORITY, LATCH_TIMEOUT_MS);
+        setIsSyncable();
+        requestSync(ACCOUNT);
 
         getMockSyncAdapter().clearData();
 
-        cancelSync(ACCOUNT, AUTHORITY, LATCH_TIMEOUT_MS);
+        cancelSync(ACCOUNT);
 
-        assertFalse(getMockSyncAdapter().isStartSync());
-        assertTrue(getMockSyncAdapter().isCancelSync());
-        assertFalse(getMockSyncAdapter().isInitialized());
+        assertThat(getMockSyncAdapter().isStartSync()).isFalse();
+        assertThat(getMockSyncAdapter().isCancelSync()).isTrue();
+        assertThat(getMockSyncAdapter().isInitialized()).isFalse();
 
-        assertFalse(ContentResolver.isSyncActive(ACCOUNT, AUTHORITY));
-        assertFalse(ContentResolver.isSyncPending(ACCOUNT, AUTHORITY));
+        assertThat(ContentResolver.isSyncActive(ACCOUNT, AUTHORITY)).isFalse();
+        assertThat(ContentResolver.isSyncPending(ACCOUNT, AUTHORITY)).isFalse();
     }
 
-    /**
-     * Test if we can set and get the MasterSyncAutomatically switch
-     */
-    public void testGetAndSetMasterSyncAutomatically() throws Exception {
+    /** Test if we can set and get the MasterSyncAutomatically switch */
+    @Test
+    public void testGetAndSetMasterSyncAutomatically() {
         ContentResolver.setMasterSyncAutomatically(true);
-        assertEquals(true, ContentResolver.getMasterSyncAutomatically());
+        assertThat(ContentResolver.getMasterSyncAutomatically()).isTrue();
 
         ContentResolver.setMasterSyncAutomatically(false);
-        assertEquals(false, ContentResolver.getMasterSyncAutomatically());
-        Thread.sleep(3000);
+        assertThat(ContentResolver.getMasterSyncAutomatically()).isFalse();
     }
 
-    /**
-     * Test if we can set and get the SyncAutomatically switch for an account
-     */
-    public void testGetAndSetSyncAutomatically() {
-        try {
-            Thread.sleep(5000);
-        } catch (InterruptedException e) {
-        }
+    /** Test if we can set and get the SyncAutomatically switch for an account */
+    @Test
+    public void testGetAndSetSyncAutomatically() throws InterruptedException {
         // Prevent auto sync
         ContentResolver.setMasterSyncAutomatically(false);
-        assertEquals(false, ContentResolver.getMasterSyncAutomatically());
+        assertThat(ContentResolver.getMasterSyncAutomatically()).isFalse();
 
         ContentResolver.setSyncAutomatically(ACCOUNT, AUTHORITY, false);
-        assertEquals(false, ContentResolver.getSyncAutomatically(ACCOUNT, AUTHORITY));
+        assertThat(ContentResolver.getSyncAutomatically(ACCOUNT, AUTHORITY)).isFalse();
 
         ContentResolver.setSyncAutomatically(ACCOUNT, AUTHORITY, true);
-        assertEquals(true, ContentResolver.getSyncAutomatically(ACCOUNT, AUTHORITY));
+        assertThat(ContentResolver.getSyncAutomatically(ACCOUNT, AUTHORITY)).isTrue();
     }
 
-    /**
-     * Test if we can set and get the IsSyncable switch for an account
-     */
+    /** Test if we can set and get the IsSyncable switch for an account */
+    @Test
     public void testGetAndSetIsSyncable() {
         // Prevent auto sync
         ContentResolver.setMasterSyncAutomatically(false);
-        assertEquals(false, ContentResolver.getMasterSyncAutomatically());
+        assertThat(ContentResolver.getMasterSyncAutomatically()).isFalse();
 
-        addAccountExplicitly(ACCOUNT, MockAccountAuthenticator.ACCOUNT_PASSWORD, null /* userData */);
+        addAccountExplicitly();
 
         ContentResolver.setIsSyncable(ACCOUNT, AUTHORITY, 2);
-        assertTrue(ContentResolver.getIsSyncable(ACCOUNT, AUTHORITY) > 0);
+        assertThat(ContentResolver.getIsSyncable(ACCOUNT, AUTHORITY)).isGreaterThan(0);
 
         ContentResolver.setIsSyncable(ACCOUNT, AUTHORITY, 1);
-        assertTrue(ContentResolver.getIsSyncable(ACCOUNT, AUTHORITY) > 0);
+        assertThat(ContentResolver.getIsSyncable(ACCOUNT, AUTHORITY)).isGreaterThan(0);
 
         ContentResolver.setIsSyncable(ACCOUNT, AUTHORITY, 0);
-        assertEquals(0, ContentResolver.getIsSyncable(ACCOUNT, AUTHORITY));
+        assertThat(ContentResolver.getIsSyncable(ACCOUNT, AUTHORITY)).isEqualTo(0);
 
         ContentResolver.setIsSyncable(ACCOUNT, AUTHORITY, -1);
-        assertTrue(ContentResolver.getIsSyncable(ACCOUNT, AUTHORITY) < 0);
+        assertThat(ContentResolver.getIsSyncable(ACCOUNT, AUTHORITY)).isLessThan(0);
 
         ContentResolver.setIsSyncable(ACCOUNT, AUTHORITY, -2);
-        assertTrue(ContentResolver.getIsSyncable(ACCOUNT, AUTHORITY) < 0);
+        assertThat(ContentResolver.getIsSyncable(ACCOUNT, AUTHORITY)).isLessThan(0);
     }
 
-    /**
-     * Test if we can get the sync adapter types
-     */
+    /** Test if we can get the sync adapter types */
+    @Test
     public void testGetSyncAdapterTypes() {
         SyncAdapterType[] types = ContentResolver.getSyncAdapterTypes();
-        assertNotNull(types);
+        assertThat(types).isNotNull();
         int length = types.length;
-        assertTrue(length > 0);
+        assertThat(length).isGreaterThan(0);
         boolean found = false;
-        for (int n=0; n < length; n++) {
-            SyncAdapterType type = types[n];
+        for (SyncAdapterType type : types) {
             if (MockAccountAuthenticator.ACCOUNT_TYPE.equals(type.accountType) &&
                     AUTHORITY.equals(type.authority)) {
                 found = true;
                 break;
             }
         }
-        assertTrue(found);
+        assertThat(found).isTrue();
     }
 
-    /**
-     * Test if a badly formed sync request is throwing exceptions
-     */
+    /** Test if a badly formed sync request is throwing exceptions */
+    @Test
     public void testStartSyncFailure() {
-        try {
-            ContentResolver.requestSync(null, null, null);
-            fail("did not throw IllegalArgumentException when extras is null.");
-        } catch (IllegalArgumentException e) {
-            //expected.
-        }
+        assertThrows(
+                "did not throw IllegalArgumentException when extras is null.",
+                IllegalArgumentException.class,
+                () -> ContentResolver.requestSync(null, null, null));
     }
 
-    /**
-     * Test validate sync extra bundle
-     */
+    /** Test validate sync extra bundle */
+    @Test
     public void testValidateSyncExtrasBundle() {
         Bundle extras = new Bundle();
         extras.putInt("Integer", 20);
-        extras.putLong("Long", 10l);
+        extras.putLong("Long", 10L);
         extras.putBoolean("Boolean", true);
         extras.putFloat("Float", 5.5f);
         extras.putDouble("Double", 2.5);
@@ -343,41 +317,34 @@ public class ContentResolverSyncTestCase extends AndroidTestCase {
         ContentResolver.validateSyncExtrasBundle(extras);
 
         extras.putChar("Char", 'a'); // type Char is invalid
-        try {
-            ContentResolver.validateSyncExtrasBundle(extras);
-            fail("did not throw IllegalArgumentException when extras is invalide.");
-        } catch (IllegalArgumentException e) {
-            //expected.
-        }
+        assertThrows(
+                "did not throw IllegalArgumentException when extras is invalid.",
+                IllegalArgumentException.class,
+                () -> ContentResolver.validateSyncExtrasBundle(extras));
     }
 
-    /**
-     * Test to verify that a SyncAdapter is called on all the accounts accounts
-     */
+    /** Test to verify that a SyncAdapter is called on all the accounts accounts */
+    @Test
     public void testCallMultipleAccounts() {
         // Prevent auto sync
         ContentResolver.setMasterSyncAutomatically(false);
-        assertEquals(false, ContentResolver.getMasterSyncAutomatically());
+        assertThat(ContentResolver.getMasterSyncAutomatically()).isFalse();
 
-        addAccountAndVerifyInitSync(ACCOUNT,
-                MockAccountAuthenticator.ACCOUNT_PASSWORD,
-                AUTHORITY,
-                0);
+        addAccountAndVerifyInitSync();
 
         getMockSyncAdapter().clearData();
 
-        setIsSyncable(ACCOUNT, AUTHORITY, true);
-        cancelSync(ACCOUNT, AUTHORITY, LATCH_TIMEOUT_MS);
+        setIsSyncable();
+        cancelSync(ACCOUNT);
 
         getMockSyncAdapter().clearData();
 
-        requestSync(null /* all accounts */, AUTHORITY, LATCH_TIMEOUT_MS);
+        requestSync(null /* all accounts */);
 
-        assertTrue(getMockSyncAdapter().isStartSync());
-        assertFalse(getMockSyncAdapter().isCancelSync());
-        assertFalse(getMockSyncAdapter().isInitialized());
-        assertEquals(ACCOUNT, getMockSyncAdapter().getAccounts().get(0));
-        assertEquals(AUTHORITY, getMockSyncAdapter().getAuthority());
-
+        assertThat(getMockSyncAdapter().isStartSync()).isTrue();
+        assertThat(getMockSyncAdapter().isCancelSync()).isFalse();
+        assertThat(getMockSyncAdapter().isInitialized()).isFalse();
+        assertThat(getMockSyncAdapter().getAccounts().get(0)).isEqualTo(ACCOUNT);
+        assertThat(getMockSyncAdapter().getAuthority()).isEqualTo(AUTHORITY);
     }
 }
