@@ -22,6 +22,7 @@ java_test_host {
     defaults: ["cts_defaults"],
     srcs: ["src/**/*.java"],
     libs: [
+        "compatibility-host-util",
         "tools-common-prebuilt",
         "cts-tradefed",
         "tradefed",
