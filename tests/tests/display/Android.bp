@@ -48,6 +48,9 @@ android_test {
         "dts",
     ],
     sdk_version: "test_current",
-    data: [":CtsAppTestStubs"],
+    data: [
+        ":CtsAppTestStubs",
+        ":DisplayManagerTestApp",
+    ],
     per_testcase_directory: true,
 }
