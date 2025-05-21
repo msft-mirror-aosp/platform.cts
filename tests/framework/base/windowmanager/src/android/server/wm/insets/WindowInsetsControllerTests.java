@@ -1027,6 +1027,7 @@ public class WindowInsetsControllerTests extends WindowManagerTestBase {
         final int[] dispatchApplyWindowInsetsCount = {0};
         final StringBuilder insetsSb = new StringBuilder();
         rootView.setOnApplyWindowInsetsListener((v, insets) -> {
+            Log.v(TAG, "onApplyWindowInsets insets=" + insets);
             dispatchApplyWindowInsetsCount[0]++;
             insetsSb.append("\n").append(insets);
             return v.onApplyWindowInsets(insets);
@@ -1205,6 +1206,11 @@ public class WindowInsetsControllerTests extends WindowManagerTestBase {
         }
 
         @Override
+        public void onPrepare(@NonNull WindowInsetsAnimation animation) {
+            Log.d(TAG, "onPrepare animation=" + animation, new Throwable());
+        }
+
+        @Override
         public WindowInsets onProgress(WindowInsets insets,
                 List<WindowInsetsAnimation> runningAnimations) {
             return insets;
@@ -1213,6 +1219,7 @@ public class WindowInsetsControllerTests extends WindowManagerTestBase {
         @Override
         public void onEnd(WindowInsetsAnimation animation) {
             synchronized (this) {
+                Log.d(TAG, "onEnd animation=" + animation, new Throwable());
                 mFinished = true;
                 notify();
             }
