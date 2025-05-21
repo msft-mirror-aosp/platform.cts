@@ -16,6 +16,8 @@
 
 package android.server.wm.activity;
 
+import static android.server.wm.BuildUtils.HW_TIMEOUT_MULTIPLIER;
+
 import static com.android.compatibility.common.util.ShellUtils.runShellCommand;
 import static com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity;
 
@@ -137,31 +139,40 @@ public class StartActivityAsUserTests {
     private void verifyStartActivityAsValidUser(boolean withOptions) throws Throwable {
         int[] secondUser = {-1};
         CountDownLatch latch = new CountDownLatch(1);
-        RemoteCallback cb = new RemoteCallback((Bundle result) -> {
-            secondUser[0] = result.getInt(KEY_USER_ID);
-            latch.countDown();
-        });
+        RemoteCallback cb =
+                new RemoteCallback(
+                        (Bundle result) -> {
+                            secondUser[0] = result.getInt(KEY_USER_ID);
+                            Log.i(TAG, "receive second user ID:" + secondUser[0]);
+                            latch.countDown();
+                        });
 
         final Intent intent = new Intent(mContext, StartActivityAsUserActivity.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         intent.putExtra(EXTRA_CALLBACK, cb);
         UserHandle secondUserHandle = UserHandle.of(sSecondUserId);
 
-        runWithShellPermissionIdentity(() -> {
-            if (withOptions) {
-                mContext.startActivityAsUser(intent, ActivityOptions.makeBasic().toBundle(),
-                        secondUserHandle);
-            } else {
-                mContext.startActivityAsUser(intent, secondUserHandle);
-            }
-        });
+        try {
+            runWithShellPermissionIdentity(
+                    () -> {
+                        if (withOptions) {
+                            mContext.startActivityAsUser(
+                                    intent,
+                                    ActivityOptions.makeBasic().toBundle(),
+                                    secondUserHandle);
+                        } else {
+                            mContext.startActivityAsUser(intent, secondUserHandle);
+                        }
+                    });
 
-        latch.await(5, TimeUnit.SECONDS);
-        assertThat(secondUser[0]).isEqualTo(sSecondUserId);
+            assertThat(latch.await(5L * HW_TIMEOUT_MULTIPLIER, TimeUnit.SECONDS)).isTrue();
+            assertThat(secondUser[0]).isEqualTo(sSecondUserId);
 
-        // The StartActivityAsUserActivity calls finish() in onCreate and here waits for the
-        // activity removed to prevent impacting other tests.
-        mAmWmState.waitForActivityRemoved(intent.getComponent());
+        } finally {
+            // The StartActivityAsUserActivity calls finish() in onCreate and here waits for the
+            // activity removed to prevent impacting other tests.
+            mAmWmState.waitAndAssertActivityRemoved(intent.getComponent());
+        }
     }
 
     private void verifyStartActivityAsInvalidUser(boolean withOptions) {
