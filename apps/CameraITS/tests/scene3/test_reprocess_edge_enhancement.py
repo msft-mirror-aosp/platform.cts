@@ -35,6 +35,8 @@ _NAME = os.path.splitext(os.path.basename(__file__))[0]
 _NUM_SAMPLES = 4
 _PLOT_COLORS = {'yuv': 'r', 'private': 'g', 'none': 'b'}
 _SHARPNESS_RTOL = 0.15
+_TELE_CHART_HEIGHT_31CM = 6.5  # cm height of chart for 31cm distance
+_TELE_SCALE_STOP = 1.5  # extend search range for TELE cameras due to variety
 
 
 def check_edge_modes(sharpness):
@@ -155,8 +157,17 @@ class ReprocessEdgeEnhancementTest(its_base_test.ItsBaseTest):
           cam, props, self.scene, self.tablet, self.chart_distance)
 
       # Initialize chart class and locate chart in scene
-      chart = opencv_processing_utils.Chart(
-          cam, props, self.log_path, distance=self.chart_distance)
+      is_tele = cam.get_camera_type(props) == (
+          its_session_utils.CAMERA_TYPE_TELE)
+      if is_tele and self.chart_distance == (
+          opencv_processing_utils.CHART_DISTANCE_31CM):
+        logging.debug('Initializing TELE camera chart at 31cm.')
+        chart = opencv_processing_utils.Chart(
+            cam, props, self.log_path, height=_TELE_CHART_HEIGHT_31CM,
+            distance=self.chart_distance, scale_stop=_TELE_SCALE_STOP)
+      else:
+        chart = opencv_processing_utils.Chart(
+            cam, props, self.log_path, distance=self.chart_distance)
 
       # If reprocessing is supported, ZSL edge mode must be available
       if not camera_properties_utils.edge_mode(props, _EDGE_MODES['ZSL']):
