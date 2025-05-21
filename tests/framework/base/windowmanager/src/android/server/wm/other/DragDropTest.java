@@ -54,6 +54,7 @@ import android.widget.LinearLayout;
 import androidx.test.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.compatibility.common.util.FeatureUtil;
 import com.android.compatibility.common.util.UiAutomatorUtils;
 
 import org.junit.After;
@@ -793,6 +794,10 @@ public class DragDropTest extends WindowManagerTestBase {
 
     @Test
     public void testDragShadowWhenPerformDrag() {
+        // TODO(b/419011850): Ensure this test case is covered by the CTS Verifier.
+        assumeFalse("XR device uses a manual check for this case via CTS Verifier.",
+                FeatureUtil.isXrHeadset());
+
         // Mouse down. Required for the drag to start.
         injectMouseWithOffset(R.id.draggable, MotionEvent.ACTION_DOWN, 0);
         final View v = mActivity.findViewById(R.id.draggable);
