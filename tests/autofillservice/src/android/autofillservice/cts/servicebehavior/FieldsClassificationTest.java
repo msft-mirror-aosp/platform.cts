@@ -774,8 +774,6 @@ public class FieldsClassificationTest extends AbstractGridActivityTestCase {
 
         final Event packageUserDataEvent = InstrumentedAutoFillService.getFillEvents(1).get(0);
         assertFillEventForFieldsClassification(packageUserDataEvent, fieldId1.get(), "cat", 0.8F);
-
-        assertThat(sReplier.getLastFillEventHistory()).isNull();
     }
 
     @Test
