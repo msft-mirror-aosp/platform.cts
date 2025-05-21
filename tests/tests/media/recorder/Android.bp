@@ -29,6 +29,7 @@ java_defaults {
     static_libs: [
         "ctstestrunner-axt",
         "cts-media-common",
+        "android.media.mediarecorder-aconfig-java",
     ],
     srcs: [
         "src/**/*.java",

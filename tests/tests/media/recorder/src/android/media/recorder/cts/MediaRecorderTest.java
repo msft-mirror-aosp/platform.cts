@@ -21,6 +21,8 @@ import static android.media.MediaCodecInfo.CodecProfileLevel.AVCProfileBaseline;
 import static android.media.MediaCodecInfo.CodecProfileLevel.AVCProfileConstrainedBaseline;
 import static android.media.MediaCodecInfo.CodecProfileLevel.AVCProfileConstrainedHigh;
 import static android.media.MediaCodecInfo.CodecProfileLevel.AVCProfileHigh;
+import static android.media.mediarecorder.Flags.FLAG_APV_RECORDING_SUPPORT;
+import static android.media.mediarecorder.Flags.apvRecordingSupport;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -65,12 +67,14 @@ import android.os.PersistableBundle;
 import android.os.SystemProperties;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresDevice;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.util.Log;
 import android.view.Surface;
 
 import androidx.test.InstrumentationRegistry;
 import androidx.test.annotation.UiThreadTest;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.filters.SdkSuppress;
 import androidx.test.filters.SmallTest;
 
 import com.android.compatibility.common.util.ApiLevelUtil;
@@ -319,7 +323,11 @@ public class MediaRecorderTest extends MediaTestBase {
             // tolerate some floating point rounding variability
             double captureFrameRate = metrics.getDouble(MediaRecorder.MetricsConstants.CAPTURE_FPS, -2);
             if (captureFrameRate < 0.) {
-                assertEquals("getMetrics() capture framerate=" + captureFrameRate, -1.0, captureFrameRate, 0.001);
+                assertEquals(
+                        "getMetrics() capture framerate=" + captureFrameRate,
+                        -1.0,
+                        captureFrameRate,
+                        0.001);
             }
         }
 
@@ -395,7 +403,11 @@ public class MediaRecorderTest extends MediaTestBase {
             // tolerate some floating point rounding variability
             double captureFrameRate = metrics.getDouble(MediaRecorder.MetricsConstants.CAPTURE_FPS, -2);
             if (captureFrameRate < 0.) {
-                assertEquals("getMetrics() capture framerate=" + captureFrameRate, -1.0, captureFrameRate, 0.001);
+                assertEquals(
+                        "getMetrics() capture framerate=" + captureFrameRate,
+                        -1.0,
+                        captureFrameRate,
+                        0.001);
             }
         }
 
@@ -568,7 +580,8 @@ public class MediaRecorderTest extends MediaTestBase {
         float latitude = Float.parseFloat(location.substring(0, index));
         float longitude = Float.parseFloat(location.substring(index));
         assertTrue("Incorrect latitude: " + latitude, Math.abs(latitude - LATITUDE) <= TOLERANCE);
-        assertTrue("Incorrect longitude: " + longitude, Math.abs(longitude - LONGITUDE) <= TOLERANCE);
+        assertTrue(
+                "Incorrect longitude: " + longitude, Math.abs(longitude - LONGITUDE) <= TOLERANCE);
         retriever.release();
         return true;
     }
@@ -1055,6 +1068,8 @@ public class MediaRecorderTest extends MediaTestBase {
             return MediaRecorder.VideoEncoder.HEVC;
         } else if (mimeType.equals(MediaFormat.MIMETYPE_VIDEO_AV1)) {
             return MediaRecorder.VideoEncoder.AV1;
+        } else if (apvRecordingSupport() && mimeType.equals(MediaFormat.MIMETYPE_VIDEO_APV)) {
+            return MediaRecorder.VideoEncoder.APV;
         } else {
             Log.e(TAG, "The codec test for " + mimeType + " is not yet supported");
             return -1;
@@ -1133,6 +1148,27 @@ public class MediaRecorderTest extends MediaTestBase {
         }
         try {
             testsRun += testCodec(MediaFormat.MIMETYPE_VIDEO_AV1, 640, 480, 15, 200);
+        } catch (Exception e) {
+            fail("Fail to record video: " + e.toString());
+        }
+
+        if (testsRun == 0) {
+            MediaUtils.skipTest("VideoCapabilities or surface not found");
+        }
+    }
+
+    @Test
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA)
+    @RequiresFlagsEnabled(FLAG_APV_RECORDING_SUPPORT)
+    public void testAPVQCIFRecording() throws Exception {
+        int testsRun = 0;
+
+        if (!hasAPV()) {
+            MediaUtils.skipTest("no APV codecs");
+            return;
+        }
+        try {
+            testsRun += testCodec(MediaFormat.MIMETYPE_VIDEO_APV, 176, 144, 10, 2000);
         } catch (Exception e) {
             fail("Fail to record video: " + e.toString());
         }
@@ -1814,6 +1850,10 @@ public class MediaRecorderTest extends MediaTestBase {
 
     private static boolean hasAV1() {
         return MediaUtils.hasEncoder(MediaFormat.MIMETYPE_VIDEO_AV1);
+    }
+
+    private static boolean hasAPV() {
+        return MediaUtils.hasEncoder(MediaFormat.MIMETYPE_VIDEO_APV);
     }
 
     @Test
