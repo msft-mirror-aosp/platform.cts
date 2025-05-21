@@ -16,19 +16,23 @@
 
 package android.keystore.cts;
 
+import static android.security.keymaster.KeymasterDefs.KM_PURPOSE_AGREE_KEY;
+import static android.security.keymaster.KeymasterDefs.KM_PURPOSE_DECRYPT;
+import static android.security.keymaster.KeymasterDefs.KM_PURPOSE_ENCRYPT;
+import static android.security.keymaster.KeymasterDefs.KM_PURPOSE_SIGN;
+import static android.security.keymaster.KeymasterDefs.KM_PURPOSE_VERIFY;
+
 import static com.android.compatibility.common.util.PropertyUtil.getVsrApiLevel;
 
 import static com.google.common.base.Functions.forMap;
 import static com.google.common.collect.Collections2.transform;
 
 import android.os.Build;
-import static android.security.keymaster.KeymasterDefs.KM_PURPOSE_AGREE_KEY;
-import static android.security.keymaster.KeymasterDefs.KM_PURPOSE_ENCRYPT;
-import static android.security.keymaster.KeymasterDefs.KM_PURPOSE_DECRYPT;
-import static android.security.keymaster.KeymasterDefs.KM_PURPOSE_SIGN;
-import static android.security.keymaster.KeymasterDefs.KM_PURPOSE_VERIFY;
 import android.security.keystore.KeyProperties;
 import android.util.Log;
+
+import co.nstant.in.cbor.model.DataItem;
+import co.nstant.in.cbor.model.Number;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMap;
@@ -50,9 +54,6 @@ import java.util.Date;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.Set;
-
-import co.nstant.in.cbor.model.DataItem;
-import co.nstant.in.cbor.model.Number;
 
 public class AuthorizationList {
     // Algorithm values.
@@ -921,18 +922,39 @@ public class AuthorizationList {
         if (brand != null) {
             s.append("\nBrand: ").append(brand);
         }
+
         if (device != null) {
             s.append("\nDevice type: ").append(device);
         }
+
         if (product != null) {
             s.append("\nProduct: ").append(product);
         }
+
         if (manufacturer != null) {
             s.append("\nManufacturer: ").append(manufacturer);
         }
+
         if (model != null) {
             s.append("\nModel: ").append(model);
         }
+
+        if (serialNumber != null) {
+            s.append("\nSerial number: ").append(serialNumber);
+        }
+
+        if (imei != null) {
+            s.append("\nIMEI: ").append(imei);
+        }
+
+        if (mSecondImei != null) {
+            s.append("\nIMEI2: ").append(mSecondImei);
+        }
+
+        if (meid != null) {
+            s.append("\nMEID: ").append(meid);
+        }
+
         if (mModuleHash != null) {
             HexFormat hexFormat = HexFormat.of();
             s.append("\nModule Hash: ").append(hexFormat.formatHex(mModuleHash));
