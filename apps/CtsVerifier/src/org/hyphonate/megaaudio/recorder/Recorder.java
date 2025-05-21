@@ -17,19 +17,27 @@ package org.hyphonate.megaaudio.recorder;
 
 import android.media.AudioFormat;
 import android.media.AudioRecord;
+import android.util.Log;
 
 import org.hyphonate.megaaudio.common.StreamBase;
+import org.hyphonate.megaaudio.recorder.sinks.NopAudioSinkProvider;
 
 public abstract class Recorder extends StreamBase {
     private static final String TAG = Recorder.class.getSimpleName();
+    private static final boolean LOG = true;
 
-    protected AudioSinkProvider mSinkProvider;
+    private AudioSinkProvider mSinkProvider;
 
     // Recording state
     /**
      * <code>true</code> if currently recording audio data
      */
     protected boolean mRecording = false;
+
+    /** The buffer to receive the recorder samples */
+    private float[] mRecorderBuffer;
+
+    private AudioSink mAudioSink;
 
     //
     // Recorder-specific attributes
@@ -150,5 +158,81 @@ public abstract class Recorder extends StreamBase {
 
         return audioChannelMaskFromRepresentationAndBits(
                 AUDIO_CHANNEL_REPRESENTATION_POSITION, bits);
+    }
+
+    protected void buildCommon() {
+        mRecorderBuffer = new float[mNumExchangeFrames * mChannelCount];
+        if (mSinkProvider == null) {
+            mSinkProvider = new NopAudioSinkProvider();
+        }
+        mAudioSink = mSinkProvider.allocJavaSink();
+        mAudioSink.init(mNumExchangeFrames, mChannelCount);
+    }
+
+    /** Start the AudioSink, if there is one. */
+    public void startSink() {
+        if (mAudioSink != null) {
+            mAudioSink.start();
+        }
+    }
+
+    protected void startRecordingThread(RecorderRunnable runnable, String threadName) {
+        waitForStreamThreadToExit(); // just to be sure.
+        mStreamThread = new Thread(runnable, threadName);
+        mRecording = true;
+        mStreamThread.start();
+    }
+
+    /**
+     * Implements the <code>run</code> method for the record thread. Starts the AudioRecord, then
+     * continuously reads audio data until the flag <code>mRecording</code> is set to false (in the
+     * stop() method).
+     */
+    protected abstract class RecorderRunnable implements Runnable {
+
+        public abstract int read(float[] buffer, int offsetInSamples, int numSamples);
+
+        public abstract void onStop();
+
+        @Override
+        public void run() {
+            final int numRecordSamples = mRecorderBuffer.length;
+            if (LOG) {
+                Log.i(TAG, "numRecordSamples: " + numRecordSamples);
+            }
+
+            int numReadSamples = 0;
+            while (mRecording) {
+                numReadSamples = read(mRecorderBuffer, 0, numRecordSamples);
+                if (numReadSamples < 0) {
+                    // error
+                    if (LOG) {
+                        Log.e(TAG, "AudioRecord read error - numReadSamples: " + numReadSamples);
+                    }
+                    stop();
+                } else if (numReadSamples < numRecordSamples) {
+                    // got less than requested?
+                    if (LOG) {
+                        Log.e(
+                                TAG,
+                                "Recorder Underflow: "
+                                        + numReadSamples
+                                        + " vs. "
+                                        + numRecordSamples);
+                    }
+                    stop();
+                }
+
+                if (mAudioSink != null) {
+                    mAudioSink.push(mRecorderBuffer, getNumExchangeFrames(), getChannelCount());
+                }
+            }
+
+            if (mAudioSink != null) {
+                mAudioSink.stop(numReadSamples);
+            }
+
+            onStop();
+        }
     }
 }

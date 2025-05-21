@@ -22,6 +22,7 @@ import android.content.ClipboardManager.OnPrimaryClipChangedListener;
 import android.net.Uri;
 import android.platform.test.annotations.AppModeNonSdkSandbox;
 import android.test.ActivityInstrumentationTestCase2;
+import android.util.Log;
 
 import androidx.test.InstrumentationRegistry;
 import androidx.test.uiautomator.UiDevice;
@@ -36,6 +37,8 @@ public class ClipboardManagerListenerTest
     private ClipboardManagerListenerActivity mActivity;
 
     private CountingClipChangedListener mListener;
+
+    private static final String TAG = ClipboardManagerListenerTest.class.getSimpleName();
 
     public ClipboardManagerListenerTest() {
         super(ClipboardManagerListenerActivity.class);
@@ -54,6 +57,7 @@ public class ClipboardManagerListenerTest
     }
 
     public void testListener() throws Exception {
+        waitForActivityFocus();
         mActivity.addPrimaryClipChangedListener(mListener);
         int expectedCount = 0;
         assertClipChangedCount(expectedCount);
@@ -80,6 +84,16 @@ public class ClipboardManagerListenerTest
             @Override
             protected boolean check() {
                 return expectedCount == mListener.getCount();
+            }
+        }.run();
+    }
+
+    private void waitForActivityFocus() {
+        new PollingCheck() {
+            @Override protected boolean check() {
+                boolean focused = mActivity.hasWindowFocus();
+                Log.i(TAG, "hasWindowFocus() = " + focused);
+                return focused;
             }
         }.run();
     }

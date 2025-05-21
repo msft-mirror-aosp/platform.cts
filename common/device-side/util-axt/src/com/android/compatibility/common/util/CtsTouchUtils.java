@@ -511,7 +511,7 @@ public final class CtsTouchUtils {
     }
 
     private void injectPointerEvent(Instrumentation instrumentation, MotionEvent event) {
-        instrumentation.sendPointerSync(event);
+        instrumentation.getUiAutomation().injectInputEvent(event, true);
     }
 
     /**

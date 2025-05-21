@@ -1,1 +1,3 @@
+# Bug component: 76427
+include /tests/tests/webkit/OWNERS
 file:platform/external/cronet:main:/OWNERS

@@ -421,7 +421,7 @@ public class NotificationFullScreenIntentVerifierActivity extends InteractiveVer
 
         @Override
         protected View inflate(ViewGroup parent) {
-            mView = createUserItem(parent, R.string.np_start_lockscreen_settings, mInstructionRes);
+            mView = createUserItem(parent, R.string.np_start_display_settings, mInstructionRes);
             setButtonsEnabled(mView, false);
             return mView;
         }
@@ -450,7 +450,7 @@ public class NotificationFullScreenIntentVerifierActivity extends InteractiveVer
 
         @Override
         protected Intent getIntent() {
-            return new Intent(Settings.ACTION_LOCKSCREEN_SETTINGS)
+            return new Intent(Settings.ACTION_DISPLAY_SETTINGS)
                     .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK);
         }
     }

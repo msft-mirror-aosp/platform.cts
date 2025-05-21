@@ -384,7 +384,10 @@ public class BinderIntegrationTest extends ActivityTestsBase {
             token.unlinkToDeath(recipient, 0);
         }
         // Verify the IBinder
-        assertEquals("Incorrect token received on binder death", token, mWhichBinderDied);
+        assertEquals("Incorrect token received on binder death died="
+                + died.block(1)  // Check if it got binder death yet or timed out
+                + ", mEmptyService=" + mEmptyService, // Check if the service was disconnected
+                token, mWhichBinderDied);
     }
 
     private static class MockIInterface implements IInterface {

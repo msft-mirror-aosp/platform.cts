@@ -89,7 +89,10 @@ public class AudioDataPathsUSBHeadsetActivity extends AudioDataPathsBaseActivity
     void postValidateTestDevices(int numValidTestModules) {
         TextView promptView = (TextView) findViewById(R.id.audio_datapaths_deviceprompt);
         if (mIsHandheld) {
-            if (mUsbHeadsetSupport == AudioDeviceUtils.SUPPORTSDEVICE_YES) {
+            if (mIsEmulator) {
+                promptView.setText(
+                        getResources().getString(R.string.audio_datapaths_emulator_autopass));
+            } else if (mUsbHeadsetSupport == AudioDeviceUtils.SUPPORTSDEVICE_YES) {
                 if (mTestManager.calculatePass()) {
                     promptView.setVisibility(View.GONE);
                 } else {

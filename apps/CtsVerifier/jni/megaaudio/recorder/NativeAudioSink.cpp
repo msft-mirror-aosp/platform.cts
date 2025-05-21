@@ -17,13 +17,12 @@
 #include <jni.h>
 
 #include "AudioSink.h"
+#include "AppCallbackAudioSink.h"
 
 //TODO - Probably wrap the JNI handling in a class with a pointer held in the Java Object
 // so as to support multiple instances... maybe.
 
-// JNI Stuff
 extern "C" {
-
 JNIEXPORT void JNICALL
 Java_org_hyphonate_megaaudio_recorder_NativeAudioSink_initN(JNIEnv * env , jobject thiz,
         jlong native_sink_ptr , jint num_frames, jint num_chans ) {

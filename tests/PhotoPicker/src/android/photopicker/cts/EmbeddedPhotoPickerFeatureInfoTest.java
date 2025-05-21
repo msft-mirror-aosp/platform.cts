@@ -163,7 +163,7 @@ public class EmbeddedPhotoPickerFeatureInfoTest {
         // Suppress HSR tests for wearables since the APIs aren't supported in wear devices
         Assume.assumeTrue(isHardwareSupported());
         Assert.assertThrows(
-                NullPointerException.class,
+                IllegalArgumentException.class,
                 () -> {
                     new EmbeddedPhotoPickerFeatureInfo.Builder()
                             .setHighlightMediaTextQuery(null)

@@ -181,6 +181,8 @@ public final class CompatChangeTests extends MultiDisplayTestBase {
 
     private static final float FLOAT_EQUALITY_DELTA = 0.01f;
 
+    private static final int ACTIVITY_FOCUS_TIMEOUT_MS = 5000;
+
     @Rule
     public TestRule compatChangeRule = new PlatformCompatChangeRule();
     @Rule
@@ -1116,7 +1118,7 @@ public final class CompatChangeTests extends MultiDisplayTestBase {
 
         final ComponentName activity = NON_RESIZEABLE_PORTRAIT_ACTIVITY;
         startActivityOnDisplay(DEFAULT_DISPLAY, activity);
-        waitForActivityFocused(5000, activity);
+        waitForActivityFocused(ACTIVITY_FOCUS_TIMEOUT_MS, activity);
 
         separateTestJournal();
         startActivityOnDisplay(secondaryDisplayId, activity);
@@ -1149,7 +1151,7 @@ public final class CompatChangeTests extends MultiDisplayTestBase {
 
         final ComponentName activity = NO_DISPLAY_CONFIG_CHANGE_SUPPORT_GAME_ACTIVITY;
         startActivityOnDisplay(DEFAULT_DISPLAY, activity);
-        waitForActivityFocused(5000, activity);
+        waitForActivityFocused(ACTIVITY_FOCUS_TIMEOUT_MS, activity);
 
         separateTestJournal();
         startActivityOnDisplay(secondaryDisplayId, activity);

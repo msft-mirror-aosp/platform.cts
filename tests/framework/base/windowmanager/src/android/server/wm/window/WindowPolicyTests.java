@@ -35,7 +35,6 @@ import android.content.res.Configuration;
 import android.graphics.Color;
 import android.graphics.Rect;
 import android.platform.test.annotations.Presubmit;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.server.wm.NestedShellPermission;
 import android.server.wm.cts.R;
 import android.view.View;
@@ -57,7 +56,6 @@ public class WindowPolicyTests extends WindowPolicyTestBase {
 
     private static final long TIMEOUT_NAV_BAR_MODE_CHANGED = 2000L;
 
-    @RequiresFlagsEnabled(Flags.FLAG_ENFORCE_EDGE_TO_EDGE)
     @Test
     public void testWindowInsets() {
         if (Flags.disableOptOutEdgeToEdge()) {
@@ -96,7 +94,6 @@ public class WindowPolicyTests extends WindowPolicyTestBase {
                 location[1] + view.getHeight());
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_ENFORCE_EDGE_TO_EDGE)
     @Test
     public void testWindowStyleLayoutInDisplayCutoutMode_unspecified() {
         if (Flags.disableOptOutEdgeToEdge()) {
@@ -106,7 +103,6 @@ public class WindowPolicyTests extends WindowPolicyTestBase {
         assertFillWindowBounds(startActivitySync(TestActivity.class));
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_ENFORCE_EDGE_TO_EDGE)
     @Test
     public void testWindowStyleLayoutInDisplayCutoutMode_never() {
         if (Flags.disableOptOutEdgeToEdge()) {
@@ -116,7 +112,6 @@ public class WindowPolicyTests extends WindowPolicyTestBase {
         assertFillWindowBounds(startActivitySync(TestActivity.class));
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_ENFORCE_EDGE_TO_EDGE)
     @Test
     public void testWindowStyleLayoutInDisplayCutoutMode_default() {
         if (Flags.disableOptOutEdgeToEdge()) {
@@ -126,7 +121,6 @@ public class WindowPolicyTests extends WindowPolicyTestBase {
         assertFillWindowBounds(startActivitySync(TestActivity.class));
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_ENFORCE_EDGE_TO_EDGE)
     @Test
     public void testWindowStyleLayoutInDisplayCutoutMode_shortEdges() {
         if (Flags.disableOptOutEdgeToEdge()) {
@@ -136,7 +130,6 @@ public class WindowPolicyTests extends WindowPolicyTestBase {
         assertFillWindowBounds(startActivitySync(TestActivity.class));
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_ENFORCE_EDGE_TO_EDGE)
     @Test
     public void testWindowStyleLayoutInDisplayCutoutMode_always() {
         if (Flags.disableOptOutEdgeToEdge()) {
@@ -146,7 +139,6 @@ public class WindowPolicyTests extends WindowPolicyTestBase {
         assertFillWindowBounds(startActivitySync(TestActivity.class));
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_ENFORCE_EDGE_TO_EDGE)
     @Test
     public void testLayoutParamsLayoutInDisplayCutoutMode_unspecified() {
         if (Flags.disableOptOutEdgeToEdge()) {
@@ -155,7 +147,6 @@ public class WindowPolicyTests extends WindowPolicyTestBase {
         assertFillWindowBounds(startActivitySync(TestActivity.class));
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_ENFORCE_EDGE_TO_EDGE)
     @Test
     public void testLayoutParamsLayoutInDisplayCutoutMode_never() {
         if (Flags.disableOptOutEdgeToEdge()) {
@@ -165,7 +156,6 @@ public class WindowPolicyTests extends WindowPolicyTestBase {
         assertFillWindowBounds(startActivitySync(TestActivity.class));
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_ENFORCE_EDGE_TO_EDGE)
     @Test
     public void testLayoutParamsLayoutInDisplayCutoutMode_default() {
         if (Flags.disableOptOutEdgeToEdge()) {
@@ -175,7 +165,6 @@ public class WindowPolicyTests extends WindowPolicyTestBase {
         assertFillWindowBounds(startActivitySync(TestActivity.class));
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_ENFORCE_EDGE_TO_EDGE)
     @Test
     public void testLayoutParamsLayoutInDisplayCutoutMode_shortEdges() {
         if (Flags.disableOptOutEdgeToEdge()) {
@@ -185,7 +174,6 @@ public class WindowPolicyTests extends WindowPolicyTestBase {
         assertFillWindowBounds(startActivitySync(TestActivity.class));
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_ENFORCE_EDGE_TO_EDGE)
     @Test
     public void testLayoutParamsLayoutInDisplayCutoutMode_always() {
         if (Flags.disableOptOutEdgeToEdge()) {
@@ -195,7 +183,6 @@ public class WindowPolicyTests extends WindowPolicyTestBase {
         assertFillWindowBounds(startActivitySync(TestActivity.class));
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_ENFORCE_EDGE_TO_EDGE)
     @Test
     public void testSystemBarColor() {
         if (Flags.disableOptOutEdgeToEdge()) {

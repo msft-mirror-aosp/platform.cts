@@ -27,16 +27,17 @@ import android.os.UserHandle;
 import android.util.Log;
 
 public class StartActivityAsUserActivity extends Activity {
-    private static final String LOG_TAG = "startActivityAsUserTest";
+    private static final String LOG_TAG = "StartActivityAsUserTest";
 
     @Override
     public void onCreate(Bundle bundle) {
         super.onCreate(bundle);
         Bundle extra = getIntent().getExtras();
-        RemoteCallback cb = (RemoteCallback) extra.get(EXTRA_CALLBACK);
+        RemoteCallback cb = extra.getParcelable(EXTRA_CALLBACK, RemoteCallback.class);
         if (cb != null) {
             Bundle result = new Bundle();
             result.putInt(KEY_USER_ID, UserHandle.myUserId());
+            Log.i(LOG_TAG, "Send result: " + UserHandle.myUserId() + " via RemoteCallback.");
             cb.sendResult(result);
         }
         Log.i(LOG_TAG, "Second activity started with user " + UserHandle.myUserId());

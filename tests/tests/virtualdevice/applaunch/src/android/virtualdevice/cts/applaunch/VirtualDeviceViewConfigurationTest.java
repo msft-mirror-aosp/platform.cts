@@ -41,22 +41,74 @@ import java.time.Duration;
 
 @RunWith(AndroidJUnit4.class)
 @AppModeFull(reason = "VirtualDeviceManager cannot be accessed by instant apps")
-@RequiresFlagsEnabled({
-    Flags.FLAG_VIEWCONFIGURATION_APIS,
-    android.content.res.Flags.FLAG_RRO_CONSTRAINTS
-})
 public class VirtualDeviceViewConfigurationTest {
     private static final double DELTA = 0.0005;
 
     @Rule public VirtualDeviceRule mRule = VirtualDeviceRule.createDefault();
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_VIEWCONFIGURATION_APIS)
+    public void viewConfiguration_defaultValuesOnVirtualDevice() throws Exception {
+        Activity defaultDisplayActivity =
+                mRule.startActivityOnDisplaySync(Display.DEFAULT_DISPLAY, Activity.class);
+        ViewConfiguration defaultViewconfiguration = ViewConfiguration.get(defaultDisplayActivity);
+
+        VirtualDeviceManager.VirtualDevice virtualDevice = mRule.createManagedVirtualDevice();
+        VirtualDisplay virtualDisplay =
+                mRule.createManagedVirtualDisplay(
+                        virtualDevice,
+                        VirtualDeviceRule.createTrustedVirtualDisplayConfigBuilder());
+        int displayId = virtualDisplay.getDisplay().getDisplayId();
+
+        // Launch the activity on the virtual device and verify that we get the default values.
+        Activity vdActivity = mRule.startActivityOnDisplaySync(displayId, Activity.class);
+        ViewConfiguration vdViewconfiguration = ViewConfiguration.get(vdActivity);
+        assertEquals(
+                defaultViewconfiguration.getTapTimeoutMillis(),
+                vdViewconfiguration.getTapTimeoutMillis());
+        assertEquals(
+                defaultViewconfiguration.getDoubleTapTimeoutMillis(),
+                vdViewconfiguration.getDoubleTapTimeoutMillis());
+        assertEquals(
+                defaultViewconfiguration.getLongPressTimeoutMillis(),
+                vdViewconfiguration.getLongPressTimeoutMillis());
+        assertEquals(
+                defaultViewconfiguration.getMultiPressTimeoutMillis(),
+                vdViewconfiguration.getMultiPressTimeoutMillis());
+        assertEquals(
+                defaultViewconfiguration.getScrollFrictionAmount(),
+                vdViewconfiguration.getScrollFrictionAmount(),
+                DELTA);
+        assertEquals(
+                getDimensionsDp(
+                        defaultViewconfiguration.getScaledTouchSlop(), defaultDisplayActivity),
+                getDimensionsDp(vdViewconfiguration.getScaledTouchSlop(), vdActivity),
+                DELTA);
+        assertEquals(
+                getDimensionsDp(
+                        defaultViewconfiguration.getScaledMinimumFlingVelocity(),
+                        defaultDisplayActivity),
+                getDimensionsDp(vdViewconfiguration.getScaledMinimumFlingVelocity(), vdActivity),
+                DELTA);
+        assertEquals(
+                getDimensionsDp(
+                        defaultViewconfiguration.getScaledMaximumFlingVelocity(),
+                        defaultDisplayActivity),
+                getDimensionsDp(vdViewconfiguration.getScaledMaximumFlingVelocity(), vdActivity),
+                DELTA);
+    }
+
+    @Test
+    @RequiresFlagsEnabled({
+        Flags.FLAG_VIEWCONFIGURATION_APIS,
+        android.content.res.Flags.FLAG_RRO_CONSTRAINTS
+    })
     public void getTapTimeoutMillis_customValueOnVirtualDevice() throws Exception {
         Activity activity =
                 mRule.startActivityOnDisplaySync(Display.DEFAULT_DISPLAY, Activity.class);
         int valueOnDefaultDevice = ViewConfiguration.get(activity).getTapTimeoutMillis();
 
-        int overriddenValue = 5000;
+        int overriddenValue = valueOnDefaultDevice + 1000;
         int displayId =
                 createVirtualDisplayWithinVirtualDeviceWithParams(
                         new ViewConfigurationParams.Builder()
@@ -72,12 +124,16 @@ public class VirtualDeviceViewConfigurationTest {
     }
 
     @Test
+    @RequiresFlagsEnabled({
+        Flags.FLAG_VIEWCONFIGURATION_APIS,
+        android.content.res.Flags.FLAG_RRO_CONSTRAINTS
+    })
     public void getDoubleTapTimeoutMillis_customValueOnVirtualDevice() throws Exception {
         Activity activity =
                 mRule.startActivityOnDisplaySync(Display.DEFAULT_DISPLAY, Activity.class);
         int valueOnDefaultDevice = ViewConfiguration.get(activity).getDoubleTapTimeoutMillis();
 
-        int overriddenValue = 5000;
+        int overriddenValue = valueOnDefaultDevice + 1000;
         int displayId =
                 createVirtualDisplayWithinVirtualDeviceWithParams(
                         new ViewConfigurationParams.Builder()
@@ -96,6 +152,58 @@ public class VirtualDeviceViewConfigurationTest {
     @Test
     @RequiresFlagsEnabled({
         Flags.FLAG_VIEWCONFIGURATION_APIS,
+        Flags.FLAG_DEVICE_AWARE_SETTINGS_OVERRIDE
+    })
+    public void getLongPressTimeoutMillis_customValueOnVirtualDevice() throws Exception {
+        Activity activity =
+                mRule.startActivityOnDisplaySync(Display.DEFAULT_DISPLAY, Activity.class);
+        int valueOnDefaultDevice = ViewConfiguration.get(activity).getLongPressTimeoutMillis();
+
+        int overriddenValue = valueOnDefaultDevice + 1000;
+        int displayId =
+                createVirtualDisplayWithinVirtualDeviceWithParams(
+                        new ViewConfigurationParams.Builder()
+                                .setLongPressTimeoutDuration(Duration.ofMillis(overriddenValue))
+                                .build());
+
+        // Launch the activity on the virtual device and verify that we get the overridden value.
+        activity = mRule.startActivityOnDisplaySync(displayId, Activity.class);
+        assertEquals(overriddenValue, ViewConfiguration.get(activity).getLongPressTimeoutMillis());
+        // Launch the activity on the default device and verify that we get the default value.
+        activity = mRule.startActivityOnDisplaySync(Display.DEFAULT_DISPLAY, Activity.class);
+        assertEquals(
+                valueOnDefaultDevice, ViewConfiguration.get(activity).getLongPressTimeoutMillis());
+    }
+
+    @Test
+    @RequiresFlagsEnabled({
+        Flags.FLAG_VIEWCONFIGURATION_APIS,
+        Flags.FLAG_DEVICE_AWARE_SETTINGS_OVERRIDE
+    })
+    public void getMultiPressTimeoutMillis_customValueOnVirtualDevice() throws Exception {
+        Activity activity =
+                mRule.startActivityOnDisplaySync(Display.DEFAULT_DISPLAY, Activity.class);
+        int valueOnDefaultDevice = ViewConfiguration.get(activity).getMultiPressTimeoutMillis();
+
+        int overriddenValue = valueOnDefaultDevice + 1000;
+        int displayId =
+                createVirtualDisplayWithinVirtualDeviceWithParams(
+                        new ViewConfigurationParams.Builder()
+                                .setMultiPressTimeoutDuration(Duration.ofMillis(overriddenValue))
+                                .build());
+
+        // Launch the activity on the virtual device and verify that we get the overridden value.
+        activity = mRule.startActivityOnDisplaySync(displayId, Activity.class);
+        assertEquals(overriddenValue, ViewConfiguration.get(activity).getMultiPressTimeoutMillis());
+        // Launch the activity on the default device and verify that we get the default value.
+        activity = mRule.startActivityOnDisplaySync(Display.DEFAULT_DISPLAY, Activity.class);
+        assertEquals(
+                valueOnDefaultDevice, ViewConfiguration.get(activity).getMultiPressTimeoutMillis());
+    }
+
+    @Test
+    @RequiresFlagsEnabled({
+        Flags.FLAG_VIEWCONFIGURATION_APIS,
         android.content.res.Flags.FLAG_RRO_CONSTRAINTS,
         android.content.res.Flags.FLAG_DIMENSION_FRRO
     })
@@ -104,7 +212,7 @@ public class VirtualDeviceViewConfigurationTest {
                 mRule.startActivityOnDisplaySync(Display.DEFAULT_DISPLAY, Activity.class);
         float valueOnDefaultDevice = ViewConfiguration.get(activity).getScrollFrictionAmount();
 
-        float overriddenValue = 5000f;
+        float overriddenValue = valueOnDefaultDevice + 1000f;
         int displayId =
                 createVirtualDisplayWithinVirtualDeviceWithParams(
                         new ViewConfigurationParams.Builder()
@@ -134,7 +242,7 @@ public class VirtualDeviceViewConfigurationTest {
                 mRule.startActivityOnDisplaySync(Display.DEFAULT_DISPLAY, Activity.class);
         float valueOnDefaultDevice = ViewConfiguration.get(activity).getScaledTouchSlop();
 
-        float overriddenValue = 5000f;
+        float overriddenValue = valueOnDefaultDevice + 1000f;
         int displayId =
                 createVirtualDisplayWithinVirtualDeviceWithParams(
                         new ViewConfigurationParams.Builder()
@@ -165,7 +273,7 @@ public class VirtualDeviceViewConfigurationTest {
         float valueOnDefaultDevice =
                 ViewConfiguration.get(activity).getScaledMinimumFlingVelocity();
 
-        float overriddenValue = 5000f;
+        float overriddenValue = valueOnDefaultDevice + 1000f;
         int displayId =
                 createVirtualDisplayWithinVirtualDeviceWithParams(
                         new ViewConfigurationParams.Builder()
@@ -198,7 +306,7 @@ public class VirtualDeviceViewConfigurationTest {
         float valueOnDefaultDevice =
                 ViewConfiguration.get(activity).getScaledMaximumFlingVelocity();
 
-        float overriddenValue = 5000f;
+        float overriddenValue = valueOnDefaultDevice + 1000f;
         int displayId =
                 createVirtualDisplayWithinVirtualDeviceWithParams(
                         new ViewConfigurationParams.Builder()
@@ -235,10 +343,11 @@ public class VirtualDeviceViewConfigurationTest {
         return display.getDisplay().getDisplayId();
     }
 
-    private static int getPixelDimensions(float densityIndependentDimensions, Activity activity) {
-        return (int)
-                Math.ceil(
-                        densityIndependentDimensions
-                                * activity.getResources().getDisplayMetrics().density);
+    private static int getPixelDimensions(float dimensionsDp, Activity activity) {
+        return (int) Math.ceil(dimensionsDp * activity.getResources().getDisplayMetrics().density);
+    }
+
+    private static float getDimensionsDp(int pixelDimensions, Activity activity) {
+        return pixelDimensions / activity.getResources().getDisplayMetrics().density;
     }
 }
