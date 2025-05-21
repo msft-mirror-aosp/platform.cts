@@ -21,6 +21,7 @@ import static android.graphics.pdf.PdfRenderer.DOCUMENT_LINEARIZED_TYPE_NON_LINE
 import static android.graphics.pdf.component.PdfPageObjectType.IMAGE;
 import static android.graphics.pdf.component.PdfPageObjectType.PATH;
 import static android.graphics.pdf.component.PdfPageObjectType.TEXT;
+import static android.graphics.pdf.component.PdfPageObjectType.UNKNOWN;
 import static android.graphics.pdf.cts.module.Utils.A4_HEIGHT_PTS;
 import static android.graphics.pdf.cts.module.Utils.A4_PORTRAIT;
 import static android.graphics.pdf.cts.module.Utils.A4_WIDTH_PTS;
@@ -2415,6 +2416,95 @@ public class PdfRendererTest {
             RectF imageId5Bounds = new RectF(11f, 160f, 110f, 259f);
             RectF actualBounds = getRectBounds(imageObject.getMatrix());
             assertEquals(imageId5Bounds, actualBounds);
+        }
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    @SdkSuppress(
+            minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM,
+            codeName = "VanillaIceCream")
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_GET_TOP_PDF_PAGE_OBJECT_AT_POSITION)
+    public void testGetTopPageObjectAtPosition_withInvalidType()
+            throws IOException, IllegalArgumentException {
+        try (PdfRenderer renderer = createRenderer(PAGE_OBJECT_OVERLAPS, mContext);
+                PdfRenderer.Page firstPage = renderer.openPage(0)) {
+            PointF testPoint = new PointF(0f, 0f);
+            // request an invalid type
+            int[] types = {-1};
+            // Requesting an unsupported type should throw an exception
+            firstPage.getTopPageObjectAtPosition(testPoint, types);
+        }
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    @SdkSuppress(
+            minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM,
+            codeName = "VanillaIceCream")
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_GET_TOP_PDF_PAGE_OBJECT_AT_POSITION)
+    public void testGetTopPageObjectAtPosition_withUnknownType()
+            throws IOException, IllegalArgumentException {
+        try (PdfRenderer renderer = createRenderer(PAGE_OBJECT_OVERLAPS, mContext);
+                PdfRenderer.Page firstPage = renderer.openPage(0)) {
+            PointF testPoint = new PointF(0f, 0f);
+            // request an unknown type
+            int[] types = {UNKNOWN};
+            // Requesting an unsupported type should throw an exception
+            firstPage.getTopPageObjectAtPosition(testPoint, types);
+        }
+    }
+
+    @Test(expected = IllegalStateException.class)
+    @SdkSuppress(
+            minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM,
+            codeName = "VanillaIceCream")
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_GET_TOP_PDF_PAGE_OBJECT_AT_POSITION)
+    public void testGetTopPageObjectAtPosition_whenPageClosed() throws IOException {
+        PdfRenderer renderer = createRenderer(ONE_IMAGE_PAGE_OBJECT, mContext);
+        PdfRenderer.Page firstPage = renderer.openPage(0);
+        firstPage.close();
+        PointF testPoint = new PointF(0f, 0f);
+        int[] types = {IMAGE};
+        firstPage.getTopPageObjectAtPosition(testPoint, types);
+        renderer.close();
+    }
+
+    @Test(expected = IllegalStateException.class)
+    @SdkSuppress(
+            minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM,
+            codeName = "VanillaIceCream")
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_GET_TOP_PDF_PAGE_OBJECT_AT_POSITION)
+    public void testGetTopPageObjectAtPosition_whenRendererClosed() throws IOException {
+        PdfRenderer renderer = createRenderer(ONE_IMAGE_PAGE_OBJECT, mContext);
+        PdfRenderer.Page firstPage = renderer.openPage(0);
+        renderer.close();
+        PointF testPoint = new PointF(0f, 0f);
+        int[] types = {IMAGE};
+        firstPage.getTopPageObjectAtPosition(testPoint, types);
+    }
+
+    @Test(expected = NullPointerException.class)
+    @SdkSuppress(
+            minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM,
+            codeName = "VanillaIceCream")
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_GET_TOP_PDF_PAGE_OBJECT_AT_POSITION)
+    public void testGetTopPageObjectAtPosition_whenPointIsNull() throws IOException {
+        try (PdfRenderer renderer = createRenderer(PAGE_OBJECT_OVERLAPS, mContext);
+                PdfRenderer.Page firstPage = renderer.openPage(0)) {
+            int[] types = {IMAGE};
+            firstPage.getTopPageObjectAtPosition(null, types);
+        }
+    }
+
+    @Test(expected = NullPointerException.class)
+    @SdkSuppress(
+            minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM,
+            codeName = "VanillaIceCream")
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_GET_TOP_PDF_PAGE_OBJECT_AT_POSITION)
+    public void testGetTopPageObjectAtPosition_whenTypesIsNull() throws IOException {
+        try (PdfRenderer renderer = createRenderer(PAGE_OBJECT_OVERLAPS, mContext);
+                PdfRenderer.Page firstPage = renderer.openPage(0)) {
+            PointF testPoint = new PointF(0f, 0f);
+            firstPage.getTopPageObjectAtPosition(testPoint, null);
         }
     }
 
