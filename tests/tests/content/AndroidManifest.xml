@@ -455,7 +455,7 @@
         </activity-alias>
 
         <!-- Used for PackageManager test, don't delete this MockContentProvider provider -->
-        <provider android:name="android.content.cts.MockContentProvider"
+        <provider android:name="com.android.cts.content.MockContentProvider"
              android:authorities="ctstest"
              android:multiprocess="false"
              android:exported="true">
@@ -481,7 +481,7 @@
              android:authorities="android.content.cts.dummyprovider"
              android:exported="true"
              android:multiprocess="true"/>
-        <provider android:name="android.content.cts.MockRemoteContentProvider"
+        <provider android:name="com.android.cts.content.MockRemoteContentProvider"
              android:authorities="remotectstest"
              android:process=":remoteprovider"
              android:exported="true"
@@ -492,12 +492,6 @@
             <meta-data android:name="android.support.FILE_PROVIDER_PATHS"
                  android:resource="@xml/file_paths"/>
         </provider>
-
-        <provider android:name="android.content.cts.TestPagingContentProvider"
-             android:authorities="android.content.cts.testpagingprovider"
-             android:process=":testpagingprovider"
-             android:exported="true"
-             android:multiprocess="false"/>
 
         <provider android:name="com.android.cts.content.MockBuggyProvider"
              android:authorities="com.android.cts.content.mockbuggyprovider"

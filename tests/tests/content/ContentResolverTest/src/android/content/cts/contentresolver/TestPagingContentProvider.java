@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package android.content.cts;
+package android.content.cts.contentresolver;
 
 import android.content.ContentProvider;
 import android.content.ContentResolver;
@@ -32,12 +32,12 @@ import androidx.annotation.NonNull;
 import javax.annotation.Nullable;
 
 /**
- * A stub data paging provider used for testing of paging support.
- * Ignores client supplied projections.
+ * A stub data paging provider used for testing of paging support. Ignores client supplied
+ * projections.
  */
 public final class TestPagingContentProvider extends ContentProvider {
     private static final String TAG = "TestPagingContentProvider";
-    static final String AUTHORITY = "android.content.cts.testpagingprovider";
+    static final String AUTHORITY = "android.content.cts.contentresolver.testpagingprovider";
 
     static final Uri PAGED_DATA_URI =
             new Uri.Builder()
@@ -55,18 +55,13 @@ public final class TestPagingContentProvider extends ContentProvider {
 
     /** Required queryArgument specifying corpus size. */
     static final String RECORD_COUNT = "test-record-count";
+
     static final String COLUMN_POS = "ColumnPos";
     static final String COLUMN_A = "ColumnA";
     static final String COLUMN_B = "ColumnB";
     static final String COLUMN_C = "ColumnC";
     static final String COLUMN_D = "ColumnD";
-    static final String[] PROJECTION = {
-        COLUMN_POS,
-        COLUMN_A,
-        COLUMN_B,
-        COLUMN_C,
-        COLUMN_D
-    };
+    static final String[] PROJECTION = {COLUMN_POS, COLUMN_A, COLUMN_B, COLUMN_C, COLUMN_D};
 
     @Override
     public boolean onCreate() {
@@ -113,10 +108,16 @@ public final class TestPagingContentProvider extends ContentProvider {
         int offset = queryArgs.getInt(ContentResolver.QUERY_ARG_OFFSET, 0);
         int limit = queryArgs.getInt(ContentResolver.QUERY_ARG_LIMIT, Integer.MIN_VALUE);
 
-        Log.v(TAG, "Building paged results. {"
-                + "recordsetSize=" + recordsetSize
-                + ", offset=" + offset
-                + ", limit=" + limit + "}");
+        Log.v(
+                TAG,
+                "Building paged results. {"
+                        + "recordsetSize="
+                        + recordsetSize
+                        + ", offset="
+                        + offset
+                        + ", limit="
+                        + limit
+                        + "}");
 
         MatrixCursor c = createCursor();
         Bundle extras = c.getExtras();
@@ -130,10 +131,9 @@ public final class TestPagingContentProvider extends ContentProvider {
             fillRow(c.newRow(), i);
         }
 
-        extras.putStringArray(ContentResolver.EXTRA_HONORED_ARGS, new String[] {
-            ContentResolver.QUERY_ARG_OFFSET,
-            ContentResolver.QUERY_ARG_LIMIT
-        });
+        extras.putStringArray(
+                ContentResolver.EXTRA_HONORED_ARGS,
+                new String[] {ContentResolver.QUERY_ARG_OFFSET, ContentResolver.QUERY_ARG_LIMIT});
         extras.putInt(ContentResolver.EXTRA_TOTAL_COUNT, recordsetSize);
         return c;
     }

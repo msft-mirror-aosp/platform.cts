@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package android.content.cts;
+package com.android.cts.content;
 
 public class MockRemoteContentProvider extends MockContentProvider {
     public MockRemoteContentProvider() {

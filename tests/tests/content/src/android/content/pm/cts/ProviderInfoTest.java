@@ -50,7 +50,7 @@ public class ProviderInfoTest {
     public final RavenwoodRule mRavenwood = new RavenwoodRule();
 
     private static final String PACKAGE_NAME = "android.content.cts";
-    private static final String PROVIDER_NAME = "android.content.cts.MockContentProvider";
+    private static final String PROVIDER_NAME = "com.android.cts.content.MockContentProvider";
 
     private Context getContext() {
         return InstrumentationRegistry.getInstrumentation().getTargetContext();

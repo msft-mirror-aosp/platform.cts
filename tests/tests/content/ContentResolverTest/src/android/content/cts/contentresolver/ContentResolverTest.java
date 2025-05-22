@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package android.content.cts;
+package android.content.cts.contentresolver;
 
 import static android.content.ContentResolver.NOTIFY_INSERT;
 import static android.content.ContentResolver.NOTIFY_UPDATE;
@@ -57,6 +57,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.ShellIdentityUtils;
+import com.android.cts.content.MockContentProvider;
 import com.android.internal.annotations.GuardedBy;
 import com.android.internal.util.ArrayUtils;
 
@@ -87,9 +88,9 @@ import java.util.concurrent.TimeUnit;
 @RunWith(AndroidJUnit4.class)
 public final class ContentResolverTest {
     private static final String TAG = "ContentResolverTest";
-    private final static String COLUMN_ID_NAME = "_id";
-    private final static String COLUMN_KEY_NAME = "key";
-    private final static String COLUMN_VALUE_NAME = "value";
+    private static final String COLUMN_ID_NAME = "_id";
+    private static final String COLUMN_KEY_NAME = "key";
+    private static final String COLUMN_VALUE_NAME = "value";
 
     private static final String AUTHORITY = "ctstest";
     private static final Uri TABLE1_URI =
@@ -179,7 +180,7 @@ public final class ContentResolverTest {
     private static final int VALUE2 = 2;
     private static final int VALUE3 = 3;
 
-    private static final String TEST_PACKAGE_NAME = "android.content.cts";
+    private static final String TEST_PACKAGE_NAME = "android.content.cts.contentresolver";
 
     private Context mContext;
     private ContentResolver mContentResolver;
@@ -214,7 +215,8 @@ public final class ContentResolverTest {
     @After
     public void tearDown() throws Exception {
         MockContentProvider.setRefreshReturnValue(false);
-        InstrumentationRegistry.getInstrumentation().getUiAutomation()
+        InstrumentationRegistry.getInstrumentation()
+                .getUiAutomation()
                 .dropShellPermissionIdentity();
 
         mContentResolver.delete(TABLE1_URI, null, null);
@@ -238,8 +240,8 @@ public final class ContentResolverTest {
         // with a content provider process going away while a client is waiting
         // for it to come up.
         // First, we need to make sure our provider process is gone.  Goodbye!
-        ContentProviderClient client = mContentResolver.acquireContentProviderClient(
-                REMOTE_AUTHORITY);
+        ContentProviderClient client =
+                mContentResolver.acquireContentProviderClient(REMOTE_AUTHORITY);
         // We are going to do something wrong here...  release the client first,
         // so the act of killing it doesn't kill our own process.
         client.close();
@@ -279,8 +281,8 @@ public final class ContentResolverTest {
         assertThat(type1.startsWith(ContentResolver.CURSOR_DIR_BASE_TYPE)).isTrue();
 
         // Get a stable reference on the remote content provider.
-        ContentProviderClient sClient = mContentResolver.acquireContentProviderClient(
-                REMOTE_AUTHORITY);
+        ContentProviderClient sClient =
+                mContentResolver.acquireContentProviderClient(REMOTE_AUTHORITY);
         // Verify we can still access it.
         type1 = mContentResolver.getType(REMOTE_TABLE1_URI);
         assertThat(type1.startsWith(ContentResolver.CURSOR_DIR_BASE_TYPE)).isTrue();
@@ -296,7 +298,8 @@ public final class ContentResolverTest {
         // Kill it.  Note that a bug at this point where it causes our own
         // process to be killed will result in the entire test failing.
         try {
-            Log.i("ContentResolverTest",
+            Log.i(
+                    "ContentResolverTest",
                     "Killing remote client -- if test process goes away, that is why!");
             uClient.delete(REMOTE_CRASH_URI, null, null);
         } catch (RemoteException e) {
@@ -318,8 +321,8 @@ public final class ContentResolverTest {
     @Test
     public void testStableToUnstableRefs() {
         // Get a stable reference on the remote content provider.
-        ContentProviderClient sClient = mContentResolver.acquireContentProviderClient(
-                REMOTE_AUTHORITY);
+        ContentProviderClient sClient =
+                mContentResolver.acquireContentProviderClient(REMOTE_AUTHORITY);
         // Verify we can still access it.
         String type1 = mContentResolver.getType(REMOTE_TABLE1_URI);
         assertThat(type1.startsWith(ContentResolver.CURSOR_DIR_BASE_TYPE)).isTrue();
@@ -337,7 +340,8 @@ public final class ContentResolverTest {
         // Kill it.  Note that a bug at this point where it causes our own
         // process to be killed will result in the entire test failing.
         try {
-            Log.i("ContentResolverTest",
+            Log.i(
+                    "ContentResolverTest",
                     "Killing remote client -- if test process goes away, that is why!");
             uClient.delete(REMOTE_CRASH_URI, null, null);
         } catch (RemoteException e) {
@@ -381,7 +385,7 @@ public final class ContentResolverTest {
         String type1 = mContentResolver.getType(RESTRICTED_TABLE1_URI);
         assertThat(type1.startsWith(ContentResolver.CURSOR_DIR_BASE_TYPE)).isTrue();
         String type2 = mContentResolver.getType(RESTRICTED_TABLE1_ITEM_URI);
-        assertThat(type2).isNull();
+        assertThat(type2.startsWith(ContentResolver.CURSOR_ITEM_BASE_TYPE)).isTrue();
     }
 
     @Test
@@ -511,9 +515,7 @@ public final class ContentResolverTest {
 
         String[] sortCols = new String[] {COLUMN_VALUE_NAME};
         Bundle queryArgs = new Bundle();
-        queryArgs.putStringArray(
-                ContentResolver.QUERY_ARG_SORT_COLUMNS,
-                sortCols);
+        queryArgs.putStringArray(ContentResolver.QUERY_ARG_SORT_COLUMNS, sortCols);
 
         // Sort ascending...
         queryArgs.putInt(
@@ -536,9 +538,7 @@ public final class ContentResolverTest {
         queryArgs.putInt(
                 ContentResolver.QUERY_ARG_SORT_DIRECTION,
                 ContentResolver.QUERY_SORT_DIRECTION_DESCENDING);
-        queryArgs.putInt(
-                ContentResolver.QUERY_ARG_SORT_COLLATION,
-                java.text.Collator.SECONDARY);
+        queryArgs.putInt(ContentResolver.QUERY_ARG_SORT_COLLATION, java.text.Collator.SECONDARY);
 
         mCursor = mContentResolver.query(TABLE1_URI, null, queryArgs, null);
         col = mCursor.getColumnIndexOrThrow(COLUMN_VALUE_NAME);
@@ -557,9 +557,10 @@ public final class ContentResolverTest {
     public void testQuery_SqlSortingFromBundleArgs_Locale() {
         mContentResolver.delete(TABLE1_URI, null, null);
 
-        final List<String> data = Arrays.asList(
-                "ABC", "abc", "pinyin", "가나다", "바사", "테스트", "马",
-                "嘛", "妈", "骂", "吗", "码", "玛", "麻", "中", "梵", "苹果", "久了", "伺候");
+        final List<String> data =
+                Arrays.asList(
+                        "ABC", "abc", "pinyin", "가나다", "바사", "테스트", "马", "嘛", "妈", "骂", "吗", "码",
+                        "玛", "麻", "中", "梵", "苹果", "久了", "伺候");
 
         for (String s : data) {
             final ContentValues values = new ContentValues();
@@ -604,8 +605,9 @@ public final class ContentResolverTest {
         queryArgs.putInt(ContentResolver.QUERY_ARG_LIMIT, 3);
         queryArgs.putInt(TestPagingContentProvider.RECORD_COUNT, 100);
 
-        mCursor = mContentResolver.query(
-                TestPagingContentProvider.PAGED_DATA_URI, null, queryArgs, null);
+        mCursor =
+                mContentResolver.query(
+                        TestPagingContentProvider.PAGED_DATA_URI, null, queryArgs, null);
 
         Bundle extras = mCursor.getExtras();
         extras = extras != null ? extras : Bundle.EMPTY;
@@ -675,8 +677,8 @@ public final class ContentResolverTest {
     public void testCancelableQuery_WhenNotCanceled_ReturnsResultSet() {
         CancellationSignal cancellationSignal = new CancellationSignal();
 
-        Cursor cursor = mContentResolver.query(TABLE1_URI, null, null, null, null,
-                cancellationSignal);
+        Cursor cursor =
+                mContentResolver.query(TABLE1_URI, null, null, null, null, cancellationSignal);
         assertThat(cursor.getCount()).isEqualTo(3);
         cursor.close();
     }
@@ -846,8 +848,7 @@ public final class ContentResolverTest {
                 () -> mContentResolver.openAssetFileDescriptor(invalidUri, "r"));
     }
 
-    private String consumeAssetFileDescriptor(AssetFileDescriptor afd)
-            throws IOException {
+    private static String consumeAssetFileDescriptor(AssetFileDescriptor afd) throws IOException {
         try (FileInputStream stream = afd.createInputStream()) {
             InputStreamReader reader = new InputStreamReader(stream, StandardCharsets.UTF_8);
 
@@ -881,12 +882,13 @@ public final class ContentResolverTest {
         }
 
         // Make sure a content provider crash at this point won't hurt us.
-        ContentProviderClient uClient = mContentResolver.acquireUnstableContentProviderClient(
-                REMOTE_AUTHORITY);
+        ContentProviderClient uClient =
+                mContentResolver.acquireUnstableContentProviderClient(REMOTE_AUTHORITY);
         // Kill it.  Note that a bug at this point where it causes our own
         // process to be killed will result in the entire test failing.
         try {
-            Log.i("ContentResolverTest",
+            Log.i(
+                    "ContentResolverTest",
                     "Killing remote client -- if test process goes away, that is why!");
             uClient.delete(REMOTE_CRASH_URI, null, null);
         } catch (RemoteException e) {
@@ -900,8 +902,9 @@ public final class ContentResolverTest {
         AssetFileDescriptor afd = null;
         try {
             MockContentProvider.setCrashOnLaunch(mContext, true);
-            afd = mContentResolver.openTypedAssetFileDescriptor(
-                    REMOTE_CRASH_URI, "text/plain", null);
+            afd =
+                    mContentResolver.openTypedAssetFileDescriptor(
+                            REMOTE_CRASH_URI, "text/plain", null);
             assertThat(MockContentProvider.getCrashOnLaunch(mContext)).isFalse();
             assertThat(afd).isNotNull();
             String str = consumeAssetFileDescriptor(afd);
@@ -915,12 +918,13 @@ public final class ContentResolverTest {
         }
 
         // Make sure a content provider crash at this point won't hurt us.
-        ContentProviderClient uClient = mContentResolver.acquireUnstableContentProviderClient(
-                REMOTE_AUTHORITY);
+        ContentProviderClient uClient =
+                mContentResolver.acquireUnstableContentProviderClient(REMOTE_AUTHORITY);
         // Kill it.  Note that a bug at this point where it causes our own
         // process to be killed will result in the entire test failing.
         try {
-            Log.i("ContentResolverTest",
+            Log.i(
+                    "ContentResolverTest",
                     "Killing remote client -- if test process goes away, that is why!");
             uClient.delete(REMOTE_CRASH_URI, null, null);
         } catch (RemoteException e) {
@@ -1321,7 +1325,7 @@ public final class ContentResolverTest {
                                     + " uri is null.")
                     .fail();
         } catch (NullPointerException e) {
-            //expected.
+            // expected.
         } catch (IllegalArgumentException e) {
             // also expected
         }
@@ -1357,8 +1361,7 @@ public final class ContentResolverTest {
 
         ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
                 mContentResolver,
-                (cr) -> cr.registerContentObserverAsUser(TABLE1_URI, true, mco, mContext.getUser())
-        );
+                cr -> cr.registerContentObserverAsUser(TABLE1_URI, true, mco, mContext.getUser()));
         assertThat(mco.hadOnChanged()).isFalse();
 
         ContentValues values = new ContentValues();
@@ -1386,8 +1389,7 @@ public final class ContentResolverTest {
 
         ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
                 mContentResolver,
-                (cr) -> cr.registerContentObserverAsUser(TABLE1_URI, true, mco, UserHandle.ALL)
-        );
+                cr -> cr.registerContentObserverAsUser(TABLE1_URI, true, mco, UserHandle.ALL));
         assertThat(mco.hadOnChanged()).isFalse();
 
         ContentValues values = new ContentValues();
@@ -1411,14 +1413,13 @@ public final class ContentResolverTest {
         try {
             ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
                     mContentResolver,
-                    (cr) -> cr.registerContentObserverAsUser(null, false, mco, UserHandle.ALL)
-            );
+                    cr -> cr.registerContentObserverAsUser(null, false, mco, UserHandle.ALL));
             assertWithMessage(
                             "did not throw NullPointerException or IllegalArgumentException when"
                                     + " uri is null.")
                     .fail();
         } catch (NullPointerException e) {
-            //expected.
+            // expected.
         } catch (IllegalArgumentException e) {
             // also expected
         }
@@ -1429,7 +1430,7 @@ public final class ContentResolverTest {
                 () ->
                         ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
                                 mContentResolver,
-                                (cr) ->
+                                cr ->
                                         cr.registerContentObserverAsUser(
                                                 TABLE1_URI, false, null, UserHandle.ALL)));
         assertThrows(
@@ -1495,12 +1496,10 @@ public final class ContentResolverTest {
         // another with true.
         ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
                 mContentResolver,
-                (cr) -> cr.registerContentObserverAsUser(LEVEL2_URI, false, mco1, UserHandle.ALL)
-        );
+                cr -> cr.registerContentObserverAsUser(LEVEL2_URI, false, mco1, UserHandle.ALL));
         ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
                 mContentResolver,
-                (cr) -> cr.registerContentObserverAsUser(LEVEL2_URI, true, mco2, UserHandle.ALL)
-        );
+                cr -> cr.registerContentObserverAsUser(LEVEL2_URI, true, mco2, UserHandle.ALL));
 
         // Initially nothing has happened.
         assertThat(mco1.hadOnChanged()).isFalse();
@@ -1621,8 +1620,7 @@ public final class ContentResolverTest {
         mContentResolver.registerContentObserver(LEVEL2_URI, false, observer2);
 
         mContentResolver.notifyChange(List.of(LEVEL1_URI), null, 0);
-        mContentResolver.notifyChange(
-                Arrays.asList(LEVEL1_URI, LEVEL2_URI), null, NOTIFY_INSERT);
+        mContentResolver.notifyChange(Arrays.asList(LEVEL1_URI, LEVEL2_URI), null, NOTIFY_INSERT);
         mContentResolver.notifyChange(List.of(LEVEL2_URI), null, NOTIFY_UPDATE);
 
         final List<Change> expected1 =
@@ -1639,8 +1637,7 @@ public final class ContentResolverTest {
         new PollingCheck() {
             @Override
             protected boolean check() {
-                return observer1.hadChanges(expected1)
-                        && observer2.hadChanges(expected2);
+                return observer1.hadChanges(expected1) && observer2.hadChanges(expected2);
             }
         }.run();
 
@@ -1655,10 +1652,10 @@ public final class ContentResolverTest {
         extras.putBoolean(ContentResolver.SYNC_EXTRAS_MANUAL, true);
 
         ContentResolver.requestSync(ACCOUNT, AUTHORITY, extras);
-        //FIXME: how to get the result to assert.
+        // TODO(b/420749406): how to get the result to assert.
 
         ContentResolver.cancelSync(ACCOUNT, AUTHORITY);
-        //FIXME: how to assert.
+        // TODO(b/420749406): how to assert.
     }
 
     @Test
@@ -1692,7 +1689,8 @@ public final class ContentResolverTest {
     @AppModeFull
     @Test
     public void testHangRecover() throws Exception {
-        InstrumentationRegistry.getInstrumentation().getUiAutomation()
+        InstrumentationRegistry.getInstrumentation()
+                .getUiAutomation()
                 .adoptShellPermissionIdentity(android.Manifest.permission.REMOVE_TASKS);
 
         final CountDownLatch latch = new CountDownLatch(1);
@@ -1777,9 +1775,11 @@ public final class ContentResolverTest {
     @AppModeFull
     @Test
     public void testContentResolverCaching() {
-        InstrumentationRegistry.getInstrumentation().getUiAutomation().adoptShellPermissionIdentity(
-                android.Manifest.permission.CACHE_CONTENT,
-                android.Manifest.permission.INTERACT_ACROSS_USERS_FULL);
+        InstrumentationRegistry.getInstrumentation()
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(
+                        android.Manifest.permission.CACHE_CONTENT,
+                        android.Manifest.permission.INTERACT_ACROSS_USERS_FULL);
 
         Bundle cached = new Bundle();
         cached.putString("key", "value");
@@ -1876,12 +1876,15 @@ public final class ContentResolverTest {
         @Override
         public synchronized void onChange(
                 boolean selfChange, @NonNull Collection<Uri> uris, int flags) {
-            doOnChangeLocked(selfChange, uris, flags, /*userId=*/ -1);
+            doOnChangeLocked(selfChange, uris, flags, /* userId= */ -1);
         }
 
         @Override
-        public synchronized void onChange(boolean selfChange, @NonNull Collection<Uri> uris,
-                @ContentResolver.NotifyFlags int flags, UserHandle user) {
+        public synchronized void onChange(
+                boolean selfChange,
+                @NonNull Collection<Uri> uris,
+                @ContentResolver.NotifyFlags int flags,
+                UserHandle user) {
             doOnChangeLocked(selfChange, uris, flags, user.getIdentifier());
         }
 
@@ -1898,8 +1901,11 @@ public final class ContentResolverTest {
         }
 
         @GuardedBy("this")
-        private void doOnChangeLocked(boolean selfChange, @NonNull Collection<Uri> uris,
-                @ContentResolver.NotifyFlags int flags, @UserIdInt int userId) {
+        private void doOnChangeLocked(
+                boolean selfChange,
+                @NonNull Collection<Uri> uris,
+                @ContentResolver.NotifyFlags int flags,
+                @UserIdInt int userId) {
             final Change change = new Change(selfChange, uris, flags, userId);
             Log.v(TAG, change.toString());
 
