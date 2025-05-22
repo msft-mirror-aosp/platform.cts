@@ -75,6 +75,10 @@ import android.hardware.display.DisplayManager;
 import android.hardware.display.VirtualDisplay;
 import android.os.Bundle;
 import android.platform.test.annotations.Presubmit;
+import android.platform.test.annotations.RequiresFlagsDisabled;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.server.wm.CommandSession.ActivitySession;
 import android.server.wm.CommandSession.SizeInfo;
 import android.server.wm.MultiDisplayTestBase;
@@ -83,6 +87,7 @@ import android.server.wm.WindowManagerState.Task;
 import android.view.SurfaceView;
 
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 /**
@@ -94,6 +99,8 @@ import org.junit.Test;
 @Presubmit
 @android.server.wm.annotation.Group3
 public class MultiDisplayActivityLaunchTests extends MultiDisplayTestBase {
+
+    @Rule public CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Before
     @Override
@@ -406,11 +413,12 @@ public class MultiDisplayActivityLaunchTests extends MultiDisplayTestBase {
     }
 
     /**
-     * Tests launching an activity on a virtual display and then launching another activity in
-     * a new process via shell command and without specifying the display id - the second activity
-     * must appear on the primary display.
+     * Tests launching an activity on a virtual display and then launching another activity in a new
+     * process via shell command and without specifying the display id - the second activity must
+     * appear on the primary display.
      */
     @Test
+    @RequiresFlagsDisabled(com.android.window.flags.Flags.FLAG_FALLBACK_TO_FOCUSED_DISPLAY)
     public void testConsequentLaunchActivityInNewProcess() {
         // Create new virtual display.
         final DisplayContent newDisplay = createManagedVirtualDisplaySession()
@@ -430,6 +438,40 @@ public class MultiDisplayActivityLaunchTests extends MultiDisplayTestBase {
                 "Launched activity must be focused");
         assertBothDisplaysHaveResumedActivities(pair(newDisplay.mId, TEST_ACTIVITY),
                 pair(getMainDisplayId(), SECOND_ACTIVITY));
+    }
+
+    /**
+     * Tests launching an activity on a virtual display and then launching another activity in a new
+     * process via shell command and without specifying the display id - the second activity must
+     * appear on the focused display (i.e. the virtual display).
+     */
+    @Test
+    @RequiresFlagsEnabled(com.android.window.flags.Flags.FLAG_FALLBACK_TO_FOCUSED_DISPLAY)
+    public void testConsequentLaunchActivityInNewProcess_onFocusedDisplay() {
+        // Create new virtual display.
+        final DisplayContent newDisplay =
+                createManagedVirtualDisplaySession().setSimulateDisplay(true).createDisplay();
+
+        // Launch activity on new secondary display.
+        launchActivityOnDisplay(TEST_ACTIVITY, newDisplay.mId);
+
+        waitAndAssertResumedAndFocusedActivityOnDisplay(
+                TEST_ACTIVITY,
+                newDisplay.mId,
+                "Activity launched on secondary display must be on top");
+
+        // Ensure that the virtual display is now the top focused display.
+        assertEquals(
+                "The display should be the top focused display",
+                newDisplay.mId,
+                mWmState.getFocusedDisplayId());
+
+        // Launch second activity without specifying display.
+        launchActivity(SECOND_ACTIVITY);
+
+        // Check that activity is launched on the focused display.
+        waitAndAssertResumedAndFocusedActivityOnDisplay(
+                SECOND_ACTIVITY, newDisplay.mId, "Launched activity must be focused");
     }
 
     /**

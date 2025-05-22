@@ -188,11 +188,6 @@ class DrawingTabletTest {
                     withCoords(expected)
                 ))
 
-                if (!com.android.input.flags.Flags.disableTouchInputMapperPointerUsage()) {
-                    verifier.assertReceivedMotion(
-                        allOf(withMotionAction(MotionEvent.ACTION_MOVE), withCoords(expected))
-                    )
-                }
                 verifier.assertReceivedMotion(
                     allOf(withMotionAction(MotionEvent.ACTION_UP), withCoords(expected))
                 )

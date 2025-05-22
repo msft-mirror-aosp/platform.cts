@@ -165,6 +165,7 @@ import com.android.compatibility.common.util.FileUtils;
 import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.compatibility.common.util.TestUtils;
+import com.android.cts.content.MockBuggyProvider;
 import com.android.internal.security.VerityUtils;
 
 import com.google.common.truth.Expect;
@@ -1217,7 +1218,8 @@ public class PackageManagerTest {
         assertEquals(PACKAGE_NAME, provider.packageName);
         assertEquals("ctstest", provider.authority);
         ProviderInfo nonExportedProvider =
-                findPackageItemOrFail(pkgInfo.providers, "android.content.cts.MockBuggyProvider");
+                findPackageItemOrFail(
+                        pkgInfo.providers, MockBuggyProvider.class.getCanonicalName());
         assertFalse(nonExportedProvider.exported); // Don't export by default.
 
         // Check Receivers

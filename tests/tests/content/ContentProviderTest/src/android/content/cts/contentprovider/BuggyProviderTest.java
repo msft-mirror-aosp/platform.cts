@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package android.content.cts;
+package android.content.cts.contentprovider;
 
 import static com.google.common.truth.Truth.assertWithMessage;
 
@@ -26,6 +26,8 @@ import android.platform.test.annotations.AppModeSdkSandbox;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
+
+import com.android.cts.content.MockBuggyProvider;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -43,9 +45,11 @@ public final class BuggyProviderTest {
     public void testGetTypeDoesntCrashSystem() {
         // ensure the system doesn't crash when a provider takes too long to respond
         try {
-            ActivityManager.getService().getMimeTypeFilterAsync(
-                    MockBuggyProvider.CONTENT_URI, UserHandle.USER_CURRENT,
-                    new RemoteCallback(result -> {}));
+            ActivityManager.getService()
+                    .getMimeTypeFilterAsync(
+                            MockBuggyProvider.CONTENT_URI,
+                            UserHandle.USER_CURRENT,
+                            new RemoteCallback(result -> {}));
         } catch (Exception e) {
             assertWithMessage("Unexpected exception while fetching type: " + e.getMessage()).fail();
         }

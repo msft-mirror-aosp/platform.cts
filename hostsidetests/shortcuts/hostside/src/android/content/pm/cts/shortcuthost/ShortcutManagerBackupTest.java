@@ -15,17 +15,18 @@
  */
 package android.content.pm.cts.shortcuthost;
 
-import com.android.tradefed.util.RunUtil;
-
 import static org.junit.Assert.fail;
 
-import com.android.tradefed.device.DeviceNotAvailableException;
+import com.android.compatibility.common.util.BackupHostSideUtils;
+import com.android.compatibility.common.util.BackupUtils;
 import com.android.tradefed.log.LogUtil.CLog;
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
+import com.android.tradefed.util.RunUtil;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
@@ -73,12 +74,15 @@ public class ShortcutManagerBackupTest extends BaseShortcutManagerHostTest {
 
     private static final String FEATURE_BACKUP = "android.software.backup";
 
+    private BackupUtils mBackupUtils;
+
     private boolean mSupportsBackup;
 
     @Override
     public void setUp() throws Exception {
         super.setUp();
 
+        mBackupUtils = BackupHostSideUtils.createBackupUtils(getDevice());
         mSupportsBackup = getDevice().hasFeature(FEATURE_BACKUP);
 
         if (mSupportsBackup) {
@@ -133,31 +137,18 @@ public class ShortcutManagerBackupTest extends BaseShortcutManagerHostTest {
         waitUntilBroadcastsDrain(); // b/64203677
 
         CLog.i("Making sure the local transport is selected...");
-        assertContainsRegex(
-                "^Selected transport com.android.localtransport/.LocalTransport",
-                executeShellCommandWithLog(
-                        "bmgr transport com.android.localtransport/.LocalTransport"));
+        String localTransportName = mBackupUtils.getLocalTransportName();
+        mBackupUtils.setBackupTransport(localTransportName);
 
         executeShellCommandWithLog("dumpsys backup");
+        mBackupUtils.wipeAndAssertSuccess(localTransportName, "android");
 
-        assertContainsRegex(
-                "Wiped",
-                executeShellCommandWithLog(
-                        "bmgr wipe com.android.localtransport/.LocalTransport android"));
-
-        assertContainsRegex(
-                "Backup finished with result: Success",
-                executeShellCommandWithLog("bmgr backupnow android"));
-
+        mBackupUtils.backupNowAndAssertSuccess("android");
     }
 
-    private void doRestore() throws DeviceNotAvailableException {
+    private void doRestore() throws IOException {
         CLog.i("Restoring package android...");
-
-        assertContainsRegex(
-                "\\bdone\\b",
-                executeShellCommandWithLog("bmgr restore 1 android"));
-
+        mBackupUtils.restoreAndAssertSuccess("1", "android");
     }
 
     private void uninstallPackageAndWaitUntilBroadcastsDrain(String pkg) throws Exception {

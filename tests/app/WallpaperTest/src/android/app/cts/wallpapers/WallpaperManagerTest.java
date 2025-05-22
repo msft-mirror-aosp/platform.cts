@@ -1789,7 +1789,7 @@ public class WallpaperManagerTest {
                 Rect relativeCrop = mWallpaperManager.getBitmapCrops(
                         List.of(screenSize), sourceFlag, false).getFirst();
                 if (fixGetBitmapCrops()) {
-                    Rect dimensions = mWallpaperManager.peekBitmapDimensions(which);
+                    Rect dimensions = mWallpaperManager.peekBitmapDimensions(sourceFlag);
                     assertNotNull(dimensions);
                     Point croppedBitmapSize = new Point(dimensions.width(), dimensions.height());
                     assertWithinBitmap(relativeCrop, croppedBitmapSize);

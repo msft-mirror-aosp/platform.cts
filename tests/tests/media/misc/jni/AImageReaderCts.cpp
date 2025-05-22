@@ -27,6 +27,7 @@
 #include <vector>
 
 #include <android/log.h>
+#include <android/native_window.h>
 #include <android/native_window_jni.h>
 #include <camera/NdkCameraError.h>
 #include <camera/NdkCameraManager.h>
@@ -44,6 +45,7 @@ static constexpr int kCaptureWaitRetry = 10;
 static constexpr int kTestImageWidth = 640;
 static constexpr int kTestImageHeight = 480;
 static constexpr int kTestImageFormat = AIMAGE_FORMAT_YUV_420_888;
+static constexpr int kTestImageTransform = ANATIVEWINDOW_TRANSFORM_ROTATE_270;
 
 struct FormatUsageCombination {
     uint64_t format;
@@ -264,12 +266,14 @@ class ImageReaderTestCase {
                         int32_t format,
                         uint64_t usage,
                         int32_t maxImages,
+                        int32_t transform,
                         bool async)
         : mWidth(width),
           mHeight(height),
           mFormat(format),
           mUsage(usage),
           mMaxImages(maxImages),
+          mTransform(transform),
           mAsync(async) {}
 
     ~ImageReaderTestCase() {
@@ -308,6 +312,14 @@ class ImageReaderTestCase {
         ret = AImageReader_getWindow(mImgReader, &mImgReaderAnw);
         if (ret != AMEDIA_OK || mImgReaderAnw == nullptr) {
             ALOGE("Failed to get ANativeWindow from AImageReader, ret=%d, mImgReaderAnw=%p.", ret,
+                  mImgReaderAnw);
+            return -1;
+        }
+
+        // Set ANativeWindow buffers transform
+        int32_t result = ANativeWindow_setBuffersTransform(mImgReaderAnw, mTransform);
+        if (result != 0) {
+            ALOGE("Failed to set ANativeWindow transform, ret=%d, mImgReaderAnw=%p.", result,
                   mImgReaderAnw);
             return -1;
         }
@@ -383,6 +395,20 @@ class ImageReaderTestCase {
             return;
         }
 
+        if (__builtin_available(android 37, *)) {
+            int32_t imageTransform = -1;
+            ret = AImage_getTransform(img.get(), &imageTransform);
+            if (ret != AMEDIA_OK) {
+                ALOGE("Faild to get image transform, ret=%d.", ret);
+                return;
+            }
+            if (imageTransform != mTransform) {
+                ALOGE("Mismatched image transform: expected=%d, actual=%d.", mTransform,
+                      imageTransform);
+                return;
+            }
+        }
+
         if (mFormat == AIMAGE_FORMAT_RGBA_8888 ||
             mFormat == AIMAGE_FORMAT_RGBX_8888 ||
             mFormat == AIMAGE_FORMAT_RGB_888 ||
@@ -451,6 +477,7 @@ class ImageReaderTestCase {
     int32_t mFormat;
     uint64_t mUsage;
     int32_t mMaxImages;
+    int32_t mTransform;
     bool mAsync;
 
     std::mutex mMutex;
@@ -468,7 +495,7 @@ int takePictures(uint64_t readerUsage, int readerMaxImages, bool readerAsync, in
 
     ImageReaderTestCase testCase(
             kTestImageWidth, kTestImageHeight, kTestImageFormat, readerUsage, readerMaxImages,
-            readerAsync);
+            kTestImageTransform, readerAsync);
     ret = testCase.initImageReader();
     if (ret < 0) {
         return ret;
@@ -584,7 +611,7 @@ testCreateSurfaceNative(JNIEnv* env, jclass /*clazz*/) {
 
     ImageReaderTestCase testCase(
             kTestImageWidth, kTestImageHeight, kTestImageFormat, kTestImageUsage, kTestImageCount,
-            false);
+            kTestImageTransform, false);
     int ret = testCase.initImageReader();
     if (ret < 0) {
         ALOGE("Failed to get initialize image reader: ret=%d.", ret);

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package android.content.cts;
+package com.android.cts.content;
 
 import android.annotation.NonNull;
 import android.content.ContentProvider;
@@ -27,10 +27,10 @@ import java.util.concurrent.TimeUnit;
 /**
  * Mocks a buggy provider which stalls on the {@link #getType(Uri)} call.
  *
- * <p>see {@link BuggyProviderTest}
+ * <p>see {@link android.content.cts.contentprovider.BuggyProviderTest}
  */
 public final class MockBuggyProvider extends ContentProvider {
-    public static final String AUTHORITY = "android.content.cts.mockbuggyprovider";
+    public static final String AUTHORITY = "com.android.cts.content.mockbuggyprovider";
     public static final Uri CONTENT_URI = Uri.parse("content://" + AUTHORITY);
 
     @Override
@@ -52,7 +52,9 @@ public final class MockBuggyProvider extends ContentProvider {
     public String getType(@NonNull Uri uri) {
         try {
             TimeUnit.SECONDS.sleep(10); // stall for enough time such that an ANR is thrown
-        } catch (Exception ignore) { }
+        } catch (Exception ignore) {
+            // Expected
+        }
         return "buggy";
     }
 

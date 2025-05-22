@@ -499,8 +499,8 @@
              android:exported="true"
              android:multiprocess="false"/>
 
-        <provider android:name="android.content.cts.MockBuggyProvider"
-             android:authorities="android.content.cts.mockbuggyprovider"
+        <provider android:name="com.android.cts.content.MockBuggyProvider"
+             android:authorities="com.android.cts.content.mockbuggyprovider"
              android:process=":mockbuggyprovider"
              android:multiprocess="false"/>
 
