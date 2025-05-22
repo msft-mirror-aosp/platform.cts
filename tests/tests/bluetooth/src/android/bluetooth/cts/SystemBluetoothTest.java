@@ -45,11 +45,15 @@ import android.content.Context;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.os.ParcelUuid;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.Settings;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.bluetooth.flags.Flags;
 import com.android.compatibility.common.util.CddTest;
 
 import com.google.common.truth.Expect;
@@ -76,6 +80,9 @@ public class SystemBluetoothTest {
     private final BluetoothAdapter mAdapter = BlockingBluetoothAdapter.getAdapter();
     private final UiAutomation mUiAutomation =
             InstrumentationRegistry.getInstrumentation().getUiAutomation();
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Before
     public void setUp() throws Exception {
@@ -138,6 +145,45 @@ public class SystemBluetoothTest {
                         eq(device),
                         eq(BluetoothDevice.METADATA_MANUFACTURER_NAME),
                         eq(testByteData));
+
+        assertThat(mAdapter.removeOnMetadataChangedListener(device, listener)).isTrue();
+    }
+
+    /**
+     * Test whether the zoomed in icon metadata would be stored in Bluetooth storage successfully,
+     * also test whether OnMetadataChangedListener would callback correct values when metadata is
+     * changed..
+     */
+    @CddTest(requirements = {"7.4.3/C-2-1"})
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_SUPPORT_ZOOMED_IN_ICON_METADATA)
+    public void setGetMetadataZoomedInIcon() {
+        final byte[] testByteData = "Test Data".getBytes();
+        final BluetoothDevice device = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
+        final Executor executor =
+                new Executor() {
+                    @Override
+                    public void execute(Runnable command) {
+                        command.run();
+                    }
+                };
+        BluetoothAdapter.OnMetadataChangedListener listener =
+                mock(BluetoothAdapter.OnMetadataChangedListener.class);
+
+        assertThat(mAdapter.addOnMetadataChangedListener(device, executor, listener)).isTrue();
+        // prevent register device twice
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> mAdapter.addOnMetadataChangedListener(device, executor, listener));
+
+        assertThat(device.setMetadata(BluetoothDevice.METADATA_ZOOMED_IN_ICON, testByteData))
+                .isTrue();
+        assertThat(device.getMetadata(BluetoothDevice.METADATA_ZOOMED_IN_ICON))
+                .isEqualTo(testByteData);
+
+        verify(listener, timeout(1_000))
+                .onMetadataChanged(
+                        eq(device), eq(BluetoothDevice.METADATA_ZOOMED_IN_ICON), eq(testByteData));
 
         assertThat(mAdapter.removeOnMetadataChangedListener(device, listener)).isTrue();
     }
