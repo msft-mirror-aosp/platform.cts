@@ -75,41 +75,8 @@ import java.util.HashMap;
  */
 public final class VulkanDeviceInfo extends DeviceInfo {
 
-    private static HashMap<String, Integer> extensionNameToEnum;
-
     static {
         System.loadLibrary("ctsdeviceinfo");
-        extensionNameToEnum = new HashMap<>();
-        extensionNameToEnum.put(KEY_VK_KHR_DRIVER_PROPERTIES, ENUM_VK_KHR_DRIVER_PROPERTIES);
-        extensionNameToEnum.put(KEY_VK_KHR_VARIABLE_POINTERS, ENUM_VK_KHR_VARIABLE_POINTERS);
-        extensionNameToEnum.put(KEY_VK_EXT_IMAGE_2D_VIEW_OF_3D, ENUM_KEY_VK_EXT_IMAGE_2D_VIEW_OF_3D);
-        extensionNameToEnum.put(KEY_VK_EXT_CUSTOM_BORDER_COLOR, ENUM_KEY_VK_EXT_CUSTOM_BORDER_COLOR);
-        extensionNameToEnum.put(KEY_VK_EXT_PRIMITIVE_TOPOLOGY_LIST_RESTART,
-ENUM_KEY_VK_EXT_PRIMITIVE_TOPOLOGY_LIST_RESTART);
-        extensionNameToEnum.put(KEY_VK_EXT_PROVOKING_VERTEX, ENUM_KEY_VK_EXT_PROVOKING_VERTEX);
-        extensionNameToEnum.put(KEY_VK_EXT_TRANSFORM_FEEDBACK, ENUM_KEY_VK_EXT_TRANSFORM_FEEDBACK);
-        extensionNameToEnum.put(
-                KEY_VK_KHR_SHADER_FLOAT16_INT8, ENUM_KEY_VK_KHR_SHADER_FLOAT16_INT8);
-        extensionNameToEnum.put(
-                KEY_VK_KHR_SHADER_SUBGROUP_EXTENDED_TYPES,
-                ENUM_KEY_VK_KHR_SHADER_SUBGROUP_EXTENDED_TYPES);
-        extensionNameToEnum.put(
-                KEY_VK_KHR_SHADER_SUBGROUP_UNIFORM_CONTROL_FLOW,
-                ENUM_KEY_VK_KHR_SHADER_SUBGROUP_UNIFORM_CONTROL_FLOW);
-        extensionNameToEnum.put(KEY_VK_KHR_8BIT_STORAGE, ENUM_KEY_VK_KHR_8BIT_STORAGE);
-        extensionNameToEnum.put(
-                KEY_VK_KHR_SHADER_INTEGER_DOT_PRODUCT, ENUM_KEY_VK_KHR_SHADER_INTEGER_DOT_PRODUCT);
-        extensionNameToEnum.put(KEY_VK_EXT_INDEX_TYPE_UINT8, ENUM_KEY_VK_EXT_INDEX_TYPE_UINT8);
-        extensionNameToEnum.put(KEY_VK_KHR_INDEX_TYPE_UINT8, ENUM_KEY_VK_KHR_INDEX_TYPE_UINT8);
-        extensionNameToEnum.put(KEY_VK_EXT_LINE_RASTERIZATION, ENUM_KEY_VK_EXT_LINE_RASTERIZATION);
-        extensionNameToEnum.put(
-                KEY_VK_EXT_PRIMITIVES_GENERATED_QUERY, ENUM_KEY_VK_EXT_PRIMITIVES_GENERATED_QUERY);
-        extensionNameToEnum.put(
-                KEY_VK_KHR_SHADER_FLOAT_CONTROLS, ENUM_KEY_VK_KHR_SHADER_FLOAT_CONTROLS);
-        extensionNameToEnum.put(
-                KEY_VK_IMG_RELAXED_LINE_RASTERIZATION, ENUM_KEY_VK_IMG_RELAXED_LINE_RASTERIZATION);
-        extensionNameToEnum.put(
-                KEY_VK_KHR_VERTEX_ATTRIBUTE_DIVISOR, ENUM_KEY_VK_KHR_VERTEX_ATTRIBUTE_DIVISOR);
     }
 
     @Override
@@ -1567,63 +1534,62 @@ ENUM_KEY_VK_EXT_PRIMITIVE_TOPOLOGY_LIST_RESTART);
 
     private static void emitExtension(String key, DeviceInfoStore store, JSONObject parent)
             throws Exception {
-        if (!extensionNameToEnum.containsKey(key)) return;
-        switch (extensionNameToEnum.get(key)) {
-            case ENUM_VK_KHR_VARIABLE_POINTERS:
+        switch (key) {
+            case KEY_VK_KHR_VARIABLE_POINTERS:
                 emitVariablePointerFeaturesKHR(store, parent);
                 break;
-            case ENUM_VK_KHR_DRIVER_PROPERTIES:
+            case KEY_VK_KHR_DRIVER_PROPERTIES:
                 emitDriverPropertiesKHR(store, parent);
                 break;
-            case ENUM_KEY_VK_EXT_CUSTOM_BORDER_COLOR:
+            case KEY_VK_EXT_CUSTOM_BORDER_COLOR:
                 emitCustomBorderColorFeaturesEXT(store, parent);
                 break;
-            case ENUM_KEY_VK_EXT_IMAGE_2D_VIEW_OF_3D:
+            case KEY_VK_EXT_IMAGE_2D_VIEW_OF_3D:
                 emitImage2DViewOf3DFeaturesEXT(store, parent);
                 break;
-            case ENUM_KEY_VK_EXT_TRANSFORM_FEEDBACK:
+            case KEY_VK_EXT_TRANSFORM_FEEDBACK:
                 emitransformFeedbackFeaturesEXT(store, parent);
                 break;
-            case ENUM_KEY_VK_EXT_PRIMITIVE_TOPOLOGY_LIST_RESTART:
+            case KEY_VK_EXT_PRIMITIVE_TOPOLOGY_LIST_RESTART:
                 emitPrimitiveTopologyListRestartFeaturesEXT(store, parent);
                 break;
-            case ENUM_KEY_VK_EXT_PROVOKING_VERTEX:
+            case KEY_VK_EXT_PROVOKING_VERTEX:
                 emitProvokingVertexFeaturesEXT(store, parent);
                 break;
-            case ENUM_KEY_VK_EXT_INDEX_TYPE_UINT8:
+            case KEY_VK_EXT_INDEX_TYPE_UINT8:
                 emitIndexTypeUint8FeaturesEXT(store, parent);
                 break;
-            case ENUM_KEY_VK_KHR_INDEX_TYPE_UINT8:
+            case KEY_VK_KHR_INDEX_TYPE_UINT8:
                 emitIndexTypeUint8FeaturesKHR(store, parent);
                 break;
-            case ENUM_KEY_VK_KHR_8BIT_STORAGE:
+            case KEY_VK_KHR_8BIT_STORAGE:
                 emit8bitStorageFeaturesKHR(store, parent);
                 break;
-            case ENUM_KEY_VK_KHR_SHADER_FLOAT16_INT8:
+            case KEY_VK_KHR_SHADER_FLOAT16_INT8:
                 emitShaderFloat16Int8FeaturesKHR(store, parent);
                 break;
-            case ENUM_KEY_VK_KHR_SHADER_SUBGROUP_UNIFORM_CONTROL_FLOW:
+            case KEY_VK_KHR_SHADER_SUBGROUP_UNIFORM_CONTROL_FLOW:
                 emitShaderSubgroupUniformControlFlowFeaturesKHR(store, parent);
                 break;
-            case ENUM_KEY_VK_KHR_SHADER_SUBGROUP_EXTENDED_TYPES:
+            case KEY_VK_KHR_SHADER_SUBGROUP_EXTENDED_TYPES:
                 emitShaderSubgroupExtendedTypesFeaturesKHR(store, parent);
                 break;
-            case ENUM_KEY_VK_KHR_SHADER_INTEGER_DOT_PRODUCT:
+            case KEY_VK_KHR_SHADER_INTEGER_DOT_PRODUCT:
                 emitShaderIntegerDotProductFeaturesKHR(store, parent);
                 break;
-            case ENUM_KEY_VK_EXT_LINE_RASTERIZATION:
+            case KEY_VK_EXT_LINE_RASTERIZATION:
                 emitLineRasterizationFeaturesEXT(store, parent);
                 break;
-            case ENUM_KEY_VK_EXT_PRIMITIVES_GENERATED_QUERY:
+            case KEY_VK_EXT_PRIMITIVES_GENERATED_QUERY:
                 emitPrimitivesGeneratedQueryFeaturesEXT(store, parent);
                 break;
-            case ENUM_KEY_VK_KHR_SHADER_FLOAT_CONTROLS:
+            case KEY_VK_KHR_SHADER_FLOAT_CONTROLS:
                 emitFloatControlsPropertiesKHR(store, parent);
                 break;
-            case ENUM_KEY_VK_IMG_RELAXED_LINE_RASTERIZATION:
+            case KEY_VK_IMG_RELAXED_LINE_RASTERIZATION:
                 emitRelaxedLineRasterizationFeaturesIMG(store, parent);
                 break;
-            case ENUM_KEY_VK_KHR_VERTEX_ATTRIBUTE_DIVISOR:
+            case KEY_VK_KHR_VERTEX_ATTRIBUTE_DIVISOR:
                 emitVertexAttributeDivisorFeaturesKHR(store, parent);
                 break;
         }
