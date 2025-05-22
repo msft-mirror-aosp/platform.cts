@@ -66,6 +66,12 @@ oneway interface ILocalSatelliteListener {
 
     /**
      * Indicates that MockSatelliteService has just received the request
+     * setSatelliteEnabledForCarrier from Telephony.
+     */
+    void onSetSatelliteEnabledForCarrier();
+
+    /**
+     * Indicates that MockSatelliteService has just received the request
      * requestSatelliteEnabled from Telephony.
      */
     void onRequestSatelliteEnabled(in boolean enableSatellite);

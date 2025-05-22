@@ -19,6 +19,7 @@ package android.telephony.satellite.cts;
 import static android.telephony.ims.stub.ImsRegistrationImplBase.REGISTRATION_TECH_LTE;
 
 import static com.android.internal.telephony.satellite.SatelliteController.TIMEOUT_TYPE_EVALUATE_ESOS_PROFILES_PRIORITIZATION_DURATION_MILLIS;
+import static com.google.common.truth.Truth.assertThat;
 
 import static junit.framework.Assert.assertTrue;
 
@@ -41,6 +42,7 @@ import android.telephony.ServiceState;
 import android.telephony.SmsManager;
 import android.telephony.SubscriptionManager;
 import android.telephony.TelephonyCallback;
+import android.telephony.TelephonyManager;
 import android.telephony.cts.util.DefaultSmsAppHelper;
 import android.telephony.ims.ImsReasonInfo;
 import android.telephony.ims.cts.ImsServiceConnector;
@@ -60,11 +62,14 @@ import androidx.test.InstrumentationRegistry;
 import com.android.compatibility.common.util.CarrierPrivilegeUtils;
 import com.android.internal.annotations.GuardedBy;
 import com.android.internal.telephony.satellite.DatagramController;
+import com.google.common.collect.ImmutableList;
 
 import junit.framework.Assert;
 
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.List;
+import java.util.Set;
 
 public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
     private static final String TAG = "CarrierRoamingSatelliteTestBase";
@@ -488,6 +493,7 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
         int subId = SubscriptionManager.getSubscriptionId(slotId);
         logd(TAG, "enableCarrierRoamingSatelliteConfigs slotId:" + slotId
             + " connectType:" + connectType + " subId:" + subId);
+        assertTrue(isActiveSubId(subId));
 
         String satellitePlmn = sMockModemManager.getSimInfo(slotId,
                 MockModemConfigBase.SimInfoChangedResult.SIM_INFO_TYPE_MCC_MNC);
@@ -524,6 +530,20 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
                 CarrierConfigManager.KEY_SATELLITE_ROAMING_P2P_SMS_SUPPORTED_BOOL, true);
         }
         sMockSatelliteServiceManager.setSatelliteIgnorePlmnListFromStorage(false);
+        overrideCarrierConfig(subId, bundle);
+    }
+
+    protected static void enableSatelliteEntitlementSupport(int subId)
+            throws Exception {
+        logd(TAG, "enableSatelliteEntitlementSupport subId:" + subId);
+        assertTrue(isActiveSubId(subId));
+
+        PersistableBundle bundle = new PersistableBundle();
+        bundle.putBoolean(
+                CarrierConfigManager.KEY_SATELLITE_ENTITLEMENT_SUPPORTED_BOOL, true);
+        bundle.putString(
+                CarrierConfigManager.ImsServiceEntitlement.KEY_ENTITLEMENT_SERVER_URL_STRING,
+                EntilementStatusResponseGenerator.MOCK_ENTITLEMENT_SERVER_URL);
         overrideCarrierConfig(subId, bundle);
     }
 
@@ -757,5 +777,226 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
             assertTrue(serviceStateListener.waitUntilInService());
         }
         sTelephonyManager.unregisterTelephonyCallback(serviceStateListener);
+    }
+
+    protected static boolean waitForEventOnSetSatelliteEnabledForCarrier(int expectedNumOfEvents) {
+        if (getHalVersion(TelephonyManager.HAL_SERVICE_NETWORK) < RADIO_HAL_VERSION_2_3) {
+            return sMockSatelliteServiceManager.waitForEventOnSetSatellitePlmn(expectedNumOfEvents);
+        }
+        return sMockModemManager.waitForEventOnSetSatelliteEnabledForCarrier(expectedNumOfEvents);
+    }
+
+    protected static boolean waitForEventOnSetSatellitePlmn(int expectedNumOfEvents) {
+        if (getHalVersion(TelephonyManager.HAL_SERVICE_NETWORK) < RADIO_HAL_VERSION_2_3) {
+            return sMockSatelliteServiceManager.waitForEventOnSetSatellitePlmn(expectedNumOfEvents);
+        }
+        return sMockModemManager.waitForEventOnSetSatellitePlmn(expectedNumOfEvents);
+    }
+
+    @Nullable
+    protected static List<String> getCarrierPlmnListConfigured(int slotId) {
+        if (getHalVersion(TelephonyManager.HAL_SERVICE_NETWORK) < RADIO_HAL_VERSION_2_3) {
+            return sMockSatelliteServiceManager.getCarrierPlmnList();
+        }
+        return sMockModemManager.getCarrierPlmnList(slotId);
+    }
+
+    @Nullable
+    protected static List<String> getAllSatellitePlmnListConfigured(int slotId) {
+        if (getHalVersion(TelephonyManager.HAL_SERVICE_NETWORK) < RADIO_HAL_VERSION_2_3) {
+            return sMockSatelliteServiceManager.getAllSatellitePlmnList();
+        }
+        return sMockModemManager.getAllSatellitePlmnList(slotId);
+    }
+
+    protected static boolean getIsSatelliteEnabledForCarrierInMockService(int slotId) {
+        if (getHalVersion(TelephonyManager.HAL_SERVICE_NETWORK) < RADIO_HAL_VERSION_2_3) {
+            Boolean receivedResult = sMockSatelliteServiceManager.getIsSatelliteEnabledForCarrier();
+            return receivedResult != null ? receivedResult : false;
+        }
+        return sMockModemManager.getIsSatelliteEnabledForCarrier(slotId);
+    }
+
+    protected static void testQuerySatelliteEntitlementService_success(int slotId,
+        @CarrierConfigManager.CARRIER_ROAMING_NTN_CONNECT_TYPE int connectType) throws Exception {
+        logd(TAG, "testQuerySatelliteEntitlementService_success: slotId=" + slotId);
+
+        assertTrue(sMockSatelliteServiceManager
+                .overrideSatelliteEntilementQueryConditions(true, true));
+        assertTrue(sMockSatelliteServiceManager.setSatelliteIgnorePlmnListFromStorage(true));
+        sMockSatelliteServiceManager.setMaxAllowedDataModeForCtsTest(
+            SatelliteManager.SATELLITE_DATA_SUPPORT_UNCONSTRAINED);
+        try {
+            logd(TAG, "testQuerySatelliteEntitlementService_success: test entitlement disabled");
+            int subId = SubscriptionManager.getSubscriptionId(slotId);
+            sMockModemManager.clearEventOnSetSatellitePlmn();
+            sMockModemManager.clearEventOnSetSatelliteEnabledForCarrier();
+            sMockSatelliteServiceManager.clearEventOnSetSatellitePlmn();
+            sMockSatelliteServiceManager.clearEventOnSetSatelliteEnabledForCarrier();
+            prepareValidDisabledEntitlementStatus();
+            enableSatelliteEntitlementSupport(subId);
+
+            // Telephony should have requested the modem to disable satellite for the carrier.
+            waitForAccessRestrictionReason(subId,
+                    SatelliteManager.SATELLITE_COMMUNICATION_RESTRICTION_REASON_ENTITLEMENT);
+            assertFalse(getIsSatelliteEnabledForCarrierInMockService(slotId));
+            // Verify that the PLMN list come from carrier config.
+            List<String> telephonyCarrierPlmnList =
+                sSatelliteManager.getSatellitePlmnsForCarrier(subId);
+            String satellitePlmn = sMockModemManager.getSimInfo(slotId,
+                MockModemConfigBase.SimInfoChangedResult.SIM_INFO_TYPE_MCC_MNC);
+            assertThat(telephonyCarrierPlmnList).containsExactly(satellitePlmn);
+            int dataMode = sSatelliteManager.getSatelliteDataSupportMode(subId);
+            assertEquals((long) SatelliteManager.SATELLITE_DATA_SUPPORT_RESTRICTED,
+                (long) dataMode);
+
+            logd(TAG, "testQuerySatelliteEntitlementService_success: test entitlement enabled");
+            sMockModemManager.clearEventOnSetSatellitePlmn();
+            sMockModemManager.clearEventOnSetSatelliteEnabledForCarrier();
+            sMockSatelliteServiceManager.clearEventOnSetSatellitePlmn();
+            sMockSatelliteServiceManager.clearEventOnSetSatelliteEnabledForCarrier();
+            EntilementStatusResponseGenerator entilementStatusResponseGenerator =
+                prepareValidEnabledEntitlementStatus();
+            enableSatelliteEntitlementSupport(subId);
+
+            // The allowed and barred PLMNs received from the entitlement service should
+            // be configured to modem.
+            List<String> allowedPlmnList = entilementStatusResponseGenerator.getAllowedPlmns();
+            List<String> barredPlmnList = entilementStatusResponseGenerator.getBarredPlmns();
+            logd(TAG, "allowedPlmnList: " + String.join(", ", allowedPlmnList));
+            logd(TAG, "barredPlmnList: " + String.join(", ", barredPlmnList));
+            waitForCarrierPlmnListConfigured(slotId, allowedPlmnList);
+
+            // Verify that the allowed and barred PLMNs are configured correctly.
+            List<String> allSatellitePlmnListConfigured = getAllSatellitePlmnListConfigured(slotId);
+            List<String> carrierPlmnListConfigured = getCarrierPlmnListConfigured(slotId);
+            logd(TAG, "allSatellitePlmnListConfigured: "
+                + String.join(", ", allSatellitePlmnListConfigured));
+            assertThat(allSatellitePlmnListConfigured).containsAtLeastElementsIn(allowedPlmnList);
+            assertThat(allSatellitePlmnListConfigured).containsAtLeastElementsIn(barredPlmnList);
+            assertThat(carrierPlmnListConfigured).containsNoneIn(barredPlmnList);
+
+            // Verify that Telephony has updated its internal state correctly.
+            telephonyCarrierPlmnList = sSatelliteManager.getSatellitePlmnsForCarrier(subId);
+            assertThat(telephonyCarrierPlmnList).containsExactlyElementsIn(allowedPlmnList);
+            dataMode = sSatelliteManager.getSatelliteDataSupportMode(subId);
+            assertEquals((long) SatelliteManager.SATELLITE_DATA_SUPPORT_UNCONSTRAINED,
+                    (long) dataMode);
+
+            waitForAccessRestrictionReasonToBeRemoved(subId,
+                    SatelliteManager.SATELLITE_COMMUNICATION_RESTRICTION_REASON_ENTITLEMENT);
+
+            if (connectType == CarrierConfigManager.CARRIER_ROAMING_NTN_CONNECT_AUTOMATIC) {
+                waitForSatelliteEnabledForCarrier(slotId);
+            } else {
+                assertFalse(getIsSatelliteEnabledForCarrierInMockService(slotId));
+            }
+        } finally {
+            logd(TAG, "testQuerySatelliteEntitlementService_success: restore test environment");
+            sMockSatelliteServiceManager
+                .overrideSatelliteEntilementQueryConditions(false, false);
+            sMockSatelliteServiceManager
+                .overrideSatelliteEntilementStatusResponseForCtsTest(null, false);
+            sMockSatelliteServiceManager.setSatelliteIgnorePlmnListFromStorage(false);
+            sMockSatelliteServiceManager.setMaxAllowedDataModeForCtsTest(-1);
+        }
+    }
+
+    private static EntilementStatusResponseGenerator prepareValidDisabledEntitlementStatus() {
+        logd(TAG, "prepareValidDisabledEntitlementStatus");
+        EntilementStatusResponseGenerator entilementStatusResponseGenerator =
+                new EntilementStatusResponseGenerator();
+        entilementStatusResponseGenerator.setEntitlementStatus(
+                EntilementStatusResponseGenerator.SATELLITE_ENTITLEMENT_STATUS_DISABLED);
+        String t43Response = entilementStatusResponseGenerator.createTS43Response();
+        assertTrue(sMockSatelliteServiceManager
+                .overrideSatelliteEntilementStatusResponseForCtsTest(t43Response, false));
+        return entilementStatusResponseGenerator;
+    }
+
+    private static EntilementStatusResponseGenerator prepareValidEnabledEntitlementStatus() {
+        logd(TAG, "prepareValidEnabledEntitlementStatus");
+        EntilementStatusResponseGenerator entilementStatusResponseGenerator =
+                new EntilementStatusResponseGenerator();
+        entilementStatusResponseGenerator.setEntitlementStatus(
+                EntilementStatusResponseGenerator.SATELLITE_ENTITLEMENT_STATUS_ENABLED);
+        List<EntilementStatusResponseGenerator.SatelliteNetworkInfo> supportedPlmnsAndServices =
+                EntilementStatusResponseGenerator.createDefaultValidSatelliteNetworkInfoList();
+        entilementStatusResponseGenerator.setSupportedPlmnsAndServices(supportedPlmnsAndServices);
+        List<String> barredPlmnList = ImmutableList.of("46601", "46602");
+        entilementStatusResponseGenerator.setBarredPlmns(barredPlmnList);
+        String t43Response = entilementStatusResponseGenerator.createTS43Response();
+        assertTrue(sMockSatelliteServiceManager
+                .overrideSatelliteEntilementStatusResponseForCtsTest(t43Response, false));
+        return entilementStatusResponseGenerator;
+    }
+
+    private static void waitForAccessRestrictionReason(int subId,
+        @SatelliteManager.SatelliteCommunicationRestrictionReason int expectedRestrictionReason) {
+        logd(TAG, "waitForAccessRestrictionReason: subId=" + subId
+                + ", expectedRestrictionReason=" + expectedRestrictionReason);
+        int i = 0;
+        int maxRetry = 5;
+        for (; i < maxRetry; i++) {
+            assertTrue(waitForEventOnSetSatelliteEnabledForCarrier(1));
+            Set<Integer> restrictionReasons =
+                sSatelliteManager.getAttachRestrictionReasonsForCarrier(subId);
+            logd(TAG, "testQuerySatelliteEntitlementService_success: restrictionReasons="
+                + restrictionReasons);
+            if (restrictionReasons.contains(expectedRestrictionReason)) {
+                break;
+            }
+        }
+        assertThat(i).isLessThan(maxRetry);
+    }
+
+    private static void waitForAccessRestrictionReasonToBeRemoved(int subId,
+        @SatelliteManager.SatelliteCommunicationRestrictionReason int expectedRestrictionReason) {
+        logd(TAG, "waitForAccessRestrictionReasonToBeRemoved: subId=" + subId
+                + ", expectedRestrictionReason=" + expectedRestrictionReason);
+        int i = 0;
+        int maxRetry = 5;
+        for (; i < maxRetry; i++) {
+            assertTrue(waitForEventOnSetSatelliteEnabledForCarrier(1));
+            Set<Integer> restrictionReasons =
+                sSatelliteManager.getAttachRestrictionReasonsForCarrier(subId);
+            logd(TAG, "testQuerySatelliteEntitlementService_success: restrictionReasons="
+                + restrictionReasons);
+            if (!restrictionReasons.contains(expectedRestrictionReason)) {
+                break;
+            }
+        }
+        assertThat(i).isLessThan(maxRetry);
+    }
+
+    private static void waitForSatelliteEnabledForCarrier(int slotId) {
+        logd(TAG, "waitForSatelliteEnabledForCarrier: slotId=" + slotId);
+        int i = 0;
+        int maxRetry = 5;
+        for (; i < maxRetry; i++) {
+            assertTrue(waitForEventOnSetSatelliteEnabledForCarrier(1));
+            if (getIsSatelliteEnabledForCarrierInMockService(slotId)) {
+                break;
+            }
+        }
+        assertThat(i).isLessThan(maxRetry);
+    }
+
+    private static void waitForCarrierPlmnListConfigured(
+        int slotId, List<String> expectedCarrierPlmnList) {
+        logd(TAG, "waitForCarrierPlmnListConfigured: slotId=" + slotId
+                + ", expectedCarrierPlmnList=" + String.join(", ", expectedCarrierPlmnList));
+        int i = 0;
+        int maxRetry = 5;
+        for (; i < maxRetry; i++) {
+            assertTrue(waitForEventOnSetSatellitePlmn(1));
+            List<String> carrierPlmnListConfigured = getCarrierPlmnListConfigured(slotId);
+            logd(TAG, "carrierPlmnListConfigured=" + carrierPlmnListConfigured);
+            if (expectedCarrierPlmnList.size() == carrierPlmnListConfigured.size()
+                && carrierPlmnListConfigured.containsAll(expectedCarrierPlmnList)) {
+                break;
+            }
+        }
+        assertThat(i).isLessThan(maxRetry);
     }
 }
