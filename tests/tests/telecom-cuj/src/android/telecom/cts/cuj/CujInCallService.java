@@ -85,13 +85,6 @@ public class CujInCallService extends InCallService {
         CujCallCallback cujCallCallback = new CujCallCallback();
         call.registerCallback(cujCallCallback);
         sCallIdToCallback.put(call.getDetails().getId(), cujCallCallback);
-        if (call.getDetails().getState() == Call.STATE_SELECT_PHONE_ACCOUNT) {
-            Log.w(TAG, "Call moved into STATE_SELECT_PHONE_ACCOUNT unexpectedly, disconnecting: "
-                    + call);
-            // If this unexpected state happens, the test and calls could get stuck. Manually
-            // disconnect here until we support moving into SELECT_PHONE_ACCOUNT
-            call.disconnect();
-        }
         sLastCall = call;
     }
 

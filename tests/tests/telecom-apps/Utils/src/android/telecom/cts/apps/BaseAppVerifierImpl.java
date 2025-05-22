@@ -20,6 +20,7 @@ import static android.os.SystemClock.sleep;
 import static android.telecom.Call.STATE_ACTIVE;
 import static android.telecom.Call.STATE_DISCONNECTED;
 import static android.telecom.Call.STATE_RINGING;
+import static android.telecom.Call.STATE_SELECT_PHONE_ACCOUNT;
 import static android.telecom.cts.apps.AttributesUtil.getDefaultAttributesForApp;
 import static android.telecom.cts.apps.AttributesUtil.getDefaultAttributesForManaged;
 import static android.telecom.cts.apps.AttributesUtil.getDefaultMmiAttributesForApp;
@@ -363,6 +364,24 @@ public class BaseAppVerifierImpl {
         return mVerifierMethods.getLastAddedCall().getDetails().getId();
     }
 
+    public String verifyCallAddedInCallService(int currentCallCount) {
+        waitForInCallServiceBinding(mVerifierMethods);
+        waitUntilExpectedCallCount(currentCallCount + 1);
+        return mVerifierMethods.getLastAddedCall().getDetails().getId();
+    }
+
+    public int getIcsCallCount() {
+        return mVerifierMethods.getCurrentCallCount();
+    }
+
+    public void verifyCallAdded(
+            AppControlWrapper wrapper,
+            CallAttributes attr,
+            Consumer<CallStateTransitionOperation> consumer)
+            throws Exception {
+        wrapper.verifyAddCall(attr, consumer);
+    }
+
     public String verifyAddEmergencyCall(
             AppControlWrapper appControl,
             CallAttributes attributes,
@@ -495,6 +514,12 @@ public class BaseAppVerifierImpl {
     public void disconnectCallViaInCallService(String id) {
         Call call = findTargetCall(id);
         call.disconnect();
+    }
+
+    public void selectCallPhoneAccount(String id, PhoneAccountHandle handle) throws Exception {
+        verifyCallIsInState(id, STATE_SELECT_PHONE_ACCOUNT);
+        Call call = findTargetCall(id);
+        call.phoneAccountSelected(handle, false);
     }
 
     public boolean isCallHoldable(String id) {
