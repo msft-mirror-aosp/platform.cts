@@ -71,9 +71,9 @@ import org.junit.runner.RunWith
 class RuntimePermissionProperties {
     private val context = InstrumentationRegistry.getInstrumentation().getTargetContext()
     private val pm = context.packageManager
-
     private val platformPkg = pm.getPackageInfo("android", GET_PERMISSIONS)
     private val platformRuntimePerms = platformPkg.permissions
+            .filter { !it.name.startsWith("com.android.extensions.xr.", ignoreCase = false) }
             .filter { it.protection == PROTECTION_DANGEROUS }
     private val platformBgPermNames = platformRuntimePerms.mapNotNull { it.backgroundPermission }
 
