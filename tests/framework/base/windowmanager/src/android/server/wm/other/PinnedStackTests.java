@@ -134,6 +134,7 @@ import android.os.RemoteCallback;
 import android.os.UserManager;
 import android.platform.test.annotations.AsbSecurityTest;
 import android.platform.test.annotations.Presubmit;
+import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -155,6 +156,7 @@ import androidx.test.filters.FlakyTest;
 
 import com.android.compatibility.common.util.AppOpsUtils;
 import com.android.compatibility.common.util.SystemUtil;
+import com.android.wm.shell.Flags;
 
 import com.google.common.truth.Truth;
 
@@ -1644,8 +1646,9 @@ public class PinnedStackTests extends ActivityManagerTestBase {
         assertEquals(rootActivityTaskId, mWmState.getTaskByActivity(TEST_ACTIVITY).getTaskId());
     }
 
+    // TODO (b/388317826): address this for PiP2.
     @Test
-    @FlakyTest(bugId = 388317826)
+    @RequiresFlagsDisabled(Flags.FLAG_ENABLE_PIP2)
     public void testLaunchTaskByAffinityMatchSingleTask() {
         // Launch an activity into the pinned stack with a fixed affinity
         launchActivityNoWait(TEST_ACTIVITY_WITH_SAME_AFFINITY,
