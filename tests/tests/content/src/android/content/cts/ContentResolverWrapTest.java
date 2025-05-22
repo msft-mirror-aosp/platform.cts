@@ -16,9 +16,10 @@
 
 package android.content.cts;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.CALLS_REAL_METHODS;
@@ -43,7 +44,7 @@ import android.os.ParcelFileDescriptor;
 import android.platform.test.annotations.AppModeSdkSandbox;
 import android.util.Size;
 
-import androidx.test.runner.AndroidJUnit4;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -55,9 +56,10 @@ import java.util.ArrayList;
 
 @RunWith(AndroidJUnit4.class)
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
-public class ContentResolverWrapTest {
+public final class ContentResolverWrapTest {
     private static final String AUTHORITY = "com.example";
-    private static final Uri URI = Uri.parse("content://" + AUTHORITY);
+    private static final Uri URI =
+            new Uri.Builder().scheme(ContentResolver.SCHEME_CONTENT).authority(AUTHORITY).build();
     private static final ArrayList<ContentProviderOperation> OPERATIONS = new ArrayList<>();
     private static final ContentProviderResult[] RESULTS = new ContentProviderResult[0];
     private static final ContentValues VALUES = new ContentValues();
@@ -84,19 +86,18 @@ public class ContentResolverWrapTest {
         }
     }
 
-    private Context mContext;
     private ContentProvider mProvider;
     private ContentResolver mResolver;
 
     @Before
     public void setUp() throws Exception {
-        mContext = mock(Context.class, RETURNS_DEFAULTS);
+        Context context = mock(Context.class, RETURNS_DEFAULTS);
         mProvider = mock(ContentProvider.class, CALLS_REAL_METHODS);
 
         final ProviderInfo pi = new ProviderInfo();
         pi.authority = AUTHORITY;
         pi.exported = true;
-        mProvider.attachInfo(mContext, pi);
+        mProvider.attachInfo(context, pi);
 
         mResolver = ContentResolver.wrap(mProvider);
     }
@@ -104,32 +105,32 @@ public class ContentResolverWrapTest {
     @Test
     public void testApplyBatch() throws Exception {
         doReturn(RESULTS).when(mProvider).applyBatch(AUTHORITY, OPERATIONS);
-        assertEquals(RESULTS, mResolver.applyBatch(AUTHORITY, OPERATIONS));
+        assertThat(mResolver.applyBatch(AUTHORITY, OPERATIONS)).isEqualTo(RESULTS);
     }
 
     @Test
     public void testBulkInsert() throws Exception {
         doReturn(42).when(mProvider).bulkInsert(URI, VALUES_ARRAY);
-        assertEquals(42, mResolver.bulkInsert(URI, VALUES_ARRAY));
+        assertThat(mResolver.bulkInsert(URI, VALUES_ARRAY)).isEqualTo(42);
     }
 
     @Test
     public void testCall() throws Exception {
         doReturn(EXTRAS).when(mProvider).call(AUTHORITY, METHOD, ARG, EXTRAS);
-        assertEquals(EXTRAS, mResolver.call(AUTHORITY, METHOD, ARG, EXTRAS));
-        assertEquals(EXTRAS, mResolver.call(URI, METHOD, ARG, EXTRAS));
+        assertThat(mResolver.call(AUTHORITY, METHOD, ARG, EXTRAS)).isEqualTo(EXTRAS);
+        assertThat(mResolver.call(URI, METHOD, ARG, EXTRAS)).isEqualTo(EXTRAS);
     }
 
     @Test
     public void testCanonicalize() throws Exception {
         doReturn(URI).when(mProvider).canonicalize(URI);
-        assertEquals(URI, mResolver.canonicalize(URI));
+        assertThat(mResolver.canonicalize(URI)).isEqualTo(URI);
     }
 
     @Test
-    public void testUncanonicalize() throws Exception {
+    public void testUncanonicalize() {
         doReturn(URI).when(mProvider).uncanonicalize(URI);
-        assertEquals(URI, mResolver.uncanonicalize(URI));
+        assertThat(mResolver.uncanonicalize(URI)).isEqualTo(URI);
     }
 
     @Test
@@ -139,100 +140,98 @@ public class ContentResolverWrapTest {
     }
 
     @Test
-    public void testStreamTypes() throws Exception {
+    public void testStreamTypes() {
         doReturn(TYPE_ARRAY).when(mProvider).getStreamTypes(URI, TYPE);
-        assertEquals(TYPE_ARRAY, mResolver.getStreamTypes(URI, TYPE));
+        assertThat(mResolver.getStreamTypes(URI, TYPE)).isEqualTo(TYPE_ARRAY);
     }
 
     @Test
     public void testInsert() throws Exception {
         doReturn(URI).when(mProvider).insert(URI, VALUES);
-        assertEquals(URI, mResolver.insert(URI, VALUES));
+        assertThat(mResolver.insert(URI, VALUES)).isEqualTo(URI);
     }
 
     @Test
     public void testInsert_Extras() throws Exception {
         doReturn(URI).when(mProvider).insert(URI, VALUES, EXTRAS);
-        assertEquals(URI, mResolver.insert(URI, VALUES, EXTRAS));
+        assertThat(mResolver.insert(URI, VALUES, EXTRAS)).isEqualTo(URI);
     }
 
     @Test
     public void testUpdate() throws Exception {
         doReturn(42).when(mProvider).update(URI, VALUES, ARG, ARG_ARRAY);
-        assertEquals(42, mResolver.update(URI, VALUES, ARG, ARG_ARRAY));
+        assertThat(mResolver.update(URI, VALUES, ARG, ARG_ARRAY)).isEqualTo(42);
     }
 
     @Test
     public void testUpdate_Extras() throws Exception {
         doReturn(21).when(mProvider).update(URI, VALUES, EXTRAS);
-        assertEquals(21, mResolver.update(URI, VALUES, EXTRAS));
+        assertThat(mResolver.update(URI, VALUES, EXTRAS)).isEqualTo(21);
     }
 
     @Test
     public void testDelete() throws Exception {
         doReturn(42).when(mProvider).delete(URI, ARG, ARG_ARRAY);
-        assertEquals(42, mResolver.delete(URI, ARG, ARG_ARRAY));
+        assertThat(mResolver.delete(URI, ARG, ARG_ARRAY)).isEqualTo(42);
     }
 
     @Test
     public void testDelete_Extras() throws Exception {
         doReturn(21).when(mProvider).delete(URI, EXTRAS);
-        assertEquals(21, mResolver.delete(URI, EXTRAS));
+        assertThat(mResolver.delete(URI, EXTRAS)).isEqualTo(21);
     }
 
     @Test
     public void testRefresh() throws Exception {
         doReturn(true).when(mProvider).refresh(URI, EXTRAS, SIGNAL);
-        assertEquals(true, mResolver.refresh(URI, EXTRAS, SIGNAL));
+        assertThat(mResolver.refresh(URI, EXTRAS, SIGNAL)).isTrue();
     }
 
     @Test
     public void testOpenAssetFile() throws Exception {
         doReturn(ASSET_FD).when(mProvider).openAssetFile(URI, MODE, null);
-        assertEquals(ASSET_FD, mResolver.openAssetFile(URI, MODE, null));
-        assertEquals(ASSET_FD, mResolver.openAssetFileDescriptor(URI, MODE));
-        assertEquals(ASSET_FD, mResolver.openAssetFileDescriptor(URI, MODE, null));
+        assertThat(mResolver.openAssetFile(URI, MODE, null)).isEqualTo(ASSET_FD);
+        assertThat(mResolver.openAssetFileDescriptor(URI, MODE)).isEqualTo(ASSET_FD);
+        assertThat(mResolver.openAssetFileDescriptor(URI, MODE, null)).isEqualTo(ASSET_FD);
     }
 
     @Test
     public void testOpenFile() throws Exception {
         doReturn(FD).when(mProvider).openFile(URI, MODE, null);
-        assertEquals(FD, mResolver.openFile(URI, MODE, null));
-        assertEquals(FD, mResolver.openFileDescriptor(URI, MODE));
-        assertEquals(FD, mResolver.openFileDescriptor(URI, MODE, null));
+        assertThat(mResolver.openFile(URI, MODE, null)).isEqualTo(FD);
+        assertThat(mResolver.openFileDescriptor(URI, MODE)).isEqualTo(FD);
+        assertThat(mResolver.openFileDescriptor(URI, MODE, null)).isEqualTo(FD);
     }
 
     @Test
     public void testOpenStream() throws Exception {
         doReturn(ASSET_FD).when(mProvider).openAssetFile(URI, "r", null);
         doReturn(ASSET_FD).when(mProvider).openAssetFile(URI, "w", null);
-        assertNotNull(mResolver.openInputStream(URI));
-        assertNotNull(mResolver.openOutputStream(URI));
+        assertThat(mResolver.openInputStream(URI)).isNotNull();
+        assertThat(mResolver.openOutputStream(URI)).isNotNull();
     }
 
     @Test
     public void testOpenTypedAssetFile() throws Exception {
         doReturn(ASSET_FD).when(mProvider).openTypedAssetFile(URI, TYPE, EXTRAS, null);
-        assertEquals(ASSET_FD, mResolver.openTypedAssetFile(URI, TYPE, EXTRAS, null));
-        assertEquals(ASSET_FD, mResolver.openTypedAssetFileDescriptor(URI, TYPE, EXTRAS));
-        assertEquals(ASSET_FD, mResolver.openTypedAssetFileDescriptor(URI, TYPE, EXTRAS, null));
+        assertThat(mResolver.openTypedAssetFile(URI, TYPE, EXTRAS, null)).isEqualTo(ASSET_FD);
+        assertThat(mResolver.openTypedAssetFileDescriptor(URI, TYPE, EXTRAS)).isEqualTo(ASSET_FD);
+        assertThat(mResolver.openTypedAssetFileDescriptor(URI, TYPE, EXTRAS, null))
+                .isEqualTo(ASSET_FD);
     }
 
     @Test
     public void testQuery() throws Exception {
         doReturn(CURSOR).when(mProvider).query(eq(URI), eq(ARG_ARRAY), any(), any());
-        assertEquals(CURSOR, mResolver.query(URI, ARG_ARRAY, null, null));
-        assertEquals(CURSOR, mResolver.query(URI, ARG_ARRAY, null, null, null));
-        assertEquals(CURSOR, mResolver.query(URI, ARG_ARRAY, null, null, null, null));
+        assertThat(mResolver.query(URI, ARG_ARRAY, null, null)).isEqualTo(CURSOR);
+        assertThat(mResolver.query(URI, ARG_ARRAY, null, null, null)).isEqualTo(CURSOR);
+        assertThat(mResolver.query(URI, ARG_ARRAY, null, null, null, null)).isEqualTo(CURSOR);
     }
 
     @Test
     public void testLoadThumbnail() throws Exception {
         doReturn(ASSET_FD).when(mProvider).openTypedAssetFile(eq(URI), any(), any(), eq(SIGNAL));
-        try {
-            mResolver.loadThumbnail(URI, new Size(32, 32), SIGNAL);
-            fail();
-        } catch (IOException expected) {
-        }
+        assertThrows(
+                IOException.class, () -> mResolver.loadThumbnail(URI, new Size(32, 32), SIGNAL));
     }
 }
