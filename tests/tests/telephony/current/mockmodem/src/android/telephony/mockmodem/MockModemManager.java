@@ -1219,6 +1219,37 @@ public class MockModemManager {
         return mMockModemService.waitForEventOnSetSatellitePlmn(expectedNumberOfEvents);
     }
 
+    public void clearEventOnSetSatellitePlmn() {
+        Log.d(TAG, "clearEventOnSetSatellitePlmn");
+        if (mMockModemService == null) {
+            Log.e(TAG, "clearEventOnSetSatellitePlmn: mMockModemService is null");
+            return;
+        }
+        mMockModemService.clearEventOnSetSatellitePlmn();
+    }
+
+    /** Wait until setSatelliteEnabledForCarrier() is called. */
+    public boolean waitForEventOnSetSatelliteEnabledForCarrier(int expectedNumberOfEvents) {
+        Log.d(TAG, "waitForEventOnSetSatelliteEnabledForCarrier");
+        if (mMockModemService == null) {
+            Log.e(TAG, "waitForEventOnSetSatelliteEnabledForCarrier: mMockModemService is null");
+            return false;
+        }
+
+        return mMockModemService.waitForEventOnSetSatelliteEnabledForCarrier(
+                expectedNumberOfEvents);
+    }
+
+    /** Clear the event of setSatelliteEnabledForCarrier() is called. */
+    public void clearEventOnSetSatelliteEnabledForCarrier() {
+        Log.d(TAG, "clearEventOnSetSatelliteEnabledForCarrier");
+        if (mMockModemService == null) {
+            Log.e(TAG, "clearEventOnSetSatelliteEnabledForCarrier: mMockModemService is null");
+            return;
+        }
+        mMockModemService.clearEventOnSetSatelliteEnabledForCarrier();
+    }
+
     /** Get whether satellite is enabled for carrier. */
     public boolean getIsSatelliteEnabledForCarrier(int slotId) {
         Log.d(TAG, "getIsSatelliteEnabledForCarrier: slotId=" + slotId);

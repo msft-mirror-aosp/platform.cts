@@ -115,6 +115,12 @@ class MockSatelliteServiceManager {
     private static final String CONFIG_UPDATER_PACKAGE = "com.google.android.configupdater";
     private static final String SET_SATELLITE_IGNORE_PLMN_LIST_FROM_STORAGE =
             "cmd phone set-satellite-ignore-plmn-list-from-storage -d ";
+    private static final String OVERRIDE_SATELLITE_ENTITLEMENT_QUERY_CONDITIONS_CMD =
+            "cmd phone override-satellite-entitlement-entilement-query-conditions";
+    private static final String OVERRIDE_SATELLITE_ENTITLEMENT_STATUS_RESPONSE_FOR_CTS_TEST_CMD =
+            "cmd phone override-satellite-entitlement-status-response-for-cts-test";
+    private static final String SET_MAX_ALLOWED_SATELLITE_DATA_MODE_FOR_CTS_TEST_CMD =
+            "cmd phone set-max-allowed-satellite-data-mode-for-cts-test";
 
     private static final long TIMEOUT = 5000;
     @NonNull private ActivityManager mActivityManager;
@@ -153,6 +159,7 @@ class MockSatelliteServiceManager {
     private final boolean mIsSatelliteServicePackageConfigured;
     boolean mIsPointingUiOverridden = false;
     private final Semaphore mSetSatellitePlmnSemaphore = new Semaphore(0);
+    private final Semaphore mSetSatelliteEnabledForCarrierSemaphore = new Semaphore(0);
 
     @NonNull
     private final ILocalSatelliteListener mSatelliteListener =
@@ -228,6 +235,16 @@ class MockSatelliteServiceManager {
                         mSetSatellitePlmnSemaphore.release();
                     } catch (Exception ex) {
                         logd("onSetSatellitePlmn: Got exception, ex=" + ex);
+                    }
+                }
+
+                @Override
+                public void onSetSatelliteEnabledForCarrier() {
+                    logd("onSetSatelliteEnabledForCarrier()");
+                    try {
+                        mSetSatelliteEnabledForCarrierSemaphore.release();
+                    } catch (Exception ex) {
+                        logd("onSetSatelliteEnabledForCarrier: Got exception, ex=" + ex);
                     }
                 }
 
@@ -926,6 +943,30 @@ class MockSatelliteServiceManager {
             }
         }
         return true;
+    }
+
+    void clearEventOnSetSatellitePlmn() {
+        mSetSatellitePlmnSemaphore.drainPermits();
+    }
+
+    boolean waitForEventOnSetSatelliteEnabledForCarrier(int expectedNumberOfEvents) {
+        for (int i = 0; i < expectedNumberOfEvents; i++) {
+            try {
+                if (!mSetSatelliteEnabledForCarrierSemaphore.tryAcquire(
+                        TIMEOUT, TimeUnit.MILLISECONDS)) {
+                    loge("Timeout to receive onSetSatelliteEnabledForCarrier");
+                    return false;
+                }
+            } catch (Exception ex) {
+                loge("onSetSatelliteEnabledForCarrier: Got exception=" + ex);
+                return false;
+            }
+        }
+        return true;
+    }
+
+    void clearEventOnSetSatelliteEnabledForCarrier() {
+        mSetSatelliteEnabledForCarrierSemaphore.drainPermits();
     }
 
     void setErrorCode(int errorCode) {
@@ -1701,9 +1742,76 @@ class MockSatelliteServiceManager {
                             mInstrumentation,
                             SET_SATELLITE_IGNORE_PLMN_LIST_FROM_STORAGE + enabled);
             logd("setSatelliteIgnorePlmnListFromStorage: result = " + result);
-            return "true".equals(result);
+            return true;
         } catch (Exception e) {
             loge("setSatelliteIgnorePlmnListFromStorage: e=" + e);
+            return false;
+        }
+    }
+
+    boolean overrideSatelliteEntilementStatusResponseForCtsTest(
+        @Nullable String overriddenEntilementStatusResponse, boolean throwException) {
+        logd("overrideSatelliteEntilementStatusResponseForCtsTest: "
+            + "overriddenEntilementStatusResponse = " + overriddenEntilementStatusResponse);
+        StringBuilder command = new StringBuilder();
+        command.append(OVERRIDE_SATELLITE_ENTITLEMENT_STATUS_RESPONSE_FOR_CTS_TEST_CMD);
+        if (!TextUtils.isEmpty(overriddenEntilementStatusResponse)) {
+            command.append(" -r ");
+            command.append(overriddenEntilementStatusResponse);
+        }
+        if (throwException) {
+            command.append(" -t");
+        }
+        try {
+            String result =
+                    TelephonyUtils.executeShellCommand(
+                            mInstrumentation, command.toString());
+            logd("overrideSatelliteEntilementStatusResponseForCtsTest: result = " + result);
+            return true;
+        } catch (Exception e) {
+            loge("overrideSatelliteEntilementStatusResponseForCtsTest: e=" + e);
+            return false;
+        }
+    }
+
+    boolean overrideSatelliteEntilementQueryConditions(
+        boolean ignoreInternetConnection, boolean ignoreRefreshCondition) {
+        logd("overrideSatelliteEntilementQueryConditions: "
+            + "ignoreInternetConnection = " + ignoreInternetConnection);
+        StringBuilder command = new StringBuilder();
+        command.append(OVERRIDE_SATELLITE_ENTITLEMENT_QUERY_CONDITIONS_CMD);
+        if (ignoreInternetConnection) {
+            command.append(" -i");
+        }
+        if (ignoreRefreshCondition) {
+            command.append(" -r");
+        }
+        try {
+            String result =
+                    TelephonyUtils.executeShellCommand(
+                            mInstrumentation, command.toString());
+            logd("overrideSatelliteEntilementQueryConditions: result = " + result);
+            return true;
+        } catch (Exception e) {
+            loge("overrideSatelliteEntilementQueryConditions: e=" + e);
+            return false;
+        }
+    }
+
+    boolean setMaxAllowedDataModeForCtsTest(int maxAllowedDataMode) {
+        logd("setMaxAllowedDataModeForCtsTest: "
+            + "maxAllowedDataMode = " + maxAllowedDataMode);
+        StringBuilder command = new StringBuilder();
+        command.append(SET_MAX_ALLOWED_SATELLITE_DATA_MODE_FOR_CTS_TEST_CMD);
+        command.append(" -m ");
+        command.append(maxAllowedDataMode);
+        try {
+            String result =
+                    TelephonyUtils.executeShellCommand(mInstrumentation, command.toString());
+            logd("setMaxAllowedDataModeForCtsTest: result = " + result);
+            return true;
+        } catch (Exception e) {
+            loge("setMaxAllowedDataModeForCtsTest: e=" + e);
             return false;
         }
     }
