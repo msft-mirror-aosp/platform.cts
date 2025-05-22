@@ -18,6 +18,8 @@
      xmlns:tools="http://schemas.android.com/tools"
     package="android.media.audio.cts.audiorecordpermissiontests" >
 
+    <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" />
+
     <application>
         <uses-library android:name="android.test.runner" />
     </application>

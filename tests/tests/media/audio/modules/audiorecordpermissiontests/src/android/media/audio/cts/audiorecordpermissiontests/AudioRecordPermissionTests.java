@@ -16,34 +16,56 @@
 
 package android.media.audio.cts.audiorecordpermissiontests;
 
-import static  android.media.audio.cts.audiorecordpermissiontests.Utils.getFutureForIntent;
+import static android.media.audio.cts.audiorecordpermissiontests.Utils.getFutureForIntent;
 import static android.media.audio.cts.audiorecordpermissiontests.common.ActionsKt.*;
+import static android.app.AppOpsManager.OP_RECORD_AUDIO;
+import static android.app.AppOpsManager.MODE_ALLOWED;
+import static android.app.AppOpsManager.MODE_IGNORED;
 
+import static com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity;
+
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
+import android.Manifest;
 import android.app.Instrumentation;
-import android.content.ComponentName;
+import android.app.AppOpsManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.media.AudioFormat;
+import android.media.AudioRecord;
+import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.AsbSecurityTest;
+import android.provider.Settings;
+import android.util.Log;
 
-import androidx.test.InstrumentationRegistry;
+import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 
 import com.android.compatibility.common.util.SystemUtil;
+import com.android.sts.common.util.StsExtraBusinessLogicTestCase;
+
 
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+@AppModeFull(reason = "Test requires intents between multiple apps")
 @RunWith(AndroidJUnit4.class)
-public class AudioRecordPermissionTests {
+public class AudioRecordPermissionTests extends StsExtraBusinessLogicTestCase {
     // Keep in sync with test apps
     static final String API_34_PACKAGE = "android.media.audio.cts.CtsRecordServiceApi34";
     // Behavior changes with targetSdk >= 34, so test both cases
@@ -53,29 +75,117 @@ public class AudioRecordPermissionTests {
 
     static final String SERVICE_NAME = ".RecordService";
 
-    static final int FUTURE_WAIT_SECS = 15;
-    static final int FALSE_NEG_SECS = 10;
+    static final int FUTURE_WAIT_SECS = 8;
+    static final int FALSE_NEG_SECS = 5;
 
     private final Instrumentation mInstrumentation = InstrumentationRegistry.getInstrumentation();
     private final Context mContext = mInstrumentation.getContext();
 
-    private String mStartedActivityPackage = null;
-    private String mStartedServicePackage = null;
+    private static String sOldAppOpsConsts = "";
+
+    // Used in teardown
+    private Set<String> mServiceStartedPackages = new HashSet<>();
+    private Set<String> mActivityStartedPackages = new HashSet<>();
+
+    @BeforeClass
+    public static void classSetup() {
+        final var context = InstrumentationRegistry.getInstrumentation().getContext();
+        runWithShellPermissionIdentity(()-> {
+            sOldAppOpsConsts = Settings.Global.getString(context.getContentResolver(),
+                    Settings.Global.APP_OPS_CONSTANTS);
+            Settings.Global.putString(context.getContentResolver(),
+                    Settings.Global.APP_OPS_CONSTANTS,
+                    "top_state_settle_time=0,fg_service_state_settle_time=0,"
+                    + "bg_state_settle_time=0");
+        });
+    }
+
+    @AfterClass
+    public static void classTeardown() {
+        final var context = InstrumentationRegistry.getInstrumentation().getContext();
+        runWithShellPermissionIdentity(() -> {
+            // restore old AppOps settings.
+            Settings.Global.putString(context.getContentResolver(),
+                    Settings.Global.APP_OPS_CONSTANTS, sOldAppOpsConsts);
+        });
+    }
 
     @Before
     public void setup() throws Exception {
-        assumeTrue(mContext.getPackageManager().hasSystemFeature(
-                PackageManager.FEATURE_MICROPHONE));
+        assumeTrue(
+                mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_MICROPHONE));
     }
 
     @After
     public void teardown() throws Exception {
         // Clean up any left-over activities, services
-        if (mStartedActivityPackage != null) {
-            stopActivity(mStartedActivityPackage);
+        for (String pack : Set.copyOf(mActivityStartedPackages)) {
+            stopActivity(pack);
         }
-        if (mStartedServicePackage != null) {
-            stopService(mStartedServicePackage);
+        for (String pack : Set.copyOf(mServiceStartedPackages)) {
+            stopService(pack);
+        }
+    }
+
+    @Test
+    public void testRecordAudioNoRuntimePermission_fails() throws Exception {
+        // The native audio record doesn't transmit security exceptions, it just fails to build
+        assertThrows(UnsupportedOperationException.class, this::buildRecord);
+    }
+
+    @Test
+    public void testStartRecordTop_isNotSilenced() throws Exception {
+        final var TEST_PACKAGE = API_34_PACKAGE;
+        startActivity(TEST_PACKAGE);
+        // TODO(b/297259825) we never started recording unsilenced, due to avd sometime
+        // providing only silenced mic data.
+        assumeTrue(startServiceRecording(TEST_PACKAGE));
+        assertTrue(getOpState(TEST_PACKAGE));
+    }
+
+
+    @Test
+    public void testStartRecordForegroundServiceWithMicCapabilities_isNotSilenced()
+            throws Exception {
+        final var TEST_PACKAGE = API_34_PACKAGE;
+        startForeground(TEST_PACKAGE);
+        assumeTrue(startServiceRecording(TEST_PACKAGE));
+        assertTrue(getOpState(TEST_PACKAGE));
+    }
+
+    @Test
+    public void testStartRecordForegroundServiceWithoutMicCapabilities_isSilenced()
+            throws Exception {
+        final var TEST_PACKAGE = API_34_NO_CAP_PACKAGE;
+        startForeground(TEST_PACKAGE);
+        assertFalse(startServiceRecording(TEST_PACKAGE));
+        assertFalse(getOpState(TEST_PACKAGE));
+    }
+
+    // Verify our custom pre-34 behavior doesn't incorrectly permit too many bypasses
+    @Test
+    public void testStartRecordForegroundServiceWithoutMicCapabilities_whenApi33_isSilenced()
+            throws Exception {
+        final var TEST_PACKAGE = API_33_PACKAGE;
+        startForeground(TEST_PACKAGE);
+        assertFalse(startServiceRecording(TEST_PACKAGE));
+        assertFalse(getOpState(TEST_PACKAGE));
+    }
+
+    @Test
+    public void testStartRecordWhenTopSleeping_isSilenced() throws Exception {
+        final var TEST_PACKAGE = API_34_PACKAGE;
+        startActivity(TEST_PACKAGE);
+        try {
+            // Move out of TOP to TOP_SLEEPING
+            SystemUtil.runShellCommand(mInstrumentation, "input keyevent KEYCODE_SLEEP");
+            // TODO(b/355497694), these should be false, seems currently broken
+            assumeTrue(startServiceRecording(TEST_PACKAGE));
+            assertTrue(getOpState(TEST_PACKAGE));
+        } finally {
+            SystemUtil.runShellCommand(mInstrumentation, "input keyevent KEYCODE_WAKEUP");
+            Thread.sleep(1000);
+            SystemUtil.runShellCommand(mInstrumentation, "wm dismiss-keyguard");
         }
     }
 
@@ -85,16 +195,19 @@ public class AudioRecordPermissionTests {
         final String TEST_PACKAGE = API_34_PACKAGE;
         // Start an activity, then start recording in a background service
         startActivity(TEST_PACKAGE);
-        startBackgroundServiceRecording(TEST_PACKAGE);
+        // TODO(b/297259825) we never started recording unsilenced, due to avd sometime
+        // providing only silenced mic data.
+        assumeTrue(startServiceRecording(TEST_PACKAGE));
+        assertTrue(getOpState(TEST_PACKAGE));
         // Prime future that the stream is silenced
-        final Future future =
-                getFutureForIntent(mContext, TEST_PACKAGE + ACTION_BEGAN_RECEIVE_SILENCE);
+        final Future future = makeFuture(TEST_PACKAGE + ACTION_BEGAN_RECEIVE_SILENCE);
 
         // Move out of TOP to a service state
         stopActivity(TEST_PACKAGE);
 
         // Future completes when silenced. If not, timeout and throw
         future.get(FUTURE_WAIT_SECS, TimeUnit.SECONDS);
+        assertFalse(getOpState(TEST_PACKAGE));
     }
 
     @AsbSecurityTest(cveBugId = 268724205)
@@ -103,22 +216,24 @@ public class AudioRecordPermissionTests {
         final String TEST_PACKAGE = API_34_PACKAGE;
         // Start an activity, then start recording in a background service
         startActivity(TEST_PACKAGE);
-        startBackgroundServiceRecording(TEST_PACKAGE);
+        assumeTrue(startServiceRecording(TEST_PACKAGE));
+        assertTrue(getOpState(TEST_PACKAGE));
         // Prime future that the stream is silenced
-        final Future future =
-                getFutureForIntent(mContext, TEST_PACKAGE + ACTION_BEGAN_RECEIVE_SILENCE);
+        final Future future = makeFuture(TEST_PACKAGE + ACTION_BEGAN_RECEIVE_SILENCE);
 
         try {
             // Move out of TOP to TOP_SLEEPING
             SystemUtil.runShellCommand(mInstrumentation, "input keyevent KEYCODE_SLEEP");
             // Future completes when silenced. If not, timeout and throw
             future.get(FUTURE_WAIT_SECS, TimeUnit.SECONDS);
+            assertFalse(getOpState(TEST_PACKAGE));
         } finally {
             // Wait for unsilence after return to TOP
-            final Future receiveFuture = getFutureForIntent(
-                    mContext, TEST_PACKAGE + ACTION_BEGAN_RECEIVE_AUDIO);
+            final Future receiveFuture = makeFuture(TEST_PACKAGE + ACTION_BEGAN_RECEIVE_AUDIO);
             SystemUtil.runShellCommand(mInstrumentation, "input keyevent KEYCODE_WAKEUP");
-            future.get(FUTURE_WAIT_SECS, TimeUnit.SECONDS);
+            Thread.sleep(1000);
+            SystemUtil.runShellCommand(mInstrumentation, "wm dismiss-keyguard");
+            receiveFuture.get(FUTURE_WAIT_SECS, TimeUnit.SECONDS);
         }
     }
 
@@ -129,21 +244,18 @@ public class AudioRecordPermissionTests {
         final String TEST_PACKAGE = API_34_PACKAGE;
         // Start an activity, then start recording in a fgs with mic caps
         startActivity(TEST_PACKAGE);
-        startForegroundServiceRecording(TEST_PACKAGE);
+        startForeground(TEST_PACKAGE);
+        assumeTrue(startServiceRecording(TEST_PACKAGE));
+        assertTrue(getOpState(TEST_PACKAGE));
         // Prime future that the stream is silenced
-        final Future future =
-                getFutureForIntent(mContext, TEST_PACKAGE + ACTION_BEGAN_RECEIVE_SILENCE);
+        final Future future = makeFuture(TEST_PACKAGE + ACTION_BEGAN_RECEIVE_SILENCE);
 
         // Move out of TOP to a service state
         stopActivity(TEST_PACKAGE);
 
         // Assert that we timeout (future should not complete, since we should not be silenced)
-        try {
-            future.get(FALSE_NEG_SECS, TimeUnit.SECONDS);
-            throw new AssertionError("Future should not complete: " + future);
-        } catch (TimeoutException e) {
-            // Expected
-        }
+        assertThrows(TimeoutException.class, () -> future.get(FALSE_NEG_SECS, TimeUnit.SECONDS));
+        assertTrue(getOpState(TEST_PACKAGE));
     }
 
     @AsbSecurityTest(cveBugId = 268724205)
@@ -153,16 +265,18 @@ public class AudioRecordPermissionTests {
         final String TEST_PACKAGE = API_34_NO_CAP_PACKAGE;
         // Start an activity, then start recording in a fgs WITHOUT mic caps
         startActivity(TEST_PACKAGE);
-        startForegroundServiceRecording(TEST_PACKAGE);
+        startForeground(TEST_PACKAGE);
+        assumeTrue(startServiceRecording(TEST_PACKAGE));
+        assertTrue(getOpState(TEST_PACKAGE));
         // Prime future that the stream is silenced
-        final Future future =
-                getFutureForIntent(mContext, TEST_PACKAGE + ACTION_BEGAN_RECEIVE_SILENCE);
+        final Future future = makeFuture(TEST_PACKAGE + ACTION_BEGAN_RECEIVE_SILENCE);
 
         // Move out of TOP to a service state
         stopActivity(TEST_PACKAGE);
 
         // Future is completes when silenced. If not, timeout and throw
         future.get(FUTURE_WAIT_SECS, TimeUnit.SECONDS);
+        assertFalse(getOpState(TEST_PACKAGE));
     }
 
     @AsbSecurityTest(cveBugId = 268724205)
@@ -171,101 +285,111 @@ public class AudioRecordPermissionTests {
         final String TEST_PACKAGE = API_33_PACKAGE;
         // Start an activity, then start recording in a background service
         startActivity(TEST_PACKAGE);
-        startBackgroundServiceRecording(TEST_PACKAGE);
+        assumeTrue(startServiceRecording(TEST_PACKAGE));
+        assertTrue(getOpState(TEST_PACKAGE));
         // Prime future that the stream is silenced
-        final Future future =
-                getFutureForIntent(mContext, TEST_PACKAGE + ACTION_BEGAN_RECEIVE_SILENCE);
+        final Future future = makeFuture(TEST_PACKAGE + ACTION_BEGAN_RECEIVE_SILENCE);
 
         // Move out of TOP to a service state
         stopActivity(TEST_PACKAGE);
 
         // Assert that we timeout (future should not complete, since we should not be silenced)
-        try {
-            future.get(FALSE_NEG_SECS, TimeUnit.SECONDS);
-            throw new AssertionError("Future should not complete: " + future);
-        } catch (TimeoutException e) {
-            // Expected
-        }
+        assertThrows(TimeoutException.class, () -> future.get(FALSE_NEG_SECS, TimeUnit.SECONDS));
+        assertTrue(getOpState(TEST_PACKAGE));
+    }
+
+    private void buildRecord() throws Exception {
+        new AudioRecord.Builder()
+                .setAudioFormat(
+                        new AudioFormat.Builder()
+                                .setSampleRate(48000)
+                                .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
+                                .setChannelMask(AudioFormat.CHANNEL_IN_MONO)
+                                .build())
+                .build();
+    }
+
+    private void startForeground(String packageName) throws Exception {
+        // To get around background foreground-service-launch restrictions, the app has to be
+        // visible to launch an fgs: so temporarily make it TOP
+        final boolean shouldLaunch =  !mActivityStartedPackages.contains(packageName);
+        if (shouldLaunch) startActivity(packageName);
+        mContext.startService(getIntentForAction(packageName, ACTION_START_FOREGROUND));
+        mServiceStartedPackages.add(packageName);
+        // We have to wait until the app is actually running to mark it freezer ineligible
+        SystemUtil.runShellCommand(mInstrumentation, "am unfreeze --sticky " + packageName);
+        if (shouldLaunch) stopActivity(packageName);
+        // App-op constant settle time
+        Thread.sleep(5000);
     }
 
     private void startActivity(String packageName) throws Exception {
-        final Future future = getFutureForIntent(mContext, packageName + ACTION_ACTIVITY_STARTED);
+        final Future future = makeFuture(packageName + ACTION_ACTIVITY_STARTED);
         final Intent intent =
                 new Intent(Intent.ACTION_MAIN)
                         .setClassName(packageName, packageName + ".SimpleActivity")
                         .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         mInstrumentation.getTargetContext().startActivity(intent);
         future.get(FUTURE_WAIT_SECS, TimeUnit.SECONDS);
-        mStartedActivityPackage = packageName;
+        SystemUtil.runShellCommand(mInstrumentation, "am unfreeze --sticky " + packageName);
+        mActivityStartedPackages.add(packageName);
     }
 
     private void stopActivity(String packageName) throws Exception {
-        final Future future = getFutureForIntent(mContext, packageName + ACTION_ACTIVITY_FINISHED);
+        final Future future = makeFuture(packageName + ACTION_ACTIVITY_FINISHED);
         mContext.sendBroadcast(
                 new Intent(packageName + ACTION_ACTIVITY_DO_FINISH).setPackage(packageName));
         future.get(FUTURE_WAIT_SECS, TimeUnit.SECONDS);
-        mStartedActivityPackage = null;
+        mActivityStartedPackages.remove(packageName);
     }
 
-    private void startForegroundServiceRecording(String packageName) throws Exception {
-        final Future future = getFutureForIntent(
-                mContext, packageName + ACTION_BEGAN_RECEIVE_AUDIO);
-        amShellCommand(
-                "start-foreground-service", packageName, ACTION_START_RECORD, " --ez "
-                + EXTRA_IS_FOREGROUND + " true");
-        try {
-            future.get(FUTURE_WAIT_SECS, TimeUnit.SECONDS);
-        } catch (TimeoutException e) {
-            // TODO(b/297259825) we never started recording unsilenced, due to avd sometimes
-            // providing only silenced mic data.
-            assumeTrue("AVD mic data may be silenced, preventing this test from working", false);
-        }
-        mStartedServicePackage = packageName;
+    // return true iff track starts unsilenced
+    private boolean startServiceRecording(String packageName) throws Exception {
+        final Future<Intent> future =
+                getFutureForIntent(
+                        mContext,
+                        List.of(
+                                packageName + ACTION_BEGAN_RECEIVE_AUDIO,
+                                packageName + ACTION_BEGAN_RECEIVE_SILENCE),
+                        x -> true);
+
+        final Intent intent = getIntentForAction(packageName, ACTION_START_RECORD);
+
+        mContext.startService(intent);
+        final boolean result =
+                future.get(FUTURE_WAIT_SECS, TimeUnit.SECONDS)
+                        .getAction()
+                        .equals(packageName + ACTION_BEGAN_RECEIVE_AUDIO);
+        mServiceStartedPackages.add(packageName);
+        // We have to wait until the app is actually running to mark it freezer ineligible
+        SystemUtil.runShellCommand(mInstrumentation, "am unfreeze --sticky " + packageName);
+        return result;
     }
 
-    private void startBackgroundServiceRecording(String packageName) throws Exception {
-        final Future future = getFutureForIntent(
-                mContext, packageName + ACTION_BEGAN_RECEIVE_AUDIO);
-        amShellCommand("startservice", packageName, ACTION_START_RECORD);
-        try {
-            future.get(FUTURE_WAIT_SECS, TimeUnit.SECONDS);
-        } catch (TimeoutException e) {
-            // TODO(b/297259825) we never started recording unsilenced, due to avd sometimes
-            // providing only silenced mic data.
-            assumeTrue("AVD mic data may be silenced, preventing this test from working", false);
-        }
-        mStartedServicePackage = packageName;
+    private boolean getOpState(String packageName) throws Exception {
+        final var uid = mContext.getPackageManager().getPackageUid(packageName, /* flags= */ 0);
+        return runWithShellPermissionIdentity(() ->mContext.getSystemService(AppOpsManager.class)
+                .isOperationActive(OP_RECORD_AUDIO, uid, packageName));
+    }
+
+    private Future makeFuture(String action) {
+        return getFutureForIntent(mContext, action);
+    }
+
+    private Intent getIntentForAction(String packageName, String action) {
+        return new Intent()
+                .setClassName(packageName, packageName + SERVICE_NAME)
+                .setAction(packageName + action);
     }
 
     private void stopService(String packageName) throws Exception {
-        final Future future = getFutureForIntent(mContext, packageName + ACTION_FINISH_TEARDOWN);
-        amShellCommand("startservice", packageName, ACTION_STOP_RECORD);
+        final Future future = makeFuture(packageName + ACTION_FINISH_TEARDOWN);
+        mContext.startService(getIntentForAction(packageName, ACTION_TEARDOWN));
         future.get(FUTURE_WAIT_SECS, TimeUnit.SECONDS);
-        mStartedServicePackage = null;
+        mServiceStartedPackages.remove(packageName);
         // Just in case
         mInstrumentation
                 .getTargetContext()
                 .stopService(new Intent().setClassName(packageName, packageName + SERVICE_NAME));
     }
-
-    private void amShellCommand(String command, String packageName, String action)
-            throws Exception {
-        amShellCommand(command, packageName, action, "");
-    }
-
-    private void amShellCommand(String command, String packageName, String action, String extra)
-            throws Exception {
-        SystemUtil.runShellCommand(
-                mInstrumentation,
-                "am "
-                        + command
-                        + " -n "
-                        + ComponentName.createRelative(packageName, SERVICE_NAME)
-                                .flattenToShortString()
-                        + " -a "
-                        + packageName
-                        + action
-                        + extra);
-    }
-
 }
