@@ -326,7 +326,7 @@
              android:value="android.telephony.mbms.cts"/>
         <meta-data
             android:name="android.telephony.PROPERTY_SATELLITE_DATA_OPTIMIZED"
-            android:value="true"/>
+            android:value="android.telephony.cts"/>
     </application>
 
     <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner"
