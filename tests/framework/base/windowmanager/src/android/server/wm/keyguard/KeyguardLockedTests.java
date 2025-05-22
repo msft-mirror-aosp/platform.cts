@@ -432,6 +432,36 @@ public class KeyguardLockedTests extends KeyguardTestBase {
     }
 
     @Test
+    public void testDismissKeyguardPipActivityWhenKeyguardOccluded() {
+        assumeTrue(supportsPip());
+
+        final LockScreenSession lockScreenSession = createManagedLockScreenSession();
+        // Start a show-when-lock activity
+        launchActivity(SHOW_WHEN_LOCKED_ACTIVITY);
+        mWmState.computeState(SHOW_WHEN_LOCKED_ACTIVITY);
+        mWmState.assertVisibility(SHOW_WHEN_LOCKED_ACTIVITY, true);
+
+        // Start another activit into PIP
+        launchActivity(
+                PIP_ACTIVITY,
+                extraString(EXTRA_ENTER_PIP, "true"),
+                extraString(EXTRA_DISMISS_KEYGUARD, "true"));
+        waitForEnterPip(PIP_ACTIVITY);
+        mWmState.assertContainsStack(
+                "Must contain pinned stack.", WINDOWING_MODE_PINNED, ACTIVITY_TYPE_STANDARD);
+        mWmState.assertVisibility(PIP_ACTIVITY, true);
+        mWmState.assertVisibility(SHOW_WHEN_LOCKED_ACTIVITY, true);
+
+        // Lock the screen and ensure the PiP activity is not visible on the lockscreen
+        // ShowWhenLockActivity should still be visible and keyguard is occluded
+        lockScreenSession.gotoKeyguard(SHOW_WHEN_LOCKED_ACTIVITY);
+        mWmState.computeState();
+        mWmState.assertKeyguardShowingAndOccluded();
+        mWmState.assertVisibility(PIP_ACTIVITY, false);
+        mWmState.assertVisibility(SHOW_WHEN_LOCKED_ACTIVITY, true);
+    }
+
+    @Test
     public void testShowWhenLockedAttrImeActivityAndShowSoftInput() throws Exception {
         assumeTrue(MSG_NO_MOCK_IME, supportsInstallableIme());
 
