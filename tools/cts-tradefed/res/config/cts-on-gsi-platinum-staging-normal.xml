@@ -928,15 +928,6 @@
     <option name="compatibility:include-filter" value="CtsHardwareTestCases android.hardware.input.cts.tests.virtualdevices.VirtualTouchscreenTest#sendTouchEvent"/>
     <!-- CtsHealthFitnessDeviceTestCases -->
     <option name="compatibility:include-filter" value="CtsHealthFitnessDeviceTestCases android.healthconnect.cts.migration.DataMigrationTest#testInsertMinDataMigrationSdkExtensionVersion_noUpgradeRequired"/>
-    <!-- CtsHibernationTestCases -->
-    <option name="compatibility:include-filter" value="CtsHibernationTestCases android.hibernation.cts.AppHibernationIntegrationTest#testAppInfo_RemovePermissionsAndFreeUpSpaceToggleExists"/>
-    <option name="compatibility:include-filter" value="CtsHibernationTestCases android.hibernation.cts.AppHibernationIntegrationTest#testUnusedApp_getsForceStopped"/>
-    <option name="compatibility:include-filter" value="CtsHibernationTestCases android.hibernation.cts.AutoRevokeTest#testAppWithPermissionsChangedRecently_doesNotGetPermissionRevoked"/>
-    <option name="compatibility:include-filter" value="CtsHibernationTestCases android.hibernation.cts.AutoRevokeTest#testAutoRevoke_showsUpInSafetyCenter"/>
-    <option name="compatibility:include-filter" value="CtsHibernationTestCases android.hibernation.cts.AutoRevokeTest#testAutoRevoke_userAllowlisting"/>
-    <option name="compatibility:include-filter" value="CtsHibernationTestCases android.hibernation.cts.AutoRevokeTest#testPermissionEventCleanupService_scrubsEvents"/>
-    <option name="compatibility:include-filter" value="CtsHibernationTestCases android.hibernation.cts.AutoRevokeTest#testUnusedApp_getsPermissionRevoked"/>
-    <option name="compatibility:include-filter" value="CtsHibernationTestCases android.hibernation.cts.AutoRevokeTest#testUnusedApp_uninstallApp"/>
     <!-- CtsHostsideNetworkPolicyTests -->
     <option name="compatibility:include-filter" value="CtsHostsideNetworkPolicyTests com.android.cts.netpolicy.HostsideConnOnActivityStartTest#testStartActivity_appStandby"/>
     <option name="compatibility:include-filter" value="CtsHostsideNetworkPolicyTests com.android.cts.netpolicy.HostsideConnOnActivityStartTest#testStartActivity_batterySaver"/>
