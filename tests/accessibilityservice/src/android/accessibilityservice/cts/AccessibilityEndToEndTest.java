@@ -31,8 +31,10 @@ import static android.accessibilityservice.cts.utils.AsyncUtils.await;
 import static android.accessibilityservice.cts.utils.CtsTestUtils.DEFAULT_GLOBAL_TIMEOUT_MS;
 import static android.accessibilityservice.cts.utils.CtsTestUtils.DEFAULT_IDLE_TIMEOUT_MS;
 import static android.accessibilityservice.cts.utils.CtsTestUtils.isAutomotive;
+import static android.accessibilityservice.cts.utils.CtsTestUtils.isTv;
 import static android.accessibilityservice.cts.utils.GestureUtils.click;
 import static android.accessibilityservice.cts.utils.GestureUtils.dispatchGesture;
+import static android.accessibilityservice.cts.utils.CtsTestUtils.supportsTouch;
 import static android.accessibilityservice.cts.utils.RunOnMainUtils.getOnMain;
 import static android.app.UiAutomation.FLAG_DONT_SUPPRESS_ACCESSIBILITY_SERVICES;
 import static android.view.MotionEvent.ACTION_DOWN;
@@ -1620,6 +1622,8 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
     @ApiTest(apis = {"android.view.View#isAccessibilityDataSensitive"})
     @RequiresFlagsEnabled(FLAG_PREVENT_A11Y_NONTOOL_FROM_INJECTING_INTO_SENSITIVE_VIEWS)
     public void testAccessibilityDataSensitive_observesGesturesFromTool() {
+        assumeTrue("Device does not support touch",
+            supportsTouch(sInstrumentation.getTargetContext()));
         final InstrumentedAccessibilityService service = getServiceForA11yToolTests(true);
         try {
             AccessibilityServiceInfo info = service.getServiceInfo();
@@ -1639,6 +1643,8 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
     @ApiTest(apis = {"android.view.View#isAccessibilityDataSensitive"})
     @RequiresFlagsEnabled(FLAG_PREVENT_A11Y_NONTOOL_FROM_INJECTING_INTO_SENSITIVE_VIEWS)
     public void testAccessibilityDataSensitive_hiddenFromGesturesFromNonTool() {
+        assumeTrue("Device does not support touch",
+            supportsTouch(sInstrumentation.getTargetContext()));
         final InstrumentedAccessibilityService service = getServiceForA11yToolTests(false);
         try {
             AccessibilityServiceInfo info = service.getServiceInfo();
@@ -2003,11 +2009,10 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
     @ApiTest(apis = {
             "android.view.accessibility.AccessibilityNodeInfo#setQueryFromAppProcessEnabled"})
     public void testDirectAccessibilityConnection_UsesCurrentWindowSpec() throws Throwable {
-        if (isAutomotive(sInstrumentation.getTargetContext())) {
-            Log.i(LOG_TAG, "Skipping: testDirectAccessibilityConnection_UsesCurrentWindowSpec"
-                    + " - Automotive does not support magnification.");
-            return;
-        }
+        assumeFalse("Magnification is not supported on Automotive.",
+                isAutomotive(sInstrumentation.getTargetContext()));
+        assumeFalse("Magnification is not supported on TV.",
+                isTv(sInstrumentation.getTargetContext()));
 
         // Store the initial bounds of the ANI.
         final View layoutView = mActivity.findViewById(R.id.buttonLayout);

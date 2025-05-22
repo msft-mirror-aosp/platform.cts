@@ -21,6 +21,7 @@ import static android.accessibilityservice.cts.utils.ActivityLaunchUtils.homeScr
 import static android.accessibilityservice.cts.utils.CtsTestUtils.DEFAULT_GLOBAL_TIMEOUT_MS;
 import static android.accessibilityservice.cts.utils.CtsTestUtils.DEFAULT_IDLE_TIMEOUT_MS;
 import static android.accessibilityservice.cts.utils.CtsTestUtils.isAutomotive;
+import static android.accessibilityservice.cts.utils.CtsTestUtils.isTv;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -129,6 +130,8 @@ public class FullScreenMagnificationControllerTest {
     public void setUp() throws Exception {
         assumeFalse("Magnification is not supported on Automotive.",
                 isAutomotive(sInstrumentation.getTargetContext()));
+        assumeFalse("Magnification is not supported on TV.",
+                isTv(sInstrumentation.getTargetContext()));
         mService = mMagnificationAccessibilityServiceRule.enableService();
 
         // `setServiceInfo` resets magnification unless there's any magnification listener.

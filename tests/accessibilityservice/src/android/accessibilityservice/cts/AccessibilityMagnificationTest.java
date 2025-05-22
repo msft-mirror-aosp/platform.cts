@@ -21,6 +21,7 @@ import static android.accessibilityservice.MagnificationConfig.MAGNIFICATION_MOD
 import static android.accessibilityservice.cts.utils.AccessibilityEventFilterUtils.filterWindowsChangedWithChangeTypes;
 import static android.accessibilityservice.cts.utils.AsyncUtils.DEFAULT_TIMEOUT_MS;
 import static android.accessibilityservice.cts.utils.CtsTestUtils.isAutomotive;
+import static android.accessibilityservice.cts.utils.CtsTestUtils.isTv;
 import static android.content.pm.PackageManager.FEATURE_WINDOW_MAGNIFICATION;
 import static android.server.wm.BuildUtils.HW_TIMEOUT_MULTIPLIER;
 import static android.view.accessibility.AccessibilityEvent.WINDOWS_CHANGE_ADDED;
@@ -188,6 +189,8 @@ public class AccessibilityMagnificationTest {
         mInstrumentation = InstrumentationRegistry.getInstrumentation();
         assumeFalse("Magnification is not supported on Automotive.",
                 isAutomotive(mInstrumentation.getTargetContext()));
+        assumeFalse("Magnification is not supported on TV.",
+                isTv(mInstrumentation.getTargetContext()));
         ShellCommandBuilder.create(sUiAutomation)
                 .deleteSecureSetting(ACCESSIBILITY_DISPLAY_MAGNIFICATION_ENABLED)
                 .run();
