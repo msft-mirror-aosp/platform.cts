@@ -23,11 +23,8 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
-import android.permission.flags.Flags;
 import android.platform.test.annotations.FlakyTest;
-import android.platform.test.annotations.LargeTest;
 import android.platform.test.annotations.RequiresDevice;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.host.HostFlagsValueProvider;
 import android.stats.devicepolicy.EventId;
@@ -105,8 +102,6 @@ public abstract class DeviceAndProfileOwnerTest extends BaseDevicePolicyTest {
     private static final String VPN_APP_API23_APK = "CtsVpnFirewallAppApi23.apk";
     private static final String VPN_APP_API24_APK = "CtsVpnFirewallAppApi24.apk";
     private static final String VPN_APP_NOT_ALWAYS_ON_APK = "CtsVpnFirewallAppNotAlwaysOn.apk";
-
-    private static final String DISALLOW_REMOVE_USER = "no_remove_user";
 
     private static final String AUTOFILL_APP_PKG = "com.android.cts.devicepolicy.autofillapp";
     private static final String AUTOFILL_APP_APK = "CtsDevicePolicyAutofillApp.apk";
@@ -672,55 +667,6 @@ public abstract class DeviceAndProfileOwnerTest extends BaseDevicePolicyTest {
                     .setAdminPackageName(DEVICE_ADMIN_PKG)
                     .setBoolean(false)
                     .build());
-    }
-
-    @LargeTest
-    @Test
-    @RequiresFlagsEnabled(Flags.FLAG_SYSTEM_SERVER_ROLE_CONTROLLER_ENABLED)
-    public void testLockTaskAfterReboot() throws Exception {
-        try {
-            // Just start kiosk mode
-            executeDeviceTestMethod(
-                    ".LockTaskHostDrivenTest", "testStartLockTask_noAsserts");
-
-            // Reboot while in kiosk mode and then unlock the device
-            rebootAndWaitUntilReady();
-
-            // Check that kiosk mode is working and can't be interrupted
-            executeDeviceTestMethod(".LockTaskHostDrivenTest",
-                    "testLockTaskIsActiveAndCantBeInterrupted");
-        } finally {
-            executeDeviceTestMethod(".LockTaskHostDrivenTest", "testCleanupLockTask_noAsserts");
-        }
-    }
-
-    @LargeTest
-    @Test
-    @Ignore("Ignored while migrating to new infrastructure b/175377361")
-    public void testLockTaskAfterReboot_tryOpeningSettings() throws Exception {
-        try {
-            // Just start kiosk mode
-            executeDeviceTestMethod(
-                    ".LockTaskHostDrivenTest", "testStartLockTask_noAsserts");
-
-            // Reboot while in kiosk mode and then unlock the device
-            rebootAndWaitUntilReady();
-
-            // Wait for the LockTask starting
-            waitForBroadcastIdle();
-
-            // Make sure that the LockTaskUtilityActivityIfWhitelisted was started.
-            executeDeviceTestMethod(".LockTaskHostDrivenTest", "testLockTaskIsActive");
-
-            // Try to open settings via adb
-            executeShellCommand("am start -a android.settings.SETTINGS");
-
-            // Check again
-            executeDeviceTestMethod(".LockTaskHostDrivenTest",
-                    "testLockTaskIsActiveAndCantBeInterrupted");
-        } finally {
-            executeDeviceTestMethod(".LockTaskHostDrivenTest", "testCleanupLockTask_noAsserts");
-        }
     }
 
     @FlakyTest(bugId = 141314026)
