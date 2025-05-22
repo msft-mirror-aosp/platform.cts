@@ -189,6 +189,7 @@ public abstract class CodecTestBase {
             "00 d0 84 80 3e c2 33 c4 86 10 27 d0 07 13 3d 42 40 a0 0f 32 00 10 27 df 0d";
     public static final String CODEC_PREFIX_KEY = "codec-prefix";
     public static final String CODEC_FILTER_KEY = "codec-filter";
+    public static final String EXTRACTOR_TYPE_SEL_KEY = "extractor-type-sel";
     public static final String MEDIA_TYPE_PREFIX_KEY = "media-type-prefix";
     public static final String MEDIA_TYPE_SEL_KEY = "media-type-sel";
     public static final Map<String, String> CODEC_SEL_KEY_MEDIA_TYPE_MAP = new HashMap<>();
@@ -370,6 +371,7 @@ public abstract class CodecTestBase {
 
     public static String mediaTypeSelKeys;
     public static String codecPrefix;
+    public static String extractorTypeSel;
     public static String mediaTypePrefix;
     public static Pattern codecFilter;
 
@@ -505,6 +507,7 @@ public abstract class CodecTestBase {
 
         android.os.Bundle args = InstrumentationRegistry.getArguments();
         mediaTypeSelKeys = args.getString(MEDIA_TYPE_SEL_KEY);
+        extractorTypeSel = args.getString(EXTRACTOR_TYPE_SEL_KEY);
         codecPrefix = args.getString(CODEC_PREFIX_KEY);
         mediaTypePrefix = args.getString(MEDIA_TYPE_PREFIX_KEY);
         String codecFilterStr = args.getString(CODEC_FILTER_KEY);
