@@ -44,6 +44,8 @@ import android.view.Display;
 import android.view.WindowManager;
 import android.view.WindowMetrics;
 
+import androidx.test.filters.FlakyTest;
+
 import com.android.compatibility.common.util.ApiTest;
 
 import org.junit.Test;
@@ -116,6 +118,7 @@ public class WindowMetricsActivityTests extends WindowManagerTestBase {
     }
 
     @Test
+    @FlakyTest(bugId = 416173119)
     public void testMetricsMatchesDisplayAreaOnPipActivity() {
         assumeTrue(supportsPip());
 

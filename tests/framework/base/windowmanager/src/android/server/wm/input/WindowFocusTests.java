@@ -70,6 +70,7 @@ import android.view.View;
 import android.view.WindowManager.LayoutParams;
 
 import androidx.annotation.NonNull;
+import androidx.test.filters.FlakyTest;
 
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.cts.input.DebugInputRule;
@@ -196,6 +197,7 @@ public class WindowFocusTests extends WindowManagerTestBase {
     }
 
     @Test
+    @FlakyTest(bugId = 419795094)
     public void testKeyReceivingWithDisplayWithOwnFocus() {
         assumeTrue(supportsMultiDisplay());
         // This test specifically tests the behavior if a single display manages its own focus.
@@ -302,6 +304,7 @@ public class WindowFocusTests extends WindowManagerTestBase {
      * is set then that should not happen and the previous display stays the top focused display.
      */
     @Test
+    @FlakyTest(bugId = 419795094)
     public void testStealingTopFocusDisabledDoesNotMoveDisplayToTop() {
         assumeTrue(supportsMultiDisplay());
 
