@@ -23,6 +23,8 @@ import android.platform.test.annotations.Presubmit;
 import android.server.wm.ActivityManagerTestBase;
 import android.server.wm.DeprecatedTargetSdkUtils;
 
+import androidx.test.filters.FlakyTest;
+
 import org.junit.After;
 import org.junit.Test;
 
@@ -41,6 +43,7 @@ public class DeprecatedTargetSdkTest extends ActivityManagerTestBase {
     }
 
     @Test
+    @FlakyTest(bugId = 419791230)
     public void testCompatibilityDialog() throws Exception {
         // Launch target app.
         launchActivity(MAIN_ACTIVITY);

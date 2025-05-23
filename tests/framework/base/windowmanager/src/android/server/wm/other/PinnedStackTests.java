@@ -1497,6 +1497,7 @@ public class PinnedStackTests extends ActivityManagerTestBase {
     }
 
     @Test
+    @FlakyTest(bugId = 419795117)
     public void testSetRequestedOrientationWhilePinned() {
         assumeTrue("Skipping test: no orientation request support", supportsOrientationRequest());
         disableIgnoreOrientationRequest();

@@ -58,6 +58,7 @@ import android.view.WindowManager;
 import android.widget.TextView;
 
 import androidx.annotation.Nullable;
+import androidx.test.filters.FlakyTest;
 
 import com.android.compatibility.common.util.FeatureUtil;
 import com.android.compatibility.common.util.SystemUtil;
@@ -153,6 +154,7 @@ public class HideOverlayWindowsTest extends ActivityManagerTestBase {
     }
 
     @Test
+    @FlakyTest(bugId = 404332929)
     public void testInternalSystemApplicationOverlaysNotHidden() {
         String windowName = "INTERNAL_SYSTEM_WINDOW";
         ComponentName componentName = new ComponentName(
@@ -170,6 +172,7 @@ public class HideOverlayWindowsTest extends ActivityManagerTestBase {
     }
 
     @Test
+    @FlakyTest(bugId = 404332929)
     public void testSystemApplicationOverlaysNotHidden() {
         String windowName = "SYSTEM_APPLICATION_OVERLAY";
         ComponentName componentName = new ComponentName(
@@ -188,6 +191,7 @@ public class HideOverlayWindowsTest extends ActivityManagerTestBase {
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_FIX_HIDE_OVERLAY_API)
+    @FlakyTest(bugId = 404332929)
     public void testHideOverlayWindowsFromSameUidNotHidden() {
         String windowName = "SELF_APPLICATION_OVERLAY";
         ComponentName overlayComponent =

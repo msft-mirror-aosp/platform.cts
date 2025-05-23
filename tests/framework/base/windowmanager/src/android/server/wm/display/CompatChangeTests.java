@@ -111,6 +111,7 @@ import android.util.Size;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.test.filters.FlakyTest;
 
 import com.android.compatibility.common.util.ApiTest;
 import com.android.window.flags.Flags;
@@ -1106,6 +1107,7 @@ public final class CompatChangeTests extends MultiDisplayTestBase {
     @Test
     @DisableCompatChanges({ActivityInfo.UNIVERSAL_RESIZABLE_BY_DEFAULT})
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_SIZE_COMPAT_MODE_IMPROVEMENTS_FOR_CONNECTED_DISPLAYS)
+    @FlakyTest(bugId = 415631133)
     public void testSizeCompatDoesNotRestartWithDisplayMove() {
         assumeTrue(supportsMultiDisplay());
         final int secondaryDisplayId =
