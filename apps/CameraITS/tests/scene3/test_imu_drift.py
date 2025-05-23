@@ -218,6 +218,8 @@ class ImuDriftTest(its_base_test.ItsBaseTest):
         hidden_physical_id=self.hidden_physical_id) as cam:
       props = cam.get_camera_properties()
       props = cam.override_with_hidden_physical_camera_props(props)
+      has_hifi_sensors = cam.has_hifi_sensors()
+      logging.debug('Device has HIFI sensors? %s', has_hifi_sensors)
 
       # check SKIP conditions
       camera_properties_utils.skip_unless(
@@ -307,14 +309,20 @@ class ImuDriftTest(its_base_test.ItsBaseTest):
     )
 
     # Performance checks for advanced features
-    logging.debug('Check for advanced features gyro drift.')
-    gyro_drift_atol_efv = (
-        _ADV_FEATURE_GYRO_DRIFT_ATOL * test_duration * _SEC_TO_MIN
-    )
-    if gyro_drift_total > gyro_drift_atol_efv:
-      e_msg = f'{e_msg_stem}, ATOL: {gyro_drift_atol_efv:.3f}'
-      raise AssertionError(
-          f'{its_session_utils.NOT_YET_MANDATED_MESSAGE}\n\n{e_msg}')
+    if has_hifi_sensors:
+      logging.debug('Check for advanced features gyro drift.')
+      gyro_drift_atol_efv = (
+          _ADV_FEATURE_GYRO_DRIFT_ATOL * test_duration * _SEC_TO_MIN
+      )
+      if gyro_drift_total > gyro_drift_atol_efv:
+        e_msg = f'{e_msg_stem}, ATOL: {gyro_drift_atol_efv:.3f}'
+        raise AssertionError(
+            f'{its_session_utils.NOT_YET_MANDATED_MESSAGE}\n\n{e_msg}\n'
+            'Please try possible solution: Temperature based Gyroscope'
+            'calibration\n'
+            'For example: '
+            # pylint: disable=line-too-long
+            'https://android.googlesource.com/device/google/contexthub/+/e6bd5ca5207f04fa720c9274f506ef15b9412b49/firmware/os/algos/calibration/over_temp')
 
 
 if __name__ == '__main__':

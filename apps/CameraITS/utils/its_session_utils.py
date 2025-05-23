@@ -2907,6 +2907,25 @@ class ItsSession(object):
       jpeg_image = buf
     return capture_result_metadata, jpeg_image
 
+  def has_hifi_sensors(self):
+    """Checks if the device implements high quality sensors.
+
+    https://source.android.com/docs/compatibility/15/android-15-cdd#739_high_fidelity_sensors
+
+    Returns:
+      True if the device implements high quality sensors and false otherwise.
+    """
+    cmd = {
+        'cmdName': 'hasHifiSensors'
+    }
+    self.sock.send(json.dumps(cmd).encode() + '\n'.encode())
+    timeout = self.SOCK_TIMEOUT + self.EXTRA_SOCK_TIMEOUT
+    self.sock.settimeout(timeout)
+    data, _ = self.__read_response_from_socket()
+    if data['tag'] != 'hasHifiSensors':
+      raise error_util.CameraItsError('Invalid command response')
+    return data[_STR_VALUE_STR] == 'true'
+
   def preview_surface(self, size, hlg10_enabled=False):
     """Create a surface dictionary based on size and hdr-ness.
 
