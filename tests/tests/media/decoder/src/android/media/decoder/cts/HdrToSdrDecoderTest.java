@@ -311,29 +311,24 @@ public class HdrToSdrDecoderTest extends HDRDecoderTestBase{
 
                 ByteBuffer inputBuffer = codec.getInputBuffer(index);
 
-                if (mExtractor.getSampleTrackIndex() == -1) {
-                    codec.queueInputBuffer(
-                            index, 0, 0, 0, MediaCodec.BUFFER_FLAG_END_OF_STREAM);
-                    mInputEOS = true;
-                } else {
-                    int size = mExtractor.readSampleData(inputBuffer, 0);
-                    long timestamp = mExtractor.getSampleTime();
-                    mExtractor.advance();
+                int size = mExtractor.readSampleData(inputBuffer, 0);
+                long timestamp = mExtractor.getSampleTime();
+                boolean hasSamples = mExtractor.advance();
 
-                    if (dynamic && mMetaDataInContainer) {
-                        final Bundle params = new Bundle();
-                        // TODO: extractor currently doesn't extract the dynamic metadata.
-                        // Send in the test pattern for now to test the metadata propagation.
-                        byte[] info = loadByteArrayFromString(mHdrDynamicInfo[mInputCount]);
-                        params.putByteArray(MediaFormat.KEY_HDR10_PLUS_INFO, info);
-                        codec.setParameters(params);
-                        mInputCount++;
-                        if (mInputCount >= mHdrDynamicInfo.length) {
-                            mInputEOS = true;
-                        }
+                if (dynamic && mMetaDataInContainer) {
+                    final Bundle params = new Bundle();
+                    // TODO: extractor currently doesn't extract the dynamic metadata.
+                    // Send in the test pattern for now to test the metadata propagation.
+                    byte[] info = loadByteArrayFromString(mHdrDynamicInfo[mInputCount]);
+                    params.putByteArray(MediaFormat.KEY_HDR10_PLUS_INFO, info);
+                    codec.setParameters(params);
+                    mInputCount++;
+                    if (mInputCount >= mHdrDynamicInfo.length) {
+                        mInputEOS = true;
                     }
-                    codec.queueInputBuffer(index, 0, size, timestamp, 0);
                 }
+                int flags = (mInputEOS || !hasSamples) ? MediaCodec.BUFFER_FLAG_END_OF_STREAM : 0;
+                codec.queueInputBuffer(index, 0, size, timestamp, flags);
             }
 
             @Override
