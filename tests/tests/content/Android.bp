@@ -26,6 +26,9 @@ java_library {
         "android.test.base.stubs.system",
         "android.test.mock.stubs.system",
     ],
+    static_libs: [
+        "truth",
+    ],
     srcs: [
         "src/android/content/cts/**/DummyProvider.java",
         "src/android/content/cts/**/Mock*.java",
