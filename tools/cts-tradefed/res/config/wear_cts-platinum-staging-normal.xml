@@ -210,12 +210,6 @@
     <option name="compatibility:include-filter" value="CtsGraphicsTestCases android.graphics.cts.TypefaceTest#testEffectiveWeight"/>
     <!-- CtsHardwareTestCases -->
     <option name="compatibility:include-filter" value="CtsHardwareTestCases android.hardware.input.cts.tests.SonyDualshock4BluetoothTest#testAllTouch"/>
-    <!-- CtsHibernationTestCases -->
-    <option name="compatibility:include-filter" value="CtsHibernationTestCases android.hibernation.cts.AppHibernationIntegrationTest#testPreSVersionUnusedApp_doesntGetForceStopped"/>
-    <option name="compatibility:include-filter" value="CtsHibernationTestCases android.hibernation.cts.AppHibernationIntegrationTest#testUnusedAppCount"/>
-    <option name="compatibility:include-filter" value="CtsHibernationTestCases android.hibernation.cts.AppHibernationIntegrationTest#testUnusedApp_getsForceStopped"/>
-    <option name="compatibility:include-filter" value="CtsHibernationTestCases android.hibernation.cts.AutoRevokeTest#testPermissionEventCleanupService_scrubsEvents"/>
-    <option name="compatibility:include-filter" value="CtsHibernationTestCases android.hibernation.cts.AutoRevokeTest#testUnusedApp_uninstallApp"/>
     <!-- CtsHostsideNetworkPolicyTests -->
     <option name="compatibility:include-filter" value="CtsHostsideNetworkPolicyTests com.android.cts.netpolicy.HostsideConnOnActivityStartTest#testStartActivity_appStandby"/>
     <option name="compatibility:include-filter" value="CtsHostsideNetworkPolicyTests com.android.cts.netpolicy.HostsideConnOnActivityStartTest#testStartActivity_batterySaver"/>
