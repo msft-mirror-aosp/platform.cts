@@ -3129,9 +3129,14 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
         final String ssid = currentConfig.getSsid().length() <= 28
                 ? currentConfig.getSsid() + "test"
                 : "AndroidTest";
+        final int testBand = currentConfig.getBand();
         ShellIdentityUtils.invokeWithShellPermissions(
-                () -> sWifiManager.setSoftApConfiguration(new SoftApConfiguration.Builder()
-                .setSsid(ssid).build()));
+                () ->
+                        sWifiManager.setSoftApConfiguration(
+                                new SoftApConfiguration.Builder()
+                                        .setSsid(ssid)
+                                        .setBand(testBand)
+                                        .build()));
         SoftApConfiguration changedSsidConfig = ShellIdentityUtils.invokeWithShellPermissions(
                 sWifiManager::getSoftApConfiguration);
         assertNotEquals(currentConfig.getPersistentRandomizedMacAddress(),
