@@ -184,6 +184,22 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
             "file:///cts_test_01212025-test-v15-telephony_config.pb";
     private static final String TEST_V15_CONFIG_DATA_METADATA_LOCAL_URI =
             "file:///cts_test_01212025-test-v15-telephony_config-metadata.txt";
+    // v21 has CarrierConfigManager.SATELLITE_DATA_SUPPORT_BANDWIDTH_CONSTRAINED
+    private static final String TEST_V21_CONFIG_DATA_CONTENT_LOCAL_URI =
+            "file:///cts_test_v21_telephony_config.pb";
+    private static final String TEST_V21_CONFIG_DATA_METADATA_LOCAL_URI =
+            "file:///cts_test_v21_telephony_config-metadata.txt";
+    // v22 has CarrierConfigManager.SATELLITE_DATA_SUPPORT_ALL
+    private static final String TEST_V22_CONFIG_DATA_CONTENT_LOCAL_URI =
+            "file:///cts_test_v22_telephony_config.pb";
+    private static final String TEST_V22_CONFIG_DATA_METADATA_LOCAL_URI =
+            "file:///cts_test_v22_telephony_config-metadata.txt";
+    // v23 has CarrierConfigManager.SATELLITE_DATA_SUPPORT_ONLY_RESTRICTED
+    private static final String TEST_V23_CONFIG_DATA_CONTENT_LOCAL_URI =
+            "file:///cts_test_v23_telephony_config.pb";
+    private static final String TEST_V23_CONFIG_DATA_METADATA_LOCAL_URI =
+            "file:///cts_test_v23_telephony_config-metadata.txt";
+
     private static final String PACKAGE_CONFIGUPDATER = "com.google.android.configupdater";
 
     private static final int SUB_ID = SubscriptionManager.DEFAULT_SUBSCRIPTION_ID;
@@ -4446,6 +4462,103 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         assertNotNull(queriedSatelliteAccessConfiguration);
         assertEquals(getV15TestConfigForUs(), notifiedSatelliteAccessConfiguration);
         assertNull(resultReceiver.second);
+    }
+
+    @Test
+    public void testCarrierRoamingConfigUpdate() throws Exception {
+        logd("testCarrierRoamingConfigUpdate");
+
+        logd("testCarrierRoamingConfigUpdate: check if satellite is supported");
+        assumeTrue(shouldTestSatellite());
+
+        logd("testCarrierRoamingConfigUpdate: check if configupdater is installed");
+        assumeTrue(isAppInstalled(PACKAGE_CONFIGUPDATER));
+
+        logd("testCarrierRoamingConfigUpdate: grant satellite permission");
+        grantSatellitePermission();
+
+        sTestSubIDForCarrierSatellite = getDefaultActiveSubIdForSatelliteTest();
+        logd(
+                "testCarrierRoamingConfigUpdate: sub_id with carrier satellite:"
+                        + sTestSubIDForCarrierSatellite);
+        if (sTestSubIDForCarrierSatellite == SubscriptionManager.INVALID_SUBSCRIPTION_ID) {
+            logd("testCarrierRoamingConfigUpdate: no sub_id with carrier satellite, skip the test");
+            return;
+        }
+
+        // Override datamode from carrier config to CarrierConfigManager.SATELLITE_DATA_SUPPORT_ALL
+        logd(
+                "testCarrierRoamingConfigUpdate: overriding datamode from carrier config to "
+                        + CarrierConfigManager.SATELLITE_DATA_SUPPORT_ALL);
+        PersistableBundle bundle = new PersistableBundle();
+        int[] defaultSupportedServices = {2, 3, 6};
+        bundle.putIntArray(
+                CarrierConfigManager.KEY_CARRIER_ROAMING_SATELLITE_DEFAULT_SERVICES_INT_ARRAY,
+                defaultSupportedServices);
+        bundle.putInt(
+                CarrierConfigManager.KEY_SATELLITE_DATA_SUPPORT_MODE_INT,
+                CarrierConfigManager.SATELLITE_DATA_SUPPORT_ALL);
+        overrideCarrierConfig(sTestSubIDForCarrierSatellite, bundle);
+
+        // simulate v21 config update
+        logd("testCarrierRoamingConfigUpdate: simulate v21 config update");
+        assertTrue(
+                sMockSatelliteServiceManager.updateTelephonyConfig(
+                        TEST_V21_CONFIG_DATA_CONTENT_LOCAL_URI,
+                        TEST_V21_CONFIG_DATA_METADATA_LOCAL_URI));
+
+        logd(
+                "testCarrierRoamingConfigUpdate: wait for v21 config update and assert"
+                        + " maxAllowedDataMode to be SATELLITE_DATA_SUPPORT_BANDWIDTH_CONSTRAINED");
+        assertTrue(
+                waitUntilDataModeChangedTo(
+                        CarrierConfigManager.SATELLITE_DATA_SUPPORT_BANDWIDTH_CONSTRAINED,
+                        TIMEOUT));
+
+        // simulate v22 config update
+        logd("testCarrierRoamingConfigUpdate: simulate v22 config update");
+        assertTrue(
+                sMockSatelliteServiceManager.updateTelephonyConfig(
+                        TEST_V22_CONFIG_DATA_CONTENT_LOCAL_URI,
+                        TEST_V22_CONFIG_DATA_METADATA_LOCAL_URI));
+        logd(
+                "testCarrierRoamingConfigUpdate: wait for v22 config update and assert"
+                        + " maxAllowedDataMode to be SATELLITE_DATA_SUPPORT_ALL");
+        assertTrue(
+                waitUntilDataModeChangedTo(
+                        CarrierConfigManager.SATELLITE_DATA_SUPPORT_ALL, TIMEOUT));
+
+        // simulate v23 config update
+        logd("testCarrierRoamingConfigUpdate: simulate v23 config update");
+        assertTrue(
+                sMockSatelliteServiceManager.updateTelephonyConfig(
+                        TEST_V23_CONFIG_DATA_CONTENT_LOCAL_URI,
+                        TEST_V23_CONFIG_DATA_METADATA_LOCAL_URI));
+        logd(
+                "testCarrierRoamingConfigUpdate: wait for v23 config update and assert"
+                        + " maxAllowedDataMode to be SATELLITE_DATA_SUPPORT_ONLY_RESTRICTED");
+        assertTrue(
+                waitUntilDataModeChangedTo(
+                        CarrierConfigManager.SATELLITE_DATA_SUPPORT_ONLY_RESTRICTED, TIMEOUT));
+    }
+
+    private boolean waitUntilDataModeChangedTo(int expectedDataMode, long timeout)
+            throws Exception {
+        long startTime = System.currentTimeMillis();
+        while (System.currentTimeMillis() - startTime < timeout) {
+            int currentDataMode =
+                    sSatelliteManager.getSatelliteDataSupportMode(sTestSubIDForCarrierSatellite);
+            logd(
+                    "waitUntilDataModeChangedTo: expectedDataMode: "
+                            + expectedDataMode
+                            + ", currentDataMode: "
+                            + currentDataMode);
+            if (currentDataMode == expectedDataMode) {
+                return true;
+            }
+            Thread.sleep(1000);
+        }
+        return false;
     }
 
     /**
