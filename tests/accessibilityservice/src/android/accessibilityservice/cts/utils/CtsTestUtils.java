@@ -16,7 +16,6 @@
 
 package android.accessibilityservice.cts.utils;
 
-
 import android.content.Context;
 import android.content.pm.PackageManager;
 
@@ -56,5 +55,19 @@ public class CtsTestUtils {
     public static boolean isAutomotive(Context context) {
         PackageManager pm = context.getPackageManager();
         return pm != null && pm.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE);
+    }
+
+    /** Returns {@code true} if run on a TV device */
+    public static boolean isTv(Context context) {
+        PackageManager pm = context.getPackageManager();
+        return pm != null && pm.hasSystemFeature(PackageManager.FEATURE_LEANBACK);
+    }
+
+    /** Returns {@code true} if run on a device that supports touch or faketouch */
+    public static boolean supportsTouch(Context context) {
+        PackageManager pm = context.getPackageManager();
+        return pm != null
+                && (pm.hasSystemFeature(PackageManager.FEATURE_TOUCHSCREEN)
+                        || pm.hasSystemFeature(PackageManager.FEATURE_FAKETOUCH));
     }
 }
