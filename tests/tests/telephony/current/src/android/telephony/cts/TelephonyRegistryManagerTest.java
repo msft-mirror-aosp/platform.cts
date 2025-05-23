@@ -3,6 +3,7 @@ package android.telephony.cts;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
@@ -109,6 +110,18 @@ public class TelephonyRegistryManagerTest {
             fail("Expected SecurityException for notifyCarrierNetworkChange with subscription");
         } catch (SecurityException expected) {
         }
+    }
+
+    /** expect security exception as there is no MODIFY_PHONE_STATE permission. */
+    @Test
+    public void testNotifyCarrierNetworkChangeForPhone() {
+        int defaultSubId = SubscriptionManager.getDefaultSubscriptionId();
+        int phoneId = SubscriptionManager.getSlotIndex(defaultSubId);
+        assertThrows(
+                SecurityException.class,
+                () ->
+                        mTelephonyRegistryMgr.notifyCarrierNetworkChange(
+                                phoneId, defaultSubId, /* active= */ true));
     }
 
     @Test
