@@ -569,25 +569,6 @@ public final class VulkanDeviceInfoUtils {
     public static final int VK_API_VERSION_1_2 = 4202496;
     public static final int VK_API_VERSION_1_3 = 4206592;
     public static final int VK_API_VERSION_1_4 = 4210688;
-    public static final int ENUM_VK_KHR_VARIABLE_POINTERS = 0;
-    public static final int ENUM_VK_KHR_DRIVER_PROPERTIES = 1;
-    public static final int ENUM_KEY_VK_EXT_IMAGE_2D_VIEW_OF_3D = 2;
-    public static final int ENUM_KEY_VK_EXT_CUSTOM_BORDER_COLOR = 3;
-    public static final int ENUM_KEY_VK_EXT_PRIMITIVE_TOPOLOGY_LIST_RESTART = 4;
-    public static final int ENUM_KEY_VK_EXT_PROVOKING_VERTEX = 5;
-    public static final int ENUM_KEY_VK_EXT_TRANSFORM_FEEDBACK = 6;
-    public static final int ENUM_KEY_VK_KHR_8BIT_STORAGE = 7;
-    public static final int ENUM_KEY_VK_KHR_SHADER_FLOAT16_INT8 = 8;
-    public static final int ENUM_KEY_VK_KHR_SHADER_INTEGER_DOT_PRODUCT = 9;
-    public static final int ENUM_KEY_VK_KHR_SHADER_SUBGROUP_EXTENDED_TYPES = 10;
-    public static final int ENUM_KEY_VK_KHR_SHADER_SUBGROUP_UNIFORM_CONTROL_FLOW = 11;
-    public static final int ENUM_KEY_VK_EXT_INDEX_TYPE_UINT8 = 12;
-    public static final int ENUM_KEY_VK_KHR_INDEX_TYPE_UINT8 = 13;
-    public static final int ENUM_KEY_VK_EXT_LINE_RASTERIZATION = 14;
-    public static final int ENUM_KEY_VK_EXT_PRIMITIVES_GENERATED_QUERY = 15;
-    public static final int ENUM_KEY_VK_KHR_SHADER_FLOAT_CONTROLS = 16;
-    public static final int ENUM_KEY_VK_IMG_RELAXED_LINE_RASTERIZATION = 17;
-    public static final int ENUM_KEY_VK_KHR_VERTEX_ATTRIBUTE_DIVISOR = 18;
 
     private static Map<String, String> keyToConvertedName;
 
