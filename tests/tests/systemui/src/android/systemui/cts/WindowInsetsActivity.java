@@ -33,6 +33,8 @@ import android.view.Window;
 import android.view.WindowInsets;
 import android.widget.TextView;
 
+import com.android.compatibility.common.util.FeatureUtil;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -284,10 +286,10 @@ public class WindowInsetsActivity extends LightBarBaseActivity implements View.O
         int top = insets.top;
         int right = insets.right;
         int bottom = insets.bottom;
+        final int slack = (int) (DISPLAY_CUTOUT_SLACK_DP * mDisplayMetrics.density);
 
         final DisplayCutout cutout = windowInsets.getDisplayCutout();
         if (cutout != null) {
-            int slack = (int) (DISPLAY_CUTOUT_SLACK_DP * mDisplayMetrics.density);
             if (cutout.getSafeInsetLeft() > 0) {
                 left = Math.max(left, cutout.getSafeInsetLeft() + slack);
             }
@@ -299,6 +301,16 @@ public class WindowInsetsActivity extends LightBarBaseActivity implements View.O
             }
             if (cutout.getSafeInsetBottom() > 0) {
                 bottom = Math.max(bottom, cutout.getSafeInsetBottom() + slack);
+            }
+        }
+
+        if (FeatureUtil.isXrHeadset()) {
+            Insets localCutoutInsets = windowInsets.getInsets(WindowInsets.Type.displayCutout());
+            if (!localCutoutInsets.equals(Insets.NONE)) {
+                left = Math.max(left,  localCutoutInsets.left + slack);
+                top = Math.max(top, localCutoutInsets.top + slack);
+                right = Math.max(right, localCutoutInsets.right + slack);
+                bottom = Math.max(bottom, localCutoutInsets.bottom + slack);
             }
         }
 
