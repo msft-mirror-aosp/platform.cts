@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package android.content.cts;
+package android.content.cts.contentprovider;
 
 import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.workProfile;
 

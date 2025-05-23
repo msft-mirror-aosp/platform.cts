@@ -64,8 +64,7 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * Simple delegation test for {@link ContentProviderClient}, checking the right methods are called.
- * Actual {@link ContentProvider} functionality is tested in {@link
- * android.content.cts.ContentProviderTest}.
+ * Actual {@link ContentProvider} functionality is tested in {@link ContentProviderTest}.
  */
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 @RunWith(AndroidJUnit4.class)
