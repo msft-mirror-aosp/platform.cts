@@ -717,12 +717,34 @@ public class BackgroundActivityLaunchTest extends BackgroundActivityTestBase {
                 APP_A.APP_PACKAGE_NAME, true, ACTIVITY_START_TIMEOUT_MS));
 
         // Click home button, and test app activity onPause() will trigger pip window,
-        // test will will try to start background activity, but we expect the background activity
+        // test will try to start background activity, but we expect the background activity
         // will be blocked even the app has a visible pip window, as we do not allow background
         // activity to be started after pressing home button.
         pressHomeAndWaitHomeResumed();
 
         boolean result = waitForActivityFocused(APP_A.BACKGROUND_ACTIVITY);
+        assertFalse("Should not able to launch background activity", result);
+    }
+
+    @Test
+    @AsbSecurityTest(cveBugId = 406880479)
+    public void testPipCannotStartAfterHomeButton10s() throws Exception {
+
+        Intent intent = new Intent();
+        intent.setComponent(APP_A.PIP_ACTIVITY);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        mContext.startActivity(intent);
+
+        assertTrue("Pip activity not started", waitUntilForegroundChanged(
+                APP_A.APP_PACKAGE_NAME, true, ACTIVITY_START_TIMEOUT_MS));
+
+        // Click home button, and test app activity onPause() will trigger pip window,
+        // test will try to start background activity, but we expect the background activity
+        // will be blocked even the app has a visible pip window, as we do not allow background
+        // activity to be started after pressing home button.
+        pressHomeAndWaitHomeResumed();
+
+        boolean result = waitForActivityFocused(10_000, APP_A.BACKGROUND_ACTIVITY);
         assertFalse("Should not able to launch background activity", result);
     }
 
