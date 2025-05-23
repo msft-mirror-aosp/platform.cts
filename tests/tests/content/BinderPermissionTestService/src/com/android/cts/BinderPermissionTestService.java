@@ -16,20 +16,13 @@
 
 package com.android.cts;
 
-import android.accounts.AbstractAccountAuthenticator;
-import android.accounts.Account;
-import android.accounts.AccountAuthenticatorResponse;
-import android.accounts.AccountManager;
-import android.accounts.NetworkErrorException;
 import android.app.Service;
-import android.content.Context;
 import android.content.Intent;
-import android.os.Bundle;
 import android.os.IBinder;
 
-public class BinderPermissionTestService extends Service {
+public final class BinderPermissionTestService extends Service {
 
-    private static String TEST_NOT_ALLOWED_MESSAGE = "Test: you're not allowed to do this.";
+    private static final String TEST_NOT_ALLOWED_MESSAGE = "Test: you're not allowed to do this.";
 
     private final IBinder mBinder = new IBinderPermissionTestService.Stub() {
         @Override
