@@ -99,7 +99,7 @@ class YuvPlusJpegTest(its_base_test.ItsBaseTest):
           linear_tonemap=True, props=props, do_af=False)
 
       camera_properties_utils.log_minimum_focus_distance(props)
-      cam.do_3a()
+      cam.do_3a(do_af=False)
       cap_yuv, cap_jpg = cam.do_capture(req, [fmt_yuv, fmt_jpg])
       rgb_means_yuv = compute_means_and_save(cap_yuv, 'yuv', log_path)
       rgb_means_jpg = compute_means_and_save(cap_jpg, 'jpg', log_path)
