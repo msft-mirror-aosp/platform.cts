@@ -131,7 +131,9 @@ public final class ActivityManagerAppExitInfoTest {
     private static final long HEARTBEAT_INTERVAL = 1000;
     private static final long HEARTBEAT_FREEZER_LONG = 30000;
     private static final long HEARTBEAT_FREEZER_SHORT = 5000;
-    private static final long FREEZER_TIMEOUT_FLOOR = 10000;
+    // Freezer debounce values that are too low may lead to unexpected behavior.  The value here
+    // is the lowest value that has been validated.
+    private static final long FREEZER_TIMEOUT_FLOOR = 5000;
 
     private static final String EXIT_ACTION =
             "com.android.cts.launchertests.simpleapp.EXIT_ACTION";
@@ -1462,7 +1464,9 @@ public final class ActivityManagerAppExitInfoTest {
         Matcher matcher = pattern.matcher(output);
         assertTrue(matcher.find());
         final long timeout = Long.parseLong(matcher.group(1));
-        assertTrue(timeout >= FREEZER_TIMEOUT_FLOOR);
+        assertTrue("Configured freezer debounce timeout " + timeout
+                + " is below " + FREEZER_TIMEOUT_FLOOR,
+                timeout >= FREEZER_TIMEOUT_FLOOR);
     }
 
     @Test

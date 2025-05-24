@@ -84,7 +84,7 @@ public class ReadableUriExtraToClipDataTest extends AndroidTestCase {
         intent.setComponent(new ComponentName(getContext(), ReadableFileReceiverActivity.class));
         intent.putExtra(Intent.EXTRA_STREAM, mTestFileUris.get(0));
         intent.setType("*/*");
-        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_GRANT_READ_URI_PERMISSION);
 
         getContext().startActivity(intent);
 
@@ -96,7 +96,7 @@ public class ReadableUriExtraToClipDataTest extends AndroidTestCase {
         intent.setComponent(new ComponentName(getContext(), ReadableFileReceiverActivity.class));
         intent.putParcelableArrayListExtra(Intent.EXTRA_STREAM, mTestFileUris);
         intent.setType("*/*");
-        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_GRANT_READ_URI_PERMISSION);
 
         getContext().startActivity(intent);
 

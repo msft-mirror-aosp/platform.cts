@@ -99,21 +99,18 @@ public class PackageInstallerCujTestBase {
             "CtsInstallerCujTestNoLauncherActivityAppV2.apk";
 
     public static final String APP_INSTALLED_LABEL = "App installed";
-    public static final String APP_REINSTALLED_LABEL = "App reinstalled";
     public static final String APP_UPDATED_LABEL = "App updated";
     public static final String APP_INSTALL_CONFIRM_LABEL = "Install this app";
-    public static final String APP_REINSTALL_CONFIRM_LABEL = "Reinstall this app";
     public static final String APP_UPDATE_CONFIRM_LABEL = "Update this app";
     public static final String BUTTON_CANCEL_LABEL = "Cancel";
     public static final String BUTTON_DELETE_LABEL = "Delete";
     public static final String BUTTON_DONE_LABEL = "Done";
-    public static final String BUTTON_GPP_MORE_DETAILS_LABEL = "More details";
-    public static final String BUTTON_GPP_INSTALL_WITHOUT_SCANNING_LABEL =
+    public static final String BUTTON_MORE_DETAILS_LABEL = "More details";
+    public static final String BUTTON_INSTALL_WITHOUT_SCANNING_LABEL =
             "Install without scanning";
     public static final String BUTTON_INSTALL_LABEL = "Install";
     public static final String BUTTON_OK_LABEL = "OK";
     public static final String BUTTON_OPEN_LABEL = "Open";
-    public static final String BUTTON_REINSTALL_LABEL = "Reinstall";
     public static final String BUTTON_SETTINGS_LABEL = "Settings";
     public static final String BUTTON_UNINSTALL_LABEL = "Uninstall";
     public static final String BUTTON_UPDATE_LABEL = "Update";
@@ -130,7 +127,8 @@ public class PackageInstallerCujTestBase {
     public static final String TEXTVIEW_WIDGET_CLASSNAME = "android.widget.TextView";
 
     public static final long FIND_OBJECT_TIMEOUT_MS = 20 * 1000L;
-    private static final long WAIT_OBJECT_GONE_TIMEOUT_MS = 3 * 1000L;
+    private static final long WAIT_OBJECT_GONE_TIMEOUT_MS = 10 * 1000L;
+    private static final long WAIT_NEW_WINDOW_TIMEOUT_MS = 3 * 1000L;
 
     private static final long TEST_APK_VERSION = 1;
     private static final long TEST_APK_V2_VERSION = 2;
@@ -276,7 +274,7 @@ public class PackageInstallerCujTestBase {
      * Click the object and wait for the new window content is changed
      */
     public static void clickAndWaitForNewWindow(UiObject2 uiObject2) {
-        uiObject2.clickAndWait(Until.newWindow(), WAIT_OBJECT_GONE_TIMEOUT_MS);
+        uiObject2.clickAndWait(Until.newWindow(), WAIT_NEW_WINDOW_TIMEOUT_MS);
     }
 
     /**
@@ -284,13 +282,6 @@ public class PackageInstallerCujTestBase {
      */
     public static void assertTitleIncludes(String content) throws Exception {
         findPackageInstallerObject(By.textContains(content), /* checkNull= */ true);
-    }
-
-    /**
-     * Assert the content includes the installer label {@link #TEST_APP_LABEL}.
-     */
-    public static void assertContentIncludesAppLabel() throws Exception {
-        findPackageInstallerObject(By.textContains(TEST_APP_LABEL), /* checkNull= */ true);
     }
 
     /**
@@ -464,12 +455,11 @@ public class PackageInstallerCujTestBase {
             }
         }
 
-        // dump window hierarchy for debug
-        if (object == null) {
-            dumpWindowHierarchy();
-        }
-
         if (checkNull) {
+            // dump window hierarchy for debug
+            if (object == null) {
+                dumpWindowHierarchy();
+            }
             assertWithMessage("Can't find object " + bySelector).that(object).isNotNull();
         }
         return object;

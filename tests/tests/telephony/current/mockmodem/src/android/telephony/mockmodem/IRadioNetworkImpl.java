@@ -1096,6 +1096,8 @@ public class IRadioNetworkImpl extends IRadioNetwork.Stub {
         } catch (RemoteException ex) {
             Log.e(TAG, "Failed to setSatelliteEnabledForCarrier from AIDL. Exception " + ex);
         }
+
+        mService.onSetSatelliteEnabledForCarrier();
     }
 
     @Override

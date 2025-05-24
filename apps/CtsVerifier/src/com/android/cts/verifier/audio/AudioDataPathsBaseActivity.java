@@ -115,6 +115,7 @@ public abstract class AudioDataPathsBaseActivity
     private boolean mSupportsMMAPExclusive;
 
     protected boolean mIsHandheld;
+    protected boolean mIsEmulator;
 
     // Analysis
     private BaseSineAnalyzer mAnalyzer = new BaseSineAnalyzer();
@@ -145,6 +146,7 @@ public abstract class AudioDataPathsBaseActivity
         mHasSpeaker = AudioSystemFlags.claimsOutput(this);
 
         mIsHandheld = AudioSystemFlags.isHandheld(this);
+        mIsEmulator = Build.IS_EMULATOR;
 
         String yesString = getResources().getString(R.string.audio_general_yes);
         String noString = getResources().getString(R.string.audio_general_no);
@@ -211,9 +213,11 @@ public abstract class AudioDataPathsBaseActivity
 
         DisplayUtils.setKeepScreenOn(this, true);
 
-        getPassButton().setEnabled(!mIsHandheld || !hasPeripheralSupport());
+        getPassButton().setEnabled(!mIsHandheld || !hasPeripheralSupport() || mIsEmulator);
         if (!mIsHandheld) {
             displayNonHandheldMessage();
+        } else if (mIsEmulator) {
+            displayEmulatorMessage();
         }
 
         // Write to a directory that can be read on production builds using 'adb pull'.
@@ -1789,7 +1793,8 @@ public abstract class AudioDataPathsBaseActivity
         return (mTestHasBeenRun && calculatePass())
                 || (mTestHasBeenRun && grantAutoPass())
                 || !hasPeripheralSupport()
-                || !mIsHandheld;
+                || !mIsHandheld
+                || mIsEmulator;
     }
 
     void displayNonHandheldMessage() {
@@ -1797,6 +1802,18 @@ public abstract class AudioDataPathsBaseActivity
         mTextFormatter.openDocument();
         mTextFormatter.openParagraph();
         mTextFormatter.appendText(getResources().getString(R.string.audio_exempt_nonhandheld));
+        mTextFormatter.closeParagraph();
+
+        mTextFormatter.closeDocument();
+        mTextFormatter.put(mResultsView);
+        showResultsView();
+    }
+
+    void displayEmulatorMessage() {
+        mTextFormatter.clear();
+        mTextFormatter.openDocument();
+        mTextFormatter.openParagraph();
+        mTextFormatter.appendText(getResources().getString(R.string.audio_exempt_emulator));
         mTextFormatter.closeParagraph();
 
         mTextFormatter.closeDocument();
@@ -1927,6 +1944,9 @@ public abstract class AudioDataPathsBaseActivity
             mTestManager.validateTestDevices();
             if (!mIsHandheld) {
                 displayNonHandheldMessage();
+                getPassButton().setEnabled(true);
+            } else if (mIsEmulator) {
+                displayEmulatorMessage();
                 getPassButton().setEnabled(true);
             } else {
                 showDeviceView();

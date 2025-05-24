@@ -356,6 +356,7 @@ public class ImsCallingTest extends ImsCallingBase {
         if (!ImsUtils.shouldTestImsCall()) {
             return;
         }
+
         bindImsService();
         mServiceCallBack = new ServiceCallBack();
         InCallServiceStateValidator.setCallbacks(mServiceCallBack);
@@ -398,46 +399,50 @@ public class ImsCallingTest extends ImsCallingBase {
             return;
         }
 
-        enableCarrierUseSimCallManager();
+        try {
+            enableCarrierUseSimCallManager();
 
-        bindImsService();
-        mServiceCallBack = new ServiceCallBack();
-        InCallServiceStateValidator.setCallbacks(mServiceCallBack);
+            bindImsService();
+            mServiceCallBack = new ServiceCallBack();
+            InCallServiceStateValidator.setCallbacks(mServiceCallBack);
 
-        Bundle extras = new Bundle();
-        sServiceConnector.getCarrierService().getMmTelFeature().onIncomingCallReceived(extras);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
+            Bundle extras = new Bundle();
+            sServiceConnector.getCarrierService().getMmTelFeature().onIncomingCallReceived(extras);
+            assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
 
-        Call call = getCall(mCurrentCallId);
-        if (call.getDetails().getState() == Call.STATE_RINGING) {
-            call.answer(0);
+            Call call = getCall(mCurrentCallId);
+            if (call.getDetails().getState() == Call.STATE_RINGING) {
+                call.answer(0);
+            }
+
+            waitForCallSessionToNotBe(null);
+            TestImsCallSessionImpl callSession =
+                    sServiceConnector.getCarrierService().getMmTelFeature().getImsCallsession();
+
+            isCallActive(call, callSession);
+
+            // Initiate this call becoming a remotely hosted conference call:
+            callSession.changeMultipartyState(true);
+
+            // Calls that don't use a SIM call manager would take time to convert to a conference:
+            ImsUtils.waitInCurrentState(WAIT_IN_CURRENT_STATE_MULTIPARTY_STATE_CHANGED);
+
+            // Ensure that request to convert this call into a conference was ignored:
+            assertFalse("Call should not have been converted to a conference since a SIM "
+                            + "call manager is in use.",
+                    call.getDetails().hasProperty(Call.Details.PROPERTY_CONFERENCE));
+
+            // Ensure the call was not disconnected and thus is still ACTIVE:
+            isCallActive(call, callSession);
+
+            // End the call and ensure it is cleaned up correctly:
+            callSession.terminateIncomingCall();
+            isCallDisconnected(call, callSession);
+            assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
+            waitForUnboundService();
+        } finally {
+            overrideCarrierConfig(null);
         }
-
-        waitForCallSessionToNotBe(null);
-        TestImsCallSessionImpl callSession =
-                sServiceConnector.getCarrierService().getMmTelFeature().getImsCallsession();
-
-        isCallActive(call, callSession);
-
-        // Initiate this call becoming a remotely hosted conference call:
-        callSession.changeMultipartyState(true);
-
-        // Calls that don't use a SIM call manager would take time to convert to a conference:
-        ImsUtils.waitInCurrentState(WAIT_IN_CURRENT_STATE_MULTIPARTY_STATE_CHANGED);
-
-        // Ensure that request to convert this call into a conference was ignored:
-        assertFalse("Call should not have been converted to a conference since a SIM "
-                + "call manager is in use.",
-                call.getDetails().hasProperty(Call.Details.PROPERTY_CONFERENCE));
-
-        // Ensure the call was not disconnected and thus is still ACTIVE:
-        isCallActive(call, callSession);
-
-        // End the call and ensure it is cleaned up correctly:
-        callSession.terminateIncomingCall();
-        isCallDisconnected(call, callSession);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
-        waitForUnboundService();
     }
 
     @RequiresFlagsDisabled(Flags.FLAG_REUSE_ORIGINAL_CONN_REMOTE_CONF_BEHAVIOR)

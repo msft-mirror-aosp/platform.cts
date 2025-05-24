@@ -141,7 +141,7 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
     txtpb_file_name = proto_file_name.replace('.pb', '.txtpb')
     txtpb_file_path = os.path.join(self.root_output_path, txtpb_file_name)
     with open(txtpb_file_path, 'w') as tf:
-      database_str = text_format.MessageToString(database, as_one_line = True)
+      database_str = text_format.MessageToString(database, as_one_line=True)
       tf.write(database_str)
 
     print(f'feature_query_proto:{txtpb_file_name}')

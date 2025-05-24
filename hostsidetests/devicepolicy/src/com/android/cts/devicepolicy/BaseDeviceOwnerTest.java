@@ -78,7 +78,7 @@ abstract class BaseDeviceOwnerTest extends BaseDevicePolicyTest {
     }
 
     protected final void executeDeviceOwnerTest(String testClassName) throws Exception {
-        executeDeviceOwnerTestOnSpecificUser(testClassName, mPrimaryUserId);
+        executeDeviceOwnerTestOnSpecificUser(testClassName, mMainUserId);
     }
 
     protected final void executeDeviceOwnerTestOnDeviceOwnerUser(String testClassName)
@@ -99,7 +99,7 @@ abstract class BaseDeviceOwnerTest extends BaseDevicePolicyTest {
 
     protected final void executeDeviceTestMethod(String className, String testName)
             throws Exception {
-        executeDeviceOwnerPackageTestMethod(className, testName, mPrimaryUserId);
+        executeDeviceOwnerPackageTestMethod(className, testName, mMainUserId);
     }
 
     protected final String getStopBgUsersOnSwitchProperty() throws Exception {

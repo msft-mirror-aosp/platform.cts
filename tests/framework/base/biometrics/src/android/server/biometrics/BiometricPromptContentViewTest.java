@@ -445,8 +445,8 @@ public class BiometricPromptContentViewTest extends BiometricTestBase {
     @Test
     public void testVerticalList_onlyCredential_showsTwoStep() throws Exception {
         assumeTrue(Utils.isFirstApiLevel29orGreater());
-        //TODO: b/331955301 need to update Auto biometric UI
-        assumeFalse(isCar());
+        // TODO: b/331955301 need to update Auto biometric UI
+        assumeFalse(isCar() || isWatch());
         try (CredentialSession session = new CredentialSession()) {
             session.setCredential();
 

@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 
-package android.content.cts;
+package com.android.cts.content;
 
+import android.annotation.NonNull;
 import android.content.ContentProvider;
 import android.content.ContentValues;
 import android.database.Cursor;
@@ -26,10 +27,10 @@ import java.util.concurrent.TimeUnit;
 /**
  * Mocks a buggy provider which stalls on the {@link #getType(Uri)} call.
  *
- * see {@link BuggyProviderTest}
+ * <p>see {@link android.content.cts.contentprovider.BuggyProviderTest}
  */
-public class MockBuggyProvider extends ContentProvider {
-    public static final String AUTHORITY = "android.content.cts.mockbuggyprovider";
+public final class MockBuggyProvider extends ContentProvider {
+    public static final String AUTHORITY = "com.android.cts.content.mockbuggyprovider";
     public static final Uri CONTENT_URI = Uri.parse("content://" + AUTHORITY);
 
     @Override
@@ -38,31 +39,38 @@ public class MockBuggyProvider extends ContentProvider {
     }
 
     @Override
-    public Cursor query(Uri uri, String[] projection, String selection, String[] selectionArgs,
+    public Cursor query(
+            @NonNull Uri uri,
+            String[] projection,
+            String selection,
+            String[] selectionArgs,
             String sortOrder) {
         return null;
     }
 
     @Override
-    public String getType(Uri uri) {
+    public String getType(@NonNull Uri uri) {
         try {
             TimeUnit.SECONDS.sleep(10); // stall for enough time such that an ANR is thrown
-        } catch (Exception ignore) { }
+        } catch (Exception ignore) {
+            // Expected
+        }
         return "buggy";
     }
 
     @Override
-    public Uri insert(Uri uri, ContentValues values) {
+    public Uri insert(@NonNull Uri uri, ContentValues values) {
         return null;
     }
 
     @Override
-    public int delete(Uri uri, String selection, String[] selectionArgs) {
+    public int delete(@NonNull Uri uri, String selection, String[] selectionArgs) {
         return 0;
     }
 
     @Override
-    public int update(Uri uri, ContentValues values, String selection, String[] selectionArgs) {
+    public int update(
+            @NonNull Uri uri, ContentValues values, String selection, String[] selectionArgs) {
         return 0;
     }
 }

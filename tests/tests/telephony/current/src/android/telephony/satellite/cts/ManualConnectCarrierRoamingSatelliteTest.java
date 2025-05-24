@@ -281,6 +281,14 @@ public class ManualConnectCarrierRoamingSatelliteTest extends CarrierRoamingSate
         }
     }
 
+    @Test
+    public void testQuerySatelliteEntitlementService_success() throws Exception {
+        logd(TAG, "testQuerySatelliteEntitlementService_success");
+        if (!shouldTestManualConnectCarrierRoaming()) return;
+        testQuerySatelliteEntitlementService_success(ESOS_SLOT_ID,
+            CarrierConfigManager.CARRIER_ROAMING_NTN_CONNECT_MANUAL);
+    }
+
     private static boolean shouldTestManualConnectCarrierRoaming() {
         if (!shouldTestSatelliteWithMockService()) return false;
         if (!isActiveSubId(sEsosSubId)) {

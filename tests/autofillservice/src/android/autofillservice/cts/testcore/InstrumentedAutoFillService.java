@@ -244,8 +244,12 @@ public class InstrumentedAutoFillService extends AutofillService {
                     new IllegalStateException("onFillRequest() called when disconnected"));
         }
 
-        if (!TestNameUtils.isRunningTest()) {
-            Log.e(TAG, "onFillRequest(" + component + ") called after tests finished");
+        if (!sTestRunning.get()) {
+            Log.e(
+                    TAG,
+                    "onFillRequest("
+                            + component
+                            + ") called before tests started or after tests finished");
             return;
         }
         if (!fromSamePackage(component))  {
@@ -392,6 +396,7 @@ public class InstrumentedAutoFillService extends AutofillService {
     }
 
     public static void resetStaticState() {
+        Log.v(TAG, "resetStaticState()");
         sTestRunning.set(false);
         sConnected.set(false);
         sServiceLabel = SERVICE_CLASS;
@@ -638,7 +643,12 @@ public class InstrumentedAutoFillService extends AutofillService {
             if (delayedInfo != null) {
                 delayedInfo.callback.onSuccess(delayedInfo.response);
                 Helper.offer(mFillRequests, delayedInfo.originalRequest, CONNECTION_TIMEOUT.ms());
-                Log.d(TAG, "processDelayedResponse(" + requestId + ") finished. Remaining delayed: " + mDelayedResponses.size());
+                Log.d(
+                        TAG,
+                        "processDelayedResponse("
+                                + requestId
+                                + ") finished. Remaining delayed: "
+                                + mDelayedResponses.size());
             } else {
                 // This indicates a test logic error - trying to process a non-existent delayed response.
                 String errorMsg =
@@ -657,7 +667,12 @@ public class InstrumentedAutoFillService extends AutofillService {
         public void clearDelayedResponses() {
              int count = mDelayedResponses.size();
              if (count > 0) {
-                 Log.d(TAG, "Clearing " + count + " delayed responses. IDs: " + mDelayedResponses.keySet());
+                Log.d(
+                        TAG,
+                        "Clearing "
+                                + count
+                                + " delayed responses. IDs: "
+                                + mDelayedResponses.keySet());
                  mDelayedResponses.clear();
              }
         }
@@ -788,9 +803,7 @@ public class InstrumentedAutoFillService extends AutofillService {
             mHandler = handler;
         }
 
-        /**
-         * Resets its internal state.
-         */
+        /** Resets its internal state. */
         public void reset() {
             mLazyResponses.clear();
             mResponses.clear();
@@ -900,7 +913,12 @@ public class InstrumentedAutoFillService extends AutofillService {
                 }
 
                 if (response.getResponseType() == ResponseType.DELAY) {
-                    Log.v(TAG, "onFillRequest(" + requestId + "): delayed fillResponse = " + fillResponse);
+                    Log.v(
+                            TAG,
+                            "onFillRequest("
+                                    + requestId
+                                    + "): delayed fillResponse = "
+                                    + fillResponse);
                     DelayedFillInfo delayedInfo =
                         new DelayedFillInfo(
                             requestId,
@@ -910,7 +928,12 @@ public class InstrumentedAutoFillService extends AutofillService {
                             cancellationSignal, callback, flags, inlineRequest,
                             delayFillIntentSender, requestId));
                     mDelayedResponses.put(requestId, delayedInfo);
-                    Log.d(TAG, "onFillRequest(" + requestId + ") finished for delayed response. Remaining delayed: " + mDelayedResponses.size());
+                    Log.d(
+                            TAG,
+                            "onFillRequest("
+                                    + requestId
+                                    + ") finished for delayed response. Remaining delayed: "
+                                    + mDelayedResponses.size());
                 } else {
                     Log.v(TAG, "onFillRequest(" + requestId + "): fillResponse = " + fillResponse);
                     callback.onSuccess(fillResponse);
@@ -919,7 +942,11 @@ public class InstrumentedAutoFillService extends AutofillService {
                 addException(t);
             } finally {
                 if (!hasLazyResponse) {
-                    Log.v(TAG, "onFillRequest(" + requestId + "): Queuing request object for test synchronization.");
+                    Log.v(
+                            TAG,
+                            "onFillRequest("
+                                    + requestId
+                                    + "): Queuing request object for test synchronization.");
                     Helper.offer(mFillRequests, new FillRequest(contexts, hints, data,
                             cancellationSignal, callback, flags, inlineRequest,
                             delayFillIntentSender, requestId),

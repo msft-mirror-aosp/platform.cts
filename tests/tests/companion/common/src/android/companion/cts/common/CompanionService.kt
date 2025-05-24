@@ -90,7 +90,7 @@ sealed class CompanionService<T : CompanionService<T>>(
             Log.i(
                 TAG,
                 "$this.onDevicePresenceEvent(), " +
-                        "association id=${devicePresenceEvent.associationId}" + "event is: $event"
+                        "association id=${devicePresenceEvent.associationId}" + " event is: $event"
             )
 
             var associationId: Int = devicePresenceEvent.associationId

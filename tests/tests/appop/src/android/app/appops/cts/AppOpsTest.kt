@@ -36,6 +36,8 @@ import android.companion.virtual.VirtualDeviceManager
 import android.content.Context
 import android.content.pm.PackageManager
 import android.content.pm.PackageManager.NameNotFoundException
+import android.content.res.Resources
+import android.content.res.Resources.NotFoundException
 import android.os.Process
 import android.os.UserHandle
 import android.permission.flags.Flags
@@ -168,8 +170,17 @@ class AppOpsTest {
         val adbUid = runCommand("id -u").trim()
         assumeTrue("Test is skipped when adb is root", "0" != adbUid)
 
-        val deviceProvisioningPackage =
-            mContext.getResources().getString(R.string.config_deviceProvisioningPackage)
+        lateinit var deviceProvisioningPackage: String
+        try {
+            var resourceId = Resources.getSystem().getIdentifier(
+                "config_deviceProvisioningPackage",
+                "string",
+                "android"
+            )
+            deviceProvisioningPackage = mContext.getResources().getString(resourceId)
+        } catch (e: NotFoundException) {
+            assumeTrue("Test is skipped when config_deviceProvisioningPackage not found", false)
+        }
 
         try {
             mContext.packageManager.getPackageInfo(deviceProvisioningPackage, 0)

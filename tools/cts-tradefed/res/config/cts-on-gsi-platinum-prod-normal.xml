@@ -198,8 +198,6 @@
     <option name="compatibility:include-filter" value="CtsHardwareTestCases android.hardware.input.cts.tests.UsbVoiceCommandTest#testVolumeKeys"/>
     <option name="compatibility:include-filter" value="CtsHardwareTestCases android.hardware.input.cts.tests.virtualdevices.VirtualDeviceMirrorDisplayTest#virtualDpad_keyEvent"/>
     <option name="compatibility:include-filter" value="CtsHardwareTestCases android.hardware.input.cts.tests.virtualdevices.VirtualDeviceMirrorDisplayTest#virtualKeyboard_keyEvent"/>
-    <!-- CtsHealthConnectControllerTestCases -->
-    <option name="compatibility:include-filter" value="CtsHealthConnectControllerTestCases android.healthconnect.cts.ui.permissions.ExerciseRouteRequestTest#requestRoute_enforcesAccessTimeLimits"/>
     <!-- CtsHealthFitnessDeviceTestCases -->
     <option name="compatibility:include-filter" value="CtsHealthFitnessDeviceTestCases android.healthconnect.cts.migration.DataMigrationTest#testInsertMinDataMigrationSdkExtensionVersion_noUpgradeRequired"/>
     <!-- CtsIncrementalInstallHostTestCases -->

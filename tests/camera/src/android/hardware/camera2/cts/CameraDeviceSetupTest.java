@@ -28,6 +28,7 @@ import static junit.framework.Assert.assertTrue;
 import static junit.framework.Assert.fail;
 
 import android.graphics.ImageFormat;
+import android.graphics.PixelFormat;
 import android.graphics.SurfaceTexture;
 import android.hardware.HardwareBuffer;
 import android.hardware.camera2.CameraCaptureSession;
@@ -41,15 +42,20 @@ import android.hardware.camera2.params.DynamicRangeProfiles;
 import android.hardware.camera2.params.OutputConfiguration;
 import android.hardware.camera2.params.SessionConfiguration;
 import android.media.ImageReader;
+import android.media.MediaCodec;
+import android.media.MediaRecorder;
 import android.os.Build;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Log;
 import android.util.Range;
 import android.util.Size;
+import android.view.SurfaceHolder;
 
 import com.android.ex.camera2.blocking.BlockingSessionCallback;
 import com.android.ex.camera2.blocking.BlockingStateCallback;
+import com.android.internal.camera.flags.Flags;
 
 import org.junit.Assert;
 import org.junit.Rule;
@@ -633,6 +639,67 @@ public class CameraDeviceSetupTest extends Camera2AndroidTestCase {
         }
     }
 
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_OUTPUT_CONFIGURATION_GETTER)
+    public void testOutputConfigurationFormatSizeGetter() throws Exception {
+        Size size = new Size(2, 2);
+
+        // OutputConfiguration(Size surfaceSize, Class<T> klass)
+        Class<?>[] classes =
+                new Class<?>[] {
+                    SurfaceHolder.class,
+                    SurfaceTexture.class,
+                    MediaRecorder.class,
+                    MediaCodec.class,
+                };
+        for (Class<?> outputClass : classes) {
+            OutputConfiguration config = new OutputConfiguration(size, outputClass);
+            verifyOutputConfiguration(ImageFormat.PRIVATE, size, config);
+        }
+
+        // OutputConfiguration(int format, Size surfaceSize)
+        int[] formats = {
+            PixelFormat.RGBA_8888,
+            PixelFormat.RGBX_8888,
+            PixelFormat.RGB_888,
+            PixelFormat.RGB_565,
+            ImageFormat.YV12,
+            ImageFormat.Y8,
+            ImageFormat.YCBCR_P010,
+            ImageFormat.YCBCR_P210,
+            ImageFormat.NV16,
+            ImageFormat.NV21,
+            ImageFormat.YUY2,
+            ImageFormat.JPEG,
+            ImageFormat.DEPTH_JPEG,
+            ImageFormat.YUV_420_888,
+            ImageFormat.RAW_SENSOR,
+            ImageFormat.RAW_PRIVATE,
+            ImageFormat.RAW10,
+            ImageFormat.RAW12,
+            ImageFormat.DEPTH16,
+            ImageFormat.DEPTH_POINT_CLOUD,
+            ImageFormat.PRIVATE,
+            ImageFormat.HEIC,
+            ImageFormat.HEIC_ULTRAHDR,
+            ImageFormat.JPEG_R,
+        };
+        for (int format : formats) {
+            OutputConfiguration config = new OutputConfiguration(format, size);
+            verifyOutputConfiguration(format, size, config);
+        }
+
+        // OutputConfiguration(Surface surface)
+        ImageReader reader =
+                ImageReader.newInstance(
+                        size.getWidth(),
+                        size.getHeight(),
+                        ImageFormat.YUV_420_888,
+                        1 /*maxImages*/);
+        OutputConfiguration config = new OutputConfiguration(reader.getSurface());
+        verifyOutputConfiguration(ImageFormat.YUV_420_888, size, config);
+    }
+
     /**
      * A helper class to wrap camera features.
      */
@@ -711,6 +778,25 @@ public class CameraDeviceSetupTest extends Camera2AndroidTestCase {
         public final boolean mIsJpegR;
         public final Range<Integer> mFpsRange;
         public final long mDynamicProfile;
+    }
+
+    private void verifyOutputConfiguration(int format, Size size, OutputConfiguration config) {
+        Size configuredSize = config.getConfiguredSize();
+        int configuredFormat = config.getConfiguredFormat();
+        mCollector.expectEquals(
+                "OutputConfiguration surface size "
+                        + size
+                        + ", but getConfiguredSize returns "
+                        + configuredSize,
+                size,
+                configuredSize);
+        mCollector.expectEquals(
+                "OutputConfiguration surface format "
+                        + format
+                        + ", but getConfiguredFormat returns "
+                        + configuredFormat,
+                format,
+                configuredFormat);
     }
 
     private long setupConfigurations(StaticMetadata staticInfo, int[] configs,

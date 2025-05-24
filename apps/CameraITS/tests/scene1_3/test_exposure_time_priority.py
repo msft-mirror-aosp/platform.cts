@@ -233,7 +233,7 @@ class ExposureTimePriorityTest(its_base_test.ItsBaseTest):
           e) for e in e_test]
 
       for req in reqs:
-        cam.do_3a()
+        cam.do_3a(do_af=False)
         results = cam.do_capture([req]*_BURST_LEN, fmt, reuse_session=True)
         caps.append(results[-1])
 

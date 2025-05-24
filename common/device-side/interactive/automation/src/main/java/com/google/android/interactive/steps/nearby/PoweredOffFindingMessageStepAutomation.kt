@@ -33,7 +33,7 @@ class PoweredOffFindingMessageStepAutomation : Automation<Boolean> {
             .getUiAutomation()
             .performGlobalAction(GLOBAL_ACTION_POWER_DIALOG)
         return try {
-            DeviceHelpers.waitForObj(By.textContains("Find My Device"), TIMEOUT)
+            DeviceHelpers.waitForObj(By.textContains("Find Hub"), TIMEOUT)
             true
         } catch (e: IllegalStateException) {
             false

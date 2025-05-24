@@ -16,6 +16,7 @@
 
 package android.content.res.flaggedresourcesrw.cts
 
+import android.app.LocaleConfig
 import android.content.res.Flags
 import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.CheckFlagsRule
@@ -26,6 +27,7 @@ import android.widget.TextView
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.MediumTest
 import androidx.test.platform.app.InstrumentationRegistry
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Rule
@@ -52,5 +54,14 @@ class FlaggedResourcesRWTest {
         assertNotNull(rootView.findViewById<TextView>(R.id.ll2))
         assertNotNull(rootView.findViewById<TextView>(R.id.text4))
         assertNull(rootView.findViewById<TextView>(R.id.text5))
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_LAYOUT_READWRITE_FLAGS)
+    fun testLocaleConfig() {
+        val context = InstrumentationRegistry.getInstrumentation().getTargetContext()
+        val localeConfig = LocaleConfig.fromContextIgnoringOverride(context)
+        val list = localeConfig.supportedLocales
+        assertEquals("en-US,ja,en-GB", list!!.toLanguageTags())
     }
 }

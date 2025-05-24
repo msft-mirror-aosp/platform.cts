@@ -926,24 +926,8 @@
     <option name="compatibility:include-filter" value="CtsHardwareTestCases android.hardware.input.cts.tests.virtualdevices.VirtualStylusTest#stylusButtonPressRelease_withoutHoverOrTouch[1]"/>
     <option name="compatibility:include-filter" value="CtsHardwareTestCases android.hardware.input.cts.tests.virtualdevices.VirtualTouchscreenTest#sendHoverEvents"/>
     <option name="compatibility:include-filter" value="CtsHardwareTestCases android.hardware.input.cts.tests.virtualdevices.VirtualTouchscreenTest#sendTouchEvent"/>
-    <!-- CtsHealthConnectControllerTestCases -->
-    <option name="compatibility:include-filter" value="CtsHealthConnectControllerTestCases android.healthconnect.cts.ui.newia.AppDataFragmentTest#appPermissions_showsAppDataButton"/>
-    <option name="compatibility:include-filter" value="CtsHealthConnectControllerTestCases android.healthconnect.cts.ui.permissions.AdditionalPermissionsRequestUITest#requestAdditionalPermissions_showsBothAdditionalPermissions_grantsBoth"/>
-    <option name="compatibility:include-filter" value="CtsHealthConnectControllerTestCases android.healthconnect.cts.ui.permissions.AdditionalPermissionsRequestUITest#requestAdditionalPermissions_showsOnlyNotGrantedPermissions"/>
-    <option name="compatibility:include-filter" value="CtsHealthConnectControllerTestCases android.healthconnect.cts.ui.permissions.ExerciseRouteRequestTest#requestRoute_enforcesAccessTimeLimits"/>
-    <option name="compatibility:include-filter" value="CtsHealthConnectControllerTestCases android.healthconnect.cts.ui.permissions.ExerciseRouteRequestTest#requestRoute_showsDialog_clickAllowThis_returnsRoute_permissionRemainsRevoked"/>
-    <option name="compatibility:include-filter" value="CtsHealthConnectControllerTestCases android.healthconnect.cts.ui.permissions.ManageAppHealthPermissionUITest#revokeAllPermissions_revokesAllAppPermissions"/>
     <!-- CtsHealthFitnessDeviceTestCases -->
     <option name="compatibility:include-filter" value="CtsHealthFitnessDeviceTestCases android.healthconnect.cts.migration.DataMigrationTest#testInsertMinDataMigrationSdkExtensionVersion_noUpgradeRequired"/>
-    <!-- CtsHibernationTestCases -->
-    <option name="compatibility:include-filter" value="CtsHibernationTestCases android.hibernation.cts.AppHibernationIntegrationTest#testAppInfo_RemovePermissionsAndFreeUpSpaceToggleExists"/>
-    <option name="compatibility:include-filter" value="CtsHibernationTestCases android.hibernation.cts.AppHibernationIntegrationTest#testUnusedApp_getsForceStopped"/>
-    <option name="compatibility:include-filter" value="CtsHibernationTestCases android.hibernation.cts.AutoRevokeTest#testAppWithPermissionsChangedRecently_doesNotGetPermissionRevoked"/>
-    <option name="compatibility:include-filter" value="CtsHibernationTestCases android.hibernation.cts.AutoRevokeTest#testAutoRevoke_showsUpInSafetyCenter"/>
-    <option name="compatibility:include-filter" value="CtsHibernationTestCases android.hibernation.cts.AutoRevokeTest#testAutoRevoke_userAllowlisting"/>
-    <option name="compatibility:include-filter" value="CtsHibernationTestCases android.hibernation.cts.AutoRevokeTest#testPermissionEventCleanupService_scrubsEvents"/>
-    <option name="compatibility:include-filter" value="CtsHibernationTestCases android.hibernation.cts.AutoRevokeTest#testUnusedApp_getsPermissionRevoked"/>
-    <option name="compatibility:include-filter" value="CtsHibernationTestCases android.hibernation.cts.AutoRevokeTest#testUnusedApp_uninstallApp"/>
     <!-- CtsHostsideNetworkPolicyTests -->
     <option name="compatibility:include-filter" value="CtsHostsideNetworkPolicyTests com.android.cts.netpolicy.HostsideConnOnActivityStartTest#testStartActivity_appStandby"/>
     <option name="compatibility:include-filter" value="CtsHostsideNetworkPolicyTests com.android.cts.netpolicy.HostsideConnOnActivityStartTest#testStartActivity_batterySaver"/>

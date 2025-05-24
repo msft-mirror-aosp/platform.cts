@@ -32,6 +32,8 @@ _EDGE_MODES = {'OFF': 0, 'FAST': 1, 'HQ': 2}
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
 _NUM_SAMPLES = 4
 _SHARPNESS_RTOL = 0.1
+_TELE_CHART_HEIGHT_31CM = 6.5  # cm height of chart for 31cm distance
+_TELE_SCALE_STOP = 1.5  # extend search range for TELE cameras due to variety
 
 
 def plot_results(modes, sharpness_values, name_with_log_path):
@@ -128,8 +130,17 @@ class EdgeEnhancementTest(its_base_test.ItsBaseTest):
           cam, props, self.scene, self.tablet, self.chart_distance)
 
       # Initialize chart class and locate chart in scene
-      chart = opencv_processing_utils.Chart(
-          cam, props, self.log_path, distance=self.chart_distance)
+      is_tele = cam.get_camera_type(props) == (
+          its_session_utils.CAMERA_TYPE_TELE)
+      if is_tele and self.chart_distance == (
+          opencv_processing_utils.CHART_DISTANCE_31CM):
+        logging.debug('Initializing TELE camera chart at 31cm.')
+        chart = opencv_processing_utils.Chart(
+            cam, props, self.log_path, height=_TELE_CHART_HEIGHT_31CM,
+            distance=self.chart_distance, scale_stop=_TELE_SCALE_STOP)
+      else:
+        chart = opencv_processing_utils.Chart(
+            cam, props, self.log_path, distance=self.chart_distance)
 
       # Define format
       fmt = 'yuv'
@@ -176,7 +187,7 @@ class EdgeEnhancementTest(its_base_test.ItsBaseTest):
         raise AssertionError(
             f"FAST: {sharpness_regular[_EDGE_MODES['FAST']]:.3f}, "
             f"OFF: {sharpness_regular[_EDGE_MODES['OFF']]:.3f}, "
-            f"RTOL: {_SHARPNESS_RTOL}")
+            f'RTOL: {_SHARPNESS_RTOL}')
 
       logging.debug('Verify FAST is not sharper than HQ')
       if (sharpness_regular[_EDGE_MODES['HQ']] <=
@@ -184,7 +195,7 @@ class EdgeEnhancementTest(its_base_test.ItsBaseTest):
         raise AssertionError(
             f"HQ: {sharpness_regular[_EDGE_MODES['HQ']]:.3f}, "
             f"FAST: {sharpness_regular[_EDGE_MODES['FAST']]:.3f}, "
-            f"RTOL: {_SHARPNESS_RTOL}")
+            f'RTOL: {_SHARPNESS_RTOL}')
 
 if __name__ == '__main__':
   test_runner.main()

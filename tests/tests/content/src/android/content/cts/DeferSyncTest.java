@@ -25,8 +25,8 @@ import static com.android.cts.content.Utils.hasDataConnection;
 import static com.android.cts.content.Utils.requestSync;
 import static com.android.cts.content.Utils.withAccount;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static com.google.common.truth.Truth.assertThat;
+
 import static org.junit.Assume.assumeTrue;
 import static org.mockito.ArgumentCaptor.forClass;
 import static org.mockito.ArgumentMatchers.any;
@@ -39,16 +39,22 @@ import static org.mockito.Mockito.when;
 import android.content.AbstractThreadedSyncAdapter;
 import android.content.ContentResolver;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.HandlerThread;
+import android.os.SystemClock;
 import android.platform.test.annotations.AppModeFull;
 
-import androidx.test.rule.ActivityTestRule;
-import androidx.test.runner.AndroidJUnit4;
+import androidx.test.core.app.ActivityScenario;
+import androidx.test.ext.junit.rules.ActivityScenarioRule;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import com.android.cts.content.AlwaysSyncableSyncService;
 import com.android.cts.content.FlakyTestRule;
 import com.android.cts.content.NotAlwaysSyncableSyncService;
 import com.android.cts.content.StubActivity;
 import com.android.cts.content.Utils;
+
+import com.google.common.util.concurrent.SettableFuture;
 
 import org.junit.After;
 import org.junit.Before;
@@ -58,14 +64,17 @@ import org.junit.rules.TestRule;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 
+import java.util.concurrent.ExecutionException;
+
 @RunWith(AndroidJUnit4.class)
 @AppModeFull(reason = "Sync manage not supported")
-public class DeferSyncTest {
-    @Rule
-    public final TestRule flakyTestRule = new FlakyTestRule(3);
+public final class DeferSyncTest {
+    private static final String THREAD_NAME = "DeferSyncTestBackgroundThread";
+    @Rule public final TestRule mFlakyTestRule = new FlakyTestRule(3);
 
     @Rule
-    public final ActivityTestRule<StubActivity> activity = new ActivityTestRule(StubActivity.class);
+    public final ActivityScenarioRule<StubActivity> mActivityScenarioRule =
+            new ActivityScenarioRule<>(StubActivity.class);
 
     @Before
     public void setUp() throws Exception {
@@ -78,129 +87,297 @@ public class DeferSyncTest {
     }
 
     @Test
-    public void noSyncsWhenDeferred() throws Exception {
+    public void noSyncsWhenDeferred() {
         assumeTrue(hasDataConnection());
+        HandlerThread handlerThread = new HandlerThread(THREAD_NAME);
+        handlerThread.start();
+        Handler handler = new Handler(handlerThread.getLooper());
+        SettableFuture<Boolean> hasFinishedFuture = SettableFuture.create();
+        try (ActivityScenario<StubActivity> scenario =
+                ActivityScenario.launch(StubActivity.class)) {
+            scenario.onActivity(
+                    activity -> {
+                        AbstractThreadedSyncAdapter notAlwaysSyncableAdapter =
+                                NotAlwaysSyncableSyncService.getInstance(activity).setNewDelegate();
+                        AbstractThreadedSyncAdapter alwaysSyncableAdapter =
+                                AlwaysSyncableSyncService.getInstance(activity).setNewDelegate();
 
-        AbstractThreadedSyncAdapter notAlwaysSyncableAdapter =
-                NotAlwaysSyncableSyncService.getInstance(activity.getActivity()).setNewDelegate();
-        AbstractThreadedSyncAdapter alwaysSyncableAdapter =
-                AlwaysSyncableSyncService.getInstance(activity.getActivity()).setNewDelegate();
+                        when(alwaysSyncableAdapter.onUnsyncableAccount()).thenReturn(false);
+                        when(notAlwaysSyncableAdapter.onUnsyncableAccount()).thenReturn(false);
+                        handler.post(
+                                () -> {
+                                    try (Utils.ClosableAccount ignored = withAccount(activity)) {
+                                        requestSync(NOT_ALWAYS_SYNCABLE_AUTHORITY);
+                                        requestSync(ALWAYS_SYNCABLE_AUTHORITY);
 
-        when(alwaysSyncableAdapter.onUnsyncableAccount()).thenReturn(false);
-        when(notAlwaysSyncableAdapter.onUnsyncableAccount()).thenReturn(false);
+                                        SystemClock.sleep(SYNC_TIMEOUT_MILLIS);
 
-        try (Utils.ClosableAccount ignored = withAccount(activity.getActivity())) {
-            requestSync(NOT_ALWAYS_SYNCABLE_AUTHORITY);
-            requestSync(ALWAYS_SYNCABLE_AUTHORITY);
+                                        verify(notAlwaysSyncableAdapter, atLeast(1))
+                                                .onUnsyncableAccount();
+                                        verify(notAlwaysSyncableAdapter, never())
+                                                .onPerformSync(any(), any(), any(), any(), any());
 
-            Thread.sleep(SYNC_TIMEOUT_MILLIS);
-
-            verify(notAlwaysSyncableAdapter, atLeast(1)).onUnsyncableAccount();
-            verify(notAlwaysSyncableAdapter, never()).onPerformSync(any(), any(), any(), any(),
-                    any());
-
-            verify(alwaysSyncableAdapter, atLeast(1)).onUnsyncableAccount();
-            verify(alwaysSyncableAdapter, never()).onPerformSync(any(), any(), any(), any(), any());
+                                        verify(alwaysSyncableAdapter, atLeast(1))
+                                                .onUnsyncableAccount();
+                                        verify(alwaysSyncableAdapter, never())
+                                                .onPerformSync(any(), any(), any(), any(), any());
+                                        hasFinishedFuture.set(true);
+                                    } catch (Exception e) {
+                                        hasFinishedFuture.set(false);
+                                        throw new RuntimeException(e);
+                                    }
+                                });
+                    });
+        }
+        try {
+            hasFinishedFuture.get();
+        } catch (InterruptedException | ExecutionException e) {
+            throw new RuntimeException(e);
+        } finally {
+            handlerThread.quitSafely();
         }
     }
 
     @Test
-    public void deferSyncAndMakeSyncable() throws Exception {
+    public void deferSyncAndMakeSyncable() {
         assumeTrue(hasDataConnection());
+        HandlerThread handlerThread = new HandlerThread(THREAD_NAME);
+        handlerThread.start();
+        Handler handler = new Handler(handlerThread.getLooper());
+        SettableFuture<Boolean> hasFinishedFuture = SettableFuture.create();
+        try (ActivityScenario<StubActivity> scenario =
+                ActivityScenario.launch(StubActivity.class)) {
+            scenario.onActivity(
+                    activity -> {
+                        AbstractThreadedSyncAdapter adapter =
+                                NotAlwaysSyncableSyncService.getInstance(activity).setNewDelegate();
+                        when(adapter.onUnsyncableAccount()).thenReturn(false);
+                        handler.post(
+                                () -> {
+                                    try (Utils.ClosableAccount account = withAccount(activity)) {
+                                        verify(adapter, timeout(SYNC_TIMEOUT_MILLIS))
+                                                .onUnsyncableAccount();
 
-        AbstractThreadedSyncAdapter adapter = NotAlwaysSyncableSyncService.getInstance(
-                activity.getActivity()).setNewDelegate();
-        when(adapter.onUnsyncableAccount()).thenReturn(false);
+                                        // Enable the adapter by making the account/provider
+                                        // syncable
+                                        ContentResolver.setIsSyncable(
+                                                account.account, NOT_ALWAYS_SYNCABLE_AUTHORITY, 1);
+                                        requestSync(NOT_ALWAYS_SYNCABLE_AUTHORITY);
 
-        try (Utils.ClosableAccount account = withAccount(activity.getActivity())) {
-            verify(adapter, timeout(SYNC_TIMEOUT_MILLIS)).onUnsyncableAccount();
+                                        ArgumentCaptor<Bundle> extrasCaptor =
+                                                forClass(Bundle.class);
+                                        verify(adapter, timeout(SYNC_TIMEOUT_MILLIS))
+                                                .onPerformSync(
+                                                        any(),
+                                                        extrasCaptor.capture(),
+                                                        any(),
+                                                        any(),
+                                                        any());
 
-            // Enable the adapter by making the account/provider syncable
-            ContentResolver.setIsSyncable(account.account, NOT_ALWAYS_SYNCABLE_AUTHORITY, 1);
-            requestSync(NOT_ALWAYS_SYNCABLE_AUTHORITY);
-
-            ArgumentCaptor<Bundle> extrasCaptor = forClass(Bundle.class);
-            verify(adapter, timeout(SYNC_TIMEOUT_MILLIS)).onPerformSync(any(),
-                    extrasCaptor.capture(), any(), any(), any());
-
-            // As the adapter is made syncable, we should not get an initialization sync
-            assertFalse(
-                    extrasCaptor.getValue().containsKey(ContentResolver.SYNC_EXTRAS_INITIALIZE));
+                                        // As the adapter is made syncable, we should not get an
+                                        // initialization sync
+                                        assertThat(
+                                                        extrasCaptor
+                                                                .getValue()
+                                                                .containsKey(
+                                                                        ContentResolver
+                                                                                .SYNC_EXTRAS_INITIALIZE))
+                                                .isFalse();
+                                        hasFinishedFuture.set(true);
+                                    } catch (Exception e) {
+                                        hasFinishedFuture.set(false);
+                                        throw new RuntimeException(e);
+                                    }
+                                });
+                    });
+        }
+        try {
+            hasFinishedFuture.get();
+        } catch (InterruptedException | ExecutionException e) {
+            throw new RuntimeException(e);
+        } finally {
+            handlerThread.quitSafely();
         }
     }
 
     @Test
-    public void deferSyncAndReportIsReady() throws Exception {
+    public void deferSyncAndReportIsReady() {
         assumeTrue(hasDataConnection());
+        HandlerThread handlerThread = new HandlerThread(THREAD_NAME);
+        handlerThread.start();
+        Handler handler = new Handler(handlerThread.getLooper());
+        SettableFuture<Boolean> hasFinishedFuture = SettableFuture.create();
+        try (ActivityScenario<StubActivity> scenario =
+                ActivityScenario.launch(StubActivity.class)) {
+            scenario.onActivity(
+                    activity -> {
+                        AbstractThreadedSyncAdapter adapter =
+                                NotAlwaysSyncableSyncService.getInstance(activity).setNewDelegate();
+                        when(adapter.onUnsyncableAccount()).thenReturn(false);
+                        handler.post(
+                                () -> {
+                                    try (Utils.ClosableAccount ignored = withAccount(activity)) {
+                                        verify(adapter, timeout(SYNC_TIMEOUT_MILLIS))
+                                                .onUnsyncableAccount();
 
-        AbstractThreadedSyncAdapter adapter = NotAlwaysSyncableSyncService.getInstance(
-                activity.getActivity()).setNewDelegate();
-        when(adapter.onUnsyncableAccount()).thenReturn(false);
+                                        // Enable the adapter by returning true from onNewAccount
+                                        when(adapter.onUnsyncableAccount()).thenReturn(true);
+                                        requestSync(NOT_ALWAYS_SYNCABLE_AUTHORITY);
+                                        verify(adapter, atLeast(1)).onUnsyncableAccount();
 
-        try (Utils.ClosableAccount ignored = withAccount(activity.getActivity())) {
-            verify(adapter, timeout(SYNC_TIMEOUT_MILLIS)).onUnsyncableAccount();
+                                        ArgumentCaptor<Bundle> extrasCaptor =
+                                                forClass(Bundle.class);
+                                        verify(adapter, timeout(SYNC_TIMEOUT_MILLIS))
+                                                .onPerformSync(
+                                                        any(),
+                                                        extrasCaptor.capture(),
+                                                        any(),
+                                                        any(),
+                                                        any());
 
-            // Enable the adapter by returning true from onNewAccount
-            when(adapter.onUnsyncableAccount()).thenReturn(true);
-            requestSync(NOT_ALWAYS_SYNCABLE_AUTHORITY);
-            verify(adapter, atLeast(1)).onUnsyncableAccount();
-
-            ArgumentCaptor<Bundle> extrasCaptor = forClass(Bundle.class);
-            verify(adapter, timeout(SYNC_TIMEOUT_MILLIS)).onPerformSync(any(),
-                    extrasCaptor.capture(), any(), any(), any());
-
-            // As the adapter is not syncable yet, we should get an initialization sync
-            assertTrue(extrasCaptor.getValue().getBoolean(ContentResolver.SYNC_EXTRAS_INITIALIZE));
+                                        // As the adapter is not syncable yet, we should get an
+                                        // initialization sync
+                                        assertThat(
+                                                        extrasCaptor
+                                                                .getValue()
+                                                                .getBoolean(
+                                                                        ContentResolver
+                                                                                .SYNC_EXTRAS_INITIALIZE))
+                                                .isTrue();
+                                        hasFinishedFuture.set(true);
+                                    } catch (Exception e) {
+                                        hasFinishedFuture.set(false);
+                                        throw new RuntimeException(e);
+                                    }
+                                });
+                    });
+        }
+        try {
+            hasFinishedFuture.get();
+        } catch (InterruptedException | ExecutionException e) {
+            throw new RuntimeException(e);
+        } finally {
+            handlerThread.quitSafely();
         }
     }
 
     @Test
-    public void deferSyncAndReportIsReadyAlwaysSyncable() throws Exception {
+    public void deferSyncAndReportIsReadyAlwaysSyncable() {
         assumeTrue(hasDataConnection());
+        HandlerThread handlerThread = new HandlerThread(THREAD_NAME);
+        handlerThread.start();
+        Handler handler = new Handler(handlerThread.getLooper());
+        SettableFuture<Boolean> hasFinishedFuture = SettableFuture.create();
+        try (ActivityScenario<StubActivity> scenario =
+                ActivityScenario.launch(StubActivity.class)) {
+            scenario.onActivity(
+                    activity -> {
+                        AbstractThreadedSyncAdapter adapter =
+                                AlwaysSyncableSyncService.getInstance(activity).setNewDelegate();
+                        when(adapter.onUnsyncableAccount()).thenReturn(false);
+                        handler.post(
+                                () -> {
+                                    try (Utils.ClosableAccount ignored = withAccount(activity)) {
+                                        verify(adapter, timeout(SYNC_TIMEOUT_MILLIS))
+                                                .onUnsyncableAccount();
 
-        AbstractThreadedSyncAdapter adapter = AlwaysSyncableSyncService.getInstance(
-                activity.getActivity()).setNewDelegate();
-        when(adapter.onUnsyncableAccount()).thenReturn(false);
+                                        // Enable the adapter by returning true from onNewAccount
+                                        when(adapter.onUnsyncableAccount()).thenReturn(true);
+                                        requestSync(ALWAYS_SYNCABLE_AUTHORITY);
+                                        verify(adapter, atLeast(1)).onUnsyncableAccount();
 
-        try (Utils.ClosableAccount ignored = withAccount(activity.getActivity())) {
-            verify(adapter, timeout(SYNC_TIMEOUT_MILLIS)).onUnsyncableAccount();
+                                        ArgumentCaptor<Bundle> extrasCaptor =
+                                                forClass(Bundle.class);
+                                        verify(adapter, timeout(SYNC_TIMEOUT_MILLIS))
+                                                .onPerformSync(
+                                                        any(),
+                                                        extrasCaptor.capture(),
+                                                        any(),
+                                                        any(),
+                                                        any());
 
-            // Enable the adapter by returning true from onNewAccount
-            when(adapter.onUnsyncableAccount()).thenReturn(true);
-            requestSync(ALWAYS_SYNCABLE_AUTHORITY);
-            verify(adapter, atLeast(1)).onUnsyncableAccount();
-
-            ArgumentCaptor<Bundle> extrasCaptor = forClass(Bundle.class);
-            verify(adapter, timeout(SYNC_TIMEOUT_MILLIS)).onPerformSync(any(),
-                    extrasCaptor.capture(), any(), any(), any());
-
-            // The adapter is always syncable, hence there is no init sync
-            assertFalse(
-                    extrasCaptor.getValue().containsKey(ContentResolver.SYNC_EXTRAS_INITIALIZE));
+                                        // The adapter is always syncable, hence there is no init
+                                        // sync
+                                        assertThat(
+                                                        extrasCaptor
+                                                                .getValue()
+                                                                .containsKey(
+                                                                        ContentResolver
+                                                                                .SYNC_EXTRAS_INITIALIZE))
+                                                .isFalse();
+                                        hasFinishedFuture.set(true);
+                                    } catch (Exception e) {
+                                        hasFinishedFuture.set(false);
+                                        throw new RuntimeException(e);
+                                    }
+                                });
+                    });
+        }
+        try {
+            hasFinishedFuture.get();
+        } catch (InterruptedException | ExecutionException e) {
+            throw new RuntimeException(e);
+        } finally {
+            handlerThread.quitSafely();
         }
     }
 
     @Test
-    public void onNewAccountForEachAccount() throws Exception {
+    public void onNewAccountForEachAccount() {
         assumeTrue(hasDataConnection());
+        HandlerThread handlerThread = new HandlerThread(THREAD_NAME);
+        handlerThread.start();
+        Handler handler = new Handler(handlerThread.getLooper());
+        SettableFuture<Boolean> hasFinishedFuture = SettableFuture.create();
+        try (ActivityScenario<StubActivity> scenario =
+                ActivityScenario.launch(StubActivity.class)) {
+            scenario.onActivity(
+                    activity -> {
+                        AbstractThreadedSyncAdapter adapter =
+                                NotAlwaysSyncableSyncService.getInstance(activity).setNewDelegate();
+                        when(adapter.onUnsyncableAccount()).thenReturn(true, false);
+                        handler.post(
+                                () -> {
+                                    try (Utils.ClosableAccount ignored = withAccount(activity)) {
+                                        try (Utils.ClosableAccount ignored1 =
+                                                withAccount(activity)) {
+                                            verify(adapter, timeout(SYNC_TIMEOUT_MILLIS).atLeast(2))
+                                                    .onUnsyncableAccount();
 
-        AbstractThreadedSyncAdapter adapter = NotAlwaysSyncableSyncService.getInstance(
-                activity.getActivity()).setNewDelegate();
-        when(adapter.onUnsyncableAccount()).thenReturn(true, false);
-
-        try (Utils.ClosableAccount account1 = withAccount(activity.getActivity())) {
-            try (Utils.ClosableAccount account2 = withAccount(activity.getActivity())) {
-                verify(adapter, timeout(SYNC_TIMEOUT_MILLIS).atLeast(2)).onUnsyncableAccount();
-
-                // Exactly account should have gotten the init-sync. No further syncs happen as
-                // onNewAccount returns false again.
-                ArgumentCaptor<Bundle> extrasCaptor = forClass(Bundle.class);
-                verify(adapter, timeout(SYNC_TIMEOUT_MILLIS)).onPerformSync(any(),
-                        extrasCaptor.capture(), any(), any(), any());
-                assertTrue(
-                        extrasCaptor.getValue().getBoolean(ContentResolver.SYNC_EXTRAS_INITIALIZE));
-            }
+                                            // Exactly account should have gotten the init-sync. No
+                                            // further syncs happen as
+                                            // onNewAccount returns false again.
+                                            ArgumentCaptor<Bundle> extrasCaptor =
+                                                    forClass(Bundle.class);
+                                            verify(adapter, timeout(SYNC_TIMEOUT_MILLIS))
+                                                    .onPerformSync(
+                                                            any(),
+                                                            extrasCaptor.capture(),
+                                                            any(),
+                                                            any(),
+                                                            any());
+                                            assertThat(
+                                                            extrasCaptor
+                                                                    .getValue()
+                                                                    .getBoolean(
+                                                                            ContentResolver
+                                                                                    .SYNC_EXTRAS_INITIALIZE))
+                                                    .isTrue();
+                                            hasFinishedFuture.set(true);
+                                        }
+                                    } catch (Exception e) {
+                                        hasFinishedFuture.set(false);
+                                        throw new RuntimeException(e);
+                                    }
+                                });
+                    });
+        }
+        try {
+            hasFinishedFuture.get();
+        } catch (InterruptedException | ExecutionException e) {
+            throw new RuntimeException(e);
+        } finally {
+            handlerThread.quitSafely();
         }
     }
-
 }

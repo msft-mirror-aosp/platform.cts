@@ -76,7 +76,7 @@ _WAIT_FOR_CONFIG_COMPLETION = 0.2
 _ARDUINO_STR = 'Arduino'
 _LIGHTS_STR = 'lights'
 _ROTATOR_STR = 'rotator'
-_CH340_STR = 'CH340'
+_STR_340 = '340'
 _MEGA_STR = 'Mega'
 
 
@@ -133,7 +133,7 @@ def find_serial_port(name):
 
     if _ROTATOR_STR in name:
       logging.debug('Finding serial port for rotator')
-      if _CH340_STR in device['ID_MODEL_FROM_DATABASE']:
+      if _STR_340 in device['ID_MODEL_FROM_DATABASE']:
         port_name = device['DEVNAME']
         logging.debug('Rotator controller port_name: %s', port_name)
         return serial.Serial(port_name, _ROTATOR_BAUDRATE, timeout=1)

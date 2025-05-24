@@ -19,6 +19,7 @@ package android.app.cts.wallpapers;
 import static android.Manifest.permission.ALWAYS_UPDATE_WALLPAPER;
 import static android.Manifest.permission.READ_WALLPAPER_INTERNAL;
 import static android.app.Flags.FLAG_LIVE_WALLPAPER_CONTENT_HANDLING;
+import static android.app.Flags.fixGetBitmapCrops;
 import static android.app.Flags.liveWallpaperContentHandling;
 import static android.app.WallpaperManager.FLAG_LOCK;
 import static android.app.WallpaperManager.FLAG_SYSTEM;
@@ -44,6 +45,7 @@ import static com.android.window.flags.Flags.FLAG_MULTI_CROP;
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
@@ -1782,9 +1784,16 @@ public class WallpaperManagerTest {
                 int sourceFlag = which == FLAG_LOCK ? FLAG_LOCK : FLAG_SYSTEM;
                 Rect absoluteCrop = mWallpaperManager.getBitmapCrops(
                         List.of(screenSize), sourceFlag, true).getFirst();
+                if (fixGetBitmapCrops()) assertWithinBitmap(absoluteCrop, bitmapSize);
                 assertAlmostEqual(expectedCrop, absoluteCrop);
                 Rect relativeCrop = mWallpaperManager.getBitmapCrops(
                         List.of(screenSize), sourceFlag, false).getFirst();
+                if (fixGetBitmapCrops()) {
+                    Rect dimensions = mWallpaperManager.peekBitmapDimensions(sourceFlag);
+                    assertNotNull(dimensions);
+                    Point croppedBitmapSize = new Point(dimensions.width(), dimensions.height());
+                    assertWithinBitmap(relativeCrop, croppedBitmapSize);
+                }
                 float tolerance = 2f / Math.min(relativeCrop.width(), relativeCrop.height());
                 assertThat((float) relativeCrop.width() / relativeCrop.height()).isWithin(tolerance)
                         .of((float) expectedCrop.width() / expectedCrop.height());
@@ -2104,8 +2113,9 @@ public class WallpaperManagerTest {
                             assertThat(descCropHints.size()).isEqualTo(cropHintsSparseArray.size());
                             for (int i = 0; i < descCropHints.size(); i++) {
                                 int key = descCropHints.keyAt(i);
-                                assertAlmostEqual(cropHintsSparseArray.get(key),
-                                        descCropHints.get(key));
+                                Rect crop = descCropHints.get(key);
+                                if (fixGetBitmapCrops()) assertWithinBitmap(crop, bitmapSize);
+                                assertAlmostEqual(cropHintsSparseArray.get(key), crop);
                             }
                         }
                     }
@@ -2121,17 +2131,32 @@ public class WallpaperManagerTest {
                             displaySizes, sourceFlag, true);
 
                     for (int i = 0; i < actualBitmapCrops.size(); i++) {
-                        assertAlmostEqual(expectedBitmapCrops.get(i), actualBitmapCrops.get(i));
+                        Rect actualCrop = actualBitmapCrops.get(i);
+                        if (fixGetBitmapCrops()) assertWithinBitmap(actualCrop, bitmapSize);
+                        assertAlmostEqual(expectedBitmapCrops.get(i), actualCrop);
                     }
 
                     Bitmap croppedBitmap = mWallpaperManager.getBitmapAsUser(
                             mContext.getUserId(), false, sourceFlag);
+                    assertNotNull(croppedBitmap);
+                    Point croppedBitmapSize = new Point(
+                            croppedBitmap.getWidth(), croppedBitmap.getHeight());
                     Rect actualScreenCrop = mWallpaperManager.getBitmapCrops(
                             List.of(currentScreenSize), sourceFlag, false).getFirst();
+                    if (fixGetBitmapCrops()) {
+                        assertWithinBitmap(actualScreenCrop, croppedBitmapSize);
+                    }
                     assertAlmostGreen(croppedBitmap, actualScreenCrop);
                 }
             }
         });
+    }
+
+    private void assertWithinBitmap(Rect crop, Point bitmapSize) {
+        assertThat(crop.left).isAtLeast(0);
+        assertThat(crop.top).isAtLeast(0);
+        assertThat(crop.right).isAtMost(bitmapSize.x);
+        assertThat(crop.bottom).isAtMost(bitmapSize.y);
     }
 
     private void assertAlmostEqual(Rect expected, Rect actual) {

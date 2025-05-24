@@ -22,10 +22,11 @@
 #include <oboe/Oboe.h>
 
 #include "Recorder.h"
+#include "AppCallbackAudioSink.h"
 
 class OboeRecorder: public oboe::AudioStreamCallback, public Recorder {
 public:
-    OboeRecorder(AudioSink* sink, int32_t recorderSubtype);
+    OboeRecorder(JavaNativeFloatFifo* floatFifoPtr, int32_t recorderSubtype);
     virtual ~OboeRecorder() {}
 
     // Inherited from oboe::AudioStreamCallback

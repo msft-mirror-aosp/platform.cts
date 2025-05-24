@@ -1803,7 +1803,7 @@ public class MediaRouter2Test {
             router.setDeviceSuggestions(suggestedDeviceInfo);
             router.clearDeviceSuggestions();
 
-            assertThat(callback.mSuggestionChangedLatch.await(TIMEOUT_MS, TimeUnit.MILLISECONDS))
+            assertThat(callback.mSuggestionClearedLatch.await(TIMEOUT_MS, TimeUnit.MILLISECONDS))
                     .isTrue();
             assertThat(callback.mLastSuggestingPackage).isEqualTo(mContext.getPackageName());
             assertThat(callback.mLastSuggestedDeviceInfo).isNull();
@@ -1848,6 +1848,7 @@ public class MediaRouter2Test {
         List<SuggestedDeviceInfo> mLastSuggestedDeviceInfo = null;
         CountDownLatch mSuggestionChangedLatch = new CountDownLatch(1);
         CountDownLatch mSuggestionRequestedLatch = new CountDownLatch(1);
+        CountDownLatch mSuggestionClearedLatch = new CountDownLatch(1);
 
         @Override
         public void onSuggestionsUpdated(
@@ -1861,7 +1862,7 @@ public class MediaRouter2Test {
         public void onSuggestionsCleared(String suggestingPackageName) {
             mLastSuggestingPackage = suggestingPackageName;
             mLastSuggestedDeviceInfo = null;
-            mSuggestionChangedLatch.countDown();
+            mSuggestionClearedLatch.countDown();
         }
 
         @Override

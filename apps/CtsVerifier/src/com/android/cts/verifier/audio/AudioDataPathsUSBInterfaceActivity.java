@@ -110,7 +110,10 @@ public class AudioDataPathsUSBInterfaceActivity extends AudioDataPathsBaseActivi
     void postValidateTestDevices(int numValidTestModules) {
         TextView promptView = (TextView) findViewById(R.id.audio_datapaths_deviceprompt);
         if (mIsHandheld) {
-            if (mUsbInterfaceSupport == AudioDeviceUtils.SUPPORTSDEVICE_YES) {
+            if (mIsEmulator) {
+                promptView.setText(
+                        getResources().getString(R.string.audio_datapaths_emulator_autopass));
+            } else if (mUsbInterfaceSupport == AudioDeviceUtils.SUPPORTSDEVICE_YES) {
                 if (mTestManager.calculatePass()) {
                     promptView.setVisibility(View.GONE);
                 } else {

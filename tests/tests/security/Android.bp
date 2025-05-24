@@ -32,6 +32,7 @@ android_test {
         "wifi_aconfig_flags_lib",
         "ctstestserver",
         "ctstestrunner-axt",
+        "cts-biometric-util",
         "cts-input-lib",
         "cts-install-lib",
         "compatibility-device-util-axt",
@@ -319,6 +320,13 @@ test_module_config {
     include_filters: ["android.security.cts.advancedprotection."],
 }
 
+test_module_config {
+    name: "CtsSecurityTestCases_cts_authenticationpolicytest",
+    base: "CtsSecurityTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.security.cts.authenticationpolicy."],
+}
+
 android_test {
     name: "CtsSecurityTestCases_multiuser",
     defaults: ["cts_defaults"],
@@ -358,5 +366,5 @@ android_test {
         "src/android/security/cts/advancedprotection/BaseAdvancedProtectionTest.java",
     ],
     test_config: "AndroidMultiUserTest.xml",
-    manifest: "AndroidMultiUserManifest.xml"
+    manifest: "AndroidMultiUserManifest.xml",
 }

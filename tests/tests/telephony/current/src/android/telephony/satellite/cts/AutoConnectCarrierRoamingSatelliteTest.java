@@ -88,6 +88,9 @@ public class AutoConnectCarrierRoamingSatelliteTest extends CarrierRoamingSatell
 
     @Test
     public void testCarrierRoamingNtnModeListener() throws Exception {
+        logd(TAG, "testCarrierRoamingNtnModeListener");
+        if (!shouldTestSatelliteWithMockService()) return;
+
         CarrierRoamingNtnListenerTest listener = new CarrierRoamingNtnListenerTest();
         listener.clearModeChanges();
 
@@ -111,5 +114,13 @@ public class AutoConnectCarrierRoamingSatelliteTest extends CarrierRoamingSatell
             sTelephonyManager.unregisterTelephonyCallback(listener);
             dropShellIdentity();
         }
+    }
+
+    @Test
+    public void testQuerySatelliteEntitlementService_success() throws Exception {
+        logd(TAG, "testQuerySatelliteEntitlementService_success");
+        if (!shouldTestSatelliteWithMockService()) return;
+        testQuerySatelliteEntitlementService_success(SLOT_ID_0,
+            CarrierConfigManager.CARRIER_ROAMING_NTN_CONNECT_AUTOMATIC);
     }
 }

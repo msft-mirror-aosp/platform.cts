@@ -1,4 +1,4 @@
-// Copyright (C) 2018 The Android Open Source Project
+// Copyright (C) 2025 The Android Open Source Project
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,12 +17,27 @@ package {
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
-java_library {
-    name: "accountaccesslib",
+android_test {
+    name: "CtsProtectedPackagesTestCases",
     srcs: ["src/**/*.java"],
+
     static_libs: [
-        "mockito-target",
-        "androidx.test.uiautomator_uiautomator",
+        "androidx.test.rules",
+        "android.content.pm.flags-aconfig-java",
         "compatibility-device-util-axt",
+        "bedstead-flags",
+        "bedstead-root",
+        "cts-install-lib",
+        "ctstestrunner-axt",
+        "flag-junit",
+        "Nene",
+    ],
+
+    sdk_version: "test_current",
+
+    test_suites: [
+        "cts",
+        "general-tests",
+        "mts",
     ],
 }

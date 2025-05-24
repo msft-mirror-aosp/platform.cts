@@ -678,6 +678,7 @@ public class Components extends ComponentsBase {
 
     public static class PresentationActivity {
         public static final String KEY_DISPLAY_ID = "display_id";
+        public static final String HIDE_PRESENTATION = "hide_presentation";
     }
 
     public static class LaunchingActivity {

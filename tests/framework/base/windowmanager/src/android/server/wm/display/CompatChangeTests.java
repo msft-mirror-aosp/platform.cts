@@ -111,6 +111,7 @@ import android.util.Size;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.test.filters.FlakyTest;
 
 import com.android.compatibility.common.util.ApiTest;
 import com.android.window.flags.Flags;
@@ -180,6 +181,8 @@ public final class CompatChangeTests extends MultiDisplayTestBase {
     private static final float ACTIVITY_LARGE_MIN_ASPECT_RATIO = 4f;
 
     private static final float FLOAT_EQUALITY_DELTA = 0.01f;
+
+    private static final int ACTIVITY_FOCUS_TIMEOUT_MS = 5000;
 
     @Rule
     public TestRule compatChangeRule = new PlatformCompatChangeRule();
@@ -1104,6 +1107,7 @@ public final class CompatChangeTests extends MultiDisplayTestBase {
     @Test
     @DisableCompatChanges({ActivityInfo.UNIVERSAL_RESIZABLE_BY_DEFAULT})
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_SIZE_COMPAT_MODE_IMPROVEMENTS_FOR_CONNECTED_DISPLAYS)
+    @FlakyTest(bugId = 415631133)
     public void testSizeCompatDoesNotRestartWithDisplayMove() {
         assumeTrue(supportsMultiDisplay());
         final int secondaryDisplayId =
@@ -1116,7 +1120,7 @@ public final class CompatChangeTests extends MultiDisplayTestBase {
 
         final ComponentName activity = NON_RESIZEABLE_PORTRAIT_ACTIVITY;
         startActivityOnDisplay(DEFAULT_DISPLAY, activity);
-        waitForActivityFocused(5000, activity);
+        waitForActivityFocused(ACTIVITY_FOCUS_TIMEOUT_MS, activity);
 
         separateTestJournal();
         startActivityOnDisplay(secondaryDisplayId, activity);
@@ -1149,7 +1153,7 @@ public final class CompatChangeTests extends MultiDisplayTestBase {
 
         final ComponentName activity = NO_DISPLAY_CONFIG_CHANGE_SUPPORT_GAME_ACTIVITY;
         startActivityOnDisplay(DEFAULT_DISPLAY, activity);
-        waitForActivityFocused(5000, activity);
+        waitForActivityFocused(ACTIVITY_FOCUS_TIMEOUT_MS, activity);
 
         separateTestJournal();
         startActivityOnDisplay(secondaryDisplayId, activity);

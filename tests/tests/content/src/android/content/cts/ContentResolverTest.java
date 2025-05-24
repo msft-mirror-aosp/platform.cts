@@ -19,6 +19,11 @@ package android.content.cts;
 import static android.content.ContentResolver.NOTIFY_INSERT;
 import static android.content.ContentResolver.NOTIFY_UPDATE;
 
+import static com.google.common.truth.Truth.assertThat;
+import static com.google.common.truth.Truth.assertWithMessage;
+
+import static org.junit.Assert.assertThrows;
+
 import android.accounts.Account;
 import android.annotation.NonNull;
 import android.annotation.UserIdInt;
@@ -41,18 +46,24 @@ import android.os.OperationCanceledException;
 import android.os.ParcelFileDescriptor;
 import android.os.Process;
 import android.os.RemoteException;
+import android.os.SystemClock;
 import android.os.UserHandle;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.AppModeSdkSandbox;
-import android.test.AndroidTestCase;
 import android.util.Log;
 
-import androidx.test.InstrumentationRegistry;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.ShellIdentityUtils;
 import com.android.internal.annotations.GuardedBy;
 import com.android.internal.util.ArrayUtils;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -61,6 +72,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -72,38 +84,92 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
-public class ContentResolverTest extends AndroidTestCase {
+@RunWith(AndroidJUnit4.class)
+public final class ContentResolverTest {
     private static final String TAG = "ContentResolverTest";
-
     private final static String COLUMN_ID_NAME = "_id";
     private final static String COLUMN_KEY_NAME = "key";
     private final static String COLUMN_VALUE_NAME = "value";
 
     private static final String AUTHORITY = "ctstest";
-    private static final Uri TABLE1_URI = Uri.parse("content://" + AUTHORITY + "/testtable1/");
+    private static final Uri TABLE1_URI =
+            new Uri.Builder()
+                    .scheme(ContentResolver.SCHEME_CONTENT)
+                    .authority(AUTHORITY)
+                    .appendPath("testtable1")
+                    .build();
     private static final Uri TABLE1_CROSS_URI =
-            Uri.parse("content://" + AUTHORITY + "/testtable1/cross");
-    private static final Uri TABLE2_URI = Uri.parse("content://" + AUTHORITY + "/testtable2/");
+            new Uri.Builder()
+                    .scheme(ContentResolver.SCHEME_CONTENT)
+                    .authority(AUTHORITY)
+                    .appendPath("testtable1")
+                    .appendPath("cross")
+                    .build();
+    private static final Uri TABLE2_URI =
+            new Uri.Builder()
+                    .scheme(ContentResolver.SCHEME_CONTENT)
+                    .authority(AUTHORITY)
+                    .appendPath("testtable2")
+                    .build();
 
-    private static final Uri LEVEL1_URI = Uri.parse("content://" + AUTHORITY + "/level/");
-    private static final Uri LEVEL2_URI = Uri.parse("content://" + AUTHORITY + "/level/child");
-    private static final Uri LEVEL3_URI = Uri.parse("content://" + AUTHORITY
-            + "/level/child/grandchild/");
-
+    private static final Uri LEVEL1_URI =
+            new Uri.Builder()
+                    .scheme(ContentResolver.SCHEME_CONTENT)
+                    .authority(AUTHORITY)
+                    .appendPath("level")
+                    .build();
+    private static final Uri LEVEL2_URI =
+            new Uri.Builder()
+                    .scheme(ContentResolver.SCHEME_CONTENT)
+                    .authority(AUTHORITY)
+                    .appendPath("level")
+                    .appendPath("child")
+                    .build();
+    private static final Uri LEVEL3_URI =
+            new Uri.Builder()
+                    .scheme(ContentResolver.SCHEME_CONTENT)
+                    .authority(AUTHORITY)
+                    .appendPath("level")
+                    .appendPath("child")
+                    .appendPath("grandchild")
+                    .build();
     private static final String REMOTE_AUTHORITY = "remotectstest";
-    private static final Uri REMOTE_TABLE1_URI = Uri.parse("content://"
-                + REMOTE_AUTHORITY + "/testtable1/");
-    private static final Uri REMOTE_CRASH_URI = Uri.parse("content://"
-            + REMOTE_AUTHORITY + "/crash/");
-    private static final Uri REMOTE_HANG_URI = Uri.parse("content://"
-            + REMOTE_AUTHORITY + "/hang/");
+    private static final Uri REMOTE_TABLE1_URI =
+            new Uri.Builder()
+                    .scheme(ContentResolver.SCHEME_CONTENT)
+                    .authority(REMOTE_AUTHORITY)
+                    .appendPath("testtable1")
+                    .build();
+    private static final Uri REMOTE_CRASH_URI =
+            new Uri.Builder()
+                    .scheme(ContentResolver.SCHEME_CONTENT)
+                    .authority(REMOTE_AUTHORITY)
+                    .appendPath("crash")
+                    .build();
+    private static final Uri REMOTE_HANG_URI =
+            new Uri.Builder()
+                    .scheme(ContentResolver.SCHEME_CONTENT)
+                    .authority(REMOTE_AUTHORITY)
+                    .appendPath("hang")
+                    .build();
 
     private static final String RESTRICTED_AUTHORITY = "restrictedctstest";
     private static final Uri RESTRICTED_TABLE1_URI =
-            Uri.parse("content://" + RESTRICTED_AUTHORITY + "/testtable1/");
-    private static final Uri RESTRICTED_TABLE1_ITEM_URI =
-            Uri.parse("content://" + RESTRICTED_AUTHORITY + "/testtable1/1");
+            new Uri.Builder()
+                    .scheme(ContentResolver.SCHEME_CONTENT)
+                    .authority(RESTRICTED_AUTHORITY)
+                    .appendPath("testtable1")
+                    .build();
 
+    private static final Uri RESTRICTED_TABLE1_ITEM_URI =
+            new Uri.Builder()
+                    .scheme(ContentResolver.SCHEME_CONTENT)
+                    .authority(RESTRICTED_AUTHORITY)
+                    .appendPath("testtable1")
+                    .appendPath("1")
+                    .build();
+
+    private static final Uri INVALID_URI = Uri.parse("abc");
     private static final Account ACCOUNT = new Account("cts", "cts");
 
     private static final String KEY1 = "key1";
@@ -119,11 +185,9 @@ public class ContentResolverTest extends AndroidTestCase {
     private ContentResolver mContentResolver;
     private Cursor mCursor;
 
-    @Override
-    protected void setUp() throws Exception {
-        super.setUp();
-
-        mContext = getContext();
+    @Before
+    public void setUp() throws Exception {
+        mContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
         mContentResolver = mContext.getContentResolver();
 
         MockContentProvider.setCrashOnLaunch(mContext, false);
@@ -147,26 +211,28 @@ public class ContentResolverTest extends AndroidTestCase {
         mContentResolver.insert(REMOTE_TABLE1_URI, values);
     }
 
-    @Override
-    protected void tearDown() throws Exception {
+    @After
+    public void tearDown() throws Exception {
+        MockContentProvider.setRefreshReturnValue(false);
         InstrumentationRegistry.getInstrumentation().getUiAutomation()
                 .dropShellPermissionIdentity();
 
         mContentResolver.delete(TABLE1_URI, null, null);
-        if ( null != mCursor && !mCursor.isClosed() ) {
+        if (null != mCursor && !mCursor.isClosed()) {
             mCursor.close();
         }
         mContentResolver.delete(REMOTE_TABLE1_URI, null, null);
-        if ( null != mCursor && !mCursor.isClosed() ) {
+        if (null != mCursor && !mCursor.isClosed()) {
             mCursor.close();
         }
-        super.tearDown();
     }
 
+    @Test
     public void testConstructor() {
-        assertNotNull(mContentResolver);
+        assertThat(mContentResolver).isNotNull();
     }
 
+    @Test
     public void testCrashOnLaunch() {
         // This test is going to make sure that the platform deals correctly
         // with a content provider process going away while a client is waiting
@@ -176,10 +242,11 @@ public class ContentResolverTest extends AndroidTestCase {
                 REMOTE_AUTHORITY);
         // We are going to do something wrong here...  release the client first,
         // so the act of killing it doesn't kill our own process.
-        client.release();
+        client.close();
         try {
             client.delete(REMOTE_CRASH_URI, null, null);
         } catch (RemoteException e) {
+            // Expected
         }
         // Now make sure the thing is actually gone.
         boolean gone = true;
@@ -187,43 +254,45 @@ public class ContentResolverTest extends AndroidTestCase {
             client.getType(REMOTE_TABLE1_URI);
             gone = false;
         } catch (RemoteException e) {
+            // Expected
         }
         if (!gone) {
-            fail("Content provider process is not gone!");
+            assertWithMessage("Content provider process is not gone!").fail();
         }
         try {
             MockContentProvider.setCrashOnLaunch(mContext, true);
             String type1 = mContentResolver.getType(REMOTE_TABLE1_URI);
-            assertFalse(MockContentProvider.getCrashOnLaunch(mContext));
-            assertTrue(type1.startsWith(ContentResolver.CURSOR_DIR_BASE_TYPE, 0));
+            assertThat(MockContentProvider.getCrashOnLaunch(mContext)).isFalse();
+            assertThat(type1.startsWith(ContentResolver.CURSOR_DIR_BASE_TYPE)).isTrue();
         } finally {
             MockContentProvider.setCrashOnLaunch(mContext, false);
         }
     }
 
+    @Test
     public void testUnstableToStableRefs() {
-        // Get an unstable refrence on the remote content provider.
-        ContentProviderClient uClient = mContentResolver.acquireUnstableContentProviderClient(
-                REMOTE_AUTHORITY);
+        // Get an unstable reference on the remote content provider.
+        ContentProviderClient uClient =
+                mContentResolver.acquireUnstableContentProviderClient(REMOTE_AUTHORITY);
         // Verify we can access it.
         String type1 = mContentResolver.getType(REMOTE_TABLE1_URI);
-        assertTrue(type1.startsWith(ContentResolver.CURSOR_DIR_BASE_TYPE, 0));
+        assertThat(type1.startsWith(ContentResolver.CURSOR_DIR_BASE_TYPE)).isTrue();
 
         // Get a stable reference on the remote content provider.
         ContentProviderClient sClient = mContentResolver.acquireContentProviderClient(
                 REMOTE_AUTHORITY);
         // Verify we can still access it.
         type1 = mContentResolver.getType(REMOTE_TABLE1_URI);
-        assertTrue(type1.startsWith(ContentResolver.CURSOR_DIR_BASE_TYPE, 0));
+        assertThat(type1.startsWith(ContentResolver.CURSOR_DIR_BASE_TYPE)).isTrue();
 
         // Release unstable reference.
-        uClient.release();
+        uClient.close();
         // Verify we can still access it.
         type1 = mContentResolver.getType(REMOTE_TABLE1_URI);
-        assertTrue(type1.startsWith(ContentResolver.CURSOR_DIR_BASE_TYPE, 0));
+        assertThat(type1.startsWith(ContentResolver.CURSOR_DIR_BASE_TYPE)).isTrue();
 
         // Release stable reference, removing last ref.
-        sClient.release();
+        sClient.close();
         // Kill it.  Note that a bug at this point where it causes our own
         // process to be killed will result in the entire test failing.
         try {
@@ -231,6 +300,7 @@ public class ContentResolverTest extends AndroidTestCase {
                     "Killing remote client -- if test process goes away, that is why!");
             uClient.delete(REMOTE_CRASH_URI, null, null);
         } catch (RemoteException e) {
+            // Expected
         }
         // Make sure the remote client is actually gone.
         boolean gone = true;
@@ -238,29 +308,31 @@ public class ContentResolverTest extends AndroidTestCase {
             sClient.getType(REMOTE_TABLE1_URI);
             gone = false;
         } catch (RemoteException e) {
+            // Expected
         }
         if (!gone) {
-            fail("Content provider process is not gone!");
+            assertWithMessage("Content provider process is not gone!").fail();
         }
     }
 
+    @Test
     public void testStableToUnstableRefs() {
         // Get a stable reference on the remote content provider.
         ContentProviderClient sClient = mContentResolver.acquireContentProviderClient(
                 REMOTE_AUTHORITY);
         // Verify we can still access it.
         String type1 = mContentResolver.getType(REMOTE_TABLE1_URI);
-        assertTrue(type1.startsWith(ContentResolver.CURSOR_DIR_BASE_TYPE, 0));
+        assertThat(type1.startsWith(ContentResolver.CURSOR_DIR_BASE_TYPE)).isTrue();
 
-        // Get an unstable refrence on the remote content provider.
-        ContentProviderClient uClient = mContentResolver.acquireUnstableContentProviderClient(
-                REMOTE_AUTHORITY);
+        // Get an unstable reference on the remote content provider.
+        ContentProviderClient uClient =
+                mContentResolver.acquireUnstableContentProviderClient(REMOTE_AUTHORITY);
         // Verify we can access it.
         type1 = mContentResolver.getType(REMOTE_TABLE1_URI);
-        assertTrue(type1.startsWith(ContentResolver.CURSOR_DIR_BASE_TYPE, 0));
+        assertThat(type1.startsWith(ContentResolver.CURSOR_DIR_BASE_TYPE)).isTrue();
 
         // Release stable reference, leaving only an unstable ref.
-        sClient.release();
+        sClient.close();
 
         // Kill it.  Note that a bug at this point where it causes our own
         // process to be killed will result in the entire test failing.
@@ -269,6 +341,7 @@ public class ContentResolverTest extends AndroidTestCase {
                     "Killing remote client -- if test process goes away, that is why!");
             uClient.delete(REMOTE_CRASH_URI, null, null);
         } catch (RemoteException e) {
+            // Expected
         }
         // Make sure the remote client is actually gone.
         boolean gone = true;
@@ -276,124 +349,138 @@ public class ContentResolverTest extends AndroidTestCase {
             uClient.getType(REMOTE_TABLE1_URI);
             gone = false;
         } catch (RemoteException e) {
+            // Expected
         }
         if (!gone) {
-            fail("Content provider process is not gone!");
+            assertWithMessage("Content provider process is not gone!").fail();
         }
 
         // Release unstable reference.
-        uClient.release();
+        uClient.close();
     }
 
+    @Test
     public void testGetType() {
         String type1 = mContentResolver.getType(TABLE1_URI);
-        assertTrue(type1.startsWith(ContentResolver.CURSOR_DIR_BASE_TYPE, 0));
+        assertThat(type1.startsWith(ContentResolver.CURSOR_DIR_BASE_TYPE)).isTrue();
 
         String type2 = mContentResolver.getType(TABLE2_URI);
-        assertTrue(type2.startsWith(ContentResolver.CURSOR_DIR_BASE_TYPE, 0));
+        assertThat(type2.startsWith(ContentResolver.CURSOR_DIR_BASE_TYPE)).isTrue();
 
-        Uri invalidUri = Uri.parse("abc");
-        assertNull(mContentResolver.getType(invalidUri));
+        assertThat(mContentResolver.getType(INVALID_URI)).isNull();
 
-        try {
-            mContentResolver.getType(null);
-            fail("did not throw NullPointerException when Uri is null.");
-        } catch (NullPointerException e) {
-            //expected.
-        }
+        assertThrows(
+                "did not throw NullPointerException when Uri is null.",
+                NullPointerException.class,
+                () -> mContentResolver.getType(null));
     }
 
     @AppModeFull
+    @Test
     public void testGetTypeAnonymous() {
         String type1 = mContentResolver.getType(RESTRICTED_TABLE1_URI);
-        assertTrue(type1.startsWith(ContentResolver.CURSOR_DIR_BASE_TYPE, 0));
+        assertThat(type1.startsWith(ContentResolver.CURSOR_DIR_BASE_TYPE)).isTrue();
         String type2 = mContentResolver.getType(RESTRICTED_TABLE1_ITEM_URI);
-        assertNull(type2);
+        assertThat(type2).isNull();
     }
 
+    @Test
     public void testUnstableGetType() {
-        // Get an unstable refrence on the remote content provider.
-        ContentProviderClient client = mContentResolver.acquireUnstableContentProviderClient(
-                REMOTE_AUTHORITY);
-        // Verify we can access it.
-        String type1 = mContentResolver.getType(REMOTE_TABLE1_URI);
-        assertTrue(type1.startsWith(ContentResolver.CURSOR_DIR_BASE_TYPE, 0));
+        // Get an unstable reference on the remote content provider.
+        try (ContentProviderClient client =
+                mContentResolver.acquireUnstableContentProviderClient(REMOTE_AUTHORITY)) {
+            // Verify we can access it.
+            String type1 = mContentResolver.getType(REMOTE_TABLE1_URI);
+            assertThat(type1.startsWith(ContentResolver.CURSOR_DIR_BASE_TYPE)).isTrue();
 
-        // Kill it.  Note that a bug at this point where it causes our own
-        // process to be killed will result in the entire test failing.
-        try {
-            Log.i("ContentResolverTest",
-                    "Killing remote client -- if test process goes away, that is why!");
-            client.delete(REMOTE_CRASH_URI, null, null);
-        } catch (RemoteException e) {
-        }
-        // Make sure the remote client is actually gone.
-        boolean gone = true;
-        try {
-            client.getType(REMOTE_TABLE1_URI);
-            gone = false;
-        } catch (RemoteException e) {
-        }
-        if (!gone) {
-            fail("Content provider process is not gone!");
+            // Kill it.  Note that a bug at this point where it causes our own
+            // process to be killed will result in the entire test failing.
+            try {
+                Log.i(
+                        "ContentResolverTest",
+                        "Killing remote client -- if test process goes away, that is why!");
+                client.delete(REMOTE_CRASH_URI, null, null);
+            } catch (RemoteException e) {
+                // Expected
+            }
+            // Make sure the remote client is actually gone.
+            boolean gone = true;
+            try {
+                client.getType(REMOTE_TABLE1_URI);
+                gone = false;
+            } catch (RemoteException e) {
+                // Expected
+            }
+            if (!gone) {
+                assertWithMessage("Content provider process is not gone!").fail();
+            }
         }
 
-        // Now the remote client is gone, can we recover?
-        // Release our old reference.
-        client.release();
         // Get a new reference.
-        client = mContentResolver.acquireUnstableContentProviderClient(REMOTE_AUTHORITY);
-        // Verify we can access it.
-        type1 = mContentResolver.getType(REMOTE_TABLE1_URI);
-        assertTrue(type1.startsWith(ContentResolver.CURSOR_DIR_BASE_TYPE, 0));
+        try (ContentProviderClient unused =
+                mContentResolver.acquireUnstableContentProviderClient(REMOTE_AUTHORITY)) {
+            // Verify we can access it.
+            String type1 = mContentResolver.getType(REMOTE_TABLE1_URI);
+            assertThat(type1.startsWith(ContentResolver.CURSOR_DIR_BASE_TYPE)).isTrue();
+        }
     }
 
+    @Test
     public void testQuery() {
         mCursor = mContentResolver.query(TABLE1_URI, null, null, null);
 
-        assertNotNull(mCursor);
-        assertEquals(3, mCursor.getCount());
-        assertEquals(3, mCursor.getColumnCount());
+        assertThat(mCursor).isNotNull();
+        assertThat(mCursor.getCount()).isEqualTo(3);
+        assertThat(mCursor.getColumnCount()).isEqualTo(3);
 
         mCursor.moveToLast();
-        assertEquals(3, mCursor.getInt(mCursor.getColumnIndexOrThrow(COLUMN_ID_NAME)));
-        assertEquals(KEY3, mCursor.getString(mCursor.getColumnIndexOrThrow(COLUMN_KEY_NAME)));
-        assertEquals(VALUE3, mCursor.getInt(mCursor.getColumnIndexOrThrow(COLUMN_VALUE_NAME)));
+        assertThat(mCursor.getInt(mCursor.getColumnIndexOrThrow(COLUMN_ID_NAME))).isEqualTo(3);
+        assertThat(mCursor.getString(mCursor.getColumnIndexOrThrow(COLUMN_KEY_NAME)))
+                .isEqualTo(KEY3);
+        assertThat(mCursor.getInt(mCursor.getColumnIndexOrThrow(COLUMN_VALUE_NAME)))
+                .isEqualTo(VALUE3);
 
         mCursor.moveToPrevious();
-        assertEquals(2, mCursor.getInt(mCursor.getColumnIndexOrThrow(COLUMN_ID_NAME)));
-        assertEquals(KEY2, mCursor.getString(mCursor.getColumnIndexOrThrow(COLUMN_KEY_NAME)));
-        assertEquals(VALUE2, mCursor.getInt(mCursor.getColumnIndexOrThrow(COLUMN_VALUE_NAME)));
+        assertThat(mCursor.getInt(mCursor.getColumnIndexOrThrow(COLUMN_ID_NAME))).isEqualTo(2);
+        assertThat(mCursor.getString(mCursor.getColumnIndexOrThrow(COLUMN_KEY_NAME)))
+                .isEqualTo(KEY2);
+        assertThat(mCursor.getInt(mCursor.getColumnIndexOrThrow(COLUMN_VALUE_NAME)))
+                .isEqualTo(VALUE2);
         mCursor.close();
     }
 
+    @Test
     public void testQuery_WithSqlSelectionArgs() {
         Bundle queryArgs = new Bundle();
         queryArgs.putString(ContentResolver.QUERY_ARG_SQL_SELECTION, COLUMN_ID_NAME + "=?");
         queryArgs.putStringArray(ContentResolver.QUERY_ARG_SQL_SELECTION_ARGS, new String[] {"1"});
 
         mCursor = mContentResolver.query(TABLE1_URI, null, queryArgs, null);
-        assertNotNull(mCursor);
-        assertEquals(1, mCursor.getCount());
-        assertEquals(3, mCursor.getColumnCount());
+        assertThat(mCursor).isNotNull();
+        assertThat(mCursor.getCount()).isEqualTo(1);
+        assertThat(mCursor.getColumnCount()).isEqualTo(3);
 
         mCursor.moveToFirst();
-        assertEquals(1, mCursor.getInt(mCursor.getColumnIndexOrThrow(COLUMN_ID_NAME)));
-        assertEquals(KEY1, mCursor.getString(mCursor.getColumnIndexOrThrow(COLUMN_KEY_NAME)));
-        assertEquals(VALUE1, mCursor.getInt(mCursor.getColumnIndexOrThrow(COLUMN_VALUE_NAME)));
+        assertThat(mCursor.getInt(mCursor.getColumnIndexOrThrow(COLUMN_ID_NAME))).isEqualTo(1);
+        assertThat(mCursor.getString(mCursor.getColumnIndexOrThrow(COLUMN_KEY_NAME)))
+                .isEqualTo(KEY1);
+        assertThat(mCursor.getInt(mCursor.getColumnIndexOrThrow(COLUMN_VALUE_NAME)))
+                .isEqualTo(VALUE1);
         mCursor.close();
 
         queryArgs.putString(ContentResolver.QUERY_ARG_SQL_SELECTION, COLUMN_KEY_NAME + "=?");
         queryArgs.putStringArray(ContentResolver.QUERY_ARG_SQL_SELECTION_ARGS, new String[] {KEY3});
         mCursor = mContentResolver.query(TABLE1_URI, null, queryArgs, null);
-        assertNotNull(mCursor);
-        assertEquals(1, mCursor.getCount());
-        assertEquals(3, mCursor.getColumnCount());
+        assertThat(mCursor).isNotNull();
+        assertThat(mCursor.getCount()).isEqualTo(1);
+        assertThat(mCursor.getColumnCount()).isEqualTo(3);
 
         mCursor.moveToFirst();
-        assertEquals(3, mCursor.getInt(mCursor.getColumnIndexOrThrow(COLUMN_ID_NAME)));
-        assertEquals(KEY3, mCursor.getString(mCursor.getColumnIndexOrThrow(COLUMN_KEY_NAME)));
-        assertEquals(VALUE3, mCursor.getInt(mCursor.getColumnIndexOrThrow(COLUMN_VALUE_NAME)));
+        assertThat(mCursor.getInt(mCursor.getColumnIndexOrThrow(COLUMN_ID_NAME))).isEqualTo(3);
+        assertThat(mCursor.getString(mCursor.getColumnIndexOrThrow(COLUMN_KEY_NAME)))
+                .isEqualTo(KEY3);
+        assertThat(mCursor.getInt(mCursor.getColumnIndexOrThrow(COLUMN_VALUE_NAME)))
+                .isEqualTo(VALUE3);
         mCursor.close();
     }
 
@@ -405,8 +492,8 @@ public class ContentResolverTest extends AndroidTestCase {
      * - it receives the auto-generated sql format arguments (supplied by the framework)
      * - it is backed by sqlite and forwards the sql formatted args.
      */
+    @Test
     public void testQuery_SqlSortingFromBundleArgs() {
-
         mContentResolver.delete(TABLE1_URI, null, null);
         ContentValues values = new ContentValues();
 
@@ -422,7 +509,7 @@ public class ContentResolverTest extends AndroidTestCase {
         values.put(COLUMN_VALUE_NAME, "ghi");
         mContentResolver.insert(TABLE1_URI, values);
 
-        String[] sortCols = new String[] { COLUMN_VALUE_NAME };
+        String[] sortCols = new String[] {COLUMN_VALUE_NAME};
         Bundle queryArgs = new Bundle();
         queryArgs.putStringArray(
                 ContentResolver.QUERY_ARG_SORT_COLUMNS,
@@ -437,11 +524,11 @@ public class ContentResolverTest extends AndroidTestCase {
         int col = mCursor.getColumnIndexOrThrow(COLUMN_VALUE_NAME);
 
         mCursor.moveToNext();
-        assertEquals("DEF", mCursor.getString(col));
+        assertThat(mCursor.getString(col)).isEqualTo("DEF");
         mCursor.moveToNext();
-        assertEquals("abc", mCursor.getString(col));
+        assertThat(mCursor.getString(col)).isEqualTo("abc");
         mCursor.moveToNext();
-        assertEquals("ghi", mCursor.getString(col));
+        assertThat(mCursor.getString(col)).isEqualTo("ghi");
 
         mCursor.close();
 
@@ -457,15 +544,16 @@ public class ContentResolverTest extends AndroidTestCase {
         col = mCursor.getColumnIndexOrThrow(COLUMN_VALUE_NAME);
 
         mCursor.moveToNext();
-        assertEquals("ghi", mCursor.getString(col));
+        assertThat(mCursor.getString(col)).isEqualTo("ghi");
         mCursor.moveToNext();
-        assertEquals("DEF", mCursor.getString(col));
+        assertThat(mCursor.getString(col)).isEqualTo("DEF");
         mCursor.moveToNext();
-        assertEquals("abc", mCursor.getString(col));
+        assertThat(mCursor.getString(col)).isEqualTo("abc");
 
         mCursor.close();
     }
 
+    @Test
     public void testQuery_SqlSortingFromBundleArgs_Locale() {
         mContentResolver.delete(TABLE1_URI, null, null);
 
@@ -480,21 +568,19 @@ public class ContentResolverTest extends AndroidTestCase {
             mContentResolver.insert(TABLE1_URI, values);
         }
 
-        String[] sortCols = new String[] { COLUMN_VALUE_NAME };
+        String[] sortCols = new String[] {COLUMN_VALUE_NAME};
         Bundle queryArgs = new Bundle();
         queryArgs.putStringArray(ContentResolver.QUERY_ARG_SORT_COLUMNS, sortCols);
 
-        for (String locale : new String[] {
-                "zh",
-                "zh@collation=pinyin",
-                "zh@collation=stroke",
-                "zh@collation=zhuyin",
-        }) {
+        for (String locale :
+                new String[] {
+                    "zh", "zh@collation=pinyin", "zh@collation=stroke", "zh@collation=zhuyin",
+                }) {
             // Assert that sorting is identical between SQLite and ICU4J
             queryArgs.putString(ContentResolver.QUERY_ARG_SORT_LOCALE, locale);
             try (Cursor c = mContentResolver.query(TABLE1_URI, sortCols, queryArgs, null)) {
                 data.sort(Collator.getInstance(new ULocale(locale)));
-                assertEquals(data, collect(c));
+                assertThat(collect(c)).isEqualTo(data);
             }
         }
     }
@@ -508,11 +594,11 @@ public class ContentResolverTest extends AndroidTestCase {
     }
 
     /**
-     * Verifies that paging information is correctly relayed, and that
-     * honored arguments from a supporting client are returned correctly.
+     * Verifies that paging information is correctly relayed, and that honored arguments from a
+     * supporting client are returned correctly.
      */
+    @Test
     public void testQuery_PagedResults() {
-
         Bundle queryArgs = new Bundle();
         queryArgs.putInt(ContentResolver.QUERY_ARG_OFFSET, 10);
         queryArgs.putInt(ContentResolver.QUERY_ARG_LIMIT, 3);
@@ -524,84 +610,91 @@ public class ContentResolverTest extends AndroidTestCase {
         Bundle extras = mCursor.getExtras();
         extras = extras != null ? extras : Bundle.EMPTY;
 
-        assertEquals(3, mCursor.getCount());
-        assertTrue(extras.containsKey(ContentResolver.EXTRA_TOTAL_COUNT));
-        assertEquals(100, extras.getInt(ContentResolver.EXTRA_TOTAL_COUNT));
+        assertThat(mCursor.getCount()).isEqualTo(3);
+        assertThat(extras.containsKey(ContentResolver.EXTRA_TOTAL_COUNT)).isTrue();
+        assertThat(extras.getInt(ContentResolver.EXTRA_TOTAL_COUNT)).isEqualTo(100);
 
         String[] honoredArgs = extras.getStringArray(ContentResolver.EXTRA_HONORED_ARGS);
-        assertNotNull(honoredArgs);
-        assertTrue(ArrayUtils.contains(honoredArgs, ContentResolver.QUERY_ARG_OFFSET));
-        assertTrue(ArrayUtils.contains(honoredArgs, ContentResolver.QUERY_ARG_LIMIT));
+        assertThat(honoredArgs).isNotNull();
+        assertThat(ArrayUtils.contains(honoredArgs, ContentResolver.QUERY_ARG_OFFSET)).isTrue();
+        assertThat(ArrayUtils.contains(honoredArgs, ContentResolver.QUERY_ARG_LIMIT)).isTrue();
 
         int col = mCursor.getColumnIndexOrThrow(TestPagingContentProvider.COLUMN_POS);
 
         mCursor.moveToNext();
-        assertEquals(10, mCursor.getInt(col));
+        assertThat(mCursor.getInt(col)).isEqualTo(10);
         mCursor.moveToNext();
-        assertEquals(11, mCursor.getInt(col));
+        assertThat(mCursor.getInt(col)).isEqualTo(11);
         mCursor.moveToNext();
-        assertEquals(12, mCursor.getInt(col));
+        assertThat(mCursor.getInt(col)).isEqualTo(12);
 
-        assertFalse(mCursor.moveToNext());
+        assertThat(mCursor.moveToNext()).isFalse();
 
         mCursor.close();
     }
 
+    @Test
     public void testQuery_NullUriThrows() {
-        try {
-            mContentResolver.query(null, null, null, null, null);
-            fail("did not throw NullPointerException when uri is null.");
-        } catch (NullPointerException e) {
-            //expected.
-        }
+        assertThrows(
+                "did not throw NullPointerException when uri is null.",
+                NullPointerException.class,
+                () -> mContentResolver.query(null, null, null, null, null));
     }
 
+    @Test
     public void testCrashingQuery() {
         try {
             MockContentProvider.setCrashOnLaunch(mContext, true);
             mCursor = mContentResolver.query(REMOTE_CRASH_URI, null, null, null, null);
-            assertFalse(MockContentProvider.getCrashOnLaunch(mContext));
+            assertThat(MockContentProvider.getCrashOnLaunch(mContext)).isFalse();
         } finally {
             MockContentProvider.setCrashOnLaunch(mContext, false);
         }
 
-        assertNotNull(mCursor);
-        assertEquals(3, mCursor.getCount());
-        assertEquals(3, mCursor.getColumnCount());
+        assertThat(mCursor).isNotNull();
+        assertThat(mCursor.getCount()).isEqualTo(3);
+        assertThat(mCursor.getColumnCount()).isEqualTo(3);
 
         mCursor.moveToLast();
-        assertEquals(3, mCursor.getInt(mCursor.getColumnIndexOrThrow(COLUMN_ID_NAME)));
-        assertEquals(KEY3, mCursor.getString(mCursor.getColumnIndexOrThrow(COLUMN_KEY_NAME)));
-        assertEquals(VALUE3, mCursor.getInt(mCursor.getColumnIndexOrThrow(COLUMN_VALUE_NAME)));
+        assertThat(mCursor.getInt(mCursor.getColumnIndexOrThrow(COLUMN_ID_NAME))).isEqualTo(3);
+        assertThat(mCursor.getString(mCursor.getColumnIndexOrThrow(COLUMN_KEY_NAME)))
+                .isEqualTo(KEY3);
+        assertThat(mCursor.getInt(mCursor.getColumnIndexOrThrow(COLUMN_VALUE_NAME)))
+                .isEqualTo(VALUE3);
 
         mCursor.moveToPrevious();
-        assertEquals(2, mCursor.getInt(mCursor.getColumnIndexOrThrow(COLUMN_ID_NAME)));
-        assertEquals(KEY2, mCursor.getString(mCursor.getColumnIndexOrThrow(COLUMN_KEY_NAME)));
-        assertEquals(VALUE2, mCursor.getInt(mCursor.getColumnIndexOrThrow(COLUMN_VALUE_NAME)));
+        assertThat(mCursor.getInt(mCursor.getColumnIndexOrThrow(COLUMN_ID_NAME))).isEqualTo(2);
+        assertThat(mCursor.getString(mCursor.getColumnIndexOrThrow(COLUMN_KEY_NAME)))
+                .isEqualTo(KEY2);
+        assertThat(mCursor.getInt(mCursor.getColumnIndexOrThrow(COLUMN_VALUE_NAME)))
+                .isEqualTo(VALUE2);
         mCursor.close();
     }
 
+    @Test
     public void testCancelableQuery_WhenNotCanceled_ReturnsResultSet() {
         CancellationSignal cancellationSignal = new CancellationSignal();
 
         Cursor cursor = mContentResolver.query(TABLE1_URI, null, null, null, null,
                 cancellationSignal);
-        assertEquals(3, cursor.getCount());
+        assertThat(cursor.getCount()).isEqualTo(3);
         cursor.close();
     }
 
+    @Test
     public void testCancelableQuery_WhenCanceledBeforeQuery_ThrowsImmediately() {
         CancellationSignal cancellationSignal = new CancellationSignal();
         cancellationSignal.cancel();
 
-        try {
-            mContentResolver.query(TABLE1_URI, null, null, null, null, cancellationSignal);
-            fail("Expected OperationCanceledException");
-        } catch (OperationCanceledException ex) {
-            // expected
-        }
+        assertThrows(
+                "Expected OperationCanceledException",
+                OperationCanceledException.class,
+                () ->
+                        mContentResolver.query(
+                                TABLE1_URI, null, null, null, null, cancellationSignal));
     }
 
+    @Test
     public void testCancelableQuery_WhenCanceledDuringLongRunningQuery_CancelsQueryAndThrows() {
         // Populate a table with a bunch of integers.
         mContentResolver.delete(TABLE1_URI, null, null);
@@ -614,16 +707,12 @@ public class ContentResolverTest extends AndroidTestCase {
 
         for (int i = 0; i < 5; i++) {
             final CancellationSignal cancellationSignal = new CancellationSignal();
-            Thread cancellationThread = new Thread() {
-                @Override
-                public void run() {
-                    try {
-                        Thread.sleep(300);
-                    } catch (InterruptedException ex) {
-                    }
-                    cancellationSignal.cancel();
-                }
-            };
+            Thread cancellationThread =
+                    new Thread(
+                            () -> {
+                                SystemClock.sleep(300);
+                                cancellationSignal.cancel();
+                            });
             try {
                 // Build an unsatisfiable 5-way cross-product query over 100 values but
                 // produces no output.  This should force SQLite to loop for a long time
@@ -631,15 +720,17 @@ public class ContentResolverTest extends AndroidTestCase {
                 cancellationThread.start();
 
                 final long startTime = System.nanoTime();
-                try {
-                    mContentResolver.query(TABLE1_CROSS_URI, null,
-                            "a.value + b.value + c.value + d.value + e.value > 1000000",
-                            null, null, cancellationSignal);
-                    fail("Expected OperationCanceledException");
-                } catch (OperationCanceledException ex) {
-                    // expected
-                }
-
+                assertThrows(
+                        "Expected OperationCanceledException",
+                        OperationCanceledException.class,
+                        () ->
+                                mContentResolver.query(
+                                        TABLE1_CROSS_URI,
+                                        null,
+                                        "a.value + b.value + c.value + d.value + e.value > 1000000",
+                                        null,
+                                        null,
+                                        cancellationSignal));
                 // We want to confirm that the query really was running and then got
                 // canceled midway.
                 final long waitTime = System.nanoTime() - startTime;
@@ -650,6 +741,7 @@ public class ContentResolverTest extends AndroidTestCase {
                 try {
                     cancellationThread.join();
                 } catch (InterruptedException e) {
+                    // Expected
                 }
             }
         }
@@ -657,131 +749,130 @@ public class ContentResolverTest extends AndroidTestCase {
         // Occasionally we might miss the timing deadline due to factors in the
         // environment, but if after several trials we still couldn't demonstrate
         // that the query was canceled, then the test must be broken.
-        fail("Could not prove that the query actually canceled midway during execution.");
+        assertWithMessage(
+                        "Could not prove that the query actually canceled midway during execution.")
+                .fail();
     }
 
+    @Test
     public void testOpenInputStream() throws IOException {
-        final Uri uri = Uri.parse(ContentResolver.SCHEME_ANDROID_RESOURCE +
-                "://" + TEST_PACKAGE_NAME + "/" + R.drawable.pass);
-
+        final Uri uri =
+                new Uri.Builder()
+                        .scheme(ContentResolver.SCHEME_ANDROID_RESOURCE)
+                        .authority(TEST_PACKAGE_NAME)
+                        .appendPath(String.valueOf(R.drawable.pass))
+                        .build();
         InputStream is = mContentResolver.openInputStream(uri);
-        assertNotNull(is);
+        assertThat(is).isNotNull();
         is.close();
 
         final Uri invalidUri = Uri.parse("abc");
-        try {
-            mContentResolver.openInputStream(invalidUri);
-            fail("did not throw FileNotFoundException when uri is invalid.");
-        } catch (FileNotFoundException e) {
-            //expected.
-        }
+
+        assertThrows(
+                "did not throw FileNotFoundException when uri is invalid.",
+                FileNotFoundException.class,
+                () -> mContentResolver.openInputStream(invalidUri));
     }
 
+    @Test
     public void testOpenOutputStream() throws IOException {
-        Uri uri = Uri.parse(ContentResolver.SCHEME_FILE + "://" +
-                getContext().getCacheDir().getAbsolutePath() +
-                "/temp.jpg");
+        Uri uri =
+                new Uri.Builder()
+                        .scheme(ContentResolver.SCHEME_FILE)
+                        .appendPath(mContext.getCacheDir().getAbsolutePath())
+                        .appendPath("temp.jpg")
+                        .build();
+
         OutputStream os = mContentResolver.openOutputStream(uri);
-        assertNotNull(os);
+        assertThat(os).isNotNull();
         os.close();
 
         os = mContentResolver.openOutputStream(uri, "wa");
-        assertNotNull(os);
+        assertThat(os).isNotNull();
         os.close();
 
-        uri = Uri.parse(ContentResolver.SCHEME_ANDROID_RESOURCE +
-                "://" + TEST_PACKAGE_NAME + "/" + R.raw.testimage);
-        try {
-            mContentResolver.openOutputStream(uri);
-            fail("did not throw FileNotFoundException when scheme is not accepted.");
-        } catch (FileNotFoundException e) {
-            //expected.
-        }
+        Uri badSchemeUri =
+                new Uri.Builder()
+                        .scheme(ContentResolver.SCHEME_ANDROID_RESOURCE)
+                        .authority(TEST_PACKAGE_NAME)
+                        .appendPath(String.valueOf(R.raw.testimage))
+                        .build();
 
-        try {
-            mContentResolver.openOutputStream(uri, "w");
-            fail("did not throw FileNotFoundException when scheme is not accepted.");
-        } catch (FileNotFoundException e) {
-            //expected.
-        }
+        assertThrows(
+                "did not throw FileNotFoundException when scheme is not accepted.",
+                FileNotFoundException.class,
+                () -> mContentResolver.openOutputStream(badSchemeUri));
+
+        assertThrows(
+                "did not throw FileNotFoundException when scheme is not accepted.",
+                FileNotFoundException.class,
+                () -> mContentResolver.openOutputStream(badSchemeUri, "w"));
 
         Uri invalidUri = Uri.parse("abc");
-        try {
-            mContentResolver.openOutputStream(invalidUri);
-            fail("did not throw FileNotFoundException when uri is invalid.");
-        } catch (FileNotFoundException e) {
-            //expected.
-        }
 
-        try {
-            mContentResolver.openOutputStream(invalidUri, "w");
-            fail("did not throw FileNotFoundException when uri is invalid.");
-        } catch (FileNotFoundException e) {
-            //expected.
-        }
+        assertThrows(
+                "did not throw FileNotFoundException when uri is invalid.",
+                FileNotFoundException.class,
+                () -> mContentResolver.openOutputStream(invalidUri));
+
+        assertThrows(
+                "did not throw FileNotFoundException when uri is invalid.",
+                FileNotFoundException.class,
+                () -> mContentResolver.openOutputStream(invalidUri, "w"));
     }
 
+    @Test
     public void testOpenAssetFileDescriptor() throws IOException {
-        Uri uri = Uri.parse(ContentResolver.SCHEME_ANDROID_RESOURCE +
-                "://" + TEST_PACKAGE_NAME + "/" + R.raw.testimage);
+        Uri uri =
+                new Uri.Builder()
+                        .scheme(ContentResolver.SCHEME_ANDROID_RESOURCE)
+                        .authority(TEST_PACKAGE_NAME)
+                        .appendPath(String.valueOf(R.raw.testimage))
+                        .build();
 
         AssetFileDescriptor afd = mContentResolver.openAssetFileDescriptor(uri, "r");
-        assertNotNull(afd);
+        assertThat(afd).isNotNull();
         afd.close();
 
-        try {
-            mContentResolver.openAssetFileDescriptor(uri, "d");
-            fail("did not throw FileNotFoundException when mode is unknown.");
-        } catch (FileNotFoundException e) {
-            //expected.
-        }
+        assertThrows(
+                "did not throw FileNotFoundException when mode is unknown.",
+                FileNotFoundException.class,
+                () -> mContentResolver.openAssetFileDescriptor(uri, "d"));
 
         Uri invalidUri = Uri.parse("abc");
-        try {
-            mContentResolver.openAssetFileDescriptor(invalidUri, "r");
-            fail("did not throw FileNotFoundException when uri is invalid.");
-        } catch (FileNotFoundException e) {
-            //expected.
-        }
+        assertThrows(
+                "did not throw FileNotFoundException when uri is invalid.",
+                FileNotFoundException.class,
+                () -> mContentResolver.openAssetFileDescriptor(invalidUri, "r"));
     }
 
     private String consumeAssetFileDescriptor(AssetFileDescriptor afd)
             throws IOException {
-        FileInputStream stream = null;
-        try {
-            stream = afd.createInputStream();
-            InputStreamReader reader = new InputStreamReader(stream, "UTF-8");
+        try (FileInputStream stream = afd.createInputStream()) {
+            InputStreamReader reader = new InputStreamReader(stream, StandardCharsets.UTF_8);
 
             // Got it...  copy the stream into a local string and return it.
             StringBuilder builder = new StringBuilder(128);
             char[] buffer = new char[8192];
             int len;
-            while ((len=reader.read(buffer)) > 0) {
+            while ((len = reader.read(buffer)) > 0) {
                 builder.append(buffer, 0, len);
             }
             return builder.toString();
-
-        } finally {
-            if (stream != null) {
-                try {
-                    stream.close();
-                } catch (IOException e) {
-                }
-            }
         }
-
     }
 
+    @Test
     public void testCrashingOpenAssetFileDescriptor() throws IOException {
         AssetFileDescriptor afd = null;
         try {
             MockContentProvider.setCrashOnLaunch(mContext, true);
             afd = mContentResolver.openAssetFileDescriptor(REMOTE_CRASH_URI, "rw");
-            assertFalse(MockContentProvider.getCrashOnLaunch(mContext));
-            assertNotNull(afd);
+            assertThat(MockContentProvider.getCrashOnLaunch(mContext)).isFalse();
+            assertThat(afd).isNotNull();
             String str = consumeAssetFileDescriptor(afd);
             afd = null;
-            assertEquals(str, "This is the openAssetFile test data!");
+            assertThat(str).isEqualTo("This is the openAssetFile test data!");
         } finally {
             MockContentProvider.setCrashOnLaunch(mContext, false);
             if (afd != null) {
@@ -799,21 +890,23 @@ public class ContentResolverTest extends AndroidTestCase {
                     "Killing remote client -- if test process goes away, that is why!");
             uClient.delete(REMOTE_CRASH_URI, null, null);
         } catch (RemoteException e) {
+            // Expected
         }
-        uClient.release();
+        uClient.close();
     }
 
+    @Test
     public void testCrashingOpenTypedAssetFileDescriptor() throws IOException {
         AssetFileDescriptor afd = null;
         try {
             MockContentProvider.setCrashOnLaunch(mContext, true);
             afd = mContentResolver.openTypedAssetFileDescriptor(
                     REMOTE_CRASH_URI, "text/plain", null);
-            assertFalse(MockContentProvider.getCrashOnLaunch(mContext));
-            assertNotNull(afd);
+            assertThat(MockContentProvider.getCrashOnLaunch(mContext)).isFalse();
+            assertThat(afd).isNotNull();
             String str = consumeAssetFileDescriptor(afd);
             afd = null;
-            assertEquals(str, "This is the openTypedAssetFile test data!");
+            assertThat(str).isEqualTo("This is the openTypedAssetFile test data!");
         } finally {
             MockContentProvider.setCrashOnLaunch(mContext, false);
             if (afd != null) {
@@ -831,43 +924,50 @@ public class ContentResolverTest extends AndroidTestCase {
                     "Killing remote client -- if test process goes away, that is why!");
             uClient.delete(REMOTE_CRASH_URI, null, null);
         } catch (RemoteException e) {
+            // Expected
         }
-        uClient.release();
+        uClient.close();
     }
 
+    @Test
     public void testOpenFileDescriptor() throws IOException {
-        Uri uri = Uri.parse(ContentResolver.SCHEME_FILE + "://" +
-                getContext().getCacheDir().getAbsolutePath() +
-                "/temp.jpg");
+        Uri uri =
+                new Uri.Builder()
+                        .scheme(ContentResolver.SCHEME_FILE)
+                        .appendPath(mContext.getCacheDir().getAbsolutePath())
+                        .appendPath("temp.jpg")
+                        .build();
+
         ParcelFileDescriptor pfd = mContentResolver.openFileDescriptor(uri, "w");
-        assertNotNull(pfd);
+        assertThat(pfd).isNotNull();
         pfd.close();
 
-        try {
-            mContentResolver.openFileDescriptor(uri, "d");
-            fail("did not throw IllegalArgumentException when mode is unknown.");
-        } catch (IllegalArgumentException e) {
-            //expected.
-        }
+        assertThrows(
+                "did not throw IllegalArgumentException when mode is unknown.",
+                IllegalArgumentException.class,
+                () -> mContentResolver.openFileDescriptor(uri, "d"));
 
         Uri invalidUri = Uri.parse("abc");
-        try {
-            mContentResolver.openFileDescriptor(invalidUri, "w");
-            fail("did not throw FileNotFoundException when uri is invalid.");
-        } catch (FileNotFoundException e) {
-            //expected.
-        }
 
-        uri = Uri.parse(ContentResolver.SCHEME_ANDROID_RESOURCE +
-                "://" + TEST_PACKAGE_NAME + "/" + R.raw.testimage);
-        try {
-            mContentResolver.openFileDescriptor(uri, "w");
-            fail("did not throw FileNotFoundException when scheme is not accepted.");
-        } catch (FileNotFoundException e) {
-            //expected.
-        }
+        assertThrows(
+                "did not throw FileNotFoundException when uri is invalid.",
+                FileNotFoundException.class,
+                () -> mContentResolver.openFileDescriptor(invalidUri, "w"));
+
+        Uri unknownUri =
+                new Uri.Builder()
+                        .scheme(ContentResolver.SCHEME_ANDROID_RESOURCE)
+                        .authority(TEST_PACKAGE_NAME)
+                        .appendPath(String.valueOf(R.raw.testimage))
+                        .build();
+
+        assertThrows(
+                "did not throw FileNotFoundException when scheme is not accepted.",
+                FileNotFoundException.class,
+                () -> mContentResolver.openFileDescriptor(unknownUri, "w"));
     }
 
+    @Test
     public void testInsert() {
         String key4 = "key4";
         String key5 = "key5";
@@ -876,49 +976,52 @@ public class ContentResolverTest extends AndroidTestCase {
         String key4Selection = COLUMN_KEY_NAME + "=\"" + key4 + "\"";
 
         mCursor = mContentResolver.query(TABLE1_URI, null, key4Selection, null, null);
-        assertEquals(0, mCursor.getCount());
+        assertThat(mCursor.getCount()).isEqualTo(0);
         mCursor.close();
 
         ContentValues values = new ContentValues();
         values.put(COLUMN_KEY_NAME, key4);
         values.put(COLUMN_VALUE_NAME, value4);
         Uri uri = mContentResolver.insert(TABLE1_URI, values);
-        assertNotNull(uri);
+        assertThat(uri).isNotNull();
 
         mCursor = mContentResolver.query(TABLE1_URI, null, key4Selection, null, null);
-        assertNotNull(mCursor);
-        assertEquals(1, mCursor.getCount());
+        assertThat(mCursor).isNotNull();
+        assertThat(mCursor.getCount()).isEqualTo(1);
 
         mCursor.moveToFirst();
-        assertEquals(4, mCursor.getInt(mCursor.getColumnIndexOrThrow(COLUMN_ID_NAME)));
-        assertEquals(key4, mCursor.getString(mCursor.getColumnIndexOrThrow(COLUMN_KEY_NAME)));
-        assertEquals(value4, mCursor.getInt(mCursor.getColumnIndexOrThrow(COLUMN_VALUE_NAME)));
+        assertThat(mCursor.getInt(mCursor.getColumnIndexOrThrow(COLUMN_ID_NAME))).isEqualTo(4);
+        assertThat(mCursor.getString(mCursor.getColumnIndexOrThrow(COLUMN_KEY_NAME)))
+                .isEqualTo(key4);
+        assertThat(mCursor.getInt(mCursor.getColumnIndexOrThrow(COLUMN_VALUE_NAME)))
+                .isEqualTo(value4);
         mCursor.close();
 
         values.put(COLUMN_KEY_NAME, key5);
         values.put(COLUMN_VALUE_NAME, value5);
         uri = mContentResolver.insert(TABLE1_URI, values);
-        assertNotNull(uri);
+        assertThat(uri).isNotNull();
 
         // check returned uri
         mCursor = mContentResolver.query(uri, null, null, null, null);
-        assertNotNull(mCursor);
-        assertEquals(1, mCursor.getCount());
+        assertThat(mCursor).isNotNull();
+        assertThat(mCursor.getCount()).isEqualTo(1);
 
         mCursor.moveToLast();
-        assertEquals(5, mCursor.getInt(mCursor.getColumnIndexOrThrow(COLUMN_ID_NAME)));
-        assertEquals(key5, mCursor.getString(mCursor.getColumnIndexOrThrow(COLUMN_KEY_NAME)));
-        assertEquals(value5, mCursor.getInt(mCursor.getColumnIndexOrThrow(COLUMN_VALUE_NAME)));
+        assertThat(mCursor.getInt(mCursor.getColumnIndexOrThrow(COLUMN_ID_NAME))).isEqualTo(5);
+        assertThat(mCursor.getString(mCursor.getColumnIndexOrThrow(COLUMN_KEY_NAME)))
+                .isEqualTo(key5);
+        assertThat(mCursor.getInt(mCursor.getColumnIndexOrThrow(COLUMN_VALUE_NAME)))
+                .isEqualTo(value5);
         mCursor.close();
 
-        try {
-            mContentResolver.insert(null, values);
-            fail("did not throw NullPointerException when uri is null.");
-        } catch (NullPointerException e) {
-            //expected.
-        }
+        assertThrows(
+                "did not throw NullPointerException when uri is null.",
+                NullPointerException.class,
+                () -> mContentResolver.insert(null, values));
     }
 
+    @Test
     public void testBulkInsert() {
         String key4 = "key4";
         String key5 = "key5";
@@ -926,8 +1029,8 @@ public class ContentResolverTest extends AndroidTestCase {
         int value5 = 5;
 
         mCursor = mContentResolver.query(TABLE1_URI, null, null, null, null);
-        assertNotNull(mCursor);
-        assertEquals(3, mCursor.getCount());
+        assertThat(mCursor).isNotNull();
+        assertThat(mCursor.getCount()).isEqualTo(3);
         mCursor.close();
 
         ContentValues[] cvs = new ContentValues[2];
@@ -939,40 +1042,43 @@ public class ContentResolverTest extends AndroidTestCase {
         cvs[1].put(COLUMN_KEY_NAME, key5);
         cvs[1].put(COLUMN_VALUE_NAME, value5);
 
-        assertEquals(2, mContentResolver.bulkInsert(TABLE1_URI, cvs));
+        assertThat(mContentResolver.bulkInsert(TABLE1_URI, cvs)).isEqualTo(2);
         mCursor = mContentResolver.query(TABLE1_URI, null, null, null, null);
-        assertNotNull(mCursor);
-        assertEquals(5, mCursor.getCount());
+        assertThat(mCursor).isNotNull();
+        assertThat(mCursor.getCount()).isEqualTo(5);
 
         mCursor.moveToLast();
-        assertEquals(5, mCursor.getInt(mCursor.getColumnIndexOrThrow(COLUMN_ID_NAME)));
-        assertEquals(key5, mCursor.getString(mCursor.getColumnIndexOrThrow(COLUMN_KEY_NAME)));
-        assertEquals(value5, mCursor.getInt(mCursor.getColumnIndexOrThrow(COLUMN_VALUE_NAME)));
+        assertThat(mCursor.getInt(mCursor.getColumnIndexOrThrow(COLUMN_ID_NAME))).isEqualTo(5);
+        assertThat(mCursor.getString(mCursor.getColumnIndexOrThrow(COLUMN_KEY_NAME)))
+                .isEqualTo(key5);
+        assertThat(mCursor.getInt(mCursor.getColumnIndexOrThrow(COLUMN_VALUE_NAME)))
+                .isEqualTo(value5);
 
         mCursor.moveToPrevious();
-        assertEquals(4, mCursor.getInt(mCursor.getColumnIndexOrThrow(COLUMN_ID_NAME)));
-        assertEquals(key4, mCursor.getString(mCursor.getColumnIndexOrThrow(COLUMN_KEY_NAME)));
-        assertEquals(value4, mCursor.getInt(mCursor.getColumnIndexOrThrow(COLUMN_VALUE_NAME)));
+        assertThat(mCursor.getInt(mCursor.getColumnIndexOrThrow(COLUMN_ID_NAME))).isEqualTo(4);
+        assertThat(mCursor.getString(mCursor.getColumnIndexOrThrow(COLUMN_KEY_NAME)))
+                .isEqualTo(key4);
+        assertThat(mCursor.getInt(mCursor.getColumnIndexOrThrow(COLUMN_VALUE_NAME)))
+                .isEqualTo(value4);
         mCursor.close();
 
-        try {
-            mContentResolver.bulkInsert(null, cvs);
-            fail("did not throw NullPointerException when uri is null.");
-        } catch (NullPointerException e) {
-            //expected.
-        }
+        assertThrows(
+                "did not throw NullPointerException when uri is null.",
+                NullPointerException.class,
+                () -> mContentResolver.bulkInsert(null, cvs));
     }
 
+    @Test
     public void testDelete() {
         mCursor = mContentResolver.query(TABLE1_URI, null, null, null, null);
-        assertNotNull(mCursor);
-        assertEquals(3, mCursor.getCount());
+        assertThat(mCursor).isNotNull();
+        assertThat(mCursor.getCount()).isEqualTo(3);
         mCursor.close();
 
-        assertEquals(3, mContentResolver.delete(TABLE1_URI, null, null));
+        assertThat(mContentResolver.delete(TABLE1_URI, null, null)).isEqualTo(3);
         mCursor = mContentResolver.query(TABLE1_URI, null, null, null, null);
-        assertNotNull(mCursor);
-        assertEquals(0, mCursor.getCount());
+        assertThat(mCursor).isNotNull();
+        assertThat(mCursor.getCount()).isEqualTo(0);
         mCursor.close();
 
         // add three rows to database.
@@ -991,52 +1097,57 @@ public class ContentResolverTest extends AndroidTestCase {
 
         // test delete row using selection
         String selection = COLUMN_ID_NAME + "=2";
-        assertEquals(1, mContentResolver.delete(TABLE1_URI, selection, null));
+        assertThat(mContentResolver.delete(TABLE1_URI, selection, null)).isEqualTo(1);
 
         mCursor = mContentResolver.query(TABLE1_URI, null, null, null, null);
-        assertNotNull(mCursor);
-        assertEquals(2, mCursor.getCount());
+        assertThat(mCursor).isNotNull();
+        assertThat(mCursor.getCount()).isEqualTo(2);
 
         mCursor.moveToFirst();
-        assertEquals(1, mCursor.getInt(mCursor.getColumnIndexOrThrow(COLUMN_ID_NAME)));
-        assertEquals(KEY1, mCursor.getString(mCursor.getColumnIndexOrThrow(COLUMN_KEY_NAME)));
-        assertEquals(VALUE1, mCursor.getInt(mCursor.getColumnIndexOrThrow(COLUMN_VALUE_NAME)));
+        assertThat(mCursor.getInt(mCursor.getColumnIndexOrThrow(COLUMN_ID_NAME))).isEqualTo(1);
+        assertThat(mCursor.getString(mCursor.getColumnIndexOrThrow(COLUMN_KEY_NAME)))
+                .isEqualTo(KEY1);
+        assertThat(mCursor.getInt(mCursor.getColumnIndexOrThrow(COLUMN_VALUE_NAME)))
+                .isEqualTo(VALUE1);
 
         mCursor.moveToNext();
-        assertEquals(3, mCursor.getInt(mCursor.getColumnIndexOrThrow(COLUMN_ID_NAME)));
-        assertEquals(KEY3, mCursor.getString(mCursor.getColumnIndexOrThrow(COLUMN_KEY_NAME)));
-        assertEquals(VALUE3, mCursor.getInt(mCursor.getColumnIndexOrThrow(COLUMN_VALUE_NAME)));
+        assertThat(mCursor.getInt(mCursor.getColumnIndexOrThrow(COLUMN_ID_NAME))).isEqualTo(3);
+        assertThat(mCursor.getString(mCursor.getColumnIndexOrThrow(COLUMN_KEY_NAME)))
+                .isEqualTo(KEY3);
+        assertThat(mCursor.getInt(mCursor.getColumnIndexOrThrow(COLUMN_VALUE_NAME)))
+                .isEqualTo(VALUE3);
         mCursor.close();
 
         selection = COLUMN_VALUE_NAME + "=3";
-        assertEquals(1, mContentResolver.delete(TABLE1_URI, selection, null));
+        assertThat(mContentResolver.delete(TABLE1_URI, selection, null)).isEqualTo(1);
 
         mCursor = mContentResolver.query(TABLE1_URI, null, null, null, null);
-        assertNotNull(mCursor);
-        assertEquals(1, mCursor.getCount());
+        assertThat(mCursor).isNotNull();
+        assertThat(mCursor.getCount()).isEqualTo(1);
 
         mCursor.moveToFirst();
-        assertEquals(1, mCursor.getInt(mCursor.getColumnIndexOrThrow(COLUMN_ID_NAME)));
-        assertEquals(KEY1, mCursor.getString(mCursor.getColumnIndexOrThrow(COLUMN_KEY_NAME)));
-        assertEquals(VALUE1, mCursor.getInt(mCursor.getColumnIndexOrThrow(COLUMN_VALUE_NAME)));
+        assertThat(mCursor.getInt(mCursor.getColumnIndexOrThrow(COLUMN_ID_NAME))).isEqualTo(1);
+        assertThat(mCursor.getString(mCursor.getColumnIndexOrThrow(COLUMN_KEY_NAME)))
+                .isEqualTo(KEY1);
+        assertThat(mCursor.getInt(mCursor.getColumnIndexOrThrow(COLUMN_VALUE_NAME)))
+                .isEqualTo(VALUE1);
         mCursor.close();
 
         selection = COLUMN_KEY_NAME + "=\"" + KEY1 + "\"";
-        assertEquals(1, mContentResolver.delete(TABLE1_URI, selection, null));
+        assertThat(mContentResolver.delete(TABLE1_URI, selection, null)).isEqualTo(1);
 
         mCursor = mContentResolver.query(TABLE1_URI, null, null, null, null);
-        assertNotNull(mCursor);
-        assertEquals(0, mCursor.getCount());
+        assertThat(mCursor).isNotNull();
+        assertThat(mCursor.getCount()).isEqualTo(0);
         mCursor.close();
 
-        try {
-            mContentResolver.delete(null, null, null);
-            fail("did not throw NullPointerException when uri is null.");
-        } catch (NullPointerException e) {
-            //expected.
-        }
+        assertThrows(
+                "did not throw NullPointerException when uri is null.",
+                NullPointerException.class,
+                () -> mContentResolver.delete(null, null, null));
     }
 
+    @Test
     public void testUpdate() {
         ContentValues values = new ContentValues();
         String key10 = "key10";
@@ -1048,25 +1159,31 @@ public class ContentResolverTest extends AndroidTestCase {
         values.put(COLUMN_VALUE_NAME, value10);
 
         // test update all the rows.
-        assertEquals(3, mContentResolver.update(TABLE1_URI, values, null, null));
+        assertThat(mContentResolver.update(TABLE1_URI, values, null, null)).isEqualTo(3);
         mCursor = mContentResolver.query(TABLE1_URI, null, null, null, null);
-        assertNotNull(mCursor);
-        assertEquals(3, mCursor.getCount());
+        assertThat(mCursor).isNotNull();
+        assertThat(mCursor.getCount()).isEqualTo(3);
 
         mCursor.moveToFirst();
-        assertEquals(1, mCursor.getInt(mCursor.getColumnIndexOrThrow(COLUMN_ID_NAME)));
-        assertEquals(key10, mCursor.getString(mCursor.getColumnIndexOrThrow(COLUMN_KEY_NAME)));
-        assertEquals(value10, mCursor.getInt(mCursor.getColumnIndexOrThrow(COLUMN_VALUE_NAME)));
+        assertThat(mCursor.getInt(mCursor.getColumnIndexOrThrow(COLUMN_ID_NAME))).isEqualTo(1);
+        assertThat(mCursor.getString(mCursor.getColumnIndexOrThrow(COLUMN_KEY_NAME)))
+                .isEqualTo(key10);
+        assertThat(mCursor.getInt(mCursor.getColumnIndexOrThrow(COLUMN_VALUE_NAME)))
+                .isEqualTo(value10);
 
         mCursor.moveToNext();
-        assertEquals(2, mCursor.getInt(mCursor.getColumnIndexOrThrow(COLUMN_ID_NAME)));
-        assertEquals(key10, mCursor.getString(mCursor.getColumnIndexOrThrow(COLUMN_KEY_NAME)));
-        assertEquals(value10, mCursor.getInt(mCursor.getColumnIndexOrThrow(COLUMN_VALUE_NAME)));
+        assertThat(mCursor.getInt(mCursor.getColumnIndexOrThrow(COLUMN_ID_NAME))).isEqualTo(2);
+        assertThat(mCursor.getString(mCursor.getColumnIndexOrThrow(COLUMN_KEY_NAME)))
+                .isEqualTo(key10);
+        assertThat(mCursor.getInt(mCursor.getColumnIndexOrThrow(COLUMN_VALUE_NAME)))
+                .isEqualTo(value10);
 
         mCursor.moveToLast();
-        assertEquals(3, mCursor.getInt(mCursor.getColumnIndexOrThrow(COLUMN_ID_NAME)));
-        assertEquals(key10, mCursor.getString(mCursor.getColumnIndexOrThrow(COLUMN_KEY_NAME)));
-        assertEquals(value10, mCursor.getInt(mCursor.getColumnIndexOrThrow(COLUMN_VALUE_NAME)));
+        assertThat(mCursor.getInt(mCursor.getColumnIndexOrThrow(COLUMN_ID_NAME))).isEqualTo(3);
+        assertThat(mCursor.getString(mCursor.getColumnIndexOrThrow(COLUMN_KEY_NAME)))
+                .isEqualTo(key10);
+        assertThat(mCursor.getInt(mCursor.getColumnIndexOrThrow(COLUMN_VALUE_NAME)))
+                .isEqualTo(value10);
         mCursor.close();
 
         // test update one row using selection.
@@ -1074,37 +1191,41 @@ public class ContentResolverTest extends AndroidTestCase {
         values.put(COLUMN_KEY_NAME, key20);
         values.put(COLUMN_VALUE_NAME, value20);
 
-        assertEquals(1, mContentResolver.update(TABLE1_URI, values, selection, null));
+        assertThat(mContentResolver.update(TABLE1_URI, values, selection, null)).isEqualTo(1);
         mCursor = mContentResolver.query(TABLE1_URI, null, null, null, null);
-        assertNotNull(mCursor);
-        assertEquals(3, mCursor.getCount());
+        assertThat(mCursor).isNotNull();
+        assertThat(mCursor.getCount()).isEqualTo(3);
 
         mCursor.moveToFirst();
-        assertEquals(1, mCursor.getInt(mCursor.getColumnIndexOrThrow(COLUMN_ID_NAME)));
-        assertEquals(key20, mCursor.getString(mCursor.getColumnIndexOrThrow(COLUMN_KEY_NAME)));
-        assertEquals(value20, mCursor.getInt(mCursor.getColumnIndexOrThrow(COLUMN_VALUE_NAME)));
+        assertThat(mCursor.getInt(mCursor.getColumnIndexOrThrow(COLUMN_ID_NAME))).isEqualTo(1);
+        assertThat(mCursor.getString(mCursor.getColumnIndexOrThrow(COLUMN_KEY_NAME)))
+                .isEqualTo(key20);
+        assertThat(mCursor.getInt(mCursor.getColumnIndexOrThrow(COLUMN_VALUE_NAME)))
+                .isEqualTo(value20);
 
         mCursor.moveToNext();
-        assertEquals(2, mCursor.getInt(mCursor.getColumnIndexOrThrow(COLUMN_ID_NAME)));
-        assertEquals(key10, mCursor.getString(mCursor.getColumnIndexOrThrow(COLUMN_KEY_NAME)));
-        assertEquals(value10, mCursor.getInt(mCursor.getColumnIndexOrThrow(COLUMN_VALUE_NAME)));
+        assertThat(mCursor.getInt(mCursor.getColumnIndexOrThrow(COLUMN_ID_NAME))).isEqualTo(2);
+        assertThat(mCursor.getString(mCursor.getColumnIndexOrThrow(COLUMN_KEY_NAME)))
+                .isEqualTo(key10);
+        assertThat(mCursor.getInt(mCursor.getColumnIndexOrThrow(COLUMN_VALUE_NAME)))
+                .isEqualTo(value10);
 
         mCursor.moveToLast();
-        assertEquals(3, mCursor.getInt(mCursor.getColumnIndexOrThrow(COLUMN_ID_NAME)));
-        assertEquals(key10, mCursor.getString(mCursor.getColumnIndexOrThrow(COLUMN_KEY_NAME)));
-        assertEquals(value10, mCursor.getInt(mCursor.getColumnIndexOrThrow(COLUMN_VALUE_NAME)));
+        assertThat(mCursor.getInt(mCursor.getColumnIndexOrThrow(COLUMN_ID_NAME))).isEqualTo(3);
+        assertThat(mCursor.getString(mCursor.getColumnIndexOrThrow(COLUMN_KEY_NAME)))
+                .isEqualTo(key10);
+        assertThat(mCursor.getInt(mCursor.getColumnIndexOrThrow(COLUMN_VALUE_NAME)))
+                .isEqualTo(value10);
         mCursor.close();
 
-        try {
-            mContentResolver.update(null, values, null, null);
-            fail("did not throw NullPointerException when uri is null.");
-        } catch (NullPointerException e) {
-            //expected.
-        }
+        assertThrows(
+                "did not throw NullPointerException when uri is null.",
+                NullPointerException.class,
+                () -> mContentResolver.update(null, values, null, null));
 
         try {
             mContentResolver.update(TABLE1_URI, null, null, null);
-            fail("did not throw required exception when values are null.");
+            assertWithMessage("did not throw required exception when values are null.").fail();
         } catch (Exception e) {
             // If this test is running in an SDK sandbox instead of a regular app, the
             // ContentProvider runs in the app process. When the SDK sandbox interacts with the
@@ -1115,60 +1236,65 @@ public class ContentResolverTest extends AndroidTestCase {
                     Process.isSdkSandbox()
                             ? NullPointerException.class
                             : IllegalArgumentException.class;
-            assertEquals(e.getClass(), expectedErrorType);
+            assertThat(e.getClass()).isEqualTo(expectedErrorType);
         }
     }
 
+    @Test
     public void testRefresh_DefaultImplReturnsFalse() {
         boolean refreshed = mContentResolver.refresh(TABLE1_URI, null, null);
-        assertFalse(refreshed);
+        assertThat(refreshed).isFalse();
         MockContentProvider.assertRefreshed(TABLE1_URI);
     }
 
+    @Test
     public void testRefresh_ReturnsProviderValue() {
-        try {
-            MockContentProvider.setRefreshReturnValue(true);
-            boolean refreshed = mContentResolver.refresh(TABLE1_URI, null, null);
-            assertTrue(refreshed);
-            MockContentProvider.assertRefreshed(TABLE1_URI);
-        } finally {
-            MockContentProvider.setRefreshReturnValue(false);
-        }
+        MockContentProvider.setRefreshReturnValue(true);
+        boolean refreshed = mContentResolver.refresh(TABLE1_URI, null, null);
+        assertThat(refreshed).isTrue();
+        MockContentProvider.assertRefreshed(TABLE1_URI);
     }
 
+    @Test
     public void testRefresh_NullUriThrowsImmediately() {
-        try {
-            mContentResolver.refresh(null, null, null);
-            fail("did not throw NullPointerException when uri is null.");
-        } catch (NullPointerException e) {
-            //expected.
-        }
+        assertThrows(
+                "did not throw NullPointerException when uri is null.",
+                NullPointerException.class,
+                () -> mContentResolver.refresh(null, null, null));
     }
 
     public void testRefresh_CancellableThrowsImmediately() {
         CancellationSignal cancellationSignal = new CancellationSignal();
         cancellationSignal.cancel();
 
-        try {
-            mContentResolver.refresh(TABLE1_URI, null, cancellationSignal);
-            fail("Expected OperationCanceledException");
-        } catch (OperationCanceledException ex) {
-            // expected
-        }
+        assertThrows(
+                "Expected OperationCanceledException",
+                OperationCanceledException.class,
+                () -> mContentResolver.refresh(TABLE1_URI, null, cancellationSignal));
     }
 
+    @Test
     public void testCheckUriPermission() {
-        assertEquals(PackageManager.PERMISSION_GRANTED, mContentResolver.checkUriPermission(
-                TABLE1_URI, android.os.Process.myUid(), Intent.FLAG_GRANT_READ_URI_PERMISSION));
-        assertEquals(PackageManager.PERMISSION_DENIED, mContentResolver.checkUriPermission(
-                TABLE1_URI, android.os.Process.myUid(), Intent.FLAG_GRANT_WRITE_URI_PERMISSION));
+        assertThat(
+                        mContentResolver.checkUriPermission(
+                                TABLE1_URI,
+                                android.os.Process.myUid(),
+                                Intent.FLAG_GRANT_READ_URI_PERMISSION))
+                .isEqualTo(PackageManager.PERMISSION_GRANTED);
+        assertThat(
+                        mContentResolver.checkUriPermission(
+                                TABLE1_URI,
+                                android.os.Process.myUid(),
+                                Intent.FLAG_GRANT_WRITE_URI_PERMISSION))
+                .isEqualTo(PackageManager.PERMISSION_DENIED);
     }
 
+    @Test
     public void testRegisterContentObserver() {
         final MockContentObserver mco = new MockContentObserver();
 
         mContentResolver.registerContentObserver(TABLE1_URI, true, mco);
-        assertFalse(mco.hadOnChanged());
+        assertThat(mco.hadOnChanged()).isFalse();
 
         ContentValues values = new ContentValues();
         values.put(COLUMN_KEY_NAME, "key10");
@@ -1183,47 +1309,49 @@ public class ContentResolverTest extends AndroidTestCase {
 
         mco.reset();
         mContentResolver.unregisterContentObserver(mco);
-        assertFalse(mco.hadOnChanged());
+        assertThat(mco.hadOnChanged()).isFalse();
         mContentResolver.update(TABLE1_URI, values, null, null);
 
-        assertFalse(mco.hadOnChanged());
+        assertThat(mco.hadOnChanged()).isFalse();
 
         try {
             mContentResolver.registerContentObserver(null, false, mco);
-            fail("did not throw NullPointerException or IllegalArgumentException when uri is null.");
+            assertWithMessage(
+                            "did not throw NullPointerException or IllegalArgumentException when"
+                                    + " uri is null.")
+                    .fail();
         } catch (NullPointerException e) {
             //expected.
         } catch (IllegalArgumentException e) {
             // also expected
         }
 
-        try {
-            mContentResolver.registerContentObserver(TABLE1_URI, false, null);
-            fail("did not throw NullPointerException when register null content observer.");
-        } catch (NullPointerException e) {
-            //expected.
-        }
+        assertThrows(
+                "did not throw NullPointerException when register null content observer.",
+                NullPointerException.class,
+                () -> mContentResolver.registerContentObserver(TABLE1_URI, false, null));
 
-        try {
-            mContentResolver.unregisterContentObserver(null);
-            fail("did not throw NullPointerException when unregister null content observer.");
-        } catch (NullPointerException e) {
-            //expected.
-        }
+        assertThrows(
+                "did not throw NullPointerException when unregister null content observer.",
+                NullPointerException.class,
+                () -> mContentResolver.unregisterContentObserver(null));
     }
+
     // Tests registerContentObserverForAllUsers without INTERACT_ACROSS_USERS_FULL: verify
     // SecurityException.
+    @Test
     public void testRegisterContentObserverForAllUsersWithoutPermission() {
         final MockContentObserver mco = new MockContentObserver();
-        try {
-            mContentResolver.registerContentObserverAsUser(TABLE1_URI, true, mco, UserHandle.ALL);
-            fail("testRegisterContentObserverForAllUsers: "
-                    + "SecurityException expected on testRegisterContentObserverForAllUsers");
-        } catch (SecurityException se) {
-            // expected
-        }
+        assertThrows(
+                "testRegisterContentObserverForAllUsers: "
+                        + "SecurityException expected on testRegisterContentObserverForAllUsers",
+                SecurityException.class,
+                () ->
+                        mContentResolver.registerContentObserverAsUser(
+                                TABLE1_URI, true, mco, UserHandle.ALL));
     }
 
+    @Test
     public void testRegisterContentObserverAsUser() {
         final MockContentObserver mco = new MockContentObserver();
 
@@ -1231,7 +1359,7 @@ public class ContentResolverTest extends AndroidTestCase {
                 mContentResolver,
                 (cr) -> cr.registerContentObserverAsUser(TABLE1_URI, true, mco, mContext.getUser())
         );
-        assertFalse(mco.hadOnChanged());
+        assertThat(mco.hadOnChanged()).isFalse();
 
         ContentValues values = new ContentValues();
         values.put(COLUMN_KEY_NAME, "key10");
@@ -1246,12 +1374,13 @@ public class ContentResolverTest extends AndroidTestCase {
 
         mco.reset();
         mContentResolver.unregisterContentObserver(mco);
-        assertFalse(mco.hadOnChanged());
+        assertThat(mco.hadOnChanged()).isFalse();
         mContentResolver.update(TABLE1_URI, values, null, null);
 
-        assertFalse(mco.hadOnChanged());
+        assertThat(mco.hadOnChanged()).isFalse();
     }
 
+    @Test
     public void testRegisterContentObserverForAllUsers() {
         final MockContentObserver mco = new MockContentObserver();
 
@@ -1259,7 +1388,7 @@ public class ContentResolverTest extends AndroidTestCase {
                 mContentResolver,
                 (cr) -> cr.registerContentObserverAsUser(TABLE1_URI, true, mco, UserHandle.ALL)
         );
-        assertFalse(mco.hadOnChanged());
+        assertThat(mco.hadOnChanged()).isFalse();
 
         ContentValues values = new ContentValues();
         values.put(COLUMN_KEY_NAME, "key10");
@@ -1274,43 +1403,42 @@ public class ContentResolverTest extends AndroidTestCase {
 
         mco.reset();
         mContentResolver.unregisterContentObserver(mco);
-        assertFalse(mco.hadOnChanged());
+        assertThat(mco.hadOnChanged()).isFalse();
         mContentResolver.update(TABLE1_URI, values, null, null);
 
-        assertFalse(mco.hadOnChanged());
+        assertThat(mco.hadOnChanged()).isFalse();
 
         try {
             ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
                     mContentResolver,
                     (cr) -> cr.registerContentObserverAsUser(null, false, mco, UserHandle.ALL)
             );
-            fail("did not throw NullPointerException or IllegalArgumentException when uri is null"
-                    + ".");
+            assertWithMessage(
+                            "did not throw NullPointerException or IllegalArgumentException when"
+                                    + " uri is null.")
+                    .fail();
         } catch (NullPointerException e) {
             //expected.
         } catch (IllegalArgumentException e) {
             // also expected
         }
 
-        try {
-            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
-                    mContentResolver,
-                    (cr) -> cr.registerContentObserverAsUser(TABLE1_URI, false, null,
-                            UserHandle.ALL)
-            );
-            fail("did not throw NullPointerException when register null content observer.");
-        } catch (NullPointerException e) {
-            //expected.
-        }
-
-        try {
-            mContentResolver.unregisterContentObserver(null);
-            fail("did not throw NullPointerException when unregister null content observer.");
-        } catch (NullPointerException e) {
-            //expected.
-        }
+        assertThrows(
+                "did not throw NullPointerException when register null content observer.",
+                NullPointerException.class,
+                () ->
+                        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                                mContentResolver,
+                                (cr) ->
+                                        cr.registerContentObserverAsUser(
+                                                TABLE1_URI, false, null, UserHandle.ALL)));
+        assertThrows(
+                "did not throw NullPointerException when unregister null content observer.",
+                NullPointerException.class,
+                () -> mContentResolver.unregisterContentObserver(null));
     }
 
+    @Test
     public void testRegisterContentObserverDescendantBehavior() throws Exception {
         final MockContentObserver mco1 = new MockContentObserver();
         final MockContentObserver mco2 = new MockContentObserver();
@@ -1321,15 +1449,15 @@ public class ContentResolverTest extends AndroidTestCase {
         mContentResolver.registerContentObserver(LEVEL2_URI, true, mco2);
 
         // Initially nothing has happened.
-        assertFalse(mco1.hadOnChanged());
-        assertFalse(mco2.hadOnChanged());
+        assertThat(mco1.hadOnChanged()).isFalse();
+        assertThat(mco2.hadOnChanged()).isFalse();
 
         // Fire a change with the exact URI.
         // Should signal both observers due to exact match, notifyDescendants doesn't matter.
         mContentResolver.notifyChange(LEVEL2_URI, null);
         Thread.sleep(200);
-        assertTrue(mco1.hadOnChanged());
-        assertTrue(mco2.hadOnChanged());
+        assertThat(mco1.hadOnChanged()).isTrue();
+        assertThat(mco2.hadOnChanged()).isTrue();
         mco1.reset();
         mco2.reset();
 
@@ -1337,16 +1465,16 @@ public class ContentResolverTest extends AndroidTestCase {
         // Should only signal observer with notifyDescendants set to true.
         mContentResolver.notifyChange(LEVEL3_URI, null);
         Thread.sleep(200);
-        assertFalse(mco1.hadOnChanged());
-        assertTrue(mco2.hadOnChanged());
+        assertThat(mco1.hadOnChanged()).isFalse();
+        assertThat(mco2.hadOnChanged()).isTrue();
         mco2.reset();
 
         // Fire a change with an ancestor URI.
         // Should signal both observers due to ancestry, notifyDescendants doesn't matter.
         mContentResolver.notifyChange(LEVEL1_URI, null);
         Thread.sleep(200);
-        assertTrue(mco1.hadOnChanged());
-        assertTrue(mco2.hadOnChanged());
+        assertThat(mco1.hadOnChanged()).isTrue();
+        assertThat(mco2.hadOnChanged()).isTrue();
         mco1.reset();
         mco2.reset();
 
@@ -1354,10 +1482,11 @@ public class ContentResolverTest extends AndroidTestCase {
         // Should signal neither observer.
         mContentResolver.notifyChange(TABLE1_URI, null);
         Thread.sleep(200);
-        assertFalse(mco1.hadOnChanged());
-        assertFalse(mco2.hadOnChanged());
+        assertThat(mco1.hadOnChanged()).isFalse();
+        assertThat(mco2.hadOnChanged()).isFalse();
     }
 
+    @Test
     public void testRegisterContentObserverForAllUsersDescendantBehavior() throws Exception {
         final MockContentObserver mco1 = new MockContentObserver();
         final MockContentObserver mco2 = new MockContentObserver();
@@ -1374,15 +1503,15 @@ public class ContentResolverTest extends AndroidTestCase {
         );
 
         // Initially nothing has happened.
-        assertFalse(mco1.hadOnChanged());
-        assertFalse(mco2.hadOnChanged());
+        assertThat(mco1.hadOnChanged()).isFalse();
+        assertThat(mco2.hadOnChanged()).isFalse();
 
         // Fire a change with the exact URI.
         // Should signal both observers due to exact match, notifyDescendants doesn't matter.
         mContentResolver.notifyChange(LEVEL2_URI, null);
         Thread.sleep(200);
-        assertTrue(mco1.hadOnChanged());
-        assertTrue(mco2.hadOnChanged());
+        assertThat(mco1.hadOnChanged()).isTrue();
+        assertThat(mco2.hadOnChanged()).isTrue();
         mco1.reset();
         mco2.reset();
 
@@ -1390,16 +1519,16 @@ public class ContentResolverTest extends AndroidTestCase {
         // Should only signal observer with notifyDescendants set to true.
         mContentResolver.notifyChange(LEVEL3_URI, null);
         Thread.sleep(200);
-        assertFalse(mco1.hadOnChanged());
-        assertTrue(mco2.hadOnChanged());
+        assertThat(mco1.hadOnChanged()).isFalse();
+        assertThat(mco2.hadOnChanged()).isTrue();
         mco2.reset();
 
         // Fire a change with an ancestor URI.
         // Should signal both observers due to ancestry, notifyDescendants doesn't matter.
         mContentResolver.notifyChange(LEVEL1_URI, null);
         Thread.sleep(200);
-        assertTrue(mco1.hadOnChanged());
-        assertTrue(mco2.hadOnChanged());
+        assertThat(mco1.hadOnChanged()).isTrue();
+        assertThat(mco2.hadOnChanged()).isTrue();
         mco1.reset();
         mco2.reset();
 
@@ -1407,15 +1536,16 @@ public class ContentResolverTest extends AndroidTestCase {
         // Should signal neither observer.
         mContentResolver.notifyChange(TABLE1_URI, null);
         Thread.sleep(200);
-        assertFalse(mco1.hadOnChanged());
-        assertFalse(mco2.hadOnChanged());
+        assertThat(mco1.hadOnChanged()).isFalse();
+        assertThat(mco2.hadOnChanged()).isFalse();
     }
 
+    @Test
     public void testNotifyChange1() {
         final MockContentObserver mco = new MockContentObserver();
 
         mContentResolver.registerContentObserver(TABLE1_URI, true, mco);
-        assertFalse(mco.hadOnChanged());
+        assertThat(mco.hadOnChanged()).isFalse();
 
         mContentResolver.notifyChange(TABLE1_URI, mco);
         new PollingCheck() {
@@ -1428,13 +1558,14 @@ public class ContentResolverTest extends AndroidTestCase {
         mContentResolver.unregisterContentObserver(mco);
     }
 
+    @Test
     public void testNotifyChange2() {
         final MockContentObserver mco = new MockContentObserver();
 
         mContentResolver.registerContentObserver(TABLE1_URI, true, mco);
-        assertFalse(mco.hadOnChanged());
+        assertThat(mco.hadOnChanged()).isFalse();
 
-        mContentResolver.notifyChange(TABLE1_URI, mco, false);
+        mContentResolver.notifyChange(TABLE1_URI, mco, 0);
         new PollingCheck() {
             @Override
             protected boolean check() {
@@ -1446,10 +1577,10 @@ public class ContentResolverTest extends AndroidTestCase {
     }
 
     /**
-     * Verify that callers using the {@link Iterable} version of
-     * {@link ContentResolver#notifyChange} are correctly split and delivered to
-     * disjoint listeners.
+     * Verify that callers using the {@link Iterable} version of {@link
+     * ContentResolver#notifyChange} are correctly split and delivered to disjoint listeners.
      */
+    @Test
     public void testNotifyChange_MultipleSplit() {
         final MockContentObserver observer1 = new MockContentObserver();
         final MockContentObserver observer2 = new MockContentObserver();
@@ -1457,8 +1588,8 @@ public class ContentResolverTest extends AndroidTestCase {
         mContentResolver.registerContentObserver(TABLE1_URI, true, observer1);
         mContentResolver.registerContentObserver(TABLE2_URI, true, observer2);
 
-        assertFalse(observer1.hadOnChanged());
-        assertFalse(observer2.hadOnChanged());
+        assertThat(observer1.hadOnChanged()).isFalse();
+        assertThat(observer2.hadOnChanged()).isFalse();
 
         final ArrayList<Uri> list = new ArrayList<>();
         list.add(TABLE1_URI);
@@ -1477,10 +1608,11 @@ public class ContentResolverTest extends AndroidTestCase {
     }
 
     /**
-     * Verify that callers using the {@link Iterable} version of
-     * {@link ContentResolver#notifyChange} are correctly grouped and delivered
-     * to overlapping listeners, including untouched flags.
+     * Verify that callers using the {@link Iterable} version of {@link
+     * ContentResolver#notifyChange} are correctly grouped and delivered to overlapping listeners,
+     * including untouched flags.
      */
+    @Test
     public void testNotifyChange_MultipleFlags() {
         final MockContentObserver observer1 = new MockContentObserver();
         final MockContentObserver observer2 = new MockContentObserver();
@@ -1488,21 +1620,21 @@ public class ContentResolverTest extends AndroidTestCase {
         mContentResolver.registerContentObserver(LEVEL1_URI, false, observer1);
         mContentResolver.registerContentObserver(LEVEL2_URI, false, observer2);
 
-        mContentResolver.notifyChange(
-                Arrays.asList(LEVEL1_URI), null, 0);
+        mContentResolver.notifyChange(List.of(LEVEL1_URI), null, 0);
         mContentResolver.notifyChange(
                 Arrays.asList(LEVEL1_URI, LEVEL2_URI), null, NOTIFY_INSERT);
-        mContentResolver.notifyChange(
-                Arrays.asList(LEVEL2_URI), null, NOTIFY_UPDATE);
+        mContentResolver.notifyChange(List.of(LEVEL2_URI), null, NOTIFY_UPDATE);
 
-        final List<Change> expected1 = Arrays.asList(
-                new Change(false, Arrays.asList(LEVEL1_URI), 0),
-                new Change(false, Arrays.asList(LEVEL1_URI), NOTIFY_INSERT));
+        final List<Change> expected1 =
+                Arrays.asList(
+                        new Change(false, List.of(LEVEL1_URI), 0),
+                        new Change(false, List.of(LEVEL1_URI), NOTIFY_INSERT));
 
-        final List<Change> expected2 = Arrays.asList(
-                new Change(false, Arrays.asList(LEVEL1_URI), 0),
-                new Change(false, Arrays.asList(LEVEL1_URI, LEVEL2_URI), NOTIFY_INSERT),
-                new Change(false, Arrays.asList(LEVEL2_URI), NOTIFY_UPDATE));
+        final List<Change> expected2 =
+                Arrays.asList(
+                        new Change(false, List.of(LEVEL1_URI), 0),
+                        new Change(false, Arrays.asList(LEVEL1_URI, LEVEL2_URI), NOTIFY_INSERT),
+                        new Change(false, List.of(LEVEL2_URI), NOTIFY_UPDATE));
 
         new PollingCheck() {
             @Override
@@ -1516,6 +1648,7 @@ public class ContentResolverTest extends AndroidTestCase {
         mContentResolver.unregisterContentObserver(observer2);
     }
 
+    @Test
     public void testStartCancelSync() {
         Bundle extras = new Bundle();
 
@@ -1528,19 +1661,19 @@ public class ContentResolverTest extends AndroidTestCase {
         //FIXME: how to assert.
     }
 
+    @Test
     public void testStartSyncFailure() {
-        try {
-            ContentResolver.requestSync(null, null, null);
-            fail("did not throw IllegalArgumentException when extras is null.");
-        } catch (IllegalArgumentException e) {
-            //expected.
-        }
+        assertThrows(
+                "did not throw IllegalArgumentException when extras is null.",
+                IllegalArgumentException.class,
+                () -> ContentResolver.requestSync(null, null, null));
     }
 
+    @Test
     public void testValidateSyncExtrasBundle() {
         Bundle extras = new Bundle();
         extras.putInt("Integer", 20);
-        extras.putLong("Long", 10l);
+        extras.putLong("Long", 10L);
         extras.putBoolean("Boolean", true);
         extras.putFloat("Float", 5.5f);
         extras.putDouble("Double", 2.5);
@@ -1550,31 +1683,34 @@ public class ContentResolverTest extends AndroidTestCase {
         ContentResolver.validateSyncExtrasBundle(extras);
 
         extras.putChar("Char", 'a'); // type Char is invalid
-        try {
-            ContentResolver.validateSyncExtrasBundle(extras);
-            fail("did not throw IllegalArgumentException when extras is invalide.");
-        } catch (IllegalArgumentException e) {
-            //expected.
-        }
+        assertThrows(
+                "did not throw IllegalArgumentException when extras is invalid.",
+                IllegalArgumentException.class,
+                () -> ContentResolver.validateSyncExtrasBundle(extras));
     }
 
     @AppModeFull
+    @Test
     public void testHangRecover() throws Exception {
         InstrumentationRegistry.getInstrumentation().getUiAutomation()
                 .adoptShellPermissionIdentity(android.Manifest.permission.REMOVE_TASKS);
 
         final CountDownLatch latch = new CountDownLatch(1);
-        new Thread(() -> {
-            final ContentProviderClient client = mContentResolver
-                    .acquireUnstableContentProviderClient(REMOTE_AUTHORITY);
-            client.setDetectNotResponding(2_000);
-            try {
-                client.query(REMOTE_HANG_URI, null, null, null);
-                fail("Funky, we somehow returned?");
-            } catch (RemoteException e) {
-                latch.countDown();
-            }
-        }).start();
+        new Thread(
+                        () -> {
+                            try (ContentProviderClient client =
+                                    mContentResolver.acquireUnstableContentProviderClient(
+                                            REMOTE_AUTHORITY)) {
+                                client.setDetectNotResponding(2_000);
+                                try {
+                                    client.query(REMOTE_HANG_URI, null, null, null);
+                                    assertWithMessage("Funky, we somehow returned?").fail();
+                                } catch (RemoteException e) {
+                                    latch.countDown();
+                                }
+                            }
+                        })
+                .start();
 
         // The remote process should have been killed after the ANR was detected
         // above, causing our pending call to return and release our latch above
@@ -1583,59 +1719,64 @@ public class ContentResolverTest extends AndroidTestCase {
         latch.await(10, TimeUnit.SECONDS);
     }
 
-    public void testGetTypeInfo() throws Exception {
-        for (String mimeType : new String[] {
-                "image/png",
-                "IMage/PnG",
-                "image/x-custom",
-                "application/x-flac",
-                "application/rdf+xml",
-                "x-custom/x-custom",
-        }) {
+    @Test
+    public void testGetTypeInfo() {
+        for (String mimeType :
+                new String[] {
+                    "image/png",
+                    "IMage/PnG",
+                    "image/x-custom",
+                    "application/x-flac",
+                    "application/rdf+xml",
+                    "x-custom/x-custom",
+                }) {
             final MimeTypeInfo ti = mContentResolver.getTypeInfo(mimeType);
-            assertNotNull(ti);
-            assertNotNull(ti.getLabel());
-            assertNotNull(ti.getContentDescription());
-            assertNotNull(ti.getIcon());
+            assertThat(ti).isNotNull();
+            assertThat(ti.getLabel()).isNotNull();
+            assertThat(ti.getContentDescription()).isNotNull();
+            assertThat(ti.getIcon()).isNotNull();
         }
     }
 
-    public void testGetTypeInfo_Invalid() throws Exception {
-        try {
-            mContentResolver.getTypeInfo(null);
-            fail("Expected exception for null");
-        } catch (NullPointerException expected) {
-        }
+    @Test
+    public void testGetTypeInfo_Invalid() {
+        assertThrows(
+                "Expected exception for null",
+                NullPointerException.class,
+                () -> mContentResolver.getTypeInfo(null));
     }
 
-    public void testWrapContentProvider() throws Exception {
-        try (ContentProviderClient local = getContext().getContentResolver()
-                .acquireContentProviderClient(AUTHORITY)) {
+    @Test
+    public void testWrapContentProvider() {
+        try (ContentProviderClient local =
+                mContext.getContentResolver().acquireContentProviderClient(AUTHORITY)) {
             final ContentResolver resolver = ContentResolver.wrap(local.getLocalContentProvider());
-            assertNotNull(resolver.getType(TABLE1_URI));
+            assertThat(resolver.getType(TABLE1_URI)).isNotNull();
             try {
                 resolver.getType(REMOTE_TABLE1_URI);
-                fail();
+                assertWithMessage("").fail();
             } catch (SecurityException | IllegalArgumentException expected) {
             }
         }
     }
 
-    public void testWrapContentProviderClient() throws Exception {
-        try (ContentProviderClient remote = getContext().getContentResolver()
-                .acquireContentProviderClient(REMOTE_AUTHORITY)) {
+    @Test
+    public void testWrapContentProviderClient() {
+        try (ContentProviderClient remote =
+                mContext.getContentResolver().acquireContentProviderClient(REMOTE_AUTHORITY)) {
             final ContentResolver resolver = ContentResolver.wrap(remote);
-            assertNotNull(resolver.getType(REMOTE_TABLE1_URI));
+            assertThat(resolver.getType(REMOTE_TABLE1_URI)).isNotNull();
             try {
                 resolver.getType(TABLE1_URI);
-                fail();
+                assertWithMessage("").fail();
             } catch (SecurityException | IllegalArgumentException expected) {
             }
         }
     }
 
     @AppModeFull
-    public void testContentResolverCaching() throws Exception {
+    @Test
+    public void testContentResolverCaching() {
         InstrumentationRegistry.getInstrumentation().getUiAutomation().adoptShellPermissionIdentity(
                 android.Manifest.permission.CACHE_CONTENT,
                 android.Manifest.permission.INTERACT_ACROSS_USERS_FULL);
@@ -1645,7 +1786,7 @@ public class ContentResolverTest extends AndroidTestCase {
         mContentResolver.putCache(TABLE1_URI, cached);
 
         Bundle response = mContentResolver.getCache(TABLE1_URI);
-        assertEquals("value", response.getString("key"));
+        assertThat(response.getString("key")).isEqualTo("value");
 
         ContentValues values = new ContentValues();
         values.put(COLUMN_KEY_NAME, "key10");
@@ -1653,53 +1794,60 @@ public class ContentResolverTest extends AndroidTestCase {
         mContentResolver.update(TABLE1_URI, values, null, null);
 
         response = mContentResolver.getCache(TABLE1_URI);
-        assertNull(response);
+        assertThat(response).isNull();
     }
 
+    @Test
     public void testEncodeDecode() {
-        final Uri expected = Uri.parse("content://com.example/item/23");
+        final Uri expected =
+                new Uri.Builder()
+                        .scheme(ContentResolver.SCHEME_CONTENT)
+                        .authority(AUTHORITY)
+                        .appendPath("com.example")
+                        .appendPath("item")
+                        .appendPath("23")
+                        .build();
         final File file = ContentResolver.encodeToFile(expected);
-        assertNotNull(file);
+        assertThat(file).isNotNull();
 
         final Uri actual = ContentResolver.decodeFromFile(file);
-        assertNotNull(actual);
-        assertEquals(expected, actual);
+        assertThat(actual).isNotNull();
+        assertThat(actual).isEqualTo(expected);
     }
 
-    public static class Change {
-        public final boolean selfChange;
-        public final Iterable<Uri> uris;
-        public final int flags;
-        @UserIdInt
-        public final int userId;
+    private static final class Change {
+        private final boolean mSelfChange;
+        private final Iterable<Uri> mUris;
+        private final int mFlags;
+        @UserIdInt private final int mUserId;
 
-        public Change(boolean selfChange, Iterable<Uri> uris, int flags) {
-            this.selfChange = selfChange;
-            this.uris = uris;
-            this.flags = flags;
-            this.userId = -1;
+        Change(boolean selfChange, Iterable<Uri> uris, int flags) {
+            mSelfChange = selfChange;
+            mUris = uris;
+            mFlags = flags;
+            mUserId = -1;
         }
 
-        public Change(boolean selfChange, Iterable<Uri> uris, int flags, @UserIdInt int userId) {
-            this.selfChange = selfChange;
-            this.uris = uris;
-            this.flags = flags;
-            this.userId = userId;
+        Change(boolean selfChange, Iterable<Uri> uris, int flags, @UserIdInt int userId) {
+            mSelfChange = selfChange;
+            mUris = uris;
+            mFlags = flags;
+            mUserId = userId;
         }
 
         @Override
         public String toString() {
-            return String.format("onChange(%b, %s, %d, %d)",
-                    selfChange, asSet(uris).toString(), flags, userId);
+            return String.format(
+                    "onChange(%b, %s, %d, %d)", mSelfChange, asSet(mUris), mFlags, mUserId);
         }
 
         @Override
         public boolean equals(Object other) {
-            if (other instanceof Change) {
-                final Change change = (Change) other;
-                return change.selfChange == selfChange &&
-                        Objects.equals(asSet(change.uris), asSet(uris)) &&
-                        change.flags == flags && change.userId == userId;
+            if (other instanceof Change change) {
+                return change.mSelfChange == mSelfChange
+                        && Objects.equals(asSet(change.mUris), asSet(mUris))
+                        && change.mFlags == mFlags
+                        && change.mUserId == mUserId;
             } else {
                 return false;
             }
@@ -1712,11 +1860,11 @@ public class ContentResolverTest extends AndroidTestCase {
         }
     }
 
-    private static class MockContentObserver extends ContentObserver {
+    private static final class MockContentObserver extends ContentObserver {
         private boolean mHadOnChanged = false;
-        private List<Change> mChanges = new ArrayList<>();
+        private final List<Change> mChanges = new ArrayList<>();
 
-        public MockContentObserver() {
+        MockContentObserver() {
             super(null);
         }
 
@@ -1726,7 +1874,8 @@ public class ContentResolverTest extends AndroidTestCase {
         }
 
         @Override
-        public synchronized void onChange(boolean selfChange, Collection<Uri> uris, int flags) {
+        public synchronized void onChange(
+                boolean selfChange, @NonNull Collection<Uri> uris, int flags) {
             doOnChangeLocked(selfChange, uris, flags, /*userId=*/ -1);
         }
 
@@ -1736,15 +1885,15 @@ public class ContentResolverTest extends AndroidTestCase {
             doOnChangeLocked(selfChange, uris, flags, user.getIdentifier());
         }
 
-        public synchronized boolean hadOnChanged() {
+        private synchronized boolean hadOnChanged() {
             return mHadOnChanged;
         }
 
-        public synchronized void reset() {
+        private synchronized void reset() {
             mHadOnChanged = false;
         }
 
-        public synchronized boolean hadChanges(Collection<Change> changes) {
+        private synchronized boolean hadChanges(Collection<Change> changes) {
             return mChanges.containsAll(changes);
         }
 

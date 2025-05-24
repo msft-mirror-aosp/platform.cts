@@ -121,18 +121,18 @@ public final class ManagedProfilePasswordTest extends BaseManagedProfileTest {
 
         try {
             // Add a device password after the work profile has been created.
-            changeUserCredential(TEST_PASSWORD, /* oldCredential= */ null, mPrimaryUserId);
+            changeUserCredential(TEST_PASSWORD, /* oldCredential= */ null, mMainUserId);
             // Lock the profile with key eviction.
             lockProfile();
             // Turn on work profile, by unlocking the profile with the device password.
-            verifyUserCredential(TEST_PASSWORD, mPrimaryUserId);
+            verifyUserCredential(TEST_PASSWORD, mMainUserId);
 
             // Verify profile user is running unlocked by running a basic test on the work profile.
             installAppAsUser(SIMPLE_APP_APK, mProfileUserId);
             runDeviceTestsAsUser(MANAGED_PROFILE_PKG, ".BasicTest", mProfileUserId);
         } finally {
             // Clean up
-            changeUserCredential(/* newCredential= */ null, TEST_PASSWORD, mPrimaryUserId);
+            changeUserCredential(/* newCredential= */ null, TEST_PASSWORD, mMainUserId);
         }
     }
 
@@ -145,7 +145,7 @@ public final class ManagedProfilePasswordTest extends BaseManagedProfileTest {
 
         // Waiting before rebooting prevents flakiness.
         waitForBroadcastIdle();
-        changeUserCredential(TEST_PASSWORD, /* oldCredential= */ null, mPrimaryUserId);
+        changeUserCredential(TEST_PASSWORD, /* oldCredential= */ null, mMainUserId);
         try {
             rebootAndWaitUntilReady();
 
@@ -153,12 +153,12 @@ public final class ManagedProfilePasswordTest extends BaseManagedProfileTest {
             // unlocked.
             waitUntilProfileRunning();
 
-            verifyUserCredential(TEST_PASSWORD, mPrimaryUserId);
+            verifyUserCredential(TEST_PASSWORD, mMainUserId);
             waitForUserUnlock(mProfileUserId);
             installAppAsUser(SIMPLE_APP_APK, mProfileUserId);
             runDeviceTestsAsUser(MANAGED_PROFILE_PKG, ".BasicTest", mProfileUserId);
         } finally {
-            changeUserCredential(/* newCredential= */ null, TEST_PASSWORD, mPrimaryUserId);
+            changeUserCredential(/* newCredential= */ null, TEST_PASSWORD, mMainUserId);
             // Work-around for http://b/113866275 - password prompt being erroneously shown at the
             // end.
             pressPowerButton();
@@ -178,17 +178,17 @@ public final class ManagedProfilePasswordTest extends BaseManagedProfileTest {
         int managedProfileUserId = getFirstManagedProfileUserId();
         changeUserCredential(
                 profilePassword, /* oldCredential= */ null, managedProfileUserId);
-        changeUserCredential(primaryPassword, /* oldCredential= */ null, mPrimaryUserId);
+        changeUserCredential(primaryPassword, /* oldCredential= */ null, mMainUserId);
         try {
             rebootAndWaitUntilReady();
             verifyUserCredential(profilePassword, managedProfileUserId);
-            verifyUserCredential(primaryPassword, mPrimaryUserId);
+            verifyUserCredential(primaryPassword, mMainUserId);
             installAppAsUser(SIMPLE_APP_APK, mProfileUserId);
             runDeviceTestsAsUser(MANAGED_PROFILE_PKG, ".BasicTest", mProfileUserId);
         } finally {
             changeUserCredential(
                     /* newCredential= */ null, profilePassword, managedProfileUserId);
-            changeUserCredential(/* newCredential= */ null, primaryPassword, mPrimaryUserId);
+            changeUserCredential(/* newCredential= */ null, primaryPassword, mMainUserId);
             // Work-around for http://b/113866275 - password prompt being erroneously shown at the
             // end.
             pressPowerButton();

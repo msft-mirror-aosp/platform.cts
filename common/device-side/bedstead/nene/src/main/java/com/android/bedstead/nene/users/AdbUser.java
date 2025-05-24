@@ -57,7 +57,6 @@ public final class AdbUser {
         @Nullable Integer mSerialNo;
         @Nullable String mName;
         @Nullable UserType mType;
-        @Nullable Boolean mHasProfileOwner;
         @Nullable Boolean mIsPrimary;
         @Nullable UserState mState;
         @Nullable Boolean mIsRemoving;
@@ -103,11 +102,6 @@ public final class AdbUser {
         return mMutableUser.mType;
     }
 
-    /** {@code true} if the user has a profile owner. */
-    public Boolean hasProfileOwner() {
-        return mMutableUser.mHasProfileOwner;
-    }
-
     /**
      * Return {@code true} if this is the primary user.
      */
@@ -139,7 +133,6 @@ public final class AdbUser {
         stringBuilder.append(", serialNo=" + mMutableUser.mSerialNo);
         stringBuilder.append(", name=" + mMutableUser.mName);
         stringBuilder.append(", type=" + mMutableUser.mType);
-        stringBuilder.append(", hasProfileOwner" + mMutableUser.mHasProfileOwner);
         stringBuilder.append(", isPrimary=" + mMutableUser.mIsPrimary);
         stringBuilder.append(", state=" + mMutableUser.mState);
         stringBuilder.append(", parent=" + mMutableUser.mParent);

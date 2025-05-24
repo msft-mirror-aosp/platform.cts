@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package android.content.cts;
+package android.content.cts.syncmanager;
 
 import static com.android.cts.content.Utils.ALWAYS_SYNCABLE_AUTHORITY;
 import static com.android.cts.content.Utils.SYNC_TIMEOUT_MILLIS;
@@ -56,11 +56,10 @@ import org.junit.runner.RunWith;
 @AppModeNonSdkSandbox(reason = "Sync adapter not supported since sandboxes cannot declare services")
 public final class AccountAccessSameCertTest {
     private static final String THREAD_NAME = "AccountAccessSameCertTestBackgroundThread";
-    @Rule
-    public final TestRule mFlakyTestTRule = new FlakyTestRule(3);
+    @Rule public final TestRule mFlakyTestTRule = new FlakyTestRule(3);
 
     @Rule
-    public final ActivityScenarioRule<StubActivity> scenarioRule =
+    public final ActivityScenarioRule<StubActivity> mActivityScenarioRule =
             new ActivityScenarioRule<>(StubActivity.class);
 
     @Before
@@ -81,9 +80,9 @@ public final class AccountAccessSameCertTest {
                 ActivityScenario.launch(StubActivity.class)) {
             scenario.onActivity(
                     activity -> {
-                        HandlerThread thread = new HandlerThread(THREAD_NAME);
-                        thread.start();
-                        Handler handler = new Handler(thread.getLooper());
+                        HandlerThread handlerThread = new HandlerThread(THREAD_NAME);
+                        handlerThread.start();
+                        Handler handler = new Handler(handlerThread.getLooper());
                         handler.post(
                                 () -> {
                                     try (AutoCloseable ignored = withAccount(activity)) {
@@ -99,6 +98,13 @@ public final class AccountAccessSameCertTest {
                                         throw new RuntimeException(e);
                                     }
                                 });
+                        // Wait for the handlerThread to finish
+                        try {
+                            handlerThread.quitSafely();
+                            handlerThread.join(SYNC_TIMEOUT_MILLIS);
+                        } catch (InterruptedException e) {
+                            throw new RuntimeException(e);
+                        }
                     });
         }
     }

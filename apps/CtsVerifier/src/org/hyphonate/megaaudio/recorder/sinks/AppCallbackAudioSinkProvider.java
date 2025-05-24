@@ -17,11 +17,9 @@ package org.hyphonate.megaaudio.recorder.sinks;
 
 import org.hyphonate.megaaudio.recorder.AudioSink;
 import org.hyphonate.megaaudio.recorder.AudioSinkProvider;
-import org.hyphonate.megaaudio.recorder.NativeAudioSink;
 
 public class AppCallbackAudioSinkProvider implements AudioSinkProvider {
     private AppCallback mCallbackObj;
-    private long mOboeSinkObj;
 
     public AppCallbackAudioSinkProvider(AppCallback callback) {
         mCallbackObj = callback;
@@ -29,19 +27,6 @@ public class AppCallbackAudioSinkProvider implements AudioSinkProvider {
 
     public AudioSink allocJavaSink() {
         return new AppCallbackAudioSink(mCallbackObj);
-        // return allocNativeSink();
     }
 
-    @Override
-    public NativeAudioSink allocNativeSink() {
-        return new NativeAudioSink(mOboeSinkObj = allocOboeSinkN(mCallbackObj));
-    }
-
-    private native long allocOboeSinkN(AppCallback callbackObj);
-
-    public void releaseJNIResources() {
-        releaseJNIResourcesN(mOboeSinkObj);
-    }
-
-    private native void releaseJNIResourcesN(long oboeSink);
 }

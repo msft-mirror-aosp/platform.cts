@@ -48,6 +48,7 @@ import android.window.WindowContainerToken;
 import android.window.WindowContainerTransaction;
 
 import androidx.annotation.NonNull;
+import androidx.test.filters.FlakyTest;
 
 import org.junit.Test;
 
@@ -447,6 +448,7 @@ public class SplitActivityLifecycleTest extends TaskFragmentOrganizerTestBase {
      * embedded activities even if one of Activity has showWhenLocked flag.
      */
     @Test
+    @FlakyTest(bugId = 419793280)
     public void testLaunchEmbeddedActivityWithShowWhenLocked() {
         assumeTrue(supportsLockScreen());
 
@@ -467,6 +469,7 @@ public class SplitActivityLifecycleTest extends TaskFragmentOrganizerTestBase {
      * embedded activities if the activities don't have showWhenLocked flag.
      */
     @Test
+    @FlakyTest(bugId = 419793280)
     public void testLaunchEmbeddedActivitiesWithoutShowWhenLocked() {
         assumeTrue(supportsLockScreen());
 
@@ -487,6 +490,7 @@ public class SplitActivityLifecycleTest extends TaskFragmentOrganizerTestBase {
      * Don't show the embedded activities even if one of Activity has showWhenLocked flag.
      */
     @Test
+    @FlakyTest(bugId = 419793280)
     public void testLaunchEmbeddedActivitiesWithShowWhenLocked() {
         assumeTrue(supportsLockScreen());
 

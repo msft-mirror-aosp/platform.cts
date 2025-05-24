@@ -60,7 +60,7 @@ class DefaultJcaImageParityClassTest(its_base_test.ItsBaseTest):
       gen2_rig_controller_utils.set_lighting_state(
           lights_port, lights_channel, 'ON')
     motor_port = gen2_rig_controller_utils.find_serial_port(
-          self.rotator_cntl)
+        self.rotator_cntl)
     if motor_port:
       gen2_rig_controller_utils.configure_rotator(motor_port, motor_channel)
       gen2_rig_controller_utils.rotate(motor_port, motor_channel)

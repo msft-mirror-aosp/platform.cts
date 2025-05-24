@@ -27,16 +27,40 @@ public class OboeRecorder extends Recorder {
 
     private int mRecorderSubtype;
     private long mNativeRecorder;
+    JavaNativeFloatFifo mUpFifo;
+
+    private class OboeRecorderRunnable extends RecorderRunnable {
+
+        @Override
+        public int read(float[] buffer, int offsetInSamples, int numSamples) {
+            return mUpFifo.readBlocking(buffer, offsetInSamples, numSamples);
+        }
+
+        @Override
+        public void onStop() {
+            stopStreamN(mNativeRecorder);
+        }
+    }
 
     public OboeRecorder(AudioSinkProvider sinkProvider, int subType) {
         super(sinkProvider);
         if (LOG) {
             Log.d(TAG, "OboeRecorder()");
         }
-
+        // Allocate a very large FIFO that can hold more than we need
+        // to prevent overflows from the native stream.
+        //
+        // This can be bigger than it needs to be and it will not affect latency
+        // because input FIFOs are kept near empty.
+        // Allocate enough for 100 msec of data in a stereo buffer at 48000 Hz.
+        // TODO b/418840924 use channelCount and sampleRate in build() method.
+        int capacityInFloats = 2 * 48000 / 10;
+        mUpFifo = new JavaNativeFloatFifo(JavaNativeFloatFifo.FROM_NATIVE, capacityInFloats);
+        if (LOG) {
+            Log.d(TAG, "OboeRecorder() JavaNativeFloatFifo capacity = " + capacityInFloats);
+        }
         mRecorderSubtype = subType;
-        mNativeRecorder = allocNativeRecorder(
-                sinkProvider.allocNativeSink().getNativeObject(), mRecorderSubtype);
+        mNativeRecorder = allocNativeRecorder(mUpFifo.getNativeToken(), mRecorderSubtype);
     }
 
     //
@@ -60,8 +84,17 @@ public class OboeRecorder extends Recorder {
             Log.i(TAG, "  route device: " + builder.getRouteDeviceId());
             Log.i(TAG, "  preset: " + mInputPreset);
         }
-        return trackBuild(buildStreamN(mNativeRecorder, mChannelCount, mSampleRate,
-                mPerformanceMode, mSharingMode, builder.getRouteDeviceId(), mInputPreset));
+        buildCommon();
+
+        return trackBuild(
+                buildStreamN(
+                        mNativeRecorder,
+                        mChannelCount,
+                        mSampleRate,
+                        mPerformanceMode,
+                        mSharingMode,
+                        builder.getRouteDeviceId(),
+                        mInputPreset));
     }
 
     @Override
@@ -77,8 +110,13 @@ public class OboeRecorder extends Recorder {
         if (LOG) {
             Log.d(TAG, "start()");
         }
+
+        startSink();
+
         int retVal = startStreamN(mNativeRecorder, mRecorderSubtype);
-        mRecording = retVal == 0;
+        if (retVal == 0) {
+            startRecordingThread(new OboeRecorderRunnable(), "OboeRecorder Thread");
+        }
         return trackStart(retVal);
     }
 
@@ -99,15 +137,33 @@ public class OboeRecorder extends Recorder {
         return trackClose(closeStreamN(mNativeRecorder));
     }
 
+    /**
+     * Stop and close the streams. Also delete any native resources that were allocated.
+     *
+     * <p>This should be called when the object is no longer needed. This object cannot be used
+     * after calling this method.
+     *
+     * @return error code
+     */
     @Override
     public int teardown() {
         if (LOG) {
             Log.d(TAG, "teardown()");
         }
+        waitForStreamThreadToExit();
+
         int errCode = teardownStreamN(mNativeRecorder);
         mChannelCount = 0;
         mSampleRate = 0;
-
+        // The recorder uses the FIFO so free the recorder first.
+        if (mNativeRecorder != 0) {
+            deleteNativeRecorder(mNativeRecorder);
+            mNativeRecorder = 0;
+        }
+        if (mUpFifo != null) {
+            mUpFifo.release(); // release native FIFO
+            mUpFifo = null;
+        }
         return trackTeardown(errCode);
     }
 
@@ -152,7 +208,9 @@ public class OboeRecorder extends Recorder {
         return getLastErrorCallbackResultN(mNativeRecorder);
     }
 
-    private native long allocNativeRecorder(long nativeSink, int recorderSubtype);
+    private native long allocNativeRecorder(long nativeFifoPtr, int recorderSubtype);
+
+    private native long deleteNativeRecorder(long nativeRecorder);
 
     private native int getBufferFrameCountN(long nativeRecorder);
     private native void setInputPresetN(long nativeRecorder, int inputPreset);

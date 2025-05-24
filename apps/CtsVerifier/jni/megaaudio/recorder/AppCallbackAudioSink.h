@@ -18,12 +18,17 @@
 #define SMOKEPLAYER_APPCALLBACKAUDIOSINK_H
 
 #include <jni.h>
+#include <JavaNativeFloatFifo.h>
 
 #include "AudioSink.h"
 
 class AppCallbackAudioSink: public AudioSink {
 public:
-    AppCallbackAudioSink(JNIEnv *env, jobject callbackObj);
+    /**
+     *
+     * @param floatFifoPtr The pointer is managed by Java code.
+     */
+    explicit AppCallbackAudioSink(JavaNativeFloatFifo* floatFifoPtr);
 
     virtual void init(int numFrames, int numChannels) override;
     virtual void start() override;
@@ -31,16 +36,8 @@ public:
 
     virtual void push(float* audioData, int numFrames, int numChannels) override;
 
-    void releaseJNIResources(JNIEnv *env);
-
 private:
-    // JNI Stuff
-    JavaVM* mJVM;
-    jobject mCallbackObj;
-    jmethodID mMIDonDataReady;
-
-    jfloatArray mAudioDataArray;
-    int mAudioDataArrayLength;
+    JavaNativeFloatFifo *mFloatFifoPtr = nullptr;
 };
 
 #endif //SMOKEPLAYER_APPCALLBACKAUDIOSINK_H
