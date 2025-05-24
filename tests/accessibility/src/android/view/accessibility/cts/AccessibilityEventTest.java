@@ -350,6 +350,28 @@ public class AccessibilityEventTest {
     }
 
     @Test
+    @ApiTest(apis = {"android.view.accessibility.AccessibilityEvent#CONTENT_CHANGE_TYPE_SORT_DIRECTION"})
+    @RequiresFlagsEnabled(Flags.FLAG_A11Y_SORT_DIRECTION_API)
+    public void testContentChangeTypeSortedEvent() throws Throwable {
+        final AccessibilityEvent awaitedEvent =
+                sUiAutomation.executeAndWaitForEvent(
+                        () -> {
+                            AccessibilityEvent event =
+                                    new AccessibilityEvent(
+                                            AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED);
+                            event.setContentChangeTypes(
+                                    AccessibilityEvent.CONTENT_CHANGE_TYPE_SORT_DIRECTION);
+                            mChildView.sendAccessibilityEventUnchecked(event);
+                        },
+                        event ->
+                                event.getEventType()
+                                        == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED,
+                        DEFAULT_TIMEOUT_MS);
+        assertThat(awaitedEvent.getContentChangeTypes())
+                .isEqualTo(AccessibilityEvent.CONTENT_CHANGE_TYPE_SORT_DIRECTION);
+    }
+
+    @Test
     public void testStateEvent() throws Throwable {
         sUiAutomation.executeAndWaitForEvent(
                 () -> {
