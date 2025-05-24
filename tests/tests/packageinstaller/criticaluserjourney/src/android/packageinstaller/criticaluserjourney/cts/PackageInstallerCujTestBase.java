@@ -455,12 +455,11 @@ public class PackageInstallerCujTestBase {
             }
         }
 
-        // dump window hierarchy for debug
-        if (object == null) {
-            dumpWindowHierarchy();
-        }
-
         if (checkNull) {
+            // dump window hierarchy for debug
+            if (object == null) {
+                dumpWindowHierarchy();
+            }
             assertWithMessage("Can't find object " + bySelector).that(object).isNotNull();
         }
         return object;

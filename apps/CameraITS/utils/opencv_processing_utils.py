@@ -1359,7 +1359,7 @@ def define_metering_rectangle_values(
     tl_coordinates, br_coordinates = top_left, bottom_right
 
   # Normalize coordinates' values to construct metering rectangles
-  meter_rects = []
+  meter_rects = [None] * NUM_AE_AWB_REGIONS
   tl_normalized_x = tl_coordinates[0] / w
   tl_normalized_y = tl_coordinates[1] / h
   br_normalized_x = br_coordinates[0] / w
@@ -1369,8 +1369,7 @@ def define_metering_rectangle_values(
   for i in range(NUM_AE_AWB_REGIONS):
     x = round(tl_normalized_x + (rect_w * i), 2)
     y = round(tl_normalized_y, 2)
-    meter_rect = [x, y, rect_w, rect_h, AE_AWB_METER_WEIGHT]
-    meter_rects.append(meter_rect)
+    meter_rects[i] = [x, y, rect_w, rect_h, AE_AWB_METER_WEIGHT]
   logging.debug('metering rects: %s', meter_rects)
   return meter_rects
 

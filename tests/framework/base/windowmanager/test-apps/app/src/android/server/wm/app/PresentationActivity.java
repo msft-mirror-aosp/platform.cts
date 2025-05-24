@@ -16,9 +16,14 @@
 
 package android.server.wm.app;
 
+import static android.server.wm.app.Components.PresentationActivity.HIDE_PRESENTATION;
+
 import android.app.Activity;
 import android.app.Presentation;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.graphics.Color;
 import android.hardware.display.DisplayManager;
 import android.os.Bundle;
@@ -38,6 +43,20 @@ public class PresentationActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         mLastIntent = getIntent();
+        registerReceiver(
+                new BroadcastReceiver() {
+                    @Override
+                    public void onReceive(Context context, Intent intent) {
+                        if (HIDE_PRESENTATION.equals(intent.getAction())) {
+                            if (mPresentation != null) {
+                                mPresentation.hide();
+                                mPresentation = null;
+                            }
+                        }
+                    }
+                },
+                new IntentFilter(HIDE_PRESENTATION),
+                Context.RECEIVER_EXPORTED);
     }
 
     @Override

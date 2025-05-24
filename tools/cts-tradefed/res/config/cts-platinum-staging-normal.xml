@@ -2577,10 +2577,6 @@
     <option name="compatibility:include-filter" value="CtsHealthFitnessDeviceTestCasesRateLimiter android.healthconnect.cts.ratelimiter.RateLimiterTest#testTryAcquireApiCallQuota_readCallsInLimit"/>
     <option name="compatibility:include-filter" value="CtsHealthFitnessDeviceTestCasesRateLimiter android.healthconnect.cts.ratelimiter.RateLimiterTest#testTryAcquireApiCallQuota_readLimitExceeded"/>
     <option name="compatibility:include-filter" value="CtsHealthFitnessDeviceTestCasesRateLimiter android.healthconnect.cts.ratelimiter.RateLimiterTest#testTryAcquireApiCallQuota_writeCallsInLimit"/>
-    <!-- CtsHibernationTestCases -->
-    <option name="compatibility:include-filter" value="CtsHibernationTestCases android.hibernation.cts.AppHibernationIntegrationTest#testUnusedApp_getsForceStopped"/>
-    <option name="compatibility:include-filter" value="CtsHibernationTestCases android.hibernation.cts.AutoRevokeTest#testUnusedApp_getsPermissionRevoked"/>
-    <option name="compatibility:include-filter" value="CtsHibernationTestCases android.hibernation.cts.AutoRevokeTest#testUnusedApp_uninstallApp"/>
     <!-- CtsHiddenApiBlocklistApi27TestCases -->
     <option name="compatibility:include-filter" value="CtsHiddenApiBlocklistApi27TestCases android.signature.cts.api.api27.HiddenApiTest#testSignatureFieldsThroughJni"/>
     <option name="compatibility:include-filter" value="CtsHiddenApiBlocklistApi27TestCases android.signature.cts.api.api27.HiddenApiTest#testSignatureFieldsThroughReflection"/>

@@ -102,6 +102,9 @@ public class MockDataService {
     LinkAddress[] mDefaultLinkAddress;
     int mPhoneId;
 
+    private boolean mIsUserDataEnabled;
+    private boolean mIsUserDataRoamingEnabled;
+
     public MockDataService(Context context, int instanceId) {
         mTag = TAG + "-" + instanceId;
         mContext = context;
@@ -389,6 +392,14 @@ public class MockDataService {
         return cid;
     }
 
+    public boolean isUserDataEnabled() {
+        return mIsUserDataEnabled;
+    }
+
+    public boolean isUserDataRoamingEnabled() {
+        return mIsUserDataRoamingEnabled;
+    }
+
     public synchronized void setBridgeTheDataConnection(String string) {
         try {
             String[] lines = new String[] {};
@@ -463,5 +474,13 @@ public class MockDataService {
 
     public synchronized void setInternetMtuV6(int mtusize) {
         this.mInternetMtuV6 = mtusize;
+    }
+
+    public synchronized void setUserDataEnabled(boolean isUserDataEnabled) {
+        this.mIsUserDataEnabled = isUserDataEnabled;
+    }
+
+    public synchronized void setUserDataRoamingEnabled(boolean isUserDataRoamingEnabled) {
+        this.mIsUserDataRoamingEnabled = isUserDataRoamingEnabled;
     }
 }

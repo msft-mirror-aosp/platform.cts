@@ -23,14 +23,14 @@
         <option name="forbidden-feature" value="android.hardware.type.leanback_only"/>
     </object>
     <object type="module_controller" class="com.android.tradefed.testtype.suite.module.CommandSuccessModuleController" >
-        <option name="command-timeout" value="2000" />
+        <option name="command-timeout" value="10000" />
         <!-- Skip the test on low ram devices. -->
         <option name="run-command" value="getprop ro.config.low_ram | grep -v true" />
         <!-- Skip the test if we're not able to execute virtual_camera commands on device. -->
-        <option name="run-command" value="cmd -w virtual_camera" />
+        <option name="run-command" value="timeout --foreground 2 cmd -w virtual_camera" />
         <!-- Skip the test if a virtual camera cannot be created successfully. -->
-        <option name="run-command" value="cmd -w virtual_camera enable_test_camera" />
-        <option name="run-command" value="cmd -w virtual_camera disable_test_camera" />
+        <option name="run-command" value="timeout --foreground 2 cmd -w virtual_camera enable_test_camera" />
+        <option name="run-command" value="timeout --foreground 2 cmd -w virtual_camera disable_test_camera" />
     </object>
 
     <option name="config-descriptor:metadata" key="component" value="framework" />

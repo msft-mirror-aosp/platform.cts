@@ -93,8 +93,8 @@ public class MmsTest {
     public void setupTestEnvironment() throws Exception {
         assumeTelephony();
         assumeMessaging();
-        cleanup();
         mContentResolver = getInstrumentation().getContext().getContentResolver();
+        mContentResolver.delete(Telephony.Mms.CONTENT_URI, null, null);
     }
 
     @Test

@@ -53,6 +53,7 @@
     <target_preparer class="com.android.compatibility.common.tradefed.targetprep.FilePusher">
         <option name="cleanup" value="true" />
         <option name="push" value="CtsContentTestCases.apk->/data/local/tmp/cts/content/CtsContentTestCases.apk" />
+        <option name="push" value="CtsIntentResolutionTestApp.apk->/data/local/tmp/cts/content/CtsIntentResolutionTestApp.apk" />
     </target_preparer>
 
     <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">
@@ -64,7 +65,7 @@
         <option name="test-file-name" value="CtsSyncAccountAccessStubs.apk" />
         <option name="test-file-name" value="CtsBinderPermissionTestService.apk" />
         <option name="test-file-name" value="CtsContentMockRestrictedApp.apk" />
-
+        <option name="test-file-name" value="CtsIntentResolutionTestApp.apk" />
     </target_preparer>
 
     <test class="com.android.tradefed.testtype.AndroidJUnitTest" >

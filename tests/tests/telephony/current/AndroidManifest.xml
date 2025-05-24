@@ -53,6 +53,7 @@
     <uses-permission android:name="android.permission.READ_DROPBOX_DATA"/>
     <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" />
     <uses-permission android:name="android.permission.WRITE_SECURE_SETTINGS" />
+    <uses-permission android:name="android.permission.MODIFY_PHONE_STATE" />
 
     <permission android:name="android.telephony.embms.cts.permission.TEST_BROADCAST"
          android:protectionLevel="signature"/>

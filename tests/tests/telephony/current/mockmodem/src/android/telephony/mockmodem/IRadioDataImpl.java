@@ -35,9 +35,17 @@ import android.os.RemoteException;
 import android.util.Log;
 
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 public class IRadioDataImpl extends IRadioData.Stub {
     private static final String TAG = "MRDATA";
+
+    private static final int LATCH_SET_USER_DATA_ENABLED = 0;
+    private static final int LATCH_SET_USER_DATA_ROAMING_ENABLED = 1;
+    private static final int LATCH_MAX = 2;
+
+    private final CountDownLatch[] mLatches = new CountDownLatch[LATCH_MAX];
 
     private final MockModemService mService;
     private final MockDataService mMockDataService;
@@ -73,6 +81,10 @@ public class IRadioDataImpl extends IRadioData.Stub {
         // Register event
         mMockModemConfigInterface.registerForServiceStateChanged(
                 mSubId, mHandler, EVENT_NETWORK_STATUS_CHANGED, null);
+
+        for (int i = 0; i < LATCH_MAX; i++) {
+            mLatches[i] = new CountDownLatch(1);
+        }
     }
 
     public MockDataService getMockDataServiceInstance() {
@@ -302,23 +314,27 @@ public class IRadioDataImpl extends IRadioData.Stub {
     @Override
     public void setUserDataEnabled(int serial, boolean enabled) throws RemoteException {
         Log.d(mTag, "setUserDataEnabled");
+        mMockDataService.setUserDataEnabled(enabled);
         RadioResponseInfo rsp = mService.makeSolRsp(serial, RadioError.REQUEST_NOT_SUPPORTED);
         try {
             mRadioDataResponse.setUserDataEnabledResponse(rsp);
         } catch (RemoteException ex) {
             Log.e(mTag, "Failed to setUserDataEnabled from AIDL. Exception" + ex);
         }
+        countDownLatch(LATCH_SET_USER_DATA_ENABLED);
     }
 
     @Override
     public void setUserDataRoamingEnabled(int serial, boolean enabled) throws RemoteException {
         Log.d(mTag, "setUserDataRoamingEnabled");
+        mMockDataService.setUserDataRoamingEnabled(enabled);
         RadioResponseInfo rsp = mService.makeSolRsp(serial, RadioError.REQUEST_NOT_SUPPORTED);
         try {
             mRadioDataResponse.setUserDataRoamingEnabledResponse(rsp);
         } catch (RemoteException ex) {
             Log.e(mTag, "Failed to setUserDataRoamingEnabled from AIDL. Exception" + ex);
         }
+        countDownLatch(LATCH_SET_USER_DATA_ROAMING_ENABLED);
     }
 
     @Override
@@ -348,6 +364,53 @@ public class IRadioDataImpl extends IRadioData.Stub {
             }
         } else {
             Log.e(mTag, "null mRadioDataIndication");
+        }
+    }
+
+    private void countDownLatch(int latchIndex) {
+        synchronized (mLatches) {
+            mLatches[latchIndex].countDown();
+        }
+    }
+
+    /**
+     * Waits for the event of data service.
+     *
+     * @param latchIndex The index of the event.
+     * @param waitMs The timeout in milliseconds.
+     * @return {@code true} if the event happens.
+     */
+    public boolean waitForLatchCountdown(int latchIndex, long waitMs) {
+        boolean complete = false;
+        try {
+            CountDownLatch latch;
+            synchronized (mLatches) {
+                latch = mLatches[latchIndex];
+            }
+            long startTime = System.currentTimeMillis();
+            complete = latch.await(waitMs, TimeUnit.MILLISECONDS);
+            Log.i(
+                    TAG,
+                    "Latch "
+                            + latchIndex
+                            + " took "
+                            + (System.currentTimeMillis() - startTime)
+                            + " ms to count down.");
+        } catch (InterruptedException e) {
+            Log.e(TAG, "Waiting latch " + latchIndex + " interrupted, e=" + e);
+        }
+        synchronized (mLatches) {
+            mLatches[latchIndex] = new CountDownLatch(1);
+        }
+        return complete;
+    }
+
+    /** Resets the CountDownLatches. */
+    public void resetAllLatchCountdown() {
+        synchronized (mLatches) {
+            for (int i = 0; i < LATCH_MAX; i++) {
+                mLatches[i] = new CountDownLatch(1);
+            }
         }
     }
 

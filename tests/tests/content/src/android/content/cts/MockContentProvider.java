@@ -16,7 +16,7 @@
 
 package android.content.cts;
 
-import static junit.framework.Assert.assertEquals;
+import static com.google.common.truth.Truth.assertThat;
 
 import android.annotation.NonNull;
 import android.annotation.Nullable;
@@ -39,6 +39,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.CancellationSignal;
 import android.os.ParcelFileDescriptor;
+import android.os.Process;
 import android.os.SystemClock;
 import android.text.TextUtils;
 import android.util.Log;
@@ -49,7 +50,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
-import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 
 public class MockContentProvider extends ContentProvider implements PipeDataWriter<String> {
@@ -66,19 +67,27 @@ public class MockContentProvider extends ContentProvider implements PipeDataWrit
     private static final int TESTTABLE2_ID = 5;
     private static final int CRASH_ID = 6;
     private static final int HANG_ID = 7;
+    private static final String GROUP_BY = null;
+    private static final String HAVING = null;
+    private static final String LIMIT = null;
+    private static final String SELECTION = null;
+    private static final String[] SELECTION_ARGS = null;
+    private static final String TEST_TABLE_NAME1 = "TestTable1";
+    private static final String TEST_TABLE_NAME2 = "TestTable2";
+    private static final String ID = "_id=";
 
     private static @Nullable Uri sRefreshedUri;
     private static boolean sRefreshReturnValue;
 
     private final String mAuthority;
     private final String mDbName;
-    private final UriMatcher URL_MATCHER;
-    private HashMap<String, String> CTSDBTABLE1_LIST_PROJECTION_MAP;
-    private HashMap<String, String> CTSDBTABLE2_LIST_PROJECTION_MAP;
+    private final UriMatcher mUrlMatcher;
+    private final HashMap<String, String> mCtsDbtable1ListProjectionMap;
+    private final HashMap<String, String> mCtsDbtable2ListProjectionMap;
 
     private SQLiteOpenHelper mOpenHelper;
 
-    private static class DatabaseHelper extends SQLiteOpenHelper {
+    private static final class DatabaseHelper extends SQLiteOpenHelper {
 
         DatabaseHelper(Context context, String dbname) {
             super(context, dbname, null, DBVERSION);
@@ -86,13 +95,19 @@ public class MockContentProvider extends ContentProvider implements PipeDataWrit
 
         @Override
         public void onCreate(SQLiteDatabase db) {
-            db.execSQL("CREATE TABLE TestTable1 ("
-                    + "_id INTEGER PRIMARY KEY, " + "key TEXT, " + "value INTEGER"
-                    + ");");
+            db.execSQL(
+                    "CREATE TABLE TestTable1 ("
+                            + "_id INTEGER PRIMARY KEY, "
+                            + "key TEXT, "
+                            + "value INTEGER"
+                            + ");");
 
-            db.execSQL("CREATE TABLE TestTable2 ("
-                    + "_id INTEGER PRIMARY KEY, " + "key TEXT, " + "value INTEGER"
-                    + ");");
+            db.execSQL(
+                    "CREATE TABLE TestTable2 ("
+                            + "_id INTEGER PRIMARY KEY, "
+                            + "key TEXT, "
+                            + "value INTEGER"
+                            + ");");
         }
 
         @Override
@@ -111,24 +126,24 @@ public class MockContentProvider extends ContentProvider implements PipeDataWrit
         mAuthority = authority;
         mDbName = dbName;
 
-        URL_MATCHER = new UriMatcher(UriMatcher.NO_MATCH);
-        URL_MATCHER.addURI(mAuthority, "testtable1", TESTTABLE1);
-        URL_MATCHER.addURI(mAuthority, "testtable1/#", TESTTABLE1_ID);
-        URL_MATCHER.addURI(mAuthority, "testtable1/cross", TESTTABLE1_CROSS);
-        URL_MATCHER.addURI(mAuthority, "testtable2", TESTTABLE2);
-        URL_MATCHER.addURI(mAuthority, "testtable2/#", TESTTABLE2_ID);
-        URL_MATCHER.addURI(mAuthority, "crash", CRASH_ID);
-        URL_MATCHER.addURI(mAuthority, "hang", HANG_ID);
+        mUrlMatcher = new UriMatcher(UriMatcher.NO_MATCH);
+        mUrlMatcher.addURI(mAuthority, "testtable1", TESTTABLE1);
+        mUrlMatcher.addURI(mAuthority, "testtable1/#", TESTTABLE1_ID);
+        mUrlMatcher.addURI(mAuthority, "testtable1/cross", TESTTABLE1_CROSS);
+        mUrlMatcher.addURI(mAuthority, "testtable2", TESTTABLE2);
+        mUrlMatcher.addURI(mAuthority, "testtable2/#", TESTTABLE2_ID);
+        mUrlMatcher.addURI(mAuthority, "crash", CRASH_ID);
+        mUrlMatcher.addURI(mAuthority, "hang", HANG_ID);
 
-        CTSDBTABLE1_LIST_PROJECTION_MAP = new HashMap<>();
-        CTSDBTABLE1_LIST_PROJECTION_MAP.put("_id", "_id");
-        CTSDBTABLE1_LIST_PROJECTION_MAP.put("key", "key");
-        CTSDBTABLE1_LIST_PROJECTION_MAP.put("value", "value");
+        mCtsDbtable1ListProjectionMap = new HashMap<>();
+        mCtsDbtable1ListProjectionMap.put("_id", "_id");
+        mCtsDbtable1ListProjectionMap.put("key", "key");
+        mCtsDbtable1ListProjectionMap.put("value", "value");
 
-        CTSDBTABLE2_LIST_PROJECTION_MAP = new HashMap<>();
-        CTSDBTABLE2_LIST_PROJECTION_MAP.put("_id", "_id");
-        CTSDBTABLE2_LIST_PROJECTION_MAP.put("key", "key");
-        CTSDBTABLE2_LIST_PROJECTION_MAP.put("value", "value");
+        mCtsDbtable2ListProjectionMap = new HashMap<>();
+        mCtsDbtable2ListProjectionMap.put("_id", "_id");
+        mCtsDbtable2ListProjectionMap.put("key", "key");
+        mCtsDbtable2ListProjectionMap.put("value", "value");
     }
 
     @Override
@@ -139,42 +154,52 @@ public class MockContentProvider extends ContentProvider implements PipeDataWrit
     }
 
     @Override
-    public int delete(Uri uri, String selection, String[] selectionArgs) {
+    public int delete(
+            @NonNull Uri uri, @Nullable String selection, @Nullable String[] selectionArgs) {
         SQLiteDatabase db = mOpenHelper.getWritableDatabase();
         String segment;
         int count;
 
-        switch (URL_MATCHER.match(uri)) {
-        case TESTTABLE1:
-            if (null == selection) {
-                // get the count when remove all rows
-                selection = "1";
+        switch (mUrlMatcher.match(uri)) {
+            case TESTTABLE1 -> {
+                if (null == selection) {
+                    // get the count when remove all rows
+                    selection = "1";
+                }
+                count = db.delete(TEST_TABLE_NAME1, selection, selectionArgs);
             }
-            count = db.delete("TestTable1", selection, selectionArgs);
-            break;
-        case TESTTABLE1_ID:
-            segment = uri.getPathSegments().get(1);
-            count = db.delete("TestTable1", "_id=" + segment +
-                    (!TextUtils.isEmpty(selection) ? " AND (" + selection + ')' : ""),
-                    selectionArgs);
-            break;
-        case TESTTABLE2:
-            count = db.delete("TestTable2", selection, selectionArgs);
-            break;
-        case TESTTABLE2_ID:
-            segment = uri.getPathSegments().get(1);
-            count = db.delete("TestTable2", "_id=" + segment +
-                    (!TextUtils.isEmpty(selection) ? " AND (" + selection + ')' : ""),
-                    selectionArgs);
-            break;
-        case CRASH_ID:
-            // Wha...?  Delete ME?!?  O.K.!
-            Log.i(TAG, "Delete self requested!");
-            count = 1;
-            android.os.Process.killProcess(android.os.Process.myPid());
-            break;
-        default:
-            throw new IllegalArgumentException("Unknown URL " + uri);
+            case TESTTABLE1_ID -> {
+                segment = uri.getPathSegments().get(1);
+                count =
+                        db.delete(
+                                TEST_TABLE_NAME1,
+                                ID
+                                        + segment
+                                        + (!TextUtils.isEmpty(selection)
+                                                ? " AND (" + selection + ')'
+                                                : ""),
+                                selectionArgs);
+            }
+            case TESTTABLE2 -> count = db.delete(TEST_TABLE_NAME2, selection, selectionArgs);
+            case TESTTABLE2_ID -> {
+                segment = uri.getPathSegments().get(1);
+                count =
+                        db.delete(
+                                TEST_TABLE_NAME2,
+                                ID
+                                        + segment
+                                        + (!TextUtils.isEmpty(selection)
+                                                ? " AND (" + selection + ')'
+                                                : ""),
+                                selectionArgs);
+            }
+            case CRASH_ID -> {
+                // Wha...?  Delete ME?!?  O.K.!
+                Log.i(TAG, "Delete self requested!");
+                count = 1;
+                Process.killProcess(Process.myPid());
+            }
+            default -> throw new IllegalArgumentException("Unknown URL " + uri);
         }
 
         getContext().getContentResolver().notifyChange(uri, null);
@@ -182,65 +207,64 @@ public class MockContentProvider extends ContentProvider implements PipeDataWrit
     }
 
     @Override
-    public String getType(Uri uri) {
-        switch (URL_MATCHER.match(uri)) {
-        case TESTTABLE1:
-            return "vnd.android.cursor.dir/com.android.content.testtable1";
-        case TESTTABLE1_ID:
-            return "vnd.android.cursor.item/com.android.content.testtable1";
-        case TESTTABLE1_CROSS:
-            return "vnd.android.cursor.cross/com.android.content.testtable1";
-        case TESTTABLE2:
-            return "vnd.android.cursor.dir/com.android.content.testtable2";
-        case TESTTABLE2_ID:
-            return "vnd.android.cursor.item/com.android.content.testtable2";
-
-        default:
-            throw new IllegalArgumentException("Unknown URL " + uri);
-        }
+    public String getType(@NonNull Uri uri) {
+        return switch (mUrlMatcher.match(uri)) {
+            case TESTTABLE1 -> "vnd.android.cursor.dir/com.android.content.testtable1";
+            case TESTTABLE1_ID -> "vnd.android.cursor.item/com.android.content.testtable1";
+            case TESTTABLE1_CROSS -> "vnd.android.cursor.cross/com.android.content.testtable1";
+            case TESTTABLE2 -> "vnd.android.cursor.dir/com.android.content.testtable2";
+            case TESTTABLE2_ID -> "vnd.android.cursor.item/com.android.content.testtable2";
+            default -> throw new IllegalArgumentException("Unknown URL " + uri);
+        };
     }
 
     @Override
     public String[] getStreamTypes(@NonNull Uri uri, @NonNull String mimeTypeFilter) {
-        if (URL_MATCHER.match(uri) == TESTTABLE2_ID) {
+        if (mUrlMatcher.match(uri) == TESTTABLE2_ID) {
             switch (Integer.parseInt(uri.getPathSegments().get(1)) % 10) {
                 case 0:
-                    return new String[]{"image/jpeg"};
+                    return new String[] {"image/jpeg"};
                 case 1:
-                    return new String[]{"audio/mpeg"};
+                    return new String[] {"audio/mpeg"};
                 case 2:
-                    return new String[]{"video/mpeg", "audio/mpeg"};
+                    return new String[] {"video/mpeg", "audio/mpeg"};
             }
         }
         return super.getStreamTypes(uri, mimeTypeFilter);
     }
 
     @Override
-    public Uri insert(Uri uri, ContentValues initialValues) {
+    public Uri insert(@NonNull Uri uri, @Nullable ContentValues initialValues) {
         long rowID;
         ContentValues values;
         String table;
         Uri testUri;
 
-        if (initialValues != null)
-            values = new ContentValues(initialValues);
-        else
-            values = new ContentValues();
+        if (initialValues != null) values = new ContentValues(initialValues);
+        else values = new ContentValues();
 
-        if (values.containsKey("value") == false)
-            values.put("value", -1);
+        if (!values.containsKey("value")) values.put("value", -1);
 
-        switch (URL_MATCHER.match(uri)) {
-        case TESTTABLE1:
-            table = "TestTable1";
-            testUri = Uri.parse("content://" + mAuthority + "/testtable1");
-            break;
-        case TESTTABLE2:
-            table = "TestTable2";
-            testUri = Uri.parse("content://" + mAuthority + "/testtable2");
-            break;
-        default:
-            throw new IllegalArgumentException("Unknown URL " + uri);
+        switch (mUrlMatcher.match(uri)) {
+            case TESTTABLE1 -> {
+                table = TEST_TABLE_NAME1;
+                testUri =
+                        new Uri.Builder()
+                                .scheme(ContentResolver.SCHEME_CONTENT)
+                                .authority(mAuthority)
+                                .appendPath("testtable1")
+                                .build();
+            }
+            case TESTTABLE2 -> {
+                table = TEST_TABLE_NAME2;
+                testUri =
+                        new Uri.Builder()
+                                .scheme(ContentResolver.SCHEME_CONTENT)
+                                .authority(mAuthority)
+                                .appendPath("testtable2")
+                                .build();
+            }
+            default -> throw new IllegalArgumentException("Unknown URL " + uri);
         }
 
         SQLiteDatabase db = mOpenHelper.getWritableDatabase();
@@ -256,131 +280,165 @@ public class MockContentProvider extends ContentProvider implements PipeDataWrit
     }
 
     @Override
-    public @Nullable Cursor query(@NonNull Uri uri, @Nullable String[] projection,
-            @Nullable Bundle queryArgs, @Nullable CancellationSignal cancellationSignal) {
+    public @Nullable Cursor query(
+            @NonNull Uri uri,
+            @Nullable String[] projection,
+            @Nullable Bundle queryArgs,
+            @Nullable CancellationSignal cancellationSignal) {
         if (queryArgs != null && queryArgs.containsKey(ContentResolver.QUERY_ARG_SORT_LOCALE)) {
             final SQLiteDatabase db = mOpenHelper.getReadableDatabase();
             final String locale = queryArgs.getString(ContentResolver.QUERY_ARG_SORT_LOCALE);
             final String safeLocale = locale.replaceAll("[^a-zA-Z]", "");
-            try (Cursor c = db.rawQuery("SELECT icu_load_collation(?, ?);",
-                    new String[] { locale, safeLocale }, cancellationSignal)) {
+            try (Cursor c =
+                    db.rawQuery(
+                            "SELECT icu_load_collation(?, ?);",
+                            new String[] {locale, safeLocale},
+                            cancellationSignal)) {
                 while (c.moveToNext()) {
+                    // Expected
                 }
             }
 
             final SQLiteQueryBuilder qb = new SQLiteQueryBuilder();
-            qb.setTables("TestTable1");
-            qb.setProjectionMap(CTSDBTABLE1_LIST_PROJECTION_MAP);
+            qb.setTables(TEST_TABLE_NAME1);
+            qb.setProjectionMap(mCtsDbtable1ListProjectionMap);
 
-            final String sortOrder = TextUtils.join(", ",
-                    queryArgs.getStringArray(ContentResolver.QUERY_ARG_SORT_COLUMNS));
-            return qb.query(db, projection, null, null, null, null,
+            final String sortOrder =
+                    TextUtils.join(
+                            ", ", queryArgs.getStringArray(ContentResolver.QUERY_ARG_SORT_COLUMNS));
+            return qb.query(
+                    db,
+                    projection,
+                    SELECTION,
+                    SELECTION_ARGS,
+                    GROUP_BY,
+                    HAVING,
                     sortOrder + " COLLATE " + safeLocale,
-                    null, cancellationSignal);
+                    LIMIT,
+                    cancellationSignal);
         } else {
             return super.query(uri, projection, queryArgs, cancellationSignal);
         }
     }
 
     @Override
-    public Cursor query(Uri uri, String[] projection, String selection,
-            String[] selectionArgs, String sortOrder) {
+    public Cursor query(
+            @NonNull Uri uri,
+            @Nullable String[] projection,
+            @Nullable String selection,
+            @Nullable String[] selectionArgs,
+            @Nullable String sortOrder) {
         return query(uri, projection, selection, selectionArgs, sortOrder, null);
     }
 
     @Override
-    public Cursor query(Uri uri, String[] projection, String selection,
-            String[] selectionArgs, String sortOrder, CancellationSignal cancellationSignal) {
+    public Cursor query(
+            @NonNull Uri uri,
+            @Nullable String[] projection,
+            @Nullable String selection,
+            @Nullable String[] selectionArgs,
+            @Nullable String sortOrder,
+            @Nullable CancellationSignal cancellationSignal) {
 
         SQLiteQueryBuilder qb = new SQLiteQueryBuilder();
 
-        switch (URL_MATCHER.match(uri)) {
-        case TESTTABLE1:
-            qb.setTables("TestTable1");
-            qb.setProjectionMap(CTSDBTABLE1_LIST_PROJECTION_MAP);
-            break;
-
-        case TESTTABLE1_ID:
-            qb.setTables("TestTable1");
-            qb.appendWhere("_id=" + uri.getPathSegments().get(1));
-            break;
-
-        case TESTTABLE1_CROSS:
-            // Create a ridiculous cross-product of the test table.  This is done
-            // to create an artificially long-running query to enable us to test
-            // remote query cancellation in ContentResolverTest.
-            qb.setTables("TestTable1 a, TestTable1 b, TestTable1 c, TestTable1 d, TestTable1 e");
-            break;
-
-        case TESTTABLE2:
-            qb.setTables("TestTable2");
-            qb.setProjectionMap(CTSDBTABLE2_LIST_PROJECTION_MAP);
-            break;
-
-        case TESTTABLE2_ID:
-            qb.setTables("TestTable2");
-            qb.appendWhere("_id=" + uri.getPathSegments().get(1));
-            break;
-
-        case CRASH_ID:
-            crashOnLaunchIfNeeded();
-            qb.setTables("TestTable1");
-            qb.setProjectionMap(CTSDBTABLE1_LIST_PROJECTION_MAP);
-            break;
-
-        case HANG_ID:
-            while (true) {
-                Log.i(TAG, "Hanging provider by request...");
-                SystemClock.sleep(1000);
+        switch (mUrlMatcher.match(uri)) {
+            case TESTTABLE1 -> {
+                qb.setTables(TEST_TABLE_NAME1);
+                qb.setProjectionMap(mCtsDbtable1ListProjectionMap);
             }
-
-        default:
-            throw new IllegalArgumentException("Unknown URL " + uri);
+            case TESTTABLE1_ID -> {
+                qb.setTables(TEST_TABLE_NAME1);
+                qb.appendWhere(ID + uri.getPathSegments().get(1));
+            }
+            case TESTTABLE1_CROSS ->
+                    // Create a ridiculous cross-product of the test table.  This is done
+                    // to create an artificially long-running query to enable us to test
+                    // remote query cancellation in ContentResolverTest.
+                    qb.setTables(
+                            "TestTable1 a, TestTable1 b, TestTable1 c, TestTable1 d, TestTable1 e");
+            case TESTTABLE2 -> {
+                qb.setTables(TEST_TABLE_NAME2);
+                qb.setProjectionMap(mCtsDbtable2ListProjectionMap);
+            }
+            case TESTTABLE2_ID -> {
+                qb.setTables(TEST_TABLE_NAME2);
+                qb.appendWhere(ID + uri.getPathSegments().get(1));
+            }
+            case CRASH_ID -> {
+                crashOnLaunchIfNeeded();
+                qb.setTables(TEST_TABLE_NAME1);
+                qb.setProjectionMap(mCtsDbtable1ListProjectionMap);
+            }
+            case HANG_ID -> {
+                while (true) {
+                    Log.i(TAG, "Hanging provider by request...");
+                    SystemClock.sleep(1000);
+                }
+            }
+            default -> throw new IllegalArgumentException("Unknown URL " + uri);
         }
 
         /* If no sort order is specified use the default */
         String orderBy = TextUtils.isEmpty(sortOrder) ? "_id" : sortOrder;
 
         SQLiteDatabase db = mOpenHelper.getReadableDatabase();
-        Cursor c = qb.query(db, projection, selection, selectionArgs, null, null, orderBy,
-                null, cancellationSignal);
+        Cursor c =
+                qb.query(
+                        db,
+                        projection,
+                        selection,
+                        selectionArgs,
+                        GROUP_BY,
+                        HAVING,
+                        orderBy,
+                        LIMIT,
+                        cancellationSignal);
 
         c.setNotificationUri(getContext().getContentResolver(), uri);
         return c;
     }
 
     @Override
-    public int update(Uri uri, ContentValues values, String selection,
-            String[] selectionArgs) {
+    public int update(
+            @NonNull Uri uri,
+            @Nullable ContentValues values,
+            @Nullable String selection,
+            @Nullable String[] selectionArgs) {
         SQLiteDatabase db = mOpenHelper.getWritableDatabase();
         String segment;
-        int count;
-
-        switch (URL_MATCHER.match(uri)) {
-        case TESTTABLE1:
-            count = db.update("TestTable1", values, selection, selectionArgs);
-            break;
-
-        case TESTTABLE1_ID:
-            segment = uri.getPathSegments().get(1);
-            count = db.update("TestTable1", values, "_id=" + segment +
-                    (!TextUtils.isEmpty(selection) ? " AND (" + selection + ')' : ""),
-                    selectionArgs);
-            break;
-
-        case TESTTABLE2:
-            count = db.update("TestTable2", values, selection, selectionArgs);
-            break;
-
-        case TESTTABLE2_ID:
-            segment = uri.getPathSegments().get(1);
-            count = db.update("TestTable2", values, "_id=" + segment +
-                    (!TextUtils.isEmpty(selection) ? " AND (" + selection + ')' : ""),
-                    selectionArgs);
-            break;
-
-        default:
-            throw new IllegalArgumentException("Unknown URL " + uri);
+        int count = 0;
+        switch (mUrlMatcher.match(uri)) {
+            case TESTTABLE1 ->
+                    count = db.update(TEST_TABLE_NAME1, values, selection, selectionArgs);
+            case TESTTABLE1_ID -> {
+                segment = uri.getPathSegments().get(1);
+                count =
+                        db.update(
+                                TEST_TABLE_NAME1,
+                                values,
+                                ID
+                                        + segment
+                                        + (!TextUtils.isEmpty(selection)
+                                                ? " AND (" + selection + ')'
+                                                : ""),
+                                selectionArgs);
+            }
+            case TESTTABLE2 -> db.update(TEST_TABLE_NAME2, values, selection, selectionArgs);
+            case TESTTABLE2_ID -> {
+                segment = uri.getPathSegments().get(1);
+                count =
+                        db.update(
+                                TEST_TABLE_NAME2,
+                                values,
+                                ID
+                                        + segment
+                                        + (!TextUtils.isEmpty(selection)
+                                                ? " AND (" + selection + ')'
+                                                : ""),
+                                selectionArgs);
+            }
+            default -> throw new IllegalArgumentException("Unknown URL " + uri);
         }
 
         getContext().getContentResolver().notifyChange(uri, null);
@@ -388,60 +446,53 @@ public class MockContentProvider extends ContentProvider implements PipeDataWrit
     }
 
     @Override
-    public AssetFileDescriptor openAssetFile(Uri uri, String mode) throws FileNotFoundException {
-        switch (URL_MATCHER.match(uri)) {
-            case CRASH_ID:
-                crashOnLaunchIfNeeded();
-                return new AssetFileDescriptor(
-                        openPipeHelper(uri, null, null,
-                                "This is the openAssetFile test data!", this), 0,
-                        AssetFileDescriptor.UNKNOWN_LENGTH);
-
-            default:
-                return super.openAssetFile(uri, mode);
-        }
-    }
-
-    @Override
-    public AssetFileDescriptor openTypedAssetFile(Uri uri, String mimeTypeFilter, Bundle opts)
+    public AssetFileDescriptor openAssetFile(@NonNull Uri uri, @NonNull String mode)
             throws FileNotFoundException {
-        switch (URL_MATCHER.match(uri)) {
-            case CRASH_ID:
-                crashOnLaunchIfNeeded();
-                return new AssetFileDescriptor(
-                        openPipeHelper(uri, null, null,
-                                "This is the openTypedAssetFile test data!", this), 0,
-                        AssetFileDescriptor.UNKNOWN_LENGTH);
+        if (mUrlMatcher.match(uri) == CRASH_ID) {
+            crashOnLaunchIfNeeded();
+            return new AssetFileDescriptor(
+                    openPipeHelper(uri, null, null, "This is the openAssetFile test data!", this),
+                    0,
+                    AssetFileDescriptor.UNKNOWN_LENGTH);
+        }
+        return super.openAssetFile(uri, mode);
+    }
 
-            default:
-                return super.openTypedAssetFile(uri, mimeTypeFilter, opts);
+    @Override
+    public AssetFileDescriptor openTypedAssetFile(
+            @NonNull Uri uri, @NonNull String mimeTypeFilter, @Nullable Bundle opts)
+            throws FileNotFoundException {
+        if (mUrlMatcher.match(uri) == CRASH_ID) {
+            crashOnLaunchIfNeeded();
+            return new AssetFileDescriptor(
+                    openPipeHelper(
+                            uri, null, null, "This is the openTypedAssetFile test data!", this),
+                    0,
+                    AssetFileDescriptor.UNKNOWN_LENGTH);
+        }
+        return super.openTypedAssetFile(uri, mimeTypeFilter, opts);
+    }
+
+    @Override
+    public void writeDataToPipe(
+            @NonNull ParcelFileDescriptor output,
+            @NonNull Uri uri,
+            @NonNull String mimeType,
+            @Nullable Bundle opts,
+            @Nullable String args) {
+        try (FileOutputStream fout = new FileOutputStream(output.getFileDescriptor())) {
+            try (PrintWriter pw =
+                    new PrintWriter(new OutputStreamWriter(fout, StandardCharsets.UTF_8))) {
+                pw.print(args);
+            }
+        } catch (IOException e) {
+            Log.e(TAG, "Exception in writing data to pipe", e);
         }
     }
 
     @Override
-    public void writeDataToPipe(ParcelFileDescriptor output, Uri uri, String mimeType, Bundle opts,
-            String args) {
-        FileOutputStream fout = new FileOutputStream(output.getFileDescriptor());
-        PrintWriter pw = null;
-        try {
-            pw = new PrintWriter(new OutputStreamWriter(fout, "UTF-8"));
-            pw.print(args);
-        } catch (UnsupportedEncodingException e) {
-            Log.w(TAG, "Ooops", e);
-        } finally {
-            if (pw != null) {
-                pw.flush();
-            }
-            try {
-                fout.close();
-            } catch (IOException e) {
-            }
-        }
-    }
-
-    @Override
-    public boolean refresh(Uri uri, @Nullable Bundle args,
-            @Nullable CancellationSignal cancellationSignal) {
+    public boolean refresh(
+            Uri uri, @Nullable Bundle args, @Nullable CancellationSignal cancellationSignal) {
         sRefreshedUri = uri;
         return sRefreshReturnValue;
     }
@@ -461,7 +512,7 @@ public class MockContentProvider extends ContentProvider implements PipeDataWrit
             // Well, okay then!
             Log.i(TAG, "TEST IS CRASHING SELF, CROSS FINGERS!");
             setCrashOnLaunch(getContext(), false);
-            android.os.Process.killProcess(android.os.Process.myPid());
+            Process.killProcess(Process.myPid());
         }
     }
 
@@ -488,7 +539,7 @@ public class MockContentProvider extends ContentProvider implements PipeDataWrit
     }
 
     public static void assertRefreshed(Uri expectedUri) {
-        assertEquals(sRefreshedUri, expectedUri);
+        assertThat(expectedUri).isEqualTo(sRefreshedUri);
     }
 
     private static File getCrashOnLaunchFile(Context context) {

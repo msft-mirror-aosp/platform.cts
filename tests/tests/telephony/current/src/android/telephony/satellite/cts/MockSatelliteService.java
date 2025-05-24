@@ -499,6 +499,12 @@ public class MockSatelliteService extends SatelliteImplBase {
         if (mShouldRespondTelephony.get()) {
             runWithExecutor(() -> callback.accept(SatelliteResult.SATELLITE_RESULT_SUCCESS));
         }
+
+        if (mLocalListener != null) {
+            runWithExecutor(() -> mLocalListener.onSetSatelliteEnabledForCarrier());
+        } else {
+            loge("setSatelliteEnabledForCarrier: mLocalListener is null");
+        }
     }
 
     @Override

@@ -70,6 +70,8 @@ import android.server.wm.WaitForValidActivityState;
 import android.server.wm.WindowManagerState.Task;
 import android.server.wm.app.Components;
 
+import androidx.test.filters.FlakyTest;
+
 import com.android.compatibility.common.util.ApiTest;
 
 import org.junit.Rule;
@@ -214,6 +216,7 @@ public class ActivityVisibilityTests extends ActivityManagerTestBase {
     }
 
     @Test
+    @FlakyTest(bugId = 419783784)
     public void testTurnScreenOnActivity() {
         // TODO(b/380276500): Re-enable once per-display interactiveness is supported.
         assumeFalse(

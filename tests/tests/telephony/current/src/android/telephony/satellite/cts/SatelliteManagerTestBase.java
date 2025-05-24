@@ -2480,7 +2480,7 @@ public class SatelliteManagerTestBase {
     }
 
     /** Get HAL version for the given HAL service. */
-    public int getHalVersion(int halService) {
+    public static int getHalVersion(int halService) {
         Pair<Integer, Integer> halVersion = sTelephonyManager.getHalVersion(halService);
         return makeRadioVersion(halVersion.first, halVersion.second);
     }

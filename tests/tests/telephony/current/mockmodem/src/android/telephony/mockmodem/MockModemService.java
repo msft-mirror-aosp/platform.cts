@@ -86,6 +86,7 @@ public class MockModemService extends Service {
     protected static CountDownLatch[] sLatches;
     private LocalBinder mBinder;
     private final Semaphore mSetSatellitePlmnSemaphore = new Semaphore(0);
+    private final Semaphore mSetSatelliteEnabledForCarrierSemaphore = new Semaphore(0);
     private static final long TIMEOUT = 5000;
 
     // For local access of this Service.
@@ -441,5 +442,40 @@ public class MockModemService extends Service {
             }
         }
         return true;
+    }
+
+    public void clearEventOnSetSatellitePlmn() {
+        mSetSatellitePlmnSemaphore.drainPermits();
+        Log.d(TAG, "clearEventOnSetSatellitePlmn: drained");
+    }
+
+    public void onSetSatelliteEnabledForCarrier() {
+        Log.d(TAG, "onSetSatelliteEnabledForCarrier");
+        try {
+            mSetSatelliteEnabledForCarrierSemaphore.release();
+        } catch (Exception ex) {
+            Log.d(TAG, "onSetSatelliteEnabledForCarrier: Got exception, ex=" + ex);
+        }
+    }
+
+    boolean waitForEventOnSetSatelliteEnabledForCarrier(int expectedNumberOfEvents) {
+        for (int i = 0; i < expectedNumberOfEvents; i++) {
+            try {
+                if (!mSetSatelliteEnabledForCarrierSemaphore.tryAcquire(
+                        TIMEOUT, TimeUnit.MILLISECONDS)) {
+                    Log.e(TAG, "Timeout to receive onSetSatelliteEnabledForCarrier");
+                    return false;
+                }
+            } catch (Exception ex) {
+                Log.e(TAG, "onSetSatelliteEnabledForCarrier: Got exception=" + ex);
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public void clearEventOnSetSatelliteEnabledForCarrier() {
+        mSetSatelliteEnabledForCarrierSemaphore.drainPermits();
+        Log.d(TAG, "clearEventOnSetSatelliteEnabledForCarrier: drained");
     }
 }

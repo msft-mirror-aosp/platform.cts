@@ -60,6 +60,10 @@ public class PresentationTest extends MultiDisplayTestBase {
     // WindowManager.LayoutParams.TYPE_PRESENTATION
     private static final int TYPE_PRESENTATION = 2037;
 
+    private static final int[] PRESENTATION_WINDOW_TYPES = {
+        TYPE_PRESENTATION, TYPE_PRIVATE_PRESENTATION
+    };
+
     @Before
     @Override
     public void setUp() throws Exception {
@@ -83,9 +87,9 @@ public class PresentationTest extends MultiDisplayTestBase {
         for (Display display : mDm.getDisplays()) {
             launchPresentationActivity(getMainDisplayId(), display.getDisplayId());
             if ((display.getFlags() & Display.FLAG_PRESENTATION) != Display.FLAG_PRESENTATION) {
-                assertNoPresentationDisplayed();
+                waitAndAssertNoPresentationDisplayed();
             } else {
-                assertPresentationOnDisplayAndMatchesDisplayMetrics(display.getDisplayId());
+                waitAndAssertPesentationOnDisplayAndMatchesDisplayMetrics(display.getDisplayId());
             }
         }
     }
@@ -100,7 +104,7 @@ public class PresentationTest extends MultiDisplayTestBase {
         final WindowManagerState.DisplayContent displayForActivity = createDisplayForActivity();
         final WindowManagerState.DisplayContent presentationDisplay = createPresentationDisplay();
         launchPresentationActivity(displayForActivity.mId, presentationDisplay.mId);
-        assertPresentationOnDisplayAndMatchesDisplayMetrics(presentationDisplay.mId);
+        waitAndAssertPesentationOnDisplayAndMatchesDisplayMetrics(presentationDisplay.mId);
     }
 
     /**
@@ -113,7 +117,24 @@ public class PresentationTest extends MultiDisplayTestBase {
     public void testPresentationBlockedOverHostActivity() {
         final WindowManagerState.DisplayContent displayForActivity = createDisplayForActivity();
         launchPresentationActivity(displayForActivity.mId, displayForActivity.mId);
-        assertNoPresentationDisplayed();
+        waitAndAssertNoPresentationDisplayed();
+    }
+
+    /** Asserts that hiding a presentation leads to removing it automatically. */
+    @ApiTest(apis = {"android.app.Presentation#show", "android.app.Presentation#hide"})
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_PRESENTATION_FOR_CONNECTED_DISPLAYS)
+    @Test
+    public void testInvisiblePresentationDisallowed() {
+        final WindowManagerState.DisplayContent displayForActivity = createDisplayForActivity();
+        final WindowManagerState.DisplayContent presentationDisplay = createPresentationDisplay();
+        launchPresentationActivity(displayForActivity.mId, presentationDisplay.mId);
+        waitAndAssertPesentationOnDisplayAndMatchesDisplayMetrics(presentationDisplay.mId);
+
+        // Have the host activity hide the presentation, but Window Manager doesn't allow an
+        // invisible presentation and immediately kills it.
+        Intent intent = new Intent(Components.PresentationActivity.HIDE_PRESENTATION);
+        mContext.sendBroadcast(intent);
+        waitAndAssertNoPresentationDisplayed();
     }
 
     /**
@@ -129,7 +150,7 @@ public class PresentationTest extends MultiDisplayTestBase {
         final WindowManagerState.DisplayContent nonPresentationDisplay =
                 createNonPresentationDisplay();
         launchPresentationActivity(displayForActivity.mId, nonPresentationDisplay.mId);
-        assertPresentationOnDisplayAndMatchesDisplayMetrics(nonPresentationDisplay.mId);
+        waitAndAssertPesentationOnDisplayAndMatchesDisplayMetrics(nonPresentationDisplay.mId);
     }
 
     /** Asserts that a presentation isn't dismissed with display resize. */
@@ -148,7 +169,7 @@ public class PresentationTest extends MultiDisplayTestBase {
                 .isEqualTo(Display.FLAG_PRESENTATION);
 
         launchPresentationActivity(displayForActivity.mId, display.mId);
-        assertPresentationOnDisplayAndMatchesDisplayMetrics(display.mId);
+        waitAndAssertPesentationOnDisplayAndMatchesDisplayMetrics(display.mId);
 
         mVirtualDisplaySession.resizeDisplay();
 
@@ -172,7 +193,7 @@ public class PresentationTest extends MultiDisplayTestBase {
                 createNonPresentationDisplay();
 
         launchPresentationActivity(displayForActivity.mId, nonPresentationDisplay.mId);
-        assertNoPresentationDisplayed();
+        waitAndAssertNoPresentationDisplayed();
     }
 
     /** Asserts that a private presentation is created on a private presentation display. */
@@ -183,7 +204,7 @@ public class PresentationTest extends MultiDisplayTestBase {
         final WindowManagerState.DisplayContent privatePresentationDisplay =
                 createPrivatePresentationDisplay();
         launchPresentationActivity(displayForActivity.mId, privatePresentationDisplay.mId);
-        assertPresentationOnDisplayAndMatchesDisplayMetrics(privatePresentationDisplay.mId);
+        waitAndAssertPesentationOnDisplayAndMatchesDisplayMetrics(privatePresentationDisplay.mId);
     }
 
     private boolean isPresentationOnDisplay(WindowManagerState windowManagerState, int displayId) {
@@ -195,19 +216,20 @@ public class PresentationTest extends MultiDisplayTestBase {
         return false;
     }
 
-    private void assertNoPresentationDisplayed() {
-        final List<WindowManagerState.WindowState> presentationWindows =
-                mWmState.getWindowsByPackageName(
-                        Components.PRESENTATION_ACTIVITY.getPackageName(), TYPE_PRESENTATION);
-        assertThat(presentationWindows).isEmpty();
-        final List<WindowManagerState.WindowState> privatePresentationWindows =
-                mWmState.getWindowsByPackageName(
-                        Components.PRESENTATION_ACTIVITY.getPackageName(),
-                        TYPE_PRIVATE_PRESENTATION);
-        assertThat(privatePresentationWindows).isEmpty();
+    private void waitAndAssertNoPresentationDisplayed() {
+        waitForOrFail(
+                "Presentation window exists",
+                () -> {
+                    mWmState.computeState();
+                    final List<WindowManagerState.WindowState> presentationWindows =
+                            mWmState.getWindowsByPackageName(
+                                    Components.PRESENTATION_ACTIVITY.getPackageName(),
+                                    PRESENTATION_WINDOW_TYPES);
+                    return presentationWindows.isEmpty();
+                });
     }
 
-    private void assertPresentationOnDisplayAndMatchesDisplayMetrics(int displayId) {
+    private void waitAndAssertPesentationOnDisplayAndMatchesDisplayMetrics(int displayId) {
         waitForOrFail(
                 "Presentation that matches display metrics didn't show up",
                 () -> {
