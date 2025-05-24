@@ -11,6 +11,7 @@
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package com.android.cts.content;
@@ -22,8 +23,8 @@ import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
 /**
- * Rule for running flaky tests that runs the test up to attempt
- * count and if one run succeeds reports the tests as passing.
+ * Rule for running flaky tests that runs the test up to attempt count and if one run succeeds
+ * reports the tests as passing.
  */
 // TODO: Move this puppy in a common place, so ppl can use it.
 public class FlakyTestRule implements TestRule {
@@ -52,7 +53,7 @@ public class FlakyTestRule implements TestRule {
                     }
                 }
                 throw throwable;
-            };
+            }
         };
     }
 }

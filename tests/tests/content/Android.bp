@@ -86,12 +86,12 @@ java_defaults {
         "services.core",
         "junit",
         "truth",
-        "accountaccesslib",
         // TODO: remove once Android migrates to JUnit 4.12, which provides assertThrows:
         "testng",
         "androidx.legacy_legacy-support-v4",
         "androidx.test.core",
         "androidx.test.uiautomator_uiautomator",
+        "cts_content_shared_lib",
         "cts-install-lib",
         "ShortcutManagerTestUtils",
         "libincfs-prebuilt",

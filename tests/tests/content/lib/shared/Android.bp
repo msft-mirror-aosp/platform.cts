@@ -18,7 +18,7 @@ package {
 }
 
 java_library {
-    name: "accountaccesslib",
+    name: "cts_content_shared_lib",
     srcs: ["src/**/*.java"],
     static_libs: [
         "mockito-target",
