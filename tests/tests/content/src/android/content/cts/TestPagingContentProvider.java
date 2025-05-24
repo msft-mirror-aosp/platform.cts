@@ -27,6 +27,8 @@ import android.os.Bundle;
 import android.os.CancellationSignal;
 import android.util.Log;
 
+import androidx.annotation.NonNull;
+
 import javax.annotation.Nullable;
 
 /**
@@ -34,11 +36,22 @@ import javax.annotation.Nullable;
  * Ignores client supplied projections.
  */
 public final class TestPagingContentProvider extends ContentProvider {
-
+    private static final String TAG = "TestPagingContentProvider";
     static final String AUTHORITY = "android.content.cts.testpagingprovider";
 
-    static final Uri PAGED_DATA_URI = Uri.parse("content://" + AUTHORITY + "/paged/");
-    static final Uri UNPAGED_DATA_URI = Uri.parse("content://" + AUTHORITY + "/un-paged/");
+    static final Uri PAGED_DATA_URI =
+            new Uri.Builder()
+                    .scheme(ContentResolver.SCHEME_CONTENT)
+                    .authority(AUTHORITY)
+                    .appendPath("paged")
+                    .build();
+
+    static final Uri UNPAGED_DATA_URI =
+            new Uri.Builder()
+                    .scheme(ContentResolver.SCHEME_CONTENT)
+                    .authority(AUTHORITY)
+                    .appendPath("un-paged")
+                    .build();
 
     /** Required queryArgument specifying corpus size. */
     static final String RECORD_COUNT = "test-record-count";
@@ -55,16 +68,17 @@ public final class TestPagingContentProvider extends ContentProvider {
         COLUMN_D
     };
 
-    private static final String TAG = "TestPagingContentProvider";
-
     @Override
     public boolean onCreate() {
         return true;
     }
 
     @Override
-    public Cursor query(Uri uri, String[] ignored, Bundle queryArgs,
-            CancellationSignal cancellationSignal) {
+    public Cursor query(
+            @NonNull Uri uri,
+            @Nullable String[] ignored,
+            @Nullable Bundle queryArgs,
+            @Nullable CancellationSignal cancellationSignal) {
 
         queryArgs = queryArgs != null ? queryArgs : Bundle.EMPTY;
 
@@ -109,7 +123,7 @@ public final class TestPagingContentProvider extends ContentProvider {
 
         // Calculate the number of items to include in the cursor.
         int numItems = recordsetSize - offset;
-        numItems = numItems < 0 ? 0 : (numItems > limit ? limit : numItems);
+        numItems = Math.max(0, Math.min(numItems, limit));
 
         // Build the paged result set.
         for (int i = offset; i < offset + numItems; i++) {
@@ -155,28 +169,36 @@ public final class TestPagingContentProvider extends ContentProvider {
 
     @Override
     public Cursor query(
-            Uri uri, @Nullable String[] projection, String selection, String[] selectionArgs,
-            String sortOrder) {
+            @NonNull Uri uri,
+            @Nullable String[] projection,
+            @Nullable String selection,
+            @Nullable String[] selectionArgs,
+            @Nullable String sortOrder) {
         throw new UnsupportedOperationException("Call query w/ Bundle args");
     }
 
     @Override
-    public String getType(Uri uri) {
+    public String getType(@NonNull Uri uri) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public Uri insert(Uri uri, ContentValues values) {
+    public Uri insert(@NonNull Uri uri, @Nullable ContentValues values) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public int delete(Uri uri, String selection, String[] selectionArgs) {
+    public int delete(
+            @NonNull Uri uri, @Nullable String selection, @Nullable String[] selectionArgs) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public int update(Uri uri, ContentValues values, String selection, String[] selectionArgs) {
+    public int update(
+            @NonNull Uri uri,
+            @Nullable ContentValues values,
+            @Nullable String selection,
+            @Nullable String[] selectionArgs) {
         throw new UnsupportedOperationException();
     }
 }

@@ -1,3 +1,19 @@
+/*
+ * Copyright (C) 2025 The Android Open Source Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.android.cts.content;
 
 import android.accounts.Account;
@@ -86,8 +102,7 @@ public final class Utils {
     }
 
     public static boolean hasNotificationSupport() {
-        return !getContext().getPackageManager()
-                .hasSystemFeature(PackageManager.FEATURE_LEANBACK);
+        return !getContext().getPackageManager().hasSystemFeature(PackageManager.FEATURE_LEANBACK);
     }
 
     public static Context getContext() {
@@ -96,7 +111,8 @@ public final class Utils {
 
     public static boolean isWatch() {
         return (getContext().getResources().getConfiguration().uiMode
-                & Configuration.UI_MODE_TYPE_MASK) == Configuration.UI_MODE_TYPE_WATCH;
+                        & Configuration.UI_MODE_TYPE_MASK)
+                == Configuration.UI_MODE_TYPE_WATCH;
     }
 
     public static UiDevice getUiDevice() {
@@ -111,19 +127,23 @@ public final class Utils {
 
     public static void allowSyncAdapterRunInBackgroundAndDataInBackground() throws IOException {
         // Allow us to run in the background
-        SystemUtil.runShellCommand(InstrumentationRegistry.getInstrumentation(),
+        SystemUtil.runShellCommand(
+                InstrumentationRegistry.getInstrumentation(),
                 "cmd deviceidle whitelist +" + getContext().getPackageName());
         // Allow us to use data in the background
-        SystemUtil.runShellCommand(InstrumentationRegistry.getInstrumentation(),
+        SystemUtil.runShellCommand(
+                InstrumentationRegistry.getInstrumentation(),
                 "cmd netpolicy add restrict-background-whitelist " + Process.myUid());
     }
 
-    public static  void disallowSyncAdapterRunInBackgroundAndDataInBackground() throws IOException {
+    public static void disallowSyncAdapterRunInBackgroundAndDataInBackground() throws IOException {
         // Allow us to run in the background
-        SystemUtil.runShellCommand(InstrumentationRegistry.getInstrumentation(),
+        SystemUtil.runShellCommand(
+                InstrumentationRegistry.getInstrumentation(),
                 "cmd deviceidle whitelist -" + getContext().getPackageName());
         // Allow us to use data in the background
-        SystemUtil.runShellCommand(InstrumentationRegistry.getInstrumentation(),
+        SystemUtil.runShellCommand(
+                InstrumentationRegistry.getInstrumentation(),
                 "cmd netpolicy remove restrict-background-whitelist " + Process.myUid());
     }
 
@@ -138,8 +158,8 @@ public final class Utils {
         public void close() throws Exception {
             AccountManager accountManager = getContext().getSystemService(AccountManager.class);
 
-            accountManager.getAuthToken(account, TOKEN_TYPE_REMOVE_ACCOUNTS, null, false, null,
-                    null);
+            accountManager.getAuthToken(
+                    account, TOKEN_TYPE_REMOVE_ACCOUNTS, null, false, null, null);
         }
     }
 
@@ -150,9 +170,10 @@ public final class Utils {
                 accountManager
                         .addAccount(SYNC_ACCOUNT_TYPE, null, null, null, activity, null, null)
                         .getResult();
-        Account addedAccount = new Account(
-                result.getString(AccountManager.KEY_ACCOUNT_NAME),
-                result.getString(AccountManager.KEY_ACCOUNT_TYPE));
+        Account addedAccount =
+                new Account(
+                        result.getString(AccountManager.KEY_ACCOUNT_NAME),
+                        result.getString(AccountManager.KEY_ACCOUNT_TYPE));
         Log.i(LOG_TAG, "Added account " + addedAccount);
 
         waitForSyncManagerAccountChangeUpdate();
@@ -165,13 +186,14 @@ public final class Utils {
         extras.putBoolean(ContentResolver.SYNC_EXTRAS_DO_NOT_RETRY, true);
         extras.putBoolean(ContentResolver.SYNC_EXTRAS_PRIORITY, true);
         extras.getBoolean(ContentResolver.SYNC_EXTRAS_IGNORE_SETTINGS, true);
-        SyncRequest request = new SyncRequest.Builder()
-                .setSyncAdapter(null, authority)
-                .syncOnce()
-                .setExtras(extras)
-                .setExpedited(true)
-                .setManual(true)
-                .build();
+        SyncRequest request =
+                new SyncRequest.Builder()
+                        .setSyncAdapter(null, authority)
+                        .syncOnce()
+                        .setExtras(extras)
+                        .setExpedited(true)
+                        .setManual(true)
+                        .build();
         ContentResolver.requestSync(request);
 
         return request;

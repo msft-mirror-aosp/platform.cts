@@ -25,9 +25,9 @@ android_test {
         "cts_defaults",
     ],
     static_libs: [
-        "accountaccesslib",
         "androidx.test.rules",
         "androidx.test.ext.junit",
+        "cts_content_shared_lib",
         "junit",
         "mockito-target",
     ],

@@ -24,9 +24,9 @@ android_test {
     defaults: ["cts_defaults"],
     static_libs: [
         "androidx.test.rules",
-        "ctstestrunner-axt",
-        "accountaccesslib",
         "androidx.test.uiautomator_uiautomator",
+        "cts_content_shared_lib",
+        "ctstestrunner-axt",
     ],
     srcs: ["src/**/*.java"],
     platform_apis: true,
