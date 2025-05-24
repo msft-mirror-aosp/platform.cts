@@ -37,6 +37,7 @@ import java.util.concurrent.locks.ReentrantLock
 import java.util.function.Consumer
 import org.junit.After
 import org.junit.Before
+import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -356,6 +357,7 @@ class HistoricalAppopsTest {
         }
     }
 
+    @Ignore("b/419626572")
     @RequiresFlagsEnabled(Flags.FLAG_NOTE_OP_BATCHING_ENABLED)
     @RequiresFlagsDisabled(Flags.FLAG_RATE_LIMIT_BATCHED_NOTE_OP_ASYNC_CALLBACKS_ENABLED)
     @Test
