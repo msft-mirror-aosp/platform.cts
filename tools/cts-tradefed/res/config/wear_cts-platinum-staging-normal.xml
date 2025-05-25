@@ -153,7 +153,7 @@
     <!-- CtsContactsProviderWipe -->
     <option name="compatibility:include-filter" value="CtsContactsProviderWipe android.provider.cts.contactsproviderwipe.ContactsContract_Wipe#testCreationTimestamp"/>
     <!-- CtsContentTestCases -->
-    <option name="compatibility:include-filter" value="CtsContentTestCases android.content.cts.ContentResolverSyncTestCase#testCallMultipleAccounts"/>
+    <option name="compatibility:include-filter" value="CtsContentTestCases android.content.cts.ContentResolverSyncTest#testCallMultipleAccounts"/>
     <!-- CtsDeviceConfigTestCases -->
     <option name="compatibility:include-filter" value="CtsDeviceConfigTestCases android.deviceconfig.cts.DeviceConfigApiPermissionTests#testDeviceConfigPublicNamespacesWithoutReadPermission"/>
     <option name="compatibility:include-filter" value="CtsDeviceConfigTestCases android.deviceconfig.cts.DeviceConfigApiPermissionTests#testDeviceConfigWithAllPermissions"/>

@@ -47,13 +47,14 @@ import java.util.concurrent.TimeUnit;
 
 @AppModeFull(reason = "Sync manager not supported")
 @RunWith(AndroidJUnit4.class)
-public final class ContentResolverSyncTestCase {
+public final class ContentResolverSyncTest {
     private static final String TAG = "SyncTest";
 
     private static final String AUTHORITY = "android.content.cts.authority";
 
-    private static final Account ACCOUNT = new Account(MockAccountAuthenticator.ACCOUNT_NAME,
-            MockAccountAuthenticator.ACCOUNT_TYPE);
+    private static final Account ACCOUNT =
+            new Account(
+                    MockAccountAuthenticator.ACCOUNT_NAME, MockAccountAuthenticator.ACCOUNT_TYPE);
 
     private static final int INITIAL_SYNC_TIMEOUT_MS = 60 * 1000;
     private static final int CANCEL_TIMEOUT_MS = 60 * 1000;
@@ -81,7 +82,6 @@ public final class ContentResolverSyncTestCase {
 
     private static MockSyncAdapter getMockSyncAdapter() {
         return MockSyncAdapter.getMockSyncAdapter();
-
     }
 
     private void addAccountExplicitly() {
@@ -147,7 +147,7 @@ public final class ContentResolverSyncTestCase {
         final long timeout = SystemClock.uptimeMillis() + CANCEL_TIMEOUT_MS;
         while (SystemClock.uptimeMillis() < timeout) {
             if (!ContentResolver.isSyncActive(ACCOUNT, AUTHORITY)
-                && !ContentResolver.isSyncPending(ACCOUNT, AUTHORITY)) {
+                    && !ContentResolver.isSyncPending(ACCOUNT, AUTHORITY)) {
                 break;
             }
             Log.i(TAG, "Waiting for sync to finish...");
@@ -284,8 +284,8 @@ public final class ContentResolverSyncTestCase {
         assertThat(length).isGreaterThan(0);
         boolean found = false;
         for (SyncAdapterType type : types) {
-            if (MockAccountAuthenticator.ACCOUNT_TYPE.equals(type.accountType) &&
-                    AUTHORITY.equals(type.authority)) {
+            if (MockAccountAuthenticator.ACCOUNT_TYPE.equals(type.accountType)
+                    && AUTHORITY.equals(type.authority)) {
                 found = true;
                 break;
             }
