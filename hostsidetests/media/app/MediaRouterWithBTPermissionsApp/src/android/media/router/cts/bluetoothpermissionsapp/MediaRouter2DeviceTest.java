@@ -113,11 +113,6 @@ public class MediaRouter2DeviceTest {
     private static final Correspondence<MediaRoute2Info, String> ROUTE_HAS_ORIGINAL_ID =
             Correspondence.transforming(MediaRoute2Info::getOriginalId, "has original id");
 
-    // TODO: b/316864909 - Stop relying on route ids once we can control system routing in CTS.
-    private static final String ROUTE_ID_BUILTIN_SPEAKER =
-            Flags.enableAudioPoliciesDeviceAndBluetoothController()
-                    ? "ROUTE_ID_BUILTIN_SPEAKER"
-                    : MediaRoute2Info.ROUTE_ID_DEVICE;
     private static final int TIMEOUT_MS = 5000;
 
     private ExecutorService mExecutor;
@@ -670,10 +665,11 @@ public class MediaRouter2DeviceTest {
                         waitForAndGetRoutes(
                                         router,
                                         SYSTEM_ROUTE_DISCOVERY_PREFERENCE,
-                                        /* expectedRouteIds= */ Set.of(ROUTE_ID_BUILTIN_SPEAKER),
+                                        /* expectedRouteIds= */ Set.of(
+                                                MediaRoute2Info.ROUTE_ID_DEFAULT),
                                         mExecutor)
                                 .keySet())
-                .containsExactly(ROUTE_ID_BUILTIN_SPEAKER);
+                .doesNotContain(MediaRoute2Info.ROUTE_ID_DEFAULT);
     }
 
     @Test
