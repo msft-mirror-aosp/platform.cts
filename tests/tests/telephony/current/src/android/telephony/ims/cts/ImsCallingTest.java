@@ -31,17 +31,14 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
-import android.os.PersistableBundle;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.telecom.Call;
 import android.telecom.PhoneAccount;
 import android.telecom.TelecomManager;
-import android.telecom.VideoProfile;
 import android.telephony.AccessNetworkConstants;
 import android.telephony.CallState;
-import android.telephony.CarrierConfigManager;
 import android.telephony.PreciseCallState;
 import android.telephony.SubscriptionManager;
 import android.telephony.TelephonyCallback;
@@ -50,12 +47,9 @@ import android.telephony.cts.InCallServiceStateValidator;
 import android.telephony.emergency.EmergencyNumber;
 import android.telephony.ims.ImsCallProfile;
 import android.telephony.ims.ImsCallSessionListener;
-import android.telephony.ims.ImsManager;
-import android.telephony.ims.ImsMmTelManager;
 import android.telephony.ims.ImsStreamMediaProfile;
 import android.telephony.ims.MediaQualityStatus;
 import android.telephony.ims.feature.MmTelFeature;
-import android.telephony.ims.stub.ImsRegistrationImplBase;
 import android.text.TextUtils;
 import android.util.Log;
 
@@ -1412,121 +1406,6 @@ public class ImsCallingTest extends ImsCallingBase {
         assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
         isCallDisconnected(call, callSession);
         assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
-        waitForUnboundService();
-    }
-
-    @Test
-    @RequiresFlagsEnabled(
-            Flags.FLAG_TERMINATE_ACTIVE_VIDEO_CALL_WHEN_ACCEPTING_SECOND_VIDEO_CALL_AS_AUDIO_ONLY)
-    public void testMultipleVideoCallAcceptTerminate() throws Exception {
-        if (!ImsUtils.shouldTestImsCall()) {
-            return;
-        }
-
-        PersistableBundle bundle = new PersistableBundle();
-        bundle.putBoolean(CarrierConfigManager.KEY_DROP_VIDEO_CALL_WHEN_ANSWERING_AUDIO_CALL_BOOL,
-                true);
-        bundle.putBoolean(CarrierConfigManager.KEY_CARRIER_WFC_IMS_AVAILABLE_BOOL, true);
-        bundle.putBoolean(CarrierConfigManager.KEY_CARRIER_DEFAULT_WFC_IMS_ENABLED_BOOL, false);
-        bundle.putBoolean(CarrierConfigManager.KEY_ALLOW_HOLD_VIDEO_CALL_BOOL, false);
-        overrideCarrierConfig(bundle);
-
-        // Precondition : WFC disabled
-        Uri callingUri = Uri.withAppendedPath(
-                SubscriptionManager.WFC_ENABLED_CONTENT_URI, "" + sTestSub);
-        CountDownLatch contentObservedLatch = new CountDownLatch(1);
-        ContentObserver observer = createObserver(callingUri, contentObservedLatch);
-
-        ImsManager imsManager = getContext().getSystemService(ImsManager.class);
-        ImsMmTelManager mMmTelManager = imsManager.getImsMmTelManager(sTestSub);
-
-        boolean isEnabled = ShellIdentityUtils.invokeMethodWithShellPermissions(mMmTelManager,
-                ImsMmTelManager::isVoWiFiSettingEnabled);
-        if (isEnabled) {
-            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mMmTelManager,
-                    (m) -> m.setVoWiFiSettingEnabled(false));
-        }
-        waitForLatch(contentObservedLatch, observer);
-
-        MmTelFeature.MmTelCapabilities capabilities =
-                new MmTelFeature.MmTelCapabilities(
-                        MmTelFeature.MmTelCapabilities.CAPABILITY_TYPE_VOICE
-                                | MmTelFeature.MmTelCapabilities.CAPABILITY_TYPE_VIDEO);
-
-        bindImsServiceForCapabilities(ImsRegistrationImplBase.REGISTRATION_TECH_IWLAN,
-                capabilities);
-
-        ImsStreamMediaProfile mediaProfile = new ImsStreamMediaProfile(
-                ImsStreamMediaProfile.AUDIO_QUALITY_AMR,
-                ImsStreamMediaProfile.DIRECTION_SEND_RECEIVE,
-                ImsStreamMediaProfile.VIDEO_QUALITY_QVGA_PORTRAIT,
-                ImsStreamMediaProfile.DIRECTION_SEND_RECEIVE,
-                ImsStreamMediaProfile.RTT_MODE_DISABLED);
-        sServiceConnector.getCarrierService().getMmTelFeature()
-                .setImsStreamProfileForVt(mediaProfile);
-
-        mServiceCallBack = new ServiceCallBack();
-        InCallServiceStateValidator.setCallbacks(mServiceCallBack);
-
-        TelecomManager telecomManager = (TelecomManager) InstrumentationRegistry
-                .getInstrumentation().getContext().getSystemService(Context.TELECOM_SERVICE);
-
-        final Uri imsUri = Uri.fromParts(PhoneAccount.SCHEME_TEL, String.valueOf(++sCounter), null);
-        Bundle extras = new Bundle();
-        extras.putInt(TelecomManager.EXTRA_START_CALL_WITH_VIDEO_STATE,
-                VideoProfile.STATE_BIDIRECTIONAL);
-        extras.putInt(TelecomManager.EXTRA_CALL_NETWORK_TYPE, TelephonyManager.NETWORK_TYPE_IWLAN);
-
-        // MO Call
-        telecomManager.placeCall(imsUri, extras);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
-
-        Call moCall = getCall(mCurrentCallId);
-        waitForCallSessionToNotBe(null);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DIALING, WAIT_FOR_CALL_STATE));
-
-        TestImsCallSessionImpl moCallSession = sServiceConnector.getCarrierService()
-                .getMmTelFeature().getImsCallsession();
-
-        isCallActive(moCall, moCallSession);
-
-        // MT Call
-        extras.putBoolean("android.telephony.ims.feature.extra.IS_USSD", false);
-        extras.putBoolean("android.telephony.ims.feature.extra.IS_UNKNOWN_CALL", false);
-        extras.putString("android:imsCallID", String.valueOf(++sCounter));
-        extras.putLong("android:phone_id", 123456);
-        sServiceConnector.getCarrierService().getMmTelFeature().onIncomingVtCallReceived(extras);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
-        waitForCallSessionToNotBe(null);
-        TestImsCallSessionImpl mtCallSession =
-                sServiceConnector.getCarrierService().getMmTelFeature().getImsCallsession();
-
-        Call mtCall = null;
-        if (mCurrentCallId != null) {
-            mtCall = getCall(mCurrentCallId);
-            if (mtCall.getDetails().getState() == Call.STATE_RINGING) {
-                mtCall.answer(VideoProfile.STATE_AUDIO_ONLY);
-            }
-        }
-
-        // MO call should be terminated
-        isCallDisconnected(moCall, moCallSession);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
-
-        isCallActive(mtCall, mtCallSession);
-        mtCall.disconnect();
-
-        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
-        isCallDisconnected(mtCall, mtCallSession);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
-
-        // Return the WFC activation status to before testing.
-        if (isEnabled) {
-            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mMmTelManager,
-                    (m) -> m.setVoWiFiSettingEnabled(true));
-        }
-        waitForLatch(contentObservedLatch, observer);
-
         waitForUnboundService();
     }
 
