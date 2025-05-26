@@ -24,6 +24,7 @@ import static org.junit.Assume.assumeTrue;
 
 import android.app.ActivityManager;
 import android.content.ComponentName;
+import android.content.pm.PackageManager;
 import android.os.UserManager;
 import android.platform.test.annotations.AppModeFull;
 
@@ -33,6 +34,7 @@ import com.android.bedstead.enterprise.annotations.EnsureHasNoDeviceOwner;
 import com.android.bedstead.multiuser.annotations.RequireRunOnSystemUser;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.devicepolicy.DeviceOwner;
+import com.android.compatibility.common.util.FeatureUtil;
 import com.android.compatibility.common.util.SystemUtil;
 
 import org.junit.After;
@@ -58,6 +60,9 @@ public class PackageManagerDeviceOwnerTest {
     @Before
     public void setup() throws Exception {
         assumeTrue("Device is not supported", isDeviceSupported());
+        assumeTrue(
+                "Skipping test that requires device admin",
+                FeatureUtil.hasSystemFeature(PackageManager.FEATURE_DEVICE_ADMIN));
     }
 
     @After
