@@ -79,7 +79,6 @@ import android.os.UserHandle;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.AppModeInstant;
 import android.platform.test.annotations.AppModeSdkSandbox;
-import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -140,6 +139,7 @@ import com.android.cts.mockime.ImeSettings;
 import com.android.cts.mockime.MockImeSession;
 
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.function.ThrowingRunnable;
@@ -640,7 +640,7 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
     }
 
     @Test
-    @RequiresFlagsDisabled(Flags.FLAG_REFACTOR_INSETS_CONTROLLER)
+    @Ignore("b/418178877")
     public void testShowSoftInputWithShowForcedFlagWhenAppIsLeaving() throws Exception {
         try (MockImeSession imeSession = MockImeSession.create(
                 mInstrumentation.getContext(),
@@ -2233,14 +2233,12 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_REFACTOR_INSETS_CONTROLLER)
     public void testQuickDoubleSwipeBackHidesImeAndSendsEventToApp_OnBackInvokedCallbackEnabled()
             throws Exception {
         testQuickDoubleSwipeBackHidesImeAndSendsEventToApp(true);
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_REFACTOR_INSETS_CONTROLLER)
     public void testQuickDoubleSwipeBackHidesImeAndSendsEventToApp_OnBackInvokedCallbackDisabled()
             throws Exception {
         testQuickDoubleSwipeBackHidesImeAndSendsEventToApp(false);

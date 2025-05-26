@@ -41,23 +41,32 @@ public class ShortcutManagerMultiuserTest extends BaseShortcutManagerHostTest {
             return;
         }
         // First, create users
-        final int profileId = createProfile(getPrimaryUserId());
+        final int profileId = createProfile(getMainUserId());
 
-        installAppAsUser(TARGET_APK, getPrimaryUserId());
+        installAppAsUser(TARGET_APK, getMainUserId());
 
-        runDeviceTestsAsUser(TARGET_PKG, ".ShortcutManagerManagedUserTest",
-                "test01_managedProfileNotStarted", getPrimaryUserId());
+        runDeviceTestsAsUser(
+                TARGET_PKG,
+                ".ShortcutManagerManagedUserTest",
+                "test01_managedProfileNotStarted",
+                getMainUserId());
 
         getDevice().startUser(profileId, /* wait */ true);
         installAppAsUser(TARGET_APK, profileId);
 
-        runDeviceTestsAsUser(TARGET_PKG, ".ShortcutManagerManagedUserTest",
-                "test02_createShortuctsOnPrimaryUser", getPrimaryUserId());
+        runDeviceTestsAsUser(
+                TARGET_PKG,
+                ".ShortcutManagerManagedUserTest",
+                "test02_createShortuctsOnPrimaryUser",
+                getMainUserId());
         runDeviceTestsAsUser(TARGET_PKG, ".ShortcutManagerManagedUserTest",
                 "test03_createShortuctsOnManagedProfile", profileId);
 
-        runDeviceTestsAsUser(TARGET_PKG, ".ShortcutManagerManagedUserTest",
-                "test04_getAndLaunch_primary", getPrimaryUserId());
+        runDeviceTestsAsUser(
+                TARGET_PKG,
+                ".ShortcutManagerManagedUserTest",
+                "test04_getAndLaunch_primary",
+                getMainUserId());
     }
 
     @Ignore("b/288276271")

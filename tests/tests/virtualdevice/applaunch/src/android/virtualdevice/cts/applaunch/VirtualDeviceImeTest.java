@@ -58,6 +58,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.FeatureUtil;
+import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.SystemUtil;
 
 import org.junit.After;
@@ -79,7 +80,8 @@ import java.util.concurrent.TimeUnit;
 @AppModeFull(reason = "VirtualDeviceManager cannot be accessed by instant apps")
 public class VirtualDeviceImeTest {
 
-    private static final long TIMEOUT_MILLIS = TimeUnit.SECONDS.toMillis(5);
+    private static final long TIMEOUT_MILLIS = TimeUnit.SECONDS.toMillis(20);
+    private static final long NO_IME_TIMEOUT_MILLIS = TimeUnit.SECONDS.toMillis(5);
 
     @Rule
     public VirtualDeviceRule mRule = VirtualDeviceRule.createDefault();
@@ -175,7 +177,7 @@ public class VirtualDeviceImeTest {
                 /* imeComponent= */ Optional.of(new ComponentName("foo.bar", "foo.bar.Baz")));
 
         showSoftInputOnDisplay(mVirtualDisplayId);
-        verify(mDefaultDeviceImeListener, after(TIMEOUT_MILLIS).never()).onShow(anyInt());
+        verify(mDefaultDeviceImeListener, after(NO_IME_TIMEOUT_MILLIS).never()).onShow(anyInt());
     }
 
     /** No IME is used on virtual devices when the custom IME component is invalid. */
@@ -187,7 +189,7 @@ public class VirtualDeviceImeTest {
                 new ComponentName(mContext, EmptyActivity.class.getName())));
 
         showSoftInputOnDisplay(mVirtualDisplayId);
-        verify(mDefaultDeviceImeListener, after(TIMEOUT_MILLIS).never()).onShow(anyInt());
+        verify(mDefaultDeviceImeListener, after(NO_IME_TIMEOUT_MILLIS).never()).onShow(anyInt());
     }
 
     @Test
@@ -202,7 +204,7 @@ public class VirtualDeviceImeTest {
                     mVirtualDisplayId);
             return true;
         }, android.Manifest.permission.INTERNAL_SYSTEM_WINDOW);
-        verify(mVirtualDeviceImeListener, after(TIMEOUT_MILLIS).never()).onShow(anyInt());
+        verify(mVirtualDeviceImeListener, after(NO_IME_TIMEOUT_MILLIS).never()).onShow(anyInt());
     }
 
     /**
@@ -294,7 +296,7 @@ public class VirtualDeviceImeTest {
                 () -> !mVirtualDeviceImeId.equals(
                         mInputMethodManager.getCurrentInputMethodInfo().getId())))
                 .isTrue();
-        verify(mDefaultDeviceImeListener, after(TIMEOUT_MILLIS).never()).onShow(anyInt());
+        verify(mDefaultDeviceImeListener, after(NO_IME_TIMEOUT_MILLIS).never()).onShow(anyInt());
     }
 
     @Test
@@ -375,7 +377,7 @@ public class VirtualDeviceImeTest {
         waitForImePolicy(mVirtualDisplayId, DISPLAY_IME_POLICY_HIDE);
 
         showSoftInputOnDisplay(mVirtualDisplayId);
-        verify(mDefaultDeviceImeListener, after(TIMEOUT_MILLIS).never()).onShow(anyInt());
+        verify(mDefaultDeviceImeListener, after(NO_IME_TIMEOUT_MILLIS).never()).onShow(anyInt());
     }
 
     @ApiTest(apis = {
@@ -386,7 +388,7 @@ public class VirtualDeviceImeTest {
         virtualDevice.setDisplayImePolicy(mVirtualDisplayId, DISPLAY_IME_POLICY_HIDE);
         waitForImePolicy(mVirtualDisplayId, DISPLAY_IME_POLICY_HIDE);
         showSoftInputOnDisplay(mVirtualDisplayId);
-        verify(mDefaultDeviceImeListener, after(TIMEOUT_MILLIS).never()).onShow(anyInt());
+        verify(mDefaultDeviceImeListener, after(NO_IME_TIMEOUT_MILLIS).never()).onShow(anyInt());
 
         virtualDevice.setDisplayImePolicy(mVirtualDisplayId, DISPLAY_IME_POLICY_FALLBACK_DISPLAY);
         waitForImePolicy(mVirtualDisplayId, DISPLAY_IME_POLICY_FALLBACK_DISPLAY);
@@ -426,7 +428,7 @@ public class VirtualDeviceImeTest {
         waitForImePolicy(noImeDisplayId, DISPLAY_IME_POLICY_HIDE);
 
         showSoftInputOnDisplay(noImeDisplayId);
-        verify(mDefaultDeviceImeListener, after(TIMEOUT_MILLIS).never()).onShow(anyInt());
+        verify(mDefaultDeviceImeListener, after(NO_IME_TIMEOUT_MILLIS).never()).onShow(anyInt());
 
         showSoftInputOnDisplay(mVirtualDisplayId);
         verify(mDefaultDeviceImeListener, timeout(TIMEOUT_MILLIS).atLeastOnce())
@@ -448,7 +450,7 @@ public class VirtualDeviceImeTest {
         waitForImePolicy(mVirtualDisplayId, DISPLAY_IME_POLICY_FALLBACK_DISPLAY);
 
         showSoftInputOnDisplay(mVirtualDisplayId);
-        verify(mVirtualDeviceImeListener, after(TIMEOUT_MILLIS).never()).onShow(anyInt());
+        verify(mVirtualDeviceImeListener, after(NO_IME_TIMEOUT_MILLIS).never()).onShow(anyInt());
         verify(mDefaultDeviceImeListener, timeout(TIMEOUT_MILLIS).atLeastOnce())
                 .onShow(Display.DEFAULT_DISPLAY);
     }
@@ -464,7 +466,7 @@ public class VirtualDeviceImeTest {
         waitForImePolicy(mVirtualDisplayId, DISPLAY_IME_POLICY_HIDE);
 
         showSoftInputOnDisplay(mVirtualDisplayId);
-        verify(mVirtualDeviceImeListener, after(TIMEOUT_MILLIS).never()).onShow(anyInt());
+        verify(mVirtualDeviceImeListener, after(NO_IME_TIMEOUT_MILLIS).never()).onShow(anyInt());
         verify(mDefaultDeviceImeListener, never()).onShow(Display.DEFAULT_DISPLAY);
     }
 
@@ -507,15 +509,11 @@ public class VirtualDeviceImeTest {
                 new ComponentName(mContext, imeClass.getName()).flattenToShortString();
         SystemUtil.runShellCommandOrThrow("ime enable --user " + mUserId + " " + imeId);
         if (makeDefault) {
-            // The "ime set" command can be flaky, try a few times until it takes effect.
-            for (int i = 0; i < 5; ++i) {
-                SystemUtil.runShellCommandOrThrow("ime set --user " + mUserId + " " + imeId);
-                if (mInputMethodManager.getCurrentInputMethodInfo().getId().equals(imeId)) {
-                    return imeId;
-                }
-            }
-            assertThat(mInputMethodManager.getCurrentInputMethodInfo().getId().equals(imeId))
-                    .isTrue();
+            SystemUtil.runShellCommandOrThrow("ime set --user " + mUserId + " " + imeId);
+            PollingCheck.waitFor(
+                    TIMEOUT_MILLIS,
+                    () -> mInputMethodManager.getCurrentInputMethodInfo().getId().equals(imeId),
+                    "enableTestIme shell command failed.");
         }
         return imeId;
     }

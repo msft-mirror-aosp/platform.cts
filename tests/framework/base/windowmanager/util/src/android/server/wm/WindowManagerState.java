@@ -42,6 +42,7 @@ import android.app.ActivityTaskManager;
 import android.app.UiAutomation;
 import android.content.ComponentName;
 import android.content.res.Configuration;
+import android.graphics.Insets;
 import android.graphics.Point;
 import android.graphics.Rect;
 import android.os.ParcelFileDescriptor;
@@ -58,6 +59,7 @@ import com.google.protobuf.nano.InvalidProtocolBufferNanoException;
 
 import perfetto.protos.Displayinfo.DisplayInfoProto;
 import perfetto.protos.Enums.TransitionTypeEnum;
+import perfetto.protos.Insets.InsetsProto;
 import perfetto.protos.Insetssource.InsetsSourceProto;
 import perfetto.protos.Rect.RectProto;
 import perfetto.protos.TraceOuterClass.Trace;
@@ -2959,18 +2961,36 @@ public class WindowManagerState {
         private Rect mFrame;
         private Rect mVisibleFrame;
         private boolean mVisible;
+        private Insets mAttachedInsets;
 
         InsetsSource(InsetsSourceProto proto) {
             mType = proto.getTypeNumber();
             if (proto.hasFrame()) {
-                mFrame = new Rect(
-                        proto.getFrame().getLeft(), proto.getFrame().getTop(),
-                        proto.getFrame().getRight(), proto.getFrame().getBottom());
+                RectProto frame = proto.getFrame();
+                mFrame =
+                        new Rect(
+                                frame.getLeft(),
+                                frame.getTop(),
+                                frame.getRight(),
+                                frame.getBottom());
             }
             if (proto.hasVisibleFrame()) {
-                mVisibleFrame = new Rect(
-                        proto.getVisibleFrame().getLeft(), proto.getVisibleFrame().getTop(),
-                        proto.getVisibleFrame().getRight(), proto.getVisibleFrame().getBottom());
+                RectProto frame = proto.getFrame();
+                mVisibleFrame =
+                        new Rect(
+                                frame.getLeft(),
+                                frame.getTop(),
+                                frame.getRight(),
+                                frame.getBottom());
+            }
+            if (proto.hasAttachedInsets()) {
+                InsetsProto attachedInsets = proto.getAttachedInsets();
+                mAttachedInsets =
+                        Insets.of(
+                                attachedInsets.getLeft(),
+                                attachedInsets.getTop(),
+                                attachedInsets.getRight(),
+                                attachedInsets.getBottom());
             }
             mVisible = proto.getVisible();
         }
@@ -2978,12 +2998,26 @@ public class WindowManagerState {
         InsetsSource(android.view.nano.InsetsSourceProto proto) {
             mType = proto.typeNumber;
             if (proto.frame != null) {
-                mFrame = new Rect(
-                        proto.frame.left, proto.frame.top, proto.frame.right, proto.frame.bottom);
+                android.graphics.nano.RectProto frame = proto.frame;
+                mFrame = new Rect(frame.left, frame.top, frame.right, frame.bottom);
             }
             if (proto.visibleFrame != null) {
-                mVisibleFrame = new Rect(proto.visibleFrame.left, proto.visibleFrame.top,
-                        proto.visibleFrame.right, proto.visibleFrame.bottom);
+                android.graphics.nano.RectProto visibleFrame = proto.visibleFrame;
+                mVisibleFrame =
+                        new Rect(
+                                visibleFrame.left,
+                                visibleFrame.top,
+                                visibleFrame.right,
+                                visibleFrame.bottom);
+            }
+            if (proto.attachedInsets != null) {
+                android.graphics.nano.InsetsProto attachedInsets = proto.attachedInsets;
+                mAttachedInsets =
+                        Insets.of(
+                                attachedInsets.left,
+                                attachedInsets.top,
+                                attachedInsets.right,
+                                attachedInsets.bottom);
             }
             mVisible = proto.visible;
         }
@@ -3004,6 +3038,10 @@ public class WindowManagerState {
             return mVisible;
         }
 
+        Insets getAttachedInsets() {
+            return mAttachedInsets;
+        }
+
         /**
          * Check whether this InsetsSource is with given type.
          * @param type The type to which check against.
@@ -3014,6 +3052,10 @@ public class WindowManagerState {
         }
 
         public void insetGivenFrame(Rect inOutFrame) {
+            if (mAttachedInsets != null) {
+                inOutFrame.inset(mAttachedInsets);
+                return;
+            }
             if (inOutFrame.left == mFrame.left && inOutFrame.right == mFrame.right) {
                 if (inOutFrame.top == mFrame.top) {
                     inOutFrame.top = mFrame.bottom;
@@ -3038,10 +3080,16 @@ public class WindowManagerState {
 
         @Override
         public String toString() {
-            return "InsetsSource: {type=" + WindowInsets.Type.toString(mType)
-                    + " frame=" + mFrame
-                    + " visibleFrame=" + mVisibleFrame
-                    + " visible=" + mVisible
+            return "InsetsSource: {type="
+                    + WindowInsets.Type.toString(mType)
+                    + " frame="
+                    + mFrame
+                    + " visibleFrame="
+                    + mVisibleFrame
+                    + " visible="
+                    + mVisible
+                    + " attachedInsets="
+                    + mAttachedInsets
                     + "}";
         }
     }

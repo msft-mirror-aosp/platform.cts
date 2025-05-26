@@ -123,6 +123,23 @@ public final class VirtualCameraUtils {
         assertThat(config.getLensFacing()).isEqualTo(lensFacing);
     }
 
+    public static void assertVirtualCameraConfigFromCharacteristics(VirtualCameraConfig config,
+            int width, int height, int format, int maximumFramesPerSecond,
+            int characteristicSensorOrientation, int characteristicLensFacing, String name) {
+        assertThat(config.getName()).isEqualTo(name);
+        assertThat(config.getStreamConfigs()).hasSize(1);
+        VirtualCameraStreamConfig streamConfig =
+                Iterables.getOnlyElement(config.getStreamConfigs());
+        assertThat(streamConfig.getWidth()).isEqualTo(width);
+        assertThat(streamConfig.getHeight()).isEqualTo(height);
+        assertThat(streamConfig.getFormat()).isEqualTo(format);
+        assertThat(streamConfig.getMaximumFramesPerSecond()).isEqualTo(maximumFramesPerSecond);
+        assertThat(config.getCameraCharacteristics().get(CameraCharacteristics.SENSOR_ORIENTATION))
+                .isEqualTo(characteristicSensorOrientation);
+        assertThat(config.getCameraCharacteristics().get(CameraCharacteristics.LENS_FACING))
+                .isEqualTo(characteristicLensFacing);
+    }
+
     public static void paintSurface(Surface surface, @ColorInt int color) {
         Canvas canvas = surface.lockCanvas(null);
         canvas.drawColor(color);
