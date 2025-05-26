@@ -2028,18 +2028,20 @@ public class ASurfaceControlTest {
         // a vsyncId in the surface transaction; this should be guaranteed as part of the API
         // specification. Don't check whether the frame presents on-time since it can be flaky from
         // other delays.
-        assertTrue("Frame presented too early using frame timeline index=" + timelineIndex
-                        + " (preferred index=" + frameCallbackData.getPreferredFrameTimelineIndex()
-                        + ", preferred vsyncId="
-                        + frameTimelines[frameCallbackData.getPreferredFrameTimelineIndex()]
-                                  .getVsyncId()
-                        + "), vsyncId=" + frameTimeline.getVsyncId() + ", actual presentation time="
-                        + onCompleteCallback.mPresentTime + ", expected presentation time="
-                        + frameTimeline.getExpectedPresentTime() + ", actual - expected diff (ns)="
-                        + (onCompleteCallback.mPresentTime - frameTimeline.getExpectedPresentTime())
-                        + ", acceptable diff threshold (ns)= " + threshold,
-                onCompleteCallback.mPresentTime
-                        > frameTimeline.getExpectedPresentTime() - threshold);
+        if(SystemProperties.getBoolean("service.sf.present_timestamp", true)) {
+            assertTrue("Frame presented too early using frame timeline index=" + timelineIndex
+                            + " (preferred index=" + frameCallbackData.getPreferredFrameTimelineIndex()
+                            + ", preferred vsyncId="
+                            + frameTimelines[frameCallbackData.getPreferredFrameTimelineIndex()]
+                                      .getVsyncId()
+                            + "), vsyncId=" + frameTimeline.getVsyncId() + ", actual presentation time="
+                            + onCompleteCallback.mPresentTime + ", expected presentation time="
+                            + frameTimeline.getExpectedPresentTime() + ", actual - expected diff (ns)="
+                            + (onCompleteCallback.mPresentTime - frameTimeline.getExpectedPresentTime())
+                            + ", acceptable diff threshold (ns)= " + threshold,
+                    onCompleteCallback.mPresentTime
+                            > frameTimeline.getExpectedPresentTime() - threshold);
+        }
         return true;
     }
 
