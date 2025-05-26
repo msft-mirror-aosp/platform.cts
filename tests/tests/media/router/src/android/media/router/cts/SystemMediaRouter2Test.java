@@ -177,6 +177,8 @@ public class SystemMediaRouter2Test {
         mAudioDeviceVolumeManager = mContext.getSystemService(AudioDeviceVolumeManager.class);
         MediaRouter2TestActivity.startActivity(mContext);
 
+        mService = mProviderSetup.setupAndGetService(mContext);
+
         mSystemRouter2ForCts = MediaRouter2.getInstance(mContext, mContext.getPackageName());
         mSystemRouter2ForCts.startScan();
 
@@ -186,8 +188,6 @@ public class SystemMediaRouter2Test {
         // into mRouteCallbacks here (instead of having to do it in each test) so it gets cleaned up
         // properly in clearCallbacks().
         mRouteCallbacks.add(mAppRouterPlaceHolderCallback);
-
-        mService = mProviderSetup.setupAndGetService(mContext);
     }
 
     @After
