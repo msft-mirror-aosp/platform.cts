@@ -42,12 +42,12 @@ public class ShortcutManagerUpgradeTest extends BaseShortcutManagerHostTest {
     @Ignore("b/288276271")
     @Test
     public void testUpgrade() throws Exception {
-        installAppAsUser(VERSION1_APK, getPrimaryUserId());
+        installAppAsUser(VERSION1_APK, getMainUserId());
 
-        runDeviceTestsAsUser(TARGET_PKG, ".ShortcutManagerPreUpgradeTest", getPrimaryUserId());
+        runDeviceTestsAsUser(TARGET_PKG, ".ShortcutManagerPreUpgradeTest", getMainUserId());
 
-        installAppAsUser(VERSION2_APK, getPrimaryUserId());
+        installAppAsUser(VERSION2_APK, getMainUserId());
 
-        runDeviceTestsAsUser(TARGET_PKG, ".ShortcutManagerPostUpgradeTest", getPrimaryUserId());
+        runDeviceTestsAsUser(TARGET_PKG, ".ShortcutManagerPostUpgradeTest", getMainUserId());
     }
 }
