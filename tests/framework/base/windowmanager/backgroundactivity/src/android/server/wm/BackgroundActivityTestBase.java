@@ -36,7 +36,6 @@ import static org.junit.Assert.fail;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
-import android.os.Build;
 import android.os.SystemClock;
 import android.os.UserManager;
 import android.server.wm.WindowManagerState.Task;
@@ -47,7 +46,6 @@ import android.util.Log;
 import androidx.annotation.CallSuper;
 
 import com.android.compatibility.common.util.AppOpsUtils;
-import com.android.compatibility.common.util.DeviceConfigStateHelper;
 
 import org.junit.After;
 import org.junit.Before;
@@ -92,39 +90,13 @@ public abstract class BackgroundActivityTestBase extends ActivityManagerTestBase
     // This can be long as the activity should start
     static final Duration ACTIVITY_FOCUS_TIMEOUT = Duration.ofSeconds(10);
 
-    // TODO(b/258792202): Cleanup with feature flag
-    static final String NAMESPACE_WINDOW_MANAGER = "window_manager";
-    static final String ASM_RESTRICTIONS_ENABLED =
-            "ActivitySecurity__asm_restrictions_enabled";
     private static final int TEST_SERVICE_SETUP_TIMEOUT_MS = 5_000;
     public static final int FOCUS_LOSS_TIMEOUT_MS = 10_000;
-    final DeviceConfigStateHelper mDeviceConfig =
-            new DeviceConfigStateHelper(NAMESPACE_WINDOW_MANAGER);
     final List<TaskStateDump> mTaskStateDumps = new ArrayList<>();
     final Instant mTestStartTime = Instant.now();
 
     private final Map<ComponentName, FutureConnection<ITestService>> mServiceConnections =
             new HashMap<>();
-
-    @Before
-    public void enableFeatureFlags() {
-        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-            mDeviceConfig.set(ASM_RESTRICTIONS_ENABLED, "1");
-        }
-    }
-
-    @After
-    public void disableFeatureFlags() throws Exception {
-        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-            mDeviceConfig.close();
-        } else {
-            try {
-                mDeviceConfig.close();
-            } catch (Exception e) {
-                Log.w(TAG, "Failed to tear down feature flags.", e);
-            }
-        }
-    }
 
     @Override
     @Before
