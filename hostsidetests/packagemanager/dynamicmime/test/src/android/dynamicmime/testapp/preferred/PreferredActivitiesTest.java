@@ -301,6 +301,7 @@ public class PreferredActivitiesTest extends BaseDynamicMimeTest {
 
     private void triggerResolutionDialog() {
         getUiDevice().pressHome();
+        getUiDevice().waitForIdle();
         sendIntent(mTest.mimeType());
     }
 
