@@ -6671,6 +6671,9 @@ public class ImsServiceTest {
     }
 
     private static void overrideCarrierConfig(PersistableBundle bundle) throws Exception {
+        if (sReceiver == null) {
+            return;
+        }
         CarrierConfigManager carrierConfigManager = InstrumentationRegistry.getInstrumentation()
                 .getContext().getSystemService(CarrierConfigManager.class);
         sReceiver.clearQueue();
