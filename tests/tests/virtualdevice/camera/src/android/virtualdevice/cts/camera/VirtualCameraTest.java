@@ -42,7 +42,6 @@ import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.util.concurrent.MoreExecutors.directExecutor;
 
 import static org.junit.Assert.assertThrows;
-import static org.junit.Assume.assumeNoException;
 import static org.mockito.AdditionalMatchers.not;
 import static org.mockito.AdditionalMatchers.or;
 import static org.mockito.ArgumentMatchers.any;
@@ -56,6 +55,7 @@ import static org.mockito.Mockito.verify;
 
 import android.companion.virtual.VirtualDeviceManager.VirtualDevice;
 import android.companion.virtual.VirtualDeviceParams;
+import android.companion.virtual.camera.CameraCharacteristicsBuilder;
 import android.companion.virtual.camera.VirtualCamera;
 import android.companion.virtual.camera.VirtualCameraCallback;
 import android.companion.virtual.camera.VirtualCameraConfig;
@@ -646,6 +646,25 @@ public class VirtualCameraTest {
         verify(otherCallback, never()).onOpenCamera();
     }
 
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_CAMERA_METADATA)
+    public void createVirtualCamera_withCameraCharacteristics_succeeds() throws Exception {
+        setupVirtualDeviceCameraManager();
+
+        CameraCharacteristics characteristics = new CameraCharacteristicsBuilder()
+                .set(CameraCharacteristics.LENS_FACING, LENS_FACING_BACK)
+                .set(CameraCharacteristics.SENSOR_ORIENTATION, SENSOR_ORIENTATION_180)
+                .build();
+
+        createVirtualCameraWithCharacteristics(characteristics);
+        mCameraManager.openCamera(BACK_CAMERA_ID, mExecutor, mCameraStateCallback);
+        verify(mCameraStateCallback, timeout(TIMEOUT_MILLIS)).onOpened(
+                mCameraDeviceCaptor.capture());
+
+        // TODO: b371167033 - expand test
+        // verifyConfigureSessionForSupportedFormatSucceeds(BACK_CAMERA_ID);
+    }
+
     private VirtualCamera createFrontVirtualCamera() {
         return createVirtualCamera(LENS_FACING_FRONT);
     }
@@ -662,12 +681,19 @@ public class VirtualCameraTest {
         VirtualCameraConfig config = createVirtualCameraConfig(CAMERA_WIDTH, CAMERA_HEIGHT,
                 CAMERA_FORMAT, CAMERA_MAX_FPS, sensorOrientation, lensFacing,
                 CAMERA_NAME, mExecutor, mVirtualCameraCallback);
-        try {
-            return mVirtualDevice.createVirtualCamera(config);
-        } catch (UnsupportedOperationException e) {
-            assumeNoException("Virtual camera is not available on this device", e);
-        }
-        return null;
+
+        return mVirtualDevice.createVirtualCamera(config);
+    }
+
+    private VirtualCamera createVirtualCameraWithCharacteristics(
+            CameraCharacteristics cameraCharacteristics) {
+        VirtualCameraConfig config = new VirtualCameraConfig.Builder("CharacteristicCamera")
+                .addStreamConfig(CAMERA_WIDTH, CAMERA_HEIGHT, CAMERA_FORMAT, CAMERA_MAX_FPS)
+                .setVirtualCameraCallback(mExecutor, mVirtualCameraCallback)
+                .setCameraCharacteristics(cameraCharacteristics)
+                .build();
+
+        return mVirtualDevice.createVirtualCamera(config);
     }
 
     private void setupDefaultDeviceCameraManager() {
