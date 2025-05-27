@@ -390,6 +390,21 @@ def face_detect(props):
       'android.statistics.info.availableFaceDetectModes'] != [0]
 
 
+def face_detect_full(props):
+  """Returns whether a device has full face detection mode.
+
+  android.statistics.info.availableFaceDetectModes property provides an array
+  of all supported modes, such as [0, 1, 2], which are [OFF, SIMPLE, FULL].
+
+  Args:
+    props: Camera properties objects.
+
+  Returns:
+    Boolean. True if device supports face detection.
+  """
+  return 2 in props.get('android.statistics.info.availableFaceDetectModes', [])
+
+
 def read_3a(props):
   """Return whether a device supports reading out the below 3A settings.
 
