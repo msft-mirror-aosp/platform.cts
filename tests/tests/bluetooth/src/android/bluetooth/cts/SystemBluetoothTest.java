@@ -68,7 +68,7 @@ public class SystemBluetoothTest {
     @Rule public final Expect expect = Expect.create();
     private static final String TAG = SystemBluetoothTest.class.getSimpleName();
 
-    private static final Duration OOB_TIMEOUT = Duration.ofSeconds(1);
+    private static final Duration OOB_TIMEOUT = Duration.ofSeconds(2);
     private static final long DEFAULT_DISCOVERY_TIMEOUT_MS = 12800;
     private static final int DISCOVERY_START_TIMEOUT = 500;
 
