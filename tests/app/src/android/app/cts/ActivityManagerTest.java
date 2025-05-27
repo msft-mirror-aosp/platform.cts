@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package android.app.cts;
 
 import static android.app.Activity.RESULT_OK;
@@ -38,14 +39,10 @@ import static com.android.compatibility.common.util.SystemUtil.callWithShellPerm
 import static com.android.compatibility.common.util.SystemUtil.runShellCommand;
 import static com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
+import static com.google.common.truth.Truth.assertThat;
+import static com.google.common.truth.Truth.assertWithMessage;
+
 import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
@@ -115,10 +112,11 @@ import android.server.wm.WindowManagerStateHelper;
 import android.server.wm.settings.SettingsSession;
 import android.util.Log;
 
-import androidx.test.InstrumentationRegistry;
+import androidx.annotation.NonNull;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.FlakyTest;
 import androidx.test.filters.LargeTest;
-import androidx.test.runner.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.uiautomator.UiDevice;
 
 import com.android.compatibility.common.util.AmMonitor;
@@ -218,7 +216,6 @@ public final class ActivityManagerTest {
     private boolean mAppStandbyEnabled;
     private boolean mAutomotiveDevice;
     private boolean mLeanbackOnly;
-    private boolean mWatchDevice;
     private WindowManagerStateHelper mWmState;
 
     @Rule
@@ -230,15 +227,6 @@ public final class ActivityManagerTest {
 
     private boolean mIsWaitForFinishAttachApplicationEnabled;
 
-    private static final String WRITE_DEVICE_CONFIG_PERMISSION =
-            "android.permission.WRITE_DEVICE_CONFIG";
-
-    private static final String READ_DEVICE_CONFIG_PERMISSION =
-            "android.permission.READ_DEVICE_CONFIG";
-
-    private static final String MONITOR_DEVICE_CONFIG_ACCESS =
-            "android.permission.MONITOR_DEVICE_CONFIG_ACCESS";
-
     @Before
     public void setUp() throws Exception {
         mInstrumentation = InstrumentationRegistry.getInstrumentation();
@@ -247,12 +235,11 @@ public final class ActivityManagerTest {
         mActivityManager = mInstrumentation.getContext().getSystemService(ActivityManager.class);
         mPackageManager = mInstrumentation.getContext().getPackageManager();
 
-        mStartedActivityList = new ArrayList<Activity>();
+        mStartedActivityList = new ArrayList<>();
         mErrorProcessID = -1;
         mAppStandbyEnabled = AppStandbyUtils.isAppStandbyEnabled();
         mAutomotiveDevice = mPackageManager.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE);
         mLeanbackOnly = mPackageManager.hasSystemFeature(PackageManager.FEATURE_LEANBACK_ONLY);
-        mWatchDevice = mPackageManager.hasSystemFeature(PackageManager.FEATURE_WATCH);
         mWmState = new WindowManagerStateHelper();
 
         for (String pkg : HELPER_PACKAGES) {
@@ -290,18 +277,18 @@ public final class ActivityManagerTest {
         List<RecentTaskInfo> recentTaskList;
         // Test parameter: maxNum is set to 0
         recentTaskList = mActivityManager.getRecentTasks(maxNum, flags);
-        assertNotNull(recentTaskList);
-        assertTrue(recentTaskList.size() == 0);
+        assertThat(recentTaskList).isNotNull();
+        assertThat(recentTaskList).isEmpty();
         // Test parameter: maxNum is set to 50
         maxNum = 50;
         recentTaskList = mActivityManager.getRecentTasks(maxNum, flags);
-        assertNotNull(recentTaskList);
+        assertThat(recentTaskList).isNotNull();
         // start recent1_activity.
         startSubActivity(ActivityManagerRecentOneActivity.class);
-        Thread.sleep(WAIT_TIME);
+        SystemClock.sleep(WAIT_TIME);
         // start recent2_activity
         startSubActivity(ActivityManagerRecentTwoActivity.class);
-        Thread.sleep(WAIT_TIME);
+        SystemClock.sleep(WAIT_TIME);
         /*
          * assert both recent1_activity and recent2_activity exist in the recent
          * tasks list. Moreover,the index of the recent2_activity is smaller
@@ -312,12 +299,13 @@ public final class ActivityManagerTest {
                 ActivityManagerRecentOneActivity.class);
         int indexRecentTwo = getTaskInfoIndex(recentTaskList,
                 ActivityManagerRecentTwoActivity.class);
-        assertTrue(indexRecentOne != -1 && indexRecentTwo != -1);
-        assertTrue(indexRecentTwo < indexRecentOne);
+        assertThat(indexRecentOne).isNotEqualTo(-1);
+        assertThat(indexRecentTwo).isNotEqualTo(-1);
+        assertThat(indexRecentTwo).isLessThan(indexRecentOne);
 
         try {
             mActivityManager.getRecentTasks(-1, 0);
-            fail("Should throw IllegalArgumentException");
+            assertWithMessage("Should throw IllegalArgumentException").fail();
         } catch (IllegalArgumentException e) {
             // expected exception
         }
@@ -341,13 +329,13 @@ public final class ActivityManagerTest {
         mTargetContext.startActivity(intent);
 
         // Make sure the activity has really started.
-        assertEquals(RESULT_PASS, receiver.waitForActivity());
+        assertThat(receiver.waitForActivity()).isEqualTo(RESULT_PASS);
         receiver.close();
 
         // There shouldn't be any more tasks in this list at this time.
         recentTaskList = mActivityManager.getRecentTasks(maxNum, flags);
         int numberOfEntriesSecondRun = recentTaskList.size();
-        assertTrue(numberOfEntriesSecondRun == numberOfEntriesFirstRun);
+        assertThat(numberOfEntriesFirstRun).isEqualTo(numberOfEntriesSecondRun);
 
         // Tell the activity to finalize.
         intent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
@@ -359,7 +347,7 @@ public final class ActivityManagerTest {
     // startActivity.
     private class ActivityReceiverFilter extends BroadcastReceiver {
         // The activity we want to filter for.
-        private String mActivityToFilter;
+        private final String mActivityToFilter;
         private int result = RESULT_TIMEOUT;
         public long mTimeUsed = 0;
         private static final int TIMEOUT_IN_MS = 5000;
@@ -392,7 +380,7 @@ public final class ActivityManagerTest {
             }
         }
 
-        public int waitForActivity() throws Exception {
+        public int waitForActivity() {
             AmUtils.waitForBroadcastBarrier();
             synchronized(this) {
                 try {
@@ -404,7 +392,7 @@ public final class ActivityManagerTest {
         }
     }
 
-    private final <T extends Activity> void startSubActivity(Class<T> activityClass) {
+    private <T extends Activity> void startSubActivity(Class<T> activityClass) {
         startSubActivity(activityClass, null);
     }
 
@@ -414,24 +402,20 @@ public final class ActivityManagerTest {
         final Instrumentation.ActivityResult result = new ActivityResult(0, new Intent());
         final ActivityMonitor monitor = new ActivityMonitor(activityClass.getName(), result, false);
         mInstrumentation.addMonitor(monitor);
-        launchActivity(STUB_PACKAGE_NAME, activityClass, activityOptions);
+        launchActivity(activityClass, activityOptions);
         mStartedActivityList.add(monitor.waitForActivity());
     }
 
     private <T extends Activity> T launchActivity(
-            String pkg,
             Class<T> activityCls,
             ActivityOptions activityOptions) {
         Intent intent = new Intent(Intent.ACTION_MAIN);
-        return launchActivityWithIntent(pkg, activityCls, intent, activityOptions);
+        return launchStubActivityWithIntent(activityCls, intent, activityOptions);
     }
 
-    private <T extends Activity> T launchActivityWithIntent(
-            String pkg,
-            Class<T> activityCls,
-            Intent intent,
-            ActivityOptions activityOptions) {
-        intent.setClassName(pkg, activityCls.getName());
+    private <T extends Activity> T launchStubActivityWithIntent(
+            Class<T> activityCls, Intent intent, ActivityOptions activityOptions) {
+        intent.setClassName(ActivityManagerTest.STUB_PACKAGE_NAME, activityCls.getName());
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         T activity = (T) mInstrumentation.startActivitySync(
                 intent, activityOptions == null ? null : activityOptions.toBundle());
@@ -454,16 +438,14 @@ public final class ActivityManagerTest {
     @Test
     public void testGetRunningTasks() {
         // Test illegal parameter
-        List<RunningTaskInfo> runningTaskList;
-        runningTaskList = mActivityManager.getRunningTasks(-1);
-        assertTrue(runningTaskList.size() == 0);
+        List<RunningTaskInfo> runningTaskList = mActivityManager.getRunningTasks(-1);
+        assertThat(runningTaskList).isEmpty();
 
         runningTaskList = mActivityManager.getRunningTasks(0);
-        assertTrue(runningTaskList.size() == 0);
+        assertThat(runningTaskList).isEmpty();
 
         runningTaskList = mActivityManager.getRunningTasks(20);
-        int taskSize = runningTaskList.size();
-        assertTrue(taskSize >= 0 && taskSize <= 20);
+        assertThat(runningTaskList.size()).isAtMost(20);
 
         // start recent1_activity.
         startSubActivity(ActivityManagerRecentOneActivity.class);
@@ -475,8 +457,9 @@ public final class ActivityManagerTest {
                 ActivityManagerRecentOneActivity.class);
         int indexRecentTwo = getTaskInfoIndex(runningTaskList,
                 ActivityManagerRecentTwoActivity.class);
-        assertTrue(indexRecentOne != -1 && indexRecentTwo == -1);
-        assertTrue(runningTaskList.get(indexRecentOne).isVisible());
+        assertThat(indexRecentOne).isNotEqualTo(-1);
+        assertThat(indexRecentTwo).isEqualTo(-1);
+        assertThat(runningTaskList.get(indexRecentOne).isVisible()).isTrue();
 
         // start recent2_activity in fullscreen to hide the recent1_activity.
         final ActivityOptions options = ActivityOptions.makeBasic();
@@ -493,8 +476,9 @@ public final class ActivityManagerTest {
                 ActivityManagerRecentOneActivity.class);
         indexRecentTwo = getTaskInfoIndex(runningTaskList,
                 ActivityManagerRecentTwoActivity.class);
-        assertTrue(indexRecentOne != -1 && indexRecentTwo != -1);
-        assertTrue(indexRecentTwo < indexRecentOne);
+        assertThat(indexRecentOne).isNotEqualTo(-1);
+        assertThat(indexRecentTwo).isNotEqualTo(-1);
+        assertThat(indexRecentTwo).isLessThan(indexRecentOne);
 
         boolean isRecentTwoActivityInMultiWindowMode = false;
         for (int i = mStartedActivityList.size() - 1; i >= 0; i--) {
@@ -508,23 +492,23 @@ public final class ActivityManagerTest {
         // mode). If recent2_activity is in multi-windowing mode, it may not fully obscure
         // recent1_activity.
         if (!isRecentTwoActivityInMultiWindowMode) {
-            assertFalse(runningTaskList.get(indexRecentOne).isVisible());
+            assertThat(runningTaskList.get(indexRecentOne).isVisible()).isFalse();
         }
-        assertTrue(runningTaskList.get(indexRecentTwo).isVisible());
+        assertThat(runningTaskList.get(indexRecentTwo).isVisible()).isTrue();
     }
 
     @Test
-    public void testGetRunningServices() throws Exception {
+    public void testGetRunningServices() {
         // Test illegal parameter
         List<RunningServiceInfo> runningServiceInfo;
         runningServiceInfo = mActivityManager.getRunningServices(-1);
-        assertTrue(runningServiceInfo.isEmpty());
+        assertThat(runningServiceInfo).isEmpty();
 
         runningServiceInfo = mActivityManager.getRunningServices(0);
-        assertTrue(runningServiceInfo.isEmpty());
+        assertThat(runningServiceInfo).isEmpty();
 
         runningServiceInfo = mActivityManager.getRunningServices(5);
-        assertTrue(runningServiceInfo.size() <= 5);
+        assertThat(runningServiceInfo.size()).isAtMost(5);
 
         Intent intent = new Intent();
         intent.setClass(mInstrumentation.getTargetContext(), MockService.class);
@@ -540,11 +524,11 @@ public final class ActivityManagerTest {
                 break;
             }
         }
-        assertTrue(foundService);
+        assertThat(foundService).isTrue();
         MockService.prepareDestroy();
         mTargetContext.stopService(intent);
         boolean destroyed = MockService.waitForDestroy(WAIT_TIME);
-        assertTrue(destroyed);
+        assertThat(destroyed).isTrue();
     }
 
     private void executeAndLogShellCommand(String cmd) throws IOException {
@@ -560,12 +544,14 @@ public final class ActivityManagerTest {
 
     private void setForcedAppStandby(String packageName, boolean enabled)
             throws IOException {
-        final StringBuilder cmdBuilder = new StringBuilder("appops set --user ")
-                .append(mUserHelper.getUserId()).append(' ')
-                .append(packageName)
-                .append(" RUN_ANY_IN_BACKGROUND ")
-                .append(enabled ? "ignore" : "allow");
-        executeAndLogShellCommand(cmdBuilder.toString());
+        String cmdBuilder =
+                "appops set --user "
+                        + mUserHelper.getUserId()
+                        + ' '
+                        + packageName
+                        + " RUN_ANY_IN_BACKGROUND "
+                        + (enabled ? "ignore" : "allow");
+        executeAndLogShellCommand(cmdBuilder);
     }
 
     @Test
@@ -574,33 +560,37 @@ public final class ActivityManagerTest {
         final String targetPackage = mTargetContext.getPackageName();
         final ActivityManager am = mTargetContext.getSystemService(ActivityManager.class);
         setForcedAppStandby(targetPackage, true);
-        assertTrue(am.isBackgroundRestricted());
+        assertThat(am.isBackgroundRestricted()).isTrue();
         setForcedAppStandby(targetPackage, false);
-        assertFalse(am.isBackgroundRestricted());
+        assertThat(am.isBackgroundRestricted()).isFalse();
     }
 
-    @FlakyTest(detail = "Known fail on cuttleshish b/275888802 and other devices b/255817314.")
+    @FlakyTest(detail = "Known fail on cuttlefish b/275888802 and other devices b/255817314.")
     @Test
     public void testGetMemoryInfo() {
         // Advertised memory is required when VSR API is V.
         if (PropertyUtil.getVsrApiLevel() > Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
             ActivityManager.MemoryInfo outInfo = new ActivityManager.MemoryInfo();
             mActivityManager.getMemoryInfo(outInfo);
-            assertTrue(
-                String.format("lowmemory (%s) == (%d <= %d)",
-                outInfo.lowMemory, outInfo.availMem, outInfo.threshold),
-                outInfo.lowMemory == (outInfo.availMem <= outInfo.threshold));
-            assertTrue(
-                String.format("totalMem (%d) <= advertisedMem (%d)",
-                outInfo.totalMem, outInfo.advertisedMem),
-                outInfo.totalMem <= outInfo.advertisedMem);
+            assertWithMessage(
+                            String.format(
+                                    "lowmemory (%s) == (%d <= %d)",
+                                    outInfo.lowMemory, outInfo.availMem, outInfo.threshold))
+                    .that(outInfo.lowMemory == (outInfo.availMem <= outInfo.threshold))
+                    .isTrue();
+            assertWithMessage(
+                            String.format(
+                                    "totalMem (%d) <= advertisedMem (%d)",
+                                    outInfo.totalMem, outInfo.advertisedMem))
+                    .that(outInfo.totalMem <= outInfo.advertisedMem)
+                    .isTrue();
         }
     }
 
     @Test
     public void testGetRunningAppProcesses() throws Exception {
         List<RunningAppProcessInfo> list = mActivityManager.getRunningAppProcesses();
-        assertNotNull(list);
+        assertThat(list).isNotNull();
         final String SYSTEM_PROCESS = "system";
         boolean hasSystemProcess = false;
         // The package name is also the default name for the application process
@@ -611,20 +601,20 @@ public final class ActivityManagerTest {
                 hasSystemProcess = true;
 
                 // Make sure the importance is a sane value.
-                assertTrue(ra.importance >= RunningAppProcessInfo.IMPORTANCE_FOREGROUND);
-                assertTrue(ra.importance < RunningAppProcessInfo.IMPORTANCE_GONE);
+                assertThat(ra.importance >= RunningAppProcessInfo.IMPORTANCE_FOREGROUND).isTrue();
+                assertThat(ra.importance < RunningAppProcessInfo.IMPORTANCE_GONE).isTrue();
             } else if (ra.processName.equals(TEST_PROCESS)) {
                 hasTestProcess = true;
             }
         }
 
         // For security reasons the system process is not exposed.
-        assertFalse(hasSystemProcess);
-        assertTrue(hasTestProcess);
+        assertThat(hasSystemProcess).isFalse();
+        assertThat(hasTestProcess).isTrue();
 
         for (RunningAppProcessInfo ra : list) {
             if (ra.processName.equals("android.app.stubs:remote")) {
-                fail("should be no process named android.app.stubs:remote");
+                assertWithMessage("should be no process named android.app.stubs:remote").fail();
             }
         }
         // start a new process
@@ -632,7 +622,7 @@ public final class ActivityManagerTest {
         mIntent = new Intent("android.app.REMOTESERVICE");
         mIntent.setPackage("android.app.stubs");
         mInstrumentation.getTargetContext().startService(mIntent);
-        Thread.sleep(WAITFOR_MSEC);
+        SystemClock.sleep(WAITFOR_MSEC);
 
         List<RunningAppProcessInfo> listNew = mActivityManager.getRunningAppProcesses();
         mInstrumentation.getTargetContext().stopService(mIntent);
@@ -642,7 +632,7 @@ public final class ActivityManagerTest {
                 return;
             }
         }
-        fail("android.app.stubs:remote process should be available");
+        assertWithMessage("android.app.stubs:remote process should be available").fail();
     }
 
     @Test
@@ -650,17 +640,17 @@ public final class ActivityManagerTest {
         final RunningAppProcessInfo ra = new RunningAppProcessInfo();
         ActivityManager.getMyMemoryState(ra);
 
-        assertEquals(android.os.Process.myUid(), ra.uid);
+        assertThat(ra.uid).isEqualTo(android.os.Process.myUid());
 
         // When an instrumentation test is running, the importance is high.
-        assertEquals(RunningAppProcessInfo.IMPORTANCE_FOREGROUND, ra.importance);
+        assertThat(ra.importance).isEqualTo(RunningAppProcessInfo.IMPORTANCE_FOREGROUND);
     }
 
     @Test
     public void testGetProcessInErrorState() throws Exception {
-        List<ActivityManager.ProcessErrorStateInfo> errList = null;
+        List<ActivityManager.ProcessErrorStateInfo> errList;
         errList = mActivityManager.getProcessesInErrorState();
-        assertNull(errList);
+        assertThat(errList).isNull();
 
         // Setup the ANR monitor.
         final AmMonitor monitor = new AmMonitor(mInstrumentation, null);
@@ -672,60 +662,82 @@ public final class ActivityManagerTest {
                 WAITFOR_MSEC, PROCESS_CAPABILITY_ALL);
         final String crashActivityName = "ActivityManagerStubCrashActivity";
 
-        final SettingsSession<Integer> showOnFirstCrash = new SettingsSession<>(
-                Settings.Global.getUriFor(Settings.Global.SHOW_FIRST_CRASH_DIALOG),
-                Settings.Global::getInt, Settings.Global::putInt);
-        final SettingsSession<Integer> showBackground = new SettingsSession<>(
-                Settings.Secure.getUriFor(Settings.Secure.ANR_SHOW_BACKGROUND),
-                Settings.Secure::getInt, Settings.Secure::putInt);
+        // Since this resource is explicitly closed in the `finally` block, a `try-with-resources`
+        // statement was intentionally omitted.
+        final SettingsSession<Integer> showOnFirstCrash =
+                new SettingsSession<>(
+                        Settings.Global.getUriFor(Settings.Global.SHOW_FIRST_CRASH_DIALOG),
+                        Settings.Global::getInt,
+                        Settings.Global::putInt);
+        // Since this resource is explicitly closed in the `finally` block, a `try-with-resources`
+        // statement was intentionally omitted.
+        final SettingsSession<Integer> showBackground =
+                new SettingsSession<>(
+                        Settings.Secure.getUriFor(Settings.Secure.ANR_SHOW_BACKGROUND),
+                        Settings.Secure::getInt,
+                        Settings.Secure::putInt);
         try (AutoCloseable unused =
                 CtsAppTestUtils.allowBackgroundActivityLaunch(PACKAGE_NAME_APP1)) {
-            runWithShellPermissionIdentity(() -> {
-                showOnFirstCrash.set(1);
-                showBackground.set(1);
-            });
+            runWithShellPermissionIdentity(
+                    () -> {
+                        showOnFirstCrash.set(1);
+                        showBackground.set(1);
+                    });
 
-            CommandReceiver.sendCommand(mTargetContext,
+            CommandReceiver.sendCommand(
+                    mTargetContext,
                     CommandReceiver.COMMAND_START_ACTIVITY,
-                    PACKAGE_NAME_APP1, PACKAGE_NAME_APP1, 0, null);
-            uid1Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE,
+                    PACKAGE_NAME_APP1,
+                    PACKAGE_NAME_APP1,
+                    0,
+                    null);
+            uid1Watcher.waitFor(
+                    WatchUidRunner.CMD_PROCSTATE,
                     WatchUidRunner.STATE_TOP,
-                    new Integer(PROCESS_CAPABILITY_ALL));
+                    Integer.valueOf(PROCESS_CAPABILITY_ALL));
 
             // Sleep a while to let things go through.
-            Thread.sleep(WAIT_TIME);
+            SystemClock.sleep(WAIT_TIME);
 
             // Now tell it goto ANR.
-            CommandReceiver.sendCommand(mTargetContext, CommandReceiver.COMMAND_SELF_INDUCED_ANR,
-                    PACKAGE_NAME_APP1, PACKAGE_NAME_APP1, 0, null);
+            CommandReceiver.sendCommand(
+                    mTargetContext,
+                    CommandReceiver.COMMAND_SELF_INDUCED_ANR,
+                    PACKAGE_NAME_APP1,
+                    PACKAGE_NAME_APP1,
+                    0,
+                    null);
 
             // Verify we got the ANR.
-            assertTrue(monitor.waitFor(AmMonitor.WAIT_FOR_EARLY_ANR, WAITFOR_MSEC));
+            assertThat(monitor.waitFor(AmMonitor.WAIT_FOR_EARLY_ANR, WAITFOR_MSEC)).isTrue();
 
             // Let it continue.
             monitor.sendCommand(AmMonitor.CMD_CONTINUE);
 
             // Now it should've reached the normal ANR process.
-            assertTrue(monitor.waitFor(AmMonitor.WAIT_FOR_ANR, WAITFOR_MSEC * 3));
+            assertThat(monitor.waitFor(AmMonitor.WAIT_FOR_ANR, WAITFOR_MSEC * 3)).isTrue();
 
-            // Continue again, we need to see the ANR dialog in order to get the error report.
+            // Continue again, we need to see the ANR dialog in order to get the error
+            // report.
             monitor.sendCommand(AmMonitor.CMD_CONTINUE);
 
             // Sleep a while to let things go through.
-            Thread.sleep(WAIT_TIME);
+            SystemClock.sleep(WAIT_TIME);
 
             // We shouldn't be able to read the error state info of that.
             errList = mActivityManager.getProcessesInErrorState();
-            assertNull(errList);
+            assertThat(errList).isNull();
 
             // Shell should have the access.
             final List<ActivityManager.ProcessErrorStateInfo>[] holder = new List[1];
-            runWithShellPermissionIdentity(() -> {
-                holder[0] = mActivityManager.getProcessesInErrorState();
-            });
-            assertNotNull(holder[0]);
-            assertEquals(1, holder[0].size());
-            verifyProcessErrorStateInfo(holder[0].get(0),
+            runWithShellPermissionIdentity(
+                    () -> {
+                        holder[0] = mActivityManager.getProcessesInErrorState();
+                    });
+            assertThat(holder[0]).isNotNull();
+            assertThat(holder[0]).hasSize(1);
+            verifyProcessErrorStateInfo(
+                    holder[0].get(0),
                     ActivityManager.ProcessErrorStateInfo.NOT_RESPONDING,
                     app1Info.uid,
                     PACKAGE_NAME_APP1);
@@ -737,73 +749,81 @@ public final class ActivityManagerTest {
             mTargetContext.startActivity(intent);
 
             // Wait for the crash.
-            assertTrue(monitor.waitFor(AmMonitor.WAIT_FOR_CRASHED, WAITFOR_MSEC));
+            assertThat(monitor.waitFor(AmMonitor.WAIT_FOR_CRASHED, WAITFOR_MSEC)).isTrue();
 
-            // Let it continue, we need to see the crash dialog in order to get the error report.
+            // Let it continue, we need to see the crash dialog in order to get the error
+            // report.
             monitor.sendCommand(AmMonitor.CMD_CONTINUE);
 
             // Sleep a while to let things go through.
-            Thread.sleep(WAIT_TIME);
+            SystemClock.sleep(WAIT_TIME);
 
             // We should be able to see this crash info.
             errList = mActivityManager.getProcessesInErrorState();
-            assertNotNull(errList);
-            assertEquals(1, errList.size());
+            assertThat(errList).isNotNull();
+            assertThat(errList).hasSize(1);
 
-            verifyProcessErrorStateInfo(errList.get(0),
+            verifyProcessErrorStateInfo(
+                    errList.get(0),
                     ActivityManager.ProcessErrorStateInfo.CRASHED,
                     stubInfo.uid,
                     STUB_PACKAGE_NAME + ":" + crashActivityName);
 
             // Shell should have the access to all of the crash info here.
-            runWithShellPermissionIdentity(() -> {
-                holder[0] = mActivityManager.getProcessesInErrorState();
-            });
-            assertNotNull(holder[0]);
-            assertEquals(2, holder[0].size());
+            runWithShellPermissionIdentity(
+                    () -> {
+                        holder[0] = mActivityManager.getProcessesInErrorState();
+                    });
+            assertThat(holder[0]).isNotNull();
+            assertThat(holder[0]).hasSize(2);
             // The return result is not sorted.
             final ActivityManager.ProcessErrorStateInfo t0 = holder[0].get(0);
             final ActivityManager.ProcessErrorStateInfo t1 = holder[0].get(1);
             final ActivityManager.ProcessErrorStateInfo info0 = t0.uid == stubInfo.uid ? t0 : t1;
             final ActivityManager.ProcessErrorStateInfo info1 = t1.uid == app1Info.uid ? t1 : t0;
 
-            verifyProcessErrorStateInfo(info0,
+            verifyProcessErrorStateInfo(
+                    info0,
                     ActivityManager.ProcessErrorStateInfo.CRASHED,
                     stubInfo.uid,
                     STUB_PACKAGE_NAME + ":" + crashActivityName);
-            verifyProcessErrorStateInfo(info1,
+            verifyProcessErrorStateInfo(
+                    info1,
                     ActivityManager.ProcessErrorStateInfo.NOT_RESPONDING,
                     app1Info.uid,
                     PACKAGE_NAME_APP1);
         } finally {
-            runWithShellPermissionIdentity(() -> {
-                showOnFirstCrash.close();
-                showBackground.close();
-            });
+            runWithShellPermissionIdentity(
+                    () -> {
+                        showOnFirstCrash.close();
+                        showBackground.close();
+                    });
             monitor.finish();
             uid1Watcher.finish();
-            runWithShellPermissionIdentity(() -> {
-                mActivityManager.forceStopPackage(PACKAGE_NAME_APP1);
-            });
+            runWithShellPermissionIdentity(
+                    () -> mActivityManager.forceStopPackage(PACKAGE_NAME_APP1));
         }
     }
 
-    private void verifyProcessErrorStateInfo(ActivityManager.ProcessErrorStateInfo info,
-            int condition, int uid, String processName) throws Exception {
-        assertEquals(condition, info.condition);
-        assertEquals(uid, info.uid);
-        assertEquals(processName, info.processName);
+    private void verifyProcessErrorStateInfo(
+            ActivityManager.ProcessErrorStateInfo info,
+            int condition,
+            int uid,
+            String processName) {
+        assertThat(info.condition).isEqualTo(condition);
+        assertThat(info.uid).isEqualTo(uid);
+        assertThat(info.processName).isEqualTo(processName);
     }
 
     @Test
     public void testGetDeviceConfigurationInfo() {
         ConfigurationInfo conInf = mActivityManager.getDeviceConfigurationInfo();
-        assertNotNull(conInf);
+        assertThat(conInf).isNotNull();
     }
 
     @Test
     @Ignore("b/417216810 - flaky test")
-    public void testUpdateMccMncConfiguration() throws Exception {
+    public void testUpdateMccMncConfiguration() {
         if (!mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY)) {
             Log.i(TAG, "testUpdateMccMncConfiguration skipped: no telephony available");
             return;
@@ -817,8 +837,8 @@ public final class ActivityManagerTest {
 
         if (success) {
             Configuration changedConfig = mTargetContext.getResources().getConfiguration();
-            assertEquals(MNC_TO_UPDATE, Integer.toString(changedConfig.mnc));
-            assertEquals(MCC_TO_UPDATE, Integer.toString(changedConfig.mcc));
+            assertThat(Integer.toString(changedConfig.mnc)).isEqualTo(MNC_TO_UPDATE);
+            assertThat(Integer.toString(changedConfig.mcc)).isEqualTo(MCC_TO_UPDATE);
         }
 
         // Set mcc mnc configs back in the end of the test if they were set to something else.
@@ -830,11 +850,11 @@ public final class ActivityManagerTest {
     /**
      * Simple test for {@link ActivityManager#isUserAMonkey()} - verifies its false.
      *
-     * TODO: test positive case
+     * <p>TODO: test positive case
      */
     @Test
     public void testIsUserAMonkey() {
-        assertFalse(ActivityManager.isUserAMonkey());
+        assertThat(ActivityManager.isUserAMonkey()).isFalse();
     }
 
     /**
@@ -843,8 +863,9 @@ public final class ActivityManagerTest {
     @RestrictedBuildTest
     @Test
     public void testIsRunningInTestHarness() {
-        assertFalse("isRunningInTestHarness must be false in production builds",
-                ActivityManager.isRunningInTestHarness());
+        assertWithMessage("isRunningInTestHarness must be false in production builds")
+                .that(ActivityManager.isRunningInTestHarness())
+                .isFalse();
     }
 
     /**
@@ -853,14 +874,14 @@ public final class ActivityManagerTest {
      */
     private void launchHome() throws Exception {
         if (noHomeScreen()) {
-            Log.d(TAG, "launcHome(): no home screen");
+            Log.d(TAG, "launchHome(): no home screen");
             return;
         }
         Intent intent = new Intent(Intent.ACTION_MAIN);
         intent.addCategory(Intent.CATEGORY_HOME);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         mTargetContext.startActivity(intent);
-        Thread.sleep(WAIT_TIME);
+        SystemClock.sleep(WAIT_TIME);
     }
 
     /**
@@ -909,7 +930,7 @@ public final class ActivityManagerTest {
         mTargetContext.startActivity(intent, options.toBundle());
 
         // Wait until it finishes and end the receiver then.
-        assertEquals(RESULT_OK, appEndReceiver.getResult());
+        assertThat(appEndReceiver.getResult()).isEqualTo(RESULT_OK);
 
         if (isTestHomeActivityFocused()) {
             // At this time the timerReceiver should not fire, even though the activity has shut
@@ -917,13 +938,13 @@ public final class ActivityManagerTest {
             // qualify as the user leaving the activity's flow. The time tracking is considered
             // complete only when the user switches to another activity that is not part of the
             // tracked flow.
-            assertEquals(RESULT_TIMEOUT, timeReceiver.waitForActivity());
-            assertTrue(timeReceiver.mTimeUsed == 0);
+            assertThat(timeReceiver.waitForActivity()).isEqualTo(RESULT_TIMEOUT);
+            assertThat(timeReceiver.mTimeUsed).isEqualTo(0);
         } else {
             // If the system has not returned to the home screen, focus is returned to something
             // else that is considered a completion of the tracked activity flow, and hence time
             // tracking is triggered.
-            assertEquals(RESULT_PASS, timeReceiver.waitForActivity());
+            assertThat(timeReceiver.waitForActivity()).isEqualTo(RESULT_PASS);
         }
 
         // Issuing now another activity will trigger the timing information release.
@@ -932,9 +953,9 @@ public final class ActivityManagerTest {
         final Activity activity = mInstrumentation.startActivitySync(dummyIntent);
 
         // Wait until it finishes and end the receiver then.
-        assertEquals(RESULT_PASS, timeReceiver.waitForActivity());
+        assertThat(timeReceiver.waitForActivity()).isEqualTo(RESULT_PASS);
         timeReceiver.close();
-        assertTrue(timeReceiver.mTimeUsed != 0);
+        assertThat(timeReceiver.mTimeUsed).isNotEqualTo(0);
     }
 
     @Test
@@ -955,7 +976,7 @@ public final class ActivityManagerTest {
 
         try {
             // Make sure we got the first notification that the home screen is visible.
-            assertTrue(currentHomeScreenVisibility.poll(WAIT_TIME, TimeUnit.MILLISECONDS));
+            assertThat(currentHomeScreenVisibility.poll(WAIT_TIME, TimeUnit.MILLISECONDS)).isTrue();
             // Launch a basic activity to obscure the home screen.
             Intent intent = new Intent(Intent.ACTION_MAIN);
             intent.setClassName(SIMPLE_PACKAGE_NAME, SIMPLE_PACKAGE_NAME + SIMPLE_ACTIVITY);
@@ -963,7 +984,8 @@ public final class ActivityManagerTest {
             mTargetContext.startActivity(intent);
 
             // Make sure the observer reports the home screen as no longer visible
-            assertFalse(currentHomeScreenVisibility.poll(WAIT_TIME, TimeUnit.MILLISECONDS));
+            assertThat(currentHomeScreenVisibility.poll(WAIT_TIME, TimeUnit.MILLISECONDS))
+                    .isFalse();
         } finally {
             ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mActivityManager,
                     (am) -> am.removeHomeVisibilityListener(homeVisibilityListener));
@@ -1002,22 +1024,22 @@ public final class ActivityManagerTest {
         mTargetContext.startActivity(intent, options.toBundle());
 
         // Wait until it finishes and end the receiver then.
-        assertEquals(RESULT_PASS, appStartedReceiver.waitForActivity());
+        assertThat(appStartedReceiver.waitForActivity()).isEqualTo(RESULT_PASS);
         appStartedReceiver.close();
 
         // At this time the timerReceiver should not fire since our app is running.
-        assertEquals(RESULT_TIMEOUT, timeReceiver.waitForActivity());
-        assertTrue(timeReceiver.mTimeUsed == 0);
+        assertThat(timeReceiver.waitForActivity()).isEqualTo(RESULT_TIMEOUT);
+        assertThat(timeReceiver.mTimeUsed).isEqualTo(0);
 
         // Starting now another activity will put ours into the back hence releasing the timing.
         final Intent dummyIntent = new Intent(context, MockApplicationActivity.class);
         dummyIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        final Activity activity = mInstrumentation.startActivitySync(dummyIntent);
+        final Activity unused = mInstrumentation.startActivitySync(dummyIntent);
 
         // Wait until it finishes and end the receiver then.
-        assertEquals(RESULT_PASS, timeReceiver.waitForActivity());
+        assertThat(timeReceiver.waitForActivity()).isEqualTo(RESULT_PASS);
         timeReceiver.close();
-        assertTrue(timeReceiver.mTimeUsed != 0);
+        assertThat(timeReceiver.mTimeUsed).isNotEqualTo(0);
     }
 
     /**
@@ -1053,7 +1075,7 @@ public final class ActivityManagerTest {
         mTargetContext.startActivity(intent, options.toBundle());
 
         // Wait until it finishes and end the receiver then.
-        assertEquals(RESULT_OK, appEndReceiver.getResult());
+        assertThat(appEndReceiver.getResult()).isEqualTo(RESULT_OK);
         Log.e("SOSO", "Done waiting for activity exit");
 
         if (isTestHomeActivityFocused()) {
@@ -1062,24 +1084,24 @@ public final class ActivityManagerTest {
             // qualify as the user leaving the activity's flow. The time tracking is considered
             // complete only when the user switches to another activity that is not part of the
             // tracked flow.
-            assertEquals(RESULT_TIMEOUT, timeReceiver.waitForActivity());
-            assertTrue(timeReceiver.mTimeUsed == 0);
+            assertThat(timeReceiver.waitForActivity()).isEqualTo(RESULT_TIMEOUT);
+            assertThat(timeReceiver.mTimeUsed).isEqualTo(0);
         } else {
             // If the system has not returned to the home screen, focus is returned to something
             // else that is considered a completion of the tracked activity flow, and hence time
             // tracking is triggered.
-            assertEquals(RESULT_PASS, timeReceiver.waitForActivity());
+            assertThat(timeReceiver.waitForActivity()).isEqualTo(RESULT_PASS);
         }
 
         // Issue another activity so that the timing information gets released.
         final Intent dummyIntent = new Intent(context, MockApplicationActivity.class);
         dummyIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        final Activity activity = mInstrumentation.startActivitySync(dummyIntent);
+        final Activity unused = mInstrumentation.startActivitySync(dummyIntent);
 
         // Wait until it finishes and end the receiver then.
-        assertEquals(RESULT_PASS, timeReceiver.waitForActivity());
+        assertThat(timeReceiver.waitForActivity()).isEqualTo(RESULT_PASS);
         timeReceiver.close();
-        assertTrue(timeReceiver.mTimeUsed != 0);
+        assertThat(timeReceiver.mTimeUsed).isNotEqualTo(0);
     }
 
     /**
@@ -1099,18 +1121,18 @@ public final class ActivityManagerTest {
         intent.setClassName(SIMPLE_PACKAGE_NAME, SIMPLE_PACKAGE_NAME + SIMPLE_ACTIVITY);
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         mTargetContext.startActivity(intent);
-        assertEquals(RESULT_PASS, appStartedReceiver.waitForActivity());
+        assertThat(appStartedReceiver.waitForActivity()).isEqualTo(RESULT_PASS);
 
         // Start a new activity in the same task. Here adds an action to make a different to intent
         // filter comparison so another same activity will be created.
         intent.setAction(Intent.ACTION_VIEW);
         mTargetContext.startActivity(intent);
-        assertEquals(RESULT_PASS, appStartedReceiver.waitForActivity());
+        assertThat(appStartedReceiver.waitForActivity()).isEqualTo(RESULT_PASS);
         appStartedReceiver.close();
 
         // Wait for the first activity to stop so its ActivityRecord.haveState will be true. The
         // condition is required to keep the activity record when its process is died.
-        Thread.sleep(WAIT_TIME);
+        SystemClock.sleep(WAIT_TIME);
 
         // The package name is also the default name for the activity process.
         final String testProcess = SIMPLE_PACKAGE_NAME;
@@ -1119,19 +1141,24 @@ public final class ActivityManagerTest {
 
         List<RunningAppProcessInfo> runningApps = callWithShellPermissionIdentity(
                 () -> mActivityManager.getRunningAppProcesses());
-        assertTrue("Process " + testProcess + " should be found in running process list",
-                runningApps.stream().anyMatch(processNamePredicate));
+        assertWithMessage("Process " + testProcess + " should be found in running process list")
+                .that(runningApps.stream().anyMatch(processNamePredicate))
+                .isTrue();
 
-        runningApps = callWithShellPermissionIdentity(() -> {
-            mActivityManager.forceStopPackage(SIMPLE_PACKAGE_NAME);
-            // Wait awhile (process starting may be asynchronous) to verify if the process is
-            // started again unexpectedly.
-            Thread.sleep(WAIT_TIME);
-            return mActivityManager.getRunningAppProcesses();
-        });
+        runningApps =
+                callWithShellPermissionIdentity(
+                        () -> {
+                            mActivityManager.forceStopPackage(SIMPLE_PACKAGE_NAME);
+                            // Wait awhile (process starting may be asynchronous) to verify if the
+                            // process is
+                            // started again unexpectedly.
+                            SystemClock.sleep(WAIT_TIME);
+                            return mActivityManager.getRunningAppProcesses();
+                        });
 
-        assertFalse("Process " + testProcess + " should not be alive after force-stop",
-                runningApps.stream().anyMatch(processNamePredicate));
+        assertWithMessage("Process " + testProcess + " should not be alive after force-stop")
+                .that(runningApps.stream().anyMatch(processNamePredicate))
+                .isFalse();
     }
 
     /**
@@ -1142,7 +1169,8 @@ public final class ActivityManagerTest {
        try {
            Class.forName("android.app.IActivityManager").getDeclaredMethod(
                    "isAppForeground", int.class);
-           fail("IActivityManager.isAppForeground() API should not be available.");
+            assertWithMessage("IActivityManager.isAppForeground() API should not be available.")
+                    .fail();
        } catch (NoSuchMethodException e) {
            // Patched devices should throw this exception since isAppForeground is removed.
        }
@@ -1164,24 +1192,21 @@ public final class ActivityManagerTest {
         try {
 
             // Verify we got the ANR
-            assertTrue(monitor.waitFor(AmMonitor.WAIT_FOR_EARLY_ANR, WAITFOR_MSEC));
+            assertThat(monitor.waitFor(AmMonitor.WAIT_FOR_EARLY_ANR, WAITFOR_MSEC)).isTrue();
 
             // Just kill the test app
             monitor.sendCommand(AmMonitor.CMD_KILL);
         } finally {
             // clean up
             monitor.finish();
-            runWithShellPermissionIdentity(() -> {
-                mActivityManager.forceStopPackage(PACKAGE_NAME_APP1);
-            });
+            runWithShellPermissionIdentity(
+                    () -> mActivityManager.forceStopPackage(PACKAGE_NAME_APP1));
         }
     }
 
-    /**
-     * This test verifies that the PROC_START_TIMEOUT triggers an ANR.
-     */
+    /** This test verifies that the PROC_START_TIMEOUT triggers an ANR. */
     @Test
-    public void testAppNotRespondingOnStartup() throws Exception {
+    public void testAppNotRespondingOnStartup() {
         runWithShellPermissionIdentity(() -> {
             mIsWaitForFinishAttachApplicationEnabled = DeviceConfig.getBoolean(
                     DeviceConfig.NAMESPACE_ACTIVITY_MANAGER,
@@ -1203,17 +1228,16 @@ public final class ActivityManagerTest {
 
         try {
             // Verify we got the ANR
-            assertTrue(monitor.waitFor(AmMonitor.WAIT_FOR_EARLY_ANR,
-                            WAITFOR_PROCSTAT_TIMEOUT_MSEC));
+            assertThat(monitor.waitFor(AmMonitor.WAIT_FOR_EARLY_ANR, WAITFOR_PROCSTAT_TIMEOUT_MSEC))
+                    .isTrue();
 
             // Just kill the test app
             monitor.sendCommand(AmMonitor.CMD_KILL);
         } finally {
             // clean up
             monitor.finish();
-            runWithShellPermissionIdentity(() -> {
-                mActivityManager.forceStopPackage(PACKAGE_NAME_WEDGED_STARTUP);
-            });
+            runWithShellPermissionIdentity(
+                    () -> mActivityManager.forceStopPackage(PACKAGE_NAME_WEDGED_STARTUP));
         }
     }
 
@@ -1227,10 +1251,10 @@ public final class ActivityManagerTest {
         Intent remoteIntent = new Intent("android.app.REMOTESERVICE");
         remoteIntent.setPackage(STUB_PACKAGE_NAME);
         mTargetContext.startService(remoteIntent);
-        Thread.sleep(WAITFOR_MSEC);
+        SystemClock.sleep(WAITFOR_MSEC);
 
         RunningAppProcessInfo remote = getRunningAppProcessInfo(remoteProcessName);
-        assertNotNull(remote);
+        assertThat(remote).isNotNull();
 
         ActivityReceiverFilter appStartedReceiver = new ActivityReceiverFilter(
                 ACTIVITY_LAUNCHED_ACTION);
@@ -1243,19 +1267,18 @@ public final class ActivityManagerTest {
             intent.setClassName(SIMPLE_PACKAGE_NAME, SIMPLE_PACKAGE_NAME + SIMPLE_ACTIVITY);
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             mTargetContext.startActivity(intent);
-            assertEquals(RESULT_PASS, appStartedReceiver.waitForActivity());
+            assertThat(appStartedReceiver.waitForActivity()).isEqualTo(RESULT_PASS);
 
             RunningAppProcessInfo proc = getRunningAppProcessInfo(SIMPLE_PACKAGE_NAME);
-            assertNotNull(proc);
+            assertThat(proc).isNotNull();
 
             final String reason = "cts";
-
-            try {
-                mActivityManager.killProcessesWhenImperceptible(new int[]{proc.pid}, reason);
-                fail("Shouldn't have the permission");
-            } catch (SecurityException e) {
-                // expected
-            }
+            assertThrows(
+                    "Shouldn't have the permission",
+                    SecurityException.class,
+                    () ->
+                            mActivityManager.killProcessesWhenImperceptible(
+                                    new int[] {proc.pid}, reason));
 
             final long defaultWaitForKillTimeout = 5_000;
 
@@ -1263,20 +1286,28 @@ public final class ActivityManagerTest {
             toggleScreenOn(true);
 
             // Kill the remote process
-            runWithShellPermissionIdentity(() -> {
-                mActivityManager.killProcessesWhenImperceptible(new int[]{remote.pid}, reason);
-            });
+            runWithShellPermissionIdentity(
+                    () ->
+                            mActivityManager.killProcessesWhenImperceptible(
+                                    new int[] {remote.pid}, reason));
 
             // Kill the activity process
-            runWithShellPermissionIdentity(() -> {
-                mActivityManager.killProcessesWhenImperceptible(new int[]{proc.pid}, reason);
-            });
+            runWithShellPermissionIdentity(
+                    () ->
+                            mActivityManager.killProcessesWhenImperceptible(
+                                    new int[] {proc.pid}, reason));
 
             // The processes should be still alive because device isn't in idle
-            assertFalse(waitUntilTrue(defaultWaitForKillTimeout, () -> isProcessGone(
-                    remote.pid, remoteProcessName)));
-            assertFalse(waitUntilTrue(defaultWaitForKillTimeout, () -> isProcessGone(
-                    proc.pid, SIMPLE_PACKAGE_NAME)));
+            assertThat(
+                            waitUntilTrue(
+                                    defaultWaitForKillTimeout,
+                                    () -> isProcessGone(remote.pid, remoteProcessName)))
+                    .isFalse();
+            assertThat(
+                            waitUntilTrue(
+                                    defaultWaitForKillTimeout,
+                                    () -> isProcessGone(proc.pid, SIMPLE_PACKAGE_NAME)))
+                    .isFalse();
 
             if (isAtvDevice()) {
                 // On operator tier devices of AndroidTv, Activity is put behind TvLauncher
@@ -1290,15 +1321,21 @@ public final class ActivityManagerTest {
             triggerIdle(true);
 
             // Now the remote process should have been killed.
-            assertTrue(waitUntilTrue(defaultWaitForKillTimeout, () -> isProcessGone(
-                    remote.pid, remoteProcessName)));
+            assertThat(
+                            waitUntilTrue(
+                                    defaultWaitForKillTimeout,
+                                    () -> isProcessGone(remote.pid, remoteProcessName)))
+                    .isTrue();
 
             // The activity process should be still alive because it's is on the top (perceptible)
-            assertFalse(waitUntilTrue(defaultWaitForKillTimeout, () -> isProcessGone(
-                    proc.pid, SIMPLE_PACKAGE_NAME)));
+            assertThat(
+                            waitUntilTrue(
+                                    defaultWaitForKillTimeout,
+                                    () -> isProcessGone(proc.pid, SIMPLE_PACKAGE_NAME)))
+                    .isFalse();
 
             triggerIdle(false);
-            // Toogle screen ON
+            // Toggle screen ON
             toggleScreenOn(true);
 
             // Now launch home
@@ -1310,8 +1347,11 @@ public final class ActivityManagerTest {
             triggerIdle(true);
 
             // Now the activity process should be gone.
-            assertTrue(waitUntilTrue(defaultWaitForKillTimeout, () -> isProcessGone(
-                    proc.pid, SIMPLE_PACKAGE_NAME)));
+            assertThat(
+                            waitUntilTrue(
+                                    defaultWaitForKillTimeout,
+                                    () -> isProcessGone(proc.pid, SIMPLE_PACKAGE_NAME)))
+                    .isTrue();
 
         } finally {
             // Clean up code
@@ -1323,9 +1363,8 @@ public final class ActivityManagerTest {
             if (disabled) {
                 executeAndLogShellCommand("cmd deviceidle disable light");
             }
-            runWithShellPermissionIdentity(() -> {
-                mActivityManager.forceStopPackage(SIMPLE_PACKAGE_NAME);
-            });
+            runWithShellPermissionIdentity(
+                    () -> mActivityManager.forceStopPackage(SIMPLE_PACKAGE_NAME));
             executeAndLogShellCommand("am kill --user " + mTestRunningUserId
                     + " " + STUB_PACKAGE_NAME);
         }
@@ -1369,8 +1408,9 @@ public final class ActivityManagerTest {
                     new String[] {"/system/bin/sh", "-c",  "sleep 1000"});
 
             // Wait for the start of the child process
-            assertTrue("Failed to spawn child process",
-                    startLatch.await(waitForSec, TimeUnit.MILLISECONDS));
+            assertWithMessage("Failed to spawn child process")
+                    .that(startLatch.await(waitForSec, TimeUnit.MILLISECONDS))
+                    .isTrue();
 
             // Stop the activity
             CommandReceiver.sendCommand(mTargetContext, CommandReceiver.COMMAND_STOP_ACTIVITY,
@@ -1379,17 +1419,18 @@ public final class ActivityManagerTest {
             watcher.waitFor(WatchUidRunner.CMD_CACHED, null);
 
             // Wait for the system to kill that light weight child (it won't happen actually)
-            CountDownLatch stopLatch = initWaitingForChildProcessGone(
-                    PACKAGE_NAME_APP1, processGoneTimeout);
+            CountDownLatch stopLatch = initWaitingForChildProcessGone();
 
-            assertFalse("App's light weight child process shouldn't be gone",
-                    stopLatch.await(processGoneTimeout, TimeUnit.MILLISECONDS));
+            assertWithMessage("App's light weight child process shouldn't be gone")
+                    .that(stopLatch.await(processGoneTimeout, TimeUnit.MILLISECONDS))
+                    .isFalse();
 
             // Now kill the light weight child
-            stopLatch = stopChildProcess(PACKAGE_NAME_APP1, waitForSec);
+            stopLatch = stopChildProcess();
 
-            assertTrue("Failed to kill app's light weight child process",
-                    stopLatch.await(waitForSec, TimeUnit.MILLISECONDS));
+            assertWithMessage("Failed to kill app's light weight child process")
+                    .that(stopLatch.await(waitForSec, TimeUnit.MILLISECONDS))
+                    .isTrue();
 
             // Start an activity again
             CommandReceiver.sendCommand(mTargetContext, CommandReceiver.COMMAND_START_ACTIVITY,
@@ -1402,8 +1443,9 @@ public final class ActivityManagerTest {
                     new String[] {"/system/bin/sh", "-c",  "while true; do :; done"});
 
             // Wait for the start of the child process
-            assertTrue("Failed to spawn child process",
-                    startLatch.await(waitForSec, TimeUnit.MILLISECONDS));
+            assertWithMessage("Failed to spawn child process")
+                    .that(startLatch.await(waitForSec, TimeUnit.MILLISECONDS))
+                    .isTrue();
 
             // Stop the activity
             CommandReceiver.sendCommand(mTargetContext, CommandReceiver.COMMAND_STOP_ACTIVITY,
@@ -1486,8 +1528,9 @@ public final class ActivityManagerTest {
                     new String[] {"/system/bin/sh", "-c",  "sleep 1000"});
 
             // Wait for the start of the child process
-            assertTrue("Failed to spawn child process",
-                    startLatch.await(waitForSec, TimeUnit.MILLISECONDS));
+            assertWithMessage("Failed to spawn child process")
+                    .that(startLatch.await(waitForSec, TimeUnit.MILLISECONDS))
+                    .isTrue();
 
             // Start an activity in another package
             CommandReceiver.sendCommand(mTargetContext, CommandReceiver.COMMAND_START_ACTIVITY,
@@ -1500,8 +1543,9 @@ public final class ActivityManagerTest {
                     new String[] {"/system/bin/sh", "-c",  "sleep 1000"});
 
             // Wait for the start of the child process
-            assertTrue("Failed to spawn child process",
-                    startLatch.await(waitForSec, TimeUnit.MILLISECONDS));
+            assertWithMessage("Failed to spawn child process")
+                    .that(startLatch.await(waitForSec, TimeUnit.MILLISECONDS))
+                    .isTrue();
 
             // Finish the 1st activity
             CommandReceiver.sendCommand(mTargetContext, CommandReceiver.COMMAND_STOP_ACTIVITY,
@@ -1510,11 +1554,11 @@ public final class ActivityManagerTest {
             watcher1.waitFor(WatchUidRunner.CMD_CACHED, null);
 
             // Wait for the system to kill that light weight child (it won't happen actually)
-            CountDownLatch stopLatch = initWaitingForChildProcessGone(
-                    PACKAGE_NAME_APP1, processGoneTimeout);
+            CountDownLatch stopLatch = initWaitingForChildProcessGone();
 
-            assertFalse("App's light weight child process shouldn't be gone",
-                    stopLatch.await(processGoneTimeout, TimeUnit.MILLISECONDS));
+            assertWithMessage("App's light weight child process shouldn't be gone")
+                    .that(stopLatch.await(processGoneTimeout, TimeUnit.MILLISECONDS))
+                    .isFalse();
 
             // Sleep a while
             SystemClock.sleep(powerCheckInterval);
@@ -1530,15 +1574,16 @@ public final class ActivityManagerTest {
                     new String[] {"/system/bin/sh", "-c",  "sleep 1000"});
 
             // Wait for the start of the child process
-            assertTrue("Failed to spawn child process",
-                    startLatch.await(waitForSec, TimeUnit.MILLISECONDS));
+            assertWithMessage("Failed to spawn child process")
+                    .that(startLatch.await(waitForSec, TimeUnit.MILLISECONDS))
+                    .isTrue();
 
             // Now the 1st child process should have been gone.
-            stopLatch = initWaitingForChildProcessGone(
-                    PACKAGE_NAME_APP1, processGoneTimeout);
+            stopLatch = initWaitingForChildProcessGone();
 
-            assertTrue("1st App's child process should have been gone",
-                    stopLatch.await(processGoneTimeout, TimeUnit.MILLISECONDS));
+            assertWithMessage("1st App's child process should have been gone")
+                    .that(stopLatch.await(processGoneTimeout, TimeUnit.MILLISECONDS))
+                    .isTrue();
 
         } finally {
             amSettings.close();
@@ -1572,19 +1617,18 @@ public final class ActivityManagerTest {
     private CountDownLatch startChildProcessInPackage(String pkgName, String[] cmdline) {
         final CountDownLatch startLatch = new CountDownLatch(1);
 
-        final IBinder binder = new Binder() {
-            @Override
-            protected boolean onTransact(int code, Parcel data, Parcel reply, int flags)
-                    throws RemoteException {
-                switch (code) {
-                    case CommandReceiver.RESULT_CHILD_PROCESS_STARTED:
-                        startLatch.countDown();
-                        return true;
-                    default:
+        final IBinder binder =
+                new Binder() {
+                    @Override
+                    protected boolean onTransact(
+                            int code, @NonNull Parcel data, Parcel reply, int flags) {
+                        if (code == CommandReceiver.RESULT_CHILD_PROCESS_STARTED) {
+                            startLatch.countDown();
+                            return true;
+                        }
                         return false;
-                }
-            }
-        };
+                    }
+                };
         final Bundle extras = new Bundle();
         extras.putBinder(CommandReceiver.EXTRA_CALLBACK, binder);
         extras.putStringArray(CommandReceiver.EXTRA_CHILD_CMDLINE, cmdline);
@@ -1595,54 +1639,62 @@ public final class ActivityManagerTest {
         return startLatch;
     }
 
-    final CountDownLatch stopChildProcess(String pkgName, long timeout) {
+    private CountDownLatch stopChildProcess() {
         final CountDownLatch stopLatch = new CountDownLatch(1);
 
-        final IBinder binder = new Binder() {
-            @Override
-            protected boolean onTransact(int code, Parcel data, Parcel reply, int flags)
-                    throws RemoteException {
-                switch (code) {
-                    case CommandReceiver.RESULT_CHILD_PROCESS_STOPPED:
-                        stopLatch.countDown();
-                        return true;
-                    default:
+        final IBinder binder =
+                new Binder() {
+                    @Override
+                    protected boolean onTransact(
+                            int code, @NonNull Parcel data, Parcel reply, int flags) {
+                        if (code == CommandReceiver.RESULT_CHILD_PROCESS_STOPPED) {
+                            stopLatch.countDown();
+                            return true;
+                        }
                         return false;
-                }
-            }
-        };
+                    }
+                };
         final Bundle extras = new Bundle();
         extras.putBinder(CommandReceiver.EXTRA_CALLBACK, binder);
-        extras.putLong(CommandReceiver.EXTRA_TIMEOUT, timeout);
+        extras.putLong(CommandReceiver.EXTRA_TIMEOUT, 10000);
 
-        CommandReceiver.sendCommand(mTargetContext,
-                CommandReceiver.COMMAND_STOP_CHILD_PROCESS, pkgName, pkgName, 0, extras);
+        CommandReceiver.sendCommand(
+                mTargetContext,
+                CommandReceiver.COMMAND_STOP_CHILD_PROCESS,
+                ActivityManagerTest.PACKAGE_NAME_APP1,
+                ActivityManagerTest.PACKAGE_NAME_APP1,
+                0,
+                extras);
 
         return stopLatch;
     }
 
-    final CountDownLatch initWaitingForChildProcessGone(String pkgName, long timeout) {
+    private CountDownLatch initWaitingForChildProcessGone() {
         final CountDownLatch stopLatch = new CountDownLatch(1);
 
-        final IBinder binder = new Binder() {
-            @Override
-            protected boolean onTransact(int code, Parcel data, Parcel reply, int flags)
-                    throws RemoteException {
-                switch (code) {
-                    case CommandReceiver.RESULT_CHILD_PROCESS_GONE:
-                        stopLatch.countDown();
-                        return true;
-                    default:
+        final IBinder binder =
+                new Binder() {
+                    @Override
+                    protected boolean onTransact(
+                            int code, @NonNull Parcel data, Parcel reply, int flags) {
+                        if (code == CommandReceiver.RESULT_CHILD_PROCESS_GONE) {
+                            stopLatch.countDown();
+                            return true;
+                        }
                         return false;
-                }
-            }
-        };
+                    }
+                };
         final Bundle extras = new Bundle();
         extras.putBinder(CommandReceiver.EXTRA_CALLBACK, binder);
-        extras.putLong(CommandReceiver.EXTRA_TIMEOUT, timeout);
+        extras.putLong(CommandReceiver.EXTRA_TIMEOUT, 20000L);
 
-        CommandReceiver.sendCommand(mTargetContext,
-                CommandReceiver.COMMAND_WAIT_FOR_CHILD_PROCESS_GONE, pkgName, pkgName, 0, extras);
+        CommandReceiver.sendCommand(
+                mTargetContext,
+                CommandReceiver.COMMAND_WAIT_FOR_CHILD_PROCESS_GONE,
+                ActivityManagerTest.PACKAGE_NAME_APP1,
+                ActivityManagerTest.PACKAGE_NAME_APP1,
+                0,
+                extras);
 
         return stopLatch;
     }
@@ -1699,17 +1751,17 @@ public final class ActivityManagerTest {
             boolean resumed = mWmState.waitForActivityState(app1, WindowManagerState.STATE_RESUMED);
             if (!resumed) {
                 watcher1.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_SERVICE, null);
-                assertTrue(
-                        "Failed to wait for the trim memory event",
-                        latchHolder[0].await(waitForSec, TimeUnit.MILLISECONDS));
+                assertWithMessage("Failed to wait for the trim memory event")
+                        .that(latchHolder[0].await(waitForSec, TimeUnit.MILLISECONDS))
+                        .isTrue();
             } else {
                 // On some form factors, like XR, multiple activities can be in the resumed state,
                 // so PACKAGE_NAME_APP1 doesn't go into the background or the service state.
                 // Therefore, there should not be any changes in the process state
                 // or the memory trim level.
-                assertFalse(
-                        "The memory trim level shouldn't change",
-                        latchHolder[0].await(waitForSec, TimeUnit.MILLISECONDS));
+                assertWithMessage("The memory trim level shouldn't change")
+                        .that(latchHolder[0].await(waitForSec, TimeUnit.MILLISECONDS))
+                        .isFalse();
             }
         } finally {
             runShellCommand(mInstrumentation, "am memory-factor reset");
@@ -1724,21 +1776,6 @@ public final class ActivityManagerTest {
             watcher2.finish();
             watcher3.finish();
         }
-    }
-
-    private void killBackgroundProcesses(Predicate<String> predicate) {
-        runWithShellPermissionIdentity(() -> {
-            final List<ActivityManager.RunningAppProcessInfo> procs = mActivityManager
-                    .getRunningAppProcesses();
-            for (ActivityManager.RunningAppProcessInfo info: procs) {
-                if (info.importance
-                        >= ActivityManager.RunningAppProcessInfo.IMPORTANCE_SERVICE) {
-                    if (predicate.test(info.processName)) {
-                        mActivityManager.killBackgroundProcesses(info.pkgList[0]);
-                    }
-                }
-            }
-        });
     }
 
     @Test
@@ -1778,8 +1815,9 @@ public final class ActivityManagerTest {
             watchers[0].waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_FG_SERVICE,
                     null);
 
-            assertTrue("Failed to get the controller interface",
-                    countDownLatchHolder[0].await(WAITFOR_MSEC, TimeUnit.MILLISECONDS));
+            assertWithMessage("Failed to get the controller interface")
+                    .that(countDownLatchHolder[0].await(WAITFOR_MSEC, TimeUnit.MILLISECONDS))
+                    .isTrue();
 
             final WatchUidRunner[] otherWatchers = {watchers[1], watchers[2]};
             // Start an activity in another package
@@ -1809,13 +1847,13 @@ public final class ActivityManagerTest {
                 msg.what = LocalForegroundService.COMMAND_STOP_SELF;
                 controllerHolder[0].send(msg);
             } catch (RemoteException e) {
-                fail("Unable to stop test package");
+                assertWithMessage("Unable to stop test package").fail();
             }
             msg.recycle();
             watchers[0].waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_CACHED_EMPTY,
                     null);
 
-            verifyLruOrders(packageNames, 0, true, (a, b) -> a > b, "%s should be newer than %s");
+            verifyLruOrders(packageNames, true, (a, b) -> a > b, "%s should be newer than %s");
         } finally {
             handlerThread.quitSafely();
 
@@ -1825,7 +1863,7 @@ public final class ActivityManagerTest {
             forEach(packageNames, packageName -> runWithShellPermissionIdentity(
                     () -> mActivityManager.forceStopPackage(packageName)));
 
-            forEach(watchers, watcher -> watcher.finish());
+            forEach(watchers, WatchUidRunner::finish);
         }
     }
 
@@ -1900,8 +1938,7 @@ public final class ActivityManagerTest {
                 launchHome();
 
                 // Verify the LRU position.
-                verifyLruOrders(
-                        packageNames, 0, false, (a, b) -> a < b, "%s should be older than %s");
+                verifyLruOrders(packageNames, false, (a, b) -> a < b, "%s should be older than %s");
             } // Close the AutoCloseable and revoke the ability to launch from background.
 
             // Restrict the PACKAGE_NAME_APP1
@@ -1918,7 +1955,6 @@ public final class ActivityManagerTest {
                 }
             });
 
-            final Intent intent = new Intent();
             final CountDownLatch[] latch = new CountDownLatch[] {new CountDownLatch(1)};
             final BroadcastReceiver receiver = new BroadcastReceiver() {
                 @Override
@@ -1931,11 +1967,12 @@ public final class ActivityManagerTest {
                     CommandReceiver.COMMAND_EMPTY, PACKAGE_NAME_APP1, PACKAGE_NAME_APP1,
                     0, null, receiver);
 
-            assertTrue("Failed to get the broadcast",
-                    latch[0].await(WAITFOR_MSEC * 2, TimeUnit.MILLISECONDS));
+            assertWithMessage("Failed to get the broadcast")
+                    .that(latch[0].await(WAITFOR_MSEC * 2, TimeUnit.MILLISECONDS))
+                    .isTrue();
 
             // Now check the LRU position again, it should remain the same because it's restricted.
-            verifyLruOrders(packageNames, 0, false, (a, b) -> a < b, "%s should be older than %s");
+            verifyLruOrders(packageNames, false, (a, b) -> a < b, "%s should be older than %s");
 
             // Set the PACKAGE_NAME_APP1 into rare bucket again.
             runShellCommand(mInstrumentation, "am set-standby-bucket --user " + mTestRunningUserId
@@ -1947,8 +1984,8 @@ public final class ActivityManagerTest {
                     CommandReceiver.COMMAND_EMPTY, PACKAGE_NAME_APP1, PACKAGE_NAME_APP1,
                     0, null, receiver);
 
-            // Now its LRU posistion should have been bumped.
-            verifyLruOrders(packageNames, 0, true, (a, b) -> a > b, "%s should be newer than %s");
+            // Now its LRU position should have been bumped.
+            verifyLruOrders(packageNames, true, (a, b) -> a > b, "%s should be newer than %s");
         } finally {
             runShellCommand(mInstrumentation, "am set-standby-bucket --user " + mTestRunningUserId
                     + " " + PACKAGE_NAME_APP1 + " rare");
@@ -1957,7 +1994,7 @@ public final class ActivityManagerTest {
             forEach(packageNames, packageName -> runWithShellPermissionIdentity(
                     () -> mActivityManager.forceStopPackage(packageName)));
 
-            forEach(watchers, watcher -> watcher.finish());
+            forEach(watchers, WatchUidRunner::finish);
             mInstrumentation.getUiAutomation().grantRuntimePermission(PACKAGE_NAME_APP1,
                     android.Manifest.permission.ACCESS_BACKGROUND_LOCATION);
         }
@@ -1979,9 +2016,9 @@ public final class ActivityManagerTest {
 
             assumeTrue(UserManager.supportsMultipleUsers());
             newUserId = createNewUser();
-            assertNotEquals(UserHandle.USER_NULL, newUserId);
+            assertThat(newUserId).isNotEqualTo(UserHandle.USER_NULL);
             startUser(newUserId);
-            installExistingPackageAsUser(STUB_PACKAGE_NAME, newUserId);
+            installExistingPackageAsUser(newUserId);
             final int uidFromNewUser = UserHandle.getUid(newUserId, Process.myUid());
             // Verify that calling the API for a uid on a different user results in an exception.
             assertThrows(SecurityException.class, () -> mActivityManager.getUidProcessState(
@@ -2018,9 +2055,9 @@ public final class ActivityManagerTest {
 
             assumeTrue(UserManager.supportsMultipleUsers());
             newUserId = createNewUser();
-            assertNotEquals(UserHandle.USER_NULL, newUserId);
+            assertThat(newUserId).isNotEqualTo(UserHandle.USER_NULL);
             startUser(newUserId);
-            installExistingPackageAsUser(STUB_PACKAGE_NAME, newUserId);
+            installExistingPackageAsUser(newUserId);
             final int uidFromNewUser = UserHandle.getUid(newUserId, Process.myUid());
             // Verify that calling the API for a uid on a different user results in an exception.
             assertThrows(SecurityException.class, () -> mActivityManager.getUidProcessState(
@@ -2054,7 +2091,7 @@ public final class ActivityManagerTest {
             mTargetContext.startActivity(intent);
             final String result = reader.readLine();
             final int topPid = getRunningAppProcessInfo(SIMPLE_PACKAGE_NAME).pid;
-            assertEquals(result, "New foreground process: " + topPid);
+            assertThat("New foreground process: " + topPid).isEqualTo(result);
         }
     }
 
@@ -2098,22 +2135,25 @@ public final class ActivityManagerTest {
             // Now, try to kill the background process of our own, it should succeed.
             mActivityManager.killBackgroundProcesses(mTargetContext.getPackageName());
 
-            assertTrue("We should be able to kill our own process",
-                    remoteBinderDeathLatch1.await(WAITFOR_MSEC, TimeUnit.MILLISECONDS));
+            assertWithMessage("We should be able to kill our own process")
+                    .that(remoteBinderDeathLatch1.await(WAITFOR_MSEC, TimeUnit.MILLISECONDS))
+                    .isTrue();
 
             // Try to kill the background process of other app, it should fail.
             mActivityManager.killBackgroundProcesses(otherPackage);
 
-            assertFalse("We should be able to kill the processes of other package",
-                    remoteBinderDeathLatch2.await(WAITFOR_MSEC, TimeUnit.MILLISECONDS));
+            assertWithMessage("We should be able to kill the processes of other package")
+                    .that(remoteBinderDeathLatch2.await(WAITFOR_MSEC, TimeUnit.MILLISECONDS))
+                    .isFalse();
 
             // Adopt the permission, we should be able to kill it now.
             mInstrumentation.getUiAutomation().adoptShellPermissionIdentity(
                     android.Manifest.permission.KILL_ALL_BACKGROUND_PROCESSES);
             mActivityManager.killBackgroundProcesses(otherPackage);
 
-            assertTrue("We should be able to kill the processes of other package",
-                    remoteBinderDeathLatch2.await(WAITFOR_MSEC, TimeUnit.MILLISECONDS));
+            assertWithMessage("We should be able to kill the processes of other package")
+                    .that(remoteBinderDeathLatch2.await(WAITFOR_MSEC, TimeUnit.MILLISECONDS))
+                    .isTrue();
         } finally {
             uid1Watcher.finish();
             uid2Watcher.finish();
@@ -2128,19 +2168,20 @@ public final class ActivityManagerTest {
                         + "config_canSwitchToHeadlessSystemUser is disabled.",
                 canSwitchToHeadlessSystemUser());
 
-        runWithShellPermissionIdentity(() ->
-                assertFalse(mActivityManager.switchUser(UserHandle.SYSTEM)));
+        runWithShellPermissionIdentity(
+                () -> assertThat(mActivityManager.switchUser(UserHandle.SYSTEM)).isFalse());
     }
 
     @Test
     public void testSwitchToSystemUserIsAllowedWhenItsAFullUser() {
         assumeNonHeadlessSystemUserMode();
 
-        runWithShellPermissionIdentity(() -> {
-            int currentUser = ActivityManager.getCurrentUser();
-            assertTrue(mActivityManager.switchUser(UserHandle.SYSTEM));
-            assertTrue(switchUser(currentUser, /* waitForSwitchToComplete= */ true));
-        });
+        runWithShellPermissionIdentity(
+                () -> {
+                    int currentUser = ActivityManager.getCurrentUser();
+                    assertThat(mActivityManager.switchUser(UserHandle.SYSTEM)).isTrue();
+                    assertThat(switchUser(currentUser)).isTrue();
+                });
     }
 
     @Test
@@ -2152,11 +2193,12 @@ public final class ActivityManagerTest {
                         + "config_canSwitchToHeadlessSystemUser is enabled.",
                 canSwitchToHeadlessSystemUser());
 
-        runWithShellPermissionIdentity(() -> {
-            int currentUser = ActivityManager.getCurrentUser();
-            assumeTrue(mActivityManager.switchUser(UserHandle.SYSTEM));
-            assertTrue(switchUser(currentUser, /* waitForSwitchToComplete= */ true));
-        });
+        runWithShellPermissionIdentity(
+                () -> {
+                    int currentUser = ActivityManager.getCurrentUser();
+                    assumeTrue(mActivityManager.switchUser(UserHandle.SYSTEM));
+                    assertThat(switchUser(currentUser)).isTrue();
+                });
     }
 
     @Test
@@ -2164,35 +2206,40 @@ public final class ActivityManagerTest {
             + "that must be one way and thus cannot be verified.")
     public void testNoteForegroundResourceUse() {
         // Testing the method without permissions
-        try {
-            mActivityManager.noteForegroundResourceUseBegin(1, 1, 1);
-            fail("Should not be able to call noteForegroundResourceUseBegin without permission");
-        } catch (SecurityException expected) {
-        }
-        try {
-            mActivityManager.noteForegroundResourceUseEnd(1, 1, 1);
-            fail("Should not be able to call noteForegroundResourceUseEnd without permission");
-        } catch (SecurityException expected) {
-        }
+        assertThrows(
+                "Should not be able to call noteForegroundResourceUseBegin without permission",
+                SecurityException.class,
+                () -> mActivityManager.noteForegroundResourceUseBegin(1, 1, 1));
+
+        assertThrows(
+                "Should not be able to call noteForegroundResourceUseEnd without permission",
+                SecurityException.class,
+                () -> mActivityManager.noteForegroundResourceUseEnd(1, 1, 1));
 
         try {
             mInstrumentation.getUiAutomation()
                     .adoptShellPermissionIdentity(
                             android.Manifest.permission.LOG_FOREGROUND_RESOURCE_USE);
         } catch (Exception e) {
-            fail("Couldn't grant permission: " + e.getMessage());
+            assertWithMessage("Couldn't grant permission: " + e.getMessage()).fail();
         }
 
         // Testing invocation with permission granted
         try {
             mActivityManager.noteForegroundResourceUseBegin(1, 1, 1);
         } catch (SecurityException e) {
-            fail("Could not call noteForegroundResourceUseBegin with permission" + e.getMessage());
+            assertWithMessage(
+                            "Could not call noteForegroundResourceUseBegin with permission"
+                                    + e.getMessage())
+                    .fail();
         }
         try {
             mActivityManager.noteForegroundResourceUseEnd(1, 1, 1);
         } catch (SecurityException e) {
-            fail("Could not call noteForegroundResourceUseBegin with permission" + e.getMessage());
+            assertWithMessage(
+                            "Could not call noteForegroundResourceUseBegin with permission"
+                                    + e.getMessage())
+                    .fail();
         }
     }
 
@@ -2221,16 +2268,18 @@ public final class ActivityManagerTest {
             CommandReceiver.sendCommand(mTargetContext,
                     CommandReceiver.COMMAND_START_ACTIVITY,
                     PACKAGE_NAME_APP1, PACKAGE_NAME_APP1, 0, null);
-            assertTrue("Failed to receive the UID importance changes",
-                    latchHolder[0].await(WAITFOR_MSEC * 2, TimeUnit.MILLISECONDS));
+            assertWithMessage("Failed to receive the UID importance changes")
+                    .that(latchHolder[0].await(WAITFOR_MSEC * 2, TimeUnit.MILLISECONDS))
+                    .isTrue();
 
             latchHolder[0] = new CountDownLatch(1);
             expectedUidHolder[0] = ai2.uid;
             CommandReceiver.sendCommand(mTargetContext,
                     CommandReceiver.COMMAND_START_ACTIVITY,
                     PACKAGE_NAME_APP1, PACKAGE_NAME_APP2, 0, null);
-            assertTrue("Failed to receive the UID importance changes",
-                    latchHolder[0].await(WAITFOR_MSEC * 2, TimeUnit.MILLISECONDS));
+            assertWithMessage("Failed to receive the UID importance changes")
+                    .that(latchHolder[0].await(WAITFOR_MSEC * 2, TimeUnit.MILLISECONDS))
+                    .isTrue();
         } finally {
             mActivityManager.removeOnUidImportanceListener(listener);
 
@@ -2269,16 +2318,18 @@ public final class ActivityManagerTest {
             CommandReceiver.sendCommand(mTargetContext,
                     CommandReceiver.COMMAND_START_ACTIVITY,
                     PACKAGE_NAME_APP1, PACKAGE_NAME_APP1, 0, null);
-            assertTrue("Failed to receive the UID importance changes",
-                    latchHolder[0].await(WAITFOR_MSEC, TimeUnit.MILLISECONDS));
+            assertWithMessage("Failed to receive the UID importance changes")
+                    .that(latchHolder[0].await(WAITFOR_MSEC, TimeUnit.MILLISECONDS))
+                    .isTrue();
 
             latchHolder[0] = new CountDownLatch(1);
             expectedUidHolder[0] = ai2.uid;
             CommandReceiver.sendCommand(mTargetContext,
                     CommandReceiver.COMMAND_START_ACTIVITY,
                     PACKAGE_NAME_APP1, PACKAGE_NAME_APP2, 0, null);
-            assertFalse("It should not receive the UID importance changes",
-                    latchHolder[0].await(WAITFOR_MSEC, TimeUnit.MILLISECONDS));
+            assertWithMessage("It should not receive the UID importance changes")
+                    .that(latchHolder[0].await(WAITFOR_MSEC, TimeUnit.MILLISECONDS))
+                    .isFalse();
         } finally {
             mActivityManager.removeOnUidImportanceListener(listener);
 
@@ -2307,44 +2358,33 @@ public final class ActivityManagerTest {
         mTargetContext.startActivity(intent);
 
         // Wait until it finishes and end the receiver then.
-        assertEquals(RESULT_OK, appEndReceiver.getResult());
+        assertThat(appEndReceiver.getResult()).isEqualTo(RESULT_OK);
     }
 
-    private boolean switchUser(int userId, boolean waitForSwitchToComplete) throws IOException {
-        StringBuilder userSwitchCommand = new StringBuilder("am switch-user ");
-        if (waitForSwitchToComplete) {
-            userSwitchCommand.append("-w ");
-        }
-
-        userSwitchCommand.append(userId);
-        return runShellCommand(mInstrumentation, userSwitchCommand.toString()).isEmpty();
+    private boolean switchUser(int userId) throws IOException {
+        String userSwitchCommand = "am switch-user -w " + userId;
+        return runShellCommand(mInstrumentation, userSwitchCommand).isEmpty();
     }
 
     private CountDownLatch startRemoteActivityAndLinkToDeath(ComponentName activity,
             WatchUidRunner uidWatcher) throws Exception {
         final IBinder[] remoteBinderHolder = new IBinder[1];
         final CountDownLatch remoteBinderLatch = new CountDownLatch(1);
-        final IBinder binder = new Binder() {
-            @Override
-            protected boolean onTransact(int code, Parcel data, Parcel reply, int flags)
-                    throws RemoteException {
-                switch (code) {
-                    case IBinder.FIRST_CALL_TRANSACTION:
-                        remoteBinderHolder[0] = data.readStrongBinder();
-                        remoteBinderLatch.countDown();
-                        return true;
-                    default:
+        final IBinder binder =
+                new Binder() {
+                    @Override
+                    protected boolean onTransact(
+                            int code, @NonNull Parcel data, Parcel reply, int flags) {
+                        if (code == IBinder.FIRST_CALL_TRANSACTION) {
+                            remoteBinderHolder[0] = data.readStrongBinder();
+                            remoteBinderLatch.countDown();
+                            return true;
+                        }
                         return false;
-                }
-            }
-        };
+                    }
+                };
         final CountDownLatch remoteBinderDeathLatch = new CountDownLatch(1);
-        final IBinder.DeathRecipient recipient = new IBinder.DeathRecipient() {
-            @Override
-            public void binderDied() {
-                remoteBinderDeathLatch.countDown();
-            }
-        };
+        final IBinder.DeathRecipient recipient = remoteBinderDeathLatch::countDown;
         final Intent intent = new Intent();
         intent.setComponent(activity);
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
@@ -2354,9 +2394,10 @@ public final class ActivityManagerTest {
         mTargetContext.startActivity(intent);
 
         uidWatcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_TOP, null);
-        assertTrue("Failed to receive the callback from remote activity",
-                remoteBinderLatch.await(WAITFOR_MSEC, TimeUnit.MILLISECONDS));
-        assertNotNull(remoteBinderHolder[0]);
+        assertWithMessage("Failed to receive the callback from remote activity")
+                .that(remoteBinderLatch.await(WAITFOR_MSEC, TimeUnit.MILLISECONDS))
+                .isTrue();
+        assertThat(remoteBinderHolder[0]).isNotNull();
         remoteBinderHolder[0].linkToDeath(recipient, 0);
 
         // Finish the activity.
@@ -2364,12 +2405,13 @@ public final class ActivityManagerTest {
         try {
             remoteBinderHolder[0].transact(IBinder.FIRST_CALL_TRANSACTION, data, null, 0);
         } catch (RemoteException e) {
+            Log.e(TAG, "Exception in binder transaction", e);
         } finally {
             data.recycle();
         }
 
         // Sleep a while to let things go through.
-        Thread.sleep(WAIT_TIME);
+        SystemClock.sleep(WAIT_TIME);
         return remoteBinderDeathLatch;
     }
 
@@ -2390,11 +2432,11 @@ public final class ActivityManagerTest {
         final String cmd = "cmd activity start-user -w " + userId;
         final String output = executeShellCommand(cmd);
         if (output.startsWith("Error")) {
-            fail("Error starting the new user u" + userId + ": " + output);
+            assertWithMessage("Error starting the new user u" + userId + ": " + output).fail();
         }
         final String state = executeShellCommand("am get-started-user-state " + userId);
         if (!state.contains("RUNNING_UNLOCKED")) {
-            fail("Unexpected state for the new user u" + userId + ": " + state);
+            assertWithMessage("Unexpected state for the new user u" + userId + ": " + state).fail();
         }
     }
 
@@ -2402,20 +2444,21 @@ public final class ActivityManagerTest {
         final String cmd = "cmd package remove-user " + userId;
         final String output = executeShellCommand(cmd);
         if (output.startsWith("Error")) {
-            fail("Error removing the user u" + userId + ": " + output);
+            assertWithMessage("Error removing the user u" + userId + ": " + output).fail();
         }
     }
 
-    private void installExistingPackageAsUser(String packageName, int userId)
-            throws Exception {
-        final String cmd = String.format("cmd package install-existing --user %d --wait %s",
-                userId, packageName);
+    private void installExistingPackageAsUser(int userId) throws Exception {
+        final String cmd =
+                String.format(
+                        "cmd package install-existing --user %d --wait %s",
+                        userId, ActivityManagerTest.STUB_PACKAGE_NAME);
         executeShellCommand(cmd);
     }
 
     private int[] getLruPositions(String[] packageNames) throws Exception {
         final List<String> lru = getCachedAppsLru();
-        assertTrue("Failed to get cached app list", lru.size() > 0);
+        assertWithMessage("Failed to get cached app list").that(lru).isNotEmpty();
         final int[] pos = new int[packageNames.length];
         for (int i = 0; i < packageNames.length; i++) {
             pos[i] = lru.indexOf(packageNames[i]);
@@ -2423,23 +2466,28 @@ public final class ActivityManagerTest {
         return pos;
     }
 
-    private void verifyLruOrders(String[] packageNames, int testIndex, boolean newest,
-            BiPredicate<Integer, Integer> predicate, String msg) throws Exception {
+    private void verifyLruOrders(
+            String[] packageNames,
+            boolean newest,
+            BiPredicate<Integer, Integer> predicate,
+            String msg)
+            throws Exception {
         final List<String> lru = getCachedAppsLru();
 
-        assertTrue("Failed to get cached app list", lru.size() > 0);
+        assertWithMessage("Failed to get cached app list").that(lru).isNotEmpty();
         final int[] pos = getLruPositions(packageNames);
-        if (pos[testIndex] != -1) {
+        if (pos[0] != -1) {
             for (int i = 0; i < pos.length; i++) {
-                if (i == testIndex || pos[i] == -1) {
+                if (i == 0 || pos[i] == -1) {
                     continue;
                 }
-                assertTrue(String.format(msg, packageNames[testIndex], packageNames[i]),
-                        predicate.test(pos[testIndex], pos[i]));
+                assertWithMessage(String.format(msg, packageNames[0], packageNames[i]))
+                        .that(predicate.test(pos[0], pos[i]))
+                        .isTrue();
             }
         } else if (newest) {
             for (int i = 0; i < pos.length; i++) {
-                assertEquals(packageNames[i] + " should have gone", -1, pos[i]);
+                assertWithMessage(packageNames[i] + " should have gone").that(pos[i]).isEqualTo(-1);
             }
         }
     }
@@ -2481,7 +2529,7 @@ public final class ActivityManagerTest {
         final String output = runShellCommand(mInstrumentation, "dumpsys activity lru");
         final String[] lines = output.split("\n");
         for (String line: lines) {
-            if (line == null || line.indexOf(" cch") == -1) {
+            if (line == null || !line.contains(" cch")) {
                 continue;
             }
             final int slash = line.lastIndexOf('/');
@@ -2504,20 +2552,19 @@ public final class ActivityManagerTest {
     }
 
     private Bundle initWaitingForTrimLevel(final Consumer<Integer> checker) {
-        final IBinder binder = new Binder() {
-            @Override
-            protected boolean onTransact(int code, Parcel data, Parcel reply, int flags)
-                    throws RemoteException {
-                switch (code) {
-                    case IBinder.FIRST_CALL_TRANSACTION:
-                        final int level = data.readInt();
-                        checker.accept(level);
-                        return true;
-                    default:
+        final IBinder binder =
+                new Binder() {
+                    @Override
+                    protected boolean onTransact(
+                            int code, @NonNull Parcel data, Parcel reply, int flags) {
+                        if (code == IBinder.FIRST_CALL_TRANSACTION) {
+                            final int level = data.readInt();
+                            checker.accept(level);
+                            return true;
+                        }
                         return false;
-                }
-            }
-        };
+                    }
+                };
         final Bundle extras = new Bundle();
         extras.putBinder(CommandReceiver.EXTRA_CALLBACK, binder);
         return extras;
@@ -2525,10 +2572,12 @@ public final class ActivityManagerTest {
 
     private RunningAppProcessInfo getRunningAppProcessInfo(String processName) {
         try {
-            return callWithShellPermissionIdentity(()-> {
-                return mActivityManager.getRunningAppProcesses().stream().filter(
-                        (ra) -> processName.equals(ra.processName)).findFirst().orElse(null);
-            });
+            return callWithShellPermissionIdentity(
+                    () ->
+                            mActivityManager.getRunningAppProcesses().stream()
+                                    .filter((ra) -> processName.equals(ra.processName))
+                                    .findFirst()
+                                    .orElse(null));
         } catch (Exception e) {
         }
         return null;
@@ -2540,11 +2589,9 @@ public final class ActivityManagerTest {
     }
 
     // Copied from DeviceStatesTest
-    /**
-     * Make sure the screen state.
-     */
-    private void toggleScreenOn(final boolean screenon) throws Exception {
-        if (screenon) {
+    /** Make sure the screen state. */
+    private void toggleScreenOn(final boolean screenOn) throws Exception {
+        if (screenOn) {
             executeAndLogShellCommand("input keyevent KEYCODE_WAKEUP");
             executeAndLogShellCommand("wm dismiss-keyguard");
         } else {
@@ -2567,14 +2614,12 @@ public final class ActivityManagerTest {
         SystemClock.sleep(2_000);
     }
 
-    /**
-     * Return true if the given supplier says it's true
-     */
-    private boolean waitUntilTrue(long maxWait, Supplier<Boolean> supplier) throws Exception {
+    /** Return true if the given supplier says it's true */
+    private boolean waitUntilTrue(long maxWait, Supplier<Boolean> supplier) {
         final long deadLine = SystemClock.uptimeMillis() + maxWait;
-        boolean result = false;
+        boolean result;
         do {
-            Thread.sleep(500);
+            SystemClock.sleep(500);
         } while (!(result = supplier.get()) && SystemClock.uptimeMillis() < deadLine);
         return result;
     }
@@ -2588,14 +2633,14 @@ public final class ActivityManagerTest {
     }
 
     /**
-     * HomeActivitySession is used to replace the default home component, so that you can use
-     * your preferred home for testing within the session. The original default home will be
-     * restored automatically afterward.
+     * HomeActivitySession is used to replace the default home component, so that you can use your
+     * preferred home for testing within the session. The original default home will be restored
+     * automatically afterward.
      */
-    private class HomeActivitySession {
-        private PackageManager mPackageManager;
+    private final class HomeActivitySession {
+        private final PackageManager mPackageManager;
         private ComponentName mOrigHome;
-        private ComponentName mSessionHome;
+        private final ComponentName mSessionHome;
 
         HomeActivitySession(ComponentName sessionHome) throws Exception {
             mSessionHome = sessionHome;
@@ -2685,7 +2730,7 @@ public final class ActivityManagerTest {
         return pm.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE);
     }
 
-    private static class BlockingResultReceiver {
+    private static final class BlockingResultReceiver {
         private final BlockingQueue<Integer> mBlockingQueue = new LinkedBlockingQueue<>();
         private final RemoteCallback mRemoteCallback;
 
@@ -2702,7 +2747,7 @@ public final class ActivityManagerTest {
 
         public int getResult() throws InterruptedException {
             final Integer result = mBlockingQueue.poll(WAITFOR_MSEC * 2, TimeUnit.MILLISECONDS);
-            return result == null ? RESULT_TIMEOUT : result.intValue();
+            return result == null ? RESULT_TIMEOUT : result;
         }
     }
 }
