@@ -40,17 +40,26 @@ import static org.junit.Assert.assertTrue;
 
 import android.app.Activity;
 import android.app.Application;
+import android.app.Flags;
+import android.app.Instrumentation;
 import android.app.stubs.ActivityCallbacksTestActivity;
 import android.app.stubs.ActivityCallbacksTestActivity.Event;
 import android.app.stubs.ActivityCallbacksTestActivity.Source;
+import android.app.stubs.MockApplicationActivity;
 import android.content.Context;
 import android.os.Bundle;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Pair;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.test.InstrumentationRegistry;
 import androidx.test.filters.SmallTest;
 import androidx.test.rule.ActivityTestRule;
 import androidx.test.runner.AndroidJUnit4;
+import androidx.test.uiautomator.UiDevice;
 
 import org.junit.After;
 import org.junit.Rule;
@@ -70,6 +79,13 @@ public class ActivityCallbacksTest {
     @Rule
     public ActivityTestRule<ActivityCallbacksTestActivity> mActivityRule =
             new ActivityTestRule<>(ActivityCallbacksTestActivity.class, false, false);
+
+    @Rule
+    public ActivityTestRule<MockApplicationActivity> mMockApplicationActivity =
+            new ActivityTestRule<>(MockApplicationActivity.class, false, false);
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private Application.ActivityLifecycleCallbacks mActivityCallbacks;
 
@@ -242,6 +258,71 @@ public class ActivityCallbacksTest {
         addNestedEvents(expectedEvents, ON_PRE_DESTROY, ON_DESTROY, ON_POST_DESTROY);
 
         assertEquals(expectedEvents, actualEvents);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ON_RESTART_ACTIVITY_LIFECYCLE_CALLBACK)
+    public void testOnActivityRestartedCallback() throws InterruptedException {
+        Instrumentation instrumentation =
+                androidx.test.platform.app.InstrumentationRegistry.getInstrumentation();
+        Context targetContext = instrumentation.getTargetContext();
+        Application application = (Application) targetContext.getApplicationContext();
+
+        // Launch the mock activity, this will be the activity where onRestart will be called.
+        mMockApplicationActivity.launchActivity(null);
+        CountDownLatch activityStartCountdown = new CountDownLatch(1);
+        CountDownLatch activityRestartCountdown = new CountDownLatch(1);
+
+        UiDevice device = UiDevice.getInstance(instrumentation);
+        mActivityCallbacks =
+                new Application.ActivityLifecycleCallbacks() {
+                    @Override
+                    public void onActivityCreated(
+                            @NonNull Activity activity, @Nullable Bundle savedInstanceState) {}
+
+                    @Override
+                    public void onActivityStarted(@NonNull Activity activity) {
+                        activityStartCountdown.countDown();
+                    }
+
+                    @Override
+                    public void onActivityResumed(@NonNull Activity activity) {}
+
+                    @Override
+                    public void onActivityPaused(@NonNull Activity activity) {}
+
+                    @Override
+                    public void onActivityStopped(@NonNull Activity activity) {}
+
+                    @Override
+                    public void onActivitySaveInstanceState(
+                            @NonNull Activity activity, @NonNull Bundle outState) {}
+
+                    @Override
+                    public void onActivityDestroyed(@NonNull Activity activity) {}
+
+                    @Override
+                    public void onActivityRestarted(@NonNull Activity activity) {
+                        activityRestartCountdown.countDown();
+                    }
+                };
+        application.registerActivityLifecycleCallbacks(mActivityCallbacks);
+
+        // Launch a new activity placing the mock activity in the background.
+        mActivityRule.launchActivity(null);
+
+        // Confirm new activity has launched.
+        assertTrue(
+                "Failed to await for an activity to start ",
+                activityStartCountdown.await(TIMEOUT_SECS, TimeUnit.SECONDS));
+
+        // Navigate back to the mock activity, triggering the onActivityRestarted callback.
+        device.pressBack();
+
+        // Confirm onActivityRestarted has been called.
+        assertTrue(
+                "Failed to await for mock activity to restart",
+                activityRestartCountdown.await(TIMEOUT_SECS, TimeUnit.SECONDS));
     }
 
     private void addNestedEvents(ArrayList<Pair<Source, Event>> expectedEvents,
