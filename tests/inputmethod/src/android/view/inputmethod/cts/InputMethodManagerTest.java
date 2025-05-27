@@ -19,12 +19,12 @@ package android.view.inputmethod.cts;
 import static android.content.Intent.ACTION_CLOSE_SYSTEM_DIALOGS;
 import static android.content.Intent.FLAG_RECEIVER_FOREGROUND;
 import static android.content.pm.PackageManager.FEATURE_INPUT_METHODS;
+import static android.view.WindowManager.LayoutParams.TYPE_INPUT_METHOD_DIALOG;
 import static android.view.inputmethod.cts.util.TestUtils.getOnMainSync;
 import static android.view.inputmethod.cts.util.TestUtils.isInputMethodPickerShown;
 import static android.view.inputmethod.cts.util.TestUtils.waitOnMainUntil;
 
 import static com.android.compatibility.common.util.SystemUtil.runShellCommandOrThrow;
-import static com.android.sts.common.SystemUtil.withSetting;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
@@ -40,7 +40,6 @@ import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.app.Instrumentation;
-import android.app.KeyguardManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -53,10 +52,9 @@ import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.annotations.SecurityTest;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
-import android.provider.Settings;
-import android.server.wm.LockScreenSession;
 import android.server.wm.WindowManagerStateHelper;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.Flags;
@@ -75,6 +73,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.uiautomator.By;
 import androidx.test.uiautomator.Direction;
 import androidx.test.uiautomator.UiDevice;
+import androidx.test.uiautomator.UiObject2;
 import androidx.test.uiautomator.Until;
 
 import com.android.compatibility.common.util.PollingCheck;
@@ -94,11 +93,14 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 @MediumTest
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public final class InputMethodManagerTest {
+
+    private static final String TAG = "InputMethodManagerTest";
     private static final String MOCK_IME_ID = "com.android.cts.mockime/.MockIme";
     private static final String MOCK_IME_LABEL = "Mock IME";
     private static final String HIDDEN_FROM_PICKER_IME_ID =
@@ -107,6 +109,9 @@ public final class InputMethodManagerTest {
     private static final long TIMEOUT = TimeUnit.SECONDS.toMillis(5);
     // TODO(b/371520375): Remove after UiAutomator scroll waits for animation to finish.
     private static final long SCROLL_TIMEOUT_MS = 500;
+
+    /** Percentage to scroll by, to reach the top of a scrollable item. */
+    private static final float SCROLL_TOP_PERCENT = 100;
 
     private final DeviceFlagsValueProvider mFlagsValueProvider = new DeviceFlagsValueProvider();
 
@@ -282,39 +287,40 @@ public final class InputMethodManagerTest {
     }
 
     /**
-     * Shows the Input Method Picker menu and verifies Mock IME is shown,
-     * but Hidden from picker IME is not.
+     * Shows the IME Switcher menu and verifies Mock IME is shown, but Hidden from picker IME is
+     * not.
      */
     @AppModeFull(reason = "Instant apps cannot rely on ACTION_CLOSE_SYSTEM_DIALOGS")
     @Test
-    public void testInputMethodPickerShownItems() throws Exception {
+    public void testInputMethodPickerShownItems() {
         assumeFalse(mContext.getPackageManager().hasSystemFeature(
                 PackageManager.FEATURE_AUTOMOTIVE));
         assumeTrue(mContext.getPackageManager().hasSystemFeature(
                 PackageManager.FEATURE_INPUT_METHODS));
         enableImes(MOCK_IME_ID, HIDDEN_FROM_PICKER_IME_ID);
 
-        startActivityAndShowInputMethodPicker(false /* showWhenLocked */);
+        final var activity = startActivityAndShowImeSwitcherMenu();
 
         final UiDevice uiDevice = getUiDevice();
-        if (mFlagsValueProvider.getBoolean(Flags.FLAG_IME_SWITCHER_REVAMP)) {
-            final var list = uiDevice.wait(Until.findObject(By.res("android:id/list")), TIMEOUT);
-            assertNotNull("List view should be found.", list);
-
-            // Make sure the list starts at the top.
-            list.scroll(Direction.UP, 100f);
-            final var hasMockIme = list.scrollUntil(Direction.DOWN,
+        final var scrollable = uiDevice.wait(Until.findObject(By.scrollable(true)), TIMEOUT);
+        if (scrollable != null) {
+            Log.i(TAG, "Scrollable from package: " + scrollable.getApplicationPackage()
+                    + " found, with class: " + scrollable.getClassName());
+            // Make sure the scrollable starts at the top.
+            scrollable.scroll(Direction.UP, SCROLL_TOP_PERCENT);
+            final var hasMockIme = scrollable.scrollUntil(Direction.DOWN,
                     Until.hasObject(By.text(MOCK_IME_LABEL)));
             assertWithMessage("Mock IME should be found")
                     .that(hasMockIme).isTrue();
 
-            // Reset the list to the top.
-            list.scroll(Direction.UP, 100f);
-            final var hasHiddenFromPickerIme = list.scrollUntil(Direction.DOWN,
+            // Reset the scrollable to the top.
+            scrollable.scroll(Direction.UP, SCROLL_TOP_PERCENT);
+            final var hasHiddenFromPickerIme = scrollable.scrollUntil(Direction.DOWN,
                     Until.hasObject(By.text(HIDDEN_FROM_PICKER_IME_LABEL)));
             assertWithMessage("Hidden from picker IME should not be found")
                     .that(hasHiddenFromPickerIme).isFalse();
         } else {
+            Log.i(TAG, "No scrollable found");
             final var hasMockIme = uiDevice.wait(
                     Until.hasObject(By.text(MOCK_IME_LABEL)), TIMEOUT);
             assertWithMessage("Mock IME should be found")
@@ -329,13 +335,17 @@ public final class InputMethodManagerTest {
         // Make sure that InputMethodPicker can be closed with ACTION_CLOSE_SYSTEM_DIALOGS
         mContext.sendBroadcast(
                 new Intent(ACTION_CLOSE_SYSTEM_DIALOGS).setFlags(FLAG_RECEIVER_FOREGROUND));
-        waitOnMainUntil(() -> !isInputMethodPickerShown(mImManager), TIMEOUT,
-                "InputMethod picker should be closed");
+        mWmStateHelper.waitAndAssert(
+                WindowManagerStateHelper.focusedActivity(activity.getComponentName())
+                        .and(WindowManagerStateHelper::activityWindowFocused),
+                "Test activity should have the focused window");
+
+        assertWithMessage("Input Method Switcher Menu should no longer be shown")
+                .that(isInputMethodPickerShown(mImManager))
+                .isFalse();
     }
 
-    /**
-     * Shows the Input Method Picker menu and verifies switching to Mock IME by tapping on the item.
-     */
+    /** Shows the IME Switcher menu and verifies switching to Mock IME by tapping on the item. */
     @AppModeFull(reason = "Instant apps cannot rely on ACTION_CLOSE_SYSTEM_DIALOGS")
     @RequiresFlagsEnabled(Flags.FLAG_IME_SWITCHER_REVAMP)
     @Test
@@ -350,171 +360,47 @@ public final class InputMethodManagerTest {
                 mInstrumentation.getUiAutomation(),
                 new ImeSettings.Builder()
                         .setSuppressSetIme(true))) {
-            startActivityAndShowInputMethodPicker(false /* showWhenLocked */);
+            final var activity = startActivityAndShowImeSwitcherMenu();
 
             final var info = mImManager.getCurrentInputMethodInfo();
             assertNotEquals(MOCK_IME_ID, info != null ? info.getId() : null);
 
             final UiDevice uiDevice = getUiDevice();
-            final var list = uiDevice.wait(Until.findObject(By.res("android:id/list")), TIMEOUT);
-            assertNotNull("List view should be found.", list);
+            final var scrollable = uiDevice.wait(Until.findObject(By.scrollable(true)), TIMEOUT);
+            final UiObject2 mockImeUiObject;
+            if (scrollable != null) {
+                Log.i(TAG, "Scrollable from package: " + scrollable.getApplicationPackage()
+                        + " found, with class: " + scrollable.getClassName());
+                // Make sure the list starts at the top.
+                scrollable.scroll(Direction.UP, SCROLL_TOP_PERCENT);
+                mockImeUiObject = scrollable.scrollUntil(Direction.DOWN,
+                        Until.findObject(By.text(MOCK_IME_LABEL).hasAncestor(By.clickable(true))));
 
-            // Make sure the list starts at the top.
-            list.scroll(Direction.UP, 100f);
-            final var mockImeUiObject = list.scrollUntil(Direction.DOWN,
-                    Until.findObject(By.res("android:id/list_item")
-                            .hasDescendant(By.text(MOCK_IME_LABEL))));
+                // TODO(b/371520375): Remove after UiAutomator scroll waits for animation to finish.
+                SystemClock.sleep(SCROLL_TIMEOUT_MS);
+            } else {
+                Log.i(TAG, "No scrollable found");
+                mockImeUiObject = uiDevice.wait(
+                        Until.findObject(By.text(MOCK_IME_LABEL).hasAncestor(By.clickable(true))),
+                        TIMEOUT);
+            }
             assertNotNull("Mock IME should be found", mockImeUiObject);
-
-            // TODO(b/371520375): Remove after UiAutomator scroll waits for animation to finish.
-            SystemClock.sleep(SCROLL_TIMEOUT_MS);
 
             // Tapping on a menu item should dismiss the menu.
             mockImeUiObject.click();
-            waitOnMainUntil(() -> !isInputMethodPickerShown(mImManager), TIMEOUT,
-                    "InputMethod picker should be closed");
+
+            mWmStateHelper.waitAndAssert(
+                    WindowManagerStateHelper.focusedActivity(activity.getComponentName())
+                            .and(WindowManagerStateHelper::activityWindowFocused),
+                    "Test activity should have the focused window");
+
+            assertWithMessage("Input Method Switcher Menu should no longer be shown")
+                    .that(isInputMethodPickerShown(mImManager))
+                    .isFalse();
 
             final var newInfo = mImManager.getCurrentInputMethodInfo();
             assertNotEquals(info, newInfo);
             assertEquals(MOCK_IME_ID, newInfo != null ? newInfo.getId() : null);
-        }
-    }
-
-    /**
-     * Shows the Input Method Picker menu and verifies opening the IME Language Settings activity
-     * by tapping on the button, when the device is provisioned.
-     */
-    @AppModeFull(reason = "Instant apps cannot rely on ACTION_CLOSE_SYSTEM_DIALOGS")
-    @RequiresFlagsEnabled(Flags.FLAG_IME_SWITCHER_REVAMP)
-    @Test
-    public void testInputMethodPickerOpenLanguageSettings() throws Exception {
-        assumeFalse(mContext.getPackageManager().hasSystemFeature(
-                PackageManager.FEATURE_AUTOMOTIVE));
-        assumeTrue(mContext.getPackageManager().hasSystemFeature(
-                PackageManager.FEATURE_INPUT_METHODS));
-        try (var ignored1 = withSetting(mInstrumentation, "global",
-                Settings.Global.DEVICE_PROVISIONED, "1");
-                var ignored2 = MockImeSession.create(
-                        mInstrumentation.getContext(),
-                        mInstrumentation.getUiAutomation(),
-                    new ImeSettings.Builder())) {
-            final var activity = startActivityAndShowInputMethodPicker(false /* showWhenLocked */);
-
-            final var info = mImManager.getCurrentInputMethodInfo();
-            assertEquals(MOCK_IME_ID, info != null ? info.getId() : null);
-
-            final UiDevice uiDevice = getUiDevice();
-
-            final var container = uiDevice.wait(Until.findObject(By.res("android:id/container")),
-                    TIMEOUT);
-            assertNotNull("Container view should be found.", container);
-
-            // Make sure the container starts at the top.
-            container.scroll(Direction.UP, 100f);
-            final var languageSettingsButtonUiObject = container.scrollUntil(Direction.DOWN,
-                    Until.findObject(By.res("android:id/button1")));
-            assertNotNull("Language settings button should be found",
-                    languageSettingsButtonUiObject);
-
-            // TODO(b/371520375): Remove after UiAutomator scroll waits for animation to finish.
-            SystemClock.sleep(SCROLL_TIMEOUT_MS);
-
-            languageSettingsButtonUiObject.click();
-
-            // Tapping on the language settings button should dismiss the menu.
-            waitOnMainUntil(() -> !isInputMethodPickerShown(mImManager), TIMEOUT,
-                    "InputMethod picker should be closed");
-
-            waitOnMainUntil(() -> !activity.hasWindowFocus(), TIMEOUT,
-                    "Test activity shouldn't be focused");
-        }
-    }
-
-    /**
-     * Shows the Input Method Picker menu and verifies the IME Language Settings button is not
-     * visible when the screen is locked.
-     */
-    @AppModeFull(reason = "Instant apps cannot rely on ACTION_CLOSE_SYSTEM_DIALOGS")
-    @RequiresFlagsEnabled(Flags.FLAG_IME_SWITCHER_REVAMP)
-    @Test
-    public void testInputMethodPickerNoLanguageSettingsWhenScreenLocked() throws Exception {
-        assumeFalse(mContext.getPackageManager().hasSystemFeature(
-                PackageManager.FEATURE_AUTOMOTIVE));
-        assumeFalse(mContext.getPackageManager().hasSystemFeature(
-                PackageManager.FEATURE_LEANBACK));
-        assumeTrue(mContext.getPackageManager().hasSystemFeature(
-                PackageManager.FEATURE_INPUT_METHODS));
-
-        try (var lockScreenSession = new LockScreenSession(mInstrumentation, mWmStateHelper);
-                var ignored = MockImeSession.create(
-                        mInstrumentation.getContext(),
-                        mInstrumentation.getUiAutomation(),
-                        new ImeSettings.Builder())) {
-
-            lockScreenSession.setLockCredential().gotoKeyguard();
-
-            final var km = mContext.getSystemService(KeyguardManager.class);
-            assertNotNull("KeyguardManager must be found", km);
-            assertTrue("keyguard is locked", km.isKeyguardLocked());
-            assertTrue("keyguard is secure", km.isKeyguardSecure());
-
-            startActivityAndShowInputMethodPicker(true /* showWhenLocked */);
-
-            final UiDevice uiDevice = getUiDevice();
-
-            final var container = uiDevice.wait(Until.findObject(By.res("android:id/container")),
-                    TIMEOUT);
-            assertNotNull("Container view should be found.", container);
-
-            // Make sure the container starts at the top.
-            container.scroll(Direction.UP, 100f);
-            final boolean hasButton = container.scrollUntil(Direction.DOWN,
-                    Until.hasObject(By.res("android:id/button1")));
-            assertFalse("Language settings button should not be found", hasButton);
-
-            mContext.sendBroadcast(
-                    new Intent(ACTION_CLOSE_SYSTEM_DIALOGS).setFlags(FLAG_RECEIVER_FOREGROUND));
-            waitOnMainUntil(() -> !isInputMethodPickerShown(mImManager), TIMEOUT,
-                    "InputMethod picker should be closed");
-        }
-    }
-
-    /**
-     * Shows the Input Method Picker menu and verifies the IME Language Settings button is not
-     * visible when the device is not provisioned.
-     */
-    @AppModeFull(reason = "Instant apps cannot rely on ACTION_CLOSE_SYSTEM_DIALOGS")
-    @RequiresFlagsEnabled(Flags.FLAG_IME_SWITCHER_REVAMP)
-    @Test
-    public void testInputMethodPickerNoLanguageSettingsWhenDeviceNotProvisioned() throws Exception {
-        assumeFalse(mContext.getPackageManager().hasSystemFeature(
-                PackageManager.FEATURE_AUTOMOTIVE));
-        assumeTrue(mContext.getPackageManager().hasSystemFeature(
-                PackageManager.FEATURE_INPUT_METHODS));
-        try (var ignored1 = withSetting(mInstrumentation, "global",
-                Settings.Global.DEVICE_PROVISIONED, "0");
-                var ignored2 = MockImeSession.create(
-                        mInstrumentation.getContext(),
-                        mInstrumentation.getUiAutomation(),
-                     new ImeSettings.Builder())) {
-            startActivityAndShowInputMethodPicker(false /* showWhenLocked */);
-
-            final UiDevice uiDevice = getUiDevice();
-
-            final var container = uiDevice.wait(Until.findObject(By.res("android:id/container")),
-                    TIMEOUT);
-            assertNotNull("Container view should be found.", container);
-
-            // Make sure the container starts at the top.
-            container.scroll(Direction.UP, 100f);
-            final boolean hasButton = container.scrollUntil(Direction.DOWN,
-                    Until.hasObject(By.res("android:id/button1")));
-            assertFalse("Language settings button should not be found", hasButton);
-
-            mContext.sendBroadcast(
-                    new Intent(ACTION_CLOSE_SYSTEM_DIALOGS).setFlags(FLAG_RECEIVER_FOREGROUND));
-            waitOnMainUntil(() -> !isInputMethodPickerShown(mImManager), TIMEOUT,
-                    "InputMethod picker should be closed");
         }
     }
 
@@ -548,31 +434,41 @@ public final class InputMethodManagerTest {
     /**
      * Creates the test activity and waits for it to start, and then shows the IME Switcher menu.
      *
-     * @param showWhenLocked whether the test activity should be shown when the screen is locked.
      * @return the started test activity.
      */
     @NonNull
-    private TestActivity startActivityAndShowInputMethodPicker(boolean showWhenLocked)
-            throws Exception {
+    private TestActivity startActivityAndShowImeSwitcherMenu() {
         final var testActivity = TestActivity.startSync(activity -> {
             final View view = new View(activity);
             view.setLayoutParams(new LayoutParams(
                     LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
-            activity.setShowWhenLocked(showWhenLocked);
             return view;
         });
-        waitOnMainUntil(testActivity::hasWindowFocus, TIMEOUT, "TestActivity should be focused");
 
         // Make sure that InputMethodPicker is not shown in the initial state.
-        mContext.sendBroadcast(
-                new Intent(ACTION_CLOSE_SYSTEM_DIALOGS).setFlags(FLAG_RECEIVER_FOREGROUND));
-        waitOnMainUntil(() -> !isInputMethodPickerShown(mImManager), TIMEOUT,
-                "InputMethod picker should be closed");
+        mContext.sendBroadcast(new Intent(ACTION_CLOSE_SYSTEM_DIALOGS)
+                .setFlags(FLAG_RECEIVER_FOREGROUND));
+        mWmStateHelper.waitAndAssert(
+                WindowManagerStateHelper.focusedActivity(testActivity.getComponentName())
+                        .and(WindowManagerStateHelper::activityWindowFocused),
+                "Test activity should have the focused window");
+        assertWithMessage("Input Method Switcher Menu should not be shown")
+                .that(isInputMethodPickerShown(mImManager))
+                .isFalse();
 
         // Test InputMethodManager#showInputMethodPicker() works as expected.
         mImManager.showInputMethodPicker();
-        waitOnMainUntil(() -> isInputMethodPickerShown(mImManager), TIMEOUT,
-                "InputMethod picker should be shown");
+        mWmStateHelper.waitAndAssert(
+                WindowManagerStateHelper.focusedActivity(testActivity.getComponentName())
+                        .and(Predicate.not(WindowManagerStateHelper::activityWindowFocused))
+                        .and(state -> state.getMatchingWindows(
+                                        ws -> ws.isSurfaceShown()
+                                                && ws.getType() == TYPE_INPUT_METHOD_DIALOG)
+                                .findAny().isPresent()),
+                "Input Method Dialog window should be focused on top of test activity");
+        assertWithMessage("Input Method Switcher Menu should be shown")
+                .that(isInputMethodPickerShown(mImManager))
+                .isTrue();
 
         return testActivity;
     }
