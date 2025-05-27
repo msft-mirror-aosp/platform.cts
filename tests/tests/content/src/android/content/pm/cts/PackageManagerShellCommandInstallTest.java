@@ -3541,10 +3541,14 @@ public class PackageManagerShellCommandInstallTest {
         getUiAutomation()
                 .adoptShellPermissionIdentity(
                         Manifest.permission.INTERACT_ACROSS_USERS_FULL,
-                        Manifest.permission.MANAGE_ROLE_HOLDERS);
+                        Manifest.permission.MANAGE_ROLE_HOLDERS,
+                        Manifest.permission.BYPASS_ROLE_QUALIFICATION);
         try {
             assertThat(mPreviousDependencyInstallerRoleHolder).isNull();
             mPreviousDependencyInstallerRoleHolder = getDependencyInstallerRoleHolder(userId);
+
+            mRoleManager.setBypassingRoleQualification(true);
+            mRoleManager.setRoleFallbackEnabled(ROLE_SYSTEM_DEPENDENCY_INSTALLER, false);
             mRoleManager.clearRoleHoldersAsUser(
                     ROLE_SYSTEM_DEPENDENCY_INSTALLER,
                     RoleManager.MANAGE_HOLDERS_FLAG_DONT_KILL_APP,
@@ -3561,6 +3565,8 @@ public class PackageManagerShellCommandInstallTest {
                     .that(getDependencyInstallerRoleHolder(userId))
                     .isNull();
         } finally {
+            mRoleManager.setBypassingRoleQualification(false);
+            mRoleManager.setRoleFallbackEnabled(ROLE_SYSTEM_DEPENDENCY_INSTALLER, true);
             getUiAutomation().dropShellPermissionIdentity();
         }
     }
