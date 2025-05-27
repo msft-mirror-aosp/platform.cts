@@ -128,6 +128,7 @@ public class WindowInsetsControllerTests extends WindowManagerTestBase {
     private static final long TIMEOUT = 1000; // milliseconds
     private static final long TIMEOUT_COLD_START_IME = 10000; // milliseconds
     private static final long TIMEOUT_UPDATING_INPUT_WINDOW = 500; // milliseconds
+    private static final long TIMEOUT_UPDATING_SYSTEM_BAR_VISIBILITY = 500; // milliseconds
     private static final long TIME_SLICE = 50; // milliseconds
     private static final AnimationCallback ANIMATION_CALLBACK = new AnimationCallback();
 
@@ -1124,7 +1125,10 @@ public class WindowInsetsControllerTests extends WindowManagerTestBase {
             view.getWindowInsetsController().hide(types);
         });
         ANIMATION_CALLBACK.waitForFinishing();
-        PollingCheck.waitFor(TIMEOUT, () -> !view.getRootWindowInsets().isVisible(types));
+        PollingCheck.waitFor(TIMEOUT, () -> !view.getContext().getSystemService(WindowManager.class)
+                .getMaximumWindowMetrics().getWindowInsets().isVisible(types));
+        // Wait for system server sending the system bar visibility to system components.
+        SystemClock.sleep(TIMEOUT_UPDATING_SYSTEM_BAR_VISIBILITY);
     }
 
     private void tapOnDisplay(float x, float y) {
