@@ -65,6 +65,7 @@ public class TestImsCallSessionImpl extends ImsCallSessionImplBase {
     public static final int TEST_TYPE_JOIN_EXIST_CONFERENCE_FAILED_AFTER_SWAP = 1 << 9;
     public static final int TEST_TYPE_TRANSFERRED = 1 << 10;
     public static final int TEST_TYPE_TRANSFER_FAILED = 1 << 11;
+    public static final int TEST_TYPE_MO_STAY_AT_ESTABLISHING = 1 << 12;
     private int mTestType = TEST_TYPE_NONE;
     private boolean mIsOnHold = false;
     private boolean mIsTransferResultNotified = false;
@@ -184,6 +185,11 @@ public class TestImsCallSessionImpl extends ImsCallSessionImplBase {
             }
         });
         setState(ImsCallSessionImplBase.State.ESTABLISHING);
+
+        if (isTestType(TEST_TYPE_MO_STAY_AT_ESTABLISHING)) {
+            Log.d(LOG_TAG, "Stay at establishing state for mCallId = " + mCallId);
+            return;
+        }
 
         postAndRunTask(() -> {
             ImsUtils.waitInCurrentState(WAIT_IN_CURRENT_STATE);
