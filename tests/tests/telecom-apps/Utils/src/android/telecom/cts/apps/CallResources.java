@@ -51,7 +51,6 @@ public class CallResources {
                 callChannelId,
                 callAttributes.getDisplayName().toString(),
                 AttributesUtil.isOutgoing(callAttributes));
-        postInitialCallStyleNotification(context);
     }
 
     public CallAttributes getCallAttributes() {

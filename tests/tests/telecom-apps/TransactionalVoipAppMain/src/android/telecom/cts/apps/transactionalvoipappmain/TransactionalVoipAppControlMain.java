@@ -148,14 +148,14 @@ public class TransactionalVoipAppControlMain extends Service {
                                         mClassName + ".addCall(" + callAttributes + ")");
                         maybeInitTelecomManager();
                         final CountDownLatch latch = new CountDownLatch(1);
-                        final TransactionalCall call =
-                                new TransactionalCall(
+                        final CallResources callResources =
+                                new CallResources(
                                         getApplicationContext(),
-                                        new CallResources(
-                                                getApplicationContext(),
-                                                callAttributes,
-                                                NOTIFICATION_CHANNEL_ID,
-                                                sNextNotificationId++));
+                                        callAttributes,
+                                        NOTIFICATION_CHANNEL_ID,
+                                        sNextNotificationId++);
+                        final TransactionalCall call =
+                                new TransactionalCall(getApplicationContext(), callResources);
                         if (consumer != null) {
                             call.setOperationConsumer(
                                     c -> {
@@ -180,6 +180,8 @@ public class TransactionalVoipAppControlMain extends Service {
                                         verifyCallControlIsNonNull(callControl, stackTrace);
                                         call.setCallControlAndId(callControl);
                                         mIdToControl.put(call.getId(), call);
+                                        callResources.postInitialCallStyleNotification(
+                                                getApplicationContext());
                                         latch.countDown();
                                     }
 
