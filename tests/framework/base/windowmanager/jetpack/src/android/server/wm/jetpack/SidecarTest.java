@@ -100,7 +100,7 @@ public class SidecarTest extends WindowManagerJetpackTestBase {
         // Create the sidecar callback. onWindowLayoutChanged should only be called twice in this
         // test, not the third time when the orientation will change because the listener will be
         // removed.
-        SidecarCallbackCounter sidecarCallback = new SidecarCallbackCounter(mWindowToken);
+        SidecarCallbackCounter sidecarCallback = new SidecarCallbackCounter(mWindowToken, 2);
         mSidecarInterface.setSidecarCallback(sidecarCallback);
 
         // Add window layout listener for mWindowToken - onWindowLayoutChanged should be called
@@ -113,6 +113,7 @@ public class SidecarTest extends WindowManagerJetpackTestBase {
         // Check that the callback is called at least twice
         // The callback could be called more than twice because there may have additional
         // configuration changes on some device configurations.
+        sidecarCallback.waitForCountdown();
         assertTrue("Callback should be called twice", sidecarCallback.getCallbackCount() >= 2);
 
         // Reset the callback count
