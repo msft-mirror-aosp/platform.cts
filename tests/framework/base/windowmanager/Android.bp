@@ -253,7 +253,7 @@ filegroup {
 
 android_test {
     name: "CtsWindowManagerDeviceActivity",
-    team: "trendy_team_windowing_sdk",
+    team: "trendy_team_activity_task_management",
     defaults: ["CtsWindowManagerDeviceDefault"],
 
     srcs: [
@@ -265,7 +265,7 @@ android_test {
 
 android_test {
     name: "CtsWindowManagerDeviceAm",
-    team: "trendy_team_windowing_sdk",
+    team: "trendy_team_activity_task_management",
     defaults: ["CtsWindowManagerDeviceDefault"],
 
     srcs: [
@@ -358,7 +358,7 @@ android_test {
 
 android_test {
     name: "CtsWindowManagerDeviceTaskFragment",
-    team: "trendy_team_windowing_sdk",
+    team: "trendy_team_activity_embedding",
     defaults: ["CtsWindowManagerDeviceDefault"],
 
     srcs: [
@@ -370,7 +370,7 @@ android_test {
 
 android_test {
     name: "CtsWindowManagerDeviceMultiDisplay",
-    team: "trendy_team_windowing_sdk",
+    team: "trendy_team_multi_display",
     defaults: ["CtsWindowManagerDeviceDefault"],
 
     srcs: [
@@ -394,7 +394,7 @@ android_test {
 
 android_test {
     name: "CtsWindowManagerDeviceOther",
-    team: "trendy_team_windowing_sdk",
+    team: "trendy_team_window_manager_other",
     defaults: ["CtsWindowManagerDeviceDefault"],
 
     srcs: [
