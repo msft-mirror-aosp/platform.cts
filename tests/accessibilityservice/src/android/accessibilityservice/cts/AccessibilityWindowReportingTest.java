@@ -50,6 +50,7 @@ import android.accessibilityservice.cts.activities.AccessibilityWindowReportingA
 import android.accessibilityservice.cts.activities.NonDefaultDisplayActivity;
 import android.accessibilityservice.cts.activities.NotTouchableWindowTestActivity;
 import android.accessibilityservice.cts.utils.ActivityLaunchUtils;
+import android.accessibilityservice.cts.utils.AnimationTestRule;
 import android.accessibilityservice.cts.utils.DisplayUtils;
 import android.accessibilityservice.cts.utils.WindowCreationUtils;
 import android.app.Activity;
@@ -114,10 +115,13 @@ public class AccessibilityWindowReportingTest {
     private final AccessibilityDumpOnFailureRule mDumpOnFailureRule =
             new AccessibilityDumpOnFailureRule();
 
+    // testDisableWindowAnimations modifies the animation scales. Adding AnimationTestRule to
+    // ensure the animation scales are properly restored.
+    private final AnimationTestRule mAnimationRule = new AnimationTestRule();
+
     @Rule
-    public final RuleChain mRuleChain = RuleChain
-            .outerRule(mActivityRule)
-            .around(mDumpOnFailureRule);
+    public final RuleChain mRuleChain =
+            RuleChain.outerRule(mAnimationRule).around(mActivityRule).around(mDumpOnFailureRule);
 
     @BeforeClass
     public static void oneTimeSetup() throws Exception {
