@@ -16,16 +16,12 @@
 
 package android.app.cts;
 
-import static org.mockito.Mockito.CALLS_REAL_METHODS;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 
 import android.app.Activity;
 import android.app.Application;
 import android.app.Instrumentation;
 import android.app.stubs.MockApplication;
 import android.app.stubs.MockApplicationActivity;
-import android.content.ComponentCallbacks2;
 import android.content.Context;
 import android.content.Intent;
 import android.test.InstrumentationTestCase;
@@ -33,7 +29,9 @@ import android.test.InstrumentationTestCase;
 import com.android.compatibility.common.util.SystemUtil;
 
 /**
- * Test {@link Application}.
+ * Test {@link Application} that depends on the stub app.
+ *
+ * @see ApplicationNoStubTest
  */
 public class ApplicationTest extends InstrumentationTestCase {
     private static final String ERASE_FONT_SCALE_CMD = "settings delete system font_scale";
@@ -59,17 +57,6 @@ public class ApplicationTest extends InstrumentationTestCase {
         assertTrue(mockApp.isOnCreateCalled);
         toggleFontScale();
         assertTrue(waitForOnConfigurationChange(mockApp));
-    }
-
-    public void testOnTrimMemory() {
-        final int level = 2;
-        Application app = new Application();
-        ComponentCallbacks2 mockCallBack2 = mock(ComponentCallbacks2.class, CALLS_REAL_METHODS);
-        app.registerComponentCallbacks(mockCallBack2);
-
-        app.onTrimMemory(level);
-
-        verify(mockCallBack2).onTrimMemory(level);
     }
 
     // Font scale is a global configuration.
