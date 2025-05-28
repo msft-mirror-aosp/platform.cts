@@ -398,6 +398,41 @@ public class MessageQueueTest {
     }
 
     @Test
+    public void testStressEnqueueRemoveHasOnLooperThread() throws Throwable {
+        AssertableHandlerThread thread = new AssertableHandlerThread();
+        thread.start();
+        final Runnable doNothing = () -> {};
+        try {
+            final CountDownLatch latch = new CountDownLatch(1);
+            final Handler handler = new Handler(thread.getLooper());
+            handler.post(
+                    () -> {
+                        final MessageQueue queue = Looper.myQueue();
+                        assertTrue(queue.isIdle());
+
+                        for (int i = 0; i < 10_000; i++) {
+                            // Post a Message to the head so that the queue isn't idle.
+                            handler.post(doNothing);
+                            // Future Message is never handled because the Looper thread is busy.
+                            handler.postDelayed(doNothing, 10_000);
+                            assertTrue(handler.hasCallbacks(doNothing));
+                            assertFalse(queue.isIdle());
+
+                            handler.removeCallbacks(doNothing);
+                            assertFalse(handler.hasCallbacks(doNothing));
+                            assertTrue(queue.isIdle());
+                        }
+
+                        latch.countDown();
+                    });
+
+            latch.await();
+        } finally {
+            thread.quitAndRethrow();
+        }
+    }
+
+    @Test
     public void testEnqueueThenQuit() throws InterruptedException {
         for (int i = 0; i < 1000; i++) {
             final AtomicBoolean handlerRan = new AtomicBoolean();
