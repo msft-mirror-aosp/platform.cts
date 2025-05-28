@@ -18,6 +18,11 @@ package com.android.cts.input
 
 import android.app.Instrumentation
 import android.view.InputDevice.SOURCE_KEYBOARD
+import com.android.cts.input.EvdevInputEventCodes.Companion.EV_KEY
+import com.android.cts.input.EvdevInputEventCodes.Companion.EV_KEY_PRESS
+import com.android.cts.input.EvdevInputEventCodes.Companion.EV_KEY_RELEASE
+import com.android.cts.input.EvdevInputEventCodes.Companion.EV_SYN
+import com.android.cts.input.EvdevInputEventCodes.Companion.SYN_REPORT
 
 private fun createKeyboardRegisterCommand(
     keys: List<String>,
@@ -56,15 +61,6 @@ class UinputKeyboard(
     createKeyboardRegisterCommand(keys, productId),
     null // display
 ) {
-
-  companion object {
-    const val EV_KEY = 1
-    const val KEY_DOWN = 1
-    const val KEY_UP = 0
-    const val EV_SYN = 0
-    const val SYN_REPORT = 0
-  }
-
   // store the keys that are currently down
   private val keysDown = mutableSetOf<Int>()
 
@@ -76,13 +72,13 @@ class UinputKeyboard(
       if (!keysDown.add(scanCode)) {
         throw IllegalArgumentException("Key $scanCode is already down")
       }
-      injectEvents(intArrayOf(EV_KEY, scanCode, KEY_DOWN, EV_SYN, SYN_REPORT, 0))
+      injectEvents(intArrayOf(EV_KEY, scanCode, EV_KEY_PRESS, EV_SYN, SYN_REPORT, 0))
   }
 
   fun injectKeyUp(scanCode: Int) {
       if (!keysDown.remove(scanCode)) {
         throw IllegalArgumentException("Key $scanCode is not down")
       }
-      injectEvents(intArrayOf(EV_KEY, scanCode, KEY_UP, EV_SYN, SYN_REPORT, 0))
+      injectEvents(intArrayOf(EV_KEY, scanCode, EV_KEY_RELEASE, EV_SYN, SYN_REPORT, 0))
   }
 }
