@@ -264,13 +264,14 @@ public class VoipConnectionServiceControlMain extends Service {
                                 });
                     }
                     mIdToConnection.put(id, connection);
-                    connection.setIdAndResources(
-                            id,
+                    CallResources callResources =
                             new CallResources(
                                     getApplicationContext(),
                                     callAttributes,
                                     NOTIFICATION_CHANNEL_ID,
-                                    sNextNotificationId++));
+                                    sNextNotificationId++);
+                    connection.setIdAndResources(id, callResources);
+                    callResources.postInitialCallStyleNotification(getApplicationContext());
                     // clear out the last connection since it has been added to tracking
                     VoipConnectionServiceMain.sLastConnection = null;
                 }
