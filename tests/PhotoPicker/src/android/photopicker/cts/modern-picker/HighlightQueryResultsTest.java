@@ -105,11 +105,12 @@ public class HighlightQueryResultsTest {
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         Bundle highlightResultsBundle = new Bundle();
         highlightResultsBundle.putString(
-                MediaStore.KEY_PICK_IMAGES_HIGHLIGHT_MEDIA_TEXT_QUERY, highlightQuery);
+                MediaStore.KEY_PICK_IMAGES_HIGHLIGHT_SEARCH_TEXT_QUERY, highlightQuery);
         highlightResultsBundle.putInt(
                 MediaStore.KEY_PICK_IMAGES_HIGHLIGHT_TYPE,
                 MediaStore.PICK_IMAGES_HIGHLIGHT_TYPE_COLLAPSED);
-        intent.putExtra(MediaStore.EXTRA_PICK_IMAGES_HIGHLIGHT_MEDIA, highlightResultsBundle);
+        intent.putExtra(
+                MediaStore.EXTRA_PICK_IMAGES_HIGHLIGHT_SEARCH_RESULTS, highlightResultsBundle);
 
         // Fetch the activity and package to resolve ACTION_PICK_IMAGES
         Intent pickImagesIntent = new Intent(MediaStore.ACTION_PICK_IMAGES);
@@ -129,12 +130,13 @@ public class HighlightQueryResultsTest {
         TestApis.activities().startActivity(intent);
         Intents.intended(IntentMatchers.hasAction(MediaStore.ACTION_PICK_IMAGES));
         Intents.intended(
-                IntentMatchers.hasExtraWithKey(MediaStore.EXTRA_PICK_IMAGES_HIGHLIGHT_MEDIA));
+                IntentMatchers.hasExtraWithKey(
+                        MediaStore.EXTRA_PICK_IMAGES_HIGHLIGHT_SEARCH_RESULTS));
         Bundle addedHighlightBundle =
-                intent.getBundleExtra(MediaStore.EXTRA_PICK_IMAGES_HIGHLIGHT_MEDIA);
+                intent.getBundleExtra(MediaStore.EXTRA_PICK_IMAGES_HIGHLIGHT_SEARCH_RESULTS);
         assertThat(
                         addedHighlightBundle.getString(
-                                MediaStore.KEY_PICK_IMAGES_HIGHLIGHT_MEDIA_TEXT_QUERY))
+                                MediaStore.KEY_PICK_IMAGES_HIGHLIGHT_SEARCH_TEXT_QUERY))
                 .isEqualTo(highlightQuery);
         assertThat(addedHighlightBundle.getInt(MediaStore.KEY_PICK_IMAGES_HIGHLIGHT_TYPE))
                 .isEqualTo(MediaStore.PICK_IMAGES_HIGHLIGHT_TYPE_COLLAPSED);
@@ -148,12 +150,12 @@ public class HighlightQueryResultsTest {
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         Bundle highlightResultsBundle = new Bundle();
         highlightResultsBundle.putString(
-                MediaStore.KEY_PICK_IMAGES_HIGHLIGHT_MEDIA_TEXT_QUERY,
+                MediaStore.KEY_PICK_IMAGES_HIGHLIGHT_ALBUM_ID,
                 MediaStore.PICK_IMAGES_HIGHLIGHT_ALBUM_FAVORITES);
         highlightResultsBundle.putInt(
                 MediaStore.KEY_PICK_IMAGES_HIGHLIGHT_TYPE,
                 MediaStore.PICK_IMAGES_HIGHLIGHT_TYPE_COLLAPSED);
-        intent.putExtra(MediaStore.EXTRA_PICK_IMAGES_HIGHLIGHT_MEDIA, highlightResultsBundle);
+        intent.putExtra(MediaStore.EXTRA_PICK_IMAGES_HIGHLIGHT_ALBUM, highlightResultsBundle);
 
         // Fetch the activity and package to resolve ACTION_PICK_IMAGES
         Intent pickImagesIntent = new Intent(MediaStore.ACTION_PICK_IMAGES);
@@ -173,15 +175,46 @@ public class HighlightQueryResultsTest {
         TestApis.activities().startActivity(intent);
         Intents.intended(IntentMatchers.hasAction(MediaStore.ACTION_PICK_IMAGES));
         Intents.intended(
-                IntentMatchers.hasExtraWithKey(MediaStore.EXTRA_PICK_IMAGES_HIGHLIGHT_MEDIA));
+                IntentMatchers.hasExtraWithKey(MediaStore.EXTRA_PICK_IMAGES_HIGHLIGHT_ALBUM));
         Bundle addedHighlightBundle =
-                intent.getBundleExtra(MediaStore.EXTRA_PICK_IMAGES_HIGHLIGHT_MEDIA);
-        assertThat(
-                        addedHighlightBundle.getString(
-                                MediaStore.KEY_PICK_IMAGES_HIGHLIGHT_MEDIA_TEXT_QUERY))
+                intent.getBundleExtra(MediaStore.EXTRA_PICK_IMAGES_HIGHLIGHT_ALBUM);
+        assertThat(addedHighlightBundle.getString(MediaStore.KEY_PICK_IMAGES_HIGHLIGHT_ALBUM_ID))
                 .isEqualTo(MediaStore.PICK_IMAGES_HIGHLIGHT_ALBUM_FAVORITES);
         assertThat(addedHighlightBundle.getInt(MediaStore.KEY_PICK_IMAGES_HIGHLIGHT_TYPE))
                 .isEqualTo(MediaStore.PICK_IMAGES_HIGHLIGHT_TYPE_COLLAPSED);
+    }
+
+    @Test
+    public void testIntentResolvesToKotlinPickerWithHighlightResultsExtraForInvalidAlbumQuery()
+            throws Exception {
+
+        final Intent intent = new Intent(MediaStore.ACTION_PICK_IMAGES);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        Bundle highlightResultsBundle = new Bundle();
+        highlightResultsBundle.putString(MediaStore.KEY_PICK_IMAGES_HIGHLIGHT_ALBUM_ID, "camera");
+        highlightResultsBundle.putInt(
+                MediaStore.KEY_PICK_IMAGES_HIGHLIGHT_TYPE,
+                MediaStore.PICK_IMAGES_HIGHLIGHT_TYPE_COLLAPSED);
+        intent.putExtra(MediaStore.EXTRA_PICK_IMAGES_HIGHLIGHT_ALBUM, highlightResultsBundle);
+
+        // Fetch the activity and package to resolve ACTION_PICK_IMAGES
+        Intent pickImagesIntent = new Intent(MediaStore.ACTION_PICK_IMAGES);
+        ResolveInfo resolveInfo = mPackageManager.resolveActivity(pickImagesIntent, 0);
+        String modernPickerPackageName = resolveInfo.activityInfo.packageName;
+        String modernPickerMainActivityName = resolveInfo.activityInfo.name;
+
+        ComponentName resolvedActivityInfo = intent.resolveActivity(mPackageManager);
+        // Assert that the intent resolves to the kotlin photopicker since ACTION_PICK_IMAGES
+        // is an implicit intent and can't be asserted by an IntentMatcher for its
+        // activity/package resolution.
+        assertThat(resolvedActivityInfo.getPackageName()).isEqualTo(modernPickerPackageName);
+        assertThat(resolvedActivityInfo.getClassName()).isEqualTo(modernPickerMainActivityName);
+
+        // Picker will throw IllegalArgumentException when TestApis() tries to launch it.
+        // TestApis() fails and throws its own error when it couldn't launch the activity
+        // which is a PollValueFailedException at the moment for their implementation.
+        Assert.assertThrows(
+                PollValueFailedException.class, () -> TestApis.activities().startActivity(intent));
     }
 
     @Test
@@ -192,11 +225,12 @@ public class HighlightQueryResultsTest {
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         Bundle highlightResultsBundle = new Bundle();
         highlightResultsBundle.putString(
-                MediaStore.KEY_PICK_IMAGES_HIGHLIGHT_MEDIA_TEXT_QUERY, null);
+                MediaStore.KEY_PICK_IMAGES_HIGHLIGHT_SEARCH_TEXT_QUERY, null);
         highlightResultsBundle.putInt(
                 MediaStore.KEY_PICK_IMAGES_HIGHLIGHT_TYPE,
                 MediaStore.PICK_IMAGES_HIGHLIGHT_TYPE_COLLAPSED);
-        intent.putExtra(MediaStore.EXTRA_PICK_IMAGES_HIGHLIGHT_MEDIA, highlightResultsBundle);
+        intent.putExtra(
+                MediaStore.EXTRA_PICK_IMAGES_HIGHLIGHT_SEARCH_RESULTS, highlightResultsBundle);
 
         // Fetch the activity and package to resolve ACTION_PICK_IMAGES
         Intent pickImagesIntent = new Intent(MediaStore.ACTION_PICK_IMAGES);
