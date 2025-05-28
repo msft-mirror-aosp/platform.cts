@@ -96,20 +96,12 @@ open class UinputTouchDevice(
 
     val uinputDevice = UinputDevice(instrumentation, source, registerCommand, display)
 
-    private fun injectEvent(events: IntArray) {
-        uinputDevice.injectEvents(events.joinToString(
-            prefix = "[",
-            postfix = "]",
-            separator = ",",
-        ))
-    }
-
     fun sendBtnTouch(isDown: Boolean) {
-        injectEvent(intArrayOf(EV_KEY, BTN_TOUCH, if (isDown) 1 else 0))
+        sendBtn(BTN_TOUCH, isDown)
     }
 
     fun sendBtn(btnCode: Int, isDown: Boolean) {
-        injectEvent(intArrayOf(EV_KEY, btnCode, if (isDown) 1 else 0))
+        uinputDevice.injectEvents(EV_KEY, btnCode, if (isDown) 1 else 0)
     }
 
     /**
@@ -121,11 +113,11 @@ open class UinputTouchDevice(
      * coordinate space.
      */
     fun sendDown(id: Int, physicalLocation: Point) {
-        injectEvent(intArrayOf(EV_ABS, ABS_MT_SLOT, id))
-        injectEvent(intArrayOf(EV_ABS, ABS_MT_TRACKING_ID, id))
-        injectEvent(intArrayOf(EV_ABS, ABS_MT_TOOL_TYPE, defaultToolType))
-        injectEvent(intArrayOf(EV_ABS, ABS_MT_POSITION_X, physicalLocation.x))
-        injectEvent(intArrayOf(EV_ABS, ABS_MT_POSITION_Y, physicalLocation.y))
+        uinputDevice.injectEvents(EV_ABS, ABS_MT_SLOT, id)
+        uinputDevice.injectEvents(EV_ABS, ABS_MT_TRACKING_ID, id)
+        uinputDevice.injectEvents(EV_ABS, ABS_MT_TOOL_TYPE, defaultToolType)
+        uinputDevice.injectEvents(EV_ABS, ABS_MT_POSITION_X, physicalLocation.x)
+        uinputDevice.injectEvents(EV_ABS, ABS_MT_POSITION_Y, physicalLocation.y)
     }
 
     /**
@@ -140,21 +132,21 @@ open class UinputTouchDevice(
     }
 
     fun sendUp(id: Int) {
-        injectEvent(intArrayOf(EV_ABS, ABS_MT_SLOT, id))
-        injectEvent(intArrayOf(EV_ABS, ABS_MT_TRACKING_ID, INVALID_MT_TRACKING_ID))
+        uinputDevice.injectEvents(EV_ABS, ABS_MT_SLOT, id)
+        uinputDevice.injectEvents(EV_ABS, ABS_MT_TRACKING_ID, INVALID_MT_TRACKING_ID)
     }
 
     fun sendToolType(id: Int, toolType: Int) {
-        injectEvent(intArrayOf(EV_ABS, ABS_MT_SLOT, id))
-        injectEvent(intArrayOf(EV_ABS, ABS_MT_TOOL_TYPE, toolType))
+        uinputDevice.injectEvents(EV_ABS, ABS_MT_SLOT, id)
+        uinputDevice.injectEvents(EV_ABS, ABS_MT_TOOL_TYPE, toolType)
     }
 
     fun sendPressure(pressure: Int) {
-        injectEvent(intArrayOf(EV_ABS, ABS_MT_PRESSURE, pressure))
+        uinputDevice.injectEvents(EV_ABS, ABS_MT_PRESSURE, pressure)
     }
 
     fun sync() {
-        injectEvent(intArrayOf(EV_SYN, SYN_REPORT, 0))
+        uinputDevice.injectEvents(EV_SYN, SYN_REPORT, 0)
     }
 
     fun delay(delayMs: Int) {

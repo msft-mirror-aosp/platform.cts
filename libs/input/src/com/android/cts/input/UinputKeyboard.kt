@@ -64,21 +64,17 @@ class UinputKeyboard(
   // store the keys that are currently down
   private val keysDown = mutableSetOf<Int>()
 
-  private fun injectEvents(events: IntArray) {
-      injectEvents(events.joinToString(prefix = "[", postfix = "]", separator = ","))
-  }
-
   fun injectKeyDown(scanCode: Int) {
       if (!keysDown.add(scanCode)) {
         throw IllegalArgumentException("Key $scanCode is already down")
       }
-      injectEvents(intArrayOf(EV_KEY, scanCode, EV_KEY_PRESS, EV_SYN, SYN_REPORT, 0))
+      injectEvents(EV_KEY, scanCode, EV_KEY_PRESS, EV_SYN, SYN_REPORT, 0)
   }
 
   fun injectKeyUp(scanCode: Int) {
       if (!keysDown.remove(scanCode)) {
         throw IllegalArgumentException("Key $scanCode is not down")
       }
-      injectEvents(intArrayOf(EV_KEY, scanCode, EV_KEY_RELEASE, EV_SYN, SYN_REPORT, 0))
+      injectEvents(EV_KEY, scanCode, EV_KEY_RELEASE, EV_SYN, SYN_REPORT, 0)
   }
 }

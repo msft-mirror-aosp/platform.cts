@@ -76,46 +76,36 @@ class UinputMouse(instrumentation: Instrumentation) : UinputDevice(
 
     private val pressedButtons = mutableSetOf<Int>()
 
-    private fun injectEvent(events: IntArray) {
-        injectEvents(
-            events.joinToString(prefix = "[", postfix = "]", separator = ",")
-        )
-    }
-
     fun pressButton(button: Int) {
         if (!pressedButtons.add(button)) {
             throw IllegalStateException("Button $button is already pressed")
         }
-        injectEvent(intArrayOf(EV_KEY, button, 1))
+        injectEvents(EV_KEY, button, 1)
     }
 
     fun releaseButton(button: Int) {
         if (!pressedButtons.remove(button)) {
             throw IllegalStateException("Button $button is not pressed")
         }
-        injectEvent(intArrayOf(EV_KEY, button, 0))
+        injectEvents(EV_KEY, button, 0)
     }
 
     fun move(dx: Int, dy: Int) {
-        injectEvent(intArrayOf(EV_REL, REL_X, dx))
-        injectEvent(intArrayOf(EV_REL, REL_Y, dy))
+        injectEvents(EV_REL, REL_X, dx)
+        injectEvents(EV_REL, REL_Y, dy)
     }
 
     fun scrollVertically(amount: Float) {
-        injectEvent(intArrayOf(EV_REL, REL_WHEEL, amount.toInt()))
-        injectEvent(
-            intArrayOf(EV_REL, REL_WHEEL_HI_RES, (amount * HI_RES_WHEEL_UNITS_PER_TICK).toInt())
-        )
+        injectEvents(EV_REL, REL_WHEEL, amount.toInt())
+        injectEvents(EV_REL, REL_WHEEL_HI_RES, (amount * HI_RES_WHEEL_UNITS_PER_TICK).toInt())
     }
 
     fun scrollHorizontally(amount: Float) {
-        injectEvent(intArrayOf(EV_REL, REL_HWHEEL, amount.toInt()))
-        injectEvent(
-            intArrayOf(EV_REL, REL_HWHEEL_HI_RES, (amount * HI_RES_WHEEL_UNITS_PER_TICK).toInt())
-        )
+        injectEvents(EV_REL, REL_HWHEEL, amount.toInt())
+        injectEvents(EV_REL, REL_HWHEEL_HI_RES, (amount * HI_RES_WHEEL_UNITS_PER_TICK).toInt())
     }
 
     fun sync() {
-        injectEvent(intArrayOf(EV_SYN, SYN_REPORT, 0))
+        injectEvents(EV_SYN, SYN_REPORT, 0)
     }
 }

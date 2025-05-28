@@ -22,6 +22,7 @@ import static com.android.cts.input.EvdevInputEventCodes.EV_KEY;
 import static com.android.cts.input.EvdevInputEventCodes.EV_KEY_PRESS;
 import static com.android.cts.input.EvdevInputEventCodes.EV_KEY_RELEASE;
 import static com.android.cts.input.EvdevInputEventCodes.EV_SYN;
+import static com.android.cts.input.EvdevInputEventCodes.SYN_REPORT;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -256,11 +257,9 @@ public class InputDeviceKeyLayoutMapTest {
      * @param evKeyCode The key scan code
      */
     private void pressKey(int evKeyCode) {
-        int[] evCodesDown = new int[] {EV_KEY, evKeyCode, EV_KEY_PRESS, EV_SYN, 0, 0};
-        mUinputDevice.injectEvents(Arrays.toString(evCodesDown));
+        mUinputDevice.injectEvents(EV_KEY, evKeyCode, EV_KEY_PRESS, EV_SYN, SYN_REPORT, 0);
 
-        int[] evCodesUp = new int[] {EV_KEY, evKeyCode, EV_KEY_RELEASE, EV_SYN, 0, 0};
-        mUinputDevice.injectEvents(Arrays.toString(evCodesUp));
+        mUinputDevice.injectEvents(EV_KEY, evKeyCode, EV_KEY_RELEASE, EV_SYN, SYN_REPORT, 0);
     }
 
     /**

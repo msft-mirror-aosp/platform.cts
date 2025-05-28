@@ -29,6 +29,7 @@ import org.json.JSONObject;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -108,24 +109,28 @@ public class UinputDevice extends VirtualInputDevice {
     }
 
     /**
-     * Inject array of uinput events to the device.  The events array should follow the below
-     * format:
+     * Inject an array of uinput events to the device.
      *
-     * String evdevEvents = "[1, 10, 1, 0, 0, 0]"
-     * The above string represents an event array of [EV_KEY, KEY_9, DOWN, EV_SYN, SYN_REPORT, 0]
-     * Hex strings ("0x01") are not supported inside the incoming string.
-     * The number of entries in the provided string has to be a multiple of 3.
+     * <p>The arguments should be triplets of (event type, event code, value). For example, passing
+     * {@code 1, 10, 1, 0, 0, 0} represents an event array of {@code [EV_KEY, KEY_9, DOWN, EV_SYN,
+     * SYN_REPORT, 0]}. The number of arguments must be a multiple of 3.
      *
-     * @param evdevEvents The uinput events to be injected.  (a JSON-formatted array of numbers)
+     * @param evdevEvents The uinput events to be injected.
      */
-    public void injectEvents(String evdevEvents) {
+    public void injectEvents(int... evdevEvents) {
+        if (evdevEvents.length % 3 != 0) {
+            throw new IllegalArgumentException(
+                    "Number of arguments to UinputDevice#injectEvents must be a multiple of 3; "
+                            + evdevEvents.length
+                            + " passed");
+        }
         JSONObject json = new JSONObject();
         try {
             json.put("command", "inject");
             json.put("id", mId);
             json.put("events", new JSONArray(evdevEvents));
         } catch (JSONException e) {
-            throw new RuntimeException("Could not inject events: " + evdevEvents);
+            throw new RuntimeException("Could not inject events: " + Arrays.toString(evdevEvents));
         }
         writeCommands(json.toString().getBytes());
     }
