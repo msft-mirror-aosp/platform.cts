@@ -26,6 +26,7 @@ import static com.android.cts.input.EvdevInputEventCodes.EV_ABS;
 import static com.android.cts.input.EvdevInputEventCodes.EV_MSC;
 import static com.android.cts.input.EvdevInputEventCodes.EV_SYN;
 import static com.android.cts.input.EvdevInputEventCodes.MSC_TIMESTAMP;
+import static com.android.cts.input.EvdevInputEventCodes.SYN_REPORT;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -275,31 +276,24 @@ public class InputDeviceSensorManagerTest {
 
         switch (sensor.getType()) {
             case Sensor.TYPE_ACCELEROMETER: {
-                int[] evSensorSample = new int[] {
-                    EV_ABS, ABS_X, dataVec[0],
-                    EV_ABS, ABS_Y, dataVec[1],
-                    EV_ABS, ABS_Z, dataVec[2],
-                };
-                mUinputDevice.injectEvents(Arrays.toString(evSensorSample));
+                mUinputDevice.injectEvents(
+                        EV_ABS, ABS_X, dataVec[0],
+                        EV_ABS, ABS_Y, dataVec[1],
+                        EV_ABS, ABS_Z, dataVec[2]);
                 break;
             }
             case Sensor.TYPE_GYROSCOPE: {
-                int[] evSensorSample = new int[] {
-                    EV_ABS, ABS_RX, dataVec[0],
-                    EV_ABS, ABS_RY, dataVec[1],
-                    EV_ABS, ABS_RZ, dataVec[2],
-                };
-                mUinputDevice.injectEvents(Arrays.toString(evSensorSample));
+                mUinputDevice.injectEvents(
+                        EV_ABS, ABS_RX, dataVec[0],
+                        EV_ABS, ABS_RY, dataVec[1],
+                        EV_ABS, ABS_RZ, dataVec[2]);
                 break;
             }
             default:
                 return;
         }
         if (timestamp > 0) {
-            int[] evTimestamp = new int[] {
-                    EV_MSC, MSC_TIMESTAMP, timestamp,
-                    EV_SYN, 0, 0 };
-            mUinputDevice.injectEvents(Arrays.toString(evTimestamp));
+            mUinputDevice.injectEvents(EV_MSC, MSC_TIMESTAMP, timestamp, EV_SYN, SYN_REPORT, 0);
         }
     }
 

@@ -28,6 +28,7 @@
         <option name="test-file-name" value="CtsDisplayTestCases.apk" />
         <option name="test-file-name" value="CtsAppTestStubs.apk" />
         <option name="test-file-name" value="DisplayManagerTestApp.apk" />
+        <option name="test-file-name" value="TopologyTestApp.apk" />
     </target_preparer>
     <test class="com.android.tradefed.testtype.AndroidJUnitTest" >
         <option name="package" value="android.display.cts" />

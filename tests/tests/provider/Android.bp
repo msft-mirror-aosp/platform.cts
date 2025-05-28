@@ -33,6 +33,9 @@ android_test {
         // TODO: remove testng once Android migrates to JUnit 4.12, which provides assertThrows
         "testng",
         "sts-device-util",
+        "telecom_flags_core_java_lib",
+        "telephony_flags_core_java_lib",
+        "flag-junit",
     ],
 
     jni_libs: [

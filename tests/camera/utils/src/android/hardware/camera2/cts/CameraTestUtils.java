@@ -166,7 +166,7 @@ public class CameraTestUtils extends Assert {
     // Set such that 1920x1080 and 1920x1088 be treated as the same aspect ratio.
     private static final float ASPECT_RATIO_MATCH_THRESHOLD = 0.014f;
 
-    private static final int AVAILABILITY_TIMEOUT_MS = 10;
+    private static final int AVAILABILITY_TIMEOUT_MS = 30;
 
     private static final Location sTestLocation0 = new Location(LocationManager.GPS_PROVIDER);
     private static final Location sTestLocation1 = new Location(LocationManager.GPS_PROVIDER);

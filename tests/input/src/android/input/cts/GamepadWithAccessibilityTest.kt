@@ -40,10 +40,8 @@ import com.android.cts.input.inputeventmatchers.withKeyFlags
 import com.android.input.flags.Flags.FLAG_DEVICE_ASSOCIATIONS
 import org.hamcrest.Matchers.allOf
 import org.junit.After
-import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNotNull
-import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -107,19 +105,8 @@ class GamepadWithAccessibilityTest {
         val uinputDevice = UinputGamepad(instrumentation)
         assertNotEquals(uinputDevice.getDeviceId(), VIRTUAL_KEYBOARD)
 
-        val evdevEventsDown = intArrayOf(EV_KEY, BTN_SOUTH, EV_KEY_PRESS, EV_SYN, SYN_REPORT, 0)
-        uinputDevice.injectEvents(evdevEventsDown.joinToString(
-            prefix = "[",
-            postfix = "]",
-            separator = ","
-        ))
-
-        val evdevEventsUp = intArrayOf(EV_KEY, BTN_SOUTH, EV_KEY_RELEASE, EV_SYN, SYN_REPORT, 0)
-        uinputDevice.injectEvents(evdevEventsUp.joinToString(
-            prefix = "[",
-            postfix = "]",
-            separator = ","
-        ))
+        uinputDevice.injectEvents(EV_KEY, BTN_SOUTH, EV_KEY_PRESS, EV_SYN, SYN_REPORT, 0)
+        uinputDevice.injectEvents(EV_KEY, BTN_SOUTH, EV_KEY_RELEASE, EV_SYN, SYN_REPORT, 0)
 
         // The event was not modified by accessibility in any way, so it should not have
         // KeyEvent.FLAG_IS_ACCESSIBILITY_EVENT in getFlags()

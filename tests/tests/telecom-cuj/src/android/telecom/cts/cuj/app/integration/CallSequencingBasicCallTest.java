@@ -21,6 +21,7 @@ import static android.telecom.Call.STATE_DIALING;
 import static android.telecom.Call.STATE_DISCONNECTED;
 import static android.telecom.Call.STATE_HOLDING;
 import static android.telecom.Call.STATE_RINGING;
+import static android.telecom.Call.STATE_SELECT_PHONE_ACCOUNT;
 import static android.telecom.cts.apps.TelecomTestApp.ConnectionServiceVoipAppClone;
 import static android.telecom.cts.apps.TelecomTestApp.ConnectionServiceVoipAppMain;
 import static android.telecom.cts.apps.TelecomTestApp.ManagedConnectionServiceApp;
@@ -41,6 +42,8 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /** Basic call sequencing call tests */
@@ -175,6 +178,46 @@ public class CallSequencingBasicCallTest extends BaseAppVerifier {
             controls.add(firstApp);
             controls.add(secondApp);
             tearDownApps(controls);
+        }
+    }
+
+    /**
+     * Prerequisite: An active call on PhoneAccount A. Test : Place new outgoing call with no
+     * PhoneAccount specified. Set the PhoneAccount for the call as PhoneAccount B. Verify: The
+     * active call on PhoneAccount A should be held in order to place the new call on PhoneAccount
+     * B.
+     */
+    @Test
+    @RequiresFlagsEnabled({Flags.FLAG_SELECT_PHONE_ACCOUNT_BEFORE_MAKING_ROOM})
+    public void testHoldAfterSelectPhoneAccount() throws Exception {
+        if (!mShouldTestTelecom) {
+            return;
+        }
+        AppControlWrapper firstApp = null;
+        AppControlWrapper secondApp = null;
+        try {
+            Log.d(TAG, "testHoldAfterSelectPhoneAccount: binding to apps");
+            firstApp = bindToApp(ManagedConnectionServiceApp);
+            secondApp = bindToApp(ManagedConnectionServiceAppClone);
+
+            Log.d(TAG, "testHoldAfterSelectPhoneAccount: adding call1");
+            String call = addOutgoingCallAndVerify(firstApp);
+            verifyCallIsInState(call, STATE_DIALING);
+            Log.d(TAG, "testHoldAfterSelectPhoneAccount: settimng call1 active");
+            setCallStateAndVerify(firstApp, call, STATE_ACTIVE);
+
+            CallAttributes callAttr = getDefaultAttributes(secondApp.getTelecomApps(), true);
+            Log.d(TAG, "testHoldAfterSelectPhoneAccount: Adding SPA call");
+            String callUt = addCallToSelectPhoneAccount(secondApp, callAttr);
+            verifyCallIsInState(callUt, STATE_SELECT_PHONE_ACCOUNT);
+            Log.d(TAG, "testHoldAfterSelectPhoneAccount: setting PhoneAccount");
+            setPhoneAccountAndVerifyAdded(secondApp, callUt, callAttr);
+            // Once the PhoneAccount is selected, the ongoing call should be held and the new call
+            // should be dialed.
+            verifyCallIsInState(call, STATE_HOLDING);
+            verifyCallIsInState(callUt, STATE_DIALING);
+        } finally {
+            tearDownApps(Collections.unmodifiableList(Arrays.asList(firstApp, secondApp)));
         }
     }
 

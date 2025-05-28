@@ -24,6 +24,7 @@ import static android.view.Display.FRAME_RATE_CATEGORY_NORMAL;
 
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 
+import static com.android.server.display.feature.flags.Flags.FLAG_DISPLAY_TOPOLOGY_API;
 import static com.android.server.display.feature.flags.Flags.FLAG_ENABLE_GET_SUGGESTED_FRAME_RATE;
 import static com.android.server.display.feature.flags.Flags.FLAG_ENABLE_GET_SUPPORTED_REFRESH_RATES;
 import static com.android.server.display.feature.flags.Flags.FLAG_ENABLE_HAS_ARR_SUPPORT;
@@ -1310,6 +1311,17 @@ public class DisplayTest extends TestBase {
         final float[] refreshRates = mDefaultDisplay.getSupportedRefreshRates();
         final float[] refreshRateLegacy = mDefaultDisplay.getSupportedRefreshRatesLegacy();
         assertArrayEquals(refreshRates, refreshRateLegacy, 0.0f);
+    }
+
+    /** Verify that {@link Display#isInternal()} returns the correct value. */
+    @Test
+    @RequiresFlagsEnabled(FLAG_DISPLAY_TOPOLOGY_API)
+    public void testIsInternal() {
+        Display[] displays = mDisplayManager.getDisplays();
+        assertNotNull(displays);
+        for (Display display : displays) {
+            assertEquals(display.getType() == Display.TYPE_INTERNAL, display.isInternal());
+        }
     }
 
     /**

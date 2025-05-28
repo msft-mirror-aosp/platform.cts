@@ -1,1 +1,3 @@
 per-file SecurityPolicyDeviceInfo.java = victorhsieh@google.com,otjdavies@google.com
+# Same "per-file" as system/core/storaged/tests/check_for_ufs.sh
+per-file StorageIoInterfaceDeviceInfo.java = file:platform/frameworks/base:/tests/BouncyBall/OWNERS

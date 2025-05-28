@@ -16,12 +16,11 @@
 
 package android.content.cts;
 
-import static org.junit.Assert.assertNotNull;
+import static com.google.common.truth.Truth.assertThat;
 
 import android.content.ContentProviderClient;
 import android.content.ContentResolver;
 import android.content.Context;
-import android.os.RemoteException;
 import android.platform.test.annotations.AppModeFull;
 import android.provider.MediaStore;
 
@@ -33,101 +32,67 @@ import org.junit.runner.RunWith;
 
 @RunWith(AndroidJUnit4.class)
 @AppModeFull
-public class CtsMediaProviderClientRefCountTest {
+public final class CtsMediaProviderClientRefCountTest {
 
     private final Context mContext = ApplicationProvider.getApplicationContext();
 
     @Test
-    public void testAcquireReleaseUnstableClient() throws RemoteException {
+    public void testAcquireReleaseUnstableClient() {
         ContentResolver resolver = mContext.getContentResolver();
-        assertNotNull(resolver);
+        assertThat(resolver).isNotNull();
 
-        ContentProviderClient client = null;
-        try {
-            client = resolver.acquireUnstableContentProviderClient(MediaStore.AUTHORITY);
-            assertNotNull(client);
-        } finally {
-            if (client != null) {
-                client.release();
-            }
+        try (ContentProviderClient client =
+                resolver.acquireUnstableContentProviderClient(MediaStore.AUTHORITY)) {
+            assertThat(client).isNotNull();
         }
     }
 
     @Test
-    public void testAcquireReleaseStableClient() throws RemoteException {
+    public void testAcquireReleaseStableClient() {
         ContentResolver resolver = mContext.getContentResolver();
-        assertNotNull(resolver);
+        assertThat(resolver).isNotNull();
 
-        ContentProviderClient client = null;
-        try {
-            client = resolver.acquireContentProviderClient(MediaStore.AUTHORITY);
-            assertNotNull(client);
-        } finally {
-            if (client != null) {
-                client.release();
-            }
+        try (ContentProviderClient client =
+                resolver.acquireContentProviderClient(MediaStore.AUTHORITY)) {
+            assertThat(client).isNotNull();
         }
     }
 
     @Test
-    public void testMultipleClientAcquisitionsAndReleases() throws RemoteException {
+    public void testMultipleClientAcquisitionsAndReleases() {
         ContentResolver resolver = mContext.getContentResolver();
-        assertNotNull(resolver);
+        assertThat(resolver).isNotNull();
 
-        ContentProviderClient client1 = null;
-        ContentProviderClient client2 = null;
-        ContentProviderClient client3 = null;
-
-        try {
-            client1 = resolver.acquireContentProviderClient(MediaStore.AUTHORITY);
-            assertNotNull(client1);
-
-            client2 = resolver.acquireContentProviderClient(MediaStore.AUTHORITY);
-            assertNotNull(client2);
-
-            client3 = resolver.acquireContentProviderClient(MediaStore.AUTHORITY);
-            assertNotNull(client3);
-        } finally {
-            if (client1 != null) {
-                client1.release();
-            }
-            if (client2 != null) {
-                client2.release();
-            }
-            if (client3 != null) {
-                client3.release();
-            }
+        try (ContentProviderClient client1 =
+                resolver.acquireContentProviderClient(MediaStore.AUTHORITY)) {
+            assertThat(client1).isNotNull();
+        }
+        try (ContentProviderClient client2 =
+                resolver.acquireContentProviderClient(MediaStore.AUTHORITY)) {
+            assertThat(client2).isNotNull();
+        }
+        try (ContentProviderClient client3 =
+                resolver.acquireContentProviderClient(MediaStore.AUTHORITY)) {
+            assertThat(client3).isNotNull();
         }
     }
 
     @Test
-    public void testMultipleUnstableClientAcquisitionsAndReleases() throws RemoteException {
+    public void testMultipleUnstableClientAcquisitionsAndReleases() {
         ContentResolver resolver = mContext.getContentResolver();
-        assertNotNull(resolver);
+        assertThat(resolver).isNotNull();
 
-        ContentProviderClient client1 = null;
-        ContentProviderClient client2 = null;
-        ContentProviderClient client3 = null;
-
-        try {
-            client1 = resolver.acquireUnstableContentProviderClient(MediaStore.AUTHORITY);
-            assertNotNull(client1);
-
-            client2 = resolver.acquireUnstableContentProviderClient(MediaStore.AUTHORITY);
-            assertNotNull(client2);
-
-            client3 = resolver.acquireUnstableContentProviderClient(MediaStore.AUTHORITY);
-            assertNotNull(client3);
-        } finally {
-            if (client1 != null) {
-                client1.release();
-            }
-            if (client2 != null) {
-                client2.release();
-            }
-            if (client3 != null) {
-                client3.release();
-            }
+        try (ContentProviderClient client1 =
+                resolver.acquireUnstableContentProviderClient(MediaStore.AUTHORITY)) {
+            assertThat(client1).isNotNull();
+        }
+        try (ContentProviderClient client2 =
+                resolver.acquireUnstableContentProviderClient(MediaStore.AUTHORITY)) {
+            assertThat(client2).isNotNull();
+        }
+        try (ContentProviderClient client3 =
+                resolver.acquireUnstableContentProviderClient(MediaStore.AUTHORITY)) {
+            assertThat(client3).isNotNull();
         }
     }
 }

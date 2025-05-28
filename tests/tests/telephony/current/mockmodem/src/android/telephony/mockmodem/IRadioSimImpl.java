@@ -307,7 +307,7 @@ public class IRadioSimImpl extends IRadioSim.Stub {
         if (Build.VERSION.SDK_INT > Build.VERSION_CODES.TIRAMISU) {
             carriers.status = mCarrierRestrictionStatus;
         }
-        if (Flags.carrierRestrictionRulesEnhancement() && mCarrierRestrictionRules != null) {
+        if (mCarrierRestrictionRules != null) {
             Log.e(mTag, "Updating carrierInfo information in CarrierRestrictions");
             carriers.allowedCarrierInfoList = mCarrierRestrictionRules.allowedCarrierInfoList;
             carriers.excludedCarrierInfoList = mCarrierRestrictionRules.excludedCarrierInfoList;

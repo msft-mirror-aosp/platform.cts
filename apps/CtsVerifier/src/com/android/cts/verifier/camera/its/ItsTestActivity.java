@@ -58,6 +58,7 @@ import com.android.cts.verifier.R;
 import com.android.cts.verifier.TestResult;
 
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.rules.TestName;
 
@@ -120,6 +121,11 @@ public class ItsTestActivity extends DialogTestListActivity {
     public static final String JCA_CAPTURE_PATHS_TAG = "JCA_CAPTURE_PATHS";
     public static final String JCA_CAPTURE_STATUS_TAG = "JCA_CAPTURE_STATUS";
     public static final String JCA_DATE_TIME_TAG = "yyyyMMdd_HHmmss";
+
+    private static final String PERF_METRICS = "perf_metrics";
+    private static final String CAM_ID_KEY = "camera_id";
+    private static final String TABLET_NAME_KEY = "tablet_name";
+    private static final int PERF_METRICS_PERMANENT_KEY_COUNT = 2; // CAM_ID_KEY, TABLET_NAME_KEY
 
     private static final String RESULT_PASS = "PASS";
     private static final String RESULT_FAIL = "FAIL";
@@ -318,7 +324,7 @@ public class ItsTestActivity extends DialogTestListActivity {
     private CtsVerifierReportLog mReportLog;
     // Json Array to store all jsob objects with ITS metrics information
     // stored in the report log
-    private final JSONArray mFinalPerfMetricsArr = new JSONArray();
+    private JSONArray mFinalPerfMetricsArr = new JSONArray();
 
     private static class HandlerExecutor implements Executor {
         private final Handler mHandler;
@@ -444,8 +450,10 @@ public class ItsTestActivity extends DialogTestListActivity {
                     }
 
                     JSONObject camJsonObj = new JSONObject();
-                    camJsonObj.put("camera_id", cameraId);
-                    camJsonObj.put("tablet_name", tabletName);
+                    // NOTE: Must increment PERF_METRICS_PERMANENT_KEY_COUNT when adding new
+                    // permanent keys.
+                    camJsonObj.put(CAM_ID_KEY, cameraId);
+                    camJsonObj.put(TABLET_NAME_KEY, tabletName);
                     // Update test execution results
                     for (String scene : scenes) {
                         JSONObject sceneResult = jsonResults.getJSONObject(scene);
@@ -501,9 +509,9 @@ public class ItsTestActivity extends DialogTestListActivity {
 
                         // Update performance metrics with metrics data from all
                         // scenes for each camera
-                        JSONArray mArr = sceneResult.getJSONArray("performance_metrics");
-                        for (int i = 0; i < mArr.length(); i++) {
-                            String perfResult = mArr.getString(i);
+                        JSONArray perfMetrics = sceneResult.getJSONArray("performance_metrics");
+                        for (int i = 0; i < perfMetrics.length(); i++) {
+                            String perfResult = perfMetrics.getString(i);
                             try {
                                 if (!matchPerfMetricsResult(perfResult, camJsonObj)) {
                                     Log.e(TAG, "Error parsing perf result string:" + perfResult);
@@ -532,17 +540,15 @@ public class ItsTestActivity extends DialogTestListActivity {
                         }
                     }
                     // Add performance metrics for all scenes along with camera_id as json arr
-                    // to CtsVerifierReportLog for each camera.
-                    mFinalPerfMetricsArr.put(camJsonObj);
-                    mReportLog.addValues("perf_metrics", mFinalPerfMetricsArr);
+                    // to CtsVerifierReportLog for each camera. Only append the metrics if there
+                    // are actual metrics in camJsonObj.
+                    if (camJsonObj.length() > PERF_METRICS_PERMANENT_KEY_COUNT) {
+                        appendJsonObjToMetrics(camJsonObj);
+                    }
                 } catch (org.json.JSONException e) {
                     Log.e(TAG, "Error reading json result string:" + results , e);
                     return;
                 }
-
-                // Submitting the report log generates a CtsCameraITSTestCases.reportlog.json
-                // on device at path /sdcard/ReportLogFiles
-                mReportLog.submit();
 
                 // Set summary if all scenes reported
                 if (mSummaryMap.keySet().containsAll(mAllScenes)) {
@@ -591,6 +597,44 @@ public class ItsTestActivity extends DialogTestListActivity {
                     ItsTestActivity.this.getPassButton().setEnabled(false);
                 }
             }
+        }
+
+        private void appendJsonObjToMetrics(JSONObject newObj) throws JSONException {
+            String cameraId = newObj.getString(CAM_ID_KEY);
+            String tabletName = newObj.getString(TABLET_NAME_KEY);
+
+            for (int i = mFinalPerfMetricsArr.length() - 1; i >= 0; i--) {
+                JSONObject obj = mFinalPerfMetricsArr.getJSONObject(i);
+                if (!obj.getString(CAM_ID_KEY).equals(cameraId)
+                        || !obj.getString(TABLET_NAME_KEY).equals(tabletName)) {
+                    continue;
+                }
+
+                // Remove all outdated keys in mFinalPerfMetricsArr
+                Iterator<String> keys = newObj.keys();
+                while (keys.hasNext()) {
+                    String key = keys.next();
+                    if (key.equals(CAM_ID_KEY) || key.equals(TABLET_NAME_KEY)) {
+                        continue;
+                    }
+
+                    obj.remove(key);
+                }
+
+                // Only contains CAM_ID_KEY and TABLET_NAME_KEY
+                if (obj.length() <= PERF_METRICS_PERMANENT_KEY_COUNT) {
+                    mFinalPerfMetricsArr.remove(i);
+                } else {
+                    mFinalPerfMetricsArr.put(i, obj);
+                }
+            }
+
+            mFinalPerfMetricsArr.put(newObj);
+
+            // Submitting the report log generates a CtsCameraITSTestCases.reportlog.json
+            // on device at path /sdcard/ReportLogFiles
+            mReportLog.addValues(PERF_METRICS, mFinalPerfMetricsArr);
+            mReportLog.submit();
         }
 
         private void appendFileContentToSummary(
@@ -1001,6 +1045,16 @@ public class ItsTestActivity extends DialogTestListActivity {
             mReportLog =
                     new CtsVerifierReportLog(REPORT_LOG_NAME, "camera_its_results");
         }
+
+        try {
+            JSONObject itsResultsObj = mReportLog.getReportLogForStream();
+            if (itsResultsObj != null && itsResultsObj.has(PERF_METRICS)) {
+                mFinalPerfMetricsArr = itsResultsObj.getJSONArray(PERF_METRICS);
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Exception: " + e);
+        }
+
         Context context = this.getApplicationContext();
         if (mAllScenes == null) {
             mAllScenes = new TreeSet<>(mComparator);

@@ -138,14 +138,14 @@ class StylusButtonInputEventTest {
         UinputBluetoothStylus(instrumentation).use { bluetoothStylus ->
             for (button in LINUX_TO_ANDROID_KEYCODE_MAP.entries.iterator()) {
                 bluetoothStylus.injectEvents(
-                        makeEvents(EV_KEY, button.key, EV_KEY_PRESS, EV_SYN, SYN_REPORT, 0)
+                    EV_KEY, button.key, EV_KEY_PRESS, EV_SYN, SYN_REPORT, 0,
                 )
                 // The stylus button is expected to be sent to the status bar as a system key on
                 // the down press.
                 assertReceivedSystemKey(button.value)
 
                 bluetoothStylus.injectEvents(
-                        makeEvents(EV_KEY, button.key, EV_KEY_RELEASE, EV_SYN, SYN_REPORT, 0)
+                    EV_KEY, button.key, EV_KEY_RELEASE, EV_SYN, SYN_REPORT, 0,
                 )
             }
         }
@@ -157,10 +157,10 @@ class StylusButtonInputEventTest {
         UinputBluetoothStylus(instrumentation).use { bluetoothStylus ->
             for (button in LINUX_TO_ANDROID_KEYCODE_MAP.entries.iterator()) {
                 bluetoothStylus.injectEvents(
-                        makeEvents(EV_KEY, button.key, EV_KEY_PRESS, EV_SYN, SYN_REPORT, 0)
+                    EV_KEY, button.key, EV_KEY_PRESS, EV_SYN, SYN_REPORT, 0,
                 )
                 bluetoothStylus.injectEvents(
-                        makeEvents(EV_KEY, button.key, EV_KEY_RELEASE, EV_SYN, SYN_REPORT, 0)
+                    EV_KEY, button.key, EV_KEY_RELEASE, EV_SYN, SYN_REPORT, 0,
                 )
 
                 // Stylus buttons should not be sent to the status bar as a system key when
@@ -281,8 +281,4 @@ class StylusButtonInputEventTest {
     private fun disableStylusButtons() {
         SystemUtil.runShellCommandOrThrow("settings put $SETTING_NAMESPACE_KEY 0")
     }
-}
-
-private fun makeEvents(vararg codes: Int): String {
-    return codes.joinToString(prefix = "[", postfix = "]", separator = ",")
 }
