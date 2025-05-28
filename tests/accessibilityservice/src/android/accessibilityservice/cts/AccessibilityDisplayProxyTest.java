@@ -321,7 +321,13 @@ public class AccessibilityDisplayProxyTest {
             mA11yManager.unregisterDisplayProxy(mA11yProxy);
         }
         if (mProxiedVirtualDisplayActivityScenario != null) {
-            mProxiedVirtualDisplayActivityScenario.close();
+            try {
+                mProxiedVirtualDisplayActivityScenario.close();
+            } catch (RuntimeException e) {
+                // Ignore any exception thrown during virtual display activity cleanup. Some
+                // devices may fail to launch the home screen when the ActivityScenario attempts
+                // to close the activity from a virtual display.
+            }
         }
         if (mNonProxiedConcurrentActivityScenario != null) {
             mNonProxiedConcurrentActivityScenario.close();
