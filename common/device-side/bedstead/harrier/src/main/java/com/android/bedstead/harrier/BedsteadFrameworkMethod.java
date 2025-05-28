@@ -16,10 +16,10 @@
 
 package com.android.bedstead.harrier;
 
-import com.android.bedstead.multiuser.annotations.RequireRunOnAdditionalUser;
-import com.android.bedstead.harrier.annotations.RequireRunOnInitialUser;
-import com.android.bedstead.multiuser.annotations.RequireRunOnVisibleBackgroundNonProfileUser;
 import com.android.bedstead.enterprise.annotations.RequireRunOnWorkProfile;
+import com.android.bedstead.harrier.annotations.RequireRunOnInitialUser;
+import com.android.bedstead.multiuser.annotations.RequireRunOnAdditionalUser;
+import com.android.bedstead.multiuser.annotations.RequireRunOnVisibleBackgroundNonProfileUser;
 import com.android.bedstead.multiuser.annotations.meta.RequireRunOnProfileAnnotation;
 import com.android.bedstead.multiuser.annotations.meta.RequireRunOnUserAnnotation;
 import com.android.bedstead.nene.types.OptionalBoolean;
@@ -31,11 +31,9 @@ import org.junit.runners.model.FrameworkMethod;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 /** {@link FrameworkMethod} subclass which allows modifying the test name and annotations. */
 public final class BedsteadFrameworkMethod extends FrameworkMethod {
@@ -70,15 +68,10 @@ public final class BedsteadFrameworkMethod extends FrameworkMethod {
 
     private void calculateAnnotations() {
         List<Annotation> annotations =
-                new ArrayList<>(Arrays.asList(getDeclaringClass().getAnnotations()));
-        annotations.sort(BedsteadJUnit4::annotationSorter);
-
-        annotations.addAll(Arrays.stream(getMethod().getAnnotations())
-                .sorted(BedsteadJUnit4::annotationSorter)
-                .collect(Collectors.toList()));
+                getAnnotationWithReplacements(getDeclaringClass().getAnnotations());
+        annotations.addAll(getAnnotationWithReplacements(getMethod().getAnnotations()));
 
         BedsteadJUnit4.parseEnterpriseAnnotations(annotations);
-        BedsteadJUnit4.parsePermissionAnnotations(annotations);
         BedsteadJUnit4.parseUserAnnotations(annotations);
 
         mBedsteadJUnit4.resolveRecursiveAnnotations(annotations, mParameterizedAnnotations);
@@ -116,6 +109,20 @@ public final class BedsteadFrameworkMethod extends FrameworkMethod {
             }
             mAnnotationsMap.put(annotation.annotationType(), annotation);
         }
+    }
+
+    private static List<Annotation> getAnnotationWithReplacements(Annotation[] sourceAnnotations) {
+        var annotations = new ArrayList<Annotation>();
+        for (Annotation annotation : sourceAnnotations) {
+            var replacements = BedsteadJUnit4.generateReplacementAnnotations(annotation);
+            if (replacements == null) {
+                annotations.add(annotation);
+            } else {
+                annotations.addAll(replacements);
+            }
+        }
+        annotations.sort(BedsteadJUnit4::annotationSorter);
+        return annotations;
     }
 
     @Override

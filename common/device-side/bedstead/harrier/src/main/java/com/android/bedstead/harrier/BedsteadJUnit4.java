@@ -16,8 +16,7 @@
 
 package com.android.bedstead.harrier;
 
-import static com.android.bedstead.permissions.annotations.EnsureDoesNotHavePermissionKt.ensureDoesNotHavePermission;
-import static com.android.bedstead.permissions.annotations.EnsureHasPermissionKt.ensureHasPermission;
+import androidx.annotation.Nullable;
 
 import com.android.bedstead.enterprise.annotations.CanSetPolicyTest;
 import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest;
@@ -33,12 +32,12 @@ import com.android.bedstead.harrier.annotations.CrossUserTest;
 import com.android.bedstead.harrier.annotations.EnumTestParameter;
 import com.android.bedstead.harrier.annotations.HiddenApiTest;
 import com.android.bedstead.harrier.annotations.IntTestParameter;
-import com.android.bedstead.harrier.annotations.PermissionTest;
 import com.android.bedstead.harrier.annotations.PolicyArgument;
 import com.android.bedstead.harrier.annotations.RequireRunOnInitialUser;
 import com.android.bedstead.harrier.annotations.StringTestParameter;
 import com.android.bedstead.harrier.annotations.UserPair;
 import com.android.bedstead.harrier.annotations.UserTest;
+import com.android.bedstead.harrier.annotations.UsesParameterizedTestGenerator;
 import com.android.bedstead.harrier.annotations.meta.ParameterizedAnnotation;
 import com.android.bedstead.harrier.annotations.meta.RepeatingAnnotation;
 import com.android.bedstead.harrier.annotations.parameterized.IncludeNone;
@@ -111,6 +110,7 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
 
     private static final String LOG_TAG = "BedsteadJUnit4";
     private boolean mHasManualHarrierRule = false;
+    private static final BedsteadServiceLocator mLocator = new BedsteadServiceLocator();
 
     @AutoAnnotation
     private static RequireRunOnSystemUser requireRunOnSystemUser() {
@@ -267,8 +267,7 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
 
     private static int computeAnnotationPriority(Annotation annotation) {
         if (annotation instanceof DynamicParameterizedAnnotation) {
-            // Special case, not important
-            return AnnotationPriorityRunPrecedence.PRECEDENCE_NOT_IMPORTANT;
+            return ((DynamicParameterizedAnnotation) annotation).getPriority();
         }
 
         try {
@@ -471,22 +470,29 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
     }
 
     private static List<FrameworkMethod> getBasicTests(TestClass testClass) {
-        Set<FrameworkMethod> methods = new HashSet<>();
+        return testClass.getAnnotatedMethods().stream().filter(
+                method -> method.getAnnotation(Test.class) != null
+                        || method.getAnnotation(PolicyAppliesTest.class) != null
+                        || method.getAnnotation(PolicyDoesNotApplyTest.class) != null
+                        || method.getAnnotation(CanSetPolicyTest.class) != null
+                        || method.getAnnotation(CannotSetPolicyTest.class) != null
+                        || method.getAnnotation(UserTest.class) != null
+                        || method.getAnnotation(CrossUserTest.class) != null
+                        || method.getAnnotation(MostRestrictiveCoexistenceTest.class) != null
+                        || method.getAnnotation(MostImportantCoexistenceTest.class) != null
+                        || method.getAnnotation(HiddenApiTest.class) != null
+                        || method.getAnnotation(PerformanceTest.class) != null
+                        || isMethodAnnotatedIndirectly(method, UsesParameterizedTestGenerator.class)
+        ).collect(Collectors.toList());
+    }
 
-        methods.addAll(testClass.getAnnotatedMethods(Test.class));
-        methods.addAll(testClass.getAnnotatedMethods(PolicyAppliesTest.class));
-        methods.addAll(testClass.getAnnotatedMethods(PolicyDoesNotApplyTest.class));
-        methods.addAll(testClass.getAnnotatedMethods(CanSetPolicyTest.class));
-        methods.addAll(testClass.getAnnotatedMethods(CannotSetPolicyTest.class));
-        methods.addAll(testClass.getAnnotatedMethods(UserTest.class));
-        methods.addAll(testClass.getAnnotatedMethods(CrossUserTest.class));
-        methods.addAll(testClass.getAnnotatedMethods(PermissionTest.class));
-        methods.addAll(testClass.getAnnotatedMethods(MostRestrictiveCoexistenceTest.class));
-        methods.addAll(testClass.getAnnotatedMethods(MostImportantCoexistenceTest.class));
-        methods.addAll(testClass.getAnnotatedMethods(HiddenApiTest.class));
-        methods.addAll(testClass.getAnnotatedMethods(PerformanceTest.class));
-
-        return new ArrayList<>(methods);
+    private static <A extends Annotation> boolean isMethodAnnotatedIndirectly(
+            FrameworkMethod method,
+            Class<A> annotationType
+    ) {
+        return Arrays.stream(method.getAnnotations()).anyMatch(annotation ->
+                annotation.annotationType().getDeclaredAnnotation(annotationType) != null
+        );
     }
 
     /**
@@ -804,16 +810,43 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
         List<Annotation> annotations = new ArrayList<>(Arrays.asList(methodAnnotations));
 
         parseEnterpriseAnnotations(annotations);
-        parsePermissionAnnotations(annotations);
         parseUserAnnotations(annotations);
 
         for (Annotation annotation : annotations) {
+            var replacements = generateReplacementAnnotations(annotation);
+            if (replacements != null) {
+                parameterizedAnnotations.addAll(replacements);
+            }
+
             if (isParameterizedAnnotation(annotation)) {
                 parameterizedAnnotations.add(annotation);
             }
         }
 
         return parameterizedAnnotations;
+    }
+
+    /**
+     * Parse annotation using @ParametrizedTestGenerator
+     *
+     * <p>To be used before general annotation processing.
+     */
+    @Nullable
+    static List<DynamicParameterizedAnnotation> generateReplacementAnnotations(
+            Annotation annotation) {
+        Class<? extends Annotation> annotationType = annotation.annotationType();
+        if (annotationType != null) {
+            UsesParameterizedTestGenerator usesParameterizedTestGenerator =
+                    annotationType.getAnnotation(UsesParameterizedTestGenerator.class);
+            if (usesParameterizedTestGenerator != null) {
+                ParameterizedTestGenerator generator =
+                        mLocator.get(usesParameterizedTestGenerator.value());
+                var replacementAnnotations = generator.generateReplacementAnnotations(annotation);
+                replacementAnnotations.sort(BedsteadJUnit4::annotationSorter);
+                return replacementAnnotations;
+            }
+        }
+        return null;
     }
 
     /**
@@ -830,49 +863,6 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
         } else {
             mediator.parseEnterpriseAnnotations(annotations);
         }
-    }
-
-    /**
-     * Parse @PermissionTest annotations.
-     *
-     * <p>To be used before general annotation processing.
-     */
-    static void parsePermissionAnnotations(List<Annotation> annotations) {
-        int index = 0;
-        while (index < annotations.size()) {
-            Annotation annotation = annotations.get(index);
-            if (annotation instanceof PermissionTest) {
-                annotations.remove(index);
-
-                List<Annotation> replacementAnnotations = generatePermissionAnnotations(
-                        ((PermissionTest) annotation).value());
-                replacementAnnotations.sort(BedsteadJUnit4::annotationSorter);
-
-                annotations.addAll(index, replacementAnnotations);
-                index += replacementAnnotations.size();
-            } else {
-                index++;
-            }
-        }
-    }
-
-    private static List<Annotation> generatePermissionAnnotations(String[] permissions) {
-        Set<String> allPermissions = new HashSet<>(Arrays.asList(permissions));
-        List<Annotation> replacementAnnotations = new ArrayList<>();
-
-        for (String permission : permissions) {
-            allPermissions.remove(permission);
-            replacementAnnotations.add(
-                    new DynamicParameterizedAnnotation(
-                            permission,
-                            new Annotation[]{
-                                    ensureHasPermission(permission),
-                                    ensureDoesNotHavePermission(allPermissions.toArray(new String[]{}))
-                            }));
-            allPermissions.add(permission);
-        }
-
-        return replacementAnnotations;
     }
 
     /**

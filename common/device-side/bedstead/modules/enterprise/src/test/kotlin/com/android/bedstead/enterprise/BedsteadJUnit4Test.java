@@ -23,9 +23,6 @@ import static com.android.bedstead.enterprise.TestPolicyForPolicyArguments.POLIC
 import static com.android.bedstead.harrier.UserType.INITIAL_USER;
 import static com.android.bedstead.harrier.UserType.WORK_PROFILE;
 import static com.android.bedstead.multiuser.MultiUserDeviceStateExtensionsKt.otherUser;
-import static com.android.bedstead.permissions.CommonPermissions.INTERACT_ACROSS_PROFILES;
-import static com.android.bedstead.permissions.CommonPermissions.INTERACT_ACROSS_USERS;
-import static com.android.bedstead.permissions.CommonPermissions.INTERACT_ACROSS_USERS_FULL;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -43,7 +40,6 @@ import com.android.bedstead.harrier.annotations.CrossUserTest;
 import com.android.bedstead.harrier.annotations.EnsureRunsLate;
 import com.android.bedstead.harrier.annotations.EnumTestParameter;
 import com.android.bedstead.harrier.annotations.IntTestParameter;
-import com.android.bedstead.harrier.annotations.PermissionTest;
 import com.android.bedstead.harrier.annotations.PolicyArgument;
 import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.harrier.annotations.RequireRunOnInitialUser;
@@ -58,7 +54,6 @@ import com.android.bedstead.harrier.annotations.parameterized.IncludePortraitOri
 import com.android.bedstead.harrier.exceptions.RestartTestException;
 import com.android.bedstead.harrier.policies.LockTask;
 import com.android.bedstead.nene.TestApis;
-import com.android.bedstead.permissions.annotations.EnsureHasPermission;
 import com.android.queryable.annotations.IntegerQuery;
 import com.android.queryable.annotations.Query;
 
@@ -213,18 +208,6 @@ public class BedsteadJUnit4Test {
     public void enumParameterized(
             @EnumTestParameter(EnumWithThreeValues.class) EnumWithThreeValues argument) {
         sEnumParameterizedCalls += 1;
-    }
-
-    @PermissionTest({INTERACT_ACROSS_PROFILES, INTERACT_ACROSS_USERS})
-    @EnsureHasPermission(INTERACT_ACROSS_USERS_FULL)
-    @Test
-    public void permissionTestAnnotation_generatesRunsWithOnePermissionOrOther() {
-        assertThat(TestApis.permissions().hasPermission(INTERACT_ACROSS_USERS_FULL)).isTrue();
-        if (TestApis.permissions().hasPermission(INTERACT_ACROSS_PROFILES)) {
-            assertThat(TestApis.permissions().hasPermission(INTERACT_ACROSS_USERS)).isFalse();
-        } else {
-            assertThat(TestApis.permissions().hasPermission(INTERACT_ACROSS_USERS)).isTrue();
-        }
     }
 
     @UserTest({INITIAL_USER, WORK_PROFILE})
