@@ -70,8 +70,10 @@ import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 
+import androidx.annotation.NonNull;
 import androidx.test.filters.FlakyTest;
 
+import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.cts.mockime.ImeCommand;
@@ -588,6 +590,106 @@ public class MultiDisplayImeTests extends MultiDisplayTestBase {
                     displayRect1.equals(displayRect2));
             throw e;
         }
+    }
+
+    /**
+     * Verifies if the IME matches the associated display ID when IME is moved with relaunching
+     * {@link Activity}.
+     */
+    @ApiTest(apis = {"android.view.inputmethod.InputMethodService#getDisplay"})
+    @Test
+    public void testDisplayIdUpdateWhenImeMove_RelaunchActivity() throws Exception {
+        testDisplayIdUpdateWhenImeMove(true /* verifyRelaunch */);
+    }
+
+    /**
+     * Verifies if the IME matches the associated display ID when IME is moved with no-relaunching
+     * {@link Activity}.
+     */
+    @ApiTest(apis = {"android.view.inputmethod.InputMethodService#getDisplay"})
+    @Test
+    public void testDisplayIdUpdateWhenImeMove_NoRelaunchActivity() throws Exception {
+        testDisplayIdUpdateWhenImeMove(false /* verifyRelaunch */);
+    }
+
+    /**
+     * Verifies if the IME matches the associated display ID when IME is moved with {@link
+     * Activity}.
+     *
+     * @param verifyRelaunch whether the verified activity is relaunched with display switch, or
+     *     receives {@link Activity#onConfigurationChanged(Configuration)}, otherwise.
+     */
+    private <T extends ImeTestActivity> void testDisplayIdUpdateWhenImeMove(boolean verifyRelaunch)
+            throws Exception {
+        // If config_perDisplayFocusEnabled, the focus will not move even if touching on
+        // the Activity in the different display.
+        assumeFalse(perDisplayFocusEnabled());
+        assumeTrue(MSG_NO_MOCK_IME, supportsInstallableIme());
+
+        final Class<T> activityClass =
+                (verifyRelaunch)
+                        ? (Class<T>) ImeTestActivity2.class
+                        : (Class<T>) ImeTestActivity.class;
+
+        final VirtualDisplaySession virtualDisplaySession = createManagedVirtualDisplaySession();
+        final MockImeSession mockImeSession = createManagedMockImeSession(this);
+        final TestActivitySession<T> imeTestActivitySession = createManagedTestActivitySession();
+        final int defaultDisplayId = getMainDisplayId();
+        imeTestActivitySession.launchTestActivityOnDisplaySync(activityClass, defaultDisplayId);
+
+        final ImeEventStream stream = mockImeSession.openEventStream();
+
+        assertImeMatchesDisplayId(imeTestActivitySession, mockImeSession, stream, defaultDisplayId);
+
+        final DisplayContent newDisplay =
+                virtualDisplaySession
+                        .setSimulateDisplay(true)
+                        .setShowSystemDecorations(true)
+                        .setDisplayImePolicy(DISPLAY_IME_POLICY_LOCAL)
+                        .createDisplay();
+
+        // Move ImeTestActivity from main display to new display
+        if (verifyRelaunch) {
+            imeTestActivitySession.launchTestActivityOnDisplaySync(activityClass, newDisplay.mId);
+        } else {
+            getLaunchActivityBuilder()
+                    .setUseInstrumentation()
+                    .setTargetActivity(imeTestActivitySession.getActivity().getComponentName())
+                    .setIntentFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    .allowMultipleInstances(false)
+                    .setDisplayId(newDisplay.mId)
+                    .execute();
+        }
+
+        // Make sure ImeTestActivity is move from the firstDisplay to the secondDisplay
+        waitAndAssertResumedAndFocusedActivityOnDisplay(
+                imeTestActivitySession.getActivity().getComponentName(),
+                newDisplay.mId,
+                "ImeTestActivity must be top-resumed on display#" + newDisplay.mId);
+
+        // Launch activity on the secondary display and make IME show.
+        assertImeMatchesDisplayId(imeTestActivitySession, mockImeSession, stream, newDisplay.mId);
+    }
+
+    private void assertImeMatchesDisplayId(
+            @NonNull TestActivitySession<? extends ImeTestActivity> imeTestActivitySession,
+            @NonNull MockImeSession imeSession,
+            @NonNull ImeEventStream stream,
+            int targetDisplayId)
+            throws Exception {
+
+        // Wait until IME is ready for the IME client to call showSoftInput().
+        expectEvent(
+                stream,
+                editorMatcher(
+                        "onStartInput",
+                        imeTestActivitySession.getActivity().mEditText.getPrivateImeOptions()),
+                TIMEOUT);
+
+        int imeDisplayId =
+                expectCommand(stream, imeSession.callGetDisplayId(), TIMEOUT)
+                        .getReturnIntegerValue();
+        assertThat(imeDisplayId).isEqualTo(targetDisplayId);
     }
 
     public static class ImeTestActivity extends Activity {
