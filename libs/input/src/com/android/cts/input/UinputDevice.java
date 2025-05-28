@@ -118,6 +118,12 @@ public class UinputDevice extends VirtualInputDevice {
      * @param evdevEvents The uinput events to be injected.
      */
     public void injectEvents(int... evdevEvents) {
+        if (evdevEvents.length % 3 != 0) {
+            throw new IllegalArgumentException(
+                    "Number of arguments to UinputDevice#injectEvents must be a multiple of 3; "
+                            + evdevEvents.length
+                            + " passed");
+        }
         JSONObject json = new JSONObject();
         try {
             json.put("command", "inject");
