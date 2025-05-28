@@ -110,7 +110,7 @@
       "host": true
     }
   ],
-  "wear-cts-postsubmit": [
+  "wear-cts-presubmit": [
     {
       "name": "CtsOsTestCases",
       "options": [
