@@ -79,6 +79,7 @@ import android.media.AudioAttributes;
 import android.media.session.MediaSession;
 import android.net.Uri;
 import android.os.Build;
+import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
@@ -3617,6 +3618,60 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
                 .getInt(Notification.EXTRA_MEDIA_REMOTE_ICON));
         assertEquals(deviceIntent, sbn.getNotification().extras
                 .getParcelable(Notification.EXTRA_MEDIA_REMOTE_INTENT));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(android.app.Flags.FLAG_HIDE_STATUS_BAR_NOTIFICATION)
+    public void testHideStatusBarNotification_noPermission() throws Exception {
+        int id = 99;
+
+        Bundle extras = new Bundle();
+        extras.putBoolean(Notification.EXTRA_HIDE_STATUS_BAR_NOTIFICATION, true);
+
+        final Notification notification =
+                new Notification.Builder(mContext, NOTIFICATION_CHANNEL_ID)
+                        .setSmallIcon(R.drawable.black)
+                        .setExtras(extras)
+                        .build();
+        mNotificationManager.notify(id, notification);
+
+        StatusBarNotification sbn =
+                mNotificationHelper.findPostedNotification(null, id, SEARCH_TYPE.APP);
+        assertNotNull(sbn);
+
+        assertFalse(
+                sbn.getNotification()
+                        .extras
+                        .getBoolean(Notification.EXTRA_HIDE_STATUS_BAR_NOTIFICATION, false));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(android.app.Flags.FLAG_HIDE_STATUS_BAR_NOTIFICATION)
+    public void testHideStatusBarNotification_hasPermission() throws Exception {
+        int id = 99;
+
+        Bundle extras = new Bundle();
+        extras.putBoolean(Notification.EXTRA_HIDE_STATUS_BAR_NOTIFICATION, true);
+
+        final Notification notification =
+                new Notification.Builder(mContext, NOTIFICATION_CHANNEL_ID)
+                        .setSmallIcon(R.drawable.black)
+                        .setExtras(extras)
+                        .build();
+        SystemUtil.runWithShellPermissionIdentity(
+                () -> {
+                    mNotificationManager.notify(id, notification);
+                },
+                android.Manifest.permission.HIDE_STATUS_BAR_NOTIFICATION);
+
+        StatusBarNotification sbn =
+                mNotificationHelper.findPostedNotification(null, id, SEARCH_TYPE.APP);
+        assertNotNull(sbn);
+
+        assertTrue(
+                sbn.getNotification()
+                        .extras
+                        .getBoolean(Notification.EXTRA_HIDE_STATUS_BAR_NOTIFICATION, false));
     }
 
     @Test
