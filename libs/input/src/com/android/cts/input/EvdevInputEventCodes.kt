@@ -53,6 +53,7 @@ class EvdevInputEventCodes {
         const val KEY_LEFTMETA = 125
 
         const val BTN_LEFT = 0x110
+        const val BTN_RIGHT = 0x111
         const val BTN_SOUTH = 0x130
         const val BTN_TOUCH = 0x14a
         const val BTN_TOOL_PEN = 0x140
@@ -71,6 +72,10 @@ class EvdevInputEventCodes {
          */
         const val REL_X = 0x00
         const val REL_Y = 0x01
+        const val REL_HWHEEL = 0x06
+        const val REL_WHEEL = 0x08
+        const val REL_WHEEL_HI_RES = 0x0b
+        const val REL_HWHEEL_HI_RES = 0x0c
 
         /**
          * Absolute axes
