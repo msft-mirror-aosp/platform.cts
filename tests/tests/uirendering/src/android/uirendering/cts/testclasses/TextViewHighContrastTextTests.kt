@@ -47,6 +47,7 @@ import androidx.test.runner.AndroidJUnit4
 import com.android.compatibility.common.util.PollingCheck
 import com.android.graphics.hwui.flags.Flags
 import org.junit.After
+import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -54,6 +55,7 @@ import org.junit.runner.RunWith
 @MediumTest
 @RunWith(AndroidJUnit4::class)
 @RequiresFlagsEnabled(Flags.FLAG_HIGH_CONTRAST_TEXT_SMALL_TEXT_RECT)
+@Ignore("See b/416795321")
 class TextViewHighContrastTextTests : ActivityTestBase() {
 
     @get:Rule
