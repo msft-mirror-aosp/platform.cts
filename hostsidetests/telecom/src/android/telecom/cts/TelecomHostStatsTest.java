@@ -93,7 +93,7 @@ public class TelecomHostStatsTest extends BaseHostJUnit4Test {
                 .setTestClassName("android.telecom.cts.OutgoingCallTest")
                 .setTestMethodName("testStartCallWithSpeakerphoneTrue_SpeakerphoneOnInCall"));
 
-        RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
+        RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG * 2);
         // Verify that we have three atoma for  callstatechange
         List<EventMetricData> data = ReportUtils.getEventMetricDataList(getDevice());
         AtomsProto.CallStateChanged callStateChangedAtom = null;
