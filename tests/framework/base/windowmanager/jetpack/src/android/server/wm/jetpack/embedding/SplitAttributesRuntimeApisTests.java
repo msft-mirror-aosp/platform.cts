@@ -25,6 +25,7 @@ import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.startActivit
 import android.app.Activity;
 import android.content.res.Resources;
 import android.graphics.Color;
+import android.platform.test.annotations.Presubmit;
 import android.server.wm.jetpack.utils.TestActivityWithId;
 
 import androidx.window.extensions.core.util.function.Function;
@@ -45,13 +46,13 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * Test class to verify the behaviors of
- * {@link androidx.window.extensions.embedding.SplitAttributes} runtime APIs
+ * Test class to verify the behaviors of {@link
+ * androidx.window.extensions.embedding.SplitAttributes} runtime APIs
  *
- * Build/Install/Run:
- *     atest CtsWindowManagerJetpackTestCases:SplitAttributesRuntimeApisTests
+ * <p>Build/Install/Run: atest CtsWindowManagerJetpackTestCases:SplitAttributesRuntimeApisTests
  */
 @RunWith(Parameterized.class)
+@Presubmit
 public class SplitAttributesRuntimeApisTests extends ActivityEmbeddingTestBase {
 
     private static final AnimationParams ANIMATION_PARAMS =
