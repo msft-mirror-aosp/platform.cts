@@ -24,7 +24,6 @@ import static android.view.inputmethod.Flags.FLAG_ADAPTIVE_HANDWRITING_BOUNDS;
 import static android.view.inputmethod.Flags.FLAG_CONNECTIONLESS_HANDWRITING;
 import static android.view.inputmethod.Flags.FLAG_HOME_SCREEN_HANDWRITING_DELEGATOR;
 import static android.view.inputmethod.Flags.FLAG_INITIATION_WITHOUT_INPUT_CONNECTION;
-import static android.view.inputmethod.Flags.FLAG_USE_HANDWRITING_LISTENER_FOR_TOOLTYPE;
 import static android.view.inputmethod.InputMethodInfo.ACTION_STYLUS_HANDWRITING_SETTINGS;
 
 import static com.android.cts.mockime.ImeEventStreamTestUtils.editorMatcher;
@@ -1438,14 +1437,10 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
                 y = unfocusedEditText.getHeight() / 2;
                 stylusPointer = TestUtils.injectStylusDownEvent(stylus, unfocusedEditText, x, y);
                 TestUtils.injectStylusUpEvent(stylusPointer);
-                if (mFlagsValueProvider.getBoolean(FLAG_USE_HANDWRITING_LISTENER_FOR_TOOLTYPE)) {
-                    expectEvent(
-                            stream,
-                            startInputInitialEditorToolMatcher(toolType, unfocusedMarker),
-                            TIMEOUT);
-                } else {
-                    expectEvent(stream, onStartInputMatcher(toolType, unfocusedMarker), TIMEOUT);
-                }
+                expectEvent(
+                        stream,
+                        startInputInitialEditorToolMatcher(toolType, unfocusedMarker),
+                        TIMEOUT);
             }
         }
     }
@@ -1599,7 +1594,6 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
      * Inject KeyEvent and Stylus tap verify toolType is detected with
      * {@link InputMethodService#onUpdateEditorToolType(int)} lifecycle method.
      */
-    @RequiresFlagsEnabled(FLAG_USE_HANDWRITING_LISTENER_FOR_TOOLTYPE)
     @Test
     public void testOnViewClicked_withKeyEvent() throws Exception {
         final Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
@@ -1988,10 +1982,10 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
     }
 
     /**
-     * Tap on a view with stylus to launch a new activity with Editor. The editor's
-     * editor ToolType should match stylus.
+     * Tap on a view with stylus to launch a new activity with Editor. The editor's editor ToolType
+     * should match stylus.
      */
-    @RequiresFlagsEnabled({FLAG_USE_HANDWRITING_LISTENER_FOR_TOOLTYPE, FLAG_DEVICE_ASSOCIATIONS})
+    @RequiresFlagsEnabled({FLAG_DEVICE_ASSOCIATIONS})
     @Test
     public void testHandwriting_editorToolTypeOnNewWindow() throws Exception {
         Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
