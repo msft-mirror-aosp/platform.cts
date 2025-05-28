@@ -386,6 +386,79 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
         }
     }
 
+    /**
+     * Verifies that the IME back invoked callback is registered and unregistered on the correct
+     * dispatcher, when switching processes and activities. The test will first start TestActivity1
+     * on the main process, show the IME, then start a RemoteTestActivity in a separate process
+     * which will hide the IME, and then launch TestActivity2 on the main process, verifying the
+     * next back event is sent to the app.
+     */
+    @Test
+    public void testHideImeAfterBackPressed_inSecondActivityAfterProcessSwitch() throws Exception {
+        final Context context = mInstrumentation.getTargetContext();
+
+        try (MockImeSession imeSession = MockImeSession.create(
+                mInstrumentation.getContext(),
+                mInstrumentation.getUiAutomation(),
+                new ImeSettings.Builder().setOnBackCallbackEnabled(true))) {
+            context.getApplicationInfo().setEnableOnBackInvokedCallback(true);
+
+            final ImeEventStream stream = imeSession.openEventStream();
+            final String marker = getTestMarker(FOCUSED_EDIT_TEXT_TAG);
+            final EditText editText = launchTestActivity(marker);
+
+            expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
+            notExpectEvent(stream, editorMatcher("onStartInputView", marker), TIMEOUT);
+            expectImeInvisible(TIMEOUT);
+
+            final var imm = editText.getContext().getSystemService(InputMethodManager.class);
+            assertNotNull("InputMethodManager should be found", imm);
+            assertTrue("hasActiveInputConnection() must return true if the View has IME focus",
+                    getOnMainSync(() -> imm.hasActiveInputConnection(editText)));
+
+            // Test showSoftInput() flow
+            assertTrue("showSoftInput must success if the View has IME focus",
+                    getOnMainSync(() -> imm.showSoftInput(editText, 0)));
+
+            expectEvent(stream, showSoftInputMatcher(InputMethod.SHOW_EXPLICIT), TIMEOUT);
+            expectEvent(stream, editorMatcher("onStartInputView", marker), TIMEOUT);
+            expectEventWithKeyValue(stream, "onWindowVisibilityChanged", "visible",
+                    View.VISIBLE, TIMEOUT);
+            expectImeVisible(TIMEOUT);
+
+            final var marker2 = getTestMarker(SECOND_EDIT_TEXT_TAG);
+            try (var ignored = MockTestActivityUtil.launchSync(
+                    context.getPackageManager().isInstantApp(), TIMEOUT,
+                    Map.of(MockTestActivityUtil.EXTRA_KEY_PRIVATE_IME_OPTIONS, marker2))) {
+                expectEvent(stream, eventMatcher("onFinishInput"), TIMEOUT);
+                expectEvent(stream, editorMatcher("onStartInput", marker2), START_INPUT_TIMEOUT);
+                expectEvent(stream, editorMatcher("onStartInputView", marker2), TIMEOUT);
+                expectEvent(stream, hideSoftInputMatcher(), TIMEOUT);
+                expectImeInvisible(TIMEOUT);
+
+                // Launch the second test activity from the main process.
+                final var backCallbackInvocationCount = new AtomicInteger();
+                TestActivity.startSync((activity) -> {
+                    // We must register this before the activity is attached, otherwise it would
+                    // overwrite the IME callback/
+                    activity.getOnBackInvokedDispatcher().registerOnBackInvokedCallback(
+                            OnBackInvokedDispatcher.PRIORITY_DEFAULT,
+                            backCallbackInvocationCount::getAndIncrement);
+                    return new LinearLayout(activity);
+                });
+
+                notExpectEvent(stream, showSoftInputMatcher(InputMethod.SHOW_EXPLICIT),
+                        NOT_EXPECT_TIMEOUT);
+                expectImeInvisible(TIMEOUT);
+
+                mInstrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK);
+
+                assertEquals("The back event should be received by the app",
+                        1, backCallbackInvocationCount.get());
+            }
+        }
+    }
+
     @Test
     public void testHideImeAfterBackPressed_legacyAppLegacyIme() throws Exception {
         verifyHideImeBackPressed(false /* appRequestsBackCallback */,
