@@ -26,13 +26,19 @@ import androidx.window.sidecar.SidecarDeviceState;
 import androidx.window.sidecar.SidecarInterface.SidecarCallback;
 import androidx.window.sidecar.SidecarWindowLayoutInfo;
 
-public class SidecarCallbackCounter implements SidecarCallback {
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
+public class SidecarCallbackCounter implements SidecarCallback {
+    private static final int TIMEOUT_MILLISECONDS = 100;
+    private final Object mLock = new Object();
     private final IBinder mWindowToken;
     private int mCallbackCount;
+    private final CountDownLatch mCountDownLatch;
 
-    public SidecarCallbackCounter(IBinder windowToken) {
+    public SidecarCallbackCounter(IBinder windowToken, int callbackCount) {
         mWindowToken = windowToken;
+        mCountDownLatch = new CountDownLatch(callbackCount);
     }
 
     @Override
@@ -42,13 +48,30 @@ public class SidecarCallbackCounter implements SidecarCallback {
     @Override
     public void onWindowLayoutChanged(@NonNull IBinder iBinder,
             @NonNull SidecarWindowLayoutInfo sidecarWindowLayoutInfo) {
-        assertEquals(iBinder, mWindowToken);
-        assertNotNull(sidecarWindowLayoutInfo);
-        mCallbackCount++;
+        synchronized (mLock) {
+            assertEquals(iBinder, mWindowToken);
+            assertNotNull(sidecarWindowLayoutInfo);
+            mCallbackCount++;
+            mCountDownLatch.countDown();
+        }
     }
 
     public void resetCallbackCount() {
         mCallbackCount = 0;
+    }
+
+    /**
+     * Waits for the expected number of values to be emitted.
+     *
+     * @return {@code true} if expected number of values was reached within the timeout, {@code
+     *     false} otherwise.
+     */
+    public boolean waitForCountdown() {
+        try {
+            return mCountDownLatch.await(TIMEOUT_MILLISECONDS, TimeUnit.MILLISECONDS);
+        } catch (InterruptedException e) {
+            return false;
+        }
     }
 
     public long getCallbackCount() {
