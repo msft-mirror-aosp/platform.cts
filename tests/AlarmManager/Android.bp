@@ -18,7 +18,7 @@ package {
 
 android_test {
     name: "CtsAlarmManagerTestCases",
-    team: "trendy_team_framework_backstage_power",
+    team: "trendy_team_framework_bpm",
     defaults: ["cts_defaults"],
     static_libs: [
         "androidx.test.rules",
