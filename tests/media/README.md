@@ -117,3 +117,6 @@ atest MctsMediaV2TestCases -- --module-arg MctsMediaV2TestCases:instrumentation-
 | araw | audio/raw |
 | flac | audio/flac |
 | gsm | audio/gsm |
+| ac3 | audio/ac3 |
+| ac4 | audio/ac4 |
+| eac3 | audio/eac3 |

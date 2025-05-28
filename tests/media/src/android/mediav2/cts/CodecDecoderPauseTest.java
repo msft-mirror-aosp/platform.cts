@@ -18,6 +18,7 @@ package android.mediav2.cts;
 
 import static android.media.codec.Flags.apvSupport;
 import static android.mediav2.common.cts.CodecTestBase.SupportClass.CODEC_ALL;
+import static android.mediav2.common.cts.CodecTestBase.SupportClass.CODEC_OPTIONAL;
 
 import static com.android.media.extractor.flags.Flags.extractorMp4EnableApv;
 
@@ -81,6 +82,9 @@ public class CodecDecoderPauseTest extends CodecDecoderTestBase {
                 {MediaFormat.MIMETYPE_VIDEO_VP9, "bbb_cif_768kbps_30fps_vp9.mkv", CODEC_ALL},
                 {MediaFormat.MIMETYPE_VIDEO_AV1, "cosmat_520x390_24fps_768kbps_av1_10bit.mkv",
                         CODEC_ALL},
+                {MediaFormat.MIMETYPE_AUDIO_AC3, "audio/ac3_510_48kHz_256.mp4", CODEC_OPTIONAL},
+                {MediaFormat.MIMETYPE_AUDIO_AC4, "audio/ac4_510_48kHz_256.mp4", CODEC_OPTIONAL},
+                {MediaFormat.MIMETYPE_AUDIO_EAC3, "audio/eac3_510_48kHz_256.mp4", CODEC_OPTIONAL},
         }));
         if (IS_AT_LEAST_B && apvSupport() && extractorMp4EnableApv()) {
             exhaustiveArgsList.addAll(Arrays.asList(new Object[][] {

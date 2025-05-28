@@ -96,6 +96,9 @@ public class CodecDecoderValidationTest extends CodecDecoderTestBase {
     private static final String MEDIA_TYPE_HEVC = MediaFormat.MIMETYPE_VIDEO_HEVC;
     private static final String MEDIA_TYPE_VP9 = MediaFormat.MIMETYPE_VIDEO_VP9;
     private static final String MEDIA_TYPE_AV1 = MediaFormat.MIMETYPE_VIDEO_AV1;
+    private static final String MEDIA_TYPE_AC3 = MediaFormat.MIMETYPE_AUDIO_AC3;
+    private static final String MEDIA_TYPE_AC4 = MediaFormat.MIMETYPE_AUDIO_AC4;
+    private static final String MEDIA_TYPE_EAC3 = MediaFormat.MIMETYPE_AUDIO_EAC3;
     private static final String MEDIA_DIR = WorkDir.getMediaDirString();
     private final String[] mSrcFiles;
     private final String mRefFile;
@@ -736,6 +739,26 @@ public class CodecDecoderValidationTest extends CodecDecoderTestBase {
                         null, -1.0f, -1L, 44100, 2, -1, -1, CODEC_DEFAULT},
                 {MEDIA_TYPE_AAC, new String[]{"audio/bbb_2ch_48kHz_usac.m4a"},
                         null, -1.0f, -1L, 48000, 2, -1, -1, CODEC_DEFAULT},
+
+                // ac3
+                {MEDIA_TYPE_AC3, new String[]{"audio/ac3_200_48kHz_128.mp4"},
+                        null, -1.0f, -1L, 48000, 2, -1, -1, CODEC_OPTIONAL},
+                {MEDIA_TYPE_AC3, new String[]{"audio/ac3_200_48kHz_256.mp4"},
+                        null, -1.0f, -1L, 48000, 2, -1, -1, CODEC_OPTIONAL},
+
+                // ac4
+                {MEDIA_TYPE_AC4, new String[]{"audio/ac4_200_48kHz_48.mp4"},
+                        null, -1.0f, -1L, 48000, 2, -1, -1, CODEC_OPTIONAL},
+                {MEDIA_TYPE_AC4, new String[]{"audio/ac4_510_48hkz_96.mp4"},
+                        null, -1.0f, -1L, 48000, 6, -1, -1, CODEC_OPTIONAL},
+                {MEDIA_TYPE_AC4, new String[]{"audio/ac4_510_48kHz_128.mp4"},
+                        null, -1.0f, -1L, 48000, 6, -1, -1, CODEC_OPTIONAL},
+
+                // eac3
+                {MEDIA_TYPE_EAC3, new String[]{"audio/eac3_200_48kHz_128.mp4"},
+                        null, -1.0f, -1L, 48000, 2, -1, -1, CODEC_OPTIONAL},
+                {MEDIA_TYPE_EAC3, new String[]{"audio/eac3_200_48kHz_256.mp4"},
+                        null, -1.0f, -1L, 48000, 2, -1, -1, CODEC_OPTIONAL},
         }));
         if (IS_AT_LEAST_U) {
             exhaustiveArgsList.addAll(Arrays.asList(new Object[][]{
