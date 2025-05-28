@@ -26,15 +26,11 @@ import com.android.tradefed.log.LogUtil.CLog;
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
 import com.android.tradefed.util.FileUtil;
 
-import com.google.errorprone.annotations.FormatMethod;
-import com.google.errorprone.annotations.FormatString;
-
 import org.junit.After;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.io.File;
-import java.util.Locale;
 
 /**
  * Test verifying backup eligibility rules are respected.
@@ -188,14 +184,11 @@ public class BackupEligibilityHostSideTest extends BaseBackupHostSideTest {
 
             // Create a temp dir on the host for adb backup output.
             tempDir = FileUtil.createTempDir(TEMP_DIR);
-            int user = getBackupUtils().getCurrentUserId();
             String backupFileName = new File(tempDir, ADB_BACKUP_FILE).getAbsolutePath();
-            runShellCommand(
-                    "bu backup -user %d -f %s %s",
-                    user, backupFileName, BACKUP_ELIGIBILITY_APP_NAME);
+            runAdbCommand("backup", "-f", backupFileName, BACKUP_ELIGIBILITY_APP_NAME);
 
             checkBackupEligibilityDeviceTest("deleteFilesAndAssertNoneExist");
-            runShellCommand("bu restore -user %d %s", user, backupFileName);
+            runAdbCommand("restore", backupFileName);
         } finally {
             if (tempDir != null) {
                 FileUtil.recursiveDelete(tempDir);
@@ -210,26 +203,21 @@ public class BackupEligibilityHostSideTest extends BaseBackupHostSideTest {
                 methodName);
     }
 
-    @FormatMethod
-    private void runShellCommand(@FormatString String commandTemplate, Object... commandArgs)
-            throws Exception {
+    private void runAdbCommand(String... arguments) throws Exception {
         ITestDevice device = getDevice();
-        String command = String.format(Locale.ENGLISH, commandTemplate, commandArgs);
 
         try {
             // Close the backup confirmation window in case there's already one floating around for
             // any reason.
-            device.executeShellCommand(
-                    String.format(Locale.ENGLISH, "am force-stop %s",
-                            BACKUP_RESTORE_CONFIRMATION_PACKAGE));
+            device.executeShellCommand("am force-stop " + BACKUP_RESTORE_CONFIRMATION_PACKAGE);
         } catch (Exception e) {
-            CLog.w("Error while trying to force-stop backup confirmation: %s", e.getMessage());
+            CLog.w("Error while trying to force-stop backup confirmation: " + e.getMessage());
             // Keep going
         }
 
         Thread restore = new Thread(() -> {
             try {
-                device.executeShellCommand(command);
+                device.executeAdbCommand(arguments);
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
