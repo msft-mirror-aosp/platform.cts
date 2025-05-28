@@ -2072,6 +2072,18 @@ public final class Helper {
         }
     }
 
+    /**
+     * Return {@code true} if feature `android.software.car.splitscreen_multitasking` (feature used
+     * to identify Automotive with multi-window) is enabled. This information is extracted from the
+     * {@link Context} object passed as argument.
+     *
+     * <p>TODO(b/420943436): delete this method once b/420943436 is fixed.
+     */
+    public static boolean isAutomotiveWithMultiWindow(Context context) {
+        final var pm = context.getPackageManager();
+        return pm.hasSystemFeature("android.software.car.splitscreen_multitasking");
+    }
+
     public static class CustomDescriptionUtils {
         public static RemoteViews newTemplate(String packageName) {
             return new RemoteViews(packageName, R.layout.custom_description_with_link);
