@@ -1906,16 +1906,26 @@ public final class ActivityManagerTest {
             // Restrict the PACKAGE_NAME_APP1
             runShellCommand(mInstrumentation, "am set-standby-bucket --user " + mTestRunningUserId
                     + " " + PACKAGE_NAME_APP1 + " restricted");
-            waitUntilTrue(WAITFOR_MSEC, () -> {
-                try {
-                    final int bucket = Integer.getInteger(runShellCommand(mInstrumentation,
-                            "am get-standby-bucket --user " + mTestRunningUserId
-                                    + " " + PACKAGE_NAME_APP1));
-                    return bucket == STANDBY_BUCKET_RESTRICTED;
-                } catch (Exception e) {
-                    return false;
-                }
-            });
+            final boolean restricted = waitUntilTrue(
+                    WAITFOR_MSEC,
+                    () -> {
+                        try {
+                            final int bucket =
+                                    AmUtils.getStandbyBucketAsUser(
+                                            PACKAGE_NAME_APP1, mTestRunningUserId);
+                            Log.i(
+                                    TAG,
+                                    "Standby bucket of "
+                                            + PACKAGE_NAME_APP1
+                                            + ": "
+                                            + bucket);
+                            return bucket == STANDBY_BUCKET_RESTRICTED;
+                        } catch (Exception e) {
+                            Log.e(TAG, "Error querying the standby bucket", e);
+                            return false;
+                        }
+                    });
+            assertTrue(PACKAGE_NAME_APP1 + " did not move to RESTRICTED bucket", restricted);
 
             final Intent intent = new Intent();
             final CountDownLatch[] latch = new CountDownLatch[] {new CountDownLatch(1)};
