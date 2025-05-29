@@ -294,7 +294,7 @@ public class TelephonyManagerReadPhoneStatePermissionTest {
      *
      * <p>Requires Permission: {@link android.Manifest.permission#READ_BASIC_PHONE_STATE}.
      *
-     * <p>APIs list: isMultiSimSupported()
+     * <p>APIs list: isMultiSimSupported() isModemEnabledForSlot(slotIndex)
      */
     @RequiresFlagsEnabled(Flags.FLAG_MACRO_BASED_OPPORTUNISTIC_NETWORKS)
     @Test
@@ -309,10 +309,9 @@ public class TelephonyManagerReadPhoneStatePermissionTest {
                     .adoptShellPermissionIdentity(
                             android.Manifest.permission.READ_BASIC_PHONE_STATE);
             mTelephonyManager.isMultiSimSupported();
+            mTelephonyManager.isModemEnabledForSlot(0);
         } catch (SecurityException se) {
-            fail(
-                    "isMultiSimSupported must not throw a SecurityException with "
-                            + "READ_BASIC_PHONE_STATE permission");
+            fail("SecurityException not expected with READ_BASIC_PHONE_STATE permission: " + se);
         } finally {
             InstrumentationRegistry.getInstrumentation()
                     .getUiAutomation()
