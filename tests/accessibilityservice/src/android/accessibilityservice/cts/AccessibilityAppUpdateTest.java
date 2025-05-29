@@ -90,7 +90,6 @@ public class AccessibilityAppUpdateTest {
     private final UiAutomation mUiAutomation = InstrumentationRegistry.getInstrumentation()
             .getUiAutomation(FLAG_DONT_SUPPRESS_ACCESSIBILITY_SERVICES);
 
-    @AsbSecurityTest(cveBugId = 358092445)
     @Test
     public void updateA11yActivityToA11yService_sameComponentName_a11yActivityShortcutsAreCleared()
             throws Exception {
@@ -111,7 +110,6 @@ public class AccessibilityAppUpdateTest {
         }
     }
 
-    @AsbSecurityTest(cveBugId = 358092445)
     @Test
     public void updateA11yServiceToA11yActivity_sameComponentName_a11yShortcutsPersist()
             throws Exception {
