@@ -144,4 +144,11 @@
     <option name="compatibility:include-filter" value="CtsGameFrameRateTestCases android.gameframerate.cts.GameFrameRateTest#testGameModeChoreographer" />
     <option name="compatibility:include-filter" value="CtsGameFrameRateTestCases android.gameframerate.cts.GameFrameRateTest#testGameModeBackpressure" />
     <option name="compatibility:include-filter" value="CtsGameFrameRateTestCases android.gameframerate.cts.GameFrameRateTest#testGameModeDisplayGetRefreshRate" />
+
+    <!-- b/410503137 -->
+    <option name="compatibility:exclude-filter" value="CtsKeystoreTestCases android.keystore.cts.KeyAttestationTest" />
+    <option name="compatibility:exclude-filter" value="CtsKeystoreTestCases android.keystore.cts.AttestKeyTest#testEcAttestKey" />
+    <option name="compatibility:exclude-filter" value="CtsKeystoreTestCases android.keystore.cts.AttestKeyTest#testRsaAttestKey" />
+    <option name="compatibility:exclude-filter" value="CtsKeystoreTestCases android.keystore.cts.performance.AttestationPerformanceTest#testEcKeyAttestation" />
+    <option name="compatibility:exclude-filter" value="CtsKeystoreTestCases android.keystore.cts.performance.AttestationPerformanceTest#testRsaKeyAttestation" />
 </configuration>
