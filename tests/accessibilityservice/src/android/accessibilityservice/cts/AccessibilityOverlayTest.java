@@ -119,7 +119,12 @@ public class AccessibilityOverlayTest {
         final String overlayTitle = "Overlay title";
         sUiAutomation.executeAndWaitForEvent(() -> mService.runOnServiceSync(() -> {
             addOverlayWindow(mService, overlayTitle);
-        }), (event) -> findOverlayWindow(Display.DEFAULT_DISPLAY) != null, AsyncUtils.DEFAULT_TIMEOUT_MS);
+        }), (event) -> {
+                var window = findOverlayWindow(Display.DEFAULT_DISPLAY);
+                return window != null
+                        && window.getTitle() != null
+                        && window.getTitle().equals(overlayTitle);
+            }, AsyncUtils.DEFAULT_TIMEOUT_MS);
 
         assertTrue(TextUtils.equals(findOverlayWindow(Display.DEFAULT_DISPLAY).getTitle(), overlayTitle));
     }
