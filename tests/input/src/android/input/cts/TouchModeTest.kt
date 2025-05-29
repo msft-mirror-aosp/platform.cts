@@ -23,7 +23,6 @@ import android.app.Instrumentation
 import android.content.Context
 import android.content.pm.PackageManager
 import android.graphics.PixelFormat
-import android.graphics.Point
 import android.hardware.display.DisplayManager
 import android.hardware.display.VirtualDisplay
 import android.media.ImageReader
@@ -333,17 +332,12 @@ class TouchModeTest {
         CtsWindowInfoUtils.waitForStableWindowGeometry(Duration.ofSeconds(5))
         val downTime = SystemClock.uptimeMillis()
         val location = IntArray(2)
-        activity.getWindow().getDecorView().getLocationOnScreen(location)
-        val windowLocationOnScreen = Point(location[0], location[1])
+        val decorView = activity.window.decorView
+        decorView.getLocationOnScreen(location)
+        val x = (location[0] + decorView.width / 2).toFloat()
+        val y = (location[1] + decorView.height / 2).toFloat()
 
-        val down = MotionEvent.obtain(
-                downTime,
-                downTime,
-                ACTION_DOWN,
-                windowLocationOnScreen.x.toFloat(),
-                windowLocationOnScreen.y.toFloat(),
-                0 // metaState
-        )
+        val down = MotionEvent.obtain(downTime, downTime, ACTION_DOWN, x, y, 0)
         down.source = InputDevice.SOURCE_TOUCHSCREEN
         val sync = true
         instrumentation.uiAutomation.injectInputEvent(down, sync)
@@ -351,14 +345,7 @@ class TouchModeTest {
         // Clean up by sending an up event so that we ensure gestures are injected consistently.
         return AutoCloseable {
             val upEventTime = SystemClock.uptimeMillis()
-            val up = MotionEvent.obtain(
-                    downTime,
-                    upEventTime,
-                    ACTION_UP,
-                    windowLocationOnScreen.x.toFloat(),
-                    windowLocationOnScreen.y.toFloat(),
-                    0 // metaState
-            )
+            val up = MotionEvent.obtain(downTime, upEventTime, ACTION_UP, x, y, 0)
             up.source = InputDevice.SOURCE_TOUCHSCREEN
             instrumentation.uiAutomation.injectInputEvent(up, sync)
         }
