@@ -16,11 +16,14 @@
 
 package android.app.appfunctions.cts
 
+import android.app.appfunctions.AppFunctionAttribution
 import android.app.appfunctions.ExecuteAppFunctionRequest
 import android.app.appfunctions.flags.Flags.FLAG_ENABLE_APP_FUNCTION_MANAGER
 import android.app.appsearch.GenericDocument
+import android.net.Uri
 import android.os.Bundle
 import android.os.Parcel
+import android.permission.flags.Flags.FLAG_APP_FUNCTION_ACCESS_API_ENABLED
 import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.CheckFlagsRule
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
@@ -101,6 +104,95 @@ class ExecuteAppFunctionRequestTest {
         assertThat(restoredRequest.functionIdentifier).isEqualTo("targetFunctionId")
         assertThat(restoredRequest.parameters).isNotNull()
         assertThat(restoredRequest.extras).isNotNull()
+    }
+
+    @ApiTest(
+        apis =
+            [
+                "android.app.appfunctions.ExecuteAppFunctionRequest.Builder#Builder",
+                "android.app.appfunctions.ExecuteAppFunctionRequest.Builder#setParameter",
+                "android.app.appfunctions.ExecuteAppFunctionRequest.Builder#setExtras",
+                "android.app.appfunctions.ExecuteAppFunctionRequest.Builder#build",
+                "android.app.appfunctions.ExecuteAppFunctionRequest#writeToParcel",
+                "android.app.appfunctions.ExecuteAppFunctionRequest#CREATOR",
+                "android.app.appfunctions.ExecuteAppFunctionRequest#getTargetPackageName",
+                "android.app.appfunctions.ExecuteAppFunctionRequest#getFunctionIdentifier",
+                "android.app.appfunctions.ExecuteAppFunctionRequest#getParameters",
+                "android.app.appfunctions.ExecuteAppFunctionRequest#getExtras",
+                "android.app.appfunctions.ExecuteAppFunctionRequest#getAttribution",
+            ]
+    )
+    @Test
+    @RequiresFlagsEnabled(FLAG_APP_FUNCTION_ACCESS_API_ENABLED)
+    fun build_withoutAttribution() {
+        val extras = Bundle()
+        extras.putString("extra", "value")
+        val parameters: GenericDocument =
+            GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
+                .setPropertyLong("testLong", 23)
+                .build()
+        val request =
+            ExecuteAppFunctionRequest.Builder("targetPkg", "targetFunctionId")
+                .setParameters(parameters)
+                .setExtras(extras)
+                .build()
+
+        val restoredRequest: ExecuteAppFunctionRequest = parcelAndUnparcel(request)
+
+        assertThat(restoredRequest.targetPackageName).isEqualTo("targetPkg")
+        assertThat(restoredRequest.functionIdentifier).isEqualTo("targetFunctionId")
+        assertThat(restoredRequest.parameters).isEqualTo(parameters)
+        assertThat(restoredRequest.extras.size()).isEqualTo(1)
+        assertThat(restoredRequest.extras.getString("extra")).isEqualTo("value")
+        assertThat(restoredRequest.attribution).isNull()
+    }
+
+    @ApiTest(
+        apis =
+            [
+                "android.app.appfunctions.ExecuteAppFunctionRequest.Builder#Builder",
+                "android.app.appfunctions.ExecuteAppFunctionRequest.Builder#setParameter",
+                "android.app.appfunctions.ExecuteAppFunctionRequest.Builder#setExtras",
+                "android.app.appfunctions.ExecuteAppFunctionRequest.Builder#build",
+                "android.app.appfunctions.ExecuteAppFunctionRequest#writeToParcel",
+                "android.app.appfunctions.ExecuteAppFunctionRequest#CREATOR",
+                "android.app.appfunctions.ExecuteAppFunctionRequest#getTargetPackageName",
+                "android.app.appfunctions.ExecuteAppFunctionRequest#getFunctionIdentifier",
+                "android.app.appfunctions.ExecuteAppFunctionRequest#getParameters",
+                "android.app.appfunctions.ExecuteAppFunctionRequest#getExtras",
+                "android.app.appfunctions.ExecuteAppFunctionRequest#getAttribution",
+            ]
+    )
+    @Test
+    @RequiresFlagsEnabled(FLAG_APP_FUNCTION_ACCESS_API_ENABLED)
+    fun build_withAttribution() {
+        val extras = Bundle()
+        extras.putString("extra", "value")
+        val parameters: GenericDocument =
+            GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
+                .setPropertyLong("testLong", 23)
+                .build()
+        val attribution =
+            AppFunctionAttribution.Builder(AppFunctionAttribution.INTERACTION_TYPE_OTHER)
+                .setCustomInteractionType("CustomInteractionType")
+                .setThreadId("ThreadId")
+                .setInteractionUri(Uri.parse("content://com.example/android"))
+                .build()
+        val request =
+            ExecuteAppFunctionRequest.Builder("targetPkg", "targetFunctionId")
+                .setParameters(parameters)
+                .setExtras(extras)
+                .setAttribution(attribution)
+                .build()
+
+        val restoredRequest: ExecuteAppFunctionRequest = parcelAndUnparcel(request)
+
+        assertThat(restoredRequest.targetPackageName).isEqualTo("targetPkg")
+        assertThat(restoredRequest.functionIdentifier).isEqualTo("targetFunctionId")
+        assertThat(restoredRequest.parameters).isEqualTo(parameters)
+        assertThat(restoredRequest.extras.size()).isEqualTo(1)
+        assertThat(restoredRequest.extras.getString("extra")).isEqualTo("value")
+        assertThat(restoredRequest.attribution).isEqualTo(attribution)
     }
 
     private fun parcelAndUnparcel(original: ExecuteAppFunctionRequest): ExecuteAppFunctionRequest {
