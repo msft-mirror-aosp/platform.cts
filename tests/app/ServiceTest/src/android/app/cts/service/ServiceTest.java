@@ -2195,6 +2195,16 @@ public final class ServiceTest {
                 intent.setAction("android.intent.action.SEARCH");
                 intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                 mContext.startActivity(intent);
+            } else if (pm.hasSystemFeature(PackageManager.FEATURE_WATCH)) {
+                // Send the app to background by launching another activity of another process.
+                // It prevents the performance degradation or any stability issue on partner
+                // devices(b/413155192)
+                Intent intent = new Intent();
+                intent.setPackage("com.android.app1");
+                intent.setClassName(
+                        "com.android.app1", "android.app.stubs.MockApplicationActivity");
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                mContext.startActivity(intent);
             } else {
                 assertWithMessage("Failed to send the app to background")
                         .that(a.moveTaskToBack(true))
