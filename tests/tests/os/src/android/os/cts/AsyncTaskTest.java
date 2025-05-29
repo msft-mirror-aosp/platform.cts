@@ -16,19 +16,32 @@
 
 package android.os.cts;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import androidx.annotation.NonNull;
+import androidx.test.platform.app.InstrumentationRegistry;
+import androidx.test.runner.AndroidJUnit4;
+
 import android.os.AsyncTask;
 import android.platform.test.annotations.AppModeSdkSandbox;
-import android.test.InstrumentationTestCase;
 
 import com.android.compatibility.common.util.PollingCheck;
+
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
-public class AsyncTaskTest extends InstrumentationTestCase {
+@RunWith(AndroidJUnit4.class)
+public class AsyncTaskTest {
     private static final long COMPUTE_TIME = 1000;
     private static final long RESULT = 1000;
     private static final Integer[] UPDATE_VALUE = { 0, 1, 2 };
@@ -38,10 +51,26 @@ public class AsyncTaskTest extends InstrumentationTestCase {
     private static AsyncTask mAsyncTask;
     private static MyAsyncTask mMyAsyncTask;
 
+    private static void runTestOnUiThread(Runnable r) throws Throwable {
+        final Throwable[] exceptions = new Throwable[1];
+        InstrumentationRegistry.getInstrumentation().runOnMainSync(() -> {
+            try {
+                r.run();
+            } catch (Throwable throwable) {
+                exceptions[0] = throwable;
+            }
+        });
+        if (exceptions[0] != null) {
+            throw exceptions[0];
+        }
+    }
+
+    @Test
     public void testAsyncTask() throws Throwable {
         doTestAsyncTask(0);
     }
 
+    @Test
     public void testAsyncTaskWithTimeout() throws Throwable {
         doTestAsyncTask(DURATION);
     }
@@ -102,6 +131,7 @@ public class AsyncTaskTest extends InstrumentationTestCase {
         });
     }
 
+    @Test
     public void testCancelWithInterrupt() throws Throwable {
         startAsyncTask();
         Thread.sleep(COMPUTE_TIME / 2);
@@ -115,6 +145,7 @@ public class AsyncTaskTest extends InstrumentationTestCase {
         assertTrue(mMyAsyncTask.exception instanceof InterruptedException);
     }
 
+    @Test
     public void testCancel() throws Throwable {
         startAsyncTask();
         Thread.sleep(COMPUTE_TIME / 2);
@@ -127,6 +158,7 @@ public class AsyncTaskTest extends InstrumentationTestCase {
         assertNull(mMyAsyncTask.exception);
     }
 
+    @Test
     public void testCancelTooLate() throws Throwable {
         startAsyncTask();
         Thread.sleep(DURATION);
@@ -136,6 +168,7 @@ public class AsyncTaskTest extends InstrumentationTestCase {
         assertNull(mMyAsyncTask.exception);
     }
 
+    @Test
     public void testCancellationWithException() throws Throwable {
         final CountDownLatch readyToCancel = new CountDownLatch(1);
         final CountDownLatch readyToThrow = new CountDownLatch(1);
@@ -173,6 +206,7 @@ public class AsyncTaskTest extends InstrumentationTestCase {
         }
     }
 
+    @Test
     public void testException() throws Throwable {
         final CountDownLatch calledOnCancelled = new CountDownLatch(1);
         runTestOnUiThread(new Runnable() {
