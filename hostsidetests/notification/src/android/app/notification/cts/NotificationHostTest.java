@@ -23,6 +23,7 @@ import android.host.multiuser.BaseMultiUserTest;
 import android.service.notification.ManagedServiceInfoProto;
 import android.service.notification.ManagedServicesProto;
 import android.service.notification.NotificationServiceDumpProto;
+import android.platform.test.annotations.DesktopTest;
 
 import com.android.compatibility.common.tradefed.build.CompatibilityBuildHelper;
 import com.android.compatibility.common.util.PollingCheck;
@@ -34,6 +35,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 @RunWith(DeviceJUnit4ClassRunner.class)
+@DesktopTest(cujs = {"b/416196055"})
 public class NotificationHostTest extends BaseMultiUserTest {
 
     private static final String APP_APK = "CtsNotificationListenerApp.apk";
