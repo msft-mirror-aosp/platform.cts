@@ -67,7 +67,8 @@ import java.util.regex.Pattern;
 @RunWith(JUnit4.class)
 public class CommonConfigLoadingTest {
 
-    private static final Pattern TODO_BUG_PATTERN = Pattern.compile(".*TODO\\(b/[0-9]+\\).*", Pattern.DOTALL);
+    private static final Pattern TODO_BUG_PATTERN =
+            Pattern.compile(".*TODO\\(b/[0-9]+\\).*", Pattern.DOTALL);
 
     /**
      * List of the officially supported runners in CTS, they meet all the interfaces criteria as
@@ -127,6 +128,13 @@ public class CommonConfigLoadingTest {
         RUNNER_EXCEPTION.add("com.android.photopicker.tests.HiltTestRunner");
     }
 
+    /** List of performance test modules that are allowed to be added. */
+    private static final Set<String> ALLOWED_PERFORMANCE_TEST = new HashSet<>();
+
+    static {
+        ALLOWED_PERFORMANCE_TEST.add("AptsHostSideTestCases");
+    }
+
     /**
      * Test that configuration shipped in Tradefed can be parsed.
      * -> Exclude deprecated ApkInstaller.
@@ -139,7 +147,10 @@ public class CommonConfigLoadingTest {
         if (Strings.isNullOrEmpty(suiteRoot)) {
             fail(String.format("Should run within a suite context: %s doesn't exist", rootVar));
         }
-        File testcases = new File(suiteRoot, String.format("/android-%s/testcases/", getSuiteName().toLowerCase()));
+        File testcases =
+                new File(
+                        suiteRoot,
+                        String.format("/android-%s/testcases/", getSuiteName().toLowerCase()));
         if (!testcases.exists()) {
             fail(String.format("%s does not exist", testcases));
             return;
@@ -160,7 +171,8 @@ public class CommonConfigLoadingTest {
             IConfiguration c = ConfigurationFactory.getInstance()
                     .createConfigurationFromArgs(new String[] {config.getAbsolutePath()});
             if (c.getDeviceConfig().size() > 2) {
-                throw new ConfigurationException(String.format("%s declares more than 2 devices.", config));
+                throw new ConfigurationException(
+                        String.format("%s declares more than 2 devices.", config));
             }
             int deviceCount = 0;
             for (IDeviceConfiguration dConfig : c.getDeviceConfig()) {
@@ -168,10 +180,14 @@ public class CommonConfigLoadingTest {
                 for (ITargetPreparer prep : dConfig.getTargetPreparers()) {
                     if (prep.getClass().isAssignableFrom(ApkInstaller.class)) {
                         throw new ConfigurationException(
-                                String.format("%s: Use com.android.tradefed.targetprep.suite."
-                                        + "SuiteApkInstaller instead of com.android.compatibility."
-                                        + "common.tradefed.targetprep.ApkInstaller, options will be "
-                                        + "the same.", config));
+                                String.format(
+                                        """
+                                        %s: Use com.android.tradefed.targetprep.suite.\
+                                        SuiteApkInstaller instead of com.android.compatibility.\
+                                        common.tradefed.targetprep.ApkInstaller, options will be \
+                                        the same.\
+                                        """,
+                                        config));
                     }
                     if (prep.getClass().isAssignableFrom(PreconditionPreparer.class)) {
                         throw new ConfigurationException(
@@ -268,8 +284,11 @@ public class CommonConfigLoadingTest {
             // Ensure options have been set
             c.validateOptions();
 
+            // Get the config file name without ".config" suffix.
+            String configModuleName = config.getName().substring(0, config.getName().length() - 7);
             // Check that no performance test module is included
-            if (ModuleTestTypeUtil.isPerformanceModule(c)) {
+            if (!ALLOWED_PERFORMANCE_TEST.contains(configModuleName)
+                    && ModuleTestTypeUtil.isPerformanceModule(c)) {
                 throw new ConfigurationException(
                         String.format("config: %s. Performance test modules are not allowed in xTS",
                                 config.getName()));
