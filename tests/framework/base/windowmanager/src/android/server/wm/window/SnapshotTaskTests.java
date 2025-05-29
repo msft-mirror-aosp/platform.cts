@@ -85,7 +85,9 @@ public class SnapshotTaskTests extends ActivityManagerTestBase {
 
     @After
     public void cleanup() {
-        mUiAutomation.dropShellPermissionIdentity();
+        if (mUiAutomation != null) {
+            mUiAutomation.dropShellPermissionIdentity();
+        }
     }
 
     @Test
