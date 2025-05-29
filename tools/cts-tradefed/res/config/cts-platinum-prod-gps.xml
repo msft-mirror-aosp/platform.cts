@@ -16,7 +16,7 @@
 <configuration description="Run CTS platinum prod tests.">
     <include name="cts-automated"/>
     <!-- CtsLocationGnssTestCases -->
-    <option name="compatibility:include-filter" value="CtsLocationGnssTestCases android.location.cts.gnss.GnssMeasurementRegistrationTest#testGnssMeasurementRegistration_2secInterval"/>
+    <option name="compatibility:include-filter" value="CtsLocationGnssTestCases android.location.cts.gnss.GnssNavigationMessageTest#testGnssNavigationMessageMandatoryFieldRanges"/>
     <!-- CtsLocationPrivilegedTestCases -->
     <option name="compatibility:include-filter" value="CtsLocationPrivilegedTestCases android.location.cts.privileged.GnssAssistanceProviderBaseTest#testRequest"/>
 </configuration>
