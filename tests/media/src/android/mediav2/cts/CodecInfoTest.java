@@ -44,8 +44,11 @@ import static android.mediav2.common.cts.CodecTestBase.VNDK_IS_AT_LEAST_T;
 import static android.mediav2.common.cts.CodecTestBase.canDisplaySupportHDRContent;
 import static android.mediav2.common.cts.CodecTestBase.codecFilter;
 import static android.mediav2.common.cts.CodecTestBase.codecPrefix;
+import static android.mediav2.common.cts.CodecTestBase.compileRequestedMediaTypeList;
 import static android.mediav2.common.cts.CodecTestBase.isFeatureSupported;
 import static android.mediav2.common.cts.CodecTestBase.isVendorCodec;
+import static android.mediav2.common.cts.CodecTestBase.mediaTypePrefix;
+import static android.mediav2.common.cts.CodecTestBase.mediaTypeSelKeys;
 import static android.mediav2.common.cts.CodecTestBase.selectCodecs;
 
 import static org.junit.Assert.assertEquals;
@@ -113,6 +116,8 @@ public class CodecInfoTest {
     public static Collection<Object[]> input() {
         final List<Object[]> argsList = new ArrayList<>();
         MediaCodecList codecList = new MediaCodecList(MediaCodecList.REGULAR_CODECS);
+        ArrayList<String> testMediaTypes =
+                mediaTypeSelKeys != null ? compileRequestedMediaTypeList() : null;
         for (MediaCodecInfo codecInfo : codecList.getCodecInfos()) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && codecInfo.isAlias()) {
                 continue;
@@ -129,6 +134,10 @@ public class CodecInfoTest {
             }
             String[] types = codecInfo.getSupportedTypes();
             for (String type : types) {
+                if ((mediaTypePrefix != null && !type.startsWith(mediaTypePrefix))
+                        || (testMediaTypes != null && !testMediaTypes.contains(type))) {
+                    continue;
+                }
                 argsList.add(new Object[]{type, codecName, codecInfo});
             }
         }
