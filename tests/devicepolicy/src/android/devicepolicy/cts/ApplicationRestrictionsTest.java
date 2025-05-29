@@ -29,8 +29,11 @@ import static com.android.eventlib.truth.EventLogsSubject.assertThat;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import static org.junit.Assume.assumeFalse;
+import static org.junit.Assume.assumeTrue;
 import static org.testng.Assert.assertThrows;
 
+import android.app.admin.flags.Flags;
 import android.content.ComponentName;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
@@ -38,8 +41,8 @@ import android.devicepolicy.cts.utils.BundleUtils;
 import android.os.Bundle;
 import android.stats.devicepolicy.EventId;
 
-import com.android.bedstead.enterprise.annotations.CanSetPolicyTest;
 import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest;
+import com.android.bedstead.enterprise.annotations.CanSetPolicyTest;
 import com.android.bedstead.enterprise.annotations.EnsureHasDevicePolicyManagerRoleHolder;
 import com.android.bedstead.enterprise.annotations.EnsureHasProfileOwner;
 import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile;
@@ -82,6 +85,10 @@ public final class ApplicationRestrictionsTest {
     @Postsubmit(reason = "New test")
     @PolicyAppliesTest(policy = DpcOnlyApplicationRestrictions.class)
     public void setApplicationRestrictions_applicationRestrictionsAreSet() {
+        // TODO(b/371032678): Remove assumption after flag rollout.
+        assumeTrue(dpc(sDeviceState).componentName() != null ||
+                Flags.setApplicationRestrictionsCoexistence());
+
         Bundle originalApplicationRestrictions =
                 dpc(sDeviceState).devicePolicyManager()
                         .getApplicationRestrictions(
@@ -105,10 +112,13 @@ public final class ApplicationRestrictionsTest {
         }
     }
 
-  @Postsubmit(reason = "New test")
-  @PolicyAppliesTest(policy = DpcOnlyApplicationRestrictions.class)
-  @Ignore("b/290932414")
-  public void setApplicationRestrictions_applicationRestrictionsAlreadySet_setsNewRestrictions() {
+    @Postsubmit(reason = "New test")
+    @PolicyAppliesTest(policy = DpcOnlyApplicationRestrictions.class)
+    @Ignore("b/290932414")
+    public void setApplicationRestrictions_applicationRestrictionsAlreadySet_setsNewRestrictions() {
+        // TODO(b/371032678): Remove assumption after flag rollout.
+        assumeTrue(dpc(sDeviceState).componentName() != null ||
+              Flags.setApplicationRestrictionsCoexistence());
         Bundle originalApplicationRestrictions =
                 dpc(sDeviceState).devicePolicyManager()
                         .getApplicationRestrictions(
@@ -126,9 +136,9 @@ public final class ApplicationRestrictionsTest {
                             dpc(sDeviceState).componentName(), sTestApp.packageName(),
                             bundle);
 
-      BundleUtils.assertEqualToBundle(
-          "setApplicationRestrictions_applicationRestrictionsAlreadySet_setsNewRestrictions",
-          testApp.userManager().getApplicationRestrictions(sTestApp.packageName()));
+            BundleUtils.assertEqualToBundle(
+                    "setApplicationRestrictions_applicationRestrictionsAlreadySet_setsNewRestrictions",
+                    testApp.userManager().getApplicationRestrictions(sTestApp.packageName()));
         } finally {
             dpc(sDeviceState).devicePolicyManager().setApplicationRestrictions(
                     dpc(sDeviceState).componentName(),
@@ -142,12 +152,15 @@ public final class ApplicationRestrictionsTest {
     //TODO: wait for b/332662548 so we can test DMRH calling
     // dpm.getParentInstance().getApplicationRestrictions()
     public void getApplicationRestrictions_applicationRestrictionsAreSet_returnsApplicationRestrictions() {
+        // TODO(b/371032678): Remove assumption after flag rollout.
+        assumeTrue(dpc(sDeviceState).componentName() != null ||
+                Flags.setApplicationRestrictionsCoexistence());
+
         Bundle originalApplicationRestrictions =
                 dpc(sDeviceState).devicePolicyManager()
                         .getApplicationRestrictions(
                                 dpc(sDeviceState).componentName(), sTestApp.packageName());
-    Bundle bundle =
-        BundleUtils.createBundle(
+        Bundle bundle = BundleUtils.createBundle(
             "getApplicationRestrictions_applicationRestrictionsAreSet_returnsApplicationRestrictions");
 
         try {
@@ -172,6 +185,10 @@ public final class ApplicationRestrictionsTest {
     @Postsubmit(reason = "New test")
     @CanSetPolicyTest(policy = ApplicationRestrictions.class)
     public void getApplicationRestrictions_differentPackage_throwsException() {
+        // TODO(b/371032678): Remove assumption after flag rollout.
+        assumeTrue(dpc(sDeviceState).componentName() != null ||
+                Flags.setApplicationRestrictionsCoexistence());
+
         Bundle originalApplicationRestrictions =
                 dpc(sDeviceState).devicePolicyManager()
                         .getApplicationRestrictions(
@@ -198,6 +215,10 @@ public final class ApplicationRestrictionsTest {
     @Postsubmit(reason = "New test")
     @CanSetPolicyTest(policy = ApplicationRestrictions.class)
     public void getApplicationRestrictions_setForOtherPackage_returnsNull() {
+        // TODO(b/371032678): Remove assumption after flag rollout.
+        assumeTrue(dpc(sDeviceState).componentName() != null ||
+                Flags.setApplicationRestrictionsCoexistence());
+
         Bundle originalApplicationRestrictions =
                 dpc(sDeviceState).devicePolicyManager()
                         .getApplicationRestrictions(
@@ -225,6 +246,10 @@ public final class ApplicationRestrictionsTest {
     @Postsubmit(reason = "New test")
     @PolicyDoesNotApplyTest(policy = ApplicationRestrictions.class)
     public void setApplicationRestrictions_policyDoesNotApply_applicationRestrictionsAreNotSet() {
+        // TODO(b/371032678): Remove assumption after flag rollout.
+        assumeTrue(dpc(sDeviceState).componentName() != null ||
+                Flags.setApplicationRestrictionsCoexistence());
+
         Bundle originalApplicationRestrictions =
                 dpc(sDeviceState).devicePolicyManager().getApplicationRestrictions(
                         dpc(sDeviceState).componentName(), sTestApp.packageName());
@@ -250,6 +275,10 @@ public final class ApplicationRestrictionsTest {
     @Postsubmit(reason = "New test")
     @CannotSetPolicyTest(policy = ApplicationRestrictions.class)
     public void setApplicationRestrictions_cannotSetPolicy_throwsException() {
+        // TODO(b/371032678): Remove assumption after flag rollout.
+        assumeTrue(dpc(sDeviceState).componentName() != null ||
+                Flags.setApplicationRestrictionsCoexistence());
+
         Bundle bundle = BundleUtils.createBundle(
                 "setApplicationRestrictions_cannotSetPolicy_throwsException");
         assertThrows(SecurityException.class, () -> {
@@ -263,6 +292,10 @@ public final class ApplicationRestrictionsTest {
     @Postsubmit(reason = "New test")
     @CannotSetPolicyTest(policy = ApplicationRestrictions.class)
     public void getApplicationRestrictions_cannotSetPolicy_throwsException() {
+        // TODO(b/371032678): Remove assumption after flag rollout.
+        assumeTrue(dpc(sDeviceState).componentName() != null ||
+                Flags.setApplicationRestrictionsCoexistence());
+
         assertThrows(SecurityException.class, () -> {
             dpc(sDeviceState).devicePolicyManager()
                     .getApplicationRestrictions(
@@ -273,6 +306,9 @@ public final class ApplicationRestrictionsTest {
     @Postsubmit(reason = "New test")
     @CanSetPolicyTest(policy = ApplicationRestrictions.class, singleTestOnly = true)
     public void setApplicationRestrictions_nullComponent_throwsException() {
+        // TODO(b/371032678): Remove test after rollout.
+        assumeFalse(Flags.setApplicationRestrictionsCoexistence());
+
         Bundle bundle = BundleUtils.createBundle(
                 "setApplicationRestrictions_nullComponent_throwsException");
         assertThrows(SecurityException.class,
@@ -284,6 +320,10 @@ public final class ApplicationRestrictionsTest {
     @PolicyAppliesTest(policy = {
             ApplicationRestrictions.class, DmrhOnlyApplicationRestrictions.class})
     public void setApplicationRestrictions_restrictionsChangedBroadcastIsReceived() {
+        // TODO(b/371032678): Remove assumption after flag rollout.
+        assumeTrue(dpc(sDeviceState).componentName() != null ||
+                Flags.setApplicationRestrictionsCoexistence());
+
         Bundle originalApplicationRestrictions =
                 dpc(sDeviceState).devicePolicyManager()
                         .getApplicationRestrictions(
@@ -313,6 +353,10 @@ public final class ApplicationRestrictionsTest {
     @CanSetPolicyTest(policy = ApplicationRestrictionsManagingPackage.class)
     public void setApplicationRestrictionsManagingPackage_applicationRestrictionsManagingPackageIsSet()
             throws Exception {
+        // TODO(b/371032678): Remove assumption after flag rollout.
+        assumeTrue(dpc(sDeviceState).componentName() != null ||
+                Flags.setApplicationRestrictionsCoexistence());
+
         final String originalApplicationRestrictionsManagingPackage =
                 dpc(sDeviceState).devicePolicyManager().getApplicationRestrictionsManagingPackage(
                         dpc(sDeviceState).componentName());
@@ -337,6 +381,10 @@ public final class ApplicationRestrictionsTest {
     @Postsubmit(reason = "New test")
     @CanSetPolicyTest(policy = ApplicationRestrictionsManagingPackage.class)
     public void setApplicationRestrictionsManagingPackage_appNotInstalled_throwsException() {
+        // TODO(b/371032678): Remove assumption after flag rollout.
+        assumeTrue(dpc(sDeviceState).componentName() != null ||
+                Flags.setApplicationRestrictionsCoexistence());
+
         sDifferentTestApp.uninstall();
 
         assertThrows(PackageManager.NameNotFoundException.class,
@@ -350,6 +398,10 @@ public final class ApplicationRestrictionsTest {
     @PolicyAppliesTest(policy = {
             ApplicationRestrictions.class, DmrhOnlyApplicationRestrictions.class})
     public void setApplicationRestrictions_logged() {
+        // TODO(b/371032678): Remove assumption after flag rollout.
+        assumeTrue(dpc(sDeviceState).componentName() != null ||
+                Flags.setApplicationRestrictionsCoexistence());
+
         Bundle originalApplicationRestrictions =
                 dpc(sDeviceState).devicePolicyManager()
                         .getApplicationRestrictions(
@@ -381,6 +433,10 @@ public final class ApplicationRestrictionsTest {
     @CanSetPolicyTest(policy = {
             ApplicationRestrictions.class, DmrhOnlyApplicationRestrictions.class})
     public void setApplicationRestrictions_invalidPackageName_throwsException() {
+        // TODO(b/371032678): Remove assumption after flag rollout.
+        assumeTrue(dpc(sDeviceState).componentName() != null ||
+                Flags.setApplicationRestrictionsCoexistence());
+
         Bundle bundle = BundleUtils.createBundle(
                 "setApplicationRestrictions_invalidPackageName_throwsException");
         assertThrows(IllegalArgumentException.class,
@@ -392,6 +448,10 @@ public final class ApplicationRestrictionsTest {
     @CanSetPolicyTest(policy = {
             ApplicationRestrictions.class, DmrhOnlyApplicationRestrictions.class})
     public void getApplicationRestrictionsPerAdmin_restrictionsSetForOneAdmin_returnsApplicationRestrictions() {
+        // TODO(b/371032678): Remove assumption after flag rollout.
+        assumeTrue(dpc(sDeviceState).componentName() != null ||
+                Flags.setApplicationRestrictionsCoexistence());
+
         Bundle originalApplicationRestrictions =
                 dpc(sDeviceState).devicePolicyManager()
                         .getApplicationRestrictions(
@@ -422,7 +482,38 @@ public final class ApplicationRestrictionsTest {
 
     @Postsubmit(reason = "New test")
     @CanSetPolicyTest(policy = DmrhOnlyApplicationRestrictions.class)
+    public void roleHolderSetApplicationRestrictions_UserManagerReturnsSameValue() {
+        // TODO(b/371032678): Remove assumption after flag rollout.
+        assumeFalse(Flags.setApplicationRestrictionsCoexistence());
+
+        Bundle originalApplicationRestrictions =
+                dpc(sDeviceState).devicePolicyManager()
+                        .getApplicationRestrictions(
+                                dpc(sDeviceState).componentName(), sTestApp.packageName());
+        Bundle bundle = BundleUtils.createBundle(
+                "roleHolderSetApplicationRestrictions_UserManagerReturnsThisValue");
+
+        try (TestAppInstance testApp = sTestApp.install()) {
+            dpc(sDeviceState).devicePolicyManager()
+                    .setApplicationRestrictions(
+                            dpc(sDeviceState).componentName(), sTestApp.packageName(),
+                            bundle);
+
+            assertThat(testApp.userManager()
+                    .getApplicationRestrictions(testApp.packageName())).isEqualTo(bundle);
+        } finally {
+            dpc(sDeviceState).devicePolicyManager().setApplicationRestrictions(
+                    dpc(sDeviceState).componentName(),
+                    sTestApp.packageName(), originalApplicationRestrictions);
+        }
+    }
+
+    @Postsubmit(reason = "New test")
+    @CanSetPolicyTest(policy = DmrhOnlyApplicationRestrictions.class)
     public void roleHolderSetApplicationRestrictions_UserManagerReturnsNull() {
+        // TODO(b/371032678): Remove this test after flag rollout.
+        assumeTrue(dpc(sDeviceState).componentName() != null);
+
         Bundle originalApplicationRestrictions =
                 dpc(sDeviceState).devicePolicyManager()
                         .getApplicationRestrictions(
@@ -450,6 +541,10 @@ public final class ApplicationRestrictionsTest {
     @UserTest({INITIAL_USER, PRIVATE_PROFILE})
     @Test
     public void roleHolderSetApplicationRestrictionsOnParent_successWithBroadcastSent() {
+        // TODO(b/371032678): Remove assumption after flag rollout.
+        assumeTrue(dpc(sDeviceState).componentName() != null ||
+                Flags.setApplicationRestrictionsCoexistence());
+
         ComponentName admin = dpc(sDeviceState).componentName();
         Bundle originalApplicationRestrictions = dpc(sDeviceState).devicePolicyManager()
                         .getApplicationRestrictions(admin, sTestApp.packageName());
@@ -483,6 +578,10 @@ public final class ApplicationRestrictionsTest {
     @RequireRunOnInitialUser
     @Test
     public void roleHolderSetApplicationRestrictionsOnParent_throwExceptionIfNotCope() {
+        // TODO(b/371032678): Remove assumption after flag rollout.
+        assumeTrue(dpc(sDeviceState).componentName() != null ||
+                Flags.setApplicationRestrictionsCoexistence());
+
         assertThrows(IllegalStateException.class, () -> {
             dpc(sDeviceState).devicePolicyManager().getParentProfileInstance(null)
                     .setApplicationRestrictions(
@@ -504,6 +603,10 @@ public final class ApplicationRestrictionsTest {
     @RequireRunOnInitialUser
     @Test
     public void dpcAndRoleHolderSetApplicationRestrictions_doesNotOverlap() {
+        // TODO(b/371032678): Remove assumption after flag rollout.
+        assumeTrue(dpc(sDeviceState).componentName() != null ||
+                Flags.setApplicationRestrictionsCoexistence());
+
         ComponentName dpcAdmin = dpc(sDeviceState).componentName();
         ComponentName dmrhAdmin = dpmRoleHolder(sDeviceState).componentName();
         Bundle originalDpcAppRestrictions = dpc(sDeviceState).devicePolicyManager()
