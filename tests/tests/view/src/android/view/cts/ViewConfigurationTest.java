@@ -16,6 +16,8 @@
 
 package android.view.cts;
 
+import static android.view.accessibility.Flags.FLAG_TEXT_CURSOR_BLINK_INTERVAL;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -50,6 +52,8 @@ import org.junit.runner.RunWith;
 @RunWith(AndroidJUnit4.class)
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class ViewConfigurationTest {
+    private static final int NO_BLINK_TEXT_CURSOR_BLINK_INTERVAL_MS = 0;
+    private static final int MIN_TEXT_CURSOR_BLINK_INTERVAL_MS = 333;
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
@@ -115,6 +119,20 @@ public class ViewConfigurationTest {
         float scaledMinScalingSpanMm = vc.getScaledMinimumScalingSpan() / pixelsToMmRatio;
         assertTrue(scaledMinScalingSpanMm > 0);
         assertTrue(scaledMinScalingSpanMm < 40.5); // 1.5 times the recommended size of 27mm
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_TEXT_CURSOR_BLINK_INTERVAL)
+    public void testGetTextCursorBlinkIntervalMillisInstanceMethod() {
+        ViewConfiguration vc = ViewConfiguration.get(InstrumentationRegistry.getTargetContext());
+        int blinkIntervalMs = vc.getTextCursorBlinkIntervalMillis();
+
+        // The blink interval must be either:
+        // 1. == 0 for a text cursor that does not blink.
+        // 2. >= 333, the minimum text cursor blink interval that is safe for photosensitive users.
+        assertTrue(
+                blinkIntervalMs == NO_BLINK_TEXT_CURSOR_BLINK_INTERVAL_MS
+                        || blinkIntervalMs >= MIN_TEXT_CURSOR_BLINK_INTERVAL_MS);
     }
 
     @Test
