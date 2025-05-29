@@ -18,6 +18,9 @@ package android.companion.cts.core
 
 import android.Manifest
 import android.companion.DevicePresenceEvent
+import android.companion.DevicePresenceEvent.EVENT_BLE_APPEARED
+import android.companion.DevicePresenceEvent.EVENT_BLE_DISAPPEARED
+import android.companion.DevicePresenceEvent.EVENT_BT_CONNECTED
 import android.companion.Flags
 import android.companion.ObservingDevicePresenceRequest
 import android.companion.cts.common.MAC_ADDRESS_A
@@ -71,7 +74,7 @@ class DeviceEventDeviceLockedTest : CoreTestBase() {
         simulateDeviceEventDeviceLocked(
             associationId,
             userId,
-            DevicePresenceEvent.EVENT_BLE_APPEARED,
+            EVENT_BLE_APPEARED,
             "null"
         )
         // App should not bind at this moment.
@@ -81,12 +84,14 @@ class DeviceEventDeviceLockedTest : CoreTestBase() {
 
         PrimaryCompanionService.waitAssociationToAppear(associationId)
         // App should receive ble appeared event after device is unlocked.
-        PrimaryCompanionService.getCurrentEvent()
-                ?.let { assertDevicePresenceEvent(DevicePresenceEvent.EVENT_BLE_APPEARED, it) }
+        assertDevicePresenceEvent(
+            EVENT_BLE_APPEARED,
+            eventGetter = { PrimaryCompanionService.getCurrentEvent() }
+        )
 
         assertValidCompanionDeviceServicesBind()
 
-        simulateDeviceEvent(associationId, DevicePresenceEvent.EVENT_BLE_DISAPPEARED)
+        simulateDeviceEvent(associationId, EVENT_BLE_DISAPPEARED)
 
         withShellPermissionIdentity(Manifest.permission.REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE) {
             cdm.stopObservingDevicePresence(request)
@@ -121,8 +126,10 @@ class DeviceEventDeviceLockedTest : CoreTestBase() {
 
         PrimaryCompanionService.waitAssociationToBtConnect(associationId)
         // App should receive BT connected event after device is unlocked.
-        PrimaryCompanionService.getCurrentEvent()
-                ?.let { assertDevicePresenceEvent(DevicePresenceEvent.EVENT_BT_CONNECTED, it) }
+        assertDevicePresenceEvent(
+            EVENT_BT_CONNECTED,
+            eventGetter = { PrimaryCompanionService.getCurrentEvent() }
+        )
 
         assertValidCompanionDeviceServicesBind()
 
@@ -197,8 +204,10 @@ class DeviceEventDeviceLockedTest : CoreTestBase() {
         PrimaryCompanionService.waitDeviceUuidConnect(UUID_A)
 
         assertValidCompanionDeviceServicesBind()
-        PrimaryCompanionService.getCurrentEvent()
-                ?.let { assertDevicePresenceEvent(DevicePresenceEvent.EVENT_BT_CONNECTED, it) }
+        assertDevicePresenceEvent(
+            EVENT_BT_CONNECTED,
+            eventGetter = { PrimaryCompanionService.getCurrentEvent() }
+        )
 
         simulateDeviceUuidEvent(UUID_A, DevicePresenceEvent.EVENT_BT_DISCONNECTED)
         PrimaryCompanionService.waitDeviceUuidDisconnect(UUID_A)
