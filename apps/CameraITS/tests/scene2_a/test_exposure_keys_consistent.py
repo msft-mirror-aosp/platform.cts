@@ -145,7 +145,7 @@ class ExposureKeysConsistentTest(its_base_test.ItsBaseTest):
       req = capture_request_utils.auto_capture_request()
       req['android.control.aeMode'] = 1  # ON
       cam.do_3a()
-      cap_ae = cam.do_capture([req], out_surface)[0]
+      cap_ae = cam.do_capture([req], out_surface, reuse_session=True)[0]
       cr = cap_ae['metadata']
       sensor_sensitivity = cr['android.sensor.sensitivity']
       exposure_time = cr['android.sensor.exposureTime']
@@ -168,7 +168,7 @@ class ExposureKeysConsistentTest(its_base_test.ItsBaseTest):
           post_raw_sensitivity_boost
       )
       req['android.sensor.frameDuration'] = frame_duration
-      cap_no_ae = cam.do_capture([req], out_surface)[0]
+      cap_no_ae = cam.do_capture([req], out_surface, reuse_session=True)[0]
 
       cr_no_ae = cap_no_ae['metadata']
       post_raw_sensitivity_boost_no_ae = cr_no_ae[
