@@ -413,4 +413,101 @@ public class DebugTest {
         // The API is no-op and deprecated.
         Debug.enableEmulatorTraceOutput();
     }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_COUNT_CLASS_INSTANCES_API)
+    public void testGetClassInstanceCount() {
+
+        // Instantiate class so it exists in memory.
+        CustomClassInstance classInstance = new CustomClassInstance();
+
+        long instanceCount = Debug.getInstanceCount(CustomClassInstance.class);
+
+        assertEquals(1, instanceCount);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_COUNT_CLASS_INSTANCES_API)
+    public void testGetClassInstanceCount_fromList_excludeAssignable() {
+
+        // Instantiate classes so they exist in memory.
+        CustomClassExcludeAssignableSubClass customClassOne =
+                new CustomClassExcludeAssignableSubClass();
+        CustomClassExcludeAssignableSubClass customClassTwo =
+                new CustomClassExcludeAssignableSubClass();
+        CustomClassExcludeAssignableBase customClassThree = new CustomClassExcludeAssignableBase();
+
+        ArrayList<Class> classesToCount = new ArrayList<>();
+        classesToCount.add(CustomClassExcludeAssignableBase.class);
+        classesToCount.add(CustomClassExcludeAssignableSubClass.class);
+
+        long[] expectedCounts = {1, 2};
+        long[] actualCounts = Debug.getInstanceCounts(classesToCount, false);
+
+        assertEquals(actualCounts.length, expectedCounts.length);
+
+        for (int i = 0; i < actualCounts.length; i++) {
+            assertEquals(expectedCounts[i], actualCounts[i]);
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_COUNT_CLASS_INSTANCES_API)
+    public void testGetClassInstanceCount_excludeAssignable() {
+
+        // Instantiate class so it exists in memory.
+        CustomClassInstanceSubClass classInstance = new CustomClassInstanceSubClass();
+
+        long instanceCount = Debug.getInstanceCount(CustomClassInstanceBase.class, false);
+
+        assertEquals(0, instanceCount);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_COUNT_CLASS_INSTANCES_API)
+    public void testGetClassInstanceCount_fromList_includeAssignable() {
+
+        // Instantiate the different class types
+        CustomClassInstanceSubClass subClassOne = new CustomClassInstanceSubClass();
+        CustomClassInstanceSubClass subClassTwo = new CustomClassInstanceSubClass();
+
+        ArrayList<Class> classesToCount = new ArrayList<>();
+        classesToCount.add(CustomClassInstanceBase.class);
+        classesToCount.add(CustomClassInstanceSubClass.class);
+
+        long[] expectedCounts = {2, 2};
+        long[] actualCounts = Debug.getInstanceCounts(classesToCount);
+
+        assertEquals(actualCounts.length, expectedCounts.length);
+
+        for (int i = 0; i < actualCounts.length; i++) {
+            assertEquals(expectedCounts[i], actualCounts[i]);
+        }
+    }
+
+    /*
+     * The custom class definitions below are meant to be used with the tests for counting the
+     * number of class instances.  GC does not always run quick enough before the test is run which
+     * can lead to extra counts being returned by Debug.countInstancesOfClasses. Using a different
+     * class type in each test prevents this issue.
+     */
+    private class CustomClassInstance {
+        CustomClassInstance() {}
+    }
+
+    private class CustomClassInstanceBase {
+        CustomClassInstanceBase() {}
+    }
+
+    private class CustomClassInstanceSubClass extends CustomClassInstanceBase {
+        CustomClassInstanceSubClass() {}
+    }
+
+    private class CustomClassExcludeAssignableBase {
+        CustomClassExcludeAssignableBase() {}
+    }
+
+    private class CustomClassExcludeAssignableSubClass extends CustomClassExcludeAssignableBase {
+        CustomClassExcludeAssignableSubClass() {}
+    }
 }
