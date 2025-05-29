@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package android.content.cts;
+package android.content.cts.syncmanager;
 
 import static org.junit.Assert.assertThrows;
 

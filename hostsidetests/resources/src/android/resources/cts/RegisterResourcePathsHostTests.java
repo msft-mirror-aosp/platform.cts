@@ -16,9 +16,7 @@
 
 package android.resources.cts;
 
-import android.content.res.Flags;
 import android.platform.test.annotations.AppModeFull;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.host.HostFlagsValueProvider;
 
@@ -50,18 +48,15 @@ public class RegisterResourcePathsHostTests extends BaseHostJUnit4Test {
     private static final String DEVICE_TEST_CLASS = "RegisterResourcePathsTest";
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_REGISTER_RESOURCE_PATHS)
     public void testWebViewInitialization() throws Exception {
         runDeviceTests(DEVICE_TEST_PKG1, DEVICE_TEST_PKG1 + "." + DEVICE_TEST_CLASS,
                 "testWebViewInitialization");
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_REGISTER_RESOURCE_PATHS)
     public void testWebViewInitializeOnBackGroundThread() throws Exception {
         runDeviceTests(DEVICE_TEST_PKG2, DEVICE_TEST_PKG2 + "." + DEVICE_TEST_CLASS,
                 "testWebViewInitializeOnBackGroundThread");
     }
 
 }
-

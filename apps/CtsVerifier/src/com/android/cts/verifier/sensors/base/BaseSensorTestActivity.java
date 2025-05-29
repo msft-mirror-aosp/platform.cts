@@ -538,7 +538,7 @@ public abstract class BaseSensorTestActivity extends PassFailButtons.Activity
         return testDetails;
     }
 
-    private void promptUserToSetResult(SensorTestDetails testDetails) {
+    public void promptUserToSetResult(SensorTestDetails testDetails) {
         SensorTestDetails.ResultCode resultCode = testDetails.getResultCode();
         if (resultCode == SensorTestDetails.ResultCode.FAIL) {
             mTestLogger.logInstructions(R.string.snsr_test_complete_with_errors);

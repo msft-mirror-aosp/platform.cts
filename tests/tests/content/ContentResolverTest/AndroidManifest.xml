@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Copyright (C) 2025 The Android Open Source Project
+
+     Licensed under the Apache License, Version 2.0 (the "License");
+     you may not use this file except in compliance with the License.
+     You may obtain a copy of the License at
+
+          http://www.apache.org/licenses/LICENSE-2.0
+
+     Unless required by applicable law or agreed to in writing, software
+     distributed under the License is distributed on an "AS IS" BASIS,
+     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+     See the License for the specific language governing permissions and
+     limitations under the License.
+-->
+
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="android.content.cts.contentresolver">
+    <uses-permission android:name="android.cts.permission.MOCK_RESTRICTED_PERMISSION"/>
+    <application>
+        <uses-library android:name="android.test.runner"/>
+        <provider android:name="com.android.cts.content.MockContentProvider"
+            android:authorities="ctstest"
+            android:multiprocess="false"
+            android:exported="true">
+        </provider>
+        <provider android:name="com.android.cts.content.MockRemoteContentProvider"
+            android:authorities="remotectstest"
+            android:process=":remoteprovider"
+            android:exported="true"
+            android:multiprocess="false"/>
+        <provider android:name="android.content.cts.contentresolver.TestPagingContentProvider"
+            android:authorities="android.content.cts.contentresolver.testpagingprovider"
+            android:process=":testpagingprovider"
+            android:exported="true"
+            android:multiprocess="false"/>
+    </application>
+
+    <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner"
+        android:targetPackage="android.content.cts.contentresolver"/>
+
+</manifest>

@@ -16,6 +16,8 @@
 
 package android.widget.cts;
 
+import static android.view.accessibility.Flags.FLAG_TEXT_CURSOR_BLINK_INTERVAL;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -30,6 +32,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.res.Configuration;
 import android.graphics.Point;
+import android.os.SystemClock;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.support.test.uiautomator.By;
 import android.support.test.uiautomator.UiDevice;
 import android.support.test.uiautomator.Until;
@@ -47,6 +51,7 @@ import android.util.SparseArray;
 import android.util.TypedValue;
 import android.util.Xml;
 import android.view.KeyEvent;
+import android.view.ViewConfiguration;
 import android.view.ViewGroup;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.view.inputmethod.EditorInfo;
@@ -772,6 +777,64 @@ public class EditTextTest {
 
         boolean cursorBlinking = editor.isBlinking();
         assertTrue(cursorBlinking);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_TEXT_CURSOR_BLINK_INTERVAL)
+    public void testCursorShouldNotBlink_WithZeroInterval() {
+        Activity testActivity = mEmptyActivityRule.launchActivity(null);
+        EditText et = testActivity.findViewById(R.id.edittext_simple1);
+        Editor editor = et.getEditorForTesting();
+        editor.setTextCursorBlinkIntervalMs(
+                ViewConfiguration.NO_BLINK_TEXT_CURSOR_BLINK_INTERVAL_MS);
+        mInstrumentation.runOnMainSync(
+                () -> {
+                    et.requestFocus();
+                });
+
+        long currentTime = SystemClock.uptimeMillis();
+
+        // shouldRenderCursor should always return true regardless of how much time has elapsed
+        // since requestFocus() was called.
+        assertTrue(editor.shouldRenderCursor());
+
+        // Artificially advance time by setting last shown cursor time to the past.
+        editor.setShowCursorTime(currentTime - 60000);
+
+        // shouldRenderCursor should still return true.
+        assertTrue(editor.shouldRenderCursor());
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_TEXT_CURSOR_BLINK_INTERVAL)
+    public void testCursorShouldBlink_WithNonZeroInterval() {
+        Activity testActivity = mEmptyActivityRule.launchActivity(null);
+        EditText et = testActivity.findViewById(R.id.edittext_simple1);
+        Editor editor = et.getEditorForTesting();
+
+        // Manually set a very large blink interval for testing.
+        int largeBlinkIntervalMs = 3600000;
+        editor.setTextCursorBlinkIntervalMs(largeBlinkIntervalMs);
+        mInstrumentation.runOnMainSync(
+                () -> {
+                    et.requestFocus();
+                });
+
+        // Manually set the last shown cursor time to be a blink interval into the past so
+        // that the cursor is hidden now.
+        editor.setShowCursorTime(SystemClock.uptimeMillis() - largeBlinkIntervalMs);
+
+        // Assert that shouldRenderCursor returns false during the interval when the cursor should
+        // be hidden.
+        assertFalse(editor.shouldRenderCursor());
+
+        // Manually set the last shown cursor time to be the current time so that the cursor is now
+        // visible.
+        editor.setShowCursorTime(SystemClock.uptimeMillis());
+
+        // Assert that shouldRenderCursor returns true during the interval when the cursor should be
+        // visible.
+        assertTrue(editor.shouldRenderCursor());
     }
 
     @Test

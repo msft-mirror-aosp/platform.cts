@@ -99,7 +99,6 @@ import android.content.IntentFilter;
 import android.content.IntentSender;
 import android.content.ServiceConnection;
 import android.content.cts.MockActivity;
-import android.content.cts.MockContentProvider;
 import android.content.cts.MockReceiver;
 import android.content.cts.MockService;
 import android.content.cts.R;
@@ -166,6 +165,7 @@ import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.compatibility.common.util.TestUtils;
 import com.android.cts.content.MockBuggyProvider;
+import com.android.cts.content.MockContentProvider;
 import com.android.internal.security.VerityUtils;
 
 import com.google.common.truth.Expect;
@@ -237,7 +237,7 @@ public class PackageManagerTest {
     private static final String INSTRUMENT_NAME = "android.content.pm.cts.TestPmInstrumentation";
     private static final String CALL_ABROAD_PERMISSION_NAME =
             "android.content.cts.CALL_ABROAD_PERMISSION";
-    private static final String PROVIDER_NAME = "android.content.cts.MockContentProvider";
+    private static final String PROVIDER_NAME = "com.android.cts.content.MockContentProvider";
     private static final String PERMISSIONGROUP_NAME = "android.permission-group.COST_MONEY";
     private static final String PERMISSION_TREE_ROOT =
             "android.content.cts.permission.TEST_DYNAMIC";
@@ -1615,8 +1615,10 @@ public class PackageManagerTest {
                 findPackageItemOrFail(info.services, "android.content.cts.MockService")));
         checkMetaData(new PackageItemInfo(
                 findPackageItemOrFail(info.receivers, "android.content.cts.MockReceiver")));
-        checkMetaData(new PackageItemInfo(
-                findPackageItemOrFail(info.providers, "android.content.cts.MockContentProvider")));
+        checkMetaData(
+                new PackageItemInfo(
+                        findPackageItemOrFail(
+                                info.providers, "com.android.cts.content.MockContentProvider")));
     }
 
     /**

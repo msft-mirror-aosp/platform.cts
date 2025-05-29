@@ -64,14 +64,6 @@ public class ConfigurationScreenLayoutTest
             tearDown();
             return;
         }
-        if (isPC()) {
-            // The test skips mainly for Chromebook clamshell mode. For Chromebook clamshell mode
-            // with non-rotated landscape physical screen, the portrait window/activity has special
-            // behavior with black background on both sides to make the window/activity look
-            // portrait, which returns smaller screen layout size.
-            tearDown();
-            return;
-        }
         // Disable IgnoreOrientationRequest feature because when it's enabled, the device would only
         // follow physical rotations.
         try (IgnoreOrientationRequestSession session =

@@ -477,15 +477,23 @@ int getJavaEncoding(aaudio_format_t format) {
         case AAUDIO_FORMAT_PCM_I24_PACKED:
             return ENCODING_PCM_24BIT_PACKED;
         case AAUDIO_FORMAT_PCM_I32:
-
+            return ENCODING_PCM_32BIT;
         case AAUDIO_FORMAT_IEC61937:
+            return ENCODING_IEC61937;
         case AAUDIO_FORMAT_MP3:
+            return ENCODING_MP3;
         case AAUDIO_FORMAT_AAC_LC:
+            return ENCODING_AAC_LC;
         case AAUDIO_FORMAT_AAC_HE_V1:
+            return ENCODING_AAC_HE_V1;
         case AAUDIO_FORMAT_AAC_HE_V2:
+            return ENCODING_AAC_HE_V2;
         case AAUDIO_FORMAT_AAC_ELD:
+            return ENCODING_AAC_ELD;
         case AAUDIO_FORMAT_AAC_XHE:
+            return ENCODING_AAC_XHE;
         case AAUDIO_FORMAT_OPUS:
+            return ENCODING_OPUS;
         default:
             return ENCODING_INVALID;
     }

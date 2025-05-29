@@ -440,7 +440,6 @@ android_ravenwood_test {
         "src/android/content/cts/MockActivity.java",
         "src/android/content/cts/MockService.java",
         "src/android/content/cts/MockReceiver.java",
-        "src/android/content/cts/MockContentProvider.java",
         "src/android/content/cts/UriMatcherTest.java",
         "src/android/content/pm/cts/ActivityInfoTest.java",
         "src/android/content/pm/cts/ApplicationInfoTest.java",

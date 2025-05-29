@@ -18,7 +18,7 @@ package {
 
 android_test {
     name: "CtsBroadcastTestCases",
-    team: "trendy_team_framework_backstage_power",
+    team: "trendy_team_framework_bpm",
     defaults: ["cts_defaults"],
     static_libs: [
         "am_flags_lib",

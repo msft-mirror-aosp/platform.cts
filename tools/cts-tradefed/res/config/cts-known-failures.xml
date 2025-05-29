@@ -431,4 +431,7 @@
 
     <!-- b/417738157 -->
     <option name="compatibility:exclude-filter" value="CtsTelephonyTestCases android.telephony.satellite.cts.SatelliteManagerTest" />
+
+    <!-- b/418637902 -->
+    <option name="compatibility:exclude-filter" value="CtsAppOpsTestCases android.app.appops.cts.AppOpsLoggingTest#noteAsyncOpsMultipleTimesAndReceiveMultipleAsyncCallbacks" />
 </configuration>

@@ -48,6 +48,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Locale;
 
 /**
  * Wrapper class for trying and testing encoder components.
@@ -401,9 +402,15 @@ public class CodecEncoderTestBase extends CodecTestBase {
             if (mIsAudio) {
                 pts += mNumBytesSubmitted * 1000000L / ((long) mActiveRawRes.mBytesPerSample
                         * mActiveEncCfg.mChannelCount * mActiveEncCfg.mSampleRate);
+                int bytesPerFrame = mActiveRawRes.mBytesPerSample * mActiveEncCfg.mChannelCount;
                 size = Math.min(inputBuffer.capacity(), mInputData.length - mInputBufferReadOffset);
-                assertEquals(0, size % ((long) mActiveRawRes.mBytesPerSample
-                        * mActiveEncCfg.mChannelCount));
+                size = size - (size % bytesPerFrame);
+                String msg = String.format(Locale.getDefault(),
+                        "buffer capacity %d, bytes left in input file %d.\n Failed to queue at "
+                        + "least one frame because either input buffer capacity() is too small or "
+                        + "the input file does not contain integral number of frames \n",
+                        inputBuffer.capacity(), mInputData.length - mInputBufferReadOffset);
+                assertTrue(msg + mTestConfig + mTestEnv, size > 0);
                 inputBuffer.put(mInputData, mInputBufferReadOffset, size);
                 if (mSignalEOSWithLastFrame) {
                     if (mIsLoopBack ? (mInputCount + 1 >= mLoopBackFrameLimit) :
