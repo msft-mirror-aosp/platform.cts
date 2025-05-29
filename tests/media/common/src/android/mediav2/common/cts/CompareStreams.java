@@ -334,12 +334,18 @@ public class CompareStreams extends CodecDecoderTestBase {
             if (MediaUtils.isTv()) {
                 // Some TV devices support HDR10 display with VO instead of GPU. In this case,
                 // COLOR_FormatYUVP010 may not be supported.
-                MediaFormat format = mStreamFormat != null ? mStreamFormat :
-                        getFormatInStream(mMediaType, mTestFile);
-                ArrayList<MediaFormat> formatList = new ArrayList<>();
-                formatList.add(format);
-                boolean isHBD = doesAnyFormatHaveHDRProfile(mMediaType, formatList);
-                if (isHBD || mTestFile.contains("10bit")) {
+                boolean isHBD = mTestFile != null && mTestFile.contains("10bit");
+                if (!isHBD) {
+                    MediaFormat format = mStreamFormat != null
+                            ? mStreamFormat
+                            : getFormatInStream(mMediaType, mTestFile);
+                    ArrayList<MediaFormat> formatList = new ArrayList<>();
+                    formatList.add(format);
+                    isHBD = doesAnyFormatHaveHDRProfile(mMediaType, formatList);
+                    formatList.clear();
+                }
+
+                if (isHBD) {
                     if (!hasSupportForColorFormat(mCodecName, mMediaType, COLOR_FormatYUVP010)) {
                         Assume.assumeTrue("Could not validate the encoded output as"
                                 + " COLOR_FormatYUVP010 is not supported by the decoder", false);
