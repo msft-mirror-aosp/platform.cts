@@ -125,6 +125,8 @@ import javax.crypto.KeyGenerator;
 
 /**
  * Tests for Android Keystore attestation.
+ *
+ * <p>This test class is skipped on CTS-on-GSI since `remote_provisioning.hostname` is unset on GSI.
  */
 @RunWith(AndroidJUnit4.class)
 public class KeyAttestationTest {
