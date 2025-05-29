@@ -667,6 +667,16 @@ public class MediaControllerTest {
 
     @Test
     @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
+    public void getPackageName_afterRelease_returnsOriginalPackageName() {
+        mSession.release();
+
+        String packageName = mController.getPackageName();
+
+        assertThat(packageName).isEqualTo(getContext().getPackageName());
+    }
+
+    @Test
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void releaseSession_additionalCalls_doNotThrow() {
         mSession.release();
 
