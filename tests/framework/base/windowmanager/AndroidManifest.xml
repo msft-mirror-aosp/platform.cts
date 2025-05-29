@@ -383,7 +383,7 @@
                   android:windowSoftInputMode="adjustPan|stateUnchanged"/>
         <activity android:name="android.server.wm.insets.WindowInsetsControllerTests$TestShowOnCreateActivity"/>
 
-        <activity android:name="android.server.wm.other.DragDropTest$DragDropActivity"
+        <activity android:name="android.server.wm.draganddrop.DragDropTest$DragDropActivity"
              android:screenOrientation="locked"
              android:turnScreenOn="true"
              android:showWhenLocked="true"
@@ -400,7 +400,7 @@
                   android:label="DecorInsetTestsBase.TestActivity"
                   android:exported="true"/>
 
-        <activity android:name="android.server.wm.other.DragDropTest$SoftwareCanvasDragDropActivity"
+        <activity android:name="android.server.wm.draganddrop.DragDropTest$SoftwareCanvasDragDropActivity"
             android:screenOrientation="locked"
             android:turnScreenOn="true"
             android:showWhenLocked="true"
@@ -677,7 +677,7 @@
         <activity android:name="android.server.wm.backnavigation.OptOutBackNavigationActivity"
             android:enableOnBackInvokedCallback="false"
             android:exported="true"/>
-        <activity android:name="android.server.wm.other.PinnedStackTests$TestActivity"
+        <activity android:name="android.server.wm.pip.PinnedStackTests$TestActivity"
                   android:exported="true"/>
         <activity android:name="android.server.wm.taskfragment.TaskFragmentTrustedModeTest$TranslucentActivity"
                   android:exported="true"

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package android.server.wm.other;
+package android.server.wm.draganddrop;
 
 import static android.server.wm.ShellCommandHelper.executeShellCommand;
 
@@ -26,7 +26,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.runner.RunWith;
 
-/** Build/Install/Run: atest CtsWindowManagerDeviceOther:DragDropCompatTest */
+/** Build/Install/Run: atest CtsWindowManagerDeviceDragAndDrop:DragDropCompatTest */
 @Presubmit
 @RunWith(AndroidJUnit4.class)
 public class DragDropCompatTest extends DragDropTest {

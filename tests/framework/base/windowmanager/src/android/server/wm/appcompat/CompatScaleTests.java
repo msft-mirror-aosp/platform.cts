@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package android.server.wm.other;
+package android.server.wm.appcompat;
 
 import static android.server.wm.app.Components.UI_SCALING_TEST_ACTIVITY;
 import static android.server.wm.app.Components.UiScalingTestActivity.COMMAND_ADD_SUBVIEW;
@@ -66,7 +66,7 @@ import java.util.Arrays;
  * declared in DPs (the text and the red square) have the same sizes on the screen (after
  * composition).
  *
- * <p>Build/Install/Run: atest CtsWindowManagerDeviceOther:CompatScaleTests
+ * <p>Build/Install/Run: atest CtsWindowManagerDeviceAppCompat:CompatScaleTests
  */
 @RunWith(Parameterized.class)
 public class CompatScaleTests extends ActivityManagerTestBase {

@@ -591,9 +591,9 @@
     <option name="compatibility:include-filter" value="CtsWindowManagerDeviceActivity android.server.wm.activity.StartActivityAsUserTests#startActivityValidUser"/>
     <!-- CtsWindowManagerDeviceDisplay -->
     <option name="compatibility:include-filter" value="CtsWindowManagerDeviceDisplay android.server.wm.display.AppConfigurationTests#testConfigurationUpdatesWhenRotatingWhileFullscreen"/>
-    <!-- CtsWindowManagerDeviceOther -->
-    <option name="compatibility:include-filter" value="CtsWindowManagerDeviceOther android.server.wm.other.PinnedStackTests#testPinnedStackInBoundsAfterRotation"/>
-    <option name="compatibility:include-filter" value="CtsWindowManagerDeviceOther android.server.wm.other.PinnedStackTests#testSetRequestedOrientationWhilePinned"/>
+    <!-- CtsWindowManagerDevicePip -->
+    <option name="compatibility:include-filter" value="CtsWindowManagerDevicePip android.server.wm.pip.PinnedStackTests#testPinnedStackInBoundsAfterRotation"/>
+    <option name="compatibility:include-filter" value="CtsWindowManagerDevicePip android.server.wm.pip.PinnedStackTests#testSetRequestedOrientationWhilePinned"/>
     <!-- CtsWindowManagerJetpackTestCases -->
     <option name="compatibility:include-filter" value="CtsWindowManagerJetpackTestCases android.server.wm.jetpack.SidecarTest#testSidecarInterface_getDeviceState"/>
     <option name="compatibility:include-filter" value="CtsWindowManagerJetpackTestCases android.server.wm.jetpack.SidecarTest#testSidecarInterface_onWindowLayoutChangeListener"/>

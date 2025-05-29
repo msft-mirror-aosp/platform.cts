@@ -266,7 +266,12 @@
   <option name="compatibility:include-filter" value="CtsSystemApiAnnotationTestCases"/>
   <option name="compatibility:include-filter" value="CtsInitTestCases"/>
   <option name="compatibility:include-filter" value="CtsDropBoxManagerTestCasesAPI34"/>
+  <option name="compatibility:include-filter" value="CtsWindowManagerDeviceAppCompat"/>
+  <option name="compatibility:include-filter" value="CtsWindowManagerDeviceDragAndDrop"/>
+  <option name="compatibility:include-filter" value="CtsWindowManagerDeviceDreams"/>
   <option name="compatibility:include-filter" value="CtsWindowManagerDeviceOther"/>
+  <option name="compatibility:include-filter" value="CtsWindowManagerDevicePip"/>
+  <option name="compatibility:include-filter" value="CtsWindowManagerDeviceTv"/>
   <option name="compatibility:include-filter" value="CtsMediaCUJLargeTest"/>
   <option name="compatibility:include-filter" value="CtsAppFgsStartTestCases"/>
   <option name="compatibility:include-filter" value="CtsVirtualDevicesCameraTestCases"/>

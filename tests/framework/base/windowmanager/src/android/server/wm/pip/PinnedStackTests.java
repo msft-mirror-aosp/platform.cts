@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package android.server.wm.other;
+package android.server.wm.pip;
 
 import static android.app.ActivityManager.LOCK_TASK_MODE_NONE;
 import static android.app.Flags.FLAG_ENABLE_PIP_UI_STATE_CALLBACK_ON_ENTERING;
@@ -173,7 +173,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-/** Build/Install/Run: atest CtsWindowManagerDeviceOther:PinnedStackTests */
+/** Build/Install/Run: atest CtsWindowManagerDevicePip:PinnedStackTests */
 @Presubmit
 @android.server.wm.annotation.Group2
 public class PinnedStackTests extends ActivityManagerTestBase {
