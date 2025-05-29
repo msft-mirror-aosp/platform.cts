@@ -544,4 +544,7 @@
     <!-- b/291069162 -->
     <option name="compatibility:exclude-filter" value="CtsKeystoreTestCases android.keystore.cts.DeviceOwnerKeyManagementTest" />
 
+    <!-- b/416450209 -->
+    <option name="compatibility:exclude-filter" value="CtsWifiTestCases android.net.wifi.cts.WifiNetworkSpecifierTest#testUserRejectionWithSpecificSsid" />
+
 </configuration>
