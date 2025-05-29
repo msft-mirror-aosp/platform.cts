@@ -183,7 +183,8 @@ public class ConcurrencyTest extends WifiJUnit4TestBase {
     private static final int DURATION = 5000;
     private static final int TEST_OUI = 0x00C82ADD; // Google OUI
     private static final String TEST_USD_SERVICE_NAME = "test_service_name";
-    private static final int TEST_USD_PROTOCOL_TYPE = 4;
+    private static final int TEST_USD_PROTOCOL_TYPE =
+            WifiP2pUsdBasedServiceConfig.SERVICE_PROTOCOL_TYPE_GENERIC;
     private static final byte[] TEST_USD_SERVICE_SPECIFIC_INFO = {10, 20, 30, 40, 50, 60};
     private static final int TEST_USD_DISCOVERY_CHANNEL_FREQUENCY_MHZ = 2437;
     private static final int[] TEST_USD_DISCOVERY_CHANNEL_FREQUENCIES_MHZ = {2412, 2437, 2462};
