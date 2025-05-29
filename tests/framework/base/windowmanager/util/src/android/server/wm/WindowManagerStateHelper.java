@@ -46,6 +46,8 @@ import android.graphics.Rect;
 import android.util.SparseArray;
 import android.view.InputEvent;
 
+import com.android.compatibility.common.util.FeatureUtil;
+
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -158,6 +160,17 @@ public class WindowManagerStateHelper extends WindowManagerState {
         }
         assertNotNull("homeActivity should not be null", homeActivity);
         waitForValidState(homeActivity);
+    }
+
+    public void waitAndVerifyHomeInvoked(ComponentName testComponentName) {
+        waitAndAssertVisibilityGone(testComponentName);
+
+        if (!FeatureUtil.isXrHeadset()) {
+            // On XR headsets, when home is invoked, all apps are minimized
+            // to show the home space, instead of showing the home activity.
+            waitForHomeActivityVisible();
+            assertHomeActivityVisible(true);
+        }
     }
 
     /** @return {@code true} if the recents is visible; {@code false} if timeout occurs. */
