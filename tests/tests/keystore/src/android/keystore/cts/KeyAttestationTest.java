@@ -1838,14 +1838,16 @@ public class KeyAttestationTest {
         if (TestUtils.getVendorApiLevel() >= 202504) {
             assertEquals(
                     unexpectedLengthMessagePrefix + " (expected 32)", 32, verifiedBootKey.length);
-            if (isLocked && TestUtils.getVendorApiLevel() > 202504) {
-                String systemProperty =
-                        SystemProperties.get("ro.boot.vbmeta.public_key_digest", "");
-                assertEquals(
-                        "rootOfTrust.verifiedBootKey does not match the "
-                                + "ro.boot.vbmeta.public_key_digest system property",
-                        systemProperty,
-                        HexEncoding.encode(verifiedBootKey));
+            if (isLocked) {
+                if (TestUtils.getVendorApiLevel() > 202504) {
+                    String systemProperty =
+                            SystemProperties.get("ro.boot.vbmeta.public_key_digest", "");
+                    assertEquals(
+                            "rootOfTrust.verifiedBootKey does not match the "
+                                    + "ro.boot.vbmeta.public_key_digest system property",
+                            systemProperty,
+                            HexEncoding.encode(verifiedBootKey));
+                }
             } else {
                 byte[] emptyVerifiedBootKey = new byte[32];
                 assertArrayEquals(
