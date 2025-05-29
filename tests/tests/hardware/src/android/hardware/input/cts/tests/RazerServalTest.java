@@ -55,7 +55,6 @@ public class RazerServalTest extends InputHidTestCase {
         testInputEvents(R.raw.razer_serval_homekey);
         WindowManagerStateHelper wmStateHelper = new WindowManagerStateHelper();
 
-        wmStateHelper.waitForHomeActivityVisible();
-        wmStateHelper.assertHomeActivityVisible(true);
+        wmStateHelper.waitAndVerifyHomeInvoked(mTestActivity.getComponentName());
     }
 }

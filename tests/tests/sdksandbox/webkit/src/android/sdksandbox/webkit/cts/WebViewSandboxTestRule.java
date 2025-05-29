@@ -22,7 +22,9 @@ import android.webkit.cts.SharedWebViewTestEnvironment;
 
 import androidx.test.core.app.ApplicationProvider;
 
+import com.android.compatibility.common.util.FeatureUtil;
 import com.android.compatibility.common.util.NullWebViewUtils;
+import com.android.modules.utils.build.SdkLevel;
 
 import org.junit.Assume;
 import org.junit.runner.Description;
@@ -52,6 +54,14 @@ public class WebViewSandboxTestRule extends SdkSandboxScenarioRule {
         return params;
     }
 
+    private static boolean isSdkSandboxSupportedOnDevice() {
+        return !FeatureUtil.isWatch()
+                && !FeatureUtil.isTV()
+                && !FeatureUtil.isAutomotive()
+                && !FeatureUtil.isLowRam()
+                && SdkLevel.isAtLeastU();
+    }
+
     @Override
     public Statement apply(final Statement base, final Description description) {
         // If WebView is not available, simply skip loading the SDK and then throw an assumption
@@ -61,7 +71,10 @@ public class WebViewSandboxTestRule extends SdkSandboxScenarioRule {
         if (!NullWebViewUtils.isWebViewAvailable()) {
             return base;
         }
-
+        // Skip loading the SDK if the SDK Sandbox is not supported on the device.
+        if (!isSdkSandboxSupportedOnDevice()) {
+            return base;
+        }
         return super.apply(base, description);
     }
 
@@ -69,6 +82,9 @@ public class WebViewSandboxTestRule extends SdkSandboxScenarioRule {
     public void assertSdkTestRunPasses(String testMethodName, Bundle params) throws Throwable {
         // This will prevent shared webview tests from running if a WebView provider does not exist.
         Assume.assumeTrue("WebView is not available", NullWebViewUtils.isWebViewAvailable());
+        Assume.assumeTrue(
+                "SDK Sandbox is not supported on the device",
+                isSdkSandboxSupportedOnDevice());
         super.assertSdkTestRunPasses(testMethodName, params);
     }
 }
