@@ -117,23 +117,31 @@ class DeviceEventTest : CoreTestBase() {
 
         simulateDeviceEvent(associationId, EVENT_BLE_APPEARED)
         PrimaryCompanionService.waitAssociationToAppear(associationId)
-        PrimaryCompanionService.getCurrentEvent()
-                ?.let { assertDevicePresenceEvent(EVENT_BLE_APPEARED, it) }
+        assertDevicePresenceEvent(
+            EVENT_BLE_APPEARED,
+            eventGetter = { PrimaryCompanionService.getCurrentEvent() }
+        )
 
         simulateDeviceEvent(associationId, EVENT_BT_CONNECTED)
         PrimaryCompanionService.waitAssociationToBtConnect(associationId)
-        PrimaryCompanionService.getCurrentEvent()
-                ?.let { assertDevicePresenceEvent(EVENT_BT_CONNECTED, it) }
+        assertDevicePresenceEvent(
+            EVENT_BT_CONNECTED,
+            eventGetter = { PrimaryCompanionService.getCurrentEvent() }
+        )
 
         simulateDeviceEvent(associationId, EVENT_BT_DISCONNECTED)
         PrimaryCompanionService.waitAssociationToBtDisconnect(associationId)
-        PrimaryCompanionService.getCurrentEvent()
-                ?.let { assertDevicePresenceEvent(EVENT_BT_DISCONNECTED, it) }
+        assertDevicePresenceEvent(
+            EVENT_BT_DISCONNECTED,
+            eventGetter = { PrimaryCompanionService.getCurrentEvent() }
+        )
 
         simulateDeviceEvent(associationId, EVENT_BLE_DISAPPEARED)
         PrimaryCompanionService.waitAssociationToDisappear(associationId)
-        PrimaryCompanionService.getCurrentEvent()
-                ?.let { assertDevicePresenceEvent(EVENT_BLE_DISAPPEARED, it) }
+        assertDevicePresenceEvent(
+            EVENT_BLE_DISAPPEARED,
+            eventGetter = { PrimaryCompanionService.getCurrentEvent() }
+        )
 
         PrimaryCompanionService.forgetDevicePresence(associationId)
         withShellPermissionIdentity(Manifest.permission.REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE) {

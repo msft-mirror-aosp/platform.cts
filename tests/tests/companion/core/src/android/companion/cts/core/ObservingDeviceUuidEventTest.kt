@@ -127,15 +127,19 @@ class ObservingDeviceUuidEventTest : CoreTestBase() {
 
         simulateDeviceUuidEvent(UUID_A, EVENT_BT_CONNECTED)
         PrimaryCompanionService.waitDeviceUuidConnect(UUID_A)
-        PrimaryCompanionService.getCurrentEvent()
-                ?.let { assertDevicePresenceEvent(EVENT_BT_CONNECTED, it) }
+        assertDevicePresenceEvent(
+            EVENT_BT_CONNECTED,
+            eventGetter = { PrimaryCompanionService.getCurrentEvent() }
+        )
 
         assertValidCompanionDeviceServicesBind()
 
         simulateDeviceUuidEvent(UUID_A, EVENT_BT_DISCONNECTED)
         PrimaryCompanionService.waitDeviceUuidDisconnect(UUID_A)
-        PrimaryCompanionService.getCurrentEvent()
-                ?.let { assertDevicePresenceEvent(EVENT_BT_DISCONNECTED, it) }
+        assertDevicePresenceEvent(
+            EVENT_BT_DISCONNECTED,
+            eventGetter = { PrimaryCompanionService.getCurrentEvent() }
+        )
 
         stopObservingDevicePresenceByUuid(userId, targetPackageName, UUID_A.toString())
 
@@ -149,8 +153,10 @@ class ObservingDeviceUuidEventTest : CoreTestBase() {
 
         simulateDeviceUuidEvent(UUID_A, EVENT_BT_CONNECTED)
         PrimaryCompanionService.waitDeviceUuidConnect(UUID_A)
-        PrimaryCompanionService.getCurrentEvent()
-                ?.let { assertDevicePresenceEvent(EVENT_BT_CONNECTED, it) }
+        assertDevicePresenceEvent(
+            EVENT_BT_CONNECTED,
+            eventGetter = { PrimaryCompanionService.getCurrentEvent() }
+        )
 
         assertContentEquals(
                 actual = PrimaryCompanionService.connectedUuidBondDevices,
@@ -161,8 +167,10 @@ class ObservingDeviceUuidEventTest : CoreTestBase() {
 
         simulateDeviceUuidEvent(UUID_B, EVENT_BT_CONNECTED)
         PrimaryCompanionService.waitDeviceUuidConnect(UUID_B)
-        PrimaryCompanionService.getCurrentEvent()
-                ?.let { assertDevicePresenceEvent(EVENT_BT_CONNECTED, it) }
+        assertDevicePresenceEvent(
+            EVENT_BT_CONNECTED,
+            eventGetter = { PrimaryCompanionService.getCurrentEvent() }
+        )
 
         assertContentEquals(
                 actual = PrimaryCompanionService.connectedUuidBondDevices,
@@ -210,16 +218,20 @@ class ObservingDeviceUuidEventTest : CoreTestBase() {
 
         simulateDeviceEvent(associationId, EVENT_BLE_APPEARED)
         PrimaryCompanionService.waitAssociationToAppear(associationId)
-        PrimaryCompanionService.getCurrentEvent()
-                ?.let { assertDevicePresenceEvent(EVENT_BLE_APPEARED, it) }
+        assertDevicePresenceEvent(
+            EVENT_BLE_APPEARED,
+            eventGetter = { PrimaryCompanionService.getCurrentEvent() }
+        )
 
         // Start observing by UUID.
         startObservingDevicePresenceByUuid(userId, targetPackageName, UUID_A.toString())
 
         simulateDeviceUuidEvent(UUID_A, EVENT_BT_CONNECTED)
         PrimaryCompanionService.waitDeviceUuidConnect(UUID_A)
-        PrimaryCompanionService.getCurrentEvent()
-                ?.let { assertDevicePresenceEvent(EVENT_BT_CONNECTED, it) }
+        assertDevicePresenceEvent(
+            EVENT_BT_CONNECTED,
+            eventGetter = { PrimaryCompanionService.getCurrentEvent() }
+        )
 
         simulateDeviceEvent(associationId, EVENT_BLE_DISAPPEARED)
         // Now, stop observing by MAC_ADDRESS.

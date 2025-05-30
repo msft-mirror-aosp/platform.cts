@@ -71,8 +71,10 @@ class SelfPresenceReportingTest : CoreTestBase() {
         // Assert both valid CompanionDeviceServices stay bound
         assertValidCompanionDeviceServicesRemainBound()
         if (Flags.devicePresence()) {
-            PrimaryCompanionService.getCurrentEvent()
-                    ?.let { assertDevicePresenceEvent(EVENT_SELF_MANAGED_APPEARED, it) }
+            assertDevicePresenceEvent(
+                EVENT_SELF_MANAGED_APPEARED,
+                eventGetter = { PrimaryCompanionService.getCurrentEvent() }
+            )
         }
 
         withShellPermissionIdentity(REQUEST_COMPANION_SELF_MANAGED) {
@@ -82,8 +84,10 @@ class SelfPresenceReportingTest : CoreTestBase() {
         // Assert only the primary CompanionDeviceService is notified of device disappearance
         assertOnlyPrimaryCompanionDeviceServiceNotified(associationId, appeared = false)
         if (Flags.devicePresence()) {
-            PrimaryCompanionService.getCurrentEvent()
-                    ?.let { assertDevicePresenceEvent(EVENT_SELF_MANAGED_DISAPPEARED, it) }
+            assertDevicePresenceEvent(
+                EVENT_SELF_MANAGED_DISAPPEARED,
+                eventGetter = { PrimaryCompanionService.getCurrentEvent() }
+            )
         }
         // Assert both services are unbound now
         assertValidCompanionDeviceServicesUnbind()

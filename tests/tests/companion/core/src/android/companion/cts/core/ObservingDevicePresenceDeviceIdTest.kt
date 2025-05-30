@@ -140,14 +140,18 @@ class ObservingDevicePresenceDeviceIdTest : CoreTestBase() {
                 // targetApp should receive the callback once simulate device connected.
                 simulateDeviceEvent(associationId, EVENT_BT_CONNECTED)
                 PrimaryCompanionService.waitAssociationToBtConnect(associationId)
-                PrimaryCompanionService.getCurrentEvent()
-                    ?.let { assertDevicePresenceEvent(EVENT_BT_CONNECTED, it) }
+                assertDevicePresenceEvent(
+                    EVENT_BT_CONNECTED,
+                    eventGetter = { PrimaryCompanionService.getCurrentEvent() }
+                )
 
                 // targetApp should receive the callback once simulate device disconnected.
                 simulateDeviceEvent(associationId, EVENT_BT_DISCONNECTED)
                 sleep(2000)
-                PrimaryCompanionService.getCurrentEvent()
-                    ?.let { assertDevicePresenceEvent(EVENT_BT_DISCONNECTED, it) }
+                assertDevicePresenceEvent(
+                    EVENT_BT_DISCONNECTED,
+                    eventGetter = { PrimaryCompanionService.getCurrentEvent() }
+                )
 
                 // testApp stop observing device presence.
                 stopObservingDevicePresenceById(userId, testApp.packageName, associationId)
@@ -183,14 +187,18 @@ class ObservingDevicePresenceDeviceIdTest : CoreTestBase() {
                 // Do not need to simulate to send the event,
                 // the callback should trigger immediately.
                 PrimaryCompanionService.waitAssociationToBtConnect(associationId)
-                PrimaryCompanionService.getCurrentEvent()
-                    ?.let { assertDevicePresenceEvent(EVENT_BT_CONNECTED, it) }
+                assertDevicePresenceEvent(
+                    EVENT_BT_CONNECTED,
+                    eventGetter = { PrimaryCompanionService.getCurrentEvent() }
+                )
 
                 // Forth, simulate disconnected event and targetApp
                 // should receive the callback.
                 simulateDeviceEvent(associationId, EVENT_BT_DISCONNECTED)
-                PrimaryCompanionService.getCurrentEvent()
-                    ?.let { assertDevicePresenceEvent(EVENT_BT_DISCONNECTED, it) }
+                assertDevicePresenceEvent(
+                    EVENT_BT_DISCONNECTED,
+                    eventGetter = { PrimaryCompanionService.getCurrentEvent() }
+                )
 
                 // testApp stop observing device presence.
                 stopObservingDevicePresenceById(userId, testApp.packageName, associationId)
