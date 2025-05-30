@@ -6,7 +6,7 @@ const vec2 positions[3] = vec2[](
     vec2(0.5, -0.289)
 );
 
-const float smallAngle = 0.01;
+const float smallAngle = 0.15;
 
 void main() {
     int triangleIndex = gl_VertexIndex / 3;
