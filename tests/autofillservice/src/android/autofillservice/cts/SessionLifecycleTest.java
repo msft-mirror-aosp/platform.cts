@@ -336,8 +336,6 @@ public class SessionLifecycleTest extends AutoFillServiceTestCase.ManualActivity
         // Cancel authentication activity
         mUiBot.pressBack();
 
-        // Wait for fill request to be processed
-        mUiBot.waitForIdle();
         sReplier.getNextFillRequest();
 
         // Authentication should still be shown
@@ -391,8 +389,6 @@ public class SessionLifecycleTest extends AutoFillServiceTestCase.ManualActivity
         // Cancel activity on top
         mUiBot.pressBack();
 
-        // Wait for fill request to be processed
-        mUiBot.waitForIdle();
         sReplier.getNextFillRequest();
 
         // Dataset should still be shown
