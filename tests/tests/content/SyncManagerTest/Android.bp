@@ -30,6 +30,7 @@ android_test {
         "cts_content_shared_lib",
         "junit",
         "mockito-target",
+        "services.core",
     ],
     srcs: [
         "src/**/*.java",
