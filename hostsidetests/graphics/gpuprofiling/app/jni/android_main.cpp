@@ -18,7 +18,6 @@
 #include <android_native_app_glue.h>
 
 #include <chrono>
-#include <thread>
 
 #include "vulkan_renderer.h"
 
@@ -62,8 +61,12 @@ void android_main(struct android_app *app) {
     app->onAppCmd = onAppCmd;
 
     int frame = 0;
+    int trianglesCount = 1;
+    auto periodStartTime = std::chrono::high_resolution_clock::now();
+    auto prevFrameStartTime = periodStartTime;
 
     while (true) {
+        auto frameStartTime = std::chrono::high_resolution_clock::now();
         int ident;
         int events;
         android_poll_source *source;
@@ -74,9 +77,27 @@ void android_main(struct android_app *app) {
             }
         }
 
-        appState.renderer.render(3 + (frame / 2) % 10);
-        if (++frame % 20 == 0) {
-            std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+        appState.renderer.render(static_cast<int>(trianglesCount));
+        std::chrono::duration<double, std::milli> elapsedMs = frameStartTime - periodStartTime;
+        if (elapsedMs.count() > 2000) {
+            // High GPU usage period
+            if (trianglesCount == 1) {
+                trianglesCount = 30;
+            }
+            if (frame % 5 == 0) {
+                std::chrono::duration<double, std::milli> lastFrameTimeMs =
+                        frameStartTime - prevFrameStartTime;
+                if (lastFrameTimeMs.count() < 60) {
+                    trianglesCount *= 2;
+                }
+            }
+            if (elapsedMs.count() > 4000) {
+                // Start next low GPU usage period
+                periodStartTime = std::chrono::high_resolution_clock::now();
+                trianglesCount = 1;
+            }
         }
+        prevFrameStartTime = frameStartTime;
+        ++frame;
     }
 }
