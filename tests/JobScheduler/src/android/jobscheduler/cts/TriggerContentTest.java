@@ -16,6 +16,11 @@
 
 package android.jobscheduler.cts;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import android.annotation.TargetApi;
 import android.app.job.JobInfo;
 import android.app.job.JobParameters;
@@ -29,6 +34,12 @@ import android.os.Environment;
 import android.os.Process;
 import android.provider.MediaStore;
 
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+
+import org.junit.After;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -37,10 +48,9 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-/**
- * Schedules jobs that look for content URI changes and ensures they are triggered correctly.
- */
+/** Schedules jobs that look for content URI changes and ensures they are triggered correctly. */
 @TargetApi(23)
+@RunWith(AndroidJUnit4.class)
 public class TriggerContentTest extends BaseJobSchedulerTest {
     public static final int TRIGGER_CONTENT_JOB_ID = TriggerContentTest.class.hashCode();
 
@@ -113,6 +123,7 @@ public class TriggerContentTest extends BaseJobSchedulerTest {
     }
 
     @Override
+    @After
     public void tearDown() throws Exception {
         for (int i=0; i<mActiveFiles.length; i++) {
             cleanupActive(i);
@@ -236,6 +247,7 @@ public class TriggerContentTest extends BaseJobSchedulerTest {
         }
     }
 
+    @Test
     public void testDescendantsObserver() throws Exception {
         String base = "content://" + DummyJobContentProvider.AUTHORITY + "/root";
         Uri uribase = Uri.parse(base);
@@ -284,6 +296,7 @@ public class TriggerContentTest extends BaseJobSchedulerTest {
         assertEquals(DummyJobContentProvider.AUTHORITY, auths[0]);
     }
 
+    @Test
     public void testNonDescendantsObserver() throws Exception {
         String base = "content://" + DummyJobContentProvider.AUTHORITY + "/root";
         Uri uribase = Uri.parse(base);
@@ -330,6 +343,7 @@ public class TriggerContentTest extends BaseJobSchedulerTest {
         assertEquals(DummyJobContentProvider.AUTHORITY, auths[0]);
     }
 
+    @Test
     public void testPhotoAdded_Reschedule() throws Exception {
         JobInfo triggerJob = makePhotosJobInfo();
 

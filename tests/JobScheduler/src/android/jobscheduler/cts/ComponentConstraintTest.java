@@ -16,12 +16,20 @@
 
 package android.jobscheduler.cts;
 
+import static org.junit.Assert.assertTrue;
+
 import android.app.job.JobInfo;
 import android.content.pm.PackageManager;
 
-/**
- * Schedules jobs with various component-enabled states.
- */
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
+/** Schedules jobs with various component-enabled states. */
+@RunWith(AndroidJUnit4.class)
 public class ComponentConstraintTest extends BaseJobSchedulerTest {
     private static final String TAG = "ComponentConstraintTest";
     /** Unique identifier for the job scheduled by this suite of tests. */
@@ -30,17 +38,20 @@ public class ComponentConstraintTest extends BaseJobSchedulerTest {
     private JobInfo.Builder mBuilder;
 
     @Override
+    @Before
     public void setUp() throws Exception {
         super.setUp();
         mBuilder = new JobInfo.Builder(COMPONENT_JOB_ID, kJobServiceComponent);
     }
 
     @Override
+    @After
     public void tearDown() throws Exception {
         setJobServiceEnabled(true);
         super.tearDown();
     }
 
+    @Test
     public void testScheduleAfterComponentEnabled() throws Exception {
         setJobServiceEnabled(true);
         kTestEnvironment.setExpectedExecutions(1);
@@ -65,6 +76,7 @@ public class ComponentConstraintTest extends BaseJobSchedulerTest {
         }
     */
 
+    @Test
     public void testComponentDisabledAfterSchedule() throws Exception {
         setJobServiceEnabled(true);
         kTestEnvironment.setExpectedExecutions(0);
@@ -75,6 +87,7 @@ public class ComponentConstraintTest extends BaseJobSchedulerTest {
         assertTrue("Job with disabled service fired.", kTestEnvironment.awaitTimeout());
     }
 
+    @Test
     public void testComponentDisabledAndReenabledAfterSchedule() throws Exception {
         setJobServiceEnabled(true);
         kTestEnvironment.setExpectedExecutions(1);

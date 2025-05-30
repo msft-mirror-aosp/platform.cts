@@ -16,6 +16,9 @@
 
 package android.jobscheduler.cts;
 
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
 import android.Manifest;
 import android.annotation.TargetApi;
 import android.app.UiModeManager;
@@ -25,14 +28,19 @@ import android.os.UserHandle;
 import android.util.Log;
 
 import androidx.test.InstrumentationRegistry;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.uiautomator.UiDevice;
 
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.compatibility.common.util.UserHelper;
 
-/**
- * Make sure the state of {@link android.app.job.JobScheduler} is correct.
- */
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
+/** Make sure the state of {@link android.app.job.JobScheduler} is correct. */
+@RunWith(AndroidJUnit4.class)
 public class IdleConstraintTest extends BaseJobSchedulerTest {
     /** Unique identifier for the job scheduled by this suite of tests. */
     private static final int STATE_JOB_ID = IdleConstraintTest.class.hashCode();
@@ -45,6 +53,7 @@ public class IdleConstraintTest extends BaseJobSchedulerTest {
     private String mInitialDisplayTimeout;
 
     @Override
+    @Before
     public void setUp() throws Exception {
         super.setUp();
         mBuilder = new JobInfo.Builder(STATE_JOB_ID, kJobServiceComponent);
@@ -58,6 +67,7 @@ public class IdleConstraintTest extends BaseJobSchedulerTest {
     }
 
     @Override
+    @After
     public void tearDown() throws Exception {
         mJobScheduler.cancel(STATE_JOB_ID);
         // Put device back in to normal operation.
@@ -143,9 +153,8 @@ public class IdleConstraintTest extends BaseJobSchedulerTest {
                 kTestEnvironment.awaitExecution(250));
     }
 
-    /**
-     * Ensure that device can switch state normally.
-     */
+    /** Ensure that device can switch state normally. */
+    @Test
     public void testDeviceChangeIdleActiveState() throws Exception {
         // Device that support visible background users may have different display groups
         // for each display.
@@ -195,10 +204,9 @@ public class IdleConstraintTest extends BaseJobSchedulerTest {
         return !isAutomotive() && !isLeanback;
     }
 
-    /**
-     * Ensure that device can switch state on dock normally.
-     */
+    /** Ensure that device can switch state on dock normally. */
     @TargetApi(28)
+    @Test
     public void testScreenOnDeviceOnDockChangeState() throws Exception {
         if (!isDockStateSupported()) {
             return;
@@ -216,10 +224,9 @@ public class IdleConstraintTest extends BaseJobSchedulerTest {
         verifyActiveState();
     }
 
-    /**
-     *  Ensure that the tracker ignores this dock intent during screen off.
-     */
+    /** Ensure that the tracker ignores this dock intent during screen off. */
     @TargetApi(28)
+    @Test
     public void testScreenOffDeviceOnDockNoChangeState() throws Exception {
         if (!isDockStateSupported()) {
             return;
@@ -246,9 +253,8 @@ public class IdleConstraintTest extends BaseJobSchedulerTest {
         Thread.sleep(2_000);
     }
 
-    /**
-     * Ensure automotive projection is considered active.
-     */
+    /** Ensure automotive projection is considered active. */
+    @Test
     public void testAutomotiveProjectionPreventsIdle() throws Exception {
         if (!isAutomotiveProjectionSupported()) {
             return;
@@ -317,6 +323,7 @@ public class IdleConstraintTest extends BaseJobSchedulerTest {
         }
     }
 
+    @Test
     public void testIdleJobStartsOnlyWhenIdle_settingProjectionEndsIdle() throws Exception {
         if (!isAutomotiveProjectionSupported()) {
             return;
@@ -329,6 +336,7 @@ public class IdleConstraintTest extends BaseJobSchedulerTest {
                 kTestEnvironment.awaitStopped());
     }
 
+    @Test
     public void testIdleJobStartsOnlyWhenIdle_screenEndsIdle() throws Exception {
         // Device that support visible background users may have different display groups
         // for each display.
