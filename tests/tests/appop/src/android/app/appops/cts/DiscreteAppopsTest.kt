@@ -41,7 +41,10 @@ import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
 import android.os.IBinder
+import android.permission.flags.Flags
 import android.platform.test.annotations.AppModeFull
+import android.platform.test.annotations.RequiresFlagsDisabled
+import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import android.provider.DeviceConfig
 import android.provider.DeviceConfig.NAMESPACE_PRIVACY
 import android.provider.Settings
@@ -58,6 +61,7 @@ import java.util.function.Consumer
 import org.junit.After
 import org.junit.Assert
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 
 private const val LOG_TAG = "DiscreteAppopsTest"
@@ -79,6 +83,7 @@ private const val INTERVAL_COMPRESSION_MULTIPLIER = 10
 private const val SNAPSHOT_INTERVAL_MILLIS = 1000L
 
 @AppModeFull(reason = "This test connects to other test app")
+@RequiresFlagsDisabled(Flags.FLAG_ENABLE_ALL_SQLITE_APPOPS_ACCESSES)
 class DiscreteAppopsTest {
     private var previousAppOpsConstants: String? = null
 
@@ -98,6 +103,9 @@ class DiscreteAppopsTest {
     private lateinit var appOpsManager: AppOpsManager
     private lateinit var activityManager: ActivityManager
     private val uiDevice = UiDevice.getInstance(instrumentation)
+
+    @get:Rule
+    val mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
 
     private val testPkgAppOpMode: Int
         get() {
