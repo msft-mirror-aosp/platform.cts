@@ -30,6 +30,7 @@ import android.net.Uri;
 import android.provider.BaseColumns;
 import android.provider.Telephony;
 import android.util.Log;
+import android.telephony.TelephonyManager;
 
 /**
  * CTS tests for backup and restore of blocked numbers using local transport.
@@ -105,7 +106,7 @@ public class SmsBackupRestoreTest extends TestCaseThatRunsIfTelephonyIsEnabled {
 
     private boolean isFeatureSupported() throws Exception {
         return (ProviderTestUtils.hasBackupTransport(LOCAL_BACKUP_COMPONENT, mUiAutomation)
-                && mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_TELEPHONY));
+                && TelephonyManager.from(mContext).isDeviceSmsCapable());
     }
 
     private void clearMessages() {
