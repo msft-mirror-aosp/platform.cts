@@ -41,3 +41,10 @@ android_test {
     test_config: "AndroidTest.xml",
     per_testcase_directory: true,
 }
+
+test_module_config {
+    name: "CtsBatteryManagerTestCases_postsubmit",
+    base: "CtsBatteryManagerTestCases",
+    test_suites: ["general-tests"],
+    exclude_annotations: ["androidx.test.filters.FlakyTest"],
+}
