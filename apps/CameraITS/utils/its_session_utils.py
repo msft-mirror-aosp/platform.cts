@@ -78,6 +78,7 @@ TABLET_ALLOWLIST = (
     'gta8',  # Samsung Galaxy Tab A8 LTE
     'gta9pwifi',  # Samsung Galaxy Tab A9+
     'gta9p',  # Samsung Galaxy Tab A9+ 5G
+    'gts10fewifi',  # Samsung Galaxy Tab S10 FE
     'dpd2221',  # Vivo Pad2
     'nabu',  # Xiaomi Pad 5
     'nabu_tw',  # Xiaomi Pad 5
