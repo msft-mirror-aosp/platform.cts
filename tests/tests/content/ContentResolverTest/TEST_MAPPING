@@ -1,0 +1,7 @@
+{
+  "postsubmit": [
+    {
+      "name": "CtsContentResolverTestCases_postsubmit"
+    }
+  ]
+}
