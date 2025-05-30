@@ -36,6 +36,7 @@ import android.net.wifi.WifiSsid;
 import android.os.Build;
 import android.os.Parcel;
 import android.platform.test.annotations.AppModeFull;
+import android.platform.test.annotations.RequiresDevice;
 import android.support.test.uiautomator.UiDevice;
 
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -262,7 +263,8 @@ public class ScanResultTest extends WifiJUnit3TestBase {
         }
    }
 
-    @VirtualDeviceNotSupported
+
+    @RequiresDevice
     public void testScanResultTimeStamp() throws Exception {
         if (!WifiFeature.isWifiSupported(getContext())) {
             // skip the test if WiFi is not supported

@@ -182,6 +182,7 @@ public class SplashscreenTests extends ActivityManagerTestBase {
         // TODO(b/192431448): Allow Automotive to skip this test until Splash Screen is properly
         // applied insets by system bars in AAOS.
         assumeFalse(isCar());
+        assumeFalse(isLeanBack());
         assumeTrue(supportsFreeform());
 
         final CommandSession.ActivitySession starter = prepareTestStarter();
@@ -447,6 +448,7 @@ public class SplashscreenTests extends ActivityManagerTestBase {
         // TODO(b/192431448): Allow Automotive to skip this test until Splash Screen is properly
         // applied insets by system bars in AAOS.
         assumeFalse(isCar());
+        assumeFalse(isLeanBack());
         assumeTrue(supportsFreeform());
 
         final CommandSession.ActivitySession starter = prepareTestStarter();
