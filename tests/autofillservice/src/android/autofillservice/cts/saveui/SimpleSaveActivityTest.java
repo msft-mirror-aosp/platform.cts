@@ -1940,8 +1940,6 @@ public class SimpleSaveActivityTest extends CustomDescriptionWithLinkTestCase<Si
 
         // ..then go back and save it.
         mUiBot.pressBack();
-        // Waits for all UI processes to complete
-        mUiBot.waitForIdle();
 
         // Make sure previous activity is back...
         assertActivityShownInBackground(SimpleSaveActivity.class);

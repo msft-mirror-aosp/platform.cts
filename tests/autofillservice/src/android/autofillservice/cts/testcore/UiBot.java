@@ -694,20 +694,18 @@ public class UiBot {
                 null, SAVE_TIMEOUT, types);
     }
 
-    /**
-     * Presses the Back button.
-     */
+    /** Presses the Back button and waits for idle. */
     public void pressBack() {
         Log.d(TAG, "pressBack()");
         mDevice.pressBack();
+        waitForIdle();
     }
 
-    /**
-     * Presses the Home button.
-     */
+    /** Presses the Home button and waits for idle. */
     public void pressHome() {
         Log.d(TAG, "pressHome()");
         mDevice.pressHome();
+        waitForIdle();
     }
 
     /**
