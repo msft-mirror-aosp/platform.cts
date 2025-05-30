@@ -92,6 +92,7 @@ import android.os.SystemProperties;
 import android.os.UserHandle;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.AsbSecurityTest;
+import android.platform.test.annotations.RequiresDevice;
 import android.provider.Settings;
 import android.support.test.uiautomator.UiDevice;
 import android.telephony.TelephonyManager;
@@ -684,7 +685,7 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
      * To run this test in cts-tradefed:
      * run cts --class android.net.wifi.cts.WifiManagerTest --method testWifiScanTimestamp
      */
-    @VirtualDeviceNotSupported
+    @RequiresDevice
     public void testWifiScanTimestamp() throws Exception {
         if (!WifiFeature.isWifiSupported(getContext())) {
             Log.d(TAG, "Skipping test as WiFi is not supported");
@@ -3183,7 +3184,7 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
      * configuration.
      * @throws Exception
      */
-    @VirtualDeviceNotSupported
+    @RequiresDevice
     public void testSetGetSoftApConfigurationAndSoftApCapabilityCallback() throws Exception {
         if (!WifiFeature.isWifiSupported(getContext())) {
             // skip the test if WiFi is not supported
@@ -3299,7 +3300,7 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
      * Verify that startTetheredHotspot with specific channel config.
      * @throws Exception
      */
-    @VirtualDeviceNotSupported
+    @RequiresDevice
     public void testStartTetheredHotspotWithChannelConfigAndSoftApStateAndInfoCallback()
             throws Exception {
         if (!WifiFeature.isWifiSupported(getContext())) {
@@ -3727,7 +3728,7 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
     /**
      * Tests {@link WifiManager#getFactoryMacAddresses()} returns at least one valid MAC address.
      */
-    @VirtualDeviceNotSupported
+    @RequiresDevice
     public void testGetFactoryMacAddresses() throws Exception {
         if (!WifiFeature.isWifiSupported(getContext())) {
             // skip the test if WiFi is not supported
