@@ -2299,7 +2299,7 @@ public class SurfaceControlTest {
         float[] screenBrightnesses = {0.01f, 1.0f, 0.75f, 0.5f, 0.25f, -1f};
 
         for (float brightness : screenBrightnesses) {
-            mActivity.getWindow().getAttributes().screenBrightness = 0.01f;
+            mActivity.getWindow().getAttributes().screenBrightness = brightness;
             // Wait for the screenBrightness to be picked up by VRI
             WidgetTestUtils.runOnMainAndDrawSync(mActivity.getParentFrameLayout(), () -> {});
             float headroom = getStableHdrSdrRatio(display);

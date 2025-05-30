@@ -1029,7 +1029,7 @@ public class SurfaceViewTests extends ActivityTestBase {
             float[] screenBrightnesses = {0.01f, 1.0f, 0.75f, 0.5f, 0.25f, -1f};
 
             for (float brightness : screenBrightnesses) {
-                activity.getWindow().getAttributes().screenBrightness = 0.01f;
+                activity.getWindow().getAttributes().screenBrightness = brightness;
                 // Wait for the screenBrightness to be picked up by VRI
                 WidgetTestUtils.runOnMainAndDrawSync(surfaceView, () -> {});
                 float headroom = getStableHdrSdrRatio(display);
