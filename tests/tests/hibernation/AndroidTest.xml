@@ -37,11 +37,16 @@
         <option name="runner" value="androidx.test.runner.AndroidJUnitRunner" />
     </test>
 
-    <!-- Create Place to store apks -->
     <target_preparer class="com.android.tradefed.targetprep.RunCommandTargetPreparer">
+        <!-- Create Place to store apks -->
         <option name="run-command" value="mkdir -p /data/local/tmp/cts/hibernation" />
         <option name="run-command" value="am wait-for-broadcast-idle" />
         <option name="teardown-command" value="rm -rf /data/local/tmp/cts/hibernation" />
+
+        <!-- Set log tags for debuggability -->
+        <option name="run-command" value="setprop log.tag.HibernationPolicy VERBOSE" />
+        <!-- Doesn't seem to be a way to reset the command to set to highest level -->
+        <option name="teardown-command" value="setprop log.tag.HibernationPolicy ASSERT" />
     </target_preparer>
     <!-- Load additional APKs onto device -->
     <target_preparer class="com.android.compatibility.common.tradefed.targetprep.FilePusher">
