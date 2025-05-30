@@ -16,6 +16,12 @@
 
 package android.jobscheduler.cts;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import android.app.job.JobInfo;
 import android.app.job.JobScheduler;
 import android.app.job.JobWorkItem;
@@ -23,15 +29,20 @@ import android.content.Intent;
 import android.jobscheduler.MockJobService;
 import android.os.PersistableBundle;
 
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
 import java.util.List;
 
-/**
- * Tests related to created and reading JobWorkItem objects.
- */
+/** Tests related to created and reading JobWorkItem objects. */
+@RunWith(AndroidJUnit4.class)
 public class JobWorkItemTest extends BaseJobSchedulerTest {
     private static final int JOB_ID = JobWorkItemTest.class.hashCode();
     private static final Intent TEST_INTENT = new Intent("some.random.action");
 
+    @Test
     public void testAllInfoGivenToJob() throws Exception {
         final JobInfo jobInfo = new JobInfo.Builder(JOB_ID, kJobServiceComponent)
                 .setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY)
@@ -75,6 +86,7 @@ public class JobWorkItemTest extends BaseJobSchedulerTest {
         assertEquals(5, actualJwi.getMinimumNetworkChunkBytes());
     }
 
+    @Test
     public void testIntentOnlyItem_builder() {
         JobWorkItem jwi = new JobWorkItem.Builder().setIntent(TEST_INTENT).build();
 
@@ -87,6 +99,7 @@ public class JobWorkItemTest extends BaseJobSchedulerTest {
         assertTrue(jwi.getExtras().isEmpty());
     }
 
+    @Test
     public void testIntentOnlyItem_ctor() {
         JobWorkItem jwi = new JobWorkItem(TEST_INTENT);
 
@@ -99,6 +112,7 @@ public class JobWorkItemTest extends BaseJobSchedulerTest {
         assertTrue(jwi.getExtras().isEmpty());
     }
 
+    @Test
     public void testItemWithEstimatedBytes_builder() {
         try {
             new JobWorkItem.Builder().setEstimatedNetworkBytes(-10, 20).build();
@@ -123,6 +137,7 @@ public class JobWorkItemTest extends BaseJobSchedulerTest {
         assertTrue(jwi.getExtras().isEmpty());
     }
 
+    @Test
     public void testItemWithEstimatedBytes_ctor() {
         try {
             new JobWorkItem(TEST_INTENT, -10, 20);
@@ -148,6 +163,7 @@ public class JobWorkItemTest extends BaseJobSchedulerTest {
         assertTrue(jwi.getExtras().isEmpty());
     }
 
+    @Test
     public void testItemWithMinimumChunkBytes_builder() {
         JobWorkItem jwi = new JobWorkItem.Builder().setMinimumNetworkChunkBytes(3).build();
 
@@ -200,6 +216,7 @@ public class JobWorkItemTest extends BaseJobSchedulerTest {
         }
     }
 
+    @Test
     public void testItemWithMinimumChunkBytes_ctor() {
         JobWorkItem jwi = new JobWorkItem(TEST_INTENT, 10, 20, 3);
 
@@ -243,6 +260,7 @@ public class JobWorkItemTest extends BaseJobSchedulerTest {
         }
     }
 
+    @Test
     public void testItemWithPersistableBundle() {
         final PersistableBundle pb = new PersistableBundle();
         pb.putInt("random_key", 42);
@@ -267,6 +285,7 @@ public class JobWorkItemTest extends BaseJobSchedulerTest {
         }
     }
 
+    @Test
     public void testDeliveryCountBumped() throws Exception {
         JobInfo jobInfo = new JobInfo.Builder(JOB_ID, kJobServiceComponent).build();
         JobWorkItem jwi = new JobWorkItem(TEST_INTENT);
@@ -286,6 +305,7 @@ public class JobWorkItemTest extends BaseJobSchedulerTest {
         assertEquals(1, executedJWIs.get(0).getDeliveryCount());
     }
 
+    @Test
     public void testPersisted_withIntent() {
         JobWorkItem jwi = new JobWorkItem.Builder().setIntent(TEST_INTENT).build();
         JobInfo jobInfo = new JobInfo.Builder(JOB_ID, kJobServiceComponent)
@@ -299,6 +319,7 @@ public class JobWorkItemTest extends BaseJobSchedulerTest {
         }
     }
 
+    @Test
     public void testPersisted_withPersistableBundle() {
         final PersistableBundle pb = new PersistableBundle();
         pb.putInt("random_key", 42);
@@ -310,6 +331,7 @@ public class JobWorkItemTest extends BaseJobSchedulerTest {
         assertEquals(JobScheduler.RESULT_SUCCESS, mJobScheduler.enqueue(jobInfo, jwi));
     }
 
+    @Test
     public void testScheduleItemWithNetworkInfoAndNoNetworkConstraint_download() {
         JobWorkItem jwi = new JobWorkItem(TEST_INTENT, 10, JobInfo.NETWORK_BYTES_UNKNOWN);
         JobInfo jobInfo = new JobInfo.Builder(JOB_ID, kJobServiceComponent).build();
@@ -322,6 +344,7 @@ public class JobWorkItemTest extends BaseJobSchedulerTest {
         }
     }
 
+    @Test
     public void testScheduleItemWithNetworkInfoAndNoNetworkConstraint_upload() {
         JobWorkItem jwi = new JobWorkItem(TEST_INTENT, JobInfo.NETWORK_BYTES_UNKNOWN, 10);
         JobInfo jobInfo = new JobInfo.Builder(JOB_ID, kJobServiceComponent).build();
@@ -334,6 +357,7 @@ public class JobWorkItemTest extends BaseJobSchedulerTest {
         }
     }
 
+    @Test
     public void testScheduleItemWithNetworkInfoAndNoNetworkConstraint_minimumChunk() {
         JobWorkItem jwi = new JobWorkItem(TEST_INTENT,
                 JobInfo.NETWORK_BYTES_UNKNOWN, JobInfo.NETWORK_BYTES_UNKNOWN, 10);
@@ -347,6 +371,7 @@ public class JobWorkItemTest extends BaseJobSchedulerTest {
         }
     }
 
+    @Test
     public void testScheduleItemWithNetworkInfoAndNoNetworkConstraint() {
         JobWorkItem jwi = new JobWorkItem(TEST_INTENT, 10, 10, 10);
         JobInfo jobInfo = new JobInfo.Builder(JOB_ID, kJobServiceComponent)
@@ -361,6 +386,7 @@ public class JobWorkItemTest extends BaseJobSchedulerTest {
         }
     }
 
+    @Test
     public void testScheduleItemWithNetworkInfoAndNetworkConstraint() {
         JobWorkItem jwi = new JobWorkItem(TEST_INTENT,
                 JobInfo.NETWORK_BYTES_UNKNOWN, JobInfo.NETWORK_BYTES_UNKNOWN, 10);
