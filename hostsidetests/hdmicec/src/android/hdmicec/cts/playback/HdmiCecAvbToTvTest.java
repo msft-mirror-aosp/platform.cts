@@ -70,6 +70,7 @@ public class HdmiCecAvbToTvTest extends BaseHdmiCecAbsoluteVolumeBehaviorTest {
      * device's support for <Set Audio Volume Level>. In this test, this support status is
      * communicated through <Report Features> messages.
      */
+    @Ignore("(b/406050353")
     @Test
     public void testEnableDisableAvb_cec20_triggeredByReportFeatures() throws Exception {
         // Enable CEC 2.0
