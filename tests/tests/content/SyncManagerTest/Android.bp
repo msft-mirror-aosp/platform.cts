@@ -47,5 +47,11 @@ android_test {
     manifest: "AndroidManifest.xml",
     test_config: "AndroidTest.xml",
     per_testcase_directory: true,
+}
 
+test_module_config {
+    name: "CtsSyncManagerTestCases_postsubmit",
+    base: "CtsSyncManagerTestCases",
+    test_suites: ["general-tests"],
+    exclude_annotations: ["androidx.test.filters.FlakyTest"],
 }
