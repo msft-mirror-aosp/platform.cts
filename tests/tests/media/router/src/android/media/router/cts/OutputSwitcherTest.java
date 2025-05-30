@@ -52,6 +52,7 @@ import android.media.MediaRoute2Info;
 import android.media.MediaRouter2;
 import android.media.MediaRouter2.RoutingController;
 import android.media.RouteDiscoveryPreference;
+import android.text.BidiFormatter;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
@@ -114,14 +115,6 @@ public class OutputSwitcherTest {
     // com.android.systemui.R.string.cast_to_other_device_stop_dialog_button
     // (frameworks/base/packages/SystemUI/res/values/strings.xml)
     private static final String STOP_CASTING_BUTTON_TITLE = "Stop casting";
-
-    // These come from the values of
-    //   com.android.systemui.R.string.accessibility_add_device_to_group
-    // and
-    //   com.android.systemui.R.string.accessibility_remove_device_from_group
-    // (frameworks/base/packages/SystemUI/res/values/strings.xml)
-    private static final String ADD_DEVICE_TO_GROUP = "Add device to group";
-    private static final String REMOVE_DEVICE_FROM_GROUP = "Remove device from group";
 
     // Required by Bedstead.
     @ClassRule @Rule public static final DeviceState sDeviceState = new DeviceState();
@@ -445,7 +438,9 @@ public class OutputSwitcherTest {
         UiObject2 route =
                 UiAutomatorUtils2.waitFindObject(
                         By.text(routeName).pkg(SYSTEM_UI_PACKAGE), TIMEOUT_MS);
-        clickNearestElementWithDescription(route, ADD_DEVICE_TO_GROUP);
+        clickNearestElementWithDescription(route,
+               String.format("Add %s to group",
+                        BidiFormatter.getInstance().unicodeWrap(routeName)));
     }
 
     // Similar to the above, but searches for "Remove device from group".
@@ -454,7 +449,9 @@ public class OutputSwitcherTest {
         UiObject2 route =
                 UiAutomatorUtils2.waitFindObject(
                         By.text(routeName).pkg(SYSTEM_UI_PACKAGE), TIMEOUT_MS);
-        clickNearestElementWithDescription(route, REMOVE_DEVICE_FROM_GROUP);
+        clickNearestElementWithDescription(route,
+                String.format("Remove %s from group",
+                        BidiFormatter.getInstance().unicodeWrap(routeName)));
     }
 
     private static void clickNearestElementWithDescription(
