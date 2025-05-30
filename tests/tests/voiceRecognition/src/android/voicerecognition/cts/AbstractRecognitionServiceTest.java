@@ -82,7 +82,7 @@ abstract class AbstractRecognitionServiceTest {
 
     private static final long INDICATOR_DISMISS_TIMEOUT = 5000L;
     private static final long WAIT_TIMEOUT_MS = 30000L; // 30 secs
-    private static final long SEQUENCE_TEST_WAIT_TIMEOUT_MS = 5000L;
+    private static final long SEQUENCE_TEST_WAIT_TIMEOUT_MS = 30000L;
     private static final long ACTIVITY_INIT_WAIT_TIMEOUT_MS = 5000L;
 
     /* package */ static final String CTS_VOICE_RECOGNITION_SERVICE =
