@@ -333,6 +333,10 @@ TEST_P(AAudioInputStreamTest, testPauseAndFlushNotSupported) {
 }
 
 TEST_P(AAudioInputStreamTest, testFlushFromFrame) {
+    if (!mmapPcmOffloadSupport()) {
+        // No need to run the test if the flag is not enabled.
+        return;
+    }
     if (!mSetupSuccessful) return;
     mHelper->startStream();
     int64_t position = 0;
@@ -600,6 +604,10 @@ TEST_P(AAudioOutputStreamTest, testGetTimestamp) {
 }
 
 TEST_P(AAudioOutputStreamTest, testFlushFromFrame) {
+    if (!mmapPcmOffloadSupport()) {
+        // No need to run the test if the flag is not enabled.
+        return;
+    }
     if (!mSetupSuccessful) return;
     mHelper->startStream();
     int64_t position = 0;
