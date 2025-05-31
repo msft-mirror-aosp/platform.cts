@@ -860,6 +860,7 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
      * Schedule a job that requires an unmetered connection, and verify that it does not run when
      * the device is connected to a metered WiFi provider.
      */
+    @Test
     public void testUnmeteredConstraintFails_withMeteredWiFi() throws Exception {
         if (hasEthernetConnection()) {
             Log.d(TAG, "Skipping test since ethernet is connected.");
