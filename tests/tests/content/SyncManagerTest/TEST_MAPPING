@@ -1,0 +1,7 @@
+{
+  "postsubmit": [
+    {
+      "name": "CtsSyncManagerTestCases_postsubmit"
+    }
+  ]
+}
