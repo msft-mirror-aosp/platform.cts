@@ -99,11 +99,10 @@ public class RemoteSubmixTest {
 
     @Before
     public void setup() throws Exception {
-        mContext = getInstrumentation().getContext();
-        mAudioManager = mActivity.getSystemService(AudioManager.class);
-        // Note: starting projection may fail with an exception
         mMediaProjection = mMediaProjectionRule.startMediaProjection();
         mActivity = mMediaProjectionRule.getActivity();
+        mContext = getInstrumentation().getContext();
+        mAudioManager = mActivity.getSystemService(AudioManager.class);
         mStreamNames.put(AudioManager.STREAM_RING, "RING");
         mStreamNames.put(AudioManager.STREAM_NOTIFICATION, "NOTIFICATION");
         mStreamNames.put(AudioManager.STREAM_SYSTEM, "SYSTEM");
