@@ -7071,7 +7071,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         }
     }
 
-    @Ignore("b/416339477 - This test is flaky. Need to fix and re-enable it.")
     @Test
     public void testRequestSessionStats() {
         logd("testRequestSessionStats: start");
@@ -7117,6 +7116,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
                 sSatelliteManager.sendDatagram(
                         SatelliteManager.DATAGRAM_TYPE_SOS_MESSAGE, datagram, true,
                         getContext().getMainExecutor(), resultListener::offer);
+                sMockSatelliteServiceManager.waitForEventOnSendSatelliteDatagram(1);
 
                 Integer errorCode;
                 try {
@@ -7144,6 +7144,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
             sSatelliteManager.sendDatagram(SatelliteManager.DATAGRAM_TYPE_KEEP_ALIVE,
                     datagram, true, getContext().getMainExecutor(),
                     resultListener::offer);
+            sMockSatelliteServiceManager.waitForEventOnSendSatelliteDatagram(5);
 
             result = requestSessionStats();
             assertEquals(sessionStats, result.first);
