@@ -30,7 +30,6 @@ import com.android.cts.input.EvdevInputEventCodes.Companion.BTN_TOOL_DOUBLETAP
 import com.android.cts.input.EvdevInputEventCodes.Companion.BTN_TOOL_FINGER
 import com.android.cts.input.EvdevInputEventCodes.Companion.KEY_CAPSLOCK
 import com.android.cts.input.EvdevInputEventCodes.Companion.MT_TOOL_PALM
-import com.android.cts.input.UinputDevice
 import com.android.cts.input.UinputKeyboard
 import com.android.cts.input.UinputTouchDevice
 import com.android.cts.input.UinputTouchPad
@@ -255,10 +254,6 @@ class EmulateInputDevice {
             keyboard.injectKeyUp(KEY_CAPSLOCK)
             Thread.sleep(UINPUT_POST_EVENT_DELAY_MILLIS)
         }
-    }
-
-    private fun injectEvents(device: UinputDevice, events: IntArray) {
-        device.injectEvents(events.joinToString(prefix = "[", postfix = "]", separator = ","))
     }
 
     companion object {

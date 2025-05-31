@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package android.content.cts;
+package com.android.cts.content;
 
 import static com.google.common.truth.Truth.assertThat;
 

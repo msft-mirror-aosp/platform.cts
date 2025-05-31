@@ -51,6 +51,7 @@ android_test {
     data: [
         ":CtsAppTestStubs",
         ":DisplayManagerTestApp",
+        ":TopologyTestApp",
     ],
     per_testcase_directory: true,
 }

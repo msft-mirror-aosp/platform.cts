@@ -57,6 +57,7 @@ import android.accessibilityservice.AccessibilityServiceInfo;
 import android.accessibilityservice.MagnificationConfig;
 import android.accessibilityservice.cts.activities.AccessibilityTextTraversalActivity;
 import android.accessibilityservice.cts.activities.AccessibilityWindowQueryActivity;
+import android.accessibilityservice.cts.utils.AnimationTestRule;
 import android.accessibilityservice.cts.utils.SettingsSession;
 import android.app.Activity;
 import android.app.Instrumentation;
@@ -162,10 +163,12 @@ public class AccessibilityMagnificationTest {
 
     private final CheckFlagsRule mCheckFlagsRule =
             DeviceFlagsValueProvider.createCheckFlagsRule(sUiAutomation);
+    private final AnimationTestRule mAnimationRule = new AnimationTestRule();
 
     @Rule
     public final RuleChain mRuleChain =
-            RuleChain.outerRule(mMagnificationAccessibilityServiceRule)
+            RuleChain.outerRule(mAnimationRule)
+                    .around(mMagnificationAccessibilityServiceRule)
                     .around(mInstrumentedAccessibilityServiceRule)
                     .around(mDumpOnFailureRule)
                     .around(mCheckFlagsRule);
@@ -747,6 +750,7 @@ public class AccessibilityMagnificationTest {
     @Test
     public void testListener_magnificationConfigChangedWithoutAnimation_notifyConfigChanged()
             throws Exception {
+        mAnimationRule.setAnimationScale(0f);
         final MagnificationController controller = mService.getMagnificationController();
         final OnMagnificationChangedListener listener = mock(OnMagnificationChangedListener.class);
         controller.addListener(listener);
@@ -801,6 +805,7 @@ public class AccessibilityMagnificationTest {
 
     @Test
     public void testListener_magnificationConfigChangedWithAnimation_notifyConfigChanged() {
+        mAnimationRule.setAnimationScale(1f);
         final MagnificationController controller = mService.getMagnificationController();
         final OnMagnificationChangedListener listener = mock(OnMagnificationChangedListener.class);
         controller.addListener(listener);

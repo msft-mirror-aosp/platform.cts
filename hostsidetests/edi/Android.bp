@@ -42,4 +42,6 @@ java_test_host {
         "avbtool",
     ],
     per_testcase_directory: true,
+    // This script comes from within system/core.
+    java_resources: [":storaged_check_for_ufs_script"],
 }

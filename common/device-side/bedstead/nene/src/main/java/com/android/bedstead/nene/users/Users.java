@@ -16,13 +16,13 @@
 
 package com.android.bedstead.nene.users;
 
-import static android.cts.testapisreflection.TestApisReflectionKt.setStopUserOnSwitch;
-import static android.cts.testapisreflection.TestApisReflectionKt.getVisibleBackgroundUsersSupported;
-import static android.cts.testapisreflection.TestApisReflectionKt.getVisibleBackgroundUsersOnDefaultDisplaySupported;
 import static android.Manifest.permission.CREATE_USERS;
 import static android.Manifest.permission.INTERACT_ACROSS_USERS;
 import static android.Manifest.permission.INTERACT_ACROSS_USERS_FULL;
 import static android.Manifest.permission.QUERY_USERS;
+import static android.cts.testapisreflection.TestApisReflectionKt.getVisibleBackgroundUsersOnDefaultDisplaySupported;
+import static android.cts.testapisreflection.TestApisReflectionKt.getVisibleBackgroundUsersSupported;
+import static android.cts.testapisreflection.TestApisReflectionKt.setStopUserOnSwitch;
 import static android.os.Build.VERSION.SDK_INT;
 import static android.os.Build.VERSION_CODES.S;
 import static android.os.Build.VERSION_CODES.S_V2;
@@ -60,6 +60,7 @@ import com.android.bedstead.nene.utils.ShellCommand;
 import com.android.bedstead.nene.utils.Versions;
 import com.android.bedstead.permissions.PermissionContext;
 import com.android.bedstead.permissions.Permissions;
+
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 
 import java.time.Duration;
@@ -638,6 +639,12 @@ public final class Users {
     }
 
     private static Stream<UserInfo> getUsers() {
+        if (Versions.meetsMinimumSdkVersionRequirement(Versions.V)) {
+            // Technically, this method was added sometime on SC history (SC? SC V2?), but given
+            // that the deprecated method below was removed post-V, checking for V is enough...
+            return TestApisReflectionKt.getAliveUsers(sUserManager).stream()
+                    .map(ui -> new UserInfo(ui));
+        }
         return TestApisReflectionKt.getUsers(sUserManager,
                 /* excludePartial= */ false,
                 /* excludeDying= */ true,

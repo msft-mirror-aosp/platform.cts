@@ -17,18 +17,11 @@ package android.content.pm.cts.shortcuthost;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import com.android.compatibility.common.tradefed.build.CompatibilityBuildHelper;
-import com.android.ddmlib.testrunner.RemoteAndroidTestRunner;
-import com.android.ddmlib.testrunner.TestResult.TestStatus;
 import com.android.tradefed.device.DeviceNotAvailableException;
 import com.android.tradefed.log.LogUtil.CLog;
-import com.android.tradefed.result.CollectingTestListener;
-import com.android.tradefed.result.TestDescription;
-import com.android.tradefed.result.TestResult;
-import com.android.tradefed.result.TestRunResult;
 import com.android.tradefed.testtype.junit4.BaseHostJUnit4Test;
 import com.android.tradefed.testtype.junit4.DeviceTestRunOptions;
 
@@ -37,8 +30,6 @@ import org.junit.Before;
 
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Map;
 import java.util.regex.MatchResult;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -111,8 +102,10 @@ abstract public class BaseShortcutManagerHostTest extends BaseHostJUnit4Test {
                 result);
     }
 
-    protected int getPrimaryUserId() throws DeviceNotAvailableException {
-        return getDevice().getPrimaryUserId();
+    // TODO(b/412272133): Plan to deprecate this. Callers need to be updated to use the current
+    //                    user for broader test coverage on non-main users.
+    protected int getMainUserId() throws DeviceNotAvailableException {
+        return getDevice().getMainUserId();
     }
 
     /** Returns true if the specified tests passed. Tests are run as given user. */

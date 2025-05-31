@@ -19,7 +19,9 @@ import static android.server.wm.WindowManagerState.STATE_RESUMED;
 
 import static com.android.compatibility.common.util.TestUtils.waitUntil;
 
-import android.annotation.CallSuper;
+import static com.google.common.truth.Truth.assertThat;
+import static com.google.common.truth.Truth.assertWithMessage;
+
 import android.annotation.TargetApi;
 import android.app.Instrumentation;
 import android.app.job.JobScheduler;
@@ -41,21 +43,24 @@ import android.os.UserHandle;
 import android.provider.DeviceConfig;
 import android.provider.Settings;
 import android.server.wm.WindowManagerStateHelper;
-import android.test.InstrumentationTestCase;
 import android.util.Log;
+
+import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.BatteryUtils;
 import com.android.compatibility.common.util.DeviceConfigStateHelper;
 import com.android.compatibility.common.util.SystemUtil;
 
+import org.junit.After;
+import org.junit.Before;
+
 import java.io.IOException;
 
-/**
- * Common functionality from which the other test case classes derive.
- * TODO: b/338305140 - Move to JUnit4.
- */
+/** Common functionality from which the other test case classes derive. */
 @TargetApi(21)
-public abstract class BaseJobSchedulerTest extends InstrumentationTestCase {
+public abstract class BaseJobSchedulerTest {
+    protected Instrumentation mInstrumentation;
+
     private static final String TAG = BaseJobSchedulerTest.class.getSimpleName();
     static final int HW_TIMEOUT_MULTIPLIER = SystemProperties.getInt("ro.hw_timeout_multiplier", 1);
     static final int USER_ID = UserHandle.myUserId();
@@ -74,7 +79,6 @@ public abstract class BaseJobSchedulerTest extends InstrumentationTestCase {
     DeviceConfigStateHelper mDeviceConfigStateHelper;
 
     static final String MY_PACKAGE = "android.jobscheduler.cts";
-
     static final String JOBPERM_PACKAGE = "android.jobscheduler.cts.jobperm";
     static final String JOBPERM_AUTHORITY = "android.jobscheduler.cts.jobperm.provider";
     static final String JOBPERM_PERM = "android.jobscheduler.cts.jobperm.perm";
@@ -94,10 +98,9 @@ public abstract class BaseJobSchedulerTest extends InstrumentationTestCase {
 
     private String mInitialBatteryStatsConstants;
 
-    @Override
-    public void injectInstrumentation(Instrumentation instrumentation) {
-        super.injectInstrumentation(instrumentation);
-        mContext = instrumentation.getContext();
+    private void injectInstrumentation() {
+        mInstrumentation = InstrumentationRegistry.getInstrumentation();
+        mContext = mInstrumentation.getContext();
         kJobServiceComponent = new ComponentName(getContext(), MockJobService.class);
         kTriggerContentServiceComponent = new ComponentName(getContext(),
                 TriggerContentJobService.class);
@@ -113,8 +116,9 @@ public abstract class BaseJobSchedulerTest extends InstrumentationTestCase {
         mSecondClipData = new ClipData("JobPerm2", new String[] { "application/*" },
                 new ClipData.Item(mSecondUri));
         try {
-            SystemUtil.runShellCommand(getInstrumentation(), "cmd activity set-inactive "
-                    + mContext.getPackageName() + " false");
+            SystemUtil.runShellCommand(
+                    mInstrumentation,
+                    "cmd activity set-inactive " + mContext.getPackageName() + " false");
         } catch (IOException e) {
             Log.w("ConstraintTest", "Failed setting inactive false", e);
         }
@@ -127,10 +131,14 @@ public abstract class BaseJobSchedulerTest extends InstrumentationTestCase {
         return mContext;
     }
 
-    @CallSuper
-    @Override
+    protected Instrumentation getInstrumentation() {
+        return mInstrumentation;
+    }
+
+    @Before
     public void setUp() throws Exception {
-        super.setUp();
+        injectInstrumentation();
+
         mDeviceConfigStateHelper =
                 new DeviceConfigStateHelper(DeviceConfig.NAMESPACE_JOB_SCHEDULER);
         SystemUtil.runShellCommand("cmd jobscheduler cache-config-changes on");
@@ -158,8 +166,7 @@ public abstract class BaseJobSchedulerTest extends InstrumentationTestCase {
                 Settings.Global.BATTERY_STATS_CONSTANTS, "battery_charged_delay_ms=0");
     }
 
-    @CallSuper
-    @Override
+    @After
     public void tearDown() throws Exception {
         SystemUtil.runShellCommand("cmd jobscheduler cache-config-changes off");
         SystemUtil.runShellCommand(getInstrumentation(), "cmd jobscheduler monitor-battery off");
@@ -183,21 +190,28 @@ public abstract class BaseJobSchedulerTest extends InstrumentationTestCase {
         if (mDeviceIdleEnabled || mDeviceLightIdleEnabled) {
             resetDeviceIdleState();
         }
-
-        // The super method should be called at the end.
-        super.tearDown();
     }
 
     public void assertHasUriPermission(Uri uri, int grantFlags) {
         if ((grantFlags&Intent.FLAG_GRANT_READ_URI_PERMISSION) != 0) {
-            assertEquals(PackageManager.PERMISSION_GRANTED,
-                    getContext().checkUriPermission(uri, Process.myPid(),
-                            Process.myUid(), Intent.FLAG_GRANT_READ_URI_PERMISSION));
+            assertThat(
+                            getContext()
+                                    .checkUriPermission(
+                                            uri,
+                                            Process.myPid(),
+                                            Process.myUid(),
+                                            Intent.FLAG_GRANT_READ_URI_PERMISSION))
+                    .isEqualTo(PackageManager.PERMISSION_GRANTED);
         }
-        if ((grantFlags&Intent.FLAG_GRANT_WRITE_URI_PERMISSION) != 0) {
-            assertEquals(PackageManager.PERMISSION_GRANTED,
-                    getContext().checkUriPermission(uri, Process.myPid(),
-                            Process.myUid(), Intent.FLAG_GRANT_WRITE_URI_PERMISSION));
+        if ((grantFlags & Intent.FLAG_GRANT_WRITE_URI_PERMISSION) != 0) {
+            assertThat(
+                            getContext()
+                                    .checkUriPermission(
+                                            uri,
+                                            Process.myPid(),
+                                            Process.myUid(),
+                                            Intent.FLAG_GRANT_WRITE_URI_PERMISSION))
+                    .isEqualTo(PackageManager.PERMISSION_GRANTED);
         }
     }
 
@@ -209,8 +223,8 @@ public abstract class BaseJobSchedulerTest extends InstrumentationTestCase {
                 Thread.sleep(50);
             } catch (InterruptedException e) {
             }
-            if ((SystemClock.elapsedRealtime()-startTime) >= timeout) {
-                fail("Timed out waiting for permission revoke");
+            if ((SystemClock.elapsedRealtime() - startTime) >= timeout) {
+                assertWithMessage("Timed out waiting for permission revoke").fail();
             }
         }
     }
@@ -265,7 +279,12 @@ public abstract class BaseJobSchedulerTest extends InstrumentationTestCase {
             Thread.sleep(500);
         } while ((SystemClock.elapsedRealtime() - startTime) < 10_000);
 
-        fail("Timed out waiting for job scheduler: expected seq=" + seq + ", cur=" + curSeq);
+        assertWithMessage(
+                        "Timed out waiting for job scheduler: expected seq="
+                                + seq
+                                + ", cur="
+                                + curSeq)
+                .fail();
     }
 
     void startAndKeepTestActivity() {
@@ -313,17 +332,23 @@ public abstract class BaseJobSchedulerTest extends InstrumentationTestCase {
 
     void assertJobReady(int jobId) throws Exception {
         String state = getJobState(jobId);
-        assertTrue("Job unexpectedly not ready, in state: " + state, state.contains("ready"));
+        assertWithMessage("Job unexpectedly not ready, in state: " + state)
+                .that(state.contains("ready"))
+                .isTrue();
     }
 
     void assertJobWaiting(int jobId) throws Exception {
         String state = getJobState(jobId);
-        assertTrue("Job unexpectedly not waiting, in state: " + state, state.contains("waiting"));
+        assertWithMessage("Job unexpectedly not waiting, in state: " + state)
+                .that(state.contains("waiting"))
+                .isTrue();
     }
 
     void assertJobNotReady(int jobId) throws Exception {
         String state = getJobState(jobId);
-        assertTrue("Job unexpectedly ready, in state: " + state, !state.contains("ready"));
+        assertWithMessage("Job unexpectedly ready, in state: " + state)
+                .that(!state.contains("ready"))
+                .isTrue();
     }
 
     /**

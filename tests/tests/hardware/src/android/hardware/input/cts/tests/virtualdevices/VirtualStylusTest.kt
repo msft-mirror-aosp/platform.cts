@@ -25,14 +25,21 @@ import android.view.InputDevice
 import android.view.InputEvent
 import android.view.MotionEvent
 import androidx.test.filters.SmallTest
+import com.android.cts.input.DebugInputRule
 import junitparams.JUnitParamsRunner
 import junitparams.Parameters
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
 @SmallTest
 @RunWith(JUnitParamsRunner::class)
 class VirtualStylusTest : VirtualDeviceTestCase() {
+
+    // TODO(b/420436125): Remove this rule once the flakiness cause is identified.
+    @get:Rule
+    val debugInputRule = DebugInputRule()
+
     private lateinit var mVirtualStylus: VirtualStylus
 
     override fun onSetUpVirtualInputDevice() {
@@ -116,6 +123,7 @@ class VirtualStylusTest : VirtualDeviceTestCase() {
     }
 
     @Parameters(method = "allButtonCodes")
+    @DebugInputRule.DebugInput(bug = 420436125)
     @Test
     fun sendTouchEvents_withButtonPressed(buttonCode: Int) {
         val point0 = getActivityCenter()

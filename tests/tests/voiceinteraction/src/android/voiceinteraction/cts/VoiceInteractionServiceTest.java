@@ -35,8 +35,11 @@ import static com.android.queryable.queries.ActivityQuery.activity;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import static org.junit.Assert.assertThrows;
+
 import android.app.Application;
 import android.app.UiAutomation;
+import android.content.ComponentName;
 import android.content.Context;
 import android.os.Bundle;
 import android.os.PersistableBundle;
@@ -46,12 +49,14 @@ import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
+import android.provider.Settings;
 import android.service.voice.AlwaysOnHotwordDetector;
 import android.service.voice.HotwordDetectionService;
 import android.service.voice.HotwordDetector;
 import android.service.voice.HotwordRejectedResult;
 import android.service.voice.VoiceInteractionService;
 import android.service.voice.VoiceInteractionSession;
+import android.service.voice.flags.Flags;
 import android.util.Log;
 import android.voiceinteraction.common.Utils;
 import android.voiceinteraction.cts.activities.EmptyActivity;
@@ -77,6 +82,7 @@ import com.android.compatibility.common.util.ActivitiesWatcher.ActivityWatcher;
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.SettingsStateKeeperRule;
 import com.android.compatibility.common.util.SettingsStateManager;
+import com.android.compatibility.common.util.SystemUtil;
 
 import org.junit.After;
 import org.junit.Before;
@@ -521,6 +527,61 @@ public class VoiceInteractionServiceTest {
             throws Exception {
         testCreateHotwordDetector(/* useExecutor= */ true, /* runOnMainThread= */ true,
                 /* callbackShouldRunOnMainThread= */ false);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_SET_INVOCATION_EFFECT_ENABLED_API)
+    public void testSetInvocationEffectEnabled_noActiveService_throwsSecurityException()
+            throws Exception {
+        // Ensure mService is initially active
+        assertThat(
+                        VoiceInteractionService.isActiveService(
+                                mContext,
+                                ComponentName.unflattenFromString(
+                                        getTestVoiceInteractionService())))
+                .isTrue();
+        mService.setInvocationEffectEnabled(true); // Should work
+
+        // Now, set no Voice Interaction Service as active in the system settings.
+        SystemUtil.runWithShellPermissionIdentity(
+                () -> {
+                    Settings.Secure.putString(
+                            mContext.getContentResolver(),
+                            Settings.Secure.VOICE_INTERACTION_SERVICE,
+                            "");
+                });
+        try {
+            // Wait for the change to take effect and for mService to be disconnected
+            BaseVoiceInteractionService.waitServiceDisconnect();
+
+            // Verify that Service is not active anymore
+            String currentSetting =
+                    Settings.Secure.getString(
+                            mContext.getContentResolver(),
+                            Settings.Secure.VOICE_INTERACTION_SERVICE);
+            assertThat(currentSetting == null || currentSetting.isEmpty()).isTrue();
+            assertThat(
+                            VoiceInteractionService.isActiveService(
+                                    mContext,
+                                    ComponentName.unflattenFromString(
+                                            getTestVoiceInteractionService())))
+                    .isFalse();
+
+            // Now attempt to call setInvocationEffectEnabled using the mService instance and verify
+            // that a SecurityException is thrown
+            assertThrows(SecurityException.class, () -> mService.setInvocationEffectEnabled(true));
+        } finally {
+            // Restore the sDisconnectedLatch so that the VoiceInteractionServiceConnectedRule can
+            // gracefully finish.
+            BaseVoiceInteractionService.sDisconnectLatch = new CountDownLatch(0);
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_SET_INVOCATION_EFFECT_ENABLED_API)
+    public void testSetInvocationEffectEnabled_activeService_throwsNoException() {
+        mService.setInvocationEffectEnabled(true);
+        mService.setInvocationEffectEnabled(false);
     }
 
     private void testCreateHotwordDetector(boolean useExecutor, boolean runOnMainThread,

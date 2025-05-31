@@ -17,6 +17,20 @@ package {
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
+java_test_host {
+    name: "DeviceInfoUnitTests",
+    libs: ["junit"],
+    srcs: [
+        "tests/**/*.java",
+        "src/**/VulkanDeviceInfoUtils.java",
+    ],
+    test_options: {
+        unit_test: true,
+    },
+    test_suites: ["general-tests"],
+    team: "trendy_team_android_gpu",
+}
+
 android_test_helper_app {
     name: "CtsDeviceInfo",
     defaults: ["cts_support_defaults"],

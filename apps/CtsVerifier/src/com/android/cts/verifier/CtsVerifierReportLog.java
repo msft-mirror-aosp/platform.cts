@@ -24,6 +24,7 @@ import com.android.compatibility.common.util.ResultType;
 import com.android.compatibility.common.util.ResultUnit;
 
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 import org.xmlpull.v1.XmlPullParserException;
 import org.xmlpull.v1.XmlSerializer;
@@ -33,7 +34,6 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.List;
 
 public class CtsVerifierReportLog extends ReportLog {
@@ -91,15 +91,7 @@ public class CtsVerifierReportLog extends ReportLog {
         }
         try {
             Log.d(TAG, "Submit JSON file at " + mJsonFile.getAbsolutePath());
-            Path path = mJsonFile.toPath();
-            JSONObject jsonObject;
-            // If the file currently exists, load into the JSONObject.
-            if (mJsonFile.exists()) {
-                String content = new String(Files.readAllBytes(path));
-                jsonObject = new JSONObject(content);
-            } else {
-                jsonObject = new JSONObject();
-            }
+            JSONObject jsonObject = getReportLog();
             // Put the new JSON object into the existing JSON
             jsonObject.put(mStreamName, mCurrentJson);
             // Write as human readable text.
@@ -108,10 +100,42 @@ public class CtsVerifierReportLog extends ReportLog {
                 Log.d(TAG, "New JSON string:" + newString);
             }
             // Write the new JSON back into the file.
-            Files.write(path, newString.getBytes());
+            Files.write(mJsonFile.toPath(), newString.getBytes());
         } catch (Exception e) {
             Log.e(TAG, "ReportLog Submit Failed", e);
         }
+    }
+
+    /** Get the JSON object representing this ReportLog. */
+    private JSONObject getReportLog() throws Exception {
+        JSONObject jsonObject;
+        // If the file currently exists, load into the JSONObject.
+        if (mJsonFile.exists()) {
+            String content = new String(Files.readAllBytes(mJsonFile.toPath()));
+            jsonObject = new JSONObject(content);
+        } else {
+            jsonObject = new JSONObject();
+        }
+        return jsonObject;
+    }
+
+    /**
+     * Get the JSON object for the `mStreamName`
+     *
+     * If the JSON file is misformed, if `mStreamName`
+     * isn't an available key, or if other errors occur,
+     * returns null.
+     */
+    public JSONObject getReportLogForStream() {
+        JSONObject objectForStream = null;
+        try {
+            objectForStream = getReportLog().getJSONObject(mStreamName);
+        } catch (JSONException e) {
+            Log.i(TAG, "No ReportLog file with " + mStreamName, e);
+        } catch (Exception e) {
+            Log.e(TAG, "getReportLogForStream failed!", e);
+        }
+        return objectForStream;
     }
 
     //

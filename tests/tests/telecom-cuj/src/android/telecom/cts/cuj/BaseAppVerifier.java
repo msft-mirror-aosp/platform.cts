@@ -34,6 +34,7 @@ import static org.junit.Assume.assumeTrue;
 import android.content.Context;
 import android.graphics.Color;
 import android.net.Uri;
+import android.os.Bundle;
 import android.os.RemoteException;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -285,6 +286,19 @@ public class BaseAppVerifier {
                 appControl, emergencyCallAttrs, consumer, numDisconnectDueToEcc);
     }
 
+    public String addCallToSelectPhoneAccount(AppControlWrapper appControl, CallAttributes attr)
+            throws Exception {
+        int callCount = mBaseAppVerifierImpl.getIcsCallCount();
+        mTelecomManager.placeCall(attr.getAddress(), Bundle.EMPTY);
+        return mBaseAppVerifierImpl.verifyCallAddedInCallService(callCount);
+    }
+
+    public void setPhoneAccountAndVerifyAdded(
+            AppControlWrapper appControl, String callId, CallAttributes attr) throws Exception {
+        mBaseAppVerifierImpl.selectCallPhoneAccount(callId, MANAGED_CLONE_HANDLE_1);
+        mBaseAppVerifierImpl.verifyCallAdded(appControl, attr, null);
+    }
+
     public String addIncomingCallAndVerify(AppControlWrapper appControl)
             throws Exception {
         CallAttributes incomingAttributes = mBaseAppVerifierImpl.getRandomAttributes(
@@ -390,6 +404,10 @@ public class BaseAppVerifier {
 
     public void disconnectCallViaInCallService(String id) {
         mBaseAppVerifierImpl.disconnectCallViaInCallService(id);
+    }
+
+    public void selectCallPhoneAccount(String id, PhoneAccountHandle handle) throws Exception {
+        mBaseAppVerifierImpl.selectCallPhoneAccount(id, handle);
     }
 
     public boolean isCallHoldable(String id) {

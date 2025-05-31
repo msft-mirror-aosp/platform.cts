@@ -16,7 +16,7 @@
 
 package {
     default_applicable_licenses: ["Android-Apache-2.0"],
-    default_team: "trendy_team_framework_backstage_power",
+    default_team: "trendy_team_framework_bpm",
 }
 
 android_test {
@@ -30,6 +30,7 @@ android_test {
         "cts_content_shared_lib",
         "junit",
         "mockito-target",
+        "services.core",
     ],
     srcs: [
         "src/**/*.java",
@@ -43,10 +44,15 @@ android_test {
     ],
     platform_apis: true,
     min_sdk_version: "28",
-    sdk_version: "test_current",
     target_sdk_version: "36",
     manifest: "AndroidManifest.xml",
     test_config: "AndroidTest.xml",
     per_testcase_directory: true,
+}
 
+test_module_config {
+    name: "CtsSyncManagerTestCases_postsubmit",
+    base: "CtsSyncManagerTestCases",
+    test_suites: ["general-tests"],
+    exclude_annotations: ["androidx.test.filters.FlakyTest"],
 }

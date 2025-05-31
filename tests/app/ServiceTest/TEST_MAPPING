@@ -1,0 +1,7 @@
+{
+  "presubmit": [
+    {
+      "name": "CtsAppServiceTestCases_android_server_am_Presubmit"
+    }
+  ]
+}

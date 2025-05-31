@@ -20,13 +20,8 @@ import static android.content.Intent.FLAG_ACTIVITY_NEW_TASK;
 import static android.server.wm.CommandSession.ActivityCallback.ON_CONFIGURATION_CHANGED;
 import static android.server.wm.CommandSession.ActivityCallback.ON_RESUME;
 import static android.view.Display.INVALID_DISPLAY;
-import static android.view.WindowManager.DISPLAY_IME_POLICY_LOCAL;
-import static android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE;
 
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
-
-import static com.android.cts.mockime.ImeEventStreamTestUtils.expectCommand;
-import static com.android.cts.mockime.ImeEventStreamTestUtils.expectEvent;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -37,24 +32,17 @@ import android.app.ActivityOptions;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
-import android.os.Bundle;
 import android.platform.test.annotations.Presubmit;
 import android.server.wm.CommandSession;
-import android.server.wm.MockImeHelper;
 import android.server.wm.MultiDisplayTestBase;
 import android.server.wm.WindowManagerState.DisplayContent;
 import android.view.Display;
 import android.view.View;
 import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
-import android.widget.EditText;
-import android.widget.LinearLayout;
 
 import androidx.test.filters.MediumTest;
 import androidx.test.rule.ActivityTestRule;
-
-import com.android.cts.mockime.ImeEventStream;
-import com.android.cts.mockime.MockImeSession;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -139,59 +127,6 @@ public class MultiDisplayClientTests extends MultiDisplayTestBase {
         final View view = activity.getWindow().getDecorView();
         assertEquals("View#getDisplay()" + suffix,
                 displayId, view.getDisplay().getDisplayId());
-    }
-
-    @Test
-    public void testDisplayIdUpdateWhenImeMove_RelaunchActivity() throws Exception {
-        testDisplayIdUpdateWhenImeMove(ClientTestActivity.class);
-    }
-
-    @Test
-    public void testDisplayIdUpdateWhenImeMove_NoRelaunchActivity() throws Exception {
-        testDisplayIdUpdateWhenImeMove(NoRelaunchActivity.class);
-    }
-
-    private void testDisplayIdUpdateWhenImeMove(Class<? extends ImeTestActivity> activityClass)
-            throws Exception {
-        assumeTrue(MSG_NO_MOCK_IME, supportsInstallableIme());
-
-        final VirtualDisplaySession virtualDisplaySession = createManagedVirtualDisplaySession();
-        final MockImeSession mockImeSession = MockImeHelper.createManagedMockImeSession(this);
-
-        assertImeShownAndMatchesDisplayId(
-                activityClass, mockImeSession, getMainDisplayId());
-
-        final DisplayContent newDisplay = virtualDisplaySession
-                .setSimulateDisplay(true)
-                .setShowSystemDecorations(true)
-                .setDisplayImePolicy(DISPLAY_IME_POLICY_LOCAL)
-                .createDisplay();
-
-        // Launch activity on the secondary display and make IME show.
-        assertImeShownAndMatchesDisplayId(
-                activityClass, mockImeSession, newDisplay.mId);
-    }
-
-    private  void assertImeShownAndMatchesDisplayId(Class<? extends ImeTestActivity> activityClass,
-            MockImeSession imeSession, int targetDisplayId) throws Exception {
-        final ImeEventStream stream = imeSession.openEventStream();
-
-        final Intent intent = new Intent(mContext, activityClass)
-                .putExtra(EXTRA_SHOW_IME, true).setFlags(FLAG_ACTIVITY_NEW_TASK);
-        separateTestJournal();
-        final ActivityOptions launchOptions = ActivityOptions.makeBasic();
-        launchOptions.setLaunchDisplayId(targetDisplayId);
-        getInstrumentation().getTargetContext().startActivity(intent, launchOptions.toBundle());
-
-
-        // Verify if IME is showed on the target display.
-        expectEvent(stream, event -> "showSoftInput".equals(event.getEventName()), TIMEOUT);
-        mWmState.waitAndAssertImeWindowShownOnDisplay(targetDisplayId);
-
-        final int imeDisplayId = expectCommand(stream, imeSession.callGetDisplayId(), TIMEOUT)
-                .getReturnIntegerValue();
-        assertEquals("IME#getDisplayId() must match when IME move.",
-                targetDisplayId, imeDisplayId);
     }
 
     @Test
@@ -286,34 +221,7 @@ public class MultiDisplayClientTests extends MultiDisplayTestBase {
         return lifecycles.getCount(callback);
     }
 
-    public static class ClientTestActivity extends ImeTestActivity { }
+    public static class ClientTestActivity extends CommandSession.BasicTestActivity {}
 
-    public static class NoRelaunchActivity extends ImeTestActivity { }
-
-    public static class ImeTestActivity extends CommandSession.BasicTestActivity {
-        private EditText mEditText;
-        private boolean mShouldShowIme;
-
-        @Override
-        protected void onCreate(Bundle icicle) {
-            super.onCreate(icicle);
-            mShouldShowIme = getIntent().hasExtra(EXTRA_SHOW_IME);
-            if (mShouldShowIme) {
-                mEditText = new EditText(this);
-                final LinearLayout layout = new LinearLayout(this);
-                layout.setOrientation(LinearLayout.VERTICAL);
-                layout.addView(mEditText);
-                setContentView(layout);
-            }
-        }
-
-        @Override
-        protected void onResume() {
-            super.onResume();
-            if (mShouldShowIme) {
-                getWindow().setSoftInputMode(SOFT_INPUT_STATE_ALWAYS_VISIBLE);
-                mEditText.requestFocus();
-            }
-        }
-    }
+    public static class NoRelaunchActivity extends CommandSession.BasicTestActivity {}
 }

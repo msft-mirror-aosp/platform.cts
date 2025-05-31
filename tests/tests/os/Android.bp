@@ -18,7 +18,7 @@ package {
 
 android_test {
     name: "CtsOsTestCases",
-    team: "trendy_team_framework_backstage_power",
+    team: "trendy_team_framework_bpm",
     defaults: ["cts_defaults"],
     compile_multilib: "both",
     static_libs: [
@@ -105,6 +105,7 @@ android_ravenwood_test {
         "src/android/os/connectivity/cts/CellularBatteryStatsTest.java",
         "src/android/os/connectivity/cts/WifiActivityEnergyInfoTest.java",
         "src/android/os/connectivity/cts/WifiBatteryStatsTest.java",
+        "src/android/os/cts/AsyncTaskTest.java",
         "src/android/os/cts/BadParcelableExceptionTest.java",
         "src/android/os/cts/BinderTest.java",
         "src/android/os/cts/BuildTest.java",

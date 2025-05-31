@@ -22,6 +22,13 @@ import static android.net.NetworkCapabilities.NET_CAPABILITY_VALIDATED;
 import static android.text.format.DateUtils.HOUR_IN_MILLIS;
 import static android.text.format.DateUtils.MINUTE_IN_MILLIS;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import android.app.compat.CompatChanges;
 import android.app.job.Flags;
 import android.app.job.JobInfo;
@@ -38,14 +45,19 @@ import android.provider.ContactsContract;
 import android.provider.MediaStore;
 import android.util.Log;
 
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+
 import com.android.compatibility.common.util.SystemUtil;
+
+import org.junit.After;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.lang.reflect.Method;
 import java.util.Set;
 
-/**
- * Tests related to creating and reading JobInfo objects.
- */
+/** Tests related to creating and reading JobInfo objects. */
+@RunWith(AndroidJUnit4.class)
 public class JobInfoTest extends BaseJobSchedulerTest {
     private static final int JOB_ID = JobInfoTest.class.hashCode();
     private static final String TAG = JobInfoTest.class.getSimpleName();
@@ -54,6 +66,7 @@ public class JobInfoTest extends BaseJobSchedulerTest {
     private static final long THROW_ON_UNSUPPORTED_BIAS_USAGE = 300477393L;
 
     @Override
+    @After
     public void tearDown() throws Exception {
         mJobScheduler.cancel(JOB_ID);
 
@@ -61,6 +74,7 @@ public class JobInfoTest extends BaseJobSchedulerTest {
         super.tearDown();
     }
 
+    @Test
     public void testBackoffCriteria() {
         JobInfo ji = new JobInfo.Builder(JOB_ID, kJobServiceComponent)
                 .setBackoffCriteria(12345, JobInfo.BACKOFF_POLICY_LINEAR)
@@ -79,6 +93,7 @@ public class JobInfoTest extends BaseJobSchedulerTest {
         mJobScheduler.schedule(ji);
     }
 
+    @Test
     public void testBatteryNotLow() {
         JobInfo ji = new JobInfo.Builder(JOB_ID, kJobServiceComponent)
                 .setRequiresBatteryNotLow(true)
@@ -95,6 +110,7 @@ public class JobInfoTest extends BaseJobSchedulerTest {
         mJobScheduler.schedule(ji);
     }
 
+    @Test
     public void testBias() throws Exception {
         JobInfo.Builder builder = new JobInfo.Builder(JOB_ID, kJobServiceComponent);
 
@@ -123,6 +139,7 @@ public class JobInfoTest extends BaseJobSchedulerTest {
         return (Integer) getBiasMethod.invoke(job);
     }
 
+    @Test
     public void testCharging() {
         JobInfo ji = new JobInfo.Builder(JOB_ID, kJobServiceComponent)
                 .setRequiresCharging(true)
@@ -139,6 +156,7 @@ public class JobInfoTest extends BaseJobSchedulerTest {
         mJobScheduler.schedule(ji);
     }
 
+    @Test
     public void testClipData() {
         final ClipData clipData = ClipData.newPlainText("test", "testText");
         JobInfo ji = new JobInfo.Builder(JOB_ID, kJobServiceComponent)
@@ -160,6 +178,7 @@ public class JobInfoTest extends BaseJobSchedulerTest {
 
     // TODO(b/315035390): migrate to JUnit4
     @RequiresFlagsEnabled(Flags.FLAG_JOB_DEBUG_INFO_APIS) // Doesn't work for JUnit3
+    @Test
     public void testDebugTags() {
         if (!isAconfigFlagEnabled(Flags.FLAG_JOB_DEBUG_INFO_APIS)) {
             return;
@@ -232,6 +251,7 @@ public class JobInfoTest extends BaseJobSchedulerTest {
         assertBuildFails("Successfully built a JobInfo with too many debug tags", jiBuilder);
     }
 
+    @Test
     public void testDeviceIdle() {
         JobInfo ji = new JobInfo.Builder(JOB_ID, kJobServiceComponent)
                 .setRequiresDeviceIdle(true)
@@ -248,6 +268,7 @@ public class JobInfoTest extends BaseJobSchedulerTest {
         mJobScheduler.schedule(ji);
     }
 
+    @Test
     public void testEstimatedNetworkBytes() {
         assertBuildFails(
                 "Successfully built a JobInfo specifying estimated network bytes without"
@@ -295,6 +316,7 @@ public class JobInfoTest extends BaseJobSchedulerTest {
         mJobScheduler.schedule(ji);
     }
 
+    @Test
     public void testExtras() {
         final PersistableBundle pb = new PersistableBundle();
         pb.putInt("random_key", 42);
@@ -310,6 +332,7 @@ public class JobInfoTest extends BaseJobSchedulerTest {
         mJobScheduler.schedule(ji);
     }
 
+    @Test
     public void testExpeditedJob() {
         // Test all allowed constraints.
         JobInfo ji = new JobInfo.Builder(JOB_ID, kJobServiceComponent)
@@ -386,6 +409,7 @@ public class JobInfoTest extends BaseJobSchedulerTest {
     // TODO(b/315035390): migrate to JUnit4
     @SuppressWarnings("deprecation")
     @RequiresFlagsDisabled(Flags.FLAG_IGNORE_IMPORTANT_WHILE_FOREGROUND)
+    @Test
     public void testImportantWhileForeground_Legacy() {
         if (isAconfigFlagEnabled(Flags.FLAG_IGNORE_IMPORTANT_WHILE_FOREGROUND)) {
             return;
@@ -436,6 +460,7 @@ public class JobInfoTest extends BaseJobSchedulerTest {
 
     @SuppressWarnings("deprecation")
     @RequiresFlagsEnabled(android.app.job.Flags.FLAG_IGNORE_IMPORTANT_WHILE_FOREGROUND)
+    @Test
     public void testImportantWhileForeground_Ignored() {
         if (!isAconfigFlagEnabled(Flags.FLAG_IGNORE_IMPORTANT_WHILE_FOREGROUND)) {
             return;
@@ -453,6 +478,7 @@ public class JobInfoTest extends BaseJobSchedulerTest {
         mJobScheduler.schedule(ji);
     }
 
+    @Test
     public void testMinimumChunkSizeBytes() {
         assertBuildFails(
                 "Successfully built a JobInfo specifying minimum chunk bytes without"
@@ -502,6 +528,7 @@ public class JobInfoTest extends BaseJobSchedulerTest {
         mJobScheduler.schedule(ji);
     }
 
+    @Test
     public void testMinimumLatency() {
         JobInfo ji = new JobInfo.Builder(JOB_ID, kJobServiceComponent)
                 .setMinimumLatency(1337)
@@ -511,6 +538,7 @@ public class JobInfoTest extends BaseJobSchedulerTest {
         mJobScheduler.schedule(ji);
     }
 
+    @Test
     public void testMinimumLatency_negative() {
         JobInfo.Builder jiBuilder = new JobInfo.Builder(JOB_ID, kJobServiceComponent)
                 .setMinimumLatency(-1);
@@ -526,6 +554,7 @@ public class JobInfoTest extends BaseJobSchedulerTest {
         }
     }
 
+    @Test
     public void testOverrideDeadline() {
         JobInfo ji = new JobInfo.Builder(JOB_ID, kJobServiceComponent)
                 .setOverrideDeadline(HOUR_IN_MILLIS)
@@ -536,6 +565,7 @@ public class JobInfoTest extends BaseJobSchedulerTest {
         mJobScheduler.schedule(ji);
     }
 
+    @Test
     public void testOverrideDeadline_minimumTimeWindows() throws Exception {
         JobInfo.Builder jiBuilderShortFunctional = new JobInfo.Builder(JOB_ID, kJobServiceComponent)
                 .setRequiresCharging(true)
@@ -571,6 +601,7 @@ public class JobInfoTest extends BaseJobSchedulerTest {
         mJobScheduler.schedule(jiBuilderLongNonfunctional.build());
     }
 
+    @Test
     public void testOverrideDeadline_negative() {
         JobInfo.Builder jiBuilder = new JobInfo.Builder(JOB_ID, kJobServiceComponent)
                 .setOverrideDeadline(-1);
@@ -586,6 +617,7 @@ public class JobInfoTest extends BaseJobSchedulerTest {
         }
     }
 
+    @Test
     public void testPeriodic() {
         JobInfo ji = new JobInfo.Builder(JOB_ID, kJobServiceComponent)
                 .setPeriodic(60 * 60 * 1000L)
@@ -606,6 +638,7 @@ public class JobInfoTest extends BaseJobSchedulerTest {
         mJobScheduler.schedule(ji);
     }
 
+    @Test
     public void testPersisted() {
         // Assert the default value is false
         JobInfo ji = new JobInfo.Builder(JOB_ID, kJobServiceComponent)
@@ -629,6 +662,7 @@ public class JobInfoTest extends BaseJobSchedulerTest {
         mJobScheduler.schedule(ji);
     }
 
+    @Test
     public void testPrefetch() {
         // Assert the default value is false
         JobInfo ji = new JobInfo.Builder(JOB_ID, kJobServiceComponent)
@@ -667,6 +701,7 @@ public class JobInfoTest extends BaseJobSchedulerTest {
                         .setPrefetch(true));
     }
 
+    @Test
     public void testPriority() {
         // Assert the default value is DEFAULT
         JobInfo ji = new JobInfo.Builder(JOB_ID, kJobServiceComponent)
@@ -726,6 +761,7 @@ public class JobInfoTest extends BaseJobSchedulerTest {
                         .setPeriodic(JobInfo.getMinPeriodMillis()));
     }
 
+    @Test
     public void testRequiredNetwork() {
         final NetworkRequest nr = new NetworkRequest.Builder()
                 .addCapability(NET_CAPABILITY_INTERNET)
@@ -747,6 +783,7 @@ public class JobInfoTest extends BaseJobSchedulerTest {
     }
 
     @SuppressWarnings("deprecation")
+    @Test
     public void testRequiredNetworkType() {
         // Assert the default value is NONE
         JobInfo ji = new JobInfo.Builder(JOB_ID, kJobServiceComponent)
@@ -825,6 +862,7 @@ public class JobInfoTest extends BaseJobSchedulerTest {
         mJobScheduler.schedule(ji);
     }
 
+    @Test
     public void testStorageNotLow() {
         JobInfo ji = new JobInfo.Builder(JOB_ID, kJobServiceComponent)
                 .setRequiresStorageNotLow(true)
@@ -843,6 +881,7 @@ public class JobInfoTest extends BaseJobSchedulerTest {
 
     // TODO(b/315035390): migrate to JUnit4
     @RequiresFlagsEnabled(Flags.FLAG_JOB_DEBUG_INFO_APIS) // Doesn't work for JUnit3
+    @Test
     public void testTraceTag() {
         if (!isAconfigFlagEnabled(Flags.FLAG_JOB_DEBUG_INFO_APIS)) {
             return;
@@ -897,6 +936,7 @@ public class JobInfoTest extends BaseJobSchedulerTest {
         }
     }
 
+    @Test
     public void testTransientExtras() {
         final Bundle b = new Bundle();
         b.putBoolean("random_bool", true);
@@ -916,6 +956,7 @@ public class JobInfoTest extends BaseJobSchedulerTest {
         mJobScheduler.schedule(ji);
     }
 
+    @Test
     public void testTriggerContentMaxDelay() {
         JobInfo ji = new JobInfo.Builder(JOB_ID, kJobServiceComponent)
                 .setTriggerContentMaxDelay(1337)
@@ -925,6 +966,7 @@ public class JobInfoTest extends BaseJobSchedulerTest {
         mJobScheduler.schedule(ji);
     }
 
+    @Test
     public void testTriggerContentUpdateDelay() {
         JobInfo ji = new JobInfo.Builder(JOB_ID, kJobServiceComponent)
                 .setTriggerContentUpdateDelay(1337)
@@ -934,6 +976,7 @@ public class JobInfoTest extends BaseJobSchedulerTest {
         mJobScheduler.schedule(ji);
     }
 
+    @Test
     public void testTriggerContentUri() {
         final Uri u = Uri.parse("content://" + MediaStore.AUTHORITY + "/");
         final JobInfo.TriggerContentUri tcu = new JobInfo.TriggerContentUri(
@@ -963,6 +1006,7 @@ public class JobInfoTest extends BaseJobSchedulerTest {
         mJobScheduler.schedule(ji);
     }
 
+    @Test
     public void testUserInitiatedJob() {
         // Test all allowed constraints.
         JobInfo ji = new JobInfo.Builder(JOB_ID, kJobServiceComponent)

@@ -22,12 +22,15 @@ import static android.mediav2.common.cts.CodecTestBase.MEDIA_CODEC_LIST_ALL;
 import static android.mediav2.common.cts.CodecTestBase.PER_TEST_TIMEOUT_SMALL_TEST_MS;
 import static android.mediav2.common.cts.CodecTestBase.codecFilter;
 import static android.mediav2.common.cts.CodecTestBase.codecPrefix;
+import static android.mediav2.common.cts.CodecTestBase.compileRequestedMediaTypeList;
 import static android.mediav2.common.cts.CodecTestBase.getMaxSupportedInstances;
 import static android.mediav2.common.cts.CodecTestBase.isFeatureRequired;
 import static android.mediav2.common.cts.CodecTestBase.isFeatureSupported;
 import static android.mediav2.common.cts.CodecTestBase.isFormatSupported;
 import static android.mediav2.common.cts.CodecTestBase.isHardwareAcceleratedCodec;
 import static android.mediav2.common.cts.CodecTestBase.isSoftwareCodec;
+import static android.mediav2.common.cts.CodecTestBase.mediaTypePrefix;
+import static android.mediav2.common.cts.CodecTestBase.mediaTypeSelKeys;
 import static android.mediav2.common.cts.DecodeStreamToYuv.getFormatInStream;
 
 import android.media.MediaCodecInfo;
@@ -118,6 +121,8 @@ public class NativeAMediaCodecInfoTest {
     @Parameterized.Parameters(name = "{index}_{0}_{1}")
     public static Collection<Object[]> input() {
         final List<Object[]> argsList = new ArrayList<>();
+        ArrayList<String> testMediaTypes =
+                mediaTypeSelKeys != null ? compileRequestedMediaTypeList() : null;
         for (MediaCodecInfo codecInfo : MEDIA_CODEC_LIST_ALL.getCodecInfos()) {
             if (codecInfo.isAlias()) continue;
             String codecName = codecInfo.getName();
@@ -136,6 +141,10 @@ public class NativeAMediaCodecInfoTest {
             }
             for (String type : types) {
                 if (codecInfo.getCapabilitiesForType(type).isFeatureSupported(SPECIAL_CODEC)) {
+                    continue;
+                }
+                if ((mediaTypePrefix != null && !type.startsWith(mediaTypePrefix))
+                        || (testMediaTypes != null && !testMediaTypes.contains(type))) {
                     continue;
                 }
                 argsList.add(new Object[]{codecName, type});

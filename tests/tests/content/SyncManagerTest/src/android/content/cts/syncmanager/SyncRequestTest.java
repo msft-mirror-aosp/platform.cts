@@ -14,17 +14,18 @@
  * limitations under the License.
  */
 
-package android.content.cts;
+package android.content.cts.syncmanager;
 
-import static org.junit.Assert.fail;
+import static org.junit.Assert.assertThrows;
 
+import android.accounts.Account;
 import android.content.ContentResolver;
 import android.content.SyncRequest;
 import android.os.Bundle;
 import android.platform.test.annotations.AppModeSdkSandbox;
 
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
-import androidx.test.runner.AndroidJUnit4;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -32,7 +33,9 @@ import org.junit.runner.RunWith;
 @SmallTest
 @RunWith(AndroidJUnit4.class)
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
-public class SyncRequestTest {
+public final class SyncRequestTest {
+    private static final String AUTHORITY = "authority1";
+    private static final Account NULL_ACCOUNT = null;
 
     @Test
     public void testBuilder_normal() {
@@ -41,7 +44,7 @@ public class SyncRequestTest {
         extras.putBoolean(ContentResolver.SYNC_EXTRAS_PRIORITY, true);
         extras.putBoolean(ContentResolver.SYNC_EXTRAS_IGNORE_SETTINGS, true);
         new SyncRequest.Builder()
-                .setSyncAdapter(null, "authority1")
+                .setSyncAdapter(NULL_ACCOUNT, AUTHORITY)
                 .syncOnce()
                 .setExtras(extras)
                 .setExpedited(true)
@@ -52,43 +55,43 @@ public class SyncRequestTest {
     @Test
     public void testBuilder_scheduleAsEj() {
         new SyncRequest.Builder()
-                .setSyncAdapter(null, "authority1")
+                .setSyncAdapter(NULL_ACCOUNT, AUTHORITY)
                 .setScheduleAsExpeditedJob(true)
                 .build();
     }
 
     @Test
     public void testBuilder_throwsException() {
-        try {
-            new SyncRequest.Builder()
-                    .setSyncAdapter(null, "authority1")
-                    .setExpedited(true)
-                    .setScheduleAsExpeditedJob(true)
-                    .build();
-            fail("cannot both schedule as an expedited job and set the expedited extra");
-        } catch (IllegalArgumentException expected) {
-        }
+        assertThrows(
+                "cannot both schedule as an expedited job and set the expedited extra",
+                IllegalArgumentException.class,
+                () ->
+                        new SyncRequest.Builder()
+                                .setSyncAdapter(NULL_ACCOUNT, AUTHORITY)
+                                .setExpedited(true)
+                                .setScheduleAsExpeditedJob(true)
+                                .build());
 
         final Bundle extras = new Bundle();
         extras.putBoolean(ContentResolver.SYNC_EXTRAS_SCHEDULE_AS_EXPEDITED_JOB, true);
-        try {
-            new SyncRequest.Builder()
-                    .setSyncAdapter(null, "authority1")
-                    .syncPeriodic(1, 1)
-                    .setExtras(extras)
-                    .build();
-            fail("periodic syncs cannot be scheduled as EJs");
-        } catch (IllegalArgumentException expected) {
-        }
+        assertThrows(
+                "periodic syncs cannot be scheduled as EJs",
+                IllegalArgumentException.class,
+                () ->
+                        new SyncRequest.Builder()
+                                .setSyncAdapter(NULL_ACCOUNT, AUTHORITY)
+                                .syncPeriodic(1, 1)
+                                .setExtras(extras)
+                                .build());
 
-        try {
-            new SyncRequest.Builder()
-                    .setSyncAdapter(null, "authority1")
-                    .setRequiresCharging(true)
-                    .setExtras(extras)
-                    .build();
-            fail("cannot require charging if scheduled as an EJ");
-        } catch (IllegalArgumentException expected) {
-        }
+        assertThrows(
+                "cannot require charging if scheduled as an EJ",
+                IllegalArgumentException.class,
+                () ->
+                        new SyncRequest.Builder()
+                                .setSyncAdapter(NULL_ACCOUNT, AUTHORITY)
+                                .setRequiresCharging(true)
+                                .setExtras(extras)
+                                .build());
     }
 }

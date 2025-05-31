@@ -55,6 +55,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.util.HashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -67,6 +68,9 @@ public class AudioDeviceVolumeManagerTest {
 
     private static final String TAG = "AudioDeviceVolumeManagerTest";
     private AudioDeviceVolumeManager mADVmgr;
+    private AudioManager mAm;
+    private final HashMap<AudioDeviceAttributes, VolumeInfo> mPrevVolume = new HashMap<>();
+    private boolean mWasMuted;
     private boolean mUseFixedVolume;
     private boolean mIsTelevision;
     private boolean mIsSingleVolume;
@@ -133,6 +137,7 @@ public class AudioDeviceVolumeManagerTest {
                         Manifest.permission.MODIFY_AUDIO_SETTINGS_PRIVILEGED,
                         Manifest.permission.STATUS_BAR_SERVICE);
         mADVmgr = mContext.getSystemService(AudioDeviceVolumeManager.class);
+        mAm = mContext.getSystemService(AudioManager.class);
         mUseFixedVolume =
                 mContext.getResources()
                         .getBoolean(
@@ -148,10 +153,25 @@ public class AudioDeviceVolumeManagerTest {
                                 Resources.getSystem()
                                         .getIdentifier("config_single_volume", "bool", "android"));
         mSkipRingerTests = mUseFixedVolume || mIsTelevision || mIsSingleVolume;
+
+        final VolumeInfo volMedia = new VolumeInfo.Builder(AudioManager.STREAM_MUSIC).build();
+        mPrevVolume.put(BT_DEV, mADVmgr.getDeviceVolume(volMedia, BT_DEV));
+        mPrevVolume.put(BT_DEV2, mADVmgr.getDeviceVolume(volMedia, BT_DEV2));
+        mPrevVolume.put(BT_SCO_DEV, mADVmgr.getDeviceVolume(volMedia, BT_SCO_DEV));
+        mWasMuted = mAm.isStreamMute(AudioManager.STREAM_MUSIC);
     }
 
     @After
     public void tearDown() throws Exception {
+        // reset the volume
+        mADVmgr.setDeviceVolume(mPrevVolume.get(BT_DEV), BT_DEV);
+        mADVmgr.setDeviceVolume(mPrevVolume.get(BT_DEV2), BT_DEV2);
+        mADVmgr.setDeviceVolume(mPrevVolume.get(BT_SCO_DEV), BT_SCO_DEV);
+        mAm.adjustStreamVolume(
+                AudioManager.STREAM_MUSIC,
+                mWasMuted ? AudioManager.ADJUST_MUTE : AudioManager.ADJUST_UNMUTE,
+                /* flags= */ 0);
+
         // clean up device behavior
         if (unifyAbsoluteVolumeManagement()) {
             mADVmgr.resetDeviceAbsoluteVolumeBehavior(BT_DEV);
@@ -218,9 +238,9 @@ public class AudioDeviceVolumeManagerTest {
         if (mSkipRingerTests) {
             return;
         }
-        AudioManager am = mContext.getSystemService(AudioManager.class);
-        final int minIndex = am.getStreamMinVolume(AudioManager.STREAM_MUSIC);
-        final int maxIndex = am.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
+
+        final int minIndex = mAm.getStreamMinVolume(AudioManager.STREAM_MUSIC);
+        final int maxIndex = mAm.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
         final int midIndex = (minIndex + maxIndex) / 2;
         final VolumeInfo volMedia = new VolumeInfo.Builder(AudioManager.STREAM_MUSIC)
                 .setMinVolumeIndex(minIndex)
@@ -230,7 +250,7 @@ public class AudioDeviceVolumeManagerTest {
         final VolumeInfo volMid = new VolumeInfo.Builder(volMedia).setVolumeIndex(midIndex).build();
 
         // safe media can block the raising to volMid, disable it
-        am.disableSafeMediaVolume();
+        mAm.disableSafeMediaVolume();
 
         // verify set volume is what get returns
         mADVmgr.setDeviceVolume(volMin, BT_DEV);
@@ -275,11 +295,12 @@ public class AudioDeviceVolumeManagerTest {
         final VolumeInfo volNotif =
                 new VolumeInfo.Builder(AudioManager.STREAM_NOTIFICATION).build();
         final AudioDeviceVolumeChangedListener listener = new AudioDeviceVolumeChangedListener();
-        final VolumeInfo newVolume = computeNewVolumeWithMute(volMedia, /* mute= */ false);
+        final VolumeInfo nextVolume =
+                computeNewVolumeWithMute(volMedia, /* mute= */ false, BT_SCO_DEV);
 
         mADVmgr.setDeviceAbsoluteVolumeBehavior(
                 BT_SCO_DEV, volNotif, mContext.getMainExecutor(), listener);
-        mADVmgr.setDeviceVolume(newVolume, BT_SCO_DEV);
+        mADVmgr.setDeviceVolume(nextVolume, BT_SCO_DEV);
 
         assertNull(listener.waitForVolumeChanged(VOLUME_UPDATE_TIME_MAX_MS, TimeUnit.MILLISECONDS));
     }
@@ -296,24 +317,23 @@ public class AudioDeviceVolumeManagerTest {
         if (mSkipRingerTests) {
             return;
         }
-        AudioManager am = mContext.getSystemService(AudioManager.class);
-        final int minIndex = am.getStreamMinVolume(AudioManager.STREAM_MUSIC);
-        final int maxIndex = am.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
+        final int minIndex = mAm.getStreamMinVolume(AudioManager.STREAM_MUSIC);
+        final int maxIndex = mAm.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
         final VolumeInfo volMedia =
                 new VolumeInfo.Builder(AudioManager.STREAM_MUSIC)
                         .setMaxVolumeIndex(maxIndex)
                         .setMinVolumeIndex(minIndex)
                         .build();
         final AudioDeviceVolumeChangedListener listener = new AudioDeviceVolumeChangedListener();
-        // set mute to true to check the VolumeInfo callback with the new mute state
-        final VolumeInfo newVolume = computeNewVolumeWithMute(volMedia, /* mute= */ true);
+        final VolumeInfo nextVolume =
+                computeNewVolumeWithMute(volMedia, /* mute= */ false, BT_SCO_DEV);
 
         mADVmgr.setDeviceAbsoluteVolumeBehavior(
                 BT_SCO_DEV, volMedia, mContext.getMainExecutor(), listener);
-        mADVmgr.setDeviceVolume(newVolume, BT_SCO_DEV);
+        mADVmgr.setDeviceVolume(nextVolume, BT_SCO_DEV);
 
-        assertEquals(
-                newVolume,
+        checkIndexVolumeInfoEquals(
+                nextVolume,
                 listener.waitForVolumeChanged(VOLUME_UPDATE_TIME_MAX_MS, TimeUnit.MILLISECONDS));
     }
 
@@ -329,9 +349,8 @@ public class AudioDeviceVolumeManagerTest {
         if (mSkipRingerTests) {
             return;
         }
-        AudioManager am = mContext.getSystemService(AudioManager.class);
-        final int minIndex = am.getStreamMinVolume(AudioManager.STREAM_MUSIC);
-        final int maxIndex = am.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
+        final int minIndex = mAm.getStreamMinVolume(AudioManager.STREAM_MUSIC);
+        final int maxIndex = mAm.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
         final VolumeInfo volMedia =
                 new VolumeInfo.Builder(AudioManager.STREAM_MUSIC)
                         .setMaxVolumeIndex(maxIndex)
@@ -341,17 +360,17 @@ public class AudioDeviceVolumeManagerTest {
                 new VolumeInfo.Builder(AudioManager.STREAM_NOTIFICATION).build();
         final AudioDeviceVolumeChangedListener listener = new AudioDeviceVolumeChangedListener();
         // set mute to true to check the VolumeInfo callback with the new mute state
-        final VolumeInfo newVolume = computeNewVolumeWithMute(volMedia, /* mute= */ true);
+        final VolumeInfo nextVolume =
+                computeNewVolumeWithMute(volMedia, /* mute= */ true, BT_SCO_DEV);
 
         mADVmgr.setDeviceAbsoluteMultiVolumeBehavior(
                 BT_SCO_DEV,
                 ImmutableList.of(volNotif, volMedia),
                 mContext.getMainExecutor(),
                 listener);
-        mADVmgr.setDeviceVolume(newVolume, BT_SCO_DEV);
+        mADVmgr.setDeviceVolume(nextVolume, BT_SCO_DEV);
 
-        assertEquals(
-                newVolume,
+        checkMuteVolumeInfoEquals(
                 listener.waitForVolumeChanged(VOLUME_UPDATE_TIME_MAX_MS, TimeUnit.MILLISECONDS));
     }
 
@@ -367,27 +386,26 @@ public class AudioDeviceVolumeManagerTest {
         if (mSkipRingerTests) {
             return;
         }
-        AudioManager am = mContext.getSystemService(AudioManager.class);
-        final int minIndex = am.getStreamMinVolume(AudioManager.STREAM_MUSIC);
-        final int maxIndex = am.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
+        final int minIndex = mAm.getStreamMinVolume(AudioManager.STREAM_MUSIC);
+        final int maxIndex = mAm.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
         final VolumeInfo volMedia =
                 new VolumeInfo.Builder(AudioManager.STREAM_MUSIC)
                         .setMaxVolumeIndex(maxIndex)
                         .setMinVolumeIndex(minIndex)
                         .build();
         final AudioDeviceVolumeChangedListener listener = new AudioDeviceVolumeChangedListener();
-        final VolumeInfo newVolume = computeNewVolumeWithMute(volMedia, /* mute= */ false);
+        final VolumeInfo nextVolume = computeNewVolumeWithMute(volMedia, /* mute= */ false, BT_DEV);
 
         mADVmgr.setDeviceAbsoluteVolumeBehavior(
                 BT_DEV, volMedia, mContext.getMainExecutor(), listener);
-        mADVmgr.notifyAbsoluteVolumeChanged(newVolume, BT_DEV);
+        mADVmgr.notifyAbsoluteVolumeChanged(nextVolume, BT_DEV);
 
         // no listener will be triggered since we notify that volume changed
         assertNull(listener.waitForVolumeChanged(VOLUME_UPDATE_TIME_MAX_MS, TimeUnit.MILLISECONDS));
         VolumeInfo actualVolume = mADVmgr.getDeviceVolume(volMedia, BT_DEV);
-        assertEquals(newVolume.getVolumeIndex(), actualVolume.getVolumeIndex());
-        assertEquals(newVolume.getMinVolumeIndex(), actualVolume.getMinVolumeIndex());
-        assertEquals(newVolume.getMaxVolumeIndex(), actualVolume.getMaxVolumeIndex());
+        assertEquals(nextVolume.getVolumeIndex(), actualVolume.getVolumeIndex());
+        assertEquals(nextVolume.getMinVolumeIndex(), actualVolume.getMinVolumeIndex());
+        assertEquals(nextVolume.getMaxVolumeIndex(), actualVolume.getMaxVolumeIndex());
     }
 
     @RequiresFlagsEnabled(FLAG_UNIFY_ABSOLUTE_VOLUME_MANAGEMENT)
@@ -402,32 +420,43 @@ public class AudioDeviceVolumeManagerTest {
         if (mSkipRingerTests) {
             return;
         }
-        AudioManager am = mContext.getSystemService(AudioManager.class);
-        final int minIndex = am.getStreamMinVolume(AudioManager.STREAM_MUSIC);
-        final int maxIndex = am.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
+        final int minIndex = mAm.getStreamMinVolume(AudioManager.STREAM_MUSIC);
+        final int maxIndex = mAm.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
         final VolumeInfo volMedia =
                 new VolumeInfo.Builder(AudioManager.STREAM_MUSIC)
                         .setMaxVolumeIndex(maxIndex)
                         .setMinVolumeIndex(minIndex)
                         .build();
         // set mute to true to check the VolumeInfo callback with the new mute state
-        final VolumeInfo newVolume = computeNewVolumeWithMute(volMedia, /* mute= */ true);
-        final AudioDeviceVolumeChangedListener listener = new AudioDeviceVolumeChangedListener();
+        final VolumeInfo nextVolume = computeNewVolumeWithMute(volMedia, /* mute= */ true, BT_DEV);
+        AudioDeviceVolumeChangedListener listener = new AudioDeviceVolumeChangedListener();
         mADVmgr.setDeviceAbsoluteVolumeBehavior(
                 BT_DEV, volMedia, mContext.getMainExecutor(), listener);
 
-        mADVmgr.setDeviceVolume(newVolume, BT_DEV2);
+        mADVmgr.setDeviceVolume(nextVolume, BT_DEV2);
         assertNull(listener.waitForVolumeChanged(VOLUME_UPDATE_TIME_MAX_MS, TimeUnit.MILLISECONDS));
 
-        mADVmgr.setDeviceVolume(newVolume, BT_DEV);
-        assertEquals(
-                newVolume,
+        // reset the mute state
+        mAm.adjustStreamVolume(
+                AudioManager.STREAM_MUSIC, AudioManager.ADJUST_UNMUTE, /* flags= */ 0);
+
+        mADVmgr.setDeviceVolume(nextVolume, BT_DEV);
+        checkMuteVolumeInfoEquals(
                 listener.waitForVolumeChanged(VOLUME_UPDATE_TIME_MAX_MS, TimeUnit.MILLISECONDS));
     }
 
-    /** Return new volume info with different volume index and passed mute state. */
-    private VolumeInfo computeNewVolumeWithMute(VolumeInfo volumeInfo, boolean mute) {
-        final VolumeInfo curVolume = mADVmgr.getDeviceVolume(volumeInfo, BT_SCO_DEV);
+    private void checkIndexVolumeInfoEquals(VolumeInfo expected, VolumeInfo info) {
+        assertEquals(expected.getVolumeIndex(), info.getVolumeIndex());
+    }
+
+    private void checkMuteVolumeInfoEquals(VolumeInfo info) {
+        assertEquals(info.getMinVolumeIndex(), info.getVolumeIndex());
+    }
+
+    /** Return current and new volume info with different volume index and passed mute state. */
+    private VolumeInfo computeNewVolumeWithMute(
+            VolumeInfo volumeInfo, boolean mute, AudioDeviceAttributes ada) {
+        final VolumeInfo curVolume = mADVmgr.getDeviceVolume(volumeInfo, ada);
         final int newVolumeIndex =
                 curVolume.getVolumeIndex() < curVolume.getMaxVolumeIndex()
                         ? curVolume.getVolumeIndex() + 1

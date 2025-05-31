@@ -13,45 +13,55 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package android.app.cts;
+
+import static com.google.common.truth.Truth.assertThat;
 
 import android.app.ActivityManager;
 import android.os.Parcel;
-import android.test.AndroidTestCase;
 
-public class ActivityManagerProcessErrorStateInfoTest extends AndroidTestCase {
-    protected ActivityManager.ProcessErrorStateInfo mErrorStateInfo;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 
-    @Override
-    protected void setUp() throws Exception {
-        super.setUp();
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
+@RunWith(AndroidJUnit4.class)
+public final class ActivityManagerProcessErrorStateInfoTest {
+    private static final int CONDITION = ActivityManager.ProcessErrorStateInfo.CRASHED;
+    private static final String PROCESS_NAME = "processName";
+    private static final int PID = 2;
+    private static final int UID = 3;
+    private static final String TAG = "tag";
+    private static final String SHORT_MSG = "shortMsg";
+    private static final String LONG_MSG = "longMsg";
+    private ActivityManager.ProcessErrorStateInfo mErrorStateInfo;
+
+    @Before
+    public void setUp() {
         mErrorStateInfo = new ActivityManager.ProcessErrorStateInfo();
     }
 
+    @Test
     public void testConstructor() {
         new ActivityManager.ProcessErrorStateInfo();
     }
 
+    @Test
     public void testDescribeContents() {
-        assertEquals(0, mErrorStateInfo.describeContents());
+        assertThat(mErrorStateInfo.describeContents()).isEqualTo(0);
     }
 
-    public void testWriteToParcel() throws Exception {
-        int condition = 1;
-        String processName = "processName";
-        int pid = 2;
-        int uid = 3;
-        String tag = "tag";
-        String shortMsg = "shortMsg";
-        String longMsg = "longMsg";
-
-        mErrorStateInfo.condition = condition;
-        mErrorStateInfo.processName = processName;
-        mErrorStateInfo.pid = pid;
-        mErrorStateInfo.uid = uid;
-        mErrorStateInfo.tag = tag;
-        mErrorStateInfo.shortMsg = shortMsg;
-        mErrorStateInfo.longMsg = longMsg;
+    @Test
+    public void testWriteToParcel() {
+        mErrorStateInfo.condition = CONDITION;
+        mErrorStateInfo.processName = PROCESS_NAME;
+        mErrorStateInfo.pid = PID;
+        mErrorStateInfo.uid = UID;
+        mErrorStateInfo.tag = TAG;
+        mErrorStateInfo.shortMsg = SHORT_MSG;
+        mErrorStateInfo.longMsg = LONG_MSG;
 
         Parcel parcel = Parcel.obtain();
         mErrorStateInfo.writeToParcel(parcel, 0);
@@ -59,33 +69,26 @@ public class ActivityManagerProcessErrorStateInfoTest extends AndroidTestCase {
         ActivityManager.ProcessErrorStateInfo values =
             ActivityManager.ProcessErrorStateInfo.CREATOR.createFromParcel(parcel);
 
-        assertEquals(condition, values.condition);
-        assertEquals(processName, values.processName);
-        assertEquals(pid, values.pid);
-        assertEquals(uid, values.uid);
-        assertEquals(tag, values.tag);
+        assertThat(values.condition).isEqualTo(CONDITION);
+        assertThat(values.processName).isEqualTo(PROCESS_NAME);
+        assertThat(values.pid).isEqualTo(PID);
+        assertThat(values.uid).isEqualTo(UID);
+        assertThat(values.tag).isEqualTo(TAG);
         // null?
-        assertEquals(shortMsg, values.shortMsg);
-        assertEquals(longMsg, values.longMsg);
-        assertNull(values.crashData);  // Deprecated field: always null
+        assertThat(values.shortMsg).isEqualTo(SHORT_MSG);
+        assertThat(values.longMsg).isEqualTo(LONG_MSG);
+        assertThat(values.crashData).isNull(); // Deprecated field: always null
     }
 
-    public void testReadFromParcel() throws Exception {
-        int condition = 1;
-        String processName = "processName";
-        int pid = 2;
-        int uid = 3;
-        String tag = "tag";
-        String shortMsg = "shortMsg";
-        String longMsg = "longMsg";
-
-        mErrorStateInfo.condition = condition;
-        mErrorStateInfo.processName = processName;
-        mErrorStateInfo.pid = pid;
-        mErrorStateInfo.uid = uid;
-        mErrorStateInfo.tag = tag;
-        mErrorStateInfo.shortMsg = shortMsg;
-        mErrorStateInfo.longMsg = longMsg;
+    @Test
+    public void testReadFromParcel() {
+        mErrorStateInfo.condition = CONDITION;
+        mErrorStateInfo.processName = PROCESS_NAME;
+        mErrorStateInfo.pid = PID;
+        mErrorStateInfo.uid = UID;
+        mErrorStateInfo.tag = TAG;
+        mErrorStateInfo.shortMsg = SHORT_MSG;
+        mErrorStateInfo.longMsg = LONG_MSG;
 
         Parcel parcel = Parcel.obtain();
         mErrorStateInfo.writeToParcel(parcel, 0);
@@ -93,14 +96,13 @@ public class ActivityManagerProcessErrorStateInfoTest extends AndroidTestCase {
         ActivityManager.ProcessErrorStateInfo values = new ActivityManager.ProcessErrorStateInfo();
         values.readFromParcel(parcel);
 
-        assertEquals(condition, values.condition);
-        assertEquals(processName, values.processName);
-        assertEquals(pid, values.pid);
-        assertEquals(uid, values.uid);
-        assertEquals(tag, values.tag);
-        assertEquals(shortMsg, values.shortMsg);
-        assertEquals(longMsg, values.longMsg);
-        assertNull(values.crashData);  // Deprecated field: always null
+        assertThat(values.condition).isEqualTo(CONDITION);
+        assertThat(values.processName).isEqualTo(PROCESS_NAME);
+        assertThat(values.pid).isEqualTo(PID);
+        assertThat(values.uid).isEqualTo(UID);
+        assertThat(values.tag).isEqualTo(TAG);
+        assertThat(values.shortMsg).isEqualTo(SHORT_MSG);
+        assertThat(values.longMsg).isEqualTo(LONG_MSG);
+        assertThat(values.crashData).isNull(); // Deprecated field: always null
     }
-
 }

@@ -16,7 +16,7 @@
 
 package {
     default_applicable_licenses: ["Android-Apache-2.0"],
-    default_team: "trendy_team_framework_backstage_power",
+    default_team: "trendy_team_framework_bpm",
 }
 
 android_test {
@@ -53,4 +53,11 @@ android_test {
     manifest: "AndroidManifest.xml",
     test_config: "AndroidTest.xml",
     per_testcase_directory: true,
+}
+
+test_module_config {
+    name: "CtsContentProviderTestCases_postsubmit",
+    base: "CtsContentProviderTestCases",
+    test_suites: ["general-tests"],
+    exclude_annotations: ["androidx.test.filters.FlakyTest"],
 }

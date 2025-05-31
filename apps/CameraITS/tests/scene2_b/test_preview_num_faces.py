@@ -31,6 +31,7 @@ import video_processing_utils
 _CV2_GREEN = (0, 255, 0)
 _CV2_LINE_THICKNESS = 3
 _CV2_RADIUS = 10
+_FACE_DETECT_PROFILE_SCENE = 'scene2_g'
 _FD_MODE_OFF, _FD_MODE_SIMPLE, _FD_MODE_FULL = 0, 1, 2
 _FRAME_INDEX = -1  # last frame
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
@@ -264,10 +265,16 @@ class PreviewNumFacesTest(its_base_test.ItsBaseTest):
 
         # Check if the expected number of faces were detected.
         num_faces = len(faces)
+        logging.debug('Face detection mode %d found %d faces',
+                      fd_mode, num_faces)
         if num_faces != _PREVIEW_FACES_MIN_NUM:
-          raise AssertionError(f'Face detection in preview found {num_faces}'
-                               f' faces, but expected {_PREVIEW_FACES_MIN_NUM}')
-        logging.debug('Face detection in preview found %d faces', num_faces)
+          e_msg = (f'Face detection in preview found {num_faces} '
+                   f'faces, but expected {_PREVIEW_FACES_MIN_NUM}')
+          # FAIL* if scene2_g and if faceDetectMode does not support FULL
+          if self.scene == _FACE_DETECT_PROFILE_SCENE:
+            if not camera_properties_utils.face_detect_full(props):
+              e_msg = f'{its_session_utils.NOT_YET_MANDATED_MESSAGE}\n\n{e_msg}'
+          raise AssertionError(e_msg)
 
 if __name__ == '__main__':
   test_runner.main()

@@ -39,7 +39,6 @@ import static com.android.cts.mockime.ImeEventStreamTestUtils.expectCommand;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.expectEvent;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.expectEventWithKeyValue;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.notExpectEvent;
-import static com.android.cts.mockime.ImeEventStreamTestUtils.showSoftInputMatcher;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.verificationMatcher;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.withDescription;
 
@@ -401,11 +400,6 @@ public final class InputMethodServiceTest extends EndToEndImeTestBase {
             // Make sure IME was not restarted.
             notExpectEvent(stream, eventMatcher("onCreate"),
                     EXPECTED_TIMEOUT);
-            if (!Flags.refactorInsetsController()) {
-                // With the flag enabled, the IME is redrawn when the font scale changes.
-                notExpectEvent(stream, showSoftInputMatcher(0),
-                        EXPECTED_TIMEOUT);
-            }
 
             eraseFontScale();
 

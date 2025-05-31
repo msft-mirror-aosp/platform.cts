@@ -11,5 +11,5 @@ void main() {
     float g = normalizedCoord.y;
     float b = (r + g) * 0.5;
 
-    outColor = vec4(r, g, b, 1.0);
+    outColor = vec4(r, g, b, 0.1f);
 }

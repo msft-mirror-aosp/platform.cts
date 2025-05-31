@@ -32,11 +32,13 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.net.Uri;
 import android.os.Process;
+import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.MediaStore;
+import android.util.Log;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -52,6 +54,7 @@ import org.junit.runner.RunWith;
 import java.util.ArrayList;
 import java.util.List;
 
+@AppModeFull
 @RunWith(AndroidJUnit4.class)
 public class ActivityLaunchUriPermissionTest {
 
@@ -73,9 +76,10 @@ public class ActivityLaunchUriPermissionTest {
 
     private static final List<String> TEST_APPS = List.of(RESOLUTION_TEST_PKG_NAME);
 
+    private static final String TAG = ActivityLaunchUriPermissionTest.class.getSimpleName();
+
     static class IntentRetriever extends BroadcastReceiver {
         Intent mIntent;
-        final int mMaxWaitRetry = 3;
 
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -83,13 +87,20 @@ public class ActivityLaunchUriPermissionTest {
         }
 
         boolean waitOnReceive() {
-            for (int i = 0; i < mMaxWaitRetry; i++) {
+            final long startTime = System.currentTimeMillis();
+            final long timeoutMilliseconds = 1500;
+
+            while (mIntent == null
+                    && (System.currentTimeMillis() - startTime) < timeoutMilliseconds) {
                 SystemUtil.waitForBroadcasts();
-                if (mIntent != null) {
-                    break; // Intent received, exit loop
-                }
             }
-            return mIntent != null;
+
+            if (mIntent != null) {
+                return true;
+            } else {
+                Log.w(TAG, "Timeout: Intent not received within " + timeoutMilliseconds + "ms.");
+                return false;
+            }
         }
 
         void reset() {

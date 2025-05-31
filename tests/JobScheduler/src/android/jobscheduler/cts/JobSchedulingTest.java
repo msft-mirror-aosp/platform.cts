@@ -29,7 +29,13 @@ import static android.jobscheduler.cts.TestAppInterface.TEST_APP_PACKAGE;
 import static android.text.format.DateUtils.HOUR_IN_MILLIS;
 
 import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import android.annotation.TargetApi;
 import android.app.job.JobInfo;
@@ -44,6 +50,7 @@ import android.provider.DeviceConfig;
 import android.text.TextUtils;
 
 import androidx.test.InstrumentationRegistry;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.uiautomator.UiDevice;
 
 import com.android.compatibility.common.util.AnrMonitor;
@@ -52,14 +59,17 @@ import com.android.compatibility.common.util.BatteryUtils;
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.compatibility.common.util.ThermalUtils;
 
+import org.junit.After;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Tests related to scheduling jobs.
- */
+/** Tests related to scheduling jobs. */
 @TargetApi(30)
+@RunWith(AndroidJUnit4.class)
 public class JobSchedulingTest extends BaseJobSchedulerTest {
     private static final long DEFAULT_WAIT_TIMEOUT_MS = 2_000;
     private static final int MIN_SCHEDULE_QUOTA = 250;
@@ -68,6 +78,7 @@ public class JobSchedulingTest extends BaseJobSchedulerTest {
     private static final int MAX_JOB_CONTEXTS_COUNT = 64;
 
     @Override
+    @After
     public void tearDown() throws Exception {
         mJobScheduler.cancel(JOB_ID);
         SystemUtil.runShellCommand(getInstrumentation(), "cmd jobscheduler reset-schedule-quota");
@@ -79,6 +90,7 @@ public class JobSchedulingTest extends BaseJobSchedulerTest {
     }
 
     /** Tests that an ANR happens if the job is blocked in onStartJob. */
+    @Test
     public void testAnr_onStartJob() throws Exception {
         try (TestAppInterface mTestAppInterface = new TestAppInterface(mContext, JOB_ID);
              AnrMonitor monitor = AnrMonitor.start(InstrumentationRegistry.getInstrumentation(),
@@ -107,6 +119,7 @@ public class JobSchedulingTest extends BaseJobSchedulerTest {
     }
 
     /** Tests that an ANR happens if the job is blocked in onStopJob. */
+    @Test
     public void testAnr_onStopJob() throws Exception {
         try (TestAppInterface mTestAppInterface = new TestAppInterface(mContext, JOB_ID);
              AnrMonitor monitor = AnrMonitor.start(InstrumentationRegistry.getInstrumentation(),
@@ -136,6 +149,7 @@ public class JobSchedulingTest extends BaseJobSchedulerTest {
         }
     }
 
+    @Test
     public void testCancel_runningJob() throws Exception {
         JobInfo jobInfo = new JobInfo.Builder(JOB_ID, kJobServiceComponent)
                 .setExpedited(true)
@@ -154,6 +168,7 @@ public class JobSchedulingTest extends BaseJobSchedulerTest {
         assertEquals(0, mJobScheduler.getAllPendingJobs().size());
     }
 
+    @Test
     public void testCanRunUserInitiatedJobs() throws Exception {
         final boolean isAppOpPermission = isRunUserInitiatedJobsPermissionAppOp();
 
@@ -174,9 +189,9 @@ public class JobSchedulingTest extends BaseJobSchedulerTest {
     }
 
     /**
-     * Test that apps can call schedule at least the minimum amount of times without being
-     * blocked.
+     * Test that apps can call schedule at least the minimum amount of times without being blocked.
      */
+    @Test
     public void testMinSuccessfulSchedulingQuota() {
         JobInfo jobInfo = new JobInfo.Builder(JOB_ID, kJobServiceComponent)
                 .setMinimumLatency(60 * 60 * 1000L)
@@ -188,9 +203,8 @@ public class JobSchedulingTest extends BaseJobSchedulerTest {
         }
     }
 
-    /**
-     * Test that scheduling fails once an app hits the schedule quota limit.
-     */
+    /** Test that scheduling fails once an app hits the schedule quota limit. */
+    @Test
     public void testFailingScheduleOnQuotaExceeded() {
         mDeviceConfigStateHelper.set(
                 new DeviceConfig.Properties.Builder(DeviceConfig.NAMESPACE_JOB_SCHEDULER)
@@ -214,9 +228,8 @@ public class JobSchedulingTest extends BaseJobSchedulerTest {
         }
     }
 
-    /**
-     * Test that scheduling succeeds even after an app hits the schedule quota limit.
-     */
+    /** Test that scheduling succeeds even after an app hits the schedule quota limit. */
+    @Test
     public void testContinuingScheduleOnQuotaExceeded() {
         mDeviceConfigStateHelper.set(
                 new DeviceConfig.Properties.Builder(DeviceConfig.NAMESPACE_JOB_SCHEDULER)
@@ -238,9 +251,8 @@ public class JobSchedulingTest extends BaseJobSchedulerTest {
         }
     }
 
-    /**
-     * Test that non-persisted jobs aren't limited by quota.
-     */
+    /** Test that non-persisted jobs aren't limited by quota. */
+    @Test
     public void testNonPersistedJobsNotLimited() {
         mDeviceConfigStateHelper.set(
                 new DeviceConfig.Properties.Builder(DeviceConfig.NAMESPACE_JOB_SCHEDULER)
@@ -261,6 +273,7 @@ public class JobSchedulingTest extends BaseJobSchedulerTest {
         }
     }
 
+    @Test
     public void testHigherPriorityJobRunsFirst() throws Exception {
         setStorageStateLow(true);
         final int higherPriorityJobId = JOB_ID;
@@ -300,6 +313,7 @@ public class JobSchedulingTest extends BaseJobSchedulerTest {
                         + executedEvents, higherExecutedFirst);
     }
 
+    @Test
     public void testNamespaceSetting() {
         JobScheduler js = getContext().getSystemService(JobScheduler.class);
         assertNull(js.getNamespace());
@@ -336,6 +350,7 @@ public class JobSchedulingTest extends BaseJobSchedulerTest {
         }
     }
 
+    @Test
     public void testNamespace_schedule() {
         JobScheduler jsA = getContext().getSystemService(JobScheduler.class).forNamespace("A");
         JobScheduler jsB = getContext().getSystemService(JobScheduler.class).forNamespace("B");
@@ -382,6 +397,7 @@ public class JobSchedulingTest extends BaseJobSchedulerTest {
         assertTrue(namespaceJobsB.contains(jobB));
     }
 
+    @Test
     public void testNamespace_cancel() {
         JobScheduler jsA = getContext().getSystemService(JobScheduler.class).forNamespace("A");
         JobScheduler jsB = getContext().getSystemService(JobScheduler.class).forNamespace("B");
@@ -409,6 +425,7 @@ public class JobSchedulingTest extends BaseJobSchedulerTest {
         assertNull(jsB.getPendingJob(JOB_ID));
     }
 
+    @Test
     public void testNamespace_cancelInAllNamespaces() {
         JobScheduler jsA = getContext().getSystemService(JobScheduler.class).forNamespace("A");
         JobScheduler jsB = getContext().getSystemService(JobScheduler.class).forNamespace("B");
@@ -432,6 +449,7 @@ public class JobSchedulingTest extends BaseJobSchedulerTest {
         assertNull(jsB.getPendingJob(JOB_ID));
     }
 
+    @Test
     public void testNamespace_cancelAllInNamespace() {
         JobScheduler jsA = getContext().getSystemService(JobScheduler.class).forNamespace("A");
         JobScheduler jsB = getContext().getSystemService(JobScheduler.class).forNamespace("B");
@@ -463,11 +481,13 @@ public class JobSchedulingTest extends BaseJobSchedulerTest {
         assertNull(jsB.getPendingJob(JOB_ID));
     }
 
+    @Test
     public void testPendingJobReason_noJob() {
         assertEquals(JobScheduler.PENDING_JOB_REASON_INVALID_JOB_ID,
                 mJobScheduler.getPendingJobReason(JOB_ID));
     }
 
+    @Test
     @RequiresFlagsEnabled(android.app.job.Flags.FLAG_GET_PENDING_JOB_REASONS_API)
     public void testPendingJobReasons_noJob() {
         if (!isAconfigFlagEnabled(android.app.job.Flags.FLAG_GET_PENDING_JOB_REASONS_API)) {
@@ -478,6 +498,7 @@ public class JobSchedulingTest extends BaseJobSchedulerTest {
                 mJobScheduler.getPendingJobReasons(JOB_ID));
     }
 
+    @Test
     @RequiresFlagsEnabled(android.app.job.Flags.FLAG_GET_PENDING_JOB_REASONS_HISTORY_API)
     public void testPendingJobReasonsHistory_noJob() {
         if (!isAconfigFlagEnabled(android.app.job.Flags.FLAG_GET_PENDING_JOB_REASONS_HISTORY_API)) {
@@ -490,6 +511,7 @@ public class JobSchedulingTest extends BaseJobSchedulerTest {
         } catch (IllegalArgumentException expected) { }
     }
 
+    @Test
     public void testPendingJobReason_alreadyRunning() throws Exception {
         JobInfo jobInfo = new JobInfo.Builder(JOB_ID, kJobServiceComponent)
                 .setExpedited(true)
@@ -504,6 +526,7 @@ public class JobSchedulingTest extends BaseJobSchedulerTest {
                 mJobScheduler.getPendingJobReason(JOB_ID));
     }
 
+    @Test
     @RequiresFlagsEnabled(android.app.job.Flags.FLAG_GET_PENDING_JOB_REASONS_API)
     public void testPendingJobReasons_alreadyRunning() throws Exception {
         if (!isAconfigFlagEnabled(android.app.job.Flags.FLAG_GET_PENDING_JOB_REASONS_API)) {
@@ -523,6 +546,7 @@ public class JobSchedulingTest extends BaseJobSchedulerTest {
                 mJobScheduler.getPendingJobReasons(JOB_ID));
     }
 
+    @Test
     public void testPendingJobReason_batteryNotLow() throws Exception {
         if (!BatteryUtils.hasBattery()) {
             // Can't test while the device doesn't have battery
@@ -542,6 +566,7 @@ public class JobSchedulingTest extends BaseJobSchedulerTest {
     }
 
     @RequiresFlagsEnabled(android.app.job.Flags.FLAG_GET_PENDING_JOB_REASONS_API)
+    @Test
     public void testPendingJobReasons_batteryNotLow() throws Exception {
         if (!isAconfigFlagEnabled(android.app.job.Flags.FLAG_GET_PENDING_JOB_REASONS_API)) {
             return; // test requires flag to be enabled
@@ -562,6 +587,7 @@ public class JobSchedulingTest extends BaseJobSchedulerTest {
                 mJobScheduler.getPendingJobReasons(JOB_ID));
     }
 
+    @Test
     public void testPendingJobReason_charging() throws Exception {
         if (!BatteryUtils.hasBattery()) {
             // Can't test while the device doesn't have battery
@@ -581,6 +607,7 @@ public class JobSchedulingTest extends BaseJobSchedulerTest {
     }
 
     @RequiresFlagsEnabled(android.app.job.Flags.FLAG_GET_PENDING_JOB_REASONS_API)
+    @Test
     public void testPendingJobReasons_charging() throws Exception {
         if (!isAconfigFlagEnabled(android.app.job.Flags.FLAG_GET_PENDING_JOB_REASONS_API)) {
             return; // test requires flag to be enabled
@@ -601,6 +628,7 @@ public class JobSchedulingTest extends BaseJobSchedulerTest {
                 mJobScheduler.getPendingJobReasons(JOB_ID));
     }
 
+    @Test
     public void testPendingJobReason_connectivity() throws Exception {
         final NetworkingHelper networkingHelper =
                 new NetworkingHelper(getInstrumentation(), getContext());
@@ -625,6 +653,7 @@ public class JobSchedulingTest extends BaseJobSchedulerTest {
     }
 
     @RequiresFlagsEnabled(android.app.job.Flags.FLAG_GET_PENDING_JOB_REASONS_API)
+    @Test
     public void testPendingJobReasons_connectivity() throws Exception {
         if (!isAconfigFlagEnabled(android.app.job.Flags.FLAG_GET_PENDING_JOB_REASONS_API)) {
             return; // test requires flag to be enabled
@@ -651,6 +680,7 @@ public class JobSchedulingTest extends BaseJobSchedulerTest {
         }
     }
 
+    @Test
     public void testPendingJobReason_contentTrigger() {
         JobInfo jobInfo = new JobInfo.Builder(JOB_ID, kJobServiceComponent)
                 .addTriggerContentUri(new JobInfo.TriggerContentUri(
@@ -665,6 +695,7 @@ public class JobSchedulingTest extends BaseJobSchedulerTest {
     }
 
     @RequiresFlagsEnabled(android.app.job.Flags.FLAG_GET_PENDING_JOB_REASONS_API)
+    @Test
     public void testPendingJobReasons_contentTrigger() {
         if (!isAconfigFlagEnabled(android.app.job.Flags.FLAG_GET_PENDING_JOB_REASONS_API)) {
             return; // test requires flag to be enabled
@@ -681,6 +712,7 @@ public class JobSchedulingTest extends BaseJobSchedulerTest {
                 mJobScheduler.getPendingJobReasons(JOB_ID));
     }
 
+    @Test
     public void testPendingJobReason_minimumLatency() {
         JobInfo jobInfo = new JobInfo.Builder(JOB_ID, kJobServiceComponent)
                 .setMinimumLatency(HOUR_IN_MILLIS)
@@ -693,6 +725,7 @@ public class JobSchedulingTest extends BaseJobSchedulerTest {
     }
 
     @RequiresFlagsEnabled(android.app.job.Flags.FLAG_GET_PENDING_JOB_REASONS_API)
+    @Test
     public void testPendingJobReasons_minimumLatency() {
         if (!isAconfigFlagEnabled(android.app.job.Flags.FLAG_GET_PENDING_JOB_REASONS_API)) {
             return; // test requires flag to be enabled
@@ -707,6 +740,7 @@ public class JobSchedulingTest extends BaseJobSchedulerTest {
                 mJobScheduler.getPendingJobReasons(JOB_ID));
     }
 
+    @Test
     public void testPendingJobReason_storageNotLow() throws Exception {
         setStorageStateLow(true);
 
@@ -721,6 +755,7 @@ public class JobSchedulingTest extends BaseJobSchedulerTest {
     }
 
     @RequiresFlagsEnabled(android.app.job.Flags.FLAG_GET_PENDING_JOB_REASONS_API)
+    @Test
     public void testPendingJobReasons_storageNotLow() throws Exception {
         if (!isAconfigFlagEnabled(android.app.job.Flags.FLAG_GET_PENDING_JOB_REASONS_API)) {
             return; // test requires flag to be enabled
@@ -738,6 +773,7 @@ public class JobSchedulingTest extends BaseJobSchedulerTest {
     }
 
     /** Verify that any caching isn't JobScheduler doesn't result in returning invalid reasons. */
+    @Test
     public void testPendingJobReason_reasonCanChange() throws Exception {
         assertEquals(JobScheduler.PENDING_JOB_REASON_INVALID_JOB_ID,
                 mJobScheduler.getPendingJobReason(JOB_ID));
@@ -780,6 +816,7 @@ public class JobSchedulingTest extends BaseJobSchedulerTest {
 
     /** Verify that any caching isn't JobScheduler doesn't result in returning invalid reasons. */
     @RequiresFlagsEnabled(android.app.job.Flags.FLAG_GET_PENDING_JOB_REASONS_API)
+    @Test
     public void testPendingJobReasons_reasonCanChange() throws Exception {
         if (!isAconfigFlagEnabled(android.app.job.Flags.FLAG_GET_PENDING_JOB_REASONS_API)) {
             return; // test requires flag to be enabled
@@ -822,6 +859,7 @@ public class JobSchedulingTest extends BaseJobSchedulerTest {
     }
 
     @RequiresFlagsEnabled(android.app.job.Flags.FLAG_GET_PENDING_JOB_REASONS_API)
+    @Test
     public void testPendingJobReasons_idleChargingLatency() throws Exception {
         if (!isAconfigFlagEnabled(android.app.job.Flags.FLAG_GET_PENDING_JOB_REASONS_API)) {
             return; // test requires flag to be enabled
@@ -849,6 +887,7 @@ public class JobSchedulingTest extends BaseJobSchedulerTest {
     }
 
     @RequiresFlagsEnabled(android.app.job.Flags.FLAG_GET_PENDING_JOB_REASONS_API)
+    @Test
     public void testPendingJobReasons_deadlineAndLatency() throws Exception {
         if (!isAconfigFlagEnabled(android.app.job.Flags.FLAG_GET_PENDING_JOB_REASONS_API)) {
             return; // test requires flag to be enabled
@@ -868,6 +907,7 @@ public class JobSchedulingTest extends BaseJobSchedulerTest {
     }
 
     @RequiresFlagsEnabled(android.app.job.Flags.FLAG_GET_PENDING_JOB_REASONS_API)
+    @Test
     public void testPendingJobReasons_thermal() throws Exception {
         if (!isAconfigFlagEnabled(android.app.job.Flags.FLAG_GET_PENDING_JOB_REASONS_API)) {
             return; // test requires flag to be enabled
@@ -887,6 +927,7 @@ public class JobSchedulingTest extends BaseJobSchedulerTest {
     }
 
     @RequiresFlagsEnabled(android.app.job.Flags.FLAG_GET_PENDING_JOB_REASONS_HISTORY_API)
+    @Test
     public void testPendingJobReasonsHistory_updatesCorrectly() throws Exception {
         if (!isAconfigFlagEnabled(android.app.job.Flags.FLAG_GET_PENDING_JOB_REASONS_HISTORY_API)) {
             return; // test requires flag to be enabled
@@ -929,6 +970,7 @@ public class JobSchedulingTest extends BaseJobSchedulerTest {
     }
 
     @RequiresFlagsEnabled(android.app.job.Flags.FLAG_GET_PENDING_JOB_REASONS_HISTORY_API)
+    @Test
     public void testPendingJobReasonsHistory_trimsToSize() throws Exception {
         if (!isAconfigFlagEnabled(android.app.job.Flags.FLAG_GET_PENDING_JOB_REASONS_HISTORY_API)) {
             return; // test requires flag to be enabled
@@ -960,6 +1002,7 @@ public class JobSchedulingTest extends BaseJobSchedulerTest {
         assertEquals(10, newReasons.size());
     }
 
+    @Test
     public void testRunUserInitiatedJobsPermissionRequirement() throws Exception {
         startAndKeepTestActivity();
         final boolean isAppOpPermission = isRunUserInitiatedJobsPermissionAppOp();
@@ -992,6 +1035,7 @@ public class JobSchedulingTest extends BaseJobSchedulerTest {
     }
 
     @RequiresFlagsEnabled(android.app.job.Flags.FLAG_ADD_TYPE_INFO_TO_WAKELOCK_TAG)
+    @Test
     public void testJobWakelockTag() throws Exception {
         if (!isAconfigFlagEnabled(android.app.job.Flags.FLAG_ADD_TYPE_INFO_TO_WAKELOCK_TAG)) {
             return; // test requires flag to be enabled

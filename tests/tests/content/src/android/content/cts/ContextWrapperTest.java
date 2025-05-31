@@ -16,9 +16,9 @@
 
 package android.content.cts;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.fail;
+import static com.google.common.truth.Truth.assertThat;
+
+import static org.junit.Assert.assertThrows;
 
 import android.content.Context;
 import android.content.ContextWrapper;
@@ -32,22 +32,20 @@ import org.junit.runners.JUnit4;
 /**
  * Test {@link ContextWrapper}.
  *
- * <p>
- * This class inherits most of its test methods from its parent ContextTest.
- * Since ContextWrapper delegates its requests to the Context, the same test cases should pass
- * for both Context and ContextWrapper.
+ * <p>This class inherits most of its test methods from its parent ContextTest. Since ContextWrapper
+ * delegates its requests to the Context, the same test cases should pass for both Context and
+ * ContextWrapper.
  *
- * <p>
- * There are some tests for ContextWrapper that don't make sense for Context - those are included
+ * <p>There are some tests for ContextWrapper that don't make sense for Context - those are included
  * in this class.
  */
 @AppModeFull // TODO(Instant) Figure out which APIs should work.
 @RunWith(JUnit4.class)
-public class ContextWrapperTest extends ContextTest {
+public final class ContextWrapperTest extends ContextTest {
+    private static final String ANDROID_SHELL = "com.android.shell";
 
-    /**
-     * Returns the ContextWrapper object that's being tested.
-     */
+    /** Returns the ContextWrapper object that's being tested. */
+    @Override
     protected Context getContextUnderTest() {
         return new ContextWrapper(super.getContextUnderTest());
     }
@@ -66,18 +64,17 @@ public class ContextWrapperTest extends ContextTest {
         MockContextWrapper testContextWrapper = new MockContextWrapper(context);
 
         // Test getBaseContext()
-        assertSame(context, testContextWrapper.getBaseContext());
+        assertThat(testContextWrapper.getBaseContext()).isSameInstanceAs(context);
 
-        Context secondContext = testContextWrapper.createPackageContext("com.android.shell",
-                Context.CONTEXT_IGNORE_SECURITY);
-        assertNotNull(secondContext);
-
+        Context secondContext =
+                testContextWrapper.createPackageContext(
+                        ANDROID_SHELL, Context.CONTEXT_IGNORE_SECURITY);
+        assertThat(secondContext).isNotNull();
         // Test attachBaseContext
-        try {
-            testContextWrapper.attachBaseContext(secondContext);
-            fail("If base context has already been set, it should throw a IllegalStateException.");
-        } catch (IllegalStateException e) {
-        }
+        assertThrows(
+                "If base context has already been set, it should throw a IllegalStateException.",
+                IllegalStateException.class,
+                () -> testContextWrapper.attachBaseContext(secondContext));
     }
 
     // TODO: this mock seems unnecessary. Remove it, and just use ContextWrapper?

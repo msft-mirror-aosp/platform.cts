@@ -14,7 +14,7 @@
 
 package {
     default_applicable_licenses: ["Android-Apache-2.0"],
-    default_team: "trendy_team_framework_backstage_power",
+    default_team: "trendy_team_framework_bpm",
 }
 
 android_test {
@@ -96,6 +96,7 @@ android_ravenwood_test {
         "compatibility-device-util-axt-ravenwood",
     ],
     srcs: [
+        "src/android/app/cts/ApplicationNoStubTest.java",
         "src/android/app/cts/ActivityOptionsTest.java",
         "src/android/app/cts/InstrumentationThreadingTest.java",
     ],

@@ -131,7 +131,7 @@ public class EabBulkCapabilityUpdaterTest {
 
     @BeforeClass
     public static void beforeAllTests() throws Exception {
-        if (!ImsUtils.shouldTestImsService()) {
+        if (!ImsUtils.shouldTestImsCall()) {
             return;
         }
 
@@ -167,7 +167,7 @@ public class EabBulkCapabilityUpdaterTest {
 
     @AfterClass
     public static void afterAllTests() throws Exception {
-        if (!ImsUtils.shouldTestImsService()) {
+        if (!ImsUtils.shouldTestImsCall()) {
             return;
         }
 
@@ -197,7 +197,7 @@ public class EabBulkCapabilityUpdaterTest {
 
     @Before
     public void setup() {
-        if (!ImsUtils.shouldTestImsService()) {
+        if (!ImsUtils.shouldTestImsCall()) {
             return;
         }
 
@@ -211,7 +211,7 @@ public class EabBulkCapabilityUpdaterTest {
 
     @After
     public void teardown() throws Exception {
-        if (!ImsUtils.shouldTestImsService()) {
+        if (!ImsUtils.shouldTestImsCall()) {
             return;
         }
 
@@ -221,7 +221,7 @@ public class EabBulkCapabilityUpdaterTest {
 
     @Test
     public void insertNewContactTest() throws Exception {
-        if (!ImsUtils.shouldTestImsService()) {
+        if (!ImsUtils.shouldTestImsCall()) {
             return;
         }
 
@@ -249,7 +249,7 @@ public class EabBulkCapabilityUpdaterTest {
 
     @Test
     public void deletePhoneNumberOfContactTest() throws Exception {
-        if (!ImsUtils.shouldTestImsService()) {
+        if (!ImsUtils.shouldTestImsCall()) {
             return;
         }
 
@@ -267,7 +267,7 @@ public class EabBulkCapabilityUpdaterTest {
 
     @Test
     public void updateContactTest() throws Exception {
-        if (!ImsUtils.shouldTestImsService()) {
+        if (!ImsUtils.shouldTestImsCall()) {
             return;
         }
 
@@ -292,7 +292,7 @@ public class EabBulkCapabilityUpdaterTest {
 
     @Test
     public void deleteContactTest() throws Exception {
-        if (!ImsUtils.shouldTestImsService()) {
+        if (!ImsUtils.shouldTestImsCall()) {
             return;
         }
 

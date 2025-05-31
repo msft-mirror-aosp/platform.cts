@@ -332,6 +332,16 @@ TEST_P(AAudioInputStreamTest, testPauseAndFlushNotSupported) {
     mHelper->stopStream();
 }
 
+TEST_P(AAudioInputStreamTest, testFlushFromFrame) {
+    if (!mSetupSuccessful) return;
+    mHelper->startStream();
+    int64_t position = 0;
+    EXPECT_EQ(AAUDIO_ERROR_ILLEGAL_ARGUMENT,
+              AAudioStream_flushFromFrame(stream(), AAUDIO_FLUSH_FROM_ACCURACY_UNDEFINED,
+                                          &position));
+    mHelper->stopStream();
+}
+
 TEST_P(AAudioInputStreamTest, testRelease) {
     if (!mSetupSuccessful) return;
 
@@ -587,6 +597,16 @@ TEST_P(AAudioOutputStreamTest, testGetTimestamp) {
     timeoutNanos = std::max(timeoutNanos, 400 * NANOS_PER_MILLISECOND);
 
     testTimestamp(timeoutNanos);
+}
+
+TEST_P(AAudioOutputStreamTest, testFlushFromFrame) {
+    if (!mSetupSuccessful) return;
+    mHelper->startStream();
+    int64_t position = 0;
+    EXPECT_EQ(AAUDIO_ERROR_ILLEGAL_ARGUMENT,
+              AAudioStream_flushFromFrame(stream(), AAUDIO_FLUSH_FROM_ACCURACY_UNDEFINED,
+                                          &position));
+    mHelper->stopStream();
 }
 
 TEST_P(AAudioOutputStreamTest, testRelease) {

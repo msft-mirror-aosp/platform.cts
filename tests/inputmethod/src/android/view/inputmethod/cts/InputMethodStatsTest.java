@@ -31,14 +31,12 @@ import static org.junit.Assert.fail;
 import android.app.Activity;
 import android.app.Instrumentation;
 import android.platform.test.annotations.AppModeSdkSandbox;
-import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.view.MotionEvent;
 import android.view.WindowInsets;
 import android.view.WindowInsetsController.OnControllableInsetsChangedListener;
 import android.view.WindowManager;
-import android.view.inputmethod.Flags;
 import android.view.inputmethod.InputMethodManager;
 import android.view.inputmethod.cts.util.EndToEndImeTestBase;
 import android.view.inputmethod.cts.util.MetricsRecorder;
@@ -61,6 +59,7 @@ import com.android.os.nano.AtomsProto;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -204,7 +203,7 @@ public final class InputMethodStatsTest extends EndToEndImeTestBase {
      * Test the logging for an IME show request from the client.
      */
     @Test
-    @RequiresFlagsDisabled(Flags.FLAG_REFACTOR_INSETS_CONTROLLER)
+    @Ignore("b/418178877")
     public void testClientShowImeRequestFinished() throws Throwable {
         verifyLogging(true /* show */,
                 List.of(ImeProtoEnums.ORIGIN_CLIENT, ImeProtoEnums.ORIGIN_CLIENT_SHOW_SOFT_INPUT),
@@ -225,7 +224,7 @@ public final class InputMethodStatsTest extends EndToEndImeTestBase {
      * Test the logging for an IME hide request from the client.
      */
     @Test
-    @RequiresFlagsDisabled(Flags.FLAG_REFACTOR_INSETS_CONTROLLER)
+    @Ignore("b/418178877")
     public void testClientHideImeRequestFinished() throws Exception {
         verifyLogging(false /* show */,
                 List.of(ImeProtoEnums.ORIGIN_CLIENT, ImeProtoEnums.ORIGIN_CLIENT_HIDE_SOFT_INPUT),
@@ -243,7 +242,7 @@ public final class InputMethodStatsTest extends EndToEndImeTestBase {
      * Test the logging for an IME show request from the server.
      */
     @Test
-    @RequiresFlagsDisabled(Flags.FLAG_REFACTOR_INSETS_CONTROLLER)
+    @Ignore("b/418178877")
     public void testServerShowImeRequestFinished() throws Exception {
         verifyLogging(true /* show */,
                 List.of(ImeProtoEnums.ORIGIN_SERVER, ImeProtoEnums.ORIGIN_SERVER_START_INPUT),
@@ -258,7 +257,7 @@ public final class InputMethodStatsTest extends EndToEndImeTestBase {
      * Test the logging for an IME hide request from the server.
      */
     @Test
-    @RequiresFlagsDisabled(Flags.FLAG_REFACTOR_INSETS_CONTROLLER)
+    @Ignore("b/418178877")
     public void testServerHideImeRequestFinished() throws Exception {
         verifyLogging(false /* show */,
                 List.of(ImeProtoEnums.ORIGIN_SERVER, ImeProtoEnums.ORIGIN_SERVER_HIDE_INPUT),
@@ -273,7 +272,7 @@ public final class InputMethodStatsTest extends EndToEndImeTestBase {
      * Test the logging for an IME show request from the IME.
      */
     @Test
-    @RequiresFlagsDisabled(Flags.FLAG_REFACTOR_INSETS_CONTROLLER)
+    @Ignore("b/418178877")
     public void testImeShowImeRequestFinished() throws Exception {
         // In the past, the origin of this request was considered in the server.
         verifyLogging(true /* show */,
@@ -290,7 +289,7 @@ public final class InputMethodStatsTest extends EndToEndImeTestBase {
      * Test the logging for an IME hide request from the IME.
      */
     @Test
-    @RequiresFlagsDisabled(Flags.FLAG_REFACTOR_INSETS_CONTROLLER)
+    @Ignore("b/418178877")
     public void testImeHideImeRequestFinished() throws Exception {
         verifyLogging(false /* show */,
                 List.of(ImeProtoEnums.ORIGIN_IME, ImeProtoEnums.ORIGIN_SERVER_HIDE_INPUT),
@@ -305,7 +304,7 @@ public final class InputMethodStatsTest extends EndToEndImeTestBase {
      * Test the logging for an IME show request from a user interaction using InputMethodManager.
      */
     @Test
-    @RequiresFlagsDisabled(Flags.FLAG_REFACTOR_INSETS_CONTROLLER)
+    @Ignore("b/418178877")
     public void testFromUser_withImm_showImeRequestFinished() throws Exception {
         verifyLogging(true /* show */,
                 List.of(ImeProtoEnums.ORIGIN_CLIENT, ImeProtoEnums.ORIGIN_CLIENT_SHOW_SOFT_INPUT),
@@ -336,7 +335,7 @@ public final class InputMethodStatsTest extends EndToEndImeTestBase {
      * Test the logging for an IME hide request from a user interaction using InputMethodManager.
      */
     @Test
-    @RequiresFlagsDisabled(Flags.FLAG_REFACTOR_INSETS_CONTROLLER)
+    @Ignore("b/418178877")
     public void testFromUser_withImm_hideImeRequestFinished() throws Exception {
         verifyLogging(false /* show */,
                 List.of(ImeProtoEnums.ORIGIN_CLIENT, ImeProtoEnums.ORIGIN_CLIENT_HIDE_SOFT_INPUT),
@@ -367,7 +366,7 @@ public final class InputMethodStatsTest extends EndToEndImeTestBase {
      * WindowInsetsController.
      */
     @Test
-    @RequiresFlagsDisabled(Flags.FLAG_REFACTOR_INSETS_CONTROLLER)
+    @Ignore("b/418178877")
     public void testFromUser_withWic_showImeRequestFinished() throws Exception {
         verifyLogging(true /* show */,
                 List.of(ImeProtoEnums.ORIGIN_CLIENT, ImeProtoEnums.ORIGIN_CLIENT_SHOW_SOFT_INPUT),
@@ -398,7 +397,7 @@ public final class InputMethodStatsTest extends EndToEndImeTestBase {
      * WindowInsetsController.
      */
     @Test
-    @RequiresFlagsDisabled(Flags.FLAG_REFACTOR_INSETS_CONTROLLER)
+    @Ignore("b/418178877")
     public void testFromUser_withWic_hideImeRequestFinished() throws Exception {
         verifyLogging(false /* show */,
                 List.of(ImeProtoEnums.ORIGIN_CLIENT, ImeProtoEnums.ORIGIN_CLIENT_HIDE_SOFT_INPUT),
@@ -427,7 +426,7 @@ public final class InputMethodStatsTest extends EndToEndImeTestBase {
      * Test the logging for an IME hide request from a user interaction using back button press.
      */
     @Test
-    @RequiresFlagsDisabled(Flags.FLAG_REFACTOR_INSETS_CONTROLLER)
+    @Ignore("b/418178877")
     public void testFromUser_withBackPress_hideImeRequestFinished() throws Exception {
         verifyLogging(false /* show */,
                 List.of(ImeProtoEnums.ORIGIN_IME, ImeProtoEnums.ORIGIN_SERVER_HIDE_INPUT),

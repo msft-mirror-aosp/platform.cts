@@ -138,7 +138,7 @@
         <activity android:name="android.server.wm.ime.MultiDisplayImeTests$ImeTestActivity"
              android:resizeableActivity="true"
              android:theme="@style/no_starting_window"
-             android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|colorMode|density|touchscreen"/>
+             android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|colorMode|density|touchscreen|keyboard|keyboardHidden|navigation"/>
         <activity android:name="android.server.wm.ime.MultiDisplayImeTests$ImeTestActivity2"/>
         <activity android:name="android.server.wm.ime.MultiDisplayImeTests$ImeTestActivityWithBrokenContextWrapper"/>
 

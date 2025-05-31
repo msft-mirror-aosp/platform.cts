@@ -68,29 +68,26 @@ public class BarometerReferenceDeviceActivity extends SensorCtsVerifierTestActiv
     }
 
     @Override
-    protected void activitySetUp() throws InterruptedException {
+    public void run() {
+        SensorTestDetails testDetails;
         if (!Boolean.parseBoolean(
                 PropertyUtil.getProperty("sensor.barometer.high_quality.implemented"))) {
-            // Skip the test by throwing an exception
-            throw new SensorTestStateNotSupportedException(
-                    getString(R.string.snsr_baro_not_implemented));
+            testDetails =
+                    new SensorTestDetails(
+                            "BarometerReferenceDeviceActivity",
+                            "run()",
+                            new SensorTestStateNotSupportedException(
+                                    getString(R.string.snsr_baro_not_implemented)));
+        } else {
+            try {
+                testDetails = executeTests();
+            } catch (Throwable e) {
+                testDetails = new SensorTestDetails("BarometerReferenceDeviceActivity", "run()", e);
+            }
         }
-    }
-
-    @Override
-    protected void activityCleanUp() {
+        getTestLogger().logTestDetails(testDetails);
+        promptUserToSetResult(testDetails);
         closeGlSurfaceView();
-    }
-
-    @Override
-    public void run() {
-        try {
-            executeTests();
-        } catch (Throwable e) {
-            getTestLogger()
-                    .logTestDetails(
-                            new SensorTestDetails("BarometerReferenceDeviceActivity", "run()", e));
-        }
     }
 
     @SuppressWarnings("unused")
@@ -119,7 +116,7 @@ public class BarometerReferenceDeviceActivity extends SensorCtsVerifierTestActiv
         List<TestSensorEvent> currentEvents = sensorOperation.getCollectedEvents();
         mChatService.write(encodeEvents(currentEvents));
         mChatService.stop();
-        return "NA";
+        return "PASSED";
     }
 
     private byte[] encodeEvents(List<TestSensorEvent> events) {

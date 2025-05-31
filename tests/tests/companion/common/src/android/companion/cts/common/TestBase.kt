@@ -364,12 +364,16 @@ fun assertOnlyPrimaryCompanionDeviceServiceNotified(associationId: Int, appeared
     assertContentEquals(snapshotInvalid, MissingIntentFilterActionCompanionService.connectedDevices)
 }
 
-fun assertDevicePresenceEvent(expected: Int, actual: Int) {
-    assertTrue("Expected event: $expected, but actual: $actual") {
-        waitFor (timeout = 2.seconds, interval = 100.milliseconds ) {
-            actual == expected
-        }
+fun assertDevicePresenceEvent(expected: Int, eventGetter: () -> Int?) {
+    var lastActualValue: Int? = null
+    val conditionMet = waitFor(timeout = 2.seconds, interval = 100.milliseconds) {
+        lastActualValue = eventGetter.invoke()
+        lastActualValue == expected
     }
+    assertTrue (
+        conditionMet,
+        "Expected event: $expected, but actual: $lastActualValue."
+    )
 }
 
 /**

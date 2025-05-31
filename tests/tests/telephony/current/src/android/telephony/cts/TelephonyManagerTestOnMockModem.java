@@ -1061,13 +1061,11 @@ public class TelephonyManagerTestOnMockModem extends MockModemTestBase {
         assertEquals(CARRIER_RESTRICTION_STATUS_RESTRICTED, crr.getCarrierRestrictionStatus());
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_CARRIER_RESTRICTION_RULES_ENHANCEMENT)
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM,
             codeName = "VanillaIceCream")
     @Test
     public void getCarrierRestrictionRules() {
         assumeTrue(isCarrierLockEnabled());
-        assumeTrue(Flags.carrierRestrictionRulesEnhancement());
         // settings the data in MockModem
         android.hardware.radio.sim.CarrierRestrictions carrierRestrictions =
                 new android.hardware.radio.sim.CarrierRestrictions();
@@ -1095,13 +1093,11 @@ public class TelephonyManagerTestOnMockModem extends MockModemTestBase {
                 MULTISIM_POLICY_NONE);
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_CARRIER_RESTRICTION_RULES_ENHANCEMENT)
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM,
             codeName = "VanillaIceCream")
     @Test
     public void getCarrierRestrictionRules_WithEphlmnList() {
         assumeTrue(isCarrierLockEnabled());
-        assumeTrue(Flags.carrierRestrictionRulesEnhancement());
         // settings the data in MockModem
         android.hardware.radio.sim.CarrierRestrictions carrierRestrictions =
                 new android.hardware.radio.sim.CarrierRestrictions();

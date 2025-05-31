@@ -25,12 +25,12 @@ public class MySupervisionService extends SupervisionAppService {
     private boolean enabled = false;
 
     @Override
-    public void onEnabled() {
+    public void onSupervisionEnabled() {
         enabled = true;
     }
 
     @Override
-    public void onDisabled() {
+    public void onSupervisionDisabled() {
         enabled = false;
     }
 

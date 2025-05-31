@@ -49,7 +49,7 @@
   <option name="compatibility:exclude-filter"
       value="CtsContentProviderTestCases android.content.cts.contentprovider.ContentProviderClientTest#testUncanonicalizeTimeout" />
   <option name="compatibility:exclude-filter"
-      value="CtsContentTestCases android.content.cts.ContentResolverSyncTestCase#testCallMultipleAccounts" />
+      value="CtsContentTestCases android.content.cts.ContentResolverSyncTest#testCallMultipleAccounts" />
   <option name="compatibility:exclude-filter"
       value="CtsContentTestCases android.content.cts.ContentQueryMapTest#testSetKeepUpdated" />
   <option name="compatibility:exclude-filter"

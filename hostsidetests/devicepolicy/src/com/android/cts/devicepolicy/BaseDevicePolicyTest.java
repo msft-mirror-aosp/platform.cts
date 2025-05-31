@@ -609,8 +609,12 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
 
     /** Reboots the device and block until the boot complete flag is set. */
     protected void rebootAndWaitUntilReady() throws Exception {
+        final int userId = getDevice().getCurrentUser();
         getDevice().rebootUntilOnline();
         assertTrue("Device failed to boot", getDevice().waitForBootComplete(120_000));
+        // Switch back to the user we came from. This is needed for devices with login screen, as
+        // the login screen may be shown in a different user.
+        getDevice().switchUser(userId);
     }
 
     /** Returns a boolean value of the system property with the specified key. */

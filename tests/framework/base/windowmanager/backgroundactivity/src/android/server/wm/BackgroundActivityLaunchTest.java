@@ -1351,9 +1351,10 @@ public class BackgroundActivityLaunchTest extends BackgroundActivityTestBase {
                 }
             }
             assertWithMessage("Cannot find settings app").that(settingsPkgName).isNotEmpty();
-            assertWithMessage("Unable to start AllowBindAppWidgetActivity")
-                    .that(device.wait(Until.hasObject(By.pkg(settingsPkgName)),
-                            1000 * 10)).isTrue();
+            Boolean hasSettingPkg = device.wait(Until.hasObject(By.pkg(settingsPkgName)),
+                    1000 * 10);
+            assertWithMessage("Unable to start AllowBindAppWidgetActivity " + allTaskStateDumps())
+                    .that(hasSettingPkg).isTrue();
             boolean buttonClicked = false;
             BySelector selector = By.clickable(true);
             List<UiObject2> objects = device.findObjects(selector);

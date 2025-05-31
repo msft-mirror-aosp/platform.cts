@@ -238,9 +238,8 @@ public final class InputMethodStartInputLifecycleTest extends EndToEndImeTestBas
 
             // Not expect the input connection will be started or finished even gaining non-IME
             // focusable window focus.
-            notExpectEvent(stream, withDescription("onFinishInput OR onStartInput",
-                    event -> "onFinishInput".equals(event.getEventName())
-                            || "onStartInput".equals(event.getEventName())), TIMEOUT);
+            notExpectEvent(stream, editorMatcher("onStartInput", marker), NOT_EXPECT_TIMEOUT);
+            notExpectEvent(stream, editorMatcher("onFinishInput", marker), NOT_EXPECT_TIMEOUT);
 
             // Verify the input connection of the EditText is still active and can accept text.
             final InputMethodManager imm = editText.getContext().getSystemService(

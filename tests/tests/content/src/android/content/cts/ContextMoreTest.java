@@ -13,16 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package android.content.cts;
+
+import static com.google.common.truth.Truth.assertThat;
+import static com.google.common.truth.Truth.assertWithMessage;
 
 import android.app.ActivityManager;
 import android.content.Context;
 import android.content.ContextWrapper;
+import android.os.SystemClock;
 import android.platform.test.annotations.AppModeSdkSandbox;
-import android.test.AndroidTestCase;
-import android.util.Log;
 
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.LargeTest;
+import androidx.test.platform.app.InstrumentationRegistry;
+
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.lang.reflect.Field;
 import java.util.Arrays;
@@ -30,18 +38,20 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
-public class ContextMoreTest extends AndroidTestCase {
-    private static final String TAG = "ContextMoreTest";
+@RunWith(AndroidJUnit4.class)
+public final class ContextMoreTest {
+    private static final int SLEEP_DURATION_MS = 10 * 1000;
 
     /**
      * Test for {@link Context#getSystemService)}.
      *
-     * Call it repeatedly from multiple threads, and:
-     * - Make sure getSystemService(ActivityManager) will always return non-null.
-     * - If ContextImpl.mServiceCache is accessible via reflection, clear it once in a while and
-     * make sure getSystemService() still returns non-null.
+     * <p>Call it repeatedly from multiple threads, and: - Make sure
+     * getSystemService(ActivityManager) will always return non-null. - If ContextImpl.mServiceCache
+     * is accessible via reflection, clear it once in a while and make sure getSystemService() still
+     * returns non-null.
      */
     @LargeTest
+    @Test
     public void testGetSystemService_multiThreaded() throws Exception {
         // # of times the tester Runnable has been executed.
         final AtomicInteger totalCount = new AtomicInteger(0);
@@ -52,37 +62,35 @@ public class ContextMoreTest extends AndroidTestCase {
         // Run the threads until this becomes true.
         final AtomicBoolean stop = new AtomicBoolean(false);
 
-        final Context context = getContext();
+        final Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
         final Object[] serviceCache = findServiceCache(context);
         if (serviceCache == null) {
-            Log.w(TAG, "mServiceCache not found.");
+            assertWithMessage("mServiceCache not found.").fail();
         }
 
-        final Runnable tester = () -> {
-            for (;;) {
-                final int pass = totalCount.incrementAndGet();
+        final Runnable tester =
+                () -> {
+                    for (; ; ) {
+                        final int pass = totalCount.incrementAndGet();
 
-                final Object service = context.getSystemService(ActivityManager.class);
-                if (service == null) {
-                    failCount.incrementAndGet(); // Fail!
-                }
+                        final Object service = context.getSystemService(ActivityManager.class);
+                        if (service == null) {
+                            failCount.incrementAndGet(); // Fail!
+                        }
 
-                if (stop.get()) {
-                    return;
-                }
+                        if (stop.get()) {
+                            return;
+                        }
 
-                // Yield the CPU.
-                try {
-                    Thread.sleep(0);
-                } catch (InterruptedException e) {
-                }
+                        // Yield the CPU.
+                        SystemClock.sleep(0);
 
-                // Once in a while, force clear mServiceCache.
-                if ((serviceCache != null) && ((pass % 7) == 0)) {
-                    Arrays.fill(serviceCache, null);
-                }
-            }
-        };
+                        // Once in a while, force clear mServiceCache.
+                        if ((serviceCache != null) && ((pass % 7) == 0)) {
+                            Arrays.fill(serviceCache, null);
+                        }
+                    }
+                };
 
         final int NUM_THREADS = 20;
 
@@ -95,7 +103,7 @@ public class ContextMoreTest extends AndroidTestCase {
             threads[i].start();
         }
 
-        Thread.sleep(10 * 1000);
+        SystemClock.sleep(SLEEP_DURATION_MS);
 
         stop.set(true);
 
@@ -104,24 +112,22 @@ public class ContextMoreTest extends AndroidTestCase {
             threads[i].join();
         }
 
-        assertEquals(0, failCount.get());
-        assertTrue("totalCount must be bigger than " + NUM_THREADS
-                + " but was " + totalCount.get(), totalCount.get() > NUM_THREADS);
+        assertThat(failCount.get()).isEqualTo(0);
+        assertWithMessage(
+                        "totalCount must be bigger than "
+                                + NUM_THREADS
+                                + " but was "
+                                + totalCount.get())
+                .that(totalCount.get())
+                .isGreaterThan(NUM_THREADS);
     }
 
-    /**
-     * Find a field by name using reflection.
-     */
-    private static Object readField(Object instance, String fieldName) {
-        final Field f;
+    /** Find a field by name using reflection. */
+    private static Object readServiceCacheField(Object instance) {
         try {
-            f = instance.getClass().getDeclaredField(fieldName);
-            f.setAccessible(true);
-            final Object ret = f.get(instance);
-            if (ret == null) {
-                return null;
-            }
-            return ret;
+            final Field field = instance.getClass().getDeclaredField("mServiceCache");
+            field.setAccessible(true);
+            return field.get(instance);
         } catch (NoSuchFieldException | IllegalAccessException e) {
             return null;
         }
@@ -136,7 +142,7 @@ public class ContextMoreTest extends AndroidTestCase {
             context = ((ContextWrapper) context).getBaseContext();
         }
         // Try to find the mServiceCache field.
-        final Object serviceCache = readField(context, "mServiceCache");
+        final Object serviceCache = readServiceCacheField(context);
         if (serviceCache instanceof Object[]) {
             return (Object[]) serviceCache;
         }

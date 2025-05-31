@@ -34,6 +34,7 @@ import android.hardware.camera2.cts.helpers.StaticMetadata;
 import android.hardware.camera2.cts.testcases.Camera2SurfaceViewTestCase;
 import android.hardware.camera2.params.OutputConfiguration;
 import android.hardware.camera2.params.SessionConfiguration;
+import android.media.Image;
 import android.media.ImageReader;
 import android.util.Log;
 import android.util.Pair;
@@ -173,6 +174,30 @@ public class SurfaceViewPreviewTest extends Camera2SurfaceViewTestCase {
                 }
                 openDevice(id);
                 surfaceSetTestByCamera(id);
+            } finally {
+                closeDevice();
+            }
+        }
+    }
+
+    /**
+     * Test surface set streaming use cases.
+     *
+     * <p>
+     * This test is the same as testSurfaceSet except that discardFreeBuffers is called
+     * during camera streaming.
+     * </p>
+     */
+    @Test
+    public void testSurfaceSetWithDiscardFreeBuffers() throws Exception {
+        for (String id : getCameraIdsUnderTest()) {
+            try {
+                if (!mAllStaticInfo.get(id).isColorOutputSupported()) {
+                    Log.i(TAG, "Camera " + id + " does not support color outputs, skipping");
+                    continue;
+                }
+                openDevice(id);
+                surfaceSetWithDiscardFreeBuffersTestByCamera(id);
             } finally {
                 closeDevice();
             }
@@ -789,6 +814,61 @@ public class SurfaceViewPreviewTest extends Camera2SurfaceViewTestCase {
         }
 
         stopPreview();
+    }
+
+    private void surfaceSetWithDiscardFreeBuffersTestByCamera(String cameraId) throws Exception {
+        final int SURFACE_GROUP_ID = 2;
+
+        Size maxPreviewSz = mOrderedPreviewSizes.get(0);
+        SimpleImageReaderListener imageListener = new SimpleImageReaderListener();
+        ImageReader previewReader = makeImageReader(maxPreviewSz, ImageFormat.PRIVATE,
+                MAX_READER_IMAGES, imageListener, mHandler);
+        Surface previewSurface = previewReader.getSurface();
+        List<OutputConfiguration> outputConfigs = new ArrayList<OutputConfiguration>();
+        OutputConfiguration previewConfig =
+                new OutputConfiguration(SURFACE_GROUP_ID, previewSurface);
+        outputConfigs.add(previewConfig);
+
+        try {
+            CaptureRequest.Builder requestBuilder =
+                    mCamera.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
+            requestBuilder.addTarget(previewSurface);
+
+            CameraCaptureSession.StateCallback mockSessionListener =
+                    mock(CameraCaptureSession.StateCallback.class);
+            mSession = configureCameraSessionWithConfig(mCamera, outputConfigs,
+                    mockSessionListener, mHandler);
+            CaptureRequest request = requestBuilder.build();
+            CaptureCallback mockCaptureCallback =
+                    mock(CameraCaptureSession.CaptureCallback.class);
+
+            // Capture some images
+            for (int i = 0; i < MAX_READER_IMAGES; i++) {
+                mSession.capture(request, mockCaptureCallback, mHandler);
+            }
+            // Acquire all images. Close half of them and hold onto the rest.
+            List<Image> images = new ArrayList<Image>();
+            for (int i = 0; i < MAX_READER_IMAGES; i++) {
+                Image image = imageListener.getImage(CAPTURE_IMAGE_TIMEOUT_MS);
+                if (i < MAX_READER_IMAGES / 2) {
+                    image.close();
+                } else {
+                    images.add(image);
+                }
+            }
+            // Discard all free buffers before closing the rest of the images
+            previewReader.discardFreeBuffers();
+            for (Image image : images) {
+                image.close();
+            }
+
+            // Capture one more image to make sure no error occurs
+            mSession.capture(request, mockCaptureCallback, mHandler);
+            Image image = imageListener.getImage(CAPTURE_IMAGE_TIMEOUT_MS);
+            image.close();
+        } finally {
+            CameraTestUtils.closeImageReader(previewReader);
+        }
     }
 
     private void surfaceSetTestByCamera(String cameraId) throws Exception {
