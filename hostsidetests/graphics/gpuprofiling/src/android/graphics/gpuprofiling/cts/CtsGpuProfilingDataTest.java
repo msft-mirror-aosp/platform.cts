@@ -90,7 +90,7 @@ public class CtsGpuProfilingDataTest extends BaseHostJUnit4Test {
 
     private static final int TRACE_BUFFER_SIZE_KB = 131072; // 1024 * 128
     private static final Duration TRACE_COUNTER_PERIOD = Duration.ofMillis(5);
-    private static final Duration TRACE_DURATION = Duration.ofSeconds(5);
+    private static final Duration TRACE_DURATION = Duration.ofSeconds(10);
     private static final String TRACE_FILE_PATH = "/data/misc/perfetto-traces/cts-trace";
     private static final int MAX_TRACE_RETRIES = 3;
 

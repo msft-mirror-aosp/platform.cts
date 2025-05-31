@@ -21,7 +21,11 @@ import static android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET;
 import static android.net.NetworkCapabilities.NET_CAPABILITY_VALIDATED;
 import static android.net.NetworkCapabilities.TRANSPORT_CELLULAR;
 
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 import android.annotation.TargetApi;
 import android.app.ActivityManager;
@@ -39,23 +43,31 @@ import android.net.wifi.WifiManager;
 import android.platform.test.annotations.RequiresDevice;
 import android.util.Log;
 
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+
 import com.android.compatibility.common.util.AppStandbyUtils;
 import com.android.compatibility.common.util.BatteryUtils;
 import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.compatibility.common.util.UserHelper;
 
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
 import java.util.Collections;
 import java.util.Map;
 
 /**
  * Schedules jobs with the {@link android.app.job.JobScheduler} that have network connectivity
- * constraints.
- * Requires manipulating the {@link android.net.wifi.WifiManager} to ensure an unmetered network.
- * Similarly, requires that the phone be connected to a wifi hotspot, or else the test will fail.
+ * constraints. Requires manipulating the {@link android.net.wifi.WifiManager} to ensure an
+ * unmetered network. Similarly, requires that the phone be connected to a wifi hotspot, or else the
+ * test will fail.
  */
 @TargetApi(21)
 @RequiresDevice // Emulators don't always have access to wifi/network
+@RunWith(AndroidJUnit4.class)
 public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
     private static final String TAG = "ConnectivityConstraintTest";
 
@@ -77,6 +89,7 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
     private TestAppInterface mTestAppInterface;
 
     @Override
+    @Before
     public void setUp() throws Exception {
         super.setUp();
 
@@ -94,6 +107,7 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
     }
 
     @Override
+    @After
     public void tearDown() throws Exception {
         if (mTestAppInterface != null) {
             mTestAppInterface.cleanup();
@@ -117,6 +131,7 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
      * Schedule a job that requires a WiFi connection, and assert that it executes when the device
      * is connected to WiFi. This will fail if a wifi connection is unavailable.
      */
+    @Test
     public void testUnmeteredConstraintExecutes_withWifi() throws Exception {
         if (!mHasWifi) {
             Log.d(TAG, "Skipping test that requires the device be WiFi enabled.");
@@ -135,9 +150,8 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
                 kTestEnvironment.awaitExecution());
     }
 
-    /**
-     * Schedule a job with a connectivity constraint, and ensure that it executes on WiFi.
-     */
+    /** Schedule a job with a connectivity constraint, and ensure that it executes on WiFi. */
+    @Test
     public void testConnectivityConstraintExecutes_withWifi() throws Exception {
         if (!mHasWifi) {
             Log.d(TAG, "Skipping test that requires the device be WiFi enabled.");
@@ -160,6 +174,7 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
      * Schedule a job with a generic connectivity constraint, and ensure that it executes on WiFi,
      * even with Data Saver on.
      */
+    @Test
     public void testConnectivityConstraintExecutes_withWifi_DataSaverOn() throws Exception {
         if (!mHasWifi) {
             Log.d(TAG, "Skipping test that requires the device be WiFi enabled.");
@@ -180,9 +195,10 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
     }
 
     /**
-     * Schedule a job with a generic connectivity constraint, and ensure that it executes
-     * on a cellular data connection.
+     * Schedule a job with a generic connectivity constraint, and ensure that it executes on a
+     * cellular data connection.
      */
+    @Test
     public void testConnectivityConstraintExecutes_withMobile() throws Exception {
         if (!checkDeviceSupportsMobileData()) {
             return;
@@ -201,9 +217,10 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
     }
 
     /**
-     * Schedule a job with a generic connectivity constraint, and ensure that it executes
-     * on a metered wifi connection.
+     * Schedule a job with a generic connectivity constraint, and ensure that it executes on a
+     * metered wifi connection.
      */
+    @Test
     public void testConnectivityConstraintExecutes_withMeteredWifi() throws Exception {
         if (hasEthernetConnection()) {
             Log.d(TAG, "Skipping test since ethernet is connected.");
@@ -228,6 +245,7 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
      * Schedule a job with a generic connectivity constraint, and ensure that it isn't stopped when
      * the device transitions to WiFi, but is informed of the network change.
      */
+    @Test
     public void testConnectivityConstraintExecutes_transitionNetworks() throws Exception {
         if (!mHasWifi) {
             Log.d(TAG, "Skipping test that requires the device be WiFi enabled.");
@@ -264,9 +282,10 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
     }
 
     /**
-     * Schedule a job with a metered connectivity constraint, and ensure that it executes
-     * on a mobile data connection.
+     * Schedule a job with a metered connectivity constraint, and ensure that it executes on a
+     * mobile data connection.
      */
+    @Test
     public void testConnectivityConstraintExecutes_metered_mobile() throws Exception {
         if (!checkDeviceSupportsMobileData()) {
             return;
@@ -284,9 +303,10 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
     }
 
     /**
-     * Schedule a job with a metered connectivity constraint, and ensure that it executes
-     * on a mobile data connection.
+     * Schedule a job with a metered connectivity constraint, and ensure that it executes on a
+     * mobile data connection.
      */
+    @Test
     public void testConnectivityConstraintExecutes_metered_Wifi() throws Exception {
         if (hasEthernetConnection()) {
             Log.d(TAG, "Skipping test since ethernet is connected.");
@@ -309,10 +329,11 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
     }
 
     /**
-     * Schedule a job with a cellular connectivity constraint, and ensure that it executes
-     * on a mobile data connection and is not stopped when Data Saver is turned on because the app
-     * is in the foreground.
+     * Schedule a job with a cellular connectivity constraint, and ensure that it executes on a
+     * mobile data connection and is not stopped when Data Saver is turned on because the app is in
+     * the foreground.
      */
+    @Test
     public void testCellularConstraintExecutedAndStopped_Foreground() throws Exception {
         if (hasEthernetConnection()) {
             Log.d(TAG, "Skipping test since ethernet is connected.");
@@ -348,6 +369,7 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
      * Schedule an expedited job that requires a network connection, and verify that it runs even
      * when if an app is idle.
      */
+    @Test
     public void testExpeditedJobExecutes_IdleApp() throws Exception {
         if (!AppStandbyUtils.isAppStandbyEnabled()) {
             Log.d(TAG, "App standby not enabled");
@@ -382,6 +404,7 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
      * Schedule an expedited job that requires a network connection, and verify that it runs even
      * when Battery Saver is on.
      */
+    @Test
     public void testExpeditedJobExecutes_BatterySaverOn() throws Exception {
         if (!BatteryUtils.isBatterySaverSupported()) {
             Log.d(TAG, "Skipping test that requires battery saver support");
@@ -416,9 +439,10 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
     }
 
     /**
-     * Schedule an expedited job that requires a network connection, and verify that it runs
-     * even when Doze is on.
+     * Schedule an expedited job that requires a network connection, and verify that it runs even
+     * when Doze is on.
      */
+    @Test
     public void testExpeditedJobExecutes_DozeOn() throws Exception {
         if (!isDeviceIdleFeatureEnabled()) {
             // Test requires device idle feature
@@ -442,6 +466,7 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
      * Schedule an expedited job that requires a network connection, and verify that it runs even
      * when Data Saver is on and the device is not connected to WiFi.
      */
+    @Test
     public void testFgExpeditedJobBypassesDataSaver() throws Exception {
         if (hasEthernetConnection()) {
             Log.d(TAG, "Skipping test since ethernet is connected.");
@@ -472,6 +497,7 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
      * Schedule an expedited job that requires a network connection, and verify that it runs even
      * when multiple firewalls are active.
      */
+    @Test
     public void testExpeditedJobBypassesSimultaneousFirewalls_noDataSaver() throws Exception {
         if (!BatteryUtils.isBatterySaverSupported()) {
             Log.d(TAG, "Skipping test that requires battery saver support");
@@ -512,10 +538,11 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
      * Schedule a job that requires a network connection, and verify that it runs even after the
      * scheduling app is killed.
      *
-     * Note: This is a basic test similar to testConnectivityConstraintExecutes_withWifi, except
+     * <p>Note: This is a basic test similar to testConnectivityConstraintExecutes_withWifi, except
      * that it uses a helper app so the scheduling app's lifecycle and any resulting restrictions
      * can be managed freely by the system.
      */
+    @Test
     public void testJobExecutes_afterAppIsKilled() throws Exception {
         if (hasEthernetConnection()) {
             Log.d(TAG, "Skipping test since ethernet is connected.");
@@ -545,6 +572,7 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
      * Schedule a user-initiated job that requires a network connection, and verify that it runs
      * even when Battery Saver is on.
      */
+    @Test
     public void testUserInitiatedJobExecutes_BatterySaverOn() throws Exception {
         if (!BatteryUtils.isBatterySaverSupported()) {
             Log.d(TAG, "Skipping test that requires battery saver support");
@@ -571,6 +599,7 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
      * Schedule a user-initiated job that requires a network connection, and verify that it runs
      * even when Doze is on.
      */
+    @Test
     public void testUserInitiatedJobExecutes_DozeOn() throws Exception {
         if (!isDeviceIdleFeatureEnabled()) {
             // Test requires device idle feature
@@ -606,9 +635,10 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
     // --------------------------------------------------------------------------------------------
 
     /**
-     * Schedule a job with a cellular connectivity constraint, and ensure that it executes
-     * on a mobile data connection and is stopped when Data Saver is turned on.
+     * Schedule a job with a cellular connectivity constraint, and ensure that it executes on a
+     * mobile data connection and is stopped when Data Saver is turned on.
      */
+    @Test
     public void testCellularConstraintExecutedAndStopped() throws Exception {
         if (!checkDeviceSupportsMobileData()) {
             return;
@@ -630,6 +660,7 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
                 mTestAppInterface.awaitJobStop(DEFAULT_TIMEOUT_MILLIS));
     }
 
+    @Test
     public void testJobParametersNetwork() throws Exception {
         mNetworkingHelper.setAllNetworksEnabled(true);
 
@@ -693,6 +724,7 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
         assertNull(params.getNetwork());
     }
 
+    @Test
     public void testJobUidState() throws Exception {
         // Device that support visible background users might have different display groups
         // for each display.
@@ -733,10 +765,10 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
 
     /**
      * Schedule a job that requires a WiFi connection, and assert that it fails when the device is
-     * connected to a cellular provider.
-     * This test assumes that if the device supports a mobile data connection, then this connection
-     * will be available.
+     * connected to a cellular provider. This test assumes that if the device supports a mobile data
+     * connection, then this connection will be available.
      */
+    @Test
     public void testUnmeteredConstraintFails_withMobile() throws Exception {
         if (!checkDeviceSupportsMobileData()) {
             return;
@@ -754,9 +786,10 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
     }
 
     /**
-     * Schedule a job that requires a metered connection, and verify that it does not run when
-     * the device is not connected to WiFi and Data Saver is on.
+     * Schedule a job that requires a metered connection, and verify that it does not run when the
+     * device is not connected to WiFi and Data Saver is on.
      */
+    @Test
     public void testMeteredConstraintFails_withMobile_DataSaverOn() throws Exception {
         if (!checkDeviceSupportsMobileData()) {
             Log.d(TAG, "Skipping test that requires the device be mobile data enabled.");
@@ -775,9 +808,10 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
     }
 
     /**
-     * Schedule a job that requires a metered connection, and verify that it does not run when
-     * the device is not connected to WiFi and Data Saver is on.
+     * Schedule a job that requires a metered connection, and verify that it does not run when the
+     * device is not connected to WiFi and Data Saver is on.
      */
+    @Test
     public void testEJMeteredConstraintFails_withMobile_DataSaverOn() throws Exception {
         if (!checkDeviceSupportsMobileData()) {
             Log.d(TAG, "Skipping test that requires the device be mobile data enabled.");
@@ -796,11 +830,11 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
     }
 
     /**
-     * Schedule a job that requires a metered connection, and verify that it does not run when
-     * the device is connected to an unmetered WiFi provider.
-     * This test assumes that if the device supports a mobile data connection, then this connection
-     * will be available.
+     * Schedule a job that requires a metered connection, and verify that it does not run when the
+     * device is connected to an unmetered WiFi provider. This test assumes that if the device
+     * supports a mobile data connection, then this connection will be available.
      */
+    @Test
     public void testMeteredConstraintFails_withWiFi() throws Exception {
         if (!mHasWifi) {
             Log.d(TAG, "Skipping test that requires the device be WiFi enabled.");
@@ -848,9 +882,10 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
     }
 
     /**
-     * Schedule a job that requires a cellular connection, and verify that it does not run when
-     * the device is connected to a WiFi provider.
+     * Schedule a job that requires a cellular connection, and verify that it does not run when the
+     * device is connected to a WiFi provider.
      */
+    @Test
     public void testCellularConstraintFails_withWiFi() throws Exception {
         if (!mHasWifi) {
             Log.d(TAG, "Skipping test that requires the device be WiFi enabled.");
@@ -875,6 +910,7 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
      * Schedule an expedited job that requires a network connection, and verify that it doesn't run
      * when Data Saver is on and the device is not connected to WiFi.
      */
+    @Test
     public void testBgExpeditedJobDoesNotBypassDataSaver() throws Exception {
         if (hasEthernetConnection()) {
             Log.d(TAG, "Skipping test since ethernet is connected.");
@@ -903,6 +939,7 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
      * Schedule an expedited job that requires a network connection, and verify that it runs even
      * when multiple firewalls are active.
      */
+    @Test
     public void testExpeditedJobDoesNotBypassSimultaneousFirewalls_withDataSaver()
             throws Exception {
         if (!BatteryUtils.isBatterySaverSupported()) {
@@ -942,6 +979,7 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
      * Schedule a user-initiated job that requires a network connection, and verify that it runs
      * even when Data Saver is on and the device is not connected to WiFi.
      */
+    @Test
     public void testBgUiJobBypassesDataSaver() throws Exception {
         // TODO(b/380297485): Remove this check once NotificationListeners support
         // visible background users.
@@ -987,9 +1025,10 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
     }
 
     /**
-     * Make sure that regular and expedited jobs don't run during data saver
-     * even if a user-initiated job is running at the same time.
+     * Make sure that regular and expedited jobs don't run during data saver even if a
+     * user-initiated job is running at the same time.
      */
+    @Test
     public void testBgNonUiJobDoesNotBypassDataSaverWhenUiJobRunning() throws Exception {
         // TODO(b/380297485): Remove this check once NotificationListeners support
         // visible background users.

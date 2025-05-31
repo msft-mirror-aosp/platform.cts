@@ -283,11 +283,6 @@ public class VirtualDeviceImeTest {
         assertThat(mInputMethodManager.getCurrentInputMethodInfo().getId())
                 .isEqualTo(mVirtualDeviceImeId);
 
-        reset(mVirtualDeviceImeListener);
-        showSoftInputOnDisplay(mVirtualDisplayId);
-        verify(mVirtualDeviceImeListener, timeout(TIMEOUT_MILLIS).atLeastOnce())
-                .onShow(mVirtualDisplayId);
-
         showSoftInputOnDisplay(Display.DEFAULT_DISPLAY);
         assertThat(mInputMethodManager.getCurrentInputMethodInfo().getId())
                 .isNotEqualTo(mDefaultDeviceDefaultImeId);

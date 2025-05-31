@@ -21,7 +21,12 @@ import static android.jobscheduler.cts.TestAppInterface.TEST_APP_PACKAGE;
 
 import static com.android.compatibility.common.util.TestUtils.waitUntil;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import android.app.Notification;
 import android.app.NotificationChannel;
@@ -37,19 +42,26 @@ import android.service.notification.StatusBarNotification;
 import android.util.Log;
 
 import androidx.test.InstrumentationRegistry;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.LargeTest;
 
 import com.android.compatibility.common.util.AnrMonitor;
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.compatibility.common.util.UserHelper;
 
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
 import java.util.Collections;
 import java.util.Map;
 
 /**
- * Tests related to attaching notifications to jobs via
- * {@link JobService#setNotification(JobParameters, int, Notification, int)}
+ * Tests related to attaching notifications to jobs via {@link
+ * JobService#setNotification(JobParameters, int, Notification, int)}
  */
+@RunWith(AndroidJUnit4.class)
 public class NotificationTest extends BaseJobSchedulerTest {
     private static final String TAG = NotificationTest.class.getSimpleName();
     private static final int JOB_ID = NotificationTest.class.hashCode();
@@ -62,6 +74,7 @@ public class NotificationTest extends BaseJobSchedulerTest {
     private UserHelper mUserHelper;
 
     @Override
+    @Before
     public void setUp() throws Exception {
         super.setUp();
         mNotificationManager = getContext().getSystemService(NotificationManager.class);
@@ -74,6 +87,7 @@ public class NotificationTest extends BaseJobSchedulerTest {
     }
 
     @Override
+    @After
     public void tearDown() throws Exception {
         mJobScheduler.cancel(JOB_ID);
         mNotificationManager.cancelAll();
@@ -83,6 +97,7 @@ public class NotificationTest extends BaseJobSchedulerTest {
         super.tearDown();
     }
 
+    @Test
     public void testNotificationJobEndDetach() throws Exception {
         mNotificationManager.cancelAll();
         final int notificationId = 123;
@@ -120,6 +135,7 @@ public class NotificationTest extends BaseJobSchedulerTest {
         assertEquals(notificationId, activeNotifications[0].getId());
     }
 
+    @Test
     public void testNotificationJobEndRemove() throws Exception {
         mNotificationManager.cancelAll();
         final int notificationId = 123;
@@ -157,6 +173,7 @@ public class NotificationTest extends BaseJobSchedulerTest {
                 });
     }
 
+    @Test
     public void testNotificationRemovedOnForceStop() throws Exception {
         // TODO(b/380297485): Remove this check once NotificationListeners support
         // visible background users.
@@ -194,6 +211,7 @@ public class NotificationTest extends BaseJobSchedulerTest {
         }
     }
 
+    @Test
     public void testNotificationRemovedOnPackageRestriction() throws Exception {
         // TODO(b/380297485): Remove this check once NotificationListeners support
         // visible background users.
@@ -250,6 +268,7 @@ public class NotificationTest extends BaseJobSchedulerTest {
         }
     }
 
+    @Test
     public void testNotificationRemovedOnTaskManagerStop() throws Exception {
         // TODO(b/380297485): Remove this check once NotificationListeners support
         // visible background users.
@@ -290,9 +309,10 @@ public class NotificationTest extends BaseJobSchedulerTest {
     }
 
     /**
-     * Test that an ANR happens if the app is required to show a notification
-     * but doesn't provide one.
+     * Test that an ANR happens if the app is required to show a notification but doesn't provide
+     * one.
      */
+    @Test
     public void testNotification_userInitiated_anrWhenNotProvided() throws Exception {
         // TODO(b/380297485): Remove this check once NotificationListeners support
         // visible background users.
@@ -329,6 +349,7 @@ public class NotificationTest extends BaseJobSchedulerTest {
     /**
      * Test that no ANR happens if the app is required to show a notification and it provides one.
      */
+    @Test
     @LargeTest
     public void testNotification_userInitiated_noAnrWhenProvided() throws Exception {
         // TODO(b/380297485): Remove this check once NotificationListeners support
@@ -364,9 +385,10 @@ public class NotificationTest extends BaseJobSchedulerTest {
     }
 
     /**
-     * Test that no ANR happens if the app is not required to show a notification
-     * and it doesn't provide one.
+     * Test that no ANR happens if the app is not required to show a notification and it doesn't
+     * provide one.
      */
+    @Test
     @LargeTest
     public void testNotification_regular_noAnrWhenNotProvided() throws Exception {
         // TODO(b/380297485): Remove this check once NotificationListeners support
@@ -396,6 +418,7 @@ public class NotificationTest extends BaseJobSchedulerTest {
         }
     }
 
+    @Test
     public void testUserInitiatedJob_hasUijNotificationFlag() throws Exception {
         // TODO(b/380297485): Remove this check once NotificationListeners support
         // visible background users.
@@ -427,6 +450,7 @@ public class NotificationTest extends BaseJobSchedulerTest {
         }
     }
 
+    @Test
     public void testNonUserInitiatedJob_doesNotHaveUijNotificationFlag() throws Exception {
         // TODO(b/380297485): Remove this check once NotificationListeners support
         // visible background users.
@@ -458,6 +482,7 @@ public class NotificationTest extends BaseJobSchedulerTest {
      * Test that a notification associated with a user-initiated job cannot be cancelled and that
      * its notification channel cannot be deleted.
      */
+    @Test
     public void testUserInitiatedJobNotificationBehavior() throws Exception {
         mNotificationManager.cancelAll();
         mNetworkingHelper.setAllNetworksEnabled(true);
@@ -513,6 +538,7 @@ public class NotificationTest extends BaseJobSchedulerTest {
      * Test that a notification associated with a non user-initiated job can be cancelled and that
      * its notification channel can be deleted.
      */
+    @Test
     public void testNonUserInitiatedJobNotificationBehavior() throws Exception {
         mNotificationManager.cancelAll();
         mNetworkingHelper.setAllNetworksEnabled(true);

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package android.content.cts;
+package android.content.cts.syncmanager;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -59,16 +59,15 @@ public final class SyncStorageEngineTest {
         Looper.prepare();
         // Authority id is non integer. It should be discarded by SyncStorageEngine.
         byte[] accountsFileData =
-                (
-                        """
-                        <?xml version='1.0' encoding='utf-8' standalone='yes' ?>
-                        <accounts>
-                        <listenForTickles user="0" enabled="false" />\
-                        <listenForTickles user="1" enabled="true" />\
-                        <authority id="nonint" user="0" account="account1" type="type1"\
-                         authority="auth1" />
-                        </accounts>
-                        """)
+                ("""
+                <?xml version='1.0' encoding='utf-8' standalone='yes' ?>
+                <accounts>
+                <listenForTickles user="0" enabled="false" />\
+                <listenForTickles user="1" enabled="true" />\
+                <authority id="nonint" user="0" account="account1" type="type1"\
+                 authority="auth1" />
+                </accounts>
+                """)
                         .getBytes();
 
         File syncDir = getSyncDir();

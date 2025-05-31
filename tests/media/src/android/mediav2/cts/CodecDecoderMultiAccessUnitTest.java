@@ -276,14 +276,7 @@ public class CodecDecoderMultiAccessUnitTest extends CodecDecoderMultiAccessUnit
         MediaFormat format = setUpSource(mTestFile);
         final long pts = 250000;
         mExtractor.release();
-        mCsdBuffers.clear();
-        for (int i = 0; ; i++) {
-            String csdKey = "csd-" + i;
-            if (format.containsKey(csdKey)) {
-                mCsdBuffers.add(format.getByteBuffer(csdKey));
-            } else break;
-        }
-
+        preserveCSDBuffers(format);
         OutputManager ref = null, test;
         if (isMediaTypeOutputUnAffectedBySeek(mMediaType)) {
             CodecDecoderTestBase cdtb = new CodecDecoderTestBase(mCodecName, mMediaType, null,

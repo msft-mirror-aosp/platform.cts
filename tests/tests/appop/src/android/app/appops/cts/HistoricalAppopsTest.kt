@@ -26,6 +26,8 @@ import android.os.SystemClock
 import android.permission.flags.Flags
 import android.platform.test.annotations.RequiresFlagsDisabled
 import android.platform.test.annotations.RequiresFlagsEnabled
+import android.platform.test.flag.junit.CheckFlagsRule
+import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import androidx.test.InstrumentationRegistry
 import androidx.test.rule.ActivityTestRule
 import androidx.test.runner.AndroidJUnit4
@@ -37,12 +39,12 @@ import java.util.concurrent.locks.ReentrantLock
 import java.util.function.Consumer
 import org.junit.After
 import org.junit.Before
-import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
+@RequiresFlagsDisabled(Flags.FLAG_ENABLE_ALL_SQLITE_APPOPS_ACCESSES)
 class HistoricalAppopsTest {
     private val uid = Process.myUid()
     private lateinit var appOpsManager: AppOpsManager
@@ -51,6 +53,9 @@ class HistoricalAppopsTest {
     // Start an activity to make sure this app counts as being in the foreground
     @Rule @JvmField
     var activityRule = ActivityTestRule(UidStateForceActivity::class.java)
+
+    @get:Rule
+    val checkFlagsRule: CheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
 
     @Before
     fun wakeScreenUp() {
@@ -316,7 +321,6 @@ class HistoricalAppopsTest {
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_NOTE_OP_BATCHING_ENABLED)
-    @RequiresFlagsDisabled(Flags.FLAG_RATE_LIMIT_BATCHED_NOTE_OP_ASYNC_CALLBACKS_ENABLED)
     @Test
     fun testBatchedNoteOpWithAccessDenied() {
         setHistoryParameters(
@@ -337,6 +341,8 @@ class HistoricalAppopsTest {
                 null
             )
         }
+        // Make sure the batched call finishes to avoid test flakiness
+        Thread.sleep(2000)
 
         eventually {
             val allOps = getHistoricalOps(
@@ -357,9 +363,7 @@ class HistoricalAppopsTest {
         }
     }
 
-    @Ignore("b/419626572")
     @RequiresFlagsEnabled(Flags.FLAG_NOTE_OP_BATCHING_ENABLED)
-    @RequiresFlagsDisabled(Flags.FLAG_RATE_LIMIT_BATCHED_NOTE_OP_ASYNC_CALLBACKS_ENABLED)
     @Test
     fun testBatchedNoteOpWithAccessAllowed() {
         setHistoryParameters(
@@ -380,6 +384,8 @@ class HistoricalAppopsTest {
                 null
             )
         }
+        // Make sure the batched call finishes to avoid test flakiness
+        Thread.sleep(2000)
 
         eventually {
             val allOps = getHistoricalOps(

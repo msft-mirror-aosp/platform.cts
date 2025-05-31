@@ -20,14 +20,19 @@ import static com.google.common.truth.Truth.assertThat;
 
 import android.bluetooth.BluetoothLeAudioCodecConfig;
 import android.os.Parcel;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.bluetooth.flags.Flags;
 import com.android.compatibility.common.util.CddTest;
 
 import org.junit.Assume;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -79,6 +84,9 @@ public class BluetoothLeAudioCodecTest {
                 BluetoothLeAudioCodecConfig.FRAME_DURATION_10000
             };
 
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
     @Before
     public void setUp() {
         Assume.assumeTrue(
@@ -97,6 +105,43 @@ public class BluetoothLeAudioCodecTest {
 
             if (codecType == BluetoothLeAudioCodecConfig.SOURCE_CODEC_TYPE_LC3) {
                 assertThat(leAudioCodecConfig.getCodecName()).isEqualTo("LC3");
+            }
+            if (codecType == BluetoothLeAudioCodecConfig.SOURCE_CODEC_TYPE_INVALID) {
+                assertThat(leAudioCodecConfig.getCodecName()).isEqualTo("INVALID CODEC");
+            }
+
+            assertThat(leAudioCodecConfig.getCodecType()).isEqualTo(codecType);
+        }
+    }
+
+    @RequiresFlagsEnabled({
+        Flags.FLAG_LEAUDIO_ADD_OPUS_CODEC_TYPE,
+        Flags.FLAG_LEAUDIO_ADD_OPUS_HI_RES_CODEC_TYPE_API
+    })
+    @CddTest(requirements = {"7.4.3/C-2-1"})
+    @Test
+    public void getExtendedCodecNameAndType() {
+        final int[] mExtendedCodecTypeArray =
+                new int[] {
+                    BluetoothLeAudioCodecConfig.SOURCE_CODEC_TYPE_LC3,
+                    BluetoothLeAudioCodecConfig.SOURCE_CODEC_TYPE_OPUS,
+                    BluetoothLeAudioCodecConfig.SOURCE_CODEC_TYPE_OPUS_HI_RES,
+                    BluetoothLeAudioCodecConfig.SOURCE_CODEC_TYPE_INVALID,
+                };
+        for (int codecIdx = 0; codecIdx < mExtendedCodecTypeArray.length; codecIdx++) {
+            int codecType = mExtendedCodecTypeArray[codecIdx];
+
+            BluetoothLeAudioCodecConfig leAudioCodecConfig =
+                    new BluetoothLeAudioCodecConfig.Builder().setCodecType(codecType).build();
+
+            if (codecType == BluetoothLeAudioCodecConfig.SOURCE_CODEC_TYPE_LC3) {
+                assertThat(leAudioCodecConfig.getCodecName()).isEqualTo("LC3");
+            }
+            if (codecType == BluetoothLeAudioCodecConfig.SOURCE_CODEC_TYPE_OPUS) {
+                assertThat(leAudioCodecConfig.getCodecName()).isEqualTo("Opus");
+            }
+            if (codecType == BluetoothLeAudioCodecConfig.SOURCE_CODEC_TYPE_OPUS_HI_RES) {
+                assertThat(leAudioCodecConfig.getCodecName()).isEqualTo("Opus Hi-Res");
             }
             if (codecType == BluetoothLeAudioCodecConfig.SOURCE_CODEC_TYPE_INVALID) {
                 assertThat(leAudioCodecConfig.getCodecName()).isEqualTo("INVALID CODEC");

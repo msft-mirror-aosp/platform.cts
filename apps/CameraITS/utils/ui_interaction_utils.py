@@ -514,7 +514,7 @@ def switch_default_camera(dut, facing, log_path):
       r'toggle_button|front_back_switcher|switch_camera_button|camera_switch_button)'
     )
   non_switch_pattern = (r'(flash|panorama|video|photo|portrait|'
-                        r'beauty|night|more)')
+                        r'beauty|night|more|quick_switcher)')
   default_ui_dump = dut.ui.dump()
   logging.debug('Default camera UI dump: %s', default_ui_dump)
   root = et.fromstring(default_ui_dump)

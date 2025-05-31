@@ -18,6 +18,11 @@ package android.jobscheduler.cts;
 
 import static android.app.job.Flags.FLAG_HANDLE_ABANDONED_JOBS;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+
 import android.app.job.JobInfo;
 import android.app.job.JobParameters;
 import android.app.job.JobScheduler;
@@ -29,19 +34,25 @@ import android.os.UserHandle;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 
 import androidx.test.InstrumentationRegistry;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import com.android.compatibility.common.util.BatteryUtils;
 import com.android.compatibility.common.util.SystemUtil;
 
-/**
- * Tests related to JobParameters objects.
- */
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
+/** Tests related to JobParameters objects. */
+@RunWith(AndroidJUnit4.class)
 public class JobParametersTest extends BaseJobSchedulerTest {
     private static final int JOB_ID = JobParametersTest.class.hashCode();
 
     private NetworkingHelper mNetworkingHelper;
 
     @Override
+    @Before
     public void setUp() throws Exception {
         super.setUp();
         mNetworkingHelper =
@@ -49,11 +60,13 @@ public class JobParametersTest extends BaseJobSchedulerTest {
     }
 
     @Override
+    @After
     public void tearDown() throws Exception {
         mNetworkingHelper.tearDown();
         super.tearDown();
     }
 
+    @Test
     public void testClipData() throws Exception {
         final ClipData clipData = ClipData.newPlainText("test", "testText");
         final int grantFlags = Intent.FLAG_GRANT_READ_URI_PERMISSION;
@@ -72,6 +85,7 @@ public class JobParametersTest extends BaseJobSchedulerTest {
         assertEquals(grantFlags, params.getClipGrantFlags());
     }
 
+    @Test
     public void testExtras() throws Exception {
         final PersistableBundle pb = new PersistableBundle();
         pb.putInt("random_key", 42);
@@ -91,6 +105,7 @@ public class JobParametersTest extends BaseJobSchedulerTest {
         assertEquals(42, extras.getInt("random_key"));
     }
 
+    @Test
     public void testExpedited() throws Exception {
         JobInfo ji = new JobInfo.Builder(JOB_ID, kJobServiceComponent)
                 .setExpedited(true)
@@ -117,6 +132,7 @@ public class JobParametersTest extends BaseJobSchedulerTest {
         assertFalse(params.isExpeditedJob());
     }
 
+    @Test
     public void testUserInitiated() throws Exception {
         mNetworkingHelper.setAllNetworksEnabled(true);
         startAndKeepTestActivity();
@@ -146,6 +162,7 @@ public class JobParametersTest extends BaseJobSchedulerTest {
         assertFalse(params.isUserInitiatedJob());
     }
 
+    @Test
     public void testJobId() throws Exception {
         JobInfo ji = new JobInfo.Builder(JOB_ID, kJobServiceComponent)
                 .build();
@@ -159,6 +176,7 @@ public class JobParametersTest extends BaseJobSchedulerTest {
         assertEquals(JOB_ID, params.getJobId());
     }
 
+    @Test
     public void testNamespaceJobParameters() throws Exception {
         JobScheduler jsA = mJobScheduler.forNamespace("A");
         JobScheduler jsB = mJobScheduler.forNamespace("B");
@@ -191,6 +209,7 @@ public class JobParametersTest extends BaseJobSchedulerTest {
 
     // JobParameters.getNetwork() tested in ConnectivityConstraintTest.
 
+    @Test
     public void testStopReason() throws Exception {
         verifyStopReason(new JobInfo.Builder(JOB_ID, kJobServiceComponent).build(),
                 JobParameters.STOP_REASON_TIMEOUT,
@@ -222,6 +241,7 @@ public class JobParametersTest extends BaseJobSchedulerTest {
     }
 
     @RequiresFlagsEnabled(FLAG_HANDLE_ABANDONED_JOBS)
+    @Test
     public void testStopReasonAbandonedJob() throws Exception {
         verifyStopReason(
                 new JobInfo.Builder(JOB_ID, kJobServiceComponent).build(),
@@ -253,6 +273,7 @@ public class JobParametersTest extends BaseJobSchedulerTest {
         assertEquals(stopReason, params.getStopReason());
     }
 
+    @Test
     public void testTransientExtras() throws Exception {
         final Bundle b = new Bundle();
         b.putBoolean("random_bool", true);

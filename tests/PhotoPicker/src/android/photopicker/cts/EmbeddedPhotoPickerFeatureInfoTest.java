@@ -127,47 +127,58 @@ public class EmbeddedPhotoPickerFeatureInfoTest {
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_PICKER_HIGHLIGHT_SEARCH_RESULTS_APIS)
-    public void testSetHighlightMediaQueryForValidQuery() {
+    public void testSetHighlightSearchMediaQueryForValidQuery() {
         // Suppress HSR tests for wearables since the APIs aren't supported in wear devices
         Assume.assumeTrue(isHardwareSupported());
         final String highlightQuery = "android";
         final EmbeddedPhotoPickerFeatureInfo info =
                 new EmbeddedPhotoPickerFeatureInfo.Builder()
-                        .setHighlightMediaTextQuery(highlightQuery)
+                        .setHighlightSearchMediaTextQuery(highlightQuery)
                         .build();
 
         assertWithMessage("Expected highlight media query should be equal to input query")
-                .that(info.getHighlightMediaTextQuery())
+                .that(info.getHighlightSearchMediaTextQuery())
                 .isEqualTo(highlightQuery);
     }
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_PICKER_HIGHLIGHT_SEARCH_RESULTS_APIS)
-    public void testSetHighlightMediaTextQueryForAlbumInputQuery() {
+    public void testSetHighlightAlbumId() {
         // Suppress HSR tests for wearables since the APIs aren't supported in wear devices
         Assume.assumeTrue(isHardwareSupported());
         final EmbeddedPhotoPickerFeatureInfo info =
                 new EmbeddedPhotoPickerFeatureInfo.Builder()
-                        .setHighlightMediaTextQuery(
-                                MediaStore.PICK_IMAGES_HIGHLIGHT_ALBUM_FAVORITES)
+                        .setHighlightAlbumId(MediaStore.PICK_IMAGES_HIGHLIGHT_ALBUM_FAVORITES)
                         .build();
 
         assertWithMessage("Expected highlight media query should be equal to input query")
-                .that(info.getHighlightMediaTextQuery())
+                .that(info.getHighlightAlbumId())
                 .isEqualTo(MediaStore.PICK_IMAGES_HIGHLIGHT_ALBUM_FAVORITES);
     }
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_PICKER_HIGHLIGHT_SEARCH_RESULTS_APIS)
-    public void testSetHighlightMediaTextQueryForNullQuery() {
+    public void testSetHighlightSearchMediaTextQueryForNullQuery() {
         // Suppress HSR tests for wearables since the APIs aren't supported in wear devices
         Assume.assumeTrue(isHardwareSupported());
         Assert.assertThrows(
                 IllegalArgumentException.class,
                 () -> {
                     new EmbeddedPhotoPickerFeatureInfo.Builder()
-                            .setHighlightMediaTextQuery(null)
+                            .setHighlightSearchMediaTextQuery(null)
                             .build();
+                });
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_PICKER_HIGHLIGHT_SEARCH_RESULTS_APIS)
+    public void testSetHighlightAlbumIdForNullQuery() {
+        // Suppress HSR tests for wearables since the APIs aren't supported in wear devices
+        Assume.assumeTrue(isHardwareSupported());
+        Assert.assertThrows(
+                IllegalArgumentException.class,
+                () -> {
+                    new EmbeddedPhotoPickerFeatureInfo.Builder().setHighlightAlbumId(null).build();
                 });
     }
 

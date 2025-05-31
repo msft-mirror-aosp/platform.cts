@@ -90,6 +90,7 @@ android_test {
         ":SharedUidTestApp1",
         ":SharedUidTestApp2",
         ":AppThatExploitsAttributionTags",
+        ":AppForHistoricalRegistryTest",
     ],
     per_testcase_directory: true,
 }

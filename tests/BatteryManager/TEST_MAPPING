@@ -1,12 +1,7 @@
 {
   "postsubmit": [
     {
-      "name": "CtsBatteryManagerTestCases",
-      "options": [
-        {
-          "include-filter": "com.android.cts.batterymanager.BatteryChangedBroadcastTest"
-        }
-      ]
+      "name": "CtsBatteryManagerTestCases_postsubmit"
     }
   ]
 }

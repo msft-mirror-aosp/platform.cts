@@ -441,13 +441,7 @@ public class CodecDecoderTest extends CodecDecoderTestBase {
     public void testFlush() throws IOException, InterruptedException {
         MediaFormat format = setUpSource(mTestFile);
         mExtractor.release();
-        mCsdBuffers.clear();
-        for (int i = 0; ; i++) {
-            String csdKey = "csd-" + i;
-            if (format.containsKey(csdKey)) {
-                mCsdBuffers.add(format.getByteBuffer(csdKey));
-            } else break;
-        }
+        preserveCSDBuffers(format);
         final long pts = 500000;
         final int mode = MediaExtractor.SEEK_TO_CLOSEST_SYNC;
         boolean[] boolStates = {true, false};

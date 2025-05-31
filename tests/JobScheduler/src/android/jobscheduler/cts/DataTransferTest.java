@@ -16,18 +16,30 @@
 
 package android.jobscheduler.cts;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import android.app.job.JobInfo;
 import android.os.UserHandle;
 
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+
 import com.android.compatibility.common.util.SystemUtil;
 
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
 /** Tests related to data transfer jobs. */
+@RunWith(AndroidJUnit4.class)
 public class DataTransferTest extends BaseJobSchedulerTest {
     private static final int JOB_ID = DataTransferTest.class.hashCode();
 
     private NetworkingHelper mNetworkingHelper;
 
     @Override
+    @Before
     public void setUp() throws Exception {
         super.setUp();
 
@@ -35,6 +47,7 @@ public class DataTransferTest extends BaseJobSchedulerTest {
     }
 
     @Override
+    @After
     public void tearDown() throws Exception {
         mJobScheduler.cancel(JOB_ID);
 
@@ -44,6 +57,7 @@ public class DataTransferTest extends BaseJobSchedulerTest {
         super.tearDown();
     }
 
+    @Test
     public void testUpdateEstimatedNetworkBytes() throws Exception {
         mNetworkingHelper.setAllNetworksEnabled(true);
 
@@ -67,6 +81,7 @@ public class DataTransferTest extends BaseJobSchedulerTest {
         assertEquals(10, getEstimatedUploadBytes());
     }
 
+    @Test
     public void testUpdateTransferredNetworkBytes() throws Exception {
         mNetworkingHelper.setAllNetworksEnabled(true);
 

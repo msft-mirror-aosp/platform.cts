@@ -16,22 +16,31 @@
 
 package android.jobscheduler.cts;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 import android.annotation.TargetApi;
 import android.app.job.JobInfo;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.res.Resources;
 import android.os.BatteryManager;
 import android.provider.Settings;
 import android.util.Log;
-import android.content.res.Resources;
+
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import com.android.compatibility.common.util.SystemUtil;
 
-/**
- * Schedules jobs with the {@link android.app.job.JobScheduler} that have battery constraints.
- */
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
+/** Schedules jobs with the {@link android.app.job.JobScheduler} that have battery constraints. */
 @TargetApi(26)
+@RunWith(AndroidJUnit4.class)
 public class BatteryConstraintTest extends BaseJobSchedulerTest {
     private static final String TAG = "BatteryConstraintTest";
 
@@ -50,6 +59,7 @@ public class BatteryConstraintTest extends BaseJobSchedulerTest {
     private int mPreviousLowPowerTriggerLevel;
 
     @Override
+    @Before
     public void setUp() throws Exception {
         super.setUp();
 
@@ -67,6 +77,7 @@ public class BatteryConstraintTest extends BaseJobSchedulerTest {
     }
 
     @Override
+    @After
     public void tearDown() throws Exception {
         mJobScheduler.cancel(BATTERY_JOB_ID);
         // Put battery service back in to normal operation.
@@ -131,9 +142,10 @@ public class BatteryConstraintTest extends BaseJobSchedulerTest {
     // --------------------------------------------------------------------------------------------
 
     /**
-     * Schedule a job that requires the device is charging, when the battery reports it is
-     * plugged in.
+     * Schedule a job that requires the device is charging, when the battery reports it is plugged
+     * in.
      */
+    @Test
     public void testChargingConstraintExecutes() throws Exception {
         setBatteryState(true, 100);
         verifyChargingState(true);
@@ -152,6 +164,7 @@ public class BatteryConstraintTest extends BaseJobSchedulerTest {
      * Schedule a job that requires the device is not critical, when the battery reports it is
      * plugged in.
      */
+    @Test
     public void testBatteryNotLowConstraintExecutes_withPower() throws Exception {
         setBatteryState(true, 100);
         Thread.sleep(2_000);
@@ -169,9 +182,10 @@ public class BatteryConstraintTest extends BaseJobSchedulerTest {
     }
 
     /**
-     * Schedule a job that requires the device is not critical, when the battery reports it is
-     * not plugged in but has sufficient power.
+     * Schedule a job that requires the device is not critical, when the battery reports it is not
+     * plugged in but has sufficient power.
      */
+    @Test
     public void testBatteryNotLowConstraintExecutes_withoutPower() throws Exception {
         // "Without power" test case is valid only for devices with a battery.
         if (!hasBattery()) {
@@ -198,9 +212,10 @@ public class BatteryConstraintTest extends BaseJobSchedulerTest {
     // --------------------------------------------------------------------------------------------
 
     /**
-     * Schedule a job that requires the device is charging, and assert if failed when
-     * the device is not on power.
+     * Schedule a job that requires the device is charging, and assert if failed when the device is
+     * not on power.
      */
+    @Test
     public void testChargingConstraintFails() throws Exception {
         // "Without power" test case is valid only for devices with a battery.
         if (!hasBattery()) {
@@ -242,9 +257,10 @@ public class BatteryConstraintTest extends BaseJobSchedulerTest {
     }
 
     /**
-     * Schedule a job that requires the device is not critical, and assert it failed when
-     * the battery level is critical and not on power.
+     * Schedule a job that requires the device is not critical, and assert it failed when the
+     * battery level is critical and not on power.
      */
+    @Test
     public void testBatteryNotLowConstraintFails_withoutPower() throws Exception {
         // "Without power" test case is valid only for devices with a battery.
         if (!hasBattery()) {

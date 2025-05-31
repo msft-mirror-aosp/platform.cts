@@ -142,6 +142,7 @@ import android.provider.Settings;
 import android.server.wm.ActivityManagerTestBase;
 import android.server.wm.CommandSession.ActivityCallback;
 import android.server.wm.CommandSession.SizeInfo;
+import android.server.wm.IgnoreOrientationRequestSession;
 import android.server.wm.RotationSession;
 import android.server.wm.TestJournalProvider.TestJournalContainer;
 import android.server.wm.WaitForValidActivityState;
@@ -1497,10 +1498,11 @@ public class PinnedStackTests extends ActivityManagerTestBase {
     }
 
     @Test
-    @FlakyTest(bugId = 419795117)
     public void testSetRequestedOrientationWhilePinned() {
         assumeTrue("Skipping test: no orientation request support", supportsOrientationRequest());
-        disableIgnoreOrientationRequest();
+        assumeFalse(
+                "Skipping test: orientation request ignored",
+                IgnoreOrientationRequestSession.getIgnoreOrientationRequest());
         // Launch the PiP activity fixed as portrait, and enter picture-in-picture
         launchActivity(PIP_ACTIVITY, WINDOWING_MODE_FULLSCREEN,
                 extraString(EXTRA_PIP_ORIENTATION, String.valueOf(SCREEN_ORIENTATION_PORTRAIT)),

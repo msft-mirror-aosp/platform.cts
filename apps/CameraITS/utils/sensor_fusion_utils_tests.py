@@ -192,11 +192,13 @@ class SensorFusionUtilsTests(unittest.TestCase):
       self.assertAlmostEqual(
           derivative_minimum,
           scipy_minimum,
-          msg='Minimum value for polynomial function described by'
+          msg=(
+              'Minimum value for polynomial function described by'
               f' {coefficients} was expected to be'
               f' {derivative_minimum}, received'
-              f' {scipy_minimum} via scipy.optimize.fmin.')
-
+              f' {scipy_minimum} via scipy.optimize.fmin.'
+          )
+      )
 
 if __name__ == '__main__':
   unittest.main()

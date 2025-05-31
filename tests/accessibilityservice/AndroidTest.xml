@@ -61,6 +61,7 @@
     <test class="com.android.tradefed.testtype.AndroidJUnitTest" >
         <option name="package" value="android.accessibilityservice.cts" />
         <option name="runtime-hint" value="2m12s" />
+        <option name="instrumentation-arg" key="thisisignored" value="thisisignored --no-window-animation" />
     </test>
     <metrics_collector class="com.android.tradefed.device.metric.FilePullerLogCollector">
         <option name="directory-keys" value="/sdcard/android.accessibilityservice.cts" />

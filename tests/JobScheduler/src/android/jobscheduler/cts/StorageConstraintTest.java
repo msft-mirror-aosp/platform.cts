@@ -16,9 +16,15 @@
 
 package android.jobscheduler.cts;
 
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 import android.annotation.TargetApi;
 import android.app.job.JobInfo;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
 /**
  * Schedules jobs with the {@link android.app.job.JobScheduler} that have storage constraints.
@@ -33,6 +39,7 @@ public class StorageConstraintTest extends BaseJobSchedulerTest {
     private JobInfo.Builder mBuilder;
 
     @Override
+    @Before
     public void setUp() throws Exception {
         super.setUp();
 
@@ -40,6 +47,7 @@ public class StorageConstraintTest extends BaseJobSchedulerTest {
     }
 
     @Override
+    @After
     public void tearDown() throws Exception {
         mJobScheduler.cancel(STORAGE_JOB_ID);
         super.tearDown();
@@ -65,9 +73,8 @@ public class StorageConstraintTest extends BaseJobSchedulerTest {
     // Positives - schedule jobs under conditions that require them to pass.
     // --------------------------------------------------------------------------------------------
 
-    /**
-     * Schedule a job that requires the device storage is not low, when it is actually not low.
-     */
+    /** Schedule a job that requires the device storage is not low, when it is actually not low. */
+    @Test
     public void testNotLowConstraintExecutes() throws Exception {
         setStorageStateLow(false);
 
@@ -85,9 +92,8 @@ public class StorageConstraintTest extends BaseJobSchedulerTest {
     // Negatives - schedule jobs under conditions that require that they fail.
     // --------------------------------------------------------------------------------------------
 
-    /**
-     * Schedule a job that requires the device storage is not low, when it actually is low.
-     */
+    /** Schedule a job that requires the device storage is not low, when it actually is low. */
+    @Test
     public void testNotLowConstraintFails() throws Exception {
         setStorageStateLow(true);
 
@@ -114,6 +120,7 @@ public class StorageConstraintTest extends BaseJobSchedulerTest {
     /**
      * Test that a job that requires the device storage is not low is stopped when it becomes low.
      */
+    @Test
     public void testJobStoppedWhenStorageLow() throws Exception {
         setStorageStateLow(false);
 

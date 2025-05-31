@@ -18,6 +18,9 @@ package android.jobscheduler.cts;
 import static android.Manifest.permission.INTERACT_ACROSS_USERS_FULL;
 import static android.Manifest.permission.OVERRIDE_COMPAT_CHANGE_CONFIG_ON_RELEASE_BUILD;
 
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
 import android.annotation.TargetApi;
 import android.app.compat.CompatChanges;
 import android.app.compat.PackageOverride;
@@ -25,7 +28,12 @@ import android.app.job.JobInfo;
 import android.app.job.JobParameters;
 import android.jobscheduler.cts.jobtestapp.TestJobSchedulerReceiver;
 
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+
 import com.android.compatibility.common.util.SystemUtil;
+
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.util.Collections;
 import java.util.Map;
@@ -35,6 +43,7 @@ import java.util.Map;
  * appropriate.
  */
 @TargetApi(21)
+@RunWith(AndroidJUnit4.class)
 public class TimingConstraintsTest extends BaseJobSchedulerTest {
     private static final int TIMING_JOB_ID = TimingConstraintsTest.class.hashCode() + 0;
     private static final int CANCEL_JOB_ID = TimingConstraintsTest.class.hashCode() + 1;
@@ -42,6 +51,7 @@ public class TimingConstraintsTest extends BaseJobSchedulerTest {
     private static final int UNEXPIRED_JOB_ID = TimingConstraintsTest.class.hashCode() + 3;
     private static final int ZERO_DELAY_JOB_ID = TimingConstraintsTest.class.hashCode() + 4;
 
+    @Test
     public void testSchedulePeriodic() throws Exception {
         JobInfo periodicJob = new JobInfo.Builder(TIMING_JOB_ID, kJobServiceComponent)
                 .setPeriodic(JobInfo.getMinPeriodMillis())
@@ -59,6 +69,7 @@ public class TimingConstraintsTest extends BaseJobSchedulerTest {
     }
 
     /** Test that a periodic job isn't run outside of its flex window. */
+    @Test
     public void testSchedulePeriodic_lowFlex() throws Exception {
         JobInfo periodicJob = new JobInfo.Builder(TIMING_JOB_ID, kJobServiceComponent)
                 .setPeriodic(JobInfo.getMinPeriodMillis(), JobInfo.getMinFlexMillis())
@@ -73,6 +84,7 @@ public class TimingConstraintsTest extends BaseJobSchedulerTest {
         assertJobNotReady(TIMING_JOB_ID);
     }
 
+    @Test
     public void testCancel() throws Exception {
         JobInfo cancelJob = new JobInfo.Builder(CANCEL_JOB_ID, kJobServiceComponent)
                 .setMinimumLatency(5000L) // make sure it doesn't actually run immediately
@@ -88,6 +100,7 @@ public class TimingConstraintsTest extends BaseJobSchedulerTest {
                 kTestEnvironment.awaitTimeout());
     }
 
+    @Test
     public void testExplicitZeroLatency() throws Exception {
         JobInfo job = new JobInfo.Builder(ZERO_DELAY_JOB_ID, kJobServiceComponent)
                 .setMinimumLatency(0L)
@@ -100,9 +113,10 @@ public class TimingConstraintsTest extends BaseJobSchedulerTest {
     }
 
     /**
-     * Ensure that when a job is executed because its deadline has expired, that
-     * {@link JobParameters#isOverrideDeadlineExpired()} returns the correct value.
+     * Ensure that when a job is executed because its deadline has expired, that {@link
+     * JobParameters#isOverrideDeadlineExpired()} returns the correct value.
      */
+    @Test
     public void testJobParameters_expiredDeadline() throws Exception {
         // Make sure the storage constraint is *not* met
         // for the duration of the override deadline.
@@ -132,11 +146,11 @@ public class TimingConstraintsTest extends BaseJobSchedulerTest {
         }
     }
 
-
     /**
-     * Ensure that when a job is executed and its deadline hasn't expired, that
-     * {@link JobParameters#isOverrideDeadlineExpired()} returns the correct value.
+     * Ensure that when a job is executed and its deadline hasn't expired, that {@link
+     * JobParameters#isOverrideDeadlineExpired()} returns the correct value.
      */
+    @Test
     public void testJobParameters_unexpiredDeadline() throws Exception {
         // Test job that doesn't have a deadline
         JobInfo noDeadlineJob =

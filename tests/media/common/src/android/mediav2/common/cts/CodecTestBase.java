@@ -941,6 +941,18 @@ public abstract class CodecTestBase {
         return paramStr.toString();
     }
 
+    public static ArrayList<String> compileRequestedMediaTypeList() {
+        Set<String> list = new HashSet<>();
+        for (Map.Entry<String, String> entry : CODEC_SEL_KEY_MEDIA_TYPE_MAP.entrySet()) {
+            String key = entry.getKey();
+            String value = entry.getValue();
+            if (mediaTypeSelKeys.contains(key)) {
+                list.add(value);
+            }
+        }
+        return new ArrayList<>(list);
+    }
+
     public static ArrayList<String> compileRequiredMediaTypeList(boolean isEncoder,
             boolean needAudio, boolean needVideo) {
         Set<String> list = new HashSet<>();
@@ -1069,13 +1081,7 @@ public abstract class CodecTestBase {
                 }
             }
         } else {
-            for (Map.Entry<String, String> entry : CODEC_SEL_KEY_MEDIA_TYPE_MAP.entrySet()) {
-                String key = entry.getKey();
-                String value = entry.getValue();
-                if (mediaTypeSelKeys.contains(key) && !mediaTypes.contains(value)) {
-                    mediaTypes.add(value);
-                }
-            }
+            mediaTypes = compileRequestedMediaTypeList();
         }
         return mediaTypes;
     }
