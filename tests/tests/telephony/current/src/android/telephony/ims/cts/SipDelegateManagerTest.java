@@ -263,6 +263,8 @@ public class SipDelegateManagerTest {
                 return;
             }
         }
+        //If the device does not have FEATURE_TELEPHONY_MESSAGING, skip all the tests
+        assumeTrue(ImsUtils.shouldRunSmsImsTests(sTestSub));
         TelephonyManager tm = (TelephonyManager) InstrumentationRegistry.getInstrumentation()
                 .getContext().getSystemService(Context.TELEPHONY_SERVICE);
         if (tm.getSimState(sTestSlot) != TelephonyManager.SIM_STATE_READY) {
