@@ -20,46 +20,30 @@ import androidx.annotation.Nullable;
 
 import com.android.bedstead.enterprise.annotations.CanSetPolicyTest;
 import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest;
-import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile;
 import com.android.bedstead.enterprise.annotations.MostImportantCoexistenceTest;
 import com.android.bedstead.enterprise.annotations.MostRestrictiveCoexistenceTest;
 import com.android.bedstead.enterprise.annotations.PolicyAppliesTest;
 import com.android.bedstead.enterprise.annotations.PolicyDoesNotApplyTest;
-import com.android.bedstead.enterprise.annotations.RequireRunOnWorkProfile;
 import com.android.bedstead.harrier.annotations.AnnotationCostRunPrecedence;
 import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence;
-import com.android.bedstead.harrier.annotations.CrossUserTest;
 import com.android.bedstead.harrier.annotations.EnumTestParameter;
 import com.android.bedstead.harrier.annotations.HiddenApiTest;
 import com.android.bedstead.harrier.annotations.IntTestParameter;
 import com.android.bedstead.harrier.annotations.PolicyArgument;
 import com.android.bedstead.harrier.annotations.RequireRunOnInitialUser;
 import com.android.bedstead.harrier.annotations.StringTestParameter;
-import com.android.bedstead.harrier.annotations.UserPair;
-import com.android.bedstead.harrier.annotations.UserTest;
 import com.android.bedstead.harrier.annotations.UsesParameterizedTestGenerator;
 import com.android.bedstead.harrier.annotations.meta.ParameterizedAnnotation;
 import com.android.bedstead.harrier.annotations.meta.RepeatingAnnotation;
 import com.android.bedstead.harrier.annotations.parameterized.IncludeNone;
 import com.android.bedstead.harrier.exceptions.RestartTestException;
-import com.android.bedstead.multiuser.annotations.EnsureHasAdditionalUser;
-import com.android.bedstead.multiuser.annotations.EnsureHasCloneProfile;
-import com.android.bedstead.multiuser.annotations.EnsureHasPrivateProfile;
 import com.android.bedstead.multiuser.annotations.EnsureHasSecondaryUser;
-import com.android.bedstead.multiuser.annotations.EnsureHasTvProfile;
-import com.android.bedstead.multiuser.annotations.OtherUser;
-import com.android.bedstead.multiuser.annotations.RequireNotHeadlessSystemUserMode;
 import com.android.bedstead.multiuser.annotations.RequireRunOnAdditionalUser;
-import com.android.bedstead.multiuser.annotations.RequireRunOnCloneProfile;
 import com.android.bedstead.multiuser.annotations.RequireRunOnPrimaryUser;
-import com.android.bedstead.multiuser.annotations.RequireRunOnPrivateProfile;
 import com.android.bedstead.multiuser.annotations.RequireRunOnSecondaryUser;
-import com.android.bedstead.multiuser.annotations.RequireRunOnSystemUser;
-import com.android.bedstead.multiuser.annotations.RequireRunOnTvProfile;
 import com.android.bedstead.nene.exceptions.NeneException;
 import com.android.bedstead.nene.types.OptionalBoolean;
 import com.android.bedstead.performanceanalyzer.annotations.PerformanceTest;
-import com.android.queryable.annotations.Query;
 
 import com.google.auto.value.AutoAnnotation;
 import com.google.common.collect.ImmutableMap;
@@ -94,13 +78,7 @@ import java.util.stream.Stream;
 /**
  * A JUnit test runner for use with Bedstead.
  */
-// Annotating this class with @Query as a workaround to add this as a data type to a field
-// in annotations that are called upon by @AutoAnnotation (for e.g. EnsureHasWorkProfile).
-// @AutoAnnotation is not able to set default value for a field with an annotated data type,
-// so we try to pass the default value explicitly that is accessed via reflection through this
-// class.
 @SuppressWarnings("AndroidJdkLibsChecker")
-@Query
 public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
 
     private static final Set<TestLifecycleListener> sLifecycleListeners = new HashSet<>();
@@ -113,21 +91,8 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
     private static final BedsteadServiceLocator mLocator = new BedsteadServiceLocator();
 
     @AutoAnnotation
-    private static RequireRunOnSystemUser requireRunOnSystemUser() {
-        return new AutoAnnotation_BedsteadJUnit4_requireRunOnSystemUser();
-    }
-
-    private static RequireRunOnPrimaryUser requireRunOnPrimaryUser() {
-        return requireRunOnPrimaryUser(OptionalBoolean.ANY);
-    }
-
-    @AutoAnnotation
     private static RequireRunOnPrimaryUser requireRunOnPrimaryUser(OptionalBoolean switchedToUser) {
         return new AutoAnnotation_BedsteadJUnit4_requireRunOnPrimaryUser(switchedToUser);
-    }
-
-    private static RequireRunOnSecondaryUser requireRunOnSecondaryUser() {
-        return requireRunOnSecondaryUser(OptionalBoolean.ANY);
     }
 
     @AutoAnnotation
@@ -137,92 +102,14 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
     }
 
     @AutoAnnotation
-    private static RequireRunOnAdditionalUser requireRunOnAdditionalUser() {
-        return new AutoAnnotation_BedsteadJUnit4_requireRunOnAdditionalUser();
-    }
-
-    @AutoAnnotation
-    private static RequireRunOnWorkProfile requireRunOnWorkProfile(Query dpc) {
-        return new AutoAnnotation_BedsteadJUnit4_requireRunOnWorkProfile(dpc);
-    }
-
-    @AutoAnnotation
-    private static RequireRunOnTvProfile requireRunOnTvProfile() {
-        return new AutoAnnotation_BedsteadJUnit4_requireRunOnTvProfile();
-    }
-
-    @AutoAnnotation
-    private static RequireRunOnCloneProfile requireRunOnCloneProfile() {
-        return new AutoAnnotation_BedsteadJUnit4_requireRunOnCloneProfile();
-    }
-
-    @AutoAnnotation
-    private static RequireRunOnPrivateProfile requireRunOnPrivateProfile() {
-        return new AutoAnnotation_BedsteadJUnit4_requireRunOnPrivateProfile();
-    }
-
-    @AutoAnnotation
     static RequireRunOnInitialUser requireRunOnInitialUser(OptionalBoolean switchedToUser) {
         return new AutoAnnotation_BedsteadJUnit4_requireRunOnInitialUser(switchedToUser);
-    }
-
-    static RequireRunOnInitialUser requireRunOnInitialUser() {
-        return requireRunOnInitialUser(OptionalBoolean.TRUE);
     }
 
     @AutoAnnotation
     private static EnsureHasSecondaryUser ensureHasSecondaryUser() {
         return new AutoAnnotation_BedsteadJUnit4_ensureHasSecondaryUser();
     }
-
-    @AutoAnnotation
-    private static EnsureHasAdditionalUser ensureHasAdditionalUser() {
-        return new AutoAnnotation_BedsteadJUnit4_ensureHasAdditionalUser();
-    }
-
-    @AutoAnnotation
-    private static EnsureHasWorkProfile ensureHasWorkProfile(Query dpc) {
-        return new AutoAnnotation_BedsteadJUnit4_ensureHasWorkProfile(dpc);
-    }
-
-    @AutoAnnotation
-    private static EnsureHasTvProfile ensureHasTvProfile() {
-        return new AutoAnnotation_BedsteadJUnit4_ensureHasTvProfile();
-    }
-
-    @AutoAnnotation
-    private static EnsureHasCloneProfile ensureHasCloneProfile() {
-        return new AutoAnnotation_BedsteadJUnit4_ensureHasCloneProfile();
-    }
-
-    @AutoAnnotation
-    private static EnsureHasPrivateProfile ensureHasPrivateProfile() {
-        return new AutoAnnotation_BedsteadJUnit4_ensureHasPrivateProfile();
-    }
-
-    @AutoAnnotation
-    private static OtherUser otherUser(UserType value) {
-        return new AutoAnnotation_BedsteadJUnit4_otherUser(value);
-    }
-
-    @AutoAnnotation
-    private static RequireNotHeadlessSystemUserMode requireNotHeadlessSystemUserMode(String reason) {
-        return new AutoAnnotation_BedsteadJUnit4_requireNotHeadlessSystemUserMode(reason);
-    }
-
-    // Get @Query annotation via BedsteadJunit4 class as a workaround to enable adding Query
-    // fields to annotations that rely on @AutoAnnotation (for e.g. @EnsureHasWorkProfile)
-    private static Query query() {
-        try {
-            return Class.forName("com.android.bedstead.harrier.BedsteadJUnit4")
-                    .getAnnotation(Query.class);
-        } catch (ClassNotFoundException e) {
-            throw new RuntimeException(
-                    "Unable to get BedsteadJunit4 class when trying to get "
-                            + "@Query annotation", e);
-        }
-    }
-
 
     // These are annotations which are not included indirectly
     private static final Set<String> sIgnoredAnnotationPackages = new HashSet<>();
@@ -476,8 +363,6 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
                         || method.getAnnotation(PolicyDoesNotApplyTest.class) != null
                         || method.getAnnotation(CanSetPolicyTest.class) != null
                         || method.getAnnotation(CannotSetPolicyTest.class) != null
-                        || method.getAnnotation(UserTest.class) != null
-                        || method.getAnnotation(CrossUserTest.class) != null
                         || method.getAnnotation(MostRestrictiveCoexistenceTest.class) != null
                         || method.getAnnotation(MostImportantCoexistenceTest.class) != null
                         || method.getAnnotation(HiddenApiTest.class) != null
@@ -810,7 +695,6 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
         List<Annotation> annotations = new ArrayList<>(Arrays.asList(methodAnnotations));
 
         parseEnterpriseAnnotations(annotations);
-        parseUserAnnotations(annotations);
 
         for (Annotation annotation : annotations) {
             var replacements = generateReplacementAnnotations(annotation);
@@ -862,139 +746,6 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
                     + "parseEnterpriseAnnotations will not be executed");
         } else {
             mediator.parseEnterpriseAnnotations(annotations);
-        }
-    }
-
-    /**
-     * Parse @UserTest and @CrossUserTest annotations.
-     *
-     * <p>To be used before general annotation processing.
-     */
-    static void parseUserAnnotations(List<Annotation> annotations) {
-        int index = 0;
-        while (index < annotations.size()) {
-            Annotation annotation = annotations.get(index);
-            if (annotation instanceof UserTest) {
-                annotations.remove(index);
-
-                List<Annotation> replacementAnnotations = generateUserAnnotations(
-                        ((UserTest) annotation).value());
-                replacementAnnotations.sort(BedsteadJUnit4::annotationSorter);
-
-                annotations.addAll(index, replacementAnnotations);
-                index += replacementAnnotations.size();
-            } else if (annotation instanceof CrossUserTest) {
-                annotations.remove(index);
-
-                CrossUserTest crossUserTestAnnotation = (CrossUserTest) annotation;
-                List<Annotation> replacementAnnotations = generateCrossUserAnnotations(
-                        crossUserTestAnnotation.value());
-                replacementAnnotations.sort(BedsteadJUnit4::annotationSorter);
-
-                annotations.addAll(index, replacementAnnotations);
-                index += replacementAnnotations.size();
-            } else {
-                index++;
-            }
-        }
-    }
-
-    private static List<Annotation> generateUserAnnotations(UserType[] userTypes) {
-        List<Annotation> replacementAnnotations = new ArrayList<>();
-
-        for (UserType userType : userTypes) {
-            Annotation runOnUserAnnotation = getRunOnAnnotation(userType, "@UserTest");
-            replacementAnnotations.add(
-                    new DynamicParameterizedAnnotation(
-                            userType.name(),
-                            new Annotation[]{runOnUserAnnotation}));
-        }
-
-        return replacementAnnotations;
-    }
-
-    private static List<Annotation> generateCrossUserAnnotations(UserPair[] userPairs) {
-        List<Annotation> replacementAnnotations = new ArrayList<>();
-
-        for (UserPair userPair : userPairs) {
-            Annotation[] annotations = new Annotation[]{
-                    getRunOnAnnotation(userPair.from(), "@CrossUserTest"),
-                    otherUser(userPair.to())
-            };
-            if (userPair.from() != userPair.to()) {
-                Annotation hasUserAnnotation =
-                        getHasUserAnnotation(userPair.to(), "@CrossUserTest");
-                if (hasUserAnnotation != null) {
-                    annotations = new Annotation[]{
-                            annotations[0],
-                            annotations[1],
-                            hasUserAnnotation};
-                }
-            }
-
-            replacementAnnotations.add(
-                    new DynamicParameterizedAnnotation(
-                            userPair.from().name() + "_to_" + userPair.to().name(),
-                            annotations));
-        }
-
-        return replacementAnnotations;
-    }
-
-    private static Annotation getRunOnAnnotation(UserType userType, String annotationName) {
-        switch (userType) {
-            case SYSTEM_USER:
-                return requireRunOnSystemUser();
-            case CURRENT_USER:
-                return null; // No requirement, run on current user
-            case INITIAL_USER:
-                return requireRunOnInitialUser();
-            case ADDITIONAL_USER:
-                return requireRunOnAdditionalUser();
-            case PRIMARY_USER:
-                return requireRunOnPrimaryUser();
-            case SECONDARY_USER:
-                return requireRunOnSecondaryUser();
-            case WORK_PROFILE:
-                return requireRunOnWorkProfile(query());
-            case TV_PROFILE:
-                return requireRunOnTvProfile();
-            case CLONE_PROFILE:
-                return requireRunOnCloneProfile();
-            case PRIVATE_PROFILE:
-                return requireRunOnPrivateProfile();
-            default:
-                throw new IllegalStateException(
-                        "UserType " + userType + " is not compatible with " + annotationName);
-        }
-    }
-
-    private static Annotation getHasUserAnnotation(UserType userType, String annotationName) {
-        switch (userType) {
-            case SYSTEM_USER:
-                return null; // We always have a system user
-            case CURRENT_USER:
-                return null; // We always have a current user
-            case INITIAL_USER:
-                return null; // We always have an initial user
-            case ADDITIONAL_USER:
-                return ensureHasAdditionalUser();
-            case PRIMARY_USER:
-                return requireNotHeadlessSystemUserMode(
-                        "Headless System User Mode Devices do not have a primary user");
-            case SECONDARY_USER:
-                return ensureHasSecondaryUser();
-            case WORK_PROFILE:
-                return ensureHasWorkProfile(query());
-            case TV_PROFILE:
-                return ensureHasTvProfile();
-            case CLONE_PROFILE:
-                return ensureHasCloneProfile();
-            case PRIVATE_PROFILE:
-                return ensureHasPrivateProfile();
-            default:
-                throw new IllegalStateException(
-                        "UserType " + userType + " is not compatible with " + annotationName);
         }
     }
 

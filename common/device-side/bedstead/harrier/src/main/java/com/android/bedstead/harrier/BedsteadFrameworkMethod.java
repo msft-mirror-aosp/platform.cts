@@ -72,7 +72,6 @@ public final class BedsteadFrameworkMethod extends FrameworkMethod {
         annotations.addAll(getAnnotationWithReplacements(getMethod().getAnnotations()));
 
         BedsteadJUnit4.parseEnterpriseAnnotations(annotations);
-        BedsteadJUnit4.parseUserAnnotations(annotations);
 
         mBedsteadJUnit4.resolveRecursiveAnnotations(annotations, mParameterizedAnnotations);
 

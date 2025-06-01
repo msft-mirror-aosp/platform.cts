@@ -38,5 +38,6 @@ annotation class UsesParameterizedTestGenerator(
 ) {
     companion object {
         const val PERMISSIONS = "com.android.bedstead.permissions.PermissionsParameterizedTestGenerator"
+        const val MULTI_USER = "com.android.bedstead.multiuser.MultiUserParameterizedTestGenerator"
     }
 }
