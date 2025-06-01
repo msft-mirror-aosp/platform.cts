@@ -16,16 +16,17 @@
 
 package android.jobscheduler.cts;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static com.google.common.truth.Truth.assertThat;
+import static com.google.common.truth.Truth.assertWithMessage;
 
 import android.annotation.TargetApi;
 import android.app.job.JobInfo;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.PackageManager;
 import android.content.res.Resources;
 import android.os.BatteryManager;
+import android.os.SystemClock;
 import android.provider.Settings;
 import android.util.Log;
 
@@ -43,12 +44,13 @@ import org.junit.runner.RunWith;
 @RunWith(AndroidJUnit4.class)
 public class BatteryConstraintTest extends BaseJobSchedulerTest {
     private static final String TAG = "BatteryConstraintTest";
-
-    private String FEATURE_WATCH = "android.hardware.type.watch";
-    private String TWM_HARDWARE_FEATURE = "com.google.clockwork.hardware.traditional_watch_mode";
+    private static final String TWM_HARDWARE_FEATURE =
+            "com.google.clockwork.hardware.traditional_watch_mode";
 
     /** Unique identifier for the job scheduled by this suite of tests. */
-    public static final int BATTERY_JOB_ID = BatteryConstraintTest.class.hashCode();
+    private static final int BATTERY_JOB_ID = BatteryConstraintTest.class.hashCode();
+
+    private static final int BATTERY_STATE_SETTLE_TIME_MS = 2_000;
 
     private JobInfo.Builder mBuilder;
     private int mLowBatteryWarningLevel = 15;
@@ -95,48 +97,6 @@ public class BatteryConstraintTest extends BaseJobSchedulerTest {
         super.tearDown();
     }
 
-    boolean hasBattery() throws Exception {
-        Intent batteryInfo = getContext().registerReceiver(
-                null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
-        boolean present = batteryInfo.getBooleanExtra(BatteryManager.EXTRA_PRESENT, true);
-        if (!present) {
-            Log.i(TAG, "Device doesn't have a battery.");
-        }
-        return present;
-    }
-
-    void verifyChargingState(boolean charging) throws Exception {
-        boolean curCharging = Boolean.parseBoolean(SystemUtil.runShellCommand(getInstrumentation(),
-                "cmd jobscheduler get-battery-charging").trim());
-        assertEquals(charging, curCharging);
-    }
-
-    void verifyBatteryNotLowState(boolean notLow) throws Exception {
-        boolean curNotLow = Boolean.parseBoolean(SystemUtil.runShellCommand(getInstrumentation(),
-                "cmd jobscheduler get-battery-not-low").trim());
-        assertEquals(notLow, curNotLow);
-        IntentFilter filter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
-        Intent batteryState = getContext().registerReceiver(null, filter);
-        assertEquals(notLow,
-                !batteryState.getBooleanExtra(BatteryManager.EXTRA_BATTERY_LOW, notLow));
-    }
-
-    String getJobState() throws Exception {
-        return getJobState(BATTERY_JOB_ID);
-    }
-
-    void assertJobReady() throws Exception {
-        assertJobReady(BATTERY_JOB_ID);
-    }
-
-    void assertJobWaiting() throws Exception {
-        assertJobWaiting(BATTERY_JOB_ID);
-    }
-
-    void assertJobNotReady() throws Exception {
-        assertJobNotReady(BATTERY_JOB_ID);
-    }
-
     // --------------------------------------------------------------------------------------------
     // Positives - schedule jobs under conditions that require them to pass.
     // --------------------------------------------------------------------------------------------
@@ -153,11 +113,12 @@ public class BatteryConstraintTest extends BaseJobSchedulerTest {
         kTestEnvironment.setExpectedExecutions(1);
         kTestEnvironment.setExpectedWaitForRun();
         mJobScheduler.schedule(mBuilder.setRequiresCharging(true).build());
-        assertJobReady();
+        assertJobReady(BATTERY_JOB_ID);
         kTestEnvironment.readyToRun();
 
-        assertTrue("Job with charging constraint did not fire on power.",
-                kTestEnvironment.awaitExecution());
+        assertWithMessage("Job with charging constraint did not fire on power.")
+                .that(kTestEnvironment.awaitExecution())
+                .isTrue();
     }
 
     /**
@@ -167,18 +128,19 @@ public class BatteryConstraintTest extends BaseJobSchedulerTest {
     @Test
     public void testBatteryNotLowConstraintExecutes_withPower() throws Exception {
         setBatteryState(true, 100);
-        Thread.sleep(2_000);
+        SystemClock.sleep(BATTERY_STATE_SETTLE_TIME_MS);
         verifyChargingState(true);
         verifyBatteryNotLowState(true);
 
         kTestEnvironment.setExpectedExecutions(1);
         kTestEnvironment.setExpectedWaitForRun();
         mJobScheduler.schedule(mBuilder.setRequiresBatteryNotLow(true).build());
-        assertJobReady();
+        assertJobReady(BATTERY_JOB_ID);
         kTestEnvironment.readyToRun();
 
-        assertTrue("Job with battery not low constraint did not fire on power.",
-                kTestEnvironment.awaitExecution());
+        assertWithMessage("Job with battery not low constraint did not fire on power.")
+                .that(kTestEnvironment.awaitExecution())
+                .isTrue();
     }
 
     /**
@@ -193,18 +155,19 @@ public class BatteryConstraintTest extends BaseJobSchedulerTest {
         }
 
         setBatteryState(false, 100);
-        Thread.sleep(2_000);
+        SystemClock.sleep(BATTERY_STATE_SETTLE_TIME_MS);
         verifyChargingState(false);
         verifyBatteryNotLowState(true);
 
         kTestEnvironment.setExpectedExecutions(1);
         kTestEnvironment.setExpectedWaitForRun();
         mJobScheduler.schedule(mBuilder.setRequiresBatteryNotLow(true).build());
-        assertJobReady();
+        assertJobReady(BATTERY_JOB_ID);
         kTestEnvironment.readyToRun();
 
-        assertTrue("Job with battery not low constraint did not fire on power.",
-                kTestEnvironment.awaitExecution());
+        assertWithMessage("Job with battery not low constraint did not fire on power.")
+                .that(kTestEnvironment.awaitExecution())
+                .isTrue();
     }
 
     // --------------------------------------------------------------------------------------------
@@ -228,14 +191,15 @@ public class BatteryConstraintTest extends BaseJobSchedulerTest {
         kTestEnvironment.setExpectedExecutions(0);
         kTestEnvironment.setExpectedWaitForRun();
         mJobScheduler.schedule(mBuilder.setRequiresCharging(true).build());
-        assertJobWaiting();
-        assertJobNotReady();
+        assertJobWaiting(BATTERY_JOB_ID);
+        assertJobNotReady(BATTERY_JOB_ID);
         kTestEnvironment.readyToRun();
 
-        assertFalse("Job with charging constraint fired while not on power.",
-                kTestEnvironment.awaitExecution(250));
-        assertJobWaiting();
-        assertJobNotReady();
+        assertWithMessage("Job with charging constraint fired while not on power.")
+                .that(kTestEnvironment.awaitExecution(250))
+                .isFalse();
+        assertJobWaiting(BATTERY_JOB_ID);
+        assertJobNotReady(BATTERY_JOB_ID);
 
         // Ensure the job runs once the device is plugged in.
         kTestEnvironment.setExpectedExecutions(1);
@@ -244,16 +208,18 @@ public class BatteryConstraintTest extends BaseJobSchedulerTest {
         setBatteryState(true, 100);
         verifyChargingState(true);
         kTestEnvironment.setExpectedStopped();
-        assertJobReady();
+        assertJobReady(BATTERY_JOB_ID);
         kTestEnvironment.readyToRun();
-        assertTrue("Job with charging constraint did not fire on power.",
-                kTestEnvironment.awaitExecution());
+        assertWithMessage("Job with charging constraint did not fire on power.")
+                .that(kTestEnvironment.awaitExecution())
+                .isTrue();
 
         // And check that the job is stopped if the device is unplugged while it is running.
         setBatteryState(false, 100);
         verifyChargingState(false);
-        assertTrue("Job with charging constraint did not stop when power removed.",
-                kTestEnvironment.awaitStopped());
+        assertWithMessage("Job with charging constraint did not stop when power removed.")
+                .that(kTestEnvironment.awaitStopped())
+                .isTrue();
     }
 
     /**
@@ -266,9 +232,8 @@ public class BatteryConstraintTest extends BaseJobSchedulerTest {
         if (!hasBattery()) {
             return;
         }
-        if (getInstrumentation().getContext().getPackageManager().hasSystemFeature(FEATURE_WATCH)
-                && getInstrumentation().getContext().getPackageManager().hasSystemFeature(
-                TWM_HARDWARE_FEATURE)) {
+        if (getContext().getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH)
+                && getContext().getPackageManager().hasSystemFeature(TWM_HARDWARE_FEATURE)) {
             return;
         }
 
@@ -276,43 +241,83 @@ public class BatteryConstraintTest extends BaseJobSchedulerTest {
         // setBatteryState() waited for the charging/not-charging state to formally settle,
         // but battery level reporting lags behind that.  wait a moment to let that happen
         // before proceeding.
-        Thread.sleep(2_000);
+        SystemClock.sleep(BATTERY_STATE_SETTLE_TIME_MS);
         verifyChargingState(false);
         verifyBatteryNotLowState(false);
 
         kTestEnvironment.setExpectedExecutions(0);
         kTestEnvironment.setExpectedWaitForRun();
         mJobScheduler.schedule(mBuilder.setRequiresBatteryNotLow(true).build());
-        assertJobWaiting();
-        assertJobNotReady();
+        assertJobWaiting(BATTERY_JOB_ID);
+        assertJobNotReady(BATTERY_JOB_ID);
         kTestEnvironment.readyToRun();
 
-        assertFalse("Job with battery not low constraint fired while level critical.",
-                kTestEnvironment.awaitExecution(250));
-        assertJobWaiting();
-        assertJobNotReady();
+        assertWithMessage("Job with battery not low constraint fired while level critical.")
+                .that(kTestEnvironment.awaitExecution(250))
+                .isFalse();
+        assertJobWaiting(BATTERY_JOB_ID);
+        assertJobNotReady(BATTERY_JOB_ID);
 
         // Ensure the job runs once the device's battery level is not low.
         kTestEnvironment.setExpectedExecutions(1);
         kTestEnvironment.setExpectedWaitForRun();
         kTestEnvironment.setContinueAfterStart();
         setBatteryState(false, 50);
-        Thread.sleep(2_000);
+        SystemClock.sleep(BATTERY_STATE_SETTLE_TIME_MS);
         verifyChargingState(false);
         verifyBatteryNotLowState(true);
         kTestEnvironment.setExpectedStopped();
-        assertJobReady();
+        assertJobReady(BATTERY_JOB_ID);
         kTestEnvironment.readyToRun();
-        assertTrue("Job with not low constraint did not fire when charge increased.",
-                kTestEnvironment.awaitExecution());
+        assertWithMessage("Job with not low constraint did not fire when charge increased.")
+                .that(kTestEnvironment.awaitExecution())
+                .isTrue();
 
         // And check that the job is stopped if battery goes low again.
         setBatteryState(false, mLowBatteryWarningLevel);
         setBatteryState(false, mLowBatteryWarningLevel - 1);
-        Thread.sleep(2_000);
+        SystemClock.sleep(BATTERY_STATE_SETTLE_TIME_MS);
         verifyChargingState(false);
         verifyBatteryNotLowState(false);
-        assertTrue("Job with not low constraint did not stop when battery went low.",
-                kTestEnvironment.awaitStopped());
+        assertWithMessage("Job with not low constraint did not stop when battery went low.")
+                .that(kTestEnvironment.awaitStopped())
+                .isTrue();
+    }
+
+    private boolean hasBattery() throws Exception {
+        Intent batteryInfo =
+                getContext()
+                        .registerReceiver(null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
+        boolean present = batteryInfo.getBooleanExtra(BatteryManager.EXTRA_PRESENT, true);
+
+        if (!present) {
+            Log.i(TAG, "Device doesn't have a battery.");
+        }
+        return present;
+    }
+
+    private void verifyChargingState(boolean charging) throws Exception {
+        boolean curCharging =
+                Boolean.parseBoolean(
+                        SystemUtil.runShellCommand(
+                                        getInstrumentation(),
+                                        "cmd jobscheduler get-battery-charging")
+                                .trim());
+
+        assertThat(curCharging).isEqualTo(charging);
+    }
+
+    private void verifyBatteryNotLowState(boolean notLow) throws Exception {
+        boolean curNotLow =
+                Boolean.parseBoolean(
+                        SystemUtil.runShellCommand(
+                                        getInstrumentation(),
+                                        "cmd jobscheduler get-battery-not-low")
+                                .trim());
+        assertThat(notLow).isEqualTo(curNotLow);
+        IntentFilter filter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
+        Intent batteryState = getContext().registerReceiver(null, filter);
+        assertThat(!batteryState.getBooleanExtra(BatteryManager.EXTRA_BATTERY_LOW, notLow))
+                .isEqualTo(notLow);
     }
 }
