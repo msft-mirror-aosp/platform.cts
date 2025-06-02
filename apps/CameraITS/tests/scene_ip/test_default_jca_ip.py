@@ -18,6 +18,7 @@ import math
 import os
 import pathlib
 import types
+import subprocess
 
 import camera_properties_utils
 import gen2_rig_controller_utils
@@ -70,6 +71,7 @@ class DefaultJcaImageParityClassTest(its_base_test.ItsBaseTest):
     self.dut.services.register(
         uiautomator.ANDROID_SERVICE_NAME, uiautomator.UiAutomatorService
     )
+    gen2_rig_controller_utils.get_usb_devices_connected()
 
   def teardown_test(self):
     ui_interaction_utils.force_stop_app(
