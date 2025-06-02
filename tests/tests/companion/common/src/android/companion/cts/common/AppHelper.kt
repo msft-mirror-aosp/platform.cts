@@ -29,6 +29,11 @@ class AppHelper(
     fun associate(macAddress: MacAddress, role: String = "") =
             runShellCommand("cmd companiondevice associate $userId $packageName $macAddress $role")
 
+    fun associateSelfManaged(macAddress: MacAddress, role: String) =
+            runShellCommand(
+                "cmd companiondevice associate $userId $packageName $macAddress $role true"
+            )
+
     fun disassociate(macAddress: MacAddress) =
             runShellCommand("cmd companiondevice disassociate $userId $packageName $macAddress")
 
