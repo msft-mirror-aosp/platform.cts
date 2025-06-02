@@ -59,7 +59,7 @@ public class AutoConnectCarrierRoamingSatelliteTest extends CarrierRoamingSatell
 
         beforeAllCarrierRoamingTestsBase();
         setUpAutoConnectTestEnvironment(
-            SLOT_ID_0, MOCK_SIM_PROFILE_ID_TWN_CHT, PHONE_NUMBER_0);
+            SLOT_ID_0, MOCK_SIM_PROFILE_ID_TWN_CHT, PHONE_NUMBER_0, true);
     }
 
     /**
@@ -71,7 +71,7 @@ public class AutoConnectCarrierRoamingSatelliteTest extends CarrierRoamingSatell
         logd(TAG, "afterAllTests");
         if (!shouldTestSatelliteWithMockService()) return;
 
-        cleanUpMockSim(SLOT_ID_0, MOCK_SIM_PROFILE_ID_TWN_CHT);
+        cleanUpMockSim(SLOT_ID_0, MOCK_SIM_PROFILE_ID_TWN_CHT, true);
         afterAllCarrierRoamingTestsBase();
     }
 

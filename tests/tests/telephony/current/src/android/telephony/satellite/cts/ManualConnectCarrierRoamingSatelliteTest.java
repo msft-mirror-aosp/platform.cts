@@ -83,7 +83,7 @@ public class ManualConnectCarrierRoamingSatelliteTest extends CarrierRoamingSate
 
         beforeAllCarrierRoamingTestsBase();
         setUpManualConnectTestEnvironment(
-            ESOS_SLOT_ID, ESOS_SIM_PROFILE_ID, ESOS_PHONE_NUMBER, true, true);
+            ESOS_SLOT_ID, ESOS_SIM_PROFILE_ID, ESOS_PHONE_NUMBER, true, true, true);
     }
 
     /**
@@ -140,7 +140,7 @@ public class ManualConnectCarrierRoamingSatelliteTest extends CarrierRoamingSate
 
         CarrierRoamingNtnListenerTest carrierRoamingNtnListener =
             new CarrierRoamingNtnListenerTest();
-        ServiceStateListenerTest serviceStateListener = registerServiceStateListener();
+        ServiceStateListenerTest serviceStateListener = registerServiceStateListener(sEsosSubId);
         adoptShellIdentity();
         boolean originalWifiState = sWifiManager.isWifiEnabled();
         logd(TAG, "originalWifiState: " + originalWifiState);

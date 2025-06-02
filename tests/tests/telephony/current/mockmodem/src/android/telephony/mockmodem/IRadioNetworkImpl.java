@@ -1083,12 +1083,16 @@ public class IRadioNetworkImpl extends IRadioNetwork.Stub {
                         + " satelliteEnabled="
                         + satelliteEnabled);
 
+        boolean isEnabledStateChanged = false;
         RadioResponseInfo rsp;
         if (mSatelliteErrorCode != RadioError.NONE) {
             rsp = mService.makeSolRsp(serial, mSatelliteErrorCode);
         } else {
+            if (mIsSatelliteEnabledForCarrier != satelliteEnabled) {
+                isEnabledStateChanged = true;
+                mIsSatelliteEnabledForCarrier = satelliteEnabled;
+            }
             rsp = mService.makeSolRsp(serial, RadioError.NONE);
-            mIsSatelliteEnabledForCarrier = satelliteEnabled;
         }
 
         try {
@@ -1098,6 +1102,9 @@ public class IRadioNetworkImpl extends IRadioNetwork.Stub {
         }
 
         mService.onSetSatelliteEnabledForCarrier();
+        if (isEnabledStateChanged) {
+            mService.onSatelliteEnabledForCarrierStateChanged();
+        }
     }
 
     @Override
