@@ -141,14 +141,9 @@ public class CodecDecoderDetachedSurfaceTest extends CodecDecoderTestBase {
             }));
         }
         if (IS_AT_LEAST_B && apvSupport() && extractorMp4EnableApv()) {
-            args.addAll(
-                    Arrays.asList(
-                            new Object[][] {
-                                {
-                                    MediaFormat.MIMETYPE_VIDEO_APV,
-                                    "pattern_640x480_30fps_16mbps_apv_10bit.mp4"
-                                },
-                            }));
+            args.addAll(Arrays.asList(new Object[][] {
+                    {MediaFormat.MIMETYPE_VIDEO_APV, "pattern_640x480_30fps_16mbps_apv_10bit.mp4"},
+            }));
         }
         for (Object[] arg : args) {
             for (int burstLength : BURST_LENGTHS) {

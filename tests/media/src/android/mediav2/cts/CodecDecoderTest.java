@@ -247,10 +247,9 @@ public class CodecDecoderTest extends CodecDecoderTestBase {
             }));
         }
         if (IS_AT_LEAST_B && apvSupport() && extractorMp4EnableApv()) {
-            exhaustiveArgsList.addAll(Arrays.asList(new Object[][]{
-                    {MediaFormat.MIMETYPE_VIDEO_APV,
-                            "pattern_640x480_30fps_16mbps_apv_10bit.mp4", null, -1.0f, -1L,
-                             CODEC_ALL},
+            exhaustiveArgsList.addAll(Arrays.asList(new Object[][] {
+                    {MediaFormat.MIMETYPE_VIDEO_APV, "pattern_640x480_30fps_16mbps_apv_10bit.mp4",
+                            null, -1.0f, -1L, CODEC_ALL},
             }));
         }
         return prepareParamList(exhaustiveArgsList, isEncoder, needAudio, needVideo, true);
