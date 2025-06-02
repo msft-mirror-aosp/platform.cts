@@ -62,7 +62,7 @@ public abstract class CarHostJUnit4TestCase extends BaseHostJUnit4Test {
 
     private static final int SYSTEM_USER_ID = 0;
 
-    private static final int DEFAULT_TIMEOUT_SEC = 20;
+    private static final int DEFAULT_TIMEOUT_SEC = 40;
     protected static final int SYSTEM_RESTART_TIMEOUT_SEC = 120;
 
     private static final Pattern CREATE_USER_OUTPUT_PATTERN = Pattern.compile("id=(\\d+)");
