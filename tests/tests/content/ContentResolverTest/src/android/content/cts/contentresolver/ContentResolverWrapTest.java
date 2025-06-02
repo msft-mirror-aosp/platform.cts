@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package android.content.cts;
+package android.content.cts.contentresolver;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -78,8 +78,9 @@ public final class ContentResolverWrapTest {
 
     static {
         try {
-            FD = ParcelFileDescriptor.open(new File("/dev/null"),
-                    ParcelFileDescriptor.MODE_READ_ONLY);
+            FD =
+                    ParcelFileDescriptor.open(
+                            new File("/dev/null"), ParcelFileDescriptor.MODE_READ_ONLY);
             ASSET_FD = new AssetFileDescriptor(FD, 0, AssetFileDescriptor.UNKNOWN_LENGTH);
         } catch (Exception e) {
             throw new RuntimeException(e);
