@@ -163,7 +163,7 @@ public class AccessibilityMagnificationTest {
 
     private final CheckFlagsRule mCheckFlagsRule =
             DeviceFlagsValueProvider.createCheckFlagsRule(sUiAutomation);
-    private final AnimationTestRule mAnimationRule = new AnimationTestRule();
+    private final AnimationTestRule mAnimationRule = new AnimationTestRule(sUiAutomation);
 
     @Rule
     public final RuleChain mRuleChain =
