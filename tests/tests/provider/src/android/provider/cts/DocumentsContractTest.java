@@ -23,6 +23,7 @@ import static android.provider.DocumentsContract.buildRecentDocumentsUri;
 import static android.provider.DocumentsContract.buildRootUri;
 import static android.provider.DocumentsContract.buildRootsUri;
 import static android.provider.DocumentsContract.buildSearchDocumentsUri;
+import static android.provider.DocumentsContract.buildTrashDocumentsUri;
 import static android.provider.DocumentsContract.buildTreeDocumentUri;
 import static android.provider.DocumentsContract.copyDocument;
 import static android.provider.DocumentsContract.createDocument;
@@ -35,6 +36,8 @@ import static android.provider.DocumentsContract.isChildDocument;
 import static android.provider.DocumentsContract.moveDocument;
 import static android.provider.DocumentsContract.removeDocument;
 import static android.provider.DocumentsContract.renameDocument;
+import static android.provider.DocumentsContract.restoreDocumentFromTrash;
+import static android.provider.DocumentsContract.trashDocument;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -70,14 +73,19 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.ParcelFileDescriptor;
 import android.os.UserHandle;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.DocumentsContract;
 import android.provider.DocumentsContract.Path;
 import android.provider.DocumentsProvider;
+import android.provider.Flags;
 
 import androidx.test.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -90,6 +98,10 @@ import java.util.List;
 
 @RunWith(AndroidJUnit4.class)
 public class DocumentsContractTest {
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
     private static final String AUTHORITY = "com.example";
 
     private static final String DOC_RED = "red";
@@ -498,6 +510,33 @@ public class DocumentsContractTest {
         // clean up
         file.delete();
         bitmap.recycle();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_DOCUMENTS_TRASH_API)
+    public void testTrashDocument() throws Exception {
+        doReturn(DOC_RESULT).when(mProvider).trashDocument(DOC_RED);
+
+        assertEquals(URI_RESULT, trashDocument(mResolver, URI_RED));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_DOCUMENTS_TRASH_API)
+    public void testQueryTrashDocuments() throws Exception {
+        final Cursor res = new MatrixCursor(new String[0]);
+
+        doReturn(res).when(mProvider).queryTrashDocuments(null /*projections*/);
+
+        assertEquals(
+                res, mResolver.query(buildTrashDocumentsUri(AUTHORITY), null, Bundle.EMPTY, null));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_DOCUMENTS_TRASH_API)
+    public void testRestoreDocumentFromTrash() throws Exception {
+        doReturn(DOC_RESULT).when(mProvider).restoreDocumentFromTrash(DOC_RED, DOC_GREEN);
+
+        assertEquals(URI_RESULT, restoreDocumentFromTrash(mResolver, URI_RED, URI_GREEN));
     }
 
     private static void writeImage(int width, int height, int color, OutputStream out) {
