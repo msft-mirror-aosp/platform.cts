@@ -18,6 +18,7 @@ package android.app.notification.current.cts;
 
 import static android.app.Notification.Metric.MEANING_CELESTIAL_MOON_PHASE;
 import static android.app.Notification.Metric.MEANING_CHRONOMETER_TIMER;
+import static android.app.Notification.Metric.MEANING_EVENT_DATE;
 import static android.app.Notification.Metric.MEANING_EVENT_TIME;
 import static android.app.Notification.Metric.MEANING_HEALTH_STEPS;
 import static android.app.Notification.Metric.MEANING_MOVEMENT_DISTANCE_TRAVELED;
@@ -32,10 +33,11 @@ import static org.junit.Assert.assertThrows;
 
 import android.app.Flags;
 import android.app.Notification.Metric;
+import android.app.Notification.Metric.FixedDate;
 import android.app.Notification.Metric.FixedFloat;
-import android.app.Notification.Metric.FixedInstant;
 import android.app.Notification.Metric.FixedInt;
 import android.app.Notification.Metric.FixedString;
+import android.app.Notification.Metric.FixedTime;
 import android.app.Notification.Metric.TimeDifference;
 import android.app.Notification.MetricStyle;
 import android.platform.test.annotations.RequiresFlagsEnabled;
@@ -50,8 +52,9 @@ import org.junit.runner.RunWith;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
-import java.util.TimeZone;
 
 @RunWith(AndroidJUnit4.class)
 @RequiresFlagsEnabled(Flags.FLAG_API_METRIC_STYLE)
@@ -66,16 +69,14 @@ public class NotificationMetricStyleTest {
         style.addMetric(new Metric(new FixedString("Blah"), "Meh", MEANING_TRAVEL_TERMINAL));
         style.addMetric(new Metric(new FixedInt(42), "Steps", MEANING_HEALTH_STEPS));
         style.addMetric(
-                new Metric(new FixedInstant(Instant.ofEpochMilli(1000)), "X", MEANING_EVENT_TIME));
+                new Metric(new FixedDate(LocalDate.of(2017, 4, 1)), "X", MEANING_EVENT_DATE));
 
         assertThat(style.getMetrics())
                 .containsExactly(
                         new Metric(new FixedString("Blah"), "Meh", MEANING_TRAVEL_TERMINAL),
                         new Metric(new FixedInt(42), "Steps", MEANING_HEALTH_STEPS),
                         new Metric(
-                                new FixedInstant(Instant.ofEpochMilli(1000)),
-                                "X",
-                                MEANING_EVENT_TIME))
+                                new FixedDate(LocalDate.of(2017, 4, 1)), "X", MEANING_EVENT_DATE))
                 .inOrder();
     }
 
@@ -115,10 +116,7 @@ public class NotificationMetricStyleTest {
                                         MEANING_CELESTIAL_MOON_PHASE))
                         .addMetric(
                                 new Metric(
-                                        new FixedInstant(
-                                                Instant.ofEpochMilli(100),
-                                                FixedInstant.FORMAT_LONG_DATE_TIME,
-                                                TimeZone.getTimeZone("Europe/Zurich")),
+                                        new FixedTime(LocalTime.of(19, 30)),
                                         "Event",
                                         MEANING_EVENT_TIME));
 
@@ -137,10 +135,7 @@ public class NotificationMetricStyleTest {
                                                 "Moon",
                                                 MEANING_CELESTIAL_MOON_PHASE),
                                         new Metric(
-                                                new FixedInstant(
-                                                        Instant.ofEpochMilli(100),
-                                                        FixedInstant.FORMAT_LONG_DATE_TIME,
-                                                        TimeZone.getTimeZone("Europe/Zurich")),
+                                                new FixedTime(LocalTime.of(19, 30)),
                                                 "Event",
                                                 MEANING_EVENT_TIME)));
 
@@ -251,53 +246,52 @@ public class NotificationMetricStyleTest {
     public void timeDifference_forTimer_constructs() {
         TimeDifference timeDifference =
                 TimeDifference.forTimer(
-                        Instant.ofEpochMilli(100), TimeDifference.FORMAT_CHRONOMETER_SECONDS);
+                        Instant.ofEpochMilli(100), TimeDifference.FORMAT_CHRONOMETER);
 
         assertThat(timeDifference.getZeroTime()).isEqualTo(Instant.ofEpochMilli(100));
         assertThat(timeDifference.getPausedDuration()).isNull();
         assertThat(timeDifference.isTimer()).isTrue();
         assertThat(timeDifference.isStopwatch()).isFalse();
-        assertThat(timeDifference.getFormat()).isEqualTo(TimeDifference.FORMAT_CHRONOMETER_SECONDS);
+        assertThat(timeDifference.getFormat()).isEqualTo(TimeDifference.FORMAT_CHRONOMETER);
     }
 
     @Test
     public void timeDifference_forStopwatch_constructs() {
         TimeDifference timeDifference =
                 TimeDifference.forStopwatch(
-                        Instant.ofEpochMilli(200), TimeDifference.FORMAT_CHRONOMETER_AUTOMATIC);
+                        Instant.ofEpochMilli(200), TimeDifference.FORMAT_AUTOMATIC);
 
         assertThat(timeDifference.getZeroTime()).isEqualTo(Instant.ofEpochMilli(200));
         assertThat(timeDifference.getPausedDuration()).isNull();
         assertThat(timeDifference.isStopwatch()).isTrue();
         assertThat(timeDifference.isTimer()).isFalse();
-        assertThat(timeDifference.getFormat())
-                .isEqualTo(TimeDifference.FORMAT_CHRONOMETER_AUTOMATIC);
+        assertThat(timeDifference.getFormat()).isEqualTo(TimeDifference.FORMAT_AUTOMATIC);
     }
 
     @Test
     public void newTimeDifference_forPausedTimer_constructs() {
         TimeDifference timeDifference =
                 TimeDifference.forPausedTimer(
-                        Duration.ofSeconds(90), TimeDifference.FORMAT_CHRONOMETER_SECONDS);
+                        Duration.ofSeconds(90), TimeDifference.FORMAT_CHRONOMETER);
 
         assertThat(timeDifference.getZeroTime()).isNull();
         assertThat(timeDifference.getPausedDuration()).isEqualTo(Duration.ofSeconds(90));
         assertThat(timeDifference.isTimer()).isTrue();
         assertThat(timeDifference.isStopwatch()).isFalse();
-        assertThat(timeDifference.getFormat()).isEqualTo(TimeDifference.FORMAT_CHRONOMETER_SECONDS);
+        assertThat(timeDifference.getFormat()).isEqualTo(TimeDifference.FORMAT_CHRONOMETER);
     }
 
     @Test
     public void newTimeDifference_forPausedStopwatch_constructs() {
         TimeDifference timeDifference =
                 TimeDifference.forPausedStopwatch(
-                        Duration.ofMinutes(2), TimeDifference.FORMAT_CHRONOMETER_MINUTES);
+                        Duration.ofMinutes(2), TimeDifference.FORMAT_CHRONOMETER);
 
         assertThat(timeDifference.getZeroTime()).isNull();
         assertThat(timeDifference.getPausedDuration()).isEqualTo(Duration.ofMinutes(2));
         assertThat(timeDifference.isStopwatch()).isTrue();
         assertThat(timeDifference.isTimer()).isFalse();
-        assertThat(timeDifference.getFormat()).isEqualTo(TimeDifference.FORMAT_CHRONOMETER_MINUTES);
+        assertThat(timeDifference.getFormat()).isEqualTo(TimeDifference.FORMAT_CHRONOMETER);
     }
 
     @Test
@@ -333,32 +327,35 @@ public class NotificationMetricStyleTest {
     }
 
     @Test
-    public void newFixedInstant_constructs() {
-        FixedInstant fixedInstant =
-                new FixedInstant(
-                        Instant.ofEpochMilli(10),
-                        FixedInstant.FORMAT_LONG_DATE_TIME,
-                        TimeZone.getTimeZone("Europe/Zurich"));
+    public void newFixedDate_constructs() {
+        FixedDate fixedDate = new FixedDate(LocalDate.of(2021, 10, 31), FixedDate.FORMAT_LONG_DATE);
 
-        assertThat(fixedInstant.getValue()).isEqualTo(Instant.ofEpochMilli(10));
-        assertThat(fixedInstant.getFormat()).isEqualTo(FixedInstant.FORMAT_LONG_DATE_TIME);
-        assertThat(fixedInstant.getTimeZone()).isEqualTo(TimeZone.getTimeZone("Europe/Zurich"));
+        assertThat(fixedDate.getValue()).isEqualTo(LocalDate.of(2021, 10, 31));
+        assertThat(fixedDate.getFormat()).isEqualTo(FixedDate.FORMAT_LONG_DATE);
 
-        FixedInstant defaults = new FixedInstant(Instant.ofEpochMilli(100));
+        FixedDate defaults = new FixedDate(LocalDate.of(2021, 10, 31));
 
-        assertThat(defaults.getValue()).isEqualTo(Instant.ofEpochMilli(100));
-        assertThat(defaults.getFormat()).isEqualTo(FixedInstant.FORMAT_AUTOMATIC);
-        assertThat(defaults.getTimeZone()).isNull();
+        assertThat(defaults.getValue()).isEqualTo(LocalDate.of(2021, 10, 31));
+        assertThat(defaults.getFormat()).isEqualTo(FixedDate.FORMAT_AUTOMATIC);
     }
 
     @Test
-    public void newFixedInstant_nullInstant_throws() {
-        assertThrows(NullPointerException.class, () -> new FixedInstant(null));
+    public void newFixedDate_nullDate_throws() {
+        assertThrows(NullPointerException.class, () -> new FixedDate(null));
         assertThrows(
-                NullPointerException.class, () -> new FixedInstant(null, FixedInstant.FORMAT_TIME));
-        assertThrows(
-                NullPointerException.class,
-                () -> new FixedInstant(null, FixedInstant.FORMAT_AUTOMATIC, TimeZone.getDefault()));
+                NullPointerException.class, () -> new FixedDate(null, FixedDate.FORMAT_AUTOMATIC));
+    }
+
+    @Test
+    public void newFixedTime_constructs() {
+        FixedTime fixedTime = new FixedTime(LocalTime.of(21, 15));
+
+        assertThat(fixedTime.getValue()).isEqualTo(LocalTime.of(21, 15));
+    }
+
+    @Test
+    public void newFixedTime_nullTime_throws() {
+        assertThrows(NullPointerException.class, () -> new FixedTime(null));
     }
 
     @Test
