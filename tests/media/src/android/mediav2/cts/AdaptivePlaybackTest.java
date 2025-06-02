@@ -17,11 +17,12 @@
 package android.mediav2.cts;
 
 import static android.media.codec.Flags.apvSupport;
+import static android.media.codec.Flags.dynamicColorAspects;
 import static android.mediav2.common.cts.CodecTestBase.IS_AT_LEAST_V;
 import static android.mediav2.common.cts.CodecTestBase.SupportClass.CODEC_ALL;
 import static android.mediav2.common.cts.CodecTestBase.SupportClass.CODEC_OPTIONAL;
-import static android.mediav2.common.cts.DecodeStreamToYuv.getFormatInStream;
 import static android.mediav2.common.cts.CodecTestBase.VNDK_IS_AT_MOST_U;
+import static android.mediav2.common.cts.DecodeStreamToYuv.getFormatInStream;
 
 import static com.android.media.extractor.flags.Flags.extractorMp4EnableApv;
 
@@ -191,22 +192,17 @@ public class AdaptivePlaybackTest extends CodecDecoderTestBase {
         }
 
         if (IS_AT_LEAST_B && apvSupport() && extractorMp4EnableApv()) {
-            exhaustiveArgsList.addAll(
-                    Arrays.asList(
-                            new Object[][] {
-                                {
-                                    MediaFormat.MIMETYPE_VIDEO_APV,
-                                    new String[] {
-                                        "pattern_640x480_30fps_16mbps_apv_10bit.mp4",
-                                        "pattern_1280x720_30fps_30mbps_apv_10bit.mp4"
-                                    },
-                                    CODEC_OPTIONAL
-                                },
-                            }));
+            exhaustiveArgsList.addAll(Arrays.asList(new Object[][] {
+                    {MediaFormat.MIMETYPE_VIDEO_APV,
+                            new String[] {"pattern_640x480_30fps_16mbps_apv_10bit.mp4",
+                                    "pattern_1280x720_30fps_30mbps_apv_10bit.mp4"},
+                            CODEC_OPTIONAL},
+            }));
         }
         List<Object[]> argsList = prepareParamList(exhaustiveArgsList, isEncoder, needAudio,
                 needVideo, false);
-        if (IS_AT_LEAST_V && android.media.codec.Flags.dynamicColorAspects()) {
+
+        if (IS_AT_LEAST_V && dynamicColorAspects()) {
             List<Object[]> dynamicColorAspectsArgs = Arrays.asList(new Object[][]{
                     {MediaFormat.MIMETYPE_VIDEO_AVC, new String[]{
                             "bbb_640x360_512kbps_30fps_avc_nob.mp4",

@@ -27,7 +27,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import android.annotation.NonNull;
 import android.graphics.ImageFormat;
 import android.media.AudioFormat;
 import android.media.Image;
@@ -37,6 +36,8 @@ import android.media.MediaFormat;
 import android.media.MediaMuxer;
 import android.os.PersistableBundle;
 import android.util.Log;
+
+import androidx.annotation.NonNull;
 
 import com.android.compatibility.common.util.Preconditions;
 

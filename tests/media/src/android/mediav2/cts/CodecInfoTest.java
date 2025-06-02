@@ -29,6 +29,7 @@ import static android.media.MediaCodecInfo.CodecCapabilities.FEATURE_HdrEditing;
 import static android.media.MediaCodecInfo.CodecCapabilities.FEATURE_HlgEditing;
 import static android.media.codec.Flags.FLAG_DYNAMIC_COLOR_ASPECTS;
 import static android.media.codec.Flags.FLAG_IN_PROCESS_SW_AUDIO_CODEC;
+import static android.media.codec.Flags.hlgEditing;
 import static android.mediav2.common.cts.CodecTestBase.BOARD_FIRST_SDK_IS_AT_LEAST_202404;
 import static android.mediav2.common.cts.CodecTestBase.BOARD_SDK_IS_AT_LEAST_T;
 import static android.mediav2.common.cts.CodecTestBase.FIRST_SDK_IS_AT_LEAST_T;
@@ -254,7 +255,7 @@ public class CodecInfoTest {
             // Encoders that support FEATURE_HdrEditing / FEATURE_HlgEditing, must support
             // ABGR2101010 color format and at least one HDR profile
             boolean hdrEditingSupported = caps.isFeatureSupported(FEATURE_HdrEditing);
-            boolean hlgEditingSupported = (IS_AT_LEAST_V && android.media.codec.Flags.hlgEditing())
+            boolean hlgEditingSupported = (IS_AT_LEAST_V && hlgEditing())
                     ? caps.isFeatureSupported(FEATURE_HlgEditing) : false;
             if (hdrEditingSupported || hlgEditingSupported) {
                 boolean abgr2101010Supported = IntStream.of(caps.colorFormats)

@@ -27,9 +27,9 @@ java_defaults {
     // include both the 32 and 64 bit versions
     compile_multilib: "both",
     static_libs: [
-        "ctstestrunner-axt",
         "cts-media-common",
         "ctsmediav2common",
+        "ctstestrunner-axt",
         "testng",
     ],
     jni_libs: [
@@ -37,20 +37,18 @@ java_defaults {
     ],
     aaptflags: [
         // Do not compress these files:
-        "-0 .vp9",
-        "-0 .ts",
         "-0 .heic",
-        "-0 .trp",
-        "-0 .ota",
         "-0 .mxmf",
+        "-0 .ota",
+        "-0 .trp",
+        "-0 .ts",
+        "-0 .vp9",
     ],
     srcs: [
-        "src/**/*.java",
         "aidl/**/*.aidl",
+        "src/**/*.java",
     ],
-    // This test uses private APIs
-    platform_apis: true,
-    jni_uses_sdk_apis: true,
+    sdk_version: "test_current",
     libs: [
         "android.test.base.stubs.system",
         "android.test.runner.stubs.system",
