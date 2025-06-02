@@ -95,6 +95,18 @@ public class MediaCodecBlockModelTest extends AndroidTestCase {
         return new AssetFileDescriptor(parcelFD, 0, parcelFD.getStatSize());
     }
 
+     static boolean isPtsStrictlyIncreasing(List<Long> ptsList) {
+        long lastPts = Long.MIN_VALUE;
+        for (int i = 0; i < ptsList.size(); i++) {
+            if (lastPts < ptsList.get(i)) {
+                lastPts = ptsList.get(i);
+            } else {
+                return false;
+            }
+        }
+        return true;
+    }
+
     /**
      * Tests whether decoding a short group-of-pictures succeeds. The test queues a few video frames
      * then signals end-of-stream. The test fails if the decoder doesn't output the queued frames.
@@ -364,7 +376,7 @@ public class MediaCodecBlockModelTest extends AndroidTestCase {
             }
             request.queue();
             input.offset += written;
-            if (mTimestampList != null) {
+            if (mTimestampList != null && written > 0) {
                 mTimestampList.add(timestampUs);
             }
         }
@@ -394,15 +406,21 @@ public class MediaCodecBlockModelTest extends AndroidTestCase {
         public boolean onOutputSlot(MediaCodec codec, int index) throws Exception {
             MediaCodec.OutputFrame frame = codec.getOutputFrame(index);
             boolean eos = (frame.getFlags() & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0;
+            boolean isCodecConfig = (frame.getFlags() & MediaCodec.BUFFER_FLAG_CODEC_CONFIG) != 0;
+            boolean hasData = false;
 
             if (mGraphic && frame.getHardwareBuffer() != null) {
                 frame.getHardwareBuffer().close();
+                hasData = true;
             }
             if (!mGraphic && frame.getLinearBlock() != null) {
                 frame.getLinearBlock().recycle();
+                hasData = true;
             }
 
-            mTimestampList.remove(frame.getPresentationTimeUs());
+            if (hasData && !isCodecConfig) {
+                mTimestampList.add(frame.getPresentationTimeUs());
+            }
 
             codec.releaseOutputBuffer(index, false);
 
@@ -651,7 +669,8 @@ public class MediaCodecBlockModelTest extends AndroidTestCase {
             }
             mediaCodec = MediaCodec.createByCodecName(codecs[0]);
 
-            List<Long> timestampList = Collections.synchronizedList(new ArrayList<>());
+            List<Long> inputTimestampList = Collections.synchronizedList(new ArrayList<>());
+            List<Long> outputTimestampList = Collections.synchronizedList(new ArrayList<>());
             Result result = runComponentWithLinearInput(
                     mediaCodec,
                     null,  // crypto
@@ -662,12 +681,11 @@ public class MediaCodecBlockModelTest extends AndroidTestCase {
                             .setExtractor(mediaExtractor)
                             .setLastBufferTimestampUs(lastBufferTimestampUs)
                             .setObtainBlockForEachBuffer(obtainBlockForEachBuffer)
-                            .setTimestampQueue(timestampList)
+                            .setTimestampQueue(inputTimestampList)
                             .build(),
-                    new DummyOutputSlotListener(false /* graphic */, timestampList));
+                    new DummyOutputSlotListener(false /* graphic */, outputTimestampList));
             if (result == Result.SUCCESS) {
-                assertTrue("Timestamp should match between input / output: " + timestampList,
-                        timestampList.isEmpty());
+                assertTrue(isPtsStrictlyIncreasing(outputTimestampList));
             }
             return result;
         } catch (IOException e) {
@@ -703,7 +721,8 @@ public class MediaCodecBlockModelTest extends AndroidTestCase {
             }
             mediaCodec = MediaCodec.createByCodecName(codecs[0]);
 
-            List<Long> timestampList = Collections.synchronizedList(new ArrayList<>());
+            List<Long> inputTimestampList = Collections.synchronizedList(new ArrayList<>());
+            List<Long> outputTimestampList = Collections.synchronizedList(new ArrayList<>());
             Result result = runComponentWithLinearInput(
                     mediaCodec,
                     null,  // crypto
@@ -713,12 +732,11 @@ public class MediaCodecBlockModelTest extends AndroidTestCase {
                     new ExtractorInputSlotListener.Builder()
                             .setExtractor(mediaExtractor)
                             .setLastBufferTimestampUs(LAST_BUFFER_TIMESTAMP_US)
-                            .setTimestampQueue(timestampList)
+                            .setTimestampQueue(inputTimestampList)
                             .build(),
-                    new DummyOutputSlotListener(false /* graphic */, timestampList));
+                    new DummyOutputSlotListener(false /* graphic */, outputTimestampList));
             if (result == Result.SUCCESS) {
-                assertTrue("Timestamp should match between input / output: " + timestampList,
-                        timestampList.isEmpty());
+                assertTrue(isPtsStrictlyIncreasing(outputTimestampList));
             }
             return result;
         } catch (IOException e) {
