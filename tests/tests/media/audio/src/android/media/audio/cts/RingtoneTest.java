@@ -18,12 +18,18 @@ package android.media.audio.cts;
 
 import static android.media.Utils.SYNCHRONIZED_VIBRATION;
 import static android.media.Utils.VIBRATION_URI_PARAM;
-import static android.media.cts.Utils.getTestVibrationFile;
 import static android.media.cts.Utils.RINGTONE_TEST_URI;
+import static android.media.cts.Utils.getTestVibrationFile;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+
 import android.Manifest;
+import android.app.Instrumentation;
 import android.content.ContentProvider;
 import android.content.Context;
 import android.content.pm.PackageManager;
@@ -43,17 +49,25 @@ import android.os.Vibrator;
 import android.os.VibratorManager;
 import android.platform.test.annotations.AppModeFull;
 import android.provider.Settings;
-import android.test.InstrumentationTestCase;
 import android.util.Log;
+
+import androidx.test.InstrumentationRegistry;
+import androidx.test.runner.AndroidJUnit4;
 
 import com.android.compatibility.common.util.ApiLevelUtil;
 import com.android.compatibility.common.util.SystemUtil;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.io.IOException;
 import java.util.Objects;
 
 @AppModeFull(reason = "TODO: evaluate and port to instant")
-public class RingtoneTest extends InstrumentationTestCase {
+@RunWith(AndroidJUnit4.class)
+public class RingtoneTest {
     private static final String TAG = "RingtoneTest";
     private static final String PKG = "android.media.audio.cts";
 
@@ -67,9 +81,12 @@ public class RingtoneTest extends InstrumentationTestCase {
 
     private static boolean sIsAtLeastS = ApiLevelUtil.isAtLeast(Build.VERSION_CODES.S);
 
-    @Override
-    protected void setUp() throws Exception {
-        super.setUp();
+    private static Instrumentation getInstrumentation() {
+        return InstrumentationRegistry.getInstrumentation();
+    }
+
+    @Before
+    public void setUp() throws Exception {
         enableAppOps();
         mContext = getInstrumentation().getContext();
         mAudioManager = (AudioManager) mContext.getSystemService(Context.AUDIO_SERVICE);
@@ -121,8 +138,8 @@ public class RingtoneTest extends InstrumentationTestCase {
         }
     }
 
-    @Override
-    protected void tearDown() throws Exception {
+    @After
+    public void tearDown() throws Exception {
         // restore original settings
         if (mRingtone != null) {
             if (mRingtone.isPlaying()) mRingtone.stop();
@@ -142,7 +159,6 @@ public class RingtoneTest extends InstrumentationTestCase {
         }
         RingtoneManager.setActualDefaultRingtoneUri(mContext, RingtoneManager.TYPE_RINGTONE,
                 mDefaultRingUri);
-        super.tearDown();
     }
 
     private boolean hasAudioOutput() {
@@ -159,6 +175,7 @@ public class RingtoneTest extends InstrumentationTestCase {
         return mContext.getSystemService(Vibrator.class).hasVibrator();
     }
 
+    @Test
     public void testRingtone() {
         if (isTV()) {
             return;
@@ -208,6 +225,7 @@ public class RingtoneTest extends InstrumentationTestCase {
         assertFalse(mRingtone.isPlaying());
     }
 
+    @Test
     public void testPlaybackProperties() {
         if (isTV()) {
             return;
@@ -237,11 +255,12 @@ public class RingtoneTest extends InstrumentationTestCase {
         if (sIsAtLeastS) {
             assertEquals(HapticGenerator.isAvailable(), mRingtone.isHapticGeneratorEnabled());
         }
-        assertEquals("invalid ringtone player volume", 0.5f, mRingtone.getVolume());
+        assertEquals("invalid ringtone player volume", 0.5f, mRingtone.getVolume(), 0.1f);
         mRingtone.stop();
         assertFalse(mRingtone.isPlaying());
     }
 
+    @Test
     public void testRingtoneVibration() throws IOException {
         if (isTV()) {
             return;
@@ -281,6 +300,7 @@ public class RingtoneTest extends InstrumentationTestCase {
         assertThat(mRingtone.getVibrationEffect()).isNull();
     }
 
+    @Test
     public void testRingtoneVibrationPlayback() throws IOException {
         if (isTV()) {
             return;

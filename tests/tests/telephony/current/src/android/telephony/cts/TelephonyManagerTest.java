@@ -3513,16 +3513,9 @@ public class TelephonyManagerTest {
 
         // Clear downloaded carrier keys just after override above.
         // Otherwise, downloaded key would be used instead of the override value above.
-        if (Flags.forceImsiCertificateDelete()) {
-            Log.i(TAG, "forceDeleteImsiEncryptionKey");
-            TelephonyUtils.forceDeleteImsiEncryptionKey(
-                    androidx.test.platform.app.InstrumentationRegistry.getInstrumentation());
-        } else {
-            Log.i(TAG,
-                    "forceDeleteImsiEncryptionKey: forceImsiCertificateDelete flag not"
-                            + " enabled");
-        }
-
+        Log.i(TAG, "forceDeleteImsiEncryptionKey");
+        TelephonyUtils.forceDeleteImsiEncryptionKey(
+                androidx.test.platform.app.InstrumentationRegistry.getInstrumentation());
         // It appears that the two certs actually have the same public key. Ideally we would
         // want these to be different for testing, but it's challenging to create a valid
         // certificate string for testing and these are the only two examples available

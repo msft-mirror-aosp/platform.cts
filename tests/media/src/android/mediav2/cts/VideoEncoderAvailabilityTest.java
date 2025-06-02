@@ -42,6 +42,7 @@ import android.mediav2.common.cts.EncoderConfigParams;
 import android.mediav2.common.cts.InputSurface;
 import android.mediav2.common.cts.OutputManager;
 import android.opengl.GLES20;
+import android.os.Build;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.util.Log;
 import android.util.Pair;
@@ -49,6 +50,7 @@ import android.util.Size;
 import android.view.Surface;
 
 import androidx.test.filters.LargeTest;
+import androidx.test.filters.SdkSuppress;
 
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.VsrTest;
@@ -292,6 +294,8 @@ class CodecEncoderGLSurface extends CodecTestBase {
 /**
  * This class comprises of tests that validate codec resource availability apis for video encoders
  */
+@RequiresFlagsEnabled(FLAG_CODEC_AVAILABILITY)
+@SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA, codeName = "Baklava")
 @RunWith(Parameterized.class)
 public class VideoEncoderAvailabilityTest extends CodecEncoderGLSurface {
     private static final String LOG_TAG = VideoEncoderAvailabilityTest.class.getSimpleName();

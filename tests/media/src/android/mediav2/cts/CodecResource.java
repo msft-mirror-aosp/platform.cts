@@ -16,10 +16,15 @@
 
 package android.mediav2.cts;
 
+import static android.media.codec.Flags.FLAG_CODEC_AVAILABILITY;
+
 import android.media.MediaCodec;
+import android.os.Build;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.util.Pair;
 
 import androidx.annotation.NonNull;
+import androidx.test.filters.SdkSuppress;
 
 import org.junit.Assert;
 
@@ -84,6 +89,8 @@ public class CodecResource {
 /**
  * This class provides utility functions for managing and comparing codec resources
  */
+@RequiresFlagsEnabled(FLAG_CODEC_AVAILABILITY)
+@SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA, codeName = "Baklava")
 class CodecResourceUtils {
     private static final long CAPACITY_UNKNOWN = -1L;
     public static final int RESOURCE_EQ = 0;

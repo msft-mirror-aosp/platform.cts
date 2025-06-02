@@ -50,6 +50,7 @@ import android.graphics.Point;
 import android.graphics.Rect;
 import android.hardware.display.DisplayManager;
 import android.os.Bundle;
+import android.os.SystemClock;
 import android.provider.DeviceConfig;
 import android.provider.Settings;
 import android.server.wm.settings.SettingsSession;
@@ -102,6 +103,7 @@ public class WindowInsetsBehaviorTests {
     private static final String SETTINGS_PACKAGE_NAME = "com.android.settings";
     private static final String ARGUMENT_KEY_FORCE_ENABLE = "force_enable_gesture_navigation";
     private static final String NAV_BAR_INTERACTION_MODE_RES_NAME = "config_navBarInteractionMode";
+    private static final long TIMEOUT_UPDATE_SYSTEM_GESTURE_EXCLUSION = 500L;
     private static final long TIMEOUT_RESET_PRESSED_STATE =
             // Give it a bit more time in case the main thread is busy.
             ViewConfiguration.getPressedStateDuration() + 300L;
@@ -900,6 +902,11 @@ public class WindowInsetsBehaviorTests {
             view.setSystemGestureExclusionRects(Lists.newArrayList(exclusiveRect));
         });
         assertTrue("Exclusion must be applied.", exclusionApplied.await(3, SECONDS));
+
+        // OnSystemGestureExclusionRectsChangedListener will be called while sending the exclusion
+        // to the system server via a oneway call. So system components might not all acknowledge
+        // the exclusion yet. Wait a bit here to prevent flake.
+        SystemClock.sleep(TIMEOUT_UPDATE_SYSTEM_GESTURE_EXCLUSION);
     }
 
     /**

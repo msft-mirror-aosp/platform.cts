@@ -19,6 +19,7 @@ import struct
 import time
 import pyudev
 import serial
+import subprocess
 
 
 # baudrates used for lights and servo controllers
@@ -107,6 +108,25 @@ def _rotator_write(serial_port, channel, command, value=None):
   msg = (f'{_LSS_COMMAND_START}{tmp}{_LSS_COMMAND_END}').encode()
   logging.debug('Writing message to rotator board: %s', msg)
   serial_port.write(msg)
+
+
+def get_usb_devices_connected():
+  """Checks and lists the details of USB devices.
+  """
+  devices = pyudev.Context()
+  device_list = devices.list_devices(subsystem='tty', ID_BUS='usb')
+  logging.debug('Getting the list of connected devices')
+  for device in device_list:
+    port = device['DEVNAME']
+    logging.debug('Getting properties for device: %s', port)
+    command = f'udevadm info -q property -n {port}'
+    try:
+      property_list = subprocess.check_output(command, shell=True)
+      logging.debug('------Device %s properties-----', port)
+      logging.debug(property_list)
+      logging.debug('-------------------------------')
+    except subprocess.CalledProcessError as error:
+      logging.exception(error)
 
 
 def find_serial_port(name):

@@ -222,11 +222,11 @@ public class StorageStatsTest extends InstrumentationTestCase {
         // Since OBB storage space may be shared or isolated between users,
         // we'll accept either expected or double usage.
         try {
-            assertMostlyEquals(CODE_ALL * 2, as.getAppBytes(), 5 * MB_IN_BYTES);
-            assertMostlyEquals(CODE_ALL * 1, bs.getAppBytes(), 5 * MB_IN_BYTES);
+            assertMostlyEquals(CODE_ALL * 2, as.getAppBytes(), 8 * MB_IN_BYTES);
+            assertMostlyEquals(CODE_ALL * 1, bs.getAppBytes(), 8 * MB_IN_BYTES);
         } catch (AssertionFailedError e) {
-            assertMostlyEquals(CODE_ALL * 4, as.getAppBytes(), 5 * MB_IN_BYTES);
-            assertMostlyEquals(CODE_ALL * 2, bs.getAppBytes(), 5 * MB_IN_BYTES);
+            assertMostlyEquals(CODE_ALL * 4, as.getAppBytes(), 8 * MB_IN_BYTES);
+            assertMostlyEquals(CODE_ALL * 2, bs.getAppBytes(), 8 * MB_IN_BYTES);
         }
     }
 

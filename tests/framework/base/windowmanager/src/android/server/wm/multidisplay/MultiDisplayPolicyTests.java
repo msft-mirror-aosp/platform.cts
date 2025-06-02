@@ -565,8 +565,13 @@ public class MultiDisplayPolicyTests extends MultiDisplayTestBase {
         mBroadcastActionTrigger.finishBroadcastReceiverActivity();
 
         if (lockScreenSession != null) {
+            final LockScreenSession wakenUpSession = lockScreenSession.wakeUpDevice();
+
+            // Show the bouncer before entering the credential.
+            executeShellCommand("wm dismiss-keyguard");
+
             // Unlock and check if the focus is switched back to primary display.
-            lockScreenSession.wakeUpDevice().enterAndConfirmLockCredential();
+            wakenUpSession.enterAndConfirmLockCredential();
         }
 
         waitAndAssertResumedAndFocusedActivityOnDisplay(

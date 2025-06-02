@@ -3334,47 +3334,35 @@ victim $UID 1 /data/user/0 default:targetSdkVersion=28 none 0 0 1 @null
         }
     }
 
-    // Same tests as above, but using direct PackageInstaller API calls.
+    // Same tests as above, but using direct PackageInstaller API calls for the current user.
 
     @Test
     @RequiresFlagsEnabled(FLAG_ARCHIVING)
     public void testInstallArchivedApiFromArchived() throws Exception {
+        final int userId = mContext.getUserId();
         uninstallPackage(HELLO_WORLD_PACKAGE_NAME);
 
         assertEquals("Success\n", SystemUtil.runShellCommand(
-                String.format("pm install -r -i %s -t -g %s", mContext.getPackageName(),
-                        HELLO_WORLD_APK)));
+                String.format("pm install --user %d -r -i %s -t -g %s", userId,
+                        mContext.getPackageName(), HELLO_WORLD_APK)));
+        assertThat(SystemUtil.runShellCommand(
+                String.format("pm archive --user %d %s", userId,
+                        HELLO_WORLD_PACKAGE_NAME))).isEqualTo("Success\n");
 
-        // When we use the shell command to archive the app without the userId, the
-        // system checks the installer info for all users. Check the test app is installed
-        // on all users. If it is not installed on some users, install it on these users.
-        final int[] nonInstalledUserIds = installTestPackageForAllUsersIfNeeded();
+        var packageManager = mContext.getPackageManager();
+        var archivedPackage = packageManager.getArchivedPackage(HELLO_WORLD_PACKAGE_NAME);
+        uninstallPackage(HELLO_WORLD_PACKAGE_NAME);
 
-        try {
-            assertThat(SystemUtil.runShellCommand(
-                    String.format("pm archive %s", HELLO_WORLD_PACKAGE_NAME))).isEqualTo(
-                    "Success\n");
-
-            var packageManager = mContext.getPackageManager();
-            var archivedPackage = packageManager.getArchivedPackage(HELLO_WORLD_PACKAGE_NAME);
-            uninstallPackage(HELLO_WORLD_PACKAGE_NAME);
-
-            // Install a default APK.
-            installArchived(archivedPackage);
-            assertTrue(isPackagePresent(HELLO_WORLD_PACKAGE_NAME));
-            // Check "installed" flag.
-            var applicationInfo = mPackageManager.getPackageInfo(HELLO_WORLD_PACKAGE_NAME,
-                    PackageManager.PackageInfoFlags.of(MATCH_ARCHIVED_PACKAGES)).applicationInfo;
-            assertEquals(applicationInfo.flags & ApplicationInfo.FLAG_INSTALLED, 0);
-            // Check archive state.
-            assertTrue(applicationInfo.isArchived);
-            uninstallPackage(HELLO_WORLD_PACKAGE_NAME);
-        } finally {
-            // Uninstall the test app on the users that we installed during the test case
-            for (int i = 0; i < nonInstalledUserIds.length; i++) {
-                uninstallPackageForUser(mContext.getPackageName(), nonInstalledUserIds[i]);
-            }
-        }
+        // Install a default APK.
+        installArchived(archivedPackage);
+        assertTrue(isPackagePresent(HELLO_WORLD_PACKAGE_NAME));
+        // Check "installed" flag.
+        var applicationInfo = mPackageManager.getPackageInfo(HELLO_WORLD_PACKAGE_NAME,
+                PackageManager.PackageInfoFlags.of(MATCH_ARCHIVED_PACKAGES)).applicationInfo;
+        assertEquals(applicationInfo.flags & ApplicationInfo.FLAG_INSTALLED, 0);
+        // Check archive state.
+        assertTrue(applicationInfo.isArchived);
+        uninstallPackage(HELLO_WORLD_PACKAGE_NAME);
     }
 
     @Test
