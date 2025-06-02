@@ -566,38 +566,45 @@ public abstract class CodecTestBase {
             }
         }
         if (!hasSupport) {
+            StringBuilder msg = new StringBuilder("Media Type : " + mediaType).append("\n");
+            if (formats != null) {
+                msg.append("Formats :").append("\n");
+                for (MediaFormat format : formats) {
+                    msg.append(format).append("\n");
+                }
+            }
+            if (features != null) {
+                msg.append("Features :").append("\n");
+                for (String feature : features) {
+                    msg.append(feature).append("\n");
+                }
+            }
             switch (supportRequirements) {
                 case CODEC_ALL:
-                    fail("format(s) not supported by codec: " + codecName + " for mediaType : "
-                            + mediaType + " formats: " + formats);
+                    fail(msg + " not supported by codec : " + codecName);
                     break;
                 case CODEC_ANY:
                     if (selectCodecs(mediaType, formats, features, isEncoder).isEmpty()) {
-                        fail("format(s) not supported by any component for mediaType : " + mediaType
-                                + " formats: " + formats);
+                        fail(msg + " not supported by any component on the device");
                     }
                     break;
                 case CODEC_DEFAULT:
                     if (isDefaultCodec(codecName, mediaType, isEncoder)) {
-                        fail("format(s) not supported by default codec : " + codecName
-                                + "for mediaType : " + mediaType + " formats: " + formats);
+                        fail(msg + " not supported by default codec : " + codecName);
                     }
                     break;
                 case CODEC_HW:
                     if (isHardwareAcceleratedCodec(codecName)) {
-                        fail("format(s) not supported by codec: " + codecName + " for mediaType : "
-                                + mediaType + " formats: " + formats);
+                        fail(msg + " not supported by codec : " + codecName);
                     }
                     break;
                 case CODEC_SHOULD:
-                    Assume.assumeTrue(String.format("format(s) not supported by codec: %s for"
-                            + " mediaType : %s. It is recommended to support it",
-                            codecName, mediaType), false);
+                    Assume.assumeTrue(String.format("%s not supported by codec: %s. It is "
+                            + "recommended to support it", msg, codecName), false);
                     break;
                 case CODEC_HW_RECOMMENDED:
-                    Assume.assumeTrue(String.format(
-                            "format(s) not supported by codec: %s for mediaType : %s. It is %s "
-                                    + "recommended to support it", codecName, mediaType,
+                    Assume.assumeTrue(String.format("%s not supported by codec: %s. It is %s"
+                                    + "recommended to support it", msg, codecName,
                             isHardwareAcceleratedCodec(codecName) ? "strongly" : ""), false);
                     break;
                 case CODEC_OPTIONAL:
@@ -605,8 +612,7 @@ public abstract class CodecTestBase {
                     // the later assumeTrue() ensures we skip the test for unsupported codecs
                     break;
             }
-            Assume.assumeTrue("format(s) not supported by codec: " + codecName + " for mediaType : "
-                    + mediaType, false);
+            Assume.assumeTrue(msg + " not supported by codec : " + codecName, false);
         }
     }
 

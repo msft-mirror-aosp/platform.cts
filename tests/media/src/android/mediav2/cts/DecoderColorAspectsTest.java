@@ -267,19 +267,12 @@ public class DecoderColorAspectsTest extends CodecDecoderTestBase {
         }));
 
         if (IS_AT_LEAST_B && apvSupport() && extractorMp4EnableApv()) {
-            exhaustiveArgsList.addAll(
-                    Arrays.asList(
-                            new Object[][] {
-                                {
-                                    MediaFormat.MIMETYPE_VIDEO_APV,
-                                    "pattern_dynamic_aspect_1280x720_30fps_30mbps_apv_10bit.mp4",
-                                    MediaFormat.COLOR_RANGE_LIMITED,
-                                    MediaFormat.COLOR_STANDARD_BT2020,
-                                    MediaFormat.COLOR_TRANSFER_ST2084,
-                                    false,
-                                    CODEC_OPTIONAL
-                                },
-                            }));
+            exhaustiveArgsList.addAll(Arrays.asList(new Object[][] {
+                    {MediaFormat.MIMETYPE_VIDEO_APV,
+                            "pattern_dynamic_aspect_1280x720_30fps_30mbps_apv_10bit.mp4",
+                            MediaFormat.COLOR_RANGE_LIMITED, MediaFormat.COLOR_STANDARD_BT2020,
+                            MediaFormat.COLOR_TRANSFER_ST2084, false, CODEC_OPTIONAL},
+            }));
         }
 
         return prepareParamList(exhaustiveArgsList, isEncoder, needAudio, needVideo, false);
