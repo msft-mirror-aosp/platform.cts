@@ -1,15 +1,19 @@
 package android.companion.cts.core
 import android.Manifest
 import android.companion.DevicePresenceEvent
+import android.companion.DevicePresenceEvent.EVENT_ASSOCIATION_REMOVED
 import android.companion.DevicePresenceEvent.EVENT_BLE_APPEARED
 import android.companion.DevicePresenceEvent.EVENT_BLE_DISAPPEARED
 import android.companion.DevicePresenceEvent.EVENT_BT_CONNECTED
 import android.companion.DevicePresenceEvent.EVENT_BT_DISCONNECTED
+import android.companion.Flags
 import android.companion.Flags.FLAG_DEVICE_PRESENCE
+import android.companion.ObservingDevicePresenceRequest
 import android.companion.cts.common.ASSOCIATION_ID
 import android.companion.cts.common.MAC_ADDRESS_A
 import android.companion.cts.common.PrimaryCompanionService
 import android.companion.cts.common.UUID_A
+import android.companion.cts.common.assertApplicationUnbinds
 import android.companion.cts.common.assertDevicePresenceEvent
 import android.companion.cts.common.toUpperCaseString
 import android.os.SystemClock
@@ -147,5 +151,28 @@ class DeviceEventTest : CoreTestBase() {
         withShellPermissionIdentity(Manifest.permission.REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE) {
             cdm.stopObservingDevicePresence(MAC_ADDRESS_A.toUpperCaseString())
         }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_NOTIFY_ASSOCIATION_REMOVED)
+    fun test_association_removed_event() {
+        targetApp.associate(MAC_ADDRESS_A)
+        val associationId = cdm.myAssociations[0].id
+        val request = ObservingDevicePresenceRequest.Builder()
+            .setAssociationId(associationId).build()
+
+        withShellPermissionIdentity(Manifest.permission.REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE) {
+            cdm.startObservingDevicePresence(request)
+        }
+
+        targetApp.disassociate(MAC_ADDRESS_A)
+
+        assertDevicePresenceEvent(
+            EVENT_ASSOCIATION_REMOVED,
+            eventGetter = { PrimaryCompanionService.getCurrentEvent() }
+        )
+
+        // The service will be unbound.
+        assertApplicationUnbinds(cdm)
     }
 }
