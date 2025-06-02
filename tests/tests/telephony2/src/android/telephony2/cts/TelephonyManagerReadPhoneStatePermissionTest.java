@@ -18,10 +18,14 @@ package android.telephony2.cts;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeTrue;
 
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.platform.test.annotations.AppModeFull;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.telecom.PhoneAccount;
 import android.telecom.TelecomManager;
 import android.telephony.SubscriptionManager;
@@ -33,9 +37,11 @@ import androidx.test.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 
 import com.android.compatibility.common.util.ShellIdentityUtils;
+import com.android.internal.telephony.flags.Flags;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -45,6 +51,9 @@ import org.junit.runner.RunWith;
 @RunWith(AndroidJUnit4.class)
 @AppModeFull(reason = "Cannot grant the runtime permission in instant app mode")
 public class TelephonyManagerReadPhoneStatePermissionTest {
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private Context mContext;
     TelephonyManager mTelephonyManager = null;
@@ -100,10 +109,9 @@ public class TelephonyManagerReadPhoneStatePermissionTest {
      */
     @Test
     public void testTelephonyManagersAPIsRequiringReadPhoneStatePermissions() throws Exception {
-        if (!hasSystemFeature(PackageManager.FEATURE_TELEPHONY)
-                || !hasSystemFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION)) {
-            return;
-        }
+        assumeTrue(
+                hasSystemFeature(PackageManager.FEATURE_TELEPHONY)
+                        && hasSystemFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
 
         boolean hasCalling = hasSystemFeature(PackageManager.FEATURE_TELEPHONY_CALLING);
         try {
@@ -278,6 +286,37 @@ public class TelephonyManagerReadPhoneStatePermissionTest {
                 fail("getPreferredOpportunisticDataSubscription() must not throw"
                         + " a SecurityException with READ_PHONE_STATE" + e);
             }
+        }
+    }
+
+    /**
+     * Verify that TelephonyManager APIs requiring READ_BASIC_PHONE_STATE Permission must work.
+     *
+     * <p>Requires Permission: {@link android.Manifest.permission#READ_BASIC_PHONE_STATE}.
+     *
+     * <p>APIs list: isMultiSimSupported()
+     */
+    @RequiresFlagsEnabled(Flags.FLAG_MACRO_BASED_OPPORTUNISTIC_NETWORKS)
+    @Test
+    public void testTelephonyManagersAPIsRequiringReadBasicPhoneStatePermission() throws Exception {
+        assumeTrue(
+                hasSystemFeature(PackageManager.FEATURE_TELEPHONY)
+                        && hasSystemFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
+
+        try {
+            InstrumentationRegistry.getInstrumentation()
+                    .getUiAutomation()
+                    .adoptShellPermissionIdentity(
+                            android.Manifest.permission.READ_BASIC_PHONE_STATE);
+            mTelephonyManager.isMultiSimSupported();
+        } catch (SecurityException se) {
+            fail(
+                    "isMultiSimSupported must not throw a SecurityException with "
+                            + "READ_BASIC_PHONE_STATE permission");
+        } finally {
+            InstrumentationRegistry.getInstrumentation()
+                    .getUiAutomation()
+                    .dropShellPermissionIdentity();
         }
     }
 
