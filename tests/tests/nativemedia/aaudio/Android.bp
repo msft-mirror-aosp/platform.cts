@@ -29,6 +29,7 @@ android_test {
         "general-tests",
     ],
     static_libs: [
+        "com.android.media.audioserver-aconfig-java",
         "ctstestrunner-axt",
         "nativetesthelper",
     ],

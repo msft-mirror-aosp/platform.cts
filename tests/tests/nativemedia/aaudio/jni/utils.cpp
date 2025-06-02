@@ -554,3 +554,9 @@ void permissionBarrier() {
                                "permissionBarrier", "()V");
     __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, "%s finish", __func__);
 }
+
+bool mmapPcmOffloadSupport() {
+    return (bool)callJavaStaticBooleanFunction(nullptr /*env*/,
+                                               "android/nativemedia/aaudio/AAudioTests",
+                                               "mmapPcmOffloadSupport", "()Z");
+}
