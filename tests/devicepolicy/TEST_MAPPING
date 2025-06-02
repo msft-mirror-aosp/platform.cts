@@ -1,15 +1,7 @@
 {
     "desktop-postsubmit": [
         {
-            "name": "CtsDevicePolicyTestCases",
-            "options": [
-                {
-                    "post-boot-command": "am switch-user 10"
-                },
-                {
-                    "run-command": "am switch-user 10"
-                }
-            ]
+          "name": "CtsDevicePolicyTestCases"
         }
     ]
 }
