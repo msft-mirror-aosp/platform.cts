@@ -107,6 +107,13 @@ public class TelephonyManagerNoPermissionTest {
         assertThrows(SecurityException.class, () -> mTelephonyManager.isMultiSimSupported());
     }
 
+    @Test
+    public void testIsModemEnabledForSlot() throws Exception {
+        assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY));
+
+        assertThrows(SecurityException.class, () -> mTelephonyManager.isModemEnabledForSlot(0));
+    }
+
     @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
     @Test
     public void getCarrierRestrictionRules_SecurityException() {
