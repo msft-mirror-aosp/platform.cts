@@ -27,6 +27,8 @@ import static androidx.test.espresso.matcher.ViewMatchers.withId;
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
+import static org.junit.Assume.assumeFalse;
+
 import android.app.Instrumentation;
 import android.content.ComponentName;
 import android.content.Context;
@@ -55,6 +57,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.util.regex.Pattern;
+
 @RunWith(AndroidJUnit4.class)
 @RequiresFlagsEnabled(Flags.FLAG_INTERACTIVE_CHOOSER)
 public class CtsChooserInteractiveSessionTest {
@@ -77,8 +81,15 @@ public class CtsChooserInteractiveSessionTest {
     @Before
     public void init() throws RemoteException {
         Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
-        mDevice = UiDevice.getInstance(instrumentation);
         mContext = instrumentation.getTargetContext();
+        PackageManager pm = mContext.getPackageManager();
+        assumeFalse(
+                "Skip test: Device is a wearable, TV or Auto",
+                pm.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE)
+                        || pm.hasSystemFeature(PackageManager.FEATURE_LEANBACK)
+                        || pm.hasSystemFeature(PackageManager.FEATURE_WATCH));
+
+        mDevice = UiDevice.getInstance(instrumentation);
         mChooserPackage = readChooserPackage();
         mMyDisplayId = new UserHelper(mContext).getMainDisplayId();
 
@@ -193,10 +204,30 @@ public class CtsChooserInteractiveSessionTest {
         clickLaunchChooser();
         waitForChooserToAppear();
         clickUpdateChooserButton();
+        mDevice.waitForIdle();
         clickChooserTarget("App Two");
         waitForChooserToBeGone();
         // check that the launch button is visible again
         onView(withId(R.id.launch_chooser)).check(matches(isDisplayed()));
+    }
+
+    @ApiTest(apis = {"android.service.chooser.ChooserSession#setTargetsEnabled"})
+    @Test
+    public void test_changeTargetEnableStatus() {
+        launchTestActivity();
+
+        clickLaunchChooser();
+        waitForChooserToAppear();
+        verifyChooserTargetEnabledStatus("App One", true);
+        clickDisableChooserTargetsButton();
+        mDevice.waitForIdle();
+        verifyChooserTargetEnabledStatus("App One", false);
+
+        clickEnableChooserTargetsButton();
+        mDevice.waitForIdle();
+        verifyChooserTargetEnabledStatus("App One", true);
+
+        mDevice.pressBack();
     }
 
     private void clickLaunchChooser() {
@@ -215,6 +246,14 @@ public class CtsChooserInteractiveSessionTest {
         clickTestAppButton("Unsubscribe");
     }
 
+    private void clickDisableChooserTargetsButton() {
+        clickTestAppButton("Disable");
+    }
+
+    private void clickEnableChooserTargetsButton() {
+        clickTestAppButton("Enable");
+    }
+
     private void clickTestAppButton(String label) {
         // a way to click the test activity's button while it is behind the Chooser
         mDevice.wait(
@@ -222,7 +261,7 @@ public class CtsChooserInteractiveSessionTest {
                                 By.pkg(mContext.getPackageName())
                                         .displayId(mMyDisplayId)
                                         .clickable(true)
-                                        .text(label)),
+                                        .text(Pattern.compile(label, Pattern.CASE_INSENSITIVE))),
                         WAIT_AND_ASSERT_FOUND_TIMEOUT_MS)
                 .click();
     }
@@ -233,7 +272,11 @@ public class CtsChooserInteractiveSessionTest {
                                 By.pkg(mChooserPackage)
                                         .displayId(mMyDisplayId)
                                         .clickable(true)
-                                        .hasDescendant(By.text(targetLabel))),
+                                        .hasDescendant(
+                                                By.text(
+                                                        Pattern.compile(
+                                                                targetLabel,
+                                                                Pattern.CASE_INSENSITIVE)))),
                         WAIT_AND_ASSERT_FOUND_TIMEOUT_MS)
                 .click();
     }
@@ -282,5 +325,17 @@ public class CtsChooserInteractiveSessionTest {
         assertWithMessage(failureMessage)
                 .that(mDevice.wait(Until.findObject(selector), WAIT_AND_ASSERT_FOUND_TIMEOUT_MS))
                 .isNotNull();
+    }
+
+    private void verifyChooserTargetEnabledStatus(String label, boolean isEnabled) {
+        assertThat(
+                        mDevice.wait(
+                                        Until.findObject(
+                                                By.pkg(mChooserPackage)
+                                                        .displayId(mMyDisplayId)
+                                                        .hasDescendant(By.text(label))),
+                                        WAIT_AND_ASSERT_FOUND_TIMEOUT_MS)
+                                .isEnabled())
+                .isEqualTo(isEnabled);
     }
 }

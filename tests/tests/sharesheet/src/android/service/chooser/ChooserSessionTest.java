@@ -20,10 +20,12 @@ import static android.content.Intent.ACTION_SEND;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assume.assumeFalse;
 import static org.mockito.Mockito.mock;
 
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -48,10 +50,15 @@ public class ChooserSessionTest {
 
     @Before
     public void init() {
-        mChooserManager =
-                InstrumentationRegistry.getInstrumentation()
-                        .getTargetContext()
-                        .getSystemService(ChooserManager.class);
+        Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
+        PackageManager pm = context.getPackageManager();
+        assumeFalse(
+                "Skip test: Device is a wearable, TV or Auto",
+                pm.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE)
+                        || pm.hasSystemFeature(PackageManager.FEATURE_LEANBACK)
+                        || pm.hasSystemFeature(PackageManager.FEATURE_WATCH));
+        mChooserManager = context.getSystemService(ChooserManager.class);
+        assertNotNull("ChooserManager is not available", mChooserManager);
     }
 
     /** Test that getToken method returns non-{@code null} reference. */
