@@ -15,47 +15,63 @@
  */
 package android.cts.statsdatom.appfunctions;
 
+import static android.app.appfunctions.flags.Flags.FLAG_ENABLE_APP_FUNCTION_MANAGER;
+import static android.permission.flags.Flags.FLAG_APP_FUNCTION_ACCESS_SERVICE_ENABLED;
+
 import static com.google.common.truth.Truth.assertThat;
 
-import android.app.appfunctions.flags.Flags;
 import android.cts.statsdatom.lib.AtomTestUtils;
 import android.cts.statsdatom.lib.ConfigUtils;
 import android.cts.statsdatom.lib.DeviceUtils;
 import android.cts.statsdatom.lib.ReportUtils;
+import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.host.HostFlagsValueProvider;
 
 import com.android.compatibility.common.util.NonApiTest;
 import com.android.os.StatsLog;
 import com.android.os.appfunctions.AppFunctionsExtensionAtoms;
 import com.android.os.appfunctions.AppFunctionsRequestReported;
 import com.android.tradefed.build.IBuildInfo;
-import com.android.tradefed.testtype.DeviceTestCase;
+import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
 import com.android.tradefed.testtype.IBuildReceiver;
+import com.android.tradefed.testtype.junit4.BaseHostJUnit4Test;
 import com.android.tradefed.util.RunUtil;
 
 import com.google.protobuf.ExtensionRegistry;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.util.List;
 
 @NonApiTest(
         exemptionReasons = {},
         justification = "METRIC")
-@RequiresFlagsEnabled(Flags.FLAG_ENABLE_APP_FUNCTION_MANAGER)
-public class AppFunctionsStatsTest extends DeviceTestCase implements IBuildReceiver {
+@RequiresFlagsEnabled(FLAG_ENABLE_APP_FUNCTION_MANAGER)
+@RunWith(DeviceJUnit4ClassRunner.class)
+public class AppFunctionsStatsTest extends BaseHostJUnit4Test implements IBuildReceiver {
     private static final String TEST_PKG = "android.app.appfunctions.cts";
     private static final String TEST_CLASS = TEST_PKG + ".AppFunctionManagerTest";
+    private static final int ERROR_DENIED = 1000;
 
     private static final int ERROR_INVALID_ARGUMENT = 1001;
     private static final int SUCCESS_ERROR_CODE = -1;
     private static final int THROWS_EXCEPTION_ERROR_CODE = 3000;
 
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule =
+            HostFlagsValueProvider.createCheckFlagsRule(this::getDevice);
+
     private IBuildInfo mCtsBuild;
     private ExtensionRegistry mExtensionRegistry;
 
-    @Override
-    protected void setUp() throws Exception {
-        super.setUp();
-
+    @Before
+    public void setUp() throws Exception {
         assertThat(mCtsBuild).isNotNull();
         ConfigUtils.removeConfig(getDevice());
         ReportUtils.clearReports(getDevice());
@@ -75,13 +91,12 @@ public class AppFunctionsStatsTest extends DeviceTestCase implements IBuildRecei
                 AppFunctionsExtensionAtoms.APP_FUNCTIONS_REQUEST_REPORTED_FIELD_NUMBER);
     }
 
-    @Override
-    protected void tearDown() throws Exception {
+    @After
+    public void tearDown() throws Exception {
         ConfigUtils.removeConfig(getDevice());
         ReportUtils.clearReports(getDevice());
         DeviceUtils.uninstallStatsdTestApp(getDevice());
         DeviceUtils.uninstallTestApp(getDevice(), TEST_PKG);
-        super.tearDown();
     }
 
     @Override
@@ -89,6 +104,7 @@ public class AppFunctionsStatsTest extends DeviceTestCase implements IBuildRecei
         mCtsBuild = buildInfo;
     }
 
+    @Test
     public void testAtom_executeAppFunction_failed_uncaughtClientException() throws Exception {
         AppFunctionsRequestReported afRequestReported =
                 runTestAndGetAtom("executeAppFunction_failed_uncaughtClientException_nonParam");
@@ -96,6 +112,8 @@ public class AppFunctionsStatsTest extends DeviceTestCase implements IBuildRecei
         assertThat(afRequestReported.getErrorCode()).isEqualTo(ERROR_INVALID_ARGUMENT);
     }
 
+    @Test
+    @RequiresFlagsDisabled(FLAG_APP_FUNCTION_ACCESS_SERVICE_ENABLED)
     public void testAtom_executeAppFunction_crossUser_success() throws Exception {
         if (!getDevice().isMultiUserSupported()) return;
 
@@ -105,6 +123,20 @@ public class AppFunctionsStatsTest extends DeviceTestCase implements IBuildRecei
         assertThat(afRequestReported.getErrorCode()).isEqualTo(SUCCESS_ERROR_CODE);
     }
 
+    @Test
+    @RequiresFlagsEnabled(FLAG_APP_FUNCTION_ACCESS_SERVICE_ENABLED)
+    public void testAtom_executeAppFunction_crossUser_fail() throws Exception {
+        if (!getDevice().isMultiUserSupported()) return;
+
+        AppFunctionsRequestReported afRequestReported =
+                runTestAndGetAtom(
+                        "executeAppFunction"
+                                + "_crossUserWithCrossProfileFullPermission_fail_nonParam");
+
+        assertThat(afRequestReported.getErrorCode()).isEqualTo(ERROR_DENIED);
+    }
+
+    @Test
     public void testAtom_executeAppFunction_platformManager_platformAppFunctionService_success()
             throws Exception {
         AppFunctionsRequestReported afRequestReported =
@@ -115,6 +147,7 @@ public class AppFunctionsStatsTest extends DeviceTestCase implements IBuildRecei
         assertThat(afRequestReported.getErrorCode()).isEqualTo(SUCCESS_ERROR_CODE);
     }
 
+    @Test
     public void testAtom_executeAppFunction_throwsException() throws Exception {
         AppFunctionsRequestReported afRequestReported =
                 runTestAndGetAtom("executeAppFunction_throwsException_nonParam");
