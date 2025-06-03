@@ -27,10 +27,10 @@ import static org.junit.Assume.assumeTrue;
 
 import android.media.MediaCodec;
 import android.media.MediaFormat;
+import android.media.cts.OutputSurface;
 import android.mediav2.common.cts.CodecDecoderTestBase;
 import android.mediav2.common.cts.CodecTestBase;
 import android.mediav2.common.cts.OutputManager;
-import android.mediav2.common.cts.OutputSurface;
 import android.opengl.GLES20;
 import android.opengl.GLES30;
 import android.util.Log;
@@ -581,8 +581,8 @@ public class DecodeGlAccuracyTest extends CodecDecoderTestBase {
         ArrayList<MediaFormat> formatList = new ArrayList<>();
         formatList.add(format);
         checkFormatSupport(mCodecName, mMediaType, false, formatList, null, supportRequirements);
-        mEGLWindowOutSurface =
-                new OutputSurface(mWidth, mHeight, mUseHighBitDepth, mUseYuvSampling);
+        mEGLWindowOutSurface = new OutputSurface(
+                mWidth, mHeight, mUseHighBitDepth, false /* secure */, mUseYuvSampling);
 
         // If device supports HDR editing, then GL_EXT_YUV_target extension support is mandatory
         if (mUseYuvSampling) {

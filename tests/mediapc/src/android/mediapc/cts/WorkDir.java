@@ -16,7 +16,7 @@
 
 package android.mediapc.cts;
 
-import android.mediav2.common.cts.WorkDirBase;
+import android.media.cts.WorkDirBase;
 
 /**
  * Return the primary shared/external storage directory used by the tests
