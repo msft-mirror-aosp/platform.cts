@@ -23,7 +23,6 @@ import static android.app.Activity.RESULT_OK;
 import static android.app.AppOpsManager.MODE_ALLOWED;
 import static android.app.AppOpsManager.MODE_DEFAULT;
 import static android.app.AppOpsManager.MODE_ERRORED;
-import static android.app.AppOpsManager.MODE_IGNORED;
 import static android.app.Notification.FLAG_FOREGROUND_SERVICE;
 import static android.app.Notification.FLAG_NO_CLEAR;
 import static android.app.Notification.FLAG_USER_INITIATED_JOB;
@@ -551,57 +550,6 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
     @Test
     public void testCanSendFullScreenIntent_modeErrored_returnsFalse() throws Exception {
         verifyCanUseFullScreenIntent(MODE_ERRORED, /*canSend=*/ false);
-    }
-
-    private void verifyCanPostPromotedNotification(int appOpState, boolean canSend)
-            throws Exception {
-        final int previousState =
-                PermissionUtils.getAppOp(
-                        STUB_PACKAGE_NAME, Manifest.permission.POST_PROMOTED_NOTIFICATIONS);
-        try {
-            PermissionUtils.setAppOp(
-                    STUB_PACKAGE_NAME, Manifest.permission.POST_PROMOTED_NOTIFICATIONS, appOpState);
-
-            assertThat(mNotificationManager.canPostPromotedNotifications()).isEqualTo(canSend);
-
-        } finally {
-            // Clean up by setting to app op to previous state.
-            PermissionUtils.setAppOp(
-                    STUB_PACKAGE_NAME,
-                    Manifest.permission.POST_PROMOTED_NOTIFICATIONS,
-                    previousState);
-        }
-    }
-
-    @RequiresFlagsEnabled({
-        android.app.Flags.FLAG_API_RICH_ONGOING_PERMISSION,
-        android.app.Flags.FLAG_API_RICH_ONGOING
-    })
-    @Test
-    public void testCanPostPromotedNotification_modeDefault_returnsIsPermissionGranted()
-            throws Exception {
-        final boolean isPermissionGranted =
-                PermissionUtils.isPermissionGranted(
-                        STUB_PACKAGE_NAME, Manifest.permission.POST_PROMOTED_NOTIFICATIONS);
-        verifyCanPostPromotedNotification(MODE_DEFAULT, /* canSend= */ isPermissionGranted);
-    }
-
-    @RequiresFlagsEnabled({
-        android.app.Flags.FLAG_API_RICH_ONGOING_PERMISSION,
-        android.app.Flags.FLAG_API_RICH_ONGOING
-    })
-    @Test
-    public void testCanPostPromotedNotification_modeAllowed_returnsTrue() throws Exception {
-        verifyCanPostPromotedNotification(MODE_ALLOWED, /* canSend= */ true);
-    }
-
-    @RequiresFlagsEnabled({
-        android.app.Flags.FLAG_API_RICH_ONGOING_PERMISSION,
-        android.app.Flags.FLAG_API_RICH_ONGOING
-    })
-    @Test
-    public void testCanPostPromotedNotification_modeIgnored_returnsFalse() throws Exception {
-        verifyCanPostPromotedNotification(MODE_IGNORED, /* canSend= */ false);
     }
 
     @Test
@@ -3929,9 +3877,24 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
     @Test
     @RequiresFlagsEnabled({
         android.app.Flags.FLAG_API_RICH_ONGOING,
+        android.app.Flags.FLAG_UI_RICH_ONGOING,
         android.app.Flags.FLAG_API_RICH_ONGOING_PERMISSION
     })
-    public void testCanPostPromotedNotifications() {
+    public void testCanPostPromotedNotifications_apiEnabled() {
+        verifyCanPostPromotedNotifications();
+    }
+
+    @Test
+    @RequiresFlagsEnabled({
+        android.app.Flags.FLAG_API_RICH_ONGOING,
+        android.app.Flags.FLAG_UI_RICH_ONGOING
+    })
+    @RequiresFlagsDisabled({android.app.Flags.FLAG_API_RICH_ONGOING_PERMISSION})
+    public void testCanPostPromotedNotifications_preApiEnabled() {
+        verifyCanPostPromotedNotifications();
+    }
+
+    private void verifyCanPostPromotedNotifications() {
         boolean initialValue = mNotificationManager.canPostPromotedNotifications();
 
         try {
@@ -3969,6 +3932,7 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
         private EventCallback() {
             super(Looper.getMainLooper());
         }
+
 
         @Override
         public void handleMessage(Message message) {
