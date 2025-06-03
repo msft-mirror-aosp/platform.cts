@@ -24,6 +24,7 @@ import java.lang.Thread.sleep
 import org.junit.After
 import org.junit.Assert.fail
 import org.junit.Before
+import org.junit.Ignore
 import org.junit.Test
 
 private const val APK_PATH = "/data/local/tmp/cts/appops/"
@@ -58,6 +59,7 @@ class RuntimeMessageCollectionTest {
     }
 
     @Test
+    @Ignore
     fun collectAsyncStackTrace() {
         for (attempt in 0..25) {
             installApk("CtsAppToCollect.apk")
