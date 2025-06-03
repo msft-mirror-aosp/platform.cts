@@ -7234,4 +7234,17 @@ You should be prompted to select credentials; choose the ones you just installed
         \n3. Verify the CtsDefaultNotesApp informs can use API returned false.
         \n4. If so, pass this test else fail.
     </string>
+
+    <!-- Strings for the Drag and Drop Test test activity -->
+    <string name="test_category_window_manager_tests">Android XR</string>
+    <string name="drag_view_shadow_test_name">Window Manager Drag and Drop Test</string>
+    <string name="drag_view_shadow_instructions">Please drag the block to the target area to confirm that the drag shadow is visible and follows your movement.</string>
+    <string name="drag_view_shadow_dialog_title">Confirm Drag Shadow</string>
+    <string name="drag_view_shadow_dialog_content">Did you see the shadow of the block while dragging it?</string>
+    <string name="drag_view_shadow_dialog_positive">Yes, I saw it</string>
+    <string name="drag_view_shadow_dialog_negative">No, I did not see it</string>
+    <string name="drag_view_shadow_dialog_neutral">Not sure, let me try again</string>
+    <string name="drag_view_shadow_toast_pass">Test Passed!</string>
+    <string name="drag_view_shadow_toast_fail">Test Failed...</string>
+    <string name="drag_view_shadow_toast_remind">Almost there! Drag the block to sufficiently cover the target area.</string>
 </resources>
