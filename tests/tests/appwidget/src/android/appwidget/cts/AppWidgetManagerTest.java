@@ -25,6 +25,7 @@ import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.RequireAutomotive;
 import com.android.compatibility.common.util.ApiTest;
+import android.platform.test.annotations.DesktopTest;
 
 import org.junit.Assert;
 import org.junit.ClassRule;
@@ -33,6 +34,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 @RunWith(BedsteadJUnit4.class)
+@DesktopTest(cujs = {"b/416196526", "b/416196961"})
 public class AppWidgetManagerTest {
     @ClassRule
     @Rule
