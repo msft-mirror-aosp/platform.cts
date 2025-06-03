@@ -42,6 +42,7 @@ import static android.media.cts.MediaRouterTestConstants.ROUTE_ID_SELF_SCAN_ONLY
 import static android.media.cts.MediaRouterTestConstants.ROUTE_NAME_4;
 import static android.media.cts.MediaRouterTestConstants.ROUTE_NAME_5;
 import static android.media.cts.app.common.MediaRouter2TestUtils.ROUTE_UPDATE_MAX_WAIT_MS;
+import static android.media.cts.app.common.MediaRouter2TestUtils.fetchRoutes;
 import static android.media.cts.app.common.MediaRouter2TestUtils.waitForAndGetRoutes;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -112,13 +113,16 @@ public class MediaRouter2DeviceTest {
 
     private static final Correspondence<MediaRoute2Info, String> ROUTE_HAS_ORIGINAL_ID =
             Correspondence.transforming(MediaRoute2Info::getOriginalId, "has original id");
-
-    // TODO: b/316864909 - Stop relying on route ids once we can control system routing in CTS.
-    private static final String ROUTE_ID_BUILTIN_SPEAKER =
-            Flags.enableAudioPoliciesDeviceAndBluetoothController()
-                    ? "ROUTE_ID_BUILTIN_SPEAKER"
-                    : MediaRoute2Info.ROUTE_ID_DEVICE;
     private static final int TIMEOUT_MS = 5000;
+
+    /**
+     * The maximum number of milliseconds to wait for a system route that we are not expecting.
+     *
+     * <p>We want to keep this number small because it's a lower threshold for the test duration
+     * when passing. Also, we expect system routes to show up almost immediately, as they don't need
+     * scanning.
+     */
+    private static final long TIMEOUT_UNEXPECTED_SYSTEM_ROUTE_MS = 1000;
 
     private ExecutorService mExecutor;
     private Context mContext;
@@ -655,7 +659,7 @@ public class MediaRouter2DeviceTest {
     }
 
     @Test
-    public void getRoutes_withBTPermissions_returnsDeviceRoute() throws TimeoutException {
+    public void getRoutes_withBTPermissions_returnsDeviceRoute() {
         MediaRouter2 router = MediaRouter2.getInstance(mContext);
 
         assertThat(mContext.checkCallingOrSelfPermission(Manifest.permission.MODIFY_AUDIO_ROUTING))
@@ -666,14 +670,14 @@ public class MediaRouter2DeviceTest {
         assertThat(mContext.checkCallingOrSelfPermission(Manifest.permission.BLUETOOTH_CONNECT))
                 .isEqualTo(PackageManager.PERMISSION_GRANTED);
 
-        assertThat(
-                        waitForAndGetRoutes(
-                                        router,
-                                        SYSTEM_ROUTE_DISCOVERY_PREFERENCE,
-                                        /* expectedRouteIds= */ Set.of(ROUTE_ID_BUILTIN_SPEAKER),
-                                        mExecutor)
-                                .keySet())
-                .containsExactly(ROUTE_ID_BUILTIN_SPEAKER);
+        Map<String, MediaRoute2Info> routes =
+                fetchRoutes(
+                        router,
+                        SYSTEM_ROUTE_DISCOVERY_PREFERENCE,
+                        /* expectedRouteIds= */ Set.of(MediaRoute2Info.ROUTE_ID_DEFAULT),
+                        mExecutor,
+                        TIMEOUT_UNEXPECTED_SYSTEM_ROUTE_MS);
+        assertThat(routes.keySet()).doesNotContain(MediaRoute2Info.ROUTE_ID_DEFAULT);
     }
 
     @Test

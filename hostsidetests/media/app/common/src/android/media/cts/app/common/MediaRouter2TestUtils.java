@@ -54,10 +54,11 @@ public class MediaRouter2TestUtils {
     }
 
     /**
-     * Returns the next route list received via {@link MediaRouter2.RouteCallback#onRoutesUpdated}
-     * that includes all the given {@code expectedRouteIds}.
+     * Equivalent to {@link #fetchRoutes}, except it will throw if the expected routes don't show up
+     * before {@link #ROUTE_UPDATE_MAX_WAIT_MS}.
      *
-     * <p>Will only wait for up to {@link #ROUTE_UPDATE_MAX_WAIT_MS}.
+     * @throws TimeoutException If the expected routes don't show up before {@link
+     *     #ROUTE_UPDATE_MAX_WAIT_MS}.
      */
     public static Map<String, MediaRoute2Info> waitForAndGetRoutes(
             MediaRouter2 router,
@@ -65,38 +66,64 @@ public class MediaRouter2TestUtils {
             Set<String> expectedRouteIds,
             Executor executor)
             throws TimeoutException {
+        Map<String, MediaRoute2Info> routes =
+                fetchRoutes(
+                        router, preference, expectedRouteIds, executor, ROUTE_UPDATE_MAX_WAIT_MS);
+        if (!routes.keySet().containsAll(expectedRouteIds)) {
+            throw new TimeoutException(
+                    "Failed to get expected routes after "
+                            + ROUTE_UPDATE_MAX_WAIT_MS
+                            + " milliseconds.");
+        }
+        return routes;
+    }
+
+    /**
+     * Waits for the routes with the given original ids to show up via {@link
+     * MediaRouter2.RouteCallback#onRoutesUpdated} or {@link MediaRouter2#getRoutes()}.
+     *
+     * @param router The router from which to obtain the routes.
+     * @param preference The {@link RouteDiscoveryPreference} to find the routes.
+     * @param expectedRouteIds The original route ids to wait for.
+     * @param executor An executor for the route callback.
+     * @param timeoutMs The maximum number of milliseconds to wait for the expected routes.
+     * @return The found routes at the moment when all expected routes showed up, or when the
+     *     timeout expired.
+     */
+    public static Map<String, MediaRoute2Info> fetchRoutes(
+            MediaRouter2 router,
+            RouteDiscoveryPreference preference,
+            Set<String> expectedRouteIds,
+            Executor executor,
+            long timeoutMs) {
         ConditionVariable condition = new ConditionVariable();
         MediaRouter2.RouteCallback routeCallback =
                 new MediaRouter2.RouteCallback() {
                     @Override
                     public void onRoutesUpdated(List<MediaRoute2Info> routes) {
-                        Set<String> receivedRouteIds =
-                                routes.stream()
-                                        .map(MediaRoute2Info::getOriginalId)
-                                        .collect(Collectors.toSet());
-                        if (receivedRouteIds.containsAll(expectedRouteIds)) {
+                        if (getOriginalIds(routes).containsAll(expectedRouteIds)) {
                             condition.open();
                         }
                     }
                 };
-
         router.registerRouteCallback(executor, routeCallback, preference);
-        Set<String> currentRoutes =
-                router.getRoutes().stream()
-                        .map(MediaRoute2Info::getOriginalId)
-                        .collect(Collectors.toSet());
+        Set<String> currentRoutesOriginalIds = getOriginalIds(router.getRoutes());
         try {
-            if (!currentRoutes.containsAll(expectedRouteIds)
-                    && !condition.block(ROUTE_UPDATE_MAX_WAIT_MS)) {
-                throw new TimeoutException(
-                        "Failed to get expected routes after "
-                                + ROUTE_UPDATE_MAX_WAIT_MS
-                                + " milliseconds.");
+            if (!currentRoutesOriginalIds.containsAll(expectedRouteIds)) {
+                condition.block(timeoutMs);
             }
             return router.getRoutes().stream()
                     .collect(Collectors.toMap(MediaRoute2Info::getOriginalId, Function.identity()));
         } finally {
             router.unregisterRouteCallback(routeCallback);
         }
+    }
+
+    /**
+     * Returns a set containing the {@link MediaRoute2Info#getOriginalId() original ids} of the
+     * given routes.
+     */
+    private static Set<String> getOriginalIds(List<MediaRoute2Info> routes) {
+        return routes.stream().map(MediaRoute2Info::getOriginalId).collect(Collectors.toSet());
     }
 }
