@@ -95,7 +95,7 @@ public class WearableSensingManagerTest {
     @Before
     public void setUp() throws Exception {
         mContext = getInstrumentation().getContext();
-        assumeFalse(isWatch(mContext)); // WearableSensingManagerService is not supported on WearOS
+        assumeFalse(new TestUtils(mContext).shouldSkipWearableSensingTest());
         mWearableSensingManager =
                 (WearableSensingManager)
                         mContext.getSystemService(Context.WEARABLE_SENSING_SERVICE);
@@ -581,10 +581,5 @@ public class WearableSensingManagerTest {
         int unusedRequestCode = 0;
         return PendingIntent.getBroadcast(
                 context, unusedRequestCode, intent, PendingIntent.FLAG_MUTABLE);
-    }
-
-    private static boolean isWatch(Context context) {
-        PackageManager pm = context.getPackageManager();
-        return pm.hasSystemFeature(PackageManager.FEATURE_WATCH);
     }
 }
