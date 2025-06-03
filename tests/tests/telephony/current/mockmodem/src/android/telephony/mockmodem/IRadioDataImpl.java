@@ -43,8 +43,7 @@ public class IRadioDataImpl extends IRadioData.Stub {
 
     private static final int LATCH_SET_USER_DATA_ENABLED = 0;
     private static final int LATCH_SET_USER_DATA_ROAMING_ENABLED = 1;
-    private static final int LATCH_NOTIFY_IMS_DATA_NETWORK = 2;
-    private static final int LATCH_MAX = 3;
+    private static final int LATCH_MAX = 2;
 
     private final CountDownLatch[] mLatches = new CountDownLatch[LATCH_MAX];
 
@@ -336,24 +335,6 @@ public class IRadioDataImpl extends IRadioData.Stub {
             Log.e(mTag, "Failed to setUserDataRoamingEnabled from AIDL. Exception" + ex);
         }
         countDownLatch(LATCH_SET_USER_DATA_ROAMING_ENABLED);
-    }
-
-    @Override
-    public void notifyImsDataNetwork(
-            int serial,
-            int accessNetwork,
-            int dataNetworkState,
-            int physicalTransportType,
-            int physicalNetworkModemId) {
-        Log.d(mTag, "notifyImsDataNetwork");
-        mMockDataService.setImsDataNetworkNotified(true);
-        RadioResponseInfo rsp = mService.makeSolRsp(serial, RadioError.REQUEST_NOT_SUPPORTED);
-        try {
-            mRadioDataResponse.notifyImsDataNetworkResponse(rsp);
-        } catch (RemoteException ex) {
-            Log.e(mTag, "Failed to notifyImsDataNetwork from AIDL. Exception" + ex);
-        }
-        countDownLatch(LATCH_NOTIFY_IMS_DATA_NETWORK);
     }
 
     @Override
