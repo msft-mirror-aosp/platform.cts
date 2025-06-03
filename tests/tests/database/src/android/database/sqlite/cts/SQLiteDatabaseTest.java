@@ -418,7 +418,14 @@ public class SQLiteDatabaseTest {
 
     @Test
     public void testAccessMaximumSize() {
+        // The default maximum size is the absolute, system-mandated maximum.  In particular, it
+        // cannot be incremented.  To test increment and decrement cleanly, this test sets the
+        // maximum to 4MB.
+        long testSize = 1024 * 1024 * 4;
+        mDatabase.setMaximumSize(testSize);
+
         long curMaximumSize = mDatabase.getMaximumSize();
+        assertEquals(testSize, curMaximumSize);
 
         // the new maximum size is less than the current size.
         mDatabase.setMaximumSize(curMaximumSize - 1);
@@ -2278,11 +2285,14 @@ public class SQLiteDatabaseTest {
         }
     }
 
+    // The three fields of a sqlite version number.
+    private record Version(int major, int minor, int patch) {}
+
     // Return true if the actual version matches the expected version.
-    private static boolean versionIsOkay(int[] expected, int[] actual) {
-        return expected[0] == actual[0]
-                && expected[1] == actual[1]
-                && expected[2] >= actual[2];
+    private static boolean versionIsOkay(Version actual, Version expected) {
+        return expected.major == actual.major
+                && expected.minor == actual.minor
+                && expected.patch >= actual.patch;
     }
 
     @Test
@@ -2297,20 +2307,23 @@ public class SQLiteDatabaseTest {
         assertEquals("Unable to parse SQLite version " + fullVersionStr,
                 versionSize, strVersion.length);
 
-        int[] actual = new int[versionSize];
-        for (int i = 0; i < versionSize; i++) {
-            // This will throw NumberFormatException if the version string is not a sequence of
-            // unsigned integers.
-            actual[i] = Integer.parseUnsignedInt(strVersion[i]);
-        }
+        // This will throw NumberFormatException if the version string is not a sequence of
+        // unsigned integers.
+        Version actualVersion = new Version(
+            Integer.parseUnsignedInt(strVersion[0]),
+            Integer.parseUnsignedInt(strVersion[1]),
+            Integer.parseUnsignedInt(strVersion[2]));
 
         // Compare the actual version to the permitted SQLite release.  The test can compare to
         // multiple releases here, if multiple releases are permitted.
-        final int[] expectedVersion34403 = { 3, 44, 3 };
-        final int[] expectedVersion34404 = { 3, 44, 4 };
-        if (versionIsOkay(expectedVersion34403, actual)
-            || versionIsOkay(expectedVersion34404, actual)) {
-            return;
+        final Version[] expectedVersions = {
+            new Version(3, 44, 3),
+            new Version(3, 50, 0)
+        };
+        for (Version v : expectedVersions) {
+            if (versionIsOkay(actualVersion, v)) {
+                return;
+            }
         }
 
         // The current version does not match any of the permitted versions.
