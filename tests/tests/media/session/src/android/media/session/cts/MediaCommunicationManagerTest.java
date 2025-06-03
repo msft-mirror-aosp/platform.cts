@@ -17,6 +17,8 @@ package android.media.session.cts;
 
 import static android.Manifest.permission.MEDIA_CONTENT_CONTROL;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThrows;
@@ -45,6 +47,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -202,11 +205,8 @@ public class MediaCommunicationManagerTest {
 
     private void assertUuidInExtrasOfTokens(
             List<Session2Token> tokens, String uuid, int expectedNumberOfMatches) {
-        long matchCount =
-                tokens.stream()
-                        .filter(token -> Objects.equal(uuid, token.getExtras().getString("uuid")))
-                        .count();
-        assertEquals(matchCount, expectedNumberOfMatches);
+        assertThat(tokens.stream().map(t -> t.getExtras().getString("uuid")))
+            .containsAtLeastElementsIn(Collections.nCopies(expectedNumberOfMatches, uuid));
     }
 
     private void assertUuidInExtrasOfListOfTokens(
