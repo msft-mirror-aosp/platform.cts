@@ -229,6 +229,12 @@ public final class FakeAppSearchConfig implements ServiceAppSearchConfig {
     }
 
     @Override
+    public int getMaxPageBytesLimitForVm() {
+        throwIfClosed();
+        return IcingOptionsConfig.DEFAULT_MAX_PAGE_BYTES_LIMIT;
+    }
+
+    @Override
     public boolean getCachedRateLimitEnabled() {
         throwIfClosed();
         return DEFAULT_RATE_LIMIT_ENABLED;
