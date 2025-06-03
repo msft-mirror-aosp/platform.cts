@@ -54,6 +54,7 @@ object Components : ComponentsProvider() {
     @JvmField val LAUNCHING_ACTIVITY = component("LaunchingActivity")
     @JvmField val LOG_CONFIGURATION_ACTIVITY = component("LogConfigurationActivity")
     @JvmField val MOVE_TASK_TO_BACK_ACTIVITY = component("MoveTaskToBackActivity")
+    @JvmField val MOVE_TASK_TO_BOUNDS_ACTIVITY = component("MoveTaskToBoundsActivity")
     @JvmField val MULTI_WINDOW_FULLSCREEN_ACTIVITY = component("MultiWindowFullscreenActivity")
     @JvmField val NIGHT_MODE_ACTIVITY = component("NightModeActivity")
     @JvmField val NO_DISPLAY_ACTIVITY = component("NoDisplayActivity")
@@ -681,6 +682,21 @@ object Components : ComponentsProvider() {
 
     object WallpaperTargetActivity {
         const val EXTRA_ENABLE_WALLPAPER_TOUCH = "enable_wallpaper_touch"
+    }
+
+    object MoveTaskToBoundsActivity {
+        const val ACTION_CHECK_IS_TASK_MOVE_ALLOWED = "action_check_is_task_move_allowed"
+        const val ACTION_NOTIFY_TASK_MOVE_REQUEST_RESULT =
+                "action_notify_task_move_request_result"
+        const val ACTION_NOTIFY_TASK_MOVE_ALLOWED_RESULT =
+                "action_notify_task_move_allowed_result"
+        const val ACTION_REQUEST_TASK_MOVE = "action_request_task_move"
+        const val EXTRA_BOUNDS_KEY = "extra_bounds_key"
+        const val EXTRA_DISPLAY_ID_KEY = "extra_display_id_key"
+        const val EXTRA_EXCEPTION_KEY = "extra_exception_key"
+        const val EXTRA_SYNC_EXCEPTION_KEY = "extra_sync_exception_key"
+        const val EXTRA_TASK_MOVE_ALLOWED_RESULT =
+                "extra_task_move_allowed_result"
     }
 
     @JvmStatic fun getPackageName() = packageName
