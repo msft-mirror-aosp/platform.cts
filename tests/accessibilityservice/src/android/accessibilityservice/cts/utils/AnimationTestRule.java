@@ -16,11 +16,15 @@
 
 package android.accessibilityservice.cts.utils;
 
+import android.Manifest;
 import android.app.Instrumentation;
+import android.app.UiAutomation;
 import android.content.Context;
 import android.provider.Settings;
 
 import androidx.test.platform.app.InstrumentationRegistry;
+
+import com.android.compatibility.common.util.SystemUtil;
 
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
@@ -41,9 +45,15 @@ public class AnimationTestRule implements TestRule {
     private float mInitialAnimatorDurationScale;
 
     private final Instrumentation mInstrumentation;
+    private final UiAutomation mUiAutomation;
 
     public AnimationTestRule() {
+        this(InstrumentationRegistry.getInstrumentation().getUiAutomation());
+    }
+
+    public AnimationTestRule(UiAutomation uiAutomation) {
         mInstrumentation = InstrumentationRegistry.getInstrumentation();
+        mUiAutomation = uiAutomation;
     }
 
     @Override
@@ -71,18 +81,29 @@ public class AnimationTestRule implements TestRule {
 
     /** Set the animation scale values */
     public void setAnimationScale(float scale) {
-        Context context = mInstrumentation.getContext();
-        setGlobalFloat(context, WINDOW_ANIMATION_SCALE, scale);
-        setGlobalFloat(context, TRANSITION_ANIMATION_SCALE, scale);
-        setGlobalFloat(context, ANIMATOR_DURATION_SCALE, scale);
+        SystemUtil.runWithShellPermissionIdentity(
+                mUiAutomation,
+                () -> {
+                    Context context = mInstrumentation.getContext();
+                    setGlobalFloat(context, WINDOW_ANIMATION_SCALE, scale);
+                    setGlobalFloat(context, TRANSITION_ANIMATION_SCALE, scale);
+                    setGlobalFloat(context, ANIMATOR_DURATION_SCALE, scale);
+                },
+                Manifest.permission.WRITE_SECURE_SETTINGS);
     }
 
     /** Restores the animation scale values to what they were before the test started. */
     private void restoreAnimationScales() {
-        Context context = mInstrumentation.getContext();
-        setGlobalFloat(context, WINDOW_ANIMATION_SCALE, mInitialWindowAnimationScale);
-        setGlobalFloat(context, TRANSITION_ANIMATION_SCALE, mInitialTransitionAnimationScale);
-        setGlobalFloat(context, ANIMATOR_DURATION_SCALE, mInitialAnimatorDurationScale);
+        SystemUtil.runWithShellPermissionIdentity(
+                mUiAutomation,
+                () -> {
+                    Context context = mInstrumentation.getContext();
+                    setGlobalFloat(context, WINDOW_ANIMATION_SCALE, mInitialWindowAnimationScale);
+                    setGlobalFloat(
+                            context, TRANSITION_ANIMATION_SCALE, mInitialTransitionAnimationScale);
+                    setGlobalFloat(context, ANIMATOR_DURATION_SCALE, mInitialAnimatorDurationScale);
+                },
+                Manifest.permission.WRITE_SECURE_SETTINGS);
     }
 
     private float getGlobalFloat(Context context, String constantName) {

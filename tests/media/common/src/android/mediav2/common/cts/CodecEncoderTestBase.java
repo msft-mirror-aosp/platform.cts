@@ -240,9 +240,9 @@ public class CodecEncoderTestBase extends CodecTestBase {
             case AudioFormat.ENCODING_INVALID:
                 return "invalid";
             case AudioFormat.ENCODING_PCM_16BIT:
-                return "pcm16";
+                return "s16le";
             case AudioFormat.ENCODING_PCM_FLOAT:
-                return "pcmfloat";
+                return "f32le";
             default:
                 return "unknown";
         }

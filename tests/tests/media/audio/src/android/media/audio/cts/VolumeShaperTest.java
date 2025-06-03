@@ -32,25 +32,23 @@ import android.media.AudioManager;
 import android.media.AudioTrack;
 import android.media.MediaPlayer;
 import android.media.VolumeShaper;
-import android.media.audio.cts.R;
 import android.media.cts.AudioHelper;
 import android.os.Parcel;
 import android.os.PowerManager;
 import android.platform.test.annotations.AppModeFull;
 import android.util.Log;
 
-import androidx.test.InstrumentationRegistry;
 import androidx.test.filters.FlakyTest;
 import androidx.test.filters.LargeTest;
 import androidx.test.filters.SmallTest;
+
+import junitparams.JUnitParamsRunner;
+import junitparams.Parameters;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.util.Arrays;
-
-import junitparams.JUnitParamsRunner;
-import junitparams.Parameters;
 
 /**
  * VolumeShaperTest is automated using VolumeShaper.getVolume() to verify that a ramp
@@ -369,7 +367,7 @@ public class VolumeShaperTest {
         private State mState;
     }
 
-    private static final int PLAYER_TYPES = 3;
+    private static final int PLAYER_TYPES = 4;
     private static final int PLAYER_TYPE_AUDIO_TRACK = 0;
     private static final int PLAYER_TYPE_MEDIA_PLAYER_NON_OFFLOADED = 1;
     private static final int PLAYER_TYPE_MEDIA_PLAYER_OFFLOADED = 2;

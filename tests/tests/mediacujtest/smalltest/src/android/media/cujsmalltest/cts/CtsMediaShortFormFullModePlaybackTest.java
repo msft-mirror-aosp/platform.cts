@@ -121,6 +121,8 @@ public class CtsMediaShortFormFullModePlaybackTest extends CujTestBase {
   @PlatinumTest(focusArea = "media")
   public void testVideoPlayback() throws Exception {
     if (mCujTestParam.getPlayerListener().isCallNotificationTest()) {
+      // Skipping tests on watches, see b/418930988
+      Assume.assumeFalse("Skipping " + mTestType + " on watch", isWatchDevice(mActivity));
       Assume.assumeTrue("Skipping " + mTestType + " as device doesn't telecom service",
           deviceSupportTelecomService(mActivity));
       Assume.assumeTrue("Skipping " + mTestType + " as device doesn't support call feature",

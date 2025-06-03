@@ -117,7 +117,7 @@ public class AccessibilityWindowReportingTest {
 
     // testDisableWindowAnimations modifies the animation scales. Adding AnimationTestRule to
     // ensure the animation scales are properly restored.
-    private final AnimationTestRule mAnimationRule = new AnimationTestRule();
+    private final AnimationTestRule mAnimationRule = new AnimationTestRule(sUiAutomation);
 
     @Rule
     public final RuleChain mRuleChain =

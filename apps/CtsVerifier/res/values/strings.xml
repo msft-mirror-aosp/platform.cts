@@ -2341,13 +2341,14 @@
         dismissed, when it is allowed.</string>
     <string name="nd_notif_title">NotifDismissTest</string>
     <string name="dismiss_notif_from_the_shade">Open the shade while the device is unlocked and find the NotifDismissTest notification.\n
-        Swipe it to either side to dismiss it.\n
+        Swipe it to either side, touchpad swipe, or mouse hover the notification and press x to dismiss it.\n
         Pass the test if it can be dismissed.</string>
     <string name="dismiss_notif_from_the_ls">Lock the screen and find the NotifDismissTest notification.\n
-        Swipe it to either side to dismiss it.\n
+        Swipe it to either side, touchpad swipe, or mouse hover the notification and press x to dismiss it.\n
         Pass the test if it can be dismissed from the lock screen.</string>
     <string name="non_dismissable_notif_from_the_ls">Lock the screen and find the NotifDismissTest notification.\n
-        Swipe it to either side to dismiss it. Verify that it is non-dismissible.\n
+       Swipe it to either side, touchpad swipe, or mouse hover the notification and press x to dismiss it.\n
+       Verify that it is non-dismissible.\n
         Fail the test if it could be dismissed from the lock screen.</string>
     <string name="fsi_test">Notification Full Screen Intent Test</string>
     <string name="fsi_test_info">This test checks the behavior of Notifications
@@ -2946,7 +2947,8 @@ You should be prompted to select credentials; choose the ones you just installed
 
         2. Now hit \"Go\" and you will see a notification pop up.\n
 
-        3. Scroll from the top to see the notification and verify you are unable to dismiss it.\n
+        3. Scroll from the top to see the notification and verify you are unable to dismiss it\n
+        via gesture swipe, touchpad swipe, or by hovering with mouse and pressing the x button.\n
 
         4. To then remove the notification you must revoke the exemption by running\n
            \"adb shell appops set com.android.cts.verifier android:system_exempt_from_dismissible_notifications default\".\n

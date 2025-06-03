@@ -33,6 +33,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.gtestrunner.GtestRunner;
 import com.android.gtestrunner.TargetLibrary;
+import com.android.media.audioserver.Flags;
 
 import org.junit.runner.RunWith;
 
@@ -138,5 +139,9 @@ public class AAudioTests {
 
     static int getOutChannelCountMax() {
         return AudioSystem.OUT_CHANNEL_COUNT_MAX;
+    }
+
+    static boolean mmapPcmOffloadSupport() {
+        return Flags.mmapPcmOffloadSupport();
     }
 }
