@@ -50,12 +50,14 @@ object VirtualInputDeviceCreator {
     const val VENDOR_ID: Int = 1
 
     private fun <T : Closeable?> prepareInputDevice(
+        name: String,
         deviceCreator: Supplier<T>
     ): InputDeviceHolder<T> {
-        return prepareInputDevice(deviceCreator, languageTag = null, layoutType = null)
+        return prepareInputDevice(name, deviceCreator, languageTag = null, layoutType = null)
     }
 
     private fun <T : Closeable?> prepareInputDevice(
+        name: String,
         deviceCreator: Supplier<T>,
         languageTag: String?,
         layoutType: String?
@@ -64,7 +66,7 @@ object VirtualInputDeviceCreator {
             InstrumentationRegistry.getInstrumentation().getTargetContext()
                 .getSystemService(InputManager::class.java)
         try {
-            InputDeviceAddedWaiter(inputManager, languageTag, layoutType).use { waiter ->
+            InputDeviceAddedWaiter(inputManager, name, languageTag, layoutType).use { waiter ->
                 return InputDeviceHolder(deviceCreator.get(), waiter.await())
             }
         } catch (e: InterruptedException) {
@@ -76,7 +78,7 @@ object VirtualInputDeviceCreator {
         virtualDevice: VirtualDeviceManager.VirtualDevice,
         name: String,
         display: Display
-    ): InputDeviceHolder<VirtualTouchscreen> = prepareInputDevice {
+    ): InputDeviceHolder<VirtualTouchscreen> = prepareInputDevice(name, {
         virtualDevice.createVirtualTouchscreen(
             VirtualTouchscreenConfig.Builder(
                 display.mode.physicalWidth,
@@ -88,13 +90,13 @@ object VirtualInputDeviceCreator {
                 .setAssociatedDisplayId(display.displayId)
                 .build()
         )
-    }
+    })
 
     fun createAndPrepareStylus(
         virtualDevice: VirtualDeviceManager.VirtualDevice,
         name: String,
         display: Display
-    ): InputDeviceHolder<VirtualStylus> = prepareInputDevice {
+    ): InputDeviceHolder<VirtualStylus> = prepareInputDevice(name, {
         virtualDevice.createVirtualStylus(
             VirtualStylusConfig.Builder(
                 display.mode.physicalWidth,
@@ -106,13 +108,13 @@ object VirtualInputDeviceCreator {
                 .setAssociatedDisplayId(display.displayId)
                 .build()
         )
-    }
+    })
 
     fun createAndPrepareMouse(
         virtualDevice: VirtualDeviceManager.VirtualDevice,
         name: String,
         display: Display
-    ): InputDeviceHolder<VirtualMouse> = prepareInputDevice {
+    ): InputDeviceHolder<VirtualMouse> = prepareInputDevice(name, {
         virtualDevice.createVirtualMouse(
             VirtualMouseConfig.Builder()
                 .setVendorId(VENDOR_ID)
@@ -121,13 +123,13 @@ object VirtualInputDeviceCreator {
                 .setAssociatedDisplayId(display.displayId)
                 .build()
         )
-    }
+    })
 
     fun createAndPrepareRotary(
         virtualDevice: VirtualDeviceManager.VirtualDevice,
         name: String,
         display: Display
-    ): InputDeviceHolder<VirtualRotaryEncoder> = prepareInputDevice {
+    ): InputDeviceHolder<VirtualRotaryEncoder> = prepareInputDevice(name, {
         virtualDevice.createVirtualRotaryEncoder(
             VirtualRotaryEncoderConfig.Builder()
                 .setVendorId(VENDOR_ID)
@@ -136,7 +138,7 @@ object VirtualInputDeviceCreator {
                 .setAssociatedDisplayId(display.displayId)
                 .build()
         )
-    }
+    })
 
     fun createAndPrepareKeyboard(
         virtualDevice: VirtualDeviceManager.VirtualDevice,
@@ -145,7 +147,7 @@ object VirtualInputDeviceCreator {
         languageTag: String = VirtualKeyboardConfig.DEFAULT_LANGUAGE_TAG,
         layoutType: String = VirtualKeyboardConfig.DEFAULT_LAYOUT_TYPE
     ): InputDeviceHolder<VirtualKeyboard> =
-        prepareInputDevice({
+        prepareInputDevice(name, {
             virtualDevice.createVirtualKeyboard(
                 VirtualKeyboardConfig.Builder()
                     .setVendorId(VENDOR_ID)
@@ -162,7 +164,7 @@ object VirtualInputDeviceCreator {
         virtualDevice: VirtualDeviceManager.VirtualDevice,
         name: String,
         display: Display
-    ): InputDeviceHolder<VirtualDpad> = prepareInputDevice {
+    ): InputDeviceHolder<VirtualDpad> = prepareInputDevice(name, {
         virtualDevice.createVirtualDpad(
             VirtualDpadConfig.Builder()
                 .setVendorId(VENDOR_ID)
@@ -171,7 +173,7 @@ object VirtualInputDeviceCreator {
                 .setAssociatedDisplayId(display.displayId)
                 .build()
         )
-    }
+    })
 
     fun createAndPrepareNavigationTouchpad(
         virtualDevice: VirtualDeviceManager.VirtualDevice,
@@ -179,7 +181,7 @@ object VirtualInputDeviceCreator {
         display: Display,
         touchpadWidth: Int = display.mode.physicalWidth,
         touchpadHeight: Int = display.mode.physicalHeight
-    ): InputDeviceHolder<VirtualNavigationTouchpad> = prepareInputDevice {
+    ): InputDeviceHolder<VirtualNavigationTouchpad> = prepareInputDevice(name, {
         virtualDevice.createVirtualNavigationTouchpad(
             VirtualNavigationTouchpadConfig.Builder(touchpadWidth, touchpadHeight)
                 .setVendorId(VENDOR_ID)
@@ -188,7 +190,7 @@ object VirtualInputDeviceCreator {
                 .setAssociatedDisplayId(display.displayId)
                 .build()
         )
-    }
+    })
 
     /** Holds a virtual input device along with its input device ID.  */
     class InputDeviceHolder<T : Closeable?>(val device: T, val deviceId: Int) : Closeable {
@@ -201,6 +203,7 @@ object VirtualInputDeviceCreator {
     /** Utility to verify that an input device with a given parameters has been created.  */
     private class InputDeviceAddedWaiter(
         private val mInputManager: InputManager,
+        private val mName: String,
         private val mLanguageTag: String?,
         private val mLayoutType: String?
     ) : InputManager.InputDeviceListener, AutoCloseable {
@@ -223,6 +226,7 @@ object VirtualInputDeviceCreator {
             if (device != null &&
                 device.productId == PRODUCT_ID &&
                 device.vendorId == VENDOR_ID &&
+                mName == device.name &&
                 mLanguageTag == device.keyboardLanguageTag &&
                 mLayoutType == device.keyboardLayoutType) {
                 mDeviceId = deviceId
