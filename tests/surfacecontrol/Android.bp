@@ -17,17 +17,8 @@ package {
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
-android_test {
-    name: "CtsSurfaceControlTests",
-    defaults: ["cts_defaults"],
-
-    // Tag this module as a cts test artifact
-    test_suites: [
-        "cts",
-        "general-tests",
-    ],
-
-    compile_multilib: "both",
+java_defaults {
+    name: "CtsSurfaceControlTests_javalibs",
 
     libs: [
         "android.test.runner.stubs",
@@ -61,7 +52,24 @@ android_test {
         "collector-device-lib",
         "cts_backported_fixes",
         "surfaceflinger_flags_java_lib",
+        "ravenwood-junit",
     ],
+}
+
+android_test {
+    name: "CtsSurfaceControlTests",
+    defaults: [
+        "cts_defaults",
+        "CtsSurfaceControlTests_javalibs",
+    ],
+
+    // Tag this module as a cts test artifact
+    test_suites: [
+        "cts",
+        "general-tests",
+    ],
+
+    compile_multilib: "both",
 
     jni_libs: [
         "libctssurfacecontrol_jni",
@@ -79,4 +87,23 @@ android_test {
     ],
 
     sdk_version: "test_current",
+}
+
+android_ravenwood_test {
+    name: "CtsSurfaceControlTestsRavenwood",
+    auto_gen_config: true,
+    defaults: [
+        "CtsSurfaceControlTests_javalibs",
+    ],
+
+    srcs: [
+        "src/android/view/surfacecontrol/cts/ChoreographerTest.java",
+        "src/**/*.aidl",
+    ],
+
+    sdk_version: "test_current",
+
+    ravenizer: {
+        strip_mockito: true,
+    },
 }
