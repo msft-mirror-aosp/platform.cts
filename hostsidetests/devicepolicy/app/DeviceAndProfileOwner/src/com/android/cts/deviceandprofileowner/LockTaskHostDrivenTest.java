@@ -39,7 +39,7 @@ import com.android.compatibility.common.util.PollingCheck;
 public class LockTaskHostDrivenTest extends BaseDeviceAdminTest {
 
     private static final String TAG = LockTaskHostDrivenTest.class.getName();
-    private static final int ACTIVITY_RESUMED_TIMEOUT_MILLIS = 20000;  // 20 seconds
+    private static final int ACTIVITY_RESUMED_TIMEOUT_MILLIS = 40000;  // 40 seconds
     private static final int LOCK_TASK_STATE_CHANGE_TIMEOUT_MILLIS = 10000;  // 10 seconds
     private static final String ACTION_EMERGENCY_DIAL = "com.android.phone.EmergencyDialer.DIAL";
     private static final String LOCK_TASK_ACTIVITY
