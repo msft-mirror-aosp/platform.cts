@@ -19,6 +19,14 @@
           "include-filter": "android.media.audio.cts.AudioPlaybackCaptureTest"
         }
       ]
+    },
+    {
+      "name": "CtsStatsdAtomHostTestCases",
+      "options": [
+        {
+          "include-filter": "android.cts.statsdatom.media.projection.MediaProjectionAtomsTests"
+        }
+      ]
     }
   ]
 }
