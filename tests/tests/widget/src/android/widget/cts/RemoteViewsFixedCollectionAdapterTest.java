@@ -23,6 +23,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
@@ -883,6 +884,20 @@ public class RemoteViewsFixedCollectionAdapterTest {
         assertEquals(adapter.getItemViewType(0), adapter.getItemViewType(1));
         assertEquals(10, adapter.getItemId(0));
         assertEquals(11, adapter.getItemId(1));
+    }
+
+    @Test
+    public void testSetRemoteAdapter_setEmptyView() {
+        ListView listView = mView.findViewById(R.id.remoteView_list);
+
+        RemoteCollectionItems items = new RemoteCollectionItems.Builder().build();
+        mRemoteViews.setRemoteAdapter(R.id.remoteView_list, items);
+        reapplyRemoteViews();
+        assertNull(listView.getEmptyView());
+
+        mRemoteViews.setEmptyView(R.id.remoteView_list, R.id.remoteView_grid);
+        reapplyRemoteViews();
+        assertTrue(listView.getEmptyView() instanceof GridView);
     }
 
     /**
