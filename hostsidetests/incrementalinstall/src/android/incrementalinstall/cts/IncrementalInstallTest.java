@@ -151,8 +151,8 @@ public class IncrementalInstallTest extends BaseHostJUnit4Test {
         // Create a copy of original apk but not its idsig.
         copyTestFile(TEST_APP_BASE_APK_NAME, null, newApkName);
         // Make sure it installs.
-        assertTrue(
-                installWithAdbInstaller(TEST_APP_BASE_APK_NAME).contains(INSTALL_SUCCESS_OUTPUT));
+        Truth.assertThat(
+                installWithAdbInstaller(TEST_APP_BASE_APK_NAME)).contains(INSTALL_SUCCESS_OUTPUT);
         verifyPackageInstalled(TEST_APP_PACKAGE_NAME);
         verifyInstallationTypeAndVersion(TEST_APP_PACKAGE_NAME, /* isIncfs= */ true,
                 TEST_APP_V1_VERSION);
