@@ -71,6 +71,11 @@ oneway interface ILocalSatelliteListener {
     void onSetSatelliteEnabledForCarrier();
 
     /**
+     * Indicates that satellite enabled for carrier state has changed.
+     */
+    void onSatelliteEnabledForCarrierStateChanged();
+
+    /**
      * Indicates that MockSatelliteService has just received the request
      * requestSatelliteEnabled from Telephony.
      */

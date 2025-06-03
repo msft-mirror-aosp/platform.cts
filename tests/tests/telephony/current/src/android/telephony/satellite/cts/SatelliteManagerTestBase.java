@@ -166,7 +166,7 @@ public class SatelliteManagerTestBase {
     protected static final float LOCATION_ACCURACY = 95;
     protected static LocationManager sLocationManager;
 
-    private static CarrierConfigReceiver sCarrierConfigReceiver;
+    protected static CarrierConfigReceiver sCarrierConfigReceiver;
 
     protected static void beforeAllTestsBase() {
         sPackageManager = getContext().getPackageManager();
@@ -3740,5 +3740,13 @@ public class SatelliteManagerTestBase {
         // Restore satellite permission
         grantSatellitePermission();
         return subscriptionInfoList != null ? subscriptionInfoList.size() : 0;
+    }
+
+    protected static boolean isSimReady(int slotId) {
+        if (sTelephonyManager.getSimState(slotId) != TelephonyManager.SIM_STATE_READY) {
+            logd("isSimReady: sim is not READY");
+            return false;
+        }
+        return true;
     }
 }
