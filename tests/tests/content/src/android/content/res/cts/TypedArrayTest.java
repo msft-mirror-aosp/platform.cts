@@ -32,9 +32,7 @@ import android.content.res.Resources;
 import android.content.res.TypedArray;
 import android.content.res.XmlResourceParser;
 import android.graphics.Typeface;
-import android.graphics.drawable.Drawable;
 import android.platform.test.annotations.AppModeSdkSandbox;
-import android.platform.test.annotations.DisabledOnRavenwood;
 import android.util.AttributeSet;
 import android.util.TypedValue;
 import android.util.Xml;
@@ -254,7 +252,6 @@ public class TypedArrayTest {
     }
 
     @Test
-    @DisabledOnRavenwood(blockedBy = Drawable.class)
     public void testGetDrawableAttributes() {
         final TypedArray t = getContext().getTheme().obtainStyledAttributes(
                 R.style.Whatever, R.styleable.style1);

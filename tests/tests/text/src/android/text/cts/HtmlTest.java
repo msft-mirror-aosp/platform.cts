@@ -24,8 +24,6 @@ import static org.junit.Assert.fail;
 
 import android.graphics.Color;
 import android.graphics.Typeface;
-import android.graphics.drawable.Drawable;
-import android.platform.test.annotations.DisabledOnRavenwood;
 import android.text.Html;
 import android.text.Layout;
 import android.text.Spannable;
@@ -610,7 +608,6 @@ public class HtmlTest {
     }
 
     @Test
-    @DisabledOnRavenwood(blockedBy = Drawable.class)
     public void testImg() {
         Spanned s = Html.fromHtml("yes<img src=\"http://example.com/foo.gif\">no");
         assertThat(Html.toHtml(s), matchesIgnoringTrailingWhitespace(

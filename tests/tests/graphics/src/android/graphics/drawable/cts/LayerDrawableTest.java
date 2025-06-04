@@ -24,9 +24,9 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doNothing;
@@ -61,6 +61,7 @@ import android.graphics.drawable.RippleDrawable;
 import android.graphics.drawable.RotateDrawable;
 import android.graphics.drawable.ShapeDrawable;
 import android.graphics.drawable.StateListDrawable;
+import android.platform.test.annotations.DisabledOnRavenwood;
 import android.util.AttributeSet;
 import android.util.StateSet;
 import android.util.Xml;
@@ -1880,6 +1881,7 @@ public class LayerDrawableTest {
     }
 
     @Test
+    @DisabledOnRavenwood(blockedBy = RippleDrawable.class)
     public void testInvalidateDuringInit() {
         Drawable layer = new RippleDrawable(ColorStateList.valueOf(Color.BLACK), null, null);
 

@@ -25,6 +25,7 @@ import android.graphics.cts.R;
 import android.graphics.drawable.Animatable;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.DrawableContainer;
+import android.platform.test.annotations.DisabledOnRavenwood;
 
 import androidx.test.InstrumentationRegistry;
 import androidx.test.filters.SmallTest;
@@ -42,6 +43,7 @@ import org.junit.runner.RunWith;
  */
 @SmallTest
 @RunWith(AndroidJUnit4.class)
+@DisabledOnRavenwood(blockedBy = ValueAnimator.class)
 public class CustomAnimationScaleListDrawableTest {
     private static final int DRAWABLE_ID = R.drawable.custom_animation_scale_list_drawable;
     private Context mContext;

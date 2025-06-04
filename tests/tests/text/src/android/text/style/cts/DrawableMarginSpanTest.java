@@ -23,7 +23,6 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint.FontMetricsInt;
 import android.graphics.drawable.Drawable;
-import android.platform.test.annotations.DisabledOnRavenwood;
 import android.text.Html;
 import android.text.Layout;
 import android.text.Spanned;
@@ -42,7 +41,6 @@ import org.junit.runner.RunWith;
 
 @SmallTest
 @RunWith(AndroidJUnit4.class)
-@DisabledOnRavenwood(blockedBy = DrawableMarginSpan.class)
 public class DrawableMarginSpanTest {
     private Context mContext;
     private Drawable mDrawable;

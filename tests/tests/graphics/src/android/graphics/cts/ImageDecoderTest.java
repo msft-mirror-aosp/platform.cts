@@ -42,6 +42,7 @@ import android.graphics.ImageDecoder.OnPartialImageListener;
 import android.graphics.PixelFormat;
 import android.graphics.PostProcessor;
 import android.graphics.Rect;
+import android.graphics.drawable.AnimatedImageDrawable;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.NinePatchDrawable;
@@ -421,7 +422,6 @@ public class ImageDecoderTest {
 
     @Test
     @Parameters(method = "getRecords")
-    @DisabledOnRavenwood(blockedBy = Drawable.class)
     public void testDecodeDrawable(Record record) {
         for (SourceCreator f : mCreators) {
             ImageDecoder.Source src = f.apply(record.resId);
@@ -711,7 +711,6 @@ public class ImageDecoderTest {
     }
 
     @Test
-    @DisabledOnRavenwood(blockedBy = Drawable.class)
     public void testNinepatchWithDensityNone() {
         Resources res = getResources();
         TypedValue value = new TypedValue();
@@ -724,7 +723,6 @@ public class ImageDecoderTest {
     }
 
     @Test
-    @DisabledOnRavenwood(blockedBy = Drawable.class)
     public void testPostProcessorOverridesNinepatch() {
         class Listener implements ImageDecoder.OnHeaderDecodedListener {
             public boolean requireSoftware;
@@ -950,7 +948,7 @@ public class ImageDecoderTest {
     }
 
     @Test
-    @DisabledOnRavenwood(blockedBy = Drawable.class)
+    @DisabledOnRavenwood(blockedBy = AnimatedImageDrawable.class)
     public void testResizeTransparency() {
         ImageDecoder.Source src = mCreators[0].apply(R.drawable.animated);
         Drawable dr = null;
@@ -1085,7 +1083,7 @@ public class ImageDecoderTest {
     }
 
     @Test
-    @DisabledOnRavenwood(blockedBy = Drawable.class)
+    @DisabledOnRavenwood(blockedBy = AnimatedImageDrawable.class)
     public void testExceptionInStream() throws Throwable {
         InputStream is = new ExceptionStream(R.drawable.animated, 27570);
         ImageDecoder.Source src = ImageDecoder.createSource(getResources(), is,
@@ -1874,7 +1872,7 @@ public class ImageDecoderTest {
     }
 
     @Test
-    @DisabledOnRavenwood(blockedBy = Drawable.class)
+    @DisabledOnRavenwood(blockedBy = AnimatedImageDrawable.class)
     public void testAlphaMaskPlusHardwareAnimated() {
         // AnimatedImageDrawable ignores both of these settings, so it is okay
         // to combine them.
@@ -2745,7 +2743,6 @@ public class ImageDecoderTest {
     @Test
     @LargeTest
     @Parameters(method = "getRecordsAsSources")
-    @DisabledOnRavenwood(blockedBy = Drawable.class)
     public void testReuse(Record record, SourceCreator f) {
         if (record.mimeType.equals("image/heif") || record.mimeType.equals("image/avif")) {
             // These images take too long for this test.
@@ -2759,7 +2756,6 @@ public class ImageDecoderTest {
 
     @Test
     @Parameters(method = "getRecords")
-    @DisabledOnRavenwood(blockedBy = Drawable.class)
     public void testReuse2(Record record) {
         if (record.mimeType.equals("image/heif") || record.mimeType.equals("image/avif")) {
             // These images take too long for this test.
@@ -2794,7 +2790,6 @@ public class ImageDecoderTest {
 
     @Test
     @Parameters(method = "getAssetRecords")
-    @DisabledOnRavenwood(blockedBy = Drawable.class)
     public void testReuseAssetRecords(AssetRecord record) {
         AssetManager assets = getResources().getAssets();
         ImageDecoder.Source src = ImageDecoder.createSource(assets, record.name);
@@ -2802,7 +2797,7 @@ public class ImageDecoderTest {
     }
 
     @Test
-    @DisabledOnRavenwood(blockedBy = Drawable.class)
+    @DisabledOnRavenwood(blockedBy = AnimatedImageDrawable.class)
     public void testReuseAnimated() {
         ImageDecoder.Source src = mCreators[0].apply(R.drawable.animated);
         testReuse(src, "animated.gif");

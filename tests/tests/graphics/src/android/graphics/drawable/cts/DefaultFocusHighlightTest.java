@@ -44,6 +44,7 @@ import android.graphics.drawable.RippleDrawable;
 import android.graphics.drawable.ShapeDrawable;
 import android.graphics.drawable.StateListDrawable;
 import android.graphics.drawable.shapes.RectShape;
+import android.platform.test.annotations.DisabledOnRavenwood;
 import android.util.StateSet;
 
 import androidx.test.InstrumentationRegistry;
@@ -138,6 +139,7 @@ public class DefaultFocusHighlightTest {
 
     @UiThreadTest
     @Test
+    @DisabledOnRavenwood(blockedBy = RippleDrawable.class)
     public void testRippleDrawable() {
         Drawable d = DrawableFactory.createRippleDrawable();
         d.setState(FOCUSED_STATE);
@@ -237,6 +239,7 @@ public class DefaultFocusHighlightTest {
 
     @UiThreadTest
     @Test
+    @DisabledOnRavenwood(blockedBy = RippleDrawable.class)
     public void testDrawableContainer() {
         MockDrawableContainer container;
         DrawableContainerState containerState;
