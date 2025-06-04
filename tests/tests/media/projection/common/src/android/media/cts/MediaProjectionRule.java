@@ -294,6 +294,10 @@ public class MediaProjectionRule implements TestRule {
         return mActivity;
     }
 
+    public String getTargetPackage() {
+        return mContext.getPackageName();
+    }
+
     /** Save MediaProjection's screenshots to the device to help debug test failures. */
     public static class ScreenshotListener implements ImageReader.OnImageAvailableListener {
         private final CountDownLatch mCountDownLatch;
