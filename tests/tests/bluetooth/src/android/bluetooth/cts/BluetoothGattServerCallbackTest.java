@@ -31,10 +31,12 @@ import android.bluetooth.BluetoothGattServerCallback;
 import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothManager;
 import android.content.Context;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.bluetooth.flags.Flags;
 import com.android.compatibility.common.util.CddTest;
 
 import org.junit.After;
@@ -106,6 +108,10 @@ public class BluetoothGattServerCallbackTest {
 
                 @Override
                 public void onPhyRead(BluetoothDevice device, int txPhy, int rxPhy, int status) {}
+
+                @Override
+                @RequiresFlagsEnabled(Flags.FLAG_LE_SUBRATE_API)
+                public void onSubrateChange(BluetoothDevice device, int subrateMode, int status) {}
             };
     private final UUID TEST_UUID = UUID.fromString("0000110a-0000-1000-8000-00805f9b34fb");
     private final byte[] mBytes = new byte[] {};
@@ -172,5 +178,18 @@ public class BluetoothGattServerCallbackTest {
                 BluetoothDevice.PHY_LE_2M,
                 BluetoothDevice.PHY_LE_2M,
                 BluetoothGatt.GATT_SUCCESS);
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_LE_SUBRATE_API)
+    @Test
+    public void bt5_3AddedMethods() {
+        mCallbacks.onSubrateChange(
+                mBluetoothDevice, BluetoothGatt.SUBRATE_MODE_OFF, BluetoothGatt.GATT_SUCCESS);
+        mCallbacks.onSubrateChange(
+                mBluetoothDevice, BluetoothGatt.SUBRATE_MODE_LOW, BluetoothGatt.GATT_SUCCESS);
+        mCallbacks.onSubrateChange(
+                mBluetoothDevice, BluetoothGatt.SUBRATE_MODE_BALANCED, BluetoothGatt.GATT_SUCCESS);
+        mCallbacks.onSubrateChange(
+                mBluetoothDevice, BluetoothGatt.SUBRATE_MODE_HIGH, BluetoothGatt.GATT_SUCCESS);
     }
 }
