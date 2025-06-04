@@ -65,6 +65,9 @@ public class DataServiceTestOnMockModem {
     private TelephonyManager mTelephonyManager;
     private int mTestSub = 0;
 
+    private boolean mInitialIsUserDataEnabled = false;
+    private boolean mInitialIsUserDataRoamingEnabled = false;
+
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
@@ -104,6 +107,10 @@ public class DataServiceTestOnMockModem {
         TimeUnit.MILLISECONDS.sleep(WAIT_UPDATE_TIMEOUT_MS);
         assertTrue(mMockModemManager.changeNetworkService(TEST_SLOT, 310260, true));
 
+        mInitialIsUserDataEnabled =
+                mTelephonyManager.isDataEnabledForReason(TelephonyManager.DATA_ENABLED_REASON_USER);
+        mInitialIsUserDataRoamingEnabled = mTelephonyManager.isDataRoamingEnabled();
+
         if (mMockModemManager != null) {
             mTelephonyManager.setDataEnabledForReason(
                     TelephonyManager.DATA_ENABLED_REASON_USER, false);
@@ -130,6 +137,11 @@ public class DataServiceTestOnMockModem {
 
             TimeUnit.MILLISECONDS.sleep(WAIT_UPDATE_TIMEOUT_MS);
         }
+
+        mTelephonyManager.setDataEnabledForReason(
+                TelephonyManager.DATA_ENABLED_REASON_USER, mInitialIsUserDataEnabled);
+        mTelephonyManager.setDataRoamingEnabled(mInitialIsUserDataRoamingEnabled);
+
         InstrumentationRegistry.getInstrumentation()
                 .getUiAutomation()
                 .dropShellPermissionIdentity();
