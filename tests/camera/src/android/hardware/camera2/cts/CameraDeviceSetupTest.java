@@ -509,7 +509,7 @@ public class CameraDeviceSetupTest extends Camera2AndroidTestCase {
                 long minFrameDuration = setupConfigurations(staticInfo, comb, maxStreamSizes,
                         outputConfigs, dynamicProfile);
                 assertTrue(
-                        MaxStreamSizes.combinationToString(comb) + " should be supported!",
+                        MaxStreamSizes.combinationWithSizeToString(comb) + " should be supported!",
                         minFrameDuration > 0);
 
                 for (Range<Integer> fpsRange : fpsRanges) {
@@ -523,9 +523,12 @@ public class CameraDeviceSetupTest extends Camera2AndroidTestCase {
                         continue;
                     }
 
-                    String combinationStr = MaxStreamSizes.combinationToString(comb)
-                            + ", dynamicRangeProfile " + dynamicProfile
-                            + ", fpsRange " + fpsRange.toString();
+                    String combinationStr =
+                            MaxStreamSizes.combinationWithSizeToString(comb)
+                                    + ", dynamicRangeProfile "
+                                    + dynamicProfile
+                                    + ", fpsRange "
+                                    + fpsRange.toString();
                     try {
                         CaptureRequest.Builder builder = cameraDeviceSetup.createCaptureRequest(
                                 CameraDevice.TEMPLATE_PREVIEW);
@@ -802,14 +805,11 @@ public class CameraDeviceSetupTest extends Camera2AndroidTestCase {
     private long setupConfigurations(StaticMetadata staticInfo, int[] configs,
             MaxStreamSizes maxSizes, List<OutputConfiguration> outputConfigs, Long dynamicProfile) {
         long frameDuration = -1;
-        for (int i = 0; i < configs.length; i += 2) {
+        for (int i = 0; i < configs.length; i += 3) {
             int format = configs[i];
-            int sizeLimit = configs[i + 1];
-
-            Size targetSize = null;
+            Size targetSize = new Size(configs[i + 1], configs[i + 2]);
             switch (format) {
                 case PRIV: {
-                    targetSize = maxSizes.getOutputSizeForFormat(PRIV, sizeLimit);
                     OutputConfiguration config = new OutputConfiguration(
                             targetSize, SurfaceTexture.class);
                     config.setDynamicRangeProfile(dynamicProfile);
@@ -818,7 +818,6 @@ public class CameraDeviceSetupTest extends Camera2AndroidTestCase {
                 }
                 case JPEG:
                 case JPEG_R: {
-                    targetSize = maxSizes.getOutputSizeForFormat(format, sizeLimit);
                     OutputConfiguration config = new OutputConfiguration(format, targetSize);
                     outputConfigs.add(config);
                     break;
@@ -827,7 +826,6 @@ public class CameraDeviceSetupTest extends Camera2AndroidTestCase {
                     if (dynamicProfile == DynamicRangeProfiles.HLG10) {
                         format = ImageFormat.YCBCR_P010;
                     }
-                    targetSize = maxSizes.getOutputSizeForFormat(YUV, sizeLimit);
                     OutputConfiguration config = new OutputConfiguration(format, targetSize);
                     config.setDynamicRangeProfile(dynamicProfile);
                     outputConfigs.add(config);

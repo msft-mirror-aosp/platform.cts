@@ -100,6 +100,7 @@ import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -5034,48 +5035,6 @@ public class CameraTestUtils extends Assert {
                     }
                 }
 
-                // Remove all combinations that are not supported by the camera device
-                List<int[]> combinationsToQuery = new ArrayList<int[]>();
-                for (int[] combination: QUERY_COMBINATIONS) {
-                    boolean hasUnsupportedStream = false;
-                    for (int j = 1; j < combination.length; j += 2) {
-                        int format = combination[j];
-                        int sizeIndex = combination[j + 1];
-                        Size[] supportedSizes = configs.getOutputSizes(format);
-                        Size[] sizeArray;
-                        switch (format) {
-                            case ImageFormat.PRIVATE:
-                                sizeArray = mMaxPrivSizes;
-                                break;
-                            case ImageFormat.JPEG:
-                                sizeArray = mMaxJpegSizes;
-                                break;
-                            case ImageFormat.JPEG_R:
-                                sizeArray = mMaxJpegRSizes;
-                                break;
-                            case ImageFormat.YUV_420_888:
-                                sizeArray = mMaxYuvSizes;
-                                break;
-                            default:
-                                sizeArray = new Size[0];
-                                fail("Unsupported format "
-                                        + format + " for queryable combinations!");
-                                break;
-                        }
-                        if (supportedSizes == null
-                                || !Arrays.asList(supportedSizes).contains(sizeArray[sizeIndex])) {
-                            hasUnsupportedStream = true;
-                            break;
-                        }
-                    }
-
-                    // Skip combinations containing with unsupported stream sizes
-                    if (!hasUnsupportedStream) {
-                        combinationsToQuery.add(combination);
-                    }
-                }
-                mQueryableCombinations = combinationsToQuery.toArray(int[][]::new);
-
                 if (sm.isMonochromeWithY8()) {
                     mMaxY8Sizes[PREVIEW]  = CameraTestUtils.getMaxSizeWithBound(
                             y8Sizes, maxPreviewSize);
@@ -5197,6 +5156,74 @@ public class CameraTestUtils extends Assert {
                 mMaxYuvSizes[MAX_30FPS] = maxYuv30fpsSize;
                 mMaxY8Sizes[MAX_30FPS] = maxY830fpsSize;
                 mMaxJpegSizes[MAX_30FPS] = maxJpeg30fpsSize;
+
+                // Remove all combinations that are not supported by the camera device,
+                // and duplicate combinations.
+                List<ArrayList<Integer>> combinationsToQuery = new ArrayList<>();
+                for (int[] combination : QUERY_COMBINATIONS) {
+                    boolean hasUnsupportedStream = false;
+                    ArrayList<Integer> combinationWithSize = new ArrayList<Integer>();
+                    for (int j = 1; j < combination.length; j += 2) {
+                        int format = combination[j];
+                        int sizeIndex = combination[j + 1];
+                        Size[] supportedSizes = configs.getOutputSizes(format);
+                        Size[] sizeArray;
+                        switch (format) {
+                            case ImageFormat.PRIVATE:
+                                sizeArray = mMaxPrivSizes;
+                                break;
+                            case ImageFormat.JPEG:
+                                sizeArray = mMaxJpegSizes;
+                                break;
+                            case ImageFormat.JPEG_R:
+                                sizeArray = mMaxJpegRSizes;
+                                break;
+                            case ImageFormat.YUV_420_888:
+                                sizeArray = mMaxYuvSizes;
+                                break;
+                            default:
+                                sizeArray = new Size[0];
+                                fail("Unsupported format "
+                                        + format + " for queryable combinations!");
+                                break;
+                        }
+                        if (supportedSizes == null
+                                || !Arrays.asList(supportedSizes).contains(sizeArray[sizeIndex])) {
+                            hasUnsupportedStream = true;
+                            break;
+                        }
+
+                        combinationWithSize.add(format);
+                        Size imageSize = getOutputSizeForFormat(format, sizeIndex);
+                        combinationWithSize.add(imageSize.getWidth());
+                        combinationWithSize.add(imageSize.getHeight());
+                    }
+
+                    // Skip combinations containing unsupported stream sizes
+                    if (hasUnsupportedStream) {
+                        continue;
+                    }
+
+                    // Skip duplicate combinations
+                    Optional<ArrayList<Integer>> existing = combinationsToQuery
+                            .stream()
+                            .filter(c -> c.subList(1, c.size()).equals(combinationWithSize))
+                            .findFirst();
+                    existing.ifPresentOrElse(
+                        comb -> {
+                            int existingSdk = comb.get(0);
+                            comb.set(0, Math.min(existingSdk, combination[0]));
+                            Log.i(TAG, "Skipping duplicate combination: " + combinationWithSize);
+                        },
+                        () -> {
+                            combinationWithSize.addFirst(combination[0]);
+                            combinationsToQuery.add(combinationWithSize);
+                        });
+                }
+                mQueryableCombinations =
+                        combinationsToQuery.stream()
+                                .map(l -> l.stream().mapToInt(Integer::intValue).toArray())
+                                .toArray(int[][]::new);
             }
 
             Size[] privInputSizes = configs.getInputSizes(ImageFormat.PRIVATE);
@@ -5299,6 +5326,21 @@ public class CameraTestUtils extends Assert {
             return b.toString();
         }
 
+        public static String combinationWithSizeToString(int[] combination) {
+            StringBuilder b = new StringBuilder("{ ");
+            int i = 0;
+            while (i < combination.length) {
+                int format = combination[i];
+                Size size = new Size(combination[i + 1], combination[i + 2]);
+                appendFormatSize(b, format, size);
+
+                i += 3;
+                b.append(" ");
+            }
+            b.append("}");
+            return b.toString();
+        }
+
         public static String reprocessCombinationToString(int[] reprocessCombination) {
             // reprocessConfig[0..1] is the input configuration
             StringBuilder b = new StringBuilder("Input: ");
@@ -5332,7 +5374,17 @@ public class CameraTestUtils extends Assert {
             return -1;
         }
 
-        private static void appendFormatSize(StringBuilder b, int format, int size) {
+        private static void appendFormatSize(StringBuilder b, int format, int sizeLimit) {
+            appendFormat(b, format);
+            appendSizeLimit(b, sizeLimit);
+        }
+
+        private static void appendFormatSize(StringBuilder b, int format, Size size) {
+            appendFormat(b, format);
+            appendSize(b, size);
+        }
+
+        private static void appendFormat(StringBuilder b, int format) {
             switch (format) {
                 case PRIV:
                     b.append("[PRIV, ");
@@ -5356,8 +5408,10 @@ public class CameraTestUtils extends Assert {
                     b.append("[UNK, ");
                     break;
             }
+        }
 
-            switch (size) {
+        private static void appendSizeLimit(StringBuilder b, int sizeLimit) {
+            switch (sizeLimit) {
                 case PREVIEW:
                     b.append("PREVIEW]");
                     break;
@@ -5410,6 +5464,10 @@ public class CameraTestUtils extends Assert {
                     b.append("UNK]");
                     break;
             }
+        }
+
+        private static void appendSize(StringBuilder b, Size size) {
+            b.append(size).append("]");
         }
 
         private static void appendStreamUseCase(StringBuilder b, int streamUseCase) {
