@@ -136,7 +136,7 @@ public final class DirectActionsActivity extends Activity {
 
     private void detectDestroyedInteractor(@NonNull RemoteCallback callback) {
         final CountDownLatch latch = new CountDownLatch(1);
-        final VoiceInteractor interactor = getVoiceInteractor();
+        final VoiceInteractor interactor = waitForVoiceInteractorNonNull();
         interactor.registerOnDestroyedCallback(AsyncTask.THREAD_POOL_EXECUTOR, latch::countDown);
         Utils.await(latch);
 
@@ -163,7 +163,7 @@ public final class DirectActionsActivity extends Activity {
     }
 
     private void invalidateDirectActions(@NonNull RemoteCallback callback) {
-        getVoiceInteractor().notifyDirectActionsChanged();
+        waitForVoiceInteractorNonNull().notifyDirectActionsChanged();
         final Bundle result = new Bundle();
         result.putBoolean(Utils.DIRECT_ACTIONS_KEY_RESULT, true);
         Log.v(TAG, "invalidateDirectActions(): " + Utils.toBundleString(result));
@@ -171,7 +171,7 @@ public final class DirectActionsActivity extends Activity {
     }
 
     private void getPackageName(@NonNull RemoteCallback callback) {
-        String packageName = getVoiceInteractor().getPackageName();
+        String packageName = waitForVoiceInteractorNonNull().getPackageName();
         final Bundle result = new Bundle();
         result.putString(Utils.DIRECT_ACTIONS_KEY_RESULT, packageName);
         Log.v(TAG, "getPackageName(): " + Utils.toBundleString(result));
@@ -179,7 +179,7 @@ public final class DirectActionsActivity extends Activity {
     }
 
     private void getPackageInfo(@NonNull RemoteCallback callback) {
-        String packageName = getVoiceInteractor().getPackageName();
+        String packageName = waitForVoiceInteractorNonNull().getPackageName();
         PackageManager packageManager = getPackageManager();
         final Bundle result = new Bundle();
         if (packageManager != null) {
@@ -207,6 +207,21 @@ public final class DirectActionsActivity extends Activity {
         result.putBoolean(Utils.DIRECT_ACTIONS_KEY_RESULT, true);
         Log.v(TAG, "doFinish(): " + Utils.toBundleString(result));
         callback.sendResult(result);
+    }
+
+    // Activity thread populates the voice interactor on a direct action request, but this can
+    // sometimes still be null by the time we call for the interactor.
+    private VoiceInteractor waitForVoiceInteractorNonNull() {
+        long pollingTimeoutMs = 3000;
+        try {
+            PollingCheck.check(
+                    "Voice interactor is null for direct action activity",
+                    pollingTimeoutMs,
+                    () -> getVoiceInteractor() != null);
+        } catch (Exception e) {
+            Truth.assertWithMessage("Unexpected exception: " + e).fail();
+        }
+        return getVoiceInteractor();
     }
 
     private static void reportActionPerformed(Consumer<Bundle> callback) {
