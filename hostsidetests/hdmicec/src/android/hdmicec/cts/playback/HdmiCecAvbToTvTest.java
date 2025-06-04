@@ -30,6 +30,7 @@ import android.hdmicec.cts.HdmiCecConstants;
 
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
 
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -42,6 +43,7 @@ import java.util.concurrent.TimeUnit;
  * System Audio device is a TV.
  */
 @RunWith(DeviceJUnit4ClassRunner.class)
+@Ignore("b/406050353")
 public class HdmiCecAvbToTvTest extends BaseHdmiCecAbsoluteVolumeBehaviorTest {
 
     /**

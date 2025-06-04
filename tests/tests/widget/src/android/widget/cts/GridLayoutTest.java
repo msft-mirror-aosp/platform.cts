@@ -25,6 +25,7 @@ import static org.junit.Assert.assertTrue;
 import android.Manifest;
 import android.app.Activity;
 import android.content.Context;
+import android.platform.test.annotations.DesktopTest;
 import android.util.AttributeSet;
 import android.util.Xml;
 import android.view.Gravity;
@@ -53,6 +54,7 @@ import org.xmlpull.v1.XmlPullParser;
  */
 @MediumTest
 @RunWith(AndroidJUnit4.class)
+@DesktopTest(cujs = {"b/416196526", "b/416196961"})
 public class GridLayoutTest {
 
     // The size of the off-screen test container in which we we will testing layout.

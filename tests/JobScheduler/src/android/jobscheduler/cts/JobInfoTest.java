@@ -16,18 +16,15 @@
 
 package android.jobscheduler.cts;
 
-import static android.jobscheduler.cts.TestAppInterface.ENFORCE_MINIMUM_TIME_WINDOWS;
 import static android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET;
 import static android.net.NetworkCapabilities.NET_CAPABILITY_VALIDATED;
 import static android.text.format.DateUtils.HOUR_IN_MILLIS;
 import static android.text.format.DateUtils.MINUTE_IN_MILLIS;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static com.google.common.truth.Truth.assertThat;
+import static com.google.common.truth.Truth.assertWithMessage;
+
+import static org.junit.Assert.assertThrows;
 
 import android.app.compat.CompatChanges;
 import android.app.job.Flags;
@@ -41,15 +38,15 @@ import android.os.Bundle;
 import android.os.PersistableBundle;
 import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.ContactsContract;
 import android.provider.MediaStore;
-import android.util.Log;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
-import com.android.compatibility.common.util.SystemUtil;
-
 import org.junit.After;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -59,11 +56,14 @@ import java.util.Set;
 /** Tests related to creating and reading JobInfo objects. */
 @RunWith(AndroidJUnit4.class)
 public class JobInfoTest extends BaseJobSchedulerTest {
-    private static final int JOB_ID = JobInfoTest.class.hashCode();
     private static final String TAG = JobInfoTest.class.getSimpleName();
+    private static final int JOB_ID = JobInfoTest.class.hashCode();
 
     private static final long REJECT_NEGATIVE_DELAYS_AND_DEADLINES = 323349338L;
     private static final long THROW_ON_UNSUPPORTED_BIAS_USAGE = 300477393L;
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Override
     @After
@@ -79,16 +79,18 @@ public class JobInfoTest extends BaseJobSchedulerTest {
         JobInfo ji = new JobInfo.Builder(JOB_ID, kJobServiceComponent)
                 .setBackoffCriteria(12345, JobInfo.BACKOFF_POLICY_LINEAR)
                 .build();
-        assertEquals(12345, ji.getInitialBackoffMillis());
-        assertEquals(JobInfo.BACKOFF_POLICY_LINEAR, ji.getBackoffPolicy());
+
+        assertThat(ji.getInitialBackoffMillis()).isEqualTo(12345);
+        assertThat(ji.getBackoffPolicy()).isEqualTo(JobInfo.BACKOFF_POLICY_LINEAR);
         // Confirm JobScheduler accepts the JobInfo object.
         mJobScheduler.schedule(ji);
 
         ji = new JobInfo.Builder(JOB_ID, kJobServiceComponent)
                 .setBackoffCriteria(54321, JobInfo.BACKOFF_POLICY_EXPONENTIAL)
                 .build();
-        assertEquals(54321, ji.getInitialBackoffMillis());
-        assertEquals(JobInfo.BACKOFF_POLICY_EXPONENTIAL, ji.getBackoffPolicy());
+
+        assertThat(ji.getInitialBackoffMillis()).isEqualTo(54321);
+        assertThat(ji.getBackoffPolicy()).isEqualTo(JobInfo.BACKOFF_POLICY_EXPONENTIAL);
         // Confirm JobScheduler accepts the JobInfo object.
         mJobScheduler.schedule(ji);
     }
@@ -98,14 +100,15 @@ public class JobInfoTest extends BaseJobSchedulerTest {
         JobInfo ji = new JobInfo.Builder(JOB_ID, kJobServiceComponent)
                 .setRequiresBatteryNotLow(true)
                 .build();
-        assertTrue(ji.isRequireBatteryNotLow());
+
+        assertThat(ji.isRequireBatteryNotLow()).isTrue();
         // Confirm JobScheduler accepts the JobInfo object.
         mJobScheduler.schedule(ji);
 
         ji = new JobInfo.Builder(JOB_ID, kJobServiceComponent)
                 .setRequiresBatteryNotLow(false)
                 .build();
-        assertFalse(ji.isRequireBatteryNotLow());
+        assertThat(ji.isRequireBatteryNotLow()).isFalse();
         // Confirm JobScheduler accepts the JobInfo object.
         mJobScheduler.schedule(ji);
     }
@@ -113,7 +116,6 @@ public class JobInfoTest extends BaseJobSchedulerTest {
     @Test
     public void testBias() throws Exception {
         JobInfo.Builder builder = new JobInfo.Builder(JOB_ID, kJobServiceComponent);
-
         Method setBiasMethod = JobInfo.Builder.class.getDeclaredMethod("setBias", int.class);
         setBiasMethod.setAccessible(true);
         setBiasMethod.invoke(builder, 40);
@@ -122,21 +124,16 @@ public class JobInfoTest extends BaseJobSchedulerTest {
         // Confirm JobScheduler rejects the JobInfo object.
         // TODO(b/309023462): create separate tests for target SDK gated changes
         if (CompatChanges.isChangeEnabled(THROW_ON_UNSUPPORTED_BIAS_USAGE)) {
-            assertScheduleFailsWithException(
+            assertThrows(
                     "Successfully scheduled a job with a modified bias",
-                    ji, SecurityException.class);
+                    SecurityException.class,
+                    () -> mJobScheduler.schedule(ji));
         } else {
             mJobScheduler.schedule(ji);
-
-            assertEquals("Bias wasn't changed to default",
-                    0, getBias(mJobScheduler.getPendingJob(JOB_ID)));
+            assertWithMessage("Bias wasn't changed to default")
+                    .that(getBias(mJobScheduler.getPendingJob(JOB_ID)))
+                    .isEqualTo(0);
         }
-    }
-
-    private int getBias(JobInfo job) throws Exception {
-        Method getBiasMethod = JobInfo.class.getDeclaredMethod("getBias");
-        getBiasMethod.setAccessible(true);
-        return (Integer) getBiasMethod.invoke(job);
     }
 
     @Test
@@ -144,14 +141,15 @@ public class JobInfoTest extends BaseJobSchedulerTest {
         JobInfo ji = new JobInfo.Builder(JOB_ID, kJobServiceComponent)
                 .setRequiresCharging(true)
                 .build();
-        assertTrue(ji.isRequireCharging());
+
+        assertThat(ji.isRequireCharging()).isTrue();
         // Confirm JobScheduler accepts the JobInfo object.
         mJobScheduler.schedule(ji);
 
         ji = new JobInfo.Builder(JOB_ID, kJobServiceComponent)
                 .setRequiresCharging(false)
                 .build();
-        assertFalse(ji.isRequireCharging());
+        assertThat(ji.isRequireCharging()).isFalse();
         // Confirm JobScheduler accepts the JobInfo object.
         mJobScheduler.schedule(ji);
     }
@@ -162,30 +160,28 @@ public class JobInfoTest extends BaseJobSchedulerTest {
         JobInfo ji = new JobInfo.Builder(JOB_ID, kJobServiceComponent)
                 .setClipData(clipData, Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 .build();
-        assertEquals(clipData, ji.getClipData());
-        assertEquals(Intent.FLAG_GRANT_READ_URI_PERMISSION, ji.getClipGrantFlags());
+
+        assertThat(ji.getClipData()).isEqualTo(clipData);
+        assertThat(ji.getClipGrantFlags()).isEqualTo(Intent.FLAG_GRANT_READ_URI_PERMISSION);
         // Confirm JobScheduler accepts the JobInfo object.
         mJobScheduler.schedule(ji);
 
         ji = new JobInfo.Builder(JOB_ID, kJobServiceComponent)
                 .setClipData(null, 0)
                 .build();
-        assertNull(ji.getClipData());
-        assertEquals(0, ji.getClipGrantFlags());
+        assertThat(ji.getClipData()).isNull();
+        assertThat(ji.getClipGrantFlags()).isEqualTo(0);
         // Confirm JobScheduler accepts the JobInfo object.
         mJobScheduler.schedule(ji);
     }
 
-    // TODO(b/315035390): migrate to JUnit4
-    @RequiresFlagsEnabled(Flags.FLAG_JOB_DEBUG_INFO_APIS) // Doesn't work for JUnit3
+    @RequiresFlagsEnabled(Flags.FLAG_JOB_DEBUG_INFO_APIS)
     @Test
     public void testDebugTags() {
-        if (!isAconfigFlagEnabled(Flags.FLAG_JOB_DEBUG_INFO_APIS)) {
-            return;
-        }
         // Confirm defaults
         JobInfo ji = new JobInfo.Builder(JOB_ID, kJobServiceComponent).build();
-        assertEquals(0, ji.getDebugTags().size());
+
+        assertThat(ji.getDebugTags()).hasSize(0);
         // Confirm JobScheduler accepts the JobInfo object.
         mJobScheduler.schedule(ji);
 
@@ -194,7 +190,8 @@ public class JobInfoTest extends BaseJobSchedulerTest {
                 .addDebugTag("b")
                 .addDebugTag("c")
                 .build();
-        assertEquals(Set.of("a", "b", "c"), ji.getDebugTags());
+
+        assertThat(ji.getDebugTags()).isEqualTo(Set.of("a", "b", "c"));
         // Confirm JobScheduler accepts the JobInfo object.
         mJobScheduler.schedule(ji);
 
@@ -204,7 +201,8 @@ public class JobInfoTest extends BaseJobSchedulerTest {
                 .addDebugTag("c")
                 .removeDebugTag("b")
                 .build();
-        assertEquals(Set.of("a", "c"), ji.getDebugTags());
+
+        assertThat(ji.getDebugTags()).isEqualTo(Set.of("a", "c"));
         // Confirm JobScheduler accepts the JobInfo object.
         mJobScheduler.schedule(ji);
 
@@ -215,35 +213,34 @@ public class JobInfoTest extends BaseJobSchedulerTest {
         ji = new JobInfo.Builder(JOB_ID, kJobServiceComponent)
                 .addDebugTag(maxLengthDebugTag)
                 .build();
-        assertEquals(Set.of(maxLengthDebugTag), ji.getDebugTags());
+
+        assertThat(ji.getDebugTags()).isEqualTo(Set.of(maxLengthDebugTag));
         // Confirm JobScheduler accepts the JobInfo object.
         mJobScheduler.schedule(ji);
 
-        try {
-            new JobInfo.Builder(JOB_ID, kJobServiceComponent).addDebugTag(null).build();
-            fail("Successfully built a JobInfo with a null debug tag");
-        } catch (Exception e) {
-            // Success
-        }
-        try {
-            new JobInfo.Builder(JOB_ID, kJobServiceComponent).addDebugTag("").build();
-            fail("Successfully built a JobInfo with an empty debug tag");
-        } catch (Exception e) {
-            // Success
-        }
-        try {
-            new JobInfo.Builder(JOB_ID, kJobServiceComponent).addDebugTag("        ").build();
-            fail("Successfully built a JobInfo with a whitespace-only debug tag");
-        } catch (Exception e) {
-            // Success
-        }
-        try {
-            new JobInfo.Builder(JOB_ID, kJobServiceComponent)
-                    .setTraceTag(maxLengthDebugTag + "x").build();
-            fail("Successfully built a JobInfo with a long debug tag");
-        } catch (Exception e) {
-            // Success
-        }
+        assertThrows(
+                "Successfully built a JobInfo with a null debug tag",
+                Exception.class,
+                () -> new JobInfo.Builder(JOB_ID, kJobServiceComponent).addDebugTag(null).build());
+        assertThrows(
+                "Successfully built a JobInfo with an empty debug tag",
+                IllegalArgumentException.class,
+                () -> new JobInfo.Builder(JOB_ID, kJobServiceComponent).addDebugTag("").build());
+        assertThrows(
+                "Successfully built a JobInfo with a whitespace-only debug tag",
+                IllegalArgumentException.class,
+                () ->
+                        new JobInfo.Builder(JOB_ID, kJobServiceComponent)
+                                .addDebugTag("        ")
+                                .build());
+        assertThrows(
+                "Successfully built a JobInfo with a long debug tag",
+                IllegalArgumentException.class,
+                () ->
+                        new JobInfo.Builder(JOB_ID, kJobServiceComponent)
+                                .setTraceTag(maxLengthDebugTag + "x")
+                                .build());
+
         JobInfo.Builder jiBuilder = new JobInfo.Builder(JOB_ID, kJobServiceComponent);
         for (int i = 0; i < 33; ++i) {
             jiBuilder.addDebugTag(Integer.toString(i));
@@ -256,14 +253,15 @@ public class JobInfoTest extends BaseJobSchedulerTest {
         JobInfo ji = new JobInfo.Builder(JOB_ID, kJobServiceComponent)
                 .setRequiresDeviceIdle(true)
                 .build();
-        assertTrue(ji.isRequireDeviceIdle());
+
+        assertThat(ji.isRequireDeviceIdle()).isTrue();
         // Confirm JobScheduler accepts the JobInfo object.
         mJobScheduler.schedule(ji);
 
         ji = new JobInfo.Builder(JOB_ID, kJobServiceComponent)
                 .setRequiresDeviceIdle(false)
                 .build();
-        assertFalse(ji.isRequireDeviceIdle());
+        assertThat(ji.isRequireDeviceIdle()).isFalse();
         // Confirm JobScheduler accepts the JobInfo object.
         mJobScheduler.schedule(ji);
     }
@@ -300,8 +298,8 @@ public class JobInfoTest extends BaseJobSchedulerTest {
                 .setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY)
                 .setEstimatedNetworkBytes(500, 1000)
                 .build();
-        assertEquals(500, ji.getEstimatedNetworkDownloadBytes());
-        assertEquals(1000, ji.getEstimatedNetworkUploadBytes());
+        assertThat(ji.getEstimatedNetworkDownloadBytes()).isEqualTo(500);
+        assertThat(ji.getEstimatedNetworkUploadBytes()).isEqualTo(1000);
         // Confirm JobScheduler accepts the JobInfo object.
         mJobScheduler.schedule(ji);
 
@@ -310,8 +308,8 @@ public class JobInfoTest extends BaseJobSchedulerTest {
                 .setEstimatedNetworkBytes(
                         JobInfo.NETWORK_BYTES_UNKNOWN, JobInfo.NETWORK_BYTES_UNKNOWN)
                 .build();
-        assertEquals(JobInfo.NETWORK_BYTES_UNKNOWN, ji.getEstimatedNetworkDownloadBytes());
-        assertEquals(JobInfo.NETWORK_BYTES_UNKNOWN, ji.getEstimatedNetworkUploadBytes());
+        assertThat(ji.getEstimatedNetworkDownloadBytes()).isEqualTo(JobInfo.NETWORK_BYTES_UNKNOWN);
+        assertThat(ji.getEstimatedNetworkUploadBytes()).isEqualTo(JobInfo.NETWORK_BYTES_UNKNOWN);
         // Confirm JobScheduler accepts the JobInfo object.
         mJobScheduler.schedule(ji);
     }
@@ -325,9 +323,10 @@ public class JobInfoTest extends BaseJobSchedulerTest {
                 .setExtras(pb)
                 .build();
         final PersistableBundle extras = ji.getExtras();
-        assertNotNull(extras);
-        assertEquals(1, extras.keySet().size());
-        assertEquals(42, extras.getInt("random_key"));
+
+        assertThat(extras).isNotNull();
+        assertThat(extras.keySet()).hasSize(1);
+        assertThat(extras.getInt("random_key")).isEqualTo(42);
         // Confirm JobScheduler accepts the JobInfo object.
         mJobScheduler.schedule(ji);
     }
@@ -342,7 +341,8 @@ public class JobInfoTest extends BaseJobSchedulerTest {
                 .setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY)
                 .setRequiresStorageNotLow(true)
                 .build();
-        assertTrue(ji.isExpedited());
+
+        assertThat(ji.isExpedited()).isTrue();
         // Confirm JobScheduler accepts the JobInfo object.
         mJobScheduler.schedule(ji);
 
@@ -350,7 +350,7 @@ public class JobInfoTest extends BaseJobSchedulerTest {
         ji = new JobInfo.Builder(JOB_ID, kJobServiceComponent)
                 .setExpedited(true)
                 .build();
-        assertEquals(JobInfo.PRIORITY_MAX, ji.getPriority());
+        assertThat(ji.getPriority()).isEqualTo(JobInfo.PRIORITY_MAX);
         // Confirm JobScheduler accepts the JobInfo object.
         mJobScheduler.schedule(ji);
 
@@ -397,6 +397,7 @@ public class JobInfoTest extends BaseJobSchedulerTest {
                 new JobInfo.Builder(JOB_ID, kJobServiceComponent)
                         .setExpedited(true)
                         .setUserInitiated(true));
+
         final JobInfo.TriggerContentUri tcu = new JobInfo.TriggerContentUri(
                 Uri.parse("content://" + MediaStore.AUTHORITY + "/"),
                 JobInfo.TriggerContentUri.FLAG_NOTIFY_FOR_DESCENDANTS);
@@ -406,36 +407,32 @@ public class JobInfoTest extends BaseJobSchedulerTest {
                         .addTriggerContentUri(tcu));
     }
 
-    // TODO(b/315035390): migrate to JUnit4
     @SuppressWarnings("deprecation")
     @RequiresFlagsDisabled(Flags.FLAG_IGNORE_IMPORTANT_WHILE_FOREGROUND)
     @Test
     public void testImportantWhileForeground_Legacy() {
-        if (isAconfigFlagEnabled(Flags.FLAG_IGNORE_IMPORTANT_WHILE_FOREGROUND)) {
-            return;
-        }
         // Assert the default value is false
         JobInfo ji = new JobInfo.Builder(JOB_ID, kJobServiceComponent)
                 .build();
-        assertFalse(ji.isImportantWhileForeground());
+
+        assertThat(ji.isImportantWhileForeground()).isFalse();
         // Confirm JobScheduler accepts the JobInfo object.
         mJobScheduler.schedule(ji);
 
         ji = new JobInfo.Builder(JOB_ID, kJobServiceComponent)
                 .setImportantWhileForeground(true)
                 .build();
-        assertTrue(ji.isImportantWhileForeground());
-        assertEquals(JobInfo.PRIORITY_HIGH, ji.getPriority());
+        assertThat(ji.isImportantWhileForeground()).isTrue();
+        assertThat(ji.getPriority()).isEqualTo(JobInfo.PRIORITY_HIGH);
         // Confirm JobScheduler accepts the JobInfo object.
         mJobScheduler.schedule(ji);
 
         ji = new JobInfo.Builder(JOB_ID, kJobServiceComponent)
                 .setImportantWhileForeground(false)
                 .build();
-        assertFalse(ji.isImportantWhileForeground());
+        assertThat(ji.isImportantWhileForeground()).isFalse();
         // Confirm JobScheduler accepts the JobInfo object.
         mJobScheduler.schedule(ji);
-
 
         //noinspection deprecation
         assertBuildFails("Successfully built a low-priority JobInfo object with"
@@ -443,14 +440,12 @@ public class JobInfoTest extends BaseJobSchedulerTest {
                 new JobInfo.Builder(JOB_ID, kJobServiceComponent)
                         .setPriority(JobInfo.PRIORITY_LOW)
                         .setImportantWhileForeground(true));
-
         assertBuildFails("Successfully built a user-initiated JobInfo object with"
                 + " disallowed important while foreground flag",
                 new JobInfo.Builder(JOB_ID, kJobServiceComponent)
                         .setUserInitiated(true)
                         .setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY)
                         .setImportantWhileForeground(true));
-
         assertBuildFails("Successfully built an expedited JobInfo object with"
                 + " disallowed important while foreground flag",
                 new JobInfo.Builder(JOB_ID, kJobServiceComponent)
@@ -462,18 +457,15 @@ public class JobInfoTest extends BaseJobSchedulerTest {
     @RequiresFlagsEnabled(android.app.job.Flags.FLAG_IGNORE_IMPORTANT_WHILE_FOREGROUND)
     @Test
     public void testImportantWhileForeground_Ignored() {
-        if (!isAconfigFlagEnabled(Flags.FLAG_IGNORE_IMPORTANT_WHILE_FOREGROUND)) {
-            return;
-        }
-
         // Assert the value is false always
         final JobInfo ji = new JobInfo.Builder(JOB_ID, kJobServiceComponent)
                 .setImportantWhileForeground(true)
                 .setPriority(JobInfo.PRIORITY_LOW)
                 .build();
-        assertFalse(ji.isImportantWhileForeground());
+
+        assertThat(ji.isImportantWhileForeground()).isFalse();
         // No priority change.
-        assertEquals(JobInfo.PRIORITY_LOW, ji.getPriority());
+        assertThat(ji.getPriority()).isEqualTo(JobInfo.PRIORITY_LOW);
         // Confirm JobScheduler accepts the JobInfo object.
         mJobScheduler.schedule(ji);
     }
@@ -523,7 +515,7 @@ public class JobInfoTest extends BaseJobSchedulerTest {
                 .setEstimatedNetworkBytes(
                         JobInfo.NETWORK_BYTES_UNKNOWN, JobInfo.NETWORK_BYTES_UNKNOWN)
                 .build();
-        assertEquals(500, ji.getMinimumNetworkChunkBytes());
+        assertThat(ji.getMinimumNetworkChunkBytes()).isEqualTo(500);
         // Confirm JobScheduler accepts the JobInfo object.
         mJobScheduler.schedule(ji);
     }
@@ -533,7 +525,8 @@ public class JobInfoTest extends BaseJobSchedulerTest {
         JobInfo ji = new JobInfo.Builder(JOB_ID, kJobServiceComponent)
                 .setMinimumLatency(1337)
                 .build();
-        assertEquals(1337, ji.getMinLatencyMillis());
+
+        assertThat(ji.getMinLatencyMillis()).isEqualTo(1337);
         // Confirm JobScheduler accepts the JobInfo object.
         mJobScheduler.schedule(ji);
     }
@@ -549,7 +542,7 @@ public class JobInfoTest extends BaseJobSchedulerTest {
         } else {
             // Confirm JobScheduler accepts the JobInfo object.
             JobInfo ji = jiBuilder.build();
-            assertEquals(0, ji.getMinLatencyMillis());
+            assertThat(ji.getMinLatencyMillis()).isEqualTo(0);
             mJobScheduler.schedule(ji);
         }
     }
@@ -559,8 +552,9 @@ public class JobInfoTest extends BaseJobSchedulerTest {
         JobInfo ji = new JobInfo.Builder(JOB_ID, kJobServiceComponent)
                 .setOverrideDeadline(HOUR_IN_MILLIS)
                 .build();
+
         // ...why are the set/get methods named differently?? >.>
-        assertEquals(HOUR_IN_MILLIS, ji.getMaxExecutionDelayMillis());
+        assertThat(ji.getMaxExecutionDelayMillis()).isEqualTo(HOUR_IN_MILLIS);
         // Confirm JobScheduler accepts the JobInfo object.
         mJobScheduler.schedule(ji);
     }
@@ -584,17 +578,8 @@ public class JobInfoTest extends BaseJobSchedulerTest {
                         .setMinimumLatency(MINUTE_IN_MILLIS)
                         .setOverrideDeadline(16 * MINUTE_IN_MILLIS);
 
-        // TODO(b/309023462): create separate tests for target SDK gated changes
-        if (CompatChanges.isChangeEnabled(ENFORCE_MINIMUM_TIME_WINDOWS) && isAconfigFlagEnabled(
-                "android.app.job.enforce_minimum_time_windows")) {
-            // Confirm JobScheduler rejects the bad JobInfo objects.
-            assertBuildFails(
-                    "Successfully scheduled a job with a short deadline and functional constraints",
-                    jiBuilderShortFunctional);
-        } else {
-            // Confirm JobScheduler accepts the JobInfo objects.
-            mJobScheduler.schedule(jiBuilderShortFunctional.build());
-        }
+        // Confirm JobScheduler accepts the JobInfo objects.
+        mJobScheduler.schedule(jiBuilderShortFunctional.build());
         // Confirm JobScheduler accepts the good JobInfo objects.
         mJobScheduler.schedule(jiBuilderShortNonfunctional.build());
         mJobScheduler.schedule(jiBuilderLongFunctional.build());
@@ -612,7 +597,7 @@ public class JobInfoTest extends BaseJobSchedulerTest {
         } else {
             // Confirm JobScheduler accepts the JobInfo object.
             JobInfo ji = jiBuilder.build();
-            assertTrue(ji.getMaxExecutionDelayMillis() >= 0);
+            assertThat(ji.getMaxExecutionDelayMillis()).isAtLeast(0);
             mJobScheduler.schedule(ji);
         }
     }
@@ -622,18 +607,19 @@ public class JobInfoTest extends BaseJobSchedulerTest {
         JobInfo ji = new JobInfo.Builder(JOB_ID, kJobServiceComponent)
                 .setPeriodic(60 * 60 * 1000L)
                 .build();
-        assertTrue(ji.isPeriodic());
-        assertEquals(60 * 60 * 1000L, ji.getIntervalMillis());
-        assertEquals(60 * 60 * 1000L, ji.getFlexMillis());
+
+        assertThat(ji.isPeriodic()).isTrue();
+        assertThat(ji.getIntervalMillis()).isEqualTo(60 * 60 * 1000L);
+        assertThat(ji.getFlexMillis()).isEqualTo(60 * 60 * 1000L);
         // Confirm JobScheduler accepts the JobInfo object.
         mJobScheduler.schedule(ji);
 
         ji = new JobInfo.Builder(JOB_ID, kJobServiceComponent)
                 .setPeriodic(120 * 60 * 1000L, 20 * 60 * 1000L)
                 .build();
-        assertTrue(ji.isPeriodic());
-        assertEquals(120 * 60 * 1000L, ji.getIntervalMillis());
-        assertEquals(20 * 60 * 1000L, ji.getFlexMillis());
+        assertThat(ji.isPeriodic()).isTrue();
+        assertThat(ji.getIntervalMillis()).isEqualTo(120 * 60 * 1000L);
+        assertThat(ji.getFlexMillis()).isEqualTo(20 * 60 * 1000L);
         // Confirm JobScheduler accepts the JobInfo object.
         mJobScheduler.schedule(ji);
     }
@@ -643,21 +629,22 @@ public class JobInfoTest extends BaseJobSchedulerTest {
         // Assert the default value is false
         JobInfo ji = new JobInfo.Builder(JOB_ID, kJobServiceComponent)
                 .build();
-        assertFalse(ji.isPersisted());
+
+        assertThat(ji.isPersisted()).isFalse();
         // Confirm JobScheduler accepts the JobInfo object.
         mJobScheduler.schedule(ji);
 
         ji = new JobInfo.Builder(JOB_ID, kJobServiceComponent)
                 .setPersisted(true)
                 .build();
-        assertTrue(ji.isPersisted());
+        assertThat(ji.isPersisted()).isTrue();
         // Confirm JobScheduler accepts the JobInfo object.
         mJobScheduler.schedule(ji);
 
         ji = new JobInfo.Builder(JOB_ID, kJobServiceComponent)
                 .setPersisted(false)
                 .build();
-        assertFalse(ji.isPersisted());
+        assertThat(ji.isPersisted()).isFalse();
         // Confirm JobScheduler accepts the JobInfo object.
         mJobScheduler.schedule(ji);
     }
@@ -667,21 +654,22 @@ public class JobInfoTest extends BaseJobSchedulerTest {
         // Assert the default value is false
         JobInfo ji = new JobInfo.Builder(JOB_ID, kJobServiceComponent)
                 .build();
-        assertFalse(ji.isPrefetch());
+
+        assertThat(ji.isPrefetch()).isFalse();
         // Confirm JobScheduler accepts the JobInfo object.
         mJobScheduler.schedule(ji);
 
         ji = new JobInfo.Builder(JOB_ID, kJobServiceComponent)
                 .setPrefetch(true)
                 .build();
-        assertTrue(ji.isPrefetch());
+        assertThat(ji.isPrefetch()).isTrue();
         // Confirm JobScheduler accepts the JobInfo object.
         mJobScheduler.schedule(ji);
 
         ji = new JobInfo.Builder(JOB_ID, kJobServiceComponent)
                 .setPrefetch(false)
                 .build();
-        assertFalse(ji.isPrefetch());
+        assertThat(ji.isPrefetch()).isFalse();
         // Confirm JobScheduler accepts the JobInfo object.
         mJobScheduler.schedule(ji);
 
@@ -689,7 +677,7 @@ public class JobInfoTest extends BaseJobSchedulerTest {
                 .setMinimumLatency(60_000L)
                 .setPrefetch(true)
                 .build();
-        assertTrue(ji.isPrefetch());
+        assertThat(ji.isPrefetch()).isTrue();
         // Confirm JobScheduler accepts the JobInfo object.
         mJobScheduler.schedule(ji);
 
@@ -706,56 +694,55 @@ public class JobInfoTest extends BaseJobSchedulerTest {
         // Assert the default value is DEFAULT
         JobInfo ji = new JobInfo.Builder(JOB_ID, kJobServiceComponent)
                 .build();
-        assertEquals(JobInfo.PRIORITY_DEFAULT, ji.getPriority());
+        assertThat(ji.getPriority()).isEqualTo(JobInfo.PRIORITY_DEFAULT);
         // Confirm JobScheduler accepts the JobInfo object.
         mJobScheduler.schedule(ji);
 
         ji = new JobInfo.Builder(JOB_ID, kJobServiceComponent)
                 .setPriority(JobInfo.PRIORITY_LOW)
                 .build();
-        assertEquals(JobInfo.PRIORITY_LOW, ji.getPriority());
+        assertThat(ji.getPriority()).isEqualTo(JobInfo.PRIORITY_LOW);
         // Confirm JobScheduler accepts the JobInfo object.
         mJobScheduler.schedule(ji);
 
         ji = new JobInfo.Builder(JOB_ID, kJobServiceComponent)
                 .setPriority(JobInfo.PRIORITY_MIN)
                 .build();
-        assertEquals(JobInfo.PRIORITY_MIN, ji.getPriority());
+        assertThat(ji.getPriority()).isEqualTo(JobInfo.PRIORITY_MIN);
         // Confirm JobScheduler accepts the JobInfo object.
         mJobScheduler.schedule(ji);
 
         // Attempt an invalid number
-        try {
-            // It's over 9000!!!
-            new JobInfo.Builder(JOB_ID, kJobServiceComponent).setPriority(9001).build();
-            fail("Successfully built a job with an invalid priority level");
-        } catch (Exception e) {
-            // Success
-        }
-        try {
-            new JobInfo.Builder(JOB_ID, kJobServiceComponent).setPriority(-1).build();
-            fail("Successfully built a job with an invalid priority level");
-        } catch (Exception e) {
-            // Success
-        }
-        try {
-            new JobInfo.Builder(JOB_ID, kJobServiceComponent).setPriority(123).build();
-            fail("Successfully built a job with an invalid priority level");
-        } catch (Exception e) {
-            // Success
-        }
+        // It's over 9000!!!
+        assertThrows(
+                "Successfully built a job with a large priority level",
+                IllegalArgumentException.class,
+                () -> new JobInfo.Builder(JOB_ID, kJobServiceComponent).setPriority(9001).build());
+        // It's negative priority.
+        assertThrows(
+                "Successfully built a job with a negative priority level",
+                IllegalArgumentException.class,
+                () -> new JobInfo.Builder(JOB_ID, kJobServiceComponent).setPriority(-1).build());
+        // Wrong priority level.
+        assertThrows(
+                "Successfully built a job with an invalid priority level",
+                IllegalArgumentException.class,
+                () -> new JobInfo.Builder(JOB_ID, kJobServiceComponent).setPriority(123).build());
 
         // Test other invalid configurations.
-        final String failureMessage =
+        final String invalidConfigurationFailureMessage =
                 "Successfully built a JobInfo object with disallowed priority configurations";
-        assertBuildFails(failureMessage,
+        assertBuildFails(
+                invalidConfigurationFailureMessage,
                 new JobInfo.Builder(JOB_ID, kJobServiceComponent)
                         .setPriority(JobInfo.PRIORITY_MAX));
-        assertBuildFails(failureMessage,
+        assertBuildFails(
+                invalidConfigurationFailureMessage,
                 new JobInfo.Builder(JOB_ID, kJobServiceComponent)
                         .setPriority(JobInfo.PRIORITY_HIGH)
                         .setPrefetch(true));
-        assertBuildFails(failureMessage,
+        assertBuildFails(
+                invalidConfigurationFailureMessage,
                 new JobInfo.Builder(JOB_ID, kJobServiceComponent)
                         .setPriority(JobInfo.PRIORITY_HIGH)
                         .setPeriodic(JobInfo.getMinPeriodMillis()));
@@ -770,14 +757,15 @@ public class JobInfoTest extends BaseJobSchedulerTest {
         JobInfo ji = new JobInfo.Builder(JOB_ID, kJobServiceComponent)
                 .setRequiredNetwork(nr)
                 .build();
-        assertEquals(nr, ji.getRequiredNetwork());
+
+        assertThat(ji.getRequiredNetwork()).isEqualTo(nr);
         // Confirm JobScheduler accepts the JobInfo object.
         mJobScheduler.schedule(ji);
 
         ji = new JobInfo.Builder(JOB_ID, kJobServiceComponent)
                 .setRequiredNetwork(null)
                 .build();
-        assertNull(ji.getRequiredNetwork());
+        assertThat(ji.getRequiredNetwork()).isNull();
         // Confirm JobScheduler accepts the JobInfo object.
         mJobScheduler.schedule(ji);
     }
@@ -788,76 +776,109 @@ public class JobInfoTest extends BaseJobSchedulerTest {
         // Assert the default value is NONE
         JobInfo ji = new JobInfo.Builder(JOB_ID, kJobServiceComponent)
                 .build();
-        assertEquals(JobInfo.NETWORK_TYPE_NONE, ji.getNetworkType());
-        assertNull(ji.getRequiredNetwork());
+
+        assertThat(ji.getNetworkType()).isEqualTo(JobInfo.NETWORK_TYPE_NONE);
+        assertThat(ji.getRequiredNetwork()).isNull();
         // Confirm JobScheduler accepts the JobInfo object.
         mJobScheduler.schedule(ji);
 
         ji = new JobInfo.Builder(JOB_ID, kJobServiceComponent)
                 .setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY)
                 .build();
-        assertEquals(JobInfo.NETWORK_TYPE_ANY, ji.getNetworkType());
-        assertTrue(ji.getRequiredNetwork()
-                .hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET));
-        assertTrue(ji.getRequiredNetwork()
-                .hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED));
-        assertFalse(ji.getRequiredNetwork()
-                .hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_RESTRICTED));
-        assertFalse(ji.getRequiredNetwork()
-                .hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_VPN));
+        assertThat(ji.getNetworkType()).isEqualTo(JobInfo.NETWORK_TYPE_ANY);
+        assertThat(
+                        ji.getRequiredNetwork()
+                                .hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET))
+                .isTrue();
+        assertThat(
+                        ji.getRequiredNetwork()
+                                .hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED))
+                .isTrue();
+        assertThat(
+                        ji.getRequiredNetwork()
+                                .hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_RESTRICTED))
+                .isFalse();
+        assertThat(
+                        ji.getRequiredNetwork()
+                                .hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_VPN))
+                .isFalse();
         // Confirm JobScheduler accepts the JobInfo object.
         mJobScheduler.schedule(ji);
 
         ji = new JobInfo.Builder(JOB_ID, kJobServiceComponent)
                 .setRequiredNetworkType(JobInfo.NETWORK_TYPE_UNMETERED)
                 .build();
-        assertEquals(JobInfo.NETWORK_TYPE_UNMETERED, ji.getNetworkType());
-        assertTrue(ji.getRequiredNetwork()
-                .hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET));
-        assertTrue(ji.getRequiredNetwork()
-                .hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED));
-        assertFalse(ji.getRequiredNetwork()
-                .hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_RESTRICTED));
-        assertFalse(ji.getRequiredNetwork()
-                .hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_VPN));
+        assertThat(ji.getNetworkType()).isEqualTo(JobInfo.NETWORK_TYPE_UNMETERED);
+        assertThat(
+                        ji.getRequiredNetwork()
+                                .hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET))
+                .isTrue();
+        assertThat(
+                        ji.getRequiredNetwork()
+                                .hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED))
+                .isTrue();
+        assertThat(
+                        ji.getRequiredNetwork()
+                                .hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_RESTRICTED))
+                .isFalse();
+        assertThat(
+                        ji.getRequiredNetwork()
+                                .hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_VPN))
+                .isFalse();
         // Confirm JobScheduler accepts the JobInfo object.
         mJobScheduler.schedule(ji);
 
         ji = new JobInfo.Builder(JOB_ID, kJobServiceComponent)
                 .setRequiredNetworkType(JobInfo.NETWORK_TYPE_NOT_ROAMING)
                 .build();
-        assertEquals(JobInfo.NETWORK_TYPE_NOT_ROAMING, ji.getNetworkType());
-        assertTrue(ji.getRequiredNetwork()
-                .hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET));
-        assertTrue(ji.getRequiredNetwork()
-                .hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED));
-        assertFalse(ji.getRequiredNetwork()
-                .hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_RESTRICTED));
-        assertFalse(ji.getRequiredNetwork()
-                .hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_VPN));
+        assertThat(ji.getNetworkType()).isEqualTo(JobInfo.NETWORK_TYPE_NOT_ROAMING);
+        assertThat(
+                        ji.getRequiredNetwork()
+                                .hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET))
+                .isTrue();
+        assertThat(
+                        ji.getRequiredNetwork()
+                                .hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED))
+                .isTrue();
+        assertThat(
+                        ji.getRequiredNetwork()
+                                .hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_RESTRICTED))
+                .isFalse();
+        assertThat(
+                        ji.getRequiredNetwork()
+                                .hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_VPN))
+                .isFalse();
         // Confirm JobScheduler accepts the JobInfo object.
         mJobScheduler.schedule(ji);
 
         ji = new JobInfo.Builder(JOB_ID, kJobServiceComponent)
                 .setRequiredNetworkType(JobInfo.NETWORK_TYPE_CELLULAR)
                 .build();
-        assertEquals(JobInfo.NETWORK_TYPE_CELLULAR, ji.getNetworkType());
-        assertTrue(ji.getRequiredNetwork()
-                .hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET));
-        assertTrue(ji.getRequiredNetwork()
-                .hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED));
-        assertFalse(ji.getRequiredNetwork()
-                .hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_RESTRICTED));
-        assertFalse(ji.getRequiredNetwork()
-                .hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_VPN));
+        assertThat(ji.getNetworkType()).isEqualTo(JobInfo.NETWORK_TYPE_CELLULAR);
+        assertThat(
+                        ji.getRequiredNetwork()
+                                .hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET))
+                .isTrue();
+        assertThat(
+                        ji.getRequiredNetwork()
+                                .hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED))
+                .isTrue();
+        assertThat(
+                        ji.getRequiredNetwork()
+                                .hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_RESTRICTED))
+                .isFalse();
+        assertThat(
+                        ji.getRequiredNetwork()
+                                .hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_VPN))
+                .isFalse();
         // Confirm JobScheduler accepts the JobInfo object.
         mJobScheduler.schedule(ji);
 
         ji = new JobInfo.Builder(JOB_ID, kJobServiceComponent)
                 .setRequiredNetworkType(JobInfo.NETWORK_TYPE_NONE)
                 .build();
-        assertEquals(JobInfo.NETWORK_TYPE_NONE, ji.getNetworkType());
-        assertNull(ji.getRequiredNetwork());
+        assertThat(ji.getNetworkType()).isEqualTo(JobInfo.NETWORK_TYPE_NONE);
+        assertThat(ji.getRequiredNetwork()).isNull();
         // Confirm JobScheduler accepts the JobInfo object.
         mJobScheduler.schedule(ji);
     }
@@ -867,33 +888,31 @@ public class JobInfoTest extends BaseJobSchedulerTest {
         JobInfo ji = new JobInfo.Builder(JOB_ID, kJobServiceComponent)
                 .setRequiresStorageNotLow(true)
                 .build();
-        assertTrue(ji.isRequireStorageNotLow());
+
+        assertThat(ji.isRequireStorageNotLow()).isTrue();
         // Confirm JobScheduler accepts the JobInfo object.
         mJobScheduler.schedule(ji);
 
         ji = new JobInfo.Builder(JOB_ID, kJobServiceComponent)
                 .setRequiresStorageNotLow(false)
                 .build();
-        assertFalse(ji.isRequireStorageNotLow());
+        assertThat(ji.isRequireStorageNotLow()).isFalse();
         // Confirm JobScheduler accepts the JobInfo object.
         mJobScheduler.schedule(ji);
     }
 
-    // TODO(b/315035390): migrate to JUnit4
-    @RequiresFlagsEnabled(Flags.FLAG_JOB_DEBUG_INFO_APIS) // Doesn't work for JUnit3
+    @RequiresFlagsEnabled(Flags.FLAG_JOB_DEBUG_INFO_APIS)
     @Test
     public void testTraceTag() {
-        if (!isAconfigFlagEnabled(Flags.FLAG_JOB_DEBUG_INFO_APIS)) {
-            return;
-        }
         // Confirm defaults
         JobInfo ji = new JobInfo.Builder(JOB_ID, kJobServiceComponent).build();
-        assertNull(ji.getTraceTag());
+
+        assertThat(ji.getTraceTag()).isNull();
         // Confirm JobScheduler accepts the JobInfo object.
         mJobScheduler.schedule(ji);
 
         ji = new JobInfo.Builder(JOB_ID, kJobServiceComponent).setTraceTag("tracing").build();
-        assertEquals("tracing", ji.getTraceTag());
+        assertThat(ji.getTraceTag()).isEqualTo("tracing");
         // Confirm JobScheduler accepts the JobInfo object.
         mJobScheduler.schedule(ji);
 
@@ -904,36 +923,35 @@ public class JobInfoTest extends BaseJobSchedulerTest {
         ji = new JobInfo.Builder(JOB_ID, kJobServiceComponent)
                 .setTraceTag(maxLengthTraceTag)
                 .build();
-        assertEquals(maxLengthTraceTag, ji.getTraceTag());
+        assertThat(ji.getTraceTag()).isEqualTo(maxLengthTraceTag);
         // Confirm JobScheduler accepts the JobInfo object.
         mJobScheduler.schedule(ji);
 
         ji = new JobInfo.Builder(JOB_ID, kJobServiceComponent)
                 .setTraceTag(null)
                 .build();
-        assertNull(null, ji.getTraceTag());
+        assertThat(ji.getTraceTag()).isNull();
         // Confirm JobScheduler accepts the JobInfo object.
         mJobScheduler.schedule(ji);
+        assertThrows(
+                "Successfully built a JobInfo with an empty trace tag",
+                IllegalArgumentException.class,
+                () -> new JobInfo.Builder(JOB_ID, kJobServiceComponent).setTraceTag("").build());
 
-        try {
-            new JobInfo.Builder(JOB_ID, kJobServiceComponent).setTraceTag("").build();
-            fail("Successfully built a JobInfo with an empty trace tag");
-        } catch (Exception e) {
-            // Success
-        }
-        try {
-            new JobInfo.Builder(JOB_ID, kJobServiceComponent).setTraceTag("        ").build();
-            fail("Successfully built a JobInfo with a whitespace-only trace tag");
-        } catch (Exception e) {
-            // Success
-        }
-        try {
-            new JobInfo.Builder(JOB_ID, kJobServiceComponent)
-                    .setTraceTag(maxLengthTraceTag + "x").build();
-            fail("Successfully built a JobInfo with a long trace tag");
-        } catch (Exception e) {
-            // Success
-        }
+        assertThrows(
+                "Successfully built a JobInfo with a whitespace-only trace tag",
+                IllegalArgumentException.class,
+                () ->
+                        new JobInfo.Builder(JOB_ID, kJobServiceComponent)
+                                .setTraceTag("        ")
+                                .build());
+        assertThrows(
+                "Successfully built a JobInfo with a long trace tag",
+                IllegalArgumentException.class,
+                () ->
+                        new JobInfo.Builder(JOB_ID, kJobServiceComponent)
+                                .setTraceTag(maxLengthTraceTag + "x")
+                                .build());
     }
 
     @Test
@@ -948,9 +966,9 @@ public class JobInfoTest extends BaseJobSchedulerTest {
         JobInfo ji = new JobInfo.Builder(JOB_ID, kJobServiceComponent)
                 .setTransientExtras(b)
                 .build();
-        assertEquals(b.size(), ji.getTransientExtras().size());
+        assertThat(ji.getTransientExtras().size()).isEqualTo(b.size());
         for (String key : b.keySet()) {
-            assertEquals(b.get(key), ji.getTransientExtras().get(key));
+            assertThat(ji.getTransientExtras().get(key)).isEqualTo(b.get(key));
         }
         // Confirm JobScheduler accepts the JobInfo object.
         mJobScheduler.schedule(ji);
@@ -961,7 +979,8 @@ public class JobInfoTest extends BaseJobSchedulerTest {
         JobInfo ji = new JobInfo.Builder(JOB_ID, kJobServiceComponent)
                 .setTriggerContentMaxDelay(1337)
                 .build();
-        assertEquals(1337, ji.getTriggerContentMaxDelay());
+
+        assertThat(ji.getTriggerContentMaxDelay()).isEqualTo(1337);
         // Confirm JobScheduler accepts the JobInfo object.
         mJobScheduler.schedule(ji);
     }
@@ -971,7 +990,8 @@ public class JobInfoTest extends BaseJobSchedulerTest {
         JobInfo ji = new JobInfo.Builder(JOB_ID, kJobServiceComponent)
                 .setTriggerContentUpdateDelay(1337)
                 .build();
-        assertEquals(1337, ji.getTriggerContentUpdateDelay());
+
+        assertThat(ji.getTriggerContentUpdateDelay()).isEqualTo(1337);
         // Confirm JobScheduler accepts the JobInfo object.
         mJobScheduler.schedule(ji);
     }
@@ -981,27 +1001,29 @@ public class JobInfoTest extends BaseJobSchedulerTest {
         final Uri u = Uri.parse("content://" + MediaStore.AUTHORITY + "/");
         final JobInfo.TriggerContentUri tcu = new JobInfo.TriggerContentUri(
                 u, JobInfo.TriggerContentUri.FLAG_NOTIFY_FOR_DESCENDANTS);
-        assertEquals(u, tcu.getUri());
-        assertEquals(JobInfo.TriggerContentUri.FLAG_NOTIFY_FOR_DESCENDANTS, tcu.getFlags());
+
+        assertThat(tcu.getUri()).isEqualTo(u);
+        assertThat(tcu.getFlags()).isEqualTo(JobInfo.TriggerContentUri.FLAG_NOTIFY_FOR_DESCENDANTS);
+
         JobInfo ji = new JobInfo.Builder(JOB_ID, kJobServiceComponent)
                 .addTriggerContentUri(tcu)
                 .build();
-        assertEquals(1, ji.getTriggerContentUris().length);
-        assertEquals(tcu, ji.getTriggerContentUris()[0]);
+        assertThat(ji.getTriggerContentUris()).hasLength(1);
+        assertThat(ji.getTriggerContentUris()[0]).isEqualTo(tcu);
         // Confirm JobScheduler accepts the JobInfo object.
         mJobScheduler.schedule(ji);
 
         final Uri u2 = Uri.parse("content://" + ContactsContract.AUTHORITY + "/");
         final JobInfo.TriggerContentUri tcu2 = new JobInfo.TriggerContentUri(u2, 0);
-        assertEquals(u2, tcu2.getUri());
-        assertEquals(0, tcu2.getFlags());
+        assertThat(tcu2.getUri()).isEqualTo(u2);
+        assertThat(tcu2.getFlags()).isEqualTo(0);
         ji = new JobInfo.Builder(JOB_ID, kJobServiceComponent)
                 .addTriggerContentUri(tcu)
                 .addTriggerContentUri(tcu2)
                 .build();
-        assertEquals(2, ji.getTriggerContentUris().length);
-        assertEquals(tcu, ji.getTriggerContentUris()[0]);
-        assertEquals(tcu2, ji.getTriggerContentUris()[1]);
+        assertThat(ji.getTriggerContentUris()).hasLength(2);
+        assertThat(ji.getTriggerContentUris()[0]).isEqualTo(tcu);
+        assertThat(ji.getTriggerContentUris()[1]).isEqualTo(tcu2);
         // Confirm JobScheduler accepts the JobInfo object.
         mJobScheduler.schedule(ji);
     }
@@ -1019,7 +1041,8 @@ public class JobInfoTest extends BaseJobSchedulerTest {
                 .setRequiresBatteryNotLow(true)
                 .setRequiresCharging(true)
                 .build();
-        assertTrue(ji.isUserInitiated());
+
+        assertThat(ji.isUserInitiated()).isTrue();
         // Confirm JobScheduler accepts the JobInfo object.
         mJobScheduler.schedule(ji);
 
@@ -1028,7 +1051,7 @@ public class JobInfoTest extends BaseJobSchedulerTest {
                 .setUserInitiated(true)
                 .setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY)
                 .build();
-        assertEquals(JobInfo.PRIORITY_MAX, ji.getPriority());
+        assertThat(ji.getPriority()).isEqualTo(JobInfo.PRIORITY_MAX);
         // Confirm JobScheduler accepts the JobInfo object.
         mJobScheduler.schedule(ji);
 
@@ -1038,14 +1061,13 @@ public class JobInfoTest extends BaseJobSchedulerTest {
                 .setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY)
                 .setBackoffCriteria(0, JobInfo.BACKOFF_POLICY_LINEAR)
                 .build();
-        assertTrue(ji.isUserInitiated());
+        assertThat(ji.isUserInitiated()).isTrue();
         // Confirm JobScheduler accepts the JobInfo object.
         mJobScheduler.schedule(ji);
 
         // Test disallowed constraints.
         final String failureMessage =
                 "Successfully built a user-initiated JobInfo object with disallowed constraints";
-
         assertBuildFails(failureMessage,
                 new JobInfo.Builder(JOB_ID, kJobServiceComponent)
                         .setUserInitiated(true));
@@ -1094,6 +1116,7 @@ public class JobInfoTest extends BaseJobSchedulerTest {
                         .setExpedited(true)
                         .setUserInitiated(true)
                         .setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY));
+
         final JobInfo.TriggerContentUri tcu = new JobInfo.TriggerContentUri(
                 Uri.parse("content://" + MediaStore.AUTHORITY + "/"),
                 JobInfo.TriggerContentUri.FLAG_NOTIFY_FOR_DESCENDANTS);
@@ -1105,35 +1128,14 @@ public class JobInfoTest extends BaseJobSchedulerTest {
     }
 
     private void assertBuildFails(String message, JobInfo.Builder builder) {
-        try {
-            builder.build();
-            fail(message);
-        } catch (IllegalArgumentException e) {
-            // Expected
-        }
+        assertThrows(message, IllegalArgumentException.class, builder::build);
     }
 
-    private void assertScheduleFailsWithException(
-            String message, JobInfo jobInfo, Class<? extends Exception> expectedExceptionClass) {
-        try {
-            mJobScheduler.schedule(jobInfo);
-            fail(message);
-        } catch (Exception e) {
-            if (expectedExceptionClass.isInstance(e)) {
-                // Expected
-            } else {
-                fail("Scheduling failed with wrong exception class."
-                        + " Got " + e.getClass().getSimpleName()
-                        + ", wanted " + expectedExceptionClass.getSimpleName());
-            }
-        }
+    private int getBias(JobInfo job) throws Exception {
+        Method getBiasMethod = JobInfo.class.getDeclaredMethod("getBias");
+        getBiasMethod.setAccessible(true);
+
+        return (Integer) getBiasMethod.invoke(job);
     }
 
-    private boolean isAconfigFlagEnabled(String fullFlagName) {
-        final String ogValue = SystemUtil.runShellCommand(
-                "cmd jobscheduler get-aconfig-flag-state " + fullFlagName).trim();
-        final boolean enabled = Boolean.parseBoolean(ogValue);
-        Log.d(TAG, fullFlagName + "=" + ogValue  + " ... enabled=" + enabled);
-        return enabled;
-    }
 }

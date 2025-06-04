@@ -7468,6 +7468,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
      * values through CarrierConfig. TODO: Perform satellite config OTA with different
      * maxAllowedDataMode values and assert outcome of getSatelliteDataSupportMode
      */
+    @Ignore("b/420927880 - This test is failing with CF devices. Need to fix and re-enable it.")
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_SATELLITE_25Q4_APIS)
     public void testGetSatelliteDataSupportMode() {

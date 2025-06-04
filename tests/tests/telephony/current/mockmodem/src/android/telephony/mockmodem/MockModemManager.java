@@ -1284,6 +1284,31 @@ public class MockModemManager {
         return mMockModemService.getIRadioNetwork((byte) slotId).getIsSatelliteEnabledForCarrier();
     }
 
+    /** Wait until satellite enabled for carrier state changed. */
+    public boolean waitForEventOnSatelliteEnabledForCarrierStateChanged(
+            int expectedNumberOfEvents) {
+        Log.d(TAG, "waitForEventOnSatelliteEnabledForCarrierStateChanged");
+        if (mMockModemService == null) {
+            Log.e(TAG, "waitForEventOnSatelliteEnabledForCarrierStateChanged: "
+                    + "mMockModemService is null");
+            return false;
+        }
+
+        return mMockModemService.waitForEventOnSatelliteEnabledForCarrierStateChanged(
+                expectedNumberOfEvents);
+    }
+
+    /** Clear the event of satellite enabled for carrier state changed. */
+    public void clearEventOnSatelliteEnabledForCarrierStateChanged() {
+        Log.d(TAG, "clearEventOnSatelliteEnabledForCarrierStateChanged");
+        if (mMockModemService == null) {
+            Log.e(TAG, "clearEventOnSatelliteEnabledForCarrierStateChanged: "
+                    + "mMockModemService is null");
+            return;
+        }
+        mMockModemService.clearEventOnSatelliteEnabledForCarrierStateChanged();
+    }
+
     /** Return carrier PLMN list. */
     @Nullable
     public List<String> getCarrierPlmnList(int slotId) {

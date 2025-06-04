@@ -21,7 +21,6 @@ import static android.mediav2.common.cts.CodecDecoderDrmTestBase.setUpMediaDrmAn
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-import android.annotation.RequiresApi;
 import android.media.MediaCodec;
 import android.media.MediaCrypto;
 import android.media.MediaCryptoException;
@@ -35,6 +34,7 @@ import android.os.Build;
 import android.util.Log;
 import android.util.Pair;
 
+import androidx.annotation.RequiresApi;
 import androidx.test.filters.SdkSuppress;
 
 import org.junit.After;

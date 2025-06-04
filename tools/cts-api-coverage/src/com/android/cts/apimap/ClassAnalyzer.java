@@ -97,13 +97,6 @@ public class ClassAnalyzer extends ClassVisitor {
         }
         MethodProfile method = mClass.getOrCreateMethod(name, params);
         method.addMethodType(MethodType.DIRECT_MEMBER);
-        Type returnType = Type.getReturnType(desc);
-        // Set the method type to common if it is not a test methods candidate.
-        if ((access & Opcodes.ACC_PUBLIC) == 0
-                || !returnType.getClassName().equals("void")
-                || !params.isEmpty()) {
-            method.addMethodType(MethodType.COMMON);
-        }
         if ((access & Opcodes.ACC_ABSTRACT) != 0) {
             method.addMethodType(MethodType.ABSTRACT);
         }

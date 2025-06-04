@@ -16,6 +16,8 @@
 
 package android.hdmicec.cts;
 
+import static org.junit.Assert.fail;
+
 import com.android.tradefed.device.ITestDevice;
 
 import java.util.HashMap;
@@ -284,25 +286,25 @@ public final class RemoteControlPassthrough {
         for (Integer userControlPressKey : mUserControlPressKeys_20.keySet()) {
             hdmiCecClient.sendUserControlPressAndRelease(
                     sourceDevice, dutLogicalAddress, userControlPressKey, false);
-            // KEYCODE_SETUP_MENU might trigger the notification panel quitting the activity
+            // KEYCODE_SETUP_MENU will enter setting's page and hence quitting the activity
             // HdmiCecKeyEventCapture.
             if (userControlPressKey == HdmiCecConstants.CEC_KEYCODE_SETUP_MENU) {
                 try {
-                    LogHelper.waitForLog(device, "ActivityTaskManager", 5,
-                            "TOGGLE_NOTIFICATION_HANDLER_PANEL");
-                    // HdmiCecKeyEventCapture activity should be resumed.
-                    device.executeShellCommand(START_COMMAND);
-                    continue;
+                    // Check if intent is broadcast upon sending cec message
+                    LogHelper.waitForLog(
+                            device, "ActivityTaskManager", 5, "android.settings.SETTINGS");
                 } catch (Exception e) {
-                    // We have to send the key again since logcat was cleared.
-                    hdmiCecClient.sendUserControlPressAndRelease(
-                            sourceDevice, dutLogicalAddress, userControlPressKey, false);
+                    fail("Short Press KEYCODE_SETTINGS failed");
                 }
+                // HdmiCecKeyEventCapture activity should be resumed.
+                device.executeShellCommand(START_COMMAND);
+            } else {
+                // Check if key is captured
+                LogHelper.assertLog(
+                        device,
+                        CLASS,
+                        "Short press KEYCODE_" + mUserControlPressKeys_20.get(userControlPressKey));
             }
-            LogHelper.assertLog(
-                    device,
-                    CLASS,
-                    "Short press KEYCODE_" + mUserControlPressKeys_20.get(userControlPressKey));
             // KEYCODE_HOME pressing will let the activity HdmiCecKeyEventCapture be paused.
             // Resume the activity after testing for KEYCODE_HOME pressing.
             if (userControlPressKey == HdmiCecConstants.CEC_KEYCODE_ROOT_MENU) {
@@ -372,17 +374,14 @@ public final class RemoteControlPassthrough {
 
         hdmiCecClient.sendUserControlPressAndRelease(
                 sourceDevice, dutLogicalAddress, cecKeycode, false);
-        // KEYCODE_SETUP_MENU might trigger the notification panel quitting the activity
+        // KEYCODE_SETUP_MENU will enter setting's page and hence quitting the activity
         // HdmiCecKeyEventCapture.
         if (cecKeycode == HdmiCecConstants.CEC_KEYCODE_SETUP_MENU) {
             try {
-                LogHelper.waitForLog(device, "ActivityTaskManager", 5,
-                        "TOGGLE_NOTIFICATION_HANDLER_PANEL");
-                return;
+                LogHelper.waitForLog(device, "ActivityTaskManager", 5, "android.settings.SETTINGS");
+                return; // test pass if intent is broadcast upon sending cec message
             } catch (Exception e) {
-                // We have to send the key again since logcat was cleared.
-                hdmiCecClient.sendUserControlPressAndRelease(
-                        sourceDevice, dutLogicalAddress, cecKeycode, false);
+                fail("Short Press KEYCODE_SETTINGS failed");
             }
         }
         LogHelper.assertLog(device, CLASS, "Short press KEYCODE_" + androidKeycode);

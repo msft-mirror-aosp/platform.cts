@@ -23,7 +23,6 @@ import static android.app.Activity.RESULT_OK;
 import static android.app.AppOpsManager.MODE_ALLOWED;
 import static android.app.AppOpsManager.MODE_DEFAULT;
 import static android.app.AppOpsManager.MODE_ERRORED;
-import static android.app.AppOpsManager.MODE_IGNORED;
 import static android.app.Notification.FLAG_FOREGROUND_SERVICE;
 import static android.app.Notification.FLAG_NO_CLEAR;
 import static android.app.Notification.FLAG_USER_INITIATED_JOB;
@@ -79,6 +78,7 @@ import android.media.AudioAttributes;
 import android.media.session.MediaSession;
 import android.net.Uri;
 import android.os.Build;
+import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
@@ -551,57 +551,6 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
     @Test
     public void testCanSendFullScreenIntent_modeErrored_returnsFalse() throws Exception {
         verifyCanUseFullScreenIntent(MODE_ERRORED, /*canSend=*/ false);
-    }
-
-    private void verifyCanPostPromotedNotification(int appOpState, boolean canSend)
-            throws Exception {
-        final int previousState =
-                PermissionUtils.getAppOp(
-                        STUB_PACKAGE_NAME, Manifest.permission.POST_PROMOTED_NOTIFICATIONS);
-        try {
-            PermissionUtils.setAppOp(
-                    STUB_PACKAGE_NAME, Manifest.permission.POST_PROMOTED_NOTIFICATIONS, appOpState);
-
-            assertThat(mNotificationManager.canPostPromotedNotifications()).isEqualTo(canSend);
-
-        } finally {
-            // Clean up by setting to app op to previous state.
-            PermissionUtils.setAppOp(
-                    STUB_PACKAGE_NAME,
-                    Manifest.permission.POST_PROMOTED_NOTIFICATIONS,
-                    previousState);
-        }
-    }
-
-    @RequiresFlagsEnabled({
-        android.app.Flags.FLAG_API_RICH_ONGOING_PERMISSION,
-        android.app.Flags.FLAG_API_RICH_ONGOING
-    })
-    @Test
-    public void testCanPostPromotedNotification_modeDefault_returnsIsPermissionGranted()
-            throws Exception {
-        final boolean isPermissionGranted =
-                PermissionUtils.isPermissionGranted(
-                        STUB_PACKAGE_NAME, Manifest.permission.POST_PROMOTED_NOTIFICATIONS);
-        verifyCanPostPromotedNotification(MODE_DEFAULT, /* canSend= */ isPermissionGranted);
-    }
-
-    @RequiresFlagsEnabled({
-        android.app.Flags.FLAG_API_RICH_ONGOING_PERMISSION,
-        android.app.Flags.FLAG_API_RICH_ONGOING
-    })
-    @Test
-    public void testCanPostPromotedNotification_modeAllowed_returnsTrue() throws Exception {
-        verifyCanPostPromotedNotification(MODE_ALLOWED, /* canSend= */ true);
-    }
-
-    @RequiresFlagsEnabled({
-        android.app.Flags.FLAG_API_RICH_ONGOING_PERMISSION,
-        android.app.Flags.FLAG_API_RICH_ONGOING
-    })
-    @Test
-    public void testCanPostPromotedNotification_modeIgnored_returnsFalse() throws Exception {
-        verifyCanPostPromotedNotification(MODE_IGNORED, /* canSend= */ false);
     }
 
     @Test
@@ -3620,6 +3569,60 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
     }
 
     @Test
+    @RequiresFlagsEnabled(android.app.Flags.FLAG_HIDE_STATUS_BAR_NOTIFICATION)
+    public void testHideStatusBarNotification_noPermission() throws Exception {
+        int id = 99;
+
+        Bundle extras = new Bundle();
+        extras.putBoolean(Notification.EXTRA_HIDE_STATUS_BAR_NOTIFICATION, true);
+
+        final Notification notification =
+                new Notification.Builder(mContext, NOTIFICATION_CHANNEL_ID)
+                        .setSmallIcon(R.drawable.black)
+                        .setExtras(extras)
+                        .build();
+        mNotificationManager.notify(id, notification);
+
+        StatusBarNotification sbn =
+                mNotificationHelper.findPostedNotification(null, id, SEARCH_TYPE.APP);
+        assertNotNull(sbn);
+
+        assertFalse(
+                sbn.getNotification()
+                        .extras
+                        .getBoolean(Notification.EXTRA_HIDE_STATUS_BAR_NOTIFICATION, false));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(android.app.Flags.FLAG_HIDE_STATUS_BAR_NOTIFICATION)
+    public void testHideStatusBarNotification_hasPermission() throws Exception {
+        int id = 99;
+
+        Bundle extras = new Bundle();
+        extras.putBoolean(Notification.EXTRA_HIDE_STATUS_BAR_NOTIFICATION, true);
+
+        final Notification notification =
+                new Notification.Builder(mContext, NOTIFICATION_CHANNEL_ID)
+                        .setSmallIcon(R.drawable.black)
+                        .setExtras(extras)
+                        .build();
+        SystemUtil.runWithShellPermissionIdentity(
+                () -> {
+                    mNotificationManager.notify(id, notification);
+                },
+                android.Manifest.permission.HIDE_STATUS_BAR_NOTIFICATION);
+
+        StatusBarNotification sbn =
+                mNotificationHelper.findPostedNotification(null, id, SEARCH_TYPE.APP);
+        assertNotNull(sbn);
+
+        assertTrue(
+                sbn.getNotification()
+                        .extras
+                        .getBoolean(Notification.EXTRA_HIDE_STATUS_BAR_NOTIFICATION, false));
+    }
+
+    @Test
     public void testNoPermission() throws Exception {
         assumeFalse(
                 "Permission for POST_NOTIFICATIONS is always granted on TV and cannot be revoked",
@@ -3929,9 +3932,24 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
     @Test
     @RequiresFlagsEnabled({
         android.app.Flags.FLAG_API_RICH_ONGOING,
+        android.app.Flags.FLAG_UI_RICH_ONGOING,
         android.app.Flags.FLAG_API_RICH_ONGOING_PERMISSION
     })
-    public void testCanPostPromotedNotifications() {
+    public void testCanPostPromotedNotifications_apiEnabled() {
+        verifyCanPostPromotedNotifications();
+    }
+
+    @Test
+    @RequiresFlagsEnabled({
+        android.app.Flags.FLAG_API_RICH_ONGOING,
+        android.app.Flags.FLAG_UI_RICH_ONGOING
+    })
+    @RequiresFlagsDisabled({android.app.Flags.FLAG_API_RICH_ONGOING_PERMISSION})
+    public void testCanPostPromotedNotifications_preApiEnabled() {
+        verifyCanPostPromotedNotifications();
+    }
+
+    private void verifyCanPostPromotedNotifications() {
         boolean initialValue = mNotificationManager.canPostPromotedNotifications();
 
         try {
@@ -3969,6 +3987,7 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
         private EventCallback() {
             super(Looper.getMainLooper());
         }
+
 
         @Override
         public void handleMessage(Message message) {

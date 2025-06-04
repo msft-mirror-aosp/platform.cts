@@ -24,14 +24,14 @@ package {
 cc_test_library {
     name: "libctsmediaextractor_jni",
     srcs: [
-        "jni/NativeExtractorUnitTest.cpp",
         "jni/NativeExtractorTest.cpp",
+        "jni/NativeExtractorUnitTest.cpp",
     ],
     shared_libs: [
+        "libctsmediacommon_jni",
         "liblog",
         "libmediandk",
         "libz",
-        "libctsmediacommon_jni",
     ],
     static_libs: [
         "libctsmediav2common",
@@ -39,8 +39,8 @@ cc_test_library {
     header_libs: ["liblog_headers"],
     stl: "libc++_static",
     cflags: [
-        "-Werror",
         "-Wall",
+        "-Werror",
     ],
     gtest: false,
     sdk_version: "29",
@@ -55,21 +55,20 @@ java_defaults {
         "org.apache.http.legacy.stubs.system",
     ],
     static_libs: [
+        "android.media.extractor.flags-aconfig-java",
+        "cts-media-common",
         "ctstestrunner-axt",
         "ctstestserver",
-        "cts-media-common",
-        "android.media.extractor.flags-aconfig-java",
     ],
     srcs: [
         "src/**/*.java",
     ],
-    platform_apis: true,
-    jni_uses_sdk_apis: true,
     jni_libs: [
         "libctsmediaextractor_jni",
     ],
     host_required: ["cts-dynamic-config"],
     host_common_data: [":cts-dynamic-config"],
+    sdk_version: "test_current",
     min_sdk_version: "29",
     target_sdk_version: "31",
 }

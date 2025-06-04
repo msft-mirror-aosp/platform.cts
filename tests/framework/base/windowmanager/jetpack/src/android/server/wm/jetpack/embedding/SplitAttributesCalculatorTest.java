@@ -32,6 +32,7 @@ import static org.junit.Assume.assumeTrue;
 import android.app.Activity;
 import android.app.PictureInPictureParams;
 import android.content.Intent;
+import android.platform.test.annotations.Presubmit;
 import android.server.wm.RotationSession;
 import android.server.wm.WindowManagerState.DisplayContent;
 import android.server.wm.WindowManagerState.Task;
@@ -54,18 +55,20 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Tests to verify the behaviors of
- * {@link ActivityEmbeddingComponent#setSplitAttributesCalculator(Function)} and
- * {@link ActivityEmbeddingComponent#clearSplitAttributesCalculator}
+ * Tests to verify the behaviors of {@link
+ * ActivityEmbeddingComponent#setSplitAttributesCalculator(Function)} and {@link
+ * ActivityEmbeddingComponent#clearSplitAttributesCalculator}
  *
- * Build/Install/Run:
- *     atest CtsWindowManagerJetpackTestCases:SplitAttributesCalculatorTest
+ * <p>Build/Install/Run: atest CtsWindowManagerJetpackTestCases:SplitAttributesCalculatorTest
  */
-@ApiTest(apis = {
-        "androidx.window.extensions.embedding.ActivityEmbeddingComponent"
-                + "#setSplitAttributesCalculator",
-        "androidx.window.extensions.embedding.ActivityEmbeddingComponent"
-                + "#clearSplitAttributesCalculator"})
+@ApiTest(
+        apis = {
+            "androidx.window.extensions.embedding.ActivityEmbeddingComponent"
+                    + "#setSplitAttributesCalculator",
+            "androidx.window.extensions.embedding.ActivityEmbeddingComponent"
+                    + "#clearSplitAttributesCalculator"
+        })
+@Presubmit
 public class SplitAttributesCalculatorTest extends ActivityEmbeddingTestBase {
     private static final String ACTIVITY_A_ID = "activityA";
     private static final String ACTIVITY_B_ID = "activityB";

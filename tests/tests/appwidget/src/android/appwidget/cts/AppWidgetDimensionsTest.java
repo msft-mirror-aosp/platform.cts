@@ -26,11 +26,14 @@ import android.content.res.Resources;
 import androidx.test.filters.SmallTest;
 import androidx.test.runner.AndroidJUnit4;
 
+import android.platform.test.annotations.DesktopTest;
+
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 @SmallTest
 @RunWith(AndroidJUnit4.class)
+@DesktopTest(cujs = {"b/416196526", "b/416196961"})
 public class AppWidgetDimensionsTest {
 
     @Test

@@ -34,6 +34,7 @@
     <uses-permission android:name="android.permission.READ_COMPAT_CHANGE_CONFIG"/>
     <uses-permission android:name="android.permission.INTERACT_ACROSS_USERS" />
     <uses-permission android:name="android.permission.INTERACT_ACROSS_USERS_FULL" />
+    <uses-permission android:name="android.permission.MANAGE_MEDIA_PROJECTION" />
 
     <application
         android:debuggable="true"
@@ -46,6 +47,16 @@
             android:label="Rotating MediaProjection Mirroring Activity"
             android:configChanges="orientation" />
         <activity android:name="android.server.wm.MediaProjectionHelper$MediaProjectionActivity" />
+
+        <service
+            android:name="android.media.projection.cts.MediaProjectionAppContentService"
+            android:exported="true"
+            android:permission="android.permission.MANAGE_MEDIA_PROJECTION">
+            <intent-filter>
+                <action android:name="android.media.projection.AppContentProjectionService" />
+            </intent-filter>
+        </service>
+
     </application>
 
     <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner"

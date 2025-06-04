@@ -28,8 +28,6 @@ android_test {
         "cts-media-common",
         "ctsmediav2common",
     ],
-    platform_apis: true,
-    jni_uses_sdk_apis: true,
     jni_libs: [
         "libctscodecutils_jni",
         "libnativehelper_compat_libc++",
@@ -40,5 +38,6 @@ android_test {
         "cts",
         "general-tests",
     ],
+    sdk_version: "test_current",
     min_sdk_version: "29",
 }

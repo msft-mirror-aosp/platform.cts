@@ -27,10 +27,13 @@ import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.fail;
 
+import android.content.Context;
 import android.media.projection.MediaProjectionConfig;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
+
+import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.FrameworkSpecificTest;
@@ -75,6 +78,7 @@ public class MediaProjectionConfigTest {
         assertThat(config.getRequesterHint()).isNull();
         assertThat(config.getProjectionSources()).isEqualTo(DEFAULT_PROJECTION_SOURCES);
         assertThat(config.getInitiallySelectedSource()).isEqualTo(0);
+        assertThat(config.isOwnAppContentProvided()).isEqualTo(false);
     }
 
     @Test
@@ -145,7 +149,6 @@ public class MediaProjectionConfigTest {
     public void builder_validateInitialSelection() {
 
         try {
-            //noinspection ResultOfMethodCallIgnored
             new MediaProjectionConfig.Builder()
                     .setInitiallySelectedSource(PROJECTION_SOURCE_APP | PROJECTION_SOURCE_DISPLAY)
                     .build();
@@ -156,5 +159,14 @@ public class MediaProjectionConfigTest {
         fail(
                 "MediaProjectionConfig.Builder()#setInitialSelection() should throw on invalid "
                         + "projection type");
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_APP_CONTENT_SHARING)
+    public void builder_setSelfContentEnabled() {
+        Context context = InstrumentationRegistry.getInstrumentation().getContext();
+        MediaProjectionConfig config =
+                new MediaProjectionConfig.Builder().setOwnAppContentProvided(context, true).build();
+        assertThat(config.isOwnAppContentProvided()).isTrue();
     }
 }

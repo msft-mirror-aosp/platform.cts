@@ -16,6 +16,7 @@
 
 package android.mediav2.cts;
 
+import static android.media.MediaCodecInfo.CodecCapabilities.*;
 import static android.media.MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_CBR_FD;
 import static android.media.MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_CQ;
 import static android.mediav2.common.cts.CodecTestBase.MEDIA_CODEC_LIST_ALL;
@@ -75,6 +76,25 @@ public class NativeAMediaCodecInfoTest {
     private static final int SOFTWARE_WITH_DEVICE_ACCESS = 3;
     // alias to MediaCodecInfo.CodecCapabilities.FEATURE_SpecialCodec
     static final String SPECIAL_CODEC = "special-codec";
+    static final String[] FEATURES =
+            new String[] {
+                FEATURE_AdaptivePlayback,
+                FEATURE_TunneledPlayback,
+                FEATURE_DynamicTimestamp,
+                FEATURE_FrameParsing,
+                FEATURE_MultipleFrames,
+                FEATURE_PartialFrame,
+                FEATURE_IntraRefresh,
+                FEATURE_LowLatency,
+                SPECIAL_CODEC,
+                FEATURE_QpBounds,
+                FEATURE_EncodingStatistics,
+                FEATURE_HdrEditing,
+                FEATURE_HlgEditing,
+                FEATURE_DynamicColorAspects,
+                FEATURE_Roi,
+                FEATURE_DetachedSurface,
+            };
 
     private static final int MEDIACODEC_KIND_INVALID = 0;
     private static final int MEDIACODEC_KIND_DECODER = 1;
@@ -229,18 +249,15 @@ public class NativeAMediaCodecInfoTest {
     public void testAMediaCodecInfoNative() throws IOException {
         MediaCodecInfo codecInfo = getCodecInfo(mCodecName);
         Assert.assertNotNull("received null codecInfo for component: " + mCodecName, codecInfo);
-        String[] features = codecInfo.getCapabilitiesForType(mMediaType).validFeatures();
-        Assert.assertNotNull("received null features for component: " + mCodecName, features);
-        Assert.assertTrue("received 0 features for component: " + mCodecName, features.length > 0);
         boolean isEncoder = codecInfo.isEncoder();
         int expectedKind = getExpectedCodecKind(isEncoder);
         int featureSupportMap = 0;
         int featureRequiredMap = 0;
-        for (int i = 0; i < features.length; i++) {
-            if (isFeatureSupported(mCodecName, mMediaType, features[i])) {
+        for (int i = 0; i < FEATURES.length; i++) {
+            if (isFeatureSupported(mCodecName, mMediaType, FEATURES[i])) {
                 featureSupportMap |= (1 << i);
             }
-            if (isFeatureRequired(mCodecName, mMediaType, features[i])) {
+            if (isFeatureRequired(mCodecName, mMediaType, FEATURES[i])) {
                 featureRequiredMap |= (1 << i);
             }
         }
@@ -267,7 +284,7 @@ public class NativeAMediaCodecInfoTest {
         boolean isPass = nativeTestAMediaCodecInfo(mCodecName, codecInfo.isEncoder(), expectedKind,
                 codecInfo.isVendor(), codecInfo.getCanonicalName(),
                 getMaxSupportedInstances(mCodecName, mMediaType), getExpectedCodecType(mCodecName),
-                mMediaType, features, featureSupportMap, featureRequiredMap, files,
+                mMediaType, FEATURES, featureSupportMap, featureRequiredMap, files,
                 isFormatSupportedArray, mTestResults);
         Assert.assertTrue(mTestResults.toString(), isPass);
     }

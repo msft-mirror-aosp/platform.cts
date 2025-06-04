@@ -160,6 +160,7 @@ class MockSatelliteServiceManager {
     boolean mIsPointingUiOverridden = false;
     private final Semaphore mSetSatellitePlmnSemaphore = new Semaphore(0);
     private final Semaphore mSetSatelliteEnabledForCarrierSemaphore = new Semaphore(0);
+    private final Semaphore mSatelliteEnabledForCarrierStateChangedSemaphore = new Semaphore(0);
 
     @NonNull
     private final ILocalSatelliteListener mSatelliteListener =
@@ -245,6 +246,16 @@ class MockSatelliteServiceManager {
                         mSetSatelliteEnabledForCarrierSemaphore.release();
                     } catch (Exception ex) {
                         logd("onSetSatelliteEnabledForCarrier: Got exception, ex=" + ex);
+                    }
+                }
+
+                @Override
+                public void onSatelliteEnabledForCarrierStateChanged() {
+                    logd("onSatelliteEnabledForCarrierStateChanged()");
+                    try {
+                        mSatelliteEnabledForCarrierStateChangedSemaphore.release();
+                    } catch (Exception ex) {
+                        logd("onSatelliteEnabledForCarrierStateChanged: Got exception, ex=" + ex);
                     }
                 }
 
@@ -967,6 +978,26 @@ class MockSatelliteServiceManager {
 
     void clearEventOnSetSatelliteEnabledForCarrier() {
         mSetSatelliteEnabledForCarrierSemaphore.drainPermits();
+    }
+
+    boolean waitForEventOnSatelliteEnabledForCarrierStateChanged(int expectedNumberOfEvents) {
+        for (int i = 0; i < expectedNumberOfEvents; i++) {
+            try {
+                if (!mSatelliteEnabledForCarrierStateChangedSemaphore.tryAcquire(
+                        TIMEOUT, TimeUnit.MILLISECONDS)) {
+                    loge("Timeout to receive onSatelliteEnabledForCarrierStateChanged");
+                    return false;
+                }
+            } catch (Exception ex) {
+                loge("onSatelliteEnabledForCarrierStateChanged: Got exception=" + ex);
+                return false;
+            }
+        }
+        return true;
+    }
+
+    void clearEventOnSatelliteEnabledForCarrierStateChanged() {
+        mSatelliteEnabledForCarrierStateChangedSemaphore.drainPermits();
     }
 
     void setErrorCode(int errorCode) {
