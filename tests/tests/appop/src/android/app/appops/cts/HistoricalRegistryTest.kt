@@ -28,6 +28,7 @@ import android.app.AppOpsManager.OP_FLAGS_ALL
 import android.content.Context
 import android.os.Process
 import android.permission.flags.Flags.FLAG_ENABLE_ALL_SQLITE_APPOPS_ACCESSES
+import android.platform.test.annotations.AppModeFull
 import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -56,6 +57,7 @@ import org.junit.runner.RunWith
  * time windows.
  */
 @RunWith(AndroidJUnit4::class)
+@AppModeFull(reason = "Instant apps can't query package info")
 @RequiresFlagsEnabled(FLAG_ENABLE_ALL_SQLITE_APPOPS_ACCESSES)
 class HistoricalRegistryTest {
     companion object {
