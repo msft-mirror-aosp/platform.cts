@@ -18,6 +18,7 @@ package android.app.appsearch.cts.isolated_storage_service;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeNotNull;
+import static org.junit.Assume.assumeTrue;
 
 import android.content.ComponentName;
 import android.content.Context;
@@ -27,6 +28,7 @@ import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.os.Build;
 import android.os.IBinder;
+import android.os.SystemProperties;
 import android.os.UserHandle;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresFlagsEnabled;
@@ -54,6 +56,9 @@ public class AppSearchIsolatedStorageServiceCtsTest {
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_ISOLATED_STORAGE)
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA)
     public void testUnauthorizedBinding_permissionDenied() {
+        assumeTrue(
+                SystemProperties.getBoolean(
+                        "ro.appsearch.feature.enable_isolated_storage", /* def= */ false));
         Context context = ApplicationProvider.getApplicationContext();
         String packageName = maybeGetPackageName(context);
         assumeNotNull(packageName);
