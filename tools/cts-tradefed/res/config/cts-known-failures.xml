@@ -560,4 +560,18 @@
          <!-- b/421054063 -->
     <option name="compatibility:exclude-filter" value="CtsAdServicesDebuggableDeviceTestCases android.adservices.debuggablects.ViewAuctionResultCommandTest#testRun_withJoinCustomAudienceAndAuction_happyPath" />
 
+    <!-- b/421800994 -->
+    <option name="compatibility:exclude-filter" value="CtsAdServicesDebuggableDeviceTestCases android.adservices.debuggablects.FledgeCtsDebuggableTest#testAdSelection_errorGettingScoringLogic_failure" />
+    <option name="compatibility:exclude-filter" value="CtsAdServicesDebuggableDeviceTestCases android.adservices.debuggablects.FledgeCtsDebuggableTest#testAdSelectionFlow_skipExpiredCA_Success" />
+    <option name="compatibility:exclude-filter" value="CtsAdServicesDebuggableDeviceTestCases android.adservices.debuggablects.FledgeCtsDebuggableTest#testFledgeAuctionSelectionFlow_overall_Success" />
+    <option name="compatibility:exclude-filter" value="CtsAdServicesDebuggableDeviceTestCases android.adservices.debuggablects.FledgeCtsDebuggableTest#testAdSelectionFlow_skipCAsThatTimeoutDuringBidding_Success" />
+    <option name="compatibility:exclude-filter" value="CtsAdServicesDebuggableDeviceTestCases android.adservices.debuggablects.FledgeCtsDebuggableTest#testAdSelection_skipAdsMalformedBiddingLogic_success" />
+    <option name="compatibility:exclude-filter" value="CtsAdServicesDebuggableDeviceTestCases android.adservices.debuggablects.FledgeCtsDebuggableTest#testAdSelection_overallTimeout_Failure" />
+    <option name="compatibility:exclude-filter" value="CtsAdServicesDebuggableDeviceTestCases android.adservices.debuggablects.FledgeCtsDebuggableTest#testFledgeFlow_manuallyUpdateCustomAudience_Success" />
+    <option name="compatibility:exclude-filter" value="CtsAdServicesDebuggableDeviceTestCases android.adservices.debuggablects.FledgeCtsDebuggableTest#testAdSelection_skipAdsFailedGettingBiddingLogic_success" />
+    <option name="compatibility:exclude-filter" value="CtsAdServicesDebuggableDeviceTestCases android.adservices.debuggablects.FledgeCtsDebuggableTest#testFledgeAuctionSelectionFlow_scoringPrebuilt_Success" />
+    <option name="compatibility:exclude-filter" value="CtsAdServicesDebuggableDeviceTestCases android.adservices.debuggablects.FledgeCtsDebuggableTest#testAdSelection_malformedScoringLogic_failure" />
+    <option name="compatibility:exclude-filter" value="CtsAdServicesDebuggableDeviceTestCases android.adservices.debuggablects.FledgeCtsDebuggableTest#testAdSelection_etldViolation_failure" />
+    <option name="compatibility:exclude-filter" value="CtsAdServicesDebuggableDeviceTestCases android.adservices.debuggablects.FledgeCtsDebuggableTest#testAdSelectionFlow_skipNonActivatedCA_Success" />
+    <option name="compatibility:exclude-filter" value="CtsAdServicesDebuggableDeviceTestCases android.adservices.debuggablects.FledgeCtsDebuggableTest#testReportImpression_etldViolation_failure" />
 </configuration>
