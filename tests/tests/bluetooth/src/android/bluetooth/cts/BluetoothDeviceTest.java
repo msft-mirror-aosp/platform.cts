@@ -800,4 +800,21 @@ public class BluetoothDeviceTest {
         verify(receiver, timeout(timeout.toMillis()))
                 .onReceive(any(), MockitoHamcrest.argThat(AllOf.allOf(matchers)));
     }
+
+    @RequiresFlagsEnabled(Flags.FLAG_LINK_STATUS_API)
+    @Test
+    public void isConnected_getEncryptionStatus() {
+        // Skip the test if bluetooth or companion device are not present.
+        assumeTrue(mHasBluetooth && mHasCompanionDevice);
+
+        // Device is not bonded, so key missing count should be -1.
+        mFakeDevice = mAdapter.getRemoteDevice("AB:11:22:AA:BB:FF");
+        assertThat(mFakeDevice.isConnected(BluetoothDevice.TRANSPORT_BREDR)).isEqualTo(false);
+        assertThat(mFakeDevice.getEncryptionStatus(BluetoothDevice.TRANSPORT_BREDR)).isNull();
+
+        mUiAutomation.dropShellPermissionIdentity();
+        assertThrows(SecurityException.class, () -> mFakeDevice.isConnected(BluetoothDevice.TRANSPORT_BREDR));
+        assertThrows(SecurityException.class, () -> mFakeDevice.getEncryptionStatus(BluetoothDevice.TRANSPORT_BREDR));
+        mUiAutomation.adoptShellPermissionIdentity(BLUETOOTH_CONNECT);
+    }
 }
