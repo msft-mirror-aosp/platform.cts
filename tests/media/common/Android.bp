@@ -20,12 +20,14 @@ android_library {
     name: "ctsmediav2common",
     defaults: ["cts_defaults"],
     static_libs: [
+        "aconfig_mediacodec_flags_java_lib",
+        "android.media.codec-aconfig-java",
         "androidx.test.core",
         "compatibility-device-util-axt",
         "ctsmediaTestUtils", // split from cts-media-common to avoid circular dependency
     ],
     srcs: ["src/**/*.java"],
-    platform_apis: true,
+    sdk_version: "test_current",
     min_sdk_version: "29",
     lint: {
         baseline_filename: "lint-baseline.xml",

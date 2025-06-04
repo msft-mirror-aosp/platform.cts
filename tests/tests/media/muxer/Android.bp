@@ -21,9 +21,9 @@ package {
 cc_test_library {
     name: "libctsmediamuxertest_jni",
     srcs: [
-        "jni/native_muxer_jni.cpp",
         "jni/NativeMuxerTest.cpp",
         "jni/NativeMuxerUnitTest.cpp",
+        "jni/native_muxer_jni.cpp",
     ],
     shared_libs: [
         "liblog",
@@ -35,8 +35,8 @@ cc_test_library {
     header_libs: ["liblog_headers"],
     stl: "libc++_static",
     cflags: [
-        "-Werror",
         "-Wall",
+        "-Werror",
     ],
     gtest: false,
     // this test suite will run on sdk 29 as part of MTS, make sure it's compatible
@@ -50,11 +50,11 @@ java_defaults {
     // include both the 32 and 64 bit versions
     compile_multilib: "both",
     static_libs: [
+        "android.media.extractor.flags-aconfig-java",
+        "com.android.media.flags.editing-aconfig-java",
         "cts-media-common",
         "ctstestrunner-axt",
         "exoplayer-mediamuxer_tests",
-        "com.android.media.flags.editing-aconfig-java",
-        "android.media.extractor.flags-aconfig-java",
     ],
     jni_libs: [
         "libctsmediamuxertest_jni",
@@ -62,10 +62,9 @@ java_defaults {
     srcs: [
         "src/**/*.java",
     ],
-    platform_apis: true,
-    jni_uses_sdk_apis: true,
     host_required: ["cts-dynamic-config"],
     host_common_data: [":cts-dynamic-config"],
+    sdk_version: "test_current",
     min_sdk_version: "29",
     target_sdk_version: "31",
 }

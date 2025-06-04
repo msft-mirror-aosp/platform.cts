@@ -267,8 +267,7 @@ public class CompareStreams extends CodecDecoderTestBase {
             cropRect.right = clamp(cropRect.right, 0, imgWidth);
             cropRect.bottom = clamp(cropRect.bottom, 0, imgHeight);
             assertTrue("invalid cropRect, " + cropRect,
-                    IS_AT_LEAST_T ? cropRect.isValid()
-                            : cropRect.left <= cropRect.right && cropRect.top <= cropRect.bottom);
+                    cropRect.left <= cropRect.right && cropRect.top <= cropRect.bottom);
             assertTrue(String.format("cropRect %s exceeds frameRect %s", cropRect, frameRect),
                     frameRect.contains(cropRect));
             double curYMSE = computeMSE(yRef, yTest, mRefYuv.mBytesPerSample, imgWidth, imgHeight,

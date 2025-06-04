@@ -19,6 +19,7 @@ package android.mediav2.common.cts;
 import static android.media.MediaCodecInfo.CodecCapabilities.FEATURE_HdrEditing;
 import static android.media.MediaCodecInfo.CodecCapabilities.FEATURE_HlgEditing;
 import static android.media.MediaCodecInfo.CodecProfileLevel.*;
+import static android.media.codec.Flags.hlgEditing;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -441,7 +442,7 @@ public abstract class CodecTestBase {
         MEDIA_CODEC_LIST_REGULAR = new MediaCodecList(MediaCodecList.REGULAR_CODECS);
         IS_HDR_CAPTURE_SUPPORTED = isHDRCaptureSupported();
         IS_HDR_EDITING_SUPPORTED = isEncoderFeatureSupported(FEATURE_HdrEditing);
-        IS_HLG_EDITING_SUPPORTED = (IS_AT_LEAST_V && android.media.codec.Flags.hlgEditing())
+        IS_HLG_EDITING_SUPPORTED = (IS_AT_LEAST_V && hlgEditing())
                 ? isEncoderFeatureSupported(FEATURE_HlgEditing) : false;
         CODEC_SEL_KEY_MEDIA_TYPE_MAP.put("vp8", MediaFormat.MIMETYPE_VIDEO_VP8);
         CODEC_SEL_KEY_MEDIA_TYPE_MAP.put("vp9", MediaFormat.MIMETYPE_VIDEO_VP9);
