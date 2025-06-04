@@ -100,6 +100,7 @@ public class ToastTest {
     private static final int ACCESSIBILITY_STATE_WAIT_TIMEOUT_MS = 3000;
     private static final long TIME_FOR_UI_OPERATION  = 1000L;
     private static final long TIME_OUT = 5000L;
+    private static final long TIME_OUT_AUTOMOTIVE = 9000L;
     private static final int MAX_PACKAGE_TOASTS_LIMIT = 5;
     private static final String ACTION_TRANSLUCENT_ACTIVITY_RESUMED =
             "android.widget.cts.app.TRANSLUCENT_ACTIVITY_RESUMED";
@@ -114,6 +115,8 @@ public class ToastTest {
     // TOAST_WINDOW_SIZES_MS[i].
     private static final int[] TOAST_RATE_LIMITS = {3, 5, 6};
     private static final long[] TOAST_WINDOW_SIZES_MS = {20_000, 42_000, 68_000};
+
+    private static long sTimeOut = TIME_OUT;
 
     private Toast mToast;
     private Context mContext;
@@ -135,6 +138,10 @@ public class ToastTest {
         mUserHelper = new UserHelper(mContext);
         mUiAutomation = getInstrumentation().getUiAutomation();
         mLayoutListener = () -> mLayoutDone = true;
+        if (mContext.getPackageManager()
+                .hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE)) {
+            sTimeOut = TIME_OUT_AUTOMOTIVE;
+        }
         mNotificationManager =
                 mContext.getSystemService(NotificationManager.class);
         // disable rate limiting for tests
@@ -143,10 +150,10 @@ public class ToastTest {
 
         // Wait until the activity is resumed. Otherwise, custom toasts from non-resumed activity
         // may be blocked depending on the timing.
-        PollingCheck.waitFor(TIME_OUT, () -> null != mActivityRule.getActivity());
+        PollingCheck.waitFor(sTimeOut, () -> null != mActivityRule.getActivity());
         try {
             assertTrue("Timeout while waiting for onResume()",
-                    mActivityRule.getActivity().waitUntilResumed(TIME_OUT));
+                    mActivityRule.getActivity().waitUntilResumed(sTimeOut));
         } catch (InterruptedException e) {
             fail("Got InterruptedException while waiting for onResume()");
         }
@@ -173,20 +180,20 @@ public class ToastTest {
     }
 
     private static void assertCustomToastShown(final View view) {
-        PollingCheck.waitFor(TIME_OUT, () -> null != view.getParent());
+        PollingCheck.waitFor(sTimeOut, () -> null != view.getParent());
     }
 
     private static void assertCustomToastShown(CustomToastInfo customToastInfo) {
-        PollingCheck.waitFor(TIME_OUT, customToastInfo::isShowing);
+        PollingCheck.waitFor(sTimeOut, customToastInfo::isShowing);
     }
 
     private static void assertCustomToastHidden(CustomToastInfo customToastInfo) {
-        PollingCheck.waitFor(TIME_OUT, () -> !customToastInfo.isShowing());
+        PollingCheck.waitFor(sTimeOut, () -> !customToastInfo.isShowing());
     }
 
     private static void assertCustomToastShownAndHidden(final View view) {
         assertCustomToastShown(view);
-        PollingCheck.waitFor(TIME_OUT, () -> null == view.getParent());
+        PollingCheck.waitFor(sTimeOut, () -> null == view.getParent());
     }
 
     private static void assertCustomToastShownAndHidden(CustomToastInfo customToastInfo) {
@@ -195,13 +202,13 @@ public class ToastTest {
     }
 
     private void assertTextToastShownAndHidden() {
-        assertTrue(mToastShown.block(TIME_OUT));
-        assertTrue(mToastHidden.block(TIME_OUT));
+        assertTrue(mToastShown.block(sTimeOut));
+        assertTrue(mToastHidden.block(sTimeOut));
     }
 
     private void assertTextToastShownAndHidden(TextToastInfo textToastInfo) {
-        assertTrue(textToastInfo.blockOnToastShown(TIME_OUT));
-        assertTrue(textToastInfo.blockOnToastHidden(TIME_OUT));
+        assertTrue(textToastInfo.blockOnToastShown(sTimeOut));
+        assertTrue(textToastInfo.blockOnToastHidden(sTimeOut));
     }
 
     private static void assertCustomToastNotShown(final View view) {
@@ -228,7 +235,7 @@ public class ToastTest {
     }
 
     private void assertLayoutDone(final View view) {
-        PollingCheck.waitFor(TIME_OUT, () -> mLayoutDone);
+        PollingCheck.waitFor(sTimeOut, () -> mLayoutDone);
         view.getViewTreeObserver().removeOnGlobalLayoutListener(mLayoutListener);
     }
 
@@ -270,7 +277,7 @@ public class ToastTest {
             boolean toastHidden = mToastHidden.block(/* return immediately */ 1);
 
             if (toastShown && !toastHidden) {
-                assertTrue(mToastHidden.block(TIME_OUT));
+                assertTrue(mToastHidden.block(sTimeOut));
             }
             return;
         }
@@ -278,7 +285,7 @@ public class ToastTest {
         // custom toast case
         View view = mToast.getView();
         if (view != null && view.getParent() != null) {
-            PollingCheck.waitFor(TIME_OUT, () -> view.getParent() == null);
+            PollingCheck.waitFor(sTimeOut, () -> view.getParent() == null);
         }
     }
 
@@ -851,8 +858,8 @@ public class ToastTest {
 
         mActivityRule.runOnUiThread(() -> showToastWithNotificationPermission(mToast));
 
-        assertTrue(toastShown.block(TIME_OUT));
-        assertTrue(toastHidden.block(TIME_OUT));
+        assertTrue(toastShown.block(sTimeOut));
+        assertTrue(toastHidden.block(sTimeOut));
     }
 
     @Test
@@ -865,8 +872,8 @@ public class ToastTest {
 
         mActivityRule.runOnUiThread(() -> showToastWithNotificationPermission(mToast));
 
-        assertTrue(toastShown.block(TIME_OUT));
-        assertTrue(toastHidden.block(TIME_OUT));
+        assertTrue(toastShown.block(sTimeOut));
+        assertTrue(toastHidden.block(sTimeOut));
     }
 
     @Test
@@ -996,7 +1003,7 @@ public class ToastTest {
                 () -> uncheck(() -> mActivityRule.runOnUiThread(
                         () -> showToastWithNotificationPermission(mToast))),
                 filter,
-                TIME_OUT);
+                sTimeOut);
         assertThat(event.getEventType()).isEqualTo(
                 AccessibilityEvent.TYPE_NOTIFICATION_STATE_CHANGED);
         assertThat(event.getClassName()).isEqualTo(Toast.class.getCanonicalName());
@@ -1014,7 +1021,7 @@ public class ToastTest {
                 () -> uncheck(() -> mActivityRule.runOnUiThread(
                         () -> showToastWithNotificationPermission(mToast))),
                 filter,
-                TIME_OUT);
+                sTimeOut);
 
         assertThat(event.getEventType()).isEqualTo(
                 AccessibilityEvent.TYPE_NOTIFICATION_STATE_CHANGED);
