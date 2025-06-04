@@ -1,0 +1,6 @@
+# Adb tests
+# Buganizer template url: https://b.corp.google.com/issues/new?component=316245&template=1018194
+# Bug component: 316245
+# Android > Android OS & Apps > Framework (Java + Native) > Window Manager > Surfaces
+
+include platform/frameworks/base:/services/core/java/com/android/server/wm/OWNERS
