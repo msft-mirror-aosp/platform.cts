@@ -20,6 +20,7 @@ import static android.server.wm.jetpack.extensions.util.ExtensionsUtil.assertHas
 import static android.server.wm.jetpack.extensions.util.ExtensionsUtil.assumeHasDisplayFeatures;
 import static android.server.wm.jetpack.extensions.util.ExtensionsUtil.getExtensionWindowLayoutInfo;
 
+import android.platform.test.annotations.Presubmit;
 import android.server.wm.jetpack.utils.TestActivity;
 import android.server.wm.jetpack.utils.TestLetterboxLandscapeActivity;
 import android.server.wm.jetpack.utils.TestLetterboxLandscapeSlimActivity;
@@ -39,9 +40,9 @@ import org.junit.Test;
 /**
  * A class to test features related to letterboxed Activities.
  *
- * Build/Install/Run:
- *     atest CtsWindowManagerJetpackTestCases:WindowLayoutComponentLetterboxTest
+ * <p>Build/Install/Run: atest CtsWindowManagerJetpackTestCases:WindowLayoutComponentLetterboxTest
  */
+@Presubmit
 public class WindowLayoutComponentLetterboxTest extends WindowManagerJetpackTestBase {
 
     @Rule

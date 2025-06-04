@@ -31,6 +31,7 @@ import static org.junit.Assert.assertTrue;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.platform.test.annotations.Presubmit;
 import android.server.wm.jetpack.utils.TestActivityWithId;
 import android.server.wm.jetpack.utils.TestConfigChangeHandlingActivity;
 import android.util.ArraySet;
@@ -54,9 +55,9 @@ import java.util.stream.Collectors;
 /**
  * Test class to verify {@link androidx.window.extensions.embedding.ActivityStack} APIs
  *
- * Build/Install/Run:
- *     atest CtsWindowManagerJetpackTestCases:ActivityStackApisTests
+ * <p>Build/Install/Run: atest CtsWindowManagerJetpackTestCases:ActivityStackApisTests
  */
+@Presubmit
 public class ActivityStackApisTests extends ActivityEmbeddingTestBase {
     @ApiTest(apis = {"androidx.window.extensions.embedding.ActivityEmbeddingComponent"
             + "#finishActivityStacks"})
