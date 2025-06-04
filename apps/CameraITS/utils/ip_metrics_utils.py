@@ -386,3 +386,19 @@ def get_fov_in_degrees(img_path, qr_code_img, chart_distance):
   angle_radians = 2 * math.atan(height_in_cm / (2 * chart_distance))
   fov_degrees = math.degrees(angle_radians)
   return fov_degrees
+
+
+def get_aspect_ratio(img_path):
+  """Returns the aspect ratio of the image.
+
+  Args:
+    img_path: str; file path
+  Returns: aspect ratio of the captured image
+  """
+  img = cv2.imread(img_path)
+  height, width = img.shape[:2]
+  logging.debug('Image H: %s, W: %s', height, width)
+  aspect_ratio = width / height
+  logging.debug('Aspect ratio: %.2f', aspect_ratio)
+  return round(float(aspect_ratio), 2)
+
