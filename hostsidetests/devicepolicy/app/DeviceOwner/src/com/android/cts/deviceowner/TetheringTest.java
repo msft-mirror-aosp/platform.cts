@@ -101,7 +101,7 @@ public class TetheringTest extends BaseDeviceOwnerTest {
     public void testStartTetheringWifiWithConfigSucceeds() {
         if (!mIsTestSupported) return;
 
-        mCtsTetheringUtils.startWifiTethering(mEventCallback, TEST_SOFT_AP_CONFIG);
+        mCtsTetheringUtils.startWifiTetheringNoPermissions(mEventCallback, TEST_SOFT_AP_CONFIG);
     }
 
     @SuppressWarnings("JUnit4ClassUsedInJUnit3")
@@ -147,7 +147,7 @@ public class TetheringTest extends BaseDeviceOwnerTest {
     public void testStopTetheringWifiWithConfigSucceeds() {
         if (!mIsTestSupported) return;
 
-        mCtsTetheringUtils.startWifiTethering(mEventCallback, TEST_SOFT_AP_CONFIG);
+        mCtsTetheringUtils.startWifiTetheringNoPermissions(mEventCallback, TEST_SOFT_AP_CONFIG);
         TetheringRequest request =
                 new TetheringRequest.Builder(TETHERING_WIFI)
                         .setSoftApConfiguration(TEST_SOFT_AP_CONFIG)
