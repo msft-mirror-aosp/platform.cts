@@ -16,11 +16,8 @@ package {
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
-android_test {
-    name: "CtsOsTestCases",
-    team: "trendy_team_framework_bpm",
-    defaults: ["cts_defaults"],
-    compile_multilib: "both",
+java_defaults {
+    name: "CtsOsTestCases_javalibs",
     static_libs: [
         "android.hidl.manager-V1.0-java",
         "android.sdk.flags-aconfig-java",
@@ -51,6 +48,21 @@ android_test {
         "cts_backported_fixes",
         "cts_backported_fixes_support",
     ],
+    libs: [
+        "android.test.runner.stubs.test",
+        "android.test.base.stubs.test",
+        "PlatformProperties",
+    ],
+}
+
+android_test {
+    name: "CtsOsTestCases",
+    team: "trendy_team_framework_bpm",
+    defaults: [
+        "cts_defaults",
+        "CtsOsTestCases_javalibs",
+    ],
+    compile_multilib: "both",
     jni_uses_platform_apis: true,
     jni_libs: [
         "libcts_jni",
@@ -77,11 +89,6 @@ android_test {
         "mts-documentsui",
     ],
     sdk_version: "test_current",
-    libs: [
-        "android.test.runner.stubs.test",
-        "android.test.base.stubs.test",
-        "PlatformProperties",
-    ],
     // Do not compress minijail policy files.
     aaptflags: ["-0 .policy"],
     min_sdk_version: "29",
@@ -90,17 +97,10 @@ android_test {
 
 android_ravenwood_test {
     name: "CtsOsTestCasesRavenwood",
-    defaults: ["cts_defaults"],
-    sdk_version: "test_current",
-    static_libs: [
-        "android.sdk.flags-aconfig-java",
-        "androidx.annotation_annotation",
-        "androidx.test.rules",
-        "compatibility-device-util-axt-ravenwood",
-        "android.os.flags-aconfig-java",
-        "backstage_power_flags_lib",
-        "sdk_sandbox_flags_lib",
+    defaults: [
+        "CtsOsTestCases_javalibs",
     ],
+    sdk_version: "test_current",
     srcs: [
         "src/android/os/connectivity/cts/CellularBatteryStatsTest.java",
         "src/android/os/connectivity/cts/WifiActivityEnergyInfoTest.java",
@@ -111,6 +111,7 @@ android_ravenwood_test {
         "src/android/os/cts/BuildTest.java",
         "src/android/os/cts/BundleTest.java",
         "src/android/os/cts/DeadObjectExceptionTest.java",
+        "src/android/os/cts/EnvironmentTest.java",
         "src/android/os/cts/HandlerTest.java",
         "src/android/os/cts/HandlerThreadTest.java",
         "src/android/os/cts/IpcDataCacheTest.java",
@@ -135,6 +136,9 @@ android_ravenwood_test {
     ],
     auto_gen_config: true,
     team: "trendy_team_ravenwood",
+    ravenizer: {
+        strip_mockito: true,
+    },
 }
 
 test_module_config {
