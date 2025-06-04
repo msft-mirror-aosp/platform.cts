@@ -28,6 +28,7 @@ import android.net.LinkAddress;
 import android.os.Parcel;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
+import android.telephony.AccessNetworkConstants;
 import android.telephony.PreciseDataConnectionState;
 import android.telephony.data.ApnSetting;
 import android.telephony.data.DataCallResponse;
@@ -82,6 +83,9 @@ public class DataCallResponseTest {
     private static final int TEST_VALIDATED = PreciseDataConnectionState.NETWORK_VALIDATION_SUCCESS;
     private static final int TEST_VALIDATE_FAILED =
             PreciseDataConnectionState.NETWORK_VALIDATION_FAILURE;
+    private static final int PHYSICAL_NETWORK_TRANSPORT_TYPE =
+            AccessNetworkConstants.TRANSPORT_TYPE_WWAN;
+    private static final int PHYSICAL_NETWORK_SLOT_INDEX = 1;
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule =
@@ -89,24 +93,27 @@ public class DataCallResponseTest {
 
     @Test
     public void testConstructorAndGetters() {
-        DataCallResponse response = new DataCallResponse.Builder()
-                .setCause(CAUSE)
-                .setRetryDurationMillis(RETRY)
-                .setId(ID)
-                .setLinkStatus(LINK_STATUS)
-                .setProtocolType(PROTOCOL_TYPE)
-                .setInterfaceName(IF_NAME)
-                .setAddresses(ADDRESSES)
-                .setDnsAddresses(DNSES)
-                .setGatewayAddresses(GATEWAYS)
-                .setPcscfAddresses(PCSCFS)
-                .setMtuV4(MTU_V4)
-                .setMtuV6(MTU_V6)
-                .setHandoverFailureMode(HANDOVER_FAILURE_MODE)
-                .setPduSessionId(PDU_SESSION_ID)
-                .setSliceInfo(SLICE_INFO)
-                .setTrafficDescriptors(TRAFFIC_DESCRIPTORS)
-                .build();
+        DataCallResponse response =
+                new DataCallResponse.Builder()
+                        .setCause(CAUSE)
+                        .setRetryDurationMillis(RETRY)
+                        .setId(ID)
+                        .setLinkStatus(LINK_STATUS)
+                        .setProtocolType(PROTOCOL_TYPE)
+                        .setInterfaceName(IF_NAME)
+                        .setAddresses(ADDRESSES)
+                        .setDnsAddresses(DNSES)
+                        .setGatewayAddresses(GATEWAYS)
+                        .setPcscfAddresses(PCSCFS)
+                        .setMtuV4(MTU_V4)
+                        .setMtuV6(MTU_V6)
+                        .setHandoverFailureMode(HANDOVER_FAILURE_MODE)
+                        .setPduSessionId(PDU_SESSION_ID)
+                        .setSliceInfo(SLICE_INFO)
+                        .setTrafficDescriptors(TRAFFIC_DESCRIPTORS)
+                        .setPhysicalNetworkTransportType(PHYSICAL_NETWORK_TRANSPORT_TYPE)
+                        .setPhysicalNetworkSlotIndex(PHYSICAL_NETWORK_SLOT_INDEX)
+                        .build();
 
         assertThat(response.getCause()).isEqualTo(CAUSE);
         assertThat(response.getRetryDurationMillis()).isEqualTo(RETRY);
@@ -124,90 +131,105 @@ public class DataCallResponseTest {
         assertThat(response.getPduSessionId()).isEqualTo(PDU_SESSION_ID);
         assertThat(response.getSliceInfo()).isEqualTo(SLICE_INFO);
         assertThat(response.getTrafficDescriptors()).isEqualTo(TRAFFIC_DESCRIPTORS);
+        assertThat(response.getPhysicalNetworkTransportType())
+                .isEqualTo(PHYSICAL_NETWORK_TRANSPORT_TYPE);
+        assertThat(response.getPhysicalNetworkSlotIndex()).isEqualTo(PHYSICAL_NETWORK_SLOT_INDEX);
     }
 
     @Test
     public void testEquals() {
-        DataCallResponse response = new DataCallResponse.Builder()
-                .setCause(CAUSE)
-                .setRetryDurationMillis(RETRY)
-                .setId(ID)
-                .setLinkStatus(LINK_STATUS)
-                .setProtocolType(PROTOCOL_TYPE)
-                .setInterfaceName(IF_NAME)
-                .setAddresses(ADDRESSES)
-                .setDnsAddresses(DNSES)
-                .setGatewayAddresses(GATEWAYS)
-                .setPcscfAddresses(PCSCFS)
-                .setMtuV4(MTU_V4)
-                .setMtuV6(MTU_V6)
-                .setHandoverFailureMode(HANDOVER_FAILURE_MODE)
-                .setPduSessionId(PDU_SESSION_ID)
-                .setSliceInfo(SLICE_INFO)
-                .setTrafficDescriptors(TRAFFIC_DESCRIPTORS)
-                .build();
+        DataCallResponse response =
+                new DataCallResponse.Builder()
+                        .setCause(CAUSE)
+                        .setRetryDurationMillis(RETRY)
+                        .setId(ID)
+                        .setLinkStatus(LINK_STATUS)
+                        .setProtocolType(PROTOCOL_TYPE)
+                        .setInterfaceName(IF_NAME)
+                        .setAddresses(ADDRESSES)
+                        .setDnsAddresses(DNSES)
+                        .setGatewayAddresses(GATEWAYS)
+                        .setPcscfAddresses(PCSCFS)
+                        .setMtuV4(MTU_V4)
+                        .setMtuV6(MTU_V6)
+                        .setHandoverFailureMode(HANDOVER_FAILURE_MODE)
+                        .setPduSessionId(PDU_SESSION_ID)
+                        .setSliceInfo(SLICE_INFO)
+                        .setTrafficDescriptors(TRAFFIC_DESCRIPTORS)
+                        .setPhysicalNetworkTransportType(PHYSICAL_NETWORK_TRANSPORT_TYPE)
+                        .setPhysicalNetworkSlotIndex(PHYSICAL_NETWORK_SLOT_INDEX)
+                        .build();
 
-        DataCallResponse equalsResponse = new DataCallResponse.Builder()
-                .setCause(CAUSE)
-                .setRetryDurationMillis(RETRY)
-                .setId(ID)
-                .setLinkStatus(LINK_STATUS)
-                .setProtocolType(PROTOCOL_TYPE)
-                .setInterfaceName(IF_NAME)
-                .setAddresses(ADDRESSES)
-                .setDnsAddresses(DNSES)
-                .setGatewayAddresses(GATEWAYS)
-                .setPcscfAddresses(PCSCFS)
-                .setMtuV4(MTU_V4)
-                .setMtuV6(MTU_V6)
-                .setHandoverFailureMode(HANDOVER_FAILURE_MODE)
-                .setPduSessionId(PDU_SESSION_ID)
-                .setSliceInfo(SLICE_INFO)
-                .setTrafficDescriptors(TRAFFIC_DESCRIPTORS)
-                .build();
+        DataCallResponse equalsResponse =
+                new DataCallResponse.Builder()
+                        .setCause(CAUSE)
+                        .setRetryDurationMillis(RETRY)
+                        .setId(ID)
+                        .setLinkStatus(LINK_STATUS)
+                        .setProtocolType(PROTOCOL_TYPE)
+                        .setInterfaceName(IF_NAME)
+                        .setAddresses(ADDRESSES)
+                        .setDnsAddresses(DNSES)
+                        .setGatewayAddresses(GATEWAYS)
+                        .setPcscfAddresses(PCSCFS)
+                        .setMtuV4(MTU_V4)
+                        .setMtuV6(MTU_V6)
+                        .setHandoverFailureMode(HANDOVER_FAILURE_MODE)
+                        .setPduSessionId(PDU_SESSION_ID)
+                        .setSliceInfo(SLICE_INFO)
+                        .setTrafficDescriptors(TRAFFIC_DESCRIPTORS)
+                        .setPhysicalNetworkTransportType(PHYSICAL_NETWORK_TRANSPORT_TYPE)
+                        .setPhysicalNetworkSlotIndex(PHYSICAL_NETWORK_SLOT_INDEX)
+                        .build();
 
         assertThat(response).isEqualTo(equalsResponse);
     }
 
     @Test
     public void testNotEquals() {
-        DataCallResponse response = new DataCallResponse.Builder()
-                .setCause(CAUSE)
-                .setRetryDurationMillis(RETRY)
-                .setId(ID)
-                .setLinkStatus(LINK_STATUS)
-                .setProtocolType(PROTOCOL_TYPE)
-                .setInterfaceName(IF_NAME)
-                .setAddresses(ADDRESSES)
-                .setDnsAddresses(DNSES)
-                .setGatewayAddresses(GATEWAYS)
-                .setPcscfAddresses(PCSCFS)
-                .setMtuV4(MTU_V4)
-                .setMtuV6(MTU_V6)
-                .setHandoverFailureMode(HANDOVER_FAILURE_MODE)
-                .setPduSessionId(PDU_SESSION_ID)
-                .setSliceInfo(SLICE_INFO)
-                .setTrafficDescriptors(TRAFFIC_DESCRIPTORS)
-                .build();
+        DataCallResponse response =
+                new DataCallResponse.Builder()
+                        .setCause(CAUSE)
+                        .setRetryDurationMillis(RETRY)
+                        .setId(ID)
+                        .setLinkStatus(LINK_STATUS)
+                        .setProtocolType(PROTOCOL_TYPE)
+                        .setInterfaceName(IF_NAME)
+                        .setAddresses(ADDRESSES)
+                        .setDnsAddresses(DNSES)
+                        .setGatewayAddresses(GATEWAYS)
+                        .setPcscfAddresses(PCSCFS)
+                        .setMtuV4(MTU_V4)
+                        .setMtuV6(MTU_V6)
+                        .setHandoverFailureMode(HANDOVER_FAILURE_MODE)
+                        .setPduSessionId(PDU_SESSION_ID)
+                        .setSliceInfo(SLICE_INFO)
+                        .setTrafficDescriptors(TRAFFIC_DESCRIPTORS)
+                        .setPhysicalNetworkTransportType(PHYSICAL_NETWORK_TRANSPORT_TYPE)
+                        .setPhysicalNetworkSlotIndex(PHYSICAL_NETWORK_SLOT_INDEX)
+                        .build();
 
-        DataCallResponse notEqualsResponse = new DataCallResponse.Builder()
-                .setCause(1)
-                .setRetryDurationMillis(-1)
-                .setId(1)
-                .setLinkStatus(3)
-                .setProtocolType(PROTOCOL_TYPE)
-                .setInterfaceName(IF_NAME)
-                .setAddresses(ADDRESSES)
-                .setDnsAddresses(DNSES)
-                .setGatewayAddresses(GATEWAYS)
-                .setPcscfAddresses(PCSCFS)
-                .setMtuV4(1441)
-                .setMtuV6(1440)
-                .setHandoverFailureMode(HANDOVER_FAILURE_MODE_LEGACY)
-                .setPduSessionId(PDU_SESSION_ID)
-                .setSliceInfo(SLICE_INFO)
-                .setTrafficDescriptors(TRAFFIC_DESCRIPTORS)
-                .build();
+        DataCallResponse notEqualsResponse =
+                new DataCallResponse.Builder()
+                        .setCause(1)
+                        .setRetryDurationMillis(-1)
+                        .setId(1)
+                        .setLinkStatus(3)
+                        .setProtocolType(PROTOCOL_TYPE)
+                        .setInterfaceName(IF_NAME)
+                        .setAddresses(ADDRESSES)
+                        .setDnsAddresses(DNSES)
+                        .setGatewayAddresses(GATEWAYS)
+                        .setPcscfAddresses(PCSCFS)
+                        .setMtuV4(1441)
+                        .setMtuV6(1440)
+                        .setHandoverFailureMode(HANDOVER_FAILURE_MODE_LEGACY)
+                        .setPduSessionId(PDU_SESSION_ID)
+                        .setSliceInfo(SLICE_INFO)
+                        .setTrafficDescriptors(TRAFFIC_DESCRIPTORS)
+                        .setPhysicalNetworkTransportType(PHYSICAL_NETWORK_TRANSPORT_TYPE)
+                        .setPhysicalNetworkSlotIndex(PHYSICAL_NETWORK_SLOT_INDEX)
+                        .build();
 
         assertThat(response).isNotEqualTo(notEqualsResponse);
         assertThat(response).isNotEqualTo(null);
@@ -216,24 +238,27 @@ public class DataCallResponseTest {
 
     @Test
     public void testParcel() {
-        DataCallResponse response = new DataCallResponse.Builder()
-                .setCause(CAUSE)
-                .setRetryDurationMillis(RETRY)
-                .setId(ID)
-                .setLinkStatus(LINK_STATUS)
-                .setProtocolType(PROTOCOL_TYPE)
-                .setInterfaceName(IF_NAME)
-                .setAddresses(ADDRESSES)
-                .setDnsAddresses(DNSES)
-                .setGatewayAddresses(GATEWAYS)
-                .setPcscfAddresses(PCSCFS)
-                .setMtuV4(MTU_V4)
-                .setMtuV6(MTU_V6)
-                .setHandoverFailureMode(HANDOVER_FAILURE_MODE)
-                .setPduSessionId(PDU_SESSION_ID)
-                .setSliceInfo(SLICE_INFO)
-                .setTrafficDescriptors(TRAFFIC_DESCRIPTORS)
-                .build();
+        DataCallResponse response =
+                new DataCallResponse.Builder()
+                        .setCause(CAUSE)
+                        .setRetryDurationMillis(RETRY)
+                        .setId(ID)
+                        .setLinkStatus(LINK_STATUS)
+                        .setProtocolType(PROTOCOL_TYPE)
+                        .setInterfaceName(IF_NAME)
+                        .setAddresses(ADDRESSES)
+                        .setDnsAddresses(DNSES)
+                        .setGatewayAddresses(GATEWAYS)
+                        .setPcscfAddresses(PCSCFS)
+                        .setMtuV4(MTU_V4)
+                        .setMtuV6(MTU_V6)
+                        .setHandoverFailureMode(HANDOVER_FAILURE_MODE)
+                        .setPduSessionId(PDU_SESSION_ID)
+                        .setSliceInfo(SLICE_INFO)
+                        .setTrafficDescriptors(TRAFFIC_DESCRIPTORS)
+                        .setPhysicalNetworkTransportType(PHYSICAL_NETWORK_TRANSPORT_TYPE)
+                        .setPhysicalNetworkSlotIndex(PHYSICAL_NETWORK_SLOT_INDEX)
+                        .build();
 
         Parcel stateParcel = Parcel.obtain();
         response.writeToParcel(stateParcel, 0);
