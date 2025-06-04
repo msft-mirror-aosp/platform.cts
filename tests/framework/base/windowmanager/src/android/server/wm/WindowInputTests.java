@@ -133,7 +133,8 @@ public class WindowInputTests {
         final WindowManager wm = mActivity.getWindowManager();
         final WindowManager.LayoutParams p = new WindowManager.LayoutParams();
         p.setFitInsetsTypes(WindowInsets.Type.systemBars()
-                | WindowInsets.Type.systemGestures());
+                | WindowInsets.Type.systemGestures()
+                | WindowInsets.Type.displayCutout());
         p.flags = WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL
                 | WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE;
         p.width = p.height = 20;
