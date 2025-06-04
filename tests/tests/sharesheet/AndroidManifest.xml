@@ -64,6 +64,9 @@
 
         </activity>
 
+        <activity android:name=".CtsInteractiveChooserTestActivity"
+            android:exported="true" />
+
         <service android:name=".CtsSharesheetChooserTargetService"
              android:permission="android.permission.BIND_CHOOSER_TARGET_SERVICE"
              android:exported="true">
@@ -75,6 +78,32 @@
         <activity-alias android:name=".ExtraInitialIntentTestActivity"
              android:label="@string/test_extra_initial_intents_label"
              android:targetActivity=".CtsSharesheetDeviceActivity"/>
+
+        <activity-alias
+            android:name=".TestTargetOneActivity"
+            android:label="App One"
+            android:targetActivity=".CtsSharesheetDeviceActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.SEND"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.sharesheet.cts.TEST_CATEGORY" />
+                <data android:mimeType="test/cts"/>
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias
+            android:name=".TestTargetTwoActivity"
+            android:label="App Two"
+            android:targetActivity=".CtsSharesheetDeviceActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.SEND"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.sharesheet.cts.TEST_CATEGORY" />
+                <data android:mimeType="test/cts_alternate"/>
+            </intent-filter>
+        </activity-alias>
 
     </application>
 
