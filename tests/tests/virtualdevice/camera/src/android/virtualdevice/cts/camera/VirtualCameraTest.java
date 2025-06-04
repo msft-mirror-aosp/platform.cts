@@ -319,6 +319,168 @@ public class VirtualCameraTest {
         assertThat(cameraIds).isEqualTo(defaultCameraIds);
     }
 
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_HANDLE_INVALID_DEVICE_ID)
+    public void getCameraIdList_withInvalidDeviceIdInContext_returnsEmptyList() throws Exception {
+        setupVirtualDeviceCameraManager();
+        mVirtualDevice.close();
+
+        String[] cameraIds = mCameraManager.getCameraIdList();
+        assertThat(cameraIds).isEmpty();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_HANDLE_INVALID_DEVICE_ID)
+    public void getCameraIdListNoLazy_withInvalidDeviceIdInContext_returnsEmptyList()
+            throws Exception {
+        setupVirtualDeviceCameraManager();
+        mVirtualDevice.close();
+
+        String[] cameraIds = mCameraManager.getCameraIdListNoLazy();
+        assertThat(cameraIds).isEmpty();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_HANDLE_INVALID_DEVICE_ID)
+    public void getConcurrentCameraIds_withInvalidDeviceIdInContext_returnsEmptySet()
+            throws Exception {
+        setupVirtualDeviceCameraManager();
+        mVirtualDevice.close();
+
+        Set<Set<String>> concurrentCameraIds = mCameraManager.getConcurrentCameraIds();
+        assertThat(concurrentCameraIds).isEmpty();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_HANDLE_INVALID_DEVICE_ID)
+    @Parameters(method = "getAllCameraIds")
+    public void openCamera_withInvalidDeviceIdInContext_throwsException(String cameraId) {
+        setupVirtualDeviceCameraManager();
+        mVirtualDevice.close();
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> mCameraManager.openCamera(cameraId, directExecutor(), mCameraStateCallback));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_HANDLE_INVALID_DEVICE_ID)
+    @Parameters(method = "getAllCameraIds")
+    public void getCameraCharacteristics_withInvalidDeviceIdInContext_throwsException(
+            String cameraId) {
+        setupVirtualDeviceCameraManager();
+        mVirtualDevice.close();
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> mCameraManager.getCameraCharacteristics(cameraId));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_HANDLE_INVALID_DEVICE_ID)
+    @Parameters(method = "getAllCameraIds")
+    public void isCameraDeviceSetupSupported_withInvalidDeviceIdInContext_throwsException(
+            String cameraId) {
+        setupVirtualDeviceCameraManager();
+        mVirtualDevice.close();
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> mCameraManager.isCameraDeviceSetupSupported(cameraId));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_HANDLE_INVALID_DEVICE_ID)
+    @Parameters(method = "getAllCameraIds")
+    public void getCameraDeviceSetup_withInvalidDeviceIdInContext_throwsException(String cameraId) {
+        setupVirtualDeviceCameraManager();
+        mVirtualDevice.close();
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> mCameraManager.getCameraDeviceSetup(cameraId));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_HANDLE_INVALID_DEVICE_ID)
+    @Parameters(method = "getAllCameraIds")
+    public void isCameraDeviceSharingSupported_withInvalidDeviceIdInContext_throwsException(
+            String cameraId) {
+        setupVirtualDeviceCameraManager();
+        mVirtualDevice.close();
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> mCameraManager.isCameraDeviceSharingSupported(cameraId));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_HANDLE_INVALID_DEVICE_ID)
+    @Parameters(method = "getAllCameraIds")
+    public void setTorchMode_withInvalidDeviceIdInContext_throwsException(String cameraId) {
+        setupVirtualDeviceCameraManager();
+        mVirtualDevice.close();
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> mCameraManager.setTorchMode(cameraId, true /* enabled */));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_HANDLE_INVALID_DEVICE_ID)
+    @Parameters(method = "getAllCameraIds")
+    public void turnOnTorchWithStrengthLevel_withInvalidDeviceIdInContext_throwsException(
+            String cameraId) {
+        setupVirtualDeviceCameraManager();
+        mVirtualDevice.close();
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> mCameraManager.turnOnTorchWithStrengthLevel(cameraId, 1 /* torchStrength */));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_HANDLE_INVALID_DEVICE_ID)
+    public void getNumberOfCameras_withInvalidDeviceIdInContext_throwsException() {
+        mVirtualDevice = mRule.createManagedVirtualDevice();
+        Context vdContext =
+                getApplicationContext().createDeviceContext(mVirtualDevice.getDeviceId());
+        mVirtualDevice.close();
+
+        assertThat(Camera.getNumberOfCameras(vdContext)).isEqualTo(0);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_HANDLE_INVALID_DEVICE_ID)
+    @Parameters(method = "getAllLegacyCameraIds")
+    public void getCameraInfo_withInvalidDeviceIdInContext_throwsException(int cameraId) {
+        mVirtualDevice = mRule.createManagedVirtualDevice();
+        Context vdContext =
+                getApplicationContext().createDeviceContext(mVirtualDevice.getDeviceId());
+        mVirtualDevice.close();
+
+        Camera.CameraInfo info = new Camera.CameraInfo();
+        assertThrows(
+                RuntimeException.class,
+                () ->
+                        Camera.getCameraInfo(
+                                cameraId, vdContext, CameraManager.ROTATION_OVERRIDE_NONE, info));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_HANDLE_INVALID_DEVICE_ID)
+    @Parameters(method = "getAllLegacyCameraIds")
+    public void open_withInvalidDeviceIdInContext_throwsException(int cameraId) {
+        mVirtualDevice = mRule.createManagedVirtualDevice();
+        Context vdContext =
+                getApplicationContext().createDeviceContext(mVirtualDevice.getDeviceId());
+        mVirtualDevice.close();
+
+        assertThrows(
+                RuntimeException.class,
+                () -> Camera.open(cameraId, vdContext, CameraManager.ROTATION_OVERRIDE_NONE));
+    }
+
     @Parameters(method = "getAllSensorOrientations")
     @Test
     public void virtualCamera_hasCorrectOrientation(int sensorOrientation)
@@ -818,5 +980,19 @@ public class VirtualCameraTest {
             lensFacingDirections.add(LENS_FACING_EXTERNAL);
         }
         return lensFacingDirections;
+    }
+
+    @SuppressWarnings("unused") // Parameter for parametrized tests
+    private static String[] getAllCameraIds() {
+        return new String[] {
+            BACK_CAMERA_ID, FRONT_CAMERA_ID, "1234" // possible external camera id
+        };
+    }
+
+    @SuppressWarnings("unused") // Parameter for parametrized tests
+    private static Integer[] getAllLegacyCameraIds() {
+        return new Integer[] {
+            0, 1, 5 // possible external camera id
+        };
     }
 }
