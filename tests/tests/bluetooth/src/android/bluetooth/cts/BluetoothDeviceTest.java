@@ -774,6 +774,27 @@ public class BluetoothDeviceTest {
         }
     }
 
+    @RequiresFlagsEnabled(Flags.FLAG_KEY_MISSING_COUNT_API)
+    @Test
+    public void getKeyMissingCount() {
+        // Skip the test if bluetooth or companion device are not present.
+        assumeTrue(mHasBluetooth && mHasCompanionDevice);
+
+        // Device is not bonded, so key missing count should be -1.
+        mFakeDevice = mAdapter.getRemoteDevice("AB:11:22:AA:BB:DD");
+        assertThat(mFakeDevice.getKeyMissingCount()).isEqualTo(-1);
+
+        mUiAutomation.dropShellPermissionIdentity();
+        assertThrows(SecurityException.class, () -> mFakeDevice.getKeyMissingCount());
+        mUiAutomation.adoptShellPermissionIdentity(BLUETOOTH_CONNECT);
+
+        mFakeDevice.createBond();
+        if(mFakeDevice.isConnected()) {
+            assertThat(mFakeDevice.getKeyMissingCount()).isEqualTo(0);
+        }
+        mFakeDevice.removeBond();
+    }
+
     private void verifyIntentReceived(
             BroadcastReceiver receiver, Duration timeout, Matcher<Intent>... matchers) {
         verify(receiver, timeout(timeout.toMillis()))
