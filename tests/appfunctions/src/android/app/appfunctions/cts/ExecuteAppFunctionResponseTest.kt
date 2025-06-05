@@ -16,11 +16,15 @@
 
 package android.app.appfunctions.cts
 
+import android.app.appfunctions.AppFunctionUriGrant
 import android.app.appfunctions.ExecuteAppFunctionResponse
 import android.app.appfunctions.flags.Flags.FLAG_ENABLE_APP_FUNCTION_MANAGER
 import android.app.appsearch.GenericDocument
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.os.Parcel
+import android.permission.flags.Flags.FLAG_APP_FUNCTION_ACCESS_API_ENABLED
 import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.CheckFlagsRule
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
@@ -90,12 +94,110 @@ class ExecuteAppFunctionResponseTest {
         val restoredResponse = parcelAndUnparcel(response)
 
         assertThat(
-            restoredResponse.resultDocument.getProperty(
-                ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE
+                restoredResponse.resultDocument.getProperty(
+                    ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE
+                )
             )
-        )
             .isEqualTo(booleanArrayOf(true))
         assertThat(restoredResponse.extras.getString("key")).isEqualTo("value")
+        assertThat(restoredResponse.responseDataSize).isEqualTo(expectedDataSize)
+    }
+
+    @ApiTest(
+        apis =
+            [
+                "android.app.appfunctions.ExecuteAppFunctionResponse#CREATOR",
+                "android.app.appfunctions.ExecuteAppFunctionResponse#writeToParcel",
+                "android.app.appfunctions.ExecuteAppFunctionResponse#getExtras",
+                "android.app.appfunctions.ExecuteAppFunctionResponse#getResultDocument",
+                "android.app.appfunctions.ExecuteAppFunctionResponse#getResponseDataSize",
+                "android.app.appfunctions.ExecuteAppFunctionResponse#getUriGrants",
+            ]
+    )
+    @Test
+    @RequiresFlagsEnabled(FLAG_APP_FUNCTION_ACCESS_API_ENABLED)
+    fun build_nonEmptySuccessResponse_emptyGrantUriList() {
+        val resultGd: GenericDocument =
+            GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
+                .setPropertyBoolean(ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE, true)
+                .build()
+        val extras = Bundle()
+        val grantUriList = emptyList<AppFunctionUriGrant>()
+        extras.putString("key", "value")
+        val response = ExecuteAppFunctionResponse(resultGd, extras, grantUriList)
+        val expectedDataSize = response.responseDataSize
+
+        val restoredResponse = parcelAndUnparcel(response)
+
+        assertThat(
+                restoredResponse.resultDocument.getProperty(
+                    ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE
+                )
+            )
+            .isEqualTo(booleanArrayOf(true))
+        assertThat(restoredResponse.extras.getString("key")).isEqualTo("value")
+        assertThat(restoredResponse.uriGrants).isEmpty()
+        assertThat(restoredResponse.responseDataSize).isEqualTo(expectedDataSize)
+    }
+
+    @ApiTest(
+        apis =
+            [
+                "android.app.appfunctions.ExecuteAppFunctionResponse#CREATOR",
+                "android.app.appfunctions.ExecuteAppFunctionResponse#writeToParcel",
+                "android.app.appfunctions.ExecuteAppFunctionResponse#getExtras",
+                "android.app.appfunctions.ExecuteAppFunctionResponse#getResultDocument",
+                "android.app.appfunctions.ExecuteAppFunctionResponse#getResponseDataSize",
+                "android.app.appfunctions.ExecuteAppFunctionResponse#getUriGrants",
+            ]
+    )
+    @Test
+    @RequiresFlagsEnabled(FLAG_APP_FUNCTION_ACCESS_API_ENABLED)
+    fun build_nonEmptySuccessResponse_nonEmptyGrantUriList() {
+        val resultGd: GenericDocument =
+            GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
+                .setPropertyBoolean(ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE, true)
+                .build()
+        val extras = Bundle()
+        val grantUriList =
+            listOf<AppFunctionUriGrant>(
+                AppFunctionUriGrant(
+                    Uri.parse("content://com.android/example1"),
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION,
+                ),
+                AppFunctionUriGrant(
+                    Uri.parse("content://com.android/example2"),
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION,
+                ),
+            )
+        extras.putString("key", "value")
+        val response = ExecuteAppFunctionResponse(resultGd, extras, grantUriList)
+        val expectedDataSize = response.responseDataSize
+
+        val restoredResponse = parcelAndUnparcel(response)
+
+        assertThat(
+                restoredResponse.resultDocument.getProperty(
+                    ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE
+                )
+            )
+            .isEqualTo(booleanArrayOf(true))
+        assertThat(restoredResponse.extras.getString("key")).isEqualTo("value")
+        assertThat(restoredResponse.uriGrants).hasSize(2)
+        assertThat(restoredResponse.uriGrants[0])
+            .isEqualTo(
+                AppFunctionUriGrant(
+                    Uri.parse("content://com.android/example1"),
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION,
+                )
+            )
+        assertThat(restoredResponse.uriGrants[1])
+            .isEqualTo(
+                AppFunctionUriGrant(
+                    Uri.parse("content://com.android/example2"),
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION,
+                )
+            )
         assertThat(restoredResponse.responseDataSize).isEqualTo(expectedDataSize)
     }
 
