@@ -71,6 +71,10 @@ import androidx.test.core.app.ApplicationProvider;
 
 import com.google.common.collect.Range;
 
+import junitparams.JUnitParamsRunner;
+import junitparams.Parameters;
+import junitparams.naming.TestCaseName;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -82,10 +86,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-
-import junitparams.JUnitParamsRunner;
-import junitparams.Parameters;
-import junitparams.naming.TestCaseName;
 
 @AppModeFull(reason = "VirtualDeviceManager cannot be accessed by instant apps")
 @RunWith(JUnitParamsRunner.class)
@@ -425,6 +425,48 @@ public class VirtualCameraCaptureTest {
         // Here we expect that the input will render more frame that required, so the virtual
         // camera hal should automatically advance when it gets out of sync with the input
         testRenderingRate(requestFPSRange, inputFps);
+    }
+
+    @Parameters(method = "getOutputPixelFormats")
+    @TestCaseName("{method}_{params}")
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_CAMERA_METADATA)
+    public void captureImageWithFrameMetadata_withInput_succeeds(String format) {
+        int outputPixelFormat = toFormat(format);
+        mCaptureHelper.createVirtualCameraWithPerFrameCameraMetadata();
+
+        CaptureConfiguration captureConfiguration =
+                new CaptureConfiguration()
+                        .setOutputFormat(outputPixelFormat)
+                        .setInputSurfaceConsumer(VirtualCameraUtils::paintSurfaceRed)
+                        .setPerFrameCameraMetadataEnabled(true);
+        Image image = mCaptureHelper.captureImages(captureConfiguration);
+        assertThat(image.getFormat()).isEqualTo(outputPixelFormat);
+        assertThat(image.getWidth()).isEqualTo(VirtualCameraCaptureHelper.CAMERA_WIDTH);
+        assertThat(image.getHeight()).isEqualTo(VirtualCameraCaptureHelper.CAMERA_HEIGHT);
+        assertThat(image).hasOnlyColor(Color.RED);
+    }
+
+    @Parameters(method = "getOutputPixelFormats")
+    @TestCaseName("{method}_{params}")
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_CAMERA_METADATA)
+    public void captureImageWithFrameMetadata_withoutInput_fails(String format) {
+        int outputPixelFormat = toFormat(format);
+        mCaptureHelper.createVirtualCameraWithPerFrameCameraMetadata();
+
+        // Take a fist image, but don't write anything on the input surface.
+        // We should have a failed capture after the time expires.
+        CaptureConfiguration config =
+                new CaptureConfiguration()
+                        .setOutputFormat(outputPixelFormat)
+                        .setPerFrameCameraMetadataEnabled(true)
+                        .setVerifyCaptureComplete(false)
+                        .setFailOnCaptureError(false);
+
+        Image image = mCaptureHelper.captureImages(config);
+        mCaptureHelper.verifyCaptureFailed();
+        ImageSubject.assertThat(image).isNull();
     }
 
     /**

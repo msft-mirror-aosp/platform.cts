@@ -18,12 +18,14 @@ package android.virtualdevice.cts.camera.util;
 
 import static android.companion.virtual.camera.VirtualCameraConfig.SENSOR_ORIENTATION_0;
 import static android.graphics.ImageFormat.YUV_420_888;
+import static android.hardware.camera2.CameraMetadata.LENS_FACING_BACK;
 import static android.hardware.camera2.CameraMetadata.LENS_FACING_FRONT;
 import static android.virtualdevice.cts.camera.util.VirtualCameraUtils.createVirtualCameraConfig;
 
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assume.assumeNoException;
+import static org.mockito.ArgumentMatchers.nullable;
 
 import android.companion.virtual.VirtualDeviceManager;
 import android.companion.virtual.camera.VirtualCamera;
@@ -209,6 +211,28 @@ public class VirtualCameraCaptureHelper {
         }
     }
 
+    /** Create a virtual camera with default values and per frame camera metadata enabled. */
+    public void createVirtualCameraWithPerFrameCameraMetadata() {
+        Objects.requireNonNull(
+                mVirtualDevice,
+                "mVirtualDevice must not be null when calling #createVirtualCamera()");
+
+        VirtualCameraConfig config =
+                new VirtualCameraConfig.Builder("FrameMetadataCamera")
+                        .addStreamConfig(
+                                CAMERA_WIDTH, CAMERA_HEIGHT, CAMERA_INPUT_FORMAT, CAMERA_MAX_FPS)
+                        .setVirtualCameraCallback(mCameraExecutor, mVirtualCameraCallback)
+                        .setSensorOrientation(SENSOR_ORIENTATION_0)
+                        .setLensFacing(LENS_FACING_BACK)
+                        .setPerFrameCameraMetadataEnabled(true)
+                        .build();
+        try {
+            mVirtualCamera = mVirtualDevice.createVirtualCamera(config);
+        } catch (UnsupportedOperationException e) {
+            assumeNoException("Virtual camera is not available on this device", e);
+        }
+    }
+
     /**
      * Capture images using the provided {@link CaptureConfiguration}
      * <p>
@@ -277,7 +301,7 @@ public class VirtualCameraCaptureHelper {
                 return reader.acquireLatestImage();
             }
 
-            verifyCaptureComplete(config.mImageCount);
+            verifyCaptureComplete(config.mImageCount, config.mPerFrameCameraMetadataEnabled);
             Truth.assertWithMessage("Timeout waiting for image reader result").that(
                     imageReaderLatch.await(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS)).isTrue();
             Image image = latestImageRef.getAndSet(null);
@@ -357,10 +381,21 @@ public class VirtualCameraCaptureHelper {
         return mOutputReader;
     }
 
-    private void verifyCaptureComplete(int imageCount) {
-        Mockito.verify(mVirtualCameraCallback,
-                Mockito.timeout(TIMEOUT_MILLIS).atLeast(imageCount)).onProcessCaptureRequest(
-                ArgumentMatchers.anyInt(), ArgumentMatchers.anyLong());
+    private void verifyCaptureComplete(int imageCount, boolean perFrameCameraMetadataEnabled) {
+        if (perFrameCameraMetadataEnabled) {
+            Mockito.verify(
+                            mVirtualCameraCallback,
+                            Mockito.timeout(TIMEOUT_MILLIS).atLeast(imageCount))
+                    .onProcessCaptureRequest(
+                            ArgumentMatchers.anyInt(),
+                            ArgumentMatchers.anyLong(),
+                            nullable(CaptureRequest.class));
+        } else {
+            Mockito.verify(
+                            mVirtualCameraCallback,
+                            Mockito.timeout(TIMEOUT_MILLIS).atLeast(imageCount))
+                    .onProcessCaptureRequest(ArgumentMatchers.anyInt(), ArgumentMatchers.anyLong());
+        }
         mCaptureCallback.waitForCaptures(imageCount, TIMEOUT_MILLIS);
     }
 
@@ -428,6 +463,7 @@ public class VirtualCameraCaptureHelper {
         private int mHeight = CAMERA_HEIGHT;
         private int mOutputFormat = YUV_420_888;
         private Duration mCapturePeriod = null;
+        private boolean mPerFrameCameraMetadataEnabled = false;
 
         /**
          * Set the number of image to capture
@@ -517,6 +553,17 @@ public class VirtualCameraCaptureHelper {
          */
         public CaptureConfiguration setOutputFormat(int outputFormat) {
             mOutputFormat = outputFormat;
+            return this;
+        }
+
+        /**
+         * Set if the per frame camera metadata is expected
+         *
+         * <p>Default is false.
+         */
+        public CaptureConfiguration setPerFrameCameraMetadataEnabled(
+                boolean perFrameCameraMetadataEnabled) {
+            mPerFrameCameraMetadataEnabled = perFrameCameraMetadataEnabled;
             return this;
         }
     }
