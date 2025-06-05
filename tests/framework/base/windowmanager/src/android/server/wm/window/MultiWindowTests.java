@@ -67,14 +67,10 @@ import org.junit.Test;
 @android.server.wm.annotation.Group2
 public class MultiWindowTests extends ActivityManagerTestBase {
 
-    private boolean mIsHomeRecentsComponent;
-
     @Before
     @Override
     public void setUp() throws Exception {
         super.setUp();
-
-        mIsHomeRecentsComponent = mWmState.isHomeRecentsComponent();
 
         assumeTrue("Skipping test: no split multi-window support",
                 supportsSplitScreenMultiWindow());
@@ -127,6 +123,7 @@ public class MultiWindowTests extends ActivityManagerTestBase {
                 assertActivitySupportedInSplitScreen(NON_RESIZEABLE_ACTIVITY);
                 break;
             case 0:
+                mWmState.computeState();
                 final int smallestScreenWidthDp = mWmState.getHomeTask().getFullConfiguration().smallestScreenWidthDp;
                 if (smallestScreenWidthDp >= WindowManager.LARGE_SCREEN_SMALLEST_SCREEN_WIDTH_DP) {
                     assertActivitySupportedInSplitScreen(NON_RESIZEABLE_ACTIVITY);

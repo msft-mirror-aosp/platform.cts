@@ -156,6 +156,7 @@ import android.util.Size;
 import androidx.test.filters.FlakyTest;
 
 import com.android.compatibility.common.util.AppOpsUtils;
+import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.wm.shell.Flags;
 
@@ -1522,10 +1523,9 @@ public class PinnedStackTests extends ActivityManagerTestBase {
                         PIP_ACTIVITY, Configuration.ORIENTATION_LANDSCAPE));
     }
 
+    @CddTest(requirements = "3.8.14/C-3-4")
     @Test
     public void testWindowButtonEntersPip() {
-        assumeTrue(!mWmState.isHomeRecentsComponent());
-
         // Launch the PiP activity trigger the window button, ensure that we have entered PiP
         launchActivity(PIP_ACTIVITY);
         pressWindowButton();
