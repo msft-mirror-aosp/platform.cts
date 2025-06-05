@@ -62,6 +62,7 @@ import static android.car.cts.utils.VehiclePropertyVerifiers.getVehicleDrivingAu
 import static android.car.cts.utils.VehiclePropertyVerifiers.getWindshieldWipersStateVerifierBuilder;
 import static android.car.hardware.property.CarPropertyManager.GetPropertyResult;
 import static android.car.hardware.property.CarPropertyManager.SetPropertyResult;
+import static android.content.pm.PackageManager.PERMISSION_GRANTED;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
@@ -80,6 +81,7 @@ import android.car.VehicleIgnitionState;
 import android.car.VehiclePropertyIds;
 import android.car.VehicleUnit;
 import android.car.cts.utils.CarSvcPropsParser;
+import android.car.cts.utils.ShellPermissionUtils;
 import android.car.cts.utils.VehiclePropertyVerifier;
 import android.car.cts.utils.VehiclePropertyVerifiers;
 import android.car.feature.Flags;
@@ -5430,6 +5432,98 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                     assertThat(nightModeListener.receivedEvent(nightMode)).isEqualTo(1);
                     mCarPropertyManager.unregisterCallback(nightModeListener);
                 });
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_CAR_PROPERTY_STATUS_DETAILED_NOT_AVAILABLE)
+    @ApiTest(apis = {"android.car.hardware.CarPropertyValue#getPropertyVendorStatus"})
+    @Test
+    public void testGetPropertyVendorStatus_withPermission() throws Exception {
+        runWithShellPermissionIdentity(
+                () -> {
+                    // Permissions are checked at the first subscription, so we must get a new
+                    // CarPropertyManager here.
+                    assertThat(
+                                    mContext.checkSelfPermission(
+                                            Car.PERMISSION_READ_PROPERTY_VENDOR_STATUS))
+                            .isEqualTo(PERMISSION_GRANTED);
+                    Car car = Car.createCar(mContext);
+                    var carPropertyManager =
+                            (CarPropertyManager) car.getCarManager(Car.PROPERTY_SERVICE);
+
+                    int vehicleSpeed = VehiclePropertyIds.PERF_VEHICLE_SPEED;
+                    CarPropertyEventCounter speedListener = new CarPropertyEventCounter();
+
+                    // Disable VUR so that we can receive multiple events.
+                    Subscription subscription =
+                            new Subscription.Builder(vehicleSpeed)
+                                    .setUpdateRateFastest()
+                                    .setVariableUpdateRateEnabled(false)
+                                    .build();
+
+                    try {
+                        carPropertyManager.subscribePropertyEvents(
+                                List.of(subscription), /* callbackExecutor= */ null, speedListener);
+
+                        speedListener.assertOnChangeEventCalled();
+
+                        var carPropertyValues = speedListener.getReceivedCarPropertyValues();
+
+                        for (CarPropertyValue carPropertyValue : carPropertyValues) {
+                            assertThat(carPropertyValue.getPropertyVendorStatus()).isAtLeast(0);
+                        }
+                    } finally {
+                        carPropertyManager.unsubscribePropertyEvents(vehicleSpeed, speedListener);
+                        car.disconnect();
+                    }
+                },
+                ShellPermissionUtils.CHECK_MODE_ASSUME,
+                Car.PERMISSION_SPEED,
+                Car.PERMISSION_READ_PROPERTY_VENDOR_STATUS);
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_CAR_PROPERTY_STATUS_DETAILED_NOT_AVAILABLE)
+    @ApiTest(apis = {"android.car.hardware.CarPropertyValue#getPropertyVendorStatus"})
+    @Test
+    public void testGetPropertyVendorStatus_withoutPermission() throws Exception {
+        runWithShellPermissionIdentity(
+                () -> {
+                    // Permissions are checked at the first subscription, so we must get a new
+                    // CarPropertyManager here.
+                    Car car = Car.createCar(mContext);
+                    var carPropertyManager =
+                            (CarPropertyManager) car.getCarManager(Car.PROPERTY_SERVICE);
+
+                    int vehicleSpeed = VehiclePropertyIds.PERF_VEHICLE_SPEED;
+                    CarPropertyEventCounter speedListener = new CarPropertyEventCounter();
+
+                    // Disable VUR so that we can receive multiple events.
+                    Subscription subscription =
+                            new Subscription.Builder(vehicleSpeed)
+                                    .setUpdateRateFastest()
+                                    .setVariableUpdateRateEnabled(false)
+                                    .build();
+
+                    try {
+                        carPropertyManager.subscribePropertyEvents(
+                                List.of(subscription), /* callbackExecutor= */ null, speedListener);
+
+                        speedListener.assertOnChangeEventCalled();
+
+                        var carPropertyValues = speedListener.getReceivedCarPropertyValues();
+
+                        for (CarPropertyValue carPropertyValue : carPropertyValues) {
+                            assertThrows(
+                                    SecurityException.class,
+                                    () -> carPropertyValue.getPropertyVendorStatus());
+                        }
+                    } finally {
+                        carPropertyManager.unsubscribePropertyEvents(vehicleSpeed, speedListener);
+                        car.disconnect();
+                    }
+                },
+                ShellPermissionUtils.CHECK_MODE_ASSUME,
+                // No PERMISSION_READ_PROPERTY_VENDOR_STATUS
+                Car.PERMISSION_SPEED);
     }
 
     @ApiTest(
