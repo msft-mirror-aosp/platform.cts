@@ -142,7 +142,8 @@ public class HotwordDetectionServiceBasicTest {
                 Log.d(TAG, "Get OnOpNotedListener callback op = " + op + ", uid = " + uid);
                 // We adopt ShellPermissionIdentity for RECORD_AUDIO to pass the permission check,
                 // so the uid should be the shell uid.
-                if (Process.SHELL_UID == uid && op.equals(AppOpsManager.OPSTR_RECORD_AUDIO)) {
+                if (Process.myUserHandle().getUid(Process.SHELL_UID) == uid &&
+                            op.equals(AppOpsManager.OPSTR_RECORD_AUDIO)) {
                     if (mLatch != null) {
                         mLatch.countDown();
                     }
