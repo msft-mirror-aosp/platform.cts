@@ -17,6 +17,8 @@ package android.host.multiuser;
 
 import static com.google.common.truth.Truth.assertWithMessage;
 
+import static org.junit.Assume.assumeNotNull;
+
 import android.host.multiuser.BaseMultiUserTest.SupportsMultiUserRule;
 
 import com.android.compatibility.common.util.CddTest;
@@ -51,7 +53,10 @@ public final class CreateUsersPermissionTest extends BaseMultiUserTest {
 
     @Test
     public void testCanCreateRestrictedUser() throws Exception {
-        createRestrictedProfile(mPrimaryUserId);
+        Integer parentUser = getDevice().getMainUserId();
+        // Only devices with a main user can have a restricted profile
+        assumeNotNull(parentUser);
+        createRestrictedProfile(parentUser);
     }
 
     @CddTest(requirement="9.5/A-1-3")
