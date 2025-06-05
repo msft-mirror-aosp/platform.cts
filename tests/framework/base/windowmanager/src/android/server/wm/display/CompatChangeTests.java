@@ -637,6 +637,7 @@ public final class CompatChangeTests extends MultiDisplayTestBase {
     })
     public void
             testCameraCompatSimulateReqOrientation_propTrue_overrideNotSet_cameraCompatAllowed() {
+        assumeTrue("Skipping test: freeform windowing is not supported.", supportsFreeform());
         try (var session = new ActivitySessionCloseable(
                 CAMERA_COMPAT_ALLOW_SIMULATE_REQUESTED_ORIENTATION_OPT_IN_ACTIVITY)) {
             assertTrue(session.getActivityState()
@@ -663,6 +664,7 @@ public final class CompatChangeTests extends MultiDisplayTestBase {
     })
     public void
             testCameraCompatSimReqOrientation_propFalse_overrideNotSet_cameraCompatNotAllowed() {
+        assumeTrue("Skipping test: freeform windowing is not supported.", supportsFreeform());
         try (var session = new ActivitySessionCloseable(
                 CAMERA_COMPAT_ALLOW_SIMULATE_REQUESTED_ORIENTATION_OPT_OUT_ACTIVITY)) {
             assertFalse(session.getActivityState()
@@ -688,6 +690,7 @@ public final class CompatChangeTests extends MultiDisplayTestBase {
     })
     public void
             testCameraCompatSimulateReqOrientation_propNotSet_overrideNotSet_camCompatAllowed() {
+        assumeTrue("Skipping test: freeform windowing is not supported.", supportsFreeform());
         try (var session = new ActivitySessionCloseable(
                 CAMERA_COMPAT_ALLOW_SIMULATE_REQUESTED_ORIENTATION_DEFAULT_ACTIVITY)) {
             assertTrue(session.getActivityState()
@@ -714,6 +717,7 @@ public final class CompatChangeTests extends MultiDisplayTestBase {
     })
     public void
             testCameraCompatSimReqOrientation_propNotSet_disabledByOverride_camCompatNotAllowed() {
+        assumeTrue("Skipping test: freeform windowing is not supported.", supportsFreeform());
         try (var compatChange = new CompatChangeCloseable(
                 OVERRIDE_CAMERA_COMPAT_DISABLE_SIMULATE_REQUESTED_ORIENTATION,
                 CAMERA_COMPAT_ALLOW_SIMULATE_REQUESTED_ORIENTATION_DEFAULT_ACTIVITY
@@ -744,6 +748,7 @@ public final class CompatChangeTests extends MultiDisplayTestBase {
     })
     public void
             testCameraCompatSimReqOrientation_propTrue_disabledByOverride_cameraCompatNotAllowed() {
+        assumeTrue("Skipping test: freeform windowing is not supported.", supportsFreeform());
         try (var compatChange = new CompatChangeCloseable(
                 OVERRIDE_CAMERA_COMPAT_DISABLE_SIMULATE_REQUESTED_ORIENTATION,
                 CAMERA_COMPAT_ALLOW_SIMULATE_REQUESTED_ORIENTATION_OPT_IN_ACTIVITY
@@ -774,6 +779,7 @@ public final class CompatChangeTests extends MultiDisplayTestBase {
     })
     public void
             testCameraCompatSimReqOrientation_propFalse_disabledOverride_cameraCompatNotAllowed() {
+        assumeTrue("Skipping test: freeform windowing is not supported.", supportsFreeform());
         try (var compatChange = new CompatChangeCloseable(
                 OVERRIDE_CAMERA_COMPAT_DISABLE_SIMULATE_REQUESTED_ORIENTATION,
                 CAMERA_COMPAT_ALLOW_SIMULATE_REQUESTED_ORIENTATION_OPT_OUT_ACTIVITY
