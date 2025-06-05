@@ -35,8 +35,10 @@ import androidx.annotation.Nullable;
 import java.util.Objects;
 
 public class CtsInteractiveChooserTestActivity extends Activity {
-    private static final String CTS_DATA_TYPE = "test/cts"; // Special CTS mime type
-    private static final String CTS_ALT_DATA_TYPE = "test/cts_alternate"; // Special CTS mime type
+    // Special CTS mime type
+    private static final String CTS_DATA_TYPE = "test/cts_interactive";
+    // Special CTS mime type
+    private static final String CTS_ALT_DATA_TYPE = "test/cts_alternate_interactive";
     private static final String TEST_CATEGORY = "android.sharesheet.cts.TEST_CATEGORY";
     @Nullable private ChooserSession mChooserSession;
     private final ChooserSession.StateListener mChooserSessionStateListener =

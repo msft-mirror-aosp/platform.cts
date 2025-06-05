@@ -88,7 +88,7 @@
                 <action android:name="android.intent.action.SEND"/>
                 <category android:name="android.intent.category.DEFAULT"/>
                 <category android:name="android.sharesheet.cts.TEST_CATEGORY" />
-                <data android:mimeType="test/cts"/>
+                <data android:mimeType="test/cts_interactive"/>
             </intent-filter>
         </activity-alias>
 
@@ -101,7 +101,7 @@
                 <action android:name="android.intent.action.SEND"/>
                 <category android:name="android.intent.category.DEFAULT"/>
                 <category android:name="android.sharesheet.cts.TEST_CATEGORY" />
-                <data android:mimeType="test/cts_alternate"/>
+                <data android:mimeType="test/cts_alternate_interactive"/>
             </intent-filter>
         </activity-alias>
 
