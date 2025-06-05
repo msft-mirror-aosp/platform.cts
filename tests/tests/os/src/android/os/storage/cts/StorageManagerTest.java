@@ -1162,15 +1162,20 @@ public class StorageManagerTest {
         } catch (SecurityException e) {
             gotSecurityException = true;
         }
-        assertEquals(value, -1);
+        assertEquals(-1, value);
         assertTrue(gotSecurityException);
 
-        InstrumentationRegistry.getInstrumentation().getUiAutomation()
-                .adoptShellPermissionIdentity(READ_PRIVILEGED_PHONE_STATE);
+        try {
+            InstrumentationRegistry.getInstrumentation().getUiAutomation()
+                    .adoptShellPermissionIdentity(READ_PRIVILEGED_PHONE_STATE);
 
-        value = mStorageManager.getInternalStorageRemainingLifetime();
-        assertThat(value).isAtLeast(-1);
-        assertThat(value).isAtMost(100);
+            value = mStorageManager.getInternalStorageRemainingLifetime();
+            assertThat(value).isAtLeast(-1);
+            assertThat(value).isAtMost(100);
+        } finally {
+            InstrumentationRegistry.getInstrumentation().getUiAutomation()
+                    .dropShellPermissionIdentity();
+        }
     }
 
     public static byte[] readFully(InputStream in) throws IOException {
