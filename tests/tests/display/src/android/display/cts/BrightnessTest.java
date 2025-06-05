@@ -18,6 +18,8 @@ package android.display.cts;
 
 import static android.hardware.display.BrightnessCorrection.createScaleAndTranslateLog;
 
+import static com.android.server.display.feature.flags.Flags.FLAG_SET_BRIGHTNESS_BY_UNIT;
+
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertEquals;
@@ -39,17 +41,27 @@ import android.hardware.display.BrightnessChangeEvent;
 import android.hardware.display.BrightnessConfiguration;
 import android.hardware.display.DisplayManager;
 import android.platform.test.annotations.AppModeFull;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.Settings;
 import android.util.Pair;
+import android.view.Display;
 
 import androidx.test.filters.MediumTest;
 import androidx.test.platform.app.InstrumentationRegistry;
-import androidx.test.runner.AndroidJUnit4;
+
+import com.android.bedstead.nene.TestApis;
+import com.android.bedstead.permissions.PermissionContext;
 
 import com.google.common.collect.Range;
 
+import junitparams.JUnitParamsRunner;
+import junitparams.Parameters;
+
 import org.junit.Before;
 import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -61,13 +73,16 @@ import java.util.function.Predicate;
 
 @AppModeFull
 @MediumTest
-@RunWith(AndroidJUnit4.class)
+@RunWith(JUnitParamsRunner.class)
 public class BrightnessTest extends TestBase {
 
     private Map<Long, BrightnessChangeEvent> mLastReadEvents = new HashMap<>();
     private DisplayManager mDisplayManager;
     private Context mContext;
     private PackageManager mPackageManager;
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Before
     public void setUp() {
@@ -445,6 +460,18 @@ public class BrightnessTest extends TestBase {
         }
     }
 
+    @Test
+    @RequiresFlagsEnabled(FLAG_SET_BRIGHTNESS_BY_UNIT)
+    @Parameters({"0", "13.1", "39", "54.32", "80", "97.87", "100"})
+    public void testSetBrightness_unitPercentage(float brightness) {
+        try (var brtClosable = new BrightnessClosable()) {
+            mDisplayManager.setBrightness(
+                    Display.DEFAULT_DISPLAY, brightness, DisplayManager.BRIGHTNESS_UNIT_PERCENTAGE);
+            float actualBrightness = getDisplayBrightness("percentage");
+            assertEquals(actualBrightness, brightness, /* delta= */ 0.05);
+        }
+    }
+
     private void assertValidLuxData(BrightnessChangeEvent event) {
         assertNotNull(event.luxTimestamps);
         assertNotNull(event.luxValues);
@@ -537,6 +564,15 @@ public class BrightnessTest extends TestBase {
         runShellCommand("settings put system " + setting + " " + value);
     }
 
+    private float getDisplayBrightness(String brightnessUnit) {
+        return Float.parseFloat(
+                runShellCommand(
+                        "cmd display get-brightness "
+                                + Display.DEFAULT_DISPLAY
+                                + " "
+                                + brightnessUnit));
+    }
+
     private List<BrightnessChangeEvent> setDisplayBrightness(float value) {
         return setDisplayBrightness(value, (e) -> true);
     }
@@ -590,13 +626,16 @@ public class BrightnessTest extends TestBase {
         private final BrightnessConfiguration mPrevBrightnessConfig;
         private final float mMaxBrightness;
         private final float mMinBrightness;
-        private final PermissionClosable mBrightnessPermission;
+        private final PermissionClosable mControlBrightnessPermission;
         private final PermissionClosable mSliderPermission;
+        private final PermissionContext mWriteSettingsPermission;
 
         BrightnessClosable() {
-            mBrightnessPermission = new PermissionClosable(
-                    Manifest.permission.CONFIGURE_DISPLAY_BRIGHTNESS);
+            mControlBrightnessPermission =
+                    new PermissionClosable(Manifest.permission.CONFIGURE_DISPLAY_BRIGHTNESS);
             mSliderPermission = new PermissionClosable(Manifest.permission.BRIGHTNESS_SLIDER_USAGE);
+            mWriteSettingsPermission =
+                    TestApis.permissions().withPermission(Manifest.permission.WRITE_SETTINGS);
             mPrevBrightness = brightnessIntToFloat(getSystemSetting(
                     Settings.System.SCREEN_BRIGHTNESS));
             mPrevBrightnessMode = getSystemSetting(Settings.System.SCREEN_BRIGHTNESS_MODE);
@@ -617,7 +656,8 @@ public class BrightnessTest extends TestBase {
             setSystemSetting(Settings.System.SCREEN_BRIGHTNESS_MODE, mPrevBrightnessMode);
             mDisplayManager.setBrightnessConfiguration(mPrevBrightnessConfig);
             mSliderPermission.close();
-            mBrightnessPermission.close();
+            mControlBrightnessPermission.close();
+            mWriteSettingsPermission.close();
         }
 
         float getMinimumBrightness() {
