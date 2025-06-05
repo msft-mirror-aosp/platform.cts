@@ -21,6 +21,7 @@ import android.Manifest.permission.REQUEST_COMPANION_SELF_MANAGED
 import android.companion.AssociationRequest
 import android.companion.AssociationRequest.DEVICE_PROFILE_WATCH
 import android.companion.Flags
+import android.companion.cts.common.INVALID_DEVICE_DISPLAY_NAME
 import android.companion.cts.common.RecordingCallback
 import android.companion.cts.common.RecordingCallback.OnAssociationCreated
 import android.companion.cts.common.SIMPLE_EXECUTOR
@@ -72,6 +73,15 @@ class AssociateSelfManagedTest : CoreTestBase() {
         // Same call with the MANAGE_COMPANION_DEVICES permissions should succeed.
         withShellPermissionIdentity(REQUEST_COMPANION_SELF_MANAGED) {
             cdm.associate(request, SIMPLE_EXECUTOR, callback)
+        }
+    }
+
+    @Test
+    fun test_association_invalid_display_name() {
+        assertFailsWith(IllegalArgumentException::class) {
+            AssociationRequest.Builder().setSelfManaged(true)
+                .setDisplayName(INVALID_DEVICE_DISPLAY_NAME)
+                .build()
         }
     }
 
