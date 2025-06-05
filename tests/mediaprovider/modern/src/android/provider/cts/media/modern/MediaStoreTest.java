@@ -25,10 +25,16 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeFalse;
 
 import static src.android.provider.cts.media.modern.MediaStoreTestUtils.FAV_API_EXCEPTION;
 import static src.android.provider.cts.media.modern.MediaStoreTestUtils.IS_CALL_SUCCESSFUL;
+import static src.android.provider.cts.media.modern.MediaStoreTestUtils.MEDIASTORE_MARK_FILE_AS_TRASHED_EXCEPTION;
+import static src.android.provider.cts.media.modern.MediaStoreTestUtils.callMarkFileAsRestored;
+import static src.android.provider.cts.media.modern.MediaStoreTestUtils.callTrashFile;
+import static src.android.provider.cts.media.modern.MediaStoreTestUtils.getFilesCountInDir;
 import static src.android.provider.cts.media.modern.MediaStoreTestUtils.markIsFavoriteStatus;
+import static src.android.provider.cts.media.modern.MediaStoreTestUtils.trashFileAndGetTrashedPath;
 
 import android.Manifest;
 import android.app.AppOpsManager;
@@ -73,6 +79,7 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
+import java.io.File;
 import java.util.Set;
 
 @SdkSuppress(minSdkVersion = Build.VERSION_CODES.R)
@@ -504,6 +511,213 @@ public class MediaStoreTest {
         assertNotNull(response.getParcelable(FAV_API_EXCEPTION,
                 UnsupportedOperationException.class));
         assertFalse(isImageMarkedFavorite(uri));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_TRASH_AND_RESTORE_BY_FILE_PATH_API)
+    public void testMarkFileAsTrashedAndRestored_onlyManageExternalStorage() throws Exception {
+        assumeFalse(MediaStore.VOLUME_EXTERNAL.equals(mVolumeName));
+
+        final String testDirectoryName = "test_media_dir_" + System.nanoTime();
+        final File downloadDir = MediaProviderTestUtils.stageDownloadDir(mVolumeName);
+        final File baseTestDirectory = new File(downloadDir, testDirectoryName);
+
+        final File nestedFolder = new File(baseTestDirectory, "nested_folder");
+        final File deeplyNestedFolder = new File(nestedFolder, "deeply_nested_folder");
+
+        final File trashedDir = new File(MediaProviderTestUtils.getVolumePath(mVolumeName),
+                ".trash-storage");
+
+        try {
+            deeplyNestedFolder.mkdirs(); // Create the necessary directories
+
+            final File testImageFile = new File(deeplyNestedFolder, "example_image.jpg");
+            MediaProviderTestUtils.stageFile(R.raw.lg_g4_iso_800_jpg, testImageFile);
+
+            // scan the file to ensure it's populated in the MediaStore
+            MediaProviderTestUtils.scanFile(testImageFile);
+
+            // before Trashing
+            // nestedFolder, deeplyNestedFolder, testImageFile -> 3 nonTrashedCount
+            // no trashed items -> 0 trashedCount
+            verifyFileCounts(
+                    "Before Trashing: All files should be non-trashed.",
+                    /* expectedNonTrashedCount */ 3,
+                    /* expectedTrashedCount */ 0,
+                    baseTestDirectory.getName());
+
+            // trashing deeplyNestedFolder
+            String trashedPath =
+                    trashFileAndGetTrashedPath(APP_C_HAS_M_E_S,
+                            deeplyNestedFolder.getAbsolutePath());
+
+            assertFalse("Original folder should not exist", deeplyNestedFolder.exists());
+
+            assertNotNull("Trashed path should not be null", trashedPath);
+
+
+            assertTrue("Trashed path should be inside .trash-storage",
+                    trashedPath.startsWith(trashedDir.getAbsolutePath()));
+
+            // Verify that the nested folder within .trash-storage exists
+            // The trashed path will look something like /volume/
+            // .trash-storage/Download/<testDirectoryName>/nested_folder/
+            // .trashed-<ts>-deeply_nested_folder
+            // So the parent folder will be the one holding the
+            // .trashed-<ts>-deeply_nested_folder, which is nested_folder.
+            // This 'nested_folder' should be directly inside the .trash-storage.
+            File trashedDownloadDir = new File(trashedDir, downloadDir.getName());
+            File trashedTestParentDir = new File(trashedDownloadDir, baseTestDirectory.getName());
+            File trashedNestedDir = new File(trashedTestParentDir, nestedFolder.getName());
+
+            assertTrue(trashedTestParentDir.getPath() + " should exist",
+                    trashedTestParentDir.exists());
+
+            assertTrue(trashedNestedDir.getPath() + " should exist",
+                    trashedNestedDir.exists());
+
+            // after Trashing, path should look like
+            // <volume>/.trash-storage/nested_folder/.trashed-<ts>-deeply_nested_folder/
+            // .trashed-<ts>-example_image
+            // nestedFolder, <volume>/.trash-storage/nested_folder -> 2 nonTrashedCount
+            // .trashed-<ts>-deeply_nested_folder, .trashed-<ts>-example_image -> 2 trashedCount
+            verifyFileCounts("After Trashing: Expected 2 non-trashed and 2 trashed items.",
+                    /* expectedNonTrashedCount */ 2,
+                    /* expectedTrashedCount */ 2,
+                    baseTestDirectory.getName());
+
+            // restore the trashed folder
+            // nestedFolder, deeplyNestedFolder, testImageFile -> 3 nonTrashedCount
+            // no trashed items -> 0 trashedCount
+            String restoredPath = callMarkFileAsRestored(APP_C_HAS_M_E_S, trashedPath);
+
+            assertFalse("Trashed path should not exist", new File(trashedPath).exists());
+
+            assertNotNull("Restored path should not be null", restoredPath);
+
+            assertEquals(
+                    "Original path should be equal to the Restored path",
+                    deeplyNestedFolder.getAbsolutePath(),
+                    restoredPath);
+
+            verifyFileCounts(
+                    "After Restoration: All files should be non-trashed again.",
+                    /* expectedNonTrashedCount */ 3,
+                    /* expectedTrashedCount */ 0,
+                    baseTestDirectory.getName());
+
+
+            // After restoration, the original directory should be restored, and the
+            // temporary parent folder created inside .trash-storage should be removed.
+            assertFalse(
+                    "Test parent folder in .trash-storage should no longer exist"
+                            + " after restoration",
+                    trashedTestParentDir.exists());
+
+            assertFalse(
+                    "Nested parent folder in .trash-storage/<testDirectoryName> should no"
+                            + " longer exist after restoration",
+                    trashedNestedDir.exists());
+        } finally {
+            // delete all test files
+            MediaProviderTestUtils.deleteContentsAndDir(baseTestDirectory);
+
+            // if present in .trash-storage
+            File trashedDownloadDir = new File(trashedDir, downloadDir.getName());
+            if (trashedDownloadDir.exists()) {
+                MediaProviderTestUtils.deleteContentsAndDir(trashedDownloadDir);
+            }
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_TRASH_AND_RESTORE_BY_FILE_PATH_API)
+    public void testMarkFileAsTrashed_noPermission_throwsException() throws Exception {
+        assumeFalse(MediaStore.VOLUME_EXTERNAL.equals(mVolumeName));
+
+        final String testDirectoryName = "test_media_dir_" + System.nanoTime();
+        final File downloadDir = MediaProviderTestUtils.stageDownloadDir(mVolumeName);
+        final File baseTestDirectory = new File(downloadDir, testDirectoryName);
+
+        final File nestedFolder = new File(baseTestDirectory, "nested_folder");
+        final File deeplyNestedFolder = new File(nestedFolder, "deeply_nested_folder");
+
+        final File trashedDir = new File(MediaProviderTestUtils.getVolumePath(mVolumeName),
+                ".trash-storage");
+
+        try {
+            deeplyNestedFolder.mkdirs(); // Create the necessary directories
+
+            final File testImageFile = new File(deeplyNestedFolder, "example_image.jpg");
+            MediaProviderTestUtils.stageFile(R.raw.lg_g4_iso_800_jpg, testImageFile);
+
+            // scan the file to ensure it's populated in the MediaStore
+            MediaProviderTestUtils.scanFile(testImageFile);
+
+            // before Trashing
+            // nestedFolder, deeplyNestedFolder, testImageFile -> 3 nonTrashedCount
+            // no trashed items -> 0 trashedCount
+            verifyFileCounts(
+                    "Before Trashing: All files should be non-trashed.",
+                    /* expectedNonTrashedCount */ 3,
+                    /* expectedTrashedCount */ 0,
+                    baseTestDirectory.getName());
+
+            // trashing deeplyNestedFolder
+            Bundle bundle =
+                    callTrashFile(APP_B_NO_PERM, deeplyNestedFolder.getAbsolutePath());
+
+            assertNotNull(bundle.getParcelable(MEDIASTORE_MARK_FILE_AS_TRASHED_EXCEPTION,
+                    SecurityException.class));
+
+            // after Trashing failed, path should look like
+            // nestedFolder, deeplyNestedFolder, testImageFile -> 3 nonTrashedCount
+            // no trashed items -> 0 trashedCount
+            verifyFileCounts(
+                    "After Trashing Failed: All files should be non-trashed.",
+                    /* expectedNonTrashedCount */ 3,
+                    /* expectedTrashedCount */ 0,
+                    baseTestDirectory.getName());
+
+            assertTrue("Original nested folder should exist", nestedFolder.exists());
+            assertTrue("Original deeplyNestedFolder folder should exist",
+                    deeplyNestedFolder.exists());
+            assertTrue("Original file should exist", testImageFile.exists());
+
+        } finally {
+            // delete all test files
+            MediaProviderTestUtils.deleteContentsAndDir(baseTestDirectory);
+
+            // if present in .trash-storage
+            File trashedDownloadDir = new File(trashedDir, downloadDir.getName());
+            if (trashedDownloadDir.exists()) {
+                MediaProviderTestUtils.deleteContentsAndDir(trashedDownloadDir);
+            }
+        }
+    }
+
+    /**
+     * Helper method to verify the file counts (non-trashed and trashed) in a given directory.
+     *
+     * @param message A descriptive message for the assertion.
+     * @param expectedNonTrashedCount The expected number of non-trashed items.
+     * @param expectedTrashedCount The expected number of trashed items.
+     * @param directoryName The name of the directory to check.
+     */
+    private void verifyFileCounts(
+            String message,
+            int expectedNonTrashedCount,
+            int expectedTrashedCount,
+            String directoryName)
+            throws Exception {
+        int actualNonTrashedCount =
+                getFilesCountInDir(APP_C_HAS_M_E_S, directoryName, MediaStore.MATCH_EXCLUDE);
+        int actualTrashedCount =
+                getFilesCountInDir(APP_C_HAS_M_E_S, directoryName, MediaStore.MATCH_ONLY);
+
+        assertEquals(
+                message + " (Non-trashed count)", expectedNonTrashedCount, actualNonTrashedCount);
+        assertEquals(message + " (Trashed count)", expectedTrashedCount, actualTrashedCount);
     }
 
     private boolean isImageMarkedFavorite(Uri uri) {
