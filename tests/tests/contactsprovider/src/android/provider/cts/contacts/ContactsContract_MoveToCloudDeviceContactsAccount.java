@@ -24,6 +24,7 @@ import static com.android.providers.contacts.flags.Flags.FLAG_DISABLE_MOVE_TO_IN
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeTrue;
 
 import android.accounts.Account;
 import android.accounts.AccountManager;
@@ -52,6 +53,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -255,6 +257,9 @@ public class ContactsContract_MoveToCloudDeviceContactsAccount {
     @RequiresFlagsDisabled({FLAG_DISABLE_CP2_ACCOUNT_MOVE_FLAG,
             FLAG_DISABLE_MOVE_TO_INELIGIBLE_DEFAULT_ACCOUNT_FLAG})
     public void testGetNumberOfMovableLocalContactsWithLocalContacts() throws Exception {
+        // Skip the test if CLOUD_ACCOUNT isn't successfully added to the device.
+        assumeTrue(Arrays.stream(mAccountManager.getAccounts()).toList().contains(CLOUD_ACCOUNT));
+
         // create contact and explicitly set the account to null
         insertRawContact(null);
         // set a cloud default account
@@ -281,6 +286,9 @@ public class ContactsContract_MoveToCloudDeviceContactsAccount {
     @RequiresFlagsDisabled({FLAG_DISABLE_CP2_ACCOUNT_MOVE_FLAG,
             FLAG_DISABLE_MOVE_TO_INELIGIBLE_DEFAULT_ACCOUNT_FLAG})
     public void testMoveLocalContactsToCloudDefaultAccount() throws Exception {
+        // Skip the test if CLOUD_ACCOUNT isn't successfully added to the device.
+        assumeTrue(Arrays.stream(mAccountManager.getAccounts()).toList().contains(CLOUD_ACCOUNT));
+
         // create contact and explicitly set the account to null
         long rawContactId1 = insertRawContact(null);
 
@@ -331,6 +339,9 @@ public class ContactsContract_MoveToCloudDeviceContactsAccount {
     @RequiresFlagsDisabled({FLAG_DISABLE_CP2_ACCOUNT_MOVE_FLAG,
             FLAG_DISABLE_MOVE_TO_INELIGIBLE_DEFAULT_ACCOUNT_FLAG})
     public void testGetNumberOfMovableSimContactsWithSimContacts() throws Exception {
+        // Skip the test if CLOUD_ACCOUNT isn't successfully added to the device.
+        assumeTrue(Arrays.stream(mAccountManager.getAccounts()).toList().contains(CLOUD_ACCOUNT));
+
         insertRawContact(
                 new Account(SIM_ACCT_NAME_1, SIM_ACCT_TYPE_1));
         insertRawContact(
@@ -361,6 +372,9 @@ public class ContactsContract_MoveToCloudDeviceContactsAccount {
     @RequiresFlagsDisabled({FLAG_DISABLE_CP2_ACCOUNT_MOVE_FLAG,
             FLAG_DISABLE_MOVE_TO_INELIGIBLE_DEFAULT_ACCOUNT_FLAG})
     public void testMoveSimContactsToCloudDefaultAccount() throws Exception {
+        // Skip the test if CLOUD_ACCOUNT isn't successfully added to the device.
+        assumeTrue(Arrays.stream(mAccountManager.getAccounts()).toList().contains(CLOUD_ACCOUNT));
+
         // create contact and explicitly set the account to null
         long rawContactId = insertRawContact(new Account(SIM_ACCT_NAME_1, SIM_ACCT_TYPE_1));
 
