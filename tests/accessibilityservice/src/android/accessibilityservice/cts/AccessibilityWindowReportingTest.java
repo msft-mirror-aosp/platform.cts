@@ -63,6 +63,9 @@ import android.content.Context;
 import android.content.Intent;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.Presubmit;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.Settings;
 import android.view.Gravity;
 import android.view.View;
@@ -79,6 +82,7 @@ import androidx.test.ext.junit.rules.ActivityScenarioRule;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.SystemUtil;
 
@@ -120,8 +124,14 @@ public class AccessibilityWindowReportingTest {
     private final AnimationTestRule mAnimationRule = new AnimationTestRule(sUiAutomation);
 
     @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
+    @Rule
     public final RuleChain mRuleChain =
-            RuleChain.outerRule(mAnimationRule).around(mActivityRule).around(mDumpOnFailureRule);
+            RuleChain.outerRule(mAnimationRule)
+                    .around(mActivityRule)
+                    .around(mDumpOnFailureRule)
+                    .around(mCheckFlagsRule);
 
     @BeforeClass
     public static void oneTimeSetup() throws Exception {
@@ -200,6 +210,62 @@ public class AccessibilityWindowReportingTest {
                 TIMEOUT_ASYNC_PROCESSING);
         // Remove the view
         WindowCreationUtils.removeWindow(sUiAutomation, sInstrumentation, mActivity, button);
+    }
+
+    @Test
+    @ApiTest(apis = {"android.view.accessibility.AccessibilityWindowInfo#refresh"})
+    @RequiresFlagsEnabled(android.view.accessibility.Flags.FLAG_ENABLE_REFRESH_WINDOW_INFO)
+    public void testRefreshWindowInfo() throws Throwable {
+        View topWindowView = null;
+        try {
+            AccessibilityWindowInfo activityWindow =
+                    findWindowByTitle(sUiAutomation, mActivityTitle);
+            assertThat(activityWindow).isNotNull();
+            assertWithMessage("Refresh should have succeeded for a valid window")
+                    .that(activityWindow.refresh())
+                    .isTrue();
+
+            // Add a window on top, and test refresh().
+            topWindowView = showTopWindowAndWaitForItToShowUp();
+            final AccessibilityWindowInfo topWindow =
+                    findWindowByTitle(sUiAutomation, TOP_WINDOW_TITLE);
+            assertThat(topWindow).isNotNull();
+            final int topWindowId = topWindow.getId();
+            assertThat(topWindow.refresh()).isTrue();
+
+            // Remove the added window, and test refresh() fails.
+            WindowCreationUtils.removeWindow(
+                    sUiAutomation, sInstrumentation, mActivity, topWindowView);
+            topWindowView = null;
+            sUiAutomation.waitForIdle(DEFAULT_IDLE_TIMEOUT_MS, DEFAULT_GLOBAL_TIMEOUT_MS);
+            assertWithMessage("Refresh should fail if the window has become stale")
+                    .that(topWindow.refresh())
+                    .isFalse();
+            assertThat(topWindow.getId()).isEqualTo(topWindowId);
+
+            // Update the window property (title), and test refresh() gets the updated title.
+            final String updatedActivityTitle = "Updated Title";
+            sUiAutomation.executeAndWaitForEvent(
+                    () ->
+                            sInstrumentation.runOnMainSync(
+                                    () -> mActivity.setTitle(updatedActivityTitle)),
+                    filterWindowsChangedWithChangeTypes(WINDOWS_CHANGE_TITLE),
+                    TIMEOUT_ASYNC_PROCESSING);
+            assertThat(activityWindow.getTitle().toString()).isEqualTo(mActivityTitle.toString());
+            assertThat(activityWindow.refresh()).isTrue();
+            assertWithMessage("Refresh should update the window info")
+                    .that(activityWindow.getTitle().toString())
+                    .isEqualTo(updatedActivityTitle.toString());
+
+            // Refresh should also fail after the activity window is recycled.
+            activityWindow.recycle();
+            assertThat(activityWindow.refresh()).isFalse();
+        } finally {
+            if (topWindowView != null) {
+                WindowCreationUtils.removeWindow(
+                        sUiAutomation, sInstrumentation, mActivity, topWindowView);
+            }
+        }
     }
 
     @Test
