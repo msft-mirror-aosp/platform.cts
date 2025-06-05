@@ -58,7 +58,7 @@ public class VoiceInteractionSessionControl {
         intent.putExtra(Utils.VOICE_INTERACTION_KEY_CALLBACK, callback);
 
         Log.v(TAG, "startVoiceInteractionSession(): " + intent);
-        mContext.startActivity(intent);
+        mContext.sendBroadcast(intent);
 
         final long timeoutMs = Utils.getAdjustedOperationTimeoutMs();
         if (!latch.await(timeoutMs, TimeUnit.MILLISECONDS)) {

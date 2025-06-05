@@ -39,6 +39,7 @@ import androidx.annotation.Nullable;
 
 import com.android.compatibility.common.util.ThrowingRunnable;
 
+import org.junit.After;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -55,6 +56,12 @@ public class DirectActionsTest extends AbstractVoiceInteractionTestCase {
 
     private final @NonNull SessionControl mSessionControl = new SessionControl();
     private final @NonNull ActivityControl mActivityControl = new ActivityControl();
+
+    @After
+    public void cleanup() throws Exception {
+        // Task id mismatches due to state leak between tests can lead to flakiness
+        runShellCommand("am kill android.voiceinteraction.testapp");
+    }
 
     @Test
     public void testPerformDirectAction() throws Exception {
@@ -183,12 +190,11 @@ public class DirectActionsTest extends AbstractVoiceInteractionTestCase {
         }
 
         private void startVoiceInteractionSession() throws Exception {
-            final Intent intent = new Intent();
+            final Intent intent = new Intent("android.voiceinteraction.service.TRAMPOLINE_SERVICE");
+
             intent.putExtra(Utils.VOICE_INTERACTION_KEY_CLASS,
                     "android.voiceinteraction.service.DirectActionsSession");
-            intent.setClassName("android.voiceinteraction.service",
-                    "android.voiceinteraction.service.VoiceInteractionMain");
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            intent.setPackage("android.voiceinteraction.service");
 
             startVoiceInteractionSession(intent);
         }
