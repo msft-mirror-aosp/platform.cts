@@ -30,7 +30,6 @@ import static android.text.format.DateUtils.HOUR_IN_MILLIS;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -1043,11 +1042,15 @@ public class JobSchedulingTest extends BaseJobSchedulerTest {
 
         // Regular job
         JobInfo jobInfo = new JobInfo.Builder(JOB_ID, kJobServiceComponent).build();
+        kTestEnvironment.setExpectedExecutions(1);
+        kTestEnvironment.setExpectedWaitForRun();
         mJobScheduler.schedule(jobInfo);
         assertJobWakelockTag("*job*r");
 
         // Expediated job
         jobInfo = new JobInfo.Builder(JOB_ID, kJobServiceComponent).setExpedited(true).build();
+        kTestEnvironment.setExpectedExecutions(1);
+        kTestEnvironment.setExpectedWaitForRun();
         mJobScheduler.schedule(jobInfo);
         assertJobWakelockTag("*job*e");
 
@@ -1057,6 +1060,8 @@ public class JobSchedulingTest extends BaseJobSchedulerTest {
                         .setUserInitiated(true)
                         .setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY)
                         .build();
+        kTestEnvironment.setExpectedExecutions(1);
+        kTestEnvironment.setExpectedWaitForRun();
         mJobScheduler.schedule(jobInfo);
         assertJobWakelockTag("*job*u");
     }
@@ -1076,8 +1081,8 @@ public class JobSchedulingTest extends BaseJobSchedulerTest {
     }
 
     private void assertJobWakelockTag(String tagPrefix) throws Exception {
-        String jobWakelockTag = getJobWakelockTag();
-        assertFalse(
+        final String jobWakelockTag = getJobWakelockTag();
+        assertTrue(
                 "Job unexpected wakelock tag: " + jobWakelockTag,
                 jobWakelockTag.startsWith(tagPrefix));
     }
@@ -1085,7 +1090,7 @@ public class JobSchedulingTest extends BaseJobSchedulerTest {
     private String getJobWakelockTag() throws Exception {
         return SystemUtil.runShellCommand(
                         "cmd jobscheduler get-job-wakelock-tag --user cur "
-                                + TEST_APP_PACKAGE
+                                + kJobServiceComponent.getPackageName()
                                 + " "
                                 + JOB_ID)
                 .trim();
