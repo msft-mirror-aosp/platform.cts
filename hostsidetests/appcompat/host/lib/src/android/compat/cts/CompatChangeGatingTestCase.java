@@ -280,6 +280,7 @@ public class CompatChangeGatingTestCase extends DeviceTestCase implements IBuild
             device.pushFile(configFile, remotePath);
             device.executeShellCommand(String.format(UPDATE_CONFIG_CMD, remotePath, configId));
             device.executeShellCommand("rm " + remotePath);
+            runCommand("am compat log-change-checks-to-statsd on");
         } catch (IOException e) {
             throw new RuntimeException("IO error when writing to temp file.", e);
         }
@@ -397,6 +398,7 @@ public class CompatChangeGatingTestCase extends DeviceTestCase implements IBuild
         // Clear statsd report data and remove config
         Map<Long, Boolean> reportedChanges = getReportedChanges(configId, pkgName);
         removeStatsdConfig(configId);
+        runCommand("am compat log-change-checks-to-statsd off");
 
         for (Long enabledChange : loggedEnabledChanges) {
             assertThat(reportedChanges)
