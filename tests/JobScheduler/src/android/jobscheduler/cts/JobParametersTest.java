@@ -18,10 +18,8 @@ package android.jobscheduler.cts;
 
 import static android.app.job.Flags.FLAG_HANDLE_ABANDONED_JOBS;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static com.google.common.truth.Truth.assertThat;
+import static com.google.common.truth.Truth.assertWithMessage;
 
 import android.app.job.JobInfo;
 import android.app.job.JobParameters;
@@ -32,8 +30,9 @@ import android.os.Bundle;
 import android.os.PersistableBundle;
 import android.os.UserHandle;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
-import androidx.test.InstrumentationRegistry;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import com.android.compatibility.common.util.BatteryUtils;
@@ -41,12 +40,16 @@ import com.android.compatibility.common.util.SystemUtil;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 /** Tests related to JobParameters objects. */
 @RunWith(AndroidJUnit4.class)
 public class JobParametersTest extends BaseJobSchedulerTest {
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
     private static final int JOB_ID = JobParametersTest.class.hashCode();
 
     private NetworkingHelper mNetworkingHelper;
@@ -55,8 +58,7 @@ public class JobParametersTest extends BaseJobSchedulerTest {
     @Before
     public void setUp() throws Exception {
         super.setUp();
-        mNetworkingHelper =
-                new NetworkingHelper(InstrumentationRegistry.getInstrumentation(), mContext);
+        mNetworkingHelper = new NetworkingHelper(getInstrumentation(), getContext());
     }
 
     @Override
@@ -70,39 +72,42 @@ public class JobParametersTest extends BaseJobSchedulerTest {
     public void testClipData() throws Exception {
         final ClipData clipData = ClipData.newPlainText("test", "testText");
         final int grantFlags = Intent.FLAG_GRANT_READ_URI_PERMISSION;
-        JobInfo ji = new JobInfo.Builder(JOB_ID, kJobServiceComponent)
-                .setClipData(clipData, grantFlags)
-                .build();
+        final JobInfo ji =
+                new JobInfo.Builder(JOB_ID, kJobServiceComponent)
+                        .setClipData(clipData, grantFlags)
+                        .build();
 
         kTestEnvironment.setExpectedExecutions(1);
         mJobScheduler.schedule(ji);
         runSatisfiedJob(JOB_ID);
-        assertTrue("Job didn't fire immediately", kTestEnvironment.awaitExecution());
+        assertWithMessage("Job didn't fire immediately")
+                .that(kTestEnvironment.awaitExecution())
+                .isTrue();
 
-        JobParameters params = kTestEnvironment.getLastStartJobParameters();
-        assertEquals(clipData.getItemCount(), params.getClipData().getItemCount());
-        assertEquals(clipData.getItemAt(0).getText(), params.getClipData().getItemAt(0).getText());
-        assertEquals(grantFlags, params.getClipGrantFlags());
+        final JobParameters params = kTestEnvironment.getLastStartJobParameters();
+        assertThat(params.getClipData().getItemCount()).isEqualTo(clipData.getItemCount());
+        assertThat(params.getClipData().getItemAt(0).getText().toString())
+                .isEqualTo(clipData.getItemAt(0).getText().toString());
+        assertThat(params.getClipGrantFlags()).isEqualTo(grantFlags);
     }
 
     @Test
     public void testExtras() throws Exception {
         final PersistableBundle pb = new PersistableBundle();
         pb.putInt("random_key", 42);
-        JobInfo ji = new JobInfo.Builder(JOB_ID, kJobServiceComponent)
-                .setExtras(pb)
-                .build();
+        final JobInfo ji = new JobInfo.Builder(JOB_ID, kJobServiceComponent).setExtras(pb).build();
 
         kTestEnvironment.setExpectedExecutions(1);
         mJobScheduler.schedule(ji);
         runSatisfiedJob(JOB_ID);
-        assertTrue("Job didn't fire immediately", kTestEnvironment.awaitExecution());
+        assertWithMessage("Job didn't fire immediately")
+                .that(kTestEnvironment.awaitExecution())
+                .isTrue();
 
-        JobParameters params = kTestEnvironment.getLastStartJobParameters();
-        final PersistableBundle extras = params.getExtras();
-        assertNotNull(extras);
-        assertEquals(1, extras.keySet().size());
-        assertEquals(42, extras.getInt("random_key"));
+        final PersistableBundle extras = kTestEnvironment.getLastStartJobParameters().getExtras();
+        assertThat(extras).isNotNull();
+        assertThat(extras.keySet()).hasSize(1);
+        assertThat(extras.getInt("random_key")).isEqualTo(42);
     }
 
     @Test
@@ -114,10 +119,11 @@ public class JobParametersTest extends BaseJobSchedulerTest {
         kTestEnvironment.setExpectedExecutions(1);
         mJobScheduler.schedule(ji);
         runSatisfiedJob(JOB_ID);
-        assertTrue("Job didn't fire immediately", kTestEnvironment.awaitExecution());
+        assertWithMessage("Job didn't fire immediately")
+                .that(kTestEnvironment.awaitExecution())
+                .isTrue();
 
-        JobParameters params = kTestEnvironment.getLastStartJobParameters();
-        assertTrue(params.isExpeditedJob());
+        assertThat(kTestEnvironment.getLastStartJobParameters().isExpeditedJob()).isTrue();
 
         ji = new JobInfo.Builder(JOB_ID, kJobServiceComponent)
                 .setExpedited(false)
@@ -126,10 +132,10 @@ public class JobParametersTest extends BaseJobSchedulerTest {
         kTestEnvironment.setExpectedExecutions(1);
         mJobScheduler.schedule(ji);
         runSatisfiedJob(JOB_ID);
-        assertTrue("Job didn't fire immediately", kTestEnvironment.awaitExecution());
-
-        params = kTestEnvironment.getLastStartJobParameters();
-        assertFalse(params.isExpeditedJob());
+        assertWithMessage("Job didn't fire immediately")
+                .that(kTestEnvironment.awaitExecution())
+                .isTrue();
+        assertThat(kTestEnvironment.getLastStartJobParameters().isExpeditedJob()).isFalse();
     }
 
     @Test
@@ -144,10 +150,11 @@ public class JobParametersTest extends BaseJobSchedulerTest {
         kTestEnvironment.setExpectedExecutions(1);
         mJobScheduler.schedule(ji);
         runSatisfiedJob(JOB_ID);
-        assertTrue("Job didn't fire immediately", kTestEnvironment.awaitExecution());
+        assertWithMessage("Job didn't fire immediately")
+                .that(kTestEnvironment.awaitExecution())
+                .isTrue();
 
-        JobParameters params = kTestEnvironment.getLastStartJobParameters();
-        assertTrue(params.isUserInitiatedJob());
+        assertThat(kTestEnvironment.getLastStartJobParameters().isUserInitiatedJob()).isTrue();
 
         ji = new JobInfo.Builder(JOB_ID, kJobServiceComponent)
                 .setUserInitiated(false)
@@ -156,55 +163,54 @@ public class JobParametersTest extends BaseJobSchedulerTest {
         kTestEnvironment.setExpectedExecutions(1);
         mJobScheduler.schedule(ji);
         runSatisfiedJob(JOB_ID);
-        assertTrue("Job didn't fire immediately", kTestEnvironment.awaitExecution());
-
-        params = kTestEnvironment.getLastStartJobParameters();
-        assertFalse(params.isUserInitiatedJob());
+        assertWithMessage("Job didn't fire immediately")
+                .that(kTestEnvironment.awaitExecution())
+                .isTrue();
+        assertThat(kTestEnvironment.getLastStartJobParameters().isUserInitiatedJob()).isFalse();
     }
 
     @Test
     public void testJobId() throws Exception {
-        JobInfo ji = new JobInfo.Builder(JOB_ID, kJobServiceComponent)
-                .build();
+        final JobInfo ji = new JobInfo.Builder(JOB_ID, kJobServiceComponent).build();
 
         kTestEnvironment.setExpectedExecutions(1);
         mJobScheduler.schedule(ji);
         runSatisfiedJob(JOB_ID);
-        assertTrue("Job didn't fire immediately", kTestEnvironment.awaitExecution());
-
-        JobParameters params = kTestEnvironment.getLastStartJobParameters();
-        assertEquals(JOB_ID, params.getJobId());
+        assertWithMessage("Job didn't fire immediately")
+                .that(kTestEnvironment.awaitExecution())
+                .isTrue();
+        assertThat(kTestEnvironment.getLastStartJobParameters().getJobId()).isEqualTo(JOB_ID);
     }
 
     @Test
     public void testNamespaceJobParameters() throws Exception {
-        JobScheduler jsA = mJobScheduler.forNamespace("A");
-        JobScheduler jsB = mJobScheduler.forNamespace("B");
-        JobInfo jobA = new JobInfo.Builder(JOB_ID, kJobServiceComponent)
-                .setExpedited(true)
-                .build();
-        JobInfo jobB = new JobInfo.Builder(JOB_ID, kJobServiceComponent)
-                .setRequiresStorageNotLow(true)
-                .build();
+        final JobScheduler jsA = mJobScheduler.forNamespace("A");
+        final JobScheduler jsB = mJobScheduler.forNamespace("B");
+        final JobInfo jobA =
+                new JobInfo.Builder(JOB_ID, kJobServiceComponent).setExpedited(true).build();
+        final JobInfo jobB =
+                new JobInfo.Builder(JOB_ID, kJobServiceComponent)
+                        .setRequiresStorageNotLow(true)
+                        .build();
 
         kTestEnvironment.setExpectedExecutions(1);
         setStorageStateLow(true);
-        assertEquals(JobScheduler.RESULT_SUCCESS, jsA.schedule(jobA));
-        assertEquals(JobScheduler.RESULT_SUCCESS, jsB.schedule(jobB));
+        assertThat(jsA.schedule(jobA)).isEqualTo(JobScheduler.RESULT_SUCCESS);
+        assertThat(jsB.schedule(jobB)).isEqualTo(JobScheduler.RESULT_SUCCESS);
 
         runSatisfiedJob(JOB_ID, "A");
         runSatisfiedJob(JOB_ID, "B");
-        assertTrue("Job A didn't fire", kTestEnvironment.awaitExecution());
+        assertWithMessage("Job A didn't fire").that(kTestEnvironment.awaitExecution()).isTrue();
         JobParameters params = kTestEnvironment.getLastStartJobParameters();
-        assertEquals("A", params.getJobNamespace());
+        assertThat(params.getJobNamespace()).isEqualTo("A");
 
         kTestEnvironment.setExpectedExecutions(1);
         setStorageStateLow(false);
         runSatisfiedJob(JOB_ID, "A");
         runSatisfiedJob(JOB_ID, "B");
-        assertTrue("Job B didn't fire", kTestEnvironment.awaitExecution());
+        assertWithMessage("Job B didn't fire").that(kTestEnvironment.awaitExecution()).isTrue();
         params = kTestEnvironment.getLastStartJobParameters();
-        assertEquals("B", params.getJobNamespace());
+        assertThat(params.getJobNamespace()).isEqualTo("B");
     }
 
     // JobParameters.getNetwork() tested in ConnectivityConstraintTest.
@@ -255,6 +261,31 @@ public class JobParametersTest extends BaseJobSchedulerTest {
                                 + " " + JOB_ID));
     }
 
+    @Test
+    public void testTransientExtras() throws Exception {
+        final Bundle b = new Bundle();
+        b.putBoolean("random_bool", true);
+        final JobInfo ji =
+                new JobInfo.Builder(JOB_ID, kJobServiceComponent).setTransientExtras(b).build();
+
+        kTestEnvironment.setExpectedExecutions(1);
+        mJobScheduler.schedule(ji);
+        runSatisfiedJob(JOB_ID);
+        assertWithMessage("Job didn't fire immediately")
+                .that(kTestEnvironment.awaitExecution())
+                .isTrue();
+
+        JobParameters params = kTestEnvironment.getLastStartJobParameters();
+        assertThat(params.getTransientExtras().size()).isEqualTo(b.size());
+        for (String key : b.keySet()) {
+            assertThat(params.getTransientExtras().get(key)).isEqualTo(b.get(key));
+        }
+    }
+
+    // JobParameters.getTriggeredContentAuthorities() tested in TriggerContentTest.
+    // JobParameters.getTriggeredContentUris() tested in TriggerContentTest.
+    // JobParameters.isOverrideDeadlineExpired() tested in TimingConstraintTest.
+
     private void verifyStopReason(JobInfo ji, int stopReason, ExceptionRunnable stopCode)
             throws Exception {
         kTestEnvironment.setExpectedExecutions(1);
@@ -262,40 +293,20 @@ public class JobParametersTest extends BaseJobSchedulerTest {
         kTestEnvironment.setExpectedStopped();
         mJobScheduler.schedule(ji);
         runSatisfiedJob(ji.getId());
-        assertTrue("Job didn't fire immediately", kTestEnvironment.awaitExecution());
+        assertWithMessage("Job didn't fire immediately")
+                .that(kTestEnvironment.awaitExecution())
+                .isTrue();
 
         JobParameters params = kTestEnvironment.getLastStartJobParameters();
-        assertEquals(JobParameters.STOP_REASON_UNDEFINED, params.getStopReason());
+        assertThat(params.getStopReason()).isEqualTo(JobParameters.STOP_REASON_UNDEFINED);
 
         stopCode.run();
-        assertTrue("Job didn't stop immediately", kTestEnvironment.awaitStopped());
+        assertWithMessage("Job didn't stop immediately")
+                .that(kTestEnvironment.awaitStopped())
+                .isTrue();
         params = kTestEnvironment.getLastStopJobParameters();
-        assertEquals(stopReason, params.getStopReason());
+        assertThat(params.getStopReason()).isEqualTo(stopReason);
     }
-
-    @Test
-    public void testTransientExtras() throws Exception {
-        final Bundle b = new Bundle();
-        b.putBoolean("random_bool", true);
-        JobInfo ji = new JobInfo.Builder(JOB_ID, kJobServiceComponent)
-                .setTransientExtras(b)
-                .build();
-
-        kTestEnvironment.setExpectedExecutions(1);
-        mJobScheduler.schedule(ji);
-        runSatisfiedJob(JOB_ID);
-        assertTrue("Job didn't fire immediately", kTestEnvironment.awaitExecution());
-
-        JobParameters params = kTestEnvironment.getLastStartJobParameters();
-        assertEquals(b.size(), params.getTransientExtras().size());
-        for (String key : b.keySet()) {
-            assertEquals(b.get(key), params.getTransientExtras().get(key));
-        }
-    }
-
-    // JobParameters.getTriggeredContentAuthorities() tested in TriggerContentTest.
-    // JobParameters.getTriggeredContentUris() tested in TriggerContentTest.
-    // JobParameters.isOverrideDeadlineExpired() tested in TimingConstraintTest.
 
     private interface ExceptionRunnable {
         void run() throws Exception;

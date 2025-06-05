@@ -1773,18 +1773,27 @@ public class MediaRouter2Test {
             throws InterruptedException {
         SuggestedDeviceInfo.Builder builder =
                 new SuggestedDeviceInfo.Builder("DEVICE_DISPLAY_NAME", "ROUTE_ID", 0);
-        List<SuggestedDeviceInfo> suggestedDeviceInfo = List.of(builder.build());
+        Bundle extras = new Bundle();
+        extras.putString(TEST_KEY, TEST_VALUE);
+        List<SuggestedDeviceInfo> suggestedDeviceInfo = List.of(builder.setExtras(extras).build());
         TestDeviceSuggestionsUpdatesCallback callback = new TestDeviceSuggestionsUpdatesCallback();
 
         try {
             router.registerDeviceSuggestionsUpdatesCallback(mExecutor, callback);
-
             router.setDeviceSuggestions(suggestedDeviceInfo);
 
             assertThat(callback.mSuggestionChangedLatch.await(TIMEOUT_MS, TimeUnit.MILLISECONDS))
                     .isTrue();
             assertThat(callback.mLastSuggestingPackage).isEqualTo(mContext.getPackageName());
             assertThat(callback.mLastSuggestedDeviceInfo).isEqualTo(suggestedDeviceInfo);
+            assertThat(callback.mLastSuggestedDeviceInfo.get(0).getExtras().getString(TEST_KEY))
+                    .isEqualTo(TEST_VALUE);
+
+            Map<String, List<SuggestedDeviceInfo>> suggestions = router.getDeviceSuggestions();
+            assertThat(suggestions).hasSize(1);
+            List<SuggestedDeviceInfo> selfSuggestion = suggestions.get(mContext.getPackageName());
+            assertThat(selfSuggestion).isEqualTo(suggestedDeviceInfo);
+            assertThat(selfSuggestion.get(0).getExtras().getString(TEST_KEY)).isEqualTo(TEST_VALUE);
         } finally {
             router.unregisterDeviceSuggestionsUpdatesCallback(callback);
         }

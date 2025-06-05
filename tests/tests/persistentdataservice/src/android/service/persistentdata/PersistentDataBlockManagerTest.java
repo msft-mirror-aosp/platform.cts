@@ -26,6 +26,7 @@ import static org.junit.Assume.assumeTrue;
 import android.content.Context;
 import android.os.Build;
 import android.os.SystemProperties;
+import android.security.Flags;
 
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
@@ -75,7 +76,8 @@ public class PersistentDataBlockManagerTest {
 
     private static boolean shouldSupportFrpActiveApi() {
         return getFirstApiLevel() >= Build.VERSION_CODES.VANILLA_ICE_CREAM
-                && deviceHasPersistentDataBlock();
+                && deviceHasPersistentDataBlock()
+                && Flags.frpEnforcement();
     }
 
     @EnsureDoesNotHavePermission(android.Manifest.permission.ACCESS_PDB_STATE)

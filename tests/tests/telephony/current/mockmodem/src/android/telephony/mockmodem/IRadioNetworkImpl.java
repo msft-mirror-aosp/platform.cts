@@ -1054,7 +1054,9 @@ public class IRadioNetworkImpl extends IRadioNetwork.Stub {
     @Override
     public void setSatellitePlmn(
             int serial, String[] carrierPlmnArray, String[] allSatellitePlmnArray) {
-        Log.d(TAG, "setSatellitePlmn: mErrorCode=" + mSatelliteErrorCode);
+        Log.d(TAG, "setSatellitePlmn: mErrorCode=" + mSatelliteErrorCode
+                + ", carrierPlmnArray=" + String.join(",", carrierPlmnArray)
+                + ", allSatellitePlmnArray=" + String.join(",", allSatellitePlmnArray));
 
         RadioResponseInfo rsp;
         if (mSatelliteErrorCode != RadioError.NONE) {
@@ -1109,7 +1111,8 @@ public class IRadioNetworkImpl extends IRadioNetwork.Stub {
 
     @Override
     public void isSatelliteEnabledForCarrier(int serial) {
-        Log.d(TAG, "isSatelliteEnabledForCarrier: mErrorCode=" + mSatelliteErrorCode);
+        Log.d(TAG, "isSatelliteEnabledForCarrier: mErrorCode=" + mSatelliteErrorCode
+                + ", mIsSatelliteEnabledForCarrier=" + mIsSatelliteEnabledForCarrier);
 
         RadioResponseInfo rsp;
         if (mSatelliteErrorCode != RadioError.NONE) {

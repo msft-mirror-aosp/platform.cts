@@ -21,8 +21,9 @@ android_test {
     name: "CtsPersistentDataBlockManagerTestCases",
     defaults: ["cts_defaults"],
     static_libs: [
-        "ctstestrunner-axt",
+        "android.security.flags-aconfig-java",
         "bedstead",
+        "ctstestrunner-axt",
         "truth",
     ],
     libs: ["android.test.base.stubs.test"],

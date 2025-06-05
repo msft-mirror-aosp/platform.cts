@@ -16,6 +16,8 @@
 
 package android.media.audio.cts;
 
+import static android.media.AudioManager.ADJUST_RAISE;
+import static android.media.audio.Flags.FLAG_DEVICE_VOLUME_APIS;
 import static android.media.audio.Flags.FLAG_UNIFY_ABSOLUTE_VOLUME_MANAGEMENT;
 import static android.media.audio.Flags.unifyAbsoluteVolumeManagement;
 
@@ -212,6 +214,30 @@ public class AudioDeviceVolumeManagerTest {
     }
 
     /**
+     * Verify calling AudioDeviceVolumeManager.setVolumeForDevice/adjustVolumeForDevice with null
+     * parameters throws an NPE.
+     *
+     * @throws Exception
+     */
+    @ApiTest(
+            apis = {
+                "android.media.AudioDeviceVolumeManager#setVolumeForDevice",
+                "android.media.AudioDeviceVolumeManager#adjustVolumeForDevice"
+            })
+    @Test
+    @RequiresFlagsEnabled(FLAG_DEVICE_VOLUME_APIS)
+    public void testNullability_newApi() throws Exception {
+        assertThrows(
+                "Able to call setVolumeForDevice with null VolumeInfo",
+                NullPointerException.class,
+                () -> mADVmgr.setVolumeForDevice(null, BT_DEV));
+        assertThrows(
+                "Able to call setVolumeForDevice with null device",
+                NullPointerException.class,
+                () -> mADVmgr.setVolumeForDevice(VolumeInfo.getDefaultVolumeInfo(), null));
+    }
+
+    /**
      * Verify VolumeInfo used for setting the volume needs to have a volume index
      *
      * @throws Exception
@@ -223,9 +249,48 @@ public class AudioDeviceVolumeManagerTest {
         VolumeInfo vi = new VolumeInfo.Builder(defVolInfo).setVolumeIndex(VolumeInfo.INDEX_NOT_SET)
                 .build();
         android.util.Log.i(TAG, "testVolumeInfoArguments using VI:" + vi);
-        assertThrows("Able to call setDeviceVolume with VolumeInfo without index",
+        assertThrows(
+                "Able to call setDeviceVolume with VolumeInfo without index",
                 IllegalArgumentException.class,
-                () ->mADVmgr.setDeviceVolume(vi, BT_DEV));
+                () -> mADVmgr.setDeviceVolume(vi, BT_DEV));
+    }
+
+    /**
+     * Verify VolumeInfo used for setting the volume needs to have a volume index
+     *
+     * @throws Exception
+     */
+    @ApiTest(apis = {"android.media.AudioDeviceVolumeManager#setVolumeForDevice"})
+    @Test
+    public void testVolumeInfoArguments_newApi() throws Exception {
+        VolumeInfo defVolInfo = VolumeInfo.getDefaultVolumeInfo();
+        VolumeInfo vi =
+                new VolumeInfo.Builder(defVolInfo).setVolumeIndex(VolumeInfo.INDEX_NOT_SET).build();
+        android.util.Log.i(TAG, "testVolumeInfoArguments_newApi using VI:" + vi);
+
+        assertThrows(
+                "Able to call setVolumeForDevice with VolumeInfo without index",
+                IllegalArgumentException.class,
+                () -> mADVmgr.setVolumeForDevice(vi, BT_DEV));
+    }
+
+    /**
+     * Verify VolumeInfo used for setting the volume needs to have a volume index
+     *
+     * @throws Exception
+     */
+    @ApiTest(apis = {"android.media.AudioDeviceVolumeManager#setVolumeForDevice"})
+    @Test
+    @RequiresFlagsEnabled(FLAG_DEVICE_VOLUME_APIS)
+    public void testVolumeInfoArguments_setVolumeForDevice() throws Exception {
+        VolumeInfo defVolInfo = VolumeInfo.getDefaultVolumeInfo();
+        VolumeInfo vi =
+                new VolumeInfo.Builder(defVolInfo).setVolumeIndex(VolumeInfo.INDEX_NOT_SET).build();
+        android.util.Log.i(TAG, "testVolumeInfoArguments_setVolumeForDevice using VI:" + vi);
+        assertThrows(
+                "Able to call setVolumeForDevice with VolumeInfo without index",
+                IllegalArgumentException.class,
+                () -> mADVmgr.setVolumeForDevice(vi, BT_DEV));
     }
 
     @ApiTest(
@@ -235,6 +300,20 @@ public class AudioDeviceVolumeManagerTest {
             })
     @Test
     public void testSetGetVolume() throws Exception {
+        testSetGetAdjustVolume(/* useVolumeForDevice= */ false);
+    }
+
+    @ApiTest(
+            apis = {
+                "android.media.AudioDeviceVolumeManager#setVolumeForDevice",
+                "android.media.AudioDeviceVolumeManager#adjustVolumeForDevice"
+            })
+    @Test
+    public void testSetGetVolume_useVolumeForDevice() throws Exception {
+        testSetGetAdjustVolume(/* useVolumeForDevice= */ true);
+    }
+
+    public void testSetGetAdjustVolume(boolean useVolumeForDevice) throws Exception {
         if (mSkipRingerTests) {
             return;
         }
@@ -253,7 +332,11 @@ public class AudioDeviceVolumeManagerTest {
         mAm.disableSafeMediaVolume();
 
         // verify set volume is what get returns
-        mADVmgr.setDeviceVolume(volMin, BT_DEV);
+        if (useVolumeForDevice) {
+            mADVmgr.setVolumeForDevice(volMin, BT_DEV);
+        } else {
+            mADVmgr.setDeviceVolume(volMin, BT_DEV);
+        }
         final SleepAssertIntEquals checkVol =
                 new SleepAssertIntEquals(5000 /*maxWaitMs*/, 50 /*periodMs*/, mContext);
         checkVol.assertEqualsSleep(
@@ -261,11 +344,23 @@ public class AudioDeviceVolumeManagerTest {
                 () -> mADVmgr.getDeviceVolume(volMid, BT_DEV).getVolumeIndex(),
                 "After setting min volume:");
 
-        mADVmgr.setDeviceVolume(volMid, BT_DEV);
+        if (useVolumeForDevice) {
+            mADVmgr.setVolumeForDevice(volMid, BT_DEV);
+        } else {
+            mADVmgr.setDeviceVolume(volMid, BT_DEV);
+        }
         checkVol.assertEqualsSleep(
                 volMid.getVolumeIndex() /*expected*/,
                 () -> mADVmgr.getDeviceVolume(volMid, BT_DEV).getVolumeIndex(),
                 "After setting mid volume:");
+
+        if (useVolumeForDevice) {
+            mADVmgr.adjustVolumeForDevice(volMid, ADJUST_RAISE, BT_DEV);
+            checkVol.assertEqualsSleep(
+                    volMid.getVolumeIndex() + 1 /*expected*/,
+                    () -> mADVmgr.getDeviceVolume(volMid, BT_DEV).getVolumeIndex(),
+                    "After ADJUST_RAISE volume:");
+        }
 
         // verify the range is set, and is correct
         final VolumeInfo currentVol = mADVmgr.getDeviceVolume(volMid, BT_DEV);
@@ -273,9 +368,13 @@ public class AudioDeviceVolumeManagerTest {
                 VolumeInfo.INDEX_NOT_SET == currentVol.getMinVolumeIndex());
         assertFalse("Returned max volume index is not set",
                 VolumeInfo.INDEX_NOT_SET == currentVol.getMaxVolumeIndex());
-        assertEquals("Min possible volume index unexpected:", volMid.getMinVolumeIndex(),
+        assertEquals(
+                "Min possible volume index unexpected:",
+                volMid.getMinVolumeIndex(),
                 currentVol.getMinVolumeIndex());
-        assertEquals("Max possible volume index unexpected:", volMid.getMaxVolumeIndex(),
+        assertEquals(
+                "Max possible volume index unexpected:",
+                volMid.getMaxVolumeIndex(),
                 currentVol.getMaxVolumeIndex());
     }
 
@@ -287,7 +386,24 @@ public class AudioDeviceVolumeManagerTest {
                 "android.media.AudioDeviceVolumeManager#getDeviceVolume"
             })
     @Test
-    public void testSetDeviceAbsoluteVolumeBehavior_noMatchingStreamType() {
+    public void setDeviceAbsoluteVolumeBehavior_noMatchingStreamType() {
+        testSetDeviceAbsoluteVolumeBehavior_noMatchingStreamType(/* useVolumeForDevice= */ false);
+    }
+
+    @RequiresFlagsEnabled({FLAG_UNIFY_ABSOLUTE_VOLUME_MANAGEMENT, FLAG_DEVICE_VOLUME_APIS})
+    @ApiTest(
+            apis = {
+                "android.media.AudioDeviceVolumeManager#setDeviceAbsoluteVolumeBehavior",
+                "android.media.AudioDeviceVolumeManager#setVolumeForDevice",
+                "android.media.AudioDeviceVolumeManager#getDeviceVolume"
+            })
+    @Test
+    public void setDeviceAbsoluteVolumeBehavior_noMatchingStreamType_useVolumeForDevice() {
+        testSetDeviceAbsoluteVolumeBehavior_noMatchingStreamType(/* useVolumeForDevice= */ true);
+    }
+
+    public void testSetDeviceAbsoluteVolumeBehavior_noMatchingStreamType(
+            boolean useVolumeForDevice) {
         if (mSkipRingerTests) {
             return;
         }
@@ -300,7 +416,12 @@ public class AudioDeviceVolumeManagerTest {
 
         mADVmgr.setDeviceAbsoluteVolumeBehavior(
                 BT_SCO_DEV, volNotif, mContext.getMainExecutor(), listener);
-        mADVmgr.setDeviceVolume(nextVolume, BT_SCO_DEV);
+
+        if (useVolumeForDevice) {
+            mADVmgr.setVolumeForDevice(nextVolume, BT_SCO_DEV);
+        } else {
+            mADVmgr.setDeviceVolume(nextVolume, BT_SCO_DEV);
+        }
 
         assertNull(listener.waitForVolumeChanged(VOLUME_UPDATE_TIME_MAX_MS, TimeUnit.MILLISECONDS));
     }
@@ -313,7 +434,23 @@ public class AudioDeviceVolumeManagerTest {
                 "android.media.AudioDeviceVolumeManager#getDeviceVolume"
             })
     @Test
-    public void testSetDeviceAbsoluteVolumeBehavior_matchingStreamType() {
+    public void setDeviceAbsoluteVolumeBehavior_matchingStreamType() {
+        testSetDeviceAbsoluteVolumeBehavior_matchingStreamType(/* useVolumeForDevice= */ false);
+    }
+
+    @RequiresFlagsEnabled({FLAG_UNIFY_ABSOLUTE_VOLUME_MANAGEMENT, FLAG_DEVICE_VOLUME_APIS})
+    @ApiTest(
+            apis = {
+                "android.media.AudioDeviceVolumeManager#setDeviceAbsoluteVolumeBehavior",
+                "android.media.AudioDeviceVolumeManager#setVolumeForDevice",
+                "android.media.AudioDeviceVolumeManager#getDeviceVolume"
+            })
+    @Test
+    public void setDeviceAbsoluteVolumeBehavior_matchingStreamType_useVolumeForDevice() {
+        testSetDeviceAbsoluteVolumeBehavior_matchingStreamType(/* useVolumeForDevice= */ true);
+    }
+
+    public void testSetDeviceAbsoluteVolumeBehavior_matchingStreamType(boolean useVolumeForDevice) {
         if (mSkipRingerTests) {
             return;
         }
@@ -330,7 +467,12 @@ public class AudioDeviceVolumeManagerTest {
 
         mADVmgr.setDeviceAbsoluteVolumeBehavior(
                 BT_SCO_DEV, volMedia, mContext.getMainExecutor(), listener);
-        mADVmgr.setDeviceVolume(nextVolume, BT_SCO_DEV);
+
+        if (useVolumeForDevice) {
+            mADVmgr.setVolumeForDevice(nextVolume, BT_SCO_DEV);
+        } else {
+            mADVmgr.setDeviceVolume(nextVolume, BT_SCO_DEV);
+        }
 
         checkIndexVolumeInfoEquals(
                 nextVolume,
@@ -345,7 +487,23 @@ public class AudioDeviceVolumeManagerTest {
                 "android.media.AudioDeviceVolumeManager#getDeviceVolume"
             })
     @Test
-    public void testSetDeviceAbsoluteMultiVolumeBehavior() {
+    public void setDeviceAbsoluteMultiVolumeBehavior() {
+        testSetDeviceAbsoluteMultiVolumeBehavior(/* useVolumeForDevice= */ false);
+    }
+
+    @RequiresFlagsEnabled({FLAG_UNIFY_ABSOLUTE_VOLUME_MANAGEMENT, FLAG_DEVICE_VOLUME_APIS})
+    @ApiTest(
+            apis = {
+                "android.media.AudioDeviceVolumeManager#setDeviceAbsoluteVolumeBehavior",
+                "android.media.AudioDeviceVolumeManager#setVolumeForDevice",
+                "android.media.AudioDeviceVolumeManager#getDeviceVolume"
+            })
+    @Test
+    public void setDeviceAbsoluteMultiVolumeBehavior_useVolumeForDevice() {
+        testSetDeviceAbsoluteMultiVolumeBehavior(/* useVolumeForDevice= */ true);
+    }
+
+    public void testSetDeviceAbsoluteMultiVolumeBehavior(boolean useVolumeForDevice) {
         if (mSkipRingerTests) {
             return;
         }
@@ -368,7 +526,12 @@ public class AudioDeviceVolumeManagerTest {
                 ImmutableList.of(volNotif, volMedia),
                 mContext.getMainExecutor(),
                 listener);
-        mADVmgr.setDeviceVolume(nextVolume, BT_SCO_DEV);
+
+        if (useVolumeForDevice) {
+            mADVmgr.setVolumeForDevice(nextVolume, BT_SCO_DEV);
+        } else {
+            mADVmgr.setDeviceVolume(nextVolume, BT_SCO_DEV);
+        }
 
         checkMuteVolumeInfoEquals(
                 listener.waitForVolumeChanged(VOLUME_UPDATE_TIME_MAX_MS, TimeUnit.MILLISECONDS));
@@ -416,7 +579,23 @@ public class AudioDeviceVolumeManagerTest {
                 "android.media.AudioDeviceVolumeManager#getDeviceVolume"
             })
     @Test
-    public void testCallbackForSameTypeDifferentVolumeBehaviour() {
+    public void callbackForSameTypeDifferentVolumeBehaviour() {
+        testCallbackForSameTypeDifferentVolumeBehaviour(/* useVolumeForDevice= */ false);
+    }
+
+    @RequiresFlagsEnabled({FLAG_UNIFY_ABSOLUTE_VOLUME_MANAGEMENT, FLAG_DEVICE_VOLUME_APIS})
+    @ApiTest(
+            apis = {
+                "android.media.AudioDeviceVolumeManager#setDeviceAbsoluteVolumeBehavior",
+                "android.media.AudioDeviceVolumeManager#setVolumeForDevice",
+                "android.media.AudioDeviceVolumeManager#getDeviceVolume"
+            })
+    @Test
+    public void callbackForSameTypeDifferentVolumeBehaviour_useVolumeForDevice() {
+        testCallbackForSameTypeDifferentVolumeBehaviour(/* useVolumeForDevice= */ true);
+    }
+
+    public void testCallbackForSameTypeDifferentVolumeBehaviour(boolean useVolumeForDevice) {
         if (mSkipRingerTests) {
             return;
         }
@@ -433,14 +612,22 @@ public class AudioDeviceVolumeManagerTest {
         mADVmgr.setDeviceAbsoluteVolumeBehavior(
                 BT_DEV, volMedia, mContext.getMainExecutor(), listener);
 
-        mADVmgr.setDeviceVolume(nextVolume, BT_DEV2);
+        if (useVolumeForDevice) {
+            mADVmgr.setVolumeForDevice(nextVolume, BT_DEV2);
+        } else {
+            mADVmgr.setDeviceVolume(nextVolume, BT_DEV2);
+        }
         assertNull(listener.waitForVolumeChanged(VOLUME_UPDATE_TIME_MAX_MS, TimeUnit.MILLISECONDS));
 
         // reset the mute state
         mAm.adjustStreamVolume(
                 AudioManager.STREAM_MUSIC, AudioManager.ADJUST_UNMUTE, /* flags= */ 0);
 
-        mADVmgr.setDeviceVolume(nextVolume, BT_DEV);
+        if (useVolumeForDevice) {
+            mADVmgr.setVolumeForDevice(nextVolume, BT_DEV);
+        } else {
+            mADVmgr.setDeviceVolume(nextVolume, BT_DEV);
+        }
         checkMuteVolumeInfoEquals(
                 listener.waitForVolumeChanged(VOLUME_UPDATE_TIME_MAX_MS, TimeUnit.MILLISECONDS));
     }

@@ -208,16 +208,21 @@ public class RemoteSubmixTest {
      * Unmute device audio streams
      */
     private void unmuteStreams() throws Exception {
-        try {
-            Utils.toggleNotificationPolicyAccess(
-                    mContext.getPackageName(), getInstrumentation(), true);
-            for (Map.Entry<Integer, Integer> map : mStreamVolume.entrySet()) {
-                // Restore device stream volume
-                mAudioManager.setStreamVolume(map.getKey(), map.getValue(), 0 /*no flag used*/);
+        if (mContext != null && mAudioManager != null) {
+            try {
+                Utils.toggleNotificationPolicyAccess(
+                        mContext.getPackageName(), getInstrumentation(), true);
+                for (Map.Entry<Integer, Integer> map : mStreamVolume.entrySet()) {
+                    // Restore device stream volume
+                    mAudioManager.setStreamVolume(map.getKey(), map.getValue(), 0 /*no flag used*/);
+                }
+            } finally {
+                Utils.toggleNotificationPolicyAccess(
+                        mContext.getPackageName(), getInstrumentation(), false);
             }
-        } finally {
-            Utils.toggleNotificationPolicyAccess(
-                    mContext.getPackageName(), getInstrumentation(), false);
+        } else {
+            // This can happen if setup() fails, no need to restore anything.
+            Log.w(TAG, "Context or AudioManager is null");
         }
         mStreamVolume.clear();
     }

@@ -51,6 +51,7 @@ import android.graphics.Rect;
 import android.hardware.display.DisplayManager;
 import android.os.Bundle;
 import android.os.SystemClock;
+import android.platform.test.annotations.AppModeFull;
 import android.provider.DeviceConfig;
 import android.provider.Settings;
 import android.server.wm.settings.SettingsSession;
@@ -95,6 +96,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
+@AppModeFull(reason = "Instant apps cannot access the SD card")
 @RunWith(AndroidJUnit4.class)
 public class WindowInsetsBehaviorTests {
     private static SettingsSession<String> sImmersiveModeConfirmationSetting;
@@ -781,9 +783,14 @@ public class WindowInsetsBehaviorTests {
         // The first event may be never canceled. So we need to swipe at least twice.
         final int swipeCount = 2;
         final boolean insideLimit = true;
-        testSystemGestureExclusionLimit(swipeCount, insideLimit, SYSTEM_UI_FLAG_IMMERSIVE_STICKY
-        | SYSTEM_UI_FLAG_FULLSCREEN | SYSTEM_UI_FLAG_HIDE_NAVIGATION
-        | SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN | SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION);
+        testSystemGestureExclusionLimit(
+                swipeCount,
+                insideLimit,
+                SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                        | SYSTEM_UI_FLAG_FULLSCREEN
+                        | SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                        | SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                        | SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION);
 
         assertEquals("Swipe must not be canceled.", 0, mActionCancelPoints.size());
         assertEquals("Action up points.", swipeCount, mActionUpPoints.size());
@@ -797,9 +804,14 @@ public class WindowInsetsBehaviorTests {
         // The first event may be never canceled. So we need to swipe at least twice.
         final int swipeCount = 2;
         final boolean insideLimit = false;
-        testSystemGestureExclusionLimit(swipeCount, insideLimit, SYSTEM_UI_FLAG_IMMERSIVE_STICKY
-        | SYSTEM_UI_FLAG_FULLSCREEN | SYSTEM_UI_FLAG_HIDE_NAVIGATION
-        | SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN | SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION);
+        testSystemGestureExclusionLimit(
+                swipeCount,
+                insideLimit,
+                SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                        | SYSTEM_UI_FLAG_FULLSCREEN
+                        | SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                        | SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                        | SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION);
 
         assertEquals("Swipe must not be canceled.", 0, mActionCancelPoints.size());
         assertEquals("Action up points.", swipeCount, mActionUpPoints.size());

@@ -34,6 +34,7 @@ android_test {
         "android.nfc.flags-aconfig-java",
         "android.service.chooser.flags-aconfig-java",
         "androidx.test.uiautomator_uiautomator",
+        "androidx.test.espresso.core",
     ],
 
     libs: [

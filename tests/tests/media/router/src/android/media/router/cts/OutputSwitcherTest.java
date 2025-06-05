@@ -48,15 +48,18 @@ import static org.mockito.Mockito.verify;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.media.MediaMetadata;
 import android.media.MediaRoute2Info;
 import android.media.MediaRouter2;
 import android.media.MediaRouter2.RoutingController;
 import android.media.RouteDiscoveryPreference;
-import android.text.BidiFormatter;
+import android.media.session.MediaSession;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresFlagsDisabled;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
+import android.text.BidiFormatter;
 
 import androidx.test.filters.LargeTest;
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -115,6 +118,11 @@ public class OutputSwitcherTest {
     // com.android.systemui.R.string.cast_to_other_device_stop_dialog_button
     // (frameworks/base/packages/SystemUI/res/values/strings.xml)
     private static final String STOP_CASTING_BUTTON_TITLE = "Stop casting";
+
+    public static final String SESSION_TEST_TITLE_1 = "session_title_1";
+    public static final String SESSION_TEST_TITLE_2 = "session_title_2";
+    public static final String SESSION_TEST_ARTIST_1 = "session_artist_1";
+    public static final String SESSION_TEST_ARTIST_2 = "session_artist_2";
 
     // Required by Bedstead.
     @ClassRule @Rule public static final DeviceState sDeviceState = new DeviceState();
@@ -194,6 +202,60 @@ public class OutputSwitcherTest {
                         newController.getValue().getSelectedRoutes().stream()
                                 .map(MediaRoute2Info::getName))
                 .containsExactly(ROUTE_NAME1);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_ROUTE_VISIBILITY_CONTROL_API)
+    public void showSystemOutputSwitcherWithMediaSession_oneSession_showsSessionInfo()
+            throws Exception {
+        mService.removeAllRoutesExcept(List.of(ROUTE_ID1, ROUTE_ID2));
+        registerRouteCallback(List.of(FEATURE_SAMPLE));
+
+        MediaSession session = new MediaSession(mContext, "test_session");
+        session.setMetadata(
+                new MediaMetadata.Builder()
+                        .putString(MediaMetadata.METADATA_KEY_TITLE, SESSION_TEST_TITLE_1)
+                        .putString(MediaMetadata.METADATA_KEY_ARTIST, SESSION_TEST_ARTIST_1)
+                        .build());
+        session.setActive(true);
+
+        assertThat(mRouter2.showSystemOutputSwitcher(session.getSessionToken())).isTrue();
+
+        UiAutomatorUtils2.waitFindObject(
+                By.text(SESSION_TEST_TITLE_1).pkg(SYSTEM_UI_PACKAGE), TIMEOUT_MS);
+        UiAutomatorUtils2.waitFindObject(
+                By.text(SESSION_TEST_ARTIST_1).pkg(SYSTEM_UI_PACKAGE), TIMEOUT_MS);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_ROUTE_VISIBILITY_CONTROL_API)
+    public void showSystemOutputSwitcherWithMediaSession_twoSessions_showsSession2Info()
+            throws Exception {
+        mService.removeAllRoutesExcept(List.of(ROUTE_ID1, ROUTE_ID2));
+        registerRouteCallback(List.of(FEATURE_SAMPLE));
+
+        MediaSession session1 = new MediaSession(mContext, "test_session_1");
+        session1.setMetadata(
+                new MediaMetadata.Builder()
+                        .putString(MediaMetadata.METADATA_KEY_TITLE, SESSION_TEST_TITLE_1)
+                        .putString(MediaMetadata.METADATA_KEY_ARTIST, SESSION_TEST_ARTIST_1)
+                        .build());
+        session1.setActive(true);
+
+        MediaSession session2 = new MediaSession(mContext, "test_session_2");
+        session2.setMetadata(
+                new MediaMetadata.Builder()
+                        .putString(MediaMetadata.METADATA_KEY_TITLE, SESSION_TEST_TITLE_2)
+                        .putString(MediaMetadata.METADATA_KEY_ARTIST, SESSION_TEST_ARTIST_2)
+                        .build());
+        session2.setActive(true);
+
+        assertThat(mRouter2.showSystemOutputSwitcher(session2.getSessionToken())).isTrue();
+
+        UiAutomatorUtils2.waitFindObject(
+                By.text(SESSION_TEST_TITLE_2).pkg(SYSTEM_UI_PACKAGE), TIMEOUT_MS);
+        UiAutomatorUtils2.waitFindObject(
+                By.text(SESSION_TEST_ARTIST_2).pkg(SYSTEM_UI_PACKAGE), TIMEOUT_MS);
     }
 
     @Test

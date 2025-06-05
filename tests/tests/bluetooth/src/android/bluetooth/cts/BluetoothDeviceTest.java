@@ -774,6 +774,57 @@ public class BluetoothDeviceTest {
         }
     }
 
+    @RequiresFlagsEnabled(Flags.FLAG_KEY_MISSING_COUNT_API)
+    @Test
+    public void getKeyMissingCount() {
+        // Skip the test if bluetooth or companion device are not present.
+        assumeTrue(mHasBluetooth && mHasCompanionDevice);
+
+        // Device is not bonded, so key missing count should be -1.
+        mFakeDevice = mAdapter.getRemoteDevice("AB:11:22:AA:BB:DD");
+        assertThat(mFakeDevice.getKeyMissingCount()).isEqualTo(-1);
+
+        mUiAutomation.dropShellPermissionIdentity();
+        assertThrows(SecurityException.class, () -> mFakeDevice.getKeyMissingCount());
+        mUiAutomation.adoptShellPermissionIdentity(BLUETOOTH_CONNECT);
+
+        mFakeDevice.createBond();
+        if(mFakeDevice.isConnected()) {
+            assertThat(mFakeDevice.getKeyMissingCount()).isEqualTo(0);
+        }
+        mFakeDevice.removeBond();
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_PRIORITIZED_IN_EAR_ROUTING)
+    @Test
+    public void testSetOnHeadDetectionEnabled_permissionsAndEdgeCases() {
+        assumeTrue(mHasBluetooth);
+        Permissions.enforceEachPermissions(
+                () -> mFakeDevice.setOnHeadDetectionEnabled(true),
+                List.of(BLUETOOTH_PRIVILEGED, BLUETOOTH_CONNECT));
+        try (var p = Permissions.withPermissions(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED)) {
+            // Test when Bluetooth is disabled
+            assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
+            assertThat(mFakeDevice.setOnHeadDetectionEnabled(true))
+                    .isEqualTo(BluetoothStatusCodes.ERROR_BLUETOOTH_NOT_ENABLED);
+        }
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_PRIORITIZED_IN_EAR_ROUTING)
+    @Test
+    public void testsetOnHead_permissionsAndEdgeCases() {
+        assumeTrue(mHasBluetooth);
+        Permissions.enforceEachPermissions(
+                () -> mFakeDevice.setOnHead(true),
+                List.of(BLUETOOTH_PRIVILEGED, BLUETOOTH_CONNECT));
+        try (var p = Permissions.withPermissions(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED)) {
+            // Test when Bluetooth is disabled
+            assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
+            assertThat(mFakeDevice.setOnHead(true))
+                    .isEqualTo(BluetoothStatusCodes.ERROR_BLUETOOTH_NOT_ENABLED);
+        }
+    }
+
     private void verifyIntentReceived(
             BroadcastReceiver receiver, Duration timeout, Matcher<Intent>... matchers) {
         verify(receiver, timeout(timeout.toMillis()))

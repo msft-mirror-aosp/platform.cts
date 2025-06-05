@@ -39,7 +39,12 @@
     </target_preparer>
     <test class="com.android.tradefed.testtype.AndroidJUnitTest" >
         <option name="package" value="android.webkit.cts" />
-        <option name="runtime-hint" value="6m39s" />
+        <option name="runtime-hint" value="8m10s" />
+
+        <!-- Run every test in its own fresh process. This is necessary for WebView because the
+        underlying chromium code has some global state which is not possible to reset between tests
+        (except by getting an entirely fresh process). -->
+        <option name="orchestrator" value="true"/>
     </test>
     <object type="module_controller" class="com.android.tradefed.testtype.suite.module.MainlineTestModuleController">
         <option name="mainline-module-package-name" value="com.google.android.webview.bootstrap" />

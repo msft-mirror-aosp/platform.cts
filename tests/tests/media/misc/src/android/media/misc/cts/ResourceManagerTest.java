@@ -16,8 +16,6 @@
 
 package android.media.misc.cts;
 
-import static com.android.media.codec.flags.Flags.codecImportance;
-
 import static org.junit.Assume.assumeTrue;
 
 import android.content.Intent;
@@ -112,7 +110,6 @@ public class ResourceManagerTest {
 
     private void doTestCodecImportanceReclaim(boolean highResolution, String mimeType,
             boolean changeImportanceAtConfig) throws Exception {
-        assumeTrue("Codec Importance Feature is OFF", codecImportance());
         // Run high resolution test case only when the devices shipped on U.
         if (SDK_IS_AT_LEAST_U || !highResolution) {
             ResourceManagerStubActivity activity = mActivityRule.launchActivity(new Intent());
