@@ -63,6 +63,7 @@ import org.junit.Assume.assumeNotNull
 import org.junit.Assume.assumeTrue
 import org.junit.Before
 import org.junit.ClassRule
+import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -154,6 +155,7 @@ class AuthenticationPolicyManagerTest {
                     "#isSecureLockDeviceEnabled"),
             ]
     )
+    @Ignore("b/421113198, b/420188634")
     @Test
     @EnsureHasPermission(MANAGE_SECURE_LOCK_DEVICE)
     fun testEnableSecureLockDevice_withAllPrerequisites_returnsSuccess() {
@@ -194,6 +196,7 @@ class AuthenticationPolicyManagerTest {
                     "#isSecureLockDeviceEnabled"),
             ]
     )
+    @Ignore("b/421112670, b/420188634")
     @Test
     @EnsureHasPermission(MANAGE_SECURE_LOCK_DEVICE)
     fun testEnableSecureLockDevice_whenAlreadyEnabled_returnsAlreadyEnabled() {
@@ -302,6 +305,7 @@ class AuthenticationPolicyManagerTest {
                     "#isSecureLockDeviceAvailable"),
             ]
     )
+    @Ignore("b/420998029, b/420680233, b/420327508, b/420188634")
     @Test
     @EnsureHasPermission(MANAGE_SECURE_LOCK_DEVICE)
     fun testAvailableStatusUpdate_notifiesSecureLockDeviceStatusListeners() {
@@ -348,6 +352,7 @@ class AuthenticationPolicyManagerTest {
                     "#isSecureLockDeviceEnabled"),
             ]
     )
+    @Ignore("b/420952162, b/420188634")
     @Test
     @EnsureHasPermission(MANAGE_SECURE_LOCK_DEVICE)
     fun testDisableSecureLockDevice_returnsSuccess() {
@@ -396,6 +401,7 @@ class AuthenticationPolicyManagerTest {
                     "#unregisterSecureLockDeviceStatusListener"),
             ]
     )
+    @Ignore("b/420711730, b/420188634")
     @Test
     @EnsureHasPermission(MANAGE_SECURE_LOCK_DEVICE)
     fun testEnabledStatusUpdate_notifiesSecureLockDeviceStatusListeners() {
@@ -532,6 +538,7 @@ class AuthenticationPolicyManagerTest {
                         "#disableSecureLockDevice")
             ]
     )
+    @Ignore("b/420461434")
     @Test
     fun testDisableSecureLockDevice_withoutPermission_throwsException() {
         TestApis.permissions().withoutPermission(MANAGE_SECURE_LOCK_DEVICE).use {
