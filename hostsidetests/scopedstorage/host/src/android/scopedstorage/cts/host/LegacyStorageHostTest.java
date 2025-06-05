@@ -103,7 +103,9 @@ public class LegacyStorageHostTest extends BaseHostTestCase {
 
     @After
     public void tearDown() throws Exception {
-        mContentProviderHandler.tearDown();
+        if (mContentProviderHandler != null) {
+            mContentProviderHandler.tearDown();
+        }
         revokePermissions("android.permission.WRITE_EXTERNAL_STORAGE",
                 "android.permission.READ_EXTERNAL_STORAGE");
     }
