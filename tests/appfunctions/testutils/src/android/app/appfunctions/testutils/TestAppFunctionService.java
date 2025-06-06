@@ -18,12 +18,16 @@ package android.app.appfunctions.testutils;
 
 import android.app.appfunctions.AppFunctionException;
 import android.app.appfunctions.AppFunctionService;
+import android.app.appfunctions.AppFunctionUriGrant;
 import android.app.appfunctions.ExecuteAppFunctionRequest;
 import android.app.appfunctions.ExecuteAppFunctionResponse;
 import android.app.appsearch.GenericDocument;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.pm.SigningInfo;
+import android.net.Uri;
+import android.os.Bundle;
 import android.os.CancellationSignal;
 import android.os.OutcomeReceiver;
 
@@ -139,6 +143,10 @@ public class TestAppFunctionService extends AppFunctionService {
                 }
             case "runForever":
                 break;
+            case "getUris":
+                {
+                    callback.onResult(getUris());
+                }
             default:
                 callback.onError(
                         new AppFunctionException(
@@ -195,6 +203,39 @@ public class TestAppFunctionService extends AppFunctionService {
                                 verifyPackageInfo(callingPackageSigningInfo))
                         .build();
         return new ExecuteAppFunctionResponse(result);
+    }
+
+    private ExecuteAppFunctionResponse getUris() {
+        Uri readOnlyUri =
+                Uri.parse(
+                        "content://android.app.appfunctions.cts.helper.provider/read_only_test_file.txt");
+        Uri writeOnlyUri =
+                Uri.parse(
+                        "content://android.app.appfunctions.cts.helper.provider/write_only_test_file.txt");
+        Uri readWriteUri =
+                Uri.parse(
+                        "content://android.app.appfunctions.cts.helper.provider/read_write_test_file.txt");
+
+        GenericDocument result =
+                new GenericDocument.Builder<>("", "", "")
+                        .setPropertyString(
+                                ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE,
+                                "content://android.app.appfunctions.cts.helper.provider/read_only_test_file.txt",
+                                "content://android.app.appfunctions.cts.helper.provider/write_only_test_file.txt",
+                                "content://android.app.appfunctions.cts.helper.provider/read_write_test_file.txt")
+                        .build();
+
+        return new ExecuteAppFunctionResponse(
+                result,
+                Bundle.EMPTY,
+                Arrays.asList(
+                        new AppFunctionUriGrant(readOnlyUri, Intent.FLAG_GRANT_READ_URI_PERMISSION),
+                        new AppFunctionUriGrant(
+                                writeOnlyUri, Intent.FLAG_GRANT_WRITE_URI_PERMISSION),
+                        new AppFunctionUriGrant(
+                                readWriteUri,
+                                Intent.FLAG_GRANT_READ_URI_PERMISSION
+                                        | Intent.FLAG_GRANT_WRITE_URI_PERMISSION)));
     }
 
     @Override

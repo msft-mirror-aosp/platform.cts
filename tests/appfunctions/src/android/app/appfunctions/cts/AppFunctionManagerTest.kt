@@ -36,9 +36,13 @@ import android.app.appfunctions.testutils.TestAppFunctionServiceLifecycleReceive
 import android.app.appfunctions.testutils.TestAppFunctionServiceLifecycleReceiver.waitForServiceOnCreate
 import android.app.appfunctions.testutils.TestAppFunctionServiceLifecycleReceiver.waitForServiceOnDestroy
 import android.app.appsearch.GenericDocument
+import android.content.ContentValues
 import android.content.Context
+import android.net.Uri
+import android.os.Bundle
 import android.os.CancellationSignal
 import android.os.UserHandle
+import android.permission.flags.Flags.FLAG_APP_FUNCTION_ACCESS_API_ENABLED
 import android.permission.flags.Flags.FLAG_APP_FUNCTION_ACCESS_SERVICE_ENABLED
 import android.platform.test.annotations.RequiresFlagsDisabled
 import android.platform.test.annotations.RequiresFlagsEnabled
@@ -74,11 +78,11 @@ import com.google.common.truth.Truth.assertThat
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.TimeUnit
 import kotlin.test.assertFailsWith
-import kotlin.test.fail
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.suspendCancellableCoroutine
 import org.junit.After
+import org.junit.Assert.fail
 import org.junit.Assume.assumeFalse
 import org.junit.Assume.assumeNotNull
 import org.junit.Before
@@ -1376,6 +1380,95 @@ class AppFunctionManagerTest {
                 assertThat(isAppFunctionEnabled(TEST_HELPER_PKG, functionIdUnderTest)).isFalse()
             }
         }
+    }
+
+    @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#executeAppFunction"])
+    @Test
+    @EnsureHasNoDeviceOwner
+    @IncludeRunOnSecondaryUser
+    @IncludeRunOnPrimaryUser
+    @RequiresFlagsEnabled(
+        FLAG_APP_FUNCTION_ACCESS_SERVICE_ENABLED,
+        FLAG_APP_FUNCTION_ACCESS_API_ENABLED,
+    )
+    @Throws(Exception::class)
+    fun executeAppFunction_getUris() = doBlocking {
+        val readOnlyUri =
+            Uri.parse(
+                "content://android.app.appfunctions.cts.helper.provider/read_only_test_file.txt"
+            )
+        val writeOnlyUri =
+            Uri.parse(
+                "content://android.app.appfunctions.cts.helper.provider/write_only_test_file.txt"
+            )
+        val readWriteUri =
+            Uri.parse(
+                "content://android.app.appfunctions.cts.helper.provider/read_write_test_file.txt"
+            )
+        val request = ExecuteAppFunctionRequest.Builder(TEST_HELPER_PKG, "getUris").build()
+
+        val response = executeAppFunctionAndWait(mManager, request)
+
+        assertThat(response.isSuccess).isTrue()
+        assertThat(response.getOrNull()).isNotNull()
+        assertReadAccessible(readOnlyUri)
+        assertReadAccessible(readWriteUri)
+        assertReadInaccessible(writeOnlyUri)
+        assertWriteAccessible(writeOnlyUri)
+        assertWriteAccessible(readWriteUri)
+        assertWriteInaccessible(readOnlyUri)
+    }
+
+    private fun assertReadAccessible(uri: Uri) {
+        val contentResolver = context.getContentResolver()
+        try {
+            contentResolver.openAssetFile(uri, "r", null).use { fd ->
+                if (fd != null) {
+                    return
+                }
+            }
+        } catch (e: Exception) {}
+        fail("Uri $uri is not read accessible")
+    }
+
+    private fun assertReadInaccessible(uri: Uri) {
+        val contentResolver = context.getContentResolver()
+        try {
+            contentResolver.openAssetFile(uri, "r", null).use { fd -> }
+        } catch (e: SecurityException) {
+            return
+        }
+        fail("Uri $uri is still read accessible")
+    }
+
+    private fun assertWriteAccessible(uri: Uri) {
+        val contentResolver = context.getContentResolver()
+        try {
+            val result =
+                contentResolver.update(
+                    uri,
+                    ContentValues().apply { put("echo_value", 100) },
+                    Bundle.EMPTY,
+                )
+            if (result == 100) {
+                return
+            }
+        } catch (e: Exception) {}
+        fail("Uri $uri is not write accessible")
+    }
+
+    private fun assertWriteInaccessible(uri: Uri) {
+        val contentResolver = context.getContentResolver()
+        try {
+            contentResolver.update(
+                uri,
+                ContentValues().apply { put("echo_value", 100) },
+                Bundle.EMPTY,
+            )
+        } catch (e: Exception) {
+            return
+        }
+        fail("Uri $uri is still write accessible")
     }
 
     private fun assertCancelListenerTriggered() {
