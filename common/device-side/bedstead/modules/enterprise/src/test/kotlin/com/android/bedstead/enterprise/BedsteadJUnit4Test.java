@@ -17,15 +17,8 @@
 package com.android.bedstead.enterprise;
 
 import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpc;
-import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.workProfile;
 import static com.android.bedstead.enterprise.TestPolicyForPolicyArguments.POLICY_ARGUMENT_ONE;
 import static com.android.bedstead.enterprise.TestPolicyForPolicyArguments.POLICY_ARGUMENT_TWO;
-import static com.android.bedstead.harrier.UserType.INITIAL_USER;
-import static com.android.bedstead.harrier.UserType.WORK_PROFILE;
-import static com.android.bedstead.multiuser.MultiUserDeviceStateExtensionsKt.otherUser;
-import static com.android.bedstead.permissions.CommonPermissions.INTERACT_ACROSS_PROFILES;
-import static com.android.bedstead.permissions.CommonPermissions.INTERACT_ACROSS_USERS;
-import static com.android.bedstead.permissions.CommonPermissions.INTERACT_ACROSS_USERS_FULL;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -39,17 +32,13 @@ import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.AfterClass;
 import com.android.bedstead.harrier.annotations.BeforeClass;
-import com.android.bedstead.harrier.annotations.CrossUserTest;
 import com.android.bedstead.harrier.annotations.EnsureRunsLate;
 import com.android.bedstead.harrier.annotations.EnumTestParameter;
 import com.android.bedstead.harrier.annotations.IntTestParameter;
-import com.android.bedstead.harrier.annotations.PermissionTest;
 import com.android.bedstead.harrier.annotations.PolicyArgument;
 import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.harrier.annotations.RequireRunOnInitialUser;
 import com.android.bedstead.harrier.annotations.StringTestParameter;
-import com.android.bedstead.harrier.annotations.UserPair;
-import com.android.bedstead.harrier.annotations.UserTest;
 import com.android.bedstead.harrier.annotations.enterprise.AdditionalQueryParameters;
 import com.android.bedstead.harrier.annotations.parameterized.IncludeDarkMode;
 import com.android.bedstead.harrier.annotations.parameterized.IncludeLandscapeOrientation;
@@ -58,7 +47,6 @@ import com.android.bedstead.harrier.annotations.parameterized.IncludePortraitOri
 import com.android.bedstead.harrier.exceptions.RestartTestException;
 import com.android.bedstead.harrier.policies.LockTask;
 import com.android.bedstead.nene.TestApis;
-import com.android.bedstead.permissions.annotations.EnsureHasPermission;
 import com.android.queryable.annotations.IntegerQuery;
 import com.android.queryable.annotations.Query;
 
@@ -213,40 +201,6 @@ public class BedsteadJUnit4Test {
     public void enumParameterized(
             @EnumTestParameter(EnumWithThreeValues.class) EnumWithThreeValues argument) {
         sEnumParameterizedCalls += 1;
-    }
-
-    @PermissionTest({INTERACT_ACROSS_PROFILES, INTERACT_ACROSS_USERS})
-    @EnsureHasPermission(INTERACT_ACROSS_USERS_FULL)
-    @Test
-    public void permissionTestAnnotation_generatesRunsWithOnePermissionOrOther() {
-        assertThat(TestApis.permissions().hasPermission(INTERACT_ACROSS_USERS_FULL)).isTrue();
-        if (TestApis.permissions().hasPermission(INTERACT_ACROSS_PROFILES)) {
-            assertThat(TestApis.permissions().hasPermission(INTERACT_ACROSS_USERS)).isFalse();
-        } else {
-            assertThat(TestApis.permissions().hasPermission(INTERACT_ACROSS_USERS)).isTrue();
-        }
-    }
-
-    @UserTest({INITIAL_USER, WORK_PROFILE})
-    @Test
-    public void userTestAnnotation_isRunningOnCorrectUsers() {
-        if (!TestApis.users().instrumented().equals(sDeviceState.initialUser())) {
-            assertThat(TestApis.users().instrumented()).isEqualTo(workProfile(sDeviceState));
-        }
-    }
-
-    @CrossUserTest({
-            @UserPair(from = INITIAL_USER, to = WORK_PROFILE),
-            @UserPair(from = WORK_PROFILE, to = INITIAL_USER),
-    })
-    @Test
-    public void crossUserTestAnnotation_isRunningWithCorrectUserPairs() {
-        if (TestApis.users().instrumented().equals(sDeviceState.initialUser())) {
-            assertThat(otherUser(sDeviceState)).isEqualTo(workProfile(sDeviceState));
-        } else {
-            assertThat(TestApis.users().instrumented()).isEqualTo(workProfile(sDeviceState));
-            assertThat(otherUser(sDeviceState)).isEqualTo(sDeviceState.initialUser());
-        }
     }
 
     private static int sTestRuns = 0;

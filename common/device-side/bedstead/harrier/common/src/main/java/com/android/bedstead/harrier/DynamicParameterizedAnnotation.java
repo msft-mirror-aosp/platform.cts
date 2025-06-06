@@ -16,6 +16,8 @@
 
 package com.android.bedstead.harrier;
 
+import static com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence.PRECEDENCE_NOT_IMPORTANT;
+
 import java.lang.annotation.Annotation;
 import java.util.Arrays;
 import java.util.Objects;
@@ -26,13 +28,21 @@ import java.util.Objects;
  */
 public final class DynamicParameterizedAnnotation implements Annotation {
     private final String mName;
+
     @SuppressWarnings("ImmutableAnnotationChecker")
     private final Annotation[] mAnnotations;
 
+    private final int mPriority;
+
     public DynamicParameterizedAnnotation(String name, Annotation[] annotations) {
+        this(name, annotations, PRECEDENCE_NOT_IMPORTANT);
+    }
+
+    public DynamicParameterizedAnnotation(String name, Annotation[] annotations, int priority) {
         mName = name;
         mAnnotations = Arrays.stream(annotations).filter(Objects::nonNull)
                 .toArray(Annotation[]::new);
+        this.mPriority = priority;
     }
 
     /** Get the parameterization name. */
@@ -45,6 +55,13 @@ public final class DynamicParameterizedAnnotation implements Annotation {
         return mAnnotations;
     }
 
+    /**
+     * Priority sets the order that annotations will be resolved.
+     */
+    public int getPriority() {
+        return mPriority;
+    }
+
     @Override
     public Class<? extends Annotation> annotationType() {
         // This is special cased in BedsteadJUnit4 so will never be called
@@ -54,17 +71,14 @@ public final class DynamicParameterizedAnnotation implements Annotation {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof DynamicParameterizedAnnotation)) return false;
-        DynamicParameterizedAnnotation that = (DynamicParameterizedAnnotation) o;
-        return Objects.equals(mName, that.mName) && Arrays.equals(mAnnotations,
-                that.mAnnotations);
+        if (!(o instanceof DynamicParameterizedAnnotation that)) return false;
+        return mPriority == that.mPriority && Objects.equals(mName, that.mName)
+                && Arrays.equals(mAnnotations, that.mAnnotations);
     }
 
     @Override
     public int hashCode() {
-        int result = Objects.hash(mName);
-        result = 31 * result + Arrays.hashCode(mAnnotations);
-        return result;
+        return Objects.hash(mName, Arrays.hashCode(mAnnotations), mPriority);
     }
 
     @Override

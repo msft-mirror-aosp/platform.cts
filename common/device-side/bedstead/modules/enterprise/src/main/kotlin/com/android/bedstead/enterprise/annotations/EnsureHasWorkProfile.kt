@@ -91,7 +91,7 @@ const val DEFAULT_DPC_KEY = "profileOwner"
  * [EnsureHasWorkProfile]. See [AutoAnnotation].
  */
 fun ensureHasWorkProfile(): EnsureHasWorkProfile {
-    return ensureHasWorkProfile(query())
+    return ensureHasWorkProfile(workaroundQuery())
 }
 
 @AutoAnnotation
@@ -100,10 +100,10 @@ private fun ensureHasWorkProfile(dpc: Query): EnsureHasWorkProfile {
 }
 
 /**
- * A workaround to create an [AutoAnnotation] of [EnsureHasWorkProfile]. [AutoAnnotation]
- * cannot set default values for fields of type Annotation, hence we create an object of [Query]
- * explicitly to pass as the default value of the [dpc] field.
+ * A workaround to create a [Query]. [AutoAnnotation] cannot set default values for fields
+ * of type Annotation, hence we create an object of [Query] explicitly to pass as the default value
+ * of the [dpc] field.
  */
-private fun query(): Query {
+internal fun workaroundQuery(): Query {
     return HarrierRule::class.java.getAnnotation(Query::class.java)!!
 }
