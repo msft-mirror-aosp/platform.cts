@@ -779,7 +779,7 @@ public final class ActivityManagerNotifyMediaFGSTypeTest {
     @Test
     @RequiresFlagsEnabled(
             Flags.FLAG_ENABLE_NOTIFYING_ACTIVITY_MANAGER_WITH_MEDIA_SESSION_STATUS_CHANGE)
-    public void testAppInBgWithNonActiveMediaSessionAndNotificationGoesToBg() throws Exception {
+    public void testAppInBgWithNonActiveMediaSessionAndNotificationRemainsInFgs() throws Exception {
         ApplicationInfo app1Info =
                 mContext.getPackageManager().getApplicationInfo(PACKAGE_NAME_APP1, 0);
         WatchUidRunner uid1Watcher =
@@ -807,7 +807,7 @@ public final class ActivityManagerNotifyMediaFGSTypeTest {
                 0,
                 extras);
         waiter.doWait(WAITFOR_MSEC);
-        uid1Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_SERVICE);
+        uid1Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_FG_SERVICE);
     }
 
     @Test
@@ -849,7 +849,7 @@ public final class ActivityManagerNotifyMediaFGSTypeTest {
     @RequiresFlagsEnabled(
             Flags.FLAG_ENABLE_NOTIFYING_ACTIVITY_MANAGER_WITH_MEDIA_SESSION_STATUS_CHANGE)
     public void
-            testAppInBgWithNonActivePlayingMediaSessionWithMediaControllerAndNotificationIsStillInBg()
+            testAppInBgWithNonActivePlayingMediaSessionWithMediaControllerAndNotificationGoesToFgs()
                     throws Exception {
         ApplicationInfo app1Info =
                 mContext.getPackageManager().getApplicationInfo(PACKAGE_NAME_APP1, 0);
@@ -880,7 +880,7 @@ public final class ActivityManagerNotifyMediaFGSTypeTest {
         // Press play for deactivated media session.
         controller.getTransportControls().play();
         sleep(PLAY_TIMEOUT_MS);
-        uid1Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_SERVICE);
+        uid1Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_FG_SERVICE);
     }
 
     @Test

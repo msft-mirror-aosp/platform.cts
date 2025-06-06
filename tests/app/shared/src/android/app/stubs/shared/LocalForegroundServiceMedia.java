@@ -99,6 +99,7 @@ public class LocalForegroundServiceMedia extends LocalForegroundService {
                     }
                 });
         mMediaSession.setActive(true);
+        setPlaybackState(PlaybackState.STATE_NONE, mMediaSession);
         Log.d(
                 getTag(),
                 "service created: "
