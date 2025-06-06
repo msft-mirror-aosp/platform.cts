@@ -65,6 +65,17 @@ public class AppSearchDeviceTest {
                     .setTokenizerType(AppSearchSchema.StringPropertyConfig.TOKENIZER_TYPE_PLAIN)
                     .build())
             .build();
+    private static final AppSearchSchema ALTERNATE_SCHEMA =
+            new AppSearchSchema.Builder("testSchema")
+                    .addProperty(new AppSearchSchema.StringPropertyConfig.Builder("subject")
+                            .setCardinality(AppSearchSchema.PropertyConfig.CARDINALITY_OPTIONAL)
+                            .setIndexingType(
+                                    AppSearchSchema.StringPropertyConfig.INDEXING_TYPE_NONE)
+                            .setTokenizerType(
+                                    AppSearchSchema.StringPropertyConfig.TOKENIZER_TYPE_NONE)
+                            .build())
+                    .build();
+
     private static final GenericDocument DOCUMENT =
             new GenericDocument.Builder<>(NAMESPACE, ID, SCHEMA.getSchemaType())
                     .setPropertyString("subject", "testPut example1")
@@ -92,6 +103,29 @@ public class AppSearchDeviceTest {
         mDb = AppSearchSessionShimImpl.createSearchSessionAsync(
                 new AppSearchManager.SearchContext.Builder(DB_NAME).build()).get();
         mUiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
+    }
+
+    @Test
+    public void testRepeatedSetSchema() throws Exception {
+        mDb = AppSearchSessionShimImpl.createSearchSessionAsync(
+                new AppSearchManager.SearchContext.Builder("my_test_db").build()).get();
+        // Repeatedly call set schema without waiting for futures to complete to fill up the task
+        // queue so we have 30+ seconds of tasks to process after this "test" exits
+        for (int i = 1; i <= 500; i++) {
+            var unused1 = mDb.setSchemaAsync(
+                    new SetSchemaRequest.Builder().addSchemas(SCHEMA).build());
+            var unused2 = mDb.setSchemaAsync(new SetSchemaRequest.Builder().setVersion(
+                    i).addSchemas(ALTERNATE_SCHEMA).build());
+        }
+    }
+
+    @Test
+    public void testRepeatedSetSchema_finished() throws Exception {
+        mDb = AppSearchSessionShimImpl.createSearchSessionAsync(
+                new AppSearchManager.SearchContext.Builder("my_test_db").build()).get();
+        // It is expected that the set schema operations queued by a call to testRepeatedSetSchema
+        // before the user restarted have all completed and we verify that here
+        assertThat(mDb.getSchemaAsync().get().getVersion()).isEqualTo(500);
     }
 
     @Test

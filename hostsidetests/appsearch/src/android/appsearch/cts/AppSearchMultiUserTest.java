@@ -21,16 +21,15 @@ import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assume.assumeTrue;
 
 import com.android.tradefed.invoker.TestInformation;
+import com.android.tradefed.log.LogUtil;
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
 import com.android.tradefed.testtype.junit4.AfterClassWithInfo;
 import com.android.tradefed.testtype.junit4.BeforeClassWithInfo;
 
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-
-import java.util.Collections;
-import java.util.Map;
 
 /**
  * Test to cover multi-user interacting with AppSearch.
@@ -46,7 +45,6 @@ import java.util.Map;
  */
 @RunWith(DeviceJUnit4ClassRunner.class)
 public class AppSearchMultiUserTest extends AppSearchHostTestBase {
-
     private static int sInitialUserId;
     private static int sSecondaryUserId;
 
@@ -94,6 +92,27 @@ public class AppSearchMultiUserTest extends AppSearchHostTestBase {
         getDevice().stopUser(sSecondaryUserId, /*waitFlag=*/true, /*forceFlag=*/true);
         getDevice().startUser(sSecondaryUserId, /*waitFlag=*/true);
         runDeviceTestAsUserInPkgA("testGetDocuments_exist", sSecondaryUserId);
+    }
+
+    // To run this test, you will need to manually enable isolated storage for secondary users by
+    // always returning true for isUserAllowed() in IsolatedStorageServiceManager
+    @Test
+    @Ignore("This will fail on the secondary user as its operations will time out without the "
+            + "deferred executor behavior. We don't test the main user because it cannot be "
+            + "stopped normally.")
+    public void testStopUser_queuedOperationsFinish() throws Exception {
+        // Fills up the AppSearch task queue with set schema calls without waiting for completion
+        runDeviceTestAsUserInPkgA("testRepeatedSetSchema", sSecondaryUserId);
+
+        // Stop the user while the AppSearch task queue has 30+ seconds of tasks to complete
+        long startMillis = System.currentTimeMillis();
+        getDevice().stopUser(sSecondaryUserId, /*waitFlag=*/true, /*forceFlag=*/true);
+        long endMillis = System.currentTimeMillis();
+        LogUtil.CLog.i("Took " + (endMillis - startMillis) + " ms to stop user");
+
+        // Restart the user and check that the previously queued operations completed successfully
+        getDevice().startUser(sSecondaryUserId, /*waitFlag=*/true);
+        runDeviceTestAsUserInPkgA("testRepeatedSetSchema_finished", sSecondaryUserId);
     }
 
     @Test
