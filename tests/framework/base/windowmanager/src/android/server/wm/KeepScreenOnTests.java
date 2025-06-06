@@ -96,10 +96,10 @@ public class KeepScreenOnTests extends MultiDisplayTestBase {
     @ApiTest(apis = "android.view.WindowManager.LayoutParams#FLAG_KEEP_SCREEN_ON")
     @Test
     public void testKeepScreenOn_activityOnDefaultDisplay_screenStaysOn() {
-        setScreenOffTimeoutMs("500");
         launchActivity(TURN_SCREEN_ON_ACTIVITY);
         assertTrue(mPowerManager.isInteractive());
 
+        setScreenOffTimeoutMs("500");
         SystemClock.sleep(getMinimumScreenOffTimeoutMs());
 
         assertTrue(mPowerManager.isInteractive());
