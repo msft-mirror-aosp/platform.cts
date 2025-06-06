@@ -51,6 +51,8 @@ public class CallConnectedIndicatorTest extends BaseTelecomTestWithMockServices 
                     InstrumentationRegistry.getInstrumentation()
                             .getContext()
                             .getSystemService(Vibrator.class);
+            // Skip test on devices with no vibrator.
+            if (!hasVibrator()) return;
             invokeMethodWithShellPermissionsNoReturn(
                     mSystemVibrator,
                     (sv) -> sv.addVibratorStateListener(mOnVibratorStateChangedListener));
@@ -63,6 +65,9 @@ public class CallConnectedIndicatorTest extends BaseTelecomTestWithMockServices 
     protected void tearDown() throws Exception {
         super.tearDown();
         if (mShouldTestTelecom) {
+            // Skip test on devices with no vibrator.
+            if (!hasVibrator()) return;
+
             invokeMethodWithShellPermissionsNoReturn(
                     mSystemVibrator,
                     (sv) -> sv.removeVibratorStateListener(mOnVibratorStateChangedListener));
@@ -73,6 +78,7 @@ public class CallConnectedIndicatorTest extends BaseTelecomTestWithMockServices 
 
     public void testCallConnectedIndicatorPreference() throws Exception {
         if (!mShouldTestTelecom) return;
+        if (!hasVibrator()) return;
         if (!isCallConnectedFeatureEnabled()) return;
 
         runWithShellPermissionIdentity(
@@ -101,6 +107,7 @@ public class CallConnectedIndicatorTest extends BaseTelecomTestWithMockServices 
 
     public void testVibratingForMoCallConnected() throws Exception {
         if (!mShouldTestTelecom) return;
+        if (!hasVibrator()) return;
         if (!isCallConnectedFeatureEnabled()) return;
 
         invokeMethodWithShellPermissionsNoReturn(
@@ -146,5 +153,13 @@ public class CallConnectedIndicatorTest extends BaseTelecomTestWithMockServices 
     private boolean isCallConnectedFeatureEnabled() {
         return new com.android.server.telecom.flags.FeatureFlagsImpl()
                 .callConnectedIndicatorPreference();
+    }
+
+    /**
+     * Determines if the device has a vibrator.
+     * @return {@code true} if device has vibrator.
+     */
+    private boolean hasVibrator() {
+        return mSystemVibrator.hasVibrator();
     }
 }
