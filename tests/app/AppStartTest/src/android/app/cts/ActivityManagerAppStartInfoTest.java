@@ -24,7 +24,6 @@ import static org.junit.Assert.fail;
 
 import android.app.ActivityManager;
 import android.app.ApplicationStartInfo;
-import android.app.Flags;
 import android.app.Instrumentation;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
@@ -35,7 +34,6 @@ import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.Process;
 import android.os.UserHandle;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.util.Log;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -132,7 +130,6 @@ public final class ActivityManagerAppStartInfoTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_APP_START_INFO)
     public void testLauncherStart() throws Exception {
         clearHistoricalStartInfo();
 
@@ -153,7 +150,6 @@ public final class ActivityManagerAppStartInfoTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_APP_START_INFO)
     public void testActivityStart() throws Exception {
         clearHistoricalStartInfo();
 
@@ -179,7 +175,6 @@ public final class ActivityManagerAppStartInfoTest {
 
     /** Test that the wasForceStopped state is accurate in force stopped case. */
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_APP_START_INFO)
     public void testWasForceStopped() throws Exception {
         clearHistoricalStartInfo();
 
@@ -205,7 +200,6 @@ public final class ActivityManagerAppStartInfoTest {
 
     /** Test that the wasForceStopped state is accurate in not force stopped case. */
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_APP_START_INFO)
     public void testWasNotForceStopped() throws Exception {
         clearHistoricalStartInfo();
 
@@ -244,7 +238,6 @@ public final class ActivityManagerAppStartInfoTest {
      * the record is removed when the app is uninstalled.
      */
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_APP_START_INFO)
     public void testAppRemoved() throws Exception {
         testActivityStart();
 
@@ -263,7 +256,6 @@ public final class ActivityManagerAppStartInfoTest {
      * Test querying the startup of the process we're currently in.
      */
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_APP_START_INFO)
     public void testQueryThisProcess() throws Exception {
         clearHistoricalStartInfo();
 
@@ -299,7 +291,6 @@ public final class ActivityManagerAppStartInfoTest {
      * itself is not being tested here.
      */
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_APP_START_INFO)
     public void testAddingTimestamps() throws Exception {
         clearHistoricalStartInfo();
 
@@ -340,7 +331,6 @@ public final class ActivityManagerAppStartInfoTest {
      * Test that registered listeners are triggered when AppStartInfo is complete.
      */
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_APP_START_INFO)
     public void testTriggerListeners() throws Exception {
         clearHistoricalStartInfo();
 
@@ -369,7 +359,6 @@ public final class ActivityManagerAppStartInfoTest {
      * Test that multiple registered listeners are triggered when AppStartInfo is complete.
      */
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_APP_START_INFO)
     public void testTriggerMultipleListeners() throws Exception {
         clearHistoricalStartInfo();
 
@@ -405,7 +394,6 @@ public final class ActivityManagerAppStartInfoTest {
      * Test that a removed listener is not triggered when AppStartInfo is complete.
      */
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_APP_START_INFO)
     public void testRemoveListener() throws Exception {
         clearHistoricalStartInfo();
 
