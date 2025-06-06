@@ -6039,8 +6039,6 @@
     <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.cts.WifiScannerTest#testGetCachedScanData"/>
     <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.rtt.cts.WifiRttTest#testAwareRttWithMacAddress"/>
     <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.rtt.cts.WifiRttTest#testRangingResultBuilder"/>
-    <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.rtt.cts.WifiRttTest#testRangingToTestNon11mcApUsingResponderConfig"/>
-    <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.rtt.cts.WifiRttTest#testRangingToTestNon11mcApUsingScanResult"/>
     <!-- CtsWindowManagerBackgroundActivityTestCases -->
     <option name="compatibility:include-filter" value="CtsWindowManagerBackgroundActivityTestCases android.server.wm.ActivitySecurityModelEmbeddingTest#testEmbeddedLaunchesActivity_launchAllowedOnlyOnTop"/>
     <option name="compatibility:include-filter" value="CtsWindowManagerBackgroundActivityTestCases android.server.wm.ActivitySecurityModelEmbeddingTest#testEmbeddingLaunchesActivity_launchAllowed"/>
