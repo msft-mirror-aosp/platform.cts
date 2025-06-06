@@ -78,6 +78,8 @@ public class AudioTrackOffloadTest {
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
+    @Rule public EffectBeforeAfterRule mBeforeAfterRule = new EffectBeforeAfterRule();
+
     // flag to indicate if AAC related tests need to be run or not.
     private boolean mTestAacSupport = false;
 
