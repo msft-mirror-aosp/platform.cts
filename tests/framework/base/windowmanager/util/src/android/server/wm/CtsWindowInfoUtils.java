@@ -47,11 +47,12 @@ import com.android.compatibility.common.util.CtsTouchUtils;
 import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.compatibility.common.util.ThrowingRunnable;
+import com.android.internal.annotations.GuardedBy;
 
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.OptionalInt;
 import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -61,10 +62,13 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.stream.IntStream;
 
 public class CtsWindowInfoUtils {
     private static final int HW_TIMEOUT_MULTIPLIER = SystemProperties.getInt(
             "ro.hw_timeout_multiplier", 1);
+
+    private static final String TAG = CtsWindowInfoUtils.class.getSimpleName();
 
     /**
      * Calls the provided predicate each time window information changes.
@@ -425,100 +429,127 @@ public class CtsWindowInfoUtils {
                                                   @NonNull Predicate<WindowInfo> predicate,
                                                   int expectedOrder, boolean stabilize)
             throws InterruptedException {
-        var latch = new CountDownLatch(1);
-        var satisfied = new AtomicBoolean();
+        var consumer =
+                new BiConsumer<List<WindowInfo>, List<DisplayInfo>>() {
+                    private Timer mTimer = new Timer();
+                    private TimerTask mTask = null;
+                    private Rect mPreviousBounds = new Rect(0, 0, -1, -1);
 
-        var windowNotOccluded = new BiConsumer<List<WindowInfo>, List<DisplayInfo>>() {
-            private Timer mTimer = new Timer();
-            private TimerTask mTask = null;
-            private Rect mPreviousBounds = new Rect(0, 0, -1, -1);
+                    private final CountDownLatch mLatch = new CountDownLatch(1);
 
-            private void resetState() {
-                if (mTask != null) {
-                    mTask.cancel();
-                    mTask = null;
-                }
-                mPreviousBounds.set(0, 0, -1, -1);
-            }
+                    @GuardedBy("this")
+                    private boolean mSatisfied = false;
 
-            @Override
-            public void accept(List<WindowInfo> windowInfos, List<DisplayInfo> displayInfos) {
-                if (satisfied.get()) {
-                    return;
-                }
+                    @GuardedBy("this")
+                    private List<WindowInfo> mLastWindowInfos;
 
-                WindowInfo targetWindowInfo = null;
-                ArrayList<WindowInfo> aboveWindowInfos = new ArrayList<>();
-                for (var windowInfo : windowInfos) {
-                    if (predicate.test(windowInfo)) {
-                        targetWindowInfo = windowInfo;
-                        break;
-                    }
-                    if (windowInfo.isTrustedOverlay || !windowInfo.isVisible) {
-                        continue;
-                    }
-                    aboveWindowInfos.add(windowInfo);
-                }
-
-                if (targetWindowInfo == null) {
-                    // The window isn't present. If we have an active timer, we need to cancel it
-                    // as it's possible the window was previously present and has since disappeared.
-                    resetState();
-                    return;
-                }
-
-                int currentOrder = 0;
-                for (var windowInfo : aboveWindowInfos) {
-                    if (targetWindowInfo.displayId == windowInfo.displayId
-                            && Rect.intersects(targetWindowInfo.bounds, windowInfo.bounds)) {
-                        if (currentOrder < expectedOrder) {
-                            currentOrder++;
-                            continue;
+                    private void resetState() {
+                        if (mTask != null) {
+                            mTask.cancel();
+                            mTask = null;
                         }
-                        // The window is occluded. If we have an active timer, we need to cancel it
-                        // as it's possible the window was previously not occluded and now is
-                        // occluded.
-                        resetState();
-                        return;
+                        mPreviousBounds.set(0, 0, -1, -1);
                     }
-                }
-                if (currentOrder != expectedOrder) {
-                    resetState();
-                    return;
-                }
 
-                if (targetWindowInfo.bounds.equals(mPreviousBounds)) {
-                    // The window matches previously found bounds. Let the active timer continue.
-                    return;
-                }
-
-                // The window is present and not occluded but has different bounds than
-                // previously seen or this is the first time we've detected the window. If
-                // there's an active timer, cancel it. Schedule a task to toggle the latch in 200ms.
-                resetState();
-                mPreviousBounds.set(targetWindowInfo.bounds);
-                mTask = new TimerTask() {
                     @Override
-                    public void run() {
-                        satisfied.set(true);
-                        latch.countDown();
+                    public void accept(
+                            List<WindowInfo> windowInfos, List<DisplayInfo> displayInfos) {
+                        synchronized (this) {
+                            acceptLocked(windowInfos, displayInfos);
+                        }
+                    }
+
+                    private void acceptLocked(
+                            List<WindowInfo> windowInfos, List<DisplayInfo> displayInfos) {
+                        if (mSatisfied) {
+                            return;
+                        }
+
+                        mLastWindowInfos = windowInfos;
+
+                        OptionalInt targetWindowIndex =
+                                IntStream.range(0, windowInfos.size())
+                                        .filter(i -> predicate.test(windowInfos.get(i)))
+                                        .findFirst();
+
+                        if (targetWindowIndex.isEmpty()) {
+                            // The window isn't present. If we have an active timer, we need to
+                            // cancel it as it's possible the window was previously present and has
+                            // since disappeared.
+                            resetState();
+                            return;
+                        }
+
+                        WindowInfo targetWindowInfo = windowInfos.get(targetWindowIndex.getAsInt());
+
+                        long actualOrder =
+                                windowInfos.subList(0, targetWindowIndex.getAsInt()).stream()
+                                        .filter(
+                                                windowInfo ->
+                                                        !windowInfo.isTrustedOverlay
+                                                                && windowInfo.displayId
+                                                                        == targetWindowInfo
+                                                                                .displayId
+                                                                && windowInfo.isVisible
+                                                                && Rect.intersects(
+                                                                        windowInfo.bounds,
+                                                                        targetWindowInfo.bounds))
+                                        .count();
+
+                        if (actualOrder != expectedOrder) {
+                            resetState();
+                            return;
+                        }
+
+                        if (targetWindowInfo.bounds.equals(mPreviousBounds)) {
+                            // The window matches previously found bounds. Let the active timer
+                            // continue.
+                            return;
+                        }
+
+                        // The window is present at the expected z-order but has different bounds
+                        // than previously seen or this is the first time we've detected the window
+                        // at the expected z-order. If there's an active timer, cancel it. Schedule
+                        // a task to toggle the latch in 200ms.
+                        resetState();
+                        mPreviousBounds.set(targetWindowInfo.bounds);
+                        var lock = this;
+                        mTask =
+                                new TimerTask() {
+                                    @Override
+                                    public void run() {
+                                        synchronized (lock) {
+                                            mSatisfied = true;
+                                            mLatch.countDown();
+                                        }
+                                    }
+                                };
+                        mTimer.schedule(mTask, stabilize ? 200L * HW_TIMEOUT_MULTIPLIER : 0L);
+                    }
+
+                    boolean waitForExpectedOrder() throws InterruptedException {
+                        var ignored = mLatch.await(timeout.toMillis(), TimeUnit.MILLISECONDS);
+                        synchronized (this) {
+                            if (!mSatisfied) {
+                                dumpWindows(TAG, "(waitForNthWindowFromTop)", mLastWindowInfos);
+                            }
+                            return mSatisfied;
+                        }
                     }
                 };
-                mTimer.schedule(mTask, stabilize ? 200L * HW_TIMEOUT_MULTIPLIER : 0L);
-            }
-        };
 
-        runWithSurfaceFlingerPermission(() -> {
-            var listener = new WindowInfosListenerForTest();
-            try {
-                listener.addWindowInfosListener(windowNotOccluded);
-                latch.await(timeout.toMillis(), TimeUnit.MILLISECONDS);
-            } finally {
-                listener.removeWindowInfosListener(windowNotOccluded);
-            }
-        });
-
-        return satisfied.get();
+        boolean[] result = {false};
+        runWithSurfaceFlingerPermission(
+                () -> {
+                    var listener = new WindowInfosListenerForTest();
+                    try {
+                        listener.addWindowInfosListener(consumer);
+                        result[0] = consumer.waitForExpectedOrder();
+                    } finally {
+                        listener.removeWindowInfosListener(consumer);
+                    }
+                });
+        return result[0];
     }
 
     private interface InterruptableRunnable {
@@ -933,16 +964,26 @@ public class CtsWindowInfoUtils {
 
     public static void dumpWindowsOnScreen(String tag, String message)
             throws InterruptedException {
-        waitForWindowInfos(windowInfos -> {
-            if (windowInfos.isEmpty()) {
-                return false;
-            }
-            Log.d(tag, "Dumping windows on screen: " + message);
-            for (var windowInfo : windowInfos) {
-                Log.d(tag, "     " + windowInfo);
-            }
-            return true;
-        }, Duration.ofSeconds(5L * HW_TIMEOUT_MULTIPLIER));
+        boolean dumped =
+                waitForWindowInfos(
+                        windowInfos -> {
+                            if (windowInfos.isEmpty()) {
+                                return false;
+                            }
+                            dumpWindows(tag, message, windowInfos);
+                            return true;
+                        },
+                        Duration.ofSeconds(5L * HW_TIMEOUT_MULTIPLIER));
+        if (!dumped) {
+            Log.d(tag, "dumpWindowsOnScreen - no windows found!");
+        }
+    }
+
+    private static void dumpWindows(String tag, String message, List<WindowInfo> windowInfos) {
+        Log.d(tag, "Dumping windows on screen: " + message);
+        for (var windowInfo : windowInfos) {
+            Log.d(tag, "    " + windowInfo);
+        }
     }
 
     /**
