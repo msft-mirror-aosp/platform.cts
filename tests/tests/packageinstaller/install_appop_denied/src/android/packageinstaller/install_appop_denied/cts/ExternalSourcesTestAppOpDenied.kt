@@ -34,7 +34,8 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 private const val INSTALL_CONFIRM_TEXT_ID = "install_confirm_question"
-private const val ALERT_DIALOG_MESSAGE_ID = "android:id/message"
+private const val ALERT_DIALOG_MESSAGE =
+    "For your security, your phone currently isn’t allowed to install unknown apps from this source"
 
 @RunWith(AndroidJUnit4::class)
 @MediumTest
@@ -50,7 +51,7 @@ class ExternalSourcesTest : PackageInstallerTestBase() {
     }
 
     private fun assertInstallBlocked(errorMessage: String) {
-        assertUiObject(errorMessage, By.res(ALERT_DIALOG_MESSAGE_ID))
+        assertUiObject(errorMessage, By.textContains(ALERT_DIALOG_MESSAGE))
         uiDevice.pressBack()
     }
 
