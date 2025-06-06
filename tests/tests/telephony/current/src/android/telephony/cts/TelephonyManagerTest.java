@@ -2527,21 +2527,6 @@ public class TelephonyManagerTest {
                         || cardId >= 0);
     }
 
-    /**
-     * Tests that a SecurityException is thrown when trying to access UiccCardsInfo.
-     */
-    @Test
-    public void testGetUiccCardsInfoException() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
-
-        try {
-            // Requires READ_PRIVILEGED_PHONE_STATE or carrier privileges
-            List<UiccCardInfo> infos = mTelephonyManager.getUiccCardsInfo();
-            fail("Expected SecurityException. App does not have carrier privileges");
-        } catch (SecurityException e) {
-        }
-    }
-
     @Test
     public void testSetLine1NumberUpdatesSubscriptionInfo() throws Exception {
         assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
@@ -2594,14 +2579,6 @@ public class TelephonyManagerTest {
     public void testGetUiccCardsInfo() throws Exception {
         assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
 
-        // The API requires either READ_PRIVILEGED_PHONE_STATE or carrier privileges
-        try {
-            mTelephonyManager.getUiccCardsInfo();
-            fail("Telephony#getUiccCardsInfo should throw SecurityException without "
-                    + "READ_PRIVILEGED_PHONE_STATE nor carrier privileges");
-        } catch (SecurityException expected) {
-        }
-
         // With READ_PRIVILEGED_PHONE_STATE only, it should work
         List<UiccCardInfo> infos =
                 ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
@@ -2623,6 +2600,40 @@ public class TelephonyManagerTest {
                 getContext(),
                 SubscriptionManager.getDefaultSubscriptionId(),
                 () -> mTelephonyManager.getUiccCardsInfo());
+    }
+
+    /**
+     * Verify that, with READ_BASIC_PHONE_STATE permission, caller can retrieve UiccCardInfo with
+     * all info as what it gets with READ_PRIVILEGED_PHONE_STATE, but with sensitive info redacted.
+     */
+    @RequiresFlagsEnabled(Flags.FLAG_MACRO_BASED_OPPORTUNISTIC_NETWORKS)
+    @Test
+    public void testGetUiccCardsInfoWithReadBasicPhoneStatePermission() {
+        // With READ_PRIVILEGED_PHONE_STATE, get unredacted list first
+        final List<UiccCardInfo> originalCardInfos =
+                ShellIdentityUtils.invokeMethodWithShellPermissions(
+                        mTelephonyManager, (tm) -> tm.getUiccCardsInfo());
+        // Redact sensitive info
+        final Set<UiccCardInfo> expectedCardInfos =
+                originalCardInfos.stream()
+                        .map(cardInfo -> cardInfo.createSensitiveInfoSanitizedCopy(false))
+                        .collect(Collectors.toSet());
+
+        final List<UiccCardInfo> redatedCardInfos;
+        try {
+            InstrumentationRegistry.getInstrumentation()
+                    .getUiAutomation()
+                    .adoptShellPermissionIdentity(
+                            android.Manifest.permission.READ_BASIC_PHONE_STATE);
+
+            redatedCardInfos = mTelephonyManager.getUiccCardsInfo();
+
+            assertEquals(expectedCardInfos, new HashSet<>(redatedCardInfos));
+        } finally {
+            InstrumentationRegistry.getInstrumentation()
+                    .getUiAutomation()
+                    .dropShellPermissionIdentity();
+        }
     }
 
     private static Context getContext() {

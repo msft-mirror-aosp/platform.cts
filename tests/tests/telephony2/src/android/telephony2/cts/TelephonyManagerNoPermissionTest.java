@@ -114,6 +114,14 @@ public class TelephonyManagerNoPermissionTest {
         assertThrows(SecurityException.class, () -> mTelephonyManager.isModemEnabledForSlot(0));
     }
 
+    /** Tests that a SecurityException is thrown when trying to access UiccCardsInfo. */
+    @Test
+    public void testGetUiccCardsInfoException() {
+        assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
+
+        assertThrows(SecurityException.class, () -> mTelephonyManager.getUiccCardsInfo());
+    }
+
     @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
     @Test
     public void getCarrierRestrictionRules_SecurityException() {
