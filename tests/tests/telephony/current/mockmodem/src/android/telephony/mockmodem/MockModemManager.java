@@ -1373,6 +1373,19 @@ public class MockModemManager {
                 .isUserDataRoamingEnabled();
     }
 
+    /** Return whether IMS data network notified. */
+    public boolean getIsImsDataNetworkNotified(int slotId) {
+        Log.d(TAG, "getIsImsDataNetworkNotified");
+        if (mMockModemService == null) {
+            Log.e(TAG, "getIsImsDataNetworkNotified: mMockModemService is null");
+        }
+
+        return mMockModemService
+                .getIRadioData((byte) slotId)
+                .getMockDataServiceInstance()
+                .isImsDataNetworkNotified();
+    }
+
     public void setSendSmsErrorCode(int slotId, @RadioError int sendSmsErrorCode, int rilErrorCode) {
         Log.d(TAG, "setSendSmsErrorCode: slotId=" + slotId + "sendSmsErrorCode=" + sendSmsErrorCode
             + " rilErrorCode=" + rilErrorCode);
