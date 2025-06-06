@@ -29,7 +29,6 @@ import static org.junit.Assert.assertThrows;
 import static org.junit.Assume.assumeThat;
 import static org.junit.Assume.assumeTrue;
 
-import android.car.Car;
 import android.car.VehicleAreaDoor;
 import android.car.VehicleAreaMirror;
 import android.car.VehicleAreaSeat;
@@ -1584,11 +1583,6 @@ public class VehiclePropertyVerifier<T> {
         return Build.VERSION.SDK_INT >= Build.VERSION_CODES.BAKLAVA;
     }
 
-    // TODO(b/416768353): Update this to 25Q4 once we have the version for it.
-    public static boolean isAtLeast25Q4() {
-        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.CUR_DEVELOPMENT;
-    }
-
     /** Gets the possible values for an integer property. */
     private List<Integer> getPossibleIntegerValues(int areaId) {
         CarPropertyConfig<T> carPropertyConfig = getCarPropertyConfig();
@@ -2215,17 +2209,6 @@ public class VehiclePropertyVerifier<T> {
                         carPropertyValue,
                         carPropertyValue.getAreaId(),
                         CAR_PROPERTY_VALUE_SOURCE_CALLBACK);
-                if (Flags.carPropertyStatusDetailedNotAvailable() && isAtLeast25Q4()) {
-                    if (mContext.checkSelfPermission(Car.PERMISSION_READ_PROPERTY_VENDOR_STATUS)
-                            != PERMISSION_GRANTED) {
-                        assertThrows(
-                                SecurityException.class,
-                                () -> carPropertyValue.getPropertyVendorStatus());
-                    } else {
-                        // Make sure no exception is thrown.
-                        carPropertyValue.getPropertyVendorStatus();
-                    }
-                }
             }
         }
     }
