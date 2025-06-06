@@ -39,6 +39,7 @@ import android.server.wm.WindowManagerStateHelper;
 
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.uiautomator.By;
+import androidx.test.uiautomator.BySelector;
 import androidx.test.uiautomator.UiDevice;
 
 import com.android.compatibility.common.util.AppOpsUtils;
@@ -49,6 +50,7 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
+import java.util.regex.Pattern;
 
 public class UninstallPinnedTest {
 
@@ -98,7 +100,9 @@ public class UninstallPinnedTest {
         mUiDevice.waitForIdle();
         eventually(() -> {
             mContext.sendBroadcast(new Intent(ACTION_SELF_UNINSTALL));
-            waitFindObject(By.text("OK")).click();
+            BySelector buttonSelector =
+                    By.text(Pattern.compile("OK|Uninstall", Pattern.CASE_INSENSITIVE));
+            waitFindObject(buttonSelector).click();
         }, 60000);
 
         mUiDevice.waitForIdle();
