@@ -23,6 +23,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.ResultReceiver;
 import android.server.wm.backgroundactivity.common.Components.Event;
+import android.server.wm.backgroundactivity.common.TestService;
 import android.util.Log;
 
 /**
@@ -34,6 +35,8 @@ public class SimpleBroadcastReceiver extends BroadcastReceiver {
 
     @Override
     public void onReceive(Context context, Intent intent) {
+        TestService.onBroadcastReceived(context);
+
         String app = context.getPackageName() + "@" + context.getApplicationInfo().targetSdkVersion;
         Log.i(TAG, "onReceive " + app + " " + intent);
 
@@ -42,4 +45,5 @@ public class SimpleBroadcastReceiver extends BroadcastReceiver {
             eventNotifier.send(Event.BROADCAST_RECEIVED, null);
         }
     }
+
 }

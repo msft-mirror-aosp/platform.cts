@@ -45,5 +45,7 @@ object Components : ComponentsProvider() {
     val APP_B_START_PENDING_INTENT_ACTIVITY =
         component(APP_A_START_PENDING_INTENT_ACTIVITY.className)
 
+    @JvmField val APP_B_SIMPLE_BROADCAST_RECEIVER = component("SimpleBroadcastReceiver")
+
     private fun String.toFullAction() = buildFullActionName(packageName, this)
 }
