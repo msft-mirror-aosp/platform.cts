@@ -107,6 +107,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerExecutor;
 import android.os.HandlerThread;
+import android.os.OutcomeReceiver;
 import android.os.PersistableBundle;
 import android.os.PowerManager;
 import android.os.Process;
@@ -7746,5 +7747,76 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
         assertEquals(100, option.getBlockingTimeSeconds());
         assertTrue(option.isBlockingBssidOnly());
         sWifiManager.disallowCurrentSuggestedNetwork(option);
+    }
+
+    /**
+     * Verify the invalid and valid usages of {@code WifiManager#queryPrivilegedConfiguredNetworks}.
+     */
+    @ApiTest(apis = {"android.net.wifi.WifiManager#queryPrivilegedConfiguredNetworks"})
+    @RequiresFlagsEnabled(Flags.FLAG_GET_CONFIG_EMPTY_REASON)
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S, codeName = "S")
+    @Test
+    public void testQueryPrivilegedConfiguredNetworks() throws Exception {
+        Mutable<Boolean> onResultCalled = new Mutable<Boolean>(false);
+        Mutable<Boolean> onErrorCalled = new Mutable<Boolean>(false);
+        OutcomeReceiver<List<WifiConfiguration>, Error> resultsCallback =
+                new OutcomeReceiver<List<WifiConfiguration>, Error>() {
+                    @Override
+                    public void onResult(List<WifiConfiguration> configs) {
+                        synchronized (mLock) {
+                            onResultCalled.value = true;
+                            assertNotNull(configs);
+                            mLock.notify();
+                        }
+                    }
+                    ;
+
+                    @Override
+                    public void onError(Error error) {
+                        synchronized (mLock) {
+                            onErrorCalled.value = true;
+                            mLock.notify();
+                        }
+                    }
+                    ;
+                };
+        // Null executor/callback exception.
+        try {
+            sWifiManager.queryPrivilegedConfiguredNetworks(null, resultsCallback);
+            fail("expected NullPointerException");
+        } catch (NullPointerException expected) {
+        }
+
+        try {
+            sWifiManager.queryPrivilegedConfiguredNetworks(mExecutor, null);
+            fail("expected NullPointerException");
+        } catch (NullPointerException expectedNPE) {
+        }
+
+        try {
+            sWifiManager.queryPrivilegedConfiguredNetworks(mExecutor, resultsCallback);
+            fail("expected SecurityException");
+        } catch (SecurityException expectedSE) {
+        }
+
+        long now, deadline;
+        UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
+        try {
+            uiAutomation.adoptShellPermissionIdentity();
+            // With permission, onResult should be called but not onResult.
+            synchronized (mLock) {
+                sWifiManager.queryPrivilegedConfiguredNetworks(mExecutor, resultsCallback);
+                now = System.currentTimeMillis();
+                deadline = now + TEST_WAIT_DURATION_MS;
+                while (!onResultCalled.value && now < deadline) {
+                    mLock.wait(deadline - now);
+                    now = System.currentTimeMillis();
+                }
+            }
+            assertTrue(onResultCalled.value);
+            assertFalse(onErrorCalled.value);
+        } finally {
+            uiAutomation.dropShellPermissionIdentity();
+        }
     }
 }
