@@ -113,6 +113,66 @@ public class PropertyUtil {
     }
 
     /**
+     * Returns the vendor API level of the device when it left the factory.
+     *
+     * <p>Some features rely on data that is provisioned to the device in the factory. This data
+     * cannot be changed when the vendor layer is updated. This function should only be used when
+     * interacting with features that depend on provisioning.
+     *
+     * <p>This function mirrors the <code>AVendorSupport_getFirstVendorApiLevel</code> function in
+     * the libvendorsupport LLNDK.
+     *
+     * @return The vendor API level when the device physically shipped, or -1 if the expected system
+     *     properties are not found. The numbering scheme of the returned value is 30, 31, 32, 33,
+     *     34, 202404, 202504, etc.
+     */
+    public static int getFirstVsrApiLevel() {
+        // `ro.board.first_api_level` is only populated for GRF chipsets.
+        // Its numbering scheme is 30, 31, 32, 33, 34, 202404, 202504, etc. so there
+        // is no need for conversion using `AVendorSupport_getVendorApiLevelOf`.
+        int boardFirstApiLevel = getPropertyInt(BOARD_FIRST_API_LEVEL);
+        if (boardFirstApiLevel != INT_VALUE_IF_UNSET) {
+            return boardFirstApiLevel;
+        }
+
+        // `ro.product.first_api_level` is always populated.
+        // Its numbering scheme is 30, 31, 32, 33, 34, 35, 36... so it must be converted
+        // using `AVendorSupport_getVendorApiLevelOf`.
+        int productFirstApiLevel = getPropertyInt(FIRST_API_LEVEL);
+        if (productFirstApiLevel != INT_VALUE_IF_UNSET) {
+            return getVendorApiLevelOf(productFirstApiLevel);
+        }
+        return getFirstApiLevel();
+    }
+
+    /**
+     * Returns the vendor API level corresponding to the SDK API level.
+     *
+     * <p>SDK API levels and vendor API levels are completely decoupled starting in Android 14-QPR3,
+     * per https://source.android.com/docs/core/architecture/api-flags. This decoupling introduced a
+     * new vendor API level format (YYYYMM), meaning that the two API levels can no longer be
+     * directly compared. This function must be used when performing such a comparison.
+     *
+     * <p>This function mirrors the <code>AVendorSupport_getVendorApiLevelOf</code> function in the
+     * libvendorsupport LLNDK.
+     *
+     * @param sdkApiLevel SDK API level integer (e.g. 26, 33, 36). Must be <10000.
+     * @return Vendor API level corresponding to the SDK API level, or -1 if <code>sdkApiLevel
+     *     </code> is >=10000.
+     */
+    private static int getVendorApiLevelOf(int sdkApiLevel) {
+        if (sdkApiLevel < Build.VERSION_CODES.VANILLA_ICE_CREAM) {
+            return sdkApiLevel;
+        }
+
+        if (sdkApiLevel < Build.VERSION_CODES.CUR_DEVELOPMENT) {
+            return 202404 + ((sdkApiLevel - Build.VERSION_CODES.VANILLA_ICE_CREAM) * 100);
+        }
+
+        return INT_VALUE_IF_UNSET;
+    }
+
+    /**
      * Return the API level of the vendor partition. It will read the following properties in order
      * and returns the value of the first defined property. If none of them are defined, or the
      * value is a VERSION CODENAME, returns the current API level which is defined in
