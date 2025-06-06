@@ -27,11 +27,13 @@ java_defaults {
     ],
 
     static_libs: [
+        "android.content.pm.flags-aconfig-java",
         "androidx.legacy_legacy-support-v4",
         "androidx.test.uiautomator_uiautomator",
         "androidx.test.rules",
         "androidx.test.ext.junit",
         "compatibility-device-util-axt",
+        "flag-junit",
         "platform-test-annotations",
         "truth",
     ],
