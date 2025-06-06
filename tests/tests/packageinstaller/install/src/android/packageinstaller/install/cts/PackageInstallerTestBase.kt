@@ -26,6 +26,7 @@ import android.content.Intent.EXTRA_INTENT
 import android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK
 import android.content.Intent.FLAG_ACTIVITY_NEW_TASK
 import android.content.IntentFilter
+import android.content.pm.Flags
 import android.content.pm.PackageInfo
 import android.content.pm.PackageInstaller
 import android.content.pm.PackageInstaller.EXTRA_PRE_APPROVAL
@@ -100,7 +101,7 @@ open class PackageInstallerTestBase {
         val context: Context = InstrumentationRegistry.getTargetContext()
         val testUserId: Int = context.user.identifier
 
-        var usePiaV2: Boolean = false
+        var usePiaV2: Boolean = Flags.usePiaV2()
     }
 
     @get:Rule

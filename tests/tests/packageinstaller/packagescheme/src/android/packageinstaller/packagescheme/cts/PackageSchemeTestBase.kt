@@ -21,6 +21,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.util.Log
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.platform.app.InstrumentationRegistry
@@ -44,10 +45,6 @@ open class PackageSchemeTestBase {
     val BASE_PATH = "/data/local/tmp/cts/packagescheme/"
     val TARGET_APP_PKG_NAME = "android.packageinstaller.emptytestapp.cts"
     val TARGET_APP_APK = BASE_PATH + "CtsEmptyTestApp.apk"
-    val POSITIVE_BTN_ID = "button1"
-    val NEGATIVE_BTN_ID = "button2"
-    val SYSTEM_PACKAGE_NAME = "android"
-    val PACKAGE_INSTALLER_PACKAGE_NAME = "com.android.packageinstaller"
     val DEFAULT_TIMEOUT = 5000L
 
     var mScenario: ActivityScenario<TestActivity>? = null
@@ -55,6 +52,7 @@ open class PackageSchemeTestBase {
     val mUiDevice = UiDevice.getInstance(mInstrumentation)
     var mButton: UiObject2? = null
     val mContext: Context = mInstrumentation.context
+    var mPackageInstallerPackageName: String? = null
 
     class TestActivity : Activity() {
         val mLatch: CountDownLatch = CountDownLatch(1)
@@ -107,13 +105,25 @@ open class PackageSchemeTestBase {
                 scrollable.flingToEnd(10)
             }
             if (packageHasVisibility && needTargetApp) {
+                val buttonSelector = By.text(
+                    Pattern.compile(
+                        "Cancel",
+                        Pattern.CASE_INSENSITIVE
+                    )
+                )
                 button = mUiDevice.wait(
-                    Until.findObject(getBySelector(NEGATIVE_BTN_ID)), DEFAULT_TIMEOUT)
+                    Until.findObject(getBySelector(buttonSelector)), DEFAULT_TIMEOUT)
                 btnName = "Cancel"
             } else {
+                val buttonSelector = By.text(
+                    Pattern.compile(
+                        "OK|Close",
+                        Pattern.CASE_INSENSITIVE
+                    )
+                )
                 button = mUiDevice.wait(
-                    Until.findObject(getBySelector(POSITIVE_BTN_ID)), DEFAULT_TIMEOUT)
-                btnName = "OK"
+                    Until.findObject(getBySelector(buttonSelector)), DEFAULT_TIMEOUT)
+                btnName = "OK or Close"
             }
             assertWithMessage("$btnName not found").that(button).isNotNull()
             button?.click()
@@ -142,20 +152,23 @@ open class PackageSchemeTestBase {
             .setData(Uri.parse("package:$TARGET_APP_PKG_NAME"))
     }
 
-    private fun getBySelector(id: String): BySelector {
-        // Normally, we wouldn't need to look for buttons from 2 different packages.
-        // However, to fix b/297132020, AlertController was replaced with AlertDialog and shared
-        // to selective partners, leading to fragmentation in which button surfaces in an OEM's
-        // installer app.
-        return By.res(
-            Pattern.compile(
-                String.format(
-                    "(?:^%s|^%s):id/%s",
-                    PACKAGE_INSTALLER_PACKAGE_NAME,
-                    SYSTEM_PACKAGE_NAME,
-                    id
-                )
-            )
+    private fun getBySelector(selector: BySelector): BySelector {
+        return selector.pkg(getPackageInstallerPackageName()!!)
+    }
+
+    private fun getPackageInstallerPackageName(): String? {
+        if (mPackageInstallerPackageName != null) {
+            return mPackageInstallerPackageName
+        }
+        val intent = Intent(
+            Intent.ACTION_INSTALL_PACKAGE
+        ).setData(Uri.parse("content:"))
+        val ri = mContext.packageManager.resolveActivity(intent,  /* flags= */0)
+        mPackageInstallerPackageName = ri?.activityInfo?.packageName
+        Log.d(
+            LOG_TAG,
+            "sPackageInstallerPackageName = %mPackageInstallerPackageName"
         )
+        return mPackageInstallerPackageName
     }
 }
