@@ -51,6 +51,7 @@ import java.util.concurrent.TimeoutException;
 /**
  * Tests for the direction action related functions.
  */
+@AppModeFull(reason = "Interapp broadcast required for test.")
 public class DirectActionsTest extends AbstractVoiceInteractionTestCase {
     private static final String TAG = DirectActionsTest.class.getSimpleName();
 
@@ -87,7 +88,6 @@ public class DirectActionsTest extends AbstractVoiceInteractionTestCase {
         }
     }
 
-    @AppModeFull(reason = "testPerformDirectAction() is enough")
     @Test
     public void testGetPackageName() throws Exception {
         mActivityControl.startActivity();
@@ -104,7 +104,6 @@ public class DirectActionsTest extends AbstractVoiceInteractionTestCase {
         }
     }
 
-    @AppModeFull(reason = "testPerformDirectAction() is enough")
     @Test
     public void testGrantVisibilityOnRequestDirectActions() throws Exception {
         mActivityControl.startActivity();
@@ -123,7 +122,6 @@ public class DirectActionsTest extends AbstractVoiceInteractionTestCase {
         }
     }
 
-    @AppModeFull(reason = "testPerformDirectAction() is enough")
     @Test
     public void testCancelPerformedDirectAction() throws Exception {
         mActivityControl.startActivity();
@@ -148,7 +146,6 @@ public class DirectActionsTest extends AbstractVoiceInteractionTestCase {
         }
     }
 
-    @AppModeFull(reason = "testPerformDirectAction() is enough")
     @Test
     public void testVoiceInteractorDestroy() throws Exception {
         mActivityControl.startActivity();
@@ -166,7 +163,6 @@ public class DirectActionsTest extends AbstractVoiceInteractionTestCase {
         }
     }
 
-    @AppModeFull(reason = "testPerformDirectAction() is enough")
     @Test
     public void testNotifyDirectActionsChanged() throws Exception {
         mActivityControl.startActivity();
