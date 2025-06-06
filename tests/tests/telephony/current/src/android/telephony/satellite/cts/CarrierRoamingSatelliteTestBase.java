@@ -815,9 +815,7 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
             List<String> expectedTelephonyCarrierPlmnList = new ArrayList<>();
             expectedTelephonyCarrierPlmnList.add(satellitePlmn);
             waitForCarrierPlmnListConfigured(slotId, expectedTelephonyCarrierPlmnList);
-            List<String> telephonyCarrierPlmnList =
-                sSatelliteManager.getSatellitePlmnsForCarrier(subId);
-            assertThat(telephonyCarrierPlmnList).containsExactly(satellitePlmn);
+            waitForCarrierPlmnListAvailableInTelephony(subId, expectedTelephonyCarrierPlmnList);
             int dataMode = sSatelliteManager.getSatelliteDataSupportMode(subId);
             assertEquals((long) SatelliteManager.SATELLITE_DATA_SUPPORT_RESTRICTED,
                 (long) dataMode);
@@ -849,8 +847,7 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
             assertThat(carrierPlmnListConfigured).containsNoneIn(barredPlmnList);
 
             // Verify that Telephony has updated its internal state correctly.
-            telephonyCarrierPlmnList = sSatelliteManager.getSatellitePlmnsForCarrier(subId);
-            assertThat(telephonyCarrierPlmnList).containsExactlyElementsIn(allowedPlmnList);
+            waitForCarrierPlmnListAvailableInTelephony(subId, allowedPlmnList);
             dataMode = sSatelliteManager.getSatelliteDataSupportMode(subId);
             assertEquals((long) SatelliteManager.SATELLITE_DATA_SUPPORT_UNCONSTRAINED,
                     (long) dataMode);
@@ -989,6 +986,23 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
                 && carrierPlmnListConfigured.containsAll(expectedCarrierPlmnList)) {
                 break;
             }
+        }
+        assertThat(i).isLessThan(maxRetry);
+    }
+
+    private static void waitForCarrierPlmnListAvailableInTelephony(
+        int subId, List<String> expectedCarrierPlmnList) {
+        logd(TAG, "waitForCarrierPlmnListAvailableInTelephony: subId=" + subId
+                + ", expectedCarrierPlmnList=" + String.join(", ", expectedCarrierPlmnList));
+        int i = 0;
+        int maxRetry = 5;
+        for (; i < maxRetry; i++) {
+            List<String> carrierPlmnList = sSatelliteManager.getSatellitePlmnsForCarrier(subId);
+            logd(TAG, "carrierPlmnList=" + String.join(", ", carrierPlmnList));
+            if (areListsTheSame(carrierPlmnList, expectedCarrierPlmnList)) {
+                break;
+            }
+            waitFor(500);
         }
         assertThat(i).isLessThan(maxRetry);
     }
