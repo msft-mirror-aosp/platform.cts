@@ -26,6 +26,7 @@ import androidx.test.uiautomator.UiDevice
 import androidx.test.uiautomator.Until
 import com.android.compatibility.common.util.AppOpsUtils
 import com.google.common.truth.Truth.assertThat
+import java.util.regex.Pattern
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
@@ -35,7 +36,8 @@ import org.junit.runner.RunWith
 
 private const val INSTALL_CONFIRM_TEXT_ID = "install_confirm_question"
 private const val ALERT_DIALOG_MESSAGE =
-    "For your security, your phone currently isn’t allowed to install unknown apps from this source"
+    "For your security, your (phone|tablet|TV|watch?) currently isn’t allowed to install unknown" +
+            " apps from this source.*"
 
 @RunWith(AndroidJUnit4::class)
 @MediumTest
@@ -51,7 +53,15 @@ class ExternalSourcesTest : PackageInstallerTestBase() {
     }
 
     private fun assertInstallBlocked(errorMessage: String) {
-        assertUiObject(errorMessage, By.textContains(ALERT_DIALOG_MESSAGE))
+        assertUiObject(
+            errorMessage,
+            By.text(
+                Pattern.compile(
+                    ALERT_DIALOG_MESSAGE,
+                    Pattern.CASE_INSENSITIVE
+                )
+            )
+        )
         uiDevice.pressBack()
     }
 
