@@ -21,6 +21,7 @@ import android.app.ActivityOptions;
 import android.app.Instrumentation;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Rect;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -67,6 +68,11 @@ public class TestActivityLauncher<T extends Activity> {
 
     public TestActivityLauncher<T> setLaunchDisplayId(int displayId) {
         mOptions.setLaunchDisplayId(displayId);
+        return this;
+    }
+
+    public TestActivityLauncher<T> setLaunchBounds(Rect bounds) {
+        mOptions.setLaunchBounds(bounds);
         return this;
     }
 
