@@ -931,55 +931,6 @@
     <string name="ble_mtu_mismatch_message">MTU is not correct.(Request:%1$d, Actual:%2$d)</string>
     <string name="ble_mtu_fail_message">MTU test: failed to receive data</string>
 
-    <!-- Strings for CompanionDeviceTestActivity -->
-    <string name="companion_test">Companion Device Test</string>
-    <string name="companion_test_info">
-        This test checks that APIs to manage companion devices are working correctly,
-        including showing the dialog to the user to verify a device, as well as updating an internal
-        record once the user made the choice and then removing it.\n\n
-        Before proceeding, make sure you have a bluetooth device nearby and discoverable.
-        Also, make sure that bluetooth is turned on for this device.
-        Once you press the button, wait for a dialog to pop up and select your device from the list.
-    </string>
-
-    <!-- Strings for CompanionDeviceServiceTestActivity -->
-    <string name="companion_service_associate_button">Associate</string>
-    <string name="companion_service_associate_title">Device Association</string>
-    <string name="companion_service_associate_text">
-        Press the "Associate" button. Wait for a dialog to pop up and select your device from the
-        list.
-    </string>
-    <string name="companion_service_bluetooth_feature_title">Bluetooth Feature Supported</string>
-    <string name="companion_service_bluetooth_feature_text">
-        PackageManager.FEATURE_BLUETOOTH not supported. This test is not applicable.
-    </string>
-    <string name="companion_service_disassociate_button">Disassociate</string>
-    <string name="companion_service_disassociate_title">Device Disassociation</string>
-    <string name="companion_service_disassociate_text">
-        Press the "Disassociate" button. Wait for the device to disassociate.
-    </string>
-    <string name="companion_service_present_title">Device Present</string>
-    <string name="companion_service_present_text">
-        Make your Bluetooth device reachable (this should already be the case from the previous step).
-        Wait until your Bluetooth device is detected by CDM. This may take up to 2 minutes.
-    </string>
-    <string name="companion_service_gone_title">Device Gone</string>
-    <string name="companion_service_gone_text">
-        Make your Bluetooth device unreachable by placing your bluetooth device inside an RF Bag or
-        powering it off.
-        Wait until your Bluetooth device disappears. This may take up to 2 minutes.
-    </string>
-    <string name="companion_service_test">Companion Device Service Test</string>
-    <string name="companion_service_test_info">
-        This test checks that APIs to notify the companion app of its associated device going in and
-        out of Bluetooth range are working correctly.\n\n
-        Before proceeding, make sure that you have a Bluetooth LE device nearby and
-        discoverable. Also, make sure that bluetooth is turned on. (Note: the nearby device cannot
-        be a phone)
-    </string>
-    <string name="companion_service_test_summary_title">Test Complete</string>
-    <string name="companion_service_test_summary">Every test passed successfully.</string>
-
     <!-- Strings for FeatureSummaryActivity -->
     <string name="feature_summary">Hardware/Software Feature Summary</string>
     <string name="feature_summary_info">This is a test for...</string>
@@ -2341,13 +2292,14 @@
         dismissed, when it is allowed.</string>
     <string name="nd_notif_title">NotifDismissTest</string>
     <string name="dismiss_notif_from_the_shade">Open the shade while the device is unlocked and find the NotifDismissTest notification.\n
-        Swipe it to either side to dismiss it.\n
+        Swipe it to either side, touchpad swipe, or mouse hover the notification and press x to dismiss it.\n
         Pass the test if it can be dismissed.</string>
     <string name="dismiss_notif_from_the_ls">Lock the screen and find the NotifDismissTest notification.\n
-        Swipe it to either side to dismiss it.\n
+        Swipe it to either side, touchpad swipe, or mouse hover the notification and press x to dismiss it.\n
         Pass the test if it can be dismissed from the lock screen.</string>
     <string name="non_dismissable_notif_from_the_ls">Lock the screen and find the NotifDismissTest notification.\n
-        Swipe it to either side to dismiss it. Verify that it is non-dismissible.\n
+       Swipe it to either side, touchpad swipe, or mouse hover the notification and press x to dismiss it.\n
+       Verify that it is non-dismissible.\n
         Fail the test if it could be dismissed from the lock screen.</string>
     <string name="fsi_test">Notification Full Screen Intent Test</string>
     <string name="fsi_test_info">This test checks the behavior of Notifications
@@ -2946,7 +2898,8 @@ You should be prompted to select credentials; choose the ones you just installed
 
         2. Now hit \"Go\" and you will see a notification pop up.\n
 
-        3. Scroll from the top to see the notification and verify you are unable to dismiss it.\n
+        3. Scroll from the top to see the notification and verify you are unable to dismiss it\n
+        via gesture swipe, touchpad swipe, or by hovering with mouse and pressing the x button.\n
 
         4. To then remove the notification you must revoke the exemption by running\n
            \"adb shell appops set com.android.cts.verifier android:system_exempt_from_dismissible_notifications default\".\n

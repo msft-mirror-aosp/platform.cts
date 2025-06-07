@@ -18,13 +18,17 @@ package android.app.appfunctions.testutils
 
 import com.android.bedstead.nene.TestApis.permissions
 import kotlinx.coroutines.delay
-import org.junit.AssumptionViolatedException
 
 /** Contains testing utilities related to AppFunction's Sidecar library. */
 object CtsTestUtil {
     /** Runs a block with shell permissions. */
     suspend fun runWithShellPermission(vararg permissions: String, block: suspend () -> Unit) {
         permissions().withPermission(*permissions).use { block() }
+    }
+
+    /** Runs a block with permissions removed. */
+    suspend fun runWithoutPermission(vararg permissions: String, block: suspend () -> Unit) {
+        permissions().withoutPermission(*permissions).use { block() }
     }
 
     fun interface ThrowRunnable {

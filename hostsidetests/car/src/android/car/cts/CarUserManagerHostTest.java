@@ -116,7 +116,7 @@ public final class CarUserManagerHostTest extends CarHostJUnit4TestCase {
         assertWithMessage("switchUser(%s) ", userId).that(output).contains(expected);
 
         if (Objects.equals(expected, STATUS_SUCCESSFUL)) {
-            waitUntilCurrentUser(userId);
+            waitForUserSwitchCompleted(userId);
         }
     }
 

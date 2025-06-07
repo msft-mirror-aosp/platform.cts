@@ -23,7 +23,9 @@ import static org.junit.Assume.assumeTrue;
 
 import android.content.Context;
 import android.net.wifi.WifiKeystore;
+import android.net.wifi.flags.Flags;
 import android.os.Build;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SdkSuppress;
@@ -78,5 +80,11 @@ public class WifiKeyStoreTest {
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     public void testList() {
         assertEquals(0, WifiKeystore.list(TEST_PREFIX).length);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_WIFI_KEYSTORE_REMOVE_ALL_API)
+    public void testRemoveAll() {
+        assertFalse(WifiKeystore.removeAll());
     }
 }

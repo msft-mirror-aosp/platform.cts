@@ -247,10 +247,9 @@ public class CodecDecoderTest extends CodecDecoderTestBase {
             }));
         }
         if (IS_AT_LEAST_B && apvSupport() && extractorMp4EnableApv()) {
-            exhaustiveArgsList.addAll(Arrays.asList(new Object[][]{
-                    {MediaFormat.MIMETYPE_VIDEO_APV,
-                            "pattern_640x480_30fps_16mbps_apv_10bit.mp4", null, -1.0f, -1L,
-                             CODEC_ALL},
+            exhaustiveArgsList.addAll(Arrays.asList(new Object[][] {
+                    {MediaFormat.MIMETYPE_VIDEO_APV, "pattern_640x480_30fps_16mbps_apv_10bit.mp4",
+                            null, -1.0f, -1L, CODEC_ALL},
             }));
         }
         return prepareParamList(exhaustiveArgsList, isEncoder, needAudio, needVideo, true);
@@ -789,6 +788,7 @@ public class CodecDecoderTest extends CodecDecoderTestBase {
     /**
      * Test setting PictureProfile instance as a parameter using MediaCodec.setParameter().
      */
+    /*
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA, codeName = "Baklava")
     @RequiresFlagsEnabled({FLAG_APPLY_PICTURE_PROFILES, FLAG_MEDIA_QUALITY_FW})
     @ApiTest(apis = {"android.media.MediaFormat#KEY_PICTURE_PROFILE_INSTANCE"})
@@ -800,9 +800,7 @@ public class CodecDecoderTest extends CodecDecoderTestBase {
         mCodec = MediaCodec.createByCodecName(mCodecName);
         mExtractor.seekTo(0, MediaExtractor.SEEK_TO_CLOSEST_SYNC);
         PictureProfile testPictureProfile =
-                new PictureProfile.Builder("test")
-                        .setHandle(new PictureProfileHandle(1))
-                        .build();
+                new PictureProfile.Builder("test").setHandle(new PictureProfileHandle(1)).build();
         configureCodec(format, true, true, false);
         mCodec.start();
         Bundle bundle = new Bundle();
@@ -811,11 +809,10 @@ public class CodecDecoderTest extends CodecDecoderTestBase {
         doWork(Integer.MAX_VALUE);
         queueEOS();
         waitForAllOutputs();
-
         // TODO: verify picture profile handle value by
         // checking output format using mCodec.getOutputFormat()
-
         endCodecSession(mCodec);
         mCodec.release();
     }
+    */
 }

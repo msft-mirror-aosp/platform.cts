@@ -2527,21 +2527,6 @@ public class TelephonyManagerTest {
                         || cardId >= 0);
     }
 
-    /**
-     * Tests that a SecurityException is thrown when trying to access UiccCardsInfo.
-     */
-    @Test
-    public void testGetUiccCardsInfoException() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
-
-        try {
-            // Requires READ_PRIVILEGED_PHONE_STATE or carrier privileges
-            List<UiccCardInfo> infos = mTelephonyManager.getUiccCardsInfo();
-            fail("Expected SecurityException. App does not have carrier privileges");
-        } catch (SecurityException e) {
-        }
-    }
-
     @Test
     public void testSetLine1NumberUpdatesSubscriptionInfo() throws Exception {
         assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
@@ -2594,14 +2579,6 @@ public class TelephonyManagerTest {
     public void testGetUiccCardsInfo() throws Exception {
         assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
 
-        // The API requires either READ_PRIVILEGED_PHONE_STATE or carrier privileges
-        try {
-            mTelephonyManager.getUiccCardsInfo();
-            fail("Telephony#getUiccCardsInfo should throw SecurityException without "
-                    + "READ_PRIVILEGED_PHONE_STATE nor carrier privileges");
-        } catch (SecurityException expected) {
-        }
-
         // With READ_PRIVILEGED_PHONE_STATE only, it should work
         List<UiccCardInfo> infos =
                 ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
@@ -2623,6 +2600,40 @@ public class TelephonyManagerTest {
                 getContext(),
                 SubscriptionManager.getDefaultSubscriptionId(),
                 () -> mTelephonyManager.getUiccCardsInfo());
+    }
+
+    /**
+     * Verify that, with READ_BASIC_PHONE_STATE permission, caller can retrieve UiccCardInfo with
+     * all info as what it gets with READ_PRIVILEGED_PHONE_STATE, but with sensitive info redacted.
+     */
+    @RequiresFlagsEnabled(Flags.FLAG_MACRO_BASED_OPPORTUNISTIC_NETWORKS)
+    @Test
+    public void testGetUiccCardsInfoWithReadBasicPhoneStatePermission() {
+        // With READ_PRIVILEGED_PHONE_STATE, get unredacted list first
+        final List<UiccCardInfo> originalCardInfos =
+                ShellIdentityUtils.invokeMethodWithShellPermissions(
+                        mTelephonyManager, (tm) -> tm.getUiccCardsInfo());
+        // Redact sensitive info
+        final Set<UiccCardInfo> expectedCardInfos =
+                originalCardInfos.stream()
+                        .map(cardInfo -> cardInfo.createSensitiveInfoSanitizedCopy(false))
+                        .collect(Collectors.toSet());
+
+        final List<UiccCardInfo> redatedCardInfos;
+        try {
+            InstrumentationRegistry.getInstrumentation()
+                    .getUiAutomation()
+                    .adoptShellPermissionIdentity(
+                            android.Manifest.permission.READ_BASIC_PHONE_STATE);
+
+            redatedCardInfos = mTelephonyManager.getUiccCardsInfo();
+
+            assertEquals(expectedCardInfos, new HashSet<>(redatedCardInfos));
+        } finally {
+            InstrumentationRegistry.getInstrumentation()
+                    .getUiAutomation()
+                    .dropShellPermissionIdentity();
+        }
     }
 
     private static Context getContext() {
@@ -3513,16 +3524,9 @@ public class TelephonyManagerTest {
 
         // Clear downloaded carrier keys just after override above.
         // Otherwise, downloaded key would be used instead of the override value above.
-        if (Flags.forceImsiCertificateDelete()) {
-            Log.i(TAG, "forceDeleteImsiEncryptionKey");
-            TelephonyUtils.forceDeleteImsiEncryptionKey(
-                    androidx.test.platform.app.InstrumentationRegistry.getInstrumentation());
-        } else {
-            Log.i(TAG,
-                    "forceDeleteImsiEncryptionKey: forceImsiCertificateDelete flag not"
-                            + " enabled");
-        }
-
+        Log.i(TAG, "forceDeleteImsiEncryptionKey");
+        TelephonyUtils.forceDeleteImsiEncryptionKey(
+                androidx.test.platform.app.InstrumentationRegistry.getInstrumentation());
         // It appears that the two certs actually have the same public key. Ideally we would
         // want these to be different for testing, but it's challenging to create a valid
         // certificate string for testing and these are the only two examples available

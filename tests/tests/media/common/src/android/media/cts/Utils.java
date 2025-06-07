@@ -160,7 +160,7 @@ public class Utils {
      * <p>For a media session to receive media button events, an actual playback is needed.
      */
     public static void assertMediaPlaybackStarted(Context context) {
-        final AudioManager am = new AudioManager(context);
+        final AudioManager am = context.getSystemService(AudioManager.class);
         final HandlerThread handlerThread = new HandlerThread(TAG);
         handlerThread.start();
         final TestAudioPlaybackCallback callback = new TestAudioPlaybackCallback();

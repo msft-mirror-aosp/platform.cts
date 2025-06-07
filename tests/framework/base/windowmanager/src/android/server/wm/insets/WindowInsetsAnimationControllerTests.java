@@ -53,8 +53,8 @@ import android.graphics.Insets;
 import android.os.Bundle;
 import android.os.CancellationSignal;
 import android.platform.test.annotations.Presubmit;
-import android.server.wm.WindowManagerTestBase;
 import android.server.wm.WindowInsetsAnimationTestBase.TestActivity;
+import android.server.wm.WindowManagerTestBase;
 import android.util.Log;
 import android.view.View;
 import android.view.WindowInsets;
@@ -107,6 +107,8 @@ import java.util.stream.Collectors;
 @RunWith(Parameterized.class)
 @android.server.wm.annotation.Group2
 public class WindowInsetsAnimationControllerTests extends WindowManagerTestBase {
+
+    private static final String TAG = "InsetsAnimCtrlTests";
 
     ControllerTestActivity mActivity;
     View mRootView;
@@ -653,7 +655,7 @@ public class WindowInsetsAnimationControllerTests extends WindowManagerTestBase 
                                         insets, 1.0f, mAnimator.getAnimatedFraction());
                                 mErrorCollector.checkThat(
                                         "setInsetsAndAlpha() must synchronously call onProgress()"
-                                            + " but didn't",
+                                                + " but didn't",
                                         mOnProgressCalled,
                                         is(true));
                             });
@@ -661,13 +663,16 @@ public class WindowInsetsAnimationControllerTests extends WindowManagerTestBase 
                             new AnimatorListenerAdapter() {
                                 @Override
                                 public void onAnimationEnd(Animator animation) {
-                                    if (!mListener.mController.isCancelled()) {
+                                    final boolean cancelled = mListener.mController.isCancelled();
+                                    Log.d(TAG, "animation ended cancelled=" + cancelled);
+                                    if (!cancelled) {
                                         mListener.mController.finish(show);
                                     }
                                 }
                             });
 
                     mAnimator.start();
+                    Log.d(TAG, "animation started");
                 });
     }
 
@@ -810,12 +815,14 @@ public class WindowInsetsAnimationControllerTests extends WindowManagerTestBase 
         }
 
         private void report(Event event) {
+            Log.d(TAG, "report " + event);
             CountDownLatch latch = mLatches[event.ordinal()];
             mErrorCollector.checkThat(event + ": count", latch.getCount(), is(1L));
             latch.countDown();
         }
 
         void awaitAndAssert(Event event) {
+            Log.d(TAG, "awaitAndAssert " + event);
             CountDownLatch latch = mLatches[event.ordinal()];
             try {
                 if (!latch.await(10, TimeUnit.SECONDS)) {

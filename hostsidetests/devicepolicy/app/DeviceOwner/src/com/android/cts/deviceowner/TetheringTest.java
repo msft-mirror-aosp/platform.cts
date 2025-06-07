@@ -20,16 +20,17 @@ import static android.net.TetheringManager.TETHERING_WIFI;
 import static android.net.TetheringManager.TETHER_ERROR_NO_CHANGE_TETHERING_PERMISSION;
 import static android.net.TetheringManager.TETHER_ERROR_UNKNOWN_REQUEST;
 
-import static org.junit.Assume.assumeTrue;
-
 import android.net.TetheringManager.TetheringRequest;
 import android.net.cts.util.CtsTetheringUtils;
 import android.net.cts.util.CtsTetheringUtils.StartTetheringCallback;
 import android.net.cts.util.CtsTetheringUtils.StopTetheringCallback;
 import android.net.cts.util.CtsTetheringUtils.TestTetheringEventCallback;
 import android.net.wifi.SoftApConfiguration;
+import android.util.Log;
 
 import com.android.modules.utils.build.SdkLevel;
+
+import org.junit.AssumptionViolatedException;
 
 public class TetheringTest extends BaseDeviceOwnerTest {
     private static final String TAG = "TetheringTest";
@@ -38,18 +39,31 @@ public class TetheringTest extends BaseDeviceOwnerTest {
             new SoftApConfiguration.Builder().setSsid("started by Device Owner app").build();
     private CtsTetheringUtils mCtsTetheringUtils;
     private TestTetheringEventCallback mEventCallback;
+    private boolean mIsTestSupported = false;
 
     @SuppressWarnings("JUnit4ClassUsedInJUnit3")
     @Override
     public void setUp() throws Exception {
         super.setUp();
 
-        // Skip if tethering for DO app isn't enabled.
-        assumeTrue(SdkLevel.isAtLeastB());
-
+        mIsTestSupported = false;
         mCtsTetheringUtils = new CtsTetheringUtils(mContext);
         mEventCallback = mCtsTetheringUtils.registerTetheringEventCallback();
-        mEventCallback.assumeWifiTetheringSupported(mContext);
+        try {
+            mEventCallback.assumeWifiTetheringSupported(mContext);
+        } catch (AssumptionViolatedException e) {
+            // Assumptions aren't available in JUnit3, so simply return here.
+            Log.i(TAG, "Wifi tethering is not supported. Skipping test.");
+            return;
+        }
+
+        // Skip if tethering for DO app isn't enabled.
+        if (!SdkLevel.isAtLeastB()) {
+            Log.i(TAG, "SdkLevel is not at least B. Skipping test.");
+            return;
+        }
+
+        mIsTestSupported = true;
     }
 
     @SuppressWarnings("JUnit4ClassUsedInJUnit3")
@@ -61,6 +75,8 @@ public class TetheringTest extends BaseDeviceOwnerTest {
 
     @SuppressWarnings("JUnit4ClassUsedInJUnit3")
     public void testStartTetheringNonWifiFails() {
+        if (!mIsTestSupported) return;
+
         StartTetheringCallback callback = new StartTetheringCallback();
         TetheringRequest request = new TetheringRequest.Builder(TETHERING_WIFI + 1).build();
 
@@ -71,6 +87,8 @@ public class TetheringTest extends BaseDeviceOwnerTest {
 
     @SuppressWarnings("JUnit4ClassUsedInJUnit3")
     public void testStartTetheringWifiWithoutConfigFails() {
+        if (!mIsTestSupported) return;
+
         StartTetheringCallback callback = new StartTetheringCallback();
         TetheringRequest request = new TetheringRequest.Builder(TETHERING_WIFI).build();
 
@@ -81,11 +99,15 @@ public class TetheringTest extends BaseDeviceOwnerTest {
 
     @SuppressWarnings("JUnit4ClassUsedInJUnit3")
     public void testStartTetheringWifiWithConfigSucceeds() {
-        mCtsTetheringUtils.startWifiTethering(mEventCallback, TEST_SOFT_AP_CONFIG);
+        if (!mIsTestSupported) return;
+
+        mCtsTetheringUtils.startWifiTetheringNoPermissions(mEventCallback, TEST_SOFT_AP_CONFIG);
     }
 
     @SuppressWarnings("JUnit4ClassUsedInJUnit3")
     public void testStopTetheringNonWifiFails() {
+        if (!mIsTestSupported) return;
+
         TetheringRequest request = new TetheringRequest.Builder(TETHERING_WIFI + 1).build();
         StopTetheringCallback callback = new StopTetheringCallback();
 
@@ -96,6 +118,8 @@ public class TetheringTest extends BaseDeviceOwnerTest {
 
     @SuppressWarnings("JUnit4ClassUsedInJUnit3")
     public void testStopTetheringWifiWithoutConfigFails() {
+        if (!mIsTestSupported) return;
+
         TetheringRequest request = new TetheringRequest.Builder(TETHERING_WIFI).build();
         StopTetheringCallback callback = new StopTetheringCallback();
 
@@ -106,6 +130,8 @@ public class TetheringTest extends BaseDeviceOwnerTest {
 
     @SuppressWarnings("JUnit4ClassUsedInJUnit3")
     public void testStopTetheringWifiWithConfigButNoActiveRequestFails() {
+        if (!mIsTestSupported) return;
+
         TetheringRequest request =
                 new TetheringRequest.Builder(TETHERING_WIFI)
                         .setSoftApConfiguration(TEST_SOFT_AP_CONFIG)
@@ -119,7 +145,9 @@ public class TetheringTest extends BaseDeviceOwnerTest {
 
     @SuppressWarnings("JUnit4ClassUsedInJUnit3")
     public void testStopTetheringWifiWithConfigSucceeds() {
-        mCtsTetheringUtils.startWifiTethering(mEventCallback, TEST_SOFT_AP_CONFIG);
+        if (!mIsTestSupported) return;
+
+        mCtsTetheringUtils.startWifiTetheringNoPermissions(mEventCallback, TEST_SOFT_AP_CONFIG);
         TetheringRequest request =
                 new TetheringRequest.Builder(TETHERING_WIFI)
                         .setSoftApConfiguration(TEST_SOFT_AP_CONFIG)

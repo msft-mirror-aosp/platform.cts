@@ -45,6 +45,7 @@ import java.io.IOException
 import java.nio.charset.StandardCharsets
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
+import java.util.regex.Pattern
 import org.junit.After
 import org.junit.Assert
 import org.junit.Before
@@ -124,9 +125,15 @@ open class UninstallTestBase {
             (10 * FIND_OBJECT_TIMEOUT)
         )
 
+        val buttonSelector = By.text(
+            Pattern.compile(
+                "OK|Uninstall",
+                Pattern.CASE_INSENSITIVE
+            )
+        )
         if (packageManager.hasSystemFeature(PackageManager.FEATURE_LEANBACK)) {
             val clickableView: UiObject2 = uiDevice.findObject(
-                By.focusable(true).hasDescendant(By.text("OK"))
+                By.focusable(true).hasDescendant(buttonSelector)
             )
             if (!clickableView.isFocused) {
                 uiDevice.pressKeyCode(KeyEvent.KEYCODE_DPAD_DOWN)
@@ -139,13 +146,17 @@ open class UninstallTestBase {
             }
             uiDevice.pressKeyCode(KeyEvent.KEYCODE_DPAD_CENTER)
         } else {
-            val clickableView: UiObject2? = uiDevice.wait(Until.findObject(By.text("OK")), 1000)
+            val clickableView: UiObject2? = uiDevice.wait(Until.findObject(buttonSelector), 1000)
             if (clickableView == null) {
                 dumpWindowHierarchy()
-                Assert.fail("OK button not shown")
+                Assert.fail("Confirm button not shown")
             }
             clickableView!!.click()
         }
+    }
+
+    fun assertUninstallDialogShownWithoutCheckingAppName(selector: BySelector) {
+        Assert.assertNotNull("Uninstall prompt not shown", waitFor(Until.findObject(selector)))
     }
 
     fun assertUninstallDialogShown(selector: BySelector) {

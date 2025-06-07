@@ -22,12 +22,12 @@ import static com.android.media.codec.flags.Flags.FLAG_LARGE_AUDIO_FRAME;
 
 import static org.junit.Assert.assertTrue;
 
-import android.annotation.NonNull;
 import android.media.MediaCodec;
 import android.os.Build;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.util.Pair;
 
+import androidx.annotation.NonNull;
 import androidx.test.filters.SdkSuppress;
 
 import java.util.ArrayDeque;

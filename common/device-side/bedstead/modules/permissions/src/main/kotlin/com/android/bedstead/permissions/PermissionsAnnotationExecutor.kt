@@ -24,6 +24,7 @@ import com.android.bedstead.harrier.annotations.FailureMode
 import com.android.bedstead.nene.TestApis.packages
 import com.android.bedstead.nene.TestApis.permissions
 import com.android.bedstead.nene.exceptions.NeneException
+import com.android.bedstead.nene.utils.FailureDumper
 import com.android.bedstead.nene.utils.Tags.hasTag
 import com.android.bedstead.nene.utils.Versions
 import com.android.bedstead.permissions.annotations.EnsureCanGetPermission
@@ -36,7 +37,7 @@ import com.android.bedstead.permissions.annotations.EnsureHasPermission
  * [AnnotationExecutor] for permissions annotations
  */
 @Suppress("unused")
-class PermissionsAnnotationExecutor : AnnotationExecutor, DeviceStateComponent {
+class PermissionsAnnotationExecutor : AnnotationExecutor, DeviceStateComponent, FailureDumper {
 
     private var permissionContext: PermissionContextImpl? = null
 

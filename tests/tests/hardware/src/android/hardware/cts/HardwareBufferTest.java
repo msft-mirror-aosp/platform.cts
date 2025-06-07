@@ -19,6 +19,7 @@ package android.hardware.cts;
 import static android.media.codec.Flags.p210FormatSupport;
 
 import static com.android.graphics.hwui.flags.Flags.requestedFormats1214;
+import static com.android.graphics.hwui.flags.Flags.requestedFormatsBgra1010102;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -115,6 +116,10 @@ public class HardwareBufferTest {
                             HardwareBuffer.RG_1414,
                             HardwareBuffer.RGBA_12121212,
                             HardwareBuffer.RGBA_14141414));
+        }
+
+        if (requestedFormatsBgra1010102()) {
+            formats.add(HardwareBuffer.BGRA_1010102);
         }
 
         return formats.toArray();

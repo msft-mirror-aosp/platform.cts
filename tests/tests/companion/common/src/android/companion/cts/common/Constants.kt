@@ -71,6 +71,7 @@ const val CUSTOM_ID_A = "00:00:00:00:00:AA"
 const val CUSTOM_ID_B = "00:00:00:00:00:BB"
 
 var CUSTOM_ID_INVALID = "A".repeat(1025)
+val INVALID_DEVICE_DISPLAY_NAME = "A".repeat(1025)
 
 const val DEVICE_DISPLAY_NAME_A = "Device A"
 const val DEVICE_DISPLAY_NAME_B = "Device B"

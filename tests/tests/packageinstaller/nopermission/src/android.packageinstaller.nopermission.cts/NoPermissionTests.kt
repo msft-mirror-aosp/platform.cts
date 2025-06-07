@@ -34,6 +34,7 @@ import androidx.test.uiautomator.UiDevice
 import androidx.test.uiautomator.Until
 import java.io.File
 import java.lang.IllegalArgumentException
+import java.util.regex.Pattern
 import org.junit.After
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -46,7 +47,7 @@ private const val TEST_APK_PACKAGE_NAME = "android.packageinstaller.emptytestapp
 private const val TEST_APK_EXTERNAL_LOCATION = "/data/local/tmp/cts/nopermission"
 private const val CONTENT_AUTHORITY = "android.packageinstaller.nopermission.cts.fileprovider"
 private const val PACKAGE_INSTALLER_PACKAGE_NAME = "com.android.packageinstaller"
-private const val INSTALL_CONFIRM_TEXT_ID = "install_confirm_question"
+private const val INSTALL_CONFIRM_TEXT = "Install"
 private const val WM_DISMISS_KEYGUARD_COMMAND = "wm dismiss-keyguard"
 
 private const val ACTION = "NoPermissionTests.install_cb"
@@ -130,13 +131,19 @@ class NoPermissionTests {
     }
 
     private fun assertInstallSucceeded(errorMessage: String) {
-        val selector = By.res(PACKAGE_INSTALLER_PACKAGE_NAME, INSTALL_CONFIRM_TEXT_ID)
+        val selector = By.text(Pattern.compile(
+            INSTALL_CONFIRM_TEXT,
+            Pattern.CASE_INSENSITIVE
+        ))
         assertTrue(errorMessage, uiDevice.wait(Until.hasObject(selector), WAIT_FOR_UI_TIMEOUT))
         uiDevice.pressBack()
     }
 
     private fun assertInstallFailed(errorMessage: String) {
-        val selector = By.res(PACKAGE_INSTALLER_PACKAGE_NAME, INSTALL_CONFIRM_TEXT_ID)
+        val selector = By.text(Pattern.compile(
+            INSTALL_CONFIRM_TEXT,
+            Pattern.CASE_INSENSITIVE
+        ))
         assertFalse(errorMessage, uiDevice.wait(Until.hasObject(selector), WAIT_FOR_UI_TIMEOUT))
         uiDevice.pressBack()
     }

@@ -39,6 +39,7 @@ import androidx.annotation.Nullable;
 
 import com.android.compatibility.common.util.ThrowingRunnable;
 
+import org.junit.After;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -50,11 +51,18 @@ import java.util.concurrent.TimeoutException;
 /**
  * Tests for the direction action related functions.
  */
+@AppModeFull(reason = "Interapp broadcast required for test.")
 public class DirectActionsTest extends AbstractVoiceInteractionTestCase {
     private static final String TAG = DirectActionsTest.class.getSimpleName();
 
     private final @NonNull SessionControl mSessionControl = new SessionControl();
     private final @NonNull ActivityControl mActivityControl = new ActivityControl();
+
+    @After
+    public void cleanup() throws Exception {
+        // Task id mismatches due to state leak between tests can lead to flakiness
+        runShellCommand("am kill android.voiceinteraction.testapp");
+    }
 
     @Test
     public void testPerformDirectAction() throws Exception {
@@ -80,7 +88,6 @@ public class DirectActionsTest extends AbstractVoiceInteractionTestCase {
         }
     }
 
-    @AppModeFull(reason = "testPerformDirectAction() is enough")
     @Test
     public void testGetPackageName() throws Exception {
         mActivityControl.startActivity();
@@ -97,7 +104,6 @@ public class DirectActionsTest extends AbstractVoiceInteractionTestCase {
         }
     }
 
-    @AppModeFull(reason = "testPerformDirectAction() is enough")
     @Test
     public void testGrantVisibilityOnRequestDirectActions() throws Exception {
         mActivityControl.startActivity();
@@ -116,7 +122,6 @@ public class DirectActionsTest extends AbstractVoiceInteractionTestCase {
         }
     }
 
-    @AppModeFull(reason = "testPerformDirectAction() is enough")
     @Test
     public void testCancelPerformedDirectAction() throws Exception {
         mActivityControl.startActivity();
@@ -141,7 +146,6 @@ public class DirectActionsTest extends AbstractVoiceInteractionTestCase {
         }
     }
 
-    @AppModeFull(reason = "testPerformDirectAction() is enough")
     @Test
     public void testVoiceInteractorDestroy() throws Exception {
         mActivityControl.startActivity();
@@ -159,7 +163,6 @@ public class DirectActionsTest extends AbstractVoiceInteractionTestCase {
         }
     }
 
-    @AppModeFull(reason = "testPerformDirectAction() is enough")
     @Test
     public void testNotifyDirectActionsChanged() throws Exception {
         mActivityControl.startActivity();
@@ -183,12 +186,11 @@ public class DirectActionsTest extends AbstractVoiceInteractionTestCase {
         }
 
         private void startVoiceInteractionSession() throws Exception {
-            final Intent intent = new Intent();
+            final Intent intent = new Intent("android.voiceinteraction.service.TRAMPOLINE_SERVICE");
+
             intent.putExtra(Utils.VOICE_INTERACTION_KEY_CLASS,
                     "android.voiceinteraction.service.DirectActionsSession");
-            intent.setClassName("android.voiceinteraction.service",
-                    "android.voiceinteraction.service.VoiceInteractionMain");
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            intent.setPackage("android.voiceinteraction.service");
 
             startVoiceInteractionSession(intent);
         }

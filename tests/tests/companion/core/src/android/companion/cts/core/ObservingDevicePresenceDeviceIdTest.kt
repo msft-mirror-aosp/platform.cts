@@ -18,12 +18,14 @@ package android.companion.cts.core
 
 import android.Manifest.permission.REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE
 import android.companion.DeviceId
+import android.companion.DevicePresenceEvent.EVENT_ASSOCIATION_REMOVED
 import android.companion.DevicePresenceEvent.EVENT_BT_CONNECTED
 import android.companion.DevicePresenceEvent.EVENT_BT_DISCONNECTED
 import android.companion.Flags
 import android.companion.ObservingDevicePresenceRequest
 import android.companion.cts.common.MAC_ADDRESS_A
 import android.companion.cts.common.PrimaryCompanionService
+import android.companion.cts.common.assertApplicationUnbinds
 import android.companion.cts.common.assertDevicePresenceEvent
 import android.companion.cts.common.assertValidCompanionDeviceServicesUnbind
 import android.companion.cts.common.createDeviceId
@@ -230,6 +232,38 @@ class ObservingDevicePresenceDeviceIdTest : CoreTestBase() {
                 cdm.stopObservingDevicePresence(request)
             } else {
                 error("The device id should not be null")
+            }
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_NOTIFY_ASSOCIATION_REMOVED)
+    fun test_devicePresenceDeviceId_notify_association_removed() {
+        // Create association for the test app
+        testApp.associate(MAC_ADDRESS_A)
+        withShellPermissionIdentity {
+            val associationId = cdm.allAssociations[0].id
+            val deviceId: DeviceId = DeviceId.Builder().setMacAddress(MAC_ADDRESS_A).build()
+            val newDeviceId = cdm.createAndSetDeviceId(associationId, deviceId)
+
+            // First, testApp(normal app) start observing device presence later.
+            startObservingDevicePresenceById(userId, testApp.packageName, associationId)
+            if (newDeviceId != null) {
+                // Second, targetApp start observing device presence.
+                val request = ObservingDevicePresenceRequest.Builder()
+                    .setDeviceId(newDeviceId).build()
+                cdm.startObservingDevicePresence(request)
+
+                // Third, test app removed the association
+                testApp.disassociate(MAC_ADDRESS_A)
+                // Forth, the target app should receive association removed callback
+                assertDevicePresenceEvent(
+                    EVENT_ASSOCIATION_REMOVED,
+                    eventGetter = { PrimaryCompanionService.getCurrentEvent() }
+                )
+
+                // Last, the service will be unbound.
+                assertApplicationUnbinds(cdm)
             }
         }
     }

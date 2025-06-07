@@ -1547,7 +1547,7 @@ public class BackgroundActivityLaunchTest extends BackgroundActivityTestBase {
     }
 
     static void assumeSdkNewerThanUpsideDownCake() {
-        // Feature flag "ActivitySecurity__asm_restrictions_enabled" is set to 1 in
+        // Feature flag "ActivitySecurity__asm_restrictions_v2" is set to 1 in
         // BackgroundActivityTestBase. For backward compatibility reasons, it is only enabled
         // for apps with targetSdkVersion starting Android V.
         // TODO remove this assumption after V released.

@@ -198,12 +198,17 @@ public class MediaCodecInstancesTest {
                 || type.equalsIgnoreCase(MediaFormat.MIMETYPE_VIDEO_VP9));
     }
 
+    private boolean isLowRamDevice() {
+        ActivityManager activityManager = CONTEXT.getSystemService(ActivityManager.class);
+        return activityManager.isLowRamDevice();
+    }
+
     @ApiTest(apis = "MediaCodecInfo.CodecCapabilities#getMaxSupportedInstances")
     @Test
     public void testGetMaxSupportedInstances() {
         StringBuilder xmlOverrides = new StringBuilder();
         MediaCodecList allCodecs = new MediaCodecList(MediaCodecList.ALL_CODECS);
-        final boolean isLowRam = ActivityManager.isLowRamDeviceStatic();
+        final boolean isLowRam = isLowRamDevice();
         mActivityRule.getScenario().onActivity(activity -> mDynamicActivity = activity);
         for (MediaCodecInfo info : allCodecs.getCodecInfos()) {
             Log.d(TAG, "codec: " + info.getName());

@@ -17,6 +17,7 @@
 package android.mediav2.cts;
 
 import static android.media.codec.Flags.apvSupport;
+import static android.media.codec.Flags.FLAG_NULL_OUTPUT_SURFACE;
 import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface;
 import static android.mediav2.common.cts.CodecTestBase.SupportClass.CODEC_ALL;
 import static android.mediav2.common.cts.CodecTestBase.SupportClass.CODEC_OPTIONAL;
@@ -30,7 +31,6 @@ import android.media.MediaCodec;
 import android.media.MediaCodecInfo.CodecCapabilities;
 import android.media.MediaExtractor;
 import android.media.MediaFormat;
-import android.media.codec.Flags;
 import android.mediav2.common.cts.CodecDecoderTestBase;
 import android.mediav2.common.cts.CodecTestActivity;
 import android.mediav2.common.cts.OutputManager;
@@ -189,7 +189,7 @@ public class CodecDecoderSurfaceTest extends CodecDecoderTestBase {
         if (IS_AT_LEAST_B && apvSupport() && extractorMp4EnableApv()) {
             exhaustiveArgsList.addAll(Arrays.asList(new Object[][] {
                     {MediaFormat.MIMETYPE_VIDEO_APV, "pattern_640x480_30fps_16mbps_apv_10bit.mp4",
-                                    CODEC_OPTIONAL},
+                            CODEC_OPTIONAL},
             }));
         }
         return prepareParamList(exhaustiveArgsList, isEncoder, needAudio, needVideo, true);
@@ -253,7 +253,7 @@ public class CodecDecoderSurfaceTest extends CodecDecoderTestBase {
                      "android.media.MediaCodec#CONFIGURE_FLAG_DETACHED_SURFACE"})
     @LargeTest
     @Test(timeout = PER_TEST_TIMEOUT_LARGE_TEST_MS)
-    @RequiresFlagsEnabled(Flags.FLAG_NULL_OUTPUT_SURFACE)
+    @RequiresFlagsEnabled(FLAG_NULL_OUTPUT_SURFACE)
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM,
             codeName = "VanillaIceCream")
     public void testDetachAndReattachSurface() throws IOException, InterruptedException {

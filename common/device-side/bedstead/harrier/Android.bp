@@ -20,7 +20,7 @@ package {
 java_library_host {
     name: "bedstead-core-annotations",
     srcs: [
-        "common/src/main/java/com/android/bedstead/harrier/AnnotationExecutor.java",
+        "common/src/main/java/com/android/bedstead/harrier/AnnotationExecutor.kt",
         "common/src/main/java/com/android/bedstead/harrier/DeviceStateComponent.java",
         "common/src/main/java/com/android/bedstead/harrier/annotations/UsesAnnotationExecutor.kt",
         "common/src/main/java/com/android/bedstead/harrier/annotations/AnnotationPriorityRunPrecedence.java",
@@ -30,10 +30,6 @@ java_library_host {
 
     libs: [
         "androidx.annotation_annotation",
-    ],
-
-    static_libs: [
-        "NeneCommon",
     ],
 
     plugins: ["auto_annotation_plugin"],

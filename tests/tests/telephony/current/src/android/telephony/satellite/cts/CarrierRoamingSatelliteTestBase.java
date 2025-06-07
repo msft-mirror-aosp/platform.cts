@@ -17,6 +17,7 @@
 package android.telephony.satellite.cts;
 
 import static android.telephony.ims.stub.ImsRegistrationImplBase.REGISTRATION_TECH_LTE;
+import static android.telephony.satellite.SatelliteManager.EMERGENCY_CALL_TO_SATELLITE_HANDOVER_TYPE_SOS;
 
 import static com.android.internal.telephony.satellite.SatelliteController.TIMEOUT_TYPE_EVALUATE_ESOS_PROFILES_PRIORITIZATION_DURATION_MILLIS;
 import static com.google.common.truth.Truth.assertThat;
@@ -44,13 +45,6 @@ import android.telephony.SubscriptionManager;
 import android.telephony.TelephonyCallback;
 import android.telephony.TelephonyManager;
 import android.telephony.cts.util.DefaultSmsAppHelper;
-import android.telephony.ims.ImsReasonInfo;
-import android.telephony.ims.cts.ImsServiceConnector;
-import android.telephony.ims.cts.ImsUtils;
-import android.telephony.ims.cts.TestImsService;
-import android.telephony.ims.feature.ImsFeature;
-import android.telephony.ims.feature.MmTelFeature;
-import android.telephony.ims.stub.ImsFeatureConfiguration;
 import android.telephony.mockmodem.MockModemConfigBase;
 import android.telephony.mockmodem.MockModemManager;
 import android.telephony.satellite.SatelliteManager;
@@ -66,13 +60,16 @@ import com.google.common.collect.ImmutableList;
 
 import junit.framework.Assert;
 
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 
 public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
     private static final String TAG = "CarrierRoamingSatelliteTestBase";
+
+    protected static final int WAIT_UPDATE_TIMEOUT_MS = 3000;
     // This value should be greater than the value of TIMEOUT (5 seconds) defined in
     // SatelliteManagerTestBase.
     protected static final int HYSTERESIS_TIMEOUT_SEC = 8;
@@ -82,7 +79,6 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
     protected static final String PHONE_NUMBER_1 = "1230123456";
 
     protected static MockModemManager sMockModemManager;
-    protected static ImsServiceConnector sServiceConnector;
     protected static WifiStateReceiver sWifiStateReceiver = null;
 
     protected static void beforeAllCarrierRoamingTestsBase() throws Exception {
@@ -106,6 +102,7 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
         if (sMockModemManager != null) {
             assertTrue(sMockModemManager.disconnectMockModemService());
             sMockModemManager = null;
+            TimeUnit.MILLISECONDS.sleep(WAIT_UPDATE_TIMEOUT_MS);
         }
 
         if (sWifiStateReceiver != null) {
@@ -114,81 +111,6 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
         }
 
         afterAllTestsBase();
-    }
-
-    protected static void beforeAllTestBaseForIms() throws Exception {
-        logd(TAG, "beforeAllTestBaseForIms");
-
-        assumeTrue("ImsService is not supported.", ImsUtils.shouldTestImsService());
-
-        sServiceConnector = new ImsServiceConnector(
-                androidx.test.platform.app.InstrumentationRegistry.getInstrumentation());
-        sServiceConnector.clearAllActiveImsServices(SLOT_ID_0);
-        DefaultSmsAppHelper.ensureDefaultSmsApp();
-
-        assertTrue(sServiceConnector.connectCarrierImsServiceLocally());
-        sServiceConnector.getCarrierService().addCapabilities(ImsFeature.FEATURE_MMTEL);
-        // Connect to the ImsService with the MmTel feature.
-        assertTrue(sServiceConnector.triggerFrameworkConnectionToCarrierImsService(
-                new ImsFeatureConfiguration.Builder()
-                        .addFeature(SLOT_ID_0, ImsFeature.FEATURE_MMTEL)
-                        .addFeature(SLOT_ID_0, ImsFeature.FEATURE_EMERGENCY_MMTEL)
-                        .build()));
-
-        // The MmTelFeature is created when the ImsService is bound. If it wasn't created, then the
-        // Framework did not call it.
-        assertTrue("Did not receive createMmTelFeature", sServiceConnector.getCarrierService()
-                .waitForLatchCountdown(TestImsService.LATCH_CREATE_MMTEL));
-        assertTrue("Did not receive MmTelFeature#onReady", sServiceConnector.getCarrierService()
-                .waitForLatchCountdown(TestImsService.LATCH_MMTEL_READY));
-        Assert.assertNotNull(
-                "ImsService created, but ImsService#createMmTelFeature was not called!",
-                sServiceConnector.getCarrierService().getMmTelFeature());
-        int serviceSlot = sServiceConnector.getCarrierService().getMmTelFeature().getSlotIndex();
-        assertEquals("The slot specified for the test (" + SLOT_ID_0 + ") does not match the "
-                        + "assigned slot (" + serviceSlot + "+ for the associated MmTelFeature",
-                SLOT_ID_0, serviceSlot);
-        // Wait until ImsSmsDispatcher connects and calls onReady.
-        assertTrue(sServiceConnector.getCarrierService().getMmTelFeature().getSmsImplementation()
-                .waitForOnReadyLatch());
-        MmTelFeature.MmTelCapabilities capabilities = new MmTelFeature.MmTelCapabilities(
-                MmTelFeature.MmTelCapabilities.CAPABILITY_TYPE_SMS);
-        // Set Registered and SMS capable
-        sServiceConnector.getCarrierService().getMmTelFeature().setCapabilities(capabilities);
-        int subId = SubscriptionManager.getSubscriptionId(SLOT_ID_0);
-        sServiceConnector.getCarrierService().getImsService()
-                .getRegistrationForSubscription(SLOT_ID_0, subId)
-                .onRegistered(REGISTRATION_TECH_LTE);
-        sServiceConnector.getCarrierService().getMmTelFeature()
-                .notifyCapabilitiesStatusChanged(capabilities);
-
-        // Wait a second for the notifyCapabilitiesStatusChanged indication to be processed on the
-        // main telephony thread - currently no better way of knowing that telephony has processed
-        // this command. SmsManager#isImsSmsSupported() is @hide and must be updated to use new API.
-        Thread.sleep(1000);
-    }
-
-    protected static void afterAllTestBaseForIms() throws Exception {
-        logd(TAG, "afterAllTestBaseForIms");
-
-        DefaultSmsAppHelper.stopBeingDefaultSmsApp();
-        if (sServiceConnector != null) {
-            // release capability and trigger de-registration.
-            MmTelFeature.MmTelCapabilities capabilities = new MmTelFeature.MmTelCapabilities(
-                    MmTelFeature.MmTelCapabilities.CAPABILITY_TYPE_NONE);
-            sServiceConnector.getCarrierService().getMmTelFeature().notifyCapabilitiesStatusChanged(
-                    capabilities);
-            int subId = SubscriptionManager.getSubscriptionId(SLOT_ID_0);
-            sServiceConnector.getCarrierService().getImsService().getRegistrationForSubscription(
-                    SLOT_ID_0, subId).onDeregistered(new ImsReasonInfo());
-            sServiceConnector.disconnectServices();
-            sServiceConnector = null;
-        }
-
-        // Wait a second for the notifyCapabilitiesStatusChanged indication to be processed on the
-        // main telephony thread - currently no better way of knowing that telephony has processed
-        // this command. SmsManager#isImsSmsSupported() is @hide and must be updated to use new API.
-        Thread.sleep(1000);
     }
 
     protected static class ServiceStateListenerTest extends TelephonyCallback
@@ -445,13 +367,10 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
         }
     }
 
-    protected static void setUpAutoConnectTestEnvironment(
-        int slotId, int profile, String phoneNumber) throws Exception {
+    protected static void setUpAutoConnectTestEnvironment(int slotId, int profile,
+            String phoneNumber, boolean shouldMoveToInServiceState) throws Exception {
         logd(TAG, "setUpAutoConnectTestEnvironment() slotId:" + slotId
             + " profile:" + profile);
-
-        // Register service state listener
-        ServiceStateListenerTest serviceStateListener = registerServiceStateListener();
 
         assertTrue(sMockModemManager.insertSimCard(slotId, profile));
         TimeUnit.MILLISECONDS.sleep(TIMEOUT);
@@ -463,14 +382,34 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
         enableCarrierRoamingSatelliteConfigs(
             slotId, CarrierConfigManager.CARRIER_ROAMING_NTN_CONNECT_AUTOMATIC);
 
-        // Enter service
-        sMockModemManager.changeNetworkService(slotId, profile, true);
-        assertTrue(serviceStateListener.waitUntilNonTerrestrialNetworkConnected());
+        if (shouldMoveToInServiceState) {
+            // Register service state listener
+            ServiceStateListenerTest serviceStateListener = registerServiceStateListener(subId);
 
-        sTelephonyManager.unregisterTelephonyCallback(serviceStateListener);
+            // Enter service
+            sMockModemManager.changeNetworkService(slotId, profile, true);
+            assertTrue(serviceStateListener.waitUntilNonTerrestrialNetworkConnected());
+
+            sTelephonyManager.unregisterTelephonyCallback(serviceStateListener);
+        }
     }
 
-    protected static void cleanUpMockSim(int slotId, int profile) throws Exception {
+    protected static void setUpMockSim(int slotId, int simProfileId, String phoneNumber)
+        throws Exception {
+        logd(TAG, "setUpMockSim: slotId=" + slotId
+            + ", simProfileId=" + simProfileId + ", phoneNumber=" + phoneNumber);
+        // Insert sim card
+        assertTrue(sMockModemManager.insertSimCard(slotId, simProfileId));
+        TimeUnit.MILLISECONDS.sleep(TIMEOUT);
+
+        int subId = SubscriptionManager.getSubscriptionId(slotId);
+        assertTrue(subId != SubscriptionManager.INVALID_SUBSCRIPTION_ID);
+        setPhoneNumber(subId, phoneNumber);
+        assertTrue(isSimReady(slotId));
+    }
+
+    protected static void cleanUpMockSim(int slotId, int profile,
+            boolean shouldMoveToOutOfServiceState) throws Exception {
         logd(TAG, "cleanUpAndRemoveInsertedSim: slotId:" + slotId + " profile:" + profile);
         int subId = SubscriptionManager.getSubscriptionId(slotId);
 
@@ -480,8 +419,10 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
             logd(TAG, "cleanUpAndRemoveInsertedSim: subId:" + subId + " is not active.");
         }
 
-        // Leave service
-        sMockModemManager.changeNetworkService(slotId, profile, false);
+        if (shouldMoveToOutOfServiceState) {
+            // Leave service
+            sMockModemManager.changeNetworkService(slotId, profile, false);
+        }
 
         // Remove the SIM
         sMockModemManager.removeSimCard(slotId);
@@ -522,12 +463,21 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
                 CarrierConfigManager.KEY_CARRIER_SUPPORTED_SATELLITE_SERVICES_PER_PROVIDER_BUNDLE,
                 plmnBundle);
 
+        // Configs for automatic connect type
+        if (connectType == CarrierConfigManager.CARRIER_ROAMING_NTN_CONNECT_AUTOMATIC) {
+            bundle.putBoolean(
+                CarrierConfigManager.KEY_EMERGENCY_MESSAGING_SUPPORTED_BOOL, true);
+        }
+
         // Configs for manual connect type only
         if (connectType == CarrierConfigManager.CARRIER_ROAMING_NTN_CONNECT_MANUAL) {
             bundle.putBoolean(
                 CarrierConfigManager.KEY_SATELLITE_ESOS_SUPPORTED_BOOL, true);
             bundle.putBoolean(
                 CarrierConfigManager.KEY_SATELLITE_ROAMING_P2P_SMS_SUPPORTED_BOOL, true);
+            bundle.putInt(CarrierConfigManager
+                .KEY_CARRIER_ROAMING_NTN_EMERGENCY_CALL_TO_SATELLITE_HANDOVER_TYPE_INT,
+                EMERGENCY_CALL_TO_SATELLITE_HANDOVER_TYPE_SOS);
         }
         sMockSatelliteServiceManager.setSatelliteIgnorePlmnListFromStorage(false);
         overrideCarrierConfig(subId, bundle);
@@ -670,14 +620,16 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
     }
 
     protected static void setUpManualConnectTestEnvironment(int eSosSlotId, int eSosSimProfileId,
-        String phoneNumber, boolean supportCtsSmsApp, boolean shouldSetUpMockSatelliteService)
-        throws Exception {
+        String phoneNumber, boolean supportCtsSmsApp, boolean shouldSetUpMockSatelliteService,
+        boolean shouldMoveSimToInService) throws Exception {
         logd(TAG, "setUpManualConnectTestEnvironment: eSosSlotId=" + eSosSlotId
             + ", eSosSimProfileId=" + eSosSimProfileId);
         // Insert sim card
         assertTrue(sMockModemManager.insertSimCard(eSosSlotId, eSosSimProfileId));
         TimeUnit.MILLISECONDS.sleep(TIMEOUT);
-        moveSimToInService(eSosSlotId, eSosSimProfileId);
+        if (shouldMoveSimToInService) {
+            moveSimToInService(eSosSlotId, eSosSimProfileId);
+        }
 
         sEsosSubId = SubscriptionManager.getSubscriptionId(eSosSlotId);
         assumeTrue(sEsosSubId != SubscriptionManager.INVALID_SUBSCRIPTION_ID);
@@ -754,12 +706,13 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
                 TIMEOUT_TYPE_EVALUATE_ESOS_PROFILES_PRIORITIZATION_DURATION_MILLIS, 0));
         revokeSatellitePermission();
 
-        cleanUpMockSim(slotId, simProfileId);
+        cleanUpMockSim(slotId, simProfileId, true);
     }
 
-    protected static ServiceStateListenerTest registerServiceStateListener() {
+    protected static ServiceStateListenerTest registerServiceStateListener(int subId) {
         ServiceStateListenerTest serviceStateListener = new ServiceStateListenerTest();
-        sTelephonyManager.registerTelephonyCallback(getContext().getMainExecutor(),
+        TelephonyManager telephonyManager = sTelephonyManager.createForSubscriptionId(subId);
+        telephonyManager.registerTelephonyCallback(getContext().getMainExecutor(),
                 serviceStateListener);
         // Current service state is broadcasted immediately at registration.
         serviceStateListener.waitUntilServiceStateChanged();
@@ -769,21 +722,37 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
 
     protected static void moveSimToInService(int slotId, int simProfileId) throws Exception {
         logd(TAG, "moveSimToInService: slotId=" + slotId + ", simProfileId=" + simProfileId);
-        ServiceStateListenerTest serviceStateListener = registerServiceStateListener();
-        if (serviceStateListener.isInService()) {
-            logd(TAG, "SIM slot is already in service");
-        } else {
-            sMockModemManager.changeNetworkService(slotId, simProfileId, true);
-            assertTrue(serviceStateListener.waitUntilInService());
+        int subId = SubscriptionManager.getSubscriptionId(slotId);
+        ServiceStateListenerTest serviceStateListener = registerServiceStateListener(subId);
+        try {
+            if (serviceStateListener.isInService()) {
+                logd(TAG, "SIM slot is already in service");
+            } else {
+                sMockModemManager.changeNetworkService(slotId, simProfileId, true);
+                assertTrue(serviceStateListener.waitUntilInService());
+            }
+        } finally {
+            TelephonyManager telephonyManager = sTelephonyManager.createForSubscriptionId(subId);
+            telephonyManager.unregisterTelephonyCallback(serviceStateListener);
         }
-        sTelephonyManager.unregisterTelephonyCallback(serviceStateListener);
     }
 
     protected static boolean waitForEventOnSetSatelliteEnabledForCarrier(int expectedNumOfEvents) {
         if (getHalVersion(TelephonyManager.HAL_SERVICE_NETWORK) < RADIO_HAL_VERSION_2_3) {
-            return sMockSatelliteServiceManager.waitForEventOnSetSatellitePlmn(expectedNumOfEvents);
+            return sMockSatelliteServiceManager.waitForEventOnSetSatelliteEnabledForCarrier(
+                    expectedNumOfEvents);
         }
         return sMockModemManager.waitForEventOnSetSatelliteEnabledForCarrier(expectedNumOfEvents);
+    }
+
+    protected static boolean waitForEventOnSatelliteEnabledForCarrierStateChanged(
+            int expectedNumOfEvents) {
+        if (getHalVersion(TelephonyManager.HAL_SERVICE_NETWORK) < RADIO_HAL_VERSION_2_3) {
+            return sMockSatelliteServiceManager.waitForEventOnSatelliteEnabledForCarrierStateChanged(
+                    expectedNumOfEvents);
+        }
+        return sMockModemManager.waitForEventOnSatelliteEnabledForCarrierStateChanged(
+                expectedNumOfEvents);
     }
 
     protected static boolean waitForEventOnSetSatellitePlmn(int expectedNumOfEvents) {
@@ -839,13 +808,14 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
             // Telephony should have requested the modem to disable satellite for the carrier.
             waitForAccessRestrictionReason(subId,
                     SatelliteManager.SATELLITE_COMMUNICATION_RESTRICTION_REASON_ENTITLEMENT);
-            assertFalse(getIsSatelliteEnabledForCarrierInMockService(slotId));
+            waitForSatelliteDisabledForCarrier(slotId);
             // Verify that the PLMN list come from carrier config.
-            List<String> telephonyCarrierPlmnList =
-                sSatelliteManager.getSatellitePlmnsForCarrier(subId);
             String satellitePlmn = sMockModemManager.getSimInfo(slotId,
                 MockModemConfigBase.SimInfoChangedResult.SIM_INFO_TYPE_MCC_MNC);
-            assertThat(telephonyCarrierPlmnList).containsExactly(satellitePlmn);
+            List<String> expectedTelephonyCarrierPlmnList = new ArrayList<>();
+            expectedTelephonyCarrierPlmnList.add(satellitePlmn);
+            waitForCarrierPlmnListConfigured(slotId, expectedTelephonyCarrierPlmnList);
+            waitForCarrierPlmnListAvailableInTelephony(subId, expectedTelephonyCarrierPlmnList);
             int dataMode = sSatelliteManager.getSatelliteDataSupportMode(subId);
             assertEquals((long) SatelliteManager.SATELLITE_DATA_SUPPORT_RESTRICTED,
                 (long) dataMode);
@@ -877,8 +847,7 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
             assertThat(carrierPlmnListConfigured).containsNoneIn(barredPlmnList);
 
             // Verify that Telephony has updated its internal state correctly.
-            telephonyCarrierPlmnList = sSatelliteManager.getSatellitePlmnsForCarrier(subId);
-            assertThat(telephonyCarrierPlmnList).containsExactlyElementsIn(allowedPlmnList);
+            waitForCarrierPlmnListAvailableInTelephony(subId, allowedPlmnList);
             dataMode = sSatelliteManager.getSatelliteDataSupportMode(subId);
             assertEquals((long) SatelliteManager.SATELLITE_DATA_SUPPORT_UNCONSTRAINED,
                     (long) dataMode);
@@ -889,7 +858,7 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
             if (connectType == CarrierConfigManager.CARRIER_ROAMING_NTN_CONNECT_AUTOMATIC) {
                 waitForSatelliteEnabledForCarrier(slotId);
             } else {
-                assertFalse(getIsSatelliteEnabledForCarrierInMockService(slotId));
+                waitForSatelliteDisabledForCarrier(slotId);
             }
         } finally {
             logd(TAG, "testQuerySatelliteEntitlementService_success: restore test environment");
@@ -971,11 +940,32 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
 
     private static void waitForSatelliteEnabledForCarrier(int slotId) {
         logd(TAG, "waitForSatelliteEnabledForCarrier: slotId=" + slotId);
+        if (getIsSatelliteEnabledForCarrierInMockService(slotId)) {
+            return;
+        }
+
         int i = 0;
         int maxRetry = 5;
         for (; i < maxRetry; i++) {
-            assertTrue(waitForEventOnSetSatelliteEnabledForCarrier(1));
+            assertTrue(waitForEventOnSatelliteEnabledForCarrierStateChanged(1));
             if (getIsSatelliteEnabledForCarrierInMockService(slotId)) {
+                break;
+            }
+        }
+        assertThat(i).isLessThan(maxRetry);
+    }
+
+    private static void waitForSatelliteDisabledForCarrier(int slotId) {
+        logd(TAG, "waitForSatelliteDisabledForCarrier: slotId=" + slotId);
+        if (!getIsSatelliteEnabledForCarrierInMockService(slotId)) {
+                return;
+        }
+
+        int i = 0;
+        int maxRetry = 5;
+        for (; i < maxRetry; i++) {
+            assertTrue(waitForEventOnSatelliteEnabledForCarrierStateChanged(1));
+            if (!getIsSatelliteEnabledForCarrierInMockService(slotId)) {
                 break;
             }
         }
@@ -996,6 +986,23 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
                 && carrierPlmnListConfigured.containsAll(expectedCarrierPlmnList)) {
                 break;
             }
+        }
+        assertThat(i).isLessThan(maxRetry);
+    }
+
+    private static void waitForCarrierPlmnListAvailableInTelephony(
+        int subId, List<String> expectedCarrierPlmnList) {
+        logd(TAG, "waitForCarrierPlmnListAvailableInTelephony: subId=" + subId
+                + ", expectedCarrierPlmnList=" + String.join(", ", expectedCarrierPlmnList));
+        int i = 0;
+        int maxRetry = 5;
+        for (; i < maxRetry; i++) {
+            List<String> carrierPlmnList = sSatelliteManager.getSatellitePlmnsForCarrier(subId);
+            logd(TAG, "carrierPlmnList=" + String.join(", ", carrierPlmnList));
+            if (areListsTheSame(carrierPlmnList, expectedCarrierPlmnList)) {
+                break;
+            }
+            waitFor(500);
         }
         assertThat(i).isLessThan(maxRetry);
     }

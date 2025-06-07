@@ -166,7 +166,7 @@ public class SatelliteManagerTestBase {
     protected static final float LOCATION_ACCURACY = 95;
     protected static LocationManager sLocationManager;
 
-    private static CarrierConfigReceiver sCarrierConfigReceiver;
+    protected static CarrierConfigReceiver sCarrierConfigReceiver;
 
     protected static void beforeAllTestsBase() {
         sPackageManager = getContext().getPackageManager();
@@ -3740,5 +3740,32 @@ public class SatelliteManagerTestBase {
         // Restore satellite permission
         grantSatellitePermission();
         return subscriptionInfoList != null ? subscriptionInfoList.size() : 0;
+    }
+
+    protected static boolean isSimReady(int slotId) {
+        if (sTelephonyManager.getSimState(slotId) != TelephonyManager.SIM_STATE_READY) {
+            logd("isSimReady: sim is not READY");
+            return false;
+        }
+        return true;
+    }
+
+    protected static boolean areListsTheSame(
+            @Nullable List<String> list1, @Nullable List<String> list2) {
+        if (list1 == null && list2 == null) {
+            return true;
+        }
+        if (list1 == null || list2 == null) {
+            return false;
+        }
+        if (list1.size() != list2.size()) {
+            return false;
+        }
+        for (String element : list1) {
+            if (!list2.contains(element)) {
+                return false;
+            }
+        }
+        return true;
     }
 }

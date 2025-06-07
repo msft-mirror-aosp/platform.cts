@@ -32,6 +32,7 @@ import androidx.test.uiautomator.UiDevice
 import androidx.test.uiautomator.UiObject2
 import androidx.test.uiautomator.Until
 import com.google.common.truth.Truth.assertThat
+import java.util.regex.Pattern
 import kotlin.test.junit.JUnitAsserter.fail
 
 open class ContentProviderAppVisibilityTestsBase {
@@ -51,6 +52,7 @@ open class ContentProviderAppVisibilityTestsBase {
     val INSTALL_START_CLASS = "com.android.packageinstaller.InstallStart"
 
     private val INSTALL_FAIL_DIALOG_TEXT = "There was a problem parsing the package."
+    private val INSTALL_FAIL_DIALOG_TEXT_V2 = "There is a problem with the app file"
     private val DEFAULT_TIMEOUT: Long = 5000
 
     val TYPE_EXPORTED_CONTENT_PROVIDER = 1
@@ -90,9 +92,23 @@ open class ContentProviderAppVisibilityTestsBase {
                                                                     permissionPattern))
 
         mScenario = ActivityScenario.launchActivityForResult(intent)
-        mUiDevice.wait(Until.findObject(By.text(INSTALL_FAIL_DIALOG_TEXT)), DEFAULT_TIMEOUT)
-        mDialog = mUiDevice.findObject(By.text(INSTALL_FAIL_DIALOG_TEXT))
-        mButton = mUiDevice.findObject(By.text("OK"))
+
+        val textSelector = By.text(
+            Pattern.compile(
+                "$INSTALL_FAIL_DIALOG_TEXT|$INSTALL_FAIL_DIALOG_TEXT_V2",
+                Pattern.CASE_INSENSITIVE
+            )
+        )
+
+        mUiDevice.wait(Until.findObject(textSelector), DEFAULT_TIMEOUT)
+        mDialog = mUiDevice.findObject(textSelector)
+        val buttonSelector = By.text(
+            Pattern.compile(
+                "OK|Close",
+                Pattern.CASE_INSENSITIVE
+            )
+        )
+        mButton = mUiDevice.findObject(buttonSelector)
     }
 
     private fun getContentSchemeIntent(contentProviderType: Int, permissionPattern: String): Intent {

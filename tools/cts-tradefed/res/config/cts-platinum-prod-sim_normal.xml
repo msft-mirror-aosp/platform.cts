@@ -54,29 +54,6 @@
     <option name="compatibility:include-filter" value="CtsPermissionPolicyTestCases android.permissionpolicy.cts.NoReceiveSmsPermissionTest#testAppSpecificSmsToken"/>
     <option name="compatibility:include-filter" value="CtsPermissionPolicyTestCases android.permissionpolicy.cts.PermissionPolicyTest#platformPermissionPolicyIsUnaltered"/>
     <option name="compatibility:include-filter" value="CtsPermissionPolicyTestCases android.permissionpolicy.cts.PrivappPermissionsTest#privappPermissionsNeedToBeWhitelisted"/>
-    <!-- CtsPermissionTestCases -->
-    <option name="compatibility:include-filter" value="CtsPermissionTestCases android.permission.cts.AccessibilityPrivacySourceTest#testJobDoesNotSendNotificationInSecondRunForSameService"/>
-    <option name="compatibility:include-filter" value="CtsPermissionTestCases android.permission.cts.AccessibilityPrivacySourceTest#testJobSendsNotification"/>
-    <option name="compatibility:include-filter" value="CtsPermissionTestCases android.permission.cts.AccessibilityPrivacySourceTest#testJobSendsNotificationOnEnable"/>
-    <option name="compatibility:include-filter" value="CtsPermissionTestCases android.permission.cts.AccessibilityPrivacySourceTest#testNotificationClickOpenSafetyCenter"/>
-    <option name="compatibility:include-filter" value="CtsPermissionTestCases android.permission.cts.DevicePermissionsTest#testAllPermissionStatesApiThatNonDeviceAwareRuntimePermissionGrantIsNotInherited"/>
-    <option name="compatibility:include-filter" value="CtsPermissionTestCases android.permission.cts.LocationAccessCheckTest#notificationIsNotShownAfterAppDoesNotRequestLocationAnymore"/>
-    <option name="compatibility:include-filter" value="CtsPermissionTestCases android.permission.cts.LocationAccessCheckTest#notificationIsShown"/>
-    <option name="compatibility:include-filter" value="CtsPermissionTestCases android.permission.cts.LocationAccessCheckTest#notificationIsShownAgainAfterUninstallAndReinstall"/>
-    <option name="compatibility:include-filter" value="CtsPermissionTestCases android.permission.cts.LocationAccessCheckTest#notificationOnClickOpensSafetyCenter"/>
-    <option name="compatibility:include-filter" value="CtsPermissionTestCases android.permission.cts.NotificationListenerCheckTest#noNotificationIfFeatureDisabled"/>
-    <option name="compatibility:include-filter" value="CtsPermissionTestCases android.permission.cts.NotificationListenerCheckTest#noNotificationIfSafetyCenterDisabled"/>
-    <option name="compatibility:include-filter" value="CtsPermissionTestCases android.permission.cts.NotificationListenerCheckTest#notificationIsNotShownAfterDisableAppNotificationListener"/>
-    <option name="compatibility:include-filter" value="CtsPermissionTestCases android.permission.cts.NotificationListenerCheckTest#notificationIsShown"/>
-    <option name="compatibility:include-filter" value="CtsPermissionTestCases android.permission.cts.NotificationListenerCheckTest#notificationIsShownAgainAfterClear"/>
-    <option name="compatibility:include-filter" value="CtsPermissionTestCases android.permission.cts.NotificationListenerCheckTest#notificationIsShownAgainAfterDisableAndReenableAppNotificationListener"/>
-    <option name="compatibility:include-filter" value="CtsPermissionTestCases android.permission.cts.NotificationListenerCheckTest#notificationIsShownAgainAfterUninstallAndReinstall"/>
-    <option name="compatibility:include-filter" value="CtsPermissionTestCases android.permission.cts.NotificationListenerCheckTest#notificationIsShownOnlyOnce"/>
-    <option name="compatibility:include-filter" value="CtsPermissionTestCases android.permission.cts.NotificationListenerCheckTest#notificationOnClick_opensSafetyCenter"/>
-    <option name="compatibility:include-filter" value="CtsPermissionTestCases android.permission.cts.NotificationListenerCheckTest#removeNotificationOnUninstall"/>
-    <option name="compatibility:include-filter" value="CtsPermissionTestCases android.permission.cts.RevokeSelfPermissionTest#testKillTriggersRevocation"/>
-    <option name="compatibility:include-filter" value="CtsPermissionTestCases android.permission.cts.RevokeSelfPermissionTest#testRevokeLocationPermission"/>
-    <option name="compatibility:include-filter" value="CtsPermissionTestCases android.permission.cts.SplitPermissionsSystemTest#validateAndroidSystem"/>
     <!-- CtsStatsdAtomHostTestCases -->
     <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases android.cts.statsdatom.alarm.AlarmStatsTests#testAlarmBatchDelivered"/>
     <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases android.cts.statsdatom.alarm.AlarmStatsTests#testAlarmScheduled"/>

@@ -257,12 +257,11 @@ public class VoiceInteractionSessionVisibleActivityTest extends AbstractVoiceInt
         }
 
         private void startVoiceInteractionSession() throws Exception {
-            final Intent intent = new Intent();
+            final Intent intent = new Intent("android.voiceinteraction.service.TRAMPOLINE_SERVICE");
+
             intent.putExtra(Utils.VOICE_INTERACTION_KEY_CLASS,
                     "android.voiceinteraction.service.DirectActionsSession");
-            intent.setClassName("android.voiceinteraction.service",
-                    "android.voiceinteraction.service.VoiceInteractionMain");
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            intent.setPackage("android.voiceinteraction.service");
 
             startVoiceInteractionSession(intent);
         }

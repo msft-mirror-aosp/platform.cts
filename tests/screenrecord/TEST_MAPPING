@@ -1,0 +1,12 @@
+{
+  "presubmit": [
+    {
+      "name": "CtsScreenRecordTestCases"
+    }
+  ],
+  "hwasan-postsubmit": [
+    {
+      "name": "CtsScreenRecordTestCases"
+    }
+  ]
+}

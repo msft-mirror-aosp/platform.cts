@@ -19,6 +19,7 @@ package android.mediav2.common.cts;
 import static android.media.MediaCodecInfo.CodecCapabilities.FEATURE_HdrEditing;
 import static android.media.MediaCodecInfo.CodecCapabilities.FEATURE_HlgEditing;
 import static android.media.MediaCodecInfo.CodecProfileLevel.*;
+import static android.media.codec.Flags.hlgEditing;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -441,7 +442,7 @@ public abstract class CodecTestBase {
         MEDIA_CODEC_LIST_REGULAR = new MediaCodecList(MediaCodecList.REGULAR_CODECS);
         IS_HDR_CAPTURE_SUPPORTED = isHDRCaptureSupported();
         IS_HDR_EDITING_SUPPORTED = isEncoderFeatureSupported(FEATURE_HdrEditing);
-        IS_HLG_EDITING_SUPPORTED = (IS_AT_LEAST_V && android.media.codec.Flags.hlgEditing())
+        IS_HLG_EDITING_SUPPORTED = (IS_AT_LEAST_V && hlgEditing())
                 ? isEncoderFeatureSupported(FEATURE_HlgEditing) : false;
         CODEC_SEL_KEY_MEDIA_TYPE_MAP.put("vp8", MediaFormat.MIMETYPE_VIDEO_VP8);
         CODEC_SEL_KEY_MEDIA_TYPE_MAP.put("vp9", MediaFormat.MIMETYPE_VIDEO_VP9);
@@ -566,38 +567,45 @@ public abstract class CodecTestBase {
             }
         }
         if (!hasSupport) {
+            StringBuilder msg = new StringBuilder("Media Type : " + mediaType).append("\n");
+            if (formats != null) {
+                msg.append("Formats :").append("\n");
+                for (MediaFormat format : formats) {
+                    msg.append(format).append("\n");
+                }
+            }
+            if (features != null) {
+                msg.append("Features :").append("\n");
+                for (String feature : features) {
+                    msg.append(feature).append("\n");
+                }
+            }
             switch (supportRequirements) {
                 case CODEC_ALL:
-                    fail("format(s) not supported by codec: " + codecName + " for mediaType : "
-                            + mediaType + " formats: " + formats);
+                    fail(msg + " not supported by codec : " + codecName);
                     break;
                 case CODEC_ANY:
                     if (selectCodecs(mediaType, formats, features, isEncoder).isEmpty()) {
-                        fail("format(s) not supported by any component for mediaType : " + mediaType
-                                + " formats: " + formats);
+                        fail(msg + " not supported by any component on the device");
                     }
                     break;
                 case CODEC_DEFAULT:
                     if (isDefaultCodec(codecName, mediaType, isEncoder)) {
-                        fail("format(s) not supported by default codec : " + codecName
-                                + "for mediaType : " + mediaType + " formats: " + formats);
+                        fail(msg + " not supported by default codec : " + codecName);
                     }
                     break;
                 case CODEC_HW:
                     if (isHardwareAcceleratedCodec(codecName)) {
-                        fail("format(s) not supported by codec: " + codecName + " for mediaType : "
-                                + mediaType + " formats: " + formats);
+                        fail(msg + " not supported by codec : " + codecName);
                     }
                     break;
                 case CODEC_SHOULD:
-                    Assume.assumeTrue(String.format("format(s) not supported by codec: %s for"
-                            + " mediaType : %s. It is recommended to support it",
-                            codecName, mediaType), false);
+                    Assume.assumeTrue(String.format("%s not supported by codec: %s. It is "
+                            + "recommended to support it", msg, codecName), false);
                     break;
                 case CODEC_HW_RECOMMENDED:
-                    Assume.assumeTrue(String.format(
-                            "format(s) not supported by codec: %s for mediaType : %s. It is %s "
-                                    + "recommended to support it", codecName, mediaType,
+                    Assume.assumeTrue(String.format("%s not supported by codec: %s. It is %s"
+                                    + "recommended to support it", msg, codecName,
                             isHardwareAcceleratedCodec(codecName) ? "strongly" : ""), false);
                     break;
                 case CODEC_OPTIONAL:
@@ -605,8 +613,7 @@ public abstract class CodecTestBase {
                     // the later assumeTrue() ensures we skip the test for unsupported codecs
                     break;
             }
-            Assume.assumeTrue("format(s) not supported by codec: " + codecName + " for mediaType : "
-                    + mediaType, false);
+            Assume.assumeTrue(msg + " not supported by codec : " + codecName, false);
         }
     }
 

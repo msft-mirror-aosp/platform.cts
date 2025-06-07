@@ -390,4 +390,39 @@ public class IpcDataCacheTest {
         // Verify that system invalidation is now okay, since test mode is enabled.
         sysCache.invalidateCache();
     }
+
+    // Create a cache in the specified module.
+    private void testModule(String module) {
+        TestCache cache = new TestCache(IpcDataCache.MODULE_SYSTEM, "system");
+        cache.invalidateCache();
+        IpcDataCache.setTestMode(false);
+        try {
+            cache.invalidateCache();
+            fail("module " + module + " is writeable by outsiders");
+        } catch (RuntimeException e) {
+            // Expected exception
+        } finally {
+            IpcDataCache.setTestMode(true);
+        }
+    }
+
+    // This test verifies that a cache can be created with every exported module.  It also
+    // verifies that these modules cannot be invalidated outside test mode.  The TEST module is
+    // specifically excluded because it can (by design) be invalidated outside test mode.  Modules
+    // that are flag-guarded are tested in {@link #testModulesFlagged} until they are committed,
+    // after which they should be moved into this test.
+    @Test
+    public void testModules() {
+        testModule(IpcDataCache.MODULE_BLUETOOTH);
+        testModule(IpcDataCache.MODULE_SYSTEM);
+    }
+
+    // This is the same as testModules() except that it covers modules that are are currently
+    // flag-guarded.  When the flag is committed, the module list here can be moved into
+    // {@link #testModules}.
+    @RequiresFlagsEnabled(Flags.FLAG_IPC_DATA_CACHE_MODULE_ADSERVICES)
+    @Test
+    public void testModulesFlagged() {
+        testModule(IpcDataCache.MODULE_ADSERVICES);
+    }
 }

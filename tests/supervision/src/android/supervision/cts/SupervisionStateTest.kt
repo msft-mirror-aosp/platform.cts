@@ -20,6 +20,9 @@ import android.Manifest.permission.MANAGE_USERS
 import android.Manifest.permission.QUERY_USERS
 import android.app.supervision.SupervisionManager
 import android.app.supervision.flags.Flags
+import android.content.Intent
+import android.content.pm.PackageManager
+import androidx.test.ext.junit.rules.ActivityScenarioRule
 import com.android.bedstead.flags.annotations.RequireFlagsEnabled
 import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.harrier.DeviceState
@@ -29,6 +32,7 @@ import com.android.bedstead.permissions.annotations.EnsureHasPermission
 import com.android.compatibility.common.util.ApiTest
 import com.android.xts.root.annotations.RequireRootInstrumentation
 import com.google.common.truth.Truth.assertThat
+import com.google.common.truth.TruthJUnit.assume
 import org.junit.ClassRule
 import org.junit.Rule
 import org.junit.Test
@@ -38,6 +42,8 @@ import org.testng.Assert.assertThrows
 @RunWith(BedsteadJUnit4::class)
 @RequireFlagsEnabled(Flags.FLAG_SUPERVISION_MANAGER_APIS)
 class SupervisionStateTest {
+    @get:Rule
+    val activityRule = ActivityScenarioRule(MainActivity::class.java)
 
     @Test
     @ApiTest(apis = ["android.app.supervision.SupervisionManager#isSupervisionEnabled"])
@@ -70,6 +76,43 @@ class SupervisionStateTest {
             supervisionManager.isSupervisionEnabled()
         }
     }
+
+    @Test
+    @ApiTest(apis = ["android.app.supervision.SupervisionManager#ACTION_ENABLE_SUPERVISION"])
+    fun enableSupervisionIntent_resolvesToSettings() {
+        assume().that(isAutomotive()).isFalse()
+        assume().that(isTV()).isFalse()
+        assume().that(isWatch()).isFalse()
+
+        val intent = Intent(SupervisionManager.ACTION_ENABLE_SUPERVISION)
+        val resolveInfos = context.packageManager.queryIntentActivities(intent, 0)
+
+        assertThat(resolveInfos.size).isEqualTo(1)
+        val resolveInfo = resolveInfos[0]
+        assertThat(resolveInfo.activityInfo.packageName).isEqualTo("com.android.settings")
+    }
+
+    @Test
+    @ApiTest(apis = ["android.app.supervision.SupervisionManager#ACTION_DISABLE_SUPERVISION"])
+    fun disableSupervisionIntent_resolvesToSettings() {
+        assume().that(isAutomotive()).isFalse()
+        assume().that(isTV()).isFalse()
+        assume().that(isWatch()).isFalse()
+
+        val intent = Intent(SupervisionManager.ACTION_DISABLE_SUPERVISION)
+        val resolveInfos = context.packageManager.queryIntentActivities(intent, 0)
+
+        assertThat(resolveInfos.size).isEqualTo(1)
+        val resolveInfo = resolveInfos[0]
+        assertThat(resolveInfo.activityInfo.packageName).isEqualTo("com.android.settings")
+    }
+
+    private fun isAutomotive() =
+        context.packageManager.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE)
+
+    private fun isTV() = context.packageManager.hasSystemFeature(PackageManager.FEATURE_LEANBACK)
+
+    private fun isWatch() = context.packageManager.hasSystemFeature(PackageManager.FEATURE_WATCH)
 
     companion object {
         @[JvmField ClassRule Rule]

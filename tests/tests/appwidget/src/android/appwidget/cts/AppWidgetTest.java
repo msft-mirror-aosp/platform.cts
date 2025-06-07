@@ -59,6 +59,7 @@ import android.os.SystemClock;
 import android.os.UserHandle;
 import android.os.UserManager;
 import android.platform.test.annotations.AppModeFull;
+import android.platform.test.annotations.DesktopTest;
 import android.platform.test.annotations.AppModeInstant;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
@@ -91,6 +92,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.IntConsumer;
 
+@DesktopTest(cujs = {"b/416196526", "b/416196961"})
 public class AppWidgetTest extends AppWidgetTestCase {
 
     @Rule(order = 0)

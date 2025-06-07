@@ -27,18 +27,18 @@ cc_test_library {
         "jni/native-media-jni.cpp",
     ],
     shared_libs: [
+        "libEGL",
         "libandroid",
-        "libnativehelper_compat_libc++",
         "liblog",
         "libmediandk",
-        "libEGL",
+        "libnativehelper_compat_libc++",
     ],
     header_libs: ["liblog_headers"],
     stl: "libc++_static",
     cflags: [
-        "-Werror",
-        "-Wall",
         "-DEGL_EGLEXT_PROTOTYPES",
+        "-Wall",
+        "-Werror",
     ],
     gtest: false,
     // this test suite will run on sdk 29 as part of MTS, make sure it's compatible
@@ -52,9 +52,9 @@ java_defaults {
     // include both the 32 and 64 bit versions
     compile_multilib: "both",
     static_libs: [
+        "cts-media-common",
         "ctstestrunner-axt",
         "ctstestserver",
-        "cts-media-common",
     ],
     jni_libs: [
         "libctscodecutils_jni",
@@ -65,21 +65,19 @@ java_defaults {
     resource_dirs: ["res"],
     aaptflags: [
         // Do not compress these files:
-        "-0 .vp9",
-        "-0 .ts",
         "-0 .heic",
-        "-0 .trp",
-        "-0 .ota",
         "-0 .mxmf",
+        "-0 .ota",
+        "-0 .trp",
+        "-0 .ts",
+        "-0 .vp9",
     ],
     srcs: [
         "src/**/*.java",
     ],
-    // This test uses private APIs
-    platform_apis: true,
-    jni_uses_sdk_apis: true,
     host_required: ["cts-dynamic-config"],
     host_common_data: [":cts-dynamic-config"],
+    sdk_version: "test_current",
     min_sdk_version: "29",
     target_sdk_version: "31",
 }

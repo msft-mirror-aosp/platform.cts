@@ -30,6 +30,7 @@ import android.app.Instrumentation;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.Flags;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
@@ -180,7 +181,7 @@ public class PackageInstallerCujTestBase {
         uninstallTestPackage();
         assertTestPackageNotInstalled();
 
-        sUsePiaV2 = Settings.System.getInt(getContext().getContentResolver(),
+        sUsePiaV2 = Flags.usePiaV2() || Settings.System.getInt(getContext().getContentResolver(),
                 /* name= */ "use_pia_v2", /* def= */ 0) == 1;
         Log.i(TAG, "Using Pia V" + (sUsePiaV2 ? "2" : "1"));
     }

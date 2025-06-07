@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package android.content.cts;
+package android.content.cts.contentprovider;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -32,7 +32,7 @@ import org.junit.runner.RunWith;
 
 @RunWith(AndroidJUnit4.class)
 @AppModeFull
-public final class CtsMediaProviderClientRefCountTest {
+public final class MediaProviderClientRefCountTest {
 
     private final Context mContext = ApplicationProvider.getApplicationContext();
 

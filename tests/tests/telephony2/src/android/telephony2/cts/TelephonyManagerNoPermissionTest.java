@@ -16,26 +16,37 @@
 
 package android.telephony2.cts;
 
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeNotNull;
+import static org.junit.Assume.assumeTrue;
 
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.os.Build;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.telephony.TelephonyManager;
 import android.telephony.cts.util.TelephonyUtils;
 
 import androidx.annotation.RequiresApi;
 import androidx.test.InstrumentationRegistry;
 
+import com.android.internal.telephony.flags.Flags;
+
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 /**
  * Test APIs when the package does not have READ_PHONE_STATE.
  */
 public class TelephonyManagerNoPermissionTest {
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private Context mContext;
     private PackageManager mPackageManager;
@@ -57,9 +68,7 @@ public class TelephonyManagerNoPermissionTest {
 
     @Test
     public void testGetCallState_redirectToTelecom() throws Exception {
-        if (!mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY)) {
-            return;
-        }
+        assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY));
 
         TelephonyUtils.enableCompatCommand(InstrumentationRegistry.getInstrumentation(),
                 TelephonyUtils.CTS_APP_PACKAGE2,
@@ -75,9 +84,7 @@ public class TelephonyManagerNoPermissionTest {
 
     @Test
     public void testGetCallStateForSubscription() throws Exception {
-        if (!mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY)) {
-            return;
-        }
+        assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY));
 
         TelephonyUtils.enableCompatCommand(InstrumentationRegistry.getInstrumentation(),
                 TelephonyUtils.CTS_APP_PACKAGE2,
@@ -90,6 +97,29 @@ public class TelephonyManagerNoPermissionTest {
         } catch (SecurityException e) {
             // expected
         }
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_MACRO_BASED_OPPORTUNISTIC_NETWORKS)
+    @Test
+    public void testIsMultiSimSupported() throws Exception {
+        assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY));
+
+        assertThrows(SecurityException.class, () -> mTelephonyManager.isMultiSimSupported());
+    }
+
+    @Test
+    public void testIsModemEnabledForSlot() throws Exception {
+        assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY));
+
+        assertThrows(SecurityException.class, () -> mTelephonyManager.isModemEnabledForSlot(0));
+    }
+
+    /** Tests that a SecurityException is thrown when trying to access UiccCardsInfo. */
+    @Test
+    public void testGetUiccCardsInfoException() {
+        assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
+
+        assertThrows(SecurityException.class, () -> mTelephonyManager.getUiccCardsInfo());
     }
 
     @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)

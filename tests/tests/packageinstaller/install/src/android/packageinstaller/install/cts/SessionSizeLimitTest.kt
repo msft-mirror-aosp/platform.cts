@@ -19,6 +19,7 @@ import android.content.pm.PackageInstaller
 import android.content.pm.PackageInstaller.SessionParams.MODE_FULL_INSTALL
 import android.content.pm.PackageInstaller.SessionParams.PERMISSION_STATE_GRANTED
 import android.net.Uri
+import android.platform.test.annotations.AppModeFull
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.bedstead.nene.TestApis
 import com.google.common.truth.Truth.assertThat
@@ -26,6 +27,7 @@ import org.junit.Assert.assertThrows
 import org.junit.Test
 import org.junit.runner.RunWith
 
+@AppModeFull(reason = "Instant apps cannot create installer sessions")
 @RunWith(AndroidJUnit4::class)
 class SessionSizeLimitTest : PackageInstallerTestBase() {
 

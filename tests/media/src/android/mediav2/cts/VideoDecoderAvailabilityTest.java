@@ -38,6 +38,7 @@ import android.mediav2.common.cts.CodecAsyncHandler;
 import android.mediav2.common.cts.CodecDecoderTestBase;
 import android.mediav2.common.cts.CodecDynamicTestActivity;
 import android.mediav2.common.cts.OutputManager;
+import android.os.Build;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.util.Log;
 import android.util.Pair;
@@ -48,6 +49,7 @@ import android.view.Surface;
 import androidx.annotation.NonNull;
 import androidx.test.ext.junit.rules.ActivityScenarioRule;
 import androidx.test.filters.LargeTest;
+import androidx.test.filters.SdkSuppress;
 
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.VsrTest;
@@ -79,6 +81,7 @@ import java.util.function.Function;
  * appropriate action as desired.
  */
 @RequiresFlagsEnabled(FLAG_CODEC_AVAILABILITY)
+@SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA, codeName = "Baklava")
 class CodecAsyncHandlerResource extends CodecAsyncHandler {
     private boolean mResourceChangeCbReceived;
     private int mResourceChangeCbCount;
@@ -114,6 +117,8 @@ class CodecAsyncHandlerResource extends CodecAsyncHandler {
 /**
  * This class comprises of tests that validate codec resource availability apis for video decoders
  */
+@RequiresFlagsEnabled(FLAG_CODEC_AVAILABILITY)
+@SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA, codeName = "Baklava")
 @RunWith(Parameterized.class)
 public class VideoDecoderAvailabilityTest extends CodecDecoderTestBase {
     private static final String LOG_TAG = VideoDecoderAvailabilityTest.class.getSimpleName();

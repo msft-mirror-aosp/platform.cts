@@ -495,6 +495,7 @@ public class MockSatelliteService extends SatelliteImplBase {
             return;
         }
 
+        boolean isEnabledStateChanged = mIsSatelliteEnabledForCarrier != satelliteEnabled;
         mIsSatelliteEnabledForCarrier = satelliteEnabled;
         if (mShouldRespondTelephony.get()) {
             runWithExecutor(() -> callback.accept(SatelliteResult.SATELLITE_RESULT_SUCCESS));
@@ -502,6 +503,9 @@ public class MockSatelliteService extends SatelliteImplBase {
 
         if (mLocalListener != null) {
             runWithExecutor(() -> mLocalListener.onSetSatelliteEnabledForCarrier());
+            if (isEnabledStateChanged) {
+                runWithExecutor(() -> mLocalListener.onSatelliteEnabledForCarrierStateChanged());
+            }
         } else {
             loge("setSatelliteEnabledForCarrier: mLocalListener is null");
         }

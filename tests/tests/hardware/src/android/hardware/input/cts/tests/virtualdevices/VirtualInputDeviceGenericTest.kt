@@ -117,23 +117,26 @@ class VirtualInputDeviceGenericTest {
         )!!
         val deviceHolder: VirtualInputDeviceCreator.InputDeviceHolder<*> =
             factory.create(mVirtualDevice, DEVICE_NAME, display.display)
-        InputDeviceRemovedWaiter(mInputManager, deviceHolder.deviceId).use { waiter ->
+        InputDevicesRemovedWaiter(mInputManager, listOf(deviceHolder.deviceId)).use { waiter ->
             deviceHolder.close()
             assertThat(waiter.awaitDeviceRemoval()).isTrue()
         }
     }
 
-    @Parameters(method = "allInputDevices")
     @Test
     @Throws(Exception::class)
-    fun closeVirtualDevice_removesInputDevice(factory: VirtualInputDeviceFactory<*>) {
+    fun closeVirtualDevice_removesInputDevices() {
         val display: VirtualDisplay = mRule.createManagedVirtualDisplay(
             mVirtualDevice,
             VirtualDeviceRule.createTrustedVirtualDisplayConfigBuilder()
         )!!
-        val deviceHolder: VirtualInputDeviceCreator.InputDeviceHolder<*> =
-            factory.create(mVirtualDevice, DEVICE_NAME, display.display)
-        InputDeviceRemovedWaiter(mInputManager, deviceHolder.deviceId).use { waiter ->
+        var count = 0
+        val deviceIds = allInputDevices().map { factory ->
+            count++
+            factory.create(mVirtualDevice, DEVICE_NAME + count, display.display).deviceId
+        }
+
+        InputDevicesRemovedWaiter(mInputManager, deviceIds).use { waiter ->
             mVirtualDevice.close()
             assertThat(waiter.awaitDeviceRemoval()).isTrue()
         }
@@ -229,17 +232,17 @@ class VirtualInputDeviceGenericTest {
                 mVirtualDevice,
                 DEVICE_NAME,
                 unownedDisplay.getDisplay()
-           )
+            )
         )
             .isNotNull()
     }
 
-    /** Utility to verify that an input device with a given ID has been removed.  */
-    private class InputDeviceRemovedWaiter(
+    /** Utility to verify that the input devices with given IDs have been removed.  */
+    private class InputDevicesRemovedWaiter(
         private val mInputManager: InputManager,
-        private val mDeviceId: Int
+        private val mDeviceIds: List<Int>
     ) : InputManager.InputDeviceListener, AutoCloseable {
-        private val mLatch = CountDownLatch(1)
+        private val mLatch = CountDownLatch(mDeviceIds.size)
 
         init {
             mInputManager.registerInputDeviceListener(this, Handler(Looper.getMainLooper()))
@@ -249,7 +252,7 @@ class VirtualInputDeviceGenericTest {
         }
 
         override fun onInputDeviceRemoved(deviceId: Int) {
-            if (deviceId == mDeviceId) {
+            if (deviceId in mDeviceIds) {
                 mLatch.countDown()
             }
         }
@@ -263,7 +266,7 @@ class VirtualInputDeviceGenericTest {
 
         @Throws(InterruptedException::class)
         fun awaitDeviceRemoval(): Boolean {
-            return mLatch.await(3, TimeUnit.SECONDS)
+            return mLatch.await(3 * mDeviceIds.size.toLong(), TimeUnit.SECONDS)
         }
     }
 

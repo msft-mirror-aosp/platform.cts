@@ -167,7 +167,7 @@ public class StorageTest extends InstrumentationTestCase {
     private void clearSpaceTv(UiDevice device) throws UiObjectNotFoundException {
         device.findObject(new UiSelector().textContains("Clear")).click();
         device.waitForIdle();
-        device.findObject(new UiSelector().textContains("OK")).click();
+        device.findObject(new UiSelector().textMatches("(OK|Confirm)")).click();
     }
 
     private void clearSpaceCar(UiDevice device) throws UiObjectNotFoundException {

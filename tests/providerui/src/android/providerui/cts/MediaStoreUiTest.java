@@ -406,8 +406,9 @@ public class MediaStoreUiTest {
         assumeTrue(supportsHardware());
         clearDocumentsUi();
         mDevice.waitForIdle();
+        String volumeName = mVolumeName.toUpperCase();
         String root = Set.of(MediaStore.VOLUME_EXTERNAL,
-                MediaStore.VOLUME_EXTERNAL_PRIMARY).contains(mVolumeName) ? "primary" : mVolumeName;
+                MediaStore.VOLUME_EXTERNAL_PRIMARY).contains(mVolumeName) ? "primary" : volumeName;
 
         try {
             mDevice.executeShellCommand("am start -a android.intent.action.OPEN_DOCUMENT_TREE "

@@ -19,6 +19,7 @@ import struct
 import time
 import pyudev
 import serial
+import subprocess
 
 
 # baudrates used for lights and servo controllers
@@ -39,6 +40,7 @@ _LSS_ACTION_HOLD = 'H'
 _LSS_ACTION_LIMP = 'L'
 _LSS_CONFIG_FILTER_POSITION_COUNT = 'CFPC'
 _LSS_MODIFIER_TIMED = 'T'
+_LSS_ACTION_QUERY_POSITION = 'QD'
 
 # servo controller configuration
 _DEFAULT_MAX_SPEED_RPM = 45
@@ -109,6 +111,25 @@ def _rotator_write(serial_port, channel, command, value=None):
   serial_port.write(msg)
 
 
+def get_usb_devices_connected():
+  """Checks and lists the details of USB devices.
+  """
+  devices = pyudev.Context()
+  device_list = devices.list_devices(subsystem='tty', ID_BUS='usb')
+  logging.debug('Getting the list of connected devices')
+  for device in device_list:
+    port = device['DEVNAME']
+    logging.debug('Getting properties for device: %s', port)
+    command = f'udevadm info -q property -n {port}'
+    try:
+      property_list = subprocess.check_output(command, shell=True)
+      logging.debug('------Device %s properties-----', port)
+      logging.debug(property_list)
+      logging.debug('-------------------------------')
+    except subprocess.CalledProcessError as error:
+      logging.exception(error)
+
+
 def find_serial_port(name):
   """Determine the serial port for gen2 rig controllers and open.
 
@@ -141,6 +162,17 @@ def find_serial_port(name):
   if port_name is None:
     logging.debug('Failed to find the serial port.')
     return None
+
+
+def get_position(serial_port, channel):
+  """Get the current position of the servo."""
+  _rotator_write(serial_port, channel, _LSS_ACTION_QUERY_POSITION, value='')
+  response = serial_port.readline().decode('utf-8').strip()
+  logging.debug('Position response from rotator: %s', response)
+  position = response.split(_LSS_ACTION_QUERY_POSITION)[-1]
+  if not position or not position.isdigit():
+    raise AssertionError('Failed to get position from rotator.')
+  return int(position) / _SERVO_ANGLE_SCALE_FACTOR
 
 
 def configure_rotator(serial_port, channel):
@@ -259,11 +291,14 @@ def rotation_rig_sensor_fusion(rotate_cntl, rotate_ch, num_rotations, angles):
   # initialize servo at starting angle
   logging.debug('Moving servo to starting position')
   _move_to(serial_port, channel, starting_angle * _SERVO_ANGLE_SCALE_FACTOR)
+  get_position(serial_port, channel)
 
   # rotate phone
   for _ in range(num_rotations):
     _move_to(serial_port, channel, ending_angle * _SERVO_ANGLE_SCALE_FACTOR)
+    get_position(serial_port, channel)
     _move_to(serial_port, channel, starting_angle * _SERVO_ANGLE_SCALE_FACTOR)
+    get_position(serial_port, channel)
   logging.debug('Finished rotations for sensor fusion, moving to origin')
   _move_to(serial_port, channel, 0)
 

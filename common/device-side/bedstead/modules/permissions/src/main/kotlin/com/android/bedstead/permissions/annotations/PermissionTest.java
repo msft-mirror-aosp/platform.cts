@@ -14,10 +14,12 @@
  * limitations under the License.
  */
 
-package com.android.bedstead.harrier.annotations;
+package com.android.bedstead.permissions.annotations;
 
 import static com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence.PRECEDENCE_NOT_IMPORTANT;
 
+import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence;
+import com.android.bedstead.harrier.annotations.UsesParameterizedTestGenerator;
 import com.android.bedstead.harrier.annotations.meta.RequiresBedsteadJUnit4;
 
 import java.lang.annotation.ElementType;
@@ -36,6 +38,7 @@ import java.lang.annotation.Target;
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
 @RequiresBedsteadJUnit4
+@UsesParameterizedTestGenerator(UsesParameterizedTestGenerator.PERMISSIONS)
 public @interface PermissionTest {
     /**
      * The permissions which enable the functionality being tested.

@@ -25,6 +25,10 @@ import static org.junit.Assert.assertTrue;
 
 import android.Manifest;
 import android.content.Context;
+import android.net.ConnectivityManager;
+import android.net.Network;
+import android.net.NetworkCapabilities;
+import android.net.NetworkRequest;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -55,10 +59,14 @@ public class DataServiceTestOnMockModem {
 
     private static final int LATCH_SET_USER_DATA_ENABLED = 0;
     private static final int LATCH_SET_USER_DATA_ROAMING_ENABLED = 1;
+    private static final int LATCH_NOTIFY_IMS_DATA_NETWORK = 2;
 
     private MockModemManager mMockModemManager;
     private TelephonyManager mTelephonyManager;
     private int mTestSub = 0;
+
+    private boolean mInitialIsUserDataEnabled = false;
+    private boolean mInitialIsUserDataRoamingEnabled = false;
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
@@ -67,7 +75,9 @@ public class DataServiceTestOnMockModem {
     public void beforeTest() throws Exception {
         InstrumentationRegistry.getInstrumentation()
                 .getUiAutomation()
-                .adoptShellPermissionIdentity(Manifest.permission.MODIFY_PHONE_STATE);
+                .adoptShellPermissionIdentity(
+                        Manifest.permission.MODIFY_PHONE_STATE,
+                        Manifest.permission.CONNECTIVITY_USE_RESTRICTED_NETWORKS);
 
         MockModemManager.enforceMockModemDeveloperSetting();
         mMockModemManager = new MockModemManager();
@@ -97,6 +107,10 @@ public class DataServiceTestOnMockModem {
         TimeUnit.MILLISECONDS.sleep(WAIT_UPDATE_TIMEOUT_MS);
         assertTrue(mMockModemManager.changeNetworkService(TEST_SLOT, 310260, true));
 
+        mInitialIsUserDataEnabled =
+                mTelephonyManager.isDataEnabledForReason(TelephonyManager.DATA_ENABLED_REASON_USER);
+        mInitialIsUserDataRoamingEnabled = mTelephonyManager.isDataRoamingEnabled();
+
         if (mMockModemManager != null) {
             mTelephonyManager.setDataEnabledForReason(
                     TelephonyManager.DATA_ENABLED_REASON_USER, false);
@@ -123,6 +137,11 @@ public class DataServiceTestOnMockModem {
 
             TimeUnit.MILLISECONDS.sleep(WAIT_UPDATE_TIMEOUT_MS);
         }
+
+        mTelephonyManager.setDataEnabledForReason(
+                TelephonyManager.DATA_ENABLED_REASON_USER, mInitialIsUserDataEnabled);
+        mTelephonyManager.setDataRoamingEnabled(mInitialIsUserDataRoamingEnabled);
+
         InstrumentationRegistry.getInstrumentation()
                 .getUiAutomation()
                 .dropShellPermissionIdentity();
@@ -154,6 +173,30 @@ public class DataServiceTestOnMockModem {
         mTelephonyManager.setDataRoamingEnabled(false);
         waitForDataLatchCountdown(LATCH_SET_USER_DATA_ROAMING_ENABLED);
         assertFalse(mMockModemManager.getIsUserDataRoamingEnabled(TEST_SLOT));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_DATA_SERVICE_NOTIFY_IMS_DATA_NETWORK)
+    public void testNotifyImsDataNetwork() {
+        ConnectivityManager connectivityManager =
+                (ConnectivityManager) getContext().getSystemService(ConnectivityManager.class);
+        NetworkRequest.Builder builder = new NetworkRequest.Builder();
+        builder.addCapability(NetworkCapabilities.NET_CAPABILITY_IMS);
+        builder.addCapability(NetworkCapabilities.NET_CAPABILITY_MMTEL);
+        connectivityManager.requestNetwork(builder.build(), createSimpleCallback());
+
+        waitForDataLatchCountdown(LATCH_NOTIFY_IMS_DATA_NETWORK);
+        assertTrue(mMockModemManager.getIsImsDataNetworkNotified(TEST_SLOT));
+    }
+
+    private static ConnectivityManager.NetworkCallback createSimpleCallback() {
+        return new ConnectivityManager.NetworkCallback() {
+            @Override
+            public void onAvailable(Network network) {}
+
+            @Override
+            public void onLost(Network network) {}
+        };
     }
 
     private boolean waitForDataLatchCountdown(int latchIndex) {

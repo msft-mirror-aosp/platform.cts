@@ -40,30 +40,4 @@ public final class FeaturesTest extends CtsVerifierTest {
 
         runTest(".clipboard.ClipboardPreviewTestActivity");
     }
-
-    @Test
-    @Interactive
-    @SupportMultiDisplayMode
-    // MultiDisplayMode
-    @ApiTest(apis = "android.companion.CompanionDeviceManager#associate")
-    public void CompanionDeviceTest() throws Exception {
-        requireFeatures("android.software.companion_device_setup");
-
-        runTest(".companion.CompanionDeviceTestActivity");
-    }
-
-    @Test
-    @Interactive
-    @SupportMultiDisplayMode
-    // MultiDisplayMode
-    @ApiTest(
-            apis = {
-                "android.companion.CompanionDeviceManager#startObservingDevicePresence",
-                "android.companion.CompanionDeviceManager#stopObservingDevicePresence"
-            })
-    public void CompanionDeviceServiceTest() throws Exception {
-        requireFeatures("android.software.companion_device_setup");
-
-        runTest(".companion.CompanionDeviceServiceTestActivity");
-    }
 }

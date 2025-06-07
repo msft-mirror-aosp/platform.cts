@@ -51,6 +51,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
 
 @RunWith(BedsteadJUnit4.class)
 @AppModeFull
@@ -105,7 +106,8 @@ public class UninstallTest extends UninstallTestBase {
         assertTrue("Package is not installed", isInstalled());
 
         startUninstall();
-        assertUninstallDialogShown(By.textContains("Do you want to uninstall this app?"));
+        assertUninstallDialogShown(
+                By.text(Pattern.compile(".*uninstall this app\\?", Pattern.CASE_INSENSITIVE)));
         clickInstallerButton();
 
         for (int i = 0; i < 30; i++) {
@@ -146,7 +148,8 @@ public class UninstallTest extends UninstallTestBase {
 
         if (needUserConfirmation) {
             pi.uninstall(pkg, 0, pendingIntent.getIntentSender());
-            assertUninstallDialogShown(By.textContains("Do you want to uninstall this app?"));
+            assertUninstallDialogShown(
+                    By.text(Pattern.compile(".*uninstall this app\\?", Pattern.CASE_INSENSITIVE)));
             clickInstallerButton();
         } else {
             SystemUtil.runWithShellPermissionIdentity(() -> {

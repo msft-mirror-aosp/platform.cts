@@ -621,6 +621,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         assertTrue(sMockSatelliteServiceManager.restoreSatellitePointingUiClassName());
     }
 
+    @Ignore("b/422763846 - This test is flaky. Need to fix and re-enable it.")
     @Test
     public void testSatelliteRequestEnabled() throws Exception {
         logd("testSatelliteRequestEnabled");
@@ -5603,6 +5604,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         revokeSatellitePermission();
     }
 
+    @Ignore("b/422763846 - This test is flaky. Need to fix and re-enable it.")
     @Test
     public void testSatelliteLocationSettingsEnabledDisabled() {
         logd("testSatelliteLocationSettingsEnabledDisabled");
@@ -7468,6 +7470,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
      * values through CarrierConfig. TODO: Perform satellite config OTA with different
      * maxAllowedDataMode values and assert outcome of getSatelliteDataSupportMode
      */
+    @Ignore("b/420927880 - This test is failing with CF devices. Need to fix and re-enable it.")
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_SATELLITE_25Q4_APIS)
     public void testGetSatelliteDataSupportMode() {

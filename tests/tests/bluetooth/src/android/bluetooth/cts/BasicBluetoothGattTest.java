@@ -16,9 +16,14 @@
 
 package android.bluetooth.cts;
 
+import static android.Manifest.permission.BLUETOOTH_PRIVILEGED;
+
+import static com.android.compatibility.common.util.SystemUtil.runShellCommand;
+
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertThrows;
+import static org.junit.Assume.assumeTrue;
 
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
@@ -27,12 +32,18 @@ import android.bluetooth.BluetoothGattCallback;
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothManager;
+import android.bluetooth.BluetoothStatusCodes;
+import android.bluetooth.test_utils.Permissions;
+import android.content.AttributionSource;
 import android.content.Context;
+import android.content.pm.PackageManager;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.util.Log;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.bluetooth.flags.Flags;
 import com.android.compatibility.common.util.CddTest;
 
 import org.junit.After;
@@ -51,30 +62,36 @@ import java.util.UUID;
 @RunWith(AndroidJUnit4.class)
 public class BasicBluetoothGattTest {
     private static final String TAG = BasicBluetoothGattTest.class.getSimpleName();
-
+    private static final String TEST_DEVICE_ADDRESS = "99:11:22:AA:BB:CC";
     private static final UUID TEST_UUID = UUID.fromString("0000110a-0000-1000-8000-00805f9b34fb");
 
+    private final Context mContext =
+            InstrumentationRegistry.getInstrumentation().getTargetContext();
+    private final boolean mHasBluetooth =
+            mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH);
+    private final boolean mHasCompanionDevice =
+            mContext.getPackageManager()
+                    .hasSystemFeature(PackageManager.FEATURE_COMPANION_DEVICE_SETUP);
     private BluetoothAdapter mBluetoothAdapter;
     private BluetoothDevice mBluetoothDevice;
     private BluetoothGatt mBluetoothGatt;
 
     @Before
     public void setUp() {
-        Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
-        Assume.assumeTrue(TestUtils.isBleSupported(context));
+        Assume.assumeTrue(TestUtils.isBleSupported(mContext));
 
         InstrumentationRegistry.getInstrumentation()
                 .getUiAutomation()
                 .adoptShellPermissionIdentity(android.Manifest.permission.BLUETOOTH_CONNECT);
 
-        mBluetoothAdapter = context.getSystemService(BluetoothManager.class).getAdapter();
+        mBluetoothAdapter = mContext.getSystemService(BluetoothManager.class).getAdapter();
         if (!mBluetoothAdapter.isEnabled()) {
-            assertThat(BTAdapterUtils.enableAdapter(mBluetoothAdapter, context)).isTrue();
+            assertThat(BTAdapterUtils.enableAdapter(mBluetoothAdapter, mContext)).isTrue();
         }
-        mBluetoothDevice = mBluetoothAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
+        mBluetoothDevice = mBluetoothAdapter.getRemoteDevice(TEST_DEVICE_ADDRESS);
         mBluetoothGatt =
                 mBluetoothDevice.connectGatt(
-                        context, /* autoConnect= */ true, new BluetoothGattCallback() {});
+                        mContext, /* autoConnect= */ true, new BluetoothGattCallback() {});
         if (mBluetoothGatt == null) {
             try {
                 Thread.sleep(500); // Bt is not binded yet. Wait and retry
@@ -83,7 +100,7 @@ public class BasicBluetoothGattTest {
             }
             mBluetoothGatt =
                     mBluetoothDevice.connectGatt(
-                            context, /* autoConnect= */ true, new BluetoothGattCallback() {});
+                            mContext, /* autoConnect= */ true, new BluetoothGattCallback() {});
         }
         assertThat(mBluetoothGatt).isNotNull();
     }
@@ -96,6 +113,8 @@ public class BasicBluetoothGattTest {
         InstrumentationRegistry.getInstrumentation()
                 .getUiAutomation()
                 .dropShellPermissionIdentity();
+
+        removeAssociation();
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
@@ -162,5 +181,113 @@ public class BasicBluetoothGattTest {
                                 characteristic,
                                 value,
                                 BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_LE_SUBRATE_API)
+    public void requestSubrateMode_withDisabledAdapter() {
+        // Skip the test if bluetooth or companion device are not present.
+        assumeTrue(mHasBluetooth && mHasCompanionDevice);
+
+        int userId = mContext.getUser().getIdentifier();
+        String packageName = mContext.getOpPackageName();
+
+        AttributionSource source = AttributionSource.myAttributionSource();
+        assertThat(source.getPackageName()).isEqualTo("android.bluetooth.cts");
+
+        try (var p = Permissions.withPermissions(BLUETOOTH_PRIVILEGED)) {
+            assertThrows(
+                    "BluetoothGatt.requestSubrateMode without"
+                            + " a CDM association or BLUETOOTH_PRIVILEGED permission",
+                    SecurityException.class,
+                    () -> mBluetoothGatt.requestSubrateMode(BluetoothGatt.SUBRATE_MODE_BALANCED));
+        }
+
+        assertThat(BTAdapterUtils.disableAdapter(mBluetoothAdapter, mContext)).isTrue();
+
+        // Verify error with Bluetooth disabled
+        assertThat(mBluetoothGatt.requestSubrateMode(BluetoothGatt.SUBRATE_MODE_BALANCED))
+                .isEqualTo(BluetoothStatusCodes.ERROR_BLUETOOTH_NOT_ENABLED);
+
+        // Re-enable Adapter
+        if (!mBluetoothAdapter.isEnabled()) {
+            assertThat(BTAdapterUtils.enableAdapter(mBluetoothAdapter, mContext)).isTrue();
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_LE_SUBRATE_API)
+    public void requestSubrateMode_verifyPermissionsandParameters() {
+        // Skip the test if bluetooth or companion device are not present.
+        assumeTrue(mHasBluetooth && mHasCompanionDevice);
+
+        int userId = mContext.getUser().getIdentifier();
+
+        AttributionSource source = AttributionSource.myAttributionSource();
+        assertThat(source.getPackageName()).isEqualTo("android.bluetooth.cts");
+
+        try (var p = Permissions.withPermissions(BLUETOOTH_PRIVILEGED)) {
+            assertThrows(
+                    "BluetoothGatt.requestSubrateMode without"
+                            + " a CDM association or BLUETOOTH_PRIVILEGED permission",
+                    SecurityException.class,
+                    () -> mBluetoothGatt.requestSubrateMode(BluetoothGatt.SUBRATE_MODE_BALANCED));
+        }
+
+        associateDevice();
+
+        // Check API return values under difference parameters
+        assertThat(mBluetoothGatt.requestSubrateMode(BluetoothGatt.SUBRATE_MODE_HIGH))
+                .isEqualTo(BluetoothStatusCodes.SUCCESS);
+
+        assertThat(mBluetoothGatt.requestSubrateMode(BluetoothGatt.SUBRATE_MODE_BALANCED))
+                .isEqualTo(BluetoothStatusCodes.SUCCESS);
+
+        assertThat(mBluetoothGatt.requestSubrateMode(BluetoothGatt.SUBRATE_MODE_LOW))
+                .isEqualTo(BluetoothStatusCodes.SUCCESS);
+
+        assertThat(mBluetoothGatt.requestSubrateMode(BluetoothGatt.SUBRATE_MODE_OFF))
+                .isEqualTo(BluetoothStatusCodes.SUCCESS);
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> mBluetoothGatt.requestSubrateMode(BluetoothGatt.SUBRATE_MODE_HIGH + 1));
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> mBluetoothGatt.requestSubrateMode(BluetoothGatt.SUBRATE_MODE_SYSTEM_UPDATE));
+
+        // Remove Associated
+        removeAssociation();
+
+        // This should throw a SecurityException because there is no CDM association
+        try (var p = Permissions.withPermissions(BLUETOOTH_PRIVILEGED)) {
+            assertThrows(
+                    "BluetoothGatt.requestSubrateMode without"
+                            + " a CDM association or BLUETOOTH_PRIVILEGED permission",
+                    SecurityException.class,
+                    () -> mBluetoothGatt.requestSubrateMode(BluetoothGatt.SUBRATE_MODE_BALANCED));
+        }
+    }
+
+    private void associateDevice() {
+        int userId = mContext.getUser().getIdentifier();
+        String packageName = mContext.getOpPackageName();
+        runShellCommand(
+                String.format(
+                        "cmd companiondevice associate %d %s %s",
+                        userId, packageName, TEST_DEVICE_ADDRESS));
+        String output = runShellCommand("dumpsys companiondevice");
+        assertThat(output).contains(packageName);
+        assertThat(output).ignoringCase().contains(TEST_DEVICE_ADDRESS);
+    }
+
+    private void removeAssociation() {
+        int userId = mContext.getUser().getIdentifier();
+        String packageName = mContext.getOpPackageName();
+        runShellCommand(
+                String.format(
+                        "cmd companiondevice disassociate %d %s %s",
+                        userId, packageName, TEST_DEVICE_ADDRESS));
     }
 }

@@ -160,7 +160,7 @@ public class MultiProviderCoexistSatelliteTest extends CarrierRoamingSatelliteTe
             logd(TAG, "testSelectBindingSatelliteSubscription_ntnOnly_manualConnect: "
                 + "insert manual-connect SIM and set up eSOS support for the subscription");
             setUpManualConnectTestEnvironment(
-                ESOS_SLOT_ID, ESOS_SIM_PROFILE_ID, ESOS_PHONE_NUMBER, false, false);
+                ESOS_SLOT_ID, ESOS_SIM_PROFILE_ID, ESOS_PHONE_NUMBER, false, false, true);
 
             // The manual-connect subscription should be selected as the binding satellite
             // subscription.
@@ -211,7 +211,7 @@ public class MultiProviderCoexistSatelliteTest extends CarrierRoamingSatelliteTe
         logd(TAG, "cleanUpNtnOnlyTestEnvironment");
         restoreDeviceProvisionedState();
         restoreNtnOnlySubscriptions();
-        cleanUpMockSim(NTN_ONLY_SLOT_ID, NTN_ONLY_SIM_PROFILE_ID);
+        cleanUpMockSim(NTN_ONLY_SLOT_ID, NTN_ONLY_SIM_PROFILE_ID, true);
         sNtnOnlySubId = SubscriptionManager.INVALID_SUBSCRIPTION_ID;
     }
 

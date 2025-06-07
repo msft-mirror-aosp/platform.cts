@@ -187,4 +187,21 @@ public class ScanSettingsTest {
 
         assertThat(settingsRssi.getRssiThreshold()).isEqualTo(rssiThreshold);
     }
+
+    @RequiresFlagsEnabled(Flags.FLAG_SUPPORT_PASSIVE_SCANNING)
+    @Test
+    public void scanType_isActiveByDefault() {
+        ScanSettings settings = new ScanSettings.Builder().build();
+
+        assertThat(settings.getScanType()).isEqualTo(ScanSettings.SCAN_TYPE_ACTIVE);
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_SUPPORT_PASSIVE_SCANNING)
+    @Test
+    public void scanType() {
+        ScanSettings settings =
+                new ScanSettings.Builder().setScanType(ScanSettings.SCAN_TYPE_PASSIVE).build();
+
+        assertThat(settings.getScanType()).isEqualTo(ScanSettings.SCAN_TYPE_PASSIVE);
+    }
 }

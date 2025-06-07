@@ -47,9 +47,8 @@ public class MethodProfile {
     // Abstract api methods overridden by this method.
     private final HashMap<String, MethodProfile> mOverriddenApiMethods = new HashMap<>();
 
-    private static final Set<String> JUNIT4_ANNOTATION_PATTERNS = new HashSet<>(
-            List.of("org.junit.*")
-    );
+    private static final Set<String> JUNIT4_ANNOTATION_PATTERNS =
+            new HashSet<>(List.of("org.junit.*", "com.android.bedstead.harrier.annotations.*"));
 
     public enum MethodType {
         JUNIT3(1),
