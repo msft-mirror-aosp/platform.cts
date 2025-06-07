@@ -245,6 +245,10 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
         device_id=self.dut.serial,
         camera_id=self.camera_id) as cam:
 
+      # Skip if not primary camera
+      camera_properties_utils.skip_unless(
+          cam.is_primary_camera())
+
       # Skip if the device doesn't support feature combination query
       props = cam.get_camera_properties()
       feature_combination_query_version = props.get(
