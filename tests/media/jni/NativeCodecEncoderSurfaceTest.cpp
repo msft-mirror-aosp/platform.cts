@@ -276,17 +276,17 @@ bool CodecEncoderSurfaceTest::enqueueDecoderEOS(size_t bufferIndex) {
 }
 
 bool CodecEncoderSurfaceTest::enqueueDecoderInput(size_t bufferIndex) {
-    if (AMediaExtractor_getSampleSize(mExtractor) < 0) {
+    ssize_t size = AMediaExtractor_getSampleSize(mExtractor);
+    if (size < 0) {
         return enqueueDecoderEOS(bufferIndex);
     } else {
         uint32_t flags = 0;
         size_t bufSize = 0;
         uint8_t* buf = AMediaCodec_getInputBuffer(mDecoder, bufferIndex, &bufSize);
         RETURN_IF_NULL(buf, std::string{"AMediaCodec_getInputBuffer failed"})
-        ssize_t size = AMediaExtractor_getSampleSize(mExtractor);
         int64_t pts = AMediaExtractor_getSampleTime(mExtractor);
         RETURN_IF_TRUE(size > bufSize,
-                       StringFormat("extractor sample size exceeds codec input buffer size %zu %zu",
+                       StringFormat("extractor sample size %zd exceeds codec input buffer size %zu",
                                     size, bufSize))
         RETURN_IF_TRUE(size != AMediaExtractor_readSampleData(mExtractor, buf, bufSize),
                        std::string{"AMediaExtractor_readSampleData failed"})
@@ -440,7 +440,7 @@ bool CodecEncoderSurfaceTest::queueEOS() {
             } else if (oBufferID == AMEDIACODEC_INFO_OUTPUT_BUFFERS_CHANGED) {
             } else {
                 mErrorLogs.append(
-                        StringFormat("unexpected return value from *_dequeueOutputBuffer: %d",
+                        StringFormat("unexpected return value from *_dequeueOutputBuffer: %zd",
                                      oBufferID));
                 return false;
             }
@@ -483,7 +483,7 @@ bool CodecEncoderSurfaceTest::queueEOS() {
                 } else if (oBufferID == AMEDIACODEC_INFO_OUTPUT_BUFFERS_CHANGED) {
                 } else {
                     mErrorLogs.append(
-                            StringFormat("unexpected return value from *_dequeueOutputBuffer: %d",
+                            StringFormat("unexpected return value from *_dequeueOutputBuffer: %zd",
                                          oBufferID));
                     return false;
                 }
@@ -623,14 +623,14 @@ bool CodecEncoderSurfaceTest::testSimpleEncode(const char* encoder, const char* 
         RETURN_IF_TRUE((0 == mEncOutputCount), std::string{"Encoder has not sent any output \n"})
         RETURN_IF_TRUE((mDecInputCount != mDecOutputCount),
                        StringFormat("Decoder output count is not equal to decoder input count\n "
-                                    "Input count : %s, Output count : %s\n",
+                                    "Input count : %d, Output count : %d\n",
                                     mDecInputCount, mDecOutputCount))
         RETURN_IF_TRUE((mMaxBFrames == 0 && !mOutputBuff->isPtsStrictlyIncreasing(INT32_MIN)),
                        std::string{"Output timestamps are not strictly increasing \n"}.append(
                                ref->getErrorMsg()))
         RETURN_IF_TRUE((mEncOutputCount != mDecOutputCount),
                        StringFormat("Encoder output count is not equal to decoder input "
-                                    "count\n Input count : %s, Output count : %s\n",
+                                    "count\n Input count : %d, Output count : %d\n",
                                     mDecInputCount, mEncOutputCount))
         RETURN_IF_TRUE(!mOutputBuff->isOutPtsListIdenticalToInpPtsList(mMaxBFrames != 0),
                        std::string{"Input pts list and Output pts list are not identical \n"}

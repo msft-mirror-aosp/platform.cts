@@ -66,7 +66,6 @@ import android.companion.AssociationInfo;
 import android.companion.AssociationRequest;
 import android.companion.CompanionDeviceManager;
 import android.content.Context;
-import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.ParcelFileDescriptor;
 import android.os.ParcelFileDescriptor.AutoCloseInputStream;
@@ -181,9 +180,7 @@ public class WearableSensingManagerIsolatedServiceTest {
     public void setUp() throws Exception {
         MockitoAnnotations.initMocks(this);
         mContext = getInstrumentation().getContext();
-        assumeFalse(isWatch(mContext)); // WearableSensingManagerService is not supported on WearOS
-        // For an unknown reason, the CDM onTransportsChanged listener is not called on TV builds
-        assumeFalse(isTelevision(mContext));
+        assumeFalse(new TestUtils(mContext).shouldSkipWearableSensingTest());
         // Sleep for 2 seconds to avoid flakiness until b/326256152 is fixed. The bug can cause
         // CDM to reuse the same associationId previously assigned to WearableSensingSecureChannel
         // after the previous association is disassociation. If async clean up of the CDM
@@ -1613,16 +1610,6 @@ public class WearableSensingManagerIsolatedServiceTest {
                 statusConsumer.accept(errorCode);
             }
         };
-    }
-
-    private static boolean isTelevision(Context context) {
-        PackageManager pm = context.getPackageManager();
-        return pm.hasSystemFeature(PackageManager.FEATURE_LEANBACK);
-    }
-
-    private static boolean isWatch(Context context) {
-        PackageManager pm = context.getPackageManager();
-        return pm.hasSystemFeature(PackageManager.FEATURE_WATCH);
     }
 
     private static class CdmSecureChannelContext {

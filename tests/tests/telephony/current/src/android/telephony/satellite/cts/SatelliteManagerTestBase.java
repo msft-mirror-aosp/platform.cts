@@ -3749,4 +3749,23 @@ public class SatelliteManagerTestBase {
         }
         return true;
     }
+
+    protected static boolean areListsTheSame(
+            @Nullable List<String> list1, @Nullable List<String> list2) {
+        if (list1 == null && list2 == null) {
+            return true;
+        }
+        if (list1 == null || list2 == null) {
+            return false;
+        }
+        if (list1.size() != list2.size()) {
+            return false;
+        }
+        for (String element : list1) {
+            if (!list2.contains(element)) {
+                return false;
+            }
+        }
+        return true;
+    }
 }

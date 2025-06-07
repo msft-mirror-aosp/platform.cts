@@ -30,6 +30,7 @@ import android.app.appfunctions.cts.AppFunctionUtils.setAppFunctionEnabled
 import android.app.appfunctions.flags.Flags
 import android.app.appfunctions.testutils.CtsTestUtil.retryAssert
 import android.app.appfunctions.testutils.CtsTestUtil.runWithShellPermission
+import android.app.appfunctions.testutils.CtsTestUtil.runWithoutPermission
 import android.app.appfunctions.testutils.TestAppFunctionServiceLifecycleReceiver
 import android.app.appfunctions.testutils.TestAppFunctionServiceLifecycleReceiver.waitForOperationCancellation
 import android.app.appfunctions.testutils.TestAppFunctionServiceLifecycleReceiver.waitForServiceOnCreate
@@ -68,6 +69,7 @@ import com.android.bedstead.nene.utils.ShellCommand
 import com.android.compatibility.common.util.ApiTest
 import com.android.compatibility.common.util.DeviceConfigStateChangerRule
 import com.android.compatibility.common.util.SystemUtil
+import com.android.xts.root.annotations.RequireRootInstrumentation
 import com.google.common.truth.Truth.assertThat
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.TimeUnit
@@ -445,19 +447,22 @@ class AppFunctionManagerTest {
     @EnsureHasNoDeviceOwner
     @IncludeRunOnSecondaryUser
     @IncludeRunOnPrimaryUser
+    @RequireRootInstrumentation(reason = "Remove EXECUTE_APP_FUNCTIONS permission from test app")
     @Throws(Exception::class)
     fun executeAppFunction_otherNonExistingTargetPackage() = doBlocking {
-        val request = ExecuteAppFunctionRequest.Builder("other.package", "add").build()
+        runWithoutPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
+            val request = ExecuteAppFunctionRequest.Builder("other.package", "add").build()
 
-        val response = executeAppFunctionAndWait(mManager, request)
+            val response = executeAppFunctionAndWait(mManager, request)
 
-        assertThat(response.isSuccess).isFalse()
-        // Apps without the permission can only invoke functions from themselves.
-        assertThat(response.appFunctionException().errorCode)
-            .isEqualTo(AppFunctionException.ERROR_DENIED)
-        assertThat(response.appFunctionException().errorMessage)
-            .endsWith("does not have permission to execute the appfunction")
-        assertServiceWasNotCreated()
+            assertThat(response.isSuccess).isFalse()
+            // Apps without the permission can only invoke functions from themselves.
+            assertThat(response.appFunctionException().errorCode)
+                .isEqualTo(AppFunctionException.ERROR_DENIED)
+            assertThat(response.appFunctionException().errorMessage)
+                .endsWith("does not have permission to execute the appfunction")
+            assertServiceWasNotCreated()
+        }
     }
 
     @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#executeAppFunction"])
@@ -465,21 +470,24 @@ class AppFunctionManagerTest {
     @EnsureHasNoDeviceOwner
     @IncludeRunOnSecondaryUser
     @IncludeRunOnPrimaryUser
+    @RequireRootInstrumentation(reason = "Remove EXECUTE_APP_FUNCTIONS permission from test app")
     @Throws(Exception::class)
     fun executeAppFunction_otherExistingTargetPackage() = doBlocking {
-        val request = ExecuteAppFunctionRequest.Builder(TEST_HELPER_PKG, "someMethod").build()
+        runWithoutPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
+            val request = ExecuteAppFunctionRequest.Builder(TEST_HELPER_PKG, "someMethod").build()
 
-        val response = executeAppFunctionAndWait(mManager, request)
+            val response = executeAppFunctionAndWait(mManager, request)
 
-        assertThat(response.isSuccess).isFalse()
-        assertThat(response.appFunctionException().errorCode)
-            .isEqualTo(AppFunctionException.ERROR_DENIED)
-        // The error message from this and executeAppFunction_otherNonExistingOtherPackage must be
-        // kept in sync. This verifies that a caller cannot tell whether a package is installed or
-        // not by comparing the error messages.
-        assertThat(response.appFunctionException().errorMessage)
-            .endsWith("does not have permission to execute the appfunction")
-        assertServiceWasNotCreated()
+            assertThat(response.isSuccess).isFalse()
+            assertThat(response.appFunctionException().errorCode)
+                .isEqualTo(AppFunctionException.ERROR_DENIED)
+            // The error message from this and executeAppFunction_otherNonExistingOtherPackage must
+            // be kept in sync. This verifies that a caller cannot tell whether a package is
+            // installed or not by comparing the error messages.
+            assertThat(response.appFunctionException().errorMessage)
+                .endsWith("does not have permission to execute the appfunction")
+            assertServiceWasNotCreated()
+        }
     }
 
     @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#executeAppFunction"])
@@ -1153,9 +1161,12 @@ class AppFunctionManagerTest {
     @IncludeRunOnSecondaryUser
     @IncludeRunOnPrimaryUser
     @EnsureHasNoDeviceOwner
+    @RequireRootInstrumentation(reason = "Remove EXECUTE_APP_FUNCTIONS permission from test app")
     fun isAppFunctionEnabled_otherPackage_noPermission() = doBlocking {
-        assertFailsWith<IllegalArgumentException>("function not found") {
-            isAppFunctionEnabled(TEST_HELPER_PKG, functionIdentifier = "add_disabledByDefault")
+        runWithoutPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
+            assertFailsWith<IllegalArgumentException>("function not found") {
+                isAppFunctionEnabled(TEST_HELPER_PKG, functionIdentifier = "add_disabledByDefault")
+            }
         }
     }
 
@@ -1264,25 +1275,28 @@ class AppFunctionManagerTest {
 
     @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#executeAppFunction"])
     @Test
+    @RequireRootInstrumentation(reason = "Remove EXECUTE_APP_FUNCTIONS permission from test app")
     @IncludeRunOnSecondaryUser
     @IncludeRunOnPrimaryUser
     @EnsureHasNoDeviceOwner
     @Throws(Exception::class)
     fun executeAppFunctionWithoutPermission_processStateIsNotBfgs() = doBlocking {
-        val parameters: GenericDocument =
-            GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "").build()
-        val request =
-            ExecuteAppFunctionRequest.Builder(CURRENT_PKG, "runForever")
-                .setParameters(parameters)
-                .build()
+        runWithoutPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
+            val parameters: GenericDocument =
+                GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "").build()
+            val request =
+                ExecuteAppFunctionRequest.Builder(CURRENT_PKG, "runForever")
+                    .setParameters(parameters)
+                    .build()
 
-        val cancellationSignal = CancellationSignal()
-        try {
-            mManager.executeAppFunction(request, Runnable::run, cancellationSignal) {}
-            waitForServiceOnCreate(SHORT_TIMEOUT_SECOND, TimeUnit.SECONDS)
-            assertProcessState(isBfgs = false)
-        } finally {
-            cancellationSignal.cancel()
+            val cancellationSignal = CancellationSignal()
+            try {
+                mManager.executeAppFunction(request, Runnable::run, cancellationSignal) {}
+                waitForServiceOnCreate(SHORT_TIMEOUT_SECOND, TimeUnit.SECONDS)
+                assertProcessState(isBfgs = false)
+            } finally {
+                cancellationSignal.cancel()
+            }
         }
     }
 

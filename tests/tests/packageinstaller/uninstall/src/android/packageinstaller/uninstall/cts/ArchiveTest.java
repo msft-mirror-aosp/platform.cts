@@ -76,6 +76,7 @@ import androidx.annotation.NonNull;
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 import androidx.test.uiautomator.By;
+import androidx.test.uiautomator.BySelector;
 import androidx.test.uiautomator.SearchCondition;
 import androidx.test.uiautomator.UiDevice;
 import androidx.test.uiautomator.UiObject2;
@@ -103,6 +104,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
 
 @RunWith(AndroidJUnit4.class)
 @AppModeFull
@@ -260,16 +262,14 @@ public class ArchiveTest {
             // wait for device idle
             mUiDevice.waitForIdle();
 
-            UiObject2 headerTitle = waitFor(
-                    Until.findObject(By.res(SYSTEM_PACKAGE_NAME, "alertTitle")));
-            UiObject2 message = waitFor(Until.findObject(By.res(SYSTEM_PACKAGE_NAME, "message")));
-            assertThat(headerTitle.getText()).contains("Archive");
-            assertThat(message.getText()).contains("data will be saved");
+            assertThat(waitFor(Until.findObject(By.textContains("Archive")))).isNotNull();
+            assertThat(waitFor(Until.findObject(
+                    By.textContains("data will be saved")))).isNotNull();
 
             // Confirm the archive app can be archived after user confirmation
-            UiObject2 clickableView = mUiDevice.findObject(By.res(SYSTEM_PACKAGE_NAME, "button1"));
+            UiObject2 clickableView = mUiDevice.findObject(getArchiveConfirmButtonBySelector());
             if (clickableView == null) {
-                Assert.fail("OK button not shown");
+                Assert.fail("Confirm button not shown");
             }
             clickableView.click();
 
@@ -312,16 +312,14 @@ public class ArchiveTest {
         // wait for device idle
         mUiDevice.waitForIdle();
 
-        UiObject2 headerTitle = waitFor(
-                Until.findObject(By.res(SYSTEM_PACKAGE_NAME, "alertTitle")));
-        UiObject2 message = waitFor(Until.findObject(By.res(SYSTEM_PACKAGE_NAME, "message")));
-        assertThat(headerTitle.getText()).contains("Archive");
-        assertThat(message.getText()).contains("data will be saved");
+        assertThat(waitFor(Until.findObject(By.textContains("Archive")))).isNotNull();
+        assertThat(waitFor(Until.findObject(
+                By.textContains("data will be saved")))).isNotNull();
 
-        // Confirm uninstall
-        UiObject2 clickableView = mUiDevice.findObject(By.res(SYSTEM_PACKAGE_NAME, "button1"));
+        // Confirm the archive app can be archived after user confirmation
+        UiObject2 clickableView = mUiDevice.findObject(getArchiveConfirmButtonBySelector());
         if (clickableView == null) {
-            Assert.fail("OK button not shown");
+            Assert.fail("Confirm button not shown");
         }
         clickableView.click();
 
@@ -375,7 +373,8 @@ public class ArchiveTest {
 
         assertThat(waitFor(Until.findObject(By.textContains("Restore")))).isNotNull();
 
-        UiObject2 clickableView = mUiDevice.findObject(By.res(SYSTEM_PACKAGE_NAME, "button1"));
+        UiObject2 clickableView = mUiDevice.findObject(
+                By.text(Pattern.compile("Restore", Pattern.CASE_INSENSITIVE)));
         if (clickableView == null) {
             Assert.fail("Restore button not shown");
         }
@@ -444,7 +443,8 @@ public class ArchiveTest {
 
         assertThat(waitFor(Until.findObject(By.textContains("Restore")))).isNotNull();
 
-        UiObject2 clickableView = mUiDevice.findObject(By.res(SYSTEM_PACKAGE_NAME, "button1"));
+        UiObject2 clickableView = mUiDevice.findObject(
+                By.text(Pattern.compile("Restore", Pattern.CASE_INSENSITIVE)));
         if (clickableView == null) {
             Assert.fail("Restore button not shown");
         }
@@ -536,16 +536,13 @@ public class ArchiveTest {
         mContext.startActivity(intent);
 
         mUiDevice.waitForIdle();
-        // Check the title includes the installer's label
-        UiObject2 headerTitle = waitFor(
-                Until.findObject(By.res(SYSTEM_PACKAGE_NAME, "alertTitle")));
-        assertThat(headerTitle.getText()).contains("Cts Package Uninstaller Tests");
+        // Check the dialog includes the installer's label
+        assertThat(waitFor(Until.findObject(
+                By.textContains("Cts Package Uninstaller Tests")))).isNotNull();
 
-        assertThat(waitFor(Until.findObject(By.res(SYSTEM_PACKAGE_NAME, "button1")))).isNotNull();
-        UiObject2 clickableView = mUiDevice.findObject(By.res(SYSTEM_PACKAGE_NAME, "button1"));
-        if (clickableView == null) {
-            Assert.fail("Restore button not shown");
-        }
+        UiObject2 clickableView = waitFor(Until.findObject(
+                By.text(Pattern.compile("Restore", Pattern.CASE_INSENSITIVE))));
+        assertThat(clickableView).isNotNull();
         clickableView.click();
         assertThat(sUnarchiveReceiverPackageName.get(10, TimeUnit.SECONDS)).isEqualTo(
                 ARCHIVE_APP_PACKAGE_NAME);
@@ -586,7 +583,8 @@ public class ArchiveTest {
                 UnarchivalState.createGenericErrorState(unarchiveId));
 
         assertThat(waitFor(Until.findObject(By.textContains("Something went wrong")))).isNotNull();
-        UiObject2 clickableView = mUiDevice.findObject(By.text("OK"));
+        UiObject2 clickableView = mUiDevice.findObject(
+                By.text(Pattern.compile("OK|Close", Pattern.CASE_INSENSITIVE)));
         if (clickableView == null) {
             Assert.fail("OK button not shown");
         }
@@ -625,16 +623,14 @@ public class ArchiveTest {
             archivalIntent.addFlags(FLAG_ACTIVITY_NEW_TASK);
             mContext.startActivity(archivalIntent);
 
-            UiObject2 headerTitle = waitFor(
-                    Until.findObject(By.res(SYSTEM_PACKAGE_NAME, "alertTitle")));
-            UiObject2 message = waitFor(Until.findObject(By.res(SYSTEM_PACKAGE_NAME, "message")));
-            assertThat(headerTitle.getText()).contains("Archive");
-            assertThat(message.getText()).contains("data will be saved");
+            assertThat(waitFor(Until.findObject(By.textContains("Archive")))).isNotNull();
+            assertThat(waitFor(Until.findObject(
+                    By.textContains("data will be saved")))).isNotNull();
 
             // Confirm the archive app can be archived after user confirmation
-            UiObject2 clickableView = mUiDevice.findObject(By.res(SYSTEM_PACKAGE_NAME, "button1"));
+            UiObject2 clickableView = mUiDevice.findObject(getArchiveConfirmButtonBySelector());
             if (clickableView == null) {
-                Assert.fail("OK button not shown");
+                Assert.fail("Confirm button not shown");
             }
             clickableView.click();
 
@@ -804,6 +800,10 @@ public class ArchiveTest {
                 && !FeatureUtil.isTV()
                 && !FeatureUtil.isWatch()
                 && !FeatureUtil.isVrHeadset();
+    }
+
+    private static BySelector getArchiveConfirmButtonBySelector() {
+        return By.text(Pattern.compile("OK|Archive", Pattern.CASE_INSENSITIVE));
     }
 
     public static class UnarchiveBroadcastReceiver extends BroadcastReceiver {

@@ -283,10 +283,12 @@ def report_result(device_id, camera_id, tablet_name, results):
             f'{adb} push {host_path} {_DST_ROOT_DIR}')
 
   json_results = json.dumps(results)
-  cmd = (f"{adb} shell am broadcast -a {ACTION_ITS_RESULT} --es {EXTRA_VERSION}"
-         f" {CURRENT_ITS_VERSION} --es {EXTRA_CAMERA_ID} {camera_id} --es "
-         f"{EXTRA_TABLET_NAME} {tablet_name} --es "
-         f"{EXTRA_RESULTS} \'{json_results}\'")
+  cmd = (
+      f'{adb} shell am broadcast -a {ACTION_ITS_RESULT} --es {EXTRA_VERSION} '
+      f'{CURRENT_ITS_VERSION} --es {EXTRA_CAMERA_ID} {camera_id} --es '
+      f'{EXTRA_TABLET_NAME} {tablet_name} --es '
+      f"{EXTRA_RESULTS} \'{json_results}\'"
+  )
   its_device_utils.run(cmd)
 
 

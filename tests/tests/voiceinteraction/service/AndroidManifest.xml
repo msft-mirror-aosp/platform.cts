@@ -40,6 +40,13 @@
               <category android:name="android.intent.category.DEFAULT" />
           </intent-filter>
       </activity>
+      <receiver
+          android:name=".TrampolineReceiver"
+          android:exported="true">
+          <intent-filter>
+              <action android:name="android.voiceinteraction.service.TRAMPOLINE_SERVICE" />
+          </intent-filter>
+      </receiver>
       <activity android:name=".SettingsActivity"
                 android:label="Voice Interaction Settings"
                 android:exported="true"

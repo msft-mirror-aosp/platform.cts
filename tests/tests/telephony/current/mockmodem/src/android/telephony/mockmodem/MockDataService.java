@@ -104,6 +104,7 @@ public class MockDataService {
 
     private boolean mIsUserDataEnabled;
     private boolean mIsUserDataRoamingEnabled;
+    private boolean mIsImsDataNetworkNotified;
 
     public MockDataService(Context context, int instanceId) {
         mTag = TAG + "-" + instanceId;
@@ -400,6 +401,10 @@ public class MockDataService {
         return mIsUserDataRoamingEnabled;
     }
 
+    public boolean isImsDataNetworkNotified() {
+        return mIsImsDataNetworkNotified;
+    }
+
     public synchronized void setBridgeTheDataConnection(String string) {
         try {
             String[] lines = new String[] {};
@@ -482,5 +487,9 @@ public class MockDataService {
 
     public synchronized void setUserDataRoamingEnabled(boolean isUserDataRoamingEnabled) {
         this.mIsUserDataRoamingEnabled = isUserDataRoamingEnabled;
+    }
+
+    public synchronized void setImsDataNetworkNotified(boolean isImsDataNetworkNotified) {
+        this.mIsImsDataNetworkNotified = isImsDataNetworkNotified;
     }
 }

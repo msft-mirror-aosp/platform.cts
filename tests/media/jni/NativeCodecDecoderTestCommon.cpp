@@ -213,17 +213,17 @@ bool CodecDecoderTest::enqueueCodecConfig(int32_t bufferIndex) {
 }
 
 bool CodecDecoderTest::enqueueInput(size_t bufferIndex) {
-    if (AMediaExtractor_getSampleSize(mExtractor) < 0) {
+    ssize_t size = AMediaExtractor_getSampleSize(mExtractor);
+    if (size < 0) {
         return enqueueEOS(bufferIndex);
     } else {
         uint32_t flags = 0;
         size_t bufSize;
         uint8_t* buf = AMediaCodec_getInputBuffer(mCodec, bufferIndex, &bufSize);
         RETURN_IF_NULL(buf, std::string{"AMediaCodec_getInputBuffer returned nullptr"})
-        ssize_t size = AMediaExtractor_getSampleSize(mExtractor);
         int64_t pts = AMediaExtractor_getSampleTime(mExtractor);
         RETURN_IF_TRUE(size > bufSize,
-                       StringFormat("extractor sample size exceeds codec input buffer size %zu %zu",
+                       StringFormat("extractor sample size %zd exceeds codec input buffer size %zu",
                                     size, bufSize))
         RETURN_IF_TRUE(size != AMediaExtractor_readSampleData(mExtractor, buf, bufSize),
                        std::string{"AMediaExtractor_readSampleData failed"})
@@ -301,7 +301,9 @@ bool CodecDecoderTest::isOutputFormatOk(AMediaFormat* configFormat) {
                                 "similar. \nConfigured Input format is :- %s \nReceived Output "
                                 "format is :- %s \n",
                                 AMediaFormat_toString(configFormat),
-                                mIsCodecInAsyncMode ? mAsyncHandle.getOutputFormat() : mOutFormat))
+                                AMediaFormat_toString(mIsCodecInAsyncMode
+                                                              ? mAsyncHandle.getOutputFormat()
+                                                              : mOutFormat)))
     return true;
 }
 
