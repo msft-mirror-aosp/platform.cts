@@ -62,6 +62,10 @@ import android.os.SystemClock;
 import android.os.SystemProperties;
 import android.os.UserHandle;
 import android.os.UserManager;
+import android.platform.test.annotations.RequiresFlagsDisabled;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.Settings;
 import android.server.wm.settings.SettingsSession;
 import android.system.OsConstants;
@@ -84,16 +88,19 @@ import com.android.internal.util.ArrayUtils;
 import com.android.internal.util.MemInfoReader;
 import com.android.server.os.TombstoneProtos.Tombstone;
 
+import com.google.common.io.ByteStreams;
+
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
@@ -194,6 +201,9 @@ public final class ActivityManagerAppExitInfoTest {
     private boolean mIsProfilingPss;
     private boolean mHeartbeatDead;
 
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
     @Before
     public void setUp() throws Exception {
         mInstrumentation = InstrumentationRegistry.getInstrumentation();
@@ -233,6 +243,8 @@ public final class ActivityManagerAppExitInfoTest {
                 STUB_PACKAGE_NAME,
                 PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
                 0);
+        // Remove old records to avoid interference with the tests.
+        clearHistoricalExitInfo();
     }
 
     private void handleMessagePid(Message msg) {
@@ -477,10 +489,7 @@ public final class ActivityManagerAppExitInfoTest {
     }
 
     @Test
-    public void testExitCode() throws Exception {
-        // Remove old records to avoid interference with the test.
-        clearHistoricalExitInfo();
-
+    public void testExitCode() {
         long now = System.currentTimeMillis();
         // Start a process and let it call System.exit() right away.
         startService(ACTION_EXIT, STUB_SERVICE_NAME, true, false);
@@ -552,9 +561,6 @@ public final class ActivityManagerAppExitInfoTest {
 
     @Test
     public void testLmkdKill() throws Exception {
-        // Remove old records to avoid interference with the test.
-        clearHistoricalExitInfo();
-
         long now = System.currentTimeMillis();
         boolean lmkdReportSupported = ActivityManager.isLowMemoryKillReportSupported();
 
@@ -607,9 +613,6 @@ public final class ActivityManagerAppExitInfoTest {
 
     @Test
     public void testKillBySignal() throws Exception {
-        // Remove old records to avoid interference with the test.
-        clearHistoricalExitInfo();
-
         long now = System.currentTimeMillis();
 
         // Start a process and kill itself
@@ -627,40 +630,16 @@ public final class ActivityManagerAppExitInfoTest {
     }
 
     @Test
-    public void testAnr() throws Exception {
-        // Remove old records to avoid interference with the test.
-        clearHistoricalExitInfo();
-
+    @RequiresFlagsDisabled(android.app.Flags.FLAG_INCLUDE_ANR_SUBREASON)
+    public void testAnr() {
         final DropBoxManager dbox = mContext.getSystemService(DropBoxManager.class);
         final CountDownLatch dboxLatch = new CountDownLatch(1);
-        final BroadcastReceiver receiver = new BroadcastReceiver() {
-            @Override
-            public void onReceive(Context context, Intent intent) {
-                final String tag_anr = "data_app_anr";
-                if (tag_anr.equals(intent.getStringExtra(DropBoxManager.EXTRA_TAG))) {
-                    mAnrEntry = dbox.getNextEntry(tag_anr, intent.getLongExtra(
-                            DropBoxManager.EXTRA_TIME, 0) - 1);
-                    Log.d(TAG, "Counting down latch onReceive(" + intent + ")");
-                    dboxLatch.countDown();
-                }
-            }
-        };
+        final BroadcastReceiver receiver = getBroadcastReceiverWithLatch(dbox, dboxLatch);
         mContext.registerReceiver(receiver,
                 new IntentFilter(DropBoxManager.ACTION_DROPBOX_ENTRY_ADDED));
 
-        final KeyValueListParser parser = new KeyValueListParser(',');
-        // (10 * HW_TIMEOUT_MULTIPLIER) seconds is the default BROADCAST_FG_TIMEOUT.
-        // Using 3 times that as the test timeout.
-        final long defaultTimeout = 10L * 1000L * Build.HW_TIMEOUT_MULTIPLIER;
-        long timeout = defaultTimeout * 3;
-        try {
-            parser.setString(Settings.Global.getString(mContext.getContentResolver(),
-                    Settings.Global.BROADCAST_FG_CONSTANTS));
-            timeout = parser.getLong(KEY_TIMEOUT, defaultTimeout) * 3;
-        } catch (IllegalArgumentException e) {
-            Log.d(TAG, "Bad broadcast settings in key '" + Settings.Global.BROADCAST_FG_CONSTANTS
-                    + "'", e);
-        }
+        // Using 3 times the broadcast anr timeout as the test timeout.
+        long broadcastAnrTimeout = getBroadcastAnrTimeout() * 3;
 
         long now = System.currentTimeMillis();
 
@@ -672,78 +651,207 @@ public final class ActivityManagerAppExitInfoTest {
 
         AmMonitor monitor = new AmMonitor(mInstrumentation,
                 new String[]{AmMonitor.WAIT_FOR_CRASHED});
+        try {
+            Intent intent = new Intent();
+            intent.setComponent(new ComponentName(STUB_PACKAGE_NAME, STUB_RECEIVER_NAME));
+            intent.addFlags(Intent.FLAG_RECEIVER_FOREGROUND);
+            // This will result an ANR
+            mContext.sendOrderedBroadcast(intent, null);
 
-        Intent intent = new Intent();
-        intent.setComponent(new ComponentName(STUB_PACKAGE_NAME, STUB_RECEIVER_NAME));
-        intent.addFlags(Intent.FLAG_RECEIVER_FOREGROUND);
-        // This will result an ANR
-        mContext.sendOrderedBroadcast(intent, null);
+            // Wait for the early ANR
+            monitor.waitFor(AmMonitor.WAIT_FOR_EARLY_ANR, broadcastAnrTimeout);
+            // Continue, so we could collect ANR traces
+            monitor.sendCommand(AmMonitor.CMD_CONTINUE);
+            // Wait for the ANR
+            monitor.waitFor(AmMonitor.WAIT_FOR_ANR, broadcastAnrTimeout);
+            // Kill it
+            monitor.sendCommand(AmMonitor.CMD_KILL);
+            // Wait the process gone
+            waitForGone(mWatcher);
+            long now2 = System.currentTimeMillis();
 
-        // Wait for the early ANR
-        monitor.waitFor(AmMonitor.WAIT_FOR_EARLY_ANR, timeout);
-        // Continue, so we could collect ANR traces
-        monitor.sendCommand(AmMonitor.CMD_CONTINUE);
-        // Wait for the ANR
-        monitor.waitFor(AmMonitor.WAIT_FOR_ANR, timeout);
-        // Kill it
-        monitor.sendCommand(AmMonitor.CMD_KILL);
-        // Wait the process gone
-        waitForGone(mWatcher);
-        long now2 = System.currentTimeMillis();
+            awaitForLatch(
+                    dboxLatch,
+                    "broadcast for %s be received",
+                    DropBoxManager.ACTION_DROPBOX_ENTRY_ADDED);
+            assertNotNull(mAnrEntry);
 
-        awaitForLatch(dboxLatch, "broadcast for %s be received",
-                DropBoxManager.ACTION_DROPBOX_ENTRY_ADDED);
-        assertTrue(mAnrEntry != null);
+            List<ApplicationExitInfo> list =
+                    ShellIdentityUtils.invokeMethodWithShellPermissions(
+                            STUB_PACKAGE_NAME,
+                            mStubPackagePid,
+                            1,
+                            mActivityManager::getHistoricalProcessExitReasons,
+                            android.Manifest.permission.DUMP);
 
-        List<ApplicationExitInfo> list = ShellIdentityUtils.invokeMethodWithShellPermissions(
-                STUB_PACKAGE_NAME, mStubPackagePid, 1,
-                mActivityManager::getHistoricalProcessExitReasons,
-                android.Manifest.permission.DUMP);
+            assertNotNull(list);
+            assertEquals(1, list.size());
+            ApplicationExitInfo info = list.getFirst();
+            verify(
+                    info,
+                    mStubPackagePid,
+                    mStubPackageUid,
+                    STUB_PACKAGE_NAME,
+                    ApplicationExitInfo.REASON_ANR,
+                    null,
+                    null,
+                    now,
+                    now2);
+            assertEquals(mStubPackageUid, info.getPackageUid());
+            assertEquals(mStubPackageUid, info.getDefiningUid());
 
-        assertTrue(list != null && list.size() == 1);
-        ApplicationExitInfo info = list.get(0);
-        verify(info, mStubPackagePid, mStubPackageUid, STUB_PACKAGE_NAME,
-                ApplicationExitInfo.REASON_ANR, null, null, now, now2);
-        assertEquals(mStubPackageUid, info.getPackageUid());
-        assertEquals(mStubPackageUid, info.getDefiningUid());
+            // Verify the traces
 
-        // Verify the traces
+            // Read from dropbox
+            final String dboxTrace = mAnrEntry.getText(0x100000 /* 1M */);
+            assertFalse(TextUtils.isEmpty(dboxTrace));
 
-        // Read from dropbox
-        final String dboxTrace = mAnrEntry.getText(0x100000 /* 1M */);
-        assertFalse(TextUtils.isEmpty(dboxTrace));
+            // Read the input stream from the ApplicationExitInfo
+            String trace =
+                    ShellIdentityUtils.invokeMethodWithShellPermissions(
+                            info,
+                            (i) -> {
+                                try {
+                                    return new String(
+                                            ByteStreams.toByteArray(
+                                                    Objects.requireNonNull(
+                                                            i.getTraceInputStream())));
+                                } catch (IOException e) {
+                                    return null;
+                                }
+                            },
+                            android.Manifest.permission.DUMP);
+            assertFalse(TextUtils.isEmpty(trace));
+            assertTrue(trace.contains(Integer.toString(info.getPid())));
+            assertTrue(trace.contains("Cmd line: " + STUB_PACKAGE_NAME));
+            assertTrue(dboxTrace.contains(trace));
 
-        // Read the input stream from the ApplicationExitInfo
-        String trace = ShellIdentityUtils.invokeMethodWithShellPermissions(info, (i) -> {
-            try (BufferedInputStream input = new BufferedInputStream(i.getTraceInputStream())) {
-                StringBuilder sb = new StringBuilder();
-                byte[] buf = new byte[8192];
-                while (true) {
-                    final int len = input.read(buf, 0, buf.length);
-                    if (len <= 0) {
-                        break;
-                    }
-                    sb.append(new String(buf, 0, len));
-                }
-                return sb.toString();
-            } catch (IOException e) {
-                return null;
-            }
-        }, android.Manifest.permission.DUMP);
-        assertFalse(TextUtils.isEmpty(trace));
-        assertTrue(trace.indexOf(Integer.toString(info.getPid())) >= 0);
-        assertTrue(trace.indexOf("Cmd line: " + STUB_PACKAGE_NAME) >= 0);
-        assertTrue(dboxTrace.indexOf(trace) >= 0);
+        } finally {
+            monitor.finish();
+            mContext.unregisterReceiver(receiver);
+        }
+    }
 
-        monitor.finish();
-        mContext.unregisterReceiver(receiver);
+    @Test
+    @RequiresFlagsEnabled(android.app.Flags.FLAG_INCLUDE_ANR_SUBREASON)
+    public void testAnrSubReason() {
+        final DropBoxManager dbox = mContext.getSystemService(DropBoxManager.class);
+        final CountDownLatch dboxLatch = new CountDownLatch(1);
+
+        /*
+         * Create a BroadcastReceiver that will listen for Dropbox broadcasts. The dropbox entry
+         * that is added during an ANR will be used to verify the service that was started has
+         * blocked main thread and ANR'd when processing the broadcast then the remainder of the
+         * test can proceed.
+         */
+        final BroadcastReceiver receiver = getBroadcastReceiverWithLatch(dbox, dboxLatch);
+        mContext.registerReceiver(
+                receiver, new IntentFilter(DropBoxManager.ACTION_DROPBOX_ENTRY_ADDED));
+
+        // Using 3 times the broadcast anr timeout as the test timeout.
+        long broadcastAnrTimeout = getBroadcastAnrTimeout() * 3;
+
+        long now = System.currentTimeMillis();
+
+        // Start a process and block its main thread
+        startService(ACTION_ANR, STUB_SERVICE_NAME, false, false);
+
+        // Sleep for a while to make sure it's already blocking its main thread.
+        sleep(WAITFOR_MSEC);
+
+        AmMonitor monitor =
+                new AmMonitor(mInstrumentation, new String[] {AmMonitor.WAIT_FOR_CRASHED});
+
+        try {
+            Intent intent = new Intent();
+            intent.setComponent(new ComponentName(STUB_PACKAGE_NAME, STUB_RECEIVER_NAME));
+            intent.addFlags(Intent.FLAG_RECEIVER_FOREGROUND);
+            // This will result an ANR
+            mContext.sendOrderedBroadcast(intent, null);
+
+            // Wait for the early ANR
+            monitor.waitFor(AmMonitor.WAIT_FOR_EARLY_ANR, broadcastAnrTimeout);
+            // Continue, so we could collect ANR traces
+            monitor.sendCommand(AmMonitor.CMD_CONTINUE);
+            // Wait for the ANR
+            monitor.waitFor(AmMonitor.WAIT_FOR_ANR, broadcastAnrTimeout);
+            // Kill it
+            monitor.sendCommand(AmMonitor.CMD_KILL);
+            // Wait the process gone
+            waitForGone(mWatcher);
+            long now2 = System.currentTimeMillis();
+
+            awaitForLatch(
+                    dboxLatch,
+                    "broadcast for %s be received",
+                    DropBoxManager.ACTION_DROPBOX_ENTRY_ADDED);
+            assertNotNull(mAnrEntry);
+
+            List<ApplicationExitInfo> list =
+                    ShellIdentityUtils.invokeMethodWithShellPermissions(
+                            STUB_PACKAGE_NAME,
+                            mStubPackagePid,
+                            1,
+                            mActivityManager::getHistoricalProcessExitReasons,
+                            android.Manifest.permission.DUMP);
+
+            assertNotNull(list);
+            assertEquals(1, list.size());
+
+            ApplicationExitInfo info = list.getFirst();
+            verify(
+                    info,
+                    mStubPackagePid,
+                    mStubPackageUid,
+                    STUB_PACKAGE_NAME,
+                    ApplicationExitInfo.REASON_ANR,
+                    null,
+                    null,
+                    now,
+                    now2);
+            assertEquals(mStubPackageUid, info.getPackageUid());
+            assertEquals(mStubPackageUid, info.getDefiningUid());
+
+            // Verify the subreason
+            assertEquals(
+                    ApplicationExitInfo.SUBREASON_ANR_TYPE_BROADCAST_OF_INTENT,
+                    info.getSubReason());
+
+            // Verify the traces
+
+            // Read from dropbox
+            final String dboxTrace = mAnrEntry.getText(0x100000 /* 1M */);
+            assertFalse(TextUtils.isEmpty(dboxTrace));
+
+            // Read the input stream from the ApplicationExitInfo
+
+            String trace =
+                    ShellIdentityUtils.invokeMethodWithShellPermissions(
+                            info,
+                            (i) -> {
+                                try {
+                                    return new String(
+                                            ByteStreams.toByteArray(
+                                                    Objects.requireNonNull(
+                                                            i.getTraceInputStream())));
+                                } catch (IOException e) {
+                                    return null;
+                                }
+                            },
+                            android.Manifest.permission.DUMP);
+            assertFalse(TextUtils.isEmpty(trace));
+            assertTrue(trace.contains(Integer.toString(info.getPid())));
+            assertTrue(trace.contains("Cmd line: " + STUB_PACKAGE_NAME));
+            assertTrue(dboxTrace.contains(trace));
+
+        } finally {
+            monitor.finish();
+            mContext.unregisterReceiver(receiver);
+        }
     }
 
     @Test
     public void testOther() throws Exception {
-        // Remove old records to avoid interference with the test.
-        clearHistoricalExitInfo();
-
         final String servicePackage = "android.externalservice.service";
         final String keyIBinder = "ibinder";
         final CountDownLatch latch = new CountDownLatch(1);
@@ -828,9 +936,6 @@ public final class ActivityManagerAppExitInfoTest {
 
     @Test
     public void testPermissionChange() throws Exception {
-        // Remove old records to avoid interference with the test.
-        clearHistoricalExitInfo();
-
         // Grant the read calendar permission
         mInstrumentation.getUiAutomation().grantRuntimePermission(
                 STUB_PACKAGE_NAME, android.Manifest.permission.READ_CALENDAR);
@@ -888,8 +993,6 @@ public final class ActivityManagerAppExitInfoTest {
     @Test
     public void testPermissionChangeWithReason() throws Exception {
         String revokeReason = "test reason";
-        // Remove old records to avoid interference with the test.
-        clearHistoricalExitInfo();
 
         // Grant the read calendar permission
         mInstrumentation.getUiAutomation().grantRuntimePermission(
@@ -950,9 +1053,6 @@ public final class ActivityManagerAppExitInfoTest {
 
     @Test
     public void testCrash() throws Exception {
-        // Remove old records to avoid interference with the test.
-        clearHistoricalExitInfo();
-
         long now = System.currentTimeMillis();
 
         // Start a process and do nothing
@@ -975,9 +1075,6 @@ public final class ActivityManagerAppExitInfoTest {
 
     @Test
     public void testNativeCrash() throws Exception {
-        // Remove old records to avoid interference with the test.
-        clearHistoricalExitInfo();
-
         long now = System.currentTimeMillis();
 
         // Start a process and crash it
@@ -1011,9 +1108,6 @@ public final class ActivityManagerAppExitInfoTest {
 
     @Test
     public void testUserRequested() throws Exception {
-        // Remove old records to avoid interference with the test.
-        clearHistoricalExitInfo();
-
         long now = System.currentTimeMillis();
 
         // Start a process and do nothing
@@ -1038,9 +1132,6 @@ public final class ActivityManagerAppExitInfoTest {
 
     @Test
     public void testPackageDisabled() throws Exception {
-        // Remove old records to avoid interference with the test.
-        clearHistoricalExitInfo();
-
         // Start a process and do nothing
         startService(ACTION_NONE, STUB_SERVICE_NAME, false, false);
 
@@ -1067,9 +1158,6 @@ public final class ActivityManagerAppExitInfoTest {
 
     @Test
     public void testPackageUpdated() throws Exception {
-        // Remove old records to avoid interference with the test.
-        clearHistoricalExitInfo();
-
         // Start a process and do nothing
         startService(ACTION_NONE, STUB_SERVICE_NAME, false, false);
 
@@ -1091,9 +1179,6 @@ public final class ActivityManagerAppExitInfoTest {
 
     @Test
     public void testDependencyDied() throws Exception {
-        // Remove old records to avoid interference with the test.
-        clearHistoricalExitInfo();
-
         // Start a process and acquire the provider
         startService(ACTION_ACQUIRE_STABLE_PROVIDER, STUB_SERVICE_NAME, false, false);
 
@@ -1136,9 +1221,6 @@ public final class ActivityManagerAppExitInfoTest {
 
     @Test
     public void testMultipleProcess() throws Exception {
-        // Remove old records to avoid interference with the test.
-        clearHistoricalExitInfo();
-
         long now = System.currentTimeMillis();
 
         // Start a process and kill itself
@@ -1244,9 +1326,6 @@ public final class ActivityManagerAppExitInfoTest {
         if (!mSupportMultipleUsers) {
             return;
         }
-
-        // Remove old records to avoid interference with the test.
-        clearHistoricalExitInfo();
 
         // Get the full user permission in order to start service as other user
         mInstrumentation.getUiAutomation().adoptShellPermissionIdentity(
@@ -1483,9 +1562,6 @@ public final class ActivityManagerAppExitInfoTest {
     }
 
     public void runFreezerTest(long freezerTimeout, boolean dead, int reason) throws Exception {
-        // Remove old records to avoid interference with the test.
-        clearHistoricalExitInfo();
-
         executeShellCmd(
                 "device_config put activity_manager_native_boot freeze_debounce_timeout "
                         + freezerTimeout);
@@ -1589,6 +1665,44 @@ public final class ActivityManagerAppExitInfoTest {
         assertTrue(after >= info.getTimestamp());
         assertTrue(ArrayUtils.equals(info.getProcessStateSummary(), cookie,
                 cookie == null ? 0 : cookie.length));
+    }
+
+    private BroadcastReceiver getBroadcastReceiverWithLatch(
+            DropBoxManager dropBoxManager, CountDownLatch dropBoxLatch) {
+        return new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                final String tag_anr = "data_app_anr";
+                if (tag_anr.equals(intent.getStringExtra(DropBoxManager.EXTRA_TAG))) {
+                    mAnrEntry =
+                            dropBoxManager.getNextEntry(
+                                    tag_anr, intent.getLongExtra(DropBoxManager.EXTRA_TIME, 0) - 1);
+                    Log.d(TAG, "Counting down latch onReceive(" + intent + ")");
+                    dropBoxLatch.countDown();
+                }
+            }
+        };
+    }
+
+    private long getBroadcastAnrTimeout() {
+        final KeyValueListParser parser = new KeyValueListParser(',');
+        // (10 * HW_TIMEOUT_MULTIPLIER) seconds is the default BROADCAST_FG_TIMEOUT.
+        // Using 3 times that as the test timeout.
+        long broadcastAnrTimeout = 10L * 1000L * Build.HW_TIMEOUT_MULTIPLIER;
+        try {
+            parser.setString(
+                    Settings.Global.getString(
+                            mContext.getContentResolver(), Settings.Global.BROADCAST_FG_CONSTANTS));
+            return parser.getLong(KEY_TIMEOUT, broadcastAnrTimeout);
+        } catch (IllegalArgumentException e) {
+            Log.d(
+                    TAG,
+                    "Bad broadcast settings in key '"
+                            + Settings.Global.BROADCAST_FG_CONSTANTS
+                            + "'",
+                    e);
+        }
+        return broadcastAnrTimeout;
     }
 
     private static class TombstoneFetcher {

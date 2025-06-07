@@ -17,7 +17,6 @@
 package com.android.bedstead.enterprise.annotations
 
 import com.android.bedstead.enterprise.annotations.EnsureHasDeviceOwner.DO_PO_PRIORITY
-import com.android.bedstead.harrier.HarrierRule
 import com.android.bedstead.harrier.UserType
 import com.android.bedstead.harrier.UserType.INSTRUMENTED_USER
 import com.android.bedstead.harrier.annotations.RequireFeature
@@ -77,19 +76,10 @@ const val DEFAULT_KEY = "profileOwner"
  * [EnsureHasProfileOwner]. See [AutoAnnotation].
  */
 fun ensureHasProfileOwner(): EnsureHasProfileOwner {
-    return ensureHasProfileOwner(query())
+    return ensureHasProfileOwner(workaroundQuery())
 }
 
 @AutoAnnotation
 private fun ensureHasProfileOwner(dpc: Query): EnsureHasProfileOwner {
     return AutoAnnotation_EnsureHasProfileOwnerKt_ensureHasProfileOwner(dpc)
-}
-
-/**
- * A workaround to create an [AutoAnnotation] of [EnsureHasProfileOwner]. [AutoAnnotation]
- * cannot set default values for fields of type Annotation, hence we create an object of [Query]
- * explicitly to pass as the default value of the [dpc] field.
- */
-private fun query(): Query {
-    return HarrierRule::class.java.getAnnotation<Query>(Query::class.java)
 }

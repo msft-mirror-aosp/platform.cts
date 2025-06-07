@@ -33,6 +33,7 @@ import java.lang.annotation.Target;
 @Target({ElementType.METHOD, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 @RequiresBedsteadJUnit4
+@UsesParameterizedTestGenerator(UsesParameterizedTestGenerator.MULTI_USER)
 public @interface UserTest {
     UserType[] value();
 

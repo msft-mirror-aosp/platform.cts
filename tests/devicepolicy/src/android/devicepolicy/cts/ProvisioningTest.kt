@@ -49,7 +49,6 @@ import com.android.bedstead.flags.annotations.RequireFlagsEnabled
 import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.harrier.annotations.EnsureIsNotDemoDevice
-import com.android.bedstead.harrier.annotations.PermissionTest
 import com.android.bedstead.harrier.annotations.Postsubmit
 import com.android.bedstead.harrier.annotations.RequireDoesNotHaveFeature
 import com.android.bedstead.harrier.annotations.RequireFeature
@@ -74,6 +73,7 @@ import com.android.bedstead.nene.users.UserType
 import com.android.bedstead.permissions.CommonPermissions
 import com.android.bedstead.permissions.annotations.EnsureDoesNotHavePermission
 import com.android.bedstead.permissions.annotations.EnsureHasPermission
+import com.android.bedstead.permissions.annotations.PermissionTest
 import com.android.bedstead.remotedpc.RemoteDpc
 import com.android.bedstead.testapps.testApps
 import com.android.compatibility.common.util.ApiTest
@@ -82,7 +82,6 @@ import com.google.common.truth.Truth
 import com.google.common.truth.Truth.assertThat
 import java.io.ByteArrayOutputStream
 import java.io.IOException
-import java.lang.IllegalArgumentException
 import java.util.*
 import java.util.stream.Collectors
 import org.junit.*

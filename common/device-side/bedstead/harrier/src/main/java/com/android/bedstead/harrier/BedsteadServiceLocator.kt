@@ -24,7 +24,7 @@ import kotlin.reflect.KProperty
 /**
  * Registrar of dependencies for use by Bedstead modules.
  *
- * Use of this service locator allows for the single [DeviceState] entry point to
+ * Use of this service locator allows for the single entry point to
  * bedstead while allowing modularisation and loose coupling.
  */
 class BedsteadServiceLocator : DeviceStateComponent {
