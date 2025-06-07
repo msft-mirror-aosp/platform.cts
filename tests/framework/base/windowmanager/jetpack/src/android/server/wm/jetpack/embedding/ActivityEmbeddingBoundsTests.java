@@ -17,6 +17,7 @@
 package android.server.wm.jetpack.embedding;
 
 import static android.app.WindowConfiguration.WINDOWING_MODE_FREEFORM;
+import static android.app.WindowConfiguration.WINDOWING_MODE_MULTI_WINDOW;
 import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.DEFAULT_SPLIT_ATTRS;
 import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.EXPAND_SPLIT_ATTRS;
 import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.HINGE_SPLIT_ATTRS;
@@ -112,11 +113,13 @@ public class ActivityEmbeddingBoundsTests extends ActivityEmbeddingTestBase {
         final Task task = mWmState.getTaskByActivity(primaryActivity.getComponentName());
         final Rect origTaskBounds = task.getBounds();
         final boolean taskInFreeformMode = task.getWindowingMode() == WINDOWING_MODE_FREEFORM;
+        final boolean taskInMultiWindowMode =
+                task.getWindowingMode() == WINDOWING_MODE_MULTI_WINDOW;
         for (int i = 0; i < numTimesToResize; i++) {
             // Shrink by 10% to make the activities stacked.
             // If the activity was launched in freeform windowing mode, resize the task bounds
             // instead of resizing the display.
-            if (taskInFreeformMode) {
+            if (taskInFreeformMode || taskInMultiWindowMode) {
                 resizeActivityTask(primaryActivity.getComponentName(),
                         origTaskBounds.left, origTaskBounds.top,
                         origTaskBounds.left + (int) (origTaskBounds.width() * 0.9),
@@ -132,7 +135,7 @@ public class ActivityEmbeddingBoundsTests extends ActivityEmbeddingTestBase {
             waitAndAssertNotVisible(primaryActivity);
 
             // Return the task/display to its original size and verify that the activities are split
-            if (taskInFreeformMode) {
+            if (taskInFreeformMode || taskInMultiWindowMode) {
                 resizeActivityTask(primaryActivity.getComponentName(),
                         origTaskBounds.left, origTaskBounds.top,
                         origTaskBounds.right,origTaskBounds.bottom);
