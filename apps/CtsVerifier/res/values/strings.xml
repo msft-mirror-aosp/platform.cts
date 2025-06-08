@@ -7247,4 +7247,9 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="drag_view_shadow_toast_pass">Test Passed!</string>
     <string name="drag_view_shadow_toast_fail">Test Failed...</string>
     <string name="drag_view_shadow_toast_remind">Almost there! Drag the block to sufficiently cover the target area.</string>
+
+    <string name="notif_xr_lockscreen_support_dialog_title">Lockscreen Feature Check</string>
+    <string name="notif_xr_lockscreen_support_dialog_message">Does this Android XR headset support notifications above lockscreen?</string>
+    <string name="notif_xr_lockscreen_support_yes">Yes</string>
+    <string name="notif_xr_lockscreen_support_no">No</string>
 </resources>

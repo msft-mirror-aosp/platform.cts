@@ -240,4 +240,10 @@ public final class FeatureUtil {
         PackageManager pm = context.getPackageManager();
         return pm.hasSystemFeature(XR_API_FEATURE);
     }
+
+    /** Checks whether the device support FEATURE_SECURE_LOCK_SCREEN. */
+    public static boolean isSecureLockScreen(Context context) {
+        PackageManager pm = context.getPackageManager();
+        return pm.hasSystemFeature(PackageManager.FEATURE_SECURE_LOCK_SCREEN);
+    }
 }
