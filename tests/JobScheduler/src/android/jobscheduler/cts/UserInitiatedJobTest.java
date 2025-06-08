@@ -21,11 +21,9 @@ import static android.jobscheduler.cts.JobThrottlingTest.setScreenState;
 import static android.jobscheduler.cts.JobThrottlingTest.setTestPackageStandbyBucket;
 import static android.jobscheduler.cts.TestAppInterface.TEST_APP_PACKAGE;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeFalse;
+import static com.google.common.truth.Truth.assertThat;
+import static com.google.common.truth.Truth.assertWithMessage;
+import static com.google.common.truth.TruthJUnit.assume;
 
 import android.Manifest;
 import android.app.ActivityManager;
@@ -44,10 +42,10 @@ import android.os.UserHandle;
 import android.provider.Settings;
 import android.util.Log;
 
-import androidx.test.InstrumentationRegistry;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.FlakyTest;
 import androidx.test.filters.LargeTest;
-import androidx.test.runner.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.uiautomator.UiDevice;
 
 import com.android.bedstead.nene.TestApis;
@@ -74,7 +72,7 @@ import java.util.Map;
 import java.util.regex.Pattern;
 
 @RunWith(AndroidJUnit4.class)
-public class UserInitiatedJobTest {
+public final class UserInitiatedJobTest {
     private static final long DEFAULT_WAIT_TIMEOUT_MS = 2_000;
     private static final int JOB_ID = UserInitiatedJobTest.class.hashCode();
 
@@ -90,7 +88,7 @@ public class UserInitiatedJobTest {
 
     @Before
     public void setUp() throws Exception {
-        mContext = InstrumentationRegistry.getTargetContext();
+        mContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
         mUiDevice = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
         mTestAppInterface = new TestAppInterface(mContext, JOB_ID);
         setTestPackageStandbyBucket(mUiDevice, JobThrottlingTest.Bucket.ACTIVE);
@@ -133,8 +131,10 @@ public class UserInitiatedJobTest {
     public void testJobUidState() throws Exception {
         // TODO(b/380297485): Remove this assumption check once NotificationListeners
         // support visible background users.
-        assumeFalse("NotificationListeners do not support visible background users",
-                mUserHelper.isVisibleBackgroundUser());
+        assume().withMessage("NotificationListeners do not support visible background users")
+                .that(mUserHelper.isVisibleBackgroundUser())
+                .isFalse();
+
         // Go through the notification click/BAL route of scheduling the job so the proc state
         // data comes from being elevated by the running job and not because of the app being
         // in a higher state.
@@ -154,8 +154,9 @@ public class UserInitiatedJobTest {
             // Clicking on the notification should put the app into a BAL approved state.
             notificationHelper.clickNotification();
 
-            assertTrue("Job did not start after scheduling",
-                    mTestAppInterface.awaitJobStart(2 * DEFAULT_WAIT_TIMEOUT_MS));
+            assertWithMessage("Job did not start after scheduling")
+                    .that(mTestAppInterface.awaitJobStart(2 * DEFAULT_WAIT_TIMEOUT_MS))
+                    .isTrue();
             mTestAppInterface.assertJobUidState(new TestAppInterface.ExpectedJobUidState.Builder()
                     .setProcState(ActivityManager.PROCESS_STATE_IMPORTANT_FOREGROUND)
                     .setExpectedCapability(
@@ -186,8 +187,9 @@ public class UserInitiatedJobTest {
                     ));
         }
         for (int i = 0; i < numUijs; ++i) {
-            assertTrue("Job did not start after scheduling",
-                    mTestAppInterface.awaitJobStart(i, DEFAULT_WAIT_TIMEOUT_MS));
+            assertWithMessage("Job did not start after scheduling")
+                    .that(mTestAppInterface.awaitJobStart(i, DEFAULT_WAIT_TIMEOUT_MS))
+                    .isTrue();
         }
     }
 
@@ -199,10 +201,13 @@ public class UserInitiatedJobTest {
     public void testRestrictedBalToTop() throws Exception {
         // TODO(b/380297485): Remove this assumption check once NotificationListeners
         // support visible background users.
-        assumeFalse("NotificationListeners do not support visible background users",
-                mUserHelper.isVisibleBackgroundUser());
+        assume().withMessage("NotificationListeners do not support visible background users")
+                .that(mUserHelper.isVisibleBackgroundUser())
+                .isFalse();
         // Tests cannot disable ethernet network.
-        assumeFalse("ethernet is connected", mNetworkingHelper.hasEthernetConnection());
+        assume().withMessage("ethernet is connected")
+                .that(mNetworkingHelper.hasEthernetConnection())
+                .isFalse();
 
         // Disable networks to control when the job is eligible to start.
         mNetworkingHelper.setAllNetworksEnabled(false);
@@ -223,8 +228,10 @@ public class UserInitiatedJobTest {
             // Clicking on the notification should put the app into a BAL approved state.
             notificationHelper.clickNotification();
 
-            assertTrue(mTestAppInterface
-                    .awaitJobScheduleResult(DEFAULT_WAIT_TIMEOUT_MS, JobScheduler.RESULT_SUCCESS));
+            assertThat(
+                            mTestAppInterface.awaitJobScheduleResult(
+                                    DEFAULT_WAIT_TIMEOUT_MS, JobScheduler.RESULT_SUCCESS))
+                    .isTrue();
 
             final ApplicationInfo testAppInfo =
                     mContext.getPackageManager().getApplicationInfo(TEST_APP_PACKAGE, 0);
@@ -235,15 +242,15 @@ public class UserInitiatedJobTest {
                         + " -u " + UserHandle.myUserId()
                         + " -r " + TEST_APP_PACKAGE);
                 uidWatcher.waitFor(WatchUidRunner.CMD_IDLE);
-                Thread.sleep(1000); // Wait a bit for JS to process.
+                SystemClock.sleep(1000); // Wait a bit for JS to process.
             }
 
             mNetworkingHelper.setAllNetworksEnabled(true);
-            assertFalse(mTestAppInterface.awaitJobStart(DEFAULT_WAIT_TIMEOUT_MS));
+            assertThat(mTestAppInterface.awaitJobStart(DEFAULT_WAIT_TIMEOUT_MS)).isFalse();
 
             setScreenState(mUiDevice, true);
             mTestAppInterface.startAndKeepTestActivity(true);
-            assertTrue(mTestAppInterface.awaitJobStart(DEFAULT_WAIT_TIMEOUT_MS));
+            assertThat(mTestAppInterface.awaitJobStart(DEFAULT_WAIT_TIMEOUT_MS)).isTrue();
         }
     }
 
@@ -255,8 +262,10 @@ public class UserInitiatedJobTest {
     public void testRestrictedToggling() throws Exception {
         // TODO(b/380297485): Remove this assumption check once NotificationListeners
         // support visible background users.
-        assumeFalse("NotificationListeners do not support visible background users",
-                mUserHelper.isVisibleBackgroundUser());
+        assume().withMessage("NotificationListeners do not support visible background users")
+                .that(mUserHelper.isVisibleBackgroundUser())
+                .isFalse();
+
         try (TestNotificationListener.NotificationHelper notificationHelper =
                      new TestNotificationListener.NotificationHelper(
                              mContext, TEST_APP_PACKAGE)) {
@@ -273,9 +282,11 @@ public class UserInitiatedJobTest {
             // Clicking on the notification should put the app into a BAL approved state.
             notificationHelper.clickNotification();
 
-            assertTrue(mTestAppInterface
-                    .awaitJobScheduleResult(DEFAULT_WAIT_TIMEOUT_MS, JobScheduler.RESULT_SUCCESS));
-            assertTrue(mTestAppInterface.awaitJobStart(DEFAULT_WAIT_TIMEOUT_MS));
+            assertThat(
+                            mTestAppInterface.awaitJobScheduleResult(
+                                    DEFAULT_WAIT_TIMEOUT_MS, JobScheduler.RESULT_SUCCESS))
+                    .isTrue();
+            assertThat(mTestAppInterface.awaitJobStart(DEFAULT_WAIT_TIMEOUT_MS)).isTrue();
 
             // Take the app off the temp whitelist so it doesn't retain the exemptions.
             SystemUtil.runShellCommand("cmd deviceidle tempwhitelist -u " + UserHandle.myUserId()
@@ -283,12 +294,12 @@ public class UserInitiatedJobTest {
 
             // Restrict app. Job should stop immediately and shouldn't restart.
             mTestAppInterface.setTestPackageRestricted(true);
-            assertTrue(mTestAppInterface.awaitJobStop(DEFAULT_WAIT_TIMEOUT_MS));
-            assertFalse(mTestAppInterface.awaitJobStart(DEFAULT_WAIT_TIMEOUT_MS));
+            assertThat(mTestAppInterface.awaitJobStop(DEFAULT_WAIT_TIMEOUT_MS)).isTrue();
+            assertThat(mTestAppInterface.awaitJobStart(DEFAULT_WAIT_TIMEOUT_MS)).isFalse();
 
             // Unrestrict app. Job should be able to start.
             mTestAppInterface.setTestPackageRestricted(false);
-            assertTrue(mTestAppInterface.awaitJobStart(DEFAULT_WAIT_TIMEOUT_MS));
+            assertThat(mTestAppInterface.awaitJobStart(DEFAULT_WAIT_TIMEOUT_MS)).isTrue();
         }
     }
 
@@ -305,7 +316,7 @@ public class UserInitiatedJobTest {
                 ),
                 Map.of(TestJobSchedulerReceiver.EXTRA_REQUIRED_NETWORK_TYPE, NETWORK_TYPE_ANY));
 
-        assertTrue(mTestAppInterface.awaitJobStart(DEFAULT_WAIT_TIMEOUT_MS));
+        assertThat(mTestAppInterface.awaitJobStart(DEFAULT_WAIT_TIMEOUT_MS)).isTrue();
 
         final ApplicationInfo testAppInfo =
                 mContext.getPackageManager().getApplicationInfo(TEST_APP_PACKAGE, 0);
@@ -317,9 +328,10 @@ public class UserInitiatedJobTest {
             Thread.sleep(1000); // Wait a bit for JS to process.
         }
 
-        assertTrue(mTestAppInterface.awaitJobStop(DEFAULT_WAIT_TIMEOUT_MS));
+        assertThat(mTestAppInterface.awaitJobStop(DEFAULT_WAIT_TIMEOUT_MS)).isTrue();
         JobParameters params = mTestAppInterface.getLastParams();
-        assertEquals(JobParameters.STOP_REASON_BACKGROUND_RESTRICTION, params.getStopReason());
+        assertThat(params.getStopReason())
+                .isEqualTo(JobParameters.STOP_REASON_BACKGROUND_RESTRICTION);
     }
 
     @Test
@@ -327,8 +339,10 @@ public class UserInitiatedJobTest {
     public void testRestrictedUidState() throws Exception {
         // TODO(b/380297485): Remove this assumption check once NotificationListeners
         // support visible background users.
-        assumeFalse("NotificationListeners do not support visible background users",
-                mUserHelper.isVisibleBackgroundUser());
+        assume().withMessage("NotificationListeners do not support visible background users")
+                .that(mUserHelper.isVisibleBackgroundUser())
+                .isFalse();
+
         mTestAppInterface.setTestPackageRestricted(true);
         // Go through the notification click/BAL route of scheduling the job so the proc state
         // data comes from being elevated by the running job and not because of the app being
@@ -349,8 +363,9 @@ public class UserInitiatedJobTest {
             // Clicking on the notification should put the app into a BAL approved state.
             notificationHelper.clickNotification();
 
-            assertTrue("Job did not start after scheduling",
-                    mTestAppInterface.awaitJobStart(2 * DEFAULT_WAIT_TIMEOUT_MS));
+            assertWithMessage("Job did not start after scheduling")
+                    .that(mTestAppInterface.awaitJobStart(2 * DEFAULT_WAIT_TIMEOUT_MS))
+                    .isTrue();
 
             mTestAppInterface.assertJobUidState(new TestAppInterface.ExpectedJobUidState.Builder()
                     .setProcState(ActivityManager.PROCESS_STATE_TRANSIENT_BACKGROUND)
@@ -371,8 +386,10 @@ public class UserInitiatedJobTest {
     public void testSchedulingBal() throws Exception {
         // TODO(b/380297485): Remove this assumption check once NotificationListeners
         // support visible background users.
-        assumeFalse("NotificationListeners do not support visible background users",
-                mUserHelper.isVisibleBackgroundUser());
+        assume().withMessage("NotificationListeners do not support visible background users")
+                .that(mUserHelper.isVisibleBackgroundUser())
+                .isFalse();
+
         try (TestNotificationListener.NotificationHelper notificationHelper =
                      new TestNotificationListener.NotificationHelper(
                              mContext, TestAppInterface.TEST_APP_PACKAGE)) {
@@ -385,8 +402,10 @@ public class UserInitiatedJobTest {
             // Clicking on the notification should put the app into a BAL approved state.
             notificationHelper.clickNotification();
 
-            assertTrue(mTestAppInterface
-                    .awaitJobScheduleResult(DEFAULT_WAIT_TIMEOUT_MS, JobScheduler.RESULT_SUCCESS));
+            assertThat(
+                            mTestAppInterface.awaitJobScheduleResult(
+                                    DEFAULT_WAIT_TIMEOUT_MS, JobScheduler.RESULT_SUCCESS))
+                    .isTrue();
         }
     }
 
@@ -397,8 +416,9 @@ public class UserInitiatedJobTest {
         // for each display.
         // When KEYCODE_SLEEP event is triggered, other display groups may not enter sleep mode,
         // unlike the default display group.
-        assumeFalse("Skip the test on devices that support visible background users",
-                mUserHelper.isVisibleBackgroundUserSupported());
+        assume().withMessage("Skip the test on devices that support visible background users")
+                .that(mUserHelper.isVisibleBackgroundUserSupported())
+                .isFalse();
 
         // Close the activity and turn the screen off so the app isn't considered TOP.
         mTestAppInterface.closeActivity();
@@ -406,8 +426,10 @@ public class UserInitiatedJobTest {
         mTestAppInterface.scheduleJob(
                 Map.of(TestJobSchedulerReceiver.EXTRA_AS_USER_INITIATED, true),
                 Map.of(TestJobSchedulerReceiver.EXTRA_REQUIRED_NETWORK_TYPE, NETWORK_TYPE_ANY));
-        assertTrue(mTestAppInterface
-                .awaitJobScheduleResult(DEFAULT_WAIT_TIMEOUT_MS, JobScheduler.RESULT_FAILURE));
+        assertThat(
+                        mTestAppInterface.awaitJobScheduleResult(
+                                DEFAULT_WAIT_TIMEOUT_MS, JobScheduler.RESULT_FAILURE))
+                .isTrue();
     }
 
     /** Test that UI jobs can't be scheduled directly from EJs. */
@@ -417,8 +439,9 @@ public class UserInitiatedJobTest {
         // for each display.
         // When KEYCODE_SLEEP event is triggered, other display groups may not enter sleep mode,
         // unlike the default display group.
-        assumeFalse("Skip the test on devices that support visible background users",
-                mUserHelper.isVisibleBackgroundUserSupported());
+        assume().withMessage("Skip the test on devices that support visible background users")
+                .that(mUserHelper.isVisibleBackgroundUserSupported())
+                .isFalse();
 
         // Close the activity and turn the screen off so the app isn't considered TOP.
         mTestAppInterface.closeActivity();
@@ -430,7 +453,7 @@ public class UserInitiatedJobTest {
         mTestAppInterface.scheduleJob(
                 Map.of(TestJobSchedulerReceiver.EXTRA_AS_EXPEDITED, true),
                 Map.of(TestJobSchedulerReceiver.EXTRA_JOB_ID_KEY, jobIdEj));
-        assertTrue(mTestAppInterface.awaitJobStart(jobIdEj, DEFAULT_WAIT_TIMEOUT_MS));
+        assertThat(mTestAppInterface.awaitJobStart(jobIdEj, DEFAULT_WAIT_TIMEOUT_MS)).isTrue();
 
         mTestAppInterface.scheduleJob(
                 Map.of(TestJobSchedulerReceiver.EXTRA_AS_USER_INITIATED, true),
@@ -438,8 +461,10 @@ public class UserInitiatedJobTest {
                         TestJobSchedulerReceiver.EXTRA_REQUIRED_NETWORK_TYPE, NETWORK_TYPE_ANY,
                         TestJobSchedulerReceiver.EXTRA_JOB_ID_KEY, jobIdUij
                 ));
-        assertTrue(mTestAppInterface.awaitJobScheduleResult(
-                jobIdUij, DEFAULT_WAIT_TIMEOUT_MS, JobScheduler.RESULT_FAILURE));
+        assertThat(
+                        mTestAppInterface.awaitJobScheduleResult(
+                                jobIdUij, DEFAULT_WAIT_TIMEOUT_MS, JobScheduler.RESULT_FAILURE))
+                .isTrue();
     }
 
     /** Test that UI jobs can be scheduled directly from an FGS that was started in TOP state. */
@@ -451,12 +476,14 @@ public class UserInitiatedJobTest {
         mTestAppInterface.closeActivity(true);
         // FGS started while the app was TOP. The app should be allowed to schedule a UI job
         // because the FGS is still running, even though it's no longer TOP.
-        Thread.sleep(10000); // Wait a bit so that Activity-close BAL allowance disappears.
+        SystemClock.sleep(10000); // Wait a bit so that Activity-close BAL allowance disappears.
         mTestAppInterface.scheduleJob(
                 Map.of(TestJobSchedulerReceiver.EXTRA_AS_USER_INITIATED, true),
                 Map.of(TestJobSchedulerReceiver.EXTRA_REQUIRED_NETWORK_TYPE, NETWORK_TYPE_ANY));
-        assertTrue(mTestAppInterface
-                .awaitJobScheduleResult(DEFAULT_WAIT_TIMEOUT_MS, JobScheduler.RESULT_SUCCESS));
+        assertThat(
+                        mTestAppInterface.awaitJobScheduleResult(
+                                DEFAULT_WAIT_TIMEOUT_MS, JobScheduler.RESULT_SUCCESS))
+                .isTrue();
     }
 
     /** Test that UI jobs can't be scheduled directly from an FGS started from the background. */
@@ -473,8 +500,10 @@ public class UserInitiatedJobTest {
         mTestAppInterface.scheduleJob(
                 Map.of(TestJobSchedulerReceiver.EXTRA_AS_USER_INITIATED, true),
                 Map.of(TestJobSchedulerReceiver.EXTRA_REQUIRED_NETWORK_TYPE, NETWORK_TYPE_ANY));
-        assertTrue(mTestAppInterface
-                .awaitJobScheduleResult(DEFAULT_WAIT_TIMEOUT_MS, JobScheduler.RESULT_FAILURE));
+        assertThat(
+                        mTestAppInterface.awaitJobScheduleResult(
+                                DEFAULT_WAIT_TIMEOUT_MS, JobScheduler.RESULT_FAILURE))
+                .isTrue();
     }
 
     /** Test that UI jobs can be scheduled directly from the TOP state. */
@@ -485,8 +514,10 @@ public class UserInitiatedJobTest {
         mTestAppInterface.scheduleJob(
                 Map.of(TestJobSchedulerReceiver.EXTRA_AS_USER_INITIATED, true),
                 Map.of(TestJobSchedulerReceiver.EXTRA_REQUIRED_NETWORK_TYPE, NETWORK_TYPE_ANY));
-        assertTrue(mTestAppInterface
-                .awaitJobScheduleResult(DEFAULT_WAIT_TIMEOUT_MS, JobScheduler.RESULT_SUCCESS));
+        assertThat(
+                        mTestAppInterface.awaitJobScheduleResult(
+                                DEFAULT_WAIT_TIMEOUT_MS, JobScheduler.RESULT_SUCCESS))
+                .isTrue();
     }
 
     /** Test that UI jobs can't be scheduled directly from other UIJs. */
@@ -510,10 +541,12 @@ public class UserInitiatedJobTest {
         // Close the activity so the app is no longer considered TOP.
         mTestAppInterface.closeActivity(true);
 
-        assertTrue(mTestAppInterface.awaitJobScheduleResult(firstJobId,
-                DEFAULT_WAIT_TIMEOUT_MS, JobScheduler.RESULT_SUCCESS));
+        assertThat(
+                        mTestAppInterface.awaitJobScheduleResult(
+                                firstJobId, DEFAULT_WAIT_TIMEOUT_MS, JobScheduler.RESULT_SUCCESS))
+                .isTrue();
 
-        Thread.sleep(10000); // Wait a bit so that BAL allowance disappears.
+        SystemClock.sleep(10000); // Wait a bit so that BAL allowance disappears.
 
         mTestAppInterface.scheduleJob(
                 Map.of(TestJobSchedulerReceiver.EXTRA_AS_USER_INITIATED, true),
@@ -522,8 +555,10 @@ public class UserInitiatedJobTest {
                         TestJobSchedulerReceiver.EXTRA_JOB_ID_KEY, secondJobId
                 )
         );
-        assertTrue(mTestAppInterface.awaitJobScheduleResult(secondJobId,
-                DEFAULT_WAIT_TIMEOUT_MS, JobScheduler.RESULT_FAILURE));
+        assertThat(
+                        mTestAppInterface.awaitJobScheduleResult(
+                                secondJobId, DEFAULT_WAIT_TIMEOUT_MS, JobScheduler.RESULT_FAILURE))
+                .isTrue();
     }
 
     // TODO(141645789): merge with android.app.tools.WatchUidRunner
@@ -576,9 +611,11 @@ public class UserInitiatedJobTest {
         private void waitUntilUidObserverReady() {
             try {
                 final String line = mReadReader.readLine();
-                assertTrue("Unexpected output: " + line, line.startsWith("Watching uid states"));
+                assertWithMessage("Unexpected output: " + line)
+                        .that(line)
+                        .startsWith("Watching uid states");
             } catch (IOException e) {
-                fail("Error occurred " + e);
+                assertWithMessage("Error occurred " + e).fail();
             }
         }
 
