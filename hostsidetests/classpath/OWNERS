@@ -1,4 +1,4 @@
 # Bug component: 819107
 
-kalyssa@google.com
-satayev@google.com
+# Mainline modularization team
+include platform/packages/modules/common:/OWNERS
