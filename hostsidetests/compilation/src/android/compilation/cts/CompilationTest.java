@@ -24,7 +24,6 @@ import static org.junit.Assert.assertThrows;
 import static org.junit.Assume.assumeTrue;
 
 import android.compilation.cts.annotation.CtsTestCase;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.host.HostFlagsValueProvider;
 
@@ -420,8 +419,6 @@ public class CompilationTest extends BaseHostJUnit4Test {
     }
 
     @Test
-    @RequiresFlagsEnabled({android.content.pm.Flags.FLAG_CLOUD_COMPILATION_PM,
-            com.android.art.flags.Flags.FLAG_ART_SERVICE_V3})
     public void testSdmOk() throws Exception {
         CompilationArtifacts artifacts = generateStatusCheckerCompilationArtifacts();
         File dmFile = mUtils.createDm(STATUS_CHECKER_PROF_RES, artifacts.vdexFile());
@@ -451,7 +448,6 @@ public class CompilationTest extends BaseHostJUnit4Test {
     }
 
     @Test
-    @RequiresFlagsEnabled({android.content.pm.Flags.FLAG_CLOUD_COMPILATION_VERIFICATION})
     public void testSdmInvalidSignature() throws Exception {
         CompilationArtifacts artifacts = generateStatusCheckerCompilationArtifacts();
         File dmFile = mUtils.createDm(STATUS_CHECKER_PROF_RES, artifacts.vdexFile());
@@ -464,7 +460,6 @@ public class CompilationTest extends BaseHostJUnit4Test {
     }
 
     @Test
-    @RequiresFlagsEnabled({android.content.pm.Flags.FLAG_CLOUD_COMPILATION_VERIFICATION})
     public void testSdmNoSignature() throws Exception {
         CompilationArtifacts artifacts = generateStatusCheckerCompilationArtifacts();
         File dmFile = mUtils.createDm(STATUS_CHECKER_PROF_RES, artifacts.vdexFile());

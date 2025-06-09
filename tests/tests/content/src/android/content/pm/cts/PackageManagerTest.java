@@ -27,7 +27,6 @@ import static android.content.pm.ApplicationInfo.FLAG_HAS_CODE;
 import static android.content.pm.ApplicationInfo.FLAG_INSTALLED;
 import static android.content.pm.ApplicationInfo.FLAG_SYSTEM;
 import static android.content.pm.Flags.FLAG_ARCHIVING;
-import static android.content.pm.Flags.FLAG_CLOUD_COMPILATION_PM;
 import static android.content.pm.Flags.FLAG_GET_PACKAGE_INFO;
 import static android.content.pm.Flags.FLAG_GET_PACKAGE_INFO_WITH_FD;
 import static android.content.pm.Flags.FLAG_MIN_TARGET_SDK_24;
@@ -4007,7 +4006,6 @@ victim $UID 1 /data/user/0 default:targetSdkVersion=28 none 0 0 1 @null
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_CLOUD_COMPILATION_PM)
     public void testGetVerifiedSigningInfo() throws Exception {
         SigningInfo signingInfo = mPackageManager.getVerifiedSigningInfo(
                 EMPTY_APP_APK, SigningInfo.VERSION_SIGNING_BLOCK_V3);
@@ -4015,7 +4013,6 @@ victim $UID 1 /data/user/0 default:targetSdkVersion=28 none 0 0 1 @null
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_CLOUD_COMPILATION_PM)
     public void testGetVerifiedSigningInfoError() throws Exception {
         var e = expectThrows(SigningInfoException.class, () -> {
             mPackageManager.getVerifiedSigningInfo(
