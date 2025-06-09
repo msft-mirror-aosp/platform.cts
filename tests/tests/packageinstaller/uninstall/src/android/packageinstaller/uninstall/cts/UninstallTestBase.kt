@@ -155,10 +155,6 @@ open class UninstallTestBase {
         }
     }
 
-    fun assertUninstallDialogShownWithoutCheckingAppName(selector: BySelector) {
-        Assert.assertNotNull("Uninstall prompt not shown", waitFor(Until.findObject(selector)))
-    }
-
     fun assertUninstallDialogShown(selector: BySelector) {
         Assert.assertNotNull("Uninstall prompt not shown", waitFor(Until.findObject(selector)))
         // The app's name should be shown to the user.
