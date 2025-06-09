@@ -182,6 +182,27 @@ class LowLightBoostTest(its_base_test.ItsBaseTest):
       arduino_serial_port = lighting_control_utils.lighting_control(
           self.lighting_cntl, self.lighting_ch)
 
+      self.setup_tablet()
+
+      # Turn ON lights to capture metering region for scene
+      lighting_control_utils.set_lighting_state(
+          arduino_serial_port, self.lighting_ch, 'ON')
+
+      its_session_utils.load_scene(
+          cam, props, self.scene, self.tablet, self.chart_distance,
+          lighting_check=False, log_path=self.log_path)
+
+      cam.do_3a()
+      time.sleep(_BRIGHTNESS_SETTING_CHANGE_WAIT_SEC)
+
+      use_metering_region = (
+          first_api_level > its_session_utils.ANDROID15_API_LEVEL
+      )
+      logging.debug('use_metering_region: %s', use_metering_region)
+      metering_region = low_light_utils.get_metering_region(
+          cam, f'{test_name}_{self.camera_id}')
+      logging.debug('metering_region: %s', metering_region)
+
       # Turn OFF lights to darken scene
       lighting_control_utils.set_lighting_state(
           arduino_serial_port, self.lighting_ch, 'OFF')
@@ -200,20 +221,12 @@ class LowLightBoostTest(its_base_test.ItsBaseTest):
       its_session_utils.validate_lighting(
           y_plane, self.scene, state='OFF', log_path=self.log_path,
           tablet_state='OFF')
-      self.setup_tablet()
 
+      # Wake up tablet again
+      self.setup_tablet()
       its_session_utils.load_scene(
           cam, props, self.scene, self.tablet, self.chart_distance,
           lighting_check=False, log_path=self.log_path)
-
-      cam.do_3a()
-      time.sleep(_BRIGHTNESS_SETTING_CHANGE_WAIT_SEC)
-
-      metering_region = low_light_utils.get_metering_region(
-          cam, f'{test_name}_{self.camera_id}')
-      use_metering_region = (
-          first_api_level > its_session_utils.ANDROID15_API_LEVEL
-      )
 
       # Set tablet brightness to darken scene
       props = cam.get_camera_properties()
@@ -230,6 +243,8 @@ class LowLightBoostTest(its_base_test.ItsBaseTest):
                       self.camera_id)
         camera_properties_utils.skip_unless(False)
 
+      # Wait for tablet brightness to settle before 3A
+      time.sleep(_BRIGHTNESS_SETTING_CHANGE_WAIT_SEC)
       cam.do_3a()
 
       # Mirror the capture across the vertical axis if captured by front facing

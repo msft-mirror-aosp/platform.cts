@@ -184,25 +184,11 @@ class NightExtensionTest(its_base_test.ItsBaseTest):
       arduino_serial_port = lighting_control_utils.lighting_control(
           self.lighting_cntl, self.lighting_ch)
 
-      # Turn OFF lights to darken scene
-      lighting_control_utils.set_lighting_state(
-          arduino_serial_port, self.lighting_ch, 'OFF')
-
-      # Check that tablet is connected and turn it off to validate lighting
-      self.turn_off_tablet()
-
-      # Turn off DUT to reduce reflections
-      lighting_control_utils.turn_off_device_screen(self.dut)
-
-      # Validate lighting, then setup tablet
-      cam.do_3a(do_af=False)
-      cap = cam.do_capture(
-          capture_request_utils.auto_capture_request(), cam.CAP_YUV)
-      y_plane, _, _ = image_processing_utils.convert_capture_to_planes(cap)
-      its_session_utils.validate_lighting(
-          y_plane, self.scene, state='OFF', log_path=self.log_path,
-          tablet_state='OFF')
       self.setup_tablet()
+
+      # Turn ON lights to capture metering region for scene
+      lighting_control_utils.set_lighting_state(
+          arduino_serial_port, self.lighting_ch, 'ON')
 
       its_session_utils.load_scene(
           cam, props, self.scene, self.tablet, self.chart_distance,
@@ -235,19 +221,45 @@ class NightExtensionTest(its_base_test.ItsBaseTest):
       file_stem = (
           f'{test_name}_{self.camera_id}_{accepted_format}_{width}x{height}'
       )
-      out_surfaces = {
-          'format': accepted_format, 'width': width, 'height': height}
-      first_api_level = its_session_utils.get_first_api_level(self.dut.serial)
 
       cam.do_3a()
       time.sleep(_BRIGHTNESS_SETTING_CHANGE_WAIT_SEC)
 
+      first_api_level = its_session_utils.get_first_api_level(self.dut.serial)
       use_metering_region = (
           first_api_level > its_session_utils.ANDROID15_API_LEVEL
       )
       logging.debug('use_metering_region: %s', use_metering_region)
       metering_region = low_light_utils.get_metering_region(cam, file_stem)
       logging.debug('metering_region: %s', metering_region)
+
+      # Turn OFF lights to darken scene
+      lighting_control_utils.set_lighting_state(
+          arduino_serial_port, self.lighting_ch, 'OFF')
+
+      # Check that tablet is connected and turn it off to validate lighting
+      self.turn_off_tablet()
+
+      # Turn off DUT to reduce reflections
+      lighting_control_utils.turn_off_device_screen(self.dut)
+
+      # Validate lighting, then setup tablet
+      cam.do_3a(do_af=False)
+      cap = cam.do_capture(
+          capture_request_utils.auto_capture_request(), cam.CAP_YUV)
+      y_plane, _, _ = image_processing_utils.convert_capture_to_planes(cap)
+      its_session_utils.validate_lighting(
+          y_plane, self.scene, state='OFF', log_path=self.log_path,
+          tablet_state='OFF')
+
+      # Wake up tablet again
+      self.setup_tablet()
+      its_session_utils.load_scene(
+          cam, props, self.scene, self.tablet, self.chart_distance,
+          lighting_check=False, log_path=self.log_path)
+
+      out_surfaces = {
+          'format': accepted_format, 'width': width, 'height': height}
 
       # Set tablet brightness to darken scene
       brightness = low_light_utils.TABLET_BRIGHTNESS[tablet_name.lower()]
@@ -265,6 +277,9 @@ class NightExtensionTest(its_base_test.ItsBaseTest):
 
       logging.debug('Taking auto capture with night mode ON')
       # Wait for tablet brightness to change
+      time.sleep(_BRIGHTNESS_SETTING_CHANGE_WAIT_SEC)
+
+      cam.do_3a()
       time.sleep(_BRIGHTNESS_SETTING_CHANGE_WAIT_SEC)
 
       req = capture_request_utils.auto_capture_request()
