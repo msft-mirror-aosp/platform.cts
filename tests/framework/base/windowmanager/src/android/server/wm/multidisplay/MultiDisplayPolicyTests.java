@@ -709,6 +709,14 @@ public class MultiDisplayPolicyTests extends MultiDisplayTestBase {
         mWmState.assertFocusedAppOnDisplay("Activity on second display must be focused.",
                 VIRTUAL_DISPLAY_ACTIVITY, newDisplay.mId);
 
+        // Wait for the new display getting focused before tapping in case there is an ongoing
+        // animation.
+        mWmState.waitForAppTransitionIdleOnDisplay(DEFAULT_DISPLAY);
+        mWmState.waitForAppTransitionIdleOnDisplay(newDisplay.mId);
+        mWmState.waitForWithAmState(
+                state -> state.getFocusedDisplayId() == newDisplay.mId,
+                "top focused displayId: " + newDisplay.mId);
+
         // Tap on task center to switch focus between displays. Using task center instead of
         // display center to cover the multi window scenario.
         tapOnTaskCenter(mWmState.getTaskByActivity(TEST_ACTIVITY));
