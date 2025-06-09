@@ -26,6 +26,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.runner.RunWith;
 
+/** Build/Install/Run: atest CtsWindowManagerDeviceOther:DragDropCompatTest */
 @Presubmit
 @RunWith(AndroidJUnit4.class)
 public class DragDropCompatTest extends DragDropTest {

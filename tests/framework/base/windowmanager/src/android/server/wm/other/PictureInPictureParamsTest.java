@@ -43,8 +43,7 @@ import java.util.List;
 /**
  * Tests the {@link PictureInPictureParams} class.
  *
- * Build/Install/Run:
- * atest CtsWindowManagerDeviceOther:PictureInPictureParamsTest
+ * <p>Build/Install/Run: atest CtsWindowManagerDeviceOther:PictureInPictureParamsTest
  */
 @Presubmit
 @SmallTest
@@ -76,8 +75,8 @@ public class PictureInPictureParamsTest extends WindowManagerTestBase {
 
     @Test
     public void testPictureInPictureParamsGettersNullValues() {
-        assertPictureInPictureParamsGettersMatchValues(null, null, null, null, null, null, null,
-                false, false);
+        assertPictureInPictureParamsGettersMatchValues(
+                null, null, null, null, null, null, null, false, false);
     }
 
     @Test
@@ -166,22 +165,29 @@ public class PictureInPictureParamsTest extends WindowManagerTestBase {
         assertFalse(PictureInPictureParams.isSameAspectRatio(bounds, aspectRatio));
     }
 
-    private void assertPictureInPictureParamsGettersMatchValues(List<RemoteAction> actions,
-            RemoteAction closeAction, Rational aspectRatio, Rational expandedAspectRatio,
-            String title, String subtitle, Rect sourceRectHint, boolean isAutoEnterEnabled,
+    private void assertPictureInPictureParamsGettersMatchValues(
+            List<RemoteAction> actions,
+            RemoteAction closeAction,
+            Rational aspectRatio,
+            Rational expandedAspectRatio,
+            String title,
+            String subtitle,
+            Rect sourceRectHint,
+            boolean isAutoEnterEnabled,
             boolean isSeamlessResizeEnabled) {
 
-        PictureInPictureParams params = new PictureInPictureParams.Builder()
-                .setActions(actions)
-                .setCloseAction(closeAction)
-                .setAspectRatio(aspectRatio)
-                .setExpandedAspectRatio(expandedAspectRatio)
-                .setTitle(title)
-                .setSubtitle(subtitle)
-                .setSourceRectHint(sourceRectHint)
-                .setAutoEnterEnabled(isAutoEnterEnabled)
-                .setSeamlessResizeEnabled(isSeamlessResizeEnabled)
-                .build();
+        PictureInPictureParams params =
+                new PictureInPictureParams.Builder()
+                        .setActions(actions)
+                        .setCloseAction(closeAction)
+                        .setAspectRatio(aspectRatio)
+                        .setExpandedAspectRatio(expandedAspectRatio)
+                        .setTitle(title)
+                        .setSubtitle(subtitle)
+                        .setSourceRectHint(sourceRectHint)
+                        .setAutoEnterEnabled(isAutoEnterEnabled)
+                        .setSeamlessResizeEnabled(isSeamlessResizeEnabled)
+                        .build();
 
         if (actions == null) {
             assertEquals(new ArrayList<>(), params.getActions());
@@ -192,20 +198,22 @@ public class PictureInPictureParamsTest extends WindowManagerTestBase {
         assertEquals(aspectRatio, params.getAspectRatio());
         assertEquals(expandedAspectRatio, params.getExpandedAspectRatio());
         assertEquals(title, params.getTitle() == null ? null : params.getTitle().toString());
-        assertEquals(subtitle,
-                params.getSubtitle() == null ? null : params.getSubtitle().toString());
+        assertEquals(
+                subtitle, params.getSubtitle() == null ? null : params.getSubtitle().toString());
         assertEquals(sourceRectHint, params.getSourceRectHint());
         assertEquals(isAutoEnterEnabled, params.isAutoEnterEnabled());
         assertEquals(isSeamlessResizeEnabled, params.isSeamlessResizeEnabled());
     }
 
-    /** @return {@link RemoteAction} instance titled after a given index */
+    /**
+     * @return {@link RemoteAction} instance titled after a given index
+     */
     private RemoteAction createRemoteAction(int index) {
         return new RemoteAction(
                 Icon.createWithBitmap(Bitmap.createBitmap(24, 24, Bitmap.Config.ARGB_8888)),
                 "action " + index,
                 "contentDescription " + index,
-                PendingIntent.getBroadcast(mContext, 0, new Intent(),
-                        PendingIntent.FLAG_IMMUTABLE));
+                PendingIntent.getBroadcast(
+                        mContext, 0, new Intent(), PendingIntent.FLAG_IMMUTABLE));
     }
 }
