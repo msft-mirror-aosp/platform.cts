@@ -36,6 +36,7 @@ import android.platform.test.annotations.AppModeNonSdkSandbox;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
+import android.telephony.AccessNetworkConstants;
 import android.telephony.Annotation.RadioPowerState;
 import android.telephony.Annotation.SimActivationState;
 import android.telephony.BarringInfo;
@@ -62,7 +63,6 @@ import android.telephony.cts.util.TelephonyUtils;
 import android.telephony.emergency.EmergencyNumber;
 import android.telephony.ims.ImsReasonInfo;
 import android.telephony.satellite.NtnSignalStrength;
-import android.text.TextUtils;
 import android.util.ArraySet;
 import android.util.Log;
 import android.util.Pair;
@@ -280,20 +280,22 @@ public class TelephonyCallbackTest {
         assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
         assertFalse(mOnServiceStateChangedCalled);
 
-
         mServiceStateCallback = new ServiceStateListener();
-        registerTelephonyCallback(mServiceStateCallback);
+        registerTelephonyCallback(
+                mServiceStateCallback, false /*fine renounce*/, false /*coarse renounce*/);
 
-        synchronized (mLock) {
-            if (!mOnServiceStateChangedCalled) {
-                mLock.wait(WAIT_TIME);
+        try {
+            synchronized (mLock) {
+                if (!mOnServiceStateChangedCalled) {
+                    mLock.wait(WAIT_TIME);
+                }
             }
+
+            assertTrue(mOnServiceStateChangedCalled);
+        } finally {
+            // Test unregister
+            unRegisterTelephonyCallback(mOnServiceStateChangedCalled, mServiceStateCallback);
         }
-
-        assertTrue(mOnServiceStateChangedCalled);
-
-        // Test unregister
-        unRegisterTelephonyCallback(mOnServiceStateChangedCalled, mServiceStateCallback);
     }
 
     @Test
@@ -301,28 +303,24 @@ public class TelephonyCallbackTest {
     public void testOnServiceStateChangedByRegisterTelephonyCallbackWithLocationRenounce()
             throws Throwable {
         assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
-
-        if (mCm.getNetworkInfo(ConnectivityManager.TYPE_MOBILE) == null) {
-            Log.d(TAG, "Skipping test that requires ConnectivityManager.TYPE_MOBILE");
-            return;
-        }
-
         assertFalse(mOnServiceStateChangedCalled);
 
         mServiceStateCallback = new ServiceStateListener();
-        registerTelephonyCallback(mServiceStateCallback, true, true);
-
-        synchronized (mLock) {
-            if (!mOnServiceStateChangedCalled) {
-                mLock.wait(WAIT_TIME);
+        registerTelephonyCallback(
+                mServiceStateCallback, true /*fine renounce*/, true /*coarse renounce*/);
+        try {
+            synchronized (mLock) {
+                if (!mOnServiceStateChangedCalled) {
+                    mLock.wait(WAIT_TIME);
+                }
             }
+
+            assertTrue(mOnServiceStateChangedCalled);
+            assertServiceStateLocationSanitization(mServiceState);
+        } finally {
+            // Test unregister
+            unRegisterTelephonyCallback(mOnServiceStateChangedCalled, mServiceStateCallback);
         }
-
-        assertTrue(mOnServiceStateChangedCalled);
-        assertServiceStateLocationSanitization(mServiceState);
-
-        // Test unregister
-        unRegisterTelephonyCallback(mOnServiceStateChangedCalled, mServiceStateCallback);
     }
 
     @Test
@@ -330,27 +328,24 @@ public class TelephonyCallbackTest {
     public void testOnServiceStateChangedByRegisterTelephonyCallbackWithCoarseRenounce()
             throws Throwable {
         assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
-
-        if (mCm.getNetworkInfo(ConnectivityManager.TYPE_MOBILE) == null) {
-            Log.d(TAG, "Skipping test that requires ConnectivityManager.TYPE_MOBILE");
-            return;
-        }
-
         assertFalse(mOnServiceStateChangedCalled);
 
         mServiceStateCallback = new ServiceStateListener();
-        registerTelephonyCallback(mServiceStateCallback, false, true);
+        registerTelephonyCallback(
+                mServiceStateCallback, false /*fine renounce*/, true /*coarse renounce*/);
 
-        synchronized (mLock) {
-            if (!mOnServiceStateChangedCalled) {
-                mLock.wait(WAIT_TIME);
+        try {
+            synchronized (mLock) {
+                if (!mOnServiceStateChangedCalled) {
+                    mLock.wait(WAIT_TIME);
+                }
             }
+
+            assertTrue(mOnServiceStateChangedCalled);
+        } finally {
+            // Test unregister
+            unRegisterTelephonyCallback(mOnServiceStateChangedCalled, mServiceStateCallback);
         }
-
-        assertTrue(mOnServiceStateChangedCalled);
-
-        // Test unregister
-        unRegisterTelephonyCallback(mOnServiceStateChangedCalled, mServiceStateCallback);
     }
 
     @Test
@@ -358,46 +353,45 @@ public class TelephonyCallbackTest {
     public void testOnServiceStateChangedByRegisterTelephonyCallbackWithFineOnlyRenounce()
             throws Throwable {
         assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
-
-        if (mCm.getNetworkInfo(ConnectivityManager.TYPE_MOBILE) == null) {
-            Log.d(TAG, "Skipping test that requires ConnectivityManager.TYPE_MOBILE");
-            return;
-        }
-
         assertFalse(mOnServiceStateChangedCalled);
 
         mServiceStateCallback = new ServiceStateListener();
-        registerTelephonyCallback(mServiceStateCallback, true, false);
-
-        synchronized (mLock) {
-            if (!mOnServiceStateChangedCalled) {
-                mLock.wait(WAIT_TIME);
+        registerTelephonyCallback(
+                mServiceStateCallback, true /*fine renounce*/, false /*coarse renounce*/);
+        try {
+            synchronized (mLock) {
+                if (!mOnServiceStateChangedCalled) {
+                    mLock.wait(WAIT_TIME);
+                }
             }
-        }
-
-        assertTrue(mOnServiceStateChangedCalled);
-        assertServiceStateFineLocationSanitization(mServiceState);
-
-        // Test unregister
-        unRegisterTelephonyCallback(mOnServiceStateChangedCalled, mServiceStateCallback);
-    }
-
-    private void assertServiceStateFineLocationSanitization(ServiceState state) {
-        if (state == null) return;
-
-        if (state.getNetworkRegistrationInfoList() != null) {
-            for (NetworkRegistrationInfo nrs : state.getNetworkRegistrationInfoList()) {
-                assertNull(nrs.getCellIdentity());
-            }
+            assertTrue(mOnServiceStateChangedCalled);
+            assertServiceStateLocationSanitization(mServiceState);
+        } finally {
+            // Test unregister
+            unRegisterTelephonyCallback(mOnServiceStateChangedCalled, mServiceStateCallback);
         }
     }
 
     private void assertServiceStateLocationSanitization(ServiceState state) {
-        if (state == null) return;
-        assertServiceStateFineLocationSanitization(state);
-        assertTrue(TextUtils.isEmpty(state.getOperatorAlphaLong()));
-        assertTrue(TextUtils.isEmpty(state.getOperatorAlphaShort()));
-        assertTrue(TextUtils.isEmpty(state.getOperatorNumeric()));
+        if (state == null || state.getNetworkRegistrationInfoList() == null) return;
+
+        for (NetworkRegistrationInfo nri : state.getNetworkRegistrationInfoList()) {
+            // Null is a valid value for some NRIs, but in order to verify that the implementation
+            // follows the new behavior and doesn't return null CellIdentity's when it could
+            // otherwise return a non-null CellIdentity with location information redacted, the
+            // test needs to check whether there is a valid CellIdentity to be returned and if so
+            // validate it. There is a valid CellIdentity for the cellular registration, so for
+            // the cellular registration, we need to confirm that CellIdentity returned is not
+            // null.
+            switch (nri.getCellIdentity()) {
+                case CellIdentity ci -> assertEquals(ci, ci.sanitizeLocationInfo());
+                case null ->
+                        assertFalse(
+                                nri.isRegistered()
+                                        && nri.getTransportType()
+                                                == AccessNetworkConstants.TRANSPORT_TYPE_WWAN);
+            }
+        }
     }
 
     @Test

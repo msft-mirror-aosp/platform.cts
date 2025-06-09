@@ -2,6 +2,7 @@ package android.telephony.cts;
 
 import static androidx.test.InstrumentationRegistry.getInstrumentation;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -22,6 +23,7 @@ import android.os.Bundle;
 import android.os.IBinder;
 import android.os.RemoteException;
 import android.platform.test.annotations.AppModeNonSdkSandbox;
+import android.telephony.CellIdentity;
 import android.telephony.CellInfo;
 import android.telephony.CellLocation;
 import android.telephony.NetworkRegistrationInfo;
@@ -30,7 +32,6 @@ import android.telephony.TelephonyManager;
 import android.telephony.cts.locationaccessingapp.CtsLocationAccessService;
 import android.telephony.cts.locationaccessingapp.ICtsLocationAccessControl;
 import android.telephony.cts.util.LocationHelper;
-import android.text.TextUtils;
 
 import androidx.annotation.NonNull;
 import androidx.test.InstrumentationRegistry;
@@ -110,24 +111,23 @@ public class TelephonyLocationTests {
 
     @Test
     public void testServiceStateLocationSanitization() {
-        withRevokedPermission(LOCATION_ACCESS_APP_CURRENT_PACKAGE, () -> {
-                    ServiceState ss = (ServiceState) performLocationAccessCommand(
-                            CtsLocationAccessService.COMMAND_GET_SERVICE_STATE);
-                    assertServiceStateSanitization(ss, true);
-
-                    withRevokedPermission(LOCATION_ACCESS_APP_CURRENT_PACKAGE, () -> {
-                                ServiceState ss1 = (ServiceState) performLocationAccessCommand(
-                                        CtsLocationAccessService.COMMAND_GET_SERVICE_STATE);
-                                assertServiceStateSanitization(ss1, false);
-                            },
-                            Manifest.permission.ACCESS_COARSE_LOCATION);
+        withRevokedPermission(
+                LOCATION_ACCESS_APP_CURRENT_PACKAGE,
+                () -> {
+                    assertServiceStateSanitization(
+                            (ServiceState)
+                                    performLocationAccessCommand(
+                                            CtsLocationAccessService.COMMAND_GET_SERVICE_STATE));
                 },
                 Manifest.permission.ACCESS_FINE_LOCATION);
 
-        withRevokedPermission(LOCATION_ACCESS_APP_CURRENT_PACKAGE, () -> {
-                    ServiceState ss1 = (ServiceState) performLocationAccessCommand(
-                            CtsLocationAccessService.COMMAND_GET_SERVICE_STATE);
-                    assertServiceStateSanitization(ss1, false);
+        withRevokedPermission(
+                LOCATION_ACCESS_APP_CURRENT_PACKAGE,
+                () -> {
+                    assertServiceStateSanitization(
+                            (ServiceState)
+                                    performLocationAccessCommand(
+                                            CtsLocationAccessService.COMMAND_GET_SERVICE_STATE));
                 },
                 Manifest.permission.ACCESS_BACKGROUND_LOCATION);
     }
@@ -141,11 +141,7 @@ public class TelephonyLocationTests {
         ServiceState ss =
                 getTelephonyManagerWithRenouncedPermissions(permissionsToRenounce)
                 .getServiceState();
-        assertServiceStateSanitization(ss, true);
-
-        permissionsToRenounce.add(android.Manifest.permission.ACCESS_COARSE_LOCATION);
-        ss = getTelephonyManagerWithRenouncedPermissions(permissionsToRenounce).getServiceState();
-        assertServiceStateSanitization(ss, false);
+        assertServiceStateSanitization(ss);
     }
 
     @Test
@@ -155,36 +151,30 @@ public class TelephonyLocationTests {
                 new HashSet<>(Arrays.asList(android.Manifest.permission.ACCESS_FINE_LOCATION));
         ServiceState ss = CtsLocationAccessService.listenForServiceState(
                 getTelephonyManagerWithRenouncedPermissions(permissionsToRenounce));
-        assertServiceStateSanitization(ss , true);
-
-        permissionsToRenounce.add(android.Manifest.permission.ACCESS_COARSE_LOCATION);
-        ss = CtsLocationAccessService.listenForServiceState(
-                getTelephonyManagerWithRenouncedPermissions(permissionsToRenounce));
-        assertServiceStateSanitization(ss, false);
+        assertServiceStateSanitization(ss);
     }
 
     @Test
     public void testServiceStateListeningWithoutPermissions() {
-        withRevokedPermission(LOCATION_ACCESS_APP_CURRENT_PACKAGE, () -> {
-                    ServiceState ss = (ServiceState) performLocationAccessCommand(
-                            CtsLocationAccessService.COMMAND_GET_SERVICE_STATE_FROM_LISTENER);
-                    assertServiceStateSanitization(ss, true);
-
-                    withRevokedPermission(LOCATION_ACCESS_APP_CURRENT_PACKAGE, () -> {
-                                ServiceState ss1 = (ServiceState) performLocationAccessCommand(
-                                        CtsLocationAccessService
-                                                .COMMAND_GET_SERVICE_STATE_FROM_LISTENER);
-                                assertServiceStateSanitization(ss1, false);
-                            },
-                            Manifest.permission.ACCESS_COARSE_LOCATION);
+        withRevokedPermission(
+                LOCATION_ACCESS_APP_CURRENT_PACKAGE,
+                () -> {
+                    assertServiceStateSanitization(
+                            (ServiceState)
+                                    performLocationAccessCommand(
+                                            CtsLocationAccessService
+                                                    .COMMAND_GET_SERVICE_STATE_FROM_LISTENER));
                 },
                 Manifest.permission.ACCESS_FINE_LOCATION);
 
-        withRevokedPermission(LOCATION_ACCESS_APP_CURRENT_PACKAGE, () -> {
-                    ServiceState ss1 = (ServiceState) performLocationAccessCommand(
-                            CtsLocationAccessService
-                                    .COMMAND_GET_SERVICE_STATE_FROM_LISTENER);
-                    assertServiceStateSanitization(ss1, false);
+        withRevokedPermission(
+                LOCATION_ACCESS_APP_CURRENT_PACKAGE,
+                () -> {
+                    assertServiceStateSanitization(
+                            (ServiceState)
+                                    performLocationAccessCommand(
+                                            CtsLocationAccessService
+                                                    .COMMAND_GET_SERVICE_STATE_FROM_LISTENER));
                 },
                 Manifest.permission.ACCESS_BACKGROUND_LOCATION);
     }
@@ -420,20 +410,15 @@ public class TelephonyLocationTests {
         }
     }
 
-    private void assertServiceStateSanitization(ServiceState state, boolean sanitizedForFineOnly) {
-        if (state == null) return;
+    private void assertServiceStateSanitization(ServiceState state) {
+        if (state == null || state.getNetworkRegistrationInfoList() == null) return;
 
-        if (state.getNetworkRegistrationInfoList() != null) {
-            for (NetworkRegistrationInfo nrs : state.getNetworkRegistrationInfoList()) {
-                assertNull(nrs.getCellIdentity());
+        for (NetworkRegistrationInfo nrs : state.getNetworkRegistrationInfoList()) {
+            switch (nrs.getCellIdentity()) {
+                case CellIdentity ci -> assertEquals(ci, ci.sanitizeLocationInfo());
+                case null -> {}
             }
         }
-
-        if (sanitizedForFineOnly) return;
-
-        assertTrue(TextUtils.isEmpty(state.getOperatorAlphaLong()));
-        assertTrue(TextUtils.isEmpty(state.getOperatorAlphaShort()));
-        assertTrue(TextUtils.isEmpty(state.getOperatorNumeric()));
     }
 
     private TelephonyManager getTelephonyManagerWithRenouncedPermissions(
