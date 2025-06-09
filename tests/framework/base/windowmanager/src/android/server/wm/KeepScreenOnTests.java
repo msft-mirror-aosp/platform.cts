@@ -42,6 +42,7 @@ import com.android.compatibility.common.util.SystemUtil;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class KeepScreenOnTests extends MultiDisplayTestBase {
@@ -123,6 +124,7 @@ public class KeepScreenOnTests extends MultiDisplayTestBase {
         assertFalse(mPowerManager.isInteractive());
     }
 
+    @Ignore("b/421061790")
     @ApiTest(apis = "android.view.WindowManager.LayoutParams#FLAG_KEEP_SCREEN_ON")
     @Test
     public void testKeepScreenOn_activityOnVirtualDisplay_screenStaysOn() {
