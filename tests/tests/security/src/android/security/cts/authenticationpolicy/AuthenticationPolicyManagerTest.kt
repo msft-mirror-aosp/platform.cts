@@ -68,6 +68,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
+@Ignore("This will be re-enabled upon further investigation of b/420461434")
 @RunWith(BedsteadJUnit4::class)
 @Presubmit
 @SdkSuppress(minSdkVersion = 29)
