@@ -20,12 +20,12 @@ import static android.app.WindowConfiguration.WINDOWING_MODE_FULLSCREEN;
 
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
 
-import android.app.Instrumentation;
 import android.app.UiAutomation;
 import android.content.ClipData;
 import android.content.ClipDescription;
@@ -51,7 +51,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
 
-import androidx.test.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 
 import com.android.compatibility.common.util.UiAutomatorUtils;
@@ -65,17 +64,19 @@ import org.junit.runner.RunWith;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.IntStream;
 
+/** Build/Install/Run: atest CtsWindowManagerDeviceOther:DragDropTest */
 @Presubmit
 @RunWith(AndroidJUnit4.class)
 public class DragDropTest extends WindowManagerTestBase {
     static final String TAG = "DragDropTest";
 
-    final Instrumentation mInstrumentation = InstrumentationRegistry.getInstrumentation();
     final UiAutomation mAutomation = mInstrumentation.getUiAutomation();
 
     // inverse scaling factor no smaller than 1, also see DragDropCompatTest
@@ -95,6 +96,7 @@ public class DragDropTest extends WindowManagerTestBase {
 
     /**
      * Check whether two objects have the same binary data when dumped into Parcels
+     *
      * @return True if the objects are equal
      */
     private static boolean compareParcelables(Parcelable obj1, Parcelable obj2) {
@@ -115,7 +117,7 @@ public class DragDropTest extends WindowManagerTestBase {
     }
 
     private static final ClipDescription sClipDescription =
-            new ClipDescription("TestLabel", new String[]{"text/plain"});
+            new ClipDescription("TestLabel", new String[] {"text/plain"});
     private static final ClipData sClipData =
             new ClipData(sClipDescription, new ClipData.Item("TestText"));
     private static final Object sLocalState = new Object(); // just check if null or not
@@ -132,8 +134,15 @@ public class DragDropTest extends WindowManagerTestBase {
         public Object localState; // DragEvent.getLocalState()
         public boolean result; // DragEvent.getResult()
 
-        LogEntry(View v, int action, float x, float y, ClipData clipData,
-                ClipDescription clipDescription, Object localState, boolean result) {
+        LogEntry(
+                View v,
+                int action,
+                float x,
+                float y,
+                ClipData clipData,
+                ClipDescription clipDescription,
+                Object localState,
+                boolean result) {
             this.view = v;
             this.action = action;
             this.x = x;
@@ -153,7 +162,8 @@ public class DragDropTest extends WindowManagerTestBase {
                 return false;
             }
             final LogEntry other = (LogEntry) obj;
-            return view == other.view && action == other.action
+            return view == other.view
+                    && action == other.action
                     && Math.abs(x - other.x) <= mAllowedMargin
                     && Math.abs(y - other.y) <= mAllowedMargin
                     && compareParcelables(clipData, other.clipData)
@@ -163,19 +173,32 @@ public class DragDropTest extends WindowManagerTestBase {
         }
 
         @Override
+        public int hashCode() {
+            return Objects.hash(view, action, x, y, clipData, clipDescription, localState, result);
+        }
+
+        @Override
         public String toString() {
             StringBuilder sb = new StringBuilder();
-            sb.append("DragEvent {action=").append(action).append(" x=").append(x).append(" y=")
-                    .append(y).append(" result=").append(result).append("}")
-                    .append(" @ ").append(view);
+            sb.append("DragEvent {action=")
+                    .append(action)
+                    .append(" x=")
+                    .append(x)
+                    .append(" y=")
+                    .append(y)
+                    .append(" result=")
+                    .append(result)
+                    .append("}")
+                    .append(" @ ")
+                    .append(view);
             return sb.toString();
         }
     }
 
     // Actual and expected sequences of events.
     // While the test is running, logs should be accessed only from the main thread.
-    final private ArrayList<LogEntry> mActual = new ArrayList<LogEntry> ();
-    final private ArrayList<LogEntry> mExpected = new ArrayList<LogEntry> ();
+    private final ArrayList<LogEntry> mActual = new ArrayList<LogEntry>();
+    private final ArrayList<LogEntry> mExpected = new ArrayList<LogEntry>();
 
     private static ClipData obtainClipData(int action) {
         if (action == DragEvent.ACTION_DROP) {
@@ -198,23 +221,47 @@ public class DragDropTest extends WindowManagerTestBase {
         if (ev.getAction() == DragEvent.ACTION_DRAG_ENDED) {
             mEndReceived.countDown();
         }
-        mActual.add(new LogEntry(v, ev.getAction(), ev.getX(), ev.getY(), ev.getClipData(),
-                ev.getClipDescription(), ev.getLocalState(), ev.getResult()));
+        mActual.add(
+                new LogEntry(
+                        v,
+                        ev.getAction(),
+                        ev.getX(),
+                        ev.getY(),
+                        ev.getClipData(),
+                        ev.getClipDescription(),
+                        ev.getLocalState(),
+                        ev.getResult()));
     }
 
     // Add expected event for a view, with zero coordinates.
     private void expectEvent5(int action, int viewId) {
         View v = mActivity.findViewById(viewId);
-        mExpected.add(new LogEntry(v, action, 0, 0, obtainClipData(action),
-                obtainClipDescription(action), sLocalState, false));
+        mExpected.add(
+                new LogEntry(
+                        v,
+                        action,
+                        0,
+                        0,
+                        obtainClipData(action),
+                        obtainClipDescription(action),
+                        sLocalState,
+                        false));
     }
 
     // Add expected event for a view.
     private void expectEndEvent(int viewId, float x, float y, boolean result) {
         View v = mActivity.findViewById(viewId);
         int action = DragEvent.ACTION_DRAG_ENDED;
-        mExpected.add(new LogEntry(v, action, x, y, obtainClipData(action),
-                obtainClipDescription(action), sLocalState, result));
+        mExpected.add(
+                new LogEntry(
+                        v,
+                        action,
+                        x,
+                        y,
+                        obtainClipData(action),
+                        obtainClipDescription(action),
+                        sLocalState,
+                        result));
     }
 
     // Add expected successful-end event for a view.
@@ -227,13 +274,19 @@ public class DragDropTest extends WindowManagerTestBase {
     private void expectEndEventFailure6(int viewId, int releaseViewId) {
         View v = mActivity.findViewById(viewId);
         View release = mActivity.findViewById(releaseViewId);
-        int [] releaseLoc = new int[2];
+        int[] releaseLoc = new int[2];
         release.getLocationInWindow(releaseLoc);
         int action = DragEvent.ACTION_DRAG_ENDED;
-        mExpected.add(new LogEntry(v, action,
-                releaseLoc[0] + 6 / mInvCompatScale, releaseLoc[1] + 6 / mInvCompatScale,
-                obtainClipData(action),
-                obtainClipDescription(action), sLocalState, false));
+        mExpected.add(
+                new LogEntry(
+                        v,
+                        action,
+                        releaseLoc[0] + 6 / mInvCompatScale,
+                        releaseLoc[1] + 6 / mInvCompatScale,
+                        obtainClipData(action),
+                        obtainClipDescription(action),
+                        sLocalState,
+                        false));
     }
 
     // Add expected event for a view, with coordinates over view locationViewId, with the specified
@@ -241,15 +294,20 @@ public class DragDropTest extends WindowManagerTestBase {
     private void expectEventWithOffset(int action, int viewId, int locationViewId, int offset) {
         View v = mActivity.findViewById(viewId);
         View locationView = mActivity.findViewById(locationViewId);
-        int [] viewLocation = new int[2];
+        int[] viewLocation = new int[2];
         v.getLocationOnScreen(viewLocation);
-        int [] locationViewLocation = new int[2];
+        int[] locationViewLocation = new int[2];
         locationView.getLocationOnScreen(locationViewLocation);
-        mExpected.add(new LogEntry(v, action,
-                locationViewLocation[0] - viewLocation[0] + offset / mInvCompatScale,
-                locationViewLocation[1] - viewLocation[1] + offset / mInvCompatScale,
-                obtainClipData(action),
-                obtainClipDescription(action), sLocalState, false));
+        mExpected.add(
+                new LogEntry(
+                        v,
+                        action,
+                        locationViewLocation[0] - viewLocation[0] + offset / mInvCompatScale,
+                        locationViewLocation[1] - viewLocation[1] + offset / mInvCompatScale,
+                        obtainClipData(action),
+                        obtainClipDescription(action),
+                        sLocalState,
+                        false));
     }
 
     private void expectEvent5(int action, int viewId, int locationViewId) {
@@ -263,18 +321,24 @@ public class DragDropTest extends WindowManagerTestBase {
 
     // Inject mouse event over a given view, with specified offset from its left-upper corner.
     private void injectMouseWithOffset(int viewId, int action, int offset) {
-        runOnMain(() -> {
-            View v = mActivity.findViewById(viewId);
-            int [] destLoc = new int [2];
-            v.getLocationOnScreen(destLoc);
-            long downTime = SystemClock.uptimeMillis();
-            MotionEvent event = MotionEvent.obtain(downTime, downTime, action,
-                    destLoc[0] * mInvCompatScale + offset, destLoc[1] * mInvCompatScale + offset,
-                    1);
-            event.setDisplayId(mActivity.getDisplay().getDisplayId());
-            event.setSource(InputDevice.SOURCE_MOUSE);
-            mAutomation.injectInputEvent(event, false);
-        });
+        runOnMain(
+                () -> {
+                    View v = mActivity.findViewById(viewId);
+                    int[] destLoc = new int[2];
+                    v.getLocationOnScreen(destLoc);
+                    long downTime = SystemClock.uptimeMillis();
+                    MotionEvent event =
+                            MotionEvent.obtain(
+                                    downTime,
+                                    downTime,
+                                    action,
+                                    destLoc[0] * mInvCompatScale + offset,
+                                    destLoc[1] * mInvCompatScale + offset,
+                                    1);
+                    event.setDisplayId(mActivity.getDisplay().getDisplayId());
+                    event.setSource(InputDevice.SOURCE_MOUSE);
+                    mAutomation.injectInputEvent(event, false);
+                });
 
         // Wait till the mouse event generates drag events. Also, some waiting needed because the
         // system seems to collapse too frequent mouse events.
@@ -298,7 +362,7 @@ public class DragDropTest extends WindowManagerTestBase {
         injectMouseWithOffset(viewId, action, 6);
     }
 
-    private String logToString(ArrayList<LogEntry> log) {
+    private String logToString(List<LogEntry> log) {
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < log.size(); ++i) {
             LogEntry e = log.get(i);
@@ -308,35 +372,38 @@ public class DragDropTest extends WindowManagerTestBase {
     }
 
     private void failWithLogs(String message) {
-        fail(message + ":\nExpected event sequence:\n" + logToString(mExpected) +
-                "\nActual event sequence:\n" + logToString(mActual));
+        fail(
+                message
+                        + ":\nExpected event sequence:\n"
+                        + logToString(mExpected)
+                        + "\nActual event sequence:\n"
+                        + logToString(mActual));
     }
 
-    private void verifyEventLog() {
-        try {
-            assertTrue("Timeout while waiting for END event",
-                    mEndReceived.await(1, TimeUnit.SECONDS));
-        } catch (InterruptedException e) {
-            fail("Got InterruptedException while waiting for END event");
-        }
+    private void verifyEventLog() throws InterruptedException {
+        assertTrue("Timeout while waiting for END event", mEndReceived.await(1, TimeUnit.SECONDS));
 
         // Verify the log.
-        runOnMain(() -> {
-            if (mExpected.size() != mActual.size()) {
-                failWithLogs("Actual log has different size than expected");
-            }
+        runOnMain(
+                () -> {
+                    if (mExpected.size() != mActual.size()) {
+                        failWithLogs("Actual log has different size than expected");
+                    }
 
-            for (int i = 0; i < mActual.size(); ++i) {
-                if (!mActual.get(i).equals(mExpected.get(i))) {
-                    failWithLogs("Actual event #" + (i + 1) + " is different from expected");
-                }
-            }
-        });
+                    for (int i = 0; i < mActual.size(); ++i) {
+                        if (!mActual.get(i).equals(mExpected.get(i))) {
+                            failWithLogs(
+                                    "Actual event #" + (i + 1) + " is different from expected");
+                        }
+                    }
+                });
     }
 
     /** Checks if device type is watch. */
     private boolean isWatchDevice() {
-        return mInstrumentation.getTargetContext().getPackageManager()
+        return mInstrumentation
+                .getTargetContext()
+                .getPackageManager()
                 .hasSystemFeature(PackageManager.FEATURE_WATCH);
     }
 
@@ -347,8 +414,8 @@ public class DragDropTest extends WindowManagerTestBase {
         assumeFalse(isWatchDevice());
         UiAutomatorUtils.getUiDevice().waitForIdle();
         mActivity = startActivityInWindowingMode(DragDropActivity.class, WINDOWING_MODE_FULLSCREEN);
-        mWmState.waitUntilActivityReadyForInputInjection(mActivity, mInstrumentation,
-                TAG, "test: " + TAG);
+        mWmState.waitUntilActivityReadyForInputInjection(
+                mActivity, mInstrumentation, TAG, "test: " + TAG);
 
         mStartReceived = new CountDownLatch(1);
         mEndReceived = new CountDownLatch(1);
@@ -383,10 +450,11 @@ public class DragDropTest extends WindowManagerTestBase {
 
     // Sets handlers on all views in a tree, which log the event and return false.
     private void setRejectingHandlersOnTree(View v) {
-        v.setOnDragListener((_v, ev) -> {
-            logEvent(_v, ev);
-            return false;
-        });
+        v.setOnDragListener(
+                (_v, ev) -> {
+                    logEvent(_v, ev);
+                    return false;
+                });
 
         if (v instanceof ViewGroup) {
             ViewGroup group = (ViewGroup) v;
@@ -398,59 +466,65 @@ public class DragDropTest extends WindowManagerTestBase {
 
     private void runOnMain(Runnable runner) throws AssertionError {
         mMainThreadAssertionError = null;
-        mInstrumentation.runOnMainSync(() -> {
-            try {
-                runner.run();
-            } catch (AssertionError error) {
-                mMainThreadAssertionError = error;
-            }
-        });
+        mInstrumentation.runOnMainSync(
+                () -> {
+                    try {
+                        runner.run();
+                    } catch (AssertionError error) {
+                        mMainThreadAssertionError = error;
+                    }
+                });
         if (mMainThreadAssertionError != null) {
             throw mMainThreadAssertionError;
         }
     }
 
-    private void startDrag() {
+    private void startDrag() throws InterruptedException {
         // Mouse down. Required for the drag to start.
         injectMouse5(R.id.draggable, MotionEvent.ACTION_DOWN);
 
-        runOnMain(() -> {
-            // Start drag.
-            View v = mActivity.findViewById(R.id.draggable);
-            assertTrue("Couldn't start drag",
-                    v.startDragAndDrop(sClipData, new View.DragShadowBuilder(v), sLocalState, 0));
-        });
+        runOnMain(
+                () -> {
+                    // Start drag.
+                    View v = mActivity.findViewById(R.id.draggable);
+                    assertTrue(
+                            "Couldn't start drag",
+                            v.startDragAndDrop(
+                                    sClipData, new View.DragShadowBuilder(v), sLocalState, 0));
+                });
 
-        try {
-            assertTrue("Timeout while waiting for START event",
-                    mStartReceived.await(1, TimeUnit.SECONDS));
-        } catch (InterruptedException e) {
-            fail("Got InterruptedException while waiting for START event");
-        }
+        assertTrue(
+                "Timeout while waiting for START event", mStartReceived.await(1, TimeUnit.SECONDS));
 
         // This is needed after startDragAndDrop to ensure the drag window is ready.
         getInstrumentation().getUiAutomation().syncInputTransactions();
     }
 
-    /**
-     * Tests that no drag-drop events are sent to views that aren't supposed to receive them.
-     */
+    /** Tests that no drag-drop events are sent to views that aren't supposed to receive them. */
     @Test
     public void testNoExtraEvents() throws Exception {
-        runOnMain(() -> {
-            // Tell all views in layout to return false to all events, and log them.
-            setRejectingHandlersOnTree(mActivity.findViewById(R.id.drag_drop_activity_main));
+        runOnMain(
+                () -> {
+                    // Tell all views in layout to return false to all events, and log them.
+                    setRejectingHandlersOnTree(
+                            mActivity.findViewById(R.id.drag_drop_activity_main));
 
-            // Override handlers for the inner view and its parent to return true.
-            mActivity.findViewById(R.id.inner).setOnDragListener((v, ev) -> {
-                logEvent(v, ev);
-                return true;
-            });
-            mActivity.findViewById(R.id.subcontainer).setOnDragListener((v, ev) -> {
-                logEvent(v, ev);
-                return true;
-            });
-        });
+                    // Override handlers for the inner view and its parent to return true.
+                    mActivity
+                            .findViewById(R.id.inner)
+                            .setOnDragListener(
+                                    (v, ev) -> {
+                                        logEvent(v, ev);
+                                        return true;
+                                    });
+                    mActivity
+                            .findViewById(R.id.subcontainer)
+                            .setOnDragListener(
+                                    (v, ev) -> {
+                                        logEvent(v, ev);
+                                        return true;
+                                    });
+                });
 
         startDrag();
 
@@ -481,23 +555,33 @@ public class DragDropTest extends WindowManagerTestBase {
      */
     @Test
     public void testBlackHole() throws Exception {
-        runOnMain(() -> {
-            // Accepting child.
-            mActivity.findViewById(R.id.inner).setOnDragListener((v, ev) -> {
-                logEvent(v, ev);
-                return true;
-            });
-            // Non-accepting parent of that child.
-            mActivity.findViewById(R.id.subcontainer).setOnDragListener((v, ev) -> {
-                logEvent(v, ev);
-                return false;
-            });
-            // Accepting parent of the previous view.
-            mActivity.findViewById(R.id.container).setOnDragListener((v, ev) -> {
-                logEvent(v, ev);
-                return true;
-            });
-        });
+        runOnMain(
+                () -> {
+                    // Accepting child.
+                    mActivity
+                            .findViewById(R.id.inner)
+                            .setOnDragListener(
+                                    (v, ev) -> {
+                                        logEvent(v, ev);
+                                        return true;
+                                    });
+                    // Non-accepting parent of that child.
+                    mActivity
+                            .findViewById(R.id.subcontainer)
+                            .setOnDragListener(
+                                    (v, ev) -> {
+                                        logEvent(v, ev);
+                                        return false;
+                                    });
+                    // Accepting parent of the previous view.
+                    mActivity
+                            .findViewById(R.id.container)
+                            .setOnDragListener(
+                                    (v, ev) -> {
+                                        logEvent(v, ev);
+                                        return true;
+                                    });
+                });
 
         startDrag();
 
@@ -520,31 +604,38 @@ public class DragDropTest extends WindowManagerTestBase {
         verifyEventLog();
     }
 
-    /**
-     * Tests generation of ENTER/EXIT events.
-     */
+    /** Tests generation of ENTER/EXIT events. */
     @Test
     public void testEnterExit() throws Exception {
-        runOnMain(() -> {
-            // The setup is same as for testBlackHole.
+        runOnMain(
+                () -> {
+                    // The setup is same as for testBlackHole.
 
-            // Accepting child.
-            mActivity.findViewById(R.id.inner).setOnDragListener((v, ev) -> {
-                logEvent(v, ev);
-                return true;
-            });
-            // Non-accepting parent of that child.
-            mActivity.findViewById(R.id.subcontainer).setOnDragListener((v, ev) -> {
-                logEvent(v, ev);
-                return false;
-            });
-            // Accepting parent of the previous view.
-            mActivity.findViewById(R.id.container).setOnDragListener((v, ev) -> {
-                logEvent(v, ev);
-                return true;
-            });
-
-        });
+                    // Accepting child.
+                    mActivity
+                            .findViewById(R.id.inner)
+                            .setOnDragListener(
+                                    (v, ev) -> {
+                                        logEvent(v, ev);
+                                        return true;
+                                    });
+                    // Non-accepting parent of that child.
+                    mActivity
+                            .findViewById(R.id.subcontainer)
+                            .setOnDragListener(
+                                    (v, ev) -> {
+                                        logEvent(v, ev);
+                                        return false;
+                                    });
+                    // Accepting parent of the previous view.
+                    mActivity
+                            .findViewById(R.id.container)
+                            .setOnDragListener(
+                                    (v, ev) -> {
+                                        logEvent(v, ev);
+                                        return true;
+                                    });
+                });
 
         startDrag();
 
@@ -579,23 +670,29 @@ public class DragDropTest extends WindowManagerTestBase {
 
         verifyEventLog();
     }
-    /**
-     * Tests events over a non-accepting view that has no accepting ancestors.
-     */
+
+    /** Tests events over a non-accepting view that has no accepting ancestors. */
     @Test
     public void testOverNowhere() throws Exception {
-        runOnMain(() -> {
-            // Accepting child.
-            mActivity.findViewById(R.id.inner).setOnDragListener((v, ev) -> {
-                logEvent(v, ev);
-                return true;
-            });
-            // Non-accepting parent of that child.
-            mActivity.findViewById(R.id.subcontainer).setOnDragListener((v, ev) -> {
-                logEvent(v, ev);
-                return false;
-            });
-        });
+        runOnMain(
+                () -> {
+                    // Accepting child.
+                    mActivity
+                            .findViewById(R.id.inner)
+                            .setOnDragListener(
+                                    (v, ev) -> {
+                                        logEvent(v, ev);
+                                        return true;
+                                    });
+                    // Non-accepting parent of that child.
+                    mActivity
+                            .findViewById(R.id.subcontainer)
+                            .setOnDragListener(
+                                    (v, ev) -> {
+                                        logEvent(v, ev);
+                                        return false;
+                                    });
+                });
 
         startDrag();
 
@@ -623,21 +720,31 @@ public class DragDropTest extends WindowManagerTestBase {
      */
     @Test
     public void testAcceptingGroupInTheMiddle() throws Exception {
-        runOnMain(() -> {
-            // Set accepting handlers to the inner view and its 2 ancestors.
-            mActivity.findViewById(R.id.inner).setOnDragListener((v, ev) -> {
-                logEvent(v, ev);
-                return true;
-            });
-            mActivity.findViewById(R.id.subcontainer).setOnDragListener((v, ev) -> {
-                logEvent(v, ev);
-                return true;
-            });
-            mActivity.findViewById(R.id.container).setOnDragListener((v, ev) -> {
-                logEvent(v, ev);
-                return true;
-            });
-        });
+        runOnMain(
+                () -> {
+                    // Set accepting handlers to the inner view and its 2 ancestors.
+                    mActivity
+                            .findViewById(R.id.inner)
+                            .setOnDragListener(
+                                    (v, ev) -> {
+                                        logEvent(v, ev);
+                                        return true;
+                                    });
+                    mActivity
+                            .findViewById(R.id.subcontainer)
+                            .setOnDragListener(
+                                    (v, ev) -> {
+                                        logEvent(v, ev);
+                                        return true;
+                                    });
+                    mActivity
+                            .findViewById(R.id.container)
+                            .setOnDragListener(
+                                    (v, ev) -> {
+                                        logEvent(v, ev);
+                                        return true;
+                                    });
+                });
 
         startDrag();
 
@@ -670,89 +777,105 @@ public class DragDropTest extends WindowManagerTestBase {
                 .anyMatch(x -> x == attr);
     }
 
-    /**
-     * Tests that state_drag_hovered and state_drag_can_accept are set correctly.
-     */
+    /** Tests that state_drag_hovered and state_drag_can_accept are set correctly. */
     @Test
     public void testDrawableState() throws Exception {
-        runOnMain(() -> {
-            // Set accepting handler for the inner view.
-            mActivity.findViewById(R.id.inner).setOnDragListener((v, ev) -> {
-                logEvent(v, ev);
-                return true;
-            });
-            assertFalse(drawableStateContains(R.id.inner, android.R.attr.state_drag_can_accept));
-        });
+        runOnMain(
+                () -> {
+                    // Set accepting handler for the inner view.
+                    mActivity
+                            .findViewById(R.id.inner)
+                            .setOnDragListener(
+                                    (v, ev) -> {
+                                        logEvent(v, ev);
+                                        return true;
+                                    });
+                    assertFalse(
+                            drawableStateContains(
+                                    R.id.inner, android.R.attr.state_drag_can_accept));
+                });
 
         startDrag();
 
-        runOnMain(() -> {
-            assertFalse(drawableStateContains(R.id.inner, android.R.attr.state_drag_hovered));
-            assertTrue(drawableStateContains(R.id.inner, android.R.attr.state_drag_can_accept));
-        });
+        runOnMain(
+                () -> {
+                    assertFalse(
+                            drawableStateContains(R.id.inner, android.R.attr.state_drag_hovered));
+                    assertTrue(
+                            drawableStateContains(
+                                    R.id.inner, android.R.attr.state_drag_can_accept));
+                });
 
         // Move mouse into the view.
         injectMouse5(R.id.inner, MotionEvent.ACTION_MOVE);
-        runOnMain(() -> {
-            assertTrue(drawableStateContains(R.id.inner, android.R.attr.state_drag_hovered));
-        });
+        runOnMain(
+                () -> {
+                    assertTrue(
+                            drawableStateContains(R.id.inner, android.R.attr.state_drag_hovered));
+                });
 
         // Move out.
         injectMouse5(R.id.subcontainer, MotionEvent.ACTION_MOVE);
-        runOnMain(() -> {
-            assertFalse(drawableStateContains(R.id.inner, android.R.attr.state_drag_hovered));
-        });
+        runOnMain(
+                () -> {
+                    assertFalse(
+                            drawableStateContains(R.id.inner, android.R.attr.state_drag_hovered));
+                });
 
         // Move in.
         injectMouse5(R.id.inner, MotionEvent.ACTION_MOVE);
-        runOnMain(() -> {
-            assertTrue(drawableStateContains(R.id.inner, android.R.attr.state_drag_hovered));
-        });
+        runOnMain(
+                () -> {
+                    assertTrue(
+                            drawableStateContains(R.id.inner, android.R.attr.state_drag_hovered));
+                });
 
         // Release there.
         injectMouse5(R.id.inner, MotionEvent.ACTION_UP);
-        runOnMain(() -> {
-            assertFalse(drawableStateContains(R.id.inner, android.R.attr.state_drag_hovered));
-        });
+        runOnMain(
+                () -> {
+                    assertFalse(
+                            drawableStateContains(R.id.inner, android.R.attr.state_drag_hovered));
+                });
     }
 
-    /**
-     * Tests if window is removing, it should not perform drag.
-     */
+    /** Tests if window is removing, it should not perform drag. */
     @Test
     public void testNoDragIfWindowCantReceiveInput() throws InterruptedException {
         injectMouse5(R.id.draggable, MotionEvent.ACTION_DOWN);
 
-        runOnMain(() -> {
-            // finish activity and start drag drop.
-            View v = mActivity.findViewById(R.id.draggable);
-            mActivity.finish();
-            assertFalse("Shouldn't start drag",
-                    v.startDragAndDrop(sClipData, new View.DragShadowBuilder(v), sLocalState, 0));
-        });
+        runOnMain(
+                () -> {
+                    // finish activity and start drag drop.
+                    View v = mActivity.findViewById(R.id.draggable);
+                    mActivity.finish();
+                    assertFalse(
+                            "Shouldn't start drag",
+                            v.startDragAndDrop(
+                                    sClipData, new View.DragShadowBuilder(v), sLocalState, 0));
+                });
 
         injectMouse5(R.id.draggable, MotionEvent.ACTION_UP);
     }
 
-    /**
-     * Tests if there is no touch down, it should not perform drag.
-     */
+    /** Tests if there is no touch down, it should not perform drag. */
     @Test
     public void testNoDragIfNoTouchDown() throws InterruptedException {
         // perform a click.
         injectMouse5(R.id.draggable, MotionEvent.ACTION_DOWN);
         injectMouse5(R.id.draggable, MotionEvent.ACTION_UP);
 
-        runOnMain(() -> {
-            View v = mActivity.findViewById(R.id.draggable);
-            assertFalse("Shouldn't start drag",
-                v.startDragAndDrop(sClipData, new View.DragShadowBuilder(v), sLocalState, 0));
-        });
+        runOnMain(
+                () -> {
+                    View v = mActivity.findViewById(R.id.draggable);
+                    assertFalse(
+                            "Shouldn't start drag",
+                            v.startDragAndDrop(
+                                    sClipData, new View.DragShadowBuilder(v), sLocalState, 0));
+                });
     }
 
-    /**
-     * Tests that the canvas is hardware accelerated when the activity is hardware accelerated.
-     */
+    /** Tests that the canvas is hardware accelerated when the activity is hardware accelerated. */
     @Test
     public void testHardwareAcceleratedCanvas() throws InterruptedException {
         assertDragCanvasHwAcceleratedState(mActivity, true);
@@ -765,33 +888,36 @@ public class DragDropTest extends WindowManagerTestBase {
     @Test
     public void testSoftwareCanvas() throws InterruptedException {
         SoftwareCanvasDragDropActivity activity =
-                startActivityInWindowingMode(SoftwareCanvasDragDropActivity.class,
-                        WINDOWING_MODE_FULLSCREEN);
+                startActivityInWindowingMode(
+                        SoftwareCanvasDragDropActivity.class, WINDOWING_MODE_FULLSCREEN);
         assertDragCanvasHwAcceleratedState(activity, false);
     }
 
-    private void assertDragCanvasHwAcceleratedState(DragDropActivity activity,
-            boolean expectedHwAccelerated) {
+    private void assertDragCanvasHwAcceleratedState(
+            DragDropActivity activity, boolean expectedHwAccelerated) throws InterruptedException {
         CountDownLatch latch = new CountDownLatch(1);
         AtomicBoolean isCanvasHwAccelerated = new AtomicBoolean();
-        runOnMain(() -> {
-            View v = activity.findViewById(R.id.draggable);
-            v.startDragAndDrop(sClipData, new View.DragShadowBuilder(v) {
-                @Override
-                public void onDrawShadow(Canvas canvas) {
-                    isCanvasHwAccelerated.set(canvas.isHardwareAccelerated());
-                    latch.countDown();
-                }
-            }, null, 0);
-        });
+        runOnMain(
+                () -> {
+                    View v = activity.findViewById(R.id.draggable);
+                    v.startDragAndDrop(
+                            sClipData,
+                            new View.DragShadowBuilder(v) {
+                                @Override
+                                public void onDrawShadow(Canvas canvas) {
+                                    isCanvasHwAccelerated.set(canvas.isHardwareAccelerated());
+                                    latch.countDown();
+                                }
+                            },
+                            null,
+                            0);
+                });
 
-        try {
-            assertTrue("Timeout while waiting for canvas", latch.await(5, TimeUnit.SECONDS));
-            assertTrue("Expected canvas hardware acceleration to be: " + expectedHwAccelerated,
-                    expectedHwAccelerated == isCanvasHwAccelerated.get());
-        } catch (InterruptedException e) {
-            fail("Got InterruptedException while waiting for canvas");
-        }
+        assertTrue("Timeout while waiting for canvas", latch.await(5, TimeUnit.SECONDS));
+        assertEquals(
+                "Expected canvas hardware acceleration to be: " + expectedHwAccelerated,
+                expectedHwAccelerated,
+                isCanvasHwAccelerated.get());
     }
 
     @Test
@@ -799,30 +925,36 @@ public class DragDropTest extends WindowManagerTestBase {
         // Mouse down. Required for the drag to start.
         injectMouseWithOffset(R.id.draggable, MotionEvent.ACTION_DOWN, 0);
         final View v = mActivity.findViewById(R.id.draggable);
-        runOnMain(() -> {
-            // Start drag.
-            assertTrue("Couldn't start drag",
-                    v.startDragAndDrop(sClipData, new View.DragShadowBuilder(v) {
-                        @Override
-                        public void onProvideShadowMetrics(Point outShadowSize,
-                                Point outShadowTouchPoint) {
-                            outShadowSize.set(v.getWidth(), v.getHeight());
-                            outShadowTouchPoint.set(0, 0);
-                        }
+        runOnMain(
+                () -> {
+                    // Start drag.
+                    assertTrue(
+                            "Couldn't start drag",
+                            v.startDragAndDrop(
+                                    sClipData,
+                                    new View.DragShadowBuilder(v) {
+                                        @Override
+                                        public void onProvideShadowMetrics(
+                                                Point outShadowSize, Point outShadowTouchPoint) {
+                                            outShadowSize.set(v.getWidth(), v.getHeight());
+                                            outShadowTouchPoint.set(0, 0);
+                                        }
 
-                        @Override
-                        public void onDrawShadow(Canvas canvas) {
-                            canvas.drawColor(Color.RED);
-                        }
-                    }, sLocalState, View.DRAG_FLAG_OPAQUE));
-        });
+                                        @Override
+                                        public void onDrawShadow(Canvas canvas) {
+                                            canvas.drawColor(Color.RED);
+                                        }
+                                    },
+                                    sLocalState,
+                                    View.DRAG_FLAG_OPAQUE));
+                });
         getInstrumentation().getUiAutomation().syncInputTransactions();
 
         // Verify if the drag shadow present before any move event.
         final Bitmap screenshot = mInstrumentation.getUiAutomation().takeScreenshot();
         injectMouseWithOffset(R.id.draggable, MotionEvent.ACTION_UP, 0);
 
-        int [] viewLoc = new int[2];
+        int[] viewLoc = new int[2];
         v.getLocationOnScreen(viewLoc);
         int scaledX = (int) (viewLoc[0] * mInvCompatScale);
         int scaledY = (int) (viewLoc[1] * mInvCompatScale);

@@ -25,28 +25,36 @@ import android.content.pm.PackageInstaller.EXTRA_STATUS
 import android.content.pm.PackageInstaller.STATUS_FAILURE_INVALID
 import android.os.Build
 import android.platform.test.annotations.AppModeFull
+import android.util.Log
 import androidx.core.content.FileProvider
-import androidx.test.InstrumentationRegistry
+import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.MediumTest
-import androidx.test.runner.AndroidJUnit4
+import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.By
+import androidx.test.uiautomator.BySelector
 import androidx.test.uiautomator.UiDevice
+import androidx.test.uiautomator.UiObject2
+import androidx.test.uiautomator.UiScrollable
+import androidx.test.uiautomator.UiSelector
 import androidx.test.uiautomator.Until
+import com.google.common.truth.Truth.assertWithMessage
+import java.io.ByteArrayOutputStream
 import java.io.File
+import java.io.IOException
 import java.lang.IllegalArgumentException
+import java.nio.charset.StandardCharsets
 import java.util.regex.Pattern
 import org.junit.After
-import org.junit.Assert.assertFalse
-import org.junit.Assert.assertTrue
+import org.junit.Assert
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 
+private const val TAG = "NoPermissionTests"
 private const val TEST_APK_NAME = "CtsEmptyTestApp.apk"
 private const val TEST_APK_PACKAGE_NAME = "android.packageinstaller.emptytestapp.cts"
 private const val TEST_APK_EXTERNAL_LOCATION = "/data/local/tmp/cts/nopermission"
 private const val CONTENT_AUTHORITY = "android.packageinstaller.nopermission.cts.fileprovider"
-private const val PACKAGE_INSTALLER_PACKAGE_NAME = "com.android.packageinstaller"
 private const val INSTALL_CONFIRM_TEXT = "Install"
 private const val WM_DISMISS_KEYGUARD_COMMAND = "wm dismiss-keyguard"
 
@@ -54,11 +62,13 @@ private const val ACTION = "NoPermissionTests.install_cb"
 
 private const val WAIT_FOR_UI_TIMEOUT = 5000L
 
+private const val FIND_OBJECT_TIMEOUT = 1000L
+
 @RunWith(AndroidJUnit4::class)
 @MediumTest
 @AppModeFull
 class NoPermissionTests {
-    private var context = InstrumentationRegistry.getTargetContext()
+    private var context = InstrumentationRegistry.getInstrumentation().targetContext
     private var pm = context.packageManager
     private var packageName = context.packageName
     private var apkFile = File(context.filesDir, TEST_APK_NAME)
@@ -91,8 +101,11 @@ class NoPermissionTests {
 
     @Before
     fun registerInstallResultReceiver() {
-        context.registerReceiver(receiver, IntentFilter(ACTION),
-                Context.RECEIVER_EXPORTED)
+        context.registerReceiver(
+            receiver,
+            IntentFilter(ACTION),
+                Context.RECEIVER_EXPORTED
+        )
     }
 
     @Before
@@ -112,7 +125,8 @@ class NoPermissionTests {
 
         // Create session
         val sessionId = pi.createSession(PackageInstaller.SessionParams(
-                PackageInstaller.SessionParams.MODE_FULL_INSTALL))
+                PackageInstaller.SessionParams.MODE_FULL_INSTALL
+        ))
         val session = pi.openSession(sessionId)!!
 
         // Write data to session
@@ -123,11 +137,77 @@ class NoPermissionTests {
         }
 
         // Commit session
-        val pendingIntent = PendingIntent.getBroadcast(context, 0,
+        val pendingIntent = PendingIntent.getBroadcast(
+            context,
+            0,
                 Intent(ACTION).setPackage(context.packageName)
                         .addFlags(Intent.FLAG_RECEIVER_FOREGROUND),
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE)
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE
+        )
         session.commit(pendingIntent.intentSender)
+    }
+
+    /**
+     * Find a button in the UI of the installer app
+     *
+     * @param bySelector The bySelector of the button
+     */
+    fun findInstallerUIButton(
+        bySelector: BySelector,
+        errorMessage: String?,
+        checkNull: Boolean = true
+    ): UiObject2? {
+        // Wait for a minimum 2000ms and maximum 10000ms for the UI to become idle.
+        InstrumentationRegistry.getInstrumentation().uiAutomation.waitForIdle(
+            (2 * FIND_OBJECT_TIMEOUT),
+            (10 * FIND_OBJECT_TIMEOUT)
+        )
+
+        val message = errorMessage ?: "Failed to find the button: $bySelector"
+        var button: UiObject2? = null
+        val startTime = System.currentTimeMillis()
+        while (startTime + WAIT_FOR_UI_TIMEOUT > System.currentTimeMillis()) {
+            try {
+                button = uiDevice.wait(Until.findObject(bySelector), FIND_OBJECT_TIMEOUT)
+                if (button != null) {
+                    Log.d(
+                        TAG,
+                        "Found bounds: ${button.getVisibleBounds()} of button $bySelector," +
+                                " text: ${button.getText()}," +
+                                " package: ${button.getApplicationPackage()}"
+                    )
+                    return button
+                } else {
+                    // Maybe the screen is small. Scroll forward and attempt to click
+                    scroll()
+                }
+            } catch (ignore: Throwable) {
+            }
+        }
+
+        if (checkNull) {
+            dumpWindowHierarchy()
+            Assert.fail(message)
+        }
+        return null
+    }
+
+    private fun scroll() {
+        UiScrollable(UiSelector().scrollable(true)).scrollForward()
+    }
+
+    @Throws(InterruptedException::class, IOException::class)
+    fun dumpWindowHierarchy() {
+        val outputStream = ByteArrayOutputStream()
+        uiDevice.dumpWindowHierarchy(outputStream)
+        val windowHierarchy = outputStream.toString(StandardCharsets.UTF_8.name())
+
+        Log.w(TAG, "Window hierarchy:")
+        for (line in windowHierarchy.split("\n".toRegex()).dropLastWhile { it.isEmpty() }
+            .toTypedArray()) {
+            Thread.sleep(10)
+            Log.w(TAG, line)
+        }
     }
 
     private fun assertInstallSucceeded(errorMessage: String) {
@@ -135,7 +215,7 @@ class NoPermissionTests {
             INSTALL_CONFIRM_TEXT,
             Pattern.CASE_INSENSITIVE
         ))
-        assertTrue(errorMessage, uiDevice.wait(Until.hasObject(selector), WAIT_FOR_UI_TIMEOUT))
+        findInstallerUIButton(selector, errorMessage)
         uiDevice.pressBack()
     }
 
@@ -144,7 +224,12 @@ class NoPermissionTests {
             INSTALL_CONFIRM_TEXT,
             Pattern.CASE_INSENSITIVE
         ))
-        assertFalse(errorMessage, uiDevice.wait(Until.hasObject(selector), WAIT_FOR_UI_TIMEOUT))
+        assertWithMessage(errorMessage).that(findInstallerUIButton(
+            selector,
+            errorMessage,
+            /* checkNull= */
+            false
+        )).isNull()
         uiDevice.pressBack()
     }
 

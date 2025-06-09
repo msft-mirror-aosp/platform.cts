@@ -49,6 +49,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+/** Build/Install/Run: atest CtsWindowManagerDeviceOther:DreamManagerServiceTests */
 @Presubmit
 public class DreamManagerServiceTests extends ActivityManagerTestBase {
 
@@ -66,9 +67,11 @@ public class DreamManagerServiceTests extends ActivityManagerTestBase {
 
     @Before
     public void setup() {
-        mCommunalHubSetting = new SettingsSession<>(
-                Settings.Secure.getUriFor(Settings.Secure.GLANCEABLE_HUB_ENABLED),
-                Settings.Secure::getInt, Settings.Secure::putInt);
+        mCommunalHubSetting =
+                new SettingsSession<>(
+                        Settings.Secure.getUriFor(Settings.Secure.GLANCEABLE_HUB_ENABLED),
+                        Settings.Secure::getInt,
+                        Settings.Secure::putInt);
         mCommunalHubSetting.set(0);
 
         mDreamCoordinator.setup();
@@ -86,10 +89,10 @@ public class DreamManagerServiceTests extends ActivityManagerTestBase {
 
     private void waitAndAssertDreamActivityGone(int maxTimeOutInSeconds) {
         String msg = "Dream Activity must be gone";
-        Condition.waitFor(new Condition<>(msg, this::isDreamActivityGone)
-                .setRetryLimit(maxTimeOutInSeconds)
-                .setOnFailure(o -> fail(msg))
-        );
+        Condition.waitFor(
+                new Condition<>(msg, this::isDreamActivityGone)
+                        .setRetryLimit(maxTimeOutInSeconds)
+                        .setOnFailure(o -> fail(msg)));
     }
 
     private boolean isDreamActivityGone() {
@@ -100,18 +103,19 @@ public class DreamManagerServiceTests extends ActivityManagerTestBase {
 
     private void startFullscreenTestActivity() {
         launchActivity(TEST_ACTIVITY, WINDOWING_MODE_FULLSCREEN);
-        waitAndAssertResumedAndFocusedActivityOnDisplay(TEST_ACTIVITY, DEFAULT_DISPLAY,
-                "Test activity should be the top resumed activity");
+        waitAndAssertResumedAndFocusedActivityOnDisplay(
+                TEST_ACTIVITY, DEFAULT_DISPLAY, "Test activity should be the top resumed activity");
         mWmState.assertVisibility(TEST_ACTIVITY, true);
     }
 
     private void startFullscreenTestActivityWithShowWhenLocked() {
         launchActivity(SHOW_WHEN_LOCKED_ACTIVITY, WINDOWING_MODE_FULLSCREEN);
-        waitAndAssertResumedAndFocusedActivityOnDisplay(SHOW_WHEN_LOCKED_ACTIVITY, DEFAULT_DISPLAY,
+        waitAndAssertResumedAndFocusedActivityOnDisplay(
+                SHOW_WHEN_LOCKED_ACTIVITY,
+                DEFAULT_DISPLAY,
                 "Test activity with android:showWhenLocked should be the top resumed activity");
         mWmState.assertVisibility(SHOW_WHEN_LOCKED_ACTIVITY, true);
     }
-
 
     @Test
     public void testStartAndStopDream() throws Exception {
@@ -119,7 +123,9 @@ public class DreamManagerServiceTests extends ActivityManagerTestBase {
         mDreamActivityName = mDreamCoordinator.setActiveDream(TEST_DREAM_SERVICE);
 
         mDreamCoordinator.startDream();
-        waitAndAssertResumedAndFocusedActivityOnDisplay(mDreamActivityName, DEFAULT_DISPLAY,
+        waitAndAssertResumedAndFocusedActivityOnDisplay(
+                mDreamActivityName,
+                DEFAULT_DISPLAY,
                 "Dream activity should be the top resumed activity");
         mWmState.waitForValidState(mWmState.getHomeActivityName());
         mWmState.assertVisibility(mWmState.getHomeActivityName(), false);
@@ -131,10 +137,12 @@ public class DreamManagerServiceTests extends ActivityManagerTestBase {
         mDreamCoordinator.stopDream();
         mWmState.waitAndAssertActivityRemoved(mDreamActivityName);
 
-        //To reduce flakiness, dismiss keyguard in case the device locked while test was running
+        // To reduce flakiness, dismiss keyguard in case the device locked while test was running
         pressUnlockButton();
 
-        waitAndAssertResumedAndFocusedActivityOnDisplay(TEST_ACTIVITY, DEFAULT_DISPLAY,
+        waitAndAssertResumedAndFocusedActivityOnDisplay(
+                TEST_ACTIVITY,
+                DEFAULT_DISPLAY,
                 "Previous top activity should show when dream is stopped");
     }
 
@@ -144,7 +152,9 @@ public class DreamManagerServiceTests extends ActivityManagerTestBase {
         mDreamActivityName = mDreamCoordinator.setActiveDream(TEST_DREAM_SERVICE);
 
         mDreamCoordinator.startDream();
-        waitAndAssertResumedAndFocusedActivityOnDisplay(mDreamActivityName, DEFAULT_DISPLAY,
+        waitAndAssertResumedAndFocusedActivityOnDisplay(
+                mDreamActivityName,
+                DEFAULT_DISPLAY,
                 "Dream activity should be the top resumed activity");
         mWmState.waitForValidState(mWmState.getHomeActivityName());
         mWmState.assertVisibility(mWmState.getHomeActivityName(), false);
@@ -156,11 +166,12 @@ public class DreamManagerServiceTests extends ActivityManagerTestBase {
         mDreamCoordinator.stopDream();
         mWmState.waitAndAssertActivityRemoved(mDreamActivityName);
 
-        waitAndAssertResumedAndFocusedActivityOnDisplay(SHOW_WHEN_LOCKED_ACTIVITY, DEFAULT_DISPLAY,
+        waitAndAssertResumedAndFocusedActivityOnDisplay(
+                SHOW_WHEN_LOCKED_ACTIVITY,
+                DEFAULT_DISPLAY,
                 "ShowWhenLocked activity should be resumed when dream is stopped");
         mWmState.assertVisibility(SHOW_WHEN_LOCKED_ACTIVITY, true);
     }
-
 
     @Test
     public void testDreamServiceStopsTimely() throws Exception {
@@ -177,7 +188,9 @@ public class DreamManagerServiceTests extends ActivityManagerTestBase {
         mDreamActivityName = mDreamCoordinator.setActiveDream(TEST_STUBBORN_DREAM_SERVICE);
 
         mDreamCoordinator.startDream();
-        waitAndAssertResumedAndFocusedActivityOnDisplay(mDreamActivityName, DEFAULT_DISPLAY,
+        waitAndAssertResumedAndFocusedActivityOnDisplay(
+                mDreamActivityName,
+                DEFAULT_DISPLAY,
                 "Dream activity should be the top resumed activity");
         mWmState.waitForValidState(mWmState.getHomeActivityName());
         mWmState.assertVisibility(mWmState.getHomeActivityName(), false);
@@ -190,7 +203,9 @@ public class DreamManagerServiceTests extends ActivityManagerTestBase {
 
         assertFalse(mDreamCoordinator.isDreaming());
         pressUnlockButton();
-        waitAndAssertResumedAndFocusedActivityOnDisplay(TEST_ACTIVITY, DEFAULT_DISPLAY,
+        waitAndAssertResumedAndFocusedActivityOnDisplay(
+                TEST_ACTIVITY,
+                DEFAULT_DISPLAY,
                 "Previous top activity should show when dream is stopped");
     }
 
@@ -204,7 +219,9 @@ public class DreamManagerServiceTests extends ActivityManagerTestBase {
         mDreamCoordinator.startDream();
         rotationSession.set(Surface.ROTATION_90);
 
-        waitAndAssertResumedAndFocusedActivityOnDisplay(mDreamActivityName, DEFAULT_DISPLAY,
+        waitAndAssertResumedAndFocusedActivityOnDisplay(
+                mDreamActivityName,
+                DEFAULT_DISPLAY,
                 "Dream activity should be the top resumed activity");
     }
 
@@ -227,7 +244,9 @@ public class DreamManagerServiceTests extends ActivityManagerTestBase {
             launchActivity(TEST_ACTIVITY);
             state.waitForDreamGone();
             assertFalse(mDreamCoordinator.isDreaming());
-            waitAndAssertResumedAndFocusedActivityOnDisplay(TEST_ACTIVITY, DEFAULT_DISPLAY,
+            waitAndAssertResumedAndFocusedActivityOnDisplay(
+                    TEST_ACTIVITY,
+                    DEFAULT_DISPLAY,
                     "Test activity should be the top resumed activity");
             mWmState.assertVisibility(TEST_ACTIVITY, true);
         }
@@ -239,8 +258,10 @@ public class DreamManagerServiceTests extends ActivityManagerTestBase {
             launchActivity(Components.TURN_SCREEN_ON_ACTIVITY);
 
             state.waitForDreamGone();
-            waitAndAssertResumedAndFocusedActivityOnDisplay(Components.TURN_SCREEN_ON_ACTIVITY,
-                    DEFAULT_DISPLAY, "TurnScreenOnActivity should resume through dream");
+            waitAndAssertResumedAndFocusedActivityOnDisplay(
+                    Components.TURN_SCREEN_ON_ACTIVITY,
+                    DEFAULT_DISPLAY,
+                    "TurnScreenOnActivity should resume through dream");
         }
     }
 
@@ -251,7 +272,8 @@ public class DreamManagerServiceTests extends ActivityManagerTestBase {
             pressUnlockButton();
             state.waitForDreamGone();
             waitAndAssertResumedAndFocusedActivityOnDisplay(
-                    Components.TURN_SCREEN_ON_ATTR_ACTIVITY, DEFAULT_DISPLAY,
+                    Components.TURN_SCREEN_ON_ATTR_ACTIVITY,
+                    DEFAULT_DISPLAY,
                     "TurnScreenOnAttrActivity should resume through dream");
         }
     }
@@ -265,14 +287,17 @@ public class DreamManagerServiceTests extends ActivityManagerTestBase {
         lockScreenSession.setLockCredential();
         try (DreamingState state = new DreamingState(TEST_DREAM_SERVICE)) {
             launchActivityNoWait(Components.TEST_ACTIVITY);
-            waitAndAssertActivityState(Components.TEST_ACTIVITY, STATE_STOPPED,
-                "Activity must be started and stopped");
+            waitAndAssertActivityState(
+                    Components.TEST_ACTIVITY,
+                    STATE_STOPPED,
+                    "Activity must be started and stopped");
             assertTrue(mDreamCoordinator.isDreaming());
 
             launchActivity(Components.TURN_SCREEN_ON_SHOW_ON_LOCK_ACTIVITY);
             state.waitForDreamGone();
             waitAndAssertResumedAndFocusedActivityOnDisplay(
-                    Components.TURN_SCREEN_ON_SHOW_ON_LOCK_ACTIVITY, DEFAULT_DISPLAY,
+                    Components.TURN_SCREEN_ON_SHOW_ON_LOCK_ACTIVITY,
+                    DEFAULT_DISPLAY,
                     "TurnScreenOnShowOnLockActivity should resume through dream");
             assertFalse(mDreamCoordinator.isDreaming());
         }
@@ -288,14 +313,14 @@ public class DreamManagerServiceTests extends ActivityManagerTestBase {
         try (DreamingState state = new DreamingState(TEST_DREAM_SERVICE)) {
             launchActivity(SHOW_WHEN_LOCKED_ACTIVITY);
             state.waitForDreamGone();
-            waitAndAssertResumedAndFocusedActivityOnDisplay(SHOW_WHEN_LOCKED_ACTIVITY,
-                    DEFAULT_DISPLAY, "Activity should dismiss dream");
+            waitAndAssertResumedAndFocusedActivityOnDisplay(
+                    SHOW_WHEN_LOCKED_ACTIVITY, DEFAULT_DISPLAY, "Activity should dismiss dream");
             assertFalse(mDreamCoordinator.isDreaming());
         }
     }
 
     private class DreamingState implements AutoCloseable {
-        public DreamingState(ComponentName dream) {
+        DreamingState(ComponentName dream) {
             mDreamActivityName = mDreamCoordinator.setActiveDream(dream);
             mDreamCoordinator.startDream();
             waitAndAssertDreaming();
@@ -307,7 +332,9 @@ public class DreamManagerServiceTests extends ActivityManagerTestBase {
         }
 
         public void waitAndAssertDreaming() {
-            waitAndAssertResumedAndFocusedActivityOnDisplay(mDreamActivityName, DEFAULT_DISPLAY,
+            waitAndAssertResumedAndFocusedActivityOnDisplay(
+                    mDreamActivityName,
+                    DEFAULT_DISPLAY,
                     "Dream activity should be the top resumed activity");
             mWmState.waitForActivityState(mWmState.getHomeActivityName(), STATE_STOPPED);
             mWmState.waitAndAssertVisibilityGone(mWmState.getHomeActivityName());
