@@ -21,7 +21,6 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import android.app.PictureInPictureParams;
-import android.app.PictureInPictureParams.Builder;
 import android.graphics.Rect;
 import android.platform.test.annotations.Presubmit;
 import android.util.Rational;
@@ -37,8 +36,7 @@ import java.util.ArrayList;
 /**
  * Tests the {@link PictureInPictureParams} builder.
  *
- * Build/Install/Run:
- * atest CtsWindowManagerDeviceOther:PictureInPictureParamsBuilderTest
+ * <p>Build/Install/Run: atest CtsWindowManagerDeviceOther:PictureInPictureParamsBuilderTest
  */
 @Presubmit
 @SmallTest
@@ -46,12 +44,13 @@ import java.util.ArrayList;
 public class PictureInPictureParamsBuilderTest {
 
     @Test
-    public void testBuildParams() throws Exception {
+    public void testBuildParams() {
         // Set the params
-        Builder builder = new Builder()
-                .setAspectRatio(new Rational(1, 2))
-                .setActions(new ArrayList<>())
-                .setSourceRectHint(new Rect(0, 0, 100, 100));
+        PictureInPictureParams.Builder builder =
+                new PictureInPictureParams.Builder()
+                        .setAspectRatio(new Rational(1, 2))
+                        .setActions(new ArrayList<>())
+                        .setSourceRectHint(new Rect(0, 0, 100, 100));
 
         PictureInPictureParams params = builder.build();
         assertTrue(Float.compare(0.5f, params.getAspectRatioFloat()) == 0);
@@ -59,9 +58,7 @@ public class PictureInPictureParamsBuilderTest {
         assertEquals(new Rect(0, 0, 100, 100), params.getSourceRectHint());
 
         // Reset the params
-        builder.setAspectRatio(null)
-                .setActions(null)
-                .setSourceRectHint(null);
+        builder.setAspectRatio(null).setActions(null).setSourceRectHint(null);
         params = builder.build();
 
         assertTrue(Float.compare(0f, params.getAspectRatioFloat()) == 0);
@@ -72,7 +69,7 @@ public class PictureInPictureParamsBuilderTest {
     @Test
     public void testBuilderDefaultCtor() {
         // Construct the params with default Builder constructor
-        PictureInPictureParams params = new Builder().build();
+        PictureInPictureParams params = new PictureInPictureParams.Builder().build();
 
         // Ensures the PictureInPictureParams constructed has nothing being set
         assertNull(params.getAspectRatio());
@@ -87,14 +84,15 @@ public class PictureInPictureParamsBuilderTest {
     @Test
     public void testBuilderCopyCtor() {
         // Construct a PictureInPictureParams with some parameters being set
-        PictureInPictureParams params = new Builder()
-                .setAspectRatio(new Rational(1, 2))
-                .setActions(new ArrayList<>())
-                .setSourceRectHint(new Rect(0, 0, 100, 100))
-                .build();
+        PictureInPictureParams params =
+                new PictureInPictureParams.Builder()
+                        .setAspectRatio(new Rational(1, 2))
+                        .setActions(new ArrayList<>())
+                        .setSourceRectHint(new Rect(0, 0, 100, 100))
+                        .build();
 
         // Build a new PictureInPictureParams using the copy constructor
-        PictureInPictureParams newParams = new Builder(params).build();
+        PictureInPictureParams newParams = new PictureInPictureParams.Builder(params).build();
 
         // Ensures the two PictureInPictureParams share the same parameters
         assertEquals(params.getAspectRatio(), newParams.getAspectRatio());

@@ -161,7 +161,7 @@ public class UninstallationWithMultiUsersTest extends UninstallationTestBase {
         waitForUiIdle();
 
         findPackageInstallerObject(
-                "The current user is not allowed to perform this uninstallation.");
+                "The current user is not allowed to perform this uninstallation.?");
 
         // close the error dialog
         pressBack();
