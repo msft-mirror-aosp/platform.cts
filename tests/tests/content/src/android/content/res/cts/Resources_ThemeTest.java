@@ -32,9 +32,7 @@ import android.content.res.Resources.Theme;
 import android.content.res.TypedArray;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
-import android.graphics.drawable.Drawable;
 import android.platform.test.annotations.AppModeSdkSandbox;
-import android.platform.test.annotations.DisabledOnRavenwood;
 import android.util.AttributeSet;
 import android.util.TypedValue;
 import android.util.Xml;
@@ -177,7 +175,6 @@ public class Resources_ThemeTest {
 
     @SmallTest
     @Test
-    @DisabledOnRavenwood(blockedBy = Drawable.class)
     public void testGetDrawable() {
         final Resources res = getContext().getResources();
         final Theme theme = res.newTheme();

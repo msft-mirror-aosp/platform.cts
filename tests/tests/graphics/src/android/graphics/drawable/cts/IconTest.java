@@ -24,13 +24,12 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-import android.Manifest;
-import android.app.Activity;
+import android.content.ContentResolver;
+import android.content.Context;
 import android.content.res.ColorStateList;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.PorterDuff;
-import android.graphics.cts.ImageViewCtsActivity;
 import android.graphics.cts.R;
 import android.graphics.drawable.AdaptiveIconDrawable;
 import android.graphics.drawable.Icon;
@@ -38,16 +37,13 @@ import android.net.Uri;
 import android.os.Handler;
 import android.os.Message;
 import android.os.Parcel;
+import android.platform.test.annotations.DisabledOnRavenwood;
 
 import androidx.test.filters.MediumTest;
 import androidx.test.platform.app.InstrumentationRegistry;
-import androidx.test.rule.ActivityTestRule;
 import androidx.test.runner.AndroidJUnit4;
 
-import com.android.compatibility.common.util.AdoptShellPermissionsRule;
-
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -62,21 +58,12 @@ import java.io.OutputStream;
 public class IconTest {
     private static final long TIMEOUT_MS = 1000;
 
-    private Activity mActivity;
     private Icon mIcon;
-
-    @Rule(order = 0)
-    public AdoptShellPermissionsRule mAdoptShellPermissionsRule = new AdoptShellPermissionsRule(
-            InstrumentationRegistry.getInstrumentation().getUiAutomation(),
-            Manifest.permission.START_ACTIVITIES_FROM_SDK_SANDBOX);
-
-    @Rule(order = 1)
-    public ActivityTestRule<ImageViewCtsActivity> mActivityRule =
-            new ActivityTestRule<>(ImageViewCtsActivity.class);
+    private Context mContext;
 
     @Before
     public void setup() {
-        mActivity = mActivityRule.getActivity();
+        mContext = InstrumentationRegistry.getInstrumentation().getContext();
     }
 
     @Test
@@ -99,13 +86,12 @@ public class IconTest {
     }
 
     @Test
-    public void testFileIcon() throws IOException {
-        File file = new File(mActivity.getFilesDir(), "testimage.jpg");
+    @DisabledOnRavenwood(blockedBy = ContentResolver.class)
+    public void testUriIcon() throws IOException {
+        File file = new File(mContext.getFilesDir(), "testimage.jpg");
         try {
             writeSampleImage(file);
             assertTrue(file.exists());
-
-            verifyIconValidity(Icon.createWithFilePath(file.getPath()));
 
             verifyIconValidity(Icon.createWithContentUri(Uri.fromFile(file)));
 
@@ -116,8 +102,22 @@ public class IconTest {
     }
 
     @Test
+    public void testFileIcon() throws IOException {
+        File file = new File(mContext.getFilesDir(), "testimage.jpg");
+        try {
+            writeSampleImage(file);
+            assertTrue(file.exists());
+
+            verifyIconValidity(Icon.createWithFilePath(file.getPath()));
+        } finally {
+            file.delete();
+        }
+    }
+
+    @Test
+    @DisabledOnRavenwood(blockedBy = ContentResolver.class)
     public void testAdaptiveFileIcon() throws IOException {
-        File file = new File(mActivity.getFilesDir(), "testimage.jpg");
+        File file = new File(mContext.getFilesDir(), "testimage.jpg");
         try {
             writeSampleImage(file);
             assertTrue(file.exists());
@@ -133,10 +133,9 @@ public class IconTest {
 
     @Test
     public void testResourceIcon() {
-        verifyIconValidity(Icon.createWithResource(mActivity, R.drawable.bmp_test));
+        verifyIconValidity(Icon.createWithResource(mContext, R.drawable.bmp_test));
 
-        verifyIconValidity(Icon.createWithResource(
-                mActivity.getPackageName(), R.drawable.bmp_test));
+        verifyIconValidity(Icon.createWithResource(mContext.getPackageName(), R.drawable.bmp_test));
     }
 
     @Test
@@ -144,8 +143,8 @@ public class IconTest {
         mIcon = Icon.createWithBitmap(Bitmap.createBitmap(16, 16, Bitmap.Config.ARGB_8888));
 
         Icon.OnDrawableLoadedListener mockListener = mock(Icon.OnDrawableLoadedListener.class);
-        mActivityRule.runOnUiThread(
-                () -> mIcon.loadDrawableAsync(mActivity, mockListener, new Handler()));
+        mContext.getMainExecutor().execute(
+                () -> mIcon.loadDrawableAsync(mContext, mockListener, new Handler()));
         // Verify that there was exactly one call to the passed listener's callback within the
         // predetermined timeout
         Thread.sleep(TIMEOUT_MS);
@@ -157,8 +156,8 @@ public class IconTest {
         mIcon = Icon.createWithBitmap(Bitmap.createBitmap(16, 16, Bitmap.Config.ARGB_8888));
 
         Runnable mockRunnable = mock(Runnable.class);
-        mActivityRule.runOnUiThread(
-                () -> mIcon.loadDrawableAsync(mActivity, Message.obtain(new Handler(),
+        mContext.getMainExecutor().execute(
+                () -> mIcon.loadDrawableAsync(mContext, Message.obtain(new Handler(),
                         mockRunnable)));
         // Verify that there was exactly one call to the passed Runnable's run within the
         // predetermined timeout
@@ -189,7 +188,7 @@ public class IconTest {
 
     @Test
     public void testFileIcon_getType() throws IOException {
-        File file = new File(mActivity.getFilesDir(), "testimage.jpg");
+        File file = new File(mContext.getFilesDir(), "testimage.jpg");
         try {
             writeSampleImage(file);
             assertTrue(file.exists());
@@ -213,7 +212,7 @@ public class IconTest {
 
     @Test
     public void testAdaptiveFileIcon_getType() throws IOException {
-        File file = new File(mActivity.getFilesDir(), "testimage.jpg");
+        File file = new File(mContext.getFilesDir(), "testimage.jpg");
         try {
             writeSampleImage(file);
             assertTrue(file.exists());
@@ -240,7 +239,7 @@ public class IconTest {
     }
 
     private void writeSampleImage(File imagefile) throws IOException {
-        try (InputStream source = mActivity.getResources().openRawResource(R.drawable.testimage);
+        try (InputStream source = mContext.getResources().openRawResource(R.drawable.testimage);
              OutputStream target = new FileOutputStream(imagefile)) {
             byte[] buffer = new byte[1024];
             for (int len = source.read(buffer); len >= 0; len = source.read(buffer)) {
@@ -267,13 +266,13 @@ public class IconTest {
         assertNotNull(Icon.CREATOR.createFromParcel(parcel));
 
         // loading drawable synchronously.
-        assertNotNull(icon.loadDrawable(mActivity));
+        assertNotNull(icon.loadDrawable(mContext));
 
         parcel.recycle();
     }
 
     private void verifyAdaptiveIconValidity(Icon icon) {
         verifyIconValidity(icon);
-        assertTrue(icon.loadDrawable(mActivity) instanceof AdaptiveIconDrawable);
+        assertTrue(icon.loadDrawable(mContext) instanceof AdaptiveIconDrawable);
     }
 }

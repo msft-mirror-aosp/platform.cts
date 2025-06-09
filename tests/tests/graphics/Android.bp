@@ -129,9 +129,10 @@ android_ravenwood_test {
         "src/android/graphics/cts/FrameRateOverrideTest.java",
         "src/android/graphics/cts/MatchContentFrameRateTest.java",
         "src/android/graphics/cts/SetFrameRateTest.java",
-
-        // Require drawable support
-        "src/android/graphics/drawable/**/*.java",
+        "src/android/graphics/drawable/cts/AnimatedImageDrawableTest.java",
+        "src/android/graphics/drawable/cts/AnimatedVectorDrawableParameterizedTest.java",
+        "src/android/graphics/drawable/cts/AnimatedVectorDrawableTest.java",
+        "src/android/graphics/drawable/cts/AnimationDrawableTest.java",
 
         // Deprecated class
         "src/android/graphics/cts/MovieTest.java",

@@ -37,6 +37,7 @@ import android.graphics.drawable.AnimatedStateListDrawable;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.DrawableContainer.DrawableContainerState;
 import android.graphics.drawable.StateListDrawable;
+import android.platform.test.annotations.DisabledOnRavenwood;
 import android.util.StateSet;
 import android.util.Xml;
 
@@ -56,6 +57,7 @@ import java.util.HashSet;
 
 @SmallTest
 @RunWith(AndroidJUnit4.class)
+@DisabledOnRavenwood(blockedBy = AnimatedStateListDrawable.class)
 public class AnimatedStateListDrawableTest {
     private static final int[] STATE_EMPTY = new int[] { };
     private static final int[] STATE_FOCUSED = new int[] { android.R.attr.state_focused };
