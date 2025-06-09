@@ -78,6 +78,9 @@ public final class HdmiCecRemoteControlPassThroughTest extends BaseHdmiCecCtsTes
             // Wait for DeviceDiscoveryAction to end before starting the test.
             LogHelper.waitForLog(device, DEVICE_DISCOVERY_ACTION_TAG,
                     DEVICE_DISCOVERY_ACTION_TIMEOUT_SECONDS, DEVICE_DISCOVERY_ACTION_WRAP_UP_LOG);
+        } catch (Exception ignore) {
+            // We can safely ignore the exception since we are not testing
+            // DeviceDiscoveryAction.
         } finally {
             LogicalAddress dutLogicalAddress = getTargetLogicalAddress(device, DUT_DEVICE_TYPE);
             RemoteControlPassthrough.checkUserControlPressAndRelease(
@@ -97,6 +100,9 @@ public final class HdmiCecRemoteControlPassThroughTest extends BaseHdmiCecCtsTes
             // Wait for DeviceDiscoveryAction to end before starting the test.
             LogHelper.waitForLog(device, DEVICE_DISCOVERY_ACTION_TAG,
                     DEVICE_DISCOVERY_ACTION_TIMEOUT_SECONDS, DEVICE_DISCOVERY_ACTION_WRAP_UP_LOG);
+        } catch (Exception ignore) {
+            // We can safely ignore the exception since we are not testing
+            // DeviceDiscoveryAction.
         } finally {
             LogicalAddress dutLogicalAddress = getTargetLogicalAddress(device,
                     DUT_DEVICE_TYPE);
@@ -126,6 +132,9 @@ public final class HdmiCecRemoteControlPassThroughTest extends BaseHdmiCecCtsTes
             // Wait for DeviceDiscoveryAction to end before starting the test.
             LogHelper.waitForLog(device, DEVICE_DISCOVERY_ACTION_TAG,
                     DEVICE_DISCOVERY_ACTION_TIMEOUT_SECONDS, DEVICE_DISCOVERY_ACTION_WRAP_UP_LOG);
+        } catch (Exception ignore) {
+            // We can safely ignore the exception since we are not testing
+            // DeviceDiscoveryAction.
         } finally {
             LogicalAddress dutLogicalAddress = getTargetLogicalAddress(device,
                     DUT_DEVICE_TYPE);
