@@ -212,6 +212,7 @@ public class VibratorTest {
         // vibrator state, so reset mocks to clear it for tests.
         assertVibratorStateChangesTo(false);
         clearInvocations(mStateListener);
+        assertThat(mVibrator.isVibrating()).isFalse();
     }
 
     @After
@@ -231,6 +232,8 @@ public class VibratorTest {
         for (OnVibratorStateChangedListener listener : mStateListenersCreated) {
             mVibrator.removeVibratorStateListener(listener);
         }
+
+        assertThat(mVibrator.isVibrating()).isFalse();
     }
 
     @Test
