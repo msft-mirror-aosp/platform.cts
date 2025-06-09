@@ -79,11 +79,12 @@ open class PackageSchemeTestBase {
     }
 
     fun runTest(packageName: String, packageHasVisibility: Boolean, needTargetApp: Boolean) {
+        SystemUtil.runShellCommand(
+            "appops set $packageName android:request_install_packages allow"
+        )
+
         if (packageHasVisibility) {
             SystemUtil.runShellCommand("appops set $packageName android:query_all_packages allow")
-            SystemUtil.runShellCommand(
-                "appops set $packageName android:request_install_packages allow"
-            )
         }
 
         if (needTargetApp) {
@@ -163,7 +164,7 @@ open class PackageSchemeTestBase {
         val intent = Intent(
             Intent.ACTION_INSTALL_PACKAGE
         ).setData(Uri.parse("content:"))
-        val ri = mContext.packageManager.resolveActivity(intent,  /* flags= */0)
+        val ri = mContext.packageManager.resolveActivity(intent, /* flags= */0)
         mPackageInstallerPackageName = ri?.activityInfo?.packageName
         Log.d(
             LOG_TAG,
