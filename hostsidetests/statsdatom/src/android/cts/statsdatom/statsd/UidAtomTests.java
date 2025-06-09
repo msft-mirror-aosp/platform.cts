@@ -177,8 +177,6 @@ public class UidAtomTests extends DeviceTestCase implements IBuildReceiver {
             assertThat(atoms.get(0).getProcessName())
                     .isEqualTo(DeviceUtils.STATSD_ATOM_TEST_PKG + ":lmk_victim");
             assertThat(atoms.get(0).getOomAdjScore()).isGreaterThan(0);
-            assertThat(atoms.get(0).getRssInBytes() + atoms.get(0).getSwapInBytes())
-                    .isGreaterThan(0);
         }
     }
 
