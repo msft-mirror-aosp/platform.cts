@@ -17,8 +17,6 @@
 package android.hardware.input.cts.tests;
 
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeTrue;
-import static org.junit.Assume.assumeFalse;
 
 import android.hardware.cts.R;
 
@@ -46,13 +44,14 @@ public class SonyDualshock4UsbTest extends InputHidTestCase {
     @Test
     public void kernelModule() {
         /**
-         * Basic support is required on all kernels. After kernel 4.19, devices must have
-         * CONFIG_HID_SONY enabled, which supports advanced features like haptics.
+         * After kernel 6.2, DualShock4 support was moved from HID_SONY into the HID_PLAYSTATION
+         * driver.
          */
-        if (KernelInfo.isKernelVersionGreaterThan("4.19")) {
+        if (KernelInfo.isKernelVersionGreaterThan("6.2")) {
+            assertTrue(KernelInfo.hasConfig("CONFIG_HID_PLAYSTATION"));
+        } else {
             assertTrue(KernelInfo.hasConfig("CONFIG_HID_SONY"));
         }
-        assertTrue(KernelInfo.hasConfig("CONFIG_HID_GENERIC"));
     }
 
     @Test
@@ -72,10 +71,6 @@ public class SonyDualshock4UsbTest extends InputHidTestCase {
 
     @Test
     public void testVibrator() throws Exception {
-        assumeFalse("b/337286136 - Broken since kernel 6.2 from driver changes",
-                KernelInfo.isKernelVersionGreaterThan("6.2"));
-        // hid-generic and older HID_SONY drivers don't support vibration
-        assumeTrue(KernelInfo.isKernelVersionGreaterThan("4.19"));
         testInputVibratorEvents(R.raw.sony_dualshock4_usb_vibratortests);
     }
 }

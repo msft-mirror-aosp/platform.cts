@@ -21,6 +21,7 @@ import static org.junit.Assert.assertEquals;
 import android.content.Context;
 import android.hardware.lights.Light;
 import android.util.ArrayMap;
+import android.util.Pair;
 import android.util.SparseArray;
 import android.view.InputDevice;
 import android.view.InputEvent;
@@ -40,7 +41,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-
 
 /**
  * Parse json resource file that contains the test commands for HidDevice
@@ -318,12 +318,25 @@ public class InputJsonParser {
                 }
 
                 JSONArray outputArray = testcaseEntry.getJSONArray("output");
-                testData.verifyMap = new ArrayMap<Integer, Integer>();
+                testData.verifyMap = new ArrayMap<Integer, Pair<Integer, Integer>>();
                 for (int i = 0; i < outputArray.length(); i++) {
                     JSONObject item = outputArray.getJSONObject(i);
-                    int index = item.getInt("index");
-                    int data = item.getInt("data");
-                    testData.verifyMap.put(index, data);
+                    final int index = item.getInt("index");
+                    final int data = item.getInt("data");
+                    if (data > 0xff || data < 0) {
+                        throw new RuntimeException(
+                                "Data value " + data + " is out of range (0-255)");
+                    }
+                    // This mask assumes that the data is a single byte
+                    final int dataMaskForAssertions = item.optInt("dataMaskForAssertions", 0xff);
+                    if (dataMaskForAssertions > 0xff || dataMaskForAssertions < 0) {
+                        throw new RuntimeException(
+                                "dataMaskForAssertions value "
+                                        + dataMaskForAssertions
+                                        + " is out of range (0-255)");
+                    }
+
+                    testData.verifyMap.put(index, Pair.create(dataMaskForAssertions, data));
                 }
                 tests.add(testData);
             } catch (JSONException e) {
