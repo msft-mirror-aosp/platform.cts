@@ -32,6 +32,7 @@ android_test {
         "androidx.test.core",
         "truth",
         "telephony-cts-utils",
+        "telephony_flags_core_java_lib",
     ],
     libs: [
         "android.test.runner.stubs.test",

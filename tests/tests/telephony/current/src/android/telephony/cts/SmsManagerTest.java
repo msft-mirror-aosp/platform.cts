@@ -21,6 +21,8 @@ import static androidx.test.InstrumentationRegistry.getInstrumentation;
 
 import static com.android.compatibility.common.util.BlockedNumberUtil.deleteBlockedNumber;
 import static com.android.compatibility.common.util.BlockedNumberUtil.insertBlockedNumber;
+import static com.android.internal.telephony.flags.Flags.FLAG_REDACT_OTP_SMS;
+import static com.android.internal.telephony.flags.Flags.FLAG_REDACT_OTP_SMS_API;
 
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.emptyString;
@@ -57,6 +59,9 @@ import android.os.Bundle;
 import android.os.ParcelFileDescriptor;
 import android.os.RemoteCallback;
 import android.os.SystemClock;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.Telephony;
 import android.telephony.SmsCbMessage;
 import android.telephony.SmsManager;
@@ -73,9 +78,11 @@ import androidx.test.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.ShellIdentityUtils;
+import com.android.compatibility.common.util.SystemUtil;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.BufferedReader;
@@ -112,13 +119,16 @@ public class SmsManagerTest {
 
     private static final String SMS_SEND_ACTION = "CTS_SMS_SEND_ACTION";
     private static final String SMS_DELIVERY_ACTION = "CTS_SMS_DELIVERY_ACTION";
-    private static final String DATA_SMS_RECEIVED_ACTION = "android.intent.action.DATA_SMS_RECEIVED";
-    public static final String SMS_DELIVER_DEFAULT_APP_ACTION = "CTS_SMS_DELIVERY_ACTION_DEFAULT_APP";
+    private static final String DATA_SMS_RECEIVED_ACTION =
+            "android.intent.action.DATA_SMS_RECEIVED";
+    public static final String SMS_DELIVER_DEFAULT_APP_ACTION =
+            "CTS_SMS_DELIVERY_ACTION_DEFAULT_APP";
     public static final String LEGACY_SMS_APP = "android.telephony.cts.sms23";
     public static final String MODERN_SMS_APP = "android.telephony.cts.sms";
     private static final String SMS_RETRIEVER_APP = "android.telephony.cts.smsretriever";
     private static final String SMS_RETRIEVER_ACTION = "CTS_SMS_RETRIEVER_ACTION";
     private static final String FINANCIAL_SMS_APP = "android.telephony.cts.financialsms";
+    private static final String OTP_SMS_TEXT = "Your one time code is 11111";
 
     private TelephonyManager mTelephonyManager;
     private SubscriptionManager mSubscriptionManager;
@@ -147,6 +157,9 @@ public class SmsManagerTest {
 
     private static final int TIME_OUT = 1000 * 60 * 10;
     private static final int NO_CALLS_TIMEOUT_MILLIS = 1000; // 1 second
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Before
     public void setUp() throws Exception {
@@ -397,9 +410,12 @@ public class SmsManagerTest {
         testSendAndReceiveMessages(false);
 
         // Test default SMS app
-        DefaultSmsAppHelper.ensureDefaultSmsApp();
-        testSendAndReceiveMessages(true);
-        DefaultSmsAppHelper.stopBeingDefaultSmsApp();
+        try {
+            DefaultSmsAppHelper.ensureDefaultSmsApp();
+            testSendAndReceiveMessages(true);
+        } finally {
+            DefaultSmsAppHelper.stopBeingDefaultSmsApp();
+        }
     }
 
     private void testSendAndReceiveMessages(boolean defaultSmsApp) throws Exception {
@@ -486,13 +502,88 @@ public class SmsManagerTest {
     }
 
     @Test
+    @RequiresFlagsEnabled({FLAG_REDACT_OTP_SMS, FLAG_REDACT_OTP_SMS_API})
+    public void testOtpSmsBroadcastReceivedByDefaultSmsApp() throws Exception {
+        init();
+        try {
+            DefaultSmsAppHelper.ensureDefaultSmsApp();
+            sendOtpSmsMessage();
+            assertTrue(
+                    "Default SMS app should get SMS_RECEIVED for OTP calls",
+                    mSmsReceivedReceiver.waitForCalls(1, TIME_OUT));
+            assertTrue(
+                    "Default SMS app should get SMS_RECEIVED for OTP calls",
+                    mSmsDeliverReceiver.waitForCalls(1, TIME_OUT));
+        } finally {
+            DefaultSmsAppHelper.stopBeingDefaultSmsApp();
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled({FLAG_REDACT_OTP_SMS, FLAG_REDACT_OTP_SMS_API})
+    public void testOtpSmsBroadcastReceivedByAppsWithPermission() {
+        init();
+        SystemUtil.runWithShellPermissionIdentity(
+                () -> {
+                    sendOtpSmsMessage();
+                    assertTrue(
+                            "Apps with RECEIVE_SENSITIVE_NOTIFICATIONS permission should get "
+                                    + "SMS_RECEIVED for OTP calls",
+                            mSmsReceivedReceiver.waitForCalls(1, TIME_OUT));
+                },
+                Manifest.permission.RECEIVE_SENSITIVE_NOTIFICATIONS);
+    }
+
+    @Test
+    @RequiresFlagsEnabled({FLAG_REDACT_OTP_SMS, FLAG_REDACT_OTP_SMS_API})
+    public void testOtpSmsBroadcastReceivedByAppsWithAppOp() throws Exception {
+        init();
+        try {
+            setModeForOps(
+                    mContext.getPackageName(),
+                    AppOpsManager.MODE_ALLOWED,
+                    AppOpsManager.OPSTR_RECEIVE_SENSITIVE_NOTIFICATIONS);
+            sendOtpSmsMessage();
+            assertTrue(
+                    "Apps with RECEIVE_SENSITIVE_NOTIFICATIONS op should get SMS_RECEIVED for "
+                            + "OTP calls",
+                    mSmsReceivedReceiver.waitForCalls(1, TIME_OUT));
+        } finally {
+            setModeForOps(
+                    mContext.getPackageName(),
+                    AppOpsManager.MODE_IGNORED,
+                    AppOpsManager.OPSTR_RECEIVE_SENSITIVE_NOTIFICATIONS);
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled({FLAG_REDACT_OTP_SMS, FLAG_REDACT_OTP_SMS_API})
+    public void testOtpSmsBroadcastNotReceivedByStandardApps() throws Exception {
+        init();
+        sendOtpSmsMessage();
+        assertTrue(
+                "Normal apps should not get SMS_RECEIVED for OTP calls",
+                mSmsReceivedReceiver.verifyNoCalls(NO_CALLS_TIMEOUT_MILLIS));
+    }
+
+    private void sendOtpSmsMessage() throws Exception {
+        sendTextMessage(mDestAddr, OTP_SMS_TEXT, mSentIntent, mDeliveredIntent);
+        assertTrue(
+                "[RERUN] Could not send SMS. Check signal.",
+                mSendReceiver.waitForCalls(1, TIME_OUT));
+    }
+
+    @Test
     public void testGetSmsMessagesForFinancialAppPermissionRequestedNotGranted() throws Exception {
         CompletableFuture<Bundle> callbackResult = new CompletableFuture<>();
 
-        mContext.startActivity(new Intent()
-                .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                .setComponent(new ComponentName(FINANCIAL_SMS_APP, FINANCIAL_SMS_APP + ".MainActivity"))
-                .putExtra("callback", new RemoteCallback(callbackResult::complete)));
+        mContext.startActivity(
+                new Intent()
+                        .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        .setComponent(
+                                new ComponentName(
+                                        FINANCIAL_SMS_APP, FINANCIAL_SMS_APP + ".MainActivity"))
+                        .putExtra("callback", new RemoteCallback(callbackResult::complete)));
 
         Bundle bundle = callbackResult.get(500, TimeUnit.SECONDS);
 
@@ -510,11 +601,13 @@ public class SmsManagerTest {
                     AppOpsManager.MODE_ALLOWED,
                     AppOpsManager.OPSTR_SMS_FINANCIAL_TRANSACTIONS);
             });
-        mContext.startActivity(new Intent()
-                .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                .setComponent(new ComponentName(FINANCIAL_SMS_APP, FINANCIAL_SMS_APP + ".MainActivity"))
-                .putExtra("callback", new RemoteCallback(callbackResult::complete)));
-
+        mContext.startActivity(
+                new Intent()
+                        .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        .setComponent(
+                                new ComponentName(
+                                        FINANCIAL_SMS_APP, FINANCIAL_SMS_APP + ".MainActivity"))
+                        .putExtra("callback", new RemoteCallback(callbackResult::complete)));
 
         Bundle bundle = callbackResult.get(500, TimeUnit.SECONDS);
 

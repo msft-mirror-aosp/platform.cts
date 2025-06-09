@@ -16,6 +16,9 @@
 
 package android.telephonyprovider.cts;
 
+import static android.provider.Telephony.TextBasedSmsColumns.CONTAINS_OTP;
+import static android.provider.Telephony.TextBasedSmsColumns.OTP_TYPE_CONTAINS_OTP;
+
 import static androidx.test.InstrumentationRegistry.getInstrumentation;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -25,6 +28,8 @@ import android.content.ContentValues;
 import android.database.Cursor;
 import android.net.Uri;
 import android.provider.Telephony;
+
+import com.android.compatibility.common.util.SystemUtil;
 
 class SmsTestHelper {
 
@@ -41,6 +46,26 @@ class SmsTestHelper {
         mContentValues.put(Telephony.Sms.ADDRESS, testAddress);
         mContentValues.put(Telephony.Sms.BODY, testSmsBody);
         return mContentResolver.insert(Telephony.Sms.CONTENT_URI, mContentValues);
+    }
+
+    public Uri insertTestOtpSmsAndWaitForOtpDetection(String testAddress, String testSmsBody,
+            long createdTimeMillis) {
+        mContentValues.put(Telephony.Sms.ADDRESS, testAddress);
+        mContentValues.put(Telephony.Sms.BODY, testSmsBody);
+        mContentValues.put(Telephony.Sms.DATE, createdTimeMillis);
+        Uri uri = mContentResolver.insert(Telephony.Sms.CONTENT_URI, mContentValues);
+        waitForOtpDetection(uri);
+        return uri;
+    }
+
+    private void waitForOtpDetection(Uri uri) {
+        SystemUtil.eventually(() -> {
+            Cursor cursor = mContentResolver.query(uri, null, null, null);
+            assertThat(cursor.getCount()).isEqualTo(1);
+            cursor.moveToNext();
+            int actualSmsOtpColumn = cursor.getInt(cursor.getColumnIndex(CONTAINS_OTP));
+            assertThat(actualSmsOtpColumn).isEqualTo(OTP_TYPE_CONTAINS_OTP);
+        });
     }
 
     public ContentValues createSmsValues(String messageBody) {
