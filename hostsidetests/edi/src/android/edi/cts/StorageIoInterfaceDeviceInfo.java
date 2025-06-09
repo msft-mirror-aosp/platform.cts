@@ -20,12 +20,9 @@ import com.android.compatibility.common.util.HostInfoStore;
 import com.android.compatibility.common.util.PropertyUtil;
 import com.android.tradefed.util.CommandResult;
 import com.android.tradefed.util.CommandStatus;
+import com.android.tradefed.util.ResourceUtil;
 
-import java.io.BufferedOutputStream;
 import java.io.File;
-import java.io.FileOutputStream;
-import java.io.InputStream;
-import java.io.OutputStream;
 
 public class StorageIoInterfaceDeviceInfo extends DeviceInfo {
     private static final String INTERFACE_FIELD = "storage_io_interface";
@@ -104,20 +101,7 @@ public class StorageIoInterfaceDeviceInfo extends DeviceInfo {
         String fullResourceName = resourceName + ext;
         File outputFile = File.createTempFile(resourceName, ext);
         try {
-            // TODO(b/422488422): When the utility logic is fixed, we should replace
-            // much of this with:
-            //    ResourceUtil.extractResourceToFile("/" + fullResourceName, outputFile);
-            try (InputStream in = getClass().getResourceAsStream("/" + fullResourceName);
-                    OutputStream out = new BufferedOutputStream(new FileOutputStream(outputFile))) {
-                if (in == null) {
-                    throw new IllegalArgumentException("Resource not found: " + fullResourceName);
-                }
-                byte[] buf = new byte[8192];
-                int chunkSize;
-                while ((chunkSize = in.read(buf)) != -1) {
-                    out.write(buf, 0, chunkSize);
-                }
-            }
+            ResourceUtil.extractResourceToFile("/" + fullResourceName, outputFile);
             getDevice().pushFile(outputFile, DEVICE_DIR + fullResourceName);
         } finally {
             outputFile.delete();
