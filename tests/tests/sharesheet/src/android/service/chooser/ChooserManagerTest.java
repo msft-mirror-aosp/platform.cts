@@ -35,6 +35,8 @@ import static org.mockito.Mockito.times;
 import android.content.Context;
 import android.content.Intent;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
@@ -42,6 +44,7 @@ import androidx.test.runner.AndroidJUnit4;
 import com.android.compatibility.common.util.ApiTest;
 
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
@@ -50,6 +53,9 @@ import org.mockito.Mockito;
 @RequiresFlagsEnabled(Flags.FLAG_INTERACTIVE_CHOOSER)
 @RunWith(AndroidJUnit4.class)
 public class ChooserManagerTest {
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
     private ChooserManager mChooserManager;
 
     @Before
