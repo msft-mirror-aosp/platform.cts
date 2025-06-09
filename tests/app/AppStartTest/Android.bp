@@ -26,6 +26,7 @@ android_test {
         "android.test.base.stubs.system",
     ],
     static_libs: [
+        "android.app.flags-aconfig-java",
         "androidx.test.uiautomator_uiautomator",
         "androidx.test.rules",
         "compatibility-device-util-axt",
