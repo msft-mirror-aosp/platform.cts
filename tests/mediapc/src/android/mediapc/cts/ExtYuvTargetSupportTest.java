@@ -31,7 +31,6 @@ import androidx.test.filters.SmallTest;
 
 import com.android.compatibility.common.util.CddTest;
 
-import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
@@ -108,12 +107,11 @@ public class ExtYuvTargetSupportTest {
         mEGLContext = EGL14.eglCreateContext(mEGLDisplay, configs[0], EGL14.EGL_NO_CONTEXT,
                 attrib_list, 0);
 
-        Assert.assertNotEquals("failed to configure context", mEGLContext, EGL14.EGL_NO_CONTEXT);
-
-        if (!checkEglError()) {
+        if (mEGLContext == EGL14.EGL_NO_CONTEXT) {
             return false;
         }
-        if (mEGLContext == null) {
+
+        if (!checkEglError()) {
             return false;
         }
 
