@@ -24,6 +24,7 @@ import android.app.Instrumentation;
 import android.content.Context;
 import android.graphics.Rect;
 import android.os.SystemClock;
+import android.util.Log;
 import android.view.InputDevice;
 import android.view.KeyCharacterMap;
 import android.view.KeyEvent;
@@ -32,6 +33,9 @@ import android.view.View;
 import android.view.ViewConfiguration;
 
 public class TouchHelper {
+
+    private static final String TAG = "TouchHelper";
+
     public final Context mContext;
     public final Instrumentation mInstrumentation;
     public final WindowManagerStateHelper mWmState;
@@ -140,6 +144,17 @@ public class TouchHelper {
 
     public static void injectMotion(long downTime, long eventTime, int action,
             int x, int y, int displayId, boolean sync, boolean waitAnimations) {
+        Log.d(
+                TAG,
+                "injectMotion="
+                        + MotionEvent.actionToString(action)
+                        + " at ["
+                        + x
+                        + ","
+                        + y
+                        + "]"
+                        + " on displayId="
+                        + displayId);
         final MotionEvent event = MotionEvent.obtain(downTime, eventTime, action,
                 x, y, 0 /* metaState */);
         event.setSource(InputDevice.SOURCE_TOUCHSCREEN);
