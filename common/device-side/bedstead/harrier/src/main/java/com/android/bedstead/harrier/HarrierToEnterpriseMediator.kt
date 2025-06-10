@@ -15,10 +15,6 @@
  */
 package com.android.bedstead.harrier
 
-import com.android.bedstead.enterprise.annotations.CanSetPolicyTest
-import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest
-import com.android.bedstead.enterprise.annotations.PolicyAppliesTest
-import com.android.bedstead.enterprise.annotations.PolicyDoesNotApplyTest
 import com.android.bedstead.harrier.annotations.PolicyArgument
 import java.util.stream.Stream
 import org.junit.runners.model.FrameworkMethod
@@ -37,14 +33,6 @@ interface HarrierToEnterpriseMediator {
         expandedMethods: Stream<FrameworkMethod>
     ): Stream<FrameworkMethod>
 
-    /**
-     * Parse enterprise-specific annotations in [BedsteadJUnit4],
-     * i.e. [PolicyAppliesTest], [PolicyDoesNotApplyTest],
-     * [CanSetPolicyTest] and [CannotSetPolicyTest]
-     * To be used before general annotation processing.
-     */
-    fun parseEnterpriseAnnotations(annotations: List<Annotation>)
-
     companion object {
         private const val IMPLEMENTATION =
             "com.android.bedstead.enterprise.HarrierToEnterpriseMediatorImpl"
@@ -57,14 +45,6 @@ interface HarrierToEnterpriseMediator {
             } catch (ignored: ReflectiveOperationException) {
                 null
             }
-        }
-
-        /**
-         * @return HarrierToEnterpriseMediator or null
-         * if the bedstead-enterprise module isn't loaded
-         */
-        fun getMediatorOrNull(): HarrierToEnterpriseMediator? {
-            return mediatorInternal
         }
 
         /**

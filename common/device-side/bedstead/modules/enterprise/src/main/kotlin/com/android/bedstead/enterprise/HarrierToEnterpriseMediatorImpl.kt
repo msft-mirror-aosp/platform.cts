@@ -31,8 +31,4 @@ class HarrierToEnterpriseMediatorImpl : HarrierToEnterpriseMediator {
     ): Stream<FrameworkMethod> {
         return PolicyArgumentTestsGenerator.generate(frameworkMethod, expandedMethods)
     }
-
-    override fun parseEnterpriseAnnotations(annotations: List<Annotation>) {
-        EnterpriseAnnotationsParser.parse(annotations)
-    }
 }
