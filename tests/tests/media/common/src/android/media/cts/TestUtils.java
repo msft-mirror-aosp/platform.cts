@@ -131,14 +131,14 @@ public final class TestUtils {
         return info.getLongVersionCode();
     }
 
-
     /**
-     * Reports whether the APEX mainline module {@code module} has been updated from the
-     * version in the system image. The result is used to decide whether to relax some
-     * test criteria, like software codec performance being improved to run faster
-     * than performance data at initial release.
+     * Reports whether the APEX mainline module {@code module} has been updated from the version in
+     * the system image. The result is used to decide whether to relax some test criteria, like
+     * software codec performance being improved to run faster than performance data at initial
+     * release. Another case is to introduce new codecs via mainline so the base system image won't
+     * have performance data.
      *
-     * @param module     the apex module name
+     * @param module the apex module name
      * @return {@code true} {@code module} refers to an apex module which has been updated.
      */
     public static boolean isUpdatedMainlineModule(String module) {
@@ -147,22 +147,27 @@ public final class TestUtils {
             PackageInfo info = context.getPackageManager().getPackageInfo(module,
                     MATCH_APEX);
             if (info == null) {
+                Log.d(TAG, "module " + module + " is unknown");
                 return false;
             }
             ApplicationInfo appInfo = info.applicationInfo;
             if (appInfo == null) {
+                Log.d(TAG, "module " + module + " has no ApplicationInfo");
                 return false;
             }
             // FLAG_SYSTEM changes during apex update on <= T; but stays set on >=U
             // FLAG_UPDATED_SYSTEM_APP always provides desired signalling
             if ((info.applicationInfo.flags & ApplicationInfo.FLAG_UPDATED_SYSTEM_APP) == 0) {
+                Log.d(TAG, "module " + module + " has not been updated");
                 return false;
             }
+            Log.d(TAG, "module " + module + " HAS been updated");
             return true;
         } catch (PackageManager.NameNotFoundException e) {
             // doesn't exist, so it can't be upgraded
         }
         // we don't have information telling us otherwise.
+        Log.d(TAG, "module " + module + "unable to determine if updated");
         return false;
     }
 
@@ -170,27 +175,29 @@ public final class TestUtils {
      * decide whether we are in CTS, MCTS, or MTS mode.
      * return the appropriate constant value
      */
-    public static final int TESTMODE_CTS = 0;
-    public static final int TESTMODE_MCTS = 1;
-    public static final int TESTMODE_MTS = 2;
+    private static final int TESTMODE_NONE = 0;
+    private static final int TESTMODE_CTS = 1;
+    private static final int TESTMODE_MCTS = 2;
+    private static final int TESTMODE_MTS = 3;
+
+    private static int sCalculatedTestMode = TESTMODE_NONE;
 
     /**
-     * Report the current testing mode, as an enumeration.
-     * Testing mode is determined by argument 'media-testing-mode'
-     * which specifies 'cts', 'mcts', or 'mts'
-     * If missing, we use the older boolean "mts-media" to generate either 'cts' or 'mts'
+     * Report the current testing mode, as an enumeration. Testing mode is determined by argument
+     * 'media-testing-mode' which specifies 'cts', 'mcts', or 'mts' If missing, we use the older
+     * boolean "mts-media" to generate either 'cts' or 'mts'
      *
-     * This is most often specified in a CtsMedia* app's AndroidTest.xml, using
-     * a line like:
-     * <test class="com.android.tradefed.testtype.AndroidJUnitTest" >
-     * ...
-     * <option name="instrumentation-arg" key="media-testing-mode" value="CTS" />
-     * </test>
+     * <p>This is most often specified in a CtsMedia* app's AndroidTest.xml, using a line like:
+     * <test class="com.android.tradefed.testtype.AndroidJUnitTest" > ... <option
+     * name="instrumentation-arg" key="media-testing-mode" value="CTS" /> </test>
      *
      * @return {@code} one of the values TESTMODE_CTS, TESTMODE_MCTS, or TESTMODE_MTS.
-     *
      */
-    public static int currentTestMode() {
+    public static synchronized int currentTestMode() {
+        if (sCalculatedTestMode != TESTMODE_NONE) {
+            return sCalculatedTestMode;
+        }
+
         Bundle bundle = InstrumentationRegistry.getArguments();
         String value = bundle.getString("media-testing-mode");
         if (value == null) {
@@ -212,6 +219,23 @@ public final class TestUtils {
         } else {
             mode = TESTMODE_CTS;
         }
+
+        // if invoked in MCTS mode, we'll look to see if *both* modules have been
+        // updated from the system image; if so, we treat it as MTS.
+        // this means updating media but not swcodec will still get us
+        // behavior of validating performance data.
+        if (mode == TESTMODE_MCTS) {
+            Log.d(TAG, "Check on MCTS Mapping...");
+            if (isUpdatedMainlineModule("com.google.android.media.swcodec")
+                    && isUpdatedMainlineModule("com.google.android.media")) {
+                Log.d(TAG, "Both media+swcodec modules updated; map MCTS to MTS mode");
+                mode = TESTMODE_MTS;
+            } else {
+                Log.d(TAG, "MCTS stays in MCTS mode");
+                mode = TESTMODE_MCTS;
+            }
+        }
+        sCalculatedTestMode = mode;
         return mode;
     }
 
@@ -224,27 +248,25 @@ public final class TestUtils {
      * @return {@code} "CTS", "MCTS", or "MTS" corresponding to the mode.
      */
     public static String currentTestModeName() {
-        Bundle bundle = InstrumentationRegistry.getArguments();
-        String value = bundle.getString("media-testing-mode");
-        if (value == null) {
-            value = bundle.getString("mts-media");
-            if (value == null || !value.equals("true")) {
-                value = "CTS";
-            } else {
-                value = "MTS";
-            }
+        int mode = currentTestMode();
+        String result;
+
+        switch (mode) {
+            case TESTMODE_NONE:
+            default:
+                result = "unknown";
+                break;
+            case TESTMODE_CTS:
+                result = "CTS";
+                break;
+            case TESTMODE_MCTS:
+                result = "MCTS";
+                break;
+            case TESTMODE_MTS:
+                result = "MTS";
+                break;
         }
-        value = value.toUpperCase(Locale.ROOT);
-        if (value.equals("CTS")) {
-            return "CTS";
-        } else if (value.equals("MCTS")) {
-            return "MCTS";
-        } else if (value.equals("MTS")) {
-            return "MTS";
-        } else {
-            // same default as currentTestMode()
-            return "CTS";
-        }
+        return result;
     }
 
     /**
@@ -263,6 +285,27 @@ public final class TestUtils {
                 break;
         }
         return false;
+    }
+
+    /**
+     * Report whether this test run should evaluate module functionality. Some tests (or parts of
+     * tests) are restricted to a particular mode.
+     *
+     * @return {@code} true is the current test mode is MCTS or MTS.
+     */
+    public static boolean isTestingFramework() {
+        return !isTestingModules();
+    }
+
+    /**
+     * Report whether we are in CTS mode (vs MTS or MCTS) mode. Some tests (or parts of tests) are
+     * restricted to a particular mode.
+     *
+     * @return {@code} true is the current test mode is CTS.
+     */
+    public static boolean isCtsMode() {
+        int mode = currentTestMode();
+        return mode == TESTMODE_CTS;
     }
 
     /**
