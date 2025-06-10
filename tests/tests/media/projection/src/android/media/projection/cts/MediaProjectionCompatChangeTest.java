@@ -94,6 +94,7 @@ public class MediaProjectionCompatChangeTest {
     @Before
     public void setUpTest() throws Exception {
         assumeFalse(sIsWatch);
+        mMediaProjectionRule.enableConsentFlow();
         initializePartialScreenshareSupport();
     }
 
