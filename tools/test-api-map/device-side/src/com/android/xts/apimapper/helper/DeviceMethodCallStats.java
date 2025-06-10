@@ -92,13 +92,19 @@ public final class DeviceMethodCallStats {
      * @return a csv style string with the format "{packageName}:{className}"
      */
     public static String getPackageClass(String packageClass) {
+        // The format of the class name from ASM is "a/b/ClassA$ClassB".
         int lastDot = packageClass.lastIndexOf('/');
+        // The format of the class name from runtime is "a.b.ClassA$ClassB".
         if (lastDot < 0) {
-            return ":" + formatClassName(packageClass);
+            lastDot = packageClass.lastIndexOf('.');
+        }
+        if (lastDot < 0) {
+            return String.format(":%s", formatClassName(packageClass));
         } else {
-            return formatPackageName(packageClass.substring(0, lastDot))
-                    + ":"
-                    + formatClassName(packageClass.substring(lastDot + 1));
+            return String.format(
+                    "%s:%s",
+                    formatPackageName(packageClass.substring(0, lastDot)),
+                    formatClassName(packageClass.substring(lastDot + 1)));
         }
     }
 
