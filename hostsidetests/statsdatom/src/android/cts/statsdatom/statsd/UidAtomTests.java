@@ -479,7 +479,10 @@ public class UidAtomTests extends DeviceTestCase implements IBuildReceiver {
         final int waitTime = 5000;
 
         // From {@link VideoPlayerActivity#DELAY_MILLIS}
-        final int videoDuration = 2000;
+        // Note that the real duration is 2 seconds. However, slow devices report the start time
+        // later. Using 1sec here enforces the range to be 0.5 - 5 seconds, which should provide
+        // enough slack on either end.
+        final int videoDuration = 1000;
 
         Set<Integer> onState = new HashSet<>(
                 Arrays.asList(MediaCodecStateChanged.State.ON_VALUE));
