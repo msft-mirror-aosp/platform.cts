@@ -278,6 +278,10 @@ public class PermissionsTest extends BaseDeviceAdminTest {
                 PERMISSION_APP_PACKAGE_NAME, READ_CONTACTS);
         int permissionPolicy = mDevicePolicyManager.getPermissionPolicy(ADMIN_RECEIVER_COMPONENT);
         try {
+            // This test requires an initial permission grant state and it needs
+            // to be DEFAULT (which means removing policy). Removing a policy is
+            // only possible after adding one.
+            setPermissionGrantState(READ_CONTACTS, PERMISSION_GRANT_STATE_GRANTED);
             setPermissionGrantState(READ_CONTACTS, PERMISSION_GRANT_STATE_DEFAULT);
             setPermissionPolicy(PERMISSION_POLICY_AUTO_GRANT);
 
