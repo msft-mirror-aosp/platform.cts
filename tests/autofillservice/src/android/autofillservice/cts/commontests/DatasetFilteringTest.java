@@ -16,6 +16,7 @@
 
 package android.autofillservice.cts.commontests;
 
+import static android.autofillservice.cts.testcore.Helper.AutofillCriticalInternal;
 import static android.autofillservice.cts.testcore.Helper.ID_USERNAME;
 import static android.autofillservice.cts.testcore.Timeouts.MOCK_IME_TIMEOUT_MS;
 
@@ -71,6 +72,7 @@ public abstract class DatasetFilteringTest extends AbstractLoginActivityTestCase
     }
 
     @Presubmit
+    @AutofillCriticalInternal
     @Test
     public void testFilter() throws Exception {
         final String aa = "Two A's";
