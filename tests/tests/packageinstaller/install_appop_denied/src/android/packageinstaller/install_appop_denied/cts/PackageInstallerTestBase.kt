@@ -31,23 +31,31 @@ import android.content.pm.PackageInstaller.STATUS_FAILURE_INVALID
 import android.content.pm.PackageInstaller.STATUS_PENDING_USER_ACTION
 import android.content.pm.PackageInstaller.SessionParams.MODE_FULL_INSTALL
 import android.content.pm.PackageManager
-import androidx.test.InstrumentationRegistry
-import androidx.test.rule.ActivityTestRule
+import android.util.Log
 import androidx.core.content.FileProvider
-import androidx.test.uiautomator.By
+import androidx.test.platform.app.InstrumentationRegistry
+import androidx.test.rule.ActivityTestRule
+import androidx.test.uiautomator.BySelector
 import androidx.test.uiautomator.UiDevice
+import androidx.test.uiautomator.UiObject2
+import androidx.test.uiautomator.UiScrollable
+import androidx.test.uiautomator.UiSelector
 import androidx.test.uiautomator.Until
 import com.android.compatibility.common.util.FutureResultActivity
+import java.io.ByteArrayOutputStream
+import java.io.File
+import java.io.IOException
+import java.lang.IllegalArgumentException
+import java.nio.charset.StandardCharsets
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.LinkedBlockingQueue
+import java.util.concurrent.TimeUnit
 import org.junit.After
 import org.junit.Assert
 import org.junit.Before
 import org.junit.Rule
-import java.io.File
-import java.lang.IllegalArgumentException
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.LinkedBlockingQueue
-import java.util.concurrent.TimeUnit
 
+private const val TAG = "PackageInstallerTestBase"
 const val TEST_APK_NAME = "CtsEmptyTestApp.apk"
 const val TEST_APK_PACKAGE_NAME = "android.packageinstaller.emptytestapp.cts"
 const val TEST_APK_EXTERNAL_LOCATION = "/data/local/tmp/cts/packageinstaller"
@@ -55,17 +63,16 @@ const val INSTALL_ACTION_CB = "PackageInstallerTestBase.install_cb"
 
 const val CONTENT_AUTHORITY = "android.packageinstaller.install_appop_denied.cts.fileprovider"
 
-const val PACKAGE_INSTALLER_PACKAGE_NAME = "com.android.packageinstaller"
-const val SYSTEM_PACKAGE_NAME = "android"
-
-const val TIMEOUT = 120000L
+const val FIND_OBJECT_TIMEOUT = 1000L
+const val WAIT_FOR_UI_TIMEOUT = 5000L
+const val WAIT_FOR_RESULT_TIMEOUT = 120000L
 const val APP_OP_STR = "REQUEST_INSTALL_PACKAGES"
 
 open class PackageInstallerTestBase {
     @get:Rule
     val installDialogStarter = ActivityTestRule(FutureResultActivity::class.java)
 
-    private val context = InstrumentationRegistry.getTargetContext()
+    private val context = InstrumentationRegistry.getInstrumentation().getTargetContext()
     private val pm = context.packageManager
     private val uiDevice = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
     private val apkFile = File(context.filesDir, TEST_APK_NAME)
@@ -119,12 +126,16 @@ open class PackageInstallerTestBase {
     fun denyAppOp() {
         val testUserId = context.user.identifier
         val packageName = context.packageName
-        uiDevice.executeShellCommand("appops set --user $testUserId $packageName $APP_OP_STR deny");
+        uiDevice.executeShellCommand("appops set --user $testUserId $packageName $APP_OP_STR deny")
     }
 
     @Before
     fun registerInstallResultReceiver() {
-        context.registerReceiver(receiver, IntentFilter(INSTALL_ACTION_CB), Context.RECEIVER_EXPORTED)
+        context.registerReceiver(
+            receiver,
+            IntentFilter(INSTALL_ACTION_CB),
+            Context.RECEIVER_EXPORTED
+        )
     }
 
     @Before
@@ -135,7 +146,7 @@ open class PackageInstallerTestBase {
     /**
      * Wait for session's install result and return it
      */
-    protected fun getInstallSessionResult(timeout: Long = TIMEOUT): Int? {
+    protected fun getInstallSessionResult(timeout: Long = WAIT_FOR_RESULT_TIMEOUT): Int? {
         return installSessionResult.poll(timeout, TimeUnit.MILLISECONDS)
     }
 
@@ -158,10 +169,13 @@ open class PackageInstallerTestBase {
 
         // Commit session
         val dialog = FutureResultActivity.doAndAwaitStart {
-            val pendingIntent = PendingIntent.getBroadcast(context, 0,
+            val pendingIntent = PendingIntent.getBroadcast(
+                context,
+                0,
                     Intent(INSTALL_ACTION_CB).setPackage(context.packageName)
                             .addFlags(Intent.FLAG_RECEIVER_FOREGROUND),
-                    FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE)
+                    FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE
+            )
             session.commit(pendingIntent.intentSender)
         }
 
@@ -197,16 +211,6 @@ open class PackageInstallerTestBase {
     }
 
     /**
-     * Click a button in the UI of the installer app
-     *
-     * @param resId The resource ID of the button to click
-     */
-    fun clickInstallerUIButton(resId: String) {
-        uiDevice.wait(Until.findObject(By.res(SYSTEM_PACKAGE_NAME, resId)), TIMEOUT)
-                .click()
-    }
-
-    /**
      * Sets the given secure setting to the provided value.
      */
     fun setSecureSetting(secureSetting: String, value: Int) {
@@ -224,5 +228,68 @@ open class PackageInstallerTestBase {
     @After
     fun uninstallTestPackage() {
         uiDevice.executeShellCommand("pm uninstall $TEST_APK_PACKAGE_NAME")
+    }
+
+    /**
+     * Find a object in the UI of the installer app
+     *
+     * @param bySelector The bySelector of the object
+     */
+    fun findInstallerUIObject(
+        bySelector: BySelector,
+        errorMessage: String?,
+        checkNull: Boolean = true
+    ): UiObject2? {
+        // Wait for a minimum 2000ms and maximum 10000ms for the UI to become idle.
+        InstrumentationRegistry.getInstrumentation().uiAutomation.waitForIdle(
+            (2 * FIND_OBJECT_TIMEOUT),
+            (10 * FIND_OBJECT_TIMEOUT)
+        )
+
+        val message = errorMessage ?: "Failed to find the object: $bySelector"
+        var uiObject2: UiObject2? = null
+        val startTime = System.currentTimeMillis()
+        while (startTime + WAIT_FOR_UI_TIMEOUT > System.currentTimeMillis()) {
+            try {
+                uiObject2 = uiDevice.wait(Until.findObject(bySelector), FIND_OBJECT_TIMEOUT)
+                if (uiObject2 != null) {
+                    Log.d(
+                        TAG,
+                        "Found bounds: ${uiObject2.getVisibleBounds()} of object $bySelector," +
+                                " text: ${uiObject2.getText()}," +
+                                " package: ${uiObject2.getApplicationPackage()}"
+                    )
+                    return uiObject2
+                } else {
+                    // Maybe the screen is small. Scroll forward and attempt to click
+                    scroll()
+                }
+            } catch (ignore: Throwable) {
+            }
+        }
+
+        if (checkNull) {
+            dumpWindowHierarchy()
+            Assert.fail(message)
+        }
+        return null
+    }
+
+    private fun scroll() {
+        UiScrollable(UiSelector().scrollable(true)).scrollForward()
+    }
+
+    @Throws(InterruptedException::class, IOException::class)
+    fun dumpWindowHierarchy() {
+        val outputStream = ByteArrayOutputStream()
+        uiDevice.dumpWindowHierarchy(outputStream)
+        val windowHierarchy = outputStream.toString(StandardCharsets.UTF_8.name())
+
+        Log.w(TAG, "Window hierarchy:")
+        for (line in windowHierarchy.split("\n".toRegex()).dropLastWhile { it.isEmpty() }
+            .toTypedArray()) {
+            Thread.sleep(10)
+            Log.w(TAG, line)
+        }
     }
 }
