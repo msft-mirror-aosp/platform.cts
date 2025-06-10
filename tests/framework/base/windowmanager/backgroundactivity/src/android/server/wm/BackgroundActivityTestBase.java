@@ -480,16 +480,15 @@ public abstract class BackgroundActivityTestBase extends ActivityManagerTestBase
             title.append(" bounds:" + wc.getBounds().toShortString());
         }
         result.add(title.toString());
-        dumpWc(result, prefix, "children", wc.getChildren());
+        dumpWc(result, prefix, wc.getChildren());
     }
 
-    void dumpWc(List<String> result, String prefix, String name,
+    void dumpWc(
+            List<String> result,
+            String prefix,
             List<? extends WindowManagerState.WindowContainer> wcList) {
-        if (!wcList.isEmpty()) {
-            result.add(prefix + " -" + name);
-            for (WindowManagerState.WindowContainer w : wcList) {
-                dumpWc(result, prefix + "  ", w);
-            }
+        for (WindowManagerState.WindowContainer w : wcList) {
+            dumpWc(result, prefix + "  ", w);
         }
     }
 
