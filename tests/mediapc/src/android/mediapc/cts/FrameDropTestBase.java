@@ -139,6 +139,8 @@ public class FrameDropTestBase {
         ArrayList<String> listOfAacDecoders = selectCodecs(AAC, null, null, false);
         assertFalse("Test requires aac decoder", listOfAacDecoders.isEmpty());
         AAC_DECODER_NAME = listOfAacDecoders.get(0);
+        assumeFalse("The device doesn't support running at least four 1920x1080 avc"
+                    + "instances concurrently", !Utils.MEETS_AVC_CODEC_PRECONDITIONS);
 
         createSurface();
         startLoad();

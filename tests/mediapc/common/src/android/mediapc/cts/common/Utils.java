@@ -56,7 +56,7 @@ public final class Utils {
     private static final String TAG = "PerformanceClassTestUtils";
     private static final String MEDIA_PERF_CLASS_KEY = "media-performance-class";
 
-    private static final boolean MEETS_AVC_CODEC_PRECONDITIONS;
+    public static final boolean MEETS_AVC_CODEC_PRECONDITIONS;
     static {
         // with a default-media-performance-class that can be configured through a command line
         // argument.

@@ -26,8 +26,6 @@ java_library_host {
     libs: [
         "androidx.annotation_annotation",
         "junit",
-    ],
-    static_libs: [
         "tradefed",
     ],
     srcs: [
