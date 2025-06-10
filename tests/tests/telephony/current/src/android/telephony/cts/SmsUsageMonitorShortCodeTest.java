@@ -60,9 +60,9 @@ public class SmsUsageMonitorShortCodeTest {
     }
 
     /**
-     * List of short code test cases.
+     * Full list of short code test cases.
      */
-    private static final ShortCodeTest[] sShortCodeTests = new ShortCodeTest[] {
+    private static final ShortCodeTest[] sFullShortCodeTests = new ShortCodeTest[] {
             new ShortCodeTest("al", "112", SMS_CATEGORY_NOT_SHORT_CODE),
             new ShortCodeTest("al", "4321", SMS_CATEGORY_NOT_SHORT_CODE),
             new ShortCodeTest("al", "54321", SMS_CATEGORY_POSSIBLE_PREMIUM_SHORT_CODE),
@@ -749,6 +749,79 @@ public class SmsUsageMonitorShortCodeTest {
             new ShortCodeTest(null, "112", expectedReturnCode("112")),
     };
 
+    /**
+     * Basic list of short code test cases.
+     */
+    private static final ShortCodeTest[] sShortCodeTests = new ShortCodeTest[] {
+            new ShortCodeTest("al", "112", SMS_CATEGORY_NOT_SHORT_CODE),
+            new ShortCodeTest("al", "4321", SMS_CATEGORY_NOT_SHORT_CODE),
+            new ShortCodeTest("al", "54321", SMS_CATEGORY_POSSIBLE_PREMIUM_SHORT_CODE),
+            new ShortCodeTest("al", "15191", SMS_CATEGORY_PREMIUM_SHORT_CODE),
+            new ShortCodeTest("al", "55500", SMS_CATEGORY_PREMIUM_SHORT_CODE),
+            new ShortCodeTest("al", "55600", SMS_CATEGORY_PREMIUM_SHORT_CODE),
+            new ShortCodeTest("al", "654321", SMS_CATEGORY_NOT_SHORT_CODE),
+
+            new ShortCodeTest("at", "112", SMS_CATEGORY_NOT_SHORT_CODE),
+            new ShortCodeTest("at", "116117", SMS_CATEGORY_FREE_SHORT_CODE),
+            new ShortCodeTest("at", "0901234", SMS_CATEGORY_PREMIUM_SHORT_CODE),
+            new ShortCodeTest("at", "0900666266", SMS_CATEGORY_PREMIUM_SHORT_CODE),
+
+            new ShortCodeTest("az", "112", SMS_CATEGORY_NOT_SHORT_CODE),
+            new ShortCodeTest("az", "1234", SMS_CATEGORY_POSSIBLE_PREMIUM_SHORT_CODE),
+            new ShortCodeTest("az", "12345", SMS_CATEGORY_POSSIBLE_PREMIUM_SHORT_CODE),
+            new ShortCodeTest("az", "87744", SMS_CATEGORY_PREMIUM_SHORT_CODE),
+            new ShortCodeTest("az", "3301", SMS_CATEGORY_PREMIUM_SHORT_CODE),
+            new ShortCodeTest("az", "3302", SMS_CATEGORY_PREMIUM_SHORT_CODE),
+            new ShortCodeTest("az", "9012", SMS_CATEGORY_PREMIUM_SHORT_CODE),
+            new ShortCodeTest("az", "9014", SMS_CATEGORY_PREMIUM_SHORT_CODE),
+            new ShortCodeTest("az", "9394", SMS_CATEGORY_PREMIUM_SHORT_CODE),
+            new ShortCodeTest("az", "87744", SMS_CATEGORY_PREMIUM_SHORT_CODE),
+            new ShortCodeTest("az", "93101", SMS_CATEGORY_PREMIUM_SHORT_CODE),
+            new ShortCodeTest("az", "123456", SMS_CATEGORY_NOT_SHORT_CODE),
+
+            new ShortCodeTest("gr", "112", SMS_CATEGORY_NOT_SHORT_CODE),
+            new ShortCodeTest("gr", "116117", SMS_CATEGORY_FREE_SHORT_CODE),
+            new ShortCodeTest("gr", "54321", SMS_CATEGORY_PREMIUM_SHORT_CODE),
+            new ShortCodeTest("gr", "19567", SMS_CATEGORY_PREMIUM_SHORT_CODE),
+            new ShortCodeTest("gr", "19678", SMS_CATEGORY_POSSIBLE_PREMIUM_SHORT_CODE),
+            new ShortCodeTest("gr", "87654321", SMS_CATEGORY_NOT_SHORT_CODE),
+
+
+            new ShortCodeTest("kz", "112", SMS_CATEGORY_NOT_SHORT_CODE),
+            new ShortCodeTest("kz", "5432", SMS_CATEGORY_POSSIBLE_PREMIUM_SHORT_CODE),
+            new ShortCodeTest("kz", "9194", SMS_CATEGORY_PREMIUM_SHORT_CODE),
+            new ShortCodeTest("kz", "7790", SMS_CATEGORY_PREMIUM_SHORT_CODE),
+            new ShortCodeTest("kz", "98765", SMS_CATEGORY_NOT_SHORT_CODE),
+
+            new ShortCodeTest("ru", "112", SMS_CATEGORY_NOT_SHORT_CODE),
+            new ShortCodeTest("ru", "5432", SMS_CATEGORY_POSSIBLE_PREMIUM_SHORT_CODE),
+            new ShortCodeTest("ru", "1161", SMS_CATEGORY_PREMIUM_SHORT_CODE),
+            new ShortCodeTest("ru", "2097", SMS_CATEGORY_PREMIUM_SHORT_CODE),
+            new ShortCodeTest("ru", "3933", SMS_CATEGORY_PREMIUM_SHORT_CODE),
+            new ShortCodeTest("ru", "7781", SMS_CATEGORY_PREMIUM_SHORT_CODE),
+            new ShortCodeTest("ru", "98765", SMS_CATEGORY_NOT_SHORT_CODE),
+
+            new ShortCodeTest("sg", "112", SMS_CATEGORY_NOT_SHORT_CODE),
+            new ShortCodeTest("sg", "1234", SMS_CATEGORY_NOT_SHORT_CODE),
+            new ShortCodeTest("sg", "70000", SMS_CATEGORY_POSSIBLE_PREMIUM_SHORT_CODE),
+            new ShortCodeTest("sg", "79999", SMS_CATEGORY_POSSIBLE_PREMIUM_SHORT_CODE),
+            new ShortCodeTest("sg", "73800", SMS_CATEGORY_PREMIUM_SHORT_CODE),
+            new ShortCodeTest("sg", "74688", SMS_CATEGORY_STANDARD_SHORT_CODE),
+            new ShortCodeTest("sg", "987654", SMS_CATEGORY_NOT_SHORT_CODE),
+
+            // generic rules for other countries: 5 digits or less considered potential short code
+            new ShortCodeTest("zz", "2000000", SMS_CATEGORY_NOT_SHORT_CODE),
+            new ShortCodeTest("zz", "54321", SMS_CATEGORY_POSSIBLE_PREMIUM_SHORT_CODE),
+            new ShortCodeTest("zz", "4321", SMS_CATEGORY_POSSIBLE_PREMIUM_SHORT_CODE),
+            new ShortCodeTest("zz", "321", SMS_CATEGORY_POSSIBLE_PREMIUM_SHORT_CODE),
+            new ShortCodeTest("zz", "112", expectedReturnCode("112")),
+            new ShortCodeTest(null, "2000000", SMS_CATEGORY_NOT_SHORT_CODE),
+            new ShortCodeTest(null, "54321", SMS_CATEGORY_POSSIBLE_PREMIUM_SHORT_CODE),
+            new ShortCodeTest(null, "4321", SMS_CATEGORY_POSSIBLE_PREMIUM_SHORT_CODE),
+            new ShortCodeTest(null, "321", SMS_CATEGORY_POSSIBLE_PREMIUM_SHORT_CODE),
+            new ShortCodeTest(null, "112", expectedReturnCode("112")),
+    };
+
     @Before
     public void setUp() throws Exception {
         mContext = getInstrumentation().getTargetContext();
@@ -774,6 +847,21 @@ public class SmsUsageMonitorShortCodeTest {
             // reason. checkDestination() returns CATEGORY_NOT_SHORT_CODE for emergency numbers.
             if (test.category != SMS_CATEGORY_NOT_SHORT_CODE
                     && PhoneNumberUtils.isEmergencyNumber(test.address, test.countryIso)) {
+                continue;
+            }
+            assertEquals("country: " + test.countryIso + " number: " + test.address,
+                    test.category, SmsManager.getDefault().checkSmsShortCodeDestination(
+                            test.address, test.countryIso));
+        }
+    }
+
+    public void testFullSmsShortCodeDestination() {
+        for (ShortCodeTest test : sFullShortCodeTests) {
+            // It is intended that a short code number in country A may be an emergency number
+            // in country B. It is intended that the destination will be changed because of this
+            // reason. checkDestination() returns CATEGORY_NOT_SHORT_CODE for emergency numbers.
+            if (test.category != SMS_CATEGORY_NOT_SHORT_CODE
+                    && PhoneNumberUtils.isEmergencyNumber(test.address)) {
                 continue;
             }
             assertEquals("country: " + test.countryIso + " number: " + test.address,
