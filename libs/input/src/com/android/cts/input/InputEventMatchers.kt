@@ -69,6 +69,26 @@ fun withCoordsForPointerIndex(index: Int, pt: PointF, epsilon: Float = EPSILON):
     }
 }
 
+fun withCoordsForHistoryPos(historyPos: Int, pt: PointF, epsilon: Float = EPSILON):
+    Matcher<MotionEvent> = object : TypeSafeMatcher<MotionEvent>() {
+    override fun describeTo(description: Description) {
+        description.appendText("With coords = $pt for history pos = $historyPos")
+    }
+
+    override fun matchesSafely(event: MotionEvent): Boolean {
+        return (abs(event.getHistoricalX(historyPos) - pt.x) < epsilon) &&
+                (abs(event.getHistoricalY(historyPos) - pt.y) < epsilon)
+    }
+
+    override fun describeMismatchSafely(event: MotionEvent, mismatchDescription: Description) {
+        mismatchDescription.appendText(
+            "Got historical coords = (${event.getHistoricalX(historyPos)}, ${
+                event.getHistoricalY(historyPos)
+            }) for history pos = $historyPos"
+        )
+    }
+}
+
 fun withRawCoords(pt: PointF, epsilon: Float = EPSILON):
         Matcher<MotionEvent> = object : TypeSafeMatcher<MotionEvent>() {
     override fun describeTo(description: Description) {
@@ -409,6 +429,18 @@ fun withAxisValue(axis: Int, value: Float, epsilon: Float = EPSILON): Matcher<Mo
         }
         override fun describeMismatchSafely(event: MotionEvent, mismatchDescription: Description) {
             mismatchDescription.appendText(
-                "Got axis ${MotionEvent.axisToString(axis)} = ${event.getAxisValue(axis)}")
+                "Got axis ${MotionEvent.axisToString(axis)} = ${event.getAxisValue(axis)}"
+            )
+        }
+    }
+
+fun withClassification(classification: Int): Matcher<MotionEvent> =
+    object : TypeSafeMatcher<MotionEvent>() {
+        override fun describeTo(description: Description?) {
+            description?.appendText("With classification = $classification")
+        }
+
+        override fun matchesSafely(event: MotionEvent): Boolean {
+            return event.classification == classification
         }
     }
