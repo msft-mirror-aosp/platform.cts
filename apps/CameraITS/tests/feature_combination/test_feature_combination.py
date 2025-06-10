@@ -263,10 +263,17 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
       facing = props['android.lens.facing']
       camera_properties_utils.check_front_or_rear_camera(props)
 
+      # Stabilization: Make sure to test ON first in order to be able to skip
+      # OFF
+      stabilization_params = [True, False]
+      stabilization_modes = props[
+          'android.control.availableVideoStabilizationModes']
+
       # Initialize rotation rig
       rot_rig['cntl'] = self.rotator_cntl
       rot_rig['ch'] = self.rotator_ch
-      if rot_rig['cntl'].lower() not in _VALID_RIGS:
+      if (rot_rig['cntl'].lower() not in _VALID_RIGS and
+          len(stabilization_modes) > 1):
         raise AssertionError(
             f'You must use the arduino or gen2_rotator controller for {_NAME}.')
 
@@ -276,14 +283,6 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
       # List of queryable stream combinations
       combinations_str, combinations = cam.get_queryable_stream_combinations()
       logging.debug('Queryable stream combinations: %s', combinations_str)
-
-      # Stabilization: Make sure to test ON first in order to be able to skip
-      # OFF
-      stabilization_params = [True, False]
-      stabilization_modes = props[
-          'android.control.availableVideoStabilizationModes']
-
-      logging.debug('stabilization modes: %s', stabilization_params)
 
       configs = props['android.scaler.streamConfigurationMap'][
           'availableStreamConfigurations']
