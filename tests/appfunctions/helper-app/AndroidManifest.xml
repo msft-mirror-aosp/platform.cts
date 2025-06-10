@@ -35,5 +35,10 @@
         <receiver
             android:name="android.app.appfunctions.testutils.TestAppFunctionServiceLifecycleReceiver"
             android:exported="false"/>
+        <provider
+            android:name="android.app.appfunctions.testutils.TestContentProvider"
+            android:authorities="android.app.appfunctions.cts.helper.provider"
+            android:exported="false"
+            android:grantUriPermissions="true" />
     </application>
 </manifest>
