@@ -51,6 +51,7 @@ android_test {
         "ui-trace-collector",
         "collector-device-lib",
         "platform-screenshot-diff-core",
+        "desktop-test-lib",
     ],
     sdk_version: "test_current",
     data: [
