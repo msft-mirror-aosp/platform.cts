@@ -17,6 +17,7 @@
 package android.telephony.satellite.cts;
 
 import android.telephony.satellite.stub.SatelliteDatagram;
+import android.telephony.satellite.stub.SatelliteModemEnableRequestAttributes;
 
 /**
  * {@hide}
@@ -79,5 +80,5 @@ oneway interface ILocalSatelliteListener {
      * Indicates that MockSatelliteService has just received the request
      * requestSatelliteEnabled from Telephony.
      */
-    void onRequestSatelliteEnabled(in boolean enableSatellite);
+    void onRequestSatelliteEnabled(in SatelliteModemEnableRequestAttributes enableAttributes);
 }

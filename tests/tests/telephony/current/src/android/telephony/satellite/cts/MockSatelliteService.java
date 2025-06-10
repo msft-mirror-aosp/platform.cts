@@ -226,8 +226,7 @@ public class MockSatelliteService extends SatelliteImplBase {
         mIsEmergnecy = enableAttributes.isEmergencyMode;
 
         if (mLocalListener != null) {
-            runWithExecutor(() -> mLocalListener.onRequestSatelliteEnabled(
-                    enableAttributes.isEmergencyMode));
+            runWithExecutor(() -> mLocalListener.onRequestSatelliteEnabled(enableAttributes));
         } else {
             loge("requestSatelliteEnabled: mLocalListener is null");
         }
@@ -460,7 +459,9 @@ public class MockSatelliteService extends SatelliteImplBase {
             @NonNull List<String> carrierPlmnList,
             @NonNull List<String> allSatellitePlmnList,
             @NonNull IIntegerConsumer errorCallback) {
-        logd("setSatellitePlmn: mErrorCode=" + mErrorCode);
+        logd("setSatellitePlmn: mErrorCode=" + mErrorCode
+                + ", carrierPlmnList=" + String.join(",", carrierPlmnList)
+                + ", allSatellitePlmnList=" + String.join(",", allSatellitePlmnList));
         if (mErrorCode != SatelliteResult.SATELLITE_RESULT_SUCCESS) {
             if (mShouldRespondTelephony.get()) {
                 runWithExecutor(() -> errorCallback.accept(mErrorCode));
