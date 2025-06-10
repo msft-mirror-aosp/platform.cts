@@ -829,6 +829,7 @@ public class ConnectedNetworkScorerTest extends WifiJUnit4TestBase {
                             .get(0);
             // Disconnect & disable auto-join on the saved network to prevent auto-connect from
             // interfering with the test.
+            sWifiManager.allowAutojoinGlobal(false);
             for (WifiConfiguration savedNetwork : savedNetworks) {
                 sWifiManager.disableNetwork(savedNetwork.networkId);
             }
@@ -843,6 +844,7 @@ public class ConnectedNetworkScorerTest extends WifiJUnit4TestBase {
             sWifiManager.setWifiConnectedNetworkScorer(mExecutor, connectedNetworkScorer);
 
             // Now connect using the provided connection initiator
+            sWifiManager.allowAutojoinGlobal(true);
             networkCallback = connectionInitiator.initiateConnection(testNetwork, executorService);
 
             // We should not receive the start
