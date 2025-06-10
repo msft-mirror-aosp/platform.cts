@@ -34,6 +34,7 @@ import com.android.xts.root.annotations.RequireRootInstrumentation
 import com.google.common.truth.Truth.assertThat
 import com.google.common.truth.TruthJUnit.assume
 import org.junit.ClassRule
+import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -79,6 +80,7 @@ class SupervisionStateTest {
 
     @Test
     @ApiTest(apis = ["android.app.supervision.SupervisionManager#ACTION_ENABLE_SUPERVISION"])
+    @Ignore("This test is flaky. See b/422209296.")
     fun enableSupervisionIntent_resolvesToSettings() {
         assume().that(isAutomotive()).isFalse()
         assume().that(isTV()).isFalse()
@@ -94,6 +96,7 @@ class SupervisionStateTest {
 
     @Test
     @ApiTest(apis = ["android.app.supervision.SupervisionManager#ACTION_DISABLE_SUPERVISION"])
+    @Ignore("This test is flaky. See b/422209296.")
     fun disableSupervisionIntent_resolvesToSettings() {
         assume().that(isAutomotive()).isFalse()
         assume().that(isTV()).isFalse()
