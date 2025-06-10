@@ -65,7 +65,6 @@ import com.android.server.am.nano.ServiceRecordProto;
 import com.android.server.am.nano.ServiceRecordProto.ShortFgsInfo;
 
 import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -135,13 +134,6 @@ public final class ActivityManagerShortFgsTest {
         Log.d(TAG, "setUpClass() done");
     }
 
-    @AfterClass
-    public static void tearDownClass() throws Exception {
-        Log.d(TAG, "tearDownClass() started");
-        sDeviceConfig.close();
-        Log.d(TAG, "tearDownClass() done");
-    }
-
     @Before
     public void setUp() throws Exception {
         sLastTestStartUptime = 0;
@@ -162,8 +154,6 @@ public final class ActivityManagerShortFgsTest {
         updateDeviceConfig("service_start_foreground_timeout_ms",
                 SHORTENED_START_SERVICE_TIMEOUT, /* verify= */ true);
 
-        forceStopHelperApps();
-
         // Drop any pending messages
         CallProvider.clearMessageQueue();
 
@@ -177,6 +167,7 @@ public final class ActivityManagerShortFgsTest {
         Log.d(TAG, "tearDown() started");
 
         forceStopHelperApps();
+        sDeviceConfig.close();
 
         Log.d(TAG, "tearDown() done");
     }

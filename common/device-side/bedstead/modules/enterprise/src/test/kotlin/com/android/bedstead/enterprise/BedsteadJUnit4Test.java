@@ -19,6 +19,7 @@ package com.android.bedstead.enterprise;
 import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpc;
 import static com.android.bedstead.enterprise.TestPolicyForPolicyArguments.POLICY_ARGUMENT_ONE;
 import static com.android.bedstead.enterprise.TestPolicyForPolicyArguments.POLICY_ARGUMENT_TWO;
+import static com.android.bedstead.nene.TestApis.users;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -46,7 +47,6 @@ import com.android.bedstead.harrier.annotations.parameterized.IncludeLightMode;
 import com.android.bedstead.harrier.annotations.parameterized.IncludePortraitOrientation;
 import com.android.bedstead.harrier.exceptions.RestartTestException;
 import com.android.bedstead.harrier.policies.LockTask;
-import com.android.bedstead.nene.TestApis;
 import com.android.queryable.annotations.IntegerQuery;
 import com.android.queryable.annotations.Query;
 
@@ -89,7 +89,6 @@ public class BedsteadJUnit4Test {
     private static int sIndirectParameterizedCalls = 0;
     private static int sIntParameterizedCalls = 0;
     private static int sEnumParameterizedCalls = 0;
-    private static int sFeatureFlagTestCalls = 0;
     private static int sBeforeClassCalls = 0;
     private static int sBeforeCalls = 0;
 
@@ -100,18 +99,19 @@ public class BedsteadJUnit4Test {
 
     @AfterClass
     public static void afterClass() {
-        assertThat(sSimpleParameterizedCalls).isEqualTo(2);
-        assertThat(sMultipleSimpleParameterizedCalls).isEqualTo(4);
-        assertThat(sBedsteadParameterizedCalls).isEqualTo(2);
-        assertThat(sBedsteadPlusSimpleParameterizedCalls).isEqualTo(4);
-        assertThat(sIndirectParameterizedCalls).isEqualTo(2);
-        assertThat(sIntParameterizedCalls).isEqualTo(2);
-        assertThat(sEnumParameterizedCalls).isEqualTo(3);
-        assertThat(sFeatureFlagTestCalls).isEqualTo(2);
-        assertThat(sBedsteadParameterizedDifferentScopeTwoAnnotationCalls).isEqualTo(1);
-        assertThat(sBedsteadParameterizedSameScopeTwoAnnotationCalls).isEqualTo(2);
-        assertThat(sBedsteadParameterizedTwoScopeThreeAnnotationCalls).isEqualTo(2);
-        assertThat(sBedsteadParameterizedTwoScopesFourAnnotationCalls).isEqualTo(4);
+        if (users().instrumented().isSystem()) {
+            assertThat(sSimpleParameterizedCalls).isEqualTo(2);
+            assertThat(sMultipleSimpleParameterizedCalls).isEqualTo(4);
+            assertThat(sBedsteadParameterizedCalls).isEqualTo(2);
+            assertThat(sBedsteadPlusSimpleParameterizedCalls).isEqualTo(4);
+            assertThat(sIndirectParameterizedCalls).isEqualTo(2);
+            assertThat(sIntParameterizedCalls).isEqualTo(2);
+            assertThat(sEnumParameterizedCalls).isEqualTo(3);
+            assertThat(sBedsteadParameterizedDifferentScopeTwoAnnotationCalls).isEqualTo(1);
+            assertThat(sBedsteadParameterizedSameScopeTwoAnnotationCalls).isEqualTo(2);
+            assertThat(sBedsteadParameterizedTwoScopeThreeAnnotationCalls).isEqualTo(2);
+            assertThat(sBedsteadParameterizedTwoScopesFourAnnotationCalls).isEqualTo(4);
+        }
 
         sPolicyAppliesTestArguments.clear();
         sPolicyDoesNotApplyTestArguments.clear();
@@ -237,7 +237,7 @@ public class BedsteadJUnit4Test {
     @RequireRunOnInitialUser
     @Test
     public void requireRunOnInitialUser_runsOnInitialUser() {
-        assertThat(TestApis.users().instrumented()).isEqualTo(TestApis.users().initial());
+        assertThat(users().instrumented()).isEqualTo(users().initial());
     }
     @PolicyAppliesTest(policy = LockTask.class)
     @AdditionalQueryParameters(

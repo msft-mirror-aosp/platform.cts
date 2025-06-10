@@ -17,6 +17,7 @@
 package android.graphics.drawable.cts;
 
 import android.graphics.drawable.Animatable2.AnimationCallback;
+import android.platform.test.annotations.DisabledOnRavenwood;
 
 import androidx.test.filters.SmallTest;
 import androidx.test.runner.AndroidJUnit4;
@@ -26,6 +27,7 @@ import org.junit.runner.RunWith;
 
 @SmallTest
 @RunWith(AndroidJUnit4.class)
+@DisabledOnRavenwood(blockedBy = AnimationCallback.class)
 public class Animatable2_AnimationCallbackTest {
     @Test
     public void testCallback() {

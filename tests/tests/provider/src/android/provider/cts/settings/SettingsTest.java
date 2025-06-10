@@ -24,6 +24,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import android.app.Instrumentation;
+import android.content.ActivityNotFoundException;
 import android.content.ContentProviderClient;
 import android.content.ContentResolver;
 import android.content.ContentValues;
@@ -43,6 +44,7 @@ import android.os.Process;
 import android.os.RemoteException;
 import android.os.SystemClock;
 import android.platform.test.annotations.AppModeNonSdkSandbox;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.provider.Settings;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -396,6 +398,22 @@ public class SettingsTest {
             fail("Expect throwing RuntimeException due readable maxTargetedSdk = S");
         } catch (SecurityException e) {
             // Expected.
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(android.provider.Flags.FLAG_EXPOSE_SYSTEM_UPDATE_SETTINGS)
+    public void testSystemUpdateSettingsNoPermissionRequired() throws Exception {
+        try {
+            final Intent intent =
+                    new Intent(Settings.ACTION_SYSTEM_UPDATE_SETTINGS)
+                            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            getContext().startActivity(intent);
+        } catch (ActivityNotFoundException expected) {
+            // ActivityNotFoundException is allowed (when no activity implement the action)
+        } catch (SecurityException se) {
+            // SecurityException is NOT allowed
+            fail("SecurityException not expected when launching system update settings");
         }
     }
 

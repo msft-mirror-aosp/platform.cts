@@ -100,6 +100,10 @@ import com.android.compatibility.common.util.UserSettings;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -2072,6 +2076,18 @@ public final class Helper {
         }
     }
 
+    /**
+     * Return {@code true} if feature `android.software.car.splitscreen_multitasking` (feature used
+     * to identify Automotive with multi-window) is enabled. This information is extracted from the
+     * {@link Context} object passed as argument.
+     *
+     * <p>TODO(b/420943436): delete this method once b/420943436 is fixed.
+     */
+    public static boolean isAutomotiveWithMultiWindow(Context context) {
+        final var pm = context.getPackageManager();
+        return pm.hasSystemFeature("android.software.car.splitscreen_multitasking");
+    }
+
     public static class CustomDescriptionUtils {
         public static RemoteViews newTemplate(String packageName) {
             return new RemoteViews(packageName, R.layout.custom_description_with_link);
@@ -2143,4 +2159,17 @@ public final class Helper {
         }
         assertThat(eventFound).isTrue();
     }
+
+    /**
+     * Temporary annotation for marking some autofill tests to be critical. Engprod team has plan to
+     * define a new annotation. The new annotation will be used as a factor to select critical
+     * tests. Once the engprod annotation is created, this annotation will be replaced with the new
+     * one.
+     *
+     * <p>Note: This is a no-op annotation and is only used for tracking purposes. It should only be
+     * used by autofill team internally.
+     */
+    @Retention(RetentionPolicy.SOURCE)
+    @Target(ElementType.METHOD)
+    public static @interface AutofillCriticalInternal {}
 }

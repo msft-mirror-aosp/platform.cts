@@ -32,6 +32,7 @@ import android.graphics.cts.R;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.Drawable.ConstantState;
 import android.graphics.drawable.RippleDrawable;
+import android.platform.test.annotations.DisabledOnRavenwood;
 import android.util.Xml;
 
 import androidx.test.InstrumentationRegistry;
@@ -47,6 +48,7 @@ import java.io.IOException;
 
 @SmallTest
 @RunWith(AndroidJUnit4.class)
+@DisabledOnRavenwood(blockedBy = RippleDrawable.class)
 public class RippleDrawableTest {
     private static final ColorStateList DEFAULT_EFFECT_COLOR = ColorStateList.valueOf(0x8dffffff);
     private Context mContext;

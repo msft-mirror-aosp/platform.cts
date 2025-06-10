@@ -109,7 +109,7 @@ public class MediaProjectionAtomsTests extends BaseHostJUnit4Test implements IBu
 
         // Run an external CTS (CtsMediaProjectionTestCases#testCallbackOnStop) to generate
         // device interactions that cause MediaProjectionStateChanged atoms to be logged
-        final String testClass = ".MediaProjectionTest";
+        final String testClass = ".MediaProjectionConsentTest";
         final String testMethod = "testCallbackOnStop";
         final TestDescription desc =
                 TestDescription.fromString(TEST_PKG + testClass + "#" + testMethod);
@@ -145,7 +145,7 @@ public class MediaProjectionAtomsTests extends BaseHostJUnit4Test implements IBu
 
         // Run an external CTS (CtsMediaProjectionTestCases#testCallbackOnStop) to generate
         // device interactions that cause MediaProjectionTargetChanged atoms to be logged
-        final String testClass = ".MediaProjectionTest";
+        final String testClass = ".MediaProjectionConsentTest";
         final String testMethod = "testCallbackOnStop";
         final TestDescription desc =
                 TestDescription.fromString(TEST_PKG + testClass + "#" + testMethod);

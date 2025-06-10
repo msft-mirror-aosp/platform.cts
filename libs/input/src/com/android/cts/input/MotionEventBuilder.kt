@@ -79,6 +79,8 @@ class MotionEventBuilder(val action: Int, val source: Int) {
             downTime, eventTime, action, pointerProperties.size, pointerProperties.toTypedArray(),
             pointerCoords.toTypedArray(), metaState, buttonState, xPrecision, yPrecision, deviceId,
             edgeFlags, source, displayId, flags, classification
-        )!!
+        )!!.apply {
+            actionButton = this@MotionEventBuilder.actionButton
+        }
     }
 }

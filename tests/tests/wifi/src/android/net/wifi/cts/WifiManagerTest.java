@@ -7819,4 +7819,26 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
             uiAutomation.dropShellPermissionIdentity();
         }
     }
+
+    @RequiresFlagsEnabled(Flags.FLAG_REFRESH_MAC_RANDOMIZATION_API)
+    @Test
+    public void testRefreshMacRandomization() {
+        UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
+        assertThrows(SecurityException.class, () -> sWifiManager.refreshMacRandomization(0));
+        TestActionListener actionListener = new TestActionListener(mLock);
+        int newNetworkId = 0;
+        try {
+            uiAutomation.adoptShellPermissionIdentity();
+            assertThrows(
+                    IllegalArgumentException.class, () -> sWifiManager.refreshMacRandomization(-1));
+
+            WifiConfiguration newOpenNetwork = new WifiConfiguration();
+            newOpenNetwork.SSID = "\"" + TEST_SSID_UNQUOTED + "\"";
+            newNetworkId = sWifiManager.addNetwork(newOpenNetwork);
+            sWifiManager.refreshMacRandomization(newNetworkId);
+        } finally {
+            sWifiManager.forget(newNetworkId, actionListener);
+            uiAutomation.dropShellPermissionIdentity();
+        }
+    }
 }

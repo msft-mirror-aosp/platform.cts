@@ -26,7 +26,6 @@ import android.graphics.Color;
 import android.graphics.Paint.FontMetricsInt;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
-import android.platform.test.annotations.DisabledOnRavenwood;
 import android.text.cts.R;
 import android.text.style.DynamicDrawableSpan;
 
@@ -39,7 +38,6 @@ import org.junit.runner.RunWith;
 
 @SmallTest
 @RunWith(AndroidJUnit4.class)
-@DisabledOnRavenwood(blockedBy = DynamicDrawableSpan.class)
 public class DynamicDrawableSpanTest {
     private static final int DRAWABLE_SIZE = 50;
 

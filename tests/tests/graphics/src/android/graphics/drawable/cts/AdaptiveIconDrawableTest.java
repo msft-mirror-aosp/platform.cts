@@ -168,7 +168,7 @@ public class AdaptiveIconDrawableTest {
         Drawable foregroundDrawable = new ColorDrawable(Color.RED);
         AdaptiveIconDrawable iconDrawable = new AdaptiveIconDrawable(backgroundDrawable, foregroundDrawable);
         Context context = InstrumentationRegistry.getTargetContext();
-        File dir = context.getExternalFilesDir(null);
+        File dir = context.getCacheDir();
         L("writing temp bitmaps to %s...", dir);
 
         final Bitmap bm_test = Bitmap.createBitmap(150, 150, Bitmap.Config.ARGB_8888);
@@ -198,7 +198,7 @@ public class AdaptiveIconDrawableTest {
         int height = bottom - top;
         Context context = InstrumentationRegistry.getTargetContext();
         AdaptiveIconDrawable iconDrawable = (AdaptiveIconDrawable) context.getResources().getDrawable(android.R.drawable.sym_def_app_icon);
-        File dir = context.getExternalFilesDir(null);
+        File dir = context.getCacheDir();
         L("writing temp bitmaps to %s...", dir);
         final Bitmap bm_org = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
         final Canvas can_org = new Canvas(bm_org);

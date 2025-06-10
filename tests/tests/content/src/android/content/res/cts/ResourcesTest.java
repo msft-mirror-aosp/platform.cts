@@ -443,7 +443,6 @@ public class ResourcesTest {
     }
 
     @Test
-    @DisabledOnRavenwood(blockedBy = Drawable.class)
     public void testGetDrawable() {
         try {
             mResources.getDrawable(-1);
@@ -465,7 +464,6 @@ public class ResourcesTest {
     }
 
     @Test
-    @DisabledOnRavenwood(blockedBy = Drawable.class)
     public void testGetDrawable_fakeFrro() {
         var thrown =
                 assertThrows(
@@ -475,7 +473,6 @@ public class ResourcesTest {
     }
 
     @Test
-    @DisabledOnRavenwood(blockedBy = Drawable.class)
     public void testGetDrawable_ColorResource() {
         final Drawable drawable = mResources.getDrawable(R.color.testcolor1, null);
         assertTrue(drawable instanceof ColorDrawable);
@@ -486,7 +483,6 @@ public class ResourcesTest {
     }
 
     @Test
-    @DisabledOnRavenwood(blockedBy = Drawable.class)
     public void testGetDrawable_ColorStateListResource() {
         final Drawable drawable = mResources.getDrawable(R.color.testcolor, null);
         assertTrue(drawable instanceof ColorStateListDrawable);
@@ -499,7 +495,7 @@ public class ResourcesTest {
     }
 
     @Test
-    @DisabledOnRavenwood(blockedBy = Drawable.class)
+    @DisabledOnRavenwood(reason = "Context.createConfigurationContext() not supported")
     public void testGetDrawable_ColorStateListConfigurations() {
         final Configuration dayConfiguration = new Configuration(mResources.getConfiguration());
         final Configuration nightConfiguration = new Configuration(mResources.getConfiguration());
@@ -535,7 +531,6 @@ public class ResourcesTest {
     }
 
     @Test
-    @DisabledOnRavenwood(blockedBy = Drawable.class)
     public void testGetDrawable_StackOverflowErrorDrawable() {
         try {
             mResources.getDrawable(R.drawable.drawable_recursive);
@@ -546,7 +541,6 @@ public class ResourcesTest {
     }
 
     @Test
-    @DisabledOnRavenwood(blockedBy = Drawable.class)
     public void testGetDrawable_StackOverflowErrorDrawable_mipmap() {
         try {
             mResources.getDrawable(R.mipmap.icon_recursive);
@@ -557,7 +551,6 @@ public class ResourcesTest {
     }
 
     @Test
-    @DisabledOnRavenwood(blockedBy = Drawable.class)
     public void testGetDrawableForDensity() {
         final Drawable ldpi = mResources.getDrawableForDensity(
                 R.drawable.density_test, DisplayMetrics.DENSITY_LOW);
@@ -573,7 +566,6 @@ public class ResourcesTest {
     }
 
     @Test
-    @DisabledOnRavenwood(blockedBy = Drawable.class)
     public void testGetDrawableForDensityWithZeroDensityIsSameAsGetDrawable() {
         final Drawable defaultDrawable = mResources.getDrawable(R.drawable.density_test, null);
         assertNotNull(defaultDrawable);
@@ -592,7 +584,6 @@ public class ResourcesTest {
     }
 
     @Test
-    @DisabledOnRavenwood(blockedBy = Drawable.class)
     public void testGetDrawableForDensityWithAdaptiveIconDrawable() {
         final Drawable ldpi = extractForegroundFromAdaptiveIconDrawable(R.drawable.adaptive_icon,
                 DisplayMetrics.DENSITY_LOW);
@@ -858,7 +849,6 @@ public class ResourcesTest {
     }
 
     @Test
-    @DisabledOnRavenwood(blockedBy = ColorDrawable.class)
     public void testChangingConfiguration() {
         ColorDrawable dr1 = (ColorDrawable) mResources.getDrawable(R.color.varies_uimode);
         assertEquals(ActivityInfo.CONFIG_UI_MODE, dr1.getChangingConfigurations());
@@ -1205,7 +1195,7 @@ public class ResourcesTest {
     }
 
     @Test
-    @DisabledOnRavenwood(blockedBy = Drawable.class)
+    @DisabledOnRavenwood(blockedBy = LayoutInflater.class)
     public void testComplexColorDrawableAttributeInflation() {
         final LayoutInflater layoutInflater = (LayoutInflater) getContext().getSystemService(
                 Context.LAYOUT_INFLATER_SERVICE);

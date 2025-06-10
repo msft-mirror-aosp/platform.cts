@@ -36,6 +36,7 @@ import android.graphics.drawable.LayerDrawable;
 import android.graphics.drawable.NinePatchDrawable;
 import android.graphics.drawable.RippleDrawable;
 import android.graphics.drawable.VectorDrawable;
+import android.platform.test.annotations.DisabledOnRavenwood;
 import android.view.Gravity;
 
 import androidx.test.InstrumentationRegistry;
@@ -153,6 +154,7 @@ public class ThemedDrawableTest {
     }
 
     @Test
+    @DisabledOnRavenwood(blockedBy = RippleDrawable.class)
     public void testRippleDrawable() {
         RippleDrawable d = (RippleDrawable) mContext.getDrawable(
                 R.drawable.rippledrawable_theme);

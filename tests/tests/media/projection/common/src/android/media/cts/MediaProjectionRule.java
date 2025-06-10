@@ -39,7 +39,7 @@ import android.media.projection.MediaProjectionConfig;
 import android.media.projection.MediaProjectionManager;
 import android.os.Environment;
 import android.os.Handler;
-import android.os.Looper;
+import android.os.HandlerThread;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.ArraySet;
 import android.util.Log;
@@ -47,6 +47,8 @@ import android.view.Display;
 import android.view.Surface;
 
 import androidx.test.core.app.ActivityScenario;
+
+import com.android.compatibility.common.util.SystemUtil;
 
 import org.junit.rules.ExternalResource;
 import org.junit.rules.RuleChain;
@@ -58,10 +60,28 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.nio.ByteBuffer;
 import java.util.Set;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
-/** A test rule for testing MediaProjection and related components */
+/**
+ * A test rule for testing {@link MediaProjection} and related components
+ *
+ * <p>The test rule can be configured to show {@link MediaProjectionRule#withConsent()}, or skip
+ * {@link MediaProjectionRule#skipConsent()}, the MediaProjection consent flow in the tests.
+ * Skipping is generally recommended to keep test runtime shorter unless the test is validating
+ * things about the consent flow.
+ *
+ * <p>To start a new MediaProjection session call {@link #startMediaProjection()} and its overloads.
+ *
+ * <p>If the test needs more granularity:
+ * <li>Show the MediaProjection consent flow with: {@link
+ *     #showMediaProjectionConsent(MediaProjectionConfig)}
+ * <li>Show + grant consent for the MediaProjection session with: {@link
+ *     #authorizeMediaProjection(ActivityOptions.LaunchCookie)}
+ * <li>Start a new MediaProjection session: {@link #newMediaProjectionSession()}
+ */
 public class MediaProjectionRule implements TestRule {
     private static final String TAG = "MediaProjectionRule";
     // Enable debug mode to save screenshots from MediaProjection session.
@@ -77,20 +97,32 @@ public class MediaProjectionRule implements TestRule {
     private final MediaProjectionTrackerRule mMediaProjectionTrackerRule =
             new MediaProjectionTrackerRule();
     private final Context mContext = getInstrumentation().getTargetContext();
+    private final DisplayManager mDisplayManager = mContext.getSystemService(DisplayManager.class);
     private final MediaProjectionManager mMediaProjectionManager =
             mContext.getSystemService(MediaProjectionManager.class);
-    private final Handler mCallbackHandler = new Handler(Looper.getMainLooper());
 
+    private boolean mSkipConsent = true;
     private android.media.cts.MediaProjectionActivity mActivity;
     private String mTestName;
 
     @Override
     public Statement apply(Statement base, Description description) {
         assertThat(mMediaProjectionManager).isNotNull();
+        assertThat(mDisplayManager).isNotNull();
+
         mTestName = String.format("%s#%s", description.getClassName(), description.getMethodName());
         return RuleChain.outerRule(DeviceFlagsValueProvider.createCheckFlagsRule())
                 .around(mMediaProjectionTrackerRule)
                 .apply(base, description);
+    }
+
+    /**
+     * Enables that tests fully show the MediaProjection consent flow and pass through it by using
+     * UiAutomator. This makes the tests less efficient as clicking through the consent flow takes
+     * time. Only set for tests that absolutely need to assert details in the consent flow.
+     */
+    public void enableConsentFlow() {
+        mSkipConsent = false;
     }
 
     /** Get an instance of MediaProjectionManager. */
@@ -128,8 +160,11 @@ public class MediaProjectionRule implements TestRule {
                     android.media.cts.MediaProjectionActivity.EXTRA_FOREGROUND_SERVICE_CLASS,
                     foregroundServiceClass);
         }
+        if (mSkipConsent) {
+            intent.putExtra(android.media.cts.MediaProjectionActivity.EXTRA_SKIP_CONSENT, true);
+        }
 
-        mMediaProjectionTrackerRule.mActivityScenario = ActivityScenario.launch(intent);
+        mMediaProjectionTrackerRule.mActivityScenario = launchConsentActivity(intent);
         mMediaProjectionTrackerRule.mActivityScenario.onActivity(
                 activity -> {
                     mActivity = activity;
@@ -138,6 +173,17 @@ public class MediaProjectionRule implements TestRule {
         assertWithMessage("MediaProjectionActivity not started")
                 .that(latch.await(TIMEOUT_MS, TimeUnit.MILLISECONDS))
                 .isTrue();
+    }
+
+    private ActivityScenario<android.media.cts.MediaProjectionActivity> launchConsentActivity(
+            Intent intent) throws Exception {
+        if (mSkipConsent) {
+            // By adopting Shell permission identity we hold the CAPTURE_VIDEO_OUTPUT permission
+            // This causes MediaProjectionPermissionActivity to instantly approve the request.
+            return SystemUtil.callWithShellPermissionIdentity(
+                    () -> ActivityScenario.launch(intent));
+        }
+        return ActivityScenario.launch(intent);
     }
 
     /** Start a MediaProjection session. */
@@ -173,7 +219,8 @@ public class MediaProjectionRule implements TestRule {
             boolean skipDefaultCallback)
             throws Exception {
         showMediaProjectionConsent(config, launchCookie, foregroundServiceClass);
-        mMediaProjectionTrackerRule.mMediaProjection = mActivity.waitForMediaProjection();
+        mActivity.performMediaProjectionConsent();
+        mMediaProjectionTrackerRule.mMediaProjection = mActivity.startMediaProjection();
         mMediaProjectionTrackerRule.mActivityScenario.close();
         if (!skipDefaultCallback) {
             // Register an empty callback. Tests that want to validate callback behavior can still
@@ -183,13 +230,37 @@ public class MediaProjectionRule implements TestRule {
         return mMediaProjectionTrackerRule.mMediaProjection;
     }
 
+    /**
+     * Launches the MediaProjectionActivity and performs the consent flow. Does not start a new
+     * MediaProjection session. Call {@link MediaProjectionRule#newMediaProjectionSession()} to
+     * start a new MediaProjection session.
+     */
+    public void authorizeMediaProjection(@Nullable ActivityOptions.LaunchCookie launchCookie)
+            throws Exception {
+        showMediaProjectionConsent(null, launchCookie, null);
+        mActivity.performMediaProjectionConsent();
+    }
+
+    /**
+     * Creates a new MediaProjection session. Requires showing and passing the MediaProjection
+     * beforehand.
+     *
+     * <p>Use {@link #authorizeMediaProjection(android.app.ActivityOptions.LaunchCookie)} to pass
+     * the consent flow first.
+     */
+    public MediaProjection newMediaProjectionSession() throws Exception {
+        mMediaProjectionTrackerRule.mMediaProjection = mActivity.startMediaProjection();
+        return mMediaProjectionTrackerRule.mMediaProjection;
+    }
+
     /** Register a MediaProjection.Callback. */
     public void registerCallback(MediaProjection.Callback callback) {
         if (mMediaProjectionTrackerRule.mMediaProjection == null) {
             throw new IllegalStateException("MediaProjection not yet started.");
         }
         mMediaProjectionTrackerRule.mCallbacks.add(callback);
-        mMediaProjectionTrackerRule.mMediaProjection.registerCallback(callback, mCallbackHandler);
+        mMediaProjectionTrackerRule.mMediaProjection.registerCallback(
+                callback, mMediaProjectionTrackerRule.mBackgroundHandler);
     }
 
     /** Create a VirtualDisplay for the MediaProjection. */
@@ -216,31 +287,10 @@ public class MediaProjectionRule implements TestRule {
             throw new IllegalStateException("MediaProjection not yet started.");
         }
 
-        CountDownLatch latch = new CountDownLatch(1);
-        DisplayManager dm = mContext.getSystemService(DisplayManager.class);
-        dm.registerDisplayListener(
-                new DisplayManager.DisplayListener() {
-                    @Override
-                    public void onDisplayAdded(int displayId) {
-                        checkDisplayState(displayId);
-                    }
-
-                    @Override
-                    public void onDisplayRemoved(int displayId) {}
-
-                    @Override
-                    public void onDisplayChanged(int displayId) {
-                        checkDisplayState(displayId);
-                    }
-
-                    private void checkDisplayState(int displayId) {
-                        Display display = dm.getDisplay(displayId);
-                        if (display != null && display.getState() == Display.STATE_ON) {
-                            latch.countDown();
-                        }
-                    }
-                },
-                null);
+        TestDisplayListener displayListener = new TestDisplayListener(mDisplayManager);
+        mMediaProjectionTrackerRule.mDisplayListeners.add(displayListener);
+        mDisplayManager.registerDisplayListener(
+                displayListener, mMediaProjectionTrackerRule.mBackgroundHandler);
 
         ImageReader imageReader =
                 ImageReader.newInstance(width, height, PixelFormat.RGBA_8888, /* maxImages= */ 1);
@@ -249,7 +299,8 @@ public class MediaProjectionRule implements TestRule {
         if (DEBUG_MODE) {
             ScreenshotListener screenshotListener =
                     new ScreenshotListener(mTestName, mScreenshotCountDownLatch);
-            imageReader.setOnImageAvailableListener(screenshotListener, mCallbackHandler);
+            imageReader.setOnImageAvailableListener(
+                    screenshotListener, mMediaProjectionTrackerRule.mBackgroundHandler);
         }
         VirtualDisplay virtualDisplay =
                 mediaProjection.createVirtualDisplay(
@@ -259,16 +310,9 @@ public class MediaProjectionRule implements TestRule {
                         RECORDING_DENSITY,
                         VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR,
                         imageReader.getSurface(),
-                        new VirtualDisplay.Callback() {
-                            @Override
-                            public void onStopped() {
-                                super.onStopped();
-                                // VirtualDisplay stopped by the system; no more frames incoming.
-                                // Must release VirtualDisplay.
-                                mMediaProjectionTrackerRule.cleanupVirtualDisplay();
-                            }
-                        },
-                        mCallbackHandler);
+                        null,
+                        null);
+        assertWithMessage("Could not create VirtualDisplay").that(virtualDisplay).isNotNull();
         mMediaProjectionTrackerRule.mVirtualDisplays.add(virtualDisplay);
 
         if (DEBUG_MODE) {
@@ -283,9 +327,8 @@ public class MediaProjectionRule implements TestRule {
             }
         }
 
-        assertWithMessage("VirtualDisplay should be created and on")
-                .that(latch.await(TIMEOUT_MS, TimeUnit.MILLISECONDS))
-                .isTrue();
+        displayListener.awaitDisplayIdOn(virtualDisplay.getDisplay().getDisplayId());
+        displayListener.unregister();
         return virtualDisplay;
     }
 
@@ -369,17 +412,73 @@ public class MediaProjectionRule implements TestRule {
         }
     }
 
+    private static final class TestDisplayListener implements DisplayManager.DisplayListener {
+        private final DisplayManager mDisplayManager;
+        private final BlockingQueue<Integer> mDisplaysThatAreOn = new LinkedBlockingQueue<>();
+
+        TestDisplayListener(DisplayManager displayManager) {
+            mDisplayManager = displayManager;
+        }
+
+        public void awaitDisplayIdOn(int displayId) throws InterruptedException {
+            String message = String.format("Display %d was not ON after timeout", displayId);
+            int retries = 10;
+            Integer display;
+            do {
+                display = mDisplaysThatAreOn.poll(TIMEOUT_MS, TimeUnit.MILLISECONDS);
+                retries--;
+            } while (display != null && display != displayId && retries > 0);
+            assertWithMessage(message).that(display).isEqualTo(displayId);
+        }
+
+        @Override
+        public void onDisplayAdded(int displayId) {
+            checkDisplayState(displayId);
+        }
+
+        @Override
+        public void onDisplayRemoved(int displayId) {}
+
+        @Override
+        public void onDisplayChanged(int displayId) {
+            checkDisplayState(displayId);
+        }
+
+        private void checkDisplayState(int displayId) {
+            Display display = mDisplayManager.getDisplay(displayId);
+            if (display != null && display.getState() == Display.STATE_ON) {
+                mDisplaysThatAreOn.offer(displayId);
+            }
+        }
+
+        public void unregister() {
+            mDisplayManager.unregisterDisplayListener(this);
+        }
+    }
+
     /**
      * Internal rule that tracks the Active MediaProjection session and resources and ensures they
      * are properly closed and released after the test.
      */
     private static final class MediaProjectionTrackerRule extends ExternalResource {
 
+        private HandlerThread mBackgroundThread;
+
         final Set<MediaProjection.Callback> mCallbacks = new ArraySet<>();
         final Set<ImageReader> mImageReaders = new ArraySet<>();
         final Set<VirtualDisplay> mVirtualDisplays = new ArraySet<>();
+        final Set<TestDisplayListener> mDisplayListeners = new ArraySet<>();
+
+        Handler mBackgroundHandler;
         ActivityScenario<android.media.cts.MediaProjectionActivity> mActivityScenario;
         MediaProjection mMediaProjection;
+
+        @Override
+        protected void before() {
+            mBackgroundThread = new HandlerThread("BackgroundThread");
+            mBackgroundThread.start();
+            mBackgroundHandler = new Handler(mBackgroundThread.getLooper());
+        }
 
         @Override
         protected void after() {
@@ -387,21 +486,29 @@ public class MediaProjectionRule implements TestRule {
                 for (MediaProjection.Callback callback : mCallbacks) {
                     mMediaProjection.unregisterCallback(callback);
                 }
+                mCallbacks.clear();
                 mMediaProjection.stop();
                 mMediaProjection = null;
             }
 
             cleanupVirtualDisplay();
 
+            for (TestDisplayListener displayListener : mDisplayListeners) {
+                displayListener.unregister();
+            }
+            mDisplayListeners.clear();
+
             if (mActivityScenario != null) {
                 mActivityScenario.close();
             }
+            stopBackgroundThread();
         }
 
         void cleanupVirtualDisplay() {
             for (ImageReader imageReader : mImageReaders) {
                 imageReader.close();
             }
+            mImageReaders.clear();
 
             for (VirtualDisplay virtualDisplay : mVirtualDisplays) {
                 final Surface surface = virtualDisplay.getSurface();
@@ -409,6 +516,14 @@ public class MediaProjectionRule implements TestRule {
                     surface.release();
                 }
                 virtualDisplay.release();
+            }
+            mVirtualDisplays.clear();
+        }
+
+        public void stopBackgroundThread() {
+            if (mBackgroundThread != null) {
+                mBackgroundThread.quitSafely();
+                mBackgroundHandler = null;
             }
         }
     }

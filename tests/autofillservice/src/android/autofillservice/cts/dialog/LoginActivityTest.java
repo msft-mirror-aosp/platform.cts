@@ -28,6 +28,7 @@ import static android.autofillservice.cts.testcore.Helper.assertNoFlags;
 import static android.autofillservice.cts.testcore.Helper.disablePccDetectionFeature;
 import static android.autofillservice.cts.testcore.Helper.enableFillDialogFeature;
 import static android.autofillservice.cts.testcore.Helper.enableFillDialogImprovements;
+import static android.autofillservice.cts.testcore.Helper.isAutomotiveWithMultiWindow;
 import static android.autofillservice.cts.testcore.Helper.isImeShowing;
 import static android.autofillservice.cts.testcore.Helper.setFillDialogHints;
 import static android.service.autofill.FillRequest.FLAG_SUPPORTS_FILL_DIALOG;
@@ -35,6 +36,7 @@ import static android.service.autofill.FillRequest.FLAG_SUPPORTS_FILL_DIALOG;
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertThrows;
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.autofillservice.cts.R;
@@ -189,6 +191,12 @@ public class LoginActivityTest extends AutoFillServiceTestCase.ManualActivityLau
 
     @Test
     public void testTextView_noFillResponse_clickTwice_showIme() throws Exception {
+        // TODO(b/420943436): Skip this test in Automotive with multi-window until b/420943436 is
+        // fixed.
+        assumeFalse(
+                "Skipping test on Automotive with multi-window",
+                isAutomotiveWithMultiWindow(sContext));
+
         // Start activity and autofill
         LoginActivity activity = startLoginActivity();
         mUiBot.waitForIdleSync();
@@ -254,6 +262,12 @@ public class LoginActivityTest extends AutoFillServiceTestCase.ManualActivityLau
     @RequiresFlagsEnabled("android.service.autofill.improve_fill_dialog_aconfig")
     @Test
     public void testTextView_clickTwiceWithShowFillDialog_showIme_v2() throws Exception {
+        // TODO(b/420943436): Skip this test in Automotive with multi-window until b/420943436 is
+        // fixed.
+        assumeFalse(
+                "Skipping test on Automotive with multi-window",
+                isAutomotiveWithMultiWindow(sContext));
+
         mUiBot.assumeMinimumResolution(500);
         // Enable feature and test service
         enableFillDialogImprovements(sContext);
@@ -348,6 +362,12 @@ public class LoginActivityTest extends AutoFillServiceTestCase.ManualActivityLau
     @RequiresFlagsEnabled("android.service.autofill.improve_fill_dialog_aconfig")
     @Test
     public void testShowFillDialog_v2() throws Exception {
+        // TODO(b/420943436): Skip this test in Automotive with multi-window until b/420943436 is
+        // fixed.
+        assumeFalse(
+                "Skipping test on Automotive with multi-window",
+                isAutomotiveWithMultiWindow(sContext));
+
         // Enable feature and test service
         enableFillDialogImprovements(sContext);
         enableService();
@@ -396,8 +416,8 @@ public class LoginActivityTest extends AutoFillServiceTestCase.ManualActivityLau
     @RequiresFlagsDisabled("android.service.autofill.improve_fill_dialog_aconfig")
     @Test
     public void testShowFillDialog_onlyShowOnce() throws Exception {
-       mUiBot.assumeMinimumResolution(500);
-       // Enable feature and test service
+        mUiBot.assumeMinimumResolution(500);
+        // Enable feature and test service
         enableFillDialogFeature(sContext);
         enableService();
 
@@ -462,6 +482,12 @@ public class LoginActivityTest extends AutoFillServiceTestCase.ManualActivityLau
     @RequiresFlagsEnabled("android.service.autofill.improve_fill_dialog_aconfig")
     @Test
     public void testShowFillDialog_onlyShowOnce_v2() throws Exception {
+        // TODO(b/420943436): Skip this test in Automotive with multi-window until b/420943436 is
+        // fixed.
+        assumeFalse(
+                "Skipping test on Automotive with multi-window",
+                isAutomotiveWithMultiWindow(sContext));
+
         mUiBot.assumeMinimumResolution(500);
         // Enable feature and test service
         enableFillDialogImprovements(sContext);
@@ -1039,6 +1065,12 @@ public class LoginActivityTest extends AutoFillServiceTestCase.ManualActivityLau
     @RequiresFlagsEnabled("android.service.autofill.improve_fill_dialog_aconfig")
     @Test
     public void testCancelFillDialog_showDropdown_v2() throws Exception {
+        // TODO(b/420943436): Skip this test in Automotive with multi-window until b/420943436 is
+        // fixed.
+        assumeFalse(
+                "Skipping test on Automotive with multi-window",
+                isAutomotiveWithMultiWindow(sContext));
+
         mUiBot.assumeMinimumResolution(500);
         // Enable feature and test service
         enableFillDialogImprovements(sContext);
@@ -1129,6 +1161,12 @@ public class LoginActivityTest extends AutoFillServiceTestCase.ManualActivityLau
     @RequiresFlagsEnabled("android.service.autofill.improve_fill_dialog_aconfig")
     @Test
     public void testDismissedFillDialog_showIme_v2() throws Exception {
+        // TODO(b/420943436): Skip this test in Automotive with multi-window until b/420943436 is
+        // fixed.
+        assumeFalse(
+                "Skipping test on Automotive with multi-window",
+                isAutomotiveWithMultiWindow(sContext));
+
         // Enable feature and test service
         enableFillDialogImprovements(sContext);
         enableService();

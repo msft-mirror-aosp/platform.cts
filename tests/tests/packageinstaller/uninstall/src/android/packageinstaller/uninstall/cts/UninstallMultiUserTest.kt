@@ -79,9 +79,7 @@ class UninstallMultiUserTest : UninstallTestBase() {
         uninstallIntent.putExtra(Intent.EXTRA_UNINSTALL_ALL_USERS, true)
 
         startUninstall(uninstallIntent)
-        // TODO(b/420539987): In PiaV2, there is an issue that it doesn't show the APP info
-        // on the dialog. Will fix it as soon as possible.
-        assertUninstallDialogShownWithoutCheckingAppName(By.textContains("all users"))
+        assertUninstallDialogShown(By.textContains("all users"))
         clickInstallerButton()
 
         for (i in 0..29) {

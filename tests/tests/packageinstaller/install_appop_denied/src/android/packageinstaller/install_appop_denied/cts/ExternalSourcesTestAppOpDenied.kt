@@ -17,24 +17,20 @@ package android.packageinstaller.install_appop_denied.cts
 
 import android.app.AppOpsManager.MODE_ERRORED
 import android.platform.test.annotations.AppModeFull
-import androidx.test.InstrumentationRegistry
+import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.MediumTest
-import androidx.test.runner.AndroidJUnit4
+import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.By
-import androidx.test.uiautomator.BySelector
 import androidx.test.uiautomator.UiDevice
-import androidx.test.uiautomator.Until
 import com.android.compatibility.common.util.AppOpsUtils
 import com.google.common.truth.Truth.assertThat
 import java.util.regex.Pattern
 import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 
-private const val INSTALL_CONFIRM_TEXT_ID = "install_confirm_question"
 private const val ALERT_DIALOG_MESSAGE =
     "For your security, your (phone|tablet|TV|watch?) currently isn’t allowed to install unknown" +
             " apps from this source.*"
@@ -43,24 +39,20 @@ private const val ALERT_DIALOG_MESSAGE =
 @MediumTest
 @AppModeFull
 class ExternalSourcesTest : PackageInstallerTestBase() {
-    private val context = InstrumentationRegistry.getTargetContext()
+    private val context = InstrumentationRegistry.getInstrumentation().getTargetContext()
     private val pm = context.packageManager
     private val packageName = context.packageName
     private val uiDevice = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
 
-    private fun assertUiObject(errorMessage: String, selector: BySelector) {
-        assertNotNull(errorMessage, uiDevice.wait(Until.findObject(selector), TIMEOUT))
-    }
-
     private fun assertInstallBlocked(errorMessage: String) {
-        assertUiObject(
-            errorMessage,
+        findInstallerUIObject(
             By.text(
                 Pattern.compile(
                     ALERT_DIALOG_MESSAGE,
                     Pattern.CASE_INSENSITIVE
                 )
-            )
+            ),
+            errorMessage
         )
         uiDevice.pressBack()
     }
@@ -72,14 +64,19 @@ class ExternalSourcesTest : PackageInstallerTestBase() {
     }
 
     private fun blockedSourceTest(startInstallation: () -> Unit) {
-        assertFalse("Package $packageName allowed to install packages after setting app op to " +
-                "errored", pm.canRequestPackageInstalls())
+        assertFalse(
+            "Package $packageName allowed to install packages after setting app op to " +
+                "errored",
+            pm.canRequestPackageInstalls()
+        )
 
         startInstallation()
         assertInstallBlocked("Install blocking dialog not shown when app op set to errored")
 
-        assertTrue("Operation not logged", AppOpsUtils.rejectedOperationLogged(packageName,
-                APP_OP_STR))
+        assertTrue("Operation not logged", AppOpsUtils.rejectedOperationLogged(
+            packageName,
+                APP_OP_STR
+        ))
     }
 
     @Test
@@ -94,7 +91,10 @@ class ExternalSourcesTest : PackageInstallerTestBase() {
 
     @Test
     fun blockedSourceTest() {
-        assertFalse("Package $packageName allowed to install packages after setting app op to " +
-                "errored", pm.canRequestPackageInstalls())
+        assertFalse(
+            "Package $packageName allowed to install packages after setting app op to " +
+                "errored",
+            pm.canRequestPackageInstalls()
+        )
     }
 }

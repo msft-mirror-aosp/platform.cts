@@ -1825,7 +1825,8 @@ public class TelephonyManagerTest {
         }
         for (int i = 0; i < retries; i++) {
             try {
-                assertServiceStateSanitization(mServiceState,
+                assertSanitizedServiceStateMatches(
+                        mServiceState,
                         mTelephonyManager.getServiceState(
                                 TelephonyManager.INCLUDE_LOCATION_DATA_NONE));
                 // Exit if the assertion passes without an exception
@@ -1839,7 +1840,8 @@ public class TelephonyManagerTest {
         }
         for (int i = 0; i < retries; i++) {
             try {
-                assertServiceStateFineLocationSanitization(mServiceState,
+                assertSanitizedServiceStateMatches(
+                        mServiceState,
                         mTelephonyManager.getServiceState(
                                 TelephonyManager.INCLUDE_LOCATION_DATA_COARSE));
                 // Exit if the assertion passes without an exception
@@ -1893,24 +1895,8 @@ public class TelephonyManagerTest {
         }
     }
 
-    private void assertServiceStateSanitization(ServiceState expectedServiceState,
-            ServiceState receivedServiceState) {
-        assertNotNull("receivedServiceState should not be null", receivedServiceState);
-        assertServiceStateFineLocationSanitization(expectedServiceState, receivedServiceState);
-
-        assertTrue(
-                "unexpected alpha long " + receivedServiceState.getOperatorAlphaLong(),
-                TextUtils.isEmpty(receivedServiceState.getOperatorAlphaLong()));
-        assertTrue(
-                "unexpected alpha short " + receivedServiceState.getOperatorAlphaShort(),
-                TextUtils.isEmpty(receivedServiceState.getOperatorAlphaShort()));
-        assertTrue(
-                "unexpected operator numeric " + receivedServiceState.getOperatorNumeric(),
-                TextUtils.isEmpty(receivedServiceState.getOperatorNumeric()));
-    }
-
-    private void assertServiceStateFineLocationSanitization(ServiceState expectedServiceState,
-            ServiceState receivedServiceState) {
+    private void assertSanitizedServiceStateMatches(
+            ServiceState expectedServiceState, ServiceState receivedServiceState) {
         assertNotEquals(null, receivedServiceState);
 
         assertEquals(
@@ -1935,11 +1921,17 @@ public class TelephonyManagerTest {
                 receivedServiceState.getRilVoiceRadioTechnology());
 
         if (receivedServiceState.getNetworkRegistrationInfoList() != null) {
-            for (NetworkRegistrationInfo nrs : receivedServiceState
-                    .getNetworkRegistrationInfoList()) {
-                assertNull(
-                        "Network registration info has null cell identity. nrs=" + nrs,
-                        nrs.getCellIdentity());
+            for (NetworkRegistrationInfo nri :
+                    receivedServiceState.getNetworkRegistrationInfoList()) {
+                switch (nri.getCellIdentity()) {
+                    case CellIdentity ci ->
+                            assertEquals(
+                                    "Network registration info has unsanitized cell identity. nri="
+                                            + nri,
+                                    ci,
+                                    ci.sanitizeLocationInfo());
+                    case null -> {}
+                }
             }
         }
     }

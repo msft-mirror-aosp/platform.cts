@@ -99,6 +99,7 @@ public class MediaProjectionSDK33Test {
     public void setUp() {
         mContext = InstrumentationRegistry.getInstrumentation().getContext();
         mTimeoutMs = 1000 * HW_TIMEOUT_MULTIPLIER;
+        mMediaProjectionRule.enableConsentFlow();
     }
 
     @After
