@@ -22,6 +22,7 @@ import static android.autofillservice.cts.testcore.AugmentedTimeouts.AUGMENTED_F
 import static android.autofillservice.cts.testcore.CannedAugmentedFillResponse.DO_NOT_REPLY_AUGMENTED_RESPONSE;
 import static android.autofillservice.cts.testcore.CannedAugmentedFillResponse.NO_AUGMENTED_RESPONSE;
 import static android.autofillservice.cts.testcore.CannedFillResponse.NO_RESPONSE;
+import static android.autofillservice.cts.testcore.Helper.AutofillCriticalInternal;
 import static android.autofillservice.cts.testcore.Helper.ID_PASSWORD;
 import static android.autofillservice.cts.testcore.Helper.ID_USERNAME;
 import static android.autofillservice.cts.testcore.Helper.assertHasFlags;
@@ -348,6 +349,7 @@ public class AugmentedLoginActivityTest
 
     @Presubmit
     @Test
+    @AutofillCriticalInternal
     public void testAutoFill_mainServiceReturnedNull_augmentedAutofillOneField() throws Exception {
         // Set services
         enableService();

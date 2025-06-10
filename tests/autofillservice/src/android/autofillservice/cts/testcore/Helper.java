@@ -100,6 +100,10 @@ import com.android.compatibility.common.util.UserSettings;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -2155,4 +2159,17 @@ public final class Helper {
         }
         assertThat(eventFound).isTrue();
     }
+
+    /**
+     * Temporary annotation for marking some autofill tests to be critical. Engprod team has plan to
+     * define a new annotation. The new annotation will be used as a factor to select critical
+     * tests. Once the engprod annotation is created, this annotation will be replaced with the new
+     * one.
+     *
+     * <p>Note: This is a no-op annotation and is only used for tracking purposes. It should only be
+     * used by autofill team internally.
+     */
+    @Retention(RetentionPolicy.SOURCE)
+    @Target(ElementType.METHOD)
+    public static @interface AutofillCriticalInternal {}
 }
