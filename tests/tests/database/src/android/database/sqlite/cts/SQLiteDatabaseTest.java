@@ -2288,11 +2288,13 @@ public class SQLiteDatabaseTest {
     // The three fields of a sqlite version number.
     private record Version(int major, int minor, int patch) {}
 
-    // Return true if the actual version matches the expected version.
+    // Return true if the actual version matches the expected version.  The actual must be on the
+    // same "branch" as the expected version (that is, the same major/minor numbers) and must be
+    // at or higher than the expected patch level.
     private static boolean versionIsOkay(Version actual, Version expected) {
         return expected.major == actual.major
                 && expected.minor == actual.minor
-                && expected.patch >= actual.patch;
+                && expected.patch <= actual.patch;
     }
 
     @Test
