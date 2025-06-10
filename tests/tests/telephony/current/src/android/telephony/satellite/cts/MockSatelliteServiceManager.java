@@ -43,17 +43,19 @@ import android.telephony.cts.externalsatelliteservice.IExternalSatelliteListener
 import android.telephony.cts.util.TelephonyUtils;
 import android.telephony.satellite.EarfcnRange;
 import android.telephony.satellite.SatelliteInfo;
+import android.telephony.satellite.SatelliteModemEnableRequestAttributes;
 import android.telephony.satellite.SatellitePosition;
+import android.telephony.satellite.SatelliteSubscriptionInfo;
 import android.telephony.satellite.SystemSelectionSpecifier;
 import android.telephony.satellite.stub.PointingInfo;
 import android.telephony.satellite.stub.SatelliteDatagram;
-import android.telephony.satellite.SatelliteModemEnableRequestAttributes;
-import android.telephony.satellite.SatelliteSubscriptionInfo;
 import android.text.TextUtils;
+import android.util.Base64;
 import android.util.IntArray;
 import android.util.Log;
 
 import com.android.internal.R;
+import com.android.internal.telephony.nano.PersistAtomsProto.PersistAtoms;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -1860,11 +1862,90 @@ class MockSatelliteServiceManager {
         }
     }
 
+    /**
+     * Fetches and parses the metrics atom data from a dumpsys command.
+     *
+     * <p>This method executes a dumpsys command to TelephonyDebugService with the {@code
+     * --getAtomsBase64} subcommand. It receives the raw output, extracts the Base64 encoded string
+     * from it, and decodes the string into a byte array. Finally, it parses the byte array into a
+     * {@link com.android.internal.telephony.nano.PersistAtomsProto.PersistAtoms} protobuf object.
+     *
+     * @return The parsed {@link com.android.internal.telephony.nano.PersistAtomsProto.PersistAtoms}
+     *     object, or {@code null} if the data could not be fetched or parsed.
+     */
+    @Nullable
+    public PersistAtoms pullMetricsAtomsViaDumpsys(boolean clearAtomsAfterPull) {
+        try {
+            // This helper executes the shell command and gets the string output.
+            String rawData =
+                    executeTelephonyDebugServiceDumpsys(
+                            "--pullAtomsBase64", clearAtomsAfterPull ? "--clearAtoms" : null);
+
+            if (rawData == null || rawData.trim().isEmpty()) {
+                loge("pullMetricsAtomsViaDumpsys: Received empty data.");
+                return null;
+            }
+
+            // filter our basic dump info
+            int colonIndex = rawData.lastIndexOf(":");
+            String base64String;
+            if (colonIndex != -1) {
+                base64String = rawData.substring(colonIndex + 1).trim();
+            } else {
+                base64String = rawData.trim();
+            }
+
+            // Decode the Base64 string back to a byte array.
+            byte[] decodedBytes = Base64.decode(base64String.trim(), Base64.DEFAULT);
+
+            // Parse the byte array back into the AtomCollection protobuf object.
+            PersistAtoms atoms = PersistAtoms.parseFrom(decodedBytes);
+            logd("Successfully parsed AtomCollection data from dumpsys.");
+            return atoms;
+        } catch (Exception ex) {
+            loge("Failed to execute dumpsys command: --pullAtomsBase64, " + ex);
+        }
+        return null;
+    }
+
+    /**
+     * Executes a specific dumpsys subcommand for TelephonyDebugService. This method constructs the
+     * full dumpsys command and uses TelephonyUtils.executeShellCommand.
+     *
+     * @param subCommand The specific subcommand for TelephonyDebugService (e.g., "--saveatoms").
+     * @param arg An optional first argument for the subCommand (e.g., a filename suffix). Can be
+     *     null.
+     * @return The standard output from the command execution, or null if an exception occurs.
+     */
+    String executeTelephonyDebugServiceDumpsys(String subCommand, @Nullable String arg) {
+        String baseCommand = "dumpsys activity service TelephonyDebugService ";
+        StringBuilder commandBuilder = new StringBuilder(baseCommand);
+        commandBuilder.append(subCommand);
+        if (arg != null && !arg.isEmpty()) {
+            commandBuilder.append(" ").append(arg);
+        }
+        String command = commandBuilder.toString();
+
+        logd("Executing TelephonyDebugService dumpsys command: " + command);
+        try {
+            String result = TelephonyUtils.executeShellCommand(mInstrumentation, command);
+            logd("Command '" + command + "' output: " + result);
+            return result;
+        } catch (Exception ex) {
+            loge("Failed to execute TelephonyDebugService dumpsys command: '" + command + "'" + ex);
+            return null;
+        }
+    }
+
     private void registerForMockPointingUiActivityStatus() {
-        IntentFilter intentFilter = new IntentFilter(
-                MockPointingUiActivity.ACTION_MOCK_POINTING_UI_ACTIVITY_STARTED);
-        mInstrumentation.getContext().registerReceiver(
-                mMockPointingUiActivityStatusReceiver, intentFilter, Context.RECEIVER_EXPORTED);
+        IntentFilter intentFilter =
+                new IntentFilter(MockPointingUiActivity.ACTION_MOCK_POINTING_UI_ACTIVITY_STARTED);
+        mInstrumentation
+                .getContext()
+                .registerReceiver(
+                        mMockPointingUiActivityStatusReceiver,
+                        intentFilter,
+                        Context.RECEIVER_EXPORTED);
     }
 
     private void registerForExternalMockPointingUiActivityStatus() {

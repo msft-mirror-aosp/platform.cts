@@ -253,8 +253,10 @@ public class SatelliteManagerTestBase {
 
     protected static void grantSatellitePermission() {
         logd("grantSatellitePermission");
-        InstrumentationRegistry.getInstrumentation().getUiAutomation()
-                .adoptShellPermissionIdentity(Manifest.permission.SATELLITE_COMMUNICATION);
+        InstrumentationRegistry.getInstrumentation()
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(
+                        Manifest.permission.SATELLITE_COMMUNICATION, Manifest.permission.DUMP);
     }
 
     protected static void revokeSatellitePermission() {
@@ -264,18 +266,22 @@ public class SatelliteManagerTestBase {
     }
 
     protected static void grantSatelliteAndReadBasicPhoneStatePermissions() {
-        InstrumentationRegistry.getInstrumentation().getUiAutomation()
-                .adoptShellPermissionIdentity(Manifest.permission.SATELLITE_COMMUNICATION,
-                        Manifest.permission.READ_BASIC_PHONE_STATE);
+        InstrumentationRegistry.getInstrumentation()
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(
+                        Manifest.permission.SATELLITE_COMMUNICATION,
+                        Manifest.permission.READ_BASIC_PHONE_STATE,
+                        Manifest.permission.DUMP);
     }
 
     protected static void grantSatelliteAndSendSmsPermissions() {
-        InstrumentationRegistry.getInstrumentation().getUiAutomation()
+        InstrumentationRegistry.getInstrumentation()
+                .getUiAutomation()
                 .adoptShellPermissionIdentity(
-                    Manifest.permission.SATELLITE_COMMUNICATION,
-                    Manifest.permission.SEND_SMS);
+                        Manifest.permission.SATELLITE_COMMUNICATION,
+                        Manifest.permission.SEND_SMS,
+                        Manifest.permission.DUMP);
     }
-
     protected static class SatelliteTransmissionUpdateCallbackTest implements
             SatelliteTransmissionUpdateCallback {
 
