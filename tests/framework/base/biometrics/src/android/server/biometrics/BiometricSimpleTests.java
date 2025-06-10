@@ -57,6 +57,7 @@ import android.os.SystemClock;
 import android.platform.test.annotations.Presubmit;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.server.biometrics.util.BiometricServiceState;
+import android.server.biometrics.util.SensorStates;
 import android.server.biometrics.util.TestSessionList;
 import android.server.biometrics.util.Utils;
 import android.util.Log;
@@ -115,8 +116,10 @@ public class BiometricSimpleTests extends BiometricTestBase {
 
         for (SensorProperties prop : mSensorProperties) {
             final int sensorId = prop.getSensorId();
-            final int sensorModality =
-                    getCurrentState().mSensorStates.sensorStates.get(sensorId).getModality();
+            final SensorStates.SensorState currentSensor =
+                    getCurrentState().mSensorStates.sensorStates.get(sensorId);
+            final int sensorModality = currentSensor.getModality();
+            final int sensorStrength = currentSensor.getCurrentStrength();
 
             int enrolledModality = 0;
 
@@ -136,6 +139,7 @@ public class BiometricSimpleTests extends BiometricTestBase {
                                 (modality, status) -> {
                                     if (modality == expectedModality) {
                                         assertEquals(1, status.getEnrollmentCount());
+                                        assertEquals(sensorStrength, status.getStrength());
                                     } else {
                                         assertEquals(0, status.getEnrollmentCount());
                                     }
@@ -145,7 +149,7 @@ public class BiometricSimpleTests extends BiometricTestBase {
     }
 
     /**
-     * Test without USE_BIOMETRIC permission, {@link BiometricManager#getEnrollmentStatus()} should
+     * Test without USE_BIOMETRIC permission, {@link BiometricManager#getEnrollmentStatus} should
      * throw security exception.
      */
     @ApiTest(apis = {"android.hardware.biometrics.BiometricManager#getEnrollmentStatus"})
