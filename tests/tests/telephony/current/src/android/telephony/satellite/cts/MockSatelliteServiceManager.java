@@ -47,6 +47,8 @@ import android.telephony.satellite.SatellitePosition;
 import android.telephony.satellite.SystemSelectionSpecifier;
 import android.telephony.satellite.stub.PointingInfo;
 import android.telephony.satellite.stub.SatelliteDatagram;
+import android.telephony.satellite.SatelliteModemEnableRequestAttributes;
+import android.telephony.satellite.SatelliteSubscriptionInfo;
 import android.text.TextUtils;
 import android.util.IntArray;
 import android.util.Log;
@@ -161,6 +163,8 @@ class MockSatelliteServiceManager {
     private final Semaphore mSetSatellitePlmnSemaphore = new Semaphore(0);
     private final Semaphore mSetSatelliteEnabledForCarrierSemaphore = new Semaphore(0);
     private final Semaphore mSatelliteEnabledForCarrierStateChangedSemaphore = new Semaphore(0);
+    @Nullable
+    private SatelliteModemEnableRequestAttributes mRequestSatelliteEnabledAttributes = null;
 
     @NonNull
     private final ILocalSatelliteListener mSatelliteListener =
@@ -260,8 +264,13 @@ class MockSatelliteServiceManager {
                 }
 
                 @Override
-                public void onRequestSatelliteEnabled(boolean enableSatellite) {
-                    logd("onRequestSatelliteEnabled: enableSatellite=" + enableSatellite);
+                public void onRequestSatelliteEnabled(
+                    android.telephony.satellite.stub.SatelliteModemEnableRequestAttributes
+                        enableAttributes) {
+                    mRequestSatelliteEnabledAttributes =
+                            fromHalEnableRequestAttributes(enableAttributes);
+                    logd("onRequestSatelliteEnabled: mRequestSatelliteEnabledAttributes="
+                            + mRequestSatelliteEnabledAttributes);
                     try {
                         mRequestSatelliteEnabledSemaphore.release();
                     } catch (Exception ex) {
@@ -810,6 +819,10 @@ class MockSatelliteServiceManager {
             }
         }
         return true;
+    }
+
+    SatelliteModemEnableRequestAttributes getRequestSatelliteEnabledAttributes() {
+        return mRequestSatelliteEnabledAttributes;
     }
 
     boolean waitForEventOnSatelliteListeningEnabled(int expectedNumberOfEvents) {
@@ -1910,5 +1923,28 @@ class MockSatelliteServiceManager {
                 readStringArrayFromOverlayConfig("config_oem_enabled_satellite_country_codes");
         logd("getSupportedCountryCodesFromDeviceConfig: " + Arrays.toString(countryCodes));
         return Arrays.stream(countryCodes).toList();
+    }
+
+    private static SatelliteModemEnableRequestAttributes fromHalEnableRequestAttributes(
+            android.telephony.satellite.stub.SatelliteModemEnableRequestAttributes
+            halEnableRequestAttributes) {
+        if (halEnableRequestAttributes == null) {
+            return null;
+        }
+        return new SatelliteModemEnableRequestAttributes(
+            halEnableRequestAttributes.isEnabled,
+            halEnableRequestAttributes.isDemoMode,
+            halEnableRequestAttributes.isEmergencyMode,
+            fromHalSatelliteSubscriptionInfo(halEnableRequestAttributes.satelliteSubscriptionInfo));
+    }
+
+    private static SatelliteSubscriptionInfo fromHalSatelliteSubscriptionInfo(
+            android.telephony.satellite.stub.SatelliteSubscriptionInfo halSatelliteSubscriptionInfo) {
+        if (halSatelliteSubscriptionInfo == null) {
+            return null;
+        }
+        return new SatelliteSubscriptionInfo(
+                halSatelliteSubscriptionInfo.iccId,
+                halSatelliteSubscriptionInfo.niddApn);
     }
 }
