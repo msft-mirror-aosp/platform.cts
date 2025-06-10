@@ -7754,7 +7754,7 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
      */
     @ApiTest(apis = {"android.net.wifi.WifiManager#queryPrivilegedConfiguredNetworks"})
     @RequiresFlagsEnabled(Flags.FLAG_GET_CONFIG_EMPTY_REASON)
-    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S, codeName = "S")
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.TIRAMISU)
     @Test
     public void testQueryPrivilegedConfiguredNetworks() throws Exception {
         Mutable<Boolean> onResultCalled = new Mutable<Boolean>(false);
