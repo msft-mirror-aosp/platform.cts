@@ -6916,6 +6916,19 @@
             <meta-data android:name="NonApiTest"
                        android:value="Helper class. Used to perform admin policy setup." />
         </activity>
+        <activity
+            android:name=".dragviewshadow.DragViewShadowActivity"
+            android:label="@string/drag_view_shadow_test_name"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.cts.intent.category.MANUAL_TEST" />
+            </intent-filter>
+            <meta-data android:name="test_category" android:value="@string/test_category_window_manager_tests" />
+            <meta-data android:name="test_required_features" android:value="android.software.xr.api.spatial" />
+            <meta-data android:name="display_mode" android:value="multi_display_mode" />
+            <meta-data android:name="ApiTest" android:value="android.view.View#startDragAndDrop" />
+        </activity>
     </application>
 
     <queries>
