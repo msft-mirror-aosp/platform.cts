@@ -72,6 +72,7 @@ java_defaults {
         "androidx.heifwriter_heifwriter",
         "CtsCameraUtils",
         "aconfig_mediacodec_flags_java_lib",
+        "android.media.mediarecorder-aconfig-java",
     ],
     jni_libs: [
         "libctscodecutils_jni",

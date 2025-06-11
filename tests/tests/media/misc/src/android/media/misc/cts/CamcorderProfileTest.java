@@ -16,6 +16,7 @@
 
 package android.media.misc.cts;
 
+import static android.media.mediarecorder.Flags.apvRecordingSupport;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -238,6 +239,10 @@ public class CamcorderProfileTest {
             case MediaRecorder.VideoEncoder.AV1:
                   assertEquals(MediaFormat.MIMETYPE_VIDEO_AV1, videoProfile.getMediaType());
                   break;
+            }
+            if (apvRecordingSupport() &&
+                videoProfile.getCodec() == MediaRecorder.VideoEncoder.APV) {
+                assertEquals(MediaFormat.MIMETYPE_VIDEO_APV, videoProfile.getMediaType());
             }
             // Cannot validate profile as vendors may use vendor specific profile. Just read it.
             int codecProfile = videoProfile.getProfile();
