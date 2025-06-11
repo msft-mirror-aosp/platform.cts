@@ -29,6 +29,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.SystemClock;
+import android.platform.test.annotations.DisabledOnRavenwood;
 import android.util.Log;
 import android.view.Choreographer;
 
@@ -325,6 +326,7 @@ public class ChoreographerTest {
             if (!conditionPassed) {
                 mAssertionPassed = false;
                 mErrorMessages = (mErrorMessages.isEmpty() ? "" : "\n") + mErrorMessages + error;
+                Log.i(TAG, "Check failed: " + mErrorMessages, new RuntimeException(mErrorMessages));
                 return mAssertionPassed;
             }
             return true;
@@ -401,6 +403,7 @@ public class ChoreographerTest {
     }
 
     @Test
+    @DisabledOnRavenwood(reason = "vsync disabled on ravenwood, so vsync ID is always invalid")
     public void testPostVsyncCallbackFrameDataVsyncIdValid() {
         BasicVsyncCallback callback = new BasicVsyncCallback() {
             @Override
