@@ -58,6 +58,8 @@ TABLET_LOW_LIGHT_SCENES_ALLOWLIST = (
     'gta8',  # Samsung Galaxy Tab A8 LTE
     'gta9pwifi',  # Samsung Galaxy Tab A9+
     'gta9p',  # Samsung Galaxy Tab A9+ 5G
+    'gts10fewifi',  # Samsung Galaxy Tab S10 FE
+    'gts10fe',  # Samsung Galaxy Tab S10 FE 5G
     'nabu',  # Xiaomi Pad 5
     'nabu_tw',  # Xiaomi Pad 5
     'xun',  # Xiaomi Redmi Pad SE
@@ -71,6 +73,8 @@ TABLET_BRIGHTNESS = {
     'gta8': ('6', '12'),  # Samsung Galaxy Tab A8 LTE
     'gta9pwifi': ('6', '12'),  # Samsung Galaxy Tab A9+
     'gta9p': ('6', '12'),  # Samsung Galaxy Tab A9+ 5G
+    'gts10fewifi': ('4', '8'),  # Samsung Galaxy Tab S10 FE
+    'gts10fe': ('4', '8'),  # Samsung Galaxy Tab S10 FE 5G
     'nabu': ('8', '14'),  # Xiaomi Pad 5
     'nabu_tw': ('8', '14'),  # Xiaomi Pad 5
     'xun': ('6', '12'),  # Xiaomi Redmi Pad SE
