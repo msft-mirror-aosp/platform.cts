@@ -665,6 +665,24 @@ public class VirtualCameraTest {
         // verifyConfigureSessionForSupportedFormatSucceeds(BACK_CAMERA_ID);
     }
 
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_CAMERA_METADATA)
+    public void createVirtualCamera_withPerFrameMetadataEnabled_succeeds() throws Exception {
+        setupVirtualDeviceCameraManager();
+
+        VirtualCameraConfig config =
+                new VirtualCameraConfig.Builder("FrameMetadataCamera")
+                        .addStreamConfig(CAMERA_WIDTH, CAMERA_HEIGHT, CAMERA_FORMAT, CAMERA_MAX_FPS)
+                        .setVirtualCameraCallback(mExecutor, mVirtualCameraCallback)
+                        .setSensorOrientation(SENSOR_ORIENTATION_180)
+                        .setLensFacing(LENS_FACING_BACK)
+                        .setPerFrameCameraMetadataEnabled(true)
+                        .build();
+        mVirtualDevice.createVirtualCamera(config);
+
+        verifyConfigureSessionForSupportedFormatSucceeds(BACK_CAMERA_ID);
+    }
+
     private VirtualCamera createFrontVirtualCamera() {
         return createVirtualCamera(LENS_FACING_FRONT);
     }
