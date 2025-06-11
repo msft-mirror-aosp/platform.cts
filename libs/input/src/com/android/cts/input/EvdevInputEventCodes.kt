@@ -87,6 +87,11 @@ class EvdevInputEventCodes {
         const val ABS_RY = 0x04
         const val ABS_RZ = 0x05
         const val ABS_MT_SLOT = 0x2f
+        const val ABS_MT_TOUCH_MAJOR = 0x30
+        const val ABS_MT_TOUCH_MINOR = 0x31
+        const val ABS_MT_WIDTH_MAJOR = 0x32
+        const val ABS_MT_WIDTH_MINOR = 0x33
+        const val ABS_MT_ORIENTATION = 0x34
         const val ABS_MT_POSITION_X = 0x35
         const val ABS_MT_POSITION_Y = 0x36
         const val ABS_MT_TOOL_TYPE = 0x37

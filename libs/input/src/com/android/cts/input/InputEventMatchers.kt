@@ -69,6 +69,9 @@ fun withCoordsForPointerIndex(index: Int, pt: PointF, epsilon: Float = EPSILON):
     }
 }
 
+fun withCoordsForPointerIndex(index: Int, pt: Point, epsilon: Float = EPSILON):
+        Matcher<MotionEvent> = withCoordsForPointerIndex(index, PointF(pt), epsilon)
+
 fun withCoordsForHistoryPos(historyPos: Int, pt: PointF, epsilon: Float = EPSILON):
     Matcher<MotionEvent> = object : TypeSafeMatcher<MotionEvent>() {
     override fun describeTo(description: Description) {
@@ -105,25 +108,41 @@ fun withRawCoords(pt: PointF, epsilon: Float = EPSILON):
     }
 }
 
-fun withRelativeMotion(dx: Float, dy: Float, epsilon: Float = EPSILON):
-        Matcher<MotionEvent> = object : TypeSafeMatcher<MotionEvent>() {
+fun withRelativeMotionForPointerIndex(
+    index: Int,
+    dx: Float,
+    dy: Float,
+    epsilon: Float = EPSILON
+): Matcher<MotionEvent> = object : TypeSafeMatcher<MotionEvent>() {
     override fun describeTo(description: Description) {
-        description.appendText("With relative motion of ($dx, $dy)")
+        description.appendText("With relative motion of ($dx, $dy) for pointer index $index")
     }
 
     override fun matchesSafely(event: MotionEvent): Boolean {
-        return (abs(event.getAxisValue(MotionEvent.AXIS_RELATIVE_X) - dx) < epsilon) &&
-                (abs(event.getAxisValue(MotionEvent.AXIS_RELATIVE_Y) - dy) < epsilon)
+        if (index < 0 || index >= event.pointerCount) {
+            return false
+        }
+        return abs(event.getAxisValue(MotionEvent.AXIS_RELATIVE_X, index) - dx) < epsilon &&
+                abs(event.getAxisValue(MotionEvent.AXIS_RELATIVE_Y, index) - dy) < epsilon
     }
 
     override fun describeMismatchSafely(event: MotionEvent, mismatchDescription: Description) {
+        if (index < 0 || index >= event.pointerCount) {
+            mismatchDescription.appendText(
+                "Pointer index $index was out of bounds for pointer count ${event.pointerCount}"
+            )
+            return
+        }
         mismatchDescription.appendText(
-            "Got relative motion (${event.getAxisValue(
-                MotionEvent.AXIS_RELATIVE_X
-            )}, ${event.getAxisValue(MotionEvent.AXIS_RELATIVE_Y)})"
+            "Got relative motion (${
+                event.getAxisValue(MotionEvent.AXIS_RELATIVE_X, index)
+            }, ${event.getAxisValue(MotionEvent.AXIS_RELATIVE_Y, index)}) for pointer index $index"
         )
     }
 }
+
+fun withRelativeMotion(dx: Float, dy: Float, epsilon: Float = EPSILON):
+        Matcher<MotionEvent> = withRelativeMotionForPointerIndex(0, dx, dy, epsilon)
 
 fun withRelativeMotion(dx: Int, dy: Int, epsilon: Float = EPSILON):
         Matcher<MotionEvent> = withRelativeMotion(dx.toFloat(), dy.toFloat(), epsilon)
@@ -285,6 +304,59 @@ fun withToolType(toolType: Int): Matcher<MotionEvent> = object : TypeSafeMatcher
         return true
     }
 }
+
+fun withToolTypeForPointerIndex(index: Int, toolType: Int): Matcher<MotionEvent> =
+    object : TypeSafeMatcher<MotionEvent>() {
+        override fun describeTo(description: Description) {
+            description.appendText("With tool type = $toolType for pointer index $index")
+        }
+
+        override fun matchesSafely(event: MotionEvent): Boolean {
+            if (index < 0 || index >= event.pointerCount) {
+                return false
+            }
+            return event.getToolType(index) == toolType
+        }
+
+        override fun describeMismatchSafely(event: MotionEvent, mismatchDescription: Description) {
+            if (index < 0 || index >= event.pointerCount) {
+                mismatchDescription.appendText(
+                    "Pointer index $index was out of bounds for pointer count ${event.pointerCount}"
+                )
+                return
+            }
+            mismatchDescription.appendText(
+                "Got tool type ${event.getToolType(index)} for pointer index $index"
+            )
+        }
+    }
+
+fun withPointerIdForPointerIndex(index: Int, pointerId: Int): Matcher<MotionEvent> =
+    object : TypeSafeMatcher<MotionEvent>() {
+        override fun describeTo(description: Description) {
+            description.appendText("With pointer ID $pointerId for pointer index $index")
+        }
+
+        override fun matchesSafely(event: MotionEvent): Boolean {
+            if (index < 0 || index >= event.pointerCount) {
+                return false
+            }
+            return event.getPointerId(index) == pointerId
+        }
+
+        override fun describeMismatchSafely(event: MotionEvent, mismatchDescription: Description) {
+            if (index < 0 || index >= event.pointerCount) {
+                mismatchDescription.appendText(
+                    "Pointer index $index was out of bounds for pointer count ${event.pointerCount}"
+                )
+                return
+            }
+            mismatchDescription.appendText(
+                "Got pointer ID ${event.getPointerId(index)} for pointer index $index"
+            )
+        }
+    }
+
 
 fun withKeyCode(keyCode: Int): Matcher<KeyEvent> = object : TypeSafeMatcher<KeyEvent>() {
     override fun describeTo(description: Description) {

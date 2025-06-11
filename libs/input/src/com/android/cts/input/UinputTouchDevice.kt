@@ -28,7 +28,11 @@ import com.android.cts.input.EvdevInputEventCodes.Companion.ABS_MT_POSITION_Y
 import com.android.cts.input.EvdevInputEventCodes.Companion.ABS_MT_PRESSURE
 import com.android.cts.input.EvdevInputEventCodes.Companion.ABS_MT_SLOT
 import com.android.cts.input.EvdevInputEventCodes.Companion.ABS_MT_TOOL_TYPE
+import com.android.cts.input.EvdevInputEventCodes.Companion.ABS_MT_TOUCH_MAJOR
+import com.android.cts.input.EvdevInputEventCodes.Companion.ABS_MT_TOUCH_MINOR
 import com.android.cts.input.EvdevInputEventCodes.Companion.ABS_MT_TRACKING_ID
+import com.android.cts.input.EvdevInputEventCodes.Companion.ABS_MT_WIDTH_MAJOR
+import com.android.cts.input.EvdevInputEventCodes.Companion.ABS_MT_WIDTH_MINOR
 import com.android.cts.input.EvdevInputEventCodes.Companion.BTN_TOOL_DOUBLETAP
 import com.android.cts.input.EvdevInputEventCodes.Companion.BTN_TOOL_FINGER
 import com.android.cts.input.EvdevInputEventCodes.Companion.BTN_TOOL_QUADTAP
@@ -127,8 +131,9 @@ open class UinputTouchDevice(
      * raw coordinate space, and does not factor display rotation or scaling.
     */
     fun sendMove(id: Int, physicalLocation: Point) {
-        // Use same events of down.
-        sendDown(id, physicalLocation)
+        uinputDevice.injectEvents(EV_ABS, ABS_MT_SLOT, id)
+        uinputDevice.injectEvents(EV_ABS, ABS_MT_POSITION_X, physicalLocation.x)
+        uinputDevice.injectEvents(EV_ABS, ABS_MT_POSITION_Y, physicalLocation.y)
     }
 
     fun sendUp(id: Int) {
@@ -139,6 +144,18 @@ open class UinputTouchDevice(
     fun sendToolType(id: Int, toolType: Int) {
         uinputDevice.injectEvents(EV_ABS, ABS_MT_SLOT, id)
         uinputDevice.injectEvents(EV_ABS, ABS_MT_TOOL_TYPE, toolType)
+    }
+
+    fun sendTouchDimensions(id: Int, major: Int, minor: Int) {
+        uinputDevice.injectEvents(EV_ABS, ABS_MT_SLOT, id)
+        uinputDevice.injectEvents(EV_ABS, ABS_MT_TOUCH_MAJOR, major)
+        uinputDevice.injectEvents(EV_ABS, ABS_MT_TOUCH_MINOR, minor)
+    }
+
+    fun sendToolDimensions(id: Int, major: Int, minor: Int) {
+        uinputDevice.injectEvents(EV_ABS, ABS_MT_SLOT, id)
+        uinputDevice.injectEvents(EV_ABS, ABS_MT_WIDTH_MAJOR, major)
+        uinputDevice.injectEvents(EV_ABS, ABS_MT_WIDTH_MINOR, minor)
     }
 
     fun sendPressure(pressure: Int) {
