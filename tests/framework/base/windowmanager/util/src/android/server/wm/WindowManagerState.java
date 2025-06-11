@@ -165,7 +165,6 @@ public class WindowManagerState {
     private int mFocusedDisplayId = DEFAULT_DISPLAY;
     private String mFocusedWindow = null;
     private String mFocusedApp = null;
-    private Boolean mIsHomeRecentsComponent;
     private String mTopResumedActivityRecord = null;
     final SparseArray<ArrayList<String>> mResumedActivitiesInRootTasks = new SparseArray<>();
     final List<String> mResumedActivitiesInDisplays = new ArrayList<>();
@@ -509,7 +508,6 @@ public class WindowManagerState {
             mTopFocusedTaskId = focusedDisplay.mFocusedRootTaskId;
             mTopResumedActivityRecord = focusedDisplay.mResumedActivity;
         }
-        mIsHomeRecentsComponent = new Boolean(root.getIsHomeRecentsComponent());
 
         for (int i = 0; i < root.getPendingActivitiesCount(); i++) {
             mPendingActivities.add(root.getPendingActivities(i).getTitle());
@@ -551,7 +549,6 @@ public class WindowManagerState {
             mTopFocusedTaskId = focusedDisplay.mFocusedRootTaskId;
             mTopResumedActivityRecord = focusedDisplay.mResumedActivity;
         }
-        mIsHomeRecentsComponent = new Boolean(root.isHomeRecentsComponent);
 
         for (int i = 0; i < root.pendingActivities.length; i++) {
             mPendingActivities.add(root.pendingActivities[i].title);
@@ -582,7 +579,6 @@ public class WindowManagerState {
         mResumedActivitiesInDisplays.clear();
         mKeyguardControllerState = null;
         mKeyguardServiceDelegateState = null;
-        mIsHomeRecentsComponent = null;
         mPendingActivities.clear();
         mDefaultPinnedStackBounds.setEmpty();
         mPinnedStackMovementBounds.setEmpty();
@@ -602,14 +598,6 @@ public class WindowManagerState {
 
     public String getFocusedWindow() {
         return mFocusedWindow;
-    }
-
-    /** @return Whether the home activity is the recents component. */
-    public boolean isHomeRecentsComponent() {
-        if (mIsHomeRecentsComponent == null) {
-            computeState();
-        }
-        return mIsHomeRecentsComponent;
     }
 
     public DisplayContent getDisplay(int displayId) {
