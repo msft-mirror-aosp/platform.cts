@@ -170,17 +170,19 @@ def _get_current_camera_facing(content_desc, resource_id):
   # If separator is present, the last element is the current camera facing.
   if DEFAULT_CAMERA_CONTENT_DESC_SEPARATOR in content_desc:
     current_facing = content_desc.split(
-        DEFAULT_CAMERA_CONTENT_DESC_SEPARATOR)[-1]
-    if 'rear' in current_facing.lower() or 'back' in current_facing.lower():
+        DEFAULT_CAMERA_CONTENT_DESC_SEPARATOR)[-1].lower()
+    if 'rear' in current_facing or 'back' in current_facing:
       return 'rear'
-    elif 'front' in current_facing.lower():
+    elif ('front' in current_facing
+          or 'selfie' in current_facing):
       return 'front'
 
   # If separator is not present, the element describes the other camera facing.
   if ('rear' in content_desc.lower() or 'rear' in resource_id.lower()
       or 'back' in content_desc.lower() or 'back' in resource_id.lower()):
     return 'front'
-  elif 'front' in content_desc.lower() or 'front' in resource_id.lower():
+  elif ('front' in content_desc.lower() or 'front' in resource_id.lower()
+        or 'selfie' in content_desc.lower() or 'selfie' in resource_id.lower()):
     return 'rear'
   else:
     raise ValueError('Failed to determine current camera facing.')
