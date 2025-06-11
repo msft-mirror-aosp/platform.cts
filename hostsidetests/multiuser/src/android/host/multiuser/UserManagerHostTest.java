@@ -83,19 +83,32 @@ public final class UserManagerHostTest extends BaseMultiUserTest {
         RunUtil.getDefault().sleep(5000);
 
         getDevice().reboot();
-        assertCurrentUser("after reboot", USER_SYSTEM);
-        assertPreviousUserIs(userId2);
 
-        // Although previous user is 2, current user is system, so let's explicitly switch to 2
-        // first.
-        assertSwitchToUser(userId2);
-        assertPreviousUserIs(USER_SYSTEM);
+        // The foreground user right after reboot differs depending on HSUM boot strategy.
+        // TODO(b/411696141): Directly check HSUM boot strategy instead of the current hard-coded
+        // check on automotive.
+        if (isAutomotive()) {
+            assertCurrentUser("after reboot", userId2);
+            assertPreviousUserIs(userId1);
+        } else {
+            assertCurrentUser("after reboot", USER_SYSTEM);
+            assertPreviousUserIs(userId2);
+
+            // Although previous user is 2, current user is system, so let's explicitly switch to 2
+            // first.
+            assertSwitchToUser(userId2);
+            assertPreviousUserIs(USER_SYSTEM);
+        }
 
         assertSwitchToUser(userId1);
         assertPreviousUserIs(userId2);
 
         assertSwitchToUser(userId2);
         assertPreviousUserIs(userId1);
+    }
+
+    private boolean isAutomotive() throws DeviceNotAvailableException {
+        return getDevice().hasFeature("android.hardware.type.automotive");
     }
 
     private boolean isInteractiveHsum() throws DeviceNotAvailableException {
