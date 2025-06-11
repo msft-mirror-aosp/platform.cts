@@ -57,6 +57,7 @@ java_test_host {
     srcs: [
         "src/**/ComponentStateChangedReportedStatsTests.java",
         "src/**/PackageInstallationSessionReportedStatsTests.java",
+        "src/**/PackageInstallerSessionReportedStatsTests.java",
         "src/**/PackageInstallerV2StatsTests.java",
         "src/**/PackageManagerStatsTestsBase.java",
         "src/**/SettingsProviderSettingChangedStatsTests.java",
