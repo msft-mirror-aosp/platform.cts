@@ -48,7 +48,7 @@ public class VirtualDeviceViewConfigurationTest {
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_VIEWCONFIGURATION_APIS)
-    public void viewConfiguration_defaultValuesOnVirtualDevice() throws Exception {
+    public void viewConfiguration_defaultValuesOnVirtualDevice() {
         Activity defaultDisplayActivity =
                 mRule.startActivityOnDisplaySync(Display.DEFAULT_DISPLAY, Activity.class);
         ViewConfiguration defaultViewconfiguration = ViewConfiguration.get(defaultDisplayActivity);
@@ -82,20 +82,17 @@ public class VirtualDeviceViewConfigurationTest {
         assertEquals(
                 getDimensionsDp(
                         defaultViewconfiguration.getScaledTouchSlop(), defaultDisplayActivity),
-                getDimensionsDp(vdViewconfiguration.getScaledTouchSlop(), vdActivity),
-                DELTA);
+                getDimensionsDp(vdViewconfiguration.getScaledTouchSlop(), vdActivity));
         assertEquals(
                 getDimensionsDp(
                         defaultViewconfiguration.getScaledMinimumFlingVelocity(),
                         defaultDisplayActivity),
-                getDimensionsDp(vdViewconfiguration.getScaledMinimumFlingVelocity(), vdActivity),
-                DELTA);
+                getDimensionsDp(vdViewconfiguration.getScaledMinimumFlingVelocity(), vdActivity));
         assertEquals(
                 getDimensionsDp(
                         defaultViewconfiguration.getScaledMaximumFlingVelocity(),
                         defaultDisplayActivity),
-                getDimensionsDp(vdViewconfiguration.getScaledMaximumFlingVelocity(), vdActivity),
-                DELTA);
+                getDimensionsDp(vdViewconfiguration.getScaledMaximumFlingVelocity(), vdActivity));
     }
 
     @Test
@@ -103,7 +100,7 @@ public class VirtualDeviceViewConfigurationTest {
         Flags.FLAG_VIEWCONFIGURATION_APIS,
         android.content.res.Flags.FLAG_RRO_CONSTRAINTS
     })
-    public void getTapTimeoutMillis_customValueOnVirtualDevice() throws Exception {
+    public void getTapTimeoutMillis_customValueOnVirtualDevice() {
         Activity activity =
                 mRule.startActivityOnDisplaySync(Display.DEFAULT_DISPLAY, Activity.class);
         int valueOnDefaultDevice = ViewConfiguration.get(activity).getTapTimeoutMillis();
@@ -128,7 +125,7 @@ public class VirtualDeviceViewConfigurationTest {
         Flags.FLAG_VIEWCONFIGURATION_APIS,
         android.content.res.Flags.FLAG_RRO_CONSTRAINTS
     })
-    public void getDoubleTapTimeoutMillis_customValueOnVirtualDevice() throws Exception {
+    public void getDoubleTapTimeoutMillis_customValueOnVirtualDevice() {
         Activity activity =
                 mRule.startActivityOnDisplaySync(Display.DEFAULT_DISPLAY, Activity.class);
         int valueOnDefaultDevice = ViewConfiguration.get(activity).getDoubleTapTimeoutMillis();
@@ -154,7 +151,7 @@ public class VirtualDeviceViewConfigurationTest {
         Flags.FLAG_VIEWCONFIGURATION_APIS,
         Flags.FLAG_DEVICE_AWARE_SETTINGS_OVERRIDE
     })
-    public void getLongPressTimeoutMillis_customValueOnVirtualDevice() throws Exception {
+    public void getLongPressTimeoutMillis_customValueOnVirtualDevice() {
         Activity activity =
                 mRule.startActivityOnDisplaySync(Display.DEFAULT_DISPLAY, Activity.class);
         int valueOnDefaultDevice = ViewConfiguration.get(activity).getLongPressTimeoutMillis();
@@ -180,7 +177,7 @@ public class VirtualDeviceViewConfigurationTest {
         Flags.FLAG_VIEWCONFIGURATION_APIS,
         Flags.FLAG_DEVICE_AWARE_SETTINGS_OVERRIDE
     })
-    public void getMultiPressTimeoutMillis_customValueOnVirtualDevice() throws Exception {
+    public void getMultiPressTimeoutMillis_customValueOnVirtualDevice() {
         Activity activity =
                 mRule.startActivityOnDisplaySync(Display.DEFAULT_DISPLAY, Activity.class);
         int valueOnDefaultDevice = ViewConfiguration.get(activity).getMultiPressTimeoutMillis();
@@ -207,7 +204,7 @@ public class VirtualDeviceViewConfigurationTest {
         android.content.res.Flags.FLAG_RRO_CONSTRAINTS,
         android.content.res.Flags.FLAG_DIMENSION_FRRO
     })
-    public void getScrollFrictionAmount_customValueOnVirtualDevice() throws Exception {
+    public void getScrollFrictionAmount_customValueOnVirtualDevice() {
         Activity activity =
                 mRule.startActivityOnDisplaySync(Display.DEFAULT_DISPLAY, Activity.class);
         float valueOnDefaultDevice = ViewConfiguration.get(activity).getScrollFrictionAmount();
@@ -237,7 +234,7 @@ public class VirtualDeviceViewConfigurationTest {
         android.content.res.Flags.FLAG_RRO_CONSTRAINTS,
         android.content.res.Flags.FLAG_DIMENSION_FRRO
     })
-    public void getScaledTouchSlop_customValueOnVirtualDevice() throws Exception {
+    public void getScaledTouchSlop_customValueOnVirtualDevice() {
         Activity activity =
                 mRule.startActivityOnDisplaySync(Display.DEFAULT_DISPLAY, Activity.class);
         int valueOnDefaultDevice = ViewConfiguration.get(activity).getScaledTouchSlop();
@@ -263,7 +260,7 @@ public class VirtualDeviceViewConfigurationTest {
         android.content.res.Flags.FLAG_RRO_CONSTRAINTS,
         android.content.res.Flags.FLAG_DIMENSION_FRRO
     })
-    public void getScaledMinimumFlingVelocity_customValueOnVirtualDevice() throws Exception {
+    public void getScaledMinimumFlingVelocity_customValueOnVirtualDevice() {
         Activity activity =
                 mRule.startActivityOnDisplaySync(Display.DEFAULT_DISPLAY, Activity.class);
         int valueOnDefaultDevice = ViewConfiguration.get(activity).getScaledMinimumFlingVelocity();
@@ -292,7 +289,7 @@ public class VirtualDeviceViewConfigurationTest {
         android.content.res.Flags.FLAG_RRO_CONSTRAINTS,
         android.content.res.Flags.FLAG_DIMENSION_FRRO
     })
-    public void getScaledMaximumFlingVelocity_customValueOnVirtualDevice() throws Exception {
+    public void getScaledMaximumFlingVelocity_customValueOnVirtualDevice() {
         Activity activity =
                 mRule.startActivityOnDisplaySync(Display.DEFAULT_DISPLAY, Activity.class);
         int valueOnDefaultDevice = ViewConfiguration.get(activity).getScaledMaximumFlingVelocity();
@@ -331,7 +328,7 @@ public class VirtualDeviceViewConfigurationTest {
         return display.getDisplay().getDisplayId();
     }
 
-    private static float getDimensionsDp(int pixelDimensions, Activity activity) {
-        return pixelDimensions / activity.getResources().getDisplayMetrics().density;
+    private static int getDimensionsDp(int pixelDimensions, Activity activity) {
+        return Math.round(pixelDimensions / activity.getResources().getDisplayMetrics().density);
     }
 }
