@@ -46,12 +46,20 @@ public class KeystoreFeatureMapTest {
     @Test
     public void testFeatureTagsMapping()
             throws IllegalArgumentException, IllegalAccessException {
-        List<String> skipFields = Arrays.asList("APPLICATION_DATA", "ASSOCIATED_DATA",
-                "ATTESTATION_APPLICATION_ID", "BOOTLOADER_ONLY", "EARLY_BOOT_ONLY", "HARDWARE_TYPE",
-                "IDENTITY_CREDENTIAL_KEY", "MAX_BOOT_LEVEL", "OS_PATCHLEVEL", "OS_VERSION",
-                "ROLLBACK_RESISTANCE", "STORAGE_KEY",
-                // TODO(b/380020528): remove this exception
-                "MODULE_HASH");
+        List<String> skipFields =
+                Arrays.asList(
+                        "APPLICATION_DATA",
+                        "ASSOCIATED_DATA",
+                        "ATTESTATION_APPLICATION_ID",
+                        "BOOTLOADER_ONLY",
+                        "EARLY_BOOT_ONLY",
+                        "HARDWARE_TYPE",
+                        "IDENTITY_CREDENTIAL_KEY",
+                        "MAX_BOOT_LEVEL",
+                        "OS_PATCHLEVEL",
+                        "OS_VERSION",
+                        "ROLLBACK_RESISTANCE",
+                        "STORAGE_KEY");
         List<String> missingFields = new ArrayList<>();
 
         for (Field kmField : Tag.class.getFields()) {
