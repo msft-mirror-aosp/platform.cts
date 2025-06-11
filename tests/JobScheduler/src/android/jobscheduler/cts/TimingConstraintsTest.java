@@ -18,8 +18,7 @@ package android.jobscheduler.cts;
 import static android.Manifest.permission.INTERACT_ACROSS_USERS_FULL;
 import static android.Manifest.permission.OVERRIDE_COMPAT_CHANGE_CONFIG_ON_RELEASE_BUILD;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static com.google.common.truth.Truth.assertWithMessage;
 
 import android.annotation.TargetApi;
 import android.app.compat.CompatChanges;
@@ -27,6 +26,7 @@ import android.app.compat.PackageOverride;
 import android.app.job.JobInfo;
 import android.app.job.JobParameters;
 import android.jobscheduler.cts.jobtestapp.TestJobSchedulerReceiver;
+import android.os.SystemClock;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
@@ -44,7 +44,7 @@ import java.util.Map;
  */
 @TargetApi(21)
 @RunWith(AndroidJUnit4.class)
-public class TimingConstraintsTest extends BaseJobSchedulerTest {
+public final class TimingConstraintsTest extends BaseJobSchedulerTest {
     private static final int TIMING_JOB_ID = TimingConstraintsTest.class.hashCode() + 0;
     private static final int CANCEL_JOB_ID = TimingConstraintsTest.class.hashCode() + 1;
     private static final int EXPIRED_JOB_ID = TimingConstraintsTest.class.hashCode() + 2;
@@ -60,8 +60,10 @@ public class TimingConstraintsTest extends BaseJobSchedulerTest {
         kTestEnvironment.setExpectedExecutions(1);
         mJobScheduler.schedule(periodicJob);
         runSatisfiedJob(TIMING_JOB_ID);
-        assertTrue("Timed out waiting for periodic jobs to execute",
-                kTestEnvironment.awaitExecution());
+
+        assertWithMessage("Timed out waiting for periodic jobs to execute")
+                .that(kTestEnvironment.awaitExecution())
+                .isTrue();
 
         // Make sure the job is rescheduled after it's run
         assertJobWaiting(TIMING_JOB_ID);
@@ -78,8 +80,10 @@ public class TimingConstraintsTest extends BaseJobSchedulerTest {
         kTestEnvironment.setExpectedExecutions(0);
         mJobScheduler.schedule(periodicJob);
         runSatisfiedJob(TIMING_JOB_ID);
-        assertFalse("Timed out waiting for periodic jobs to execute",
-                kTestEnvironment.awaitExecution());
+
+        assertWithMessage("Timed out waiting for periodic jobs to execute")
+                .that(kTestEnvironment.awaitExecution())
+                .isFalse();
         assertJobWaiting(TIMING_JOB_ID);
         assertJobNotReady(TIMING_JOB_ID);
     }
@@ -96,8 +100,10 @@ public class TimingConstraintsTest extends BaseJobSchedulerTest {
         // Now cancel it.
         mJobScheduler.cancel(CANCEL_JOB_ID);
         runSatisfiedJob(CANCEL_JOB_ID);
-        assertTrue("Cancel failed: job executed when it shouldn't have.",
-                kTestEnvironment.awaitTimeout());
+
+        assertWithMessage("Cancel failed: job executed when it shouldn't have.")
+                .that(kTestEnvironment.awaitTimeout())
+                .isTrue();
     }
 
     @Test
@@ -108,8 +114,10 @@ public class TimingConstraintsTest extends BaseJobSchedulerTest {
         kTestEnvironment.setExpectedExecutions(1);
         mJobScheduler.schedule(job);
         runSatisfiedJob(ZERO_DELAY_JOB_ID);
-        assertTrue("Failed to execute job with explicit zero min latency",
-                kTestEnvironment.awaitExecution());
+
+        assertWithMessage("Failed to execute job with explicit zero min latency")
+                .that(kTestEnvironment.awaitExecution())
+                .isTrue();
     }
 
     /**
@@ -138,11 +146,14 @@ public class TimingConstraintsTest extends BaseJobSchedulerTest {
                     Collections.emptyMap(),
                     Map.of(TestJobSchedulerReceiver.EXTRA_DEADLINE, deadlineMs)
             );
+
             // Wait for deadlineMs + an extra bit of time for processing
-            assertTrue("Failed to execute deadline job",
-                    testAppInterface.awaitJobStart(deadlineMs + 10_000L));
-            assertTrue("Job does not show its deadline as expired",
-                    testAppInterface.getLastParams().isOverrideDeadlineExpired());
+            assertWithMessage("Failed to execute deadline job")
+                    .that(testAppInterface.awaitJobStart(deadlineMs + 10_000L))
+                    .isTrue();
+            assertWithMessage("Job does not show its deadline as expired")
+                    .that(testAppInterface.getLastParams().isOverrideDeadlineExpired())
+                    .isTrue();
         }
     }
 
@@ -159,12 +170,17 @@ public class TimingConstraintsTest extends BaseJobSchedulerTest {
                         .build();
         kTestEnvironment.setExpectedExecutions(1);
         mJobScheduler.schedule(noDeadlineJob);
-        Thread.sleep(500L);
+        SystemClock.sleep(500L);
         runSatisfiedJob(UNEXPIRED_JOB_ID);
-        assertTrue("Failed to execute non-deadline job", kTestEnvironment.awaitExecution());
-        assertFalse("Job that ran early (unexpired) didn't have"
-                        + " JobParameters#isOverrideDeadlineExpired=false",
-                kTestEnvironment.getLastStartJobParameters().isOverrideDeadlineExpired());
+
+        assertWithMessage("Failed to execute non-deadline job")
+                .that(kTestEnvironment.awaitExecution())
+                .isTrue();
+        assertWithMessage(
+                        "Job that ran early (unexpired) didn't have"
+                                + " JobParameters#isOverrideDeadlineExpired=false")
+                .that(kTestEnvironment.getLastStartJobParameters().isOverrideDeadlineExpired())
+                .isFalse();
 
         // Test job with a deadline
         JobInfo deadlineJob =
@@ -174,11 +190,16 @@ public class TimingConstraintsTest extends BaseJobSchedulerTest {
                         .build();
         kTestEnvironment.setExpectedExecutions(1);
         mJobScheduler.schedule(deadlineJob);
-        Thread.sleep(500L);
+        SystemClock.sleep(500L);
         runSatisfiedJob(UNEXPIRED_JOB_ID);
-        assertTrue("Failed to execute non-deadline job", kTestEnvironment.awaitExecution());
-        assertFalse("Job that ran early (unexpired) didn't have"
-                        + " JobParameters#isOverrideDeadlineExpired=false",
-                kTestEnvironment.getLastStartJobParameters().isOverrideDeadlineExpired());
+
+        assertWithMessage("Failed to execute non-deadline job")
+                .that(kTestEnvironment.awaitExecution())
+                .isTrue();
+        assertWithMessage(
+                        "Job that ran early (unexpired) didn't have"
+                                + " JobParameters#isOverrideDeadlineExpired=false")
+                .that(kTestEnvironment.getLastStartJobParameters().isOverrideDeadlineExpired())
+                .isFalse();
     }
 }
