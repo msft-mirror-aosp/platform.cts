@@ -574,4 +574,8 @@
     <option name="compatibility:exclude-filter" value="CtsAdServicesDebuggableDeviceTestCases android.adservices.debuggablects.FledgeCtsDebuggableTest#testAdSelection_etldViolation_failure" />
     <option name="compatibility:exclude-filter" value="CtsAdServicesDebuggableDeviceTestCases android.adservices.debuggablects.FledgeCtsDebuggableTest#testAdSelectionFlow_skipNonActivatedCA_Success" />
     <option name="compatibility:exclude-filter" value="CtsAdServicesDebuggableDeviceTestCases android.adservices.debuggablects.FledgeCtsDebuggableTest#testReportImpression_etldViolation_failure" />
+
+    <!-- b/414696899-->
+    <option name="compatibility:exclude-filter" value="CtsHostsideNetworkTests com.android.cts.net.HostsideRestrictBackgroundNetworkTests#testMeteredNetworkAccess_expeditedJob" />
+    <option name="compatibility:exclude-filter" value="CtsHostsideNetworkTests com.android.cts.net.HostsideRestrictBackgroundNetworkTests#testNonMeteredNetworkAccess_expeditedJob" />
 </configuration>
