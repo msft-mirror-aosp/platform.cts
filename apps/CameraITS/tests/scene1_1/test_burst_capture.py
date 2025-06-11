@@ -34,6 +34,7 @@ _PATCH_X = 0.5 - _PATCH_W/2
 _PATCH_Y = 0.5 - _PATCH_H/2
 _START_FRAME = 2  # allow 1st frame to have some push out (see test_jitter.py)
 _THRESH_MIN_LEVEL = 0.1  # check images aren't too dark
+_YUV = 'yuv'
 
 
 class BurstCaptureTest(its_base_test.ItsBaseTest):
@@ -65,8 +66,22 @@ class BurstCaptureTest(its_base_test.ItsBaseTest):
       if camera_properties_utils.noise_reduction_mode(props, _NR_MODE_FAST):
         req['android.noiseReduction.mode'] = _NR_MODE_FAST
       camera_properties_utils.log_minimum_focus_distance(props)
-      cam.do_3a()
-      caps = cam.do_capture([req] * _NUM_TEST_FRAMES)
+      sizes = capture_request_utils.get_available_output_sizes(
+          _YUV, props
+      )
+      size = sizes[0]
+      logging.debug('capture W: %d, H: %d', size[0], size[1])
+      camera_properties_utils.skip_unless(
+          size is not None)
+
+      if self.hidden_physical_id:
+        out_surface = {'width': size[0], 'height': size[1], 'format': _YUV,
+                       'physicalCamera': self.hidden_physical_id}
+      else:
+        out_surface = {'width': size[0], 'height': size[1], 'format': _YUV}
+      cam.do_3a(out_surfaces=out_surface)
+      caps = cam.do_capture([req] * _NUM_TEST_FRAMES, out_surface,
+                            reuse_session=True)
       img = image_processing_utils.convert_capture_to_rgb_image(
           caps[0], props=props)
       name_with_log_path = os.path.join(self.log_path, _NAME)
