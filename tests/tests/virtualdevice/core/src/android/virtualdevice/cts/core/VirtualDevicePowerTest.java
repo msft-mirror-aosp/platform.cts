@@ -163,7 +163,6 @@ public class VirtualDevicePowerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_DISPLAY_POWER_MANAGER_APIS)
     public void proximityOffWakeLockLevelSupported_falseOnVirtualDevice() {
         createVirtualDeviceAndDisplay();
 
@@ -174,7 +173,6 @@ public class VirtualDevicePowerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_DISPLAY_POWER_MANAGER_APIS)
     public void isInteractive_screenOffTimeout_isPerPowerGroup() {
         assumeScreenOffSupported();
 
@@ -192,7 +190,6 @@ public class VirtualDevicePowerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_DISPLAY_POWER_MANAGER_APIS)
     public void isInteractive_powerButton_isPerPowerGroup() {
         assumeScreenOffSupported();
 
@@ -208,7 +205,6 @@ public class VirtualDevicePowerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_DISPLAY_POWER_MANAGER_APIS)
     public void newWakeLock_isPerPowerGroup() {
         assumeScreenOffSupported();
 
@@ -243,8 +239,7 @@ public class VirtualDevicePowerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(
-            {Flags.FLAG_DEVICE_AWARE_DISPLAY_POWER, Flags.FLAG_DISPLAY_POWER_MANAGER_APIS})
+    @RequiresFlagsEnabled(Flags.FLAG_DEVICE_AWARE_DISPLAY_POWER)
     public void goToSleepAndWakeUp_turnsOffAndOnVirtualDisplay() {
         createVirtualDeviceAndDisplay();
 
@@ -268,7 +263,6 @@ public class VirtualDevicePowerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled({Flags.FLAG_DISPLAY_POWER_MANAGER_APIS})
     public void untrustedDisplay_followsDefaultDisplayPowerState() {
         assumeScreenOffSupported();
 
@@ -284,7 +278,6 @@ public class VirtualDevicePowerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled({Flags.FLAG_DISPLAY_POWER_MANAGER_APIS})
     public void untrustedDisplay_noWakeLock() {
         assumeScreenOffSupported();
 
@@ -302,8 +295,7 @@ public class VirtualDevicePowerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(
-            {Flags.FLAG_DEVICE_AWARE_DISPLAY_POWER, Flags.FLAG_DISPLAY_POWER_MANAGER_APIS})
+    @RequiresFlagsEnabled(Flags.FLAG_DEVICE_AWARE_DISPLAY_POWER)
     public void turnScreenOn_turnsOnVirtualDisplay() {
         createVirtualDeviceAndDisplay();
 
@@ -332,8 +324,7 @@ public class VirtualDevicePowerTest {
      * "unlocked", so android:showWhenLocked is ignored for such displays.
      */
     @Test
-    @RequiresFlagsEnabled(
-            {Flags.FLAG_DEVICE_AWARE_DISPLAY_POWER, Flags.FLAG_DISPLAY_POWER_MANAGER_APIS})
+    @RequiresFlagsEnabled(Flags.FLAG_DEVICE_AWARE_DISPLAY_POWER)
     public void turnScreenOnWithoutShowWhenLocked_turnsOnVirtualDisplay() {
         createVirtualDeviceAndDisplay();
 
@@ -358,8 +349,7 @@ public class VirtualDevicePowerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(
-            {Flags.FLAG_DEVICE_AWARE_DISPLAY_POWER, Flags.FLAG_DISPLAY_POWER_MANAGER_APIS})
+    @RequiresFlagsEnabled(Flags.FLAG_DEVICE_AWARE_DISPLAY_POWER)
     public void turnScreenOnWithoutShowWhenLocked_turnsOnAlwaysUnlockedVirtualDisplay() {
         createVirtualDeviceAndDisplay(new VirtualDeviceParams.Builder()
                 .setLockState(VirtualDeviceParams.LOCK_STATE_ALWAYS_UNLOCKED)
@@ -386,8 +376,7 @@ public class VirtualDevicePowerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(
-            {Flags.FLAG_DEVICE_AWARE_DISPLAY_POWER, Flags.FLAG_DISPLAY_POWER_MANAGER_APIS})
+    @RequiresFlagsEnabled(Flags.FLAG_DEVICE_AWARE_DISPLAY_POWER)
     public void customSleepTimeout_goesToSleep() {
         assumeScreenOffSupported();
 
@@ -405,8 +394,7 @@ public class VirtualDevicePowerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(
-            {Flags.FLAG_DEVICE_AWARE_DISPLAY_POWER, Flags.FLAG_DISPLAY_POWER_MANAGER_APIS})
+    @RequiresFlagsEnabled(Flags.FLAG_DEVICE_AWARE_DISPLAY_POWER)
     public void customBrightness_dimTimeoutTriggersCallback() {
         assumeScreenOffSupported();
 
@@ -433,8 +421,7 @@ public class VirtualDevicePowerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(
-            {Flags.FLAG_DEVICE_AWARE_DISPLAY_POWER, Flags.FLAG_DISPLAY_POWER_MANAGER_APIS})
+    @RequiresFlagsEnabled(Flags.FLAG_DEVICE_AWARE_DISPLAY_POWER)
     public void customDefaultBrightness_windowManagerOverrideRequestTriggersCallback() {
         createVirtualDeviceAndDisplay(VirtualDeviceRule.createTrustedVirtualDisplayConfigBuilder()
                 .setBrightnessListener(mContext.getMainExecutor(), mBrightnessListener)
