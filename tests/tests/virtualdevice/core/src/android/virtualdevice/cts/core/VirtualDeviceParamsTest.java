@@ -163,14 +163,14 @@ public class VirtualDeviceParamsTest {
 
     @RequiresFlagsEnabled(Flags.FLAG_VIEWCONFIGURATION_APIS)
     @Test
-    public void viewConfigurationParams_parcelable_shouldRecreateSuccessfully() throws Exception {
+    public void viewConfigurationParams_parcelable_shouldRecreateSuccessfully() {
         final Duration tapTimeoutDuration = Duration.ofMillis(10L);
         final Duration doubleTapTimeoutDuration = Duration.ofMillis(20L);
         final Duration doubleTapMinTimeDuration = Duration.ofMillis(30L);
         final float scrollFriction = 50f;
-        final float touchSlopDp = 40f;
-        final float maximumFlingVelocityDpPerSecond = 90f;
-        final float minimumFlingVelocityDpPerSecond = 70f;
+        final int touchSlopPixels = 40;
+        final int maximumFlingVelocityPixelsPerSecond = 90;
+        final int minimumFlingVelocityPixelsPerSecond = 70;
         final Duration longPressTimeoutDuration = Duration.ofMillis(110L);
         final Duration multiPressTimeoutDuration = Duration.ofMillis(120L);
         VirtualDeviceParams originalParams =
@@ -181,11 +181,11 @@ public class VirtualDeviceParamsTest {
                                         .setDoubleTapTimeoutDuration(doubleTapTimeoutDuration)
                                         .setDoubleTapMinTimeDuration(doubleTapMinTimeDuration)
                                         .setScrollFriction(scrollFriction)
-                                        .setMinimumFlingVelocityDpPerSecond(
-                                                minimumFlingVelocityDpPerSecond)
-                                        .setMaximumFlingVelocityDpPerSecond(
-                                                maximumFlingVelocityDpPerSecond)
-                                        .setTouchSlopDp(touchSlopDp)
+                                        .setMinimumFlingVelocityPixelsPerSecond(
+                                                minimumFlingVelocityPixelsPerSecond)
+                                        .setMaximumFlingVelocityPixelsPerSecond(
+                                                maximumFlingVelocityPixelsPerSecond)
+                                        .setTouchSlopPixels(touchSlopPixels)
                                         .setLongPressTimeoutDuration(longPressTimeoutDuration)
                                         .setMultiPressTimeoutDuration(multiPressTimeoutDuration)
                                         .build())
@@ -205,11 +205,11 @@ public class VirtualDeviceParamsTest {
         assertThat(viewConfigurationParams.getDoubleTapMinTimeDuration())
                 .isEqualTo(doubleTapMinTimeDuration);
         assertThat(viewConfigurationParams.getScrollFriction()).isEqualTo(scrollFriction);
-        assertThat(viewConfigurationParams.getTouchSlopDp()).isEqualTo(touchSlopDp);
-        assertThat(viewConfigurationParams.getMinimumFlingVelocityDpPerSecond())
-                .isEqualTo(minimumFlingVelocityDpPerSecond);
-        assertThat(viewConfigurationParams.getMaximumFlingVelocityDpPerSecond())
-                .isEqualTo(maximumFlingVelocityDpPerSecond);
+        assertThat(viewConfigurationParams.getTouchSlopPixels()).isEqualTo(touchSlopPixels);
+        assertThat(viewConfigurationParams.getMinimumFlingVelocityPixelsPerSecond())
+                .isEqualTo(minimumFlingVelocityPixelsPerSecond);
+        assertThat(viewConfigurationParams.getMaximumFlingVelocityPixelsPerSecond())
+                .isEqualTo(maximumFlingVelocityPixelsPerSecond);
         assertThat(viewConfigurationParams.getLongPressTimeoutDuration())
                 .isEqualTo(longPressTimeoutDuration);
         assertThat(viewConfigurationParams.getMultiPressTimeoutDuration())

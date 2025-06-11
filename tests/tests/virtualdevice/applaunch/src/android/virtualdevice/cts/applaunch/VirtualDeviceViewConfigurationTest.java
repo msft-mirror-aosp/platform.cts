@@ -240,25 +240,21 @@ public class VirtualDeviceViewConfigurationTest {
     public void getScaledTouchSlop_customValueOnVirtualDevice() throws Exception {
         Activity activity =
                 mRule.startActivityOnDisplaySync(Display.DEFAULT_DISPLAY, Activity.class);
-        float valueOnDefaultDevice = ViewConfiguration.get(activity).getScaledTouchSlop();
+        int valueOnDefaultDevice = ViewConfiguration.get(activity).getScaledTouchSlop();
 
-        float overriddenValue = valueOnDefaultDevice + 1000f;
+        int overriddenValue = valueOnDefaultDevice + 1000;
         int displayId =
                 createVirtualDisplayWithinVirtualDeviceWithParams(
                         new ViewConfigurationParams.Builder()
-                                .setTouchSlopDp(overriddenValue)
+                                .setTouchSlopPixels(overriddenValue)
                                 .build());
 
         // Launch the activity on the virtual device and verify that we get the overridden value.
         activity = mRule.startActivityOnDisplaySync(displayId, Activity.class);
-        assertEquals(
-                getPixelDimensions(overriddenValue, activity),
-                ViewConfiguration.get(activity).getScaledTouchSlop(),
-                DELTA);
+        assertEquals(overriddenValue, ViewConfiguration.get(activity).getScaledTouchSlop());
         // Launch the activity on the default device and verify that we get the default value.
         activity = mRule.startActivityOnDisplaySync(Display.DEFAULT_DISPLAY, Activity.class);
-        assertEquals(
-                valueOnDefaultDevice, ViewConfiguration.get(activity).getScaledTouchSlop(), DELTA);
+        assertEquals(valueOnDefaultDevice, ViewConfiguration.get(activity).getScaledTouchSlop());
     }
 
     @Test
@@ -270,28 +266,24 @@ public class VirtualDeviceViewConfigurationTest {
     public void getScaledMinimumFlingVelocity_customValueOnVirtualDevice() throws Exception {
         Activity activity =
                 mRule.startActivityOnDisplaySync(Display.DEFAULT_DISPLAY, Activity.class);
-        float valueOnDefaultDevice =
-                ViewConfiguration.get(activity).getScaledMinimumFlingVelocity();
+        int valueOnDefaultDevice = ViewConfiguration.get(activity).getScaledMinimumFlingVelocity();
 
-        float overriddenValue = valueOnDefaultDevice + 1000f;
+        int overriddenValue = valueOnDefaultDevice + 1000;
         int displayId =
                 createVirtualDisplayWithinVirtualDeviceWithParams(
                         new ViewConfigurationParams.Builder()
-                                .setMinimumFlingVelocityDpPerSecond(overriddenValue)
+                                .setMinimumFlingVelocityPixelsPerSecond(overriddenValue)
                                 .build());
 
         // Launch the activity on the virtual device and verify that we get the overridden value.
         activity = mRule.startActivityOnDisplaySync(displayId, Activity.class);
         assertEquals(
-                getPixelDimensions(overriddenValue, activity),
-                ViewConfiguration.get(activity).getScaledMinimumFlingVelocity(),
-                DELTA);
+                overriddenValue, ViewConfiguration.get(activity).getScaledMinimumFlingVelocity());
         // Launch the activity on the default device and verify that we get the default value.
         activity = mRule.startActivityOnDisplaySync(Display.DEFAULT_DISPLAY, Activity.class);
         assertEquals(
                 valueOnDefaultDevice,
-                ViewConfiguration.get(activity).getScaledMinimumFlingVelocity(),
-                DELTA);
+                ViewConfiguration.get(activity).getScaledMinimumFlingVelocity());
     }
 
     @Test
@@ -303,28 +295,24 @@ public class VirtualDeviceViewConfigurationTest {
     public void getScaledMaximumFlingVelocity_customValueOnVirtualDevice() throws Exception {
         Activity activity =
                 mRule.startActivityOnDisplaySync(Display.DEFAULT_DISPLAY, Activity.class);
-        float valueOnDefaultDevice =
-                ViewConfiguration.get(activity).getScaledMaximumFlingVelocity();
+        int valueOnDefaultDevice = ViewConfiguration.get(activity).getScaledMaximumFlingVelocity();
 
-        float overriddenValue = valueOnDefaultDevice + 1000f;
+        int overriddenValue = valueOnDefaultDevice + 1000;
         int displayId =
                 createVirtualDisplayWithinVirtualDeviceWithParams(
                         new ViewConfigurationParams.Builder()
-                                .setMaximumFlingVelocityDpPerSecond(overriddenValue)
+                                .setMaximumFlingVelocityPixelsPerSecond(overriddenValue)
                                 .build());
 
         // Launch the activity on the virtual device and verify that we get the overridden value.
         activity = mRule.startActivityOnDisplaySync(displayId, Activity.class);
         assertEquals(
-                getPixelDimensions(overriddenValue, activity),
-                ViewConfiguration.get(activity).getScaledMaximumFlingVelocity(),
-                DELTA);
+                overriddenValue, ViewConfiguration.get(activity).getScaledMaximumFlingVelocity());
         // Launch the activity on the default device and verify that we get the default value.
         activity = mRule.startActivityOnDisplaySync(Display.DEFAULT_DISPLAY, Activity.class);
         assertEquals(
                 valueOnDefaultDevice,
-                ViewConfiguration.get(activity).getScaledMaximumFlingVelocity(),
-                DELTA);
+                ViewConfiguration.get(activity).getScaledMaximumFlingVelocity());
     }
 
     private int createVirtualDisplayWithinVirtualDeviceWithParams(
@@ -341,10 +329,6 @@ public class VirtualDeviceViewConfigurationTest {
                         virtualDevice,
                         VirtualDeviceRule.createTrustedVirtualDisplayConfigBuilder());
         return display.getDisplay().getDisplayId();
-    }
-
-    private static int getPixelDimensions(float dimensionsDp, Activity activity) {
-        return (int) Math.ceil(dimensionsDp * activity.getResources().getDisplayMetrics().density);
     }
 
     private static float getDimensionsDp(int pixelDimensions, Activity activity) {

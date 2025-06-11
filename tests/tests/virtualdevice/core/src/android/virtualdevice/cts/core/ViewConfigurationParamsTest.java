@@ -45,14 +45,14 @@ public class ViewConfigurationParamsTest {
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Test
-    public void parcelable_shouldRecreateSuccessfully() throws Exception {
+    public void parcelable_shouldRecreateSuccessfully() {
         final Duration tapTimeoutDuration = Duration.ofMillis(10L);
         final Duration doubleTapTimeoutDuration = Duration.ofMillis(20L);
         final Duration doubleTapMinTimeDuration = Duration.ofMillis(30L);
         final float scrollFriction = 50f;
-        final float touchSlopDp = 40f;
-        final float maximumFlingVelocityDpPerSecond = 90f;
-        final float minimumFlingVelocityDpPerSecond = 70f;
+        final int touchSlopPixels = 40;
+        final int maximumFlingVelocityPixelsPerSecond = 90;
+        final int minimumFlingVelocityPixelsPerSecond = 70;
         final Duration longPressTimeoutDuration = Duration.ofMillis(110L);
         final Duration multiPressTimeoutDuration = Duration.ofMillis(120L);
         ViewConfigurationParams originalParams =
@@ -61,9 +61,9 @@ public class ViewConfigurationParamsTest {
                         .setDoubleTapTimeoutDuration(doubleTapTimeoutDuration)
                         .setDoubleTapMinTimeDuration(doubleTapMinTimeDuration)
                         .setScrollFriction(scrollFriction)
-                        .setMinimumFlingVelocityDpPerSecond(minimumFlingVelocityDpPerSecond)
-                        .setMaximumFlingVelocityDpPerSecond(maximumFlingVelocityDpPerSecond)
-                        .setTouchSlopDp(touchSlopDp)
+                        .setMinimumFlingVelocityPixelsPerSecond(minimumFlingVelocityPixelsPerSecond)
+                        .setMaximumFlingVelocityPixelsPerSecond(maximumFlingVelocityPixelsPerSecond)
+                        .setTouchSlopPixels(touchSlopPixels)
                         .setLongPressTimeoutDuration(longPressTimeoutDuration)
                         .setMultiPressTimeoutDuration(multiPressTimeoutDuration)
                         .build();
@@ -81,11 +81,11 @@ public class ViewConfigurationParamsTest {
         assertThat(viewConfigurationParams.getDoubleTapMinTimeDuration())
                 .isEqualTo(doubleTapMinTimeDuration);
         assertThat(viewConfigurationParams.getScrollFriction()).isEqualTo(scrollFriction);
-        assertThat(viewConfigurationParams.getTouchSlopDp()).isEqualTo(touchSlopDp);
-        assertThat(viewConfigurationParams.getMinimumFlingVelocityDpPerSecond())
-                .isEqualTo(minimumFlingVelocityDpPerSecond);
-        assertThat(viewConfigurationParams.getMaximumFlingVelocityDpPerSecond())
-                .isEqualTo(maximumFlingVelocityDpPerSecond);
+        assertThat(viewConfigurationParams.getTouchSlopPixels()).isEqualTo(touchSlopPixels);
+        assertThat(viewConfigurationParams.getMinimumFlingVelocityPixelsPerSecond())
+                .isEqualTo(minimumFlingVelocityPixelsPerSecond);
+        assertThat(viewConfigurationParams.getMaximumFlingVelocityPixelsPerSecond())
+                .isEqualTo(maximumFlingVelocityPixelsPerSecond);
         assertThat(viewConfigurationParams.getLongPressTimeoutDuration())
                 .isEqualTo(longPressTimeoutDuration);
         assertThat(viewConfigurationParams.getMultiPressTimeoutDuration())
@@ -93,21 +93,21 @@ public class ViewConfigurationParamsTest {
     }
 
     @Test
-    public void noParametersSet_throwsException() throws Exception {
+    public void noParametersSet_throwsException() {
         assertThrows(
                 IllegalArgumentException.class,
                 () -> new ViewConfigurationParams.Builder().build());
     }
 
     @Test
-    public void nullTapTimeoutDuration_throwsException() throws Exception {
+    public void nullTapTimeoutDuration_throwsException() {
         assertThrows(
                 NullPointerException.class,
                 () -> new ViewConfigurationParams.Builder().setTapTimeoutDuration(null).build());
     }
 
     @Test
-    public void negativeTapTimeoutDuration_throwsException() throws Exception {
+    public void negativeTapTimeoutDuration_throwsException() {
         assertThrows(
                 IllegalArgumentException.class,
                 () ->
@@ -117,7 +117,7 @@ public class ViewConfigurationParamsTest {
     }
 
     @Test
-    public void tooLargeTapTimeoutDuration_throwsException() throws Exception {
+    public void tooLargeTapTimeoutDuration_throwsException() {
         long largeValue = (long) Integer.MAX_VALUE + 1;
         assertThrows(
                 IllegalArgumentException.class,
@@ -128,7 +128,7 @@ public class ViewConfigurationParamsTest {
     }
 
     @Test
-    public void nullDoubleTapTimeoutDuration_throwsException() throws Exception {
+    public void nullDoubleTapTimeoutDuration_throwsException() {
         assertThrows(
                 NullPointerException.class,
                 () ->
@@ -138,7 +138,7 @@ public class ViewConfigurationParamsTest {
     }
 
     @Test
-    public void negativeDoubleTapTimeoutDuration_throwsException() throws Exception {
+    public void negativeDoubleTapTimeoutDuration_throwsException() {
         assertThrows(
                 IllegalArgumentException.class,
                 () ->
@@ -148,7 +148,7 @@ public class ViewConfigurationParamsTest {
     }
 
     @Test
-    public void tooLargeDoubleTapTimeoutDuration_throwsException() throws Exception {
+    public void tooLargeDoubleTapTimeoutDuration_throwsException() {
         long largeValue = (long) Integer.MAX_VALUE + 1;
         assertThrows(
                 IllegalArgumentException.class,
@@ -159,7 +159,7 @@ public class ViewConfigurationParamsTest {
     }
 
     @Test
-    public void nullDoubleTapMinTimeDuration_throwsException() throws Exception {
+    public void nullDoubleTapMinTimeDuration_throwsException() {
         assertThrows(
                 NullPointerException.class,
                 () ->
@@ -169,7 +169,7 @@ public class ViewConfigurationParamsTest {
     }
 
     @Test
-    public void negativeDoubleTapMinTimeDuration_throwsException() throws Exception {
+    public void negativeDoubleTapMinTimeDuration_throwsException() {
         assertThrows(
                 IllegalArgumentException.class,
                 () ->
@@ -179,7 +179,7 @@ public class ViewConfigurationParamsTest {
     }
 
     @Test
-    public void tooLargeDoubleTapMinTimeDuration_throwsException() throws Exception {
+    public void tooLargeDoubleTapMinTimeDuration_throwsException() {
         long largeValue = (long) Integer.MAX_VALUE + 1;
         assertThrows(
                 IllegalArgumentException.class,
@@ -190,7 +190,7 @@ public class ViewConfigurationParamsTest {
     }
 
     @Test
-    public void nullLongPressTimeoutDuration_throwsException() throws Exception {
+    public void nullLongPressTimeoutDuration_throwsException() {
         assertThrows(
                 NullPointerException.class,
                 () ->
@@ -200,7 +200,7 @@ public class ViewConfigurationParamsTest {
     }
 
     @Test
-    public void negativeLongPressTimeoutDuration_throwsException() throws Exception {
+    public void negativeLongPressTimeoutDuration_throwsException() {
         assertThrows(
                 IllegalArgumentException.class,
                 () ->
@@ -210,7 +210,7 @@ public class ViewConfigurationParamsTest {
     }
 
     @Test
-    public void tooLargeLongPressTimeoutDuration_throwsException() throws Exception {
+    public void tooLargeLongPressTimeoutDuration_throwsException() {
         long largeValue = (long) Integer.MAX_VALUE + 1;
         assertThrows(
                 IllegalArgumentException.class,
@@ -221,7 +221,7 @@ public class ViewConfigurationParamsTest {
     }
 
     @Test
-    public void nullMultiPressTimeoutDuration_throwsException() throws Exception {
+    public void nullMultiPressTimeoutDuration_throwsException() {
         assertThrows(
                 NullPointerException.class,
                 () ->
@@ -231,7 +231,7 @@ public class ViewConfigurationParamsTest {
     }
 
     @Test
-    public void negativeMultiPressTimeoutDuration_throwsException() throws Exception {
+    public void negativeMultiPressTimeoutDuration_throwsException() {
         assertThrows(
                 IllegalArgumentException.class,
                 () ->
@@ -241,7 +241,7 @@ public class ViewConfigurationParamsTest {
     }
 
     @Test
-    public void tooLargeMultiPressTimeoutDuration_throwsException() throws Exception {
+    public void tooLargeMultiPressTimeoutDuration_throwsException() {
         long largeValue = (long) Integer.MAX_VALUE + 1;
         assertThrows(
                 IllegalArgumentException.class,
@@ -252,41 +252,40 @@ public class ViewConfigurationParamsTest {
     }
 
     @Test
-    public void negativeTouchSlopDp_throwsException() throws Exception {
+    public void negativeTouchSlopPixels_throwsException() {
         assertThrows(
                 IllegalArgumentException.class,
-                () -> new ViewConfigurationParams.Builder().setTouchSlopDp(-10f).build());
+                () -> new ViewConfigurationParams.Builder().setTouchSlopPixels(-10).build());
     }
 
     @Test
-    public void negativeMinimumFlingVelocityDpPerSecond_throwsException() throws Exception {
+    public void negativeMinimumFlingVelocityPixelsPerSecond_throwsException() {
         assertThrows(
                 IllegalArgumentException.class,
                 () ->
                         new ViewConfigurationParams.Builder()
-                                .setMinimumFlingVelocityDpPerSecond(-10f)
+                                .setMinimumFlingVelocityPixelsPerSecond(-10)
                                 .build());
     }
 
     @Test
-    public void negativeMaximumFlingVelocityDpPerSecond_throwsException() throws Exception {
+    public void negativeMaximumFlingVelocityPixelsPerSecond_throwsException() {
         assertThrows(
                 IllegalArgumentException.class,
                 () ->
                         new ViewConfigurationParams.Builder()
-                                .setMaximumFlingVelocityDpPerSecond(-10f)
+                                .setMaximumFlingVelocityPixelsPerSecond(-10)
                                 .build());
     }
 
     @Test
-    public void minimumFlingVelocityGreaterThanMaximumFlingVelocity_throwsException()
-            throws Exception {
+    public void minimumFlingVelocityGreaterThanMaximumFlingVelocity_throwsException() {
         assertThrows(
                 IllegalArgumentException.class,
                 () ->
                         new ViewConfigurationParams.Builder()
-                                .setMinimumFlingVelocityDpPerSecond(200f)
-                                .setMaximumFlingVelocityDpPerSecond(100f)
+                                .setMinimumFlingVelocityPixelsPerSecond(200)
+                                .setMaximumFlingVelocityPixelsPerSecond(100)
                                 .build());
     }
 }
