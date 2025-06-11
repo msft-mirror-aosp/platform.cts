@@ -17,10 +17,11 @@
 package android.telephony.ims.cts;
 
 import static android.telephony.ims.RegistrationManager.SUGGESTED_ACTION_NONE;
+import static android.telephony.ims.RegistrationManager.SUGGESTED_ACTION_TRIGGER_CLEAR_RAT_BLOCKS;
 import static android.telephony.ims.RegistrationManager.SUGGESTED_ACTION_TRIGGER_PLMN_BLOCK;
 import static android.telephony.ims.RegistrationManager.SUGGESTED_ACTION_TRIGGER_PLMN_BLOCK_WITH_TIMEOUT;
 import static android.telephony.ims.RegistrationManager.SUGGESTED_ACTION_TRIGGER_RAT_BLOCK;
-import static android.telephony.ims.RegistrationManager.SUGGESTED_ACTION_TRIGGER_CLEAR_RAT_BLOCKS;
+import static android.telephony.ims.RegistrationManager.SUGGESTED_ACTION_TRIGGER_THROTTLE_TIME;
 import static android.telephony.ims.stub.ImsRegistrationImplBase.REGISTRATION_TECH_LTE;
 import static android.telephony.ims.stub.ImsRegistrationImplBase.REGISTRATION_TECH_NONE;
 
@@ -6036,6 +6037,62 @@ public class ImsServiceTest {
 
         suggestedAction = waitForResult(mDeregQueue);
         assertEquals(SUGGESTED_ACTION_NONE, suggestedAction);
+    }
+
+    @Ignore(
+            "RegistrationManager.RegistrationCallback#onUnregistered(ImsReasonInfo,int,int,int)"
+                    + " is hidden. Internal use only.")
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_SUPPORT_THROTTLE_TIME_FOR_DEREGISTRATION)
+    public void testMmTelManagerRegistrationDeregisteredThrottling() throws Exception {
+        if (!ImsUtils.shouldTestImsService()) {
+            return;
+        }
+
+        assumeTrue(sSupportsImsHal);
+
+        triggerFrameworkConnectToCarrierImsService();
+
+        ImsReasonInfo reasonInfo =
+                new ImsReasonInfo(
+                        ImsReasonInfo.CODE_REGISTRATION_ERROR, ImsReasonInfo.CODE_UNSPECIFIED, "");
+        int testThrottleTimeSec = 30;
+
+        // Start de-registered
+        sServiceConnector
+                .getCarrierService()
+                .getImsRegistration()
+                .onDeregistered(
+                        reasonInfo,
+                        SUGGESTED_ACTION_TRIGGER_THROTTLE_TIME,
+                        new ImsRegistrationAttributes.Builder(IMS_REGI_TECH_LTE).build(),
+                        testThrottleTimeSec);
+
+        LinkedBlockingQueue<Integer> mDeregQueue = new LinkedBlockingQueue<>();
+        RegistrationManager.RegistrationCallback callback =
+                new RegistrationManager.RegistrationCallback() {
+                    @Override
+                    public void onUnregistered(
+                            ImsReasonInfo info,
+                            int suggestedAction,
+                            int imsRadioTech,
+                            int throttlingTimeSec) {
+                        mDeregQueue.offer(throttlingTimeSec);
+                    }
+                };
+
+        final UiAutomation automan = InstrumentationRegistry.getInstrumentation().getUiAutomation();
+        try {
+            automan.adoptShellPermissionIdentity();
+            ImsManager imsManager = getContext().getSystemService(ImsManager.class);
+            ImsMmTelManager mmTelManager = imsManager.getImsMmTelManager(sTestSub);
+            mmTelManager.registerImsRegistrationCallback(getContext().getMainExecutor(), callback);
+        } finally {
+            automan.dropShellPermissionIdentity();
+        }
+
+        int throttlingTimeSec = waitForResult(mDeregQueue);
+        assertEquals(testThrottleTimeSec, throttlingTimeSec);
     }
 
     @Ignore("RegistrationManager.RegistrationCallback#onUnregistered(ImsReasonInfo,int,int)"

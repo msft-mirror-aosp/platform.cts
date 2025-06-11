@@ -77,7 +77,6 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.stubbing.Answer;
 
-import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.time.Duration;
@@ -553,7 +552,7 @@ public class VirtualSensorTest {
                 new VirtualSensorConfig.Builder(TYPE_ACCELEROMETER, VIRTUAL_SENSOR_NAME).build());
 
         try (HardwareBuffer hardwareBuffer = createSensorsHardwareBuffer()) {
-            assertThrows(UncheckedIOException.class,
+            assertThrows(UnsupportedOperationException.class,
                     () -> mVirtualDeviceSensorManager.createDirectChannel(hardwareBuffer));
         }
     }

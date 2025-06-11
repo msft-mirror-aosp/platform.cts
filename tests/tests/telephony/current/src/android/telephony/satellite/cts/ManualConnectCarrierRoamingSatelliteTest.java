@@ -22,6 +22,7 @@ import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -44,6 +45,9 @@ import android.telephony.SmsManager;
 import android.telephony.SubscriptionManager;
 import android.telephony.cts.util.DefaultSmsAppHelper;
 import android.telephony.satellite.SatelliteManager;
+import android.telephony.satellite.SatelliteModemEnableRequestAttributes;
+import android.telephony.satellite.SatelliteSubscriberInfo;
+import android.telephony.satellite.SatelliteSubscriberProvisionStatus;
 import android.telephony.satellite.stub.SatelliteModemState;
 import android.telephony.satellite.stub.SatelliteResult;
 import android.text.TextUtils;
@@ -51,6 +55,8 @@ import android.util.Pair;
 
 import com.android.internal.telephony.RILConstants;
 import com.android.internal.telephony.flags.Flags;
+
+import java.util.List;
 
 import org.junit.After;
 import org.junit.AfterClass;
@@ -68,6 +74,9 @@ public class ManualConnectCarrierRoamingSatelliteTest extends CarrierRoamingSate
     private static final int ESOS_SLOT_ID = SLOT_ID_0;
     private static final int ESOS_SIM_PROFILE_ID = MOCK_SIM_PROFILE_ID_TWN_CHT;
     private static final String ESOS_PHONE_NUMBER = PHONE_NUMBER_0;
+    private static final String ESOS_ICC_ID = "89886920042507847155";
+    private static final String ESOS_NIDD_APN = NIDD_APN_NAME;
+    private static final int ESOS_CARRIER_ID = 1884;
     private static final String SMS_SEND_ACTION = "CTS_SMS_SEND_ACTION";
     private static final String TEST_DEST_ADDR = "1234567890";
 
@@ -287,6 +296,66 @@ public class ManualConnectCarrierRoamingSatelliteTest extends CarrierRoamingSate
         if (!shouldTestManualConnectCarrierRoaming()) return;
         testQuerySatelliteEntitlementService_success(ESOS_SLOT_ID,
             CarrierConfigManager.CARRIER_ROAMING_NTN_CONNECT_MANUAL);
+    }
+
+    @Test
+    public void testVerifySatelliteModemEnableRequestAttributes() throws Exception {
+        logd(TAG, "testVerifySatelliteModemEnableRequestAttributes");
+        if (!shouldTestManualConnectCarrierRoaming()) return;
+
+        // Move satellite to off state before enabling satellite mode.
+        moveSatelliteToOffState();
+
+        int result = requestSatelliteEnabledWithResult(true, TIMEOUT);
+        assertTrue(sMockSatelliteServiceManager.waitForEventOnRequestSatelliteEnabled(1));
+        SatelliteModemEnableRequestAttributes enableAttributes =
+            sMockSatelliteServiceManager.getRequestSatelliteEnabledAttributes();
+        assertEquals(true, enableAttributes.isEnabled());
+        assertEquals(false, enableAttributes.isForDemoMode());
+        assertEquals(false, enableAttributes.isForEmergencyMode());
+        assertNotNull(enableAttributes.getSatelliteSubscriptionInfo());
+        assertEquals(ESOS_NIDD_APN, enableAttributes.getSatelliteSubscriptionInfo().getNiddApn());
+        assertEquals(ESOS_ICC_ID, enableAttributes.getSatelliteSubscriptionInfo().getIccId());
+
+        // Move satellite to off state to clean up all pending resources
+        // and reset telephony satellite states.
+        moveSatelliteToOffState();
+    }
+
+    @Test
+    public void testVerifySatelliteSubscriberProvisionStatus() {
+        logd("testVerifySatelliteSubscriberProvisionStatus");
+        if (!shouldTestManualConnectCarrierRoaming()) return;
+
+        grantSatellitePermission();
+        try {
+            Pair<List<SatelliteSubscriberProvisionStatus>, Integer> pairResult =
+                    requestSatelliteSubscriberProvisionStatus();
+            if (pairResult == null) {
+                fail("testVerifySatelliteSubscriberProvisionStatus: "
+                        + "no satellite provision status available");
+            }
+            assertNotNull(pairResult.first);
+            assertThat(pairResult.first.size()).isGreaterThan(0);
+            for (SatelliteSubscriberProvisionStatus provisionStatus : pairResult.first) {
+                logd(TAG, "testVerifySatelliteSubscriberProvisionStatus: provisionStatus: "
+                        + provisionStatus);
+                SatelliteSubscriberInfo subscriberInfo =
+                        provisionStatus.getSatelliteSubscriberInfo();
+                assertNotNull(subscriberInfo);
+                if (subscriberInfo.getSubscriberIdType()
+                        == SatelliteSubscriberInfo.SUBSCRIBER_ID_TYPE_IMSI_MSISDN) {
+                    assertTrue(provisionStatus.isProvisioned());
+                    assertThat(subscriberInfo.getSubscriberId()).contains(ESOS_PHONE_NUMBER);
+                    assertEquals(ESOS_CARRIER_ID, subscriberInfo.getCarrierId());
+                    assertEquals(ESOS_NIDD_APN, subscriberInfo.getNiddApn());
+                    assertTrue(isActiveSubId(subscriberInfo.getSubscriptionId()));
+                    break;
+                }
+            }
+        } finally {
+            revokeSatellitePermission();
+        }
     }
 
     private static boolean shouldTestManualConnectCarrierRoaming() {

@@ -17,17 +17,20 @@ package android.os.cts;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import android.content.Context;
 import android.content.pm.ApplicationInfo;
 import android.os.Environment;
 import android.os.UserHandle;
+import android.os.storage.StorageManager;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.AppModeSdkSandbox;
+import android.platform.test.annotations.DisabledOnRavenwood;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -57,6 +60,13 @@ public class EnvironmentTest {
     private static final Context sContext =
             InstrumentationRegistry.getInstrumentation().getContext();
 
+    private static void assertAbsolute(String path) {
+        assertThat(path).startsWith("/");
+    }
+
+    private static void assertAbsolute(File path) {
+        assertAbsolute(path.getPath());
+    }
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
@@ -64,33 +74,42 @@ public class EnvironmentTest {
     @Test
     public void testEnvironment() {
         new Environment();
-        assertNotNull(Environment.getExternalStorageState());
         assertTrue(Environment.getRootDirectory().isDirectory());
         assertTrue(Environment.getDownloadCacheDirectory().isDirectory());
         assertTrue(Environment.getDataDirectory().isDirectory());
     }
 
+    @Test
+    @ApiTest(apis = "android.os.Environment#getExternalStorageState")
+    @DisabledOnRavenwood(blockedBy = StorageManager.class)
+    public void testGetExternalStorageState() {
+        assertNotNull(Environment.getExternalStorageState());
+    }
+
     @AppModeFull(reason = "External directory not accessible by instant apps")
     @Test
+    @DisabledOnRavenwood(blockedBy = StorageManager.class)
     public void testEnvironmentExternal() {
         assertTrue(Environment.getStorageDirectory().isDirectory());
         assertTrue(Environment.getExternalStorageDirectory().isDirectory());
     }
 
     /**
-     * If TMPDIR points to a global shared directory,
-     * this could compromise the security of the files.
+     * If TMPDIR points to a global shared directory, this could compromise the security of the
+     * files.
      */
     @Test
+    @DisabledOnRavenwood(reason = "irrelevant on Ravenwood")
     public void testNoTmpDir() {
         assertTrue(System.getenv("TMPDIR").endsWith("android.os.cts/cache"));
     }
 
     /**
-     * Verify that all writable block filesystems are mounted "noatime" to avoid
-     * unnecessary flash churn.
+     * Verify that all writable block filesystems are mounted "noatime" to avoid unnecessary flash
+     * churn.
      */
     @Test
+    @DisabledOnRavenwood(reason = "irrelevant on Ravenwood")
     public void testNoAtime() throws Exception {
         try (BufferedReader br = new BufferedReader(new FileReader("/proc/mounts"))) {
             String line;
@@ -108,10 +127,9 @@ public class EnvironmentTest {
         }
     }
 
-    /**
-     * verify hidepid=2 on /proc
-     */
+    /** verify hidepid=2 on /proc */
     @Test
+    @DisabledOnRavenwood(reason = "irrelevant on Ravenwood")
     public void testHidePid2() throws Exception {
         try (BufferedReader br = new BufferedReader(new FileReader("/proc/mounts"))) {
             String line;
@@ -129,15 +147,17 @@ public class EnvironmentTest {
     }
 
     @Test
+    @DisabledOnRavenwood(reason = "irrelevant on Ravenwood")
     public void testHidePid2_direct() throws Exception {
         assertFalse(new File("/proc/1").exists());
     }
 
     /**
-     * Verify that all writable block filesystems are mounted with "resgid" to
-     * mitigate disk-full trouble.
+     * Verify that all writable block filesystems are mounted with "resgid" to mitigate disk-full
+     * trouble.
      */
     @Test
+    @DisabledOnRavenwood(reason = "irrelevant on Ravenwood")
     public void testSaneInodes() throws Exception {
         final File file = Environment.getDataDirectory();
         final StructStatVfs stat = Os.statvfs(file.getAbsolutePath());
@@ -169,6 +189,9 @@ public class EnvironmentTest {
 
     @Test
     @ApiTest(apis = "android.os.Environment#getDataCePackageDirectoryForUser")
+    @DisabledOnRavenwood(
+            blockedBy = ApplicationInfo.class,
+            reason = "Context.getApplicationInfo() not supported")
     public void testDataCePackageDirectoryForUser() {
         testDataPackageDirectoryForUser(
                 (uuid, userHandle) -> Environment.getDataCePackageDirectoryForUser(
@@ -179,6 +202,9 @@ public class EnvironmentTest {
 
     @Test
     @ApiTest(apis = "android.os.Environment#getDataDePackageDirectoryForUser")
+    @DisabledOnRavenwood(
+            blockedBy = ApplicationInfo.class,
+            reason = "Context.getApplicationInfo() not supported")
     public void testDataDePackageDirectoryForUser() {
         testDataPackageDirectoryForUser(
                 (uuid, userHandle) -> Environment.getDataDePackageDirectoryForUser(
@@ -201,5 +227,122 @@ public class EnvironmentTest {
         // Check that public API is consistent with the public property
         assertThat(publicApi.apply(appInfo.storageUuid, sContext.getUser()).getAbsolutePath())
                 .isEqualTo(publicProperty.apply(appInfo));
+    }
+
+    // In the following tests, we just make sure the APIs don't throw,
+    // and returned paths are absolute.
+
+    @Test
+    @ApiTest(apis = "android.os.Environment#getRootDirectory")
+    public void testGetRootDirectory() {
+        assertAbsolute(Environment.getRootDirectory());
+    }
+
+    @Test
+    @ApiTest(apis = "android.os.Environment#getStorageDirectory")
+    public void testGetStorageDirectory() {
+        assertAbsolute(Environment.getStorageDirectory());
+    }
+
+    @Test
+    @ApiTest(apis = "android.os.Environment#getOemDirectory")
+    public void testGetOemDirectory() {
+        assertAbsolute(Environment.getOemDirectory());
+    }
+
+    @Test
+    @ApiTest(apis = "android.os.Environment#getOdmDirectory")
+    public void testGetOdmDirectory() {
+        assertAbsolute(Environment.getOdmDirectory());
+    }
+
+    @Test
+    @ApiTest(apis = "android.os.Environment#getVendorDirectory")
+    public void testGetVendorDirectory() {
+        assertAbsolute(Environment.getVendorDirectory());
+    }
+
+    @Test
+    @ApiTest(apis = "android.os.Environment#getProductDirectory")
+    public void testGetProductDirectory() {
+        assertAbsolute(Environment.getProductDirectory());
+    }
+
+    @Test
+    @ApiTest(apis = "android.os.Environment#getProductServicesDirectory")
+    @SuppressWarnings("deprecation") // For Environment.getProductServicesDirectory()
+    public void testGetProductServicesDirectory() {
+        assertAbsolute(Environment.getProductServicesDirectory());
+    }
+
+    @Test
+    @ApiTest(apis = "android.os.Environment#getSystemExtDirectory")
+    public void testGetSystemExtDirectory() {
+        assertAbsolute(Environment.getSystemExtDirectory());
+    }
+
+    @Test
+    @ApiTest(apis = "android.os.Environment#getInternalMediaDirectories")
+    public void testGetInternalMediaDirectories() {
+        for (var path : Environment.getInternalMediaDirectories()) {
+            assertAbsolute(path);
+        }
+    }
+
+    @Test
+    @ApiTest(apis = "android.os.Environment#getExternalStorageDirectory")
+    @DisabledOnRavenwood(blockedBy = StorageManager.class)
+    public void testGetExternalStorageDirectory() {
+        assertAbsolute(Environment.getExternalStorageDirectory());
+    }
+
+    @Test
+    @ApiTest(apis = "android.os.Environment#getExternalStoragePublicDirectory")
+    @DisabledOnRavenwood(blockedBy = StorageManager.class)
+    public void testGetExternalStoragePublicDirectory() {
+        assertAbsolute(
+                Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES));
+    }
+
+    @Test
+    @ApiTest(apis = "android.os.Environment#getDownloadCacheDirectory")
+    public void testGetDownloadCacheDirectory() {
+        assertAbsolute(Environment.getDownloadCacheDirectory());
+    }
+
+    @Test
+    @ApiTest(apis = "android.os.Environment#isExternalStorageRemovable")
+    @DisabledOnRavenwood(blockedBy = StorageManager.class)
+    public void testIsExternalStorageRemovable() {
+        Environment.isExternalStorageRemovable();
+    }
+
+    @Test
+    @ApiTest(apis = "android.os.Environment#isExternalStorageEmulated")
+    @DisabledOnRavenwood(blockedBy = StorageManager.class)
+    public void testIsExternalStorageEmulated() {
+        Environment.isExternalStorageEmulated();
+    }
+
+    @Test
+    @ApiTest(apis = "android.os.Environment#isExternalStorageLegacy")
+    @DisabledOnRavenwood(blockedBy = StorageManager.class)
+    public void testIsExternalStorageLegacy() {
+        Environment.isExternalStorageLegacy();
+    }
+
+    @Test
+    @ApiTest(apis = "android.os.Environment#isExternalStorageManager")
+    @DisabledOnRavenwood(blockedBy = StorageManager.class)
+    public void testIsExternalStorageManager() {
+        Environment.isExternalStorageManager();
+    }
+
+    @Test
+    @ApiTest(apis = "android.os.Environment#buildPath")
+    public void testBuildPath() {
+        File baseDir = Environment.getDataDirectory();
+        var res = Environment.buildPath(baseDir, "a", "b");
+        assertEquals(res, new File(new File(baseDir, "a"), "b").getAbsoluteFile());
     }
 }

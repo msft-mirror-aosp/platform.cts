@@ -172,17 +172,6 @@ public class WindowManagerStateHelper extends WindowManagerState {
         waitForValidState(homeActivity);
     }
 
-    /** @return {@code true} if the recents is visible; {@code false} if timeout occurs. */
-    public boolean waitForRecentsActivityVisible() {
-        if (isHomeRecentsComponent()) {
-            waitForHomeActivityVisible();
-            return true;
-        } else {
-            return waitForWithAmState(WindowManagerState::isRecentsActivityVisible,
-                    "recents activity to be visible");
-        }
-    }
-
     public void waitForDreamGone() {
         assertTrue("Dream must be gone",
                 waitForWithAmState(state -> state.getDreamTask() == null, "DreamActivity gone"));

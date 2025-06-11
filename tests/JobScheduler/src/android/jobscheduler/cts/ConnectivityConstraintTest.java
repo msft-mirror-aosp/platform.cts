@@ -21,11 +21,8 @@ import static android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET;
 import static android.net.NetworkCapabilities.NET_CAPABILITY_VALIDATED;
 import static android.net.NetworkCapabilities.TRANSPORT_CELLULAR;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static com.google.common.truth.Truth.assertThat;
+import static com.google.common.truth.Truth.assertWithMessage;
 
 import android.annotation.TargetApi;
 import android.app.ActivityManager;
@@ -68,11 +65,12 @@ import java.util.Map;
 @TargetApi(21)
 @RequiresDevice // Emulators don't always have access to wifi/network
 @RunWith(AndroidJUnit4.class)
-public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
+public final class ConnectivityConstraintTest extends BaseJobSchedulerTest {
     private static final String TAG = "ConnectivityConstraintTest";
 
     /** Unique identifier for the job scheduled by this suite of tests. */
-    public static final int CONNECTIVITY_JOB_ID = ConnectivityConstraintTest.class.hashCode();
+    private static final int CONNECTIVITY_JOB_ID = ConnectivityConstraintTest.class.hashCode();
+
     /** Wait this long before timing out the test. */
     private static final long DEFAULT_TIMEOUT_MILLIS = 30000L; // 30 seconds.
 
@@ -146,8 +144,9 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
 
         runSatisfiedJob(CONNECTIVITY_JOB_ID);
 
-        assertTrue("Job with unmetered constraint did not fire on WiFi.",
-                kTestEnvironment.awaitExecution());
+        assertWithMessage("Job with unmetered constraint did not fire on WiFi.")
+                .that(kTestEnvironment.awaitExecution())
+                .isTrue();
     }
 
     /** Schedule a job with a connectivity constraint, and ensure that it executes on WiFi. */
@@ -166,8 +165,9 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
 
         runSatisfiedJob(CONNECTIVITY_JOB_ID);
 
-        assertTrue("Job with connectivity constraint did not fire on WiFi.",
-                kTestEnvironment.awaitExecution());
+        assertWithMessage("Job with connectivity constraint did not fire on WiFi.")
+                .that(kTestEnvironment.awaitExecution())
+                .isTrue();
     }
 
     /**
@@ -190,8 +190,9 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
 
         runSatisfiedJob(CONNECTIVITY_JOB_ID);
 
-        assertTrue("Job with connectivity constraint did not fire on unmetered WiFi.",
-                kTestEnvironment.awaitExecution());
+        assertWithMessage("Job with connectivity constraint did not fire on unmetered WiFi.")
+                .that(kTestEnvironment.awaitExecution())
+                .isTrue();
     }
 
     /**
@@ -212,8 +213,9 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
 
         runSatisfiedJob(CONNECTIVITY_JOB_ID);
 
-        assertTrue("Job with connectivity constraint did not fire on mobile.",
-                kTestEnvironment.awaitExecution());
+        assertWithMessage("Job with connectivity constraint did not fire on mobile.")
+                .that(kTestEnvironment.awaitExecution())
+                .isTrue();
     }
 
     /**
@@ -237,8 +239,9 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
 
         runSatisfiedJob(CONNECTIVITY_JOB_ID);
 
-        assertTrue("Job with connectivity constraint did not fire on metered wifi.",
-                kTestEnvironment.awaitExecution());
+        assertWithMessage("Job with connectivity constraint did not fire on metered wifi.")
+                .that(kTestEnvironment.awaitExecution())
+                .isTrue();
     }
 
     /**
@@ -266,19 +269,23 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
 
         runSatisfiedJob(CONNECTIVITY_JOB_ID);
 
-        assertTrue("Job with connectivity constraint did not fire on mobile.",
-                kTestEnvironment.awaitExecution());
+        assertWithMessage("Job with connectivity constraint did not fire on mobile.")
+                .that(kTestEnvironment.awaitExecution())
+                .isTrue();
         JobParameters startParams = kTestEnvironment.getLastStartJobParameters();
 
         connectToWifi();
-        assertFalse(
-                "Job with connectivity constraint was stopped when network transitioned to WiFi.",
-                kTestEnvironment.awaitStopped());
-        assertTrue("Job didn't get network change signal when network transitioned to WiFi.",
-                kTestEnvironment.awaitNetworkChange());
+        assertWithMessage(
+                        "Job with connectivity constraint was stopped when network transitioned to"
+                                + " WiFi.")
+                .that(kTestEnvironment.awaitStopped())
+                .isFalse();
+        assertWithMessage("Job didn't get network change signal when network transitioned to WiFi.")
+                .that(kTestEnvironment.awaitNetworkChange())
+                .isTrue();
         JobParameters networkChangedParams = kTestEnvironment.getLastNetworkChangedJobParameters();
-        assertNotNull(networkChangedParams.getNetwork());
-        assertNotEquals(startParams.getNetwork(), networkChangedParams.getNetwork());
+        assertThat(networkChangedParams.getNetwork()).isNotNull();
+        assertThat(startParams.getNetwork()).isNotEqualTo(networkChangedParams.getNetwork());
     }
 
     /**
@@ -298,8 +305,9 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
                         .build());
 
         runSatisfiedJob(CONNECTIVITY_JOB_ID);
-        assertTrue("Job with metered connectivity constraint did not fire on mobile.",
-                kTestEnvironment.awaitExecution());
+        assertWithMessage("Job with metered connectivity constraint did not fire on mobile.")
+                .that(kTestEnvironment.awaitExecution())
+                .isTrue();
     }
 
     /**
@@ -324,8 +332,10 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
 
         // Since we equate "metered" to "cellular", the job shouldn't start.
         runSatisfiedJob(CONNECTIVITY_JOB_ID);
-        assertTrue("Job with metered connectivity constraint fired on a metered wifi network.",
-                kTestEnvironment.awaitTimeout());
+        assertWithMessage(
+                        "Job with metered connectivity constraint fired on a metered wifi network.")
+                .that(kTestEnvironment.awaitTimeout())
+                .isTrue();
     }
 
     /**
@@ -355,14 +365,18 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
         mTestAppInterface.scheduleJob(false,  JobInfo.NETWORK_TYPE_ANY, false);
 
         mTestAppInterface.runSatisfiedJob();
-        assertTrue("Job with metered connectivity constraint did not fire on a metered network.",
-                mTestAppInterface.awaitJobStart(30_000));
+        assertWithMessage(
+                        "Job with metered connectivity constraint did not fire on a metered"
+                                + " network.")
+                .that(mTestAppInterface.awaitJobStart(30_000))
+                .isTrue();
 
         setDataSaverEnabled(true);
-        assertFalse(
-                "Job with metered connectivity constraint for foreground app was stopped when"
-                        + " Data Saver was turned on.",
-                mTestAppInterface.awaitJobStop(30_000));
+        assertWithMessage(
+                        "Job with metered connectivity constraint for foreground app was stopped"
+                                + " when Data Saver was turned on.")
+                .that(mTestAppInterface.awaitJobStop(30_000))
+                .isFalse();
     }
 
     /**
@@ -396,8 +410,9 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
                         .build());
         runSatisfiedJob(CONNECTIVITY_JOB_ID);
 
-        assertTrue("Expedited job requiring connectivity did not fire when app was idle.",
-                kTestEnvironment.awaitExecution());
+        assertWithMessage("Expedited job requiring connectivity did not fire when app was idle.")
+                .that(kTestEnvironment.awaitExecution())
+                .isTrue();
     }
 
     /**
@@ -433,9 +448,10 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
                         .build());
         runSatisfiedJob(CONNECTIVITY_JOB_ID);
 
-        assertTrue(
-                "Expedited job requiring connectivity did not fire with Battery Saver on.",
-                kTestEnvironment.awaitExecution());
+        assertWithMessage(
+                        "Expedited job requiring connectivity did not fire with Battery Saver on.")
+                .that(kTestEnvironment.awaitExecution())
+                .isTrue();
     }
 
     /**
@@ -458,8 +474,9 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
         mTestAppInterface.scheduleJob(false,  JobInfo.NETWORK_TYPE_ANY, true);
 
         mTestAppInterface.runSatisfiedJob();
-        assertTrue("UI job requiring connectivity did not fire with Doze on.",
-                mTestAppInterface.awaitJobStart(DEFAULT_TIMEOUT_MILLIS));
+        assertWithMessage("UI job requiring connectivity did not fire with Doze on.")
+                .that(mTestAppInterface.awaitJobStart(DEFAULT_TIMEOUT_MILLIS))
+                .isTrue();
     }
 
     /**
@@ -488,9 +505,11 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
         mTestAppInterface.scheduleJob(false,  JobInfo.NETWORK_TYPE_ANY, true);
         mTestAppInterface.runSatisfiedJob();
 
-        assertTrue(
-                "FG expedited job requiring metered connectivity did not fire with Data Saver on.",
-                mTestAppInterface.awaitJobStart(DEFAULT_TIMEOUT_MILLIS));
+        assertWithMessage(
+                        "FG expedited job requiring metered connectivity did not fire with Data"
+                                + " Saver on.")
+                .that(mTestAppInterface.awaitJobStart(DEFAULT_TIMEOUT_MILLIS))
+                .isTrue();
     }
 
     /**
@@ -530,8 +549,11 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
                         .build());
         runSatisfiedJob(CONNECTIVITY_JOB_ID);
 
-        assertTrue("Expedited job requiring connectivity did not fire with multiple firewalls.",
-                kTestEnvironment.awaitExecution());
+        assertWithMessage(
+                        "Expedited job requiring connectivity did not fire with multiple"
+                                + " firewalls.")
+                .that(kTestEnvironment.awaitExecution())
+                .isTrue();
     }
 
     /**
@@ -563,9 +585,9 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
         mNetworkingHelper.setAllNetworksEnabled(true);
 
         mTestAppInterface.runSatisfiedJob();
-        assertTrue(
-                "Job requiring network did not start after the app was killed",
-                mTestAppInterface.awaitJobStart(DEFAULT_TIMEOUT_MILLIS));
+        assertWithMessage("Job requiring network did not start after the app was killed")
+                .that(mTestAppInterface.awaitJobStart(DEFAULT_TIMEOUT_MILLIS))
+                .isTrue();
     }
 
     /**
@@ -591,8 +613,9 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
         mTestAppInterface.scheduleJob(false,  JobInfo.NETWORK_TYPE_ANY, false, true);
 
         mTestAppInterface.runSatisfiedJob();
-        assertTrue("UI job requiring connectivity did not fire with Battery Saver on.",
-                mTestAppInterface.awaitJobStart(DEFAULT_TIMEOUT_MILLIS));
+        assertWithMessage("UI job requiring connectivity did not fire with Battery Saver on.")
+                .that(mTestAppInterface.awaitJobStart(DEFAULT_TIMEOUT_MILLIS))
+                .isTrue();
     }
 
     /**
@@ -624,8 +647,9 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
 
             notificationHelper.clickNotification();
 
-            assertTrue("UI job requiring connectivity did not fire with Doze on.",
-                    mTestAppInterface.awaitJobStart(DEFAULT_TIMEOUT_MILLIS));
+            assertWithMessage("UI job requiring connectivity did not fire with Doze on.")
+                    .that(mTestAppInterface.awaitJobStart(DEFAULT_TIMEOUT_MILLIS))
+                    .isTrue();
         }
     }
 
@@ -651,13 +675,16 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
         mTestAppInterface.scheduleJob(false,  JobInfo.NETWORK_TYPE_CELLULAR, false);
 
         mTestAppInterface.runSatisfiedJob();
-        assertTrue("Job with cellular constraint did not fire on mobile.",
-                mTestAppInterface.awaitJobStart(DEFAULT_TIMEOUT_MILLIS));
+        assertWithMessage("Job with cellular constraint did not fire on mobile.")
+                .that(mTestAppInterface.awaitJobStart(DEFAULT_TIMEOUT_MILLIS))
+                .isTrue();
 
         setDataSaverEnabled(true);
-        assertTrue(
-                "Job with cellular constraint was not stopped when Data Saver was turned on.",
-                mTestAppInterface.awaitJobStop(DEFAULT_TIMEOUT_MILLIS));
+        assertWithMessage(
+                        "Job with cellular constraint was not stopped when Data Saver was turned"
+                                + " on.")
+                .that(mTestAppInterface.awaitJobStop(DEFAULT_TIMEOUT_MILLIS))
+                .isTrue();
     }
 
     @Test
@@ -674,14 +701,16 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
         kTestEnvironment.setExpectedExecutions(1);
         mJobScheduler.schedule(ji);
         runSatisfiedJob(CONNECTIVITY_JOB_ID);
-        assertTrue("Job didn't fire immediately", kTestEnvironment.awaitExecution());
+        assertWithMessage("Job didn't fire immediately")
+                .that(kTestEnvironment.awaitExecution())
+                .isTrue();
 
         JobParameters params = kTestEnvironment.getLastStartJobParameters();
-        assertNotNull(params.getNetwork());
+        assertThat(params.getNetwork()).isNotNull();
         final NetworkCapabilities capabilities =
                 getContext().getSystemService(ConnectivityManager.class)
                         .getNetworkCapabilities(params.getNetwork());
-        assertTrue(nr.canBeSatisfiedBy(capabilities));
+        assertThat(nr.canBeSatisfiedBy(capabilities)).isTrue();
 
         if (!hasEthernetConnection()) {
             // Deadline passed with no network satisfied.
@@ -706,10 +735,11 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
                     Map.of(TestJobSchedulerReceiver.EXTRA_DEADLINE, 0L)
             );
             mTestAppInterface.runSatisfiedJob();
-            assertTrue("Job didn't fire immediately",
-                    mTestAppInterface.awaitJobStart(DEFAULT_TIMEOUT_MILLIS));
+            assertWithMessage("Job didn't fire immediately")
+                    .that(mTestAppInterface.awaitJobStart(DEFAULT_TIMEOUT_MILLIS))
+                    .isTrue();
             params = mTestAppInterface.getLastParams();
-            assertNull(params.getNetwork());
+            assertThat(params.getNetwork()).isNull();
         }
 
         // No network requested
@@ -718,10 +748,12 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
         kTestEnvironment.setExpectedExecutions(1);
         mJobScheduler.schedule(ji);
         runSatisfiedJob(CONNECTIVITY_JOB_ID);
-        assertTrue("Job didn't fire immediately", kTestEnvironment.awaitExecution());
+        assertWithMessage("Job didn't fire immediately")
+                .that(kTestEnvironment.awaitExecution())
+                .isTrue();
 
         params = kTestEnvironment.getLastStartJobParameters();
-        assertNull(params.getNetwork());
+        assertThat(params.getNetwork()).isNull();
     }
 
     @Test
@@ -748,8 +780,9 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
                 )
         );
         mTestAppInterface.forceRunJob();
-        assertTrue("Job did not start after scheduling",
-                mTestAppInterface.awaitJobStart(DEFAULT_TIMEOUT_MILLIS));
+        assertWithMessage("Job did not start after scheduling")
+                .that(mTestAppInterface.awaitJobStart(DEFAULT_TIMEOUT_MILLIS))
+                .isTrue();
         mTestAppInterface.assertJobUidState(new TestAppInterface.ExpectedJobUidState.Builder()
                 .setProcState(ActivityManager.PROCESS_STATE_TRANSIENT_BACKGROUND)
                 .setExpectedCapability(0)
@@ -781,8 +814,9 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
                         .build());
         runSatisfiedJob(CONNECTIVITY_JOB_ID);
 
-        assertTrue("Job requiring unmetered connectivity still executed on mobile.",
-                kTestEnvironment.awaitTimeout());
+        assertWithMessage("Job requiring unmetered connectivity still executed on mobile.")
+                .that(kTestEnvironment.awaitTimeout())
+                .isTrue();
     }
 
     /**
@@ -803,8 +837,9 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
         mTestAppInterface.scheduleJob(false,  JobInfo.NETWORK_TYPE_CELLULAR, false);
         mTestAppInterface.runSatisfiedJob();
 
-        assertFalse("Job requiring cellular connectivity executed with Data Saver on",
-                mTestAppInterface.awaitJobStart(DEFAULT_TIMEOUT_MILLIS));
+        assertWithMessage("Job requiring cellular connectivity executed with Data Saver on")
+                .that(mTestAppInterface.awaitJobStart(DEFAULT_TIMEOUT_MILLIS))
+                .isFalse();
     }
 
     /**
@@ -825,8 +860,11 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
         mTestAppInterface.scheduleJob(false,  JobInfo.NETWORK_TYPE_CELLULAR, true);
         mTestAppInterface.runSatisfiedJob();
 
-        assertFalse("BG expedited job requiring cellular connectivity executed with Data Saver on",
-                mTestAppInterface.awaitJobStart(DEFAULT_TIMEOUT_MILLIS));
+        assertWithMessage(
+                        "BG expedited job requiring cellular connectivity executed with Data Saver"
+                                + " on")
+                .that(mTestAppInterface.awaitJobStart(DEFAULT_TIMEOUT_MILLIS))
+                .isFalse();
     }
 
     /**
@@ -852,8 +890,9 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
                         .build());
         runSatisfiedJob(CONNECTIVITY_JOB_ID);
 
-        assertTrue("Job requiring metered connectivity still executed on WiFi.",
-                kTestEnvironment.awaitTimeout());
+        assertWithMessage("Job requiring metered connectivity still executed on WiFi.")
+                .that(kTestEnvironment.awaitTimeout())
+                .isTrue();
     }
 
     /**
@@ -878,8 +917,9 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
                         .build());
         runSatisfiedJob(CONNECTIVITY_JOB_ID);
 
-        assertTrue("Job requiring unmetered connectivity still executed on metered WiFi.",
-                kTestEnvironment.awaitTimeout());
+        assertWithMessage("Job requiring unmetered connectivity still executed on metered WiFi.")
+                .that(kTestEnvironment.awaitTimeout())
+                .isTrue();
     }
 
     /**
@@ -903,8 +943,9 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
                 mBuilder.setRequiredNetworkType(JobInfo.NETWORK_TYPE_CELLULAR).build());
         runSatisfiedJob(CONNECTIVITY_JOB_ID);
 
-        assertTrue("Job requiring cellular connectivity still executed on WiFi.",
-                kTestEnvironment.awaitTimeout());
+        assertWithMessage("Job requiring cellular connectivity still executed on WiFi.")
+                .that(kTestEnvironment.awaitTimeout())
+                .isTrue();
     }
 
     /**
@@ -932,8 +973,9 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
         mTestAppInterface.scheduleJob(false,  JobInfo.NETWORK_TYPE_ANY, true);
         mTestAppInterface.runSatisfiedJob();
 
-        assertFalse("BG expedited job requiring connectivity fired with Data Saver on.",
-                mTestAppInterface.awaitJobStart(DEFAULT_TIMEOUT_MILLIS));
+        assertWithMessage("BG expedited job requiring connectivity fired with Data Saver on.")
+                .that(mTestAppInterface.awaitJobStart(DEFAULT_TIMEOUT_MILLIS))
+                .isFalse();
     }
 
     /**
@@ -972,8 +1014,9 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
         mTestAppInterface.scheduleJob(false,  JobInfo.NETWORK_TYPE_ANY, true);
         mTestAppInterface.runSatisfiedJob();
 
-        assertFalse("Expedited job fired with multiple firewalls, including data saver.",
-                mTestAppInterface.awaitJobStart(DEFAULT_TIMEOUT_MILLIS));
+        assertWithMessage("Expedited job fired with multiple firewalls, including data saver.")
+                .that(mTestAppInterface.awaitJobStart(DEFAULT_TIMEOUT_MILLIS))
+                .isFalse();
     }
 
     /**
@@ -1020,8 +1063,9 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
             // Clicking on the notification should put the app into a BAL approved state.
             notificationHelper.clickNotification();
 
-            assertTrue("BG UI job requiring connectivity didn't fire with Data Saver on.",
-                    mTestAppInterface.awaitJobStart(DEFAULT_TIMEOUT_MILLIS));
+            assertWithMessage("BG UI job requiring connectivity didn't fire with Data Saver on.")
+                    .that(mTestAppInterface.awaitJobStart(DEFAULT_TIMEOUT_MILLIS))
+                    .isTrue();
         }
     }
 
@@ -1092,16 +1136,19 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
             // Clicking on the notification should put the app into a BAL approved state.
             notificationHelper.clickNotification();
 
-            assertTrue("BG UI job requiring connectivity didn't fire with Data Saver on.",
-                    mTestAppInterface.awaitJobStart(uiJobId, DEFAULT_TIMEOUT_MILLIS));
+            assertWithMessage("BG UI job requiring connectivity didn't fire with Data Saver on.")
+                    .that(mTestAppInterface.awaitJobStart(uiJobId, DEFAULT_TIMEOUT_MILLIS))
+                    .isTrue();
             // The UI job may have started immediately, so keep the standard timeout for the
             // EJ check to give enough time to confirm the job didn't start.
-            assertFalse("BG EJ requiring connectivity fired with Data Saver on.",
-                    mTestAppInterface.awaitJobStart(expJobId, DEFAULT_TIMEOUT_MILLIS));
+            assertWithMessage("BG EJ requiring connectivity fired with Data Saver on.")
+                    .that(mTestAppInterface.awaitJobStart(expJobId, DEFAULT_TIMEOUT_MILLIS))
+                    .isFalse();
             // At this point, there's been enough time for this job to start, so don't have
             // a long wait time.
-            assertFalse("BG job requiring connectivity fired with Data Saver on.",
-                    mTestAppInterface.awaitJobStart(regJobId, 1000));
+            assertWithMessage("BG job requiring connectivity fired with Data Saver on.")
+                    .that(mTestAppInterface.awaitJobStart(regJobId, 1000))
+                    .isFalse();
         }
     }
 
@@ -1161,8 +1208,9 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
 
             disconnectFromWifi();
 
-            assertTrue("Device must have access to a metered network for this test.",
-                    tracker.waitForStateChange());
+            assertWithMessage("Device must have access to a metered network for this test.")
+                    .that(tracker.waitForStateChange())
+                    .isTrue();
 
             mCm.unregisterNetworkCallback(tracker);
         }

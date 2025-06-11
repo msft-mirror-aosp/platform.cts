@@ -58,6 +58,7 @@ android_test {
     ],
     data: [
         ":CtsAppFunctionsTestHelper",
+        ":CtsAppFunctionsTestAgentHelper",
         ":CtsAppFunctionsSidecarTestHelper",
         ":CtsAppSearchIndexerTestAppAV1",
         ":CtsAppSearchIndexerTestAppAV2",
@@ -81,6 +82,22 @@ android_test_helper_app {
     ],
     asset_dirs: ["helper-app/assets"],
     manifest: "helper-app/AndroidManifest.xml",
+}
+
+android_test_helper_app {
+    name: "CtsAppFunctionsTestAgentHelper",
+    defaults: ["cts_defaults"],
+    static_libs: [
+        "androidx.test.ext.junit",
+        "androidx.test.rules",
+        "compatibility-device-util-axt",
+        "testng",
+    ],
+    test_suites: [
+        "general-tests",
+    ],
+
+    manifest: "helper-agent-app/AndroidManifest.xml",
 }
 
 android_test_helper_app {

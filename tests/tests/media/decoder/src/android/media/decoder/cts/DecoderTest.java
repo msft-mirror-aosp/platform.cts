@@ -1581,7 +1581,7 @@ public class DecoderTest extends MediaTestBase {
         MediaFormat format = ex.getTrackFormat(0);
         String mime = format.getString(MediaFormat.KEY_MIME);
         for (MediaCodecInfo info: codecInfos) {
-            if (info.isEncoder()) {
+            if (info.isEncoder() || info.isAlias()) {
                 continue;
             }
             try {

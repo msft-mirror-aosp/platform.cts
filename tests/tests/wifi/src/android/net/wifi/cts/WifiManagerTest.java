@@ -1586,6 +1586,35 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
                 null, WifiScanner.SCAN_TYPE_HIGH_ACCURACY));
     }
 
+    /** Verify setting the scan schedule. */
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.TIRAMISU)
+    @RequiresFlagsEnabled(Flags.FLAG_WIFI_PNO_SCAN_SCHEDULE_API)
+    @ApiTest(apis = {"android.net.wifi.WifiManager#setScreenOffScanSchedule"})
+    @Test
+    public void testSetScreenOffScanSchedule() {
+        WifiManager.ScreenOffScanSchedule screenOffScanSchedule =
+                new WifiManager.ScreenOffScanSchedule.Builder()
+                        .setScanIterations(4)
+                        .setScanMultiplier(5)
+                        .setMovingScanInterval(Duration.ofSeconds(60))
+                        .setStationaryScanInterval(Duration.ofSeconds(180))
+                        .build();
+
+        // Verify no permission will trigger SecurityException
+        assertThrows(
+                SecurityException.class,
+                () -> sWifiManager.setScreenOffScanSchedule(screenOffScanSchedule));
+        UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
+        try {
+            uiAutomation.adoptShellPermissionIdentity();
+            sWifiManager.setScreenOffScanSchedule(screenOffScanSchedule);
+        } finally {
+            // reset back to config overlay value
+            sWifiManager.setScreenOffScanSchedule(null);
+            uiAutomation.dropShellPermissionIdentity();
+        }
+    }
+
     /**
      * Verify a normal app cannot set the scan schedule.
      */
@@ -7754,7 +7783,7 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
      */
     @ApiTest(apis = {"android.net.wifi.WifiManager#queryPrivilegedConfiguredNetworks"})
     @RequiresFlagsEnabled(Flags.FLAG_GET_CONFIG_EMPTY_REASON)
-    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S, codeName = "S")
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.TIRAMISU)
     @Test
     public void testQueryPrivilegedConfiguredNetworks() throws Exception {
         Mutable<Boolean> onResultCalled = new Mutable<Boolean>(false);

@@ -463,4 +463,44 @@ public class MediaProviderTestUtils {
                 SystemProperties.getInt("ro.product.first_api_level", 0);
         return deviceInitialSdkInt >= Build.VERSION_CODES.R;
     }
+
+    /**
+     * Deletes all contents (files and subdirectories) within a directory and
+     * then deletes the directory itself.
+     *
+     * @param dir The directory to delete.
+     * @return {@code true} if the directory and its contents were successfully deleted,
+     * {@code false} otherwise.
+     */
+    public static boolean deleteContentsAndDir(File dir) {
+        if (deleteContents(dir)) {
+            return dir.delete();
+        } else {
+            return false;
+        }
+    }
+
+    /**
+     * Deletes all files and subdirectories within a given directory, but does not
+     * delete the directory itself. This method recursively deletes contents of subdirectories
+     *
+     * @param dir The directory whose contents are to be deleted.
+     * @return {@code true} if all contents were successfully deleted, {@code false} otherwise.
+     */
+    public static boolean deleteContents(File dir) {
+        File[] files = dir.listFiles();
+        boolean success = true;
+        if (files != null) {
+            for (File file : files) {
+                if (file.isDirectory()) {
+                    success &= deleteContents(file);
+                }
+                if (!file.delete()) {
+                    Log.w(TAG, "Failed to delete " + file);
+                    success = false;
+                }
+            }
+        }
+        return success;
+    }
 }

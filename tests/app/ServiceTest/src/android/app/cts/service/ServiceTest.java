@@ -19,6 +19,7 @@ package android.app.cts.service;
 import static android.Manifest.permission.POST_NOTIFICATIONS;
 import static android.Manifest.permission.REVOKE_POST_NOTIFICATIONS_WITHOUT_KILL;
 import static android.Manifest.permission.REVOKE_RUNTIME_PERMISSIONS;
+import static android.app.WindowConfiguration.WINDOWING_MODE_FREEFORM;
 import static android.app.stubs.shared.LocalForegroundService.COMMAND_START_FOREGROUND;
 import static android.app.stubs.shared.LocalForegroundService.COMMAND_START_FOREGROUND_DEFER_NOTIFICATION;
 import static android.app.stubs.shared.LocalForegroundService.COMMAND_STOP_FOREGROUND_DETACH_NOTIFICATION;
@@ -27,8 +28,12 @@ import static android.app.stubs.shared.LocalForegroundService.COMMAND_STOP_FOREG
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
+import static org.junit.Assume.assumeTrue;
+
 import android.app.Activity;
 import android.app.ActivityManager;
+import android.app.ActivityOptions;
+import android.app.ActivityTaskManager;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
@@ -96,6 +101,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BooleanSupplier;
+import java.util.function.Consumer;
 
 @Presubmit
 @RunWith(AndroidJUnit4.class)
@@ -2433,5 +2439,57 @@ public final class ServiceTest {
         } finally {
             mContext.unbindService(connection);
         }
+    }
+
+    @Test
+    public void testLruWhenSwitchingBetweenAppsInFreeFormWindows() {
+        assumeTrue("Multi window is not supported",
+                ActivityTaskManager.supportsMultiWindow(mContext));
+
+        Consumer<ComponentName> startActivityInFreeFormWindow = componentName -> {
+            Intent intent = new Intent();
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            intent.setClassName(componentName.getPackageName(), componentName.getClassName());
+
+            ActivityOptions options = ActivityOptions.makeBasic();
+            options.setLaunchWindowingMode(WINDOWING_MODE_FREEFORM);
+
+            mContext.startActivity(intent, options.toBundle());
+        };
+
+        BooleanSupplier isApp1Top = () -> new LruOrderItem(Process.myUid(), 0)
+                .isEquivalentTo(getLruProcesses().getLast());
+
+        ComponentName app1 = new ComponentName("android.app.stubs",
+                "android.app.stubs.shared.LaunchpadActivity");
+        ComponentName app2 = new ComponentName("com.android.app1",
+                "android.app.stubs.MockApplicationActivity");
+
+
+        // start app1 in free form windowing mode
+        startActivityInFreeFormWindow.accept(app1);
+
+        // assert app1 being at top position in process LRU list
+        assertWithMessage("App hasn't come to the top of LRU list after being started")
+                .that(doWaitWhile(() -> !isApp1Top.getAsBoolean(), DELAY / 10, DELAY))
+                .isTrue();
+
+
+        // start app2 in free form windowing mode
+        startActivityInFreeFormWindow.accept(app2);
+
+        // assert app1 losing its top position in process LRU list
+        assertWithMessage("App is still at the top of the LRU list after losing focus")
+                .that(doWaitWhile(isApp1Top, DELAY / 10, DELAY))
+                .isTrue();
+
+
+        // focus back app1's window again
+        startActivityInFreeFormWindow.accept(app1);
+
+        // assert app1 gaining back its top position in process LRU list
+        assertWithMessage("App hasn't come to the top of LRU list after gaining back focus again")
+                .that(doWaitWhile(() -> !isApp1Top.getAsBoolean(), DELAY / 10, DELAY))
+                .isTrue();
     }
 }

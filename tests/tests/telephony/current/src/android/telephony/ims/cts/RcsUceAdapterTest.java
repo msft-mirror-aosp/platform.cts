@@ -53,7 +53,6 @@ import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Looper;
 import android.os.PersistableBundle;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.Telephony;
@@ -82,7 +81,6 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import com.android.compatibility.common.util.BlockedNumberUtil;
 import com.android.compatibility.common.util.ShellIdentityUtils;
 import com.android.internal.os.SomeArgs;
-import com.android.internal.telephony.flags.Flags;
 
 import org.junit.After;
 import org.junit.AfterClass;
@@ -720,7 +718,6 @@ public class RcsUceAdapterTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_SIP_SUBSCRIBE_RETRY)
     public void testCapabilitiesRequestRetry() throws Exception {
         if (!ImsUtils.shouldTestImsService()) {
             return;

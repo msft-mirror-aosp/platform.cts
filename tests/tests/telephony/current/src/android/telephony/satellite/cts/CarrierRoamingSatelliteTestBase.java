@@ -77,6 +77,7 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
     protected static final int SLOT_ID_1 = 1;
     protected static final String PHONE_NUMBER_0 = "1234567890";
     protected static final String PHONE_NUMBER_1 = "1230123456";
+    protected static final String NIDD_APN_NAME = "test_nidd.apn";
 
     protected static MockModemManager sMockModemManager;
     protected static WifiStateReceiver sWifiStateReceiver = null;
@@ -456,6 +457,7 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
         bundle.putIntArray(
             CarrierConfigManager.KEY_CARRIER_ROAMING_SATELLITE_DEFAULT_SERVICES_INT_ARRAY,
             supportedServices);
+        bundle.putString(CarrierConfigManager.KEY_SATELLITE_NIDD_APN_NAME_STRING, NIDD_APN_NAME);
 
         PersistableBundle plmnBundle = new PersistableBundle();
         plmnBundle.putIntArray(satellitePlmn, supportedServices);
