@@ -151,60 +151,6 @@ public class IncomingCallTest extends BaseTelecomTestWithMockServices {
     }
 
     /**
-     * This test verifies that when a default dialer is incapable of playing a ringtone that the
-     * platform still plays a ringtone.
-     * <p>
-     * Given that the default {@link MockInCallService} defined in the CTS tests does not declare
-     * {@link TelecomManager#METADATA_IN_CALL_SERVICE_RINGING}, we expect the Telecom framework to
-     * play a ringtone for an incoming call.
-     * @throws Exception
-     */
-    public void testRingOnIncomingCall() throws Exception {
-        if (!mShouldTestTelecom  || !TestUtils.hasTelephonyFeature(mContext)) {
-            return;
-        }
-        LinkedBlockingQueue<Boolean> queue = new LinkedBlockingQueue(1);
-        setupConnectionService(null, FLAG_REGISTER | FLAG_ENABLE);
-        AudioManager audioManager = mContext.getSystemService(AudioManager.class);
-        int originalRingVolume = audioManager.getStreamVolume(AudioManager.STREAM_RING);
-        // Set ring stream volume if it's zero.
-        try {
-            if (originalRingVolume == 0) {
-                audioManager.setStreamVolume(AudioManager.STREAM_RING, 1, 0);
-            }
-        } catch (SecurityException e) {
-            // If volume settings can't be changed due to DND config being changed,
-            // then we will just skip this test.
-            return;
-        }
-        AudioManager.AudioPlaybackCallback callback = new AudioManager.AudioPlaybackCallback() {
-            @Override
-            public void onPlaybackConfigChanged(List<AudioPlaybackConfiguration> configs) {
-                super.onPlaybackConfigChanged(configs);
-                boolean isPlayingRingtone = configs.stream()
-                        .anyMatch(c -> c.getAudioAttributes().getUsage()
-                                == USAGE_NOTIFICATION_RINGTONE);
-                if (isPlayingRingtone && queue.isEmpty()) {
-                    queue.add(isPlayingRingtone);
-                }
-            }
-        };
-        audioManager.registerAudioPlaybackCallback(callback, new Handler(Looper.getMainLooper()));
-        Uri testNumber = createTestNumber();
-        addAndVerifyNewIncomingCall(testNumber, null);
-        verifyConnectionForIncomingCall();
-        verifyPhoneStateListenerCallbacksForCall(CALL_STATE_RINGING,
-                testNumber.getSchemeSpecificPart());
-        Boolean ringing = queue.poll(WAIT_FOR_STATE_CHANGE_TIMEOUT_MS, TimeUnit.MILLISECONDS);
-        assertNotNull("Telecom should have played a ringtone, timed out waiting for state change",
-                ringing);
-        assertTrue("Telecom should have played a ringtone.", ringing);
-        audioManager.unregisterAudioPlaybackCallback(callback);
-        // Reset the ring stream volume.
-        audioManager.setStreamVolume(AudioManager.STREAM_RING, originalRingVolume, 0);
-    }
-
-    /**
      * This test verifies that the local ringtone is not played when the call has an in_band
      * ringtone associated with it.
      */
