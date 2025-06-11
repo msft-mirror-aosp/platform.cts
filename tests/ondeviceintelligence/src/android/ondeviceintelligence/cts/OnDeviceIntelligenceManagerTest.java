@@ -1172,10 +1172,20 @@ public class OnDeviceIntelligenceManagerTest {
     }
 
     private boolean isServiceOverlayConfigured() {
-        String sanboxedServiceComponentName = mContext.getResources().getString(
-                com.android.internal.R.string.config_defaultOnDeviceIntelligenceService);
-        String intelligenceServiceComponentName = mContext.getResources().getString(
-                com.android.internal.R.string.config_defaultOnDeviceIntelligenceService);
+        String sanboxedServiceComponentName = mContext.getResources()
+                        .getString(
+                                mContext.getResources()
+                                        .getIdentifier(
+                                                "config_defaultOnDeviceSandboxedInferenceService",
+                                                "string",
+                                                "android"));
+        String intelligenceServiceComponentName = mContext.getResources()
+                        .getString(
+                                mContext.getResources()
+                                        .getIdentifier(
+                                                "config_defaultOnDeviceIntelligenceService",
+                                                "string",
+                                                "android"));
 
         return !TextUtils.isEmpty(sanboxedServiceComponentName) || !TextUtils.isEmpty(
                 intelligenceServiceComponentName);
