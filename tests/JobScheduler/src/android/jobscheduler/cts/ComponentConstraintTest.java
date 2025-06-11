@@ -16,7 +16,7 @@
 
 package android.jobscheduler.cts;
 
-import static org.junit.Assert.assertTrue;
+import static com.google.common.truth.Truth.assertWithMessage;
 
 import android.app.job.JobInfo;
 import android.content.pm.PackageManager;
@@ -30,7 +30,7 @@ import org.junit.runner.RunWith;
 
 /** Schedules jobs with various component-enabled states. */
 @RunWith(AndroidJUnit4.class)
-public class ComponentConstraintTest extends BaseJobSchedulerTest {
+public final class ComponentConstraintTest extends BaseJobSchedulerTest {
     private static final String TAG = "ComponentConstraintTest";
     /** Unique identifier for the job scheduled by this suite of tests. */
     private static final int COMPONENT_JOB_ID = ComponentConstraintTest.class.hashCode();
@@ -56,9 +56,11 @@ public class ComponentConstraintTest extends BaseJobSchedulerTest {
         setJobServiceEnabled(true);
         kTestEnvironment.setExpectedExecutions(1);
         mJobScheduler.schedule(mBuilder.build());
-
         runSatisfiedJob(COMPONENT_JOB_ID);
-        assertTrue("Job with enabled service didn't fire.", kTestEnvironment.awaitExecution());
+
+        assertWithMessage("Job with enabled service didn't fire.")
+                .that(kTestEnvironment.awaitExecution())
+                .isTrue();
     }
 
     /*
@@ -81,10 +83,13 @@ public class ComponentConstraintTest extends BaseJobSchedulerTest {
         setJobServiceEnabled(true);
         kTestEnvironment.setExpectedExecutions(0);
         mJobScheduler.schedule(mBuilder.setMinimumLatency(1000).build());
-        setJobServiceEnabled(false);
 
+        setJobServiceEnabled(false);
         runSatisfiedJob(COMPONENT_JOB_ID);
-        assertTrue("Job with disabled service fired.", kTestEnvironment.awaitTimeout());
+
+        assertWithMessage("Job with disabled service fired.")
+                .that(kTestEnvironment.awaitTimeout())
+                .isTrue();
     }
 
     @Test
@@ -95,11 +100,17 @@ public class ComponentConstraintTest extends BaseJobSchedulerTest {
 
         setJobServiceEnabled(false);
         runSatisfiedJob(COMPONENT_JOB_ID);
-        assertTrue("Job with disabled service fired.", kTestEnvironment.awaitTimeout());
+
+        assertWithMessage("Job with disabled service fired.")
+                .that(kTestEnvironment.awaitTimeout())
+                .isTrue();
 
         setJobServiceEnabled(true);
         runSatisfiedJob(COMPONENT_JOB_ID);
-        assertTrue("Job with enabled service didn't fire.", kTestEnvironment.awaitExecution());
+
+        assertWithMessage("Job with enabled service didn't fire.")
+                .that(kTestEnvironment.awaitExecution())
+                .isTrue();
     }
 
     private void setJobServiceEnabled(boolean enabled) {
