@@ -1122,6 +1122,9 @@ public class NotificationAssistantServiceTest {
     @Test
     @RequiresFlagsEnabled(android.app.Flags.FLAG_NM_SUMMARIZATION)
     public void testSummarizeNotification() throws Exception {
+        SystemUtil.runWithShellPermissionIdentity(() ->
+                mNotificationManager.allowAssistantAdjustment(KEY_SUMMARIZATION));
+
         String SHARE_SHORTCUT_ID = "shareShortcut";
         String SUMMARIZATION = "This is a summarization. It's pretty long, right? Like, two lines "
                 + "long? Maybe even a little longer?";
