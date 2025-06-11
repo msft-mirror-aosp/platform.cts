@@ -143,6 +143,8 @@ public class CodecInitializationLatencyTest {
         Context context = instrumentation.getTargetContext();
         PackageManager packageManager = context.getPackageManager();
         assertNotNull(packageManager.getSystemAvailableFeatures());
+        assumeTrue("The device doesn't support running at least four 1920x1080 avc"
+                + "instances concurrently", Utils.MEETS_AVC_CODEC_PRECONDITIONS);
         assumeTrue("The device doesn't have a camera",
                 packageManager.hasSystemFeature(PackageManager.FEATURE_CAMERA_ANY));
         assumeTrue("The device doesn't have a microphone",
