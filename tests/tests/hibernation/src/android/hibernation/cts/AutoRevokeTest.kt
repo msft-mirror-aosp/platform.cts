@@ -647,7 +647,9 @@ class AutoRevokeTest {
         val uninstallSelector = if (hasFeatureWatch()) {
                 By.res(Pattern.compile(".*(button1|positive_button)"))
             } else {
-                By.text("OK")
+                // Text may be different depending on package uninstall UI and device config
+                // "Uninstall" text is flagged by new use_pia_v2 flag in package manager
+                By.text(Pattern.compile("OK|Uninstall", Pattern.CASE_INSENSITIVE))
             }
 
         waitFindObject(uninstallSelector).click()
