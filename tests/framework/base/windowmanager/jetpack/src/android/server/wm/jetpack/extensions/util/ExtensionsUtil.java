@@ -41,8 +41,6 @@ import androidx.window.extensions.layout.FoldingFeature;
 import androidx.window.extensions.layout.WindowLayoutComponent;
 import androidx.window.extensions.layout.WindowLayoutInfo;
 
-import com.android.window.flags.Flags;
-
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -99,11 +97,7 @@ public class ExtensionsUtil {
      * corresponding platform version.
      */
     public static boolean isExtensionVersionLatest() {
-        if (Flags.wlinfoOncreate()) {
-            return isExtensionVersionAtLeast(EXTENSION_VERSION_CURRENT_PLATFORM_V9);
-        } else {
-            return isExtensionVersionAtLeast(EXTENSION_VERSION_CURRENT_PLATFORM_V8);
-        }
+        return isExtensionVersionAtLeast(EXTENSION_VERSION_CURRENT_PLATFORM_V9);
     }
 
     /**
