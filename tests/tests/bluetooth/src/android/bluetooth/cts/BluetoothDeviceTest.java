@@ -208,7 +208,6 @@ public class BluetoothDeviceTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_IDENTITY_ADDRESS_TYPE_API)
     public void getIdentityAddressWithType() {
         // Skip the test if bluetooth or companion device are not present.
         assumeTrue(mHasBluetooth && mHasCompanionDevice);
@@ -222,7 +221,6 @@ public class BluetoothDeviceTest {
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_IDENTITY_ADDRESS_TYPE_API)
     public void testBluetoothAddress() {
         int addressType = BluetoothDevice.ADDRESS_TYPE_PUBLIC;
         BluetoothAddress bluetoothAddress = new BluetoothAddress(mFakeDeviceAddress, addressType);
@@ -789,7 +787,7 @@ public class BluetoothDeviceTest {
         mUiAutomation.adoptShellPermissionIdentity(BLUETOOTH_CONNECT);
 
         mFakeDevice.createBond();
-        if(mFakeDevice.isConnected()) {
+        if (mFakeDevice.isConnected()) {
             assertThat(mFakeDevice.getKeyMissingCount()).isEqualTo(0);
         }
         mFakeDevice.removeBond();
@@ -843,8 +841,12 @@ public class BluetoothDeviceTest {
         assertThat(mFakeDevice.getEncryptionStatus(BluetoothDevice.TRANSPORT_BREDR)).isNull();
 
         mUiAutomation.dropShellPermissionIdentity();
-        assertThrows(SecurityException.class, () -> mFakeDevice.isConnected(BluetoothDevice.TRANSPORT_BREDR));
-        assertThrows(SecurityException.class, () -> mFakeDevice.getEncryptionStatus(BluetoothDevice.TRANSPORT_BREDR));
+        assertThrows(
+                SecurityException.class,
+                () -> mFakeDevice.isConnected(BluetoothDevice.TRANSPORT_BREDR));
+        assertThrows(
+                SecurityException.class,
+                () -> mFakeDevice.getEncryptionStatus(BluetoothDevice.TRANSPORT_BREDR));
         mUiAutomation.adoptShellPermissionIdentity(BLUETOOTH_CONNECT);
     }
 }
