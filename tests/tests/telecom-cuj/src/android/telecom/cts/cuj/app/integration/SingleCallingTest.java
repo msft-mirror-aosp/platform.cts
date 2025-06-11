@@ -17,11 +17,17 @@
 package android.telecom.cts.cuj.app.integration;
 
 import static android.telecom.Call.STATE_ACTIVE;
+import static android.telecom.Call.STATE_AUDIO_PROCESSING;
 import static android.telecom.Call.STATE_CONNECTING;
 import static android.telecom.Call.STATE_DIALING;
 import static android.telecom.Call.STATE_DISCONNECTED;
 import static android.telecom.Call.STATE_HOLDING;
 import static android.telecom.Call.STATE_RINGING;
+import static android.telecom.Call.STATE_SIMULATED_RINGING;
+import static android.telecom.Call.AUDIO_PROCESSING_USE_CASE_ASK_TO_HOLD;
+import static android.telecom.Call.AUDIO_PROCESSING_USE_CASE_CALL_SCREENING;
+import static android.telecom.Call.AUDIO_PROCESSING_USE_CASE_UNKNOWN;
+import static android.telecom.Call.AUDIO_PROCESSING_USE_CASE_VOICEMAIL;
 import static android.telecom.cts.apps.TelecomTestApp.ConnectionServiceVoipAppClone;
 import static android.telecom.cts.apps.TelecomTestApp.ConnectionServiceVoipAppMain;
 import static android.telecom.cts.apps.TelecomTestApp.ManagedConnectionServiceApp;
@@ -34,6 +40,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
+import android.content.ContentResolver;
 import android.content.pm.PackageManager;
 import android.media.AudioAttributes;
 import android.media.AudioFocusRequest;
@@ -41,6 +48,9 @@ import android.media.AudioManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.OutcomeReceiver;
+import android.platform.test.annotations.EnableFlags;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.provider.Settings;
 import android.telecom.CallAttributes;
 import android.telecom.CallControlCallback;
 import android.telecom.CallEndpoint;
@@ -56,6 +66,7 @@ import android.telecom.cts.cuj.BaseAppVerifier;
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.ShellIdentityUtils;
+import com.android.compatibility.common.util.SystemUtil;
 import com.android.server.telecom.flags.Flags;
 
 import org.junit.Test;
@@ -233,6 +244,250 @@ public class SingleCallingTest extends BaseAppVerifier {
         try {
             managedApp = bindToApp(ManagedConnectionServiceApp);
             verifyGetAvailableEndpoints(managedApp);
+        } finally {
+            tearDownApp(managedApp);
+        }
+    }
+
+    /**
+     * Test the scenario where a new MANAGED incoming call is created and transitions from RINGING
+     * to AUDIO_PROCESSING and SIMULATED_RINGING states when marked as spam.
+     *
+     * <h3> Test Steps: </h3>
+     * <ul>
+     *  1. create a managed call that is backed by a {@link android.telecom.ConnectionService }
+     *  via {@link android.telecom.TelecomManager#addNewIncomingCall(PhoneAccountHandle, Bundle)}
+     * <p>
+     *  2. transition the call to AUDIO_PROCESSING via
+     *  {@link Call#enterBackgroundAudioProcessing(AUDIO_PROCESSING_USE_CASE_CALL_SCREENING)}
+     * <p>
+     *  3.  transition the call to SIMULATED_RINGING by passing {@link Boolean#TRUE} to
+     *  {@link Call#exitBackgroundAudioProcessing(boolean)}
+     *  </ul>
+     *  Assert the call was successfully added and transitioned to the AUDIO_PROCESSING and
+     *  SIMULATED_RINGING state without errors
+     */
+    @Test
+    public void testIncomingCallMarkedAsSpam_ShouldRing_ManagedConnectionServiceApp()
+        throws Exception {
+        if (!mShouldTestTelecom) {
+            return;
+        }
+        AppControlWrapper managedApp = null;
+        try {
+            managedApp = bindToApp(ManagedConnectionServiceApp);
+            String mt = addIncomingCallAndVerify(managedApp);
+            verifyCallIsInState(mt, STATE_RINGING);
+            enterBackgroundAudioProcessingViaInCallServiceAndVerify(mt,
+                AUDIO_PROCESSING_USE_CASE_CALL_SCREENING);
+            assertAudioMode(AudioManager.MODE_CALL_SCREENING);
+            exitBackgroundAudioProcessingViaInCallServiceAndVerify(mt, true,
+                AUDIO_PROCESSING_USE_CASE_CALL_SCREENING);
+        } finally {
+            tearDownApp(managedApp);
+        }
+    }
+
+    /**
+     * Test the scenario where a new MANAGED incoming call is created and transitions from RINGING to
+     * AUDIO_PROCESSING to SIMULATED_RINGING to DISCONNECTED states when marked for voicemail.
+     *
+     * <h3> Test Steps: </h3>
+     * <ul>
+     *  1. create a managed call that is backed by a {@link android.telecom.ConnectionService }
+     *  via {@link android.telecom.TelecomManager#addNewIncomingCall(PhoneAccountHandle, Bundle)}
+     * <p>
+     *  2. transition the call to AUDIO_PROCESSING via
+     *  {@link Call#enterBackgroundAudioProcessing(AUDIO_PROCESSING_USE_CASE_VOICE_MAIL)}
+     * <p>
+     *  3.  transition the call to ACTIVE by passing {@link Boolean#FALSE} to
+     *  {@link Call#exitBackgroundAudioProcessing(boolean)} while the use case is
+     *  {@link Call#AUDIO_PROCESSING_USE_CASE_VOICE_MAIL}
+     *  </ul>
+     *  Assert the call was successfully added and transitioned to the AUDIO_PROCESSING and
+     *  ACTIVE state without errors
+     */
+    @Test
+    public void testIncomingCallToVoiceMail_ShouldNotRingOrGoActive_ManagedConnectionServiceApp()
+        throws Exception {
+        if (!mShouldTestTelecom) {
+            return;
+        }
+        AppControlWrapper managedApp = null;
+        try {
+            managedApp = bindToApp(ManagedConnectionServiceApp);
+            String mt = addIncomingCallAndVerify(managedApp);
+            verifyCallIsInState(mt, STATE_RINGING);
+            enterBackgroundAudioProcessingViaInCallServiceAndVerify(mt,
+                AUDIO_PROCESSING_USE_CASE_VOICEMAIL);
+            assertAudioMode(AudioManager.MODE_CALL_SCREENING);
+            exitBackgroundAudioProcessingViaInCallServiceAndVerify(mt, false,
+                AUDIO_PROCESSING_USE_CASE_VOICEMAIL);
+        } finally {
+            tearDownApp(managedApp);
+        }
+    }
+
+    /**
+     * Test the scenario where a new MANAGED incoming call is created and transitions from RINGING to
+     * ACTIVE to AUDIO_PROCESSING to SIMULATED_RINGING to ACTIVE when the user uses Ask to Hold.
+     *
+     * <h3> Test Steps: </h3>
+     * <ul>
+     *  1. create a managed call that is backed by a {@link android.telecom.ConnectionService }
+     *  via {@link android.telecom.TelecomManager#addNewIncomingCall(PhoneAccountHandle, Bundle)}
+     * <p>
+     *  2. transition the call to AUDIO_PROCESSING via
+     *  {@link Call#enterBackgroundAudioProcessing(AUDIO_PROCESSING_USE_CASE_ASK_TO_HOLD)}
+     * <p>
+     *  3.  transition the call to back to ACTIVE by passing {@link Boolean#FALSE} to
+     *  {@link Call#exitBackgroundAudioProcessing(boolean)}
+     *  </ul>
+     *  Assert the call was successfully added and transitioned to the AUDIO_PROCESSING and
+     *  ACTIVE state without errors
+     */
+    @Test
+    public void testActiveCallAskToHold_ShouldNotRing_ManagedConnectionServiceApp()
+        throws Exception {
+        if (!mShouldTestTelecom) {
+            return;
+        }
+        AppControlWrapper managedApp = null;
+        try {
+            managedApp = bindToApp(ManagedConnectionServiceApp);
+            String mt = addIncomingCallAndVerify(managedApp);
+            verifyCallIsInState(mt, STATE_RINGING);
+            answerViaInCallServiceAndVerify(mt, VideoProfile.STATE_AUDIO_ONLY);
+            enterBackgroundAudioProcessingViaInCallServiceAndVerify(mt,
+                AUDIO_PROCESSING_USE_CASE_ASK_TO_HOLD);
+            assertAudioMode(AudioManager.MODE_CALL_SCREENING);
+            exitBackgroundAudioProcessingViaInCallServiceAndVerify(mt, false,
+                AUDIO_PROCESSING_USE_CASE_ASK_TO_HOLD);
+        } finally {
+            tearDownApp(managedApp);
+        }
+    }
+
+    /**
+     * Test the scenario where a new MANAGED incoming call is created and transitions from RINGING
+     * to AUDIO_PROCESSING to SIMULATED_RINGING for an unknown reason.
+     *
+     * <h3> Test Steps: </h3>
+     * <ul>
+     *  1. create a managed call that is backed by a {@link android.telecom.ConnectionService }
+     *  via {@link android.telecom.TelecomManager#addNewIncomingCall(PhoneAccountHandle, Bundle)}
+     * <p>
+     *  2. transition the call to AUDIO_PROCESSING via
+     *  {@link Call#enterBackgroundAudioProcessing(AUDIO_PROCESSING_USE_CASE_ASK_TO_HOLD)}
+     * <p>
+     *  3.  transition the call to SIMULATED_RINGING by passing {@link Boolean#TRUE} to
+     *  {@link Call#exitBackgroundAudioProcessing(boolean)}
+     *  </ul>
+     *  Assert the call was successfully added and transitioned to the AUDIO_PROCESSING and
+     *  SIMULATED_RINGING states without errors
+     */
+    @Test
+    public void testIncomingCallUnknownShouldRing_ManagedConnectionServiceApp()
+        throws Exception {
+        if (!mShouldTestTelecom) {
+            return;
+        }
+        AppControlWrapper managedApp = null;
+        try {
+            managedApp = bindToApp(ManagedConnectionServiceApp);
+            String mt = addIncomingCallAndVerify(managedApp);
+            verifyCallIsInState(mt, STATE_RINGING);
+            enterBackgroundAudioProcessingViaInCallServiceAndVerify(mt,
+                AUDIO_PROCESSING_USE_CASE_UNKNOWN);
+            assertAudioMode(AudioManager.MODE_CALL_SCREENING);
+            exitBackgroundAudioProcessingViaInCallServiceAndVerify(mt, true,
+                AUDIO_PROCESSING_USE_CASE_UNKNOWN);
+        } finally {
+            tearDownApp(managedApp);
+        }
+    }
+
+
+    /**
+     * Test the scenario where a new MANAGED incoming call is created and transitions from RINGING
+     * to AUDIO_PROCESSING and SIMULATED_RINGING states when marked for voicemail.
+     *
+     * <h3> Test Steps: </h3>
+     * <ul>
+     *  1. create a managed call that is backed by a {@link android.telecom.ConnectionService }
+     *  via {@link android.telecom.TelecomManager#addNewIncomingCall(PhoneAccountHandle, Bundle)}
+     * <p>
+     *  2. transition the call to AUDIO_PROCESSING via
+     *  {@link Connection#setAudioProcessing(AUDIO_PROCESSING_USE_CASE_VOICEMAIL)}
+     * <p>
+     *  3. transition the call to SIMULATED_RINGING via {@link Connection#setSimulatedRinging()}
+     *  </ul>
+     *  Assert the call was successfully added and transitioned to the AUDIO_PROCESSING and
+     *  SIMULATED_RINGING state without errors
+     */
+    @Test
+    public void testIncomingCallAudioProcessing_ManagedConnectionServiceApp()
+        throws Exception {
+        if (!mShouldTestTelecom) {
+            return;
+        }
+        String previousHiddenApiPolicy = setHiddenApiPolicy("1");
+        AppControlWrapper managedApp = null;
+        try {
+            managedApp = bindToApp(ManagedConnectionServiceApp);
+            String mt = addIncomingCallAndVerify(managedApp);
+            verifyCallIsInState(mt, STATE_RINGING);
+            setConnectionProperties(managedApp, mt, Connection.PROPERTY_IS_EXTERNAL_CALL);
+            setCallStateAndVerify(managedApp, mt, STATE_AUDIO_PROCESSING,
+                AUDIO_PROCESSING_USE_CASE_VOICEMAIL);
+            assertAudioMode(AudioManager.MODE_NORMAL);
+            setCallStateAndVerify(managedApp, mt, STATE_SIMULATED_RINGING);
+        } finally {
+            setHiddenApiPolicy(previousHiddenApiPolicy);
+            tearDownApp(managedApp);
+        }
+    }
+
+    /**
+     * Test the scenario where a new MANAGED outgoing call is created and transitions from ACTIVE to
+     * AUDIO_PROCESSING and ACTIVE again when the user ask to hold.
+     *
+     * <h3> Test Steps: </h3>
+     * <ul>
+     *  1. create a managed call that is backed by a {@link android.telecom.ConnectionService }
+     *  via {@link android.telecom.TelecomManager#placeCall(Uri, Bundle)}
+     * <p>
+     *  2. transition the call to ACTIVE via {@link Connection#setActive()}
+     * <p>
+     *  3. transition the call to AUDIO_PROCESSING via
+     *  {@link Call#enterBackgroundAudioProcessing(AUDIO_PROCESSING_USE_CASE_ASK_TO_HOLD)}
+     * <p>
+     *  4. transition the call to ACTIVE by passing {@link Boolean#FALSE} to
+     *  {@link Call#exitBackgroundAudioProcessing(boolean)}
+     *  </ul>
+     *  Assert the call was successfully added and transitioned to the AUDIO_PROCESSING and
+     *  ACTIVE state without errors
+     */
+    @Test
+    public void testOutgoingCallAskToHold_ManagedConnectionServiceApp()
+        throws Exception {
+        if (!mShouldTestTelecom) {
+            return;
+        }
+        AppControlWrapper managedApp = null;
+        try {
+            managedApp = bindToApp(ManagedConnectionServiceApp);
+            String mo = addOutgoingCallAndVerify(managedApp);
+            if (managedApp.isTransactionalControl()
+                && !Flags.disconnectSelfManagedStuckStartupCalls()) {
+                verifyCallIsInState(mo, STATE_CONNECTING);
+            } else {
+                verifyCallIsInState(mo, STATE_DIALING);
+            }
+            setCallStateAndVerify(managedApp, mo, STATE_ACTIVE);
+            enterBackgroundAudioProcessingViaInCallServiceAndVerify(mo,
+                AUDIO_PROCESSING_USE_CASE_ASK_TO_HOLD);
+            exitBackgroundAudioProcessingViaInCallServiceAndVerify(mo, false, AUDIO_PROCESSING_USE_CASE_ASK_TO_HOLD);
         } finally {
             tearDownApp(managedApp);
         }
@@ -1093,5 +1348,17 @@ public class SingleCallingTest extends BaseAppVerifier {
         String mo = addOutgoingCallAndVerify(appControlWrapper);
         assertNotNull(getAvailableCallEndpoints(appControlWrapper, mo));
         setCallStateAndVerify(appControlWrapper, mo, STATE_DISCONNECTED);
+    }
+
+    private String setHiddenApiPolicy(String policy) throws Exception {
+        ContentResolver resolver = mContext.getContentResolver();
+        return ShellIdentityUtils.invokeWithShellPermissions(
+            () -> {
+                String previous = Settings.Global.getString(resolver,
+                    Settings.Global.HIDDEN_API_POLICY);
+                Settings.Global.putString(resolver, Settings.Global.HIDDEN_API_POLICY, policy);
+                System.out.println("prev: " + previous + "API POLICY SET: " + policy);
+                return previous;
+            });
     }
 }
