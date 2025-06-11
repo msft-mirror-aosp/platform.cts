@@ -19,6 +19,9 @@ package com.android.cts.input
 import android.app.Instrumentation
 import android.view.Display
 import android.view.InputDevice
+import com.android.cts.input.EvdevInputEventCodes.Companion.ABS_MT_ORIENTATION
+import com.android.cts.input.EvdevInputEventCodes.Companion.ABS_MT_SLOT
+import com.android.cts.input.EvdevInputEventCodes.Companion.EV_ABS
 import com.android.cts.input.EvdevInputEventCodes.Companion.MT_TOOL_FINGER
 import com.android.cts.input.EvdevInputEventCodes.Companion.MT_TOOL_PALM
 
@@ -29,6 +32,7 @@ private fun createTouchPadRegisterCommand(): UinputRegisterCommand {
             "UI_SET_KEYBIT",
             listOf(
                 "BTN_LEFT",
+                "BTN_RIGHT",
                 "BTN_TOOL_FINGER",
                 "BTN_TOOL_QUINTTAP",
                 "BTN_TOUCH",
@@ -56,9 +60,11 @@ private fun createTouchPadRegisterCommand(): UinputRegisterCommand {
 
     val absInfoItems = mapOf(
         "ABS_MT_SLOT" to AbsInfo(0, 0, 9, 0, 0, 0),
-        "ABS_MT_TOUCH_MAJOR" to AbsInfo(0, 0, 15, 0, 0, 0),
-        "ABS_MT_TOUCH_MINOR" to AbsInfo(0, 0, 15, 0, 0, 0),
-        "ABS_MT_ORIENTATION" to AbsInfo(0, 0, 1, 0, 0, 0),
+        "ABS_MT_TOUCH_MAJOR" to AbsInfo(0, 0, 1000, 0, 0, 0),
+        "ABS_MT_TOUCH_MINOR" to AbsInfo(0, 0, 1000, 0, 0, 0),
+        "ABS_MT_WIDTH_MAJOR" to AbsInfo(0, 0, 1000, 0, 0, 0),
+        "ABS_MT_WIDTH_MINOR" to AbsInfo(0, 0, 1000, 0, 0, 0),
+        "ABS_MT_ORIENTATION" to AbsInfo(0, -3, 4, 0, 0, 0),
         "ABS_MT_POSITION_X" to AbsInfo(0, 0, 1936, 0, 0, 20),
         "ABS_MT_POSITION_Y" to AbsInfo(0, 0, 1057, 0, 0, 20),
         "ABS_MT_TOOL_TYPE" to AbsInfo(0, MT_TOOL_FINGER, MT_TOOL_PALM, 0, 0, 0),
@@ -91,4 +97,9 @@ class UinputTouchPad(
     createTouchPadRegisterCommand(),
     InputDevice.SOURCE_TOUCHPAD or InputDevice.SOURCE_MOUSE,
     MT_TOOL_FINGER,
-)
+) {
+    fun sendOrientation(id: Int, orientation: Int) {
+        uinputDevice.injectEvents(EV_ABS, ABS_MT_SLOT, id)
+        uinputDevice.injectEvents(EV_ABS, ABS_MT_ORIENTATION, orientation)
+    }
+}
