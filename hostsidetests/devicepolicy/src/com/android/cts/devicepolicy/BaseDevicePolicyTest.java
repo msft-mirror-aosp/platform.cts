@@ -296,6 +296,7 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
         // Switch back to initial user.
         if (mSupportsMultiUser && getDevice().getCurrentUser() != mInitialUserId) {
             switchUser(mInitialUserId);
+            waitForBroadcastIdle();
         }
         removeTestUsers();
         removeTestPackages();
