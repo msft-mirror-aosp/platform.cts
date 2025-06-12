@@ -4210,7 +4210,6 @@ public class ImsServiceTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_NOTIFY_INITIAL_IMS_PROVISIONING_STATUS)
     public void testInitialNotificationForMmTelWhenCallbackRegistered() throws Exception {
         if (!ImsUtils.shouldTestImsService()) {
             return;
@@ -4305,7 +4304,6 @@ public class ImsServiceTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_NOTIFY_INITIAL_IMS_PROVISIONING_STATUS)
     public void testInitialNotificationForMmTelWhenImsServiceConnected() throws Exception {
         if (!ImsUtils.shouldTestImsService()) {
             return;
@@ -4645,7 +4643,6 @@ public class ImsServiceTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_NOTIFY_INITIAL_IMS_PROVISIONING_STATUS)
     public void testInitialNotificationForRcsWhenCallbackRegistered() throws Exception {
         if (!ImsUtils.shouldTestImsSingleRegistration()) {
             return;
@@ -4738,7 +4735,6 @@ public class ImsServiceTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_NOTIFY_INITIAL_IMS_PROVISIONING_STATUS)
     public void testInitialNotificationForRcsWhenImsServiceConnected() throws Exception {
         if (!ImsUtils.shouldTestImsSingleRegistration()) {
             return;
