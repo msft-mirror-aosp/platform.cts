@@ -151,18 +151,24 @@ public class MediaExtractorTest {
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM + 1, codeName = "Baklava")
     @Test
     public void testApvMediaExtractor() throws Exception {
-        TestMediaDataSource dataSource =
-                setDataSource("pattern_640x480_30fps_16mbps_apv_10bit.mp4");
+        String testFileName = "pattern_640x480_30fps_16mbps_apv_10bit.mp4";
+        Preconditions.assertTestFileExists(mInpPrefix + testFileName);
+
+        TestMediaDataSource dataSource = setDataSource(testFileName);
+        assertNotNull("Extractor failed to initialize", mExtractor);
+
         MediaFormat trackFormat = mExtractor.getTrackFormat(0);
-
-        int profile = trackFormat.getInteger(MediaFormat.KEY_PROFILE);
-        assertEquals(MediaCodecInfo.CodecProfileLevel.APVProfile422_10, profile);
-
-        int level = trackFormat.getInteger(MediaFormat.KEY_LEVEL);
-        assertEquals(MediaCodecInfo.CodecProfileLevel.APVLevel2Band0, level);
+        assertNotNull("expected to find a track", trackFormat);
 
         final String mimeType = trackFormat.getString(MediaFormat.KEY_MIME);
-        assertEquals("video/apv", mimeType);
+        assertEquals("Unexpected Mime type value", "video/apv", mimeType);
+
+        int profile = trackFormat.getInteger(MediaFormat.KEY_PROFILE);
+        assertEquals(
+                "Mismatched profile", MediaCodecInfo.CodecProfileLevel.APVProfile422_10, profile);
+
+        int level = trackFormat.getInteger(MediaFormat.KEY_LEVEL);
+        assertEquals("Mismatched level", MediaCodecInfo.CodecProfileLevel.APVLevel2Band0, level);
     }
 
     private boolean advertisesDolbyVision() {
