@@ -73,7 +73,10 @@ public class MediaRouter2TestUtils {
             throw new TimeoutException(
                     "Failed to get expected routes after "
                             + ROUTE_UPDATE_MAX_WAIT_MS
-                            + " milliseconds.");
+                            + " milliseconds. Expected routes: "
+                            + expectedRouteIds
+                            + ", found routes: "
+                            + routes.keySet());
         }
         return routes;
     }
