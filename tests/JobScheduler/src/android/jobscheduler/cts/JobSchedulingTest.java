@@ -94,7 +94,7 @@ public final class JobSchedulingTest extends BaseJobSchedulerTest {
     /** Tests that an ANR happens if the job is blocked in onStartJob. */
     @Test
     public void testAnr_onStartJob() throws Exception {
-        try (TestAppInterface testAppInterface = new TestAppInterface(mContext, JOB_ID);
+        try (TestAppInterface testAppInterface = new TestAppInterface(getContext(), JOB_ID);
                 AnrMonitor monitor = AnrMonitor.start(getInstrumentation(), TEST_APP_PACKAGE)) {
 
             setTestPackageStandbyBucket(
@@ -121,7 +121,7 @@ public final class JobSchedulingTest extends BaseJobSchedulerTest {
     /** Tests that an ANR happens if the job is blocked in onStopJob. */
     @Test
     public void testAnr_onStopJob() throws Exception {
-        try (TestAppInterface testAppInterface = new TestAppInterface(mContext, JOB_ID);
+        try (TestAppInterface testAppInterface = new TestAppInterface(getContext(), JOB_ID);
                 AnrMonitor monitor = AnrMonitor.start(getInstrumentation(), TEST_APP_PACKAGE)) {
 
             setTestPackageStandbyBucket(
