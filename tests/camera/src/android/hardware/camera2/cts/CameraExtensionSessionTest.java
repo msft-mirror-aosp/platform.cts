@@ -1090,21 +1090,12 @@ public class CameraExtensionSessionTest extends Camera2ParameterizedTestCase {
     @Test
     public void testMultiFrameCapture() throws Exception {
         final int IMAGE_COUNT = 10;
-        int SUPPORTED_CAPTURE_OUTPUT_FORMATS[];
-        if (Flags.depthJpegExtensions()) {
-            SUPPORTED_CAPTURE_OUTPUT_FORMATS = new int[] {
-                    ImageFormat.YUV_420_888,
-                    ImageFormat.JPEG,
-                    ImageFormat.JPEG_R,
-                    ImageFormat.DEPTH_JPEG
-            };
-        } else {
-            SUPPORTED_CAPTURE_OUTPUT_FORMATS = new int[] {
-                    ImageFormat.YUV_420_888,
-                    ImageFormat.JPEG,
-                    ImageFormat.JPEG_R
-            };
-        }
+        final int SUPPORTED_CAPTURE_OUTPUT_FORMATS[] = {
+                ImageFormat.YUV_420_888,
+                ImageFormat.JPEG,
+                ImageFormat.JPEG_R,
+                ImageFormat.DEPTH_JPEG
+        };
         for (String id : getCameraIdsUnderTest()) {
             StaticMetadata staticMeta =
                     new StaticMetadata(mTestRule.getCameraManager().getCameraCharacteristics(id));
