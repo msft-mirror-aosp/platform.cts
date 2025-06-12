@@ -21,12 +21,8 @@ import static android.jobscheduler.cts.TestAppInterface.TEST_APP_PACKAGE;
 
 import static com.android.compatibility.common.util.TestUtils.waitUntil;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static com.google.common.truth.Truth.assertThat;
+import static com.google.common.truth.Truth.assertWithMessage;
 
 import android.app.Notification;
 import android.app.NotificationChannel;
@@ -37,11 +33,11 @@ import android.app.job.JobService;
 import android.content.pm.ApplicationInfo;
 import android.jobscheduler.cts.UserInitiatedJobTest.WatchUidRunner;
 import android.jobscheduler.cts.jobtestapp.TestJobSchedulerReceiver;
+import android.os.SystemClock;
 import android.provider.Settings;
 import android.service.notification.StatusBarNotification;
 import android.util.Log;
 
-import androidx.test.InstrumentationRegistry;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.LargeTest;
 
@@ -62,9 +58,10 @@ import java.util.Map;
  * JobService#setNotification(JobParameters, int, Notification, int)}
  */
 @RunWith(AndroidJUnit4.class)
-public class NotificationTest extends BaseJobSchedulerTest {
+public final class NotificationTest extends BaseJobSchedulerTest {
     private static final String TAG = NotificationTest.class.getSimpleName();
     private static final int JOB_ID = NotificationTest.class.hashCode();
+    private static final int TEST_NOTIFICATION_ID = 123;
     private static final long DEFAULT_WAIT_TIMEOUT_MS = 2_000;
     private static final String NOTIFICATION_CHANNEL_ID =
             NotificationTest.class.getSimpleName() + "_channel";
@@ -81,9 +78,8 @@ public class NotificationTest extends BaseJobSchedulerTest {
         NotificationChannel channel = new NotificationChannel(NOTIFICATION_CHANNEL_ID,
                 NotificationTest.class.getSimpleName(), NotificationManager.IMPORTANCE_DEFAULT);
         mNotificationManager.createNotificationChannel(channel);
-        mNetworkingHelper =
-                new NetworkingHelper(InstrumentationRegistry.getInstrumentation(), mContext);
-        mUserHelper = new UserHelper(mContext);
+        mNetworkingHelper = new NetworkingHelper(getInstrumentation(), getContext());
+        mUserHelper = new UserHelper(getContext());
     }
 
     @Override
@@ -100,7 +96,6 @@ public class NotificationTest extends BaseJobSchedulerTest {
     @Test
     public void testNotificationJobEndDetach() throws Exception {
         mNotificationManager.cancelAll();
-        final int notificationId = 123;
         JobInfo jobInfo = new JobInfo.Builder(JOB_ID, kJobServiceComponent).build();
 
         Notification notification = new Notification.Builder(getContext(), NOTIFICATION_CHANNEL_ID)
@@ -111,34 +106,37 @@ public class NotificationTest extends BaseJobSchedulerTest {
 
         kTestEnvironment.setExpectedExecutions(1);
         kTestEnvironment.setContinueAfterStart();
-        kTestEnvironment.setNotificationAtStart(notificationId, notification,
-                JobService.JOB_END_NOTIFICATION_POLICY_DETACH);
+        kTestEnvironment.setNotificationAtStart(
+                TEST_NOTIFICATION_ID, notification, JobService.JOB_END_NOTIFICATION_POLICY_DETACH);
         mJobScheduler.schedule(jobInfo);
-        assertTrue("Job didn't start", kTestEnvironment.awaitExecution());
 
-        waitUntil("Notification wasn't posted", 15 /* seconds */,
+        assertWithMessage("Job didn't start").that(kTestEnvironment.awaitExecution()).isTrue();
+
+        waitUntil(
+                "Notification wasn't posted",
+                15 /* seconds */,
                 () -> {
                     StatusBarNotification[] activeNotifications =
                             mNotificationManager.getActiveNotifications();
                     return activeNotifications.length == 1
-                            && activeNotifications[0].getId() == notificationId;
+                            && activeNotifications[0].getId() == TEST_NOTIFICATION_ID;
                 });
 
         kTestEnvironment.setExpectedStopped();
         mJobScheduler.cancel(JOB_ID);
-        assertTrue(kTestEnvironment.awaitStopped());
 
-        Thread.sleep(1000); // Wait a bit for NotificationManager to catch up
+        assertThat(kTestEnvironment.awaitStopped()).isTrue();
+
+        SystemClock.sleep(1000); // Wait a bit for NotificationManager to catch up
         // Notification should remain
         StatusBarNotification[] activeNotifications = mNotificationManager.getActiveNotifications();
-        assertEquals(1, activeNotifications.length);
-        assertEquals(notificationId, activeNotifications[0].getId());
+        assertThat(activeNotifications).hasLength(1);
+        assertThat(activeNotifications[0].getId()).isEqualTo(TEST_NOTIFICATION_ID);
     }
 
     @Test
     public void testNotificationJobEndRemove() throws Exception {
         mNotificationManager.cancelAll();
-        final int notificationId = 123;
         JobInfo jobInfo = new JobInfo.Builder(JOB_ID, kJobServiceComponent).build();
 
         Notification notification = new Notification.Builder(getContext(), NOTIFICATION_CHANNEL_ID)
@@ -149,22 +147,25 @@ public class NotificationTest extends BaseJobSchedulerTest {
 
         kTestEnvironment.setExpectedExecutions(1);
         kTestEnvironment.setContinueAfterStart();
-        kTestEnvironment.setNotificationAtStart(notificationId, notification,
-                JobService.JOB_END_NOTIFICATION_POLICY_REMOVE);
+        kTestEnvironment.setNotificationAtStart(
+                TEST_NOTIFICATION_ID, notification, JobService.JOB_END_NOTIFICATION_POLICY_REMOVE);
         mJobScheduler.schedule(jobInfo);
-        assertTrue("Job didn't start", kTestEnvironment.awaitExecution());
 
-        waitUntil("Notification wasn't posted", 15 /* seconds */,
+        assertWithMessage("Job didn't start").that(kTestEnvironment.awaitExecution()).isTrue();
+
+        waitUntil(
+                "Notification wasn't posted",
+                15 /* seconds */,
                 () -> {
                     StatusBarNotification[] activeNotifications =
                             mNotificationManager.getActiveNotifications();
                     return activeNotifications.length == 1
-                            && activeNotifications[0].getId() == notificationId;
+                            && activeNotifications[0].getId() == TEST_NOTIFICATION_ID;
                 });
 
         kTestEnvironment.setExpectedStopped();
         mJobScheduler.cancel(JOB_ID);
-        assertTrue(kTestEnvironment.awaitStopped());
+        assertThat(kTestEnvironment.awaitStopped()).isTrue();
 
         waitUntil("Notification wasn't removed", 15 /* seconds */,
                 () -> {
@@ -183,29 +184,29 @@ public class NotificationTest extends BaseJobSchedulerTest {
             return;
         }
         mNetworkingHelper.setAllNetworksEnabled(true);
-        try (TestAppInterface mTestAppInterface = new TestAppInterface(mContext, JOB_ID);
-             TestNotificationListener.NotificationHelper notificationHelper =
-                     new TestNotificationListener.NotificationHelper(
-                             mContext, TestAppInterface.TEST_APP_PACKAGE)) {
-            mTestAppInterface.startAndKeepTestActivity(true);
-            mTestAppInterface.scheduleJob(
+        try (TestAppInterface testAppInterface = new TestAppInterface(getContext(), JOB_ID);
+                TestNotificationListener.NotificationHelper notificationHelper =
+                        new TestNotificationListener.NotificationHelper(
+                                getContext(), TestAppInterface.TEST_APP_PACKAGE)) {
+            testAppInterface.startAndKeepTestActivity(true);
+            testAppInterface.scheduleJob(
                     Map.of(
                             TestJobSchedulerReceiver.EXTRA_AS_USER_INITIATED, true,
-                            TestJobSchedulerReceiver.EXTRA_SET_NOTIFICATION, true
-                    ),
+                            TestJobSchedulerReceiver.EXTRA_SET_NOTIFICATION, true),
                     Map.of(
                             TestJobSchedulerReceiver.EXTRA_SET_NOTIFICATION_JOB_END_POLICY,
                             JobService.JOB_END_NOTIFICATION_POLICY_DETACH,
-                            TestJobSchedulerReceiver.EXTRA_REQUIRED_NETWORK_TYPE, NETWORK_TYPE_ANY
-                    ));
+                            TestJobSchedulerReceiver.EXTRA_REQUIRED_NETWORK_TYPE,
+                            NETWORK_TYPE_ANY));
 
-            assertTrue("Job did not start after scheduling",
-                    mTestAppInterface.awaitJobStart(DEFAULT_WAIT_TIMEOUT_MS));
+            assertWithMessage("Job did not start after scheduling")
+                    .that(testAppInterface.awaitJobStart(DEFAULT_WAIT_TIMEOUT_MS))
+                    .isTrue();
 
             StatusBarNotification jobNotification = notificationHelper.getNotification();
-            assertNotNull(jobNotification);
+            assertThat(jobNotification).isNotNull();
 
-            mTestAppInterface.forceStopApp();
+            testAppInterface.forceStopApp();
 
             notificationHelper.assertNotificationsRemoved();
         }
@@ -221,10 +222,10 @@ public class NotificationTest extends BaseJobSchedulerTest {
             return;
         }
         String initialActivityManagerConstants = null;
-        try (TestAppInterface testAppInterface = new TestAppInterface(mContext, JOB_ID);
-             TestNotificationListener.NotificationHelper notificationHelper =
-                     new TestNotificationListener.NotificationHelper(
-                             mContext, TestAppInterface.TEST_APP_PACKAGE)) {
+        try (TestAppInterface testAppInterface = new TestAppInterface(getContext(), JOB_ID);
+                TestNotificationListener.NotificationHelper notificationHelper =
+                        new TestNotificationListener.NotificationHelper(
+                                getContext(), TestAppInterface.TEST_APP_PACKAGE)) {
             initialActivityManagerConstants =
                     Settings.Global.getString(getContext().getContentResolver(),
                     Settings.Global.ACTIVITY_MANAGER_CONSTANTS);
@@ -243,23 +244,24 @@ public class NotificationTest extends BaseJobSchedulerTest {
                             JobService.JOB_END_NOTIFICATION_POLICY_DETACH
                     ));
 
-            assertTrue("Job did not start after scheduling",
-                    testAppInterface.awaitJobStart(DEFAULT_WAIT_TIMEOUT_MS));
+            assertWithMessage("Job did not start after scheduling")
+                    .that(testAppInterface.awaitJobStart(DEFAULT_WAIT_TIMEOUT_MS))
+                    .isTrue();
 
             StatusBarNotification jobNotification = notificationHelper.getNotification();
-            assertNotNull(jobNotification);
+            assertThat(jobNotification).isNotNull();
 
             final ApplicationInfo testAppInfo =
-                    mContext.getPackageManager().getApplicationInfo(TEST_APP_PACKAGE, 0);
-            try (WatchUidRunner uidWatcher = new WatchUidRunner(
-                    InstrumentationRegistry.getInstrumentation(), testAppInfo.uid)) {
+                    getContext().getPackageManager().getApplicationInfo(TEST_APP_PACKAGE, 0);
+            try (WatchUidRunner uidWatcher =
+                    new WatchUidRunner(getInstrumentation(), testAppInfo.uid)) {
                 // Close the activity so the app isn't considered TOP.
                 testAppInterface.closeActivity(true);
                 uidWatcher.waitFor(UserInitiatedJobTest.WatchUidRunner.CMD_IDLE);
-                Thread.sleep(1000); // Wait a bit for JS to process.
+                SystemClock.sleep(1000); // Wait a bit for JS to process.
             }
 
-            assertTrue(testAppInterface.awaitJobStop(DEFAULT_WAIT_TIMEOUT_MS));
+            assertThat(testAppInterface.awaitJobStop(DEFAULT_WAIT_TIMEOUT_MS)).isTrue();
             notificationHelper.assertNotificationsRemoved();
         } finally {
             Settings.Global.putString(getContext().getContentResolver(),
@@ -278,30 +280,31 @@ public class NotificationTest extends BaseJobSchedulerTest {
             return;
         }
         mNetworkingHelper.setAllNetworksEnabled(true);
-        try (TestAppInterface mTestAppInterface = new TestAppInterface(mContext, JOB_ID);
-             TestNotificationListener.NotificationHelper notificationHelper =
-                     new TestNotificationListener.NotificationHelper(
-                             mContext, TestAppInterface.TEST_APP_PACKAGE)) {
-            mTestAppInterface.startAndKeepTestActivity(true);
-            mTestAppInterface.scheduleJob(
+        try (TestAppInterface testAppInterface = new TestAppInterface(getContext(), JOB_ID);
+                TestNotificationListener.NotificationHelper notificationHelper =
+                        new TestNotificationListener.NotificationHelper(
+                                getContext(), TestAppInterface.TEST_APP_PACKAGE)) {
+            testAppInterface.startAndKeepTestActivity(true);
+            testAppInterface.scheduleJob(
                     Map.of(
                             TestJobSchedulerReceiver.EXTRA_AS_USER_INITIATED, true,
-                            TestJobSchedulerReceiver.EXTRA_SET_NOTIFICATION, true
-                    ),
+                            TestJobSchedulerReceiver.EXTRA_SET_NOTIFICATION, true),
                     Map.of(
                             TestJobSchedulerReceiver.EXTRA_SET_NOTIFICATION_JOB_END_POLICY,
                             JobService.JOB_END_NOTIFICATION_POLICY_DETACH,
-                            TestJobSchedulerReceiver.EXTRA_REQUIRED_NETWORK_TYPE, NETWORK_TYPE_ANY
-                    ));
+                            TestJobSchedulerReceiver.EXTRA_REQUIRED_NETWORK_TYPE,
+                            NETWORK_TYPE_ANY));
 
-            assertTrue("Job did not start after scheduling",
-                    mTestAppInterface.awaitJobStart(DEFAULT_WAIT_TIMEOUT_MS));
+            assertWithMessage("Job did not start after scheduling")
+                    .that(testAppInterface.awaitJobStart(DEFAULT_WAIT_TIMEOUT_MS))
+                    .isTrue();
 
             StatusBarNotification jobNotification = notificationHelper.getNotification();
-            assertNotNull(jobNotification);
+            assertThat(jobNotification).isNotNull();
 
             // Use the same stop reasons as a Task Manager stop.
-            mTestAppInterface.stopJob(JobParameters.STOP_REASON_USER,
+            testAppInterface.stopJob(
+                    JobParameters.STOP_REASON_USER,
                     JobParameters.INTERNAL_STOP_REASON_USER_UI_STOP);
 
             notificationHelper.assertNotificationsRemoved();
@@ -322,11 +325,11 @@ public class NotificationTest extends BaseJobSchedulerTest {
             return;
         }
         mNetworkingHelper.setAllNetworksEnabled(true);
-        try (TestAppInterface testAppInterface = new TestAppInterface(mContext, JOB_ID);
-             AnrMonitor monitor = AnrMonitor.start(InstrumentationRegistry.getInstrumentation(),
-                     TEST_APP_PACKAGE);
-             TestNotificationListener.NotificationHelper notificationHelper =
-                     new TestNotificationListener.NotificationHelper(mContext, TEST_APP_PACKAGE)) {
+        try (TestAppInterface testAppInterface = new TestAppInterface(getContext(), JOB_ID);
+                AnrMonitor monitor = AnrMonitor.start(getInstrumentation(), TEST_APP_PACKAGE);
+                TestNotificationListener.NotificationHelper notificationHelper =
+                        new TestNotificationListener.NotificationHelper(
+                                getContext(), TEST_APP_PACKAGE)) {
 
             testAppInterface.postUiInitiatingNotification(
                     Map.of(
@@ -338,8 +341,9 @@ public class NotificationTest extends BaseJobSchedulerTest {
             // Clicking on the notification should put the app into a BAL approved state.
             notificationHelper.clickNotification();
 
-            assertTrue("Job did not start after scheduling",
-                    testAppInterface.awaitJobStart(DEFAULT_WAIT_TIMEOUT_MS));
+            assertWithMessage("Job did not start after scheduling")
+                    .that(testAppInterface.awaitJobStart(DEFAULT_WAIT_TIMEOUT_MS))
+                    .isTrue();
 
             // Confirm ANR
             monitor.waitForAnrAndReturnUptime(30_000);
@@ -360,11 +364,11 @@ public class NotificationTest extends BaseJobSchedulerTest {
             return;
         }
         mNetworkingHelper.setAllNetworksEnabled(true);
-        try (TestAppInterface testAppInterface = new TestAppInterface(mContext, JOB_ID);
-             AnrMonitor monitor = AnrMonitor.start(InstrumentationRegistry.getInstrumentation(),
-                     TEST_APP_PACKAGE);
-             TestNotificationListener.NotificationHelper notificationHelper =
-                     new TestNotificationListener.NotificationHelper(mContext, TEST_APP_PACKAGE)) {
+        try (TestAppInterface testAppInterface = new TestAppInterface(getContext(), JOB_ID);
+                AnrMonitor monitor = AnrMonitor.start(getInstrumentation(), TEST_APP_PACKAGE);
+                TestNotificationListener.NotificationHelper notificationHelper =
+                        new TestNotificationListener.NotificationHelper(
+                                getContext(), TEST_APP_PACKAGE)) {
 
             testAppInterface.postUiInitiatingNotification(
                     Map.of(
@@ -376,8 +380,9 @@ public class NotificationTest extends BaseJobSchedulerTest {
             // Clicking on the notification should put the app into a BAL approved state.
             notificationHelper.clickNotification();
 
-            assertTrue("Job did not start after scheduling",
-                    testAppInterface.awaitJobStart(DEFAULT_WAIT_TIMEOUT_MS));
+            assertWithMessage("Job did not start after scheduling")
+                    .that(testAppInterface.awaitJobStart(DEFAULT_WAIT_TIMEOUT_MS))
+                    .isTrue();
 
             // Confirm no ANR
             monitor.assertNoAnr(25_000);
@@ -398,11 +403,11 @@ public class NotificationTest extends BaseJobSchedulerTest {
                     + "NotificationListeners do not support visible background users");
             return;
         }
-        try (TestAppInterface testAppInterface = new TestAppInterface(mContext, JOB_ID);
-             AnrMonitor monitor = AnrMonitor.start(InstrumentationRegistry.getInstrumentation(),
-                     TEST_APP_PACKAGE);
-             TestNotificationListener.NotificationHelper notificationHelper =
-                     new TestNotificationListener.NotificationHelper(mContext, TEST_APP_PACKAGE)) {
+        try (TestAppInterface testAppInterface = new TestAppInterface(getContext(), JOB_ID);
+                AnrMonitor monitor = AnrMonitor.start(getInstrumentation(), TEST_APP_PACKAGE);
+                TestNotificationListener.NotificationHelper notificationHelper =
+                        new TestNotificationListener.NotificationHelper(
+                                getContext(), TEST_APP_PACKAGE)) {
 
             testAppInterface.postUiInitiatingNotification(
                     Map.of(TestJobSchedulerReceiver.EXTRA_SET_NOTIFICATION, false),
@@ -410,8 +415,9 @@ public class NotificationTest extends BaseJobSchedulerTest {
 
             notificationHelper.clickNotification();
 
-            assertTrue("Job did not start after scheduling",
-                    testAppInterface.awaitJobStart(DEFAULT_WAIT_TIMEOUT_MS));
+            assertWithMessage("Job did not start after scheduling")
+                    .that(testAppInterface.awaitJobStart(DEFAULT_WAIT_TIMEOUT_MS))
+                    .isTrue();
 
             // Confirm no ANR
             monitor.assertNoAnr(25_000);
@@ -428,25 +434,26 @@ public class NotificationTest extends BaseJobSchedulerTest {
             return;
         }
         mNetworkingHelper.setAllNetworksEnabled(true);
-        try (TestAppInterface mTestAppInterface = new TestAppInterface(mContext, JOB_ID);
-             TestNotificationListener.NotificationHelper notificationHelper =
-                     new TestNotificationListener.NotificationHelper(
-                             mContext, TestAppInterface.TEST_APP_PACKAGE)) {
-            mTestAppInterface.startAndKeepTestActivity(true);
-            mTestAppInterface.scheduleJob(
+        try (TestAppInterface testAppInterface = new TestAppInterface(getContext(), JOB_ID);
+                TestNotificationListener.NotificationHelper notificationHelper =
+                        new TestNotificationListener.NotificationHelper(
+                                getContext(), TestAppInterface.TEST_APP_PACKAGE)) {
+            testAppInterface.startAndKeepTestActivity(true);
+            testAppInterface.scheduleJob(
                     Map.of(
                             TestJobSchedulerReceiver.EXTRA_AS_USER_INITIATED, true,
-                            TestJobSchedulerReceiver.EXTRA_SET_NOTIFICATION, true
-                    ),
+                            TestJobSchedulerReceiver.EXTRA_SET_NOTIFICATION, true),
                     Map.of(TestJobSchedulerReceiver.EXTRA_REQUIRED_NETWORK_TYPE, NETWORK_TYPE_ANY));
 
-            assertTrue("Job did not start after scheduling",
-                    mTestAppInterface.awaitJobStart(DEFAULT_WAIT_TIMEOUT_MS));
+            assertWithMessage("Job did not start after scheduling")
+                    .that(testAppInterface.awaitJobStart(DEFAULT_WAIT_TIMEOUT_MS))
+                    .isTrue();
 
             StatusBarNotification jobNotification = notificationHelper.getNotification();
-            assertNotNull(jobNotification);
-            assertTrue("A user-initiated job notification should have the UIJ flag",
-                    jobNotification.getNotification().isUserInitiatedJob());
+            assertThat(jobNotification).isNotNull();
+            assertWithMessage("A user-initiated job notification should have the UIJ flag")
+                    .that(jobNotification.getNotification().isUserInitiatedJob())
+                    .isTrue();
         }
     }
 
@@ -459,22 +466,24 @@ public class NotificationTest extends BaseJobSchedulerTest {
                     + "NotificationListeners do not support visible background users");
             return;
         }
-        try (TestAppInterface mTestAppInterface = new TestAppInterface(mContext, JOB_ID);
-             TestNotificationListener.NotificationHelper notificationHelper =
-                     new TestNotificationListener.NotificationHelper(
-                             mContext, TestAppInterface.TEST_APP_PACKAGE)) {
-            mTestAppInterface.startAndKeepTestActivity(true);
-            mTestAppInterface.scheduleJob(
+        try (TestAppInterface testAppInterface = new TestAppInterface(getContext(), JOB_ID);
+                TestNotificationListener.NotificationHelper notificationHelper =
+                        new TestNotificationListener.NotificationHelper(
+                                getContext(), TestAppInterface.TEST_APP_PACKAGE)) {
+            testAppInterface.startAndKeepTestActivity(true);
+            testAppInterface.scheduleJob(
                     Map.of(TestJobSchedulerReceiver.EXTRA_SET_NOTIFICATION, true),
                     Collections.emptyMap());
 
-            assertTrue("Job did not start after scheduling",
-                    mTestAppInterface.awaitJobStart(DEFAULT_WAIT_TIMEOUT_MS));
+            assertWithMessage("Job did not start after scheduling")
+                    .that(testAppInterface.awaitJobStart(DEFAULT_WAIT_TIMEOUT_MS))
+                    .isTrue();
 
             StatusBarNotification jobNotification = notificationHelper.getNotification();
-            assertNotNull(jobNotification);
-            assertFalse("A non user-initiated job notification should not have the UIJ flag",
-                    jobNotification.getNotification().isUserInitiatedJob());
+            assertThat(jobNotification).isNotNull();
+            assertWithMessage("A non user-initiated job notification should not have the UIJ flag")
+                    .that(jobNotification.getNotification().isUserInitiatedJob())
+                    .isFalse();
         }
     }
 
@@ -487,7 +496,6 @@ public class NotificationTest extends BaseJobSchedulerTest {
         mNotificationManager.cancelAll();
         mNetworkingHelper.setAllNetworksEnabled(true);
         startAndKeepTestActivity();
-        final int notificationId = 123;
         JobInfo jobInfo = new JobInfo.Builder(JOB_ID, kJobServiceComponent)
                 .setUserInitiated(true)
                 .setRequiredNetworkType(NETWORK_TYPE_ANY)
@@ -501,36 +509,43 @@ public class NotificationTest extends BaseJobSchedulerTest {
 
         kTestEnvironment.setExpectedExecutions(1);
         kTestEnvironment.setContinueAfterStart();
-        kTestEnvironment.setNotificationAtStart(notificationId, notification,
-                JobService.JOB_END_NOTIFICATION_POLICY_REMOVE);
+        kTestEnvironment.setNotificationAtStart(
+                TEST_NOTIFICATION_ID, notification, JobService.JOB_END_NOTIFICATION_POLICY_REMOVE);
         mJobScheduler.schedule(jobInfo);
         runSatisfiedJob(JOB_ID);
-        assertTrue("Job didn't start", kTestEnvironment.awaitExecution());
 
-        waitUntil("Notification wasn't posted", 15 /* seconds */,
+        assertWithMessage("Job didn't start").that(kTestEnvironment.awaitExecution()).isTrue();
+
+        waitUntil(
+                "Notification wasn't posted",
+                15 /* seconds */,
                 () -> {
                     StatusBarNotification[] activeNotifications =
                             mNotificationManager.getActiveNotifications();
                     return activeNotifications.length == 1
-                            && activeNotifications[0].getId() == notificationId;
+                            && activeNotifications[0].getId() == TEST_NOTIFICATION_ID;
                 });
 
-        mNotificationManager.cancel(notificationId);
-        waitUntil("A user-initiated job notification should not be cancellable by apps.",
+        mNotificationManager.cancel(TEST_NOTIFICATION_ID);
+        waitUntil(
+                "A user-initiated job notification should not be cancellable by apps.",
                 5 /* seconds */,
                 () -> {
                     StatusBarNotification[] activeNotifications =
                             mNotificationManager.getActiveNotifications();
                     return activeNotifications.length == 1
-                            && activeNotifications[0].getId() == notificationId;
+                            && activeNotifications[0].getId() == TEST_NOTIFICATION_ID;
                 });
 
         try {
             mNotificationManager.deleteNotificationChannel(NOTIFICATION_CHANNEL_ID);
-            fail("A notification channel associated with a user-initiated job "
-                    + "should not be cancellable by apps.");
+            assertWithMessage(
+                            "A notification channel associated with a user-initiated job "
+                                    + "should not be cancellable by apps.")
+                    .fail();
         } catch (SecurityException expected) {
-            assertNotNull(mNotificationManager.getNotificationChannel(NOTIFICATION_CHANNEL_ID));
+            assertThat(mNotificationManager.getNotificationChannel(NOTIFICATION_CHANNEL_ID))
+                    .isNotNull();
         }
     }
 
@@ -543,7 +558,6 @@ public class NotificationTest extends BaseJobSchedulerTest {
         mNotificationManager.cancelAll();
         mNetworkingHelper.setAllNetworksEnabled(true);
         startAndKeepTestActivity();
-        final int notificationId = 123;
         JobInfo jobInfo = new JobInfo.Builder(JOB_ID, kJobServiceComponent).build();
 
         Notification notification = new Notification.Builder(getContext(), NOTIFICATION_CHANNEL_ID)
@@ -554,21 +568,24 @@ public class NotificationTest extends BaseJobSchedulerTest {
 
         kTestEnvironment.setExpectedExecutions(1);
         kTestEnvironment.setContinueAfterStart();
-        kTestEnvironment.setNotificationAtStart(notificationId, notification,
-                JobService.JOB_END_NOTIFICATION_POLICY_REMOVE);
+        kTestEnvironment.setNotificationAtStart(
+                TEST_NOTIFICATION_ID, notification, JobService.JOB_END_NOTIFICATION_POLICY_REMOVE);
         mJobScheduler.schedule(jobInfo);
         runSatisfiedJob(JOB_ID);
-        assertTrue("Job didn't start", kTestEnvironment.awaitExecution());
 
-        waitUntil("Notification wasn't posted", 15 /* seconds */,
+        assertWithMessage("Job didn't start").that(kTestEnvironment.awaitExecution()).isTrue();
+
+        waitUntil(
+                "Notification wasn't posted",
+                15 /* seconds */,
                 () -> {
                     StatusBarNotification[] activeNotifications =
                             mNotificationManager.getActiveNotifications();
                     return activeNotifications.length == 1
-                            && activeNotifications[0].getId() == notificationId;
+                            && activeNotifications[0].getId() == TEST_NOTIFICATION_ID;
                 });
 
-        mNotificationManager.cancel(notificationId);
+        mNotificationManager.cancel(TEST_NOTIFICATION_ID);
         waitUntil("A non user-initiated job notification should be cancellable by apps.",
                 15 /* seconds */,
                 () -> {
@@ -578,10 +595,13 @@ public class NotificationTest extends BaseJobSchedulerTest {
 
         try {
             mNotificationManager.deleteNotificationChannel(NOTIFICATION_CHANNEL_ID);
-            assertNull(mNotificationManager.getNotificationChannel(NOTIFICATION_CHANNEL_ID));
+            assertThat(mNotificationManager.getNotificationChannel(NOTIFICATION_CHANNEL_ID))
+                    .isNull();
         } catch (SecurityException e) {
-            fail("A notification channel associated with a non user-initiated job "
-                    + "should be cancellable by apps.");
+            assertWithMessage(
+                            "A notification channel associated with a non user-initiated job "
+                                    + "should be cancellable by apps.")
+                    .fail();
         }
     }
 }
