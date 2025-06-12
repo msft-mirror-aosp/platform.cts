@@ -25,19 +25,24 @@ import static android.app.NotificationManager.VISIBILITY_NO_OVERRIDE;
 import static android.provider.Settings.EXTRA_APP_PACKAGE;
 import static android.provider.Settings.EXTRA_CHANNEL_ID;
 
+import android.app.AlertDialog;
 import android.app.KeyguardManager;
 import android.app.Notification;
 import android.app.NotificationChannel;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.os.Bundle;
 import android.provider.Settings;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Toast;
 
 import androidx.annotation.StringRes;
 
 import com.android.cts.verifier.R;
+import com.android.cts.verifier.features.FeatureUtil;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -50,6 +55,43 @@ public class NotificationDismissVerifierActivity extends InteractiveVerifierActi
         implements Runnable {
     static final String TAG = "NotifDismissVerifier";
     private static final String NOTIFICATION_CHANNEL_ID = TAG;
+
+    private boolean mShouldLoadTests = true;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        if (FeatureUtil.isXrHeadset(this) && FeatureUtil.isSecureLockScreen(this)) {
+            mShouldLoadTests = false;
+            showPrecursorDialog();
+        }
+        super.onCreate(savedInstanceState);
+    }
+
+    private void showPrecursorDialog() {
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.notif_xr_lockscreen_support_dialog_title)
+                .setMessage(R.string.notif_xr_lockscreen_support_dialog_message)
+                .setPositiveButton(R.string.notif_xr_lockscreen_support_yes,
+                        new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                mShouldLoadTests = true;
+                                NotificationDismissVerifierActivity.super.onCreate(null);
+                                next();
+                            }
+                        })
+                .setNegativeButton(R.string.notif_xr_lockscreen_support_no,
+                        new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                Toast.makeText(NotificationDismissVerifierActivity.this,
+                                        "Test Pass!", Toast.LENGTH_SHORT).show();
+                                setTestResultAndFinish(true);
+                            }
+                        })
+                .setCancelable(false)
+                .show();
+    }
 
     @Override
     protected int getTitleResource() {
@@ -99,6 +141,11 @@ public class NotificationDismissVerifierActivity extends InteractiveVerifierActi
         boolean isAutomotive = getPackageManager().hasSystemFeature(
                 PackageManager.FEATURE_AUTOMOTIVE);
         List<InteractiveTestCase> tests = new ArrayList<>();
+
+        if (!mShouldLoadTests) {
+            return tests;
+        }
+
         if (!isAutomotive) {
 
             // FIRST: set redaction settings
