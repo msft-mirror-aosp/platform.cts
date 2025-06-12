@@ -22,6 +22,7 @@ import static android.app.AppOpsManager.MODE_IGNORED;
 import static android.app.AppOpsManager.OPSTR_PLAY_AUDIO;
 import static android.media.AudioAttributes.ALLOW_CAPTURE_BY_NONE;
 import static android.media.AudioAttributes.ALLOW_CAPTURE_BY_SYSTEM;
+import static android.media.AudioAttributes.FLAG_BYPASS_MUTE;
 import static android.media.AudioManager.ADJUST_MUTE;
 import static android.media.AudioManager.ADJUST_UNMUTE;
 import static android.media.AudioManager.STREAM_NOTIFICATION;
@@ -36,6 +37,7 @@ import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentat
 
 import static com.android.compatibility.common.util.AppOpsUtils.getOpMode;
 import static com.android.compatibility.common.util.AppOpsUtils.setOpMode;
+import static com.android.media.audio.Flags.FLAG_RING_MY_CAR;
 
 import android.Manifest;
 import android.annotation.NonNull;
@@ -54,6 +56,7 @@ import android.media.MediaPlayer;
 import android.media.SoundPool;
 import android.media.VolumeShaper;
 import android.media.audio.Flags;
+import android.media.audio.cts.AudioTestUtil.SleepAssertIntEquals;
 import android.media.cts.TestUtils;
 import android.os.Handler;
 import android.os.HandlerThread;
@@ -595,6 +598,93 @@ public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
         initializeAudioTrack(aa, sessionId);
         checkMuteFromStreamVolumeNotification(new MyPlayer(mAt), aa);
     }
+
+    /**
+     * Verify that a privileged player with AudioAttributes.FLAG_BYPASS_MUTE doesn't get muted
+     * @throws Exception on failure
+     */
+    @RequiresFlagsEnabled(FLAG_RING_MY_CAR)
+    @ApiTest(apis = {"android.media.AudioAttributes#FLAG_BYPASS_MUTE"})
+    public void testAudioTrackBypassMute() throws Exception {
+        if (isAutomotive()) {
+            Log.w(TAG, "Skip testAudioTrackBypassMute for Auto");
+            return;
+        }
+        if (!isValidPlatform("testAudioTrackBypassMute")) return;
+        AudioManager am = new AudioManager(getContext());
+        final int sessionId = am.generateAudioSessionId();
+        final AudioAttributes aa = new AudioAttributes.Builder()
+                .setUsage(TEST_USAGE)
+                .setContentType(TEST_CONTENT)
+                .setFlags(FLAG_BYPASS_MUTE)
+                .setTestId(sessionId)
+                .build();
+        final int useableVolumeIndex = am.getStreamMinVolume(TEST_STREAM_FOR_USAGE)
+                + (am.getStreamMaxVolume(TEST_STREAM_FOR_USAGE)
+                - am.getStreamMinVolume(TEST_STREAM_FOR_USAGE)) / 2;
+        final SleepAssertIntEquals volumeCheck = new SleepAssertIntEquals(
+                /*maxWaitMs=*/ 2000, /*periodMs*/ 100, getContext());
+
+        try {
+            // prepare playback and playback monitoring callback
+            adoptShellPermissionIdentity(Manifest.permission.MODIFY_AUDIO_ROUTING);
+            initializeAudioTrack(aa, sessionId);
+            final MyAudioPlaybackCallback callback = new MyAudioPlaybackCallback(sessionId, aa);
+            am.registerAudioPlaybackCallback(callback, null /*handler*/);
+            dropShellPermissionIdentity();
+
+            // make sure notifications are at non-zero volume, and then mute them
+            am.setRingerMode(AudioManager.RINGER_MODE_NORMAL);
+            am.setStreamVolume(TEST_STREAM_FOR_USAGE, useableVolumeIndex, 0 /*flags*/);
+            adjustMuteStreamVolume(am);
+
+            volumeCheck.assertEqualsSleep(/*expected*/ 0,
+                    () -> am.getStreamVolume(TEST_STREAM_FOR_USAGE),
+                    "AudioManager.getStreamVolume(" + TEST_STREAM_FOR_USAGE + ") should be 0");
+
+            mAt.play();
+            Log.i(TAG, "track started");
+            // test predicate: the player is playing and is not muted
+            Predicate<List<AudioPlaybackConfiguration>> verifyPlayerNotMuted = l -> {
+                int i = -1;
+                Log.i(TAG, "-- callback received " + l.size() + " configs");
+                for (AudioPlaybackConfiguration apc : l) {
+                    i++;
+                    Log.i(TAG, "callback apc(" + i + ")=" + apc);
+                    // is it the player we're looking for?
+                    if (apc.getAudioAttributes().getTestId() != sessionId) {
+                        Log.i(TAG, "apc " + i + " is not for session " + sessionId);
+                        return false;
+                    }
+                    // is it started?
+                    if (apc.getPlayerState() != AudioPlaybackConfiguration.PLAYER_STATE_STARTED) {
+                        Log.i(TAG, "apc " + i + " is not STARTED");
+                        return false;
+                    }
+                    // is it muted by the stream volume?
+                    if ((apc.getMutedBy() & AudioPlaybackConfiguration.MUTED_BY_PORT_VOLUME) != 0) {
+                        Log.i(TAG, "apc " + i + " mutedBy = 0x"
+                                + Integer.toHexString(apc.getMutedBy()));
+                        return false;
+                    }
+                    Log.i(TAG, "predicate validated");
+                    return true;
+                }
+                Log.i(TAG, "predicate remained false");
+                return false;
+            };
+            assertTrue("onPlaybackConfigChanged predicate remained false",
+                    callback.waitForPredicate(verifyPlayerNotMuted,
+                            TEST_TIMING_TOLERANCE_MS + PLAY_ROUTING_TIMING_TOLERANCE_MS));
+        } finally {
+            adjustUnMuteStreamVolume(am);
+            am.setStreamVolume(TEST_STREAM_FOR_USAGE, useableVolumeIndex, 0 /*flags*/);
+            volumeCheck.assertEqualsSleep(/*expected*/ useableVolumeIndex,
+                    () -> am.getStreamVolume(TEST_STREAM_FOR_USAGE),
+                    "finally: AudioManager.getStreamVolume(" + TEST_STREAM_FOR_USAGE + ")");
+        }
+    }
+
 
     @ApiTest(apis = {"android.media.AudioManager#getActivePlaybackConfigurations",
             "android.media.AudioManager.AudioPlaybackCallback#onPlaybackConfigChanged",
