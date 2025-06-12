@@ -213,13 +213,14 @@ public class WifiInfoTest extends WifiJUnit4TestBase{
         assertThat(wifiInfo.isOsuAp()).isFalse();
         assertThat(wifiInfo.isPasspointAp()).isFalse();
 
-        assertThat(wifiInfo.getWifiStandard()).isAnyOf(
-                ScanResult.WIFI_STANDARD_UNKNOWN,
-                ScanResult.WIFI_STANDARD_LEGACY,
-                ScanResult.WIFI_STANDARD_11N,
-                ScanResult.WIFI_STANDARD_11AC,
-                ScanResult.WIFI_STANDARD_11AX
-        );
+        assertThat(wifiInfo.getWifiStandard())
+                .isAnyOf(
+                        ScanResult.WIFI_STANDARD_UNKNOWN,
+                        ScanResult.WIFI_STANDARD_LEGACY,
+                        ScanResult.WIFI_STANDARD_11N,
+                        ScanResult.WIFI_STANDARD_11AC,
+                        ScanResult.WIFI_STANDARD_11AX,
+                        ScanResult.WIFI_STANDARD_11BE);
 
         assertThat(wifiInfo.getLostTxPacketsPerSecond()).isAtLeast(0.0);
         assertThat(wifiInfo.getRetriedTxPacketsPerSecond()).isAtLeast(0.0);
