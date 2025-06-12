@@ -16,10 +16,10 @@
 
 package android.telephony.satellite.cts;
 
-import static android.telephony.ims.stub.ImsRegistrationImplBase.REGISTRATION_TECH_LTE;
 import static android.telephony.satellite.SatelliteManager.EMERGENCY_CALL_TO_SATELLITE_HANDOVER_TYPE_SOS;
 
 import static com.android.internal.telephony.satellite.SatelliteController.TIMEOUT_TYPE_EVALUATE_ESOS_PROFILES_PRIORITIZATION_DURATION_MILLIS;
+
 import static com.google.common.truth.Truth.assertThat;
 
 import static junit.framework.Assert.assertTrue;
@@ -27,6 +27,7 @@ import static junit.framework.Assert.assertTrue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assume.assumeTrue;
 
 import android.annotation.NonNull;
@@ -35,6 +36,10 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.net.ConnectivityManager;
+import android.net.Network;
+import android.net.NetworkCapabilities;
+import android.net.NetworkRequest;
 import android.net.wifi.WifiManager;
 import android.os.PersistableBundle;
 import android.telephony.CarrierConfigManager;
@@ -44,25 +49,26 @@ import android.telephony.SmsManager;
 import android.telephony.SubscriptionManager;
 import android.telephony.TelephonyCallback;
 import android.telephony.TelephonyManager;
-import android.telephony.cts.util.DefaultSmsAppHelper;
 import android.telephony.mockmodem.MockModemConfigBase;
 import android.telephony.mockmodem.MockModemManager;
 import android.telephony.satellite.SatelliteManager;
 import android.telephony.satellite.stub.NTRadioTechnology;
 import android.util.Log;
+import android.util.Pair;
 
 import androidx.test.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.CarrierPrivilegeUtils;
+import com.android.compatibility.common.util.ShellIdentityUtils;
 import com.android.internal.annotations.GuardedBy;
 import com.android.internal.telephony.satellite.DatagramController;
-import com.google.common.collect.ImmutableList;
 
-import junit.framework.Assert;
+import com.google.common.collect.ImmutableList;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
@@ -81,6 +87,115 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
 
     protected static MockModemManager sMockModemManager;
     protected static WifiStateReceiver sWifiStateReceiver = null;
+
+    private static final Context sContext = InstrumentationRegistry.getContext();
+    private static final ConnectivityManager sConnectivityManager =
+            sContext.getSystemService(ConnectivityManager.class);
+
+    @Nullable
+    private static NetworkCapabilities sCurrentNetworkCapabilities;
+    public static final int DEFAULT_CALLBACK_TIMEOUT_MS = 15_000;
+    private static final int NETWORK_REQUEST_TIMEOUT_MS = 5_000;
+    private static final int CALLBACK_TIMEOUT_MS = 8_000;
+
+    public static class NetworkCallback extends ConnectivityManager.NetworkCallback {
+        private int mCallbackTimeoutInMs;
+        private CountDownLatch mOnAvailableBlocker = new CountDownLatch(1);
+        private CountDownLatch mOnUnAvailableBlocker = new CountDownLatch(1);
+        private CountDownLatch mOnLostBlocker = new CountDownLatch(1);
+        // This is invoked multiple times, so initialize only when waitForCapabilitiesChanged() is
+        // invoked.
+        @Nullable
+        private CountDownLatch mOnCapabilitiesChangedBlocker = null;
+        @Nullable
+        private Network mNetwork;
+
+        public NetworkCallback() {
+            mCallbackTimeoutInMs = DEFAULT_CALLBACK_TIMEOUT_MS;
+        }
+
+        public void setNetworkCallbackTimeOut(int callbackTimeoutInMs) {
+            mCallbackTimeoutInMs = callbackTimeoutInMs;
+        }
+
+        @Override
+        public void onAvailable(Network network) {
+            logd(TAG, "onAvailable: " + network);
+            mNetwork = network;
+            mOnAvailableBlocker.countDown();
+        }
+
+        @Override
+        public void onCapabilitiesChanged(Network network, NetworkCapabilities networkCapabilities) {
+            logd(TAG, "onCapabilitiesChanged: " + network);
+            mNetwork = network;
+            sCurrentNetworkCapabilities = networkCapabilities;
+            if (mOnCapabilitiesChangedBlocker != null) mOnCapabilitiesChangedBlocker.countDown();
+        }
+
+        @Override
+        public void onUnavailable() {
+            logd(TAG, "onUnavailable");
+            mOnUnAvailableBlocker.countDown();
+        }
+
+        @Override
+        public void onLost(Network network) {
+            logd(TAG, "onLost: " + network);
+            mNetwork = network;
+            mOnLostBlocker.countDown();
+        }
+
+        public Network getNetwork() {
+            return mNetwork;
+        }
+
+        public NetworkCapabilities getNetworkCapabilities() {
+            return sCurrentNetworkCapabilities;
+        }
+
+        /**
+         * Wait (blocks) for {@link #onAvailable(Network)} or timeout.
+         *
+         * @return A pair of values: whether the callback was invoked and the Network object
+         * created when successful - null otherwise.
+         */
+        public Pair<Boolean, Network> waitForAvailable() throws InterruptedException {
+            if (mOnAvailableBlocker.await(mCallbackTimeoutInMs, TimeUnit.MILLISECONDS)) {
+                return Pair.create(true, mNetwork);
+            }
+            return Pair.create(false, null);
+        }
+
+        /**
+         * Wait (blocks) for {@link #onUnavailable()} or timeout.
+         *
+         * @return true whether the callback was invoked.
+         */
+        public boolean waitForUnavailable() throws InterruptedException {
+            return mOnUnAvailableBlocker.await(mCallbackTimeoutInMs, TimeUnit.MILLISECONDS);
+        }
+
+        /**
+         * Wait (blocks) for {@link #onLost(Network)} or timeout.
+         *
+         * @return true whether the callback was invoked.
+         */
+        public boolean waitForLost() throws InterruptedException {
+            return mOnLostBlocker.await(mCallbackTimeoutInMs, TimeUnit.MILLISECONDS);
+        }
+
+        /**
+         * Wait (blocks) for {@link #onCapabilitiesChanged(Network, NetworkCapabilities)} or
+         * timeout.
+         *
+         * @return true whether the callback was invoked.
+         */
+        public boolean waitForCapabilitiesChanged() throws InterruptedException {
+            mOnCapabilitiesChangedBlocker = new CountDownLatch(1);
+            return mOnCapabilitiesChangedBlocker.await(mCallbackTimeoutInMs, TimeUnit.MILLISECONDS);
+        }
+    }
 
     protected static void beforeAllCarrierRoamingTestsBase() throws Exception {
         beforeAllTestsBase();
@@ -828,7 +943,7 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
             sMockSatelliteServiceManager.clearEventOnSetSatellitePlmn();
             sMockSatelliteServiceManager.clearEventOnSetSatelliteEnabledForCarrier();
             EntilementStatusResponseGenerator entilementStatusResponseGenerator =
-                prepareValidEnabledEntitlementStatus();
+                prepareValidEnabledEntitlementStatus(false);
             enableSatelliteEntitlementSupport(subId);
 
             // The allowed and barred PLMNs received from the entitlement service should
@@ -873,6 +988,274 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
         }
     }
 
+    private static void setupEnvironmentForSatelliteDataTest(int slotId,
+            int subId) throws Exception {
+        logd(TAG, "setupEnvironmentForSatelliteDataTest");
+        sMockModemManager.clearEventOnSetSatellitePlmn();
+        sMockModemManager.clearEventOnSetSatelliteEnabledForCarrier();
+        sMockSatelliteServiceManager.clearEventOnSetSatellitePlmn();
+        sMockSatelliteServiceManager.clearEventOnSetSatelliteEnabledForCarrier();
+        prepareValidDisabledEntitlementStatus();
+        enableSatelliteEntitlementSupport(subId);
+
+        // Telephony should have requested the modem to disable satellite for the carrier.
+        waitForAccessRestrictionReason(subId,
+                SatelliteManager.SATELLITE_COMMUNICATION_RESTRICTION_REASON_ENTITLEMENT);
+        waitForSatelliteDisabledForCarrier(slotId);
+
+        sMockModemManager.clearEventOnSetSatellitePlmn();
+        sMockModemManager.clearEventOnSetSatelliteEnabledForCarrier();
+        sMockSatelliteServiceManager.clearEventOnSetSatellitePlmn();
+        sMockSatelliteServiceManager.clearEventOnSetSatelliteEnabledForCarrier();
+    }
+
+    private static void enableSatelliteEntitlementSupportAndValidate(int slotId, int subId)
+            throws Exception {
+        logd(TAG, "enableSatelliteEntitlementSupportAndValidate");
+        EntilementStatusResponseGenerator entilementStatusResponseGenerator =
+                prepareValidEnabledEntitlementStatus(true);
+        enableSatelliteEntitlementSupport(subId);
+
+        // The allowed and barred PLMNs received from the entitlement service should
+        // be configured to modem.
+        List<String> allowedPlmnList = entilementStatusResponseGenerator.getAllowedPlmns();
+        logd(TAG, "allowedPlmnList: " + String.join(", ", allowedPlmnList));
+        waitForCarrierPlmnListConfigured(slotId, allowedPlmnList);
+
+        // Verify that the allowed and barred PLMNs are configured correctly.
+        List<String> allSatellitePlmnListConfigured = getAllSatellitePlmnListConfigured(slotId);
+        assertThat(allSatellitePlmnListConfigured).containsAtLeastElementsIn(allowedPlmnList);
+
+        // Verify that Telephony has updated its internal state correctly.
+        waitForCarrierPlmnListAvailableInTelephony(subId, allowedPlmnList);
+    }
+
+    private static void resetSatelliteDataRelatedConfigurations() {
+        logd(TAG, "resetSatelliteDataRelatedConfigurations");
+        sMockSatelliteServiceManager
+                .overrideSatelliteEntilementQueryConditions(false, false);
+        sMockSatelliteServiceManager
+                .overrideSatelliteEntilementStatusResponseForCtsTest(null, false);
+        sMockSatelliteServiceManager.setSatelliteIgnorePlmnListFromStorage(false);
+        sMockSatelliteServiceManager.setMaxAllowedDataModeForCtsTest(-1);
+    }
+
+    protected static void testSatelliteConstrainedNetwork(int slotId) throws Exception {
+
+        logd(TAG, "testSatelliteConstrainedNetwork: slotId=" + slotId);
+
+        assertTrue(sMockSatelliteServiceManager
+                .overrideSatelliteEntilementQueryConditions(true, true));
+        assertTrue(sMockSatelliteServiceManager.setSatelliteIgnorePlmnListFromStorage(true));
+        sMockSatelliteServiceManager.setMaxAllowedDataModeForCtsTest(
+                SatelliteManager.SATELLITE_DATA_SUPPORT_CONSTRAINED);
+        NetworkCallback testNetworkCallback = null;
+        try {
+            int subId = SubscriptionManager.getSubscriptionId(slotId);
+            setupEnvironmentForSatelliteDataTest(slotId, subId);
+
+            enableSatelliteEntitlementSupportAndValidate(slotId, subId);
+
+            // validate data mode is constrained mode
+            int dataMode = sSatelliteManager.getSatelliteDataSupportMode(subId);
+            assertEquals((long) SatelliteManager.SATELLITE_DATA_SUPPORT_CONSTRAINED,
+                    (long) dataMode);
+
+            // Disable and enable data back to bring fresh pdn connection with new data mode
+            if (sTelephonyManager.isDataEnabled()) {
+                logd(TAG, "data is disabled");
+                ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                        sTelephonyManager,
+                        (tm) -> tm.setDataEnabledForReason(
+                                TelephonyManager.DATA_ENABLED_REASON_USER, false));
+            }
+
+            TimeUnit.MILLISECONDS.sleep(3000);
+
+            logd(TAG, "data is enabled back");
+            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                    sTelephonyManager,
+                    (tm) -> tm.setDataEnabledForReason(
+                            TelephonyManager.DATA_ENABLED_REASON_USER, true));
+
+            // validate for satellite constrained data network
+            testNetworkCallback = new NetworkCallback();
+            testNetworkCallback.setNetworkCallbackTimeOut(CALLBACK_TIMEOUT_MS);
+
+            NetworkRequest networkRequest = new NetworkRequest.Builder()
+                    .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+                    .addCapability(NetworkCapabilities.NET_CAPABILITY_NOT_VCN_MANAGED)
+                    .removeCapability(NetworkCapabilities.NET_CAPABILITY_NOT_BANDWIDTH_CONSTRAINED)
+                    .addTransportType(NetworkCapabilities.TRANSPORT_SATELLITE)
+                    .build();
+
+            if (sConnectivityManager != null) {
+                sConnectivityManager.registerNetworkCallback(networkRequest, testNetworkCallback);
+                sConnectivityManager.requestNetwork(networkRequest, testNetworkCallback,
+                        NETWORK_REQUEST_TIMEOUT_MS);
+
+                // validate if onAvailable was received
+                Pair<Boolean, Network> cbStatusForAvailable =
+                        testNetworkCallback.waitForAvailable();
+
+                // Validate onAvailable callback() for csn connection
+                logd(TAG, "received network available callback");
+                assertThat(cbStatusForAvailable.first).isTrue();
+
+                // assert the network is not null
+                assertNotNull(cbStatusForAvailable.second);
+
+                // validate if onCapabilityChanged callback was received
+                boolean cbStatusForCapabilityChanged =
+                        testNetworkCallback.waitForCapabilitiesChanged();
+
+                logd(TAG, "received network capability changed callback");
+                assertThat(cbStatusForCapabilityChanged).isTrue();
+
+                // Validate if satellite network is constrained
+                assertFalse(sCurrentNetworkCapabilities.hasCapability(
+                        NetworkCapabilities.NET_CAPABILITY_NOT_BANDWIDTH_CONSTRAINED));
+            } else {
+                loge(TAG, "connecivityManager initialisation failure");
+            }
+        } finally {
+            if (sConnectivityManager != null  && testNetworkCallback != null) {
+                sConnectivityManager.unregisterNetworkCallback(testNetworkCallback);
+            }
+            resetSatelliteDataRelatedConfigurations();
+        }
+    }
+
+    protected static void
+    testNoSatelliteConstrainedNetworkConnection_WithNonConstrainedDataMode(int slotId)
+            throws Exception {
+        logd(TAG, "testNoConstrainedNetworkConnection: slotId=" + slotId);
+
+        assertTrue(sMockSatelliteServiceManager
+                .overrideSatelliteEntilementQueryConditions(true, true));
+        assertTrue(sMockSatelliteServiceManager.setSatelliteIgnorePlmnListFromStorage(true));
+        sMockSatelliteServiceManager.setMaxAllowedDataModeForCtsTest(
+                SatelliteManager.SATELLITE_DATA_SUPPORT_RESTRICTED);
+        NetworkCallback testNetworkCallback = null;
+        try {
+            int subId = SubscriptionManager.getSubscriptionId(slotId);
+            setupEnvironmentForSatelliteDataTest(slotId, subId);
+
+            enableSatelliteEntitlementSupportAndValidate(slotId, subId);
+
+            // validate data mode is restricted since max allowed data mode is restricted mode
+            int dataMode = sSatelliteManager.getSatelliteDataSupportMode(subId);
+            assertEquals((long) SatelliteManager.SATELLITE_DATA_SUPPORT_RESTRICTED,
+                    (long) dataMode);
+
+            // Disable and enable data back to bring fresh pdn connection with new data mode
+            if (sTelephonyManager.isDataEnabled()) {
+                logd(TAG, "data is disabled");
+                ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                        sTelephonyManager,
+                        (tm) -> tm.setDataEnabledForReason(
+                                TelephonyManager.DATA_ENABLED_REASON_USER, false));
+            }
+
+            TimeUnit.MILLISECONDS.sleep(3000);
+
+            logd(TAG, "data is enabled back");
+            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                    sTelephonyManager,
+                    (tm) -> tm.setDataEnabledForReason(
+                            TelephonyManager.DATA_ENABLED_REASON_USER, true));
+
+            TimeUnit.MILLISECONDS.sleep(3000);
+
+            testNetworkCallback = new NetworkCallback();
+            testNetworkCallback.setNetworkCallbackTimeOut(CALLBACK_TIMEOUT_MS);
+
+            NetworkRequest networkRequest = new NetworkRequest.Builder()
+                    .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+                    .addCapability(NetworkCapabilities.NET_CAPABILITY_NOT_VCN_MANAGED)
+                    .removeCapability(NetworkCapabilities.NET_CAPABILITY_NOT_BANDWIDTH_CONSTRAINED)
+                    .addTransportType(NetworkCapabilities.TRANSPORT_SATELLITE)
+                    .build();
+
+            // validate there is no satellite constrained data network connection
+            if (sConnectivityManager != null) {
+                sConnectivityManager.registerNetworkCallback(networkRequest, testNetworkCallback);
+                sConnectivityManager.requestNetwork(networkRequest, testNetworkCallback,
+                        NETWORK_REQUEST_TIMEOUT_MS);
+
+               Pair<Boolean, Network> cbStatusForAvailable =
+                        testNetworkCallback.waitForAvailable();
+
+               // Validate there is no callback and network is null
+               assertThat(cbStatusForAvailable.first).isFalse();
+               assertNull(cbStatusForAvailable.second);
+
+            } else {
+                loge(TAG, "connecivityManager initialisation failure");
+            }
+        } finally {
+            if (sConnectivityManager != null  && testNetworkCallback != null) {
+                sConnectivityManager.unregisterNetworkCallback(testNetworkCallback);
+            }
+            resetSatelliteDataRelatedConfigurations();
+        }
+    }
+
+    protected static void
+    testNoSatelliteConstrainedNetworkConnection_WithBandwidthNotConstrainedCapability(int slotId)
+            throws Exception {
+        logd(TAG, "testNoConstrainedNetworkConnection: slotId=" + slotId);
+
+        assertTrue(sMockSatelliteServiceManager
+                .overrideSatelliteEntilementQueryConditions(true, true));
+        assertTrue(sMockSatelliteServiceManager.setSatelliteIgnorePlmnListFromStorage(true));
+        sMockSatelliteServiceManager.setMaxAllowedDataModeForCtsTest(
+                SatelliteManager.SATELLITE_DATA_SUPPORT_UNCONSTRAINED);
+        NetworkCallback testNetworkCallback = null;
+        try {
+            int subId = SubscriptionManager.getSubscriptionId(slotId);
+            setupEnvironmentForSatelliteDataTest(slotId, subId);
+
+            enableSatelliteEntitlementSupportAndValidate(slotId, subId);
+
+            // validate data mode is restricted since max allowed data mode is restricted mode
+            int dataMode = sSatelliteManager.getSatelliteDataSupportMode(subId);
+            assertEquals((long) SatelliteManager.SATELLITE_DATA_SUPPORT_CONSTRAINED,
+                    (long) dataMode);
+
+            testNetworkCallback = new NetworkCallback();
+            testNetworkCallback.setNetworkCallbackTimeOut(CALLBACK_TIMEOUT_MS);
+
+            NetworkRequest networkRequest = new NetworkRequest.Builder()
+                    .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+                    .addCapability(NetworkCapabilities.NET_CAPABILITY_NOT_VCN_MANAGED)
+                    .addTransportType(NetworkCapabilities.TRANSPORT_SATELLITE)
+                    .build();
+
+            // validate there is no satellite constrained data network connection
+            if (sConnectivityManager != null) {
+                sConnectivityManager.registerNetworkCallback(networkRequest, testNetworkCallback);
+                sConnectivityManager.requestNetwork(networkRequest, testNetworkCallback,
+                        NETWORK_REQUEST_TIMEOUT_MS);
+
+                Pair<Boolean, Network> cbStatusForAvailable =
+                        testNetworkCallback.waitForAvailable();
+                // Validate there is no callback and network is null
+                assertThat(cbStatusForAvailable.first).isFalse();
+                assertNull(cbStatusForAvailable.second);
+
+                sConnectivityManager.unregisterNetworkCallback(testNetworkCallback);
+            } else {
+                loge(TAG, "connecivityManager initialisation failure");
+            }
+        } finally {
+            if (sConnectivityManager != null  && testNetworkCallback != null) {
+                sConnectivityManager.unregisterNetworkCallback(testNetworkCallback);
+            }
+            resetSatelliteDataRelatedConfigurations();
+        }
+    }
+
     private static EntilementStatusResponseGenerator prepareValidDisabledEntitlementStatus() {
         logd(TAG, "prepareValidDisabledEntitlementStatus");
         EntilementStatusResponseGenerator entilementStatusResponseGenerator =
@@ -885,14 +1268,16 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
         return entilementStatusResponseGenerator;
     }
 
-    private static EntilementStatusResponseGenerator prepareValidEnabledEntitlementStatus() {
+    private static EntilementStatusResponseGenerator prepareValidEnabledEntitlementStatus(
+            boolean isConstrained) {
         logd(TAG, "prepareValidEnabledEntitlementStatus");
         EntilementStatusResponseGenerator entilementStatusResponseGenerator =
                 new EntilementStatusResponseGenerator();
         entilementStatusResponseGenerator.setEntitlementStatus(
                 EntilementStatusResponseGenerator.SATELLITE_ENTITLEMENT_STATUS_ENABLED);
         List<EntilementStatusResponseGenerator.SatelliteNetworkInfo> supportedPlmnsAndServices =
-                EntilementStatusResponseGenerator.createDefaultValidSatelliteNetworkInfoList();
+                EntilementStatusResponseGenerator.createDefaultValidSatelliteNetworkInfoList(
+                        isConstrained);
         entilementStatusResponseGenerator.setSupportedPlmnsAndServices(supportedPlmnsAndServices);
         List<String> barredPlmnList = ImmutableList.of("46601", "46602");
         entilementStatusResponseGenerator.setBarredPlmns(barredPlmnList);
