@@ -119,6 +119,18 @@
         },
         {
           "include-filter": "android.os.cts.SeccompTest"
+        },
+        {
+          "include-filter": "android.os.cts.IpcDataCacheTest"
+        },
+        {
+          "include-filter": "android.os.cts.PerformanceHintManagerTest"
+        },
+        {
+          "include-filter": "android.os.cts.TestLooperManagerTest"
+        },
+        {
+          "include-filter": "android.os.health.cts.SystemHealthManagerTest"
         }
       ]
     }
