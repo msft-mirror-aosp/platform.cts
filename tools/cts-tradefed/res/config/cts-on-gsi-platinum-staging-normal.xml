@@ -3591,20 +3591,23 @@
     <option name="compatibility:include-filter" value="CtsWindowManagerDeviceOther android.server.wm.other.AnrTests#slowOnCreateWithKeyEventTriggersAnr"/>
     <option name="compatibility:include-filter" value="CtsWindowManagerDeviceOther android.server.wm.other.AnrTests#slowOnKeyEventHandleTriggersAnr"/>
     <option name="compatibility:include-filter" value="CtsWindowManagerDeviceOther android.server.wm.other.AnrTests#slowOnTouchEventHandleTriggersAnr"/>
-    <option name="compatibility:include-filter" value="CtsWindowManagerDeviceOther android.server.wm.other.DragDropCompatTest#testAcceptingGroupInTheMiddle"/>
-    <option name="compatibility:include-filter" value="CtsWindowManagerDeviceOther android.server.wm.other.DragDropTest#testOverNowhere"/>
-    <option name="compatibility:include-filter" value="CtsWindowManagerDeviceOther android.server.wm.other.DreamManagerServiceTests#testDreamNotFinishAfterRotation"/>
-    <option name="compatibility:include-filter" value="CtsWindowManagerDeviceOther android.server.wm.other.DreamManagerServiceTests#testForceStopStubbornDream"/>
-    <option name="compatibility:include-filter" value="CtsWindowManagerDeviceOther android.server.wm.other.DreamManagerServiceTests#testShowWhenLockedActivityUnderDream"/>
-    <option name="compatibility:include-filter" value="CtsWindowManagerDeviceOther android.server.wm.other.DreamManagerServiceTests#testStartTurnScreenOnAttrActivityDoesWake"/>
     <option name="compatibility:include-filter" value="CtsWindowManagerDeviceOther android.server.wm.other.KeepClearRectsTests#testKeepClearRectsOnDisplayTwoFullscreenActivities"/>
-    <option name="compatibility:include-filter" value="CtsWindowManagerDeviceOther android.server.wm.other.PinnedStackTests#testEnterPipFromTaskWithMultipleActivities"/>
-    <option name="compatibility:include-filter" value="CtsWindowManagerDeviceOther android.server.wm.other.PinnedStackTests#testEnterPipWithMinimalSize"/>
-    <option name="compatibility:include-filter" value="CtsWindowManagerDeviceOther android.server.wm.other.PinnedStackTests#testFinishPipActivityWithTaskOverlay"/>
-    <option name="compatibility:include-filter" value="CtsWindowManagerDeviceOther android.server.wm.other.PinnedStackTests#testLaunchStoppedActivityWithPiPInSameProcessPreQ"/>
-    <option name="compatibility:include-filter" value="CtsWindowManagerDeviceOther android.server.wm.other.PinnedStackTests#testLaunchTaskByComponentMatchMultipleTasks"/>
-    <option name="compatibility:include-filter" value="CtsWindowManagerDeviceOther android.server.wm.other.PinnedStackTests#testPinnedStackInBoundsAfterRotation"/>
-    <option name="compatibility:include-filter" value="CtsWindowManagerDeviceOther android.server.wm.other.PinnedStackTests#testSetRequestedOrientationWhilePinned"/>
+    <!-- CtsWindowManagerDeviceDragAndDrop -->
+    <option name="compatibility:include-filter" value="CtsWindowManagerDeviceDragAndDrop android.server.wm.draganddrop.DragDropCompatTest#testAcceptingGroupInTheMiddle"/>
+    <option name="compatibility:include-filter" value="CtsWindowManagerDeviceDragAndDrop android.server.wm.draganddrop.DragDropTest#testOverNowhere"/>
+    <!-- CtsWindowManagerDeviceDreams -->
+    <option name="compatibility:include-filter" value="CtsWindowManagerDeviceDreams android.server.wm.dreams.DreamManagerServiceTests#testDreamNotFinishAfterRotation"/>
+    <option name="compatibility:include-filter" value="CtsWindowManagerDeviceDreams android.server.wm.dreams.DreamManagerServiceTests#testForceStopStubbornDream"/>
+    <option name="compatibility:include-filter" value="CtsWindowManagerDeviceDreams android.server.wm.dreams.DreamManagerServiceTests#testShowWhenLockedActivityUnderDream"/>
+    <option name="compatibility:include-filter" value="CtsWindowManagerDeviceDreams android.server.wm.dreams.DreamManagerServiceTests#testStartTurnScreenOnAttrActivityDoesWake"/>
+    <!-- CtsWindowManagerDevicePip -->
+    <option name="compatibility:include-filter" value="CtsWindowManagerDevicePip android.server.wm.pip.PinnedStackTests#testEnterPipFromTaskWithMultipleActivities"/>
+    <option name="compatibility:include-filter" value="CtsWindowManagerDevicePip android.server.wm.pip.PinnedStackTests#testEnterPipWithMinimalSize"/>
+    <option name="compatibility:include-filter" value="CtsWindowManagerDevicePip android.server.wm.pip.PinnedStackTests#testFinishPipActivityWithTaskOverlay"/>
+    <option name="compatibility:include-filter" value="CtsWindowManagerDevicePip android.server.wm.pip.PinnedStackTests#testLaunchStoppedActivityWithPiPInSameProcessPreQ"/>
+    <option name="compatibility:include-filter" value="CtsWindowManagerDevicePip android.server.wm.pip.PinnedStackTests#testLaunchTaskByComponentMatchMultipleTasks"/>
+    <option name="compatibility:include-filter" value="CtsWindowManagerDevicePip android.server.wm.pip.PinnedStackTests#testPinnedStackInBoundsAfterRotation"/>
+    <option name="compatibility:include-filter" value="CtsWindowManagerDevicePip android.server.wm.pip.PinnedStackTests#testSetRequestedOrientationWhilePinned"/>
     <!-- CtsWindowManagerJetpackTestCases -->
     <option name="compatibility:include-filter" value="CtsWindowManagerJetpackTestCases android.server.wm.jetpack.SidecarTest#testSidecarInterface_getDeviceState"/>
     <option name="compatibility:include-filter" value="CtsWindowManagerJetpackTestCases android.server.wm.jetpack.SidecarTest#testSidecarInterface_onWindowLayoutChangeListener"/>

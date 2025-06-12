@@ -21,6 +21,8 @@ import android.os.Bundle;
 public class CallControlExtras {
     public static final String EXTRA_TELECOM_VIDEO_STATE = "EXTRA_TELECOM_VIDEO_STATE";
     public static final String EXTRA_TELECOM_DISCONNECT_CAUSE = "EXTRA_TELECOM_DISCONNECT_CAUSE";
+    public static final String EXTRA_TELECOM_AUDIO_PROCESSING_USE_CASE =
+        "EXTRA_TELECOM_AUDIO_PROCESSING_USE_CASE";
 
     public static Bundle addVideoStateExtra(Bundle extras, int videoState) {
         extras.putInt(EXTRA_TELECOM_VIDEO_STATE, videoState);
@@ -47,5 +49,18 @@ public class CallControlExtras {
 
     public static boolean hasDisconnectCauseExtra(Bundle extras) {
         return extras.containsKey(EXTRA_TELECOM_DISCONNECT_CAUSE);
+    }
+
+    public static Bundle addAudioProcessingUseCaseExtra(Bundle extras, int useCase) {
+        extras.putInt(EXTRA_TELECOM_AUDIO_PROCESSING_USE_CASE, useCase);
+        return extras;
+    }
+
+    public static int getAudioProcessingUseCaseFromExtras(Bundle extras) {
+        return extras.getInt(EXTRA_TELECOM_AUDIO_PROCESSING_USE_CASE);
+    }
+
+    public static boolean hasAudioProcessingUseCaseExtra(Bundle extras) {
+        return extras.containsKey(EXTRA_TELECOM_AUDIO_PROCESSING_USE_CASE);
     }
 }

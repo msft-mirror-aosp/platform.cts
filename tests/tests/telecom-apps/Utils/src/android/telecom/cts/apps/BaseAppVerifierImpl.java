@@ -17,10 +17,13 @@
 package android.telecom.cts.apps;
 
 import static android.os.SystemClock.sleep;
+import static android.telecom.Call.AUDIO_PROCESSING_USE_CASE_VOICEMAIL;
 import static android.telecom.Call.STATE_ACTIVE;
+import static android.telecom.Call.STATE_AUDIO_PROCESSING;
 import static android.telecom.Call.STATE_DISCONNECTED;
 import static android.telecom.Call.STATE_RINGING;
 import static android.telecom.Call.STATE_SELECT_PHONE_ACCOUNT;
+import static android.telecom.Call.STATE_SIMULATED_RINGING;
 import static android.telecom.cts.apps.AttributesUtil.getDefaultAttributesForApp;
 import static android.telecom.cts.apps.AttributesUtil.getDefaultAttributesForManaged;
 import static android.telecom.cts.apps.AttributesUtil.getDefaultMmiAttributesForApp;
@@ -32,6 +35,7 @@ import static android.telecom.cts.apps.ShellCommandExecutor.dumpTelecom;
 import static android.telecom.cts.apps.ShellCommandExecutor.executeShellCommand;
 import static android.telecom.cts.apps.TelecomTestApp.ManagedConnectionServiceApp;
 import static android.telecom.cts.apps.TelecomTestApp.ManagedConnectionServiceAppClone;
+import static android.telecom.cts.apps.WaitForInCallService.verifyAudioProcessingUseCase;
 import static android.telecom.cts.apps.WaitForInCallService.verifyCallExtras;
 import static android.telecom.cts.apps.WaitForInCallService.verifyCallState;
 import static android.telecom.cts.apps.WaitForInCallService.waitForInCallServiceBinding;
@@ -334,6 +338,11 @@ public class BaseAppVerifierImpl {
         return getRandomAttributesForApp(name, isOutgoing, isHoldable);
     }
 
+    public void setConnectionPropertiesOnCall(AppControlWrapper appControl, String callId,
+        int properties) throws Exception {
+        appControl.setConnectionProperties(callId, properties);
+    }
+
     public int addCall(AppControlWrapper appControl, CallAttributes attributes)
             throws Exception {
         int currentCallCount = mVerifierMethods.getCurrentCallCount();
@@ -445,6 +454,8 @@ public class BaseAppVerifierImpl {
             extras = CallControlExtras.addVideoStateExtra(extras, arg);
         } else if (targetCallState == STATE_DISCONNECTED) {
             extras = CallControlExtras.addDisconnectCauseExtra(extras, arg);
+        } else if (targetCallState == STATE_AUDIO_PROCESSING) {
+            extras = CallControlExtras.addAudioProcessingUseCaseExtra(extras, arg);
         }
         appControl.setCallState(id, targetCallState, true, extras);
         // verify the call was added in the ICS
@@ -486,6 +497,11 @@ public class BaseAppVerifierImpl {
         return appControl.setCallState(id, targetCallState, false, extras);
     }
 
+    public void verifyCallAudioProcessingUseCase(String id, int useCase) throws Exception {
+        waitForInCallServiceBinding(mVerifierMethods);
+        verifyAudioProcessingUseCase(mVerifierMethods, id, useCase);
+    }
+
     public void verifyCallIsInState(String id, int state) throws Exception {
         waitForInCallServiceBinding(mVerifierMethods);
         verifyCallState(mVerifierMethods, id, state);
@@ -520,6 +536,36 @@ public class BaseAppVerifierImpl {
         verifyCallIsInState(id, STATE_SELECT_PHONE_ACCOUNT);
         Call call = findTargetCall(id);
         call.phoneAccountSelected(handle, false);
+    }
+
+    public void enterBackgroundAudioProcessingViaInCallService(String id, int useCase) {
+        Call call = findTargetCall(id);
+        call.enterBackgroundAudioProcessing(useCase);
+    }
+
+    public void enterBackgroundAudioProcessingViaInCallServiceAndVerify(String id, int useCase)
+        throws Exception {
+        enterBackgroundAudioProcessingViaInCallService(id, useCase);
+        verifyCallIsInState(id, STATE_AUDIO_PROCESSING);
+        verifyCallAudioProcessingUseCase(id, useCase);
+    }
+
+    public void exitBackgroundAudioProcessingViaInCallService(String id, boolean shouldRing,
+        int useCase) {
+        Call call = findTargetCall(id);
+        call.exitBackgroundAudioProcessing(shouldRing);
+    }
+
+    public void exitBackgroundAudioProcessingViaInCallServiceAndVerify(String id,
+        boolean shouldRing, int useCase)
+        throws Exception {
+        exitBackgroundAudioProcessingViaInCallService(id, shouldRing, useCase);
+
+        if(useCase == AUDIO_PROCESSING_USE_CASE_VOICEMAIL) {
+            verifyCallIsInState(id, STATE_DISCONNECTED);
+        } else {
+            verifyCallIsInState(id, shouldRing ? STATE_SIMULATED_RINGING : STATE_ACTIVE);
+        }
     }
 
     public boolean isCallHoldable(String id) {
@@ -651,22 +697,28 @@ public class BaseAppVerifierImpl {
     }
 
     public void assertAudioMode(final int expectedMode) {
-        waitUntilConditionIsTrueOrTimeout(
-                new Condition() {
-                    @Override
-                    public Object expected() {
-                        return true;
-                    }
+        if (expectedMode == AudioManager.MODE_CALL_SCREENING &&
+            !mAudioManager.isCallScreeningModeSupported()) {
+            return;
+        }
 
-                    @Override
-                    public Object actual() {
-                        return mAudioManager.getMode() == expectedMode;
-                    }
-                },
-                DEFAULT_TIMEOUT_MS,
-                "Audio mode was expected to be " + expectedMode
+        waitUntilConditionIsTrueOrTimeout(
+            new Condition() {
+                @Override
+                public Object expected() {
+                    return true;
+                }
+
+                @Override
+                public Object actual() {
+                    return mAudioManager.getMode() == expectedMode;
+                }
+            },
+            DEFAULT_TIMEOUT_MS,
+            "Audio mode was expected to be " + expectedMode + " but is " + mAudioManager.getMode()
         );
     }
+
     public void verifyNotificationPostedForCall(AppControlWrapper appControlWrapper, String callId){
         waitUntilConditionIsTrueOrTimeout(
                 new Condition() {

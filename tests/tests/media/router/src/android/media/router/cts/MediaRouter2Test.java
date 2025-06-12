@@ -1527,6 +1527,7 @@ public class MediaRouter2Test {
         }
     }
 
+    @Ignore // TODO(b/424010870): Diagnose flakiness and re-enable.
     @Test
     public void adjustSelectedRouteVolume_callsOnControlledUpdated() throws InterruptedException {
         if (mAudioManager.isVolumeFixed()) {

@@ -325,15 +325,20 @@
     <option name="compatibility:include-filter" value="CtsWindowManagerDeviceActivity" />
     <option name="compatibility:include-filter" value="CtsWindowManagerDeviceAm" />
     <option name="compatibility:include-filter" value="CtsWindowManagerDeviceAnimations" />
+    <option name="compatibility:include-filter" value="CtsWindowManagerDeviceAppCompat" />
     <option name="compatibility:include-filter" value="CtsWindowManagerDeviceBackNavigation" />
     <option name="compatibility:include-filter" value="CtsWindowManagerDeviceDisplay" />
+    <option name="compatibility:include-filter" value="CtsWindowManagerDeviceDragAndDrop" />
+    <option name="compatibility:include-filter" value="CtsWindowManagerDeviceDreams" />
     <option name="compatibility:include-filter" value="CtsWindowManagerDeviceIme" />
     <option name="compatibility:include-filter" value="CtsWindowManagerDeviceInput" />
     <option name="compatibility:include-filter" value="CtsWindowManagerDeviceInsets" />
     <option name="compatibility:include-filter" value="CtsWindowManagerDeviceKeyguard" />
     <option name="compatibility:include-filter" value="CtsWindowManagerDeviceMultiDisplay" />
     <option name="compatibility:include-filter" value="CtsWindowManagerDeviceOther" />
+    <option name="compatibility:include-filter" value="CtsWindowManagerDevicePip" />
     <option name="compatibility:include-filter" value="CtsWindowManagerDeviceTaskFragment" />
+    <option name="compatibility:include-filter" value="CtsWindowManagerDeviceTv" />
     <option name="compatibility:include-filter" value="CtsWindowManagerDeviceWindow" />
     <option name="compatibility:include-filter" value="CtsWindowManagerJetpackTestCases" />
     <option name="compatibility:include-filter" value="CtsWindowManagerSdk29TestCases" />

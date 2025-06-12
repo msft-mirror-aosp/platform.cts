@@ -130,6 +130,10 @@ public final class InputMethodManagerTest {
         mInstrumentation = InstrumentationRegistry.getInstrumentation();
         mContext = mInstrumentation.getTargetContext();
         mImManager = mContext.getSystemService(InputMethodManager.class);
+
+        //TODO(b/422944625) This is a workaround for a permission leak.
+        // Remove it when the leak is fixed.
+        mInstrumentation.getUiAutomation().dropShellPermissionIdentity();
     }
 
     @After

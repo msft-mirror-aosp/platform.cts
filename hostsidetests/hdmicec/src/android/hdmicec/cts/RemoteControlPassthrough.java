@@ -18,6 +18,7 @@ package android.hdmicec.cts;
 
 import static org.junit.Assert.fail;
 
+import com.android.tradefed.device.DeviceNotAvailableException;
 import com.android.tradefed.device.ITestDevice;
 
 import java.util.HashMap;
@@ -40,6 +41,10 @@ public final class RemoteControlPassthrough {
 
     private static final HashMap<Integer, String> mUserControlPressKeys_20 =
             createUserControlPressKeys_20();
+    private static final String EXPECTED_SETTING_ACTIVITY_LOG =
+            "com.android.tv.settings/.MainSettings";
+    private static final String EXPECTED_NOTIFICATION_PANEL_LOG =
+            "com.google.android.apps.tv.launcherx/.dashboard.DashboardHandler";
 
     /**
      * Tests that the device responds correctly to a {@code <USER_CONTROL_PRESSED>} message followed
@@ -286,14 +291,11 @@ public final class RemoteControlPassthrough {
         for (Integer userControlPressKey : mUserControlPressKeys_20.keySet()) {
             hdmiCecClient.sendUserControlPressAndRelease(
                     sourceDevice, dutLogicalAddress, userControlPressKey, false);
-            // KEYCODE_SETUP_MENU will enter setting's page and hence quitting the activity
-            // HdmiCecKeyEventCapture.
+            // KEYCODE_SETUP_MENU will enter setting's page or brings up notification panel and
+            // hence
+            // quitting the activity HdmiCecKeyEventCapture.
             if (userControlPressKey == HdmiCecConstants.CEC_KEYCODE_SETUP_MENU) {
-                try {
-                    // Check if intent is broadcast upon sending cec message
-                    LogHelper.waitForLog(
-                            device, "ActivityTaskManager", 5, "android.settings.SETTINGS");
-                } catch (Exception e) {
+                if (!checkSettingKeyBehavior(device)) {
                     fail("Short Press KEYCODE_SETTINGS failed");
                 }
                 // HdmiCecKeyEventCapture activity should be resumed.
@@ -374,16 +376,46 @@ public final class RemoteControlPassthrough {
 
         hdmiCecClient.sendUserControlPressAndRelease(
                 sourceDevice, dutLogicalAddress, cecKeycode, false);
-        // KEYCODE_SETUP_MENU will enter setting's page and hence quitting the activity
-        // HdmiCecKeyEventCapture.
+        // KEYCODE_SETUP_MENU will enter setting's page or brings up notification panel and hence
+        // quitting the activity HdmiCecKeyEventCapture.
         if (cecKeycode == HdmiCecConstants.CEC_KEYCODE_SETUP_MENU) {
-            try {
-                LogHelper.waitForLog(device, "ActivityTaskManager", 5, "android.settings.SETTINGS");
-                return; // test pass if intent is broadcast upon sending cec message
-            } catch (Exception e) {
+            if (checkSettingKeyBehavior(device)) {
+                return;
+            } else {
                 fail("Short Press KEYCODE_SETTINGS failed");
             }
         }
         LogHelper.assertLog(device, CLASS, "Short press KEYCODE_" + androidKeycode);
+    }
+
+    /**
+     * Helper method to check the behavior when the user presses the settings button. This value
+     * might be different in the config overlay, causing different behavior.
+     *
+     * @param device device under test
+     * @return true - if matches intended behavior
+     */
+    private static boolean checkSettingKeyBehavior(ITestDevice device)
+            throws DeviceNotAvailableException {
+        // Open Settings activity  <- config_settingsKeyBehavior = 0
+        // Launch notification panel  <- config_settingsKeyBehavior = 1
+        boolean isSettingActivity =
+                device.executeShellCommand(
+                                "cmd overlay lookup android"
+                                        + " android:integer/config_settingsKeyBehavior")
+                        .trim()
+                        .startsWith("0");
+        String expectedOutput;
+        if (isSettingActivity) {
+            expectedOutput = EXPECTED_SETTING_ACTIVITY_LOG;
+        } else {
+            expectedOutput = EXPECTED_NOTIFICATION_PANEL_LOG;
+        }
+        try {
+            LogHelper.waitForLog(device, "ActivityTaskManager", 5, expectedOutput);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
     }
 }

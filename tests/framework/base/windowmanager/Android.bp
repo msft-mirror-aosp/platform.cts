@@ -178,15 +178,22 @@ filegroup {
 }
 
 filegroup {
-    name: "CtsWindowManagerDeviceBackNavigation-src",
-    srcs: ["src/**/backnavigation/*.java"],
-}
-
-filegroup {
     name: "CtsWindowManagerDeviceAnimations-src",
     srcs: [
         "src/**/animations/*.java",
     ],
+}
+
+filegroup {
+    name: "CtsWindowManagerDeviceAppCompat-src",
+    srcs: [
+        "src/**/appcompat/*.java",
+    ],
+}
+
+filegroup {
+    name: "CtsWindowManagerDeviceBackNavigation-src",
+    srcs: ["src/**/backnavigation/*.java"],
 }
 
 filegroup {
@@ -198,23 +205,17 @@ filegroup {
 }
 
 filegroup {
-    name: "CtsWindowManagerDeviceInsets-src",
+    name: "CtsWindowManagerDeviceDragAndDrop-src",
     srcs: [
-        "src/**/insets/*.java",
-        "src/**/intent/Activities.java",
+        "src/**/draganddrop/*.java",
     ],
 }
 
 filegroup {
-    name: "CtsWindowManagerDeviceMultiDisplay-src",
+    name: "CtsWindowManagerDeviceDreams-src",
     srcs: [
-        "src/**/multidisplay/*.java",
+        "src/**/dreams/*.java",
     ],
-}
-
-filegroup {
-    name: "CtsWindowManagerDeviceKeyguard-src",
-    srcs: ["src/**/keyguard/*.java"],
 }
 
 filegroup {
@@ -234,6 +235,26 @@ filegroup {
 }
 
 filegroup {
+    name: "CtsWindowManagerDeviceInsets-src",
+    srcs: [
+        "src/**/insets/*.java",
+        "src/**/intent/Activities.java",
+    ],
+}
+
+filegroup {
+    name: "CtsWindowManagerDeviceKeyguard-src",
+    srcs: ["src/**/keyguard/*.java"],
+}
+
+filegroup {
+    name: "CtsWindowManagerDeviceMultiDisplay-src",
+    srcs: [
+        "src/**/multidisplay/*.java",
+    ],
+}
+
+filegroup {
     name: "CtsWindowManagerDeviceOther-src",
     srcs: [
         "src/**/other/*.java",
@@ -242,8 +263,18 @@ filegroup {
 }
 
 filegroup {
+    name: "CtsWindowManagerDevicePip-src",
+    srcs: ["src/**/pip/*.java"],
+}
+
+filegroup {
     name: "CtsWindowManagerDeviceTaskFragment-src",
     srcs: ["src/**/taskfragment/*.java"],
+}
+
+filegroup {
+    name: "CtsWindowManagerDeviceTv-src",
+    srcs: ["src/**/tv/*.java"],
 }
 
 filegroup {
@@ -275,23 +306,34 @@ android_test {
 }
 
 android_test {
-    name: "CtsWindowManagerDeviceBackNavigation",
-    team: "trendy_team_windowing_animations_transitions",
-    defaults: ["CtsWindowManagerDeviceDefault"],
-
-    srcs: [
-        ":CtsWindowManagerDeviceBackNavigation-src",
-        ":CtsVerifierMockVrListenerServiceFiles",
-    ],
-}
-
-android_test {
     name: "CtsWindowManagerDeviceAnimations",
     team: "trendy_team_windowing_animations_transitions",
     defaults: ["CtsWindowManagerDeviceDefault"],
 
     srcs: [
         ":CtsWindowManagerDeviceAnimations-src",
+        ":CtsVerifierMockVrListenerServiceFiles",
+    ],
+}
+
+android_test {
+    name: "CtsWindowManagerDeviceAppCompat",
+    team: "trendy_team_lse_app_compat",
+    defaults: ["CtsWindowManagerDeviceDefault"],
+
+    srcs: [
+        ":CtsWindowManagerDeviceAppCompat-src",
+        ":CtsVerifierMockVrListenerServiceFiles",
+    ],
+}
+
+android_test {
+    name: "CtsWindowManagerDeviceBackNavigation",
+    team: "trendy_team_windowing_animations_transitions",
+    defaults: ["CtsWindowManagerDeviceDefault"],
+
+    srcs: [
+        ":CtsWindowManagerDeviceBackNavigation-src",
         ":CtsVerifierMockVrListenerServiceFiles",
     ],
 }
@@ -309,12 +351,34 @@ android_test {
 }
 
 android_test {
-    name: "CtsWindowManagerDeviceKeyguard",
-    team: "trendy_team_windowing_animations_transitions",
+    name: "CtsWindowManagerDeviceDragAndDrop",
+    team: "trendy_team_drag_and_drop",
     defaults: ["CtsWindowManagerDeviceDefault"],
 
     srcs: [
-        ":CtsWindowManagerDeviceKeyguard-src",
+        ":CtsWindowManagerDeviceDragAndDrop-src",
+        ":CtsVerifierMockVrListenerServiceFiles",
+    ],
+}
+
+android_test {
+    name: "CtsWindowManagerDeviceDreams",
+    team: "trendy_team_communal",
+    defaults: ["CtsWindowManagerDeviceDefault"],
+
+    srcs: [
+        ":CtsWindowManagerDeviceDreams-src",
+        ":CtsVerifierMockVrListenerServiceFiles",
+    ],
+}
+
+android_test {
+    name: "CtsWindowManagerDeviceIme",
+    team: "trendy_team_input_method_framework",
+    defaults: ["CtsWindowManagerDeviceDefault"],
+
+    srcs: [
+        ":CtsWindowManagerDeviceIme-src",
         ":CtsVerifierMockVrListenerServiceFiles",
     ],
 }
@@ -346,24 +410,12 @@ android_test {
 }
 
 android_test {
-    name: "CtsWindowManagerDeviceIme",
-    team: "trendy_team_input_method_framework",
+    name: "CtsWindowManagerDeviceKeyguard",
+    team: "trendy_team_windowing_animations_transitions",
     defaults: ["CtsWindowManagerDeviceDefault"],
 
     srcs: [
-        ":CtsWindowManagerDeviceIme-src",
-        ":CtsVerifierMockVrListenerServiceFiles",
-    ],
-}
-
-android_test {
-    name: "CtsWindowManagerDeviceTaskFragment",
-    team: "trendy_team_activity_embedding",
-    defaults: ["CtsWindowManagerDeviceDefault"],
-
-    srcs: [
-        ":CtsWindowManagerDeviceHelper-src",
-        ":CtsWindowManagerDeviceTaskFragment-src",
+        ":CtsWindowManagerDeviceKeyguard-src",
         ":CtsVerifierMockVrListenerServiceFiles",
     ],
 }
@@ -381,24 +433,58 @@ android_test {
 }
 
 android_test {
-    name: "CtsWindowManagerDeviceWindow",
-    team: "trendy_team_windowing_animations_transitions",
-    defaults: ["CtsWindowManagerDeviceDefault"],
-
-    srcs: [
-        ":CtsWindowManagerDeviceWindow-src",
-        "alertwindowservice/src/**/*.java",
-        ":CtsVerifierMockVrListenerServiceFiles",
-    ],
-}
-
-android_test {
     name: "CtsWindowManagerDeviceOther",
     team: "trendy_team_window_manager_other",
     defaults: ["CtsWindowManagerDeviceDefault"],
 
     srcs: [
         ":CtsWindowManagerDeviceOther-src",
+        "alertwindowservice/src/**/*.java",
+        ":CtsVerifierMockVrListenerServiceFiles",
+    ],
+}
+
+android_test {
+    name: "CtsWindowManagerDevicePip",
+    team: "trendy_team_picture_in_picture",
+    defaults: ["CtsWindowManagerDeviceDefault"],
+
+    srcs: [
+        ":CtsWindowManagerDevicePip-src",
+        ":CtsVerifierMockVrListenerServiceFiles",
+    ],
+}
+
+android_test {
+    name: "CtsWindowManagerDeviceTaskFragment",
+    team: "trendy_team_activity_embedding",
+    defaults: ["CtsWindowManagerDeviceDefault"],
+
+    srcs: [
+        ":CtsWindowManagerDeviceHelper-src",
+        ":CtsWindowManagerDeviceTaskFragment-src",
+        ":CtsVerifierMockVrListenerServiceFiles",
+    ],
+}
+
+android_test {
+    name: "CtsWindowManagerDeviceTv",
+    team: "trendy_team_tv_os",
+    defaults: ["CtsWindowManagerDeviceDefault"],
+
+    srcs: [
+        ":CtsWindowManagerDeviceTv-src",
+        ":CtsVerifierMockVrListenerServiceFiles",
+    ],
+}
+
+android_test {
+    name: "CtsWindowManagerDeviceWindow",
+    team: "trendy_team_windowing_animations_transitions",
+    defaults: ["CtsWindowManagerDeviceDefault"],
+
+    srcs: [
+        ":CtsWindowManagerDeviceWindow-src",
         "alertwindowservice/src/**/*.java",
         ":CtsVerifierMockVrListenerServiceFiles",
     ],
@@ -433,6 +519,13 @@ test_module_config {
 }
 
 test_module_config {
+    name: "CtsWindowManagerDeviceAppCompat_wm_cts",
+    base: "CtsWindowManagerDeviceAppCompat",
+    test_suites: ["general-tests"],
+    include_filters: ["android.content.wm.cts"],
+}
+
+test_module_config {
     name: "CtsWindowManagerDeviceBackNavigation_wm_cts",
     base: "CtsWindowManagerDeviceBackNavigation",
     test_suites: ["general-tests"],
@@ -447,8 +540,15 @@ test_module_config {
 }
 
 test_module_config {
-    name: "CtsWindowManagerDeviceKeyguard_wm_cts",
-    base: "CtsWindowManagerDeviceKeyguard",
+    name: "CtsWindowManagerDeviceDragAndDrop_wm_cts",
+    base: "CtsWindowManagerDeviceDragAndDrop",
+    test_suites: ["general-tests"],
+    include_filters: ["android.content.wm.cts"],
+}
+
+test_module_config {
+    name: "CtsWindowManagerDeviceDreams_wm_cts",
+    base: "CtsWindowManagerDeviceDreams",
     test_suites: ["general-tests"],
     include_filters: ["android.content.wm.cts"],
 }
@@ -461,15 +561,8 @@ test_module_config {
 }
 
 test_module_config {
-    name: "CtsWindowManagerDeviceTaskFragment_wm_cts",
-    base: "CtsWindowManagerDeviceTaskFragment",
-    test_suites: ["general-tests"],
-    include_filters: ["android.content.wm.cts"],
-}
-
-test_module_config {
-    name: "CtsWindowManagerDeviceWindow_wm_cts",
-    base: "CtsWindowManagerDeviceWindow",
+    name: "CtsWindowManagerDeviceKeyguard_wm_cts",
+    base: "CtsWindowManagerDeviceKeyguard",
     test_suites: ["general-tests"],
     include_filters: ["android.content.wm.cts"],
 }
@@ -477,6 +570,34 @@ test_module_config {
 test_module_config {
     name: "CtsWindowManagerDeviceOther_wm_cts",
     base: "CtsWindowManagerDeviceOther",
+    test_suites: ["general-tests"],
+    include_filters: ["android.content.wm.cts"],
+}
+
+test_module_config {
+    name: "CtsWindowManagerDevicePip_wm_cts",
+    base: "CtsWindowManagerDevicePip",
+    test_suites: ["general-tests"],
+    include_filters: ["android.content.wm.cts"],
+}
+
+test_module_config {
+    name: "CtsWindowManagerDeviceTaskFragment_wm_cts",
+    base: "CtsWindowManagerDeviceTaskFragment",
+    test_suites: ["general-tests"],
+    include_filters: ["android.content.wm.cts"],
+}
+
+test_module_config {
+    name: "CtsWindowManagerDeviceTv_wm_cts",
+    base: "CtsWindowManagerDeviceTv",
+    test_suites: ["general-tests"],
+    include_filters: ["android.content.wm.cts"],
+}
+
+test_module_config {
+    name: "CtsWindowManagerDeviceWindow_wm_cts",
+    base: "CtsWindowManagerDeviceWindow",
     test_suites: ["general-tests"],
     include_filters: ["android.content.wm.cts"],
 }

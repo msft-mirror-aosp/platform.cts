@@ -41,7 +41,6 @@ import android.view.View;
 import android.view.Window;
 
 import com.android.compatibility.common.util.PollingCheck;
-import com.android.window.flags.Flags;
 
 import org.junit.Test;
 
@@ -58,9 +57,7 @@ public class WindowPolicyTests extends WindowPolicyTestBase {
 
     @Test
     public void testWindowInsets() {
-        if (Flags.disableOptOutEdgeToEdge()) {
-            TestActivity.sStyleIdList.add(R.style.OptOutEdgeToEdgeEnforcement);
-        }
+        TestActivity.sStyleIdList.add(R.style.OptOutEdgeToEdgeEnforcement);
         final TestActivity activity = startActivitySync(TestActivity.class);
 
         runOnMainSync(() -> {
@@ -96,98 +93,76 @@ public class WindowPolicyTests extends WindowPolicyTestBase {
 
     @Test
     public void testWindowStyleLayoutInDisplayCutoutMode_unspecified() {
-        if (Flags.disableOptOutEdgeToEdge()) {
-            TestActivity.sStyleIdList.add(R.style.OptOutEdgeToEdgeEnforcement);
-        }
+        TestActivity.sStyleIdList.add(R.style.OptOutEdgeToEdgeEnforcement);
         TestActivity.sStyleIdList.add(R.style.LayoutInDisplayCutoutModeUnspecified);
         assertFillWindowBounds(startActivitySync(TestActivity.class));
     }
 
     @Test
     public void testWindowStyleLayoutInDisplayCutoutMode_never() {
-        if (Flags.disableOptOutEdgeToEdge()) {
-            TestActivity.sStyleIdList.add(R.style.OptOutEdgeToEdgeEnforcement);
-        }
+        TestActivity.sStyleIdList.add(R.style.OptOutEdgeToEdgeEnforcement);
         TestActivity.sStyleIdList.add(R.style.LayoutInDisplayCutoutModeNever);
         assertFillWindowBounds(startActivitySync(TestActivity.class));
     }
 
     @Test
     public void testWindowStyleLayoutInDisplayCutoutMode_default() {
-        if (Flags.disableOptOutEdgeToEdge()) {
-            TestActivity.sStyleIdList.add(R.style.OptOutEdgeToEdgeEnforcement);
-        }
+        TestActivity.sStyleIdList.add(R.style.OptOutEdgeToEdgeEnforcement);
         TestActivity.sStyleIdList.add(R.style.LayoutInDisplayCutoutModeDefault);
         assertFillWindowBounds(startActivitySync(TestActivity.class));
     }
 
     @Test
     public void testWindowStyleLayoutInDisplayCutoutMode_shortEdges() {
-        if (Flags.disableOptOutEdgeToEdge()) {
-            TestActivity.sStyleIdList.add(R.style.OptOutEdgeToEdgeEnforcement);
-        }
+        TestActivity.sStyleIdList.add(R.style.OptOutEdgeToEdgeEnforcement);
         TestActivity.sStyleIdList.add(R.style.LayoutInDisplayCutoutModeShortEdges);
         assertFillWindowBounds(startActivitySync(TestActivity.class));
     }
 
     @Test
     public void testWindowStyleLayoutInDisplayCutoutMode_always() {
-        if (Flags.disableOptOutEdgeToEdge()) {
-            TestActivity.sStyleIdList.add(R.style.OptOutEdgeToEdgeEnforcement);
-        }
+        TestActivity.sStyleIdList.add(R.style.OptOutEdgeToEdgeEnforcement);
         TestActivity.sStyleIdList.add(R.style.LayoutInDisplayCutoutModeAlways);
         assertFillWindowBounds(startActivitySync(TestActivity.class));
     }
 
     @Test
     public void testLayoutParamsLayoutInDisplayCutoutMode_unspecified() {
-        if (Flags.disableOptOutEdgeToEdge()) {
-            TestActivity.sStyleIdList.add(R.style.OptOutEdgeToEdgeEnforcement);
-        }
+        TestActivity.sStyleIdList.add(R.style.OptOutEdgeToEdgeEnforcement);
         assertFillWindowBounds(startActivitySync(TestActivity.class));
     }
 
     @Test
     public void testLayoutParamsLayoutInDisplayCutoutMode_never() {
-        if (Flags.disableOptOutEdgeToEdge()) {
-            TestActivity.sStyleIdList.add(R.style.OptOutEdgeToEdgeEnforcement);
-        }
+        TestActivity.sStyleIdList.add(R.style.OptOutEdgeToEdgeEnforcement);
         TestActivity.sLayoutInDisplayCutoutMode = LAYOUT_IN_DISPLAY_CUTOUT_MODE_NEVER;
         assertFillWindowBounds(startActivitySync(TestActivity.class));
     }
 
     @Test
     public void testLayoutParamsLayoutInDisplayCutoutMode_default() {
-        if (Flags.disableOptOutEdgeToEdge()) {
-            TestActivity.sStyleIdList.add(R.style.OptOutEdgeToEdgeEnforcement);
-        }
+        TestActivity.sStyleIdList.add(R.style.OptOutEdgeToEdgeEnforcement);
         TestActivity.sLayoutInDisplayCutoutMode = LAYOUT_IN_DISPLAY_CUTOUT_MODE_DEFAULT;
         assertFillWindowBounds(startActivitySync(TestActivity.class));
     }
 
     @Test
     public void testLayoutParamsLayoutInDisplayCutoutMode_shortEdges() {
-        if (Flags.disableOptOutEdgeToEdge()) {
-            TestActivity.sStyleIdList.add(R.style.OptOutEdgeToEdgeEnforcement);
-        }
+        TestActivity.sStyleIdList.add(R.style.OptOutEdgeToEdgeEnforcement);
         TestActivity.sLayoutInDisplayCutoutMode = LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
         assertFillWindowBounds(startActivitySync(TestActivity.class));
     }
 
     @Test
     public void testLayoutParamsLayoutInDisplayCutoutMode_always() {
-        if (Flags.disableOptOutEdgeToEdge()) {
-            TestActivity.sStyleIdList.add(R.style.OptOutEdgeToEdgeEnforcement);
-        }
+        TestActivity.sStyleIdList.add(R.style.OptOutEdgeToEdgeEnforcement);
         TestActivity.sLayoutInDisplayCutoutMode = LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS;
         assertFillWindowBounds(startActivitySync(TestActivity.class));
     }
 
     @Test
     public void testSystemBarColor() {
-        if (Flags.disableOptOutEdgeToEdge()) {
-            TestActivity.sStyleIdList.add(R.style.OptOutEdgeToEdgeEnforcement);
-        }
+        TestActivity.sStyleIdList.add(R.style.OptOutEdgeToEdgeEnforcement);
         TestActivity.sStyleIdList.add(R.style.BlackSystemBars);
         final TestActivity activity = startActivitySync(TestActivity.class);
         runOnMainSync(() -> {
