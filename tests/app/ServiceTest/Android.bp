@@ -24,6 +24,7 @@ android_test {
         "cts_app_test_shared_lib",
         "permission-test-util-lib",
         "platformprotosnano",
+        "android.content.flags-aconfig-java",
     ],
     srcs: [
         "src/**/*.java",

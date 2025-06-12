@@ -53,6 +53,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.content.flags.Flags;
 import android.content.pm.PackageManager;
 import android.content.pm.ServiceInfo;
 import android.os.Binder;
@@ -69,6 +70,9 @@ import android.os.UserHandle;
 import android.permission.PermissionManager;
 import android.permission.cts.PermissionUtils;
 import android.platform.test.annotations.Presubmit;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.service.notification.StatusBarNotification;
 import android.util.Log;
 import android.util.SparseArray;
@@ -89,6 +93,7 @@ import com.google.protobuf.nano.InvalidProtocolBufferNanoException;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -147,6 +152,9 @@ public final class ServiceTest {
 
     private IBinder mStateReceiver;
     private LaunchpadHelper mLaunchpadHelper;
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private static final class EmptyConnection implements ServiceConnection {
         @Override
@@ -2414,6 +2422,31 @@ public final class ServiceTest {
         }
     }
 
+    boolean findServiceFlags(long flags) throws Exception {
+        final ActivityManager am = mContext.getSystemService(ActivityManager.class);
+        final ComponentName name =
+                new ComponentName("android.app.stubs", "android.app.stubs.shared.LocalService");
+        final List<ActivityManager.ConnectionInfo> conns =
+                SystemUtil.callWithShellPermissionIdentity(
+                        () -> am.getRunningServiceConnections(name));
+        for (ActivityManager.ConnectionInfo ci : conns) {
+            if (ci.getFlags() == flags) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    int countConnectionRecords() throws Exception {
+        final ActivityManager am = mContext.getSystemService(ActivityManager.class);
+        final ComponentName name =
+                new ComponentName("android.app.stubs", "android.app.stubs.shared.LocalService");
+        final List<ActivityManager.ConnectionInfo> conns =
+                SystemUtil.callWithShellPermissionIdentity(
+                        () -> am.getRunningServiceConnections(name));
+        return conns.size();
+    }
+
     /** Test bindService() can accept long flags. */
     @Test
     public void testBindServiceLongFlags() throws Exception {
@@ -2438,6 +2471,161 @@ public final class ServiceTest {
                     .isNotNull();
         } finally {
             mContext.unbindService(connection);
+        }
+    }
+
+    /** Test updateServiceBindings() on empty list as being valid and does not crash. */
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_UPDATE_SERVICE_BINDINGS)
+    public void testUpdateServiceBindings_emptyList() throws Exception {
+        final List<Context.UpdateBindingParams> params =
+                new ArrayList<Context.UpdateBindingParams>();
+        mContext.updateServiceBindings(params);
+    }
+
+    /**
+     * Test updateServiceBindings() with rebind operation to change the priority of an existing
+     * connection.
+     */
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_UPDATE_SERVICE_BINDINGS)
+    public void testUpdateServiceBindings_rebind() throws Exception {
+        long flags = Context.BIND_AUTO_CREATE | Context.BIND_WAIVE_PRIORITY;
+        final CountDownLatch latch = new CountDownLatch(1);
+        final LatchedConnection conn = new LatchedConnection(latch);
+        try {
+            assertThat(
+                            mContext.bindService(
+                                    mLocalService, conn, Context.BindServiceFlags.of(flags)))
+                    .isTrue();
+            assertThat(latch.await(5, TimeUnit.SECONDS)).isTrue();
+
+            // BIND_IMPORTANT can be added.
+            // BIND_WAIVE_PRIORITY can be removed.
+            flags = Context.BIND_AUTO_CREATE | Context.BIND_IMPORTANT;
+            final List<Context.UpdateBindingParams> params =
+                    new ArrayList<Context.UpdateBindingParams>();
+            params.add(
+                    new Context.UpdateBindingParams.Builder(
+                                    conn, Context.BindServiceFlags.of(flags))
+                            .build());
+            mContext.updateServiceBindings(params);
+
+            assertThat(findServiceFlags(flags)).isTrue();
+        } finally {
+            mContext.unbindService(conn);
+        }
+    }
+
+    /**
+     * Test updateServiceBindings() with updates to multiple connections including both a rebind and
+     * an unbind request.
+     */
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_UPDATE_SERVICE_BINDINGS)
+    public void testUpdateServiceBindings_multipleUpdates() throws Exception {
+        long flags = Context.BIND_AUTO_CREATE | Context.BIND_WAIVE_PRIORITY;
+        final CountDownLatch latch1 = new CountDownLatch(1);
+        final LatchedConnection conn1 = new LatchedConnection(latch1);
+        final CountDownLatch latch2 = new CountDownLatch(1);
+        final LatchedConnection conn2 = new LatchedConnection(latch2);
+
+        boolean success = false;
+        try {
+            assertThat(
+                            mContext.bindService(
+                                    mLocalService, conn1, Context.BindServiceFlags.of(flags)))
+                    .isTrue();
+            assertThat(latch1.await(5, TimeUnit.SECONDS)).isTrue();
+
+            assertThat(
+                            mContext.bindService(
+                                    mLocalService_ApplicationHasPermission,
+                                    conn2,
+                                    Context.BindServiceFlags.of(flags)))
+                    .isTrue();
+            assertThat(latch2.await(5, TimeUnit.SECONDS)).isTrue();
+
+            assertThat(countConnectionRecords()).isEqualTo(2);
+
+            // conn1 is to have flags updated. (WAIVE_PRIORITY -> IMPORTANT)
+            // conn2 is to be unbound.
+            flags = Context.BIND_AUTO_CREATE | Context.BIND_IMPORTANT;
+            final List<Context.UpdateBindingParams> params =
+                    new ArrayList<Context.UpdateBindingParams>();
+            params.add(
+                    new Context.UpdateBindingParams.Builder(
+                                    conn1, Context.BindServiceFlags.of(flags))
+                            .build());
+            params.add(new Context.UpdateBindingParams.Builder(conn2).build());
+            mContext.updateServiceBindings(params);
+
+            assertThat(countConnectionRecords()).isEqualTo(1);
+            assertThat(findServiceFlags(flags)).isTrue();
+            success = true;
+        } finally {
+            mContext.unbindService(conn1);
+            if (!success) {
+                mContext.unbindService(conn2);
+            }
+        }
+    }
+
+    /** Test updateServiceBindings() with invalid updated flags. */
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_UPDATE_SERVICE_BINDINGS)
+    public void testUpdateServiceBindings_invalidFlags() throws Exception {
+        long flags = Context.BIND_AUTO_CREATE | Context.BIND_WAIVE_PRIORITY;
+        final CountDownLatch latch = new CountDownLatch(1);
+        final LatchedConnection conn = new LatchedConnection(latch);
+        try {
+            assertThat(
+                            mContext.bindService(
+                                    mLocalService, conn, Context.BindServiceFlags.of(flags)))
+                    .isTrue();
+            assertThat(latch.await(5, TimeUnit.SECONDS)).isTrue();
+
+            // BIND_IMPORTANT can be added.
+            // BIND_WAIVE_PRIORITY can be removed.
+            // BIND_SHARED_ISOLATED_PROCESS cannot be added.
+            // BIND_AUTO_CREATE cannot be removed.
+            flags = Context.BIND_SHARED_ISOLATED_PROCESS | Context.BIND_IMPORTANT;
+            final List<Context.UpdateBindingParams> params =
+                    new ArrayList<Context.UpdateBindingParams>();
+            params.add(
+                    new Context.UpdateBindingParams.Builder(
+                                    conn, Context.BindServiceFlags.of(flags))
+                            .build());
+            try {
+                mContext.updateServiceBindings(params);
+                assertWithMessage("No exception thrown on invalid flags").fail();
+            } catch (IllegalArgumentException e) {
+                // expected
+            }
+        } finally {
+            mContext.unbindService(conn);
+        }
+    }
+
+    /** Test updateServiceBindings() on invalid connection. */
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_UPDATE_SERVICE_BINDINGS)
+    public void testUpdateServiceBindings_invalidConnection() throws Exception {
+        final EmptyConnection conn = new EmptyConnection();
+        mContext.bindService(mLocalService_ApplicationHasPermission, conn, 0);
+
+        // First unbind should succeed.
+        final List<Context.UpdateBindingParams> params =
+                new ArrayList<Context.UpdateBindingParams>();
+        params.add(new Context.UpdateBindingParams.Builder(conn).build());
+        mContext.updateServiceBindings(params);
+
+        // Second unbind should fail.
+        try {
+            mContext.updateServiceBindings(params);
+            assertWithMessage("No exception thrown on invalid connection").fail();
+        } catch (IllegalArgumentException e) {
+            // expected
         }
     }
 
