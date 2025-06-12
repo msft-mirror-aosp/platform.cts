@@ -16,25 +16,24 @@
 
 package android.jobscheduler.cts;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static com.google.common.truth.Truth.assertWithMessage;
 
 import android.annotation.TargetApi;
 import android.app.job.JobInfo;
 
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 
-/**
- * Schedules jobs with the {@link android.app.job.JobScheduler} that have storage constraints.
- */
+/** Schedules jobs with the {@link android.app.job.JobScheduler} that have storage constraints. */
 @TargetApi(26)
-public class StorageConstraintTest extends BaseJobSchedulerTest {
-    private static final String TAG = "StorageConstraintTest";
-
+@RunWith(AndroidJUnit4.class)
+public final class StorageConstraintTest extends BaseJobSchedulerTest {
     /** Unique identifier for the job scheduled by this suite of tests. */
-    public static final int STORAGE_JOB_ID = StorageConstraintTest.class.hashCode();
+    private static final int STORAGE_JOB_ID = StorageConstraintTest.class.hashCode();
 
     private JobInfo.Builder mBuilder;
 
@@ -53,22 +52,6 @@ public class StorageConstraintTest extends BaseJobSchedulerTest {
         super.tearDown();
     }
 
-    String getJobState() throws Exception {
-        return getJobState(STORAGE_JOB_ID);
-    }
-
-    void assertJobReady() throws Exception {
-        assertJobReady(STORAGE_JOB_ID);
-    }
-
-    void assertJobWaiting() throws Exception {
-        assertJobWaiting(STORAGE_JOB_ID);
-    }
-
-    void assertJobNotReady() throws Exception {
-        assertJobNotReady(STORAGE_JOB_ID);
-    }
-
     // --------------------------------------------------------------------------------------------
     // Positives - schedule jobs under conditions that require them to pass.
     // --------------------------------------------------------------------------------------------
@@ -81,11 +64,12 @@ public class StorageConstraintTest extends BaseJobSchedulerTest {
         kTestEnvironment.setExpectedExecutions(1);
         kTestEnvironment.setExpectedWaitForRun();
         mJobScheduler.schedule(mBuilder.setRequiresStorageNotLow(true).build());
-        assertJobReady();
+        assertJobReady(STORAGE_JOB_ID);
         kTestEnvironment.readyToRun();
 
-        assertTrue("Job with storage not low constraint did not fire when storage not low.",
-                kTestEnvironment.awaitExecution());
+        assertWithMessage("Job with storage not low constraint did not fire when storage not low.")
+                .that(kTestEnvironment.awaitExecution())
+                .isTrue();
     }
 
     // --------------------------------------------------------------------------------------------
@@ -100,21 +84,24 @@ public class StorageConstraintTest extends BaseJobSchedulerTest {
         kTestEnvironment.setExpectedExecutions(0);
         kTestEnvironment.setExpectedWaitForRun();
         mJobScheduler.schedule(mBuilder.setRequiresStorageNotLow(true).build());
-        assertJobWaiting();
-        assertJobNotReady();
+        assertJobWaiting(STORAGE_JOB_ID);
+        assertJobNotReady(STORAGE_JOB_ID);
         kTestEnvironment.readyToRun();
 
-        assertFalse("Job with storage now low constraint fired while low.",
-                kTestEnvironment.awaitExecution(250));
+        assertWithMessage("Job with storage now low constraint fired while low.")
+                .that(kTestEnvironment.awaitExecution(250))
+                .isFalse();
 
         // And for good measure, ensure the job runs once storage is okay.
         kTestEnvironment.setExpectedExecutions(1);
         kTestEnvironment.setExpectedWaitForRun();
         setStorageStateLow(false);
-        assertJobReady();
+        assertJobReady(STORAGE_JOB_ID);
         kTestEnvironment.readyToRun();
-        assertTrue("Job with storage not low constraint did not fire when storage not low.",
-                kTestEnvironment.awaitExecution());
+
+        assertWithMessage("Job with storage not low constraint did not fire when storage not low.")
+                .that(kTestEnvironment.awaitExecution())
+                .isTrue();
     }
 
     /**
@@ -129,14 +116,18 @@ public class StorageConstraintTest extends BaseJobSchedulerTest {
         kTestEnvironment.setExpectedWaitForRun();
         kTestEnvironment.setExpectedStopped();
         mJobScheduler.schedule(mBuilder.setRequiresStorageNotLow(true).build());
-        assertJobReady();
+        assertJobReady(STORAGE_JOB_ID);
         kTestEnvironment.readyToRun();
 
-        assertTrue("Job with storage not low constraint did not fire when storage not low.",
-                kTestEnvironment.awaitExecution());
+        assertWithMessage("Job with storage not low constraint did not fire when storage not low.")
+                .that(kTestEnvironment.awaitExecution())
+                .isTrue();
 
         setStorageStateLow(true);
-        assertTrue("Job with storage not low constraint was not stopped when storage became low.",
-                kTestEnvironment.awaitStopped());
+        assertWithMessage(
+                        "Job with storage not low constraint was not stopped when storage became"
+                                + " low.")
+                .that(kTestEnvironment.awaitStopped())
+                .isTrue();
     }
 }
