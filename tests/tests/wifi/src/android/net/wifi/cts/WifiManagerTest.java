@@ -7470,7 +7470,12 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
                     testTwtSessionCallback.mTwtSession.get());
             assertTrue(testTwtSessionCallback.mTwtSession.get().getWakeDurationMicros() > 0);
             assertTrue(testTwtSessionCallback.mTwtSession.get().getWakeIntervalMicros() > 0);
-            assertTrue(testTwtSessionCallback.mTwtSession.get().getMloLinkId() == linkId);
+            // Test MLO link id only if the chip updates it in the TWT session. Some devices are
+            // not supporting link specific TWT. So make this check conditional for now.
+            if (testTwtSessionCallback.mTwtSession.get().getMloLinkId()
+                    != MloLink.INVALID_MLO_LINK_ID) {
+                assertTrue(testTwtSessionCallback.mTwtSession.get().getMloLinkId() == linkId);
+            }
 
             // Verify TWT session get stats
             testTwtSessionCallback.mTwtSession.get().getStats(mExecutor, twtStatsCallback);
