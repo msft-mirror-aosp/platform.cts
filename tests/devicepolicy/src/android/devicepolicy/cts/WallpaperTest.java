@@ -143,14 +143,18 @@ public final class WallpaperTest {
     @EnsureHasPermission({SET_WALLPAPER, /* Android.U+ */ READ_WALLPAPER_INTERNAL})
     @EnsureDoesNotHaveUserRestriction(DISALLOW_SET_WALLPAPER)
     @Test
-    public void setStream_allowed_canSet() {
-        TestApis.wallpaper().setStream(sReferenceWallpaperStream);
+    public void setStream_allowed_canSet() throws Exception {
+        try {
+            TestApis.wallpaper().setStream(sReferenceWallpaperStream);
 
-        Poll.forValue("wallpaper bitmap", () -> TestApis.wallpaper().getBitmap())
-                .toMeet((bitmap) ->
-                        BitmapUtils.compareBitmaps(bitmap, sReferenceWallpaper))
-                .errorOnFail()
-                .await();
+            Poll.forValue("wallpaper bitmap", () -> TestApis.wallpaper().getBitmap())
+                    .toMeet((bitmap) ->
+                            BitmapUtils.compareBitmaps(bitmap, sReferenceWallpaper))
+                    .errorOnFail()
+                    .await();
+        } finally {
+            TestApis.wallpaper().setStream(BitmapUtils.bitmapToInputStream(sOriginalWallpaper));
+        }
     }
 
     @ApiTest(apis = "android.app.WallpaperManager#setStream")
