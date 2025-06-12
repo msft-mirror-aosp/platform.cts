@@ -382,4 +382,8 @@
     <!-- b/379036155-->
     <option name="compatibility:exclude-filter" value="CtsMultiUserTestCases[run-on-secondary-user]" />
     <option name="compatibility:exclude-filter" value="CtsMultiUserTestCases[run-on-work-profile]" />
+
+    <!-- b/414696899-->
+    <option name="compatibility:exclude-filter" value="CtsHostsideNetworkTests com.android.cts.net.HostsideRestrictBackgroundNetworkTests#testMeteredNetworkAccess_expeditedJob" />
+    <option name="compatibility:exclude-filter" value="CtsHostsideNetworkTests com.android.cts.net.HostsideRestrictBackgroundNetworkTests#testNonMeteredNetworkAccess_expeditedJob" />
 </configuration>
