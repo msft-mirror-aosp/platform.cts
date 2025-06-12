@@ -16,6 +16,8 @@
 
 package android.media.cts;
 
+import static com.google.common.truth.Truth.assertWithMessage;
+
 import com.android.compatibility.common.tradefed.build.CompatibilityBuildHelper;
 import com.android.ddmlib.testrunner.RemoteAndroidTestRunner;
 import com.android.tradefed.device.DeviceNotAvailableException;
@@ -168,8 +170,10 @@ public class BaseMultiUserTest extends BaseMediaHostSideTest {
 
         String[] tokens = commandOutput.split("\\s+");
         assertTrue(tokens.length > 0);
-        assertEquals("Success:", tokens[0]);
-        int userId = Integer.parseInt(tokens[tokens.length-1]);
+        assertWithMessage("command = %s\noutput = %s", command, commandOutput)
+                .that(tokens[0])
+                .isEqualTo("Success:");
+        int userId = Integer.parseInt(tokens[tokens.length - 1]);
 
         // Start user for MediaSessionService to notice the created user.
         getDevice().startUser(userId);
