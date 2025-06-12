@@ -16,9 +16,9 @@
 
 package android.mediapc.cts;
 
+import static android.mediapc.cts.CodecTestBase.areFormatsSupported;
 import static android.mediapc.cts.common.CodecMetrics.getMetrics;
 import static android.mediav2.common.cts.CodecTestBase.PROFILE_HLG_MAP;
-import static android.mediapc.cts.CodecTestBase.areFormatsSupported;
 
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -31,6 +31,8 @@ import android.mediapc.cts.common.CodecMetrics;
 import android.util.Log;
 import android.util.Pair;
 import android.view.Surface;
+
+import com.android.compatibility.common.util.Preconditions;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -89,6 +91,7 @@ public class CodecTranscoderTestBase {
 
     MediaFormat setUpSource(String srcFile) throws IOException {
         mExtractor = new MediaExtractor();
+        Preconditions.assertTestFileExists(mInpPrefix + srcFile);
         mExtractor.setDataSource(mInpPrefix + srcFile);
         for (int trackID = 0; trackID < mExtractor.getTrackCount(); trackID++) {
             MediaFormat format = mExtractor.getTrackFormat(trackID);
