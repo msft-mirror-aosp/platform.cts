@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package android.server.wm.other;
+package android.server.wm.pip;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
@@ -36,7 +36,7 @@ import java.util.ArrayList;
 /**
  * Tests the {@link PictureInPictureParams} builder.
  *
- * <p>Build/Install/Run: atest CtsWindowManagerDeviceOther:PictureInPictureParamsBuilderTest
+ * <p>Build/Install/Run: atest CtsWindowManagerDevicePip:PictureInPictureParamsBuilderTest
  */
 @Presubmit
 @SmallTest

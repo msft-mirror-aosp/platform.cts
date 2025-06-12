@@ -6271,40 +6271,43 @@
     <option name="compatibility:include-filter" value="CtsWindowManagerDeviceMultiDisplay android.server.wm.multidisplay.MultiDisplaySecurityTests#testCantAccessPublicVirtualDisplayNoEmbeddingPermission"/>
     <option name="compatibility:include-filter" value="CtsWindowManagerDeviceMultiDisplay android.server.wm.multidisplay.MultiDisplaySecurityTests#testSettingFlagToUntrustedDisplay"/>
     <!-- CtsWindowManagerDeviceOther -->
-    <option name="compatibility:include-filter" value="CtsWindowManagerDeviceOther android.server.wm.other.DragDropCompatTest#testAcceptingGroupInTheMiddle"/>
-    <option name="compatibility:include-filter" value="CtsWindowManagerDeviceOther android.server.wm.other.DragDropCompatTest#testBlackHole"/>
-    <option name="compatibility:include-filter" value="CtsWindowManagerDeviceOther android.server.wm.other.DragDropCompatTest#testDragShadowWhenPerformDrag"/>
-    <option name="compatibility:include-filter" value="CtsWindowManagerDeviceOther android.server.wm.other.DragDropCompatTest#testDrawableState"/>
-    <option name="compatibility:include-filter" value="CtsWindowManagerDeviceOther android.server.wm.other.DragDropCompatTest#testEnterExit"/>
-    <option name="compatibility:include-filter" value="CtsWindowManagerDeviceOther android.server.wm.other.DragDropCompatTest#testHardwareAcceleratedCanvas"/>
-    <option name="compatibility:include-filter" value="CtsWindowManagerDeviceOther android.server.wm.other.DragDropCompatTest#testNoDragIfNoTouchDown"/>
-    <option name="compatibility:include-filter" value="CtsWindowManagerDeviceOther android.server.wm.other.DragDropCompatTest#testNoDragIfWindowCantReceiveInput"/>
-    <option name="compatibility:include-filter" value="CtsWindowManagerDeviceOther android.server.wm.other.DragDropCompatTest#testNoExtraEvents"/>
-    <option name="compatibility:include-filter" value="CtsWindowManagerDeviceOther android.server.wm.other.DragDropCompatTest#testOverNowhere"/>
-    <option name="compatibility:include-filter" value="CtsWindowManagerDeviceOther android.server.wm.other.DragDropCompatTest#testSoftwareCanvas"/>
-    <option name="compatibility:include-filter" value="CtsWindowManagerDeviceOther android.server.wm.other.DragDropTest#testAcceptingGroupInTheMiddle"/>
-    <option name="compatibility:include-filter" value="CtsWindowManagerDeviceOther android.server.wm.other.DragDropTest#testBlackHole"/>
-    <option name="compatibility:include-filter" value="CtsWindowManagerDeviceOther android.server.wm.other.DragDropTest#testDragShadowWhenPerformDrag"/>
-    <option name="compatibility:include-filter" value="CtsWindowManagerDeviceOther android.server.wm.other.DragDropTest#testDrawableState"/>
-    <option name="compatibility:include-filter" value="CtsWindowManagerDeviceOther android.server.wm.other.DragDropTest#testEnterExit"/>
-    <option name="compatibility:include-filter" value="CtsWindowManagerDeviceOther android.server.wm.other.DragDropTest#testHardwareAcceleratedCanvas"/>
-    <option name="compatibility:include-filter" value="CtsWindowManagerDeviceOther android.server.wm.other.DragDropTest#testNoDragIfNoTouchDown"/>
-    <option name="compatibility:include-filter" value="CtsWindowManagerDeviceOther android.server.wm.other.DragDropTest#testNoDragIfWindowCantReceiveInput"/>
-    <option name="compatibility:include-filter" value="CtsWindowManagerDeviceOther android.server.wm.other.DragDropTest#testNoExtraEvents"/>
-    <option name="compatibility:include-filter" value="CtsWindowManagerDeviceOther android.server.wm.other.DragDropTest#testOverNowhere"/>
-    <option name="compatibility:include-filter" value="CtsWindowManagerDeviceOther android.server.wm.other.DragDropTest#testSoftwareCanvas"/>
-    <option name="compatibility:include-filter" value="CtsWindowManagerDeviceOther android.server.wm.other.DreamManagerServiceTests#testDreamNotFinishAfterRotation"/>
-    <option name="compatibility:include-filter" value="CtsWindowManagerDeviceOther android.server.wm.other.DreamManagerServiceTests#testDreamServiceStopsTimely"/>
-    <option name="compatibility:include-filter" value="CtsWindowManagerDeviceOther android.server.wm.other.DreamManagerServiceTests#testForceStopStubbornDream"/>
-    <option name="compatibility:include-filter" value="CtsWindowManagerDeviceOther android.server.wm.other.DreamManagerServiceTests#testStartActivityDoesNotWakeAndIsNotResumed"/>
-    <option name="compatibility:include-filter" value="CtsWindowManagerDeviceOther android.server.wm.other.DreamManagerServiceTests#testStartActivityOnKeyguardLocked"/>
-    <option name="compatibility:include-filter" value="CtsWindowManagerDeviceOther android.server.wm.other.DreamManagerServiceTests#testStartAndStopDream"/>
-    <option name="compatibility:include-filter" value="CtsWindowManagerDeviceOther android.server.wm.other.DreamManagerServiceTests#testStartTurnScreenOnActivityDoesWake"/>
-    <option name="compatibility:include-filter" value="CtsWindowManagerDeviceOther android.server.wm.other.DreamManagerServiceTests#testStartTurnScreenOnAttrActivityDoesWake"/>
     <option name="compatibility:include-filter" value="CtsWindowManagerDeviceOther android.server.wm.other.EnsureBarContrastTest#test_dontEnsureContrast_lightBars"/>
     <option name="compatibility:include-filter" value="CtsWindowManagerDeviceOther android.server.wm.other.EnsureBarContrastTest#test_ensureContrast_darkBars"/>
     <option name="compatibility:include-filter" value="CtsWindowManagerDeviceOther android.server.wm.other.KeepClearRectsTests#testDisplayHasKeepClearAreasFromTwoActivitiesInSplitscreen"/>
-    <option name="compatibility:include-filter" value="CtsWindowManagerDeviceOther android.server.wm.other.PinnedStackTests#testSetRequestedOrientationWhilePinned"/>
+    <!-- CtsWindowManagerDeviceDragAndDrop -->
+    <option name="compatibility:include-filter" value="CtsWindowManagerDeviceDragAndDrop android.server.wm.draganddrop.DragDropCompatTest#testAcceptingGroupInTheMiddle"/>
+    <option name="compatibility:include-filter" value="CtsWindowManagerDeviceDragAndDrop android.server.wm.draganddrop.DragDropCompatTest#testBlackHole"/>
+    <option name="compatibility:include-filter" value="CtsWindowManagerDeviceDragAndDrop android.server.wm.draganddrop.DragDropCompatTest#testDragShadowWhenPerformDrag"/>
+    <option name="compatibility:include-filter" value="CtsWindowManagerDeviceDragAndDrop android.server.wm.draganddrop.DragDropCompatTest#testDrawableState"/>
+    <option name="compatibility:include-filter" value="CtsWindowManagerDeviceDragAndDrop android.server.wm.draganddrop.DragDropCompatTest#testEnterExit"/>
+    <option name="compatibility:include-filter" value="CtsWindowManagerDeviceDragAndDrop android.server.wm.draganddrop.DragDropCompatTest#testHardwareAcceleratedCanvas"/>
+    <option name="compatibility:include-filter" value="CtsWindowManagerDeviceDragAndDrop android.server.wm.draganddrop.DragDropCompatTest#testNoDragIfNoTouchDown"/>
+    <option name="compatibility:include-filter" value="CtsWindowManagerDeviceDragAndDrop android.server.wm.draganddrop.DragDropCompatTest#testNoDragIfWindowCantReceiveInput"/>
+    <option name="compatibility:include-filter" value="CtsWindowManagerDeviceDragAndDrop android.server.wm.draganddrop.DragDropCompatTest#testNoExtraEvents"/>
+    <option name="compatibility:include-filter" value="CtsWindowManagerDeviceDragAndDrop android.server.wm.draganddrop.DragDropCompatTest#testOverNowhere"/>
+    <option name="compatibility:include-filter" value="CtsWindowManagerDeviceDragAndDrop android.server.wm.draganddrop.DragDropCompatTest#testSoftwareCanvas"/>
+    <option name="compatibility:include-filter" value="CtsWindowManagerDeviceDragAndDrop android.server.wm.draganddrop.DragDropTest#testAcceptingGroupInTheMiddle"/>
+    <option name="compatibility:include-filter" value="CtsWindowManagerDeviceDragAndDrop android.server.wm.draganddrop.DragDropTest#testBlackHole"/>
+    <option name="compatibility:include-filter" value="CtsWindowManagerDeviceDragAndDrop android.server.wm.draganddrop.DragDropTest#testDragShadowWhenPerformDrag"/>
+    <option name="compatibility:include-filter" value="CtsWindowManagerDeviceDragAndDrop android.server.wm.draganddrop.DragDropTest#testDrawableState"/>
+    <option name="compatibility:include-filter" value="CtsWindowManagerDeviceDragAndDrop android.server.wm.draganddrop.DragDropTest#testEnterExit"/>
+    <option name="compatibility:include-filter" value="CtsWindowManagerDeviceDragAndDrop android.server.wm.draganddrop.DragDropTest#testHardwareAcceleratedCanvas"/>
+    <option name="compatibility:include-filter" value="CtsWindowManagerDeviceDragAndDrop android.server.wm.draganddrop.DragDropTest#testNoDragIfNoTouchDown"/>
+    <option name="compatibility:include-filter" value="CtsWindowManagerDeviceDragAndDrop android.server.wm.draganddrop.DragDropTest#testNoDragIfWindowCantReceiveInput"/>
+    <option name="compatibility:include-filter" value="CtsWindowManagerDeviceDragAndDrop android.server.wm.draganddrop.DragDropTest#testNoExtraEvents"/>
+    <option name="compatibility:include-filter" value="CtsWindowManagerDeviceDragAndDrop android.server.wm.draganddrop.DragDropTest#testOverNowhere"/>
+    <option name="compatibility:include-filter" value="CtsWindowManagerDeviceDragAndDrop android.server.wm.draganddrop.DragDropTest#testSoftwareCanvas"/>
+    <!-- CtsWindowManagerDeviceDreams-->
+    <option name="compatibility:include-filter" value="CtsWindowManagerDeviceDreams android.server.wm.dreams.DreamManagerServiceTests#testDreamNotFinishAfterRotation"/>
+    <option name="compatibility:include-filter" value="CtsWindowManagerDeviceDreams android.server.wm.dreams.DreamManagerServiceTests#testDreamServiceStopsTimely"/>
+    <option name="compatibility:include-filter" value="CtsWindowManagerDeviceDreams android.server.wm.dreams.DreamManagerServiceTests#testForceStopStubbornDream"/>
+    <option name="compatibility:include-filter" value="CtsWindowManagerDeviceDreams android.server.wm.dreams.DreamManagerServiceTests#testStartActivityDoesNotWakeAndIsNotResumed"/>
+    <option name="compatibility:include-filter" value="CtsWindowManagerDeviceDreams android.server.wm.dreams.DreamManagerServiceTests#testStartActivityOnKeyguardLocked"/>
+    <option name="compatibility:include-filter" value="CtsWindowManagerDeviceDreams android.server.wm.dreams.DreamManagerServiceTests#testStartAndStopDream"/>
+    <option name="compatibility:include-filter" value="CtsWindowManagerDeviceDreams android.server.wm.dreams.DreamManagerServiceTests#testStartTurnScreenOnActivityDoesWake"/>
+    <option name="compatibility:include-filter" value="CtsWindowManagerDeviceDreams android.server.wm.dreams.DreamManagerServiceTests#testStartTurnScreenOnAttrActivityDoesWake"/>
+    <!-- CtsWindowManagerDevicePip -->
+    <option name="compatibility:include-filter" value="CtsWindowManagerDevicePip android.server.wm.pip.PinnedStackTests#testSetRequestedOrientationWhilePinned"/>
     <!-- CtsWindowManagerDeviceTaskFragment -->
     <option name="compatibility:include-filter" value="CtsWindowManagerDeviceTaskFragment android.server.wm.taskfragment.TaskFragmentOrganizerTest#testStartActivityInTaskFragment_reuseTask"/>
     <!-- CtsWindowManagerDeviceWindow -->

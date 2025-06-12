@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package android.server.wm.other;
+package android.server.wm.draganddrop;
 
 import static android.app.WindowConfiguration.WINDOWING_MODE_FULLSCREEN;
 
@@ -71,7 +71,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.IntStream;
 
-/** Build/Install/Run: atest CtsWindowManagerDeviceOther:DragDropTest */
+/** Build/Install/Run: atest CtsWindowManagerDeviceDragAndDrop:DragDropTest */
 @Presubmit
 @RunWith(AndroidJUnit4.class)
 public class DragDropTest extends WindowManagerTestBase {

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package android.server.wm.other;
+package android.server.wm.dreams;
 
 import static android.app.WindowConfiguration.WINDOWING_MODE_FULLSCREEN;
 import static android.server.wm.ComponentNameUtils.getWindowName;
@@ -49,7 +49,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-/** Build/Install/Run: atest CtsWindowManagerDeviceOther:DreamManagerServiceTests */
+/** Build/Install/Run: atest CtsWindowManagerDeviceDreams:DreamManagerServiceTests */
 @Presubmit
 public class DreamManagerServiceTests extends ActivityManagerTestBase {
 

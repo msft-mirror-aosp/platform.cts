@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package android.server.wm.other;
+package android.server.wm.tv;
 
 import static android.content.pm.PackageManager.FEATURE_LEANBACK;
 import static android.content.pm.PackageManager.FEATURE_LEANBACK_ONLY;
@@ -46,7 +46,7 @@ import org.junit.Test;
  * The goal of this test is to make sure that on Android TV applications with target SDK version
  * lower than S do not get a larger than 1080p (1920x1080) Window.
  *
- * <p>Build/Install/Run: atest CtsWindowManagerDeviceOther:TvMaxWindowSizeTests
+ * <p>Build/Install/Run: atest CtsWindowManagerDeviceTv:TvMaxWindowSizeTests
  */
 public class TvMaxWindowSizeTests extends ActivityManagerTestBase {
 
