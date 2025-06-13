@@ -19,24 +19,18 @@ import static android.server.wm.WindowManagerState.STATE_RESUMED;
 
 import static com.android.compatibility.common.util.TestUtils.waitUntil;
 
-import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
 import android.annotation.TargetApi;
 import android.app.Instrumentation;
 import android.app.job.JobScheduler;
-import android.content.ClipData;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
-import android.content.pm.PackageManager;
 import android.jobscheduler.MockJobService;
 import android.jobscheduler.TestActivity;
 import android.jobscheduler.TriggerContentJobService;
-import android.net.Uri;
-import android.os.Bundle;
 import android.os.PowerManager;
-import android.os.Process;
 import android.os.SystemClock;
 import android.os.SystemProperties;
 import android.os.UserHandle;
@@ -59,44 +53,35 @@ import java.io.IOException;
 /** Common functionality from which the other test case classes derive. */
 @TargetApi(21)
 public abstract class BaseJobSchedulerTest {
-    protected Instrumentation mInstrumentation;
-
     private static final String TAG = BaseJobSchedulerTest.class.getSimpleName();
     static final int HW_TIMEOUT_MULTIPLIER = SystemProperties.getInt("ro.hw_timeout_multiplier", 1);
-    static final int USER_ID = UserHandle.myUserId();
+    private static final int USER_ID = UserHandle.myUserId();
 
     /** Environment that notifies of JobScheduler callbacks. */
-    static MockJobService.TestEnvironment kTestEnvironment =
+    protected static MockJobService.TestEnvironment kTestEnvironment =
             MockJobService.TestEnvironment.getTestEnvironment();
-    static TriggerContentJobService.TestEnvironment kTriggerTestEnvironment =
-            TriggerContentJobService.TestEnvironment.getTestEnvironment();
-    /** Handle for the service which receives the execution callbacks from the JobScheduler. */
-    static ComponentName kJobServiceComponent;
-    static ComponentName kTriggerContentServiceComponent;
-    JobScheduler mJobScheduler;
 
-    Context mContext;
-    DeviceConfigStateHelper mDeviceConfigStateHelper;
+    protected static TriggerContentJobService.TestEnvironment kTriggerTestEnvironment =
+            TriggerContentJobService.TestEnvironment.getTestEnvironment();
+
+    /** Handle for the service which receives the execution callbacks from the JobScheduler. */
+    protected static ComponentName kJobServiceComponent;
+
+    protected static ComponentName kTriggerContentServiceComponent;
+    protected JobScheduler mJobScheduler;
+    protected DeviceConfigStateHelper mDeviceConfigStateHelper;
 
     static final String MY_PACKAGE = "android.jobscheduler.cts";
-    static final String JOBPERM_PACKAGE = "android.jobscheduler.cts.jobperm";
-    static final String JOBPERM_AUTHORITY = "android.jobscheduler.cts.jobperm.provider";
-    static final String JOBPERM_PERM = "android.jobscheduler.cts.jobperm.perm";
 
-    Uri mFirstUri;
-    Bundle mFirstUriBundle;
-    Uri mSecondUri;
-    Bundle mSecondUriBundle;
-    ClipData mFirstClipData;
-    ClipData mSecondClipData;
-
-    boolean mStorageStateChanged;
-    boolean mActivityStarted;
+    private boolean mStorageStateChanged;
+    private boolean mActivityStarted;
 
     private boolean mDeviceIdleEnabled;
     private boolean mDeviceLightIdleEnabled;
 
     private String mInitialBatteryStatsConstants;
+    private Instrumentation mInstrumentation;
+    private Context mContext;
 
     private void injectInstrumentation() {
         mInstrumentation = InstrumentationRegistry.getInstrumentation();
@@ -105,16 +90,6 @@ public abstract class BaseJobSchedulerTest {
         kTriggerContentServiceComponent = new ComponentName(getContext(),
                 TriggerContentJobService.class);
         mJobScheduler = (JobScheduler) getContext().getSystemService(Context.JOB_SCHEDULER_SERVICE);
-        mFirstUri = Uri.parse("content://" + JOBPERM_AUTHORITY + "/protected/foo");
-        mFirstUriBundle = new Bundle();
-        mFirstUriBundle.putParcelable("uri", mFirstUri);
-        mSecondUri = Uri.parse("content://" + JOBPERM_AUTHORITY + "/protected/bar");
-        mSecondUriBundle = new Bundle();
-        mSecondUriBundle.putParcelable("uri", mSecondUri);
-        mFirstClipData = new ClipData("JobPerm1", new String[] { "application/*" },
-                new ClipData.Item(mFirstUri));
-        mSecondClipData = new ClipData("JobPerm2", new String[] { "application/*" },
-                new ClipData.Item(mSecondUri));
         try {
             SystemUtil.runShellCommand(
                     mInstrumentation,
@@ -131,7 +106,7 @@ public abstract class BaseJobSchedulerTest {
         return mContext;
     }
 
-    protected Instrumentation getInstrumentation() {
+    public Instrumentation getInstrumentation() {
         return mInstrumentation;
     }
 
@@ -154,7 +129,7 @@ public abstract class BaseJobSchedulerTest {
 
         mDeviceIdleEnabled = isDeviceIdleEnabled();
         mDeviceLightIdleEnabled = isDeviceLightIdleEnabled();
-        if (mDeviceIdleEnabled || mDeviceLightIdleEnabled) {
+        if (isDeviceIdleFeatureEnabled()) {
             // Make sure the device isn't dozing since it will affect execution of regular jobs
             setDeviceIdleState(false);
         }
@@ -187,58 +162,21 @@ public abstract class BaseJobSchedulerTest {
             closeActivity();
         }
 
-        if (mDeviceIdleEnabled || mDeviceLightIdleEnabled) {
+        if (isDeviceIdleFeatureEnabled()) {
             resetDeviceIdleState();
         }
     }
 
-    public void assertHasUriPermission(Uri uri, int grantFlags) {
-        if ((grantFlags&Intent.FLAG_GRANT_READ_URI_PERMISSION) != 0) {
-            assertThat(
-                            getContext()
-                                    .checkUriPermission(
-                                            uri,
-                                            Process.myPid(),
-                                            Process.myUid(),
-                                            Intent.FLAG_GRANT_READ_URI_PERMISSION))
-                    .isEqualTo(PackageManager.PERMISSION_GRANTED);
-        }
-        if ((grantFlags & Intent.FLAG_GRANT_WRITE_URI_PERMISSION) != 0) {
-            assertThat(
-                            getContext()
-                                    .checkUriPermission(
-                                            uri,
-                                            Process.myPid(),
-                                            Process.myUid(),
-                                            Intent.FLAG_GRANT_WRITE_URI_PERMISSION))
-                    .isEqualTo(PackageManager.PERMISSION_GRANTED);
-        }
-    }
-
-    void waitPermissionRevoke(Uri uri, int access, long timeout) {
-        long startTime = SystemClock.elapsedRealtime();
-        while (getContext().checkUriPermission(uri, Process.myPid(), Process.myUid(), access)
-                != PackageManager.PERMISSION_DENIED) {
-            try {
-                Thread.sleep(50);
-            } catch (InterruptedException e) {
-            }
-            if ((SystemClock.elapsedRealtime() - startTime) >= timeout) {
-                assertWithMessage("Timed out waiting for permission revoke").fail();
-            }
-        }
-    }
-
-    boolean isDeviceIdleFeatureEnabled() throws Exception {
+    boolean isDeviceIdleFeatureEnabled() {
         return mDeviceIdleEnabled || mDeviceLightIdleEnabled;
     }
 
-    static boolean isDeviceIdleEnabled() throws Exception {
+    private static boolean isDeviceIdleEnabled() {
         final String output = SystemUtil.runShellCommand("cmd deviceidle enabled deep").trim();
         return Integer.parseInt(output) != 0;
     }
 
-    static boolean isDeviceLightIdleEnabled() throws Exception {
+    private static boolean isDeviceLightIdleEnabled() {
         final String output = SystemUtil.runShellCommand("cmd deviceidle enabled light").trim();
         return Integer.parseInt(output) != 0;
     }

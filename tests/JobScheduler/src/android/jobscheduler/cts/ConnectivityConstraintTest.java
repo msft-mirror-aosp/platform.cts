@@ -95,13 +95,13 @@ public final class ConnectivityConstraintTest extends BaseJobSchedulerTest {
         mCm = (ConnectivityManager) getContext().getSystemService(Context.CONNECTIVITY_SERVICE);
         mNetworkingHelper = new NetworkingHelper(getInstrumentation(), getContext());
 
-        PackageManager packageManager = mContext.getPackageManager();
+        PackageManager packageManager = getContext().getPackageManager();
         mHasWifi = packageManager.hasSystemFeature(PackageManager.FEATURE_WIFI);
         mBuilder = new JobInfo.Builder(CONNECTIVITY_JOB_ID, kJobServiceComponent);
 
         setDataSaverEnabled(false);
         mNetworkingHelper.setAllNetworksEnabled(true);
-        mUserHelper = new UserHelper(mContext);
+        mUserHelper = new UserHelper(getContext());
     }
 
     @Override
@@ -358,7 +358,7 @@ public final class ConnectivityConstraintTest extends BaseJobSchedulerTest {
             return;
         }
 
-        mTestAppInterface = new TestAppInterface(mContext, CONNECTIVITY_JOB_ID);
+        mTestAppInterface = new TestAppInterface(getContext(), CONNECTIVITY_JOB_ID);
         mTestAppInterface.startAndKeepTestActivity();
         toggleScreenOn(true);
 
@@ -465,7 +465,7 @@ public final class ConnectivityConstraintTest extends BaseJobSchedulerTest {
             return;
         }
 
-        mTestAppInterface = new TestAppInterface(mContext, CONNECTIVITY_JOB_ID);
+        mTestAppInterface = new TestAppInterface(getContext(), CONNECTIVITY_JOB_ID);
 
         mNetworkingHelper.setAllNetworksEnabled(true);
         toggleScreenOn(false);
@@ -499,7 +499,7 @@ public final class ConnectivityConstraintTest extends BaseJobSchedulerTest {
         }
         setDataSaverEnabled(true);
 
-        mTestAppInterface = new TestAppInterface(mContext, CONNECTIVITY_JOB_ID);
+        mTestAppInterface = new TestAppInterface(getContext(), CONNECTIVITY_JOB_ID);
         mTestAppInterface.startAndKeepTestActivity();
 
         mTestAppInterface.scheduleJob(false,  JobInfo.NETWORK_TYPE_ANY, true);
@@ -573,7 +573,7 @@ public final class ConnectivityConstraintTest extends BaseJobSchedulerTest {
         // To ensure the job doesn't start immediately after scheduling.
         mNetworkingHelper.setAllNetworksEnabled(false);
 
-        mTestAppInterface = new TestAppInterface(mContext, CONNECTIVITY_JOB_ID);
+        mTestAppInterface = new TestAppInterface(getContext(), CONNECTIVITY_JOB_ID);
         mTestAppInterface.scheduleJob(false, JobInfo.NETWORK_TYPE_ANY, false);
 
         mTestAppInterface.kill();
@@ -604,7 +604,7 @@ public final class ConnectivityConstraintTest extends BaseJobSchedulerTest {
         BatteryUtils.runDumpsysBatteryUnplug();
         BatteryUtils.enableBatterySaver(true);
 
-        mTestAppInterface = new TestAppInterface(mContext, CONNECTIVITY_JOB_ID);
+        mTestAppInterface = new TestAppInterface(getContext(), CONNECTIVITY_JOB_ID);
         // Put app in a valid state to schedule a UI job.
         mTestAppInterface.startAndKeepTestActivity();
         toggleScreenOn(true);
@@ -630,9 +630,9 @@ public final class ConnectivityConstraintTest extends BaseJobSchedulerTest {
         }
 
         try (TestNotificationListener.NotificationHelper notificationHelper =
-                     new TestNotificationListener.NotificationHelper(
-                             mContext, TestAppInterface.TEST_APP_PACKAGE)) {
-            mTestAppInterface = new TestAppInterface(mContext, CONNECTIVITY_JOB_ID);
+                new TestNotificationListener.NotificationHelper(
+                        getContext(), TestAppInterface.TEST_APP_PACKAGE)) {
+            mTestAppInterface = new TestAppInterface(getContext(), CONNECTIVITY_JOB_ID);
             // Put app in a valid state to schedule a UI job.
             mNetworkingHelper.setAllNetworksEnabled(true);
             toggleScreenOn(false);
@@ -670,7 +670,7 @@ public final class ConnectivityConstraintTest extends BaseJobSchedulerTest {
         disconnectWifiToConnectToMobile();
         setDataSaverEnabled(false);
 
-        mTestAppInterface = new TestAppInterface(mContext, CONNECTIVITY_JOB_ID);
+        mTestAppInterface = new TestAppInterface(getContext(), CONNECTIVITY_JOB_ID);
 
         mTestAppInterface.scheduleJob(false,  JobInfo.NETWORK_TYPE_CELLULAR, false);
 
@@ -725,7 +725,7 @@ public final class ConnectivityConstraintTest extends BaseJobSchedulerTest {
                         ),
                         OVERRIDE_COMPAT_CHANGE_CONFIG_ON_RELEASE_BUILD, INTERACT_ACROSS_USERS_FULL);
             }
-            mTestAppInterface = new TestAppInterface(mContext, CONNECTIVITY_JOB_ID);
+            mTestAppInterface = new TestAppInterface(getContext(), CONNECTIVITY_JOB_ID);
             mTestAppInterface.scheduleJob(
                     Collections.emptyMap(),
                     Map.of(
@@ -771,7 +771,7 @@ public final class ConnectivityConstraintTest extends BaseJobSchedulerTest {
         // Turn screen off so any lingering activity close processing from previous tests
         // don't affect this one.
         toggleScreenOn(false);
-        mTestAppInterface = new TestAppInterface(mContext, CONNECTIVITY_JOB_ID);
+        mTestAppInterface = new TestAppInterface(getContext(), CONNECTIVITY_JOB_ID);
         mTestAppInterface.scheduleJob(
                 Map.of(TestJobSchedulerReceiver.EXTRA_REQUEST_JOB_UID_STATE, true),
                 Map.of(
@@ -832,7 +832,7 @@ public final class ConnectivityConstraintTest extends BaseJobSchedulerTest {
         disconnectWifiToConnectToMobile();
         setDataSaverEnabled(true);
 
-        mTestAppInterface = new TestAppInterface(mContext, CONNECTIVITY_JOB_ID);
+        mTestAppInterface = new TestAppInterface(getContext(), CONNECTIVITY_JOB_ID);
 
         mTestAppInterface.scheduleJob(false,  JobInfo.NETWORK_TYPE_CELLULAR, false);
         mTestAppInterface.runSatisfiedJob();
@@ -855,7 +855,7 @@ public final class ConnectivityConstraintTest extends BaseJobSchedulerTest {
         disconnectWifiToConnectToMobile();
         setDataSaverEnabled(true);
 
-        mTestAppInterface = new TestAppInterface(mContext, CONNECTIVITY_JOB_ID);
+        mTestAppInterface = new TestAppInterface(getContext(), CONNECTIVITY_JOB_ID);
 
         mTestAppInterface.scheduleJob(false,  JobInfo.NETWORK_TYPE_CELLULAR, true);
         mTestAppInterface.runSatisfiedJob();
@@ -968,7 +968,7 @@ public final class ConnectivityConstraintTest extends BaseJobSchedulerTest {
         }
         setDataSaverEnabled(true);
 
-        mTestAppInterface = new TestAppInterface(mContext, CONNECTIVITY_JOB_ID);
+        mTestAppInterface = new TestAppInterface(getContext(), CONNECTIVITY_JOB_ID);
 
         mTestAppInterface.scheduleJob(false,  JobInfo.NETWORK_TYPE_ANY, true);
         mTestAppInterface.runSatisfiedJob();
@@ -1009,7 +1009,7 @@ public final class ConnectivityConstraintTest extends BaseJobSchedulerTest {
         BatteryUtils.enableBatterySaver(true);
         setDataSaverEnabled(true);
 
-        mTestAppInterface = new TestAppInterface(mContext, CONNECTIVITY_JOB_ID);
+        mTestAppInterface = new TestAppInterface(getContext(), CONNECTIVITY_JOB_ID);
 
         mTestAppInterface.scheduleJob(false,  JobInfo.NETWORK_TYPE_ANY, true);
         mTestAppInterface.runSatisfiedJob();
@@ -1046,11 +1046,11 @@ public final class ConnectivityConstraintTest extends BaseJobSchedulerTest {
         }
 
         try (TestNotificationListener.NotificationHelper notificationHelper =
-                     new TestNotificationListener.NotificationHelper(
-                             mContext, TestAppInterface.TEST_APP_PACKAGE)) {
+                new TestNotificationListener.NotificationHelper(
+                        getContext(), TestAppInterface.TEST_APP_PACKAGE)) {
             setDataSaverEnabled(true);
 
-            mTestAppInterface = new TestAppInterface(mContext, CONNECTIVITY_JOB_ID);
+            mTestAppInterface = new TestAppInterface(getContext(), CONNECTIVITY_JOB_ID);
             mTestAppInterface.closeActivity(true);
             mTestAppInterface.postUiInitiatingNotification(
                     Map.of(TestJobSchedulerReceiver.EXTRA_AS_USER_INITIATED, true),
@@ -1096,14 +1096,14 @@ public final class ConnectivityConstraintTest extends BaseJobSchedulerTest {
         }
 
         try (TestNotificationListener.NotificationHelper notificationHelper =
-                     new TestNotificationListener.NotificationHelper(
-                             mContext, TestAppInterface.TEST_APP_PACKAGE)) {
+                new TestNotificationListener.NotificationHelper(
+                        getContext(), TestAppInterface.TEST_APP_PACKAGE)) {
             setDataSaverEnabled(true);
 
             final int uiJobId = CONNECTIVITY_JOB_ID;
             final int expJobId = CONNECTIVITY_JOB_ID + 1;
             final int regJobId = CONNECTIVITY_JOB_ID + 2;
-            mTestAppInterface = new TestAppInterface(mContext, CONNECTIVITY_JOB_ID);
+            mTestAppInterface = new TestAppInterface(getContext(), CONNECTIVITY_JOB_ID);
             mTestAppInterface.closeActivity(true);
             // Regular job
             mTestAppInterface.scheduleJob(
