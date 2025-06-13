@@ -712,12 +712,6 @@
                   android:noHistory="true"
                   android:theme="@style/MoveAnimationTestTheme.NoMove"/>
 
-        <activity android:name="android.server.wm.MediaProjectionHelper$MediaProjectionActivity" />
-        <service
-            android:name="android.server.wm.MediaProjectionHelper$MediaProjectionService"
-            android:enabled="true"
-            android:foregroundServiceType="mediaProjection" />
-
         <activity android:name="android.server.wm.window.ScreenRecordingCallbackTests$ScreenRecordingCallbackActivity" />
     </application>
 

@@ -72,6 +72,7 @@ java_defaults {
         "cts-input-lib",
         "android.companion.flags-aconfig-java",
         "cts-wm-util",
+        "cts-mediaprojection-common",
         "CtsSurfaceValidatorLib",
         "CtsMockInputMethodLib",
         "CtsAccessibilityCommon",

@@ -32,11 +32,11 @@ import android.app.ActivityOptions;
 import android.app.ActivityOptions.LaunchCookie;
 import android.content.ComponentName;
 import android.content.Intent;
+import android.media.cts.MediaProjectionRule;
 import android.media.projection.MediaProjection;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
-import android.server.wm.MediaProjectionHelper;
 import android.server.wm.WindowManagerTestBase;
 import android.view.WindowManager;
 
@@ -47,7 +47,6 @@ import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.window.flags.Flags;
 
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -61,15 +60,17 @@ import java.util.function.Consumer;
 /**
  * CTS tests for {@link android.view.WindowManager#addScreenRecordingCallback}.
  *
- * Media Projection set up is handled by {@link android.server.wm.MediaProjectionHelper}. The
- * helper handles Media Projection authorization and foreground service requirements. For each test,
- * a new instance of MediaProjection is obtained through the Intent flow and a new instance of the
+ * <p>Media Projection set up is handled by {@link android.media.cts.MediaProjectionRule}. The rule
+ * handles Media Projection authorization and foreground service requirements. For each test, a new
+ * instance of MediaProjection is obtained through the Intent flow and a new instance of the
  * required foreground service is started.
  */
 public class ScreenRecordingCallbackTests extends WindowManagerTestBase {
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
+    @Rule public final MediaProjectionRule mMediaProjectionRule = new MediaProjectionRule();
 
     private static class TestableScreenRecordingCallback implements Consumer<Integer> {
         private final BlockingQueue<Integer> mQueue = new LinkedBlockingDeque<>();
@@ -111,19 +112,9 @@ public class ScreenRecordingCallbackTests extends WindowManagerTestBase {
         }
     }
 
-    private MediaProjectionHelper mMediaProjectionHelper = new MediaProjectionHelper();
-    private MediaProjection mMediaProjection = null;
-
     @Before
     public void checkAssumptions() {
         assumeFalse(isCar());
-    }
-
-    @After
-    public void stopMediaProjection() {
-        if (mMediaProjection != null) {
-            mMediaProjection.stop();
-        }
     }
 
     private ScreenRecordingCallbackActivity startCallbackActivityWithLaunchCookie(
@@ -169,19 +160,19 @@ public class ScreenRecordingCallbackTests extends WindowManagerTestBase {
     @ApiTest(apis = {"android.view.WindowManager#addScreenRecordingCallback",
             "android.view.WindowManager#removeScreenRecordingCallback"})
     @Test
-    public void testFullDisplayMediaProjectionStartsAfterActivity() throws InterruptedException {
-        mMediaProjectionHelper.authorizeMediaProjection();
+    public void testFullDisplayMediaProjectionStartsAfterActivity() throws Exception {
+        mMediaProjectionRule.authorizeMediaProjection(null);
         ScreenRecordingCallbackActivity activity = startActivity(
                 ScreenRecordingCallbackActivity.class);
 
         assertEquals("Expected app to not be visible in screen recording before media projection"
                 + " starts", SCREEN_RECORDING_STATE_NOT_VISIBLE, activity.mCallback.getState());
 
-        mMediaProjection = mMediaProjectionHelper.startMediaProjection();
+        MediaProjection mediaProjection = mMediaProjectionRule.newMediaProjectionSession();
         assertEquals("Expected app to be visible in screen recording after starting media"
                 + " projection", SCREEN_RECORDING_STATE_VISIBLE, activity.mCallback.getState());
 
-        mMediaProjection.stop();
+        mediaProjection.stop();
         assertEquals("Expected app to no longer be visible in screen recording after stopping media"
                 + " projection", SCREEN_RECORDING_STATE_NOT_VISIBLE, activity.mCallback.getState());
 
@@ -196,16 +187,15 @@ public class ScreenRecordingCallbackTests extends WindowManagerTestBase {
     @ApiTest(apis = {"android.view.WindowManager#addScreenRecordingCallback",
             "android.view.WindowManager#removeScreenRecordingCallback"})
     @Test
-    public void testFullDisplayMediaProjectionStartsBeforeActivity() throws InterruptedException {
-        mMediaProjectionHelper.authorizeMediaProjection();
-        mMediaProjection = mMediaProjectionHelper.startMediaProjection();
+    public void testFullDisplayMediaProjectionStartsBeforeActivity() throws Exception {
+        MediaProjection mediaProjection = mMediaProjectionRule.startMediaProjection();
 
         ScreenRecordingCallbackActivity activity = startActivity(
                 ScreenRecordingCallbackActivity.class);
         assertEquals("Expected app to be visible in screen recording when the app starts",
                 SCREEN_RECORDING_STATE_VISIBLE, activity.mCallback.getState());
 
-        mMediaProjection.stop();
+        mediaProjection.stop();
         assertEquals("Expected app to no longer be visible in screen recording after stopping media"
                 + " projection", SCREEN_RECORDING_STATE_NOT_VISIBLE, activity.mCallback.getState());
 
@@ -220,9 +210,8 @@ public class ScreenRecordingCallbackTests extends WindowManagerTestBase {
     @ApiTest(apis = {"android.view.WindowManager#addScreenRecordingCallback",
             "android.view.WindowManager#removeScreenRecordingCallback"})
     @Test
-    public void testFullDisplayMediaProjectionAppCallback() throws InterruptedException {
-        mMediaProjectionHelper.authorizeMediaProjection();
-        mMediaProjection = mMediaProjectionHelper.startMediaProjection();
+    public void testFullDisplayMediaProjectionAppCallback() throws Exception {
+        MediaProjection mediaProjection = mMediaProjectionRule.startMediaProjection();
 
         TestableScreenRecordingCallback callback = new TestableScreenRecordingCallback();
         WindowManager windowManager = mTargetContext.getSystemService(WindowManager.class);
@@ -235,7 +224,7 @@ public class ScreenRecordingCallbackTests extends WindowManagerTestBase {
         assertEquals("Expected app to be visible in screen recording after activity starts",
                 SCREEN_RECORDING_STATE_VISIBLE, callback.getState());
 
-        mMediaProjection.stop();
+        mediaProjection.stop();
         assertEquals(
                 "Expected app to not be visible in screen recording after media projection stops",
                 SCREEN_RECORDING_STATE_NOT_VISIBLE, callback.getState());
@@ -251,7 +240,7 @@ public class ScreenRecordingCallbackTests extends WindowManagerTestBase {
     @ApiTest(apis = {"android.view.WindowManager#addScreenRecordingCallback",
             "android.view.WindowManager#removeScreenRecordingCallback"})
     @Test
-    public void testPartialScreenSharingRecorded() throws InterruptedException {
+    public void testPartialScreenSharingRecorded() throws Exception {
         // The LaunchCookie is used to test partial screen sharing. In the typical Media
         // Projection flow, when a user selects partial screen sharing, their selected app is
         // launched into a new task with a specific launch cookie. Media Projection then records
@@ -259,7 +248,7 @@ public class ScreenRecordingCallbackTests extends WindowManagerTestBase {
         // we specify the launch cookie to record and then directly start an activity with that
         // launch cookie.
         ActivityOptions.LaunchCookie launchCookie = new ActivityOptions.LaunchCookie();
-        mMediaProjectionHelper.authorizeMediaProjection(launchCookie);
+        mMediaProjectionRule.authorizeMediaProjection(launchCookie);
         startCallbackActivityWithLaunchCookie(launchCookie);
 
         TestableScreenRecordingCallback callback = new TestableScreenRecordingCallback();
@@ -270,7 +259,7 @@ public class ScreenRecordingCallbackTests extends WindowManagerTestBase {
         assertEquals("Expected app to not be visible in screen recording before activity starts",
                 SCREEN_RECORDING_STATE_NOT_VISIBLE, initialState);
 
-        mMediaProjection = mMediaProjectionHelper.startMediaProjection();
+        MediaProjection mediaProjection = mMediaProjectionRule.newMediaProjectionSession();
         assertEquals("Expected app to be visible in screen recording after starting media"
                 + " projection", SCREEN_RECORDING_STATE_VISIBLE, callback.getState());
 
@@ -284,7 +273,7 @@ public class ScreenRecordingCallbackTests extends WindowManagerTestBase {
         assertEquals("Expected app to be visible in screen recording when activity resumed",
                 SCREEN_RECORDING_STATE_VISIBLE, callback.getState());
 
-        mMediaProjection.stop();
+        mediaProjection.stop();
         assertEquals("Expected app to not be visible in screen recording after media projection"
                 + " stops", SCREEN_RECORDING_STATE_NOT_VISIBLE, callback.getState());
 
@@ -299,7 +288,7 @@ public class ScreenRecordingCallbackTests extends WindowManagerTestBase {
     @ApiTest(apis = {"android.view.WindowManager#addScreenRecordingCallback",
             "android.view.WindowManager#removeScreenRecordingCallback"})
     @Test
-    public void testPartialScreenSharingNotRecorded() throws InterruptedException {
+    public void testPartialScreenSharingNotRecorded() throws Exception {
         assumeFalse(isWatch());
 
         // The LaunchCookie is used to test partial screen sharing. In the typical Media
@@ -309,9 +298,9 @@ public class ScreenRecordingCallbackTests extends WindowManagerTestBase {
         // we specify the launch cookie to record and then directly start an activity with that
         // launch cookie.
         LaunchCookie launchCookie = new LaunchCookie();
-        mMediaProjectionHelper.authorizeMediaProjection(launchCookie);
+        mMediaProjectionRule.authorizeMediaProjection(launchCookie);
         startExternalActivity(launchCookie);
-        mMediaProjection = mMediaProjectionHelper.startMediaProjection();
+        MediaProjection mediaProjection = mMediaProjectionRule.newMediaProjectionSession();
 
         ScreenRecordingCallbackActivity activity = startActivity(
                 ScreenRecordingCallbackActivity.class);
@@ -320,7 +309,7 @@ public class ScreenRecordingCallbackTests extends WindowManagerTestBase {
                         + "task", SCREEN_RECORDING_STATE_NOT_VISIBLE,
                 activity.mCallback.getState());
 
-        mMediaProjection.stop();
+        mediaProjection.stop();
 
         assertTrue(activity.mCallback.queueEmpty());
     }
