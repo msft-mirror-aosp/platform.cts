@@ -30,7 +30,6 @@ import android.os.HandlerThread;
 import android.os.Handler;
 import android.os.Build;
 import android.platform.test.annotations.AppModeFull;
-import android.test.AndroidTestCase;
 import androidx.test.filters.SdkSuppress;
 
 import android.view.Surface;

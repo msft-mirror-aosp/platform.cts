@@ -24,12 +24,18 @@ import android.media.cts.MediaCodecBlockModelHelper;
 import android.os.Build;
 import android.os.ParcelFileDescriptor;
 import android.platform.test.annotations.AppModeFull;
-import android.test.AndroidTestCase;
+
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.filters.SmallTest;
 
 import com.android.compatibility.common.util.ApiLevelUtil;
+import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.FrameworkSpecificTest;
 import com.android.compatibility.common.util.MediaUtils;
 import com.android.compatibility.common.util.Preconditions;
+
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -41,7 +47,8 @@ import java.util.UUID;
  */
 @FrameworkSpecificTest
 @AppModeFull(reason = "Instant apps cannot access the SD card")
-public class MediaDrmCodecBlockModelTest extends AndroidTestCase {
+@RunWith(AndroidJUnit4.class)
+public class MediaDrmCodecBlockModelTest {
     private static final String TAG = "MediaDrmCodecBlockModelTest";
     private static final boolean VERBOSE = false;           // lots of logging
 
@@ -62,6 +69,9 @@ public class MediaDrmCodecBlockModelTest extends AndroidTestCase {
      * The test queues a few encrypted video frames
      * then signals end-of-stream. The test fails if the decoder doesn't output the queued frames.
      */
+    @SmallTest
+    @ApiTest(apis = "MediaCodec#CONFIGURE_FLAG_USE_BLOCK_MODEL")
+    @Test
     public void testDecodeShortEncryptedVideo() throws InterruptedException {
         if (!MediaUtils.check(mIsAtLeastR, "test needs Android 11")) return;
         MediaCodecBlockModelHelper.runThread(() -> runDecodeShortEncryptedVideo(
