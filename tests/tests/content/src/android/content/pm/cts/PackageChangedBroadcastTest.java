@@ -17,7 +17,6 @@
 package android.content.pm.cts;
 
 import static android.content.Context.RECEIVER_EXPORTED;
-import static android.content.pm.Flags.FLAG_REDUCE_BROADCASTS_FOR_COMPONENT_STATE_CHANGES;
 import static android.content.pm.PackageManager.COMPONENT_ENABLED_STATE_ENABLED;
 import static android.content.pm.PackageManager.DONT_KILL_APP;
 import static android.os.Process.myUserHandle;
@@ -39,10 +38,6 @@ import android.os.Bundle;
 import android.os.RemoteCallback;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.AppModeNonSdkSandbox;
-import android.platform.test.annotations.RequiresFlagsDisabled;
-import android.platform.test.annotations.RequiresFlagsEnabled;
-import android.platform.test.flag.junit.CheckFlagsRule;
-import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.text.TextUtils;
 import android.util.Log;
 
@@ -53,7 +48,6 @@ import com.android.compatibility.common.util.SystemUtil;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -89,9 +83,6 @@ public class PackageChangedBroadcastTest {
             "android.content.cts.packagechangedtestapp.shareduserid";
     private static final String PACKAGE_CHANGED_SHARED_USER_ID_TEST_MAIN_ACTIVITY =
             PACKAGE_CHANGED_SHARED_USER_ID_TEST_APP_PACKAGE_NAME + ".MainActivity";
-
-    @Rule
-    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private Context mContext;
     private PackageManager mPackageManager;
@@ -154,7 +145,6 @@ public class PackageChangedBroadcastTest {
                 "RECEIVE PACKAGE CHANGED BROADCAST");
     }
 
-    @RequiresFlagsEnabled(FLAG_REDUCE_BROADCASTS_FOR_COMPONENT_STATE_CHANGES)
     @Test
     public void changeNonExportedComponent_otherApplication_shouldNotReceiveBroadcast()
             throws Exception {
@@ -162,16 +152,6 @@ public class PackageChangedBroadcastTest {
                 PACKAGE_CHANGED_TEST_APP_NON_EXPORTED_ACTIVITY);
         testChangeComponentAndVerifyPackageChangedBroadcast(componentName,
                 false /* receiveBroadcast */);
-    }
-
-    @RequiresFlagsDisabled(FLAG_REDUCE_BROADCASTS_FOR_COMPONENT_STATE_CHANGES)
-    @Test
-    public void changeNonExportedComponent_otherApplication_shouldReceiveBroadcast()
-            throws Exception {
-        final ComponentName componentName = new ComponentName(PACKAGE_CHANGED_TEST_APP_PACKAGE_NAME,
-                PACKAGE_CHANGED_TEST_APP_NON_EXPORTED_ACTIVITY);
-        testChangeComponentAndVerifyPackageChangedBroadcast(componentName,
-                true /* receiveBroadcast */);
     }
 
     @Test
@@ -182,7 +162,6 @@ public class PackageChangedBroadcastTest {
                 true /* receiveBroadcast */);
     }
 
-    @RequiresFlagsEnabled(FLAG_REDUCE_BROADCASTS_FOR_COMPONENT_STATE_CHANGES)
     @Test
     public void changeNonExportedComponentState_shareTheSameUid_shouldReceiveBroadcast()
             throws Exception {
