@@ -49,7 +49,6 @@ public final class CompatChangesValidConfigTest extends CompatChangeGatingTestCa
 
     private static final Set<String> OVERRIDABLE_CHANGES =
             ImmutableSet.of(
-                    // keep-sorted start
                     "ALWAYS_SANDBOX_DISPLAY_APIS",
                     "ASM_RESTRICTIONS",
                     "BLOCK_MUTABLE_IMPLICIT_PENDING_INTENT",
@@ -136,9 +135,27 @@ public final class CompatChangesValidConfigTest extends CompatChangeGatingTestCa
                     "RETURN_DEVICE_VOLUME_BEHAVIOR_ABSOLUTE_ADJUST_ONLY",
                     "RO_DCL_CHANGE_ID",
                     "SEND_CHOOSER_RESULT",
-                    "UNIVERSAL_RESIZABLE_BY_DEFAULT"
-                    // keep-sorted end
-                    );
+                    "UNIVERSAL_RESIZABLE_BY_DEFAULT",
+                    "ENABLE_HARDCODED_XR_APP_COMPAT_OVERRIDES",
+                    "LIMIT_REAR_CAMERA_AVAILABLE_STREAM_RESOLUTIONS",
+                    "OVERRIDE_REAR_CAMERA_CAMERA_CHARACTERISTICS_ROTATE_90",
+                    "OVERRIDE_REAR_CAMERA_CAMERA_CHARACTERISTICS_ROTATE_180",
+                    "OVERRIDE_REAR_CAMERA_CAMERA_CHARACTERISTICS_ROTATE_270",
+                    "OVERRIDE_REAR_CAMERA_SURFACE_TRANSFORM_FLIP_HORIZONTAL",
+                    "OVERRIDE_REAR_CAMERA_SURFACE_TRANSFORM_FLIP_VERTICAL",
+                    "OVERRIDE_REAR_CAMERA_SURFACE_TRANSFORM_ROTATE_90",
+                    "OVERRIDE_REAR_CAMERA_CONFIGURE_STREAMS_ROTATE_90",
+                    "OVERRIDE_REAR_CAMERA_CONFIGURE_STREAMS_ROTATE_180",
+                    "OVERRIDE_REAR_CAMERA_CONFIGURE_STREAMS_ROTATE_270",
+                    "OVERRIDE_FRONT_CAMERA_CAMERA_CHARACTERISTICS_ROTATE_90",
+                    "OVERRIDE_FRONT_CAMERA_CAMERA_CHARACTERISTICS_ROTATE_180",
+                    "OVERRIDE_FRONT_CAMERA_CAMERA_CHARACTERISTICS_ROTATE_270",
+                    "OVERRIDE_FRONT_CAMERA_SURFACE_TRANSFORM_FLIP_HORIZONTAL",
+                    "OVERRIDE_FRONT_CAMERA_SURFACE_TRANSFORM_FLIP_VERTICAL",
+                    "OVERRIDE_FRONT_CAMERA_SURFACE_TRANSFORM_ROTATE_90",
+                    "OVERRIDE_FRONT_CAMERA_CONFIGURE_STREAMS_ROTATE_90",
+                    "OVERRIDE_FRONT_CAMERA_CONFIGURE_STREAMS_ROTATE_180",
+                    "OVERRIDE_FRONT_CAMERA_CONFIGURE_STREAMS_ROTATE_270");
 
     /**
      * Check that there are no overrides.
