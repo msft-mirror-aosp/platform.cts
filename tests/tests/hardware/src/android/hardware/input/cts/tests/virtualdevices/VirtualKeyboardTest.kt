@@ -15,14 +15,18 @@
  */
 package android.hardware.input.cts.tests.virtualdevices
 
+import android.hardware.input.InputManager
 import android.hardware.input.VirtualKeyEvent
 import android.hardware.input.VirtualKeyboard
 import android.hardware.input.cts.virtualcreators.VirtualInputDeviceCreator
 import android.hardware.input.cts.virtualcreators.VirtualInputEventCreator
+import android.platform.test.annotations.RequiresFlagsEnabled
+import android.view.InputDevice
 import android.view.InputEvent
 import android.view.KeyEvent
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.SmallTest
+import com.google.common.truth.Truth.assertThat
 import org.junit.Assert.assertThrows
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -37,6 +41,19 @@ class VirtualKeyboardTest : VirtualDeviceTestCase() {
             mVirtualDevice,
             DEVICE_NAME, mVirtualDisplay.display
         ).device
+    }
+
+    @RequiresFlagsEnabled(com.android.hardware.input.Flags.FLAG_CREATE_VIRTUAL_KEYBOARD_API)
+    @Test
+    fun hasInputDeviceId() {
+        val inputManager: InputManager =
+            mInstrumentation.context.getSystemService(InputManager::class.java)
+        val keyboardId: Int = mVirtualKeyboard.inputDeviceId
+        assertThat(inputManager.inputDeviceIds.asList()).contains(keyboardId)
+
+        val inputDevice: InputDevice = inputManager.getInputDevice(keyboardId)!!
+        assertThat(inputDevice.name).isEqualTo(DEVICE_NAME)
+        assertThat(inputDevice.associatedDisplayId).isEqualTo(mVirtualDisplay.display.displayId)
     }
 
     @Test
