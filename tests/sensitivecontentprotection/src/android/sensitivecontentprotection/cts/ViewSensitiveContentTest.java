@@ -29,6 +29,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
+import android.media.cts.MediaProjectionRule;
 import android.media.projection.MediaProjection;
 import android.os.UserManager;
 import android.platform.test.annotations.AppModeFull;
@@ -55,8 +56,10 @@ import org.junit.runner.RunWith;
 @AppModeFull
 public class ViewSensitiveContentTest {
     private Context mContext;
-    private final SensitiveContentMediaProjectionHelper mMediaProjectionHelper =
-            new SensitiveContentMediaProjectionHelper();
+
+    @Rule
+    public MediaProjectionRule mMediaProjectionRule = new MediaProjectionRule();
+
     @Rule
     public TestName mName = new TestName();
 
@@ -70,7 +73,7 @@ public class ViewSensitiveContentTest {
     }
 
     @Before
-    public void setup() {
+    public void setup() throws Exception {
         mContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
         // TODO: b/331064496 - projection service isn't started on auto
         assumeFalse(isAutomotive());
@@ -78,7 +81,7 @@ public class ViewSensitiveContentTest {
                 + "which aren't supported in headless",
                 isHeadlessSystemUser(mContext));
 
-        startMediaProjection();
+        mMediaProjectionRule.startMediaProjection();
         // make sure no toast when a test starts
         SystemUtil.eventually(() -> {
             assertThat(ToastVerifier.Companion.waitForNoToast()).isTrue();
@@ -158,16 +161,6 @@ public class ViewSensitiveContentTest {
                      ActivityScenario.launch(intent)) {
             verifyScreenCapture(activityScenario);
         }
-    }
-
-    private void startMediaProjection() {
-        UiAutomation uiAutomation = androidx.test.platform.app.InstrumentationRegistry
-                .getInstrumentation().getUiAutomation();
-        uiAutomation.adoptShellPermissionIdentity();
-
-        mMediaProjectionHelper.authorizeMediaProjection();
-        MediaProjection mediaProjection = mMediaProjectionHelper.startMediaProjection();
-        assertThat(mediaProjection).isNotNull();
     }
 
     private void verifyScreenCapture(ActivityScenario<? extends Activity> activityScenario) {

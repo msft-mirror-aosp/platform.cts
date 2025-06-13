@@ -27,6 +27,7 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.graphics.Color
 import android.graphics.drawable.Icon
+import android.media.cts.MediaProjectionRule
 import android.os.UserManager
 import android.permission.flags.Flags
 import android.platform.test.annotations.AppModeFull
@@ -55,7 +56,6 @@ import org.junit.runner.RunWith
 @AppModeFull(reason = "Notification Listeners are not supported for instant apps")
 class SensitiveNotificationAppHidingTest {
     private val TAG = SensitiveNotificationAppHidingTest::class.java.simpleName
-    private val mediaProjectionHelper = SensitiveContentMediaProjectionHelper()
     private val uiAutomation = InstrumentationRegistry.getInstrumentation().uiAutomation
     private val groupKey =
         "SensitiveNotificationAppHidingTest begun at " + System.currentTimeMillis()
@@ -67,6 +67,8 @@ class SensitiveNotificationAppHidingTest {
     private var previousAssistant: String? = null
 
     @JvmField @Rule val checkFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
+
+    @JvmField @Rule val mediaProjectionRule = MediaProjectionRule()
 
     @JvmField @Rule var testName = TestName()
 
@@ -207,8 +209,7 @@ class SensitiveNotificationAppHidingTest {
         sendSensitiveNotification()
 
         uiAutomation.adoptShellPermissionIdentity()
-        mediaProjectionHelper.authorizeMediaProjection()
-        val mediaProjection = mediaProjectionHelper.startMediaProjection()
+        val mediaProjection = mediaProjectionRule.startMediaProjection()
         Truth.assertThat(mediaProjection).isNotNull()
         ActivityScenario.launch(SimpleActivity::class.java).use { activityScenario ->
             verifyScreenCaptureProtected(activityScenario)
@@ -225,8 +226,7 @@ class SensitiveNotificationAppHidingTest {
         sendSensitiveNotification()
 
         uiAutomation.adoptShellPermissionIdentity()
-        mediaProjectionHelper.authorizeMediaProjection()
-        val mediaProjection = mediaProjectionHelper.startMediaProjection()
+        val mediaProjection = mediaProjectionRule.startMediaProjection()
         Truth.assertThat(mediaProjection).isNotNull()
         ActivityScenario.launch(SimpleActivity::class.java).use { activityScenario ->
             try {
@@ -249,8 +249,7 @@ class SensitiveNotificationAppHidingTest {
     @RequiresFlagsEnabled(Flags.FLAG_SENSITIVE_NOTIFICATION_APP_PROTECTION)
     fun testScreenCaptureIsBlocked_notifyAfterAppLaunch() {
         uiAutomation.adoptShellPermissionIdentity()
-        mediaProjectionHelper.authorizeMediaProjection()
-        val mediaProjection = mediaProjectionHelper.startMediaProjection()
+        val mediaProjection = mediaProjectionRule.startMediaProjection()
         Truth.assertThat(mediaProjection).isNotNull()
         ActivityScenario.launch(SimpleActivity::class.java).use { activityScenario ->
             verifyScreenCaptureNotProtected(activityScenario)
@@ -267,8 +266,7 @@ class SensitiveNotificationAppHidingTest {
     )
     fun testScreenCaptureIsBlocked_notifyAfterAppLaunch_withToast() {
         uiAutomation.adoptShellPermissionIdentity()
-        mediaProjectionHelper.authorizeMediaProjection()
-        val mediaProjection = mediaProjectionHelper.startMediaProjection()
+        val mediaProjection = mediaProjectionRule.startMediaProjection()
         Truth.assertThat(mediaProjection).isNotNull()
         ActivityScenario.launch(SimpleActivity::class.java).use { activityScenario ->
             verifyScreenCaptureNotProtected(activityScenario)
@@ -293,8 +291,7 @@ class SensitiveNotificationAppHidingTest {
     @RequiresFlagsEnabled(Flags.FLAG_SENSITIVE_NOTIFICATION_APP_PROTECTION)
     fun testScreenCaptureIsBlocked_notifyAppInBackground() {
         uiAutomation.adoptShellPermissionIdentity()
-        mediaProjectionHelper.authorizeMediaProjection()
-        val mediaProjection = mediaProjectionHelper.startMediaProjection()
+        val mediaProjection = mediaProjectionRule.startMediaProjection()
         Truth.assertThat(mediaProjection).isNotNull()
         ActivityScenario.launch(SimpleActivity::class.java).use { activityScenario ->
             verifyScreenCaptureNotProtected(activityScenario)
@@ -318,8 +315,7 @@ class SensitiveNotificationAppHidingTest {
     )
     fun testScreenCaptureIsBlocked_notifyAppInBackground_withToast() {
         uiAutomation.adoptShellPermissionIdentity()
-        mediaProjectionHelper.authorizeMediaProjection()
-        val mediaProjection = mediaProjectionHelper.startMediaProjection()
+        val mediaProjection = mediaProjectionRule.startMediaProjection()
         Truth.assertThat(mediaProjection).isNotNull()
         ActivityScenario.launch(SimpleActivity::class.java).use { activityScenario ->
             verifyScreenCaptureNotProtected(activityScenario)
@@ -346,8 +342,7 @@ class SensitiveNotificationAppHidingTest {
         sendSensitiveNotification()
 
         uiAutomation.adoptShellPermissionIdentity()
-        mediaProjectionHelper.authorizeMediaProjection()
-        val mediaProjection = mediaProjectionHelper.startMediaProjection()
+        val mediaProjection = mediaProjectionRule.startMediaProjection()
         Truth.assertThat(mediaProjection).isNotNull()
         ActivityScenario.launch(SimpleActivity::class.java).use { activityScenario ->
             mediaProjection.stop()
@@ -366,8 +361,7 @@ class SensitiveNotificationAppHidingTest {
         sendSensitiveNotification()
 
         uiAutomation.adoptShellPermissionIdentity()
-        mediaProjectionHelper.authorizeMediaProjection()
-        val mediaProjection = mediaProjectionHelper.startMediaProjection()
+        val mediaProjection = mediaProjectionRule.startMediaProjection()
         Truth.assertThat(mediaProjection).isNotNull()
         ActivityScenario.launch(SimpleFlagSecureActivity::class.java).use { activityScenario ->
             mediaProjection.stop()

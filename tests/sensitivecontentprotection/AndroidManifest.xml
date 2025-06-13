@@ -83,12 +83,6 @@
             </intent-filter>
         </activity>
 
-        <activity android:name="android.sensitivecontentprotection.cts.SensitiveContentMediaProjectionHelper$MediaProjectionActivity" />
-        <service
-            android:name="android.sensitivecontentprotection.cts.SensitiveContentMediaProjectionHelper$MediaProjectionService"
-            android:enabled="true"
-            android:foregroundServiceType="mediaProjection" />
-
     </application>
 
     <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner"
