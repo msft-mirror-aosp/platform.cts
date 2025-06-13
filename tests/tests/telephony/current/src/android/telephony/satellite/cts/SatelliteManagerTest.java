@@ -27,7 +27,6 @@ import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
-import static org.junit.Assume.assumeFalse;
 
 import android.content.Context;
 import android.content.Intent;
@@ -1003,7 +1002,6 @@ public class SatelliteManagerTest extends SatelliteManagerTestBase {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ROAMING_NB_IOT_NTN)
     public void testRequestSatelliteSubscriberProvisionStatus() {
         if (!shouldTestSatellite()) return;
 
@@ -1034,7 +1032,6 @@ public class SatelliteManagerTest extends SatelliteManagerTestBase {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ROAMING_NB_IOT_NTN)
     public void testRequestSatelliteDisplayName() {
         if (!shouldTestSatellite()) return;
 
@@ -1060,7 +1057,6 @@ public class SatelliteManagerTest extends SatelliteManagerTestBase {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ROAMING_NB_IOT_NTN)
     public void testProvisionSatellite() {
         if (!shouldTestSatellite()) return;
 
@@ -1101,7 +1097,6 @@ public class SatelliteManagerTest extends SatelliteManagerTestBase {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ROAMING_NB_IOT_NTN)
     public void testSendIntent_ActionSatelliteSubscribersChanged() {
         if (!shouldTestSatellite()) return;
 

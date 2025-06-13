@@ -1674,7 +1674,6 @@ public class TelephonyCallbackTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ROAMING_NB_IOT_NTN)
     @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have permissions to register the callback")
     public void testOnCarrierRoamingNtnEligible() throws Throwable {
         assertFalse(mOnCarrierRoamingNtnEligibleCalled);
@@ -1692,7 +1691,6 @@ public class TelephonyCallbackTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ROAMING_NB_IOT_NTN)
     @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have permissions to register the callback")
     public void testOnCarrierRoamingNtnAvailableServices() throws Throwable {
         assertFalse(mOnCarrierRoamingNtnAvailableServiceCalled);
@@ -1711,7 +1709,6 @@ public class TelephonyCallbackTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ROAMING_NB_IOT_NTN)
     @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have permissions to register the callback")
     public void testOnCarrierRoamingNtnSignalStrengthChanged() throws Throwable {
         assertFalse(mOnCarrierRoamingNtnSignalStrengthCalled);

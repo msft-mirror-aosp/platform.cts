@@ -1006,7 +1006,6 @@ public class TelephonyRegistryManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ROAMING_NB_IOT_NTN)
     public void testCarrierRoamingNtnEligible() throws Exception {
         CarrierRoamingNtnListener listener = new CarrierRoamingNtnListener();
 
@@ -1045,7 +1044,6 @@ public class TelephonyRegistryManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ROAMING_NB_IOT_NTN)
     public void testCarrierRoamingNtnAvailableServices() throws Exception {
         CarrierRoamingNtnListener listener = new CarrierRoamingNtnListener();
 
@@ -1085,7 +1083,6 @@ public class TelephonyRegistryManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ROAMING_NB_IOT_NTN)
     public void testCarrierRoamingNtnSignalStrengthChanged() throws Exception {
         CarrierRoamingNtnListener listener = new CarrierRoamingNtnListener();
 
