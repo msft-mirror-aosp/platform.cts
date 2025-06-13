@@ -116,9 +116,9 @@ open class UinputTouchDevice(
      * [touchDown] to start tracking a pointer in screen (a.k.a. logical display)
      * coordinate space.
      */
-    fun sendDown(id: Int, physicalLocation: Point) {
-        uinputDevice.injectEvents(EV_ABS, ABS_MT_SLOT, id)
-        uinputDevice.injectEvents(EV_ABS, ABS_MT_TRACKING_ID, id)
+    fun sendDown(slot: Int, physicalLocation: Point) {
+        uinputDevice.injectEvents(EV_ABS, ABS_MT_SLOT, slot)
+        uinputDevice.injectEvents(EV_ABS, ABS_MT_TRACKING_ID, slot)
         uinputDevice.injectEvents(EV_ABS, ABS_MT_TOOL_TYPE, defaultToolType)
         uinputDevice.injectEvents(EV_ABS, ABS_MT_POSITION_X, physicalLocation.x)
         uinputDevice.injectEvents(EV_ABS, ABS_MT_POSITION_Y, physicalLocation.y)
@@ -130,30 +130,30 @@ open class UinputTouchDevice(
      * Note: The [physicalLocation] parameter is specified in the touch device's
      * raw coordinate space, and does not factor display rotation or scaling.
     */
-    fun sendMove(id: Int, physicalLocation: Point) {
-        uinputDevice.injectEvents(EV_ABS, ABS_MT_SLOT, id)
+    fun sendMove(slot: Int, physicalLocation: Point) {
+        uinputDevice.injectEvents(EV_ABS, ABS_MT_SLOT, slot)
         uinputDevice.injectEvents(EV_ABS, ABS_MT_POSITION_X, physicalLocation.x)
         uinputDevice.injectEvents(EV_ABS, ABS_MT_POSITION_Y, physicalLocation.y)
     }
 
-    fun sendUp(id: Int) {
-        uinputDevice.injectEvents(EV_ABS, ABS_MT_SLOT, id)
+    fun sendUp(slot: Int) {
+        uinputDevice.injectEvents(EV_ABS, ABS_MT_SLOT, slot)
         uinputDevice.injectEvents(EV_ABS, ABS_MT_TRACKING_ID, INVALID_MT_TRACKING_ID)
     }
 
-    fun sendToolType(id: Int, toolType: Int) {
-        uinputDevice.injectEvents(EV_ABS, ABS_MT_SLOT, id)
+    fun sendToolType(slot: Int, toolType: Int) {
+        uinputDevice.injectEvents(EV_ABS, ABS_MT_SLOT, slot)
         uinputDevice.injectEvents(EV_ABS, ABS_MT_TOOL_TYPE, toolType)
     }
 
-    fun sendTouchDimensions(id: Int, major: Int, minor: Int) {
-        uinputDevice.injectEvents(EV_ABS, ABS_MT_SLOT, id)
+    fun sendTouchDimensions(slot: Int, major: Int, minor: Int) {
+        uinputDevice.injectEvents(EV_ABS, ABS_MT_SLOT, slot)
         uinputDevice.injectEvents(EV_ABS, ABS_MT_TOUCH_MAJOR, major)
         uinputDevice.injectEvents(EV_ABS, ABS_MT_TOUCH_MINOR, minor)
     }
 
-    fun sendToolDimensions(id: Int, major: Int, minor: Int) {
-        uinputDevice.injectEvents(EV_ABS, ABS_MT_SLOT, id)
+    fun sendToolDimensions(slot: Int, major: Int, minor: Int) {
+        uinputDevice.injectEvents(EV_ABS, ABS_MT_SLOT, slot)
         uinputDevice.injectEvents(EV_ABS, ABS_MT_WIDTH_MAJOR, major)
         uinputDevice.injectEvents(EV_ABS, ABS_MT_WIDTH_MINOR, minor)
     }
