@@ -33,6 +33,7 @@ import static android.telephony.satellite.SatelliteManager.SATELLITE_RESULT_SUCC
 import static com.android.internal.telephony.satellite.SatelliteController.TIMEOUT_TYPE_DEMO_POINTING_ALIGNED_DURATION_MILLIS;
 import static com.android.internal.telephony.satellite.SatelliteController.TIMEOUT_TYPE_DEMO_POINTING_NOT_ALIGNED_DURATION_MILLIS;
 import static com.android.internal.telephony.satellite.SatelliteController.TIMEOUT_TYPE_EVALUATE_ESOS_PROFILES_PRIORITIZATION_DURATION_MILLIS;
+import static com.android.internal.telephony.satellite.SatelliteController.TIMEOUT_TYPE_LAST_EMERGENCY_CALL_TIME;
 import static com.android.internal.telephony.satellite.SatelliteController.TIMEOUT_TYPE_WAIT_FOR_SATELLITE_ENABLING_RESPONSE;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -620,7 +621,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         assertTrue(sMockSatelliteServiceManager.restoreSatellitePointingUiClassName());
     }
 
-    @Ignore("b/422763846 - This test is flaky. Need to fix and re-enable it.")
     @Test
     public void testSatelliteRequestEnabled() throws Exception {
         logd("testSatelliteRequestEnabled");
@@ -630,6 +630,9 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         LocationSettingBroadcastReceiver locationSettingReceiver =
                 registerLocationSettingReceiver(getContext());
         logd("testSatelliteRequestEnabled: locationSettingReceiver registered");
+        assertTrue(
+                sMockSatelliteServiceManager.setSatelliteControllerTimeoutDuration(
+                        true, TIMEOUT_TYPE_LAST_EMERGENCY_CALL_TIME, 0));
 
         /*
          * When the LocationManager is disabled :
@@ -5603,7 +5606,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         revokeSatellitePermission();
     }
 
-    @Ignore("b/422763846 - This test is flaky. Need to fix and re-enable it.")
     @Test
     public void testSatelliteLocationSettingsEnabledDisabled() {
         logd("testSatelliteLocationSettingsEnabledDisabled");
@@ -5616,6 +5618,9 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
                 "testSatelliteLocationSettingsEnabledDisabled: "
                         + "resetSatelliteAccessControlOverlayConfigs");
         resetSatelliteAccessControlOverlayConfigs();
+        assertTrue(
+                sMockSatelliteServiceManager.setSatelliteControllerTimeoutDuration(
+                        true, TIMEOUT_TYPE_LAST_EMERGENCY_CALL_TIME, 0));
         grantSatellitePermission();
 
         logd("testSatelliteLocationSettingsEnabledDisabled: disable cache");
