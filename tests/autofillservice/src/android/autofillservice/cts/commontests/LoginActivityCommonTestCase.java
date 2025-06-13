@@ -18,6 +18,7 @@ package android.autofillservice.cts.commontests;
 
 import static android.autofillservice.cts.testcore.CannedFillResponse.NO_MOAR_RESPONSES;
 import static android.autofillservice.cts.testcore.CannedFillResponse.NO_RESPONSE;
+import static android.autofillservice.cts.testcore.Helper.AutofillCriticalInternal;
 import static android.autofillservice.cts.testcore.Helper.ID_PASSWORD;
 import static android.autofillservice.cts.testcore.Helper.ID_USERNAME;
 import static android.autofillservice.cts.testcore.Helper.assertTextIsSanitized;
@@ -51,6 +52,7 @@ public abstract class LoginActivityCommonTestCase extends AbstractLoginActivityT
         super(inlineUiBot);
     }
 
+    @AutofillCriticalInternal
     @Test
     public void testAutoFillNoDatasets() throws Exception {
         // Set service.
@@ -75,6 +77,7 @@ public abstract class LoginActivityCommonTestCase extends AbstractLoginActivityT
     }
 
     @Presubmit
+    @AutofillCriticalInternal
     @Test
     public void testAutoFillNoDatasets_multipleFields_alwaysNull() throws Exception {
         // Set service.
@@ -102,12 +105,14 @@ public abstract class LoginActivityCommonTestCase extends AbstractLoginActivityT
     }
 
     @Presubmit
+    @AutofillCriticalInternal
     @Test
     public void testAutofill_oneDataset() throws Exception {
         testBasicLoginAutofill(/* numDatasets= */ 1, /* selectedDatasetIndex= */ 0);
     }
 
     @Presubmit
+    @AutofillCriticalInternal
     @Test
     public void testAutofill_twoDatasets_selectFirstDataset() throws Exception {
         testBasicLoginAutofill(/* numDatasets= */ 2, /* selectedDatasetIndex= */ 0);
@@ -115,6 +120,7 @@ public abstract class LoginActivityCommonTestCase extends AbstractLoginActivityT
     }
 
     @Presubmit
+    @AutofillCriticalInternal
     @Test
     public void testAutofill_twoDatasets_selectSecondDataset() throws Exception {
         testBasicLoginAutofill(/* numDatasets= */ 2, /* selectedDatasetIndex= */ 1);
@@ -310,6 +316,7 @@ public abstract class LoginActivityCommonTestCase extends AbstractLoginActivityT
     }
 
     @Presubmit
+    @AutofillCriticalInternal
     @Test
     public void testResponseFirstAfterResponseSecond() throws Exception {
         // Set service
