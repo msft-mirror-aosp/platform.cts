@@ -356,6 +356,8 @@ public class SatelliteManagerTestBase {
         @Override
         public void onSendDatagramStateChanged(
                 int datagramType, int state, int sendPendingCount, int errorCode) {
+            SatelliteTransmissionUpdateCallback.super.onSendDatagramStateChanged(
+                    datagramType, state, sendPendingCount, errorCode);
             logd("onSendDatagramStateChanged:datagramType=" + datagramType + ", state=" + state
                     + ", sendPendingCount=" + sendPendingCount + ", errorCode=" + errorCode);
             synchronized (mSendDatagramStateChangesLock) {
@@ -389,6 +391,7 @@ public class SatelliteManagerTestBase {
 
         @Override
         public void onSendDatagramRequested(int datagramType) {
+            SatelliteTransmissionUpdateCallback.super.onSendDatagramRequested(datagramType);
             logd("onSendDatagramRequested: datagramType=" + datagramType);
             synchronized (mSendDatagramRequestedLock) {
                 mSendDatagramRequestedList.add(datagramType);
