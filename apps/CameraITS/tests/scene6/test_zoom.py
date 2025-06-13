@@ -32,6 +32,7 @@ _NAME = os.path.splitext(os.path.basename(__file__))[0]
 _NUM_STEPS = 10
 _TEST_FORMATS = ['yuv']  # list so can be appended for newer Android versions
 _TEST_REQUIRED_MPC = 33
+_SAVE_IMAGE_DELAY = 5  # empirically determined
 _SINGLE_CAMERA_NUMBER_OF_CAMERAS_TO_TEST = 1
 _ULTRAWIDE_NUMBER_OF_CAMERAS_TO_TEST = 2  # UW and W
 # Wider zoom ratio range will be tested by test_zoom_tele
@@ -133,7 +134,8 @@ class ZoomTest(its_base_test.UiAutomatorItsBaseTest):
           self.log_path,
           flash_mode_desc=ui_interaction_utils.FLASH_MODE_OFF_CONTENT_DESC,
           lens_facing=camera_facing,
-          zoom_ratios=z_list
+          zoom_ratios=z_list,
+          save_image_delay=_SAVE_IMAGE_DELAY
       )
       for zoom_ratio, capture in zip(z_list, captures):
         physical_ids.add(capture.physical_id)
