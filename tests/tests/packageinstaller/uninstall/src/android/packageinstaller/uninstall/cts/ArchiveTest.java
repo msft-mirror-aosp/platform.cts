@@ -83,6 +83,7 @@ import androidx.test.uiautomator.UiObject2;
 import androidx.test.uiautomator.Until;
 
 import com.android.compatibility.common.util.AppOpsUtils;
+import com.android.compatibility.common.util.DisableAnimationRule;
 import com.android.compatibility.common.util.FeatureUtil;
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.cts.install.lib.LocalIntentSender;
@@ -90,6 +91,7 @@ import com.android.cts.install.lib.LocalIntentSender;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -151,6 +153,9 @@ public class ArchiveTest {
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
+    @ClassRule
+    public static final DisableAnimationRule sDisableAnimationRule = new DisableAnimationRule();
 
     @Before
     public void setup() throws Exception {
