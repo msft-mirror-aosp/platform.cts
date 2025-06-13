@@ -767,9 +767,9 @@ public class PdfRendererPreVTest {
             assertThat(pdfAnnotations.get(0).first).isEqualTo(0);
             FreeTextAnnotation freeTextAnnotation =
                     (FreeTextAnnotation) pdfAnnotations.get(0).second;
-            assertThat(freeTextAnnotation.getTextContent()).isEqualTo("Third annotation こんにちは");
-            assertThat(freeTextAnnotation.getTextColor()).isEqualTo(Color.RED);
-            assertThat(freeTextAnnotation.getBackgroundColor()).isEqualTo(Color.GREEN);
+            assertThat(freeTextAnnotation.getTextContent()).isEqualTo("Freetext annotation");
+            assertThat(freeTextAnnotation.getTextColor()).isEqualTo(Color.BLACK);
+            assertThat(freeTextAnnotation.getBackgroundColor()).isEqualTo(Color.RED);
         }
     }
 
