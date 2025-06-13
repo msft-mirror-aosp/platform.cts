@@ -200,8 +200,8 @@ public class BackgroundActivityLaunchTest extends BackgroundActivityTestBase {
     }
 
     @Test
+    @RequiresFlagsEnabled(android.security.Flags.FLAG_ASM_RESTRICTIONS_V2)
     @RequiresFlagsDisabled(android.security.Flags.FLAG_ASM_REINTRODUCE_GRACE_PERIOD)
-    @Ignore
     public void testBackgroundActivity_withinASMGracePeriod_isBlocked() throws Exception {
         assumeSdkNewerThanUpsideDownCake();
         // Start AppA foreground activity
@@ -229,9 +229,8 @@ public class BackgroundActivityLaunchTest extends BackgroundActivityTestBase {
     @Test
     @FlakyTest(bugId = 297339382)
     @RequiresFlagsDisabled(android.security.Flags.FLAG_ASM_REINTRODUCE_GRACE_PERIOD)
-    @Ignore
-    public void testBackgroundActivity_withinBalAfterAsmGracePeriod_isBlocked()
-            throws Exception {
+    @RequiresFlagsEnabled(android.security.Flags.FLAG_ASM_RESTRICTIONS_V2)
+    public void testBackgroundActivity_withinBalAfterAsmGracePeriod_isBlocked() throws Exception {
         assumeSdkNewerThanUpsideDownCake();
         // Start AppA foreground activity
         startActivity(APP_A.FOREGROUND_ACTIVITY);
@@ -270,12 +269,9 @@ public class BackgroundActivityLaunchTest extends BackgroundActivityTestBase {
     }
 
     @Test
-    @Ignore
+    @RequiresFlagsEnabled(android.security.Flags.FLAG_ASM_RESTRICTIONS_V2)
     public void testBackgroundActivityBlockedWhenForegroundActivityNotTop() throws Exception {
-        assumeSdkNewerThanUpsideDownCake();
-
         startActivity(APP_A.FOREGROUND_ACTIVITY);
-        startViaApp(APP_A, APP_B.FOREGROUND_ACTIVITY);
         startViaApp(APP_A, APP_B.FOREGROUND_ACTIVITY);
         assertActivityFocused(APP_B.FOREGROUND_ACTIVITY);
         mWmState.waitForAppTransitionIdleOnDisplay(DEFAULT_DISPLAY);
@@ -285,7 +281,7 @@ public class BackgroundActivityLaunchTest extends BackgroundActivityTestBase {
 
         // Start AppA background activity fails as AppA not on top of stack
         startBackgroundActivity(APP_A);
-        assertActivityFocused(APP_A.BACKGROUND_ACTIVITY);
+        assertActivityNotFocused(APP_A.BACKGROUND_ACTIVITY);
         assertTaskStackHasComponents(APP_A.FOREGROUND_ACTIVITY,
                 APP_B.FOREGROUND_ACTIVITY,
                 APP_A.FOREGROUND_ACTIVITY);
@@ -357,7 +353,7 @@ public class BackgroundActivityLaunchTest extends BackgroundActivityTestBase {
     }
 
     @Test
-    @Ignore
+    @RequiresFlagsEnabled(android.security.Flags.FLAG_ASM_RESTRICTIONS_V2)
     public void testActivityBlockedFromBgActivityInFgTask() {
         assumeSdkNewerThanUpsideDownCake();
         // Launch Activity A, B in the same task with different processes.

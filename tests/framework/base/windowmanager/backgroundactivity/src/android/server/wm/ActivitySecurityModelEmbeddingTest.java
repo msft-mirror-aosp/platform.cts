@@ -19,15 +19,26 @@ package android.server.wm;
 import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.assumeActivityEmbeddingSupportedDevice;
 
 import android.content.ComponentName;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
+import android.security.Flags;
 
 import androidx.test.filters.FlakyTest;
 
+import com.android.bedstead.harrier.DeviceState;
+
 import org.junit.Before;
-import org.junit.Ignore;
+import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 
-@Ignore
 public class ActivitySecurityModelEmbeddingTest extends BackgroundActivityTestBase {
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
+    @ClassRule @Rule public static final DeviceState sDeviceState = new DeviceState();
 
     @Override
     @Before
@@ -69,8 +80,8 @@ public class ActivitySecurityModelEmbeddingTest extends BackgroundActivityTestBa
 
     @Test
     @FlakyTest(bugId = 291212072)
+    @RequiresFlagsEnabled(Flags.FLAG_ASM_RESTRICTIONS_V2)
     public void testEmbeddedLaunchesActivity_launchAllowedOnlyOnTop() {
-        BackgroundActivityLaunchTest.assumeSdkNewerThanUpsideDownCake();
         // Base State:
         // | A.FGE (A1) | B.FG (B1) |   --> left | right
         new ActivityStartVerifier()
