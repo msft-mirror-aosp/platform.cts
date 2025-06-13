@@ -643,9 +643,10 @@ public class CameraDeviceSetupTest extends Camera2AndroidTestCase {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_OUTPUT_CONFIGURATION_GETTER)
+    @RequiresFlagsEnabled({Flags.FLAG_OUTPUT_CONFIGURATION_GETTER, Flags.FLAG_SURFACE_FORMAT_FIX})
     public void testOutputConfigurationFormatSizeGetter() throws Exception {
         Size size = new Size(2, 2);
+        int maxImages = 1;
 
         // OutputConfiguration(Size surfaceSize, Class<T> klass)
         Class<?>[] classes =
@@ -660,7 +661,6 @@ public class CameraDeviceSetupTest extends Camera2AndroidTestCase {
             verifyOutputConfiguration(ImageFormat.PRIVATE, size, config);
         }
 
-        // OutputConfiguration(int format, Size surfaceSize)
         int[] formats = {
             PixelFormat.RGBA_8888,
             PixelFormat.RGBX_8888,
@@ -687,20 +687,34 @@ public class CameraDeviceSetupTest extends Camera2AndroidTestCase {
             ImageFormat.HEIC_ULTRAHDR,
             ImageFormat.JPEG_R,
         };
+
+        // OutputConfiguration(format, size)
         for (int format : formats) {
             OutputConfiguration config = new OutputConfiguration(format, size);
             verifyOutputConfiguration(format, size, config);
         }
 
         // OutputConfiguration(Surface surface)
-        ImageReader reader =
-                ImageReader.newInstance(
-                        size.getWidth(),
-                        size.getHeight(),
-                        ImageFormat.YUV_420_888,
-                        1 /*maxImages*/);
-        OutputConfiguration config = new OutputConfiguration(reader.getSurface());
-        verifyOutputConfiguration(ImageFormat.YUV_420_888, size, config);
+        for (int format : formats) {
+            // ImageReader doesn't support NV21 format
+            if (format == ImageFormat.NV21) {
+                continue;
+            }
+            boolean isRgb = (format >= PixelFormat.RGBA_8888 && format <= PixelFormat.RGB_565);
+            ImageReader reader =
+                    isRgb ?
+                            ImageReader.newInstance(
+                                    size.getWidth(), size.getHeight(), format, maxImages,
+                                    HardwareBuffer.USAGE_COMPOSER_OVERLAY) :
+                            ImageReader.newInstance(
+                                    size.getWidth(), size.getHeight(), format, maxImages);
+            OutputConfiguration config = new OutputConfiguration(reader.getSurface());
+            // For RGB formats, if a hardware usage flag is specified, the image format is
+            // overridden to PRIVATE.
+            int returnedFormat = isRgb ? ImageFormat.PRIVATE : format;
+            verifyOutputConfiguration(returnedFormat, size, config);
+            reader.close();
+        }
     }
 
     /**
