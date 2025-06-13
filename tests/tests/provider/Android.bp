@@ -37,6 +37,7 @@ android_test {
         "telecom_flags_core_java_lib",
         "telephony_flags_core_java_lib",
         "flag-junit",
+        "telecom-util-lib",
     ],
 
     jni_libs: [
