@@ -22,6 +22,7 @@ import android.os.Parcel
 import android.os.PersistableBundle
 import com.android.bedstead.flags.annotations.RequireFlagsEnabled
 import com.android.bedstead.harrier.BedsteadJUnit4
+import com.android.compatibility.common.util.ApiTest
 import com.google.common.truth.Truth.assertThat
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -43,6 +44,15 @@ class SupervisionRecoveryInfoTest {
     }
 
     @Test
+    @ApiTest(
+        apis =
+            [
+                "android.app.supervision.SupervisionRecoveryInfo#getAccountData",
+                "android.app.supervision.SupervisionRecoveryInfo#getAccountName",
+                "android.app.supervision.SupervisionRecoveryInfo#getAccountType",
+                "android.app.supervision.SupervisionRecoveryInfo#getState",
+            ]
+    )
     fun constructorAndGetters() {
         val info =
             SupervisionRecoveryInfo(
@@ -59,6 +69,15 @@ class SupervisionRecoveryInfoTest {
     }
 
     @Test
+    @ApiTest(
+        apis =
+            [
+                "android.app.supervision.SupervisionRecoveryInfo#getAccountData",
+                "android.app.supervision.SupervisionRecoveryInfo#getAccountName",
+                "android.app.supervision.SupervisionRecoveryInfo#getAccountType",
+                "android.app.supervision.SupervisionRecoveryInfo#getState",
+            ]
+    )
     fun constructorAndGetters_nullAccountData() {
         val info =
             SupervisionRecoveryInfo(TEST_ACCOUNT_NAME, TEST_ACCOUNT_TYPE, TEST_STATE_PENDING, null)
