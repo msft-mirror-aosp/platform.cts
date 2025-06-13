@@ -45,9 +45,6 @@ import android.graphics.Rect;
 import android.os.Bundle;
 import android.os.ConditionVariable;
 import android.platform.test.annotations.Presubmit;
-import android.platform.test.annotations.RequiresFlagsEnabled;
-import android.platform.test.flag.junit.CheckFlagsRule;
-import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.server.wm.ActivityManagerTestBase;
 import android.server.wm.CliIntentExtra;
 import android.server.wm.CtsWindowInfoUtils;
@@ -62,11 +59,9 @@ import androidx.test.filters.FlakyTest;
 
 import com.android.compatibility.common.util.FeatureUtil;
 import com.android.compatibility.common.util.SystemUtil;
-import com.android.window.flags.Flags;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 
 import java.time.Duration;
@@ -84,9 +79,6 @@ public class HideOverlayWindowsTest extends ActivityManagerTestBase {
     private static final Duration WINDOW_ORDER_WAIT_TIMEOUT = Duration.ofSeconds(3);
     private PongReceiver mPongReceiver;
     private TouchReceiver mTouchReceiver;
-
-    @Rule
-    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Before
     @Override
@@ -190,7 +182,6 @@ public class HideOverlayWindowsTest extends ActivityManagerTestBase {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_FIX_HIDE_OVERLAY_API)
     @FlakyTest(bugId = 404332929)
     public void testHideOverlayWindowsFromSameUidNotHidden() {
         String windowName = "SELF_APPLICATION_OVERLAY";
