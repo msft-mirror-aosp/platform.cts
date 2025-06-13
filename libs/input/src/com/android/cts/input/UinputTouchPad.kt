@@ -98,8 +98,8 @@ class UinputTouchPad(
     InputDevice.SOURCE_TOUCHPAD or InputDevice.SOURCE_MOUSE,
     MT_TOOL_FINGER,
 ) {
-    fun sendOrientation(id: Int, orientation: Int) {
-        uinputDevice.injectEvents(EV_ABS, ABS_MT_SLOT, id)
+    fun sendOrientation(slot: Int, orientation: Int) {
+        uinputDevice.injectEvents(EV_ABS, ABS_MT_SLOT, slot)
         uinputDevice.injectEvents(EV_ABS, ABS_MT_ORIENTATION, orientation)
     }
 }
