@@ -23,21 +23,26 @@ import android.companion.virtual.ViewConfigurationParams;
 import android.companion.virtual.VirtualDeviceManager;
 import android.companion.virtual.VirtualDeviceParams;
 import android.companion.virtualdevice.flags.Flags;
+import android.content.ContentResolver;
+import android.content.Context;
 import android.hardware.display.VirtualDisplay;
 import android.os.SystemClock;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.provider.Settings;
 import android.view.Display;
 import android.view.ViewConfiguration;
 import android.virtualdevice.cts.common.VirtualDeviceRule;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
 
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.time.Duration;
+import java.util.function.Function;
 
 @RunWith(AndroidJUnit4.class)
 @AppModeFull(reason = "VirtualDeviceManager cannot be accessed by instant apps")
@@ -93,6 +98,28 @@ public class VirtualDeviceViewConfigurationTest {
                         defaultViewconfiguration.getScaledMaximumFlingVelocity(),
                         defaultDisplayActivity),
                 getDimensionsDp(vdViewconfiguration.getScaledMaximumFlingVelocity(), vdActivity));
+    }
+
+    @Test
+    @RequiresFlagsEnabled({
+        Flags.FLAG_VIEWCONFIGURATION_APIS,
+        Flags.FLAG_DEVICE_AWARE_SETTINGS_OVERRIDE
+    })
+    public void getLongPressTimeoutMillis_afterSettingChange_returnsNewValueOnVirtualDevice()
+            throws Exception {
+        verifyNewValueAfterSettingChange(
+                Settings.Secure.LONG_PRESS_TIMEOUT, ViewConfiguration::getLongPressTimeoutMillis);
+    }
+
+    @Test
+    @RequiresFlagsEnabled({
+        Flags.FLAG_VIEWCONFIGURATION_APIS,
+        Flags.FLAG_DEVICE_AWARE_SETTINGS_OVERRIDE
+    })
+    public void getMultiPressTimeoutMillis_afterSettingChange_returnsNewValueOnVirtualDevice()
+            throws Exception {
+        verifyNewValueAfterSettingChange(
+                Settings.Secure.MULTI_PRESS_TIMEOUT, ViewConfiguration::getMultiPressTimeoutMillis);
     }
 
     @Test
@@ -310,6 +337,33 @@ public class VirtualDeviceViewConfigurationTest {
         assertEquals(
                 valueOnDefaultDevice,
                 ViewConfiguration.get(activity).getScaledMaximumFlingVelocity());
+    }
+
+    private void verifyNewValueAfterSettingChange(
+            String settingKey, Function<ViewConfiguration, Integer> viewConfigurationValueProvider)
+            throws Exception {
+        Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
+        ContentResolver contentResolver = context.getContentResolver();
+        int defaultValue = Settings.Secure.getInt(contentResolver, settingKey);
+        int newValue = defaultValue + 1000;
+        Settings.Secure.putInt(contentResolver, settingKey, newValue);
+
+        try {
+            VirtualDeviceManager.VirtualDevice virtualDevice = mRule.createManagedVirtualDevice();
+            VirtualDisplay virtualDisplay =
+                    mRule.createManagedVirtualDisplay(
+                            virtualDevice,
+                            VirtualDeviceRule.createTrustedVirtualDisplayConfigBuilder());
+            int displayId = virtualDisplay.getDisplay().getDisplayId();
+
+            // Launch the activity on the virtual device and verify that we get the new value.
+            Activity vdActivity = mRule.startActivityOnDisplaySync(displayId, Activity.class);
+            ViewConfiguration viewconfiguration = ViewConfiguration.get(vdActivity);
+            assertEquals(
+                    newValue, viewConfigurationValueProvider.apply(viewconfiguration).intValue());
+        } finally {
+            Settings.Secure.putInt(contentResolver, settingKey, defaultValue);
+        }
     }
 
     private int createVirtualDisplayWithinVirtualDeviceWithParams(
