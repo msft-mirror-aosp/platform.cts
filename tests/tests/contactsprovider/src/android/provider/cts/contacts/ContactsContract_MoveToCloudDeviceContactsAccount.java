@@ -31,6 +31,7 @@ import android.accounts.AccountManager;
 import android.app.Instrumentation;
 import android.content.ContentResolver;
 import android.content.Context;
+import android.content.pm.PackageManager;
 import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
@@ -45,6 +46,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.MediumTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.compatibility.common.util.FeatureUtil;
 import com.android.compatibility.common.util.SystemUtil;
 
 import org.junit.After;
@@ -86,6 +88,16 @@ public class ContactsContract_MoveToCloudDeviceContactsAccount {
     private static final int SIM_SLOT_0 = 0;
     private static final int SIM_SLOT_1 = 1;
 
+    private boolean shouldSkip() {
+        // TODO(b/424585433): Investigate test flakiness
+        PackageManager packageManager = getContext().getPackageManager();
+        // Skip test on watch, automotive and XR Headset since CTS is flaky on these targets and not
+        // required for them.
+        return packageManager.hasSystemFeature(PackageManager.FEATURE_WATCH)
+                || packageManager.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE)
+                || FeatureUtil.isXrHeadset();
+    }
+
     @Before
     public void setUp() throws Exception {
         mCreatedContacts = new HashSet<>();
@@ -94,6 +106,10 @@ public class ContactsContract_MoveToCloudDeviceContactsAccount {
         mContext = instrumentation.getContext();
         mResolver = getContext().getContentResolver();
         mAccountManager = AccountManager.get(getContext());
+
+        if (shouldSkip()) {
+            return;
+        }
 
         mAccountManager.addAccountExplicitly(CLOUD_ACCOUNT, null, null);
         mAccountManager.addAccountExplicitly(OTHER_ACCOUNT, null, null);
@@ -110,6 +126,9 @@ public class ContactsContract_MoveToCloudDeviceContactsAccount {
 
     @After
     public void tearDown() throws Exception {
+        if (shouldSkip()) {
+            return;
+        }
         for (Long contactId : mCreatedContacts) {
             RawContactUtil.delete(mResolver, contactId, /* isSyncAdapter= */ true);
         }
@@ -245,6 +264,9 @@ public class ContactsContract_MoveToCloudDeviceContactsAccount {
     @RequiresFlagsEnabled({FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED})
     @RequiresFlagsDisabled({FLAG_DISABLE_CP2_ACCOUNT_MOVE_FLAG})
     public void testGetNumberOfMovableLocalContactsWithNoLocalContacts() throws Exception {
+        if (shouldSkip()) {
+            return;
+        }
         // create a contact with a non-local account
         insertRawContact(OTHER_ACCOUNT);
         setDefaultAccountForNewContacts(DefaultAccount.DefaultAccountAndState.ofLocal());
@@ -257,6 +279,9 @@ public class ContactsContract_MoveToCloudDeviceContactsAccount {
     @RequiresFlagsDisabled({FLAG_DISABLE_CP2_ACCOUNT_MOVE_FLAG,
             FLAG_DISABLE_MOVE_TO_INELIGIBLE_DEFAULT_ACCOUNT_FLAG})
     public void testGetNumberOfMovableLocalContactsWithLocalContacts() throws Exception {
+        if (shouldSkip()) {
+            return;
+        }
         // Skip the test if CLOUD_ACCOUNT isn't successfully added to the device.
         assumeTrue(Arrays.stream(mAccountManager.getAccounts()).toList().contains(CLOUD_ACCOUNT));
 
@@ -274,6 +299,9 @@ public class ContactsContract_MoveToCloudDeviceContactsAccount {
     @RequiresFlagsEnabled({FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED,
             FLAG_DISABLE_CP2_ACCOUNT_MOVE_FLAG})
     public void testGetNumberOfMovableLocalContactsWithLocalContacts_flagsOff() throws Exception {
+        if (shouldSkip()) {
+            return;
+        }
         // create contact and explicitly set the account to null
         insertRawContact(null);
 
@@ -286,6 +314,9 @@ public class ContactsContract_MoveToCloudDeviceContactsAccount {
     @RequiresFlagsDisabled({FLAG_DISABLE_CP2_ACCOUNT_MOVE_FLAG,
             FLAG_DISABLE_MOVE_TO_INELIGIBLE_DEFAULT_ACCOUNT_FLAG})
     public void testMoveLocalContactsToCloudDefaultAccount() throws Exception {
+        if (shouldSkip()) {
+            return;
+        }
         // Skip the test if CLOUD_ACCOUNT isn't successfully added to the device.
         assumeTrue(Arrays.stream(mAccountManager.getAccounts()).toList().contains(CLOUD_ACCOUNT));
 
@@ -316,6 +347,9 @@ public class ContactsContract_MoveToCloudDeviceContactsAccount {
     @RequiresFlagsEnabled({FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED,
             FLAG_DISABLE_CP2_ACCOUNT_MOVE_FLAG})
     public void testMoveLocalContactsToCloudDefaultAccount_flagsOff() throws Exception {
+        if (shouldSkip()) {
+            return;
+        }
         // create contact and explicitly set the account to null
         long rawContactId1 = insertRawContact(null);
 
@@ -339,6 +373,9 @@ public class ContactsContract_MoveToCloudDeviceContactsAccount {
     @RequiresFlagsDisabled({FLAG_DISABLE_CP2_ACCOUNT_MOVE_FLAG,
             FLAG_DISABLE_MOVE_TO_INELIGIBLE_DEFAULT_ACCOUNT_FLAG})
     public void testGetNumberOfMovableSimContactsWithSimContacts() throws Exception {
+        if (shouldSkip()) {
+            return;
+        }
         // Skip the test if CLOUD_ACCOUNT isn't successfully added to the device.
         assumeTrue(Arrays.stream(mAccountManager.getAccounts()).toList().contains(CLOUD_ACCOUNT));
 
@@ -358,6 +395,9 @@ public class ContactsContract_MoveToCloudDeviceContactsAccount {
     @RequiresFlagsEnabled({FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED,
             FLAG_DISABLE_CP2_ACCOUNT_MOVE_FLAG})
     public void testGetNumberOfMovableSimContactsWithSimContacts_flagsOff() throws Exception {
+        if (shouldSkip()) {
+            return;
+        }
         insertRawContact(
                 new Account(SIM_ACCT_NAME_1, SIM_ACCT_TYPE_1));
         insertRawContact(
@@ -372,6 +412,9 @@ public class ContactsContract_MoveToCloudDeviceContactsAccount {
     @RequiresFlagsDisabled({FLAG_DISABLE_CP2_ACCOUNT_MOVE_FLAG,
             FLAG_DISABLE_MOVE_TO_INELIGIBLE_DEFAULT_ACCOUNT_FLAG})
     public void testMoveSimContactsToCloudDefaultAccount() throws Exception {
+        if (shouldSkip()) {
+            return;
+        }
         // Skip the test if CLOUD_ACCOUNT isn't successfully added to the device.
         assumeTrue(Arrays.stream(mAccountManager.getAccounts()).toList().contains(CLOUD_ACCOUNT));
 
@@ -396,6 +439,9 @@ public class ContactsContract_MoveToCloudDeviceContactsAccount {
     @RequiresFlagsEnabled({FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED,
             FLAG_DISABLE_CP2_ACCOUNT_MOVE_FLAG})
     public void testMoveSimContactsToCloudDefaultAccount_flagsOff() throws Exception {
+        if (shouldSkip()) {
+            return;
+        }
         // create contact and explicitly set the account to null
         long rawContactId = insertRawContact(new Account(SIM_ACCT_NAME_1, SIM_ACCT_TYPE_1));
 
@@ -412,6 +458,9 @@ public class ContactsContract_MoveToCloudDeviceContactsAccount {
 
     public void testMoveLocalContactsToInvalidDefaultAccountInternal(
             DefaultAccount.DefaultAccountAndState defaultAccountAndState) throws Exception {
+        if (shouldSkip()) {
+            return;
+        }
         // create contact and explicitly set the account to null
         long rawContactId = insertRawContact(null);
 
@@ -432,6 +481,9 @@ public class ContactsContract_MoveToCloudDeviceContactsAccount {
     @RequiresFlagsEnabled({FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED})
     @RequiresFlagsDisabled({FLAG_DISABLE_CP2_ACCOUNT_MOVE_FLAG})
     public void testMoveLocalContactsToLocalDefaultAccount() throws Exception {
+        if (shouldSkip()) {
+            return;
+        }
         testMoveLocalContactsToInvalidDefaultAccountInternal(
                 DefaultAccount.DefaultAccountAndState.ofLocal());
     }
@@ -440,6 +492,9 @@ public class ContactsContract_MoveToCloudDeviceContactsAccount {
     @RequiresFlagsEnabled({FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED})
     @RequiresFlagsDisabled({FLAG_DISABLE_CP2_ACCOUNT_MOVE_FLAG})
     public void testMoveLocalContactsToNotSetDefaultAccount() throws Exception {
+        if (shouldSkip()) {
+            return;
+        }
         testMoveLocalContactsToInvalidDefaultAccountInternal(
                 DefaultAccount.DefaultAccountAndState.ofNotSet());
     }
@@ -448,6 +503,9 @@ public class ContactsContract_MoveToCloudDeviceContactsAccount {
     @RequiresFlagsEnabled({FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED})
     @RequiresFlagsDisabled({FLAG_DISABLE_CP2_ACCOUNT_MOVE_FLAG})
     public void testMoveLocalContactsToSimDefaultAccount() throws Exception {
+        if (shouldSkip()) {
+            return;
+        }
         testMoveLocalContactsToInvalidDefaultAccountInternal(
                 DefaultAccount.DefaultAccountAndState.ofSim(
                         new Account(SIM_ACCT_NAME_1, SIM_ACCT_TYPE_1)));
