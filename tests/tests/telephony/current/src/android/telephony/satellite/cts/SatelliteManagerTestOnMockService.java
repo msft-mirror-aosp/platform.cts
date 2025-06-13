@@ -177,14 +177,27 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
 
     // The test data is stored at
     // vendor/google/services/ConfigUpdater/assets/cts_data/telephony_config_update/
+    // v14 : [US - not allowed] [KR - allowed] [TW - not allowed]
     private static final String TEST_V14_CONFIG_DATA_CONTENT_LOCAL_URI =
             "file:///cts_test_06122024-test-v14-telephony_config.pb";
     private static final String TEST_V14_CONFIG_DATA_METADATA_LOCAL_URI =
             "file:///cts_test_06122024-test-v14-telephony_config-metadata.txt";
+    // v15 : [US - allowed] [KR - allowed] [TW - not allowed]
     private static final String TEST_V15_CONFIG_DATA_CONTENT_LOCAL_URI =
             "file:///cts_test_01212025-test-v15-telephony_config.pb";
     private static final String TEST_V15_CONFIG_DATA_METADATA_LOCAL_URI =
             "file:///cts_test_01212025-test-v15-telephony_config-metadata.txt";
+    // v16 : [US - allowed] [KR - allowed] [TW - allowed]
+    private static final String TEST_V16_CONFIG_DATA_CONTENT_LOCAL_URI =
+            "file:///cts_test_01212025-test-v16-telephony_config.pb";
+    private static final String TEST_V16_CONFIG_DATA_METADATA_LOCAL_URI =
+            "file:///cts_test_01212025-test-v16-telephony_config-metadata.txt";
+    // v17 : [US - allowed] [KR - not allowed] [TW - not allowed]
+    private static final String TEST_V17_CONFIG_DATA_CONTENT_LOCAL_URI =
+            "file:///cts_test_01212025-test-v17-telephony_config.pb";
+    private static final String TEST_V17_CONFIG_DATA_METADATA_LOCAL_URI =
+            "file:///cts_test_01212025-test-v17-telephony_config-metadata.txt";
+
     // v21 has CarrierConfigManager.SATELLITE_DATA_SUPPORT_BANDWIDTH_CONSTRAINED
     private static final String TEST_V21_CONFIG_DATA_CONTENT_LOCAL_URI =
             "file:///cts_test_v21_telephony_config.pb";
@@ -3982,17 +3995,33 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         Thread.sleep(3000);
     }
 
-    @Ignore("b/399900477 - Need to fix the test and re-enable it.")
     @Test
     public void testSatelliteAccessControlWithSatelliteConfigOta() throws Exception {
         logd("testSatelliteAccessControlWithSatelliteConfigOta");
 
-        // get rid of the overriden test satellite configs, as we are going
-        // to use actual on-device and ota'd satellite configs in this test
-        resetSatelliteAccessControlOverlayConfigs();
+        logd("testSatelliteAccessControlWithSatelliteConfigOta: check if satellite is supported");
+        assumeTrue(shouldTestSatellite());
 
-        // setup permission
+        logd(
+                "testSatelliteAccessControlWithSatelliteConfigOta: check if configupdater is"
+                        + " installed");
+        assumeTrue(isAppInstalled(PACKAGE_CONFIGUPDATER));
+
+        resetSatelliteAccessControlOverlayConfigs();
         grantSatellitePermission();
+
+        final long timeOut = TimeUnit.SECONDS.toMillis(5);
+
+        SatelliteCommunicationAccessStateCallbackTest allowStateCallback =
+                new SatelliteCommunicationAccessStateCallbackTest();
+        long registerResultAllowState =
+                sSatelliteManager.registerForCommunicationAccessStateChanged(
+                        getContext().getMainExecutor(), allowStateCallback);
+
+        assertEquals(SatelliteManager.SATELLITE_RESULT_SUCCESS, registerResultAllowState);
+        assertTrue(
+                allowStateCallback.waitUntilSatelliteAccessConfigurationChangedEvent(1, timeOut));
+        assertTrue(allowStateCallback.waitUntilResult(1));
 
         double latUs = 37.7749, lngUs = -122.4194;
         String countryCodeUs = "US";
@@ -4001,25 +4030,51 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         double latTw = 25.034, lngTw = 121.565;
         String countryCodeTw = "TW";
 
-        // Check satellite allowance for on device satellite config:
-        // US - allowed; KR - not allowed; TW - not allowed;
         logd(
                 "testSatelliteAccessControlWithSatelliteConfigOta: checking satellite allowance for"
-                        + " on device satellite config");
+                        + " on device satellite config: v0 [US-YES][KR-NO][TW-NO]");
         verifySatelliteAllowedAndEnabledForLocation(latUs, lngUs, countryCodeUs);
-        verifySatelliteNotAllowedAndNotEnabledForLocation(latKr, lngKr, countryCodeKr);
         verifySatelliteNotAllowedAndNotEnabledForLocation(latTw, lngTw, countryCodeTw);
+        verifySatelliteNotAllowedAndNotEnabledForLocation(latKr, lngKr, countryCodeKr);
 
-        // perform OTA to setup v15 satellite config data
-        logd("testSatelliteAccessControlWithSatelliteConfigOta: Perform v15 config update");
-        performSatelliteConfigUpdate(
-                "https://www.gstatic.com/android/config_update/satelliteConfigDataTest/01212025"
-                        + "-test-v15-telephony_config.pb",
-                "https://www.gstatic.com/android/config_update/satelliteConfigDataTest/01212025"
-                        + "-test-v15-telephony_config-metadata.txt");
+        logd("testSatelliteAccessControlWithSatelliteConfigOta: v14 [US-NO][KR-YES][TW-NO]");
+        allowStateCallback.drainPermits();
 
-        // Check satellite allowance and enabled status for v15 satellite config:
-        // US - allowed; KR - not allowed; TW - not allowed;
+        logd(
+                "testSatelliteAccessControlWithSatelliteConfigOta: override the config data "
+                        + "version so that the new config data can be accepted by Telephony");
+        assertTrue(sMockSatelliteServiceManager.overrideConfigDataVersion(false, 0));
+
+        assertTrue(
+                sMockSatelliteServiceManager.updateTelephonyConfig(
+                        TEST_V14_CONFIG_DATA_CONTENT_LOCAL_URI,
+                        TEST_V14_CONFIG_DATA_METADATA_LOCAL_URI));
+        assertTrue(allowStateCallback.waitUntilResult(1));
+
+        logd(
+                "testSatelliteAccessControlWithSatelliteConfigOta: checking satellite allowance for"
+                        + " v14 satellite config");
+        verifySatelliteNotAllowedAndNotEnabledForLocation(latTw, lngTw, countryCodeTw);
+        verifySatelliteAllowedAndEnabledForLocation(latKr, lngKr, countryCodeKr);
+        verifySatelliteNotAllowedAndNotEnabledForLocation(latUs, lngUs, countryCodeUs);
+
+        logd("testSatelliteAccessControlWithSatelliteConfigOta: restore the original data");
+        assertTrue(sMockSatelliteServiceManager.overrideConfigDataVersion(true, 0));
+
+        logd("testSatelliteAccessControlWithSatelliteConfigOta: v15 [US-YES][KR-YES][TW-NO]");
+        allowStateCallback.drainPermits();
+
+        logd(
+                "testSatelliteAccessControlWithSatelliteConfigOta: override the config data "
+                        + "version so that the new config data can be accepted by Telephony");
+        assertTrue(sMockSatelliteServiceManager.overrideConfigDataVersion(false, 0));
+
+        assertTrue(
+                sMockSatelliteServiceManager.updateTelephonyConfig(
+                        TEST_V15_CONFIG_DATA_CONTENT_LOCAL_URI,
+                        TEST_V15_CONFIG_DATA_METADATA_LOCAL_URI));
+        assertTrue(allowStateCallback.waitUntilResult(1));
+
         logd(
                 "testSatelliteAccessControlWithSatelliteConfigOta: checking satellite allowance for"
                         + " v15 satellite config");
@@ -4027,16 +4082,23 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         verifySatelliteNotAllowedAndNotEnabledForLocation(latKr, lngKr, countryCodeKr);
         verifySatelliteNotAllowedAndNotEnabledForLocation(latTw, lngTw, countryCodeTw);
 
-        // perform OTA to setup v16 satellite config data
-        logd("testSatelliteAccessControlWithSatelliteConfigOta: Perform v16 config update");
-        performSatelliteConfigUpdate(
-                "https://www.gstatic.com/android/config_update/satelliteConfigDataTest/01212025"
-                        + "-test-v16-telephony_config.pb",
-                "https://www.gstatic.com/android/config_update/satelliteConfigDataTest/01212025"
-                        + "-test-v16-telephony_config-metadata.txt");
+        logd("testSatelliteAccessControlWithSatelliteConfigOta: restore the original data");
+        assertTrue(sMockSatelliteServiceManager.overrideConfigDataVersion(true, 0));
 
-        // Check satellite allowance and enabled status for v16 satellite config:
-        // US - allowed; KR - allowed; TW - allowed;
+        logd("testSatelliteAccessControlWithSatelliteConfigOta: v16 [US-YES][KR-YES][TW-YES]");
+        allowStateCallback.drainPermits();
+
+        logd(
+                "testSatelliteAccessControlWithSatelliteConfigOta: override the config data "
+                        + "version so that the new config data can be accepted by Telephony");
+        assertTrue(sMockSatelliteServiceManager.overrideConfigDataVersion(false, 0));
+
+        assertTrue(
+                sMockSatelliteServiceManager.updateTelephonyConfig(
+                        TEST_V16_CONFIG_DATA_CONTENT_LOCAL_URI,
+                        TEST_V16_CONFIG_DATA_METADATA_LOCAL_URI));
+        assertTrue(allowStateCallback.waitUntilResult(1));
+
         logd(
                 "testSatelliteAccessControlWithSatelliteConfigOta: checking satellite allowance for"
                         + " v16 satellite config");
@@ -4044,22 +4106,32 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         verifySatelliteAllowedAndEnabledForLocation(latKr, lngKr, countryCodeKr);
         verifySatelliteAllowedAndEnabledForLocation(latTw, lngTw, countryCodeTw);
 
-        // perform OTA to setup v17 satellite config data
-        logd("testSatelliteAccessControlWithSatelliteConfigOta: Perform v17 config update");
-        performSatelliteConfigUpdate(
-                "https://www.gstatic.com/android/config_update/satelliteConfigDataTest/01212025"
-                        + "-test-v17-telephony_config.pb",
-                "https://www.gstatic.com/android/config_update/satelliteConfigDataTest/01212025"
-                        + "-test-v17-telephony_config-metadata.txt");
+        logd("testSatelliteAccessControlWithSatelliteConfigOta: restore the original data");
+        assertTrue(sMockSatelliteServiceManager.overrideConfigDataVersion(true, 0));
 
-        // Check satellite allowance and enabled status for v17 satellite config:
-        // US - allowed; KR - not allowed; TW - not allowed;
+        logd("testSatelliteAccessControlWithSatelliteConfigOta: v17 [US-YES][KR-NO][TW-NO]");
+        allowStateCallback.drainPermits();
+
+        logd(
+                "testSatelliteAccessControlWithSatelliteConfigOta: override the config data "
+                        + "version so that the new config data can be accepted by Telephony");
+        assertTrue(sMockSatelliteServiceManager.overrideConfigDataVersion(false, 0));
+
+        assertTrue(
+                sMockSatelliteServiceManager.updateTelephonyConfig(
+                        TEST_V17_CONFIG_DATA_CONTENT_LOCAL_URI,
+                        TEST_V17_CONFIG_DATA_METADATA_LOCAL_URI));
+        assertTrue(allowStateCallback.waitUntilResult(1));
+
         logd(
                 "testSatelliteAccessControlWithSatelliteConfigOta: checking satellite allowance for"
                         + " v17 satellite config");
         verifySatelliteAllowedAndEnabledForLocation(latUs, lngUs, countryCodeUs);
         verifySatelliteNotAllowedAndNotEnabledForLocation(latKr, lngKr, countryCodeKr);
         verifySatelliteNotAllowedAndNotEnabledForLocation(latTw, lngTw, countryCodeTw);
+
+        logd("testSatelliteAccessControlWithSatelliteConfigOta: restore the original data");
+        assertTrue(sMockSatelliteServiceManager.overrideConfigDataVersion(true, 0));
 
         revokeSatellitePermission();
     }
@@ -5558,8 +5630,9 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
                 TIMEOUT_TYPE_WAIT_FOR_SATELLITE_ENABLING_RESPONSE, WAIT_FOREVER_TIMEOUT_MILLIS));
 
         // Move to enabling state
-        logd("testRequestSatelliteEnabled_EnableDisable_FeatureDisabled: enabling"
-                + " satellite... (2)");
+        logd(
+                "testRequestSatelliteEnabled_EnableDisable_FeatureDisabled: enabling"
+                        + " satellite... (2)");
         sMockSatelliteServiceManager.clearRequestSatelliteEnabledPermits();
         LinkedBlockingQueue<Integer> enableResult =
                 requestSatelliteEnabledWithoutWaitingForResult(true, false, false);
