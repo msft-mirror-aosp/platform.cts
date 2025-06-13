@@ -390,10 +390,11 @@ public class SeccompTest extends AndroidTestCase {
             final ParcelFileDescriptor.AutoCloseOutputStream outputStream =
                     new ParcelFileDescriptor.AutoCloseOutputStream(pipe[1]);
 
-            // The policy files to concatenate together.
+            // The policy files to concat together.
             final AssetFileDescriptor[] policyFiles = {
                 assets.openFd("minijail/isolated-" + arch + ".policy"),
                 assets.openFd("minijail/isolated-common.policy"),
+                arch.equals("x86") ? null : assets.openFd("minijail/isolated-common-not-x86.policy"),
             };
 
             // Convert our PID to ASCII byte string.
