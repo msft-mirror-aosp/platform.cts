@@ -112,6 +112,7 @@ public class TopologyUpdateDeliveryTest extends EventDeliveryTestBase {
                     mPid = msg.arg1;
                     mUid = msg.arg2;
                     Log.d(TAG, "Launched " + mPid + " " + mUid);
+                    mLatchActivityLaunch.countDown();
                     break;
                 case MESSAGE_CALLBACK:
                     DisplayTopology topology = (DisplayTopology) msg.obj;
