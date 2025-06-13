@@ -23,6 +23,7 @@ cc_test_library {
     header_libs: ["jni_headers"],
     srcs: ["src/cpp/compressednative_lib.cpp"],
     stl: "c++_static",
+    ldflags: ["-Wl,-z,max-page-size=0x4000"],
 }
 
 android_test_helper_app {
