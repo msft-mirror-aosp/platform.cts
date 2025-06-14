@@ -27,6 +27,7 @@ import android.content.ContentResolver;
 import android.content.Context;
 import android.hardware.display.VirtualDisplay;
 import android.os.SystemClock;
+import android.os.UserHandle;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.provider.Settings;
@@ -342,7 +343,10 @@ public class VirtualDeviceViewConfigurationTest {
     private void verifyNewValueAfterSettingChange(
             String settingKey, Function<ViewConfiguration, Integer> viewConfigurationValueProvider)
             throws Exception {
-        Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
+        Context context =
+                InstrumentationRegistry.getInstrumentation()
+                        .getTargetContext()
+                        .createContextAsUser(UserHandle.SYSTEM, 0);
         ContentResolver contentResolver = context.getContentResolver();
         int defaultValue = Settings.Secure.getInt(contentResolver, settingKey);
         int newValue = defaultValue + 1000;
