@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 The Android Open Source Project
+ * Copyright 2025 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,10 +14,17 @@
  * limitations under the License.
  */
 
-package android.security.cts.CVE_2023_21129;
+package android.input.cts
 
-import android.app.Activity;
+import android.os.Bundle
+import com.android.cts.input.CaptureEventActivity
 
-public class PocActivity extends Activity {
-    // Create an empty activity to detect the vulnerability
+/** A test activity that captures all system keys and shortcuts. */
+class KeyboardCaptureActivity : CaptureEventActivity() {
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        window.attributes.setHasKeyboardCapture(true)
+        shouldHandleKeyEvents = true
+        super.onCreate(savedInstanceState)
+    }
 }

@@ -16,6 +16,8 @@
 
 package android.media.cts;
 
+import static org.junit.Assert.assertTrue;
+
 import android.media.MediaCodec;
 import android.media.MediaCodec.CodecException;
 import android.media.MediaCrypto;
@@ -24,7 +26,6 @@ import android.media.MediaFormat;
 import android.mediav2.common.cts.OutputManager;
 import android.os.Build;
 import android.platform.test.annotations.AppModeFull;
-import android.test.AndroidTestCase;
 import android.util.Log;
 import android.view.Surface;
 
@@ -49,7 +50,7 @@ import java.util.function.Supplier;
  */
 @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
 @AppModeFull(reason = "Instant apps cannot access the SD card")
-public class MediaCodecBlockModelHelper extends AndroidTestCase {
+public class MediaCodecBlockModelHelper {
     private static final String TAG = "MediaCodecBlockModelHelper";
     private static final boolean VERBOSE = false;           // lots of logging
 

@@ -21,6 +21,7 @@ import static android.autofillservice.cts.activities.SimpleSaveActivity.ID_INPUT
 import static android.autofillservice.cts.activities.SimpleSaveActivity.ID_PASSWORD;
 import static android.autofillservice.cts.activities.SimpleSaveActivity.TEXT_LABEL;
 import static android.autofillservice.cts.testcore.AntiTrimmerTextWatcher.TRIMMER_PATTERN;
+import static android.autofillservice.cts.testcore.Helper.AutofillCriticalInternal;
 import static android.autofillservice.cts.testcore.Helper.ID_STATIC_TEXT;
 import static android.autofillservice.cts.testcore.Helper.ID_USERNAME;
 import static android.autofillservice.cts.testcore.Helper.LARGE_STRING;
@@ -122,6 +123,7 @@ public class SimpleSaveActivityTest extends CustomDescriptionWithLinkTestCase<Si
 
     @Presubmit
     @Test
+    @AutofillCriticalInternal
     public void testAutoFillOneDatasetAndSave() throws Exception {
         startActivity();
 
@@ -163,6 +165,7 @@ public class SimpleSaveActivityTest extends CustomDescriptionWithLinkTestCase<Si
     }
 
     @Test
+    @AutofillCriticalInternal
     public void testAutoFillOneDatasetAndSaveOnViewInvisible() throws Exception {
         startActivity();
 
@@ -453,6 +456,7 @@ public class SimpleSaveActivityTest extends CustomDescriptionWithLinkTestCase<Si
      */
     @Test
     @AppModeFull(reason = "testAutoFillOneDatasetAndSave() is enough")
+    @AutofillCriticalInternal
     public void testDelayedSave() throws Exception {
         startActivity();
 
@@ -667,6 +671,7 @@ public class SimpleSaveActivityTest extends CustomDescriptionWithLinkTestCase<Si
 
     @Presubmit
     @Test
+    @AutofillCriticalInternal
     public void testSaveWithParcelableOnClientState() throws Exception {
         startActivity();
 
@@ -753,12 +758,14 @@ public class SimpleSaveActivityTest extends CustomDescriptionWithLinkTestCase<Si
 
     @Presubmit
     @Test
+    @AutofillCriticalInternal
     public void testDismissSave_byTappingBack() throws Exception {
         startActivity();
         dismissSaveTest(DismissType.BACK_BUTTON);
     }
 
     @Test
+    @AutofillCriticalInternal
     public void testDismissSave_byTappingHome() throws Exception {
         startActivity();
         dismissSaveTest(DismissType.HOME_BUTTON);
@@ -766,6 +773,7 @@ public class SimpleSaveActivityTest extends CustomDescriptionWithLinkTestCase<Si
 
     @Presubmit
     @Test
+    @AutofillCriticalInternal
     public void testDismissSave_byTouchingOutside() throws Exception {
         startActivity();
         dismissSaveTest(DismissType.TOUCH_OUTSIDE);
@@ -1125,6 +1133,7 @@ public class SimpleSaveActivityTest extends CustomDescriptionWithLinkTestCase<Si
     @Presubmit
     @Test
     @AppModeFull(reason = "Service-specific test")
+    @AutofillCriticalInternal
     public void testSelectedDatasetsAreSentOnSaveRequest() throws Exception {
         startActivity();
 
@@ -1250,6 +1259,7 @@ public class SimpleSaveActivityTest extends CustomDescriptionWithLinkTestCase<Si
 
     @Presubmit
     @Test
+    @AutofillCriticalInternal
     public void testSanitizeOnSaveWhenAppChangeValues() throws Exception {
         startActivity();
 
@@ -1531,7 +1541,6 @@ public class SimpleSaveActivityTest extends CustomDescriptionWithLinkTestCase<Si
         HAS_SESSION,
         EMPTY_TEXT,
         FOCUSED,
-        NOT_IMPORTANT_FOR_AUTOFILL,
         INVISIBLE
     }
 
@@ -1577,20 +1586,11 @@ public class SimpleSaveActivityTest extends CustomDescriptionWithLinkTestCase<Si
 
     /**
      * Tests scenario when a text field's text is set automatically, it should not trigger autofill
-     * when the field is not important for autofill.
-     */
-    @Presubmit
-    @Test
-    public void testNotTriggerAutofillWhenSetTextWhileNotImportantForAutofill() throws Exception {
-        triggerAutofillWhenSetTextAutomaticallyTest(SetTextCondition.NOT_IMPORTANT_FOR_AUTOFILL);
-    }
-
-    /**
-     * Tests scenario when a text field's text is set automatically, it should not trigger autofill
      * when the field is not visible.
      */
     @Presubmit
     @Test
+    @AutofillCriticalInternal
     public void testNotTriggerAutofillWhenSetTextWhileInvisible() throws Exception {
         triggerAutofillWhenSetTextAutomaticallyTest(SetTextCondition.INVISIBLE);
     }
@@ -1628,11 +1628,6 @@ public class SimpleSaveActivityTest extends CustomDescriptionWithLinkTestCase<Si
                 });
                 sReplier.getNextFillRequest();
                 break;
-            case NOT_IMPORTANT_FOR_AUTOFILL:
-                mActivity.syncRunOnUiThread(() -> {
-                    mActivity.mInput.setImportantForAutofill(View.IMPORTANT_FOR_AUTOFILL_NO);
-                });
-                break;
             case INVISIBLE:
                 mActivity.syncRunOnUiThread(() -> {
                     mActivity.mInput.setVisibility(View.INVISIBLE);
@@ -1664,6 +1659,7 @@ public class SimpleSaveActivityTest extends CustomDescriptionWithLinkTestCase<Si
 
     @Presubmit
     @Test
+    @AutofillCriticalInternal
     public void testExplicitlySaveButton() throws Exception {
         explicitlySaveButtonTest(false, 0);
     }

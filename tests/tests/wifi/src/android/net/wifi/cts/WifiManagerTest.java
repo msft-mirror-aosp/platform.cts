@@ -3158,9 +3158,14 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
         final String ssid = currentConfig.getSsid().length() <= 28
                 ? currentConfig.getSsid() + "test"
                 : "AndroidTest";
+        final int testBand = currentConfig.getBand();
         ShellIdentityUtils.invokeWithShellPermissions(
-                () -> sWifiManager.setSoftApConfiguration(new SoftApConfiguration.Builder()
-                .setSsid(ssid).build()));
+                () ->
+                        sWifiManager.setSoftApConfiguration(
+                                new SoftApConfiguration.Builder()
+                                        .setSsid(ssid)
+                                        .setBand(testBand)
+                                        .build()));
         SoftApConfiguration changedSsidConfig = ShellIdentityUtils.invokeWithShellPermissions(
                 sWifiManager::getSoftApConfiguration);
         assertNotEquals(currentConfig.getPersistentRandomizedMacAddress(),
@@ -7500,7 +7505,12 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
                     testTwtSessionCallback.mTwtSession.get());
             assertTrue(testTwtSessionCallback.mTwtSession.get().getWakeDurationMicros() > 0);
             assertTrue(testTwtSessionCallback.mTwtSession.get().getWakeIntervalMicros() > 0);
-            assertTrue(testTwtSessionCallback.mTwtSession.get().getMloLinkId() == linkId);
+            // Test MLO link id only if the chip updates it in the TWT session. Some devices are
+            // not supporting link specific TWT. So make this check conditional for now.
+            if (testTwtSessionCallback.mTwtSession.get().getMloLinkId()
+                    != MloLink.INVALID_MLO_LINK_ID) {
+                assertTrue(testTwtSessionCallback.mTwtSession.get().getMloLinkId() == linkId);
+            }
 
             // Verify TWT session get stats
             testTwtSessionCallback.mTwtSession.get().getStats(mExecutor, twtStatsCallback);
@@ -7867,6 +7877,76 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
             sWifiManager.refreshMacRandomization(newNetworkId);
         } finally {
             sWifiManager.forget(newNetworkId, actionListener);
+            uiAutomation.dropShellPermissionIdentity();
+        }
+    }
+
+    @SdkSuppress(minSdkVersion = 37)
+    @RequiresFlagsEnabled(Flags.FLAG_MULTI_USER_WIFI_ENHANCEMENT)
+    @ApiTest(
+            apis = {
+                "android.net.wifi.WifiManager#setOpenNetworkNotifierEnabled",
+                "android.net.wifi.WifiManager#isOpenNetworkNotifierEnabled"
+            })
+    @Test
+    public void testSetAndQueryOpenNetworkNotifierEnabled() throws Exception {
+        UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
+        Boolean currState = null;
+        try {
+            long now, deadline;
+            Mutable<Boolean> isQuerySucceeded = new Mutable<Boolean>(false);
+            Mutable<Boolean> newStateWrapper = new Mutable<Boolean>(false);
+            uiAutomation.adoptShellPermissionIdentity();
+            sWifiManager.isOpenNetworkNotifierEnabled(
+                    mExecutor,
+                    new Consumer<Boolean>() {
+                        @Override
+                        public void accept(Boolean value) {
+                            synchronized (mLock) {
+                                newStateWrapper.value = value;
+                                isQuerySucceeded.value = true;
+                                mLock.notify();
+                            }
+                        }
+                    });
+            synchronized (mLock) {
+                now = System.currentTimeMillis();
+                deadline = now + TEST_WAIT_DURATION_MS;
+                while (!isQuerySucceeded.value && now < deadline) {
+                    mLock.wait(deadline - now);
+                    now = System.currentTimeMillis();
+                }
+            }
+            assertTrue(isQuerySucceeded.value);
+            // Reset for next query
+            isQuerySucceeded.value = false;
+            currState = newStateWrapper.value;
+            sWifiManager.setOpenNetworkNotifierEnabled(!currState);
+            sWifiManager.isOpenNetworkNotifierEnabled(
+                    mExecutor,
+                    new Consumer<Boolean>() {
+                        @Override
+                        public void accept(Boolean value) {
+                            synchronized (mLock) {
+                                newStateWrapper.value = value;
+                                isQuerySucceeded.value = true;
+                                mLock.notify();
+                            }
+                        }
+                    });
+            synchronized (mLock) {
+                now = System.currentTimeMillis();
+                deadline = now + TEST_WAIT_DURATION_MS;
+                while (!isQuerySucceeded.value && now < deadline) {
+                    mLock.wait(deadline - now);
+                    now = System.currentTimeMillis();
+                }
+            }
+            assertEquals(newStateWrapper.value, !currState);
+        } finally {
+            if (currState != null) {
+                sWifiManager.setOpenNetworkNotifierEnabled(currState);
+            }
             uiAutomation.dropShellPermissionIdentity();
         }
     }

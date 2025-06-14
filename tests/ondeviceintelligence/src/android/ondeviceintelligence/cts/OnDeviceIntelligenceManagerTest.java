@@ -17,7 +17,7 @@
 package android.ondeviceintelligence.cts;
 
 import static android.app.ondeviceintelligence.flags.Flags.FLAG_ENABLE_ON_DEVICE_INTELLIGENCE;
-import static android.app.ondeviceintelligence.flags.Flags.FLAG_ENABLE_ON_DEVICE_INTELLIGENCE_MODULE;
+import static android.app.ondeviceintelligence.flags.Flags.FLAG_ON_DEVICE_INTELLIGENCE_25Q4;
 import static android.content.Context.RECEIVER_EXPORTED;
 import static android.ondeviceintelligence.cts.CtsIsolatedInferenceService.constructException;
 import static android.ondeviceintelligence.cts.CtsIsolatedInferenceService.constructTokenInfo;
@@ -988,7 +988,7 @@ public class OnDeviceIntelligenceManagerTest {
 
 
     @Test
-    @RequiresFlagsEnabled(FLAG_ENABLE_ON_DEVICE_INTELLIGENCE_MODULE)
+    @RequiresFlagsEnabled(FLAG_ON_DEVICE_INTELLIGENCE_25Q4)
     public void getLatestInferenceInfoReturnSuccessfully() throws Exception {
         // When targets run as a different user than 0, it is not possible to get service
         // instance from user 0 in this test.

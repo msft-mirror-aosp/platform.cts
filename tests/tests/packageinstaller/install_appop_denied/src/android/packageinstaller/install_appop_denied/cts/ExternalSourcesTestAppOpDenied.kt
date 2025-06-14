@@ -30,11 +30,6 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-
-private const val ALERT_DIALOG_MESSAGE =
-    "For your security, your (phone|tablet|TV|watch?) currently isn’t allowed to install unknown" +
-            " apps from this source.*"
-
 @RunWith(AndroidJUnit4::class)
 @MediumTest
 @AppModeFull
@@ -48,12 +43,25 @@ class ExternalSourcesTest : PackageInstallerTestBase() {
         findInstallerUIObject(
             By.text(
                 Pattern.compile(
-                    ALERT_DIALOG_MESSAGE,
+                    context.applicationInfo.loadLabel(context.packageManager).toString(),
                     Pattern.CASE_INSENSITIVE
                 )
             ),
             errorMessage
         )
+
+        val button = findInstallerUIObject(
+            By.text(
+                Pattern.compile(
+                    "Install",
+                    Pattern.CASE_INSENSITIVE
+                )
+            ),
+            errorMessage,
+            /* checkNull= */
+            false
+        )
+        assertThat(button).isNull()
         uiDevice.pressBack()
     }
 
@@ -72,6 +80,7 @@ class ExternalSourcesTest : PackageInstallerTestBase() {
 
         startInstallation()
         assertInstallBlocked("Install blocking dialog not shown when app op set to errored")
+        assertTestPackageNotInstalled()
 
         assertTrue("Operation not logged", AppOpsUtils.rejectedOperationLogged(
             packageName,

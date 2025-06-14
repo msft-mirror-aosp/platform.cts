@@ -71,6 +71,7 @@ sigprocmask: 1
 sigreturn: 1
 
 # socketcall: call=={SYS_CONNECT,SYS_SOCKET,SYS_GETSOCKOPT}
+# TODO: this is far less restrictive than the other architectures (but can be deleted soon).
 socketcall: arg0 == 1 || arg0 == 3 || arg0 == 15; return EPERM
 
 stat64: return EPERM

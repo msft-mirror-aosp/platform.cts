@@ -2869,11 +2869,10 @@ public class ItsService extends Service implements SensorEventListener {
         int[][] queryableCombinations = maxStreamSizes.getQueryableCombinations();
         for (int i = 0; i < queryableCombinations.length; i++) {
             String oneCombination = String.valueOf(queryableCombinations[i][0]) + "+";
-            for (int j = 1; j < queryableCombinations[i].length; j += 2) {
+            for (int j = 1; j < queryableCombinations[i].length; j += 3) {
                 String format = sFormatMap.get(queryableCombinations[i][j]);
-                int sizeIndex = queryableCombinations[i][j + 1];
-                Size size = maxStreamSizes.getOutputSizeForFormat(
-                        queryableCombinations[i][j], sizeIndex);
+                Size size = new Size(queryableCombinations[i][j + 1],
+                        queryableCombinations[i][j + 2]);
                 String oneStream = format + ":" + size.toString();
                 if (j > 1) {
                     oneCombination += "+";

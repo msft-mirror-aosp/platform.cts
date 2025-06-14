@@ -81,7 +81,7 @@ enum class TestPointerDevice {
             pointer.offset(dx, dy)
             drawingTablet.sendBtn(BTN_TOOL_PEN, isDown = true)
             drawingTablet.sendDown(
-                id = 0,
+                slot = 0,
                 physicalLocation = pointer,
             )
             drawingTablet.sync()
@@ -114,16 +114,16 @@ enum class TestPointerDevice {
             val point = Point(20, 50)
             touchpad.sendBtn(BTN_TOOL_FINGER, isDown = true)
             touchpad.sendBtnTouch(isDown = true)
-            touchpad.sendDown(id = 0, point)
+            touchpad.sendDown(slot = 0, point)
             touchpad.sync()
 
             // TODO(b/310997010): Determine how we can consistently move the mouse pointer by a
             //  fixed number of integer pixels using a touchpad.
             point.offset(dx, dx)
-            touchpad.sendMove(id = 0, point)
+            touchpad.sendMove(slot = 0, point)
             touchpad.sync()
 
-            touchpad.sendUp(id = 0)
+            touchpad.sendUp(slot = 0)
             touchpad.sendBtnTouch(isDown = false)
             touchpad.sendBtn(BTN_TOOL_FINGER, isDown = false)
             touchpad.sync()

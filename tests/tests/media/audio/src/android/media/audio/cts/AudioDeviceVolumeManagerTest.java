@@ -25,6 +25,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.assertTrue;
 
 import android.Manifest;
 import android.app.Instrumentation;
@@ -89,6 +90,10 @@ public class AudioDeviceVolumeManagerTest {
             new AudioDeviceAttributes(
                     AudioDeviceAttributes.ROLE_OUTPUT, AudioDeviceInfo.TYPE_BLUETOOTH_SCO, "bla");
 
+    private static final AudioDeviceAttributes SPEAKER_DEV =
+            new AudioDeviceAttributes(
+                    AudioDeviceAttributes.ROLE_OUTPUT, AudioDeviceInfo.TYPE_BUILTIN_SPEAKER, "bla");
+
     /**
      * Constant for maximum acceptable time before which a volume change needs to be propagated
      * between client request and server update
@@ -146,9 +151,11 @@ public class AudioDeviceVolumeManagerTest {
                                 Resources.getSystem()
                                         .getIdentifier("config_useFixedVolume", "bool", "android"));
         PackageManager packageManager = mContext.getPackageManager();
-        mIsTelevision = packageManager != null
-                && (packageManager.hasSystemFeature(PackageManager.FEATURE_LEANBACK)
-                || packageManager.hasSystemFeature(PackageManager.FEATURE_TELEVISION));
+        mIsTelevision =
+                packageManager != null
+                        && (packageManager.hasSystemFeature(PackageManager.FEATURE_LEANBACK)
+                                || packageManager.hasSystemFeature(
+                                        PackageManager.FEATURE_TELEVISION));
         mIsSingleVolume =
                 mContext.getResources()
                         .getBoolean(
@@ -160,6 +167,7 @@ public class AudioDeviceVolumeManagerTest {
         mPrevVolume.put(BT_DEV, mADVmgr.getDeviceVolume(volMedia, BT_DEV));
         mPrevVolume.put(BT_DEV2, mADVmgr.getDeviceVolume(volMedia, BT_DEV2));
         mPrevVolume.put(BT_SCO_DEV, mADVmgr.getDeviceVolume(volMedia, BT_SCO_DEV));
+        mPrevVolume.put(SPEAKER_DEV, mADVmgr.getDeviceVolume(volMedia, SPEAKER_DEV));
         mWasMuted = mAm.isStreamMute(AudioManager.STREAM_MUSIC);
     }
 
@@ -169,6 +177,7 @@ public class AudioDeviceVolumeManagerTest {
         mADVmgr.setDeviceVolume(mPrevVolume.get(BT_DEV), BT_DEV);
         mADVmgr.setDeviceVolume(mPrevVolume.get(BT_DEV2), BT_DEV2);
         mADVmgr.setDeviceVolume(mPrevVolume.get(BT_SCO_DEV), BT_SCO_DEV);
+        mADVmgr.setDeviceVolume(mPrevVolume.get(SPEAKER_DEV), SPEAKER_DEV);
         mAm.adjustStreamVolume(
                 AudioManager.STREAM_MUSIC,
                 mWasMuted ? AudioManager.ADJUST_MUTE : AudioManager.ADJUST_UNMUTE,
@@ -202,15 +211,18 @@ public class AudioDeviceVolumeManagerTest {
         assertThrows("Able to call setDeviceVolume with null VolumeInfo",
                 NullPointerException.class,
                 () ->mADVmgr.setDeviceVolume(null, BT_DEV));
-        assertThrows("Able to call setDeviceVolume with null device",
+        assertThrows(
+                "Able to call setDeviceVolume with null device",
                 NullPointerException.class,
-                () ->mADVmgr.setDeviceVolume(VolumeInfo.getDefaultVolumeInfo(), null));
-        assertThrows("Able to call getDeviceVolume with null VolumeInfo",
+                () -> mADVmgr.setDeviceVolume(VolumeInfo.getDefaultVolumeInfo(), null));
+        assertThrows(
+                "Able to call getDeviceVolume with null VolumeInfo",
                 NullPointerException.class,
-                () ->mADVmgr.getDeviceVolume(null, BT_DEV));
-        assertThrows("Able to call getDeviceVolume with null device",
+                () -> mADVmgr.getDeviceVolume(null, BT_DEV));
+        assertThrows(
+                "Able to call getDeviceVolume with null device",
                 NullPointerException.class,
-                () ->mADVmgr.getDeviceVolume(VolumeInfo.getDefaultVolumeInfo(), null));
+                () -> mADVmgr.getDeviceVolume(VolumeInfo.getDefaultVolumeInfo(), null));
     }
 
     /**
@@ -246,8 +258,8 @@ public class AudioDeviceVolumeManagerTest {
     @Test
     public void testVolumeInfoArguments() throws Exception {
         VolumeInfo defVolInfo = VolumeInfo.getDefaultVolumeInfo();
-        VolumeInfo vi = new VolumeInfo.Builder(defVolInfo).setVolumeIndex(VolumeInfo.INDEX_NOT_SET)
-                .build();
+        VolumeInfo vi =
+                new VolumeInfo.Builder(defVolInfo).setVolumeIndex(VolumeInfo.INDEX_NOT_SET).build();
         android.util.Log.i(TAG, "testVolumeInfoArguments using VI:" + vi);
         assertThrows(
                 "Able to call setDeviceVolume with VolumeInfo without index",
@@ -321,10 +333,11 @@ public class AudioDeviceVolumeManagerTest {
         final int minIndex = mAm.getStreamMinVolume(AudioManager.STREAM_MUSIC);
         final int maxIndex = mAm.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
         final int midIndex = (minIndex + maxIndex) / 2;
-        final VolumeInfo volMedia = new VolumeInfo.Builder(AudioManager.STREAM_MUSIC)
-                .setMinVolumeIndex(minIndex)
-                .setMaxVolumeIndex(maxIndex)
-                .build();
+        final VolumeInfo volMedia =
+                new VolumeInfo.Builder(AudioManager.STREAM_MUSIC)
+                        .setMinVolumeIndex(minIndex)
+                        .setMaxVolumeIndex(maxIndex)
+                        .build();
         final VolumeInfo volMin = new VolumeInfo.Builder(volMedia).setVolumeIndex(minIndex).build();
         final VolumeInfo volMid = new VolumeInfo.Builder(volMedia).setVolumeIndex(midIndex).build();
 
@@ -364,9 +377,11 @@ public class AudioDeviceVolumeManagerTest {
 
         // verify the range is set, and is correct
         final VolumeInfo currentVol = mADVmgr.getDeviceVolume(volMid, BT_DEV);
-        assertFalse("Returned min volume index is not set",
+        assertFalse(
+                "Returned min volume index is not set",
                 VolumeInfo.INDEX_NOT_SET == currentVol.getMinVolumeIndex());
-        assertFalse("Returned max volume index is not set",
+        assertFalse(
+                "Returned max volume index is not set",
                 VolumeInfo.INDEX_NOT_SET == currentVol.getMaxVolumeIndex());
         assertEquals(
                 "Min possible volume index unexpected:",
@@ -479,6 +494,40 @@ public class AudioDeviceVolumeManagerTest {
                 listener.waitForVolumeChanged(VOLUME_UPDATE_TIME_MAX_MS, TimeUnit.MILLISECONDS));
     }
 
+    @RequiresFlagsEnabled({FLAG_UNIFY_ABSOLUTE_VOLUME_MANAGEMENT, FLAG_DEVICE_VOLUME_APIS})
+    @ApiTest(
+            apis = {
+                "android.media.AudioDeviceVolumeManager#setDeviceAbsoluteVolumeBehavior",
+                "android.media.AudioDeviceVolumeManager#setVolumeForDevice",
+                "android.media.AudioDeviceVolumeManager#getDeviceVolume"
+            })
+    @Test
+    public void setDeviceAbsoluteVolumeBehavior_muteOnActiveDevice() {
+        if (mSkipRingerTests) {
+            return;
+        }
+        final int minIndex = mAm.getStreamMinVolume(AudioManager.STREAM_MUSIC);
+        final int maxIndex = mAm.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
+        final VolumeInfo volMedia =
+                new VolumeInfo.Builder(AudioManager.STREAM_MUSIC)
+                        .setMaxVolumeIndex(maxIndex)
+                        .setMinVolumeIndex(minIndex)
+                        .build();
+        final AudioDeviceVolumeChangedListener listener = new AudioDeviceVolumeChangedListener();
+        final VolumeInfo nextVolume =
+                computeNewVolumeWithMute(volMedia, /* mute= */ true, SPEAKER_DEV);
+
+        mADVmgr.setDeviceAbsoluteVolumeBehavior(
+                SPEAKER_DEV, volMedia, mContext.getMainExecutor(), listener);
+        mADVmgr.setVolumeForDevice(nextVolume, SPEAKER_DEV);
+
+        checkIsMutedVolumeInfo(
+                listener.waitForVolumeChanged(VOLUME_UPDATE_TIME_MAX_MS, TimeUnit.MILLISECONDS),
+                /* activeDevice= */ true,
+                /* volumeIndexWithoutMute= */ nextVolume.getVolumeIndex(),
+                /* useVolumeForDevice= */ true);
+    }
+
     @RequiresFlagsEnabled(FLAG_UNIFY_ABSOLUTE_VOLUME_MANAGEMENT)
     @ApiTest(
             apis = {
@@ -533,8 +582,11 @@ public class AudioDeviceVolumeManagerTest {
             mADVmgr.setDeviceVolume(nextVolume, BT_SCO_DEV);
         }
 
-        checkMuteVolumeInfoEquals(
-                listener.waitForVolumeChanged(VOLUME_UPDATE_TIME_MAX_MS, TimeUnit.MILLISECONDS));
+        checkIsMutedVolumeInfo(
+                listener.waitForVolumeChanged(VOLUME_UPDATE_TIME_MAX_MS, TimeUnit.MILLISECONDS),
+                /* activeDevice= */ false,
+                /* volumeIndexWithoutMute= */ nextVolume.getVolumeIndex(),
+                useVolumeForDevice);
     }
 
     @RequiresFlagsEnabled(FLAG_UNIFY_ABSOLUTE_VOLUME_MANAGEMENT)
@@ -628,16 +680,29 @@ public class AudioDeviceVolumeManagerTest {
         } else {
             mADVmgr.setDeviceVolume(nextVolume, BT_DEV);
         }
-        checkMuteVolumeInfoEquals(
-                listener.waitForVolumeChanged(VOLUME_UPDATE_TIME_MAX_MS, TimeUnit.MILLISECONDS));
+
+        checkIsMutedVolumeInfo(
+                listener.waitForVolumeChanged(VOLUME_UPDATE_TIME_MAX_MS, TimeUnit.MILLISECONDS),
+                /* activeDevice= */ false,
+                /* volumeIndexWithoutMute= */ nextVolume.getVolumeIndex(),
+                useVolumeForDevice);
     }
 
     private void checkIndexVolumeInfoEquals(VolumeInfo expected, VolumeInfo info) {
         assertEquals(expected.getVolumeIndex(), info.getVolumeIndex());
     }
 
-    private void checkMuteVolumeInfoEquals(VolumeInfo info) {
-        assertEquals(info.getMinVolumeIndex(), info.getVolumeIndex());
+    private void checkIsMutedVolumeInfo(
+            VolumeInfo info,
+            boolean activeDevice,
+            int volumeIndexWithoutMute,
+            boolean useVolumeForDevice) {
+        if (!useVolumeForDevice || !activeDevice) {
+            assertEquals(info.getMinVolumeIndex(), info.getVolumeIndex());
+        } else {
+            assertTrue(info.isMuted());
+            assertEquals(volumeIndexWithoutMute, info.getVolumeIndex());
+        }
     }
 
     /** Return current and new volume info with different volume index and passed mute state. */

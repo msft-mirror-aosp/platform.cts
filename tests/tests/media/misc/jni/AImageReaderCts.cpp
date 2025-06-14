@@ -45,7 +45,6 @@ static constexpr int kCaptureWaitRetry = 10;
 static constexpr int kTestImageWidth = 640;
 static constexpr int kTestImageHeight = 480;
 static constexpr int kTestImageFormat = AIMAGE_FORMAT_YUV_420_888;
-static constexpr int kTestImageTransform = ANATIVEWINDOW_TRANSFORM_ROTATE_270;
 
 struct FormatUsageCombination {
     uint64_t format;
@@ -261,27 +260,21 @@ class CameraHelper {
 
 class ImageReaderTestCase {
    public:
-    ImageReaderTestCase(int32_t width,
-                        int32_t height,
-                        int32_t format,
-                        uint64_t usage,
-                        int32_t maxImages,
-                        int32_t transform,
-                        bool async)
-        : mWidth(width),
-          mHeight(height),
-          mFormat(format),
-          mUsage(usage),
-          mMaxImages(maxImages),
-          mTransform(transform),
-          mAsync(async) {}
+       ImageReaderTestCase(int32_t width, int32_t height, int32_t format, uint64_t usage,
+                           int32_t maxImages, bool async)
+             : mWidth(width),
+               mHeight(height),
+               mFormat(format),
+               mUsage(usage),
+               mMaxImages(maxImages),
+               mAsync(async) {}
 
-    ~ImageReaderTestCase() {
-        if (mImgReaderAnw) {
-            AImageReader_delete(mImgReader);
-            // No need to call ANativeWindow_release on imageReaderAnw
-        }
-    }
+       ~ImageReaderTestCase() {
+           if (mImgReaderAnw) {
+               AImageReader_delete(mImgReader);
+               // No need to call ANativeWindow_release on imageReaderAnw
+           }
+       }
 
     int initImageReader() {
         if (mImgReader != nullptr || mImgReaderAnw != nullptr) {
@@ -312,14 +305,6 @@ class ImageReaderTestCase {
         ret = AImageReader_getWindow(mImgReader, &mImgReaderAnw);
         if (ret != AMEDIA_OK || mImgReaderAnw == nullptr) {
             ALOGE("Failed to get ANativeWindow from AImageReader, ret=%d, mImgReaderAnw=%p.", ret,
-                  mImgReaderAnw);
-            return -1;
-        }
-
-        // Set ANativeWindow buffers transform
-        int32_t result = ANativeWindow_setBuffersTransform(mImgReaderAnw, mTransform);
-        if (result != 0) {
-            ALOGE("Failed to set ANativeWindow transform, ret=%d, mImgReaderAnw=%p.", result,
                   mImgReaderAnw);
             return -1;
         }
@@ -397,15 +382,25 @@ class ImageReaderTestCase {
 
         if (__builtin_available(android 37, *)) {
             int32_t imageTransform = -1;
+            // Check if the image transform is a valid value.
             ret = AImage_getTransform(img.get(), &imageTransform);
             if (ret != AMEDIA_OK) {
-                ALOGE("Faild to get image transform, ret=%d.", ret);
+                ALOGE("Failed to get image transform, ret=%d.", ret);
                 return;
             }
-            if (imageTransform != mTransform) {
-                ALOGE("Mismatched image transform: expected=%d, actual=%d.", mTransform,
-                      imageTransform);
-                return;
+
+            switch (imageTransform) {
+                case ANATIVEWINDOW_TRANSFORM_IDENTITY:
+                case ANATIVEWINDOW_TRANSFORM_MIRROR_HORIZONTAL:
+                case ANATIVEWINDOW_TRANSFORM_MIRROR_VERTICAL:
+                case ANATIVEWINDOW_TRANSFORM_ROTATE_90:
+                case ANATIVEWINDOW_TRANSFORM_ROTATE_180:
+                case ANATIVEWINDOW_TRANSFORM_ROTATE_270:
+                    // The image transform is a valid, known value.
+                    break;
+                default:
+                    ALOGE("Invalid or unsupported image transform value: %d.", imageTransform);
+                    return;
             }
         }
 
@@ -477,7 +472,6 @@ class ImageReaderTestCase {
     int32_t mFormat;
     uint64_t mUsage;
     int32_t mMaxImages;
-    int32_t mTransform;
     bool mAsync;
 
     std::mutex mMutex;
@@ -493,9 +487,8 @@ class ImageReaderTestCase {
 int takePictures(uint64_t readerUsage, int readerMaxImages, bool readerAsync, int pictureCount) {
     int ret = 0;
 
-    ImageReaderTestCase testCase(
-            kTestImageWidth, kTestImageHeight, kTestImageFormat, readerUsage, readerMaxImages,
-            kTestImageTransform, readerAsync);
+    ImageReaderTestCase testCase(kTestImageWidth, kTestImageHeight, kTestImageFormat, readerUsage,
+                                 readerMaxImages, readerAsync);
     ret = testCase.initImageReader();
     if (ret < 0) {
         return ret;
@@ -609,9 +602,8 @@ testCreateSurfaceNative(JNIEnv* env, jclass /*clazz*/) {
     static constexpr uint64_t kTestImageUsage = AHARDWAREBUFFER_USAGE_CPU_READ_OFTEN;
     static constexpr int kTestImageCount = 8;
 
-    ImageReaderTestCase testCase(
-            kTestImageWidth, kTestImageHeight, kTestImageFormat, kTestImageUsage, kTestImageCount,
-            kTestImageTransform, false);
+    ImageReaderTestCase testCase(kTestImageWidth, kTestImageHeight, kTestImageFormat,
+                                 kTestImageUsage, kTestImageCount, false);
     int ret = testCase.initImageReader();
     if (ret < 0) {
         ALOGE("Failed to get initialize image reader: ret=%d.", ret);

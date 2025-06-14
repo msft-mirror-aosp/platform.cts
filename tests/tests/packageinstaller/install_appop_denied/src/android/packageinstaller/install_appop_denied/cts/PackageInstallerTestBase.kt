@@ -45,7 +45,6 @@ import com.android.compatibility.common.util.FutureResultActivity
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.IOException
-import java.lang.IllegalArgumentException
 import java.nio.charset.StandardCharsets
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.LinkedBlockingQueue
@@ -197,19 +196,6 @@ open class PackageInstallerTestBase {
         return installDialogStarter.activity.startActivityForResult(intent)
     }
 
-    fun assertInstalled() {
-        // Throws exception if package is not installed.
-        pm.getPackageInfo(TEST_APK_PACKAGE_NAME, 0)
-    }
-
-    fun assertNotInstalled() {
-        try {
-            pm.getPackageInfo(TEST_APK_PACKAGE_NAME, 0)
-            Assert.fail("Package should not be installed")
-        } catch (expected: PackageManager.NameNotFoundException) {
-        }
-    }
-
     /**
      * Sets the given secure setting to the provided value.
      */
@@ -240,11 +226,8 @@ open class PackageInstallerTestBase {
         errorMessage: String?,
         checkNull: Boolean = true
     ): UiObject2? {
-        // Wait for a minimum 2000ms and maximum 10000ms for the UI to become idle.
-        InstrumentationRegistry.getInstrumentation().uiAutomation.waitForIdle(
-            (2 * FIND_OBJECT_TIMEOUT),
-            (10 * FIND_OBJECT_TIMEOUT)
-        )
+        // Wait for the UI to become idle.
+        uiDevice.waitForIdle()
 
         val message = errorMessage ?: "Failed to find the object: $bySelector"
         var uiObject2: UiObject2? = null

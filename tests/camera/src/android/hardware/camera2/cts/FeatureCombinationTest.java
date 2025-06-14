@@ -21,8 +21,6 @@ import static android.hardware.camera2.cts.CameraTestUtils.MaxStreamSizes.JPEG;
 import static android.hardware.camera2.cts.CameraTestUtils.MaxStreamSizes.JPEG_R;
 import static android.hardware.camera2.cts.CameraTestUtils.MaxStreamSizes.MAXIMUM_16_9;
 import static android.hardware.camera2.cts.CameraTestUtils.MaxStreamSizes.PRIV;
-import static android.hardware.camera2.cts.CameraTestUtils.MaxStreamSizes.S1080P;
-import static android.hardware.camera2.cts.CameraTestUtils.MaxStreamSizes.S720P;
 import static android.hardware.camera2.cts.CameraTestUtils.MaxStreamSizes.YUV;
 import static android.hardware.camera2.cts.CameraTestUtils.SimpleCaptureCallback;
 import static android.hardware.camera2.cts.CameraTestUtils.SimpleImageReaderListener;
@@ -222,7 +220,7 @@ public final class FeatureCombinationTest extends Camera2AndroidTestCase {
                     privTargets, jpegTargets, yuvTargets, outputConfigs, outputConfigs2Steps,
                     NUM_BUFFERS_BURST, dynamicProfile, /*hasUseCase*/ false, jpegListeners);
             assertTrue(
-                    MaxStreamSizes.combinationToString(combination) + " is not supported!",
+                    MaxStreamSizes.combinationWithSizeToString(combination) + " is not supported!",
                     minFrameDuration > 0);
 
             for (int stabilizationMode : videoStabilizationModes) {
@@ -241,10 +239,14 @@ public final class FeatureCombinationTest extends Camera2AndroidTestCase {
                         continue;
                     }
 
-                    String combinationStr = MaxStreamSizes.combinationToString(combination)
-                            + ", dynamicRangeProfile " + dynamicProfile
-                            + ", stabilizationMode " + stabilizationMode
-                            + ", fpsRange " + fpsRange.toString();
+                    String combinationStr =
+                            MaxStreamSizes.combinationWithSizeToString(combination)
+                                    + ", dynamicRangeProfile "
+                                    + dynamicProfile
+                                    + ", stabilizationMode "
+                                    + stabilizationMode
+                                    + ", fpsRange "
+                                    + fpsRange.toString();
 
                     boolean haveSession = false;
                     try {
@@ -535,12 +537,6 @@ public final class FeatureCombinationTest extends Camera2AndroidTestCase {
         PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
         CameraVideoPreviewStabilizationRequirement hlgCombinationRequirement =
                 Requirements.addR7_5__H_1_19().to(pce);
-        // Note: This must match the required stream combinations defined in [7.5/H-1-19]
-        final int[][] hlg10Combinations = {
-                // HLG10 preview + JPEG Snapshot
-                {PRIV, S1080P, JPEG, MAXIMUM_16_9},
-                {PRIV, S720P, JPEG, MAXIMUM_16_9},
-        };
         String rearId =  CameraTestUtils.getPrimaryRearCamera(mCameraManager,
                 getCameraIdsUnderTest());
         if (rearId == null) {
@@ -549,6 +545,24 @@ public final class FeatureCombinationTest extends Camera2AndroidTestCase {
             pce.submitAndCheck();
             return;
         }
+        // Note: This must match the required stream combinations defined in [7.5/H-1-19]
+        MaxStreamSizes maxStreamSizes =
+                new MaxStreamSizes(
+                        mAllStaticInfo.get(rearId), rearId, mContext, /*matchSize*/ true);
+        Size maxSize_16_9 = maxStreamSizes.getOutputSizeForFormat(JPEG, MAXIMUM_16_9);
+        final int[][] hlg10Combinations = {
+            // HLG10 preview + JPEG Snapshot
+            {
+                PRIV, CameraTestUtils.SIZE_BOUND_1080P.getWidth(),
+                        CameraTestUtils.SIZE_BOUND_1080P.getHeight(),
+                JPEG, maxSize_16_9.getWidth(), maxSize_16_9.getHeight(),
+            },
+            {
+                PRIV, CameraTestUtils.SIZE_BOUND_720P.getWidth(),
+                        CameraTestUtils.SIZE_BOUND_720P.getHeight(),
+                JPEG, maxSize_16_9.getWidth(), maxSize_16_9.getHeight(),
+            },
+        };
         try {
             // Check for static characteristics advertising HGL10 support
             openDevice(rearId);
@@ -571,8 +585,6 @@ public final class FeatureCombinationTest extends Camera2AndroidTestCase {
             }
             // Runtime test of HLG10 combinations mandated by MPC
             for (int[] c : hlg10Combinations) {
-                MaxStreamSizes maxStreamSizes = new MaxStreamSizes(mStaticInfo, mCamera.getId(),
-                        mContext, /*matchSize*/true);
                 testVPerfClassCombination(c, cameraDeviceSetup, maxStreamSizes);
             }
         } catch (Exception e) {
@@ -595,14 +607,11 @@ public final class FeatureCombinationTest extends Camera2AndroidTestCase {
         ImageDropperListener imageDropperListener = new ImageDropperListener();
 
         long frameDuration = -1;
-        for (int i = 0; i < configs.length; i += (hasUseCase ? 3 : 2)) {
+        for (int i = 0; i < configs.length; i += (hasUseCase ? 4 : 3)) {
             int format = configs[i];
-            int sizeLimit = configs[i + 1];
-
-            Size targetSize = null;
+            Size targetSize = new Size(configs[i + 1], configs[i + 2]);
             switch (format) {
                 case PRIV: {
-                    targetSize = maxSizes.getOutputSizeForFormat(PRIV, sizeLimit);
                     SurfaceTexture target = new SurfaceTexture(/*random int*/1);
                     target.setDefaultBufferSize(targetSize.getWidth(), targetSize.getHeight());
                     Surface textureSurface = new Surface(target);
@@ -612,8 +621,8 @@ public final class FeatureCombinationTest extends Camera2AndroidTestCase {
                     config.setDynamicRangeProfile(dynamicProfile);
                     configNoSurface.setDynamicRangeProfile(dynamicProfile);
                     if (hasUseCase) {
-                        config.setStreamUseCase(configs[i + 2]);
-                        configNoSurface.setStreamUseCase(configs[i + 2]);
+                        config.setStreamUseCase(configs[i + 3]);
+                        configNoSurface.setStreamUseCase(configs[i + 3]);
                     }
                     outputConfigs.add(config);
                     if (outputConfigs2Steps != null) {
@@ -624,7 +633,6 @@ public final class FeatureCombinationTest extends Camera2AndroidTestCase {
                 }
                 case JPEG:
                 case JPEG_R: {
-                    targetSize = maxSizes.getOutputSizeForFormat(format, sizeLimit);
                     ImageReader target = ImageReader.newInstance(
                             targetSize.getWidth(), targetSize.getHeight(), format, numBuffers);
                     SimpleImageReaderListener imageListener =
@@ -635,8 +643,8 @@ public final class FeatureCombinationTest extends Camera2AndroidTestCase {
                     OutputConfiguration configNoSurface = new OutputConfiguration(
                             format, targetSize);
                     if (hasUseCase) {
-                        config.setStreamUseCase(configs[i + 2]);
-                        configNoSurface.setStreamUseCase(configs[i + 2]);
+                        config.setStreamUseCase(configs[i + 3]);
+                        configNoSurface.setStreamUseCase(configs[i + 3]);
                     }
                     outputConfigs.add(config);
                     if (outputConfigs2Steps != null) {
@@ -649,7 +657,6 @@ public final class FeatureCombinationTest extends Camera2AndroidTestCase {
                     if (dynamicProfile == DynamicRangeProfiles.HLG10) {
                         format = ImageFormat.YCBCR_P010;
                     }
-                    targetSize = maxSizes.getOutputSizeForFormat(YUV, sizeLimit);
                     ImageReader target = ImageReader.newInstance(
                             targetSize.getWidth(), targetSize.getHeight(), format, numBuffers);
                     target.setOnImageAvailableListener(imageDropperListener, mHandler);
@@ -659,8 +666,8 @@ public final class FeatureCombinationTest extends Camera2AndroidTestCase {
                     config.setDynamicRangeProfile(dynamicProfile);
                     configNoSurface.setDynamicRangeProfile(dynamicProfile);
                     if (hasUseCase) {
-                        config.setStreamUseCase(configs[i + 2]);
-                        configNoSurface.setStreamUseCase(configs[i + 2]);
+                        config.setStreamUseCase(configs[i + 3]);
+                        configNoSurface.setStreamUseCase(configs[i + 3]);
                     }
                     outputConfigs.add(config);
                     if (outputConfigs2Steps != null) {

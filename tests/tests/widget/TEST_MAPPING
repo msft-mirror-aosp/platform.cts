@@ -11,5 +11,18 @@
         }
       ]
     }
+  ],
+  "wear-cts-presubmit": [
+    {
+      "name": "CtsWidgetTestCases",
+      "options": [
+        {
+          "include-filter": "android.widget.cts.RemoteViewsFixedCollectionAdapterTest"
+        },
+        {
+          "include-filter": "android.widget.cts.RemoteViewsRecyclingTest"
+        }
+      ]
+    }
   ]
 }
