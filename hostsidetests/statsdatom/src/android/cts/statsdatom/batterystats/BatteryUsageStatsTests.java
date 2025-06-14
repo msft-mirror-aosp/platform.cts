@@ -18,7 +18,6 @@ package android.cts.statsdatom.batterystats;
 
 import static com.android.os.framework.FrameworkExtensionAtoms.BATTERY_USAGE_STATS_PER_UID_FIELD_NUMBER;
 import static com.android.os.framework.FrameworkExtensionAtoms.batteryUsageStatsPerUid;
-import static com.android.server.power.optimization.Flags.FLAG_ADD_BATTERY_USAGE_STATS_SLICE_ATOM;
 import static com.android.server.power.optimization.Flags.FLAG_DISABLE_COMPOSITE_BATTERY_USAGE_STATS_ATOMS;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -29,7 +28,6 @@ import android.cts.statsdatom.lib.DeviceUtils;
 import android.cts.statsdatom.lib.ReportUtils;
 import android.os.PowerComponentEnum;
 import android.platform.test.annotations.RequiresFlagsDisabled;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.host.HostFlagsValueProvider;
 
@@ -130,7 +128,6 @@ public class BatteryUsageStatsTests extends BaseHostJUnit4Test implements IBuild
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_ADD_BATTERY_USAGE_STATS_SLICE_ATOM)
     public void testBatteryUsageStatsPerUid() throws Exception {
         if (!hasBattery()) {
             return;
