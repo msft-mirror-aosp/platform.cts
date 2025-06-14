@@ -37,13 +37,11 @@ import com.android.bedstead.harrier.annotations.RequireNotAutomotive;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.Objects;
 
-@Ignore
 public class ActivitySecurityModelTest extends BackgroundActivityTestBase {
     @Rule
     public final CheckFlagsRule mCheckFlagsRule =
@@ -113,7 +111,6 @@ public class ActivitySecurityModelTest extends BackgroundActivityTestBase {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_ASM_RESTRICTIONS_V2)
     public void testActivitySandwich_launchBlocked() {
-        BackgroundActivityLaunchTest.assumeSdkNewerThanUpsideDownCake();
         new ActivityStartVerifier()
                 .setupTaskWithForegroundActivity(APP_A)
                 .startFromForegroundActivity(APP_A)
@@ -143,7 +140,6 @@ public class ActivitySecurityModelTest extends BackgroundActivityTestBase {
     @Test
     @RequiresFlagsDisabled(Flags.FLAG_ASM_RESTRICTIONS_V2)
     public void testActivitySandwich_launchAllowed() {
-        BackgroundActivityLaunchTest.assumeSdkNewerThanUpsideDownCake();
         new ActivityStartVerifier()
                 .setupTaskWithForegroundActivity(APP_A)
                 .startFromForegroundActivity(APP_A)
