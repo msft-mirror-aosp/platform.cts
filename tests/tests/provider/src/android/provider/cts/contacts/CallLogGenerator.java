@@ -25,9 +25,10 @@ import static android.provider.CallLog.Calls.PRESENTATION_ALLOWED;
 import android.content.Context;
 import android.database.Cursor;
 import android.net.Uri;
-import android.provider.CallLog;
-import android.telecom.CallerInfo;
 import android.telecom.PhoneAccountHandle;
+
+import com.android.server.telecom.util.CallLogUtils;
+import com.android.server.telecom.util.CallerInfo;
 
 import java.util.Random;
 
@@ -70,7 +71,7 @@ public final class CallLogGenerator {
     public Uri addCallLog(PhoneAccountHandle phoneAccountHandle) {
         final CallerInfo callerInfo = new CallerInfo();
         callerInfo.setName(getRandomName());
-        return CallLog.Calls.addCall(
+        return CallLogUtils.addCall(
                 callerInfo,
                 mContext,
                 getRandomPhoneNumber(),

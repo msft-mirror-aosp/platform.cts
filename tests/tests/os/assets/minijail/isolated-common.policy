@@ -147,23 +147,3 @@ wait4: 1
 waitid: 1
 write: 1
 writev: 1
-
-# These are system calls in their own right for everything but 32-bit x86,
-# which historically multiplexed them through socketcall(2) instead.
-accept4: return EPERM
-accept: return EPERM
-bind: return EPERM
-connect: 1
-getsockopt: 1
-listen: return EPERM
-recvfrom: 1
-recvmsg: 1
-sendmsg: 1
-sendto: 1
-# setsockopt: level==SOL_SOCKET && optname==SO_PEEK_OFF
-setsockopt: arg1 == 1 && arg2 == 42
-shutdown: 1
-# socket: domain==AF_UNIX && protocol == 0
-socket: arg0 == 1 && arg2 == 0
-# socketpair: domain==AF_UNIX
-socketpair: arg0 == 1

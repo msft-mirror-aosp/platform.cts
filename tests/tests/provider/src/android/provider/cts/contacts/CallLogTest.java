@@ -46,6 +46,7 @@ import androidx.annotation.NonNull;
 import com.android.compatibility.common.util.ShellIdentityUtils;
 import com.android.compatibility.common.util.ShellUtils;
 import com.android.server.telecom.flags.Flags;
+import com.android.server.telecom.util.CallLogUtils;
 
 import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
@@ -416,8 +417,8 @@ public class CallLogTest extends InstrumentationTestCase {
         UserHandle currentUser = UserHandle.of(
                 ShellIdentityUtils.invokeStaticMethodWithShellPermissions(
                         () -> ActivityManager.getCurrentUser()));
-        CallLog.AddCallParams.AddCallParametersBuilder builder =
-                new CallLog.AddCallParams.AddCallParametersBuilder();
+        CallLogUtils.AddCallParams.AddCallParametersBuilder builder =
+                new CallLogUtils.AddCallParams.AddCallParametersBuilder();
         builder.setAddForAllUsers(false);
         builder.setUserToBeInsertedTo(currentUser);
         // Some random spot in the North Atlantic
@@ -434,7 +435,7 @@ public class CallLogTest extends InstrumentationTestCase {
                     .adoptShellPermissionIdentity(Manifest.permission.INTERACT_ACROSS_USERS,
                             Manifest.permission.READ_VOICEMAIL);
             try {
-                uri = CallLog.Calls.addCall(context, builder.build());
+                uri = CallLogUtils.addCall(context, builder.build());
             } finally {
                 getInstrumentation().getUiAutomation().dropShellPermissionIdentity();
             }

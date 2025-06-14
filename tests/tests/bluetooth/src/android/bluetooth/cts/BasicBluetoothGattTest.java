@@ -37,7 +37,11 @@ import android.bluetooth.test_utils.Permissions;
 import android.content.AttributionSource;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.os.Handler;
+import android.os.HandlerThread;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Log;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -49,6 +53,7 @@ import com.android.compatibility.common.util.CddTest;
 import org.junit.After;
 import org.junit.Assume;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -76,6 +81,9 @@ public class BasicBluetoothGattTest {
     private BluetoothDevice mBluetoothDevice;
     private BluetoothGatt mBluetoothGatt;
 
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
     @Before
     public void setUp() {
         Assume.assumeTrue(TestUtils.isBleSupported(mContext));
@@ -89,9 +97,19 @@ public class BasicBluetoothGattTest {
             assertThat(BTAdapterUtils.enableAdapter(mBluetoothAdapter, mContext)).isTrue();
         }
         mBluetoothDevice = mBluetoothAdapter.getRemoteDevice(TEST_DEVICE_ADDRESS);
+
+        HandlerThread handlerThread = new HandlerThread("BluetoothGattTest");
+        handlerThread.start();
+        Handler handler = new Handler(handlerThread.getLooper());
+
         mBluetoothGatt =
                 mBluetoothDevice.connectGatt(
-                        mContext, /* autoConnect= */ true, new BluetoothGattCallback() {});
+                        mContext,
+                        /* autoConnect= */ true,
+                        new BluetoothGattCallback() {},
+                        BluetoothDevice.TRANSPORT_LE,
+                        BluetoothDevice.PHY_LE_1M,
+                        handler);
         if (mBluetoothGatt == null) {
             try {
                 Thread.sleep(500); // Bt is not binded yet. Wait and retry
@@ -100,7 +118,12 @@ public class BasicBluetoothGattTest {
             }
             mBluetoothGatt =
                     mBluetoothDevice.connectGatt(
-                            mContext, /* autoConnect= */ true, new BluetoothGattCallback() {});
+                            mContext,
+                            /* autoConnect= */ true,
+                            new BluetoothGattCallback() {},
+                            BluetoothDevice.TRANSPORT_LE,
+                            BluetoothDevice.PHY_LE_1M,
+                            handler);
         }
         assertThat(mBluetoothGatt).isNotNull();
     }
@@ -189,6 +212,9 @@ public class BasicBluetoothGattTest {
         // Skip the test if bluetooth or companion device are not present.
         assumeTrue(mHasBluetooth && mHasCompanionDevice);
 
+        // Remove Associated
+        removeAssociation();
+
         int userId = mContext.getUser().getIdentifier();
         String packageName = mContext.getOpPackageName();
 
@@ -217,9 +243,12 @@ public class BasicBluetoothGattTest {
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_LE_SUBRATE_API)
-    public void requestSubrateMode_verifyPermissionsandParameters() {
+    public void requestSubrateMode_verifyPermissionsAndParameters() {
         // Skip the test if bluetooth or companion device are not present.
         assumeTrue(mHasBluetooth && mHasCompanionDevice);
+
+        // Remove Associated
+        removeAssociation();
 
         int userId = mContext.getUser().getIdentifier();
 

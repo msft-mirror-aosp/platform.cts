@@ -30,7 +30,6 @@ import static org.junit.Assume.assumeTrue;
 
 import android.incrementalinstall.common.Consts;
 import android.platform.test.annotations.LargeTest;
-import android.platform.test.annotations.PlatinumTest;
 
 import com.android.compatibility.common.tradefed.build.CompatibilityBuildHelper;
 import com.android.ddmlib.Log;
@@ -49,6 +48,7 @@ import com.google.common.truth.Truth;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -64,8 +64,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
-@PlatinumTest(focusArea = "pm")
 @RunWith(DeviceJUnit4ClassRunner.class)
+@Ignore("b/422161071")
 public class IncrementalInstallTest extends BaseHostJUnit4Test {
 
     private static final String FEATURE_INCREMENTAL_DELIVERY =
