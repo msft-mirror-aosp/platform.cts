@@ -17,6 +17,8 @@
 package android.media.cujcommon.cts;
 
 import static com.google.common.truth.Truth.assertWithMessage;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import android.app.Activity;
 import android.app.ActivityTaskManager;
@@ -71,6 +73,7 @@ public class CujTestBase {
   protected MainActivity mActivity;
   protected ScrollTestActivity mScrollActivity;
   protected AudioOffloadTestActivity mAudioOffloadActivity;
+  private GaplessTestActivity mGaplessActivity;
   public PlayerListener mListener;
 
   public CujTestBase(PlayerListener playerListener) {
@@ -88,6 +91,8 @@ public class CujTestBase {
           new Intent(ApplicationProvider.getApplicationContext(), AudioOffloadTestActivity.class);
       if (playerListener.getTestType().equals(TestType.AUDIO_OFFLOAD_SPEED_CHANGE_TEST)) {
         intent.putExtra("playback_rate", PLAYBACK_RATE_FOR_SPEED_CHANGE_TEST);
+      } else if (playerListener.getTestType().equals(TestType.AUDIO_OFFLOAD_GAPLESS_TEST)) {
+        intent.putExtra("gapless_audio_offload", true);
       }
       ActivityScenario<AudioOffloadTestActivity> scenario = ActivityScenario.launch(intent);
       scenario.onActivity(activity -> {
@@ -174,6 +179,23 @@ public class CujTestBase {
   }
 
   /**
+   * Whether the device supports gapless offload playback.
+   */
+  public static boolean deviceSupportGaplessAudioOffload(int encoding) {
+    AudioFormat audioFormat = new AudioFormat.Builder()
+        .setEncoding(encoding)
+        .setSampleRate(AUDIOTRACK_DEFAULT_SAMPLE_RATE)
+        .setChannelMask(AUDIOTRACK_DEFAULT_CHANNEL_MASK)
+        .build();
+    AudioAttributes defaultAudioAttributes = new AudioAttributes.Builder().build();
+    int playbackOffloadSupport =
+          AudioManager.getPlaybackOffloadSupport(audioFormat, defaultAudioAttributes);
+    return deviceSupportAudioOffload(encoding)
+          && Build.VERSION.SDK_INT > 32
+          && playbackOffloadSupport == AudioManager.PLAYBACK_OFFLOAD_GAPLESS_SUPPORTED;
+  }
+
+  /**
    * Whether the device is a watch.
    */
   public static boolean isWatchDevice(final Activity activity) {
@@ -213,6 +235,7 @@ public class CujTestBase {
   public void play(List<String> mediaUrls, Duration timeout)
       throws TimeoutException, InterruptedException {
     long startTime = System.currentTimeMillis();
+    long audioOffloadGaplessPlaybackTime = 0;
     if (mListener.isScrollTest()) {
       mScrollActivity.runOnUiThread(() -> {
         mScrollActivity.prepareMediaItems(mediaUrls);
@@ -221,6 +244,30 @@ public class CujTestBase {
       mAudioOffloadActivity.runOnUiThread(() -> {
         mAudioOffloadActivity.prepareMediaItems(mediaUrls);
       });
+    if (mListener.getTestType().equals(TestType.AUDIO_OFFLOAD_GAPLESS_TEST)) {
+        // Wait for playback to finish
+        synchronized (PlayerListener.LISTENER_LOCK) {
+          while (!PlayerListener.mPlaybackEnded) {
+            PlayerListener.LISTENER_LOCK.wait(timeout.toMillis() / 2);
+          }
+          PlayerListener.mPlaybackEnded = false;
+        }
+        audioOffloadGaplessPlaybackTime = mListener.getTotalPlaybackTime();
+        // Create gapless activity without audiooffload
+        ActivityScenario<GaplessTestActivity> scenario =
+                ActivityScenario.launch(new Intent(ApplicationProvider.getApplicationContext(),
+                                                  GaplessTestActivity.class));
+        scenario.onActivity(activity -> {
+          this.mGaplessActivity = activity;
+        });
+        mListener =
+                    new AudioOffloadTestPlayerListener(TestType.AUDIO_OFFLOAD_GAPLESS_TEST_HELPER);
+        mGaplessActivity.addPlayerListener(mListener);
+        mListener.setGaplessActivity(mGaplessActivity);
+        mGaplessActivity.runOnUiThread(() -> {
+        mGaplessActivity.prepareMediaItems(mediaUrls);
+      });
+      }
     } else {
       mActivity.runOnUiThread(() -> {
         mActivity.prepareMediaItems(mediaUrls);
@@ -243,6 +290,13 @@ public class CujTestBase {
     long expectedTotalTime = mListener.getExpectedTotalTime();
     if (mListener.getTestType().equals(TestType.AUDIO_OFFLOAD_SPEED_CHANGE_TEST)) {
       expectedTotalTime = (long) (expectedTotalTime / PLAYBACK_RATE_FOR_SPEED_CHANGE_TEST);
+    } else if (mListener.getTestType().equals(TestType.AUDIO_OFFLOAD_GAPLESS_TEST_HELPER)) {
+      // Validate the playbackduration from with and without audiooffload for gapless
+      assertTrue("The gapless playback time difference with and without audiooffload is more than "
+                 + "500ms",
+              audioOffloadGaplessPlaybackTime - mListener.getTotalPlaybackTime() < 500);
+      actualTotalTime = audioOffloadGaplessPlaybackTime + mListener.getTotalPlaybackTime();
+      expectedTotalTime = expectedTotalTime * 2;
     }
     mListener.onTestCompletion();
     assertWithMessage("Test did not complete within expected time").that(actualTotalTime)
