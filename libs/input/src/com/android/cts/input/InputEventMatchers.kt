@@ -385,7 +385,7 @@ fun withModifierState(modifierState: Int): Matcher<KeyEvent> =
     }
 
     override fun matchesSafely(event: KeyEvent): Boolean {
-        return (event.metaState and modifierState) == modifierState
+        return event.metaState == modifierState
     }
 }
 
