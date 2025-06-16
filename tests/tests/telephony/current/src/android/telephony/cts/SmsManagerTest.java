@@ -16,11 +16,19 @@
 
 package android.telephony.cts;
 
+import static android.Manifest.permission.MANAGE_COMPANION_DEVICES;
+import static android.Manifest.permission.MANAGE_ROLE_HOLDERS;
+import static android.Manifest.permission.READ_PRIVILEGED_PHONE_STATE;
+import static android.Manifest.permission.RECEIVE_SENSITIVE_NOTIFICATIONS;
+
 import static androidx.test.InstrumentationRegistry.getContext;
 import static androidx.test.InstrumentationRegistry.getInstrumentation;
 
 import static com.android.compatibility.common.util.BlockedNumberUtil.deleteBlockedNumber;
 import static com.android.compatibility.common.util.BlockedNumberUtil.insertBlockedNumber;
+import static com.android.compatibility.common.util.ShellUtils.runShellCommand;
+import static com.android.compatibility.common.util.SystemUtil.callWithShellPermissionIdentity;
+import static com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity;
 import static com.android.internal.telephony.flags.Flags.FLAG_REDACT_OTP_SMS;
 import static com.android.internal.telephony.flags.Flags.FLAG_REDACT_OTP_SMS_API;
 
@@ -40,7 +48,9 @@ import static org.junit.Assume.assumeNoException;
 import static org.junit.Assume.assumeTrue;
 
 import android.Manifest;
+import android.annotation.NonNull;
 import android.annotation.Nullable;
+import android.annotation.SuppressLint;
 import android.app.AppOpsManager;
 import android.app.PendingIntent;
 import android.app.UiAutomation;
@@ -52,11 +62,13 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.ParcelFileDescriptor;
+import android.os.Process;
 import android.os.RemoteCallback;
 import android.os.SystemClock;
 import android.platform.test.annotations.RequiresFlagsEnabled;
@@ -77,6 +89,7 @@ import android.util.Log;
 import androidx.test.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.ApiTest;
+import com.android.compatibility.common.util.CarrierPrivilegeUtils;
 import com.android.compatibility.common.util.ShellIdentityUtils;
 import com.android.compatibility.common.util.SystemUtil;
 
@@ -94,8 +107,10 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -130,10 +145,23 @@ public class SmsManagerTest {
     private static final String FINANCIAL_SMS_APP = "android.telephony.cts.financialsms";
     private static final String OTP_SMS_TEXT = "Your one time code is 11111";
 
+    private static final int SYSTEM_APP_FLAGS =
+            PackageManager.MATCH_SYSTEM_ONLY
+                    | PackageManager.MATCH_DISABLED_COMPONENTS
+                    | PackageManager.MATCH_DISABLED_UNTIL_USED_COMPONENTS
+                    | PackageManager.MATCH_KNOWN_PACKAGES
+                    | PackageManager.MATCH_DIRECT_BOOT_AWARE
+                    | PackageManager.MATCH_DIRECT_BOOT_UNAWARE;
+
+    private static final List<String> SMS_OTP_READING_ROLES =
+            List.of(RoleManager.ROLE_SMS, RoleManager.ROLE_ASSISTANT, RoleManager.ROLE_DIALER);
+
     private TelephonyManager mTelephonyManager;
     private SubscriptionManager mSubscriptionManager;
+    private RoleManager mRoleManager;
     private String mDestAddr;
     private String mText;
+    private String mSelfPackageName;
     private SmsBroadcastReceiver mSendReceiver;
     private SmsBroadcastReceiver mDeliveryReceiver;
     private SmsBroadcastReceiver mDataSmsReceiver;
@@ -145,9 +173,11 @@ public class SmsManagerTest {
     private Intent mSendIntent;
     private Intent mDeliveryIntent;
     private Context mContext;
+    private PackageManager mPackageManager;
     private Uri mBlockedNumberUri;
     private boolean mTestAppSetAsDefaultSmsApp;
     private boolean mDeliveryReportSupported;
+    private final int mSelfUid = Process.myUid();
     private static boolean mReceivedDataSms;
     private static String mReceivedText;
     @Nullable
@@ -163,12 +193,13 @@ public class SmsManagerTest {
 
     @Before
     public void setUp() throws Exception {
-        assumeTrue(getContext().getPackageManager().hasSystemFeature(
-                PackageManager.FEATURE_TELEPHONY_MESSAGING));
-
         mContext = getContext();
+        mPackageManager = mContext.getPackageManager();
+        assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_MESSAGING));
+        mSelfPackageName = mContext.getPackageName();
         mTelephonyManager = mContext.getSystemService(TelephonyManager.class);
         mSubscriptionManager = mContext.getSystemService(SubscriptionManager.class);
+        mRoleManager = mContext.getSystemService(RoleManager.class);
         mText = "This is a test message";
 
         executeWithShellPermissionIdentity(() -> {
@@ -512,7 +543,7 @@ public class SmsManagerTest {
                     "Default SMS app should get SMS_RECEIVED for OTP calls",
                     mSmsReceivedReceiver.waitForCalls(1, TIME_OUT));
             assertTrue(
-                    "Default SMS app should get SMS_RECEIVED for OTP calls",
+                    "Default SMS app should get SMS_DELIVERED for OTP calls",
                     mSmsDeliverReceiver.waitForCalls(1, TIME_OUT));
         } finally {
             DefaultSmsAppHelper.stopBeingDefaultSmsApp();
@@ -521,10 +552,38 @@ public class SmsManagerTest {
 
     @Test
     @RequiresFlagsEnabled({FLAG_REDACT_OTP_SMS, FLAG_REDACT_OTP_SMS_API})
-    public void testOtpSmsBroadcastReceivedByAppsWithPermission() {
+    public void testOtpSmsBroadcastReceivedByDefaultTrustedRoleHolders() throws Exception {
+        init();
+        List<String> smsOtpReadingRoles =
+                List.of(RoleManager.ROLE_SMS, RoleManager.ROLE_ASSISTANT, RoleManager.ROLE_DIALER);
+        for (String roleName : smsOtpReadingRoles) {
+            List<String> oldRoleHolders =
+                    callWithShellPermissionIdentity(
+                            () ->
+                                    mRoleManager.getRoleHoldersAsUser(
+                                            roleName, Process.myUserHandle()));
+            try {
+                addRoleHolder(roleName, mContext.getPackageName());
+                sendOtpSmsMessage();
+                assertTrue(
+                        "Default " + roleName + " app should get SMS_RECEIVED for OTP calls",
+                        mSmsReceivedReceiver.waitForCalls(1, TIME_OUT));
+            } finally {
+                removeRoleHolder(roleName, mContext.getPackageName());
+                for (String oldHolder : oldRoleHolders) {
+                    addRoleHolder(roleName, oldHolder);
+                }
+            }
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled({FLAG_REDACT_OTP_SMS, FLAG_REDACT_OTP_SMS_API})
+    public void testOtpSmsBroadcastReceivedByReceiveSensitiveApps() {
         init();
         SystemUtil.runWithShellPermissionIdentity(
                 () -> {
+                    // Having the RECEIVE_SENSITIVE_NOTIFICATIONS permission
                     sendOtpSmsMessage();
                     assertTrue(
                             "Apps with RECEIVE_SENSITIVE_NOTIFICATIONS permission should get "
@@ -536,25 +595,38 @@ public class SmsManagerTest {
 
     @Test
     @RequiresFlagsEnabled({FLAG_REDACT_OTP_SMS, FLAG_REDACT_OTP_SMS_API})
-    public void testOtpSmsBroadcastReceivedByAppsWithAppOp() throws Exception {
+    public void testOtpSmsBroadcastReceivedByCdmApps() throws Exception {
         init();
+        associateCdm();
         try {
-            setModeForOps(
-                    mContext.getPackageName(),
-                    AppOpsManager.MODE_ALLOWED,
-                    AppOpsManager.OPSTR_RECEIVE_SENSITIVE_NOTIFICATIONS);
             sendOtpSmsMessage();
             assertTrue(
-                    "Apps with RECEIVE_SENSITIVE_NOTIFICATIONS op should get SMS_RECEIVED for "
-                            + "OTP calls",
+                    "Apps with CDM association should get SMS_RECEIVED for OTP calls",
                     mSmsReceivedReceiver.waitForCalls(1, TIME_OUT));
+
         } finally {
-            setModeForOps(
-                    mContext.getPackageName(),
-                    AppOpsManager.MODE_IGNORED,
-                    AppOpsManager.OPSTR_RECEIVE_SENSITIVE_NOTIFICATIONS);
+            disassociateCdm();
         }
     }
+
+    /*
+     * TODO b/428735861, determine why the carrier privileged block causes the text to not get sent
+    @Test
+    @RequiresFlagsEnabled({FLAG_REDACT_OTP_SMS, FLAG_REDACT_OTP_SMS_API})
+    public void testOtpSmsBroadcastReceivedByCarrierApps() throws Exception {
+        init();
+        CarrierPrivilegeUtils.withCarrierPrivileges(
+                getContext(),
+                SubscriptionManager.getDefaultSubscriptionId(),
+                () -> {
+                    sendOtpSmsMessage();
+                    assertTrue(
+                            "Apps with Carrier Privileged status should get SMS_RECEIVED "
+                                    + "for OTP calls",
+                            mSmsReceivedReceiver.waitForCalls(1, TIME_OUT));
+                });
+    }
+     */
 
     @Test
     @RequiresFlagsEnabled({FLAG_REDACT_OTP_SMS, FLAG_REDACT_OTP_SMS_API})
@@ -703,7 +775,7 @@ public class SmsManagerTest {
     }
 
     private int getPackageUid(String pkg) throws PackageManager.NameNotFoundException {
-        return getInstrumentation().getContext().getPackageManager().getPackageUid(pkg, 0);
+        return mPackageManager.getPackageUid(pkg, 0);
     }
 
     private String getSmsApp() throws Exception {
@@ -1010,6 +1082,209 @@ public class SmsManagerTest {
         adoptShellIdentity();
     }
 
+    @Test
+    @RequiresFlagsEnabled({FLAG_REDACT_OTP_SMS_API})
+    public void testGetSmsOtpTrustedAppIds_systemApps() throws Exception {
+        Set<String> trustedAppIds =
+                callWithShellPermissionIdentity(
+                        () -> SmsManager.getSmsOtpTrustedPackages(mContext));
+        List<PackageInfo> systemPkgs =
+                callWithShellPermissionIdentity(
+                        () -> mPackageManager.getInstalledPackages(SYSTEM_APP_FLAGS));
+        for (PackageInfo info : systemPkgs) {
+            assertTrue(
+                    "Expected system package " + info.packageName + " to be in trusted list",
+                    trustedAppIds.contains(info.packageName));
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled({FLAG_REDACT_OTP_SMS_API})
+    public void testGetSmsOtpTrustedAppIds_receiveSensitiveHoldingApps() throws Exception {
+        // Running the call with RECEIVE_SENSITIVE_NOTIFICATIONS, this uid should be trusted
+        Set<String> newTrustedAppIds =
+                callWithShellPermissionIdentity(
+                        () -> SmsManager.getSmsOtpTrustedPackages(mContext),
+                        READ_PRIVILEGED_PHONE_STATE,
+                        MANAGE_COMPANION_DEVICES,
+                        MANAGE_ROLE_HOLDERS,
+                        RECEIVE_SENSITIVE_NOTIFICATIONS);
+        assertTrue(
+                "Expected permission holding package "
+                        + mSelfPackageName
+                        + " to be in trusted list",
+                newTrustedAppIds.contains(mSelfPackageName));
+    }
+
+    @Test
+    @RequiresFlagsEnabled({FLAG_REDACT_OTP_SMS_API})
+    public void testGetSmsOtpTrustedAppIds_cdmAssociation() throws Exception {
+        try {
+            associateCdm();
+            Set<String> newTrustedAppIds =
+                    callWithTrustedSmsReadPermissions(
+                            () -> SmsManager.getSmsOtpTrustedPackages(mContext));
+            assertTrue(
+                    "Expected cdm association app to be in trusted list",
+                    newTrustedAppIds.contains(mSelfPackageName));
+        } finally {
+            disassociateCdm();
+        }
+    }
+
+    @Test
+    public void testGetSmsOtpTrustedAppIds_carrierPrivilegedAppTrusted() throws Exception {
+        assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
+        CarrierPrivilegeUtils.withCarrierPrivileges(
+                getContext(),
+                SubscriptionManager.getDefaultSubscriptionId(),
+                () -> {
+                    Set<String> newTrustedPackages =
+                            callWithTrustedSmsReadPermissions(
+                                    () -> SmsManager.getSmsOtpTrustedPackages(mContext));
+                    assertTrue(
+                            "Expected carrier privileged app to be in trusted list",
+                            newTrustedPackages.contains(mSelfPackageName));
+                });
+    }
+
+    @Test
+    @SuppressLint("MissingPermission")
+    public void testGetSmsOtpTrustedAppIds_rolesTrusted() throws Exception {
+        for (String roleName : SMS_OTP_READING_ROLES) {
+            List<String> oldRoleHolders =
+                    callWithShellPermissionIdentity(
+                            () ->
+                                    mRoleManager.getRoleHoldersAsUser(
+                                            roleName, Process.myUserHandle()));
+            try {
+                addRoleHolder(roleName, mSelfPackageName);
+                Set<String> newTrustedAppIds =
+                        callWithTrustedSmsReadPermissions(
+                                () -> SmsManager.getSmsOtpTrustedPackages(mContext));
+                assertTrue(
+                        "Expected " + roleName + " holder to be in trusted list",
+                        newTrustedAppIds.contains(mSelfPackageName));
+            } finally {
+                removeRoleHolder(roleName, mSelfPackageName);
+                for (String oldHolder : oldRoleHolders) {
+                    addRoleHolder(roleName, oldHolder);
+                }
+            }
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled({FLAG_REDACT_OTP_SMS_API})
+    public void testGetSmsOtpTrustedAppIds_standardAppNotIncluded() throws Exception {
+        Set<String> trustedAppIds =
+                callWithTrustedSmsReadPermissions(
+                        () -> SmsManager.getSmsOtpTrustedPackages(mContext));
+        assertFalse(
+                "Expected standard app ID " + mSelfPackageName + " not to be in " + "trusted list",
+                trustedAppIds.contains(mSelfPackageName));
+    }
+
+    @Test
+    @RequiresFlagsEnabled({FLAG_REDACT_OTP_SMS_API})
+    public void testIsAppTrustedForSmsOtp_systemApps() throws Exception {
+        List<PackageInfo> systemPkgs =
+                callWithShellPermissionIdentity(
+                        () -> mPackageManager.getInstalledPackages(SYSTEM_APP_FLAGS));
+        for (PackageInfo info : systemPkgs) {
+            assertTrue(
+                    "Expected system app " + info.packageName + " to be trusted",
+                    callWithShellPermissionIdentity(
+                            () ->
+                                    SmsManager.isAppTrustedForSmsOtp(
+                                            mContext, info.packageName, info.applicationInfo.uid)));
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled({FLAG_REDACT_OTP_SMS_API})
+    public void testIsAppTrustedForSmsOtp_receiveSensitiveHoldingApps() throws Exception {
+        assertTrue(
+                "Expected permission holding app to be trusted",
+                callWithShellPermissionIdentity(
+                        () ->
+                                SmsManager.isAppTrustedForSmsOtp(
+                                        mContext, mSelfPackageName, mSelfUid),
+                        READ_PRIVILEGED_PHONE_STATE,
+                        MANAGE_COMPANION_DEVICES,
+                        MANAGE_ROLE_HOLDERS,
+                        RECEIVE_SENSITIVE_NOTIFICATIONS));
+    }
+
+    @Test
+    @RequiresFlagsEnabled({FLAG_REDACT_OTP_SMS_API})
+    public void testIsAppTrustedForSmsOtp_cdmAssociation() throws Exception {
+        try {
+            associateCdm();
+            assertTrue(
+                    "Expected cdm association app to be trusted",
+                    callWithTrustedSmsReadPermissions(
+                            () ->
+                                    SmsManager.isAppTrustedForSmsOtp(
+                                            mContext, mSelfPackageName, mSelfUid)));
+        } finally {
+            disassociateCdm();
+        }
+    }
+
+    @Test
+    public void testIsAppTrustedForSmsOtp_carrierPrivilegedAppTrusted() throws Exception {
+        assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
+        CarrierPrivilegeUtils.withCarrierPrivileges(
+                getContext(),
+                SubscriptionManager.getDefaultSubscriptionId(),
+                () -> {
+                    assertTrue(
+                            "Expected carrier privileged app to be trusted",
+                            callWithTrustedSmsReadPermissions(
+                                    () ->
+                                            SmsManager.isAppTrustedForSmsOtp(
+                                                    mContext, mSelfPackageName, mSelfUid)));
+                });
+    }
+
+    @Test
+    @SuppressLint("MissingPermission")
+    public void testIsAppTrustedForSmsOtp_rolesTrusted() throws Exception {
+        for (String roleName : SMS_OTP_READING_ROLES) {
+            List<String> oldRoleHolders =
+                    callWithShellPermissionIdentity(
+                            () ->
+                                    mRoleManager.getRoleHoldersAsUser(
+                                            roleName, Process.myUserHandle()));
+            try {
+                addRoleHolder(roleName, mSelfPackageName);
+                assertTrue(
+                        "Expected " + roleName + " holder to be trusted",
+                        callWithTrustedSmsReadPermissions(
+                                () ->
+                                        SmsManager.isAppTrustedForSmsOtp(
+                                                mContext, mSelfPackageName, mSelfUid)));
+            } finally {
+                removeRoleHolder(roleName, mSelfPackageName);
+                for (String oldHolder : oldRoleHolders) {
+                    addRoleHolder(roleName, oldHolder);
+                }
+            }
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled({FLAG_REDACT_OTP_SMS_API})
+    public void testIsAppTrustedForSmsOtp_standardAppNotTrusted() throws Exception {
+        assertFalse(
+                "Expected a standard app to be untrusted",
+                callWithTrustedSmsReadPermissions(
+                        () ->
+                                SmsManager.isAppTrustedForSmsOtp(
+                                        mContext, mSelfPackageName, mSelfUid)));
+    }
+
     protected ArrayList<String> divideMessage(String text) {
         return getSmsManager().divideMessage(text);
     }
@@ -1181,5 +1456,69 @@ public class SmsManagerTest {
     private static void dropShellIdentity() {
         InstrumentationRegistry.getInstrumentation().getUiAutomation()
                 .dropShellPermissionIdentity();
+    }
+
+    private void associateCdm() {
+        runShellCommand(
+                "cmd companiondevice associate %s %s 00:00:00:00:00:AA",
+                Process.myUserHandle().getIdentifier(), mContext.getPackageName());
+    }
+
+    private void disassociateCdm() {
+        runShellCommand(
+                "cmd companiondevice disassociate %s %s 00:00:00:00:00:AA",
+                Process.myUserHandle().getIdentifier(), mContext.getPackageName());
+    }
+
+    @SuppressLint("MissingPermission")
+    private void addRoleHolder(String roleName, String packageName) throws Exception {
+        CountDownLatch latch = new CountDownLatch(1);
+        runWithShellPermissionIdentity(
+                () ->
+                        mRoleManager.addRoleHolderAsUser(
+                                roleName,
+                                packageName,
+                                0,
+                                android.os.Process.myUserHandle(),
+                                getContext().getMainExecutor(),
+                                success -> {
+                                    assertTrue(
+                                            "Failed to set role " + roleName + " to " + packageName,
+                                            success);
+                                    latch.countDown();
+                                }));
+        latch.await();
+    }
+
+    @SuppressLint("MissingPermission")
+    private void removeRoleHolder(String roleName, String packageName) throws Exception {
+        CountDownLatch latch = new CountDownLatch(1);
+        runWithShellPermissionIdentity(
+                () ->
+                        mRoleManager.removeRoleHolderAsUser(
+                                roleName,
+                                packageName,
+                                0,
+                                Process.myUserHandle(),
+                                getContext().getMainExecutor(),
+                                success -> {
+                                    assertTrue(
+                                            "Failed to remove role holder "
+                                                    + packageName
+                                                    + " from "
+                                                    + roleName,
+                                            success);
+                                    latch.countDown();
+                                }));
+        latch.await();
+    }
+
+    private <T> T callWithTrustedSmsReadPermissions(@NonNull Callable<T> callable)
+            throws Exception {
+        return callWithShellPermissionIdentity(
+                callable,
+                READ_PRIVILEGED_PHONE_STATE,
+                MANAGE_COMPANION_DEVICES,
+                MANAGE_ROLE_HOLDERS);
     }
 }
