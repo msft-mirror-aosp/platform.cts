@@ -167,8 +167,13 @@ public class VendorVibrationSessionTest {
             signal.cancel();
         }
         for (TestCallback callback : mPendingCallbacks) {
+            if (!callback.isFinished() && callback.mSession != null) {
+                callback.mSession.cancel();
+            }
             // Wait for all pending session requests to be finished.
-            callback.waitToBeFinished(CALLBACK_TIMEOUT_MILLIS);
+            assertWithMessage("Error waiting for pending session callback to be finished")
+                    .that(callback.waitToBeFinished(CALLBACK_TIMEOUT_MILLIS))
+                    .isTrue();
         }
 
         // Clearing invocations so we can use this listener to wait for the vibrator to

@@ -15,6 +15,7 @@
  */
 package android.input.cts
 
+import android.hardware.input.InputManager
 import android.view.KeyEvent
 import androidx.test.ext.junit.rules.ActivityScenarioRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -49,6 +50,7 @@ class AppKeyCombinationsTest {
         activityRule.getScenario().onActivity {
             activity = it
         }
+        activity.getSystemService(InputManager::class.java).resetLockedModifierState()
         PollingCheck.waitFor { activity.hasWindowFocus() }
         instrumentation.uiAutomation.syncInputTransactions()
     }

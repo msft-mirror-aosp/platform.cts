@@ -35,6 +35,7 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.OutcomeReceiver;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.telecom.Call;
 import android.telecom.CallAttributes;
 import android.telecom.CallControl;
@@ -1159,6 +1160,31 @@ public class TransactionalApisTest extends BaseTelecomTestWithMockServices {
         } finally {
             cleanup();
         }
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_INTEGRATED_CALL_LOGS)
+    @ApiTest(
+            apis = {
+                "android.telecom.CallAttributes.Builder#setLogExcluded",
+                "android.telecom.CallAttributes#isLogExcluded"
+            })
+    public void testCallAttributesSetLogExcluded() {
+        if (!mShouldTestTelecom) {
+            return;
+        }
+
+        assertFalse(mIncomingCallAttributes.isLogExcluded());
+        assertFalse(mOutgoingCallAttributes.isLogExcluded());
+
+        CallAttributes callAttributes =
+                new CallAttributes.Builder(
+                                DEFAULT_T_HANDLE, DIRECTION_OUTGOING, TEST_NAME_1, TEST_URI_1)
+                        .setCallType(CallAttributes.AUDIO_CALL)
+                        .setCallCapabilities(CallAttributes.SUPPORTS_SET_INACTIVE)
+                        .setLogExcluded(true)
+                        .build();
+
+        assertTrue(callAttributes.isLogExcluded());
     }
 
     public void verifyCallEndpointIsNotNull(TelecomCtsVoipCall call) {

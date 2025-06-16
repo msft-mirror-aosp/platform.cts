@@ -53,6 +53,7 @@ public abstract class EventDeliveryTestBase extends MultiDisplayTestBase {
     protected DisplayManager mDisplayManager;
     private ActivityManager mActivityManager;
     private ActivityManager.OnUidImportanceListener mUidImportanceListener;
+    protected CountDownLatch mLatchActivityLaunch;
     private CountDownLatch mLatchActivityCached;
     private HandlerThread mHandlerThread;
     private Handler mHandler;
@@ -74,6 +75,7 @@ public abstract class EventDeliveryTestBase extends MultiDisplayTestBase {
     public void setUp() throws Exception {
         super.setUp();
         mDisplayManager = mContext.getSystemService(DisplayManager.class);
+        mLatchActivityLaunch = new CountDownLatch(1);
         mLatchActivityCached = new CountDownLatch(1);
         mActivityManager = mContext.getSystemService(ActivityManager.class);
         mUidImportanceListener =
@@ -111,6 +113,7 @@ public abstract class EventDeliveryTestBase extends MultiDisplayTestBase {
         SystemUtil.runWithShellPermissionIdentity(
                 () -> TestApis.activities().startActivity(intent),
                 android.Manifest.permission.START_ACTIVITIES_FROM_SDK_SANDBOX);
+        waitLatch(mLatchActivityLaunch);
 
         try {
             String cmd = "pidof " + getTestPackage();

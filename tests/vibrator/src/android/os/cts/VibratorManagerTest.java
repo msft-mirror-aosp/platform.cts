@@ -108,15 +108,16 @@ public class VibratorManagerTest {
 
         for (int i = 0; i < mStateListeners.size(); i++) {
             int vibratorId = mStateListeners.keyAt(i);
+            Vibrator vibrator = mVibratorManager.getVibrator(vibratorId);
 
             // Wait for cancel to take effect, if device is still vibrating.
-            if (mVibratorManager.getVibrator(vibratorId).isVibrating()) {
+            if (vibrator.isVibrating()) {
                 assertStopsVibrating(vibratorId);
             }
 
             // Remove all listeners added by the tests.
-            mVibratorManager.getVibrator(vibratorId).removeVibratorStateListener(
-                    mStateListeners.valueAt(i));
+            vibrator.removeVibratorStateListener(mStateListeners.valueAt(i));
+            assertThat(vibrator.isVibrating()).isFalse();
         }
     }
 

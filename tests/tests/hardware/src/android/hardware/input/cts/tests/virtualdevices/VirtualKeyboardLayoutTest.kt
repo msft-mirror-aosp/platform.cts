@@ -151,7 +151,7 @@ class VirtualKeyboardLayoutTest {
             languageTag,
             layoutType
         ).device
-        val inputDevice = mInputManager.getInputDevice(virtualKeyboard.inputDeviceId)
+        val inputDevice = mInputManager.getInputDevice(virtualKeyboard.inputDeviceIdForTest)
         assertThat(inputDevice).isNotNull()
         return inputDevice!!
     }
