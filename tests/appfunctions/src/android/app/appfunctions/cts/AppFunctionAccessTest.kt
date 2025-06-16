@@ -62,108 +62,108 @@ class AppFunctionAccessTest {
     }
 
     @ApiTest(
-        apis = ["android.app.appfunctions.AppFunctionManager#getAppFunctionAccessRequestState"]
+        apis = ["android.app.appfunctions.AppFunctionManager#getAccessRequestState"]
     )
     @Test
-    fun getAppFunctionAccessRequestState_deniedByDefault() {
+    fun getAccessRequestState_deniedByDefault() {
         assertWithMessage("Expected access to be false in a freshly installed app")
-            .that(getAppFunctionAccessRequestState(AGENT_PKG_NAME, TARGET_PKG_NAME))
+            .that(getAccessRequestState(AGENT_PKG_NAME, TARGET_PKG_NAME))
             .isEqualTo(ACCESS_REQUEST_STATE_DENIED)
     }
 
     @ApiTest(
-        apis = ["android.app.appfunctions.AppFunctionManager#getAppFunctionAccessRequestState"]
+        apis = ["android.app.appfunctions.AppFunctionManager#getAccessRequestState"]
     )
     @Test
-    fun getAppFunctionAccessRequestState_userDenied() {
+    fun getAccessRequestState_userDenied() {
         setAppFunctionFlags(ACCESS_FLAG_USER_DENIED)
         assertWithMessage("Expected access to be denied for user denied flag")
-            .that(getAppFunctionAccessRequestState(AGENT_PKG_NAME, TARGET_PKG_NAME))
+            .that(getAccessRequestState(AGENT_PKG_NAME, TARGET_PKG_NAME))
             .isEqualTo(ACCESS_REQUEST_STATE_DENIED)
     }
 
     @ApiTest(
-        apis = ["android.app.appfunctions.AppFunctionManager#getAppFunctionAccessRequestState"]
+        apis = ["android.app.appfunctions.AppFunctionManager#getAccessRequestState"]
     )
     @Test
-    fun getAppFunctionAccessRequestState_otherDenied() {
+    fun getAccessRequestState_otherDenied() {
         setAppFunctionFlags(ACCESS_FLAG_OTHER_DENIED)
         assertWithMessage("Expected access to be denied for user denied flag")
-            .that(getAppFunctionAccessRequestState(AGENT_PKG_NAME, TARGET_PKG_NAME))
+            .that(getAccessRequestState(AGENT_PKG_NAME, TARGET_PKG_NAME))
             .isEqualTo(ACCESS_REQUEST_STATE_DENIED)
     }
 
     @ApiTest(
-        apis = ["android.app.appfunctions.AppFunctionManager#getAppFunctionAccessRequestState"]
+        apis = ["android.app.appfunctions.AppFunctionManager#getAccessRequestState"]
     )
     @Test
-    fun getAppFunctionAccessRequestState_pregranted() {
+    fun getAccessRequestState_pregranted() {
         setAppFunctionFlags(ACCESS_FLAG_PREGRANTED)
         assertWithMessage("Expected access to be granted for pregranted flag")
-            .that(getAppFunctionAccessRequestState(AGENT_PKG_NAME, TARGET_PKG_NAME))
+            .that(getAccessRequestState(AGENT_PKG_NAME, TARGET_PKG_NAME))
             .isEqualTo(ACCESS_REQUEST_STATE_GRANTED)
     }
 
     @ApiTest(
-        apis = ["android.app.appfunctions.AppFunctionManager#getAppFunctionAccessRequestState"]
+        apis = ["android.app.appfunctions.AppFunctionManager#getAccessRequestState"]
     )
     @Test
-    fun getAppFunctionAccessRequestState_userGranted() {
+    fun getAccessRequestState_userGranted() {
         setAppFunctionFlags(ACCESS_FLAG_USER_GRANTED)
         assertWithMessage("Expected access to be granted for user granted flag")
-            .that(getAppFunctionAccessRequestState(AGENT_PKG_NAME, TARGET_PKG_NAME))
+            .that(getAccessRequestState(AGENT_PKG_NAME, TARGET_PKG_NAME))
             .isEqualTo(ACCESS_REQUEST_STATE_GRANTED)
     }
 
     @ApiTest(
-        apis = ["android.app.appfunctions.AppFunctionManager#getAppFunctionAccessRequestState"]
+        apis = ["android.app.appfunctions.AppFunctionManager#getAccessRequestState"]
     )
     @Test
-    fun getAppFunctionAccessRequestState_otherGranted() {
+    fun getAccessRequestState_otherGranted() {
         setAppFunctionFlags(ACCESS_FLAG_OTHER_GRANTED)
         assertWithMessage("Expected access to be granted for other granted flag")
-            .that(getAppFunctionAccessRequestState(AGENT_PKG_NAME, TARGET_PKG_NAME))
+            .that(getAccessRequestState(AGENT_PKG_NAME, TARGET_PKG_NAME))
             .isEqualTo(ACCESS_REQUEST_STATE_GRANTED)
     }
 
     @ApiTest(
-        apis = ["android.app.appfunctions.AppFunctionManager#getAppFunctionAccessRequestState"]
+        apis = ["android.app.appfunctions.AppFunctionManager#getAccessRequestState"]
     )
     @Test
-    fun getAppFunctionAccessRequestState_targetNotInstalled_unrequestable() {
+    fun getAccessRequestState_targetNotInstalled_unrequestable() {
         assertWithMessage("Cannot request access for an invalid agent")
-            .that(getAppFunctionAccessRequestState(AGENT_PKG_NAME, INVALID_PKG_NAME))
+            .that(getAccessRequestState(AGENT_PKG_NAME, INVALID_PKG_NAME))
             .isEqualTo(ACCESS_REQUEST_STATE_UNREQUESTABLE)
     }
 
     @ApiTest(
-        apis = ["android.app.appfunctions.AppFunctionManager#getAppFunctionAccessRequestState"]
+        apis = ["android.app.appfunctions.AppFunctionManager#getAccessRequestState"]
     )
     @Test
-    fun getAppFunctionAccessRequestState_agentNotInstalled_unrequestable() {
+    fun getAccessRequestState_agentNotInstalled_unrequestable() {
         assertWithMessage("Cannot request access for an invalid agent")
-            .that(getAppFunctionAccessRequestState(INVALID_PKG_NAME, TARGET_PKG_NAME))
+            .that(getAccessRequestState(INVALID_PKG_NAME, TARGET_PKG_NAME))
             .isEqualTo(ACCESS_REQUEST_STATE_UNREQUESTABLE)
     }
 
     @ApiTest(
-        apis = ["android.app.appfunctions.AppFunctionManager#getAppFunctionAccessRequestState"]
+        apis = ["android.app.appfunctions.AppFunctionManager#getAccessRequestState"]
     )
     @Test
-    fun getAppFunctionAccessRequestState_requiresPermissionIfAgentIsntSelf() {
+    fun getAccessRequestState_requiresPermissionIfAgentIsntSelf() {
         assertFailsWith<SecurityException>(
-            "Expected getAppFunctionAccessFlags to throw a security exception without permission"
+            "Expected getAccessFlags to throw a security exception without permission"
 
         ) {
-            appFunctionManager.getAppFunctionAccessRequestState(AGENT_PKG_NAME, TARGET_PKG_NAME)
+            appFunctionManager.getAccessRequestState(AGENT_PKG_NAME, TARGET_PKG_NAME)
         }
     }
 
     @ApiTest(
-        apis = ["android.app.appfunctions.AppFunctionManager#getAppFunctionAccessRequestState"]
+        apis = ["android.app.appfunctions.AppFunctionManager#getAccessRequestState"]
     )
     @Test
-    fun getSelfAppFunctionAccessRequestState_usesContextOpPackageName() {
+    fun getSelfAccessRequestState_usesContextOpPackageName() {
         setAppFunctionFlags(ACCESS_FLAG_OTHER_GRANTED, context.packageName)
         val otherPkgAppFunctionManager = callWithShellPermissionIdentity {
             context.createPackageContext(AGENT_PKG_NAME, 0)
@@ -173,61 +173,59 @@ class AppFunctionAccessTest {
             "Context should pull package name from the opPackageName for " +
                 "getSelfAppFunctionAppRequestState"
         )
-            .that(otherPkgAppFunctionManager.getSelfAppFunctionAccessRequestState(
-                TARGET_PKG_NAME
-            ))
+            .that(otherPkgAppFunctionManager.getAccessRequestState(TARGET_PKG_NAME))
             .isEqualTo(ACCESS_REQUEST_STATE_GRANTED)
     }
 
-    private fun getAppFunctionAccessRequestState(
+    private fun getAccessRequestState(
         agentPackageName: String,
         targetPackageName: String
     ): Int {
         return callWithShellPermissionIdentity {
-            appFunctionManager.getAppFunctionAccessRequestState(agentPackageName, targetPackageName)
+            appFunctionManager.getAccessRequestState(agentPackageName, targetPackageName)
         }
     }
 
     @ApiTest(
-        apis = ["android.app.appfunctions.AppFunctionManager#getAppFunctionAccessRequestState"]
+        apis = ["android.app.appfunctions.AppFunctionManager#getAccessRequestState"]
     )
     @Test
-    fun getAppFunctionAccessRequestState_agentNotAllowlisted_unrequestable() {
+    fun getAccessRequestState_agentNotAllowlisted_unrequestable() {
         // TODO implement when agent allowlist is
     }
 
     @ApiTest(
-        apis = ["android.app.appfunctions.AppFunctionManager#getAppFunctionAccessRequestState"]
+        apis = ["android.app.appfunctions.AppFunctionManager#getAccessRequestState"]
     )
     @Test
-    fun getAppFunctionAccessRequestState_agentLacksPermission_unrequestable() {
+    fun getAccessRequestState_agentLacksPermission_unrequestable() {
         // TODO implement when agent filtering is
     }
 
     @ApiTest(
-        apis = ["android.app.appfunctions.AppFunctionManager#getAppFunctionAccessRequestState"]
+        apis = ["android.app.appfunctions.AppFunctionManager#getAccessRequestState"]
     )
     @Test
-    fun getAppFunctionAccessRequestState_targetHasNoService_unrequestable() {
+    fun getAccessRequestState_targetHasNoService_unrequestable() {
         // TODO implement when target filtering is
     }
 
     @ApiTest(
-        apis = ["android.app.appfunctions.AppFunctionManager#getAppFunctionAccessRequestState"]
+        apis = ["android.app.appfunctions.AppFunctionManager#getAccessRequestState"]
     )
     @Test
-    fun getAppFunctionAccessFlags_requiresPermission() {
+    fun getAccessFlags_requiresPermission() {
         assertFailsWith<SecurityException>(
-            "Expected getAppFunctionAccessFlags to throw a security exception"
+            "Expected getAccessFlags to throw a security exception"
         ) {
-            appFunctionManager.getAppFunctionAccessFlags(AGENT_PKG_NAME, TARGET_PKG_NAME)
+            appFunctionManager.getAccessFlags(AGENT_PKG_NAME, TARGET_PKG_NAME)
         }
     }
 
     @ApiTest(
         apis = [
-            "android.app.appfunctions.AppFunctionManager#getAppFunctionAccessFlags",
-            "android.app.appfunctions.AppFunctionManager#updateAppFunctionAccessFlags"
+            "android.app.appfunctions.AppFunctionManager#getAccessFlags",
+            "android.app.appfunctions.AppFunctionManager#updateAccessFlags"
         ]
     )
     @Test
@@ -237,89 +235,89 @@ class AppFunctionAccessTest {
             .that(getAppFunctionFlags()).isEqualTo(ACCESS_FLAG_PREGRANTED)
     }
 
-    @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#getAppFunctionAccessFlags"])
+    @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#getAccessFlags"])
     @Test
-    fun getAppFunctionAccessFlags_invalidTargetApp() {
+    fun getAccessFlags_invalidTargetApp() {
         setAppFunctionFlags(ACCESS_FLAG_PREGRANTED)
         assertWithMessage("expected no flags for invalid target")
             .that(getAppFunctionFlags(AGENT_PKG_NAME, INVALID_PKG_NAME)).isEqualTo(0)
     }
 
-    @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#getAppFunctionAccessFlags"])
+    @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#getAccessFlags"])
     @Test
-    fun getAppFunctionAccessFlags_invalidAgentApp() {
+    fun getAccessFlags_invalidAgentApp() {
         setAppFunctionFlags(ACCESS_FLAG_PREGRANTED)
         assertWithMessage("expected no flags for invalid agent")
             .that(getAppFunctionFlags(INVALID_PKG_NAME, TARGET_PKG_NAME)).isEqualTo(0)
     }
 
-    @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#updateAppFunctionAccessFlags"])
+    @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#updateAccessFlags"])
     @Test
-    fun updateAppFunctionAccessFlags_requiresPermission() {
+    fun updateAccessFlags_requiresPermission() {
         assertFailsWith<SecurityException>(
-            "Expected updateAppFunctionAccessFlags to throw a security exception without permission"
+            "Expected updateAccessFlags to throw a security exception without permission"
         ) {
-            appFunctionManager.updateAppFunctionAccessFlags(AGENT_PKG_NAME, TARGET_PKG_NAME, 0, 0)
+            appFunctionManager.updateAccessFlags(AGENT_PKG_NAME, TARGET_PKG_NAME, 0, 0)
         }
     }
 
-    @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#updateAppFunctionAccessFlags"])
+    @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#updateAccessFlags"])
     @Test
-    fun updateAppFunctionAccessFlags_invalidFlagsCauseException() {
+    fun updateAccessFlags_invalidFlagsCauseException() {
         assertFailsWith<IllegalArgumentException>(
-            "Expected updateAppFunctionAccessFlags to throw an exception for invalid flags"
+            "Expected updateAccessFlags to throw an exception for invalid flags"
         ) {
-            updateAppFunctionFlags(INVALID_FLAGS, INVALID_FLAGS)
+            updateFlags(INVALID_FLAGS, INVALID_FLAGS)
         }
     }
 
-    @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#updateAppFunctionAccessFlags"])
+    @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#updateAccessFlags"])
     @Test
-    fun updateAppFunctionAccessFlags_settingOpposingFlagsTogetherCauseException() {
+    fun updateAccessFlags_settingOpposingFlagsTogetherCauseException() {
         assertFailsWith<IllegalArgumentException>(
-            "Expected updateAppFunctionAccessFlags to throw an exception when setting both a " +
+            "Expected updateAccessFlags to throw an exception when setting both a " +
                     "GRANTED and DENIED flag together"
         ) {
             setAppFunctionFlags(ACCESS_FLAG_MASK_USER)
         }
     }
 
-    @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#updateAppFunctionAccessFlags"])
+    @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#updateAccessFlags"])
     @Test
-    fun updateAppFunctionAccessFlags_settingOpposingFlagWithoutClearingOtherThrowsException() {
+    fun updateAccessFlags_settingOpposingFlagWithoutClearingOtherThrowsException() {
         assertFailsWith<IllegalArgumentException>(
-            "Expected updateAppFunctionAccessFlags to throw an exception when setting only a " +
+            "Expected updateAccessFlags to throw an exception when setting only a " +
                     "denied or granted flag, but not clearing the other"
         ) {
-            updateAppFunctionFlags(ACCESS_FLAG_USER_GRANTED, ACCESS_FLAG_USER_GRANTED)
+            updateFlags(ACCESS_FLAG_USER_GRANTED, ACCESS_FLAG_USER_GRANTED)
         }
     }
 
-    @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#updateAppFunctionAccessFlags"])
+    @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#updateAccessFlags"])
     @Test
-    fun updateAppFunctionAccessFlags_settingFlagNotInMaskThrowsException() {
+    fun updateAccessFlags_settingFlagNotInMaskThrowsException() {
         assertFailsWith<IllegalArgumentException>(
-            "Expected updateAppFunctionAccessFlags to throw a security exception when setting a " +
+            "Expected updateAccessFlags to throw a security exception when setting a " +
                     "flag not in the flag mask"
         ) {
-            updateAppFunctionFlags(ACCESS_FLAG_MASK_USER, ACCESS_FLAG_PREGRANTED)
+            updateFlags(ACCESS_FLAG_MASK_USER, ACCESS_FLAG_PREGRANTED)
         }
     }
 
-    @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#revokeSelfAppFunctionAccess"])
+    @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#revokeSelfAccess"])
     @Test
-    fun revokeSelfAppFunctionAccess_appliesOtherDeniedFlag() {
+    fun revokeSelfAccess_appliesOtherDeniedFlag() {
         setAppFunctionFlags(ACCESS_FLAG_USER_GRANTED, context.packageName, TARGET_PKG_NAME)
-        appFunctionManager.revokeSelfAppFunctionAccess(TARGET_PKG_NAME)
+        appFunctionManager.revokeSelfAccess(TARGET_PKG_NAME)
         assertWithMessage("Expected to see the OTHER_DENIED flag set after revoking self access")
             .that(getAppFunctionFlags(context.packageName, TARGET_PKG_NAME))
             .isEqualTo(ACCESS_FLAG_OTHER_DENIED)
     }
 
-    @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#revokeSelfAppFunctionAccess"])
+    @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#revokeSelfAccess"])
     @Test
-    fun revokeSelfAppFunctionAccess_appliesNoFlagsIfNoFlagsSet() {
-        appFunctionManager.revokeSelfAppFunctionAccess(TARGET_PKG_NAME)
+    fun revokeSelfAccess_appliesNoFlagsIfNoFlagsSet() {
+        appFunctionManager.revokeSelfAccess(TARGET_PKG_NAME)
         assertWithMessage("Expected to see no flags set when revoke is called with no state")
             .that(getAppFunctionFlags(context.packageName, TARGET_PKG_NAME))
             .isEqualTo(0)
@@ -375,16 +373,16 @@ class AppFunctionAccessTest {
         agentPackageName: String = AGENT_PKG_NAME,
         targetPackageName: String = TARGET_PKG_NAME
     ): Int = callWithShellPermissionIdentity {
-        appFunctionManager.getAppFunctionAccessFlags(agentPackageName, targetPackageName)
+        appFunctionManager.getAccessFlags(agentPackageName, targetPackageName)
     }
 
-    private fun updateAppFunctionFlags(
+    private fun updateFlags(
         flagMask: Int,
         flags: Int,
         agentPackageName: String = AGENT_PKG_NAME,
         targetPackageName: String = TARGET_PKG_NAME,
     ) = callWithShellPermissionIdentity {
-        appFunctionManager.updateAppFunctionAccessFlags(
+        appFunctionManager.updateAccessFlags(
             agentPackageName,
             targetPackageName,
             flagMask,
@@ -396,7 +394,7 @@ class AppFunctionAccessTest {
         flags: Int,
         agentPackageName: String = AGENT_PKG_NAME,
         targetPackageName: String = TARGET_PKG_NAME,
-    ) = updateAppFunctionFlags(ACCESS_FLAG_MASK_ALL, flags, agentPackageName, targetPackageName)
+    ) = updateFlags(ACCESS_FLAG_MASK_ALL, flags, agentPackageName, targetPackageName)
 
     companion object {
         const val AGENT_PKG_NAME = "android.app.appfunctions.cts.agent.helper"
