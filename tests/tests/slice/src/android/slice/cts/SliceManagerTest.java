@@ -16,6 +16,7 @@ package android.slice.cts;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -159,6 +160,24 @@ public class SliceManagerTest {
             assertTrue(intent == i);
         } finally {
             LocalSliceProvider.sAnswer = null;
+        }
+    }
+
+    @Test
+    public void testGrantSlicePermission() {
+        assumeFalse(isSliceDisabled);
+        mSliceManager.grantSlicePermission("com.android.non.existent.package", BASE_URI);
+    }
+
+    @Test
+    public void testGrantSlicePermission_fails_for_wrong_package() {
+        assumeFalse(isSliceDisabled);
+        try {
+            mSliceManager.grantSlicePermission(
+                    "/../../../system_de/0/companion_device_manager.xml/AAAA/BBBB", BASE_URI);
+            fail("No exception was thrown when using a malicious packageName");
+        } catch (IllegalArgumentException e) {
+            // Past
         }
     }
 
