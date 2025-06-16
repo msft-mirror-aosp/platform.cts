@@ -210,7 +210,16 @@ public class EmbeddedActivityWindowInfoTests extends ActivityEmbeddingTestBase {
         assertNotNull(info);
 
         final Rect taskBounds = waitAndGetTaskBounds(activity, true /* shouldWaitForResume */);
-        final Rect activityStackBounds = getActivityBounds(activity);
+        final Rect activityStackBounds;
+        if (isEmbedded) {
+            activityStackBounds = getActivityBounds(activity);
+        } else {
+            // Use task bounds instead of activity bounds since activity stack bounds refer to
+            // task fragment bounds which could refer to task bounds for a non-embedded activity.
+            // Activity bounds may not be the same as activity stack bounds since the activity
+            // may not be taking fullscreen bounds.
+            activityStackBounds = taskBounds;
+        }
 
         final String errorMessage = "Expected value: \nisEmbedded=" + isEmbedded
                 + "\nactivity=" + activity
