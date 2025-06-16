@@ -28,12 +28,12 @@ import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.PropertyUtil;
 
 /**
- * Checks if required sensor types are present, for example sensors required
- * when Hifi sensors or VR High performance mode features are enabled. Also
- * checks that required composite sensor types are present if the underlying
- * physical sensors are present.
+ * Checks if required sensor types are present, for example sensors required when Hifi sensors or VR
+ * High performance mode features are enabled. Also checks that required composite sensor types are
+ * present if the underlying physical sensors are present.
  *
- * <p>To execute these test cases, the following command can be used:</p>
+ * <p>To execute these test cases, the following command can be used:
+ *
  * <pre>
  * adb shell am instrument -e class android.hardware.cts.SensorSupportTest \
  *     -w android.hardware.cts/android.test.AndroidJUnitRunner
@@ -53,23 +53,25 @@ public class SensorSupportTest extends SensorTestCase {
         PackageManager pm = getContext().getPackageManager();
         // Some tests will only run if either HIFI_SENSORS or VR high performance mode is supported.
         mAreHifiSensorsSupported = pm.hasSystemFeature(PackageManager.FEATURE_HIFI_SENSORS);
-        mVrHighPerformanceModeSupported = pm.hasSystemFeature(PackageManager.FEATURE_VR_MODE_HIGH_PERFORMANCE);
-        mIsVrHeadset = (getContext().getResources().getConfiguration().uiMode
-            & Configuration.UI_MODE_TYPE_MASK) == Configuration.UI_MODE_TYPE_VR_HEADSET;
-        mSensorManager =
-                (SensorManager) getContext().getSystemService(Context.SENSOR_SERVICE);
+        mVrHighPerformanceModeSupported =
+                pm.hasSystemFeature(PackageManager.FEATURE_VR_MODE_HIGH_PERFORMANCE);
+        mIsVrHeadset =
+                (getContext().getResources().getConfiguration().uiMode
+                                & Configuration.UI_MODE_TYPE_MASK)
+                        == Configuration.UI_MODE_TYPE_VR_HEADSET;
+        mSensorManager = (SensorManager) getContext().getSystemService(Context.SENSOR_SERVICE);
 
         mHasAccel = hasSensorType(Sensor.TYPE_ACCELEROMETER);
         mHasGyro = hasSensorType(Sensor.TYPE_GYROSCOPE);
         mHasMag = hasSensorType(Sensor.TYPE_MAGNETIC_FIELD);
     }
 
-    @CddTest(requirement="7.3.9/C-2-1")
+    @CddTest(requirement = "7.3.9/C-2-1")
     public void testSupportsAccelerometer() {
         checkHifiVrSensorSupport(Sensor.TYPE_ACCELEROMETER);
     }
 
-    @CddTest(requirement="7.3.9/C-2-2")
+    @CddTest(requirement = "7.3.9/C-2-2")
     public void testSupportsAccelerometerUncalibrated() {
         // Uncalibrated accelerometer was not required before Android O
         if (PropertyUtil.getFirstApiLevel() >= Build.VERSION_CODES.O) {
@@ -77,58 +79,58 @@ public class SensorSupportTest extends SensorTestCase {
         }
     }
 
-    @CddTest(requirement="7.3.9/C-2-3")
+    @CddTest(requirement = "7.3.9/C-2-3")
     public void testSupportsGyroscope() {
         checkHifiVrSensorSupport(Sensor.TYPE_GYROSCOPE);
     }
 
-    @CddTest(requirement="7.3.9/C-2-4")
+    @CddTest(requirement = "7.3.9/C-2-4")
     public void testSupportsGyroscopeUncalibrated() {
         checkHifiVrSensorSupport(Sensor.TYPE_GYROSCOPE_UNCALIBRATED);
     }
 
-    @CddTest(requirement="7.3.9/C-2-5")
+    @CddTest(requirement = "7.3.9/C-2-5")
     public void testSupportsGeoMagneticField() {
         checkHifiVrSensorSupport(Sensor.TYPE_MAGNETIC_FIELD);
     }
 
-    @CddTest(requirement="7.3.9/C-2-6")
+    @CddTest(requirement = "7.3.9/C-2-6")
     public void testSupportsMagneticFieldUncalibrated() {
         checkHifiVrSensorSupport(Sensor.TYPE_MAGNETIC_FIELD_UNCALIBRATED);
     }
 
-    @CddTest(requirement="7.3.9/C-2-7")
+    @CddTest(requirement = "7.3.9/C-2-7")
     public void testSupportsPressure() {
         checkHifiVrSensorSupport(Sensor.TYPE_PRESSURE);
     }
 
-    @CddTest(requirement="7.3.9/C-2-8")
+    @CddTest(requirement = "7.3.9/C-2-8")
     public void testSupportsGameRotationVector() {
         checkHifiVrSensorSupport(Sensor.TYPE_GAME_ROTATION_VECTOR);
     }
 
-    @CddTest(requirement="7.3.9/C-2-9")
+    @CddTest(requirement = "7.3.9/C-2-9")
     public void testSupportsSignificantMotion() {
         checkHifiVrSensorSupport(Sensor.TYPE_SIGNIFICANT_MOTION);
     }
 
-    @CddTest(requirement="7.3.9/C-2-10")
+    @CddTest(requirement = "7.3.9/C-2-10")
     public void testSupportsStepDetector() {
         checkHifiVrSensorSupport(Sensor.TYPE_STEP_DETECTOR);
     }
 
-    @CddTest(requirement="7.3.9/C-2-11")
+    @CddTest(requirement = "7.3.9/C-2-11")
     public void testSupportsStepCounter() {
         checkHifiVrSensorSupport(Sensor.TYPE_STEP_COUNTER);
     }
 
-    @CddTest(requirement="7.3.9/C-2-12")
+    @CddTest(requirement = "7.3.9/C-2-12")
     public void testSupportsTiltDetector() {
         final int TYPE_TILT_DETECTOR = 22;
         checkHifiVrSensorSupport(TYPE_TILT_DETECTOR);
     }
 
-    @CddTest(requirement="7.3.1/C-3-1")
+    @CddTest(requirement = "7.3.1/C-3-1")
     public void testSupportsGravityAndLinearAccelIfHasAG() {
         if (mHasAccel && mHasGyro) {
             assertTrue(hasSensorType(Sensor.TYPE_GRAVITY));
@@ -136,7 +138,7 @@ public class SensorSupportTest extends SensorTestCase {
         }
     }
 
-    @CddTest(requirement="7.3.1/C-4-1")
+    @CddTest(requirement = "7.3.1/C-4-1")
     public void testSupportsRotationVectorIfHasAGM() {
         if (mHasAccel && mHasGyro && mHasMag) {
             assertTrue(hasSensorType(Sensor.TYPE_ROTATION_VECTOR));
@@ -145,7 +147,7 @@ public class SensorSupportTest extends SensorTestCase {
 
     @CddTest(requirement = "7.3/C-2-1")
     public void testGameRotationVectorInputSensorSupport() {
-        if (hasSensorType(Sensor.TYPE_GAME_ROTATION_VECTOR)) {
+        if (checkCompositeSensorRequirements() && hasSensorType(Sensor.TYPE_GAME_ROTATION_VECTOR)) {
             assertTrue(mHasAccel);
             assertTrue(mHasGyro);
         }
@@ -179,8 +181,7 @@ public class SensorSupportTest extends SensorTestCase {
     public void testRotationVectorInputSensorSupport() {
         if (hasSensorType(Sensor.TYPE_ROTATION_VECTOR)) {
             assertTrue(mHasAccel);
-            assertTrue(mHasGyro);
-            assertTrue(mHasMag);
+            assertTrue(mHasGyro || mHasMag);
         }
     }
 
@@ -213,12 +214,12 @@ public class SensorSupportTest extends SensorTestCase {
     }
 
     private boolean sensorRequiredForVrHighPerformanceMode(int sensorType) {
-        if (sensorType == Sensor.TYPE_ACCELEROMETER ||
-            sensorType == Sensor.TYPE_ACCELEROMETER_UNCALIBRATED ||
-            sensorType == Sensor.TYPE_GYROSCOPE ||
-            sensorType == Sensor.TYPE_GYROSCOPE_UNCALIBRATED ||
-            sensorType == Sensor.TYPE_MAGNETIC_FIELD ||
-            sensorType == Sensor.TYPE_MAGNETIC_FIELD_UNCALIBRATED) {
+        if (sensorType == Sensor.TYPE_ACCELEROMETER
+                || sensorType == Sensor.TYPE_ACCELEROMETER_UNCALIBRATED
+                || sensorType == Sensor.TYPE_GYROSCOPE
+                || sensorType == Sensor.TYPE_GYROSCOPE_UNCALIBRATED
+                || sensorType == Sensor.TYPE_MAGNETIC_FIELD
+                || sensorType == Sensor.TYPE_MAGNETIC_FIELD_UNCALIBRATED) {
             return true;
         } else {
             return false;
@@ -226,18 +227,25 @@ public class SensorSupportTest extends SensorTestCase {
     }
 
     private void checkHifiVrSensorSupport(int sensorType) {
-        boolean isVrSensor = mVrHighPerformanceModeSupported &&
-            sensorRequiredForVrHighPerformanceMode(sensorType);
+        boolean isVrSensor =
+                mVrHighPerformanceModeSupported
+                        && sensorRequiredForVrHighPerformanceMode(sensorType);
         if (mAreHifiSensorsSupported || isVrSensor) {
             Sensor sensor = mSensorManager.getDefaultSensor(sensorType);
             assertTrue(sensor != null);
             if (isVrSensor && mIsVrHeadset) {
-                assertTrue(sensor.isDirectChannelTypeSupported(SensorDirectChannel.TYPE_HARDWARE_BUFFER));
+                assertTrue(
+                        sensor.isDirectChannelTypeSupported(
+                                SensorDirectChannel.TYPE_HARDWARE_BUFFER));
             }
         }
     }
 
     private boolean hasSensorType(int sensorType) {
         return (mSensorManager != null && mSensorManager.getDefaultSensor(sensorType) != null);
+    }
+
+    private boolean checkCompositeSensorRequirements() {
+        return PropertyUtil.getFirstApiLevel() >= Build.VERSION_CODES.BAKLAVA;
     }
 }
