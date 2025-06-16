@@ -223,8 +223,8 @@
     <option name="compatibility:exclude-filter" value="CtsKeystoreTestCases android.keystore.cts.KeyAttestationTest" />
     <option name="compatibility:exclude-filter" value="CtsKeystoreTestCases android.keystore.cts.AttestKeyTest#testEcAttestKey" />
     <option name="compatibility:exclude-filter" value="CtsKeystoreTestCases android.keystore.cts.AttestKeyTest#testRsaAttestKey" />
-    <option name="compatibility:exclude-filter" value="CtsKeystoreTestCases android.keystore.cts.performance.AttestationPerformanceTest#testEcKeyAttestation" />
-    <option name="compatibility:exclude-filter" value="CtsKeystoreTestCases android.keystore.cts.performance.AttestationPerformanceTest#testRsaKeyAttestation" />
+    <option name="compatibility:exclude-filter" value="CtsKeystorePerformanceTestCases android.keystore.cts.performance.AttestationPerformanceTest#testEcKeyAttestation" />
+    <option name="compatibility:exclude-filter" value="CtsKeystorePerformanceTestCases android.keystore.cts.performance.AttestationPerformanceTest#testRsaKeyAttestation" />
 
     <!-- b/212223944 placeholder to avoid automerging the test exclusioin from android15-tests-dev -->
 
