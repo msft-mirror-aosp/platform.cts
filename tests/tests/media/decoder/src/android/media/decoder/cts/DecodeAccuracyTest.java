@@ -56,8 +56,8 @@ import java.util.regex.Pattern;
 @AppModeFull(reason = "There should be no instant apps specific behavior related to accuracy")
 public class DecodeAccuracyTest extends DecodeAccuracyTestBase {
 
-    private static final boolean IS_AT_LEAST_U = ApiLevelUtil.isAfter(Build.VERSION_CODES.TIRAMISU)
-            || ApiLevelUtil.codenameEquals("UpsideDownCake");
+    private static final boolean IS_AT_LEAST_U =
+            ApiLevelUtil.isAtLeast(Build.VERSION_CODES.UPSIDE_DOWN_CAKE);
     private static final boolean IS_BEFORE_U = !IS_AT_LEAST_U;
 
     private static final String TAG = DecodeAccuracyTest.class.getSimpleName();
