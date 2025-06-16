@@ -88,7 +88,7 @@ public class BackupRestrictedModeTest extends BaseBackupCtsTest {
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_RESTRICTED_MODE_CHANGES)
-    public void testBackUp_respectsAppsOptingInOrOut() {
+    public void testBackUp_respectsAppsOptingInOrOut() throws Exception {
         if (!isBackupSupported()) {
             return;
         }
@@ -180,8 +180,17 @@ public class BackupRestrictedModeTest extends BaseBackupCtsTest {
         getBackupUtils().executeShellCommandSync(cmd);
     }
 
-    private void assertAppWasInRestrictedMode(String packageName) {
+    private void assertAppWasInRestrictedMode(String packageName) throws Exception {
         // If the app is in restricted mode we expect it to crash in preflight.
+        // BackupManagerMonitor is async and it could arrive after the backup session is complete.
+        for (int i = 0; i < 5; i++) {
+            Integer eventId = mBackupManagerMonitor.receivedEventIdsPerPackage.get(packageName);
+            if (eventId == null) {
+                break;
+            }
+            Thread.sleep(1000);
+        }
+
         assertEquals(packageName + " should have crashed in preflight",
                 BackupManagerMonitor.LOG_EVENT_ID_ERROR_PREFLIGHT,
                 (int) mBackupManagerMonitor.receivedEventIdsPerPackage.get(packageName));
