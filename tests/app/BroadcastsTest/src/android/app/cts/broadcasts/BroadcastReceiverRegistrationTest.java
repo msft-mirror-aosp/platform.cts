@@ -23,12 +23,9 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.SystemClock;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Log;
-
-import com.android.server.am.Flags;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -51,13 +48,11 @@ public class BroadcastReceiverRegistrationTest extends BaseBroadcastTest {
         testPriorityValue(10 /* registeredPriority */, 10 /* expectedPriority */);
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_RESTRICT_PRIORITY_VALUES)
     @Test
     public void testPriorityValueRestricted_withSystemHighPriority() {
         testPriorityValue(IntentFilter.SYSTEM_HIGH_PRIORITY, IntentFilter.SYSTEM_HIGH_PRIORITY - 1);
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_RESTRICT_PRIORITY_VALUES)
     @Test
     public void testPriorityValueRestricted_withSystemLowPriority() {
         testPriorityValue(IntentFilter.SYSTEM_LOW_PRIORITY, IntentFilter.SYSTEM_LOW_PRIORITY + 1);
