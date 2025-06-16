@@ -23,7 +23,9 @@ import static org.junit.Assert.assertTrue;
 import android.content.Context;
 import android.content.pm.IPackageManagerNative;
 import android.content.pm.PackageInfoNative;
+import android.content.pm.PackageManager;
 import android.os.Process;
+import android.os.RemoteException;
 import android.os.ServiceManager;
 import android.os.UserHandle;
 
@@ -36,6 +38,18 @@ import org.junit.runner.RunWith;
 
 @RunWith(AndroidJUnit4.class)
 public class PackageManagerNativeTest {
+    // A permission the test package should have (declared in AndroidManifest.xml)
+    private static final String GRANTED_PERMISSION =
+            "android.content.pm.cts.permission.NATIVE_TEST_PERMISSION";
+    // A common dangerous permission the test package is unlikely to have by default.
+    private static final String DENIED_PERMISSION = "android.permission.CAMERA";
+    // A permission string that does not correspond to any defined permission.
+    private static final String NON_EXISTENT_PERMISSION =
+            "android.content.pm.cts.permission.NON_EXISTENT_PERMISSION";
+    // A package name that does not exist on the system.
+    private static final String NON_EXISTENT_PACKAGE_NAME =
+            "android.content.pm.cts.package.nonexistent";
+
     private Context mContext;
     private IPackageManagerNative mPackageManagerNative;
     private String mPackageName;
@@ -110,5 +124,63 @@ public class PackageManagerNativeTest {
         assertTrue(
                 "Current package (" + currentPackageName + ") not found in results for UID " + uid,
                 foundCurrentPackage);
+    }
+
+    @Test
+    public void testCheckPermission_granted() throws RemoteException {
+        assertEquals(
+                "Permission " + GRANTED_PERMISSION + " should be granted.",
+                PackageManager.PERMISSION_GRANTED,
+                mPackageManagerNative.checkPermission(GRANTED_PERMISSION, mPackageName, mUserId));
+    }
+
+    @Test
+    public void testCheckPermission_denied() throws RemoteException {
+        assertEquals(
+                "Permission " + DENIED_PERMISSION + " should be denied.",
+                PackageManager.PERMISSION_DENIED,
+                mPackageManagerNative.checkPermission(DENIED_PERMISSION, mPackageName, mUserId));
+    }
+
+    @Test
+    public void testCheckPermission_nonExistentPermission() throws RemoteException {
+        assertEquals(
+                "Non-existent permission should be denied.",
+                PackageManager.PERMISSION_DENIED,
+                mPackageManagerNative.checkPermission(
+                        NON_EXISTENT_PERMISSION, mPackageName, mUserId));
+    }
+
+    @Test
+    public void testCheckPermission_nullPermissionName() throws RemoteException {
+        assertEquals(
+                "Null permission name should be denied.",
+                PackageManager.PERMISSION_DENIED,
+                mPackageManagerNative.checkPermission(null, mPackageName, mUserId));
+    }
+
+    @Test
+    public void testCheckPermission_nullPackageName() throws RemoteException {
+        assertEquals(
+                "Permission should be denied for null package name.",
+                PackageManager.PERMISSION_DENIED,
+                mPackageManagerNative.checkPermission(GRANTED_PERMISSION, null, mUserId));
+    }
+
+    @Test
+    public void testCheckPermission_emptyPackageName() throws RemoteException {
+        assertEquals(
+                "Permission should be denied for empty package name.",
+                PackageManager.PERMISSION_DENIED,
+                mPackageManagerNative.checkPermission(GRANTED_PERMISSION, "", mUserId));
+    }
+
+    @Test
+    public void testCheckPermission_nonExistentPackageName() throws RemoteException {
+        assertEquals(
+                "Permission for non-existent package should be denied.",
+                PackageManager.PERMISSION_DENIED,
+                mPackageManagerNative.checkPermission(
+                        GRANTED_PERMISSION, NON_EXISTENT_PACKAGE_NAME, mUserId));
     }
 }
