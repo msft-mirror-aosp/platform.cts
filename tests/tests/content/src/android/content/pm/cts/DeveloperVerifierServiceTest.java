@@ -25,6 +25,7 @@ import static com.google.common.truth.Truth.assertThat;
 import static org.testng.Assert.expectThrows;
 
 import android.app.ActivityManager;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.pm.PackageInstaller;
 import android.platform.test.annotations.AppModeFull;
@@ -74,8 +75,10 @@ public class DeveloperVerifierServiceTest {
     @Test
     public void testSetVerificationPolicyFails() throws Exception {
         // Anyone can check the system verifier package name as it's not protected by any permission
-        final String verifierPackageName =
+        final ComponentName verifierComponentName =
                 mPackageInstaller.getDeveloperVerificationServiceProvider();
+        final String verifierPackageName =
+                verifierComponentName == null ? null : verifierComponentName.getPackageName();
         // Test changing verification policy without permission
         expectThrows(
                 SecurityException.class,
