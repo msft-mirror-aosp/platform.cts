@@ -15,7 +15,8 @@ echo "CAMERA_ITS_TOP=${CAMERA_ITS_TOP}"
 
 m -j feature_verification_test 2>&1 || return 1
 
-PB2PATH=out/soong/.intermediates/cts/apps/CameraITS/feature_verification_utils/feature_combination_proto/linux_glibc_x86_64_PY3/gen
+./soong/.intermediates/cts/apps/CameraITS/feature_verification_utils/feature_combination_proto/linux_glibc_x86_64/gen/feature_combination_info.proto.srcszip
+PB2PATH=out/soong/.intermediates/cts/apps/CameraITS/feature_verification_utils/feature_combination_proto/linux_glibc_x86_64/gen
 if ! [[ -r "${ANDROID_BUILD_TOP}/${PB2PATH}/feature_combination_info.proto.srcszip" ]]; then
   echo "feature_combination_info.proto.srcszip not generated!"
   return 1
