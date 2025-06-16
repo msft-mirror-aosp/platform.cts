@@ -22,6 +22,8 @@ import static android.view.ViewGroup.LayoutParams.WRAP_CONTENT;
 import static android.view.WindowInsets.Type.captionBar;
 import static android.view.WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS;
 
+import static com.android.cts.mockime.ImeEventStream.dumpBundle;
+
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.pm.PackageManager;
@@ -1512,6 +1514,16 @@ public final class MockIme extends InputMethodService {
             sendEventInternal(new ImeEvent(eventName, nestLevel, mThreadName,
                     mThreadId, mIsMainThread, enterTimestamp, exitTimestamp, enterWallTime,
                     exitWallTime, enterState, exitState, arguments, result));
+            // Log MockIme events to logcat.
+            StringBuilder sb = new StringBuilder(TAG);
+            sb.append(".");
+            sb.append(eventName);
+            sb.append(": ");
+            dumpBundle(sb, arguments);
+            sb.append(". Result: ");
+            sb.append(result);
+            Log.d(TAG, sb.toString());
+
             return result;
         }
 
