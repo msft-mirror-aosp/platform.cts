@@ -22,6 +22,7 @@ import static org.junit.Assert.fail;
 import android.os.Flags;
 import android.os.IpcDataCache;
 import android.platform.test.annotations.AppModeSdkSandbox;
+import android.platform.test.annotations.DisabledOnRavenwood;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -351,6 +352,7 @@ public class IpcDataCacheTest {
     // setCacheTestMode() is preferred over setTestMode() (the former forwards to the latter) but
     // the API is flag-guarded and is therefore not guaranteed to be present in all builds.  This
     // test just verifies that the two APIs are interchangeable.
+    @DisabledOnRavenwood(reason = "permissions are stubbed out in ravenwood")
     @RequiresFlagsEnabled(Flags.FLAG_IPC_DATA_CACHE_TESTMODE_APIS)
     @Test
     public void testCacheTestMode() {
@@ -411,6 +413,7 @@ public class IpcDataCacheTest {
     // specifically excluded because it can (by design) be invalidated outside test mode.  Modules
     // that are flag-guarded are tested in {@link #testModulesFlagged} until they are committed,
     // after which they should be moved into this test.
+    @DisabledOnRavenwood(reason = "permissions are stubbed out in ravenwood")
     @Test
     public void testModules() {
         testModule(IpcDataCache.MODULE_BLUETOOTH);
@@ -420,6 +423,7 @@ public class IpcDataCacheTest {
     // This is the same as testModules() except that it covers modules that are are currently
     // flag-guarded.  When the flag is committed, the module list here can be moved into
     // {@link #testModules}.
+    @DisabledOnRavenwood(reason = "permissions are stubbed out in ravenwood")
     @RequiresFlagsEnabled(Flags.FLAG_IPC_DATA_CACHE_MODULE_ADSERVICES)
     @Test
     public void testModulesFlagged() {
