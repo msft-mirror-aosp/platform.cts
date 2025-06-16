@@ -110,6 +110,7 @@ import com.android.internal.util.HexDump;
 
 import libcore.util.HexEncoding;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -376,6 +377,19 @@ public class PackageManagerShellCommandInstallTest {
         setSystemProperty("debug.pm.prune_unused_shared_libraries_delay", "invalid");
 
         getDefaultSharedPreferences().edit().clear().commit();
+    }
+
+  @After
+  public void onAfter() throws Exception {
+        getUiAutomation()
+                .adoptShellPermissionIdentity(
+                        Manifest.permission.INTERACT_ACROSS_USERS_FULL,
+                        Manifest.permission.MANAGE_ROLE_HOLDERS);
+        try {
+            mRoleManager.setRoleFallbackEnabled(ROLE_SYSTEM_DEPENDENCY_INSTALLER, true);
+        } finally {
+            getUiAutomation().dropShellPermissionIdentity();
+        }
     }
 
     @AfterClass
@@ -3566,7 +3580,6 @@ public class PackageManagerShellCommandInstallTest {
                     .isNull();
         } finally {
             mRoleManager.setBypassingRoleQualification(false);
-            mRoleManager.setRoleFallbackEnabled(ROLE_SYSTEM_DEPENDENCY_INSTALLER, true);
             getUiAutomation().dropShellPermissionIdentity();
         }
     }
