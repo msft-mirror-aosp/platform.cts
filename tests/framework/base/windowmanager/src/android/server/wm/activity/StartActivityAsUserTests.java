@@ -25,7 +25,6 @@ import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assume.assumeTrue;
 
-import android.app.ActivityManager;
 import android.app.ActivityOptions;
 import android.content.ComponentName;
 import android.content.Context;
@@ -35,8 +34,7 @@ import android.os.RemoteCallback;
 import android.os.UserHandle;
 import android.os.UserManager;
 import android.platform.test.annotations.Presubmit;
-import android.server.wm.WindowManagerState;
-import android.server.wm.WindowManagerStateHelper;
+import android.server.wm.ActivityManagerTestBase;
 import android.util.Log;
 
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -52,7 +50,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 @Presubmit
-public class StartActivityAsUserTests {
+public class StartActivityAsUserTests extends ActivityManagerTestBase {
     static final String EXTRA_CALLBACK = "callback";
     static final String KEY_USER_ID = "user id";
 
@@ -61,12 +59,8 @@ public class StartActivityAsUserTests {
     private static final int INVALID_STACK = -1;
     private static final boolean SUPPORTS_MULTIPLE_USERS = UserManager.supportsMultipleUsers();
 
-    private final Context mContext = InstrumentationRegistry.getInstrumentation().getContext();
-    private final ActivityManager mAm = mContext.getSystemService(ActivityManager.class);
-
     private static int sSecondUserId;
 
-    private WindowManagerStateHelper mAmWmState = new WindowManagerStateHelper();
     private static final String TAG = StartActivityAsUserTests.class.getSimpleName();
 
     @BeforeClass
@@ -78,10 +72,11 @@ public class StartActivityAsUserTests {
         final Context context = InstrumentationRegistry.getInstrumentation().getContext();
         // Create a CLONE profile to start a new activity as. On Automotive devices, CLONE profiles
         // are not supported, thus create a FULL secondary user instead.
-        String createUserOptions = FeatureUtil.isAutomotive()
-                ? "--user-type android.os.usertype.full.SECONDARY"
-                : "--user-type android.os.usertype.profile.CLONE --profileOf "
-                        + context.getUserId();
+        final String createUserOptions =
+                FeatureUtil.isAutomotive()
+                        ? "--user-type android.os.usertype.full.SECONDARY"
+                        : "--user-type android.os.usertype.profile.CLONE --profileOf "
+                                + context.getUserId();
 
         final String output = runShellCommand("pm create-user " + createUserOptions + " user2");
 
@@ -151,28 +146,17 @@ public class StartActivityAsUserTests {
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         intent.putExtra(EXTRA_CALLBACK, cb);
         UserHandle secondUserHandle = UserHandle.of(sSecondUserId);
-
-        try {
-            runWithShellPermissionIdentity(
-                    () -> {
-                        if (withOptions) {
-                            mContext.startActivityAsUser(
-                                    intent,
-                                    ActivityOptions.makeBasic().toBundle(),
-                                    secondUserHandle);
-                        } else {
-                            mContext.startActivityAsUser(intent, secondUserHandle);
-                        }
-                    });
-
-            assertThat(latch.await(5L * HW_TIMEOUT_MULTIPLIER, TimeUnit.SECONDS)).isTrue();
-            assertThat(secondUser[0]).isEqualTo(sSecondUserId);
-
-        } finally {
-            // The StartActivityAsUserActivity calls finish() in onCreate and here waits for the
-            // activity removed to prevent impacting other tests.
-            mAmWmState.waitAndAssertActivityRemoved(intent.getComponent());
-        }
+        runWithShellPermissionIdentity(
+                () -> {
+                    if (withOptions) {
+                        mContext.startActivityAsUser(
+                                intent, ActivityOptions.makeBasic().toBundle(), secondUserHandle);
+                    } else {
+                        mContext.startActivityAsUser(intent, secondUserHandle);
+                    }
+                });
+        assertThat(latch.await(5L * HW_TIMEOUT_MULTIPLIER, TimeUnit.SECONDS)).isTrue();
+        assertThat(secondUser[0]).isEqualTo(sSecondUserId);
     }
 
     private void verifyStartActivityAsInvalidUser(boolean withOptions) {
@@ -182,18 +166,18 @@ public class StartActivityAsUserTests {
         final Intent intent = new Intent(mContext, StartActivityAsUserActivity.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
 
-        runWithShellPermissionIdentity(() -> {
-            if (withOptions) {
-                mContext.startActivityAsUser(intent, ActivityOptions.makeBasic().toBundle(),
-                        secondUserHandle);
-            } else {
-                mContext.startActivityAsUser(intent, secondUserHandle);
-            }
-            WindowManagerState amState = mAmWmState;
-            amState.computeState();
-            ComponentName componentName = ComponentName.createRelative(PACKAGE, CLASS);
-            stackId[0] = amState.getRootTaskIdByActivity(componentName);
-        });
+        runWithShellPermissionIdentity(
+                () -> {
+                    if (withOptions) {
+                        mContext.startActivityAsUser(
+                                intent, ActivityOptions.makeBasic().toBundle(), secondUserHandle);
+                    } else {
+                        mContext.startActivityAsUser(intent, secondUserHandle);
+                    }
+                    mWmState.computeState();
+                    ComponentName componentName = ComponentName.createRelative(PACKAGE, CLASS);
+                    stackId[0] = mWmState.getRootTaskIdByActivity(componentName);
+                });
 
         assertThat(stackId[0]).isEqualTo(INVALID_STACK);
     }
