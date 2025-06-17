@@ -817,7 +817,8 @@ public class ItsTestActivity extends DialogTestListActivity {
                         && !intrinsicMetricsMatches && !lowLightBoostMetricsMatches
                         && !nightModeExtensionMetricsMatches && !aeAwbMetricsMatches
                         && !multiCamMetricsMatches && !previewFrameDropMetricsMatches
-                        && !previewZoomMetricsMatches && !previewStabilizationFovMetricsMatches) {
+                        && !previewZoomMetricsMatches && !previewStabilizationFovMetricsMatches
+                        && !sceneIpMetricsMatches) {
                 return false;
             }
 
@@ -900,8 +901,8 @@ public class ItsTestActivity extends DialogTestListActivity {
                 }
 
                 if (sceneIpMetricsMatches) {
-                    Log.i(TAG, "scene IP metrics matches");
-                    addMultiCamPerfMetricsResult(perfMetricsResult, obj);
+                    Log.i(TAG, "Scene IP metrics matches");
+                    addSceneIpPerfMetricsResult(perfMetricsResult, obj);
                 }
 
                 if (previewFrameDropMetricsMatches) {
@@ -926,6 +927,21 @@ public class ItsTestActivity extends DialogTestListActivity {
 
     private void addMultiCamPerfMetricsResult(String perfMetricsResult,
             JSONObject obj) throws org.json.JSONException {
+        String[] parts = perfMetricsResult.split(":", 2); // Limit to 2 to avoid splitting values
+        if (parts.length == 2) {
+            String key = parts[0].trim().replaceFirst(TEST_PATTERN, "");
+            String value = parts[1].trim();
+            Log.i(TAG, "Key: " + key);
+            Log.i(TAG, "Value: " + value);
+            obj.put(key, value);
+        } else {
+            Log.i(TAG, "Invalid output string");
+        }
+    }
+
+    private void addSceneIpPerfMetricsResult(String perfMetricsResult,
+            JSONObject obj) throws org.json.JSONException {
+        Log.i(TAG, "Adding Scene IP perf metrics results");
         String[] parts = perfMetricsResult.split(":", 2); // Limit to 2 to avoid splitting values
         if (parts.length == 2) {
             String key = parts[0].trim().replaceFirst(TEST_PATTERN, "");
