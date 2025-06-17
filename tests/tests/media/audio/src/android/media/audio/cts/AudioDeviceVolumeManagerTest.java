@@ -92,7 +92,7 @@ public class AudioDeviceVolumeManagerTest {
 
     private static final AudioDeviceAttributes SPEAKER_DEV =
             new AudioDeviceAttributes(
-                    AudioDeviceAttributes.ROLE_OUTPUT, AudioDeviceInfo.TYPE_BUILTIN_SPEAKER, "bla");
+                    AudioDeviceAttributes.ROLE_OUTPUT, AudioDeviceInfo.TYPE_BUILTIN_SPEAKER, "");
 
     /**
      * Constant for maximum acceptable time before which a volume change needs to be propagated
@@ -103,7 +103,15 @@ public class AudioDeviceVolumeManagerTest {
     private static final class AudioDeviceVolumeChangedListener
             implements AudioDeviceVolumeManager.OnAudioDeviceVolumeChangedListener {
         private VolumeInfo mLastVolInfo = null;
-        private final CountDownLatch mNewVolInfoLatch = new CountDownLatch(1);
+        private final CountDownLatch mNewVolInfoLatch;
+
+        AudioDeviceVolumeChangedListener() {
+            this(1);
+        }
+
+        AudioDeviceVolumeChangedListener(int numberOfCallbacks) {
+            mNewVolInfoLatch = new CountDownLatch(numberOfCallbacks);
+        }
 
         @Override
         public void onAudioDeviceVolumeChanged(
@@ -208,9 +216,10 @@ public class AudioDeviceVolumeManagerTest {
             })
     @Test
     public void testNullability() throws Exception {
-        assertThrows("Able to call setDeviceVolume with null VolumeInfo",
+        assertThrows(
+                "Able to call setDeviceVolume with null VolumeInfo",
                 NullPointerException.class,
-                () ->mADVmgr.setDeviceVolume(null, BT_DEV));
+                () -> mADVmgr.setDeviceVolume(null, BT_DEV));
         assertThrows(
                 "Able to call setDeviceVolume with null device",
                 NullPointerException.class,
@@ -513,7 +522,9 @@ public class AudioDeviceVolumeManagerTest {
                         .setMaxVolumeIndex(maxIndex)
                         .setMinVolumeIndex(minIndex)
                         .build();
-        final AudioDeviceVolumeChangedListener listener = new AudioDeviceVolumeChangedListener();
+        // when muting we get a callback for the mute state and then for the index adjustment
+        final AudioDeviceVolumeChangedListener listener =
+                new AudioDeviceVolumeChangedListener(/* numberOfCallbacks= */ 2);
         final VolumeInfo nextVolume =
                 computeNewVolumeWithMute(volMedia, /* mute= */ true, SPEAKER_DEV);
 
