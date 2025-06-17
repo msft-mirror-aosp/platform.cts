@@ -2060,4 +2060,89 @@ public class ConcurrencyTest extends WifiJUnit4TestBase {
                 testDirInfoValidationListener);
         assertTrue(waitForServiceResponse(MY_RESPONSE));
     }
+
+    /**
+     * Tests that we can add an external approver interface to receive the password generated
+     * callback. The external approver should also be able to send a connection request result to
+     * defer the password display to the Wi-Fi service.
+     */
+    @ApiTest(
+            apis = {
+                "android.net.wifi.p2p.WifiP2pManager"
+                        + ".ExternalApproverRequestListener#onPasswordGenerated",
+                "android.net.wifi.p2p.WifiP2pManager#setConnectionRequestResult"
+            })
+    @RequiresFlagsEnabled(
+            Flags.FLAG_EXTERNAL_APPROVER_SUPPORT_FOR_WFDR2_PASSWORD_BASED_BOOTSTRAPPING)
+    @SdkSuppress(minSdkVersion = 37)
+    @Test
+    public void testP2pExternalApproverForWfdR2DisplayPassword() {
+        final MacAddress peer = MacAddress.fromString(TEST_MAC_ADDRESS_STRING);
+        ExternalApproverRequestListener listener =
+                new ExternalApproverRequestListener() {
+                    @Override
+                    public void onAttached(@NonNull MacAddress deviceAddress) {
+                        synchronized (MY_RESPONSE) {
+                            MY_RESPONSE.targetPeer = deviceAddress;
+                            MY_RESPONSE.valid = true;
+                            MY_RESPONSE.isAttached = true;
+                            MY_RESPONSE.notify();
+                        }
+                    }
+
+                    @Override
+                    public void onDetached(@NonNull MacAddress deviceAddress, int reason) {
+                        synchronized (MY_RESPONSE) {
+                            MY_RESPONSE.targetPeer = deviceAddress;
+                            MY_RESPONSE.detachReason = reason;
+                            MY_RESPONSE.valid = true;
+                            MY_RESPONSE.isDetached = true;
+                            MY_RESPONSE.notify();
+                        }
+                    }
+
+                    @Override
+                    public void onConnectionRequested(
+                            int requestType,
+                            @NonNull WifiP2pConfig config,
+                            @NonNull WifiP2pDevice device) {}
+
+                    @Override
+                    public void onPinGenerated(
+                            @NonNull MacAddress deviceAddress, @NonNull String pin) {}
+
+                    @Override
+                    public void onPasswordGenerated(
+                            @NonNull MacAddress deviceAddress, @NonNull String password) {}
+                };
+
+        UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
+        try {
+            uiAutomation.adoptShellPermissionIdentity();
+            sWifiP2pManager.addExternalApprover(sWifiP2pChannel, peer, listener);
+            assertTrue(waitForServiceResponse(MY_RESPONSE));
+            assertTrue(MY_RESPONSE.isAttached);
+            assertFalse(MY_RESPONSE.isDetached);
+            assertEquals(peer, MY_RESPONSE.targetPeer);
+
+            // Just ignore the result as there is no real incoming request.
+            sWifiP2pManager.setConnectionRequestResult(
+                    sWifiP2pChannel,
+                    peer,
+                    WifiP2pManager.CONNECTION_REQUEST_DEFER_SHOW_PASSWORD_TO_SERVICE,
+                    null);
+
+            resetResponse(MY_RESPONSE);
+            sWifiP2pManager.removeExternalApprover(sWifiP2pChannel, peer, null);
+            assertTrue(waitForServiceResponse(MY_RESPONSE));
+            assertTrue(MY_RESPONSE.isDetached);
+            assertFalse(MY_RESPONSE.isAttached);
+            assertEquals(peer, MY_RESPONSE.targetPeer);
+            assertEquals(
+                    ExternalApproverRequestListener.APPROVER_DETACH_REASON_REMOVE,
+                    MY_RESPONSE.detachReason);
+        } finally {
+            uiAutomation.dropShellPermissionIdentity();
+        }
+    }
 }
