@@ -258,22 +258,27 @@ object VirtualInputEventCreator {
         )
     }
 
-    fun createKeyboardEvent(action: Int, code: Int): KeyEvent {
-        return createKeyEvent(action, code, InputDevice.SOURCE_KEYBOARD)
+    fun createKeyboardEvent(action: Int, code: Int, metaState: Int = 0): KeyEvent {
+        return createKeyEvent(action, code, metaState, InputDevice.SOURCE_KEYBOARD)
     }
 
     fun createDpadEvent(action: Int, code: Int): KeyEvent {
-        return createKeyEvent(action, code, InputDevice.SOURCE_KEYBOARD or InputDevice.SOURCE_DPAD)
+        return createKeyEvent(
+            action,
+            code,
+            /* metaState= */0,
+            InputDevice.SOURCE_KEYBOARD or InputDevice.SOURCE_DPAD
+        )
     }
 
-    private fun createKeyEvent(action: Int, code: Int, source: Int): KeyEvent {
+    private fun createKeyEvent(action: Int, code: Int, metaState: Int, source: Int): KeyEvent {
         return KeyEvent(
             /* downTime= */ 0,
             /* eventTime= */ 0,
             action,
             code,
             /* repeat= */ 0,
-            /* metaState= */ 0,
+            metaState,
             /* deviceId= */ 0,
             /* scancode= */ 0,
             /* flags= */ 0,
