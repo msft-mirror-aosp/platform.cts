@@ -24,15 +24,12 @@ import static android.telecom.Call.STATE_RINGING;
 import static android.telecom.cts.apps.TelecomTestApp.ManagedConnectionServiceApp;
 import static android.telecom.cts.apps.TelecomTestApp.ManagedConnectionServiceAppClone;
 
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.telecom.Call;
 import android.telecom.VideoProfile;
 import android.telecom.cts.apps.AppControlWrapper;
 import android.telecom.cts.apps.TelecomTestApp;
 import android.telecom.cts.cuj.BaseAppVerifier;
 import android.util.Log;
-
-import com.android.server.telecom.flags.Flags;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -58,7 +55,6 @@ public class CallSequencingManagedHoldRestrictionTest extends BaseAppVerifier {
      * ACTIVE call and moves the RINGING call to ACTIVE.
      */
     @Test
-    @RequiresFlagsEnabled({Flags.FLAG_ENABLE_CALL_SEQUENCING})
     public void testActive0_Answer0() throws Exception {
         if (!mShouldTestTelecom) {
             return;
@@ -90,7 +86,6 @@ public class CallSequencingManagedHoldRestrictionTest extends BaseAppVerifier {
      * acct 0 to be DISCONNECTED.
      */
     @Test
-    @RequiresFlagsEnabled({Flags.FLAG_ENABLE_CALL_SEQUENCING})
     public void testActive0_Answer1() throws Exception {
         if (!mShouldTestTelecom) {
             return;
@@ -121,7 +116,6 @@ public class CallSequencingManagedHoldRestrictionTest extends BaseAppVerifier {
      * moves the ACTIVE call to HOLDING before DIALING the new call.
      */
     @Test
-    @RequiresFlagsEnabled({Flags.FLAG_ENABLE_CALL_SEQUENCING})
     public void testActive0_Place0() throws Exception {
         if (!mShouldTestTelecom) {
             return;
@@ -152,7 +146,6 @@ public class CallSequencingManagedHoldRestrictionTest extends BaseAppVerifier {
      * be placed by Telecom.
      */
     @Test
-    @RequiresFlagsEnabled({Flags.FLAG_ENABLE_CALL_SEQUENCING})
     public void testActive0_Place1() throws Exception {
         if (!mShouldTestTelecom) {
             return;
@@ -182,7 +175,6 @@ public class CallSequencingManagedHoldRestrictionTest extends BaseAppVerifier {
      * to HOLDING and the RINGING call moves to ACTIVE.
      */
     @Test
-    @RequiresFlagsEnabled({Flags.FLAG_ENABLE_CALL_SEQUENCING})
     public void testHeld0Active0_Answer0() throws Exception {
         if (!mShouldTestTelecom) {
             return;
@@ -217,7 +209,6 @@ public class CallSequencingManagedHoldRestrictionTest extends BaseAppVerifier {
      * call on managed acct 0 is placed, Telecom fails to place the call.
      */
     @Test
-    @RequiresFlagsEnabled({Flags.FLAG_ENABLE_CALL_SEQUENCING})
     public void testHeld0Active0_Place0() throws Exception {
         if (!mShouldTestTelecom) {
             return;
@@ -247,7 +238,6 @@ public class CallSequencingManagedHoldRestrictionTest extends BaseAppVerifier {
      * call on managed acct 1 is placed, Telecom fails to place the call.
      */
     @Test
-    @RequiresFlagsEnabled({Flags.FLAG_ENABLE_CALL_SEQUENCING})
     public void testHeld0Active0_Place1() throws Exception {
         if (!mShouldTestTelecom) {
             return;
@@ -278,7 +268,6 @@ public class CallSequencingManagedHoldRestrictionTest extends BaseAppVerifier {
      * before answering the RINGING call.
      */
     @Test
-    @RequiresFlagsEnabled({Flags.FLAG_ENABLE_CALL_SEQUENCING})
     public void testHeld0Active0_Answer1() throws Exception {
         if (!mShouldTestTelecom) {
             return;
@@ -310,7 +299,6 @@ public class CallSequencingManagedHoldRestrictionTest extends BaseAppVerifier {
      * HOLDING call and the ACTIVE call is held before answering the RINGING call.
      */
     @Test
-    @RequiresFlagsEnabled({Flags.FLAG_ENABLE_CALL_SEQUENCING})
     public void testHeld0Active1_Answer1() throws Exception {
         if (!mShouldTestTelecom) {
             return;
