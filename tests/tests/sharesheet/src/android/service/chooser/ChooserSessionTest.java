@@ -91,7 +91,7 @@ public class ChooserSessionTest {
     @ApiTest(
             apis = {
                 "android.service.chooser.ChooserManager#getState",
-                "android.service.chooser.ChooserManager#close",
+                "android.service.chooser.ChooserManager#endSession",
                 "android.service.chooser.ChooserManager#STATE_CLOSED"
             })
     @Test
@@ -100,7 +100,7 @@ public class ChooserSessionTest {
         Intent chooserIntent = Intent.createChooser(new Intent(ACTION_SEND), null);
         ChooserSession testSubject = mChooserManager.startSession(context, chooserIntent);
 
-        testSubject.close();
+        testSubject.endSession();
 
         assertEquals(ChooserSession.STATE_CLOSED, testSubject.getState());
     }
