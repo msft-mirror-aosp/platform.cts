@@ -45,11 +45,20 @@ import java.util.stream.Collectors;
 public class PerformanceClassEvaluator {
     private static final String TAG = PerformanceClassEvaluator.class.getSimpleName();
 
+    private final boolean mIsPerfClass;
+    private final int mDeclaredPc;
     private final String mTestName;
     private final Set<Requirement> mRequirements;
 
     public PerformanceClassEvaluator(TestName testName) {
+        this(testName, Utils.isPerfClass(), Utils.getPerfClass());
+    }
+
+    @VisibleForTesting
+    protected PerformanceClassEvaluator(TestName testName, boolean isPerfClass, int declaredPc) {
         Preconditions.checkNotNull(testName);
+        mIsPerfClass = isPerfClass;
+        mDeclaredPc = declaredPc;
         String baseTestName = testName.getMethodName() != null ? testName.getMethodName() : "";
         this.mTestName = baseTestName.replace("{", "(").replace("}", ")");
         this.mRequirements = new HashSet<>();
@@ -97,13 +106,15 @@ public class PerformanceClassEvaluator {
         Map<Requirement, Integer> idToGrade = computeGrades();
         boolean perfClassMet = submit(SubmitType.TRADEFED);
         // check performance class
-        assumeTrue("Build.VERSION.MEDIA_PERFORMANCE_CLASS is not declared", Utils.isPerfClass());
-        int pc = Utils.getPerfClass();
+        assumeTrue("Build.VERSION.MEDIA_PERFORMANCE_CLASS is not declared", mIsPerfClass);
+
         if (!perfClassMet) {
             idToGrade.forEach(
                     (r, grade) -> {
-                        if (r.appliesToPerformanceClass(pc)) {
-                            assertWithMessage("%s performance class", r).that(grade).isAtLeast(pc);
+                        if (r.appliesToPerformanceClass(mDeclaredPc)) {
+                            assertWithMessage("%s performance class", r)
+                                    .that(grade)
+                                    .isAtLeast(mDeclaredPc);
                         }
                     });
         }
@@ -121,11 +132,10 @@ public class PerformanceClassEvaluator {
         // submit clears the requirements so compute before submitting
         Map<Requirement, Integer> grades = computeGrades();
         boolean perfClassMet = submit(SubmitType.VERIFIER);
-        int declaredPc = Utils.getPerfClass();
 
-        if (!perfClassMet && Utils.isPerfClass()) {
+        if (!perfClassMet && mIsPerfClass) {
             String msg = "Declared performance class %s but requirement [%s] grades as %s";
-            grades.forEach((r, grade) -> Log.w(TAG, msg.formatted(declaredPc, r, grade)));
+            grades.forEach((r, grade) -> Log.w(TAG, msg.formatted(mDeclaredPc, r, grade)));
         }
     }
 
