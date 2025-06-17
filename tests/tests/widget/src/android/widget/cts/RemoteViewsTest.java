@@ -16,7 +16,6 @@
 
 package android.widget.cts;
 
-import static android.appwidget.flags.Flags.drawDataParcel;
 import static android.util.TypedValue.COMPLEX_UNIT_DIP;
 import static android.util.TypedValue.COMPLEX_UNIT_PX;
 import static android.view.View.MeasureSpec.makeMeasureSpec;
@@ -508,9 +507,6 @@ public class RemoteViewsTest {
 
     @Test
     public void testApplyWithDrawInstructions() throws Throwable {
-        if (!drawDataParcel()) {
-            return;
-        }
         final RemoteViews.DrawInstructions drawInstructions =
                 getDrawInstructions(mContext, R.raw.widget);
         final String key = "mykey";
@@ -551,9 +547,6 @@ public class RemoteViewsTest {
 
     @Test
     public void testDrawInstructionsBlend() throws Throwable {
-        if (!drawDataParcel()) {
-            return;
-        }
         testSingleDrawInstruction("blend_clear",
                 R.raw.blend_clear, R.drawable.blend_clear);
         testSingleDrawInstruction("blend_color",
@@ -616,9 +609,6 @@ public class RemoteViewsTest {
 
     @Test
     public void testDrawInstructionsClip() throws Throwable {
-        if (!drawDataParcel()) {
-            return;
-        }
         testSingleDrawInstruction("clip_path",
                 R.raw.clip_path, R.drawable.clip_path);
         testSingleDrawInstruction("clip_rect",
@@ -627,9 +617,6 @@ public class RemoteViewsTest {
 
     @Test
     public void testDrawInstructionsText() throws Throwable {
-        if (!drawDataParcel()) {
-            return;
-        }
         testSingleDrawInstruction("draw_text",
                 R.raw.draw_text, R.drawable.draw_text);
         testSingleDrawInstruction("text_font",
@@ -646,9 +633,6 @@ public class RemoteViewsTest {
 
     @Test
     public void testDrawInstructionsGradient() throws Throwable {
-        if (!drawDataParcel()) {
-            return;
-        }
         testSingleDrawInstruction("linear_gradient_1",
                 R.raw.linear_gradient_1, R.drawable.linear_gradient_1);
         testSingleDrawInstruction("linear_gradient_2",
@@ -665,9 +649,6 @@ public class RemoteViewsTest {
 
     @Test
     public void testDrawInstructionsMatrix() throws Throwable {
-        if (!drawDataParcel()) {
-            return;
-        }
         testSingleDrawInstruction("matrix_rotate_1",
                 R.raw.matrix_rotate_1, R.drawable.matrix_rotate_1);
         testSingleDrawInstruction("matrix_rotate_2",
@@ -684,9 +665,6 @@ public class RemoteViewsTest {
 
     @Test
     public void testDrawInstructionsMulti() throws Throwable {
-        if (!drawDataParcel()) {
-            return;
-        }
         testSingleDrawInstruction("multi_path",
                 R.raw.multi_path, R.drawable.multi_path);
         testSingleDrawInstruction("multiple_draw_commands",
@@ -695,9 +673,6 @@ public class RemoteViewsTest {
 
     @Test
     public void testDrawInstructionsPaint() throws Throwable {
-        if (!drawDataParcel()) {
-            return;
-        }
         testSingleDrawInstruction("paint_filter_bitmap_1",
                 R.raw.paint_filter_bitmap_1, R.drawable.paint_filter_bitmap_1);
         testSingleDrawInstruction("paint_filter_bitmap_2",
@@ -714,9 +689,6 @@ public class RemoteViewsTest {
 
     @Test
     public void testDrawInstructionsPath() throws Throwable {
-        if (!drawDataParcel()) {
-            return;
-        }
         testSingleDrawInstruction("path_cubic_to",
                 R.raw.path_cubic_to, R.drawable.path_cubic_to);
         testSingleDrawInstruction("path_line_to",
@@ -733,9 +705,6 @@ public class RemoteViewsTest {
 
     @Test
     public void testDrawInstructionsPorter() throws Throwable {
-        if (!drawDataParcel()) {
-            return;
-        }
         testSingleDrawInstruction("porter_add",
                 R.raw.porter_add, R.drawable.porter_add);
         testSingleDrawInstruction("porter_clear",
