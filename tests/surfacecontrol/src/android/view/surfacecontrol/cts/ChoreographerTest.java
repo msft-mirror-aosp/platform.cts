@@ -583,6 +583,18 @@ public class ChoreographerTest {
 
         awaitCountDown(addedCallback.mCallbackComplete);
 
+        // post another work on the looper to make sure Choreographer callback processing is done
+        Looper looper = Looper.getMainLooper();
+        Handler handler = new Handler(looper);
+        CountDownLatch latch = new CountDownLatch(1);
+        handler.post(new Runnable(){
+            @Override
+            public void run() {
+                latch.countDown();
+            }
+        });
+        awaitCountDown(latch);
+
         assertThrows(
                 IllegalStateException.class, () -> addedCallback.mFrameData.getFrameTimeNanos());
         assertThrows(
