@@ -41,21 +41,18 @@ import java.util.stream.Collectors;
 
 /**
  * Logs a set of measurements and results for defined performance class requirements.
- *
- * <p> Nested classes are organized alphabetically, add[Requirement] functions are organized by
- * their requirement number in the order they appear in the Android CDD
  */
 public class PerformanceClassEvaluator {
     private static final String TAG = PerformanceClassEvaluator.class.getSimpleName();
 
     private final String mTestName;
-    private Set<Requirement> mRequirements;
+    private final Set<Requirement> mRequirements;
 
     public PerformanceClassEvaluator(TestName testName) {
         Preconditions.checkNotNull(testName);
         String baseTestName = testName.getMethodName() != null ? testName.getMethodName() : "";
         this.mTestName = baseTestName.replace("{", "(").replace("}", ")");
-        this.mRequirements = new HashSet<Requirement>();
+        this.mRequirements = new HashSet<>();
     }
 
     String getTestName() {
@@ -80,7 +77,7 @@ public class PerformanceClassEvaluator {
      */
     public boolean isReadyToSubmitItsResults() {
         boolean allMeasuredValuesSet =
-                mRequirements.stream().allMatch(r -> r.allMeasuredValuesSet());
+                mRequirements.stream().allMatch(Requirement::allMeasuredValuesSet);
         boolean hasRequirements = !mRequirements.isEmpty();
         return allMeasuredValuesSet && hasRequirements;
     }
@@ -89,17 +86,22 @@ public class PerformanceClassEvaluator {
         TRADEFED, VERIFIER
     }
 
-
+    /**
+     * Submits the evaluation and checks them against the device's declared performance class, and
+     * asserts that the requirements are met.
+     *
+     * <p>The set of requirements are cleared after submission.
+     */
     public void submitAndCheck() {
         // submit clears the requirements so compute before submitting
         Map<Requirement, Integer> idToGrade = computeGrades();
         boolean perfClassMet = submit(SubmitType.TRADEFED);
         // check performance class
         assumeTrue("Build.VERSION.MEDIA_PERFORMANCE_CLASS is not declared", Utils.isPerfClass());
+        int pc = Utils.getPerfClass();
         if (!perfClassMet) {
             idToGrade.forEach(
                     (r, grade) -> {
-                        int pc = Utils.getPerfClass();
                         if (r.appliesToPerformanceClass(pc)) {
                             assertWithMessage("%s performance class", r).that(grade).isAtLeast(pc);
                         }
@@ -109,6 +111,12 @@ public class PerformanceClassEvaluator {
         assertThat(perfClassMet).isTrue();
     }
 
+    /**
+     * Submits the evaluation results and logs warnings if requirements are not met for the declared
+     * performance class.
+     *
+     * <p>The set of requirements are cleared after submission.
+     */
     public void submitAndVerify() {
         // submit clears the requirements so compute before submitting
         Map<Requirement, Integer> grades = computeGrades();
@@ -129,6 +137,14 @@ public class PerformanceClassEvaluator {
     }
 
     private boolean submit(SubmitType type) {
+        if (mRequirements.isEmpty()) {
+            Log.w(
+                    TAG,
+                    ("No requirements added to PerformanceClassEvaluator for test %s. Submission "
+                                    + "skipped.")
+                            .formatted(mTestName));
+            return true;
+        }
         boolean perfClassMet = true;
         for (Requirement req : this.mRequirements) {
             switch (type) {
