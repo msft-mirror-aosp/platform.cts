@@ -16,7 +16,11 @@
 
 package android.car.cts.builtin.power;
 
+import static android.content.pm.PackageManager.FEATURE_AUTOMOTIVE;
+
 import static com.google.common.truth.Truth.assertWithMessage;
+
+import static org.junit.Assume.assumeFalse;
 
 import android.app.Instrumentation;
 import android.app.UiAutomation;
@@ -59,6 +63,8 @@ public final class PowerManagerHelperTest {
 
     @Test
     public void testSetDisplayState() {
+        // TODO(b/437105925): Rewrite the test with a new way of turning all displays off.
+        assumeFalse(isAutomotive());
         PowerManager powerManager = mContext.getSystemService(PowerManager.class);
 
         PowerManagerHelper.setDisplayState(mContext, /* on= */ true, SystemClock.uptimeMillis());
@@ -92,5 +98,9 @@ public final class PowerManagerHelperTest {
             assertWithMessage("Wake lock for display " + displayId).that(wakeLock.isHeld())
                     .isFalse();
         }
+    }
+
+    private boolean isAutomotive() {
+        return mContext.getPackageManager().hasSystemFeature(FEATURE_AUTOMOTIVE);
     }
 }
