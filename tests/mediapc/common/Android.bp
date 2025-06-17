@@ -20,6 +20,7 @@ java_library {
     name: "MediaPerformanceClassCommon",
     srcs: [
         "src/**/*.java",
+        "src/**/*.kt",
     ],
     libs: [
         "compatibility-device-util-axt",
@@ -42,7 +43,10 @@ android_test {
         "mediapc-requirements",
     ],
     platform_apis: true,
-    srcs: ["tests/src/**/*.java"],
+    srcs: [
+        "tests/src/**/*.java",
+        "tests/src/**/*.kt",
+    ],
     test_suites: [
         "general-tests",
     ],
