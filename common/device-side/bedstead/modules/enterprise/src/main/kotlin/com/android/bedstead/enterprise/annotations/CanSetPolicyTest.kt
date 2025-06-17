@@ -16,6 +16,7 @@
 package com.android.bedstead.enterprise.annotations
 
 import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence
+import com.android.bedstead.harrier.annotations.UsesParameterizedTestGenerator
 import com.android.bedstead.harrier.annotations.meta.RequiresBedsteadJUnit4
 import com.google.auto.value.AutoAnnotation
 import kotlin.reflect.KClass
@@ -29,9 +30,9 @@ import kotlin.reflect.KClass
  * use [PolicyAppliesTest].
  */
 @Target(AnnotationTarget.FUNCTION)
-@Retention(
-    AnnotationRetention.RUNTIME)
+@Retention(AnnotationRetention.RUNTIME)
 @RequiresBedsteadJUnit4
+@UsesParameterizedTestGenerator(UsesParameterizedTestGenerator.ENTERPRISE)
 annotation class CanSetPolicyTest(
     /**
      * The policy being tested.
@@ -115,7 +116,8 @@ annotation class CanSetPolicyTest(
      *
      * Priority can be set to a [AnnotationPriorityRunPrecedence] constant, or to any [Int].
      */
-    val priority: Int = AnnotationPriorityRunPrecedence.PRECEDENCE_NOT_IMPORTANT)
+    val priority: Int = AnnotationPriorityRunPrecedence.PRECEDENCE_NOT_IMPORTANT
+)
 
 @AutoAnnotation
 fun canSetPolicyTest(
@@ -123,7 +125,9 @@ fun canSetPolicyTest(
     policyUnion: Array<Class<*>>? = emptyArray(),
     policyIntersection: Array<Class<*>>? = emptyArray()
 ): CanSetPolicyTest {
-    return AutoAnnotation_CanSetPolicyTestKt_canSetPolicyTest(policy,
+    return AutoAnnotation_CanSetPolicyTestKt_canSetPolicyTest(
+        policy,
         policyUnion,
-        policyIntersection)
+        policyIntersection
+    )
 }

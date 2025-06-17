@@ -26,9 +26,9 @@ package com.android.bedstead.harrier
 interface ParameterizedTestGenerator {
 
     /**
-     * Generates list of [DynamicParameterizedAnnotation] that correspond to the [annotation]
+     * Generates list of new annotations that correspond to the original [annotation]
      */
     fun generateReplacementAnnotations(
         annotation: Annotation
-    ): List<DynamicParameterizedAnnotation>
+    ): List<Annotation>
 }
