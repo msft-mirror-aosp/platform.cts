@@ -18,12 +18,8 @@ package com.android.bedstead.harrier;
 
 import androidx.annotation.Nullable;
 
-import com.android.bedstead.enterprise.annotations.CanSetPolicyTest;
-import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest;
 import com.android.bedstead.enterprise.annotations.MostImportantCoexistenceTest;
 import com.android.bedstead.enterprise.annotations.MostRestrictiveCoexistenceTest;
-import com.android.bedstead.enterprise.annotations.PolicyAppliesTest;
-import com.android.bedstead.enterprise.annotations.PolicyDoesNotApplyTest;
 import com.android.bedstead.harrier.annotations.AnnotationCostRunPrecedence;
 import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence;
 import com.android.bedstead.harrier.annotations.EnumTestParameter;
@@ -359,10 +355,6 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
     private static List<FrameworkMethod> getBasicTests(TestClass testClass) {
         return testClass.getAnnotatedMethods().stream().filter(
                 method -> method.getAnnotation(Test.class) != null
-                        || method.getAnnotation(PolicyAppliesTest.class) != null
-                        || method.getAnnotation(PolicyDoesNotApplyTest.class) != null
-                        || method.getAnnotation(CanSetPolicyTest.class) != null
-                        || method.getAnnotation(CannotSetPolicyTest.class) != null
                         || method.getAnnotation(MostRestrictiveCoexistenceTest.class) != null
                         || method.getAnnotation(MostImportantCoexistenceTest.class) != null
                         || method.getAnnotation(HiddenApiTest.class) != null
@@ -694,8 +686,6 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
         Set<Annotation> parameterizedAnnotations = new HashSet<>();
         List<Annotation> annotations = new ArrayList<>(Arrays.asList(methodAnnotations));
 
-        parseEnterpriseAnnotations(annotations);
-
         for (Annotation annotation : annotations) {
             var replacements = generateReplacementAnnotations(annotation);
             if (replacements != null) {
@@ -716,7 +706,7 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
      * <p>To be used before general annotation processing.
      */
     @Nullable
-    static List<DynamicParameterizedAnnotation> generateReplacementAnnotations(
+    static List<Annotation> generateReplacementAnnotations(
             Annotation annotation) {
         Class<? extends Annotation> annotationType = annotation.annotationType();
         if (annotationType != null) {
@@ -731,22 +721,6 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
             }
         }
         return null;
-    }
-
-    /**
-     * Parse enterprise-specific annotations.
-     *
-     * <p>To be used before general annotation processing.
-     */
-    static void parseEnterpriseAnnotations(List<Annotation> annotations) {
-        HarrierToEnterpriseMediator mediator =
-                HarrierToEnterpriseMediator.Companion.getMediatorOrNull();
-        if (mediator == null) {
-            System.out.println(LOG_TAG + " bedstead-enterprise module is not loaded, "
-                    + "parseEnterpriseAnnotations will not be executed");
-        } else {
-            mediator.parseEnterpriseAnnotations(annotations);
-        }
     }
 
     HarrierRule getHarrierRule() {

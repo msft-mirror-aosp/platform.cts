@@ -214,7 +214,7 @@ public final class ImeEventStream {
         return new String(indentationChars);
     }
 
-    private static void dumpBundle(@NonNull StringBuilder sb, @NonNull Bundle bundle) {
+    static void dumpBundle(@NonNull StringBuilder sb, @NonNull Bundle bundle) {
         sb.append('{');
         boolean first = true;
         for (String key : bundle.keySet()) {

@@ -62,6 +62,7 @@ import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewTreeObserver;
 import android.view.animation.LayoutAnimationController;
 import android.widget.AbsListView;
 import android.widget.AdapterView;
@@ -1598,6 +1599,14 @@ public class ListViewTest {
     }
 
     private void showOnlyStretch() throws Throwable {
+        // Give it an opportunity to finish layout.
+        CountDownLatch latch = new CountDownLatch(1);
+        ViewTreeObserver.OnPreDrawListener listener =
+                () -> {
+                    latch.countDown();
+                    return true;
+                };
+        mListViewStretch.getViewTreeObserver().addOnPreDrawListener(listener);
         mActivityRule.runOnUiThread(
                 () -> {
                     ViewGroup parent = (ViewGroup) mListViewStretch.getParent();
@@ -1609,15 +1618,8 @@ public class ListViewTest {
                     mListViewStretch.setDivider(null);
                     mListViewStretch.setDividerHeight(0);
                 });
-        // Give it an opportunity to finish layout.
-        CountDownLatch latch = new CountDownLatch(1);
-        mActivityRule.runOnUiThread(() -> {
-            mListViewStretch.getViewTreeObserver().addOnPreDrawListener(() -> {
-                latch.countDown();
-                return true;
-            });
-        });
         assertTrue(latch.await(1, TimeUnit.SECONDS));
+        mListViewStretch.getViewTreeObserver().removeOnPreDrawListener(listener);
     }
 
     private static class StableArrayAdapter<T> extends ArrayAdapter<T> {

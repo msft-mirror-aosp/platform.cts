@@ -16,6 +16,7 @@
 package com.android.bedstead.enterprise.annotations
 
 import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence
+import com.android.bedstead.harrier.annotations.UsesParameterizedTestGenerator
 import com.android.bedstead.harrier.annotations.meta.RequiresBedsteadJUnit4
 import com.google.auto.value.AutoAnnotation
 import kotlin.reflect.KClass
@@ -30,9 +31,9 @@ import kotlin.reflect.KClass
  * This will generate parameterized runs for all matching states.
  */
 @Target(AnnotationTarget.FUNCTION)
-@Retention(
-    AnnotationRetention.RUNTIME)
+@Retention(AnnotationRetention.RUNTIME)
 @RequiresBedsteadJUnit4
+@UsesParameterizedTestGenerator(UsesParameterizedTestGenerator.ENTERPRISE)
 annotation class CannotSetPolicyTest(
     /**
      * The policy being tested.
@@ -66,9 +67,10 @@ annotation class CannotSetPolicyTest(
      * annotation which must be resolved first is lower than the one which must be resolved later.
      *
      *
-     * Priority can be set to a [AnnotationPriorityRunPrecedence] constant, or to any [int].
+     * Priority can be set to a [AnnotationPriorityRunPrecedence] constant, or to any [Int].
      */
-    val priority: Int = AnnotationPriorityRunPrecedence.PRECEDENCE_NOT_IMPORTANT)
+    val priority: Int = AnnotationPriorityRunPrecedence.PRECEDENCE_NOT_IMPORTANT
+)
 
 @AutoAnnotation
 fun cannotSetPolicyTest(
@@ -76,7 +78,9 @@ fun cannotSetPolicyTest(
     includeDeviceAdminStates: Boolean = true,
     includeNonDeviceAdminStates: Boolean = true
 ): CannotSetPolicyTest {
-    return AutoAnnotation_CannotSetPolicyTestKt_cannotSetPolicyTest(policy,
+    return AutoAnnotation_CannotSetPolicyTestKt_cannotSetPolicyTest(
+        policy,
         includeDeviceAdminStates,
-        includeNonDeviceAdminStates)
+        includeNonDeviceAdminStates
+    )
 }

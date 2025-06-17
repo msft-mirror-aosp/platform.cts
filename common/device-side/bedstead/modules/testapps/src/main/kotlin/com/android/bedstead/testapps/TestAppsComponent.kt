@@ -17,7 +17,6 @@ package com.android.bedstead.testapps
 
 import com.android.bedstead.enterprise.annotations.EnsureHasDelegate
 import com.android.bedstead.harrier.AnnotationExecutorUtil
-import com.android.bedstead.harrier.BedsteadServiceLocator
 import com.android.bedstead.harrier.DeviceStateComponent
 import com.android.bedstead.harrier.annotations.EnsureTestAppDoesNotHavePermission
 import com.android.bedstead.harrier.annotations.EnsureTestAppHasAppOp
@@ -29,7 +28,6 @@ import com.android.bedstead.nene.TestApis.packages
 import com.android.bedstead.nene.exceptions.NeneException
 import com.android.bedstead.nene.users.UserReference
 import com.android.bedstead.remotedpc.RemoteDpc
-import com.android.bedstead.remotedpc.RemoteTestApp
 import com.android.bedstead.testapp.TestApp
 import com.android.bedstead.testapp.TestAppInstance
 import com.android.bedstead.testapp.TestAppProvider
@@ -39,10 +37,8 @@ import org.junit.Assume
 
 /**
  * Manages test apps for device state tests.
- *
- * @param locator provides access to other dependencies.
  */
-class TestAppsComponent(locator: BedsteadServiceLocator) : DeviceStateComponent {
+class TestAppsComponent : DeviceStateComponent {
 
     private val testApps: MutableMap<String, TestAppInstance> = HashMap()
     private val installedTestApps: MutableSet<TestAppInstance> = HashSet()

@@ -16,6 +16,8 @@
 
 package android.provider.cts.settings;
 
+import static com.google.common.truth.Truth.assertWithMessage;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -45,6 +47,8 @@ import android.os.RemoteException;
 import android.os.SystemClock;
 import android.platform.test.annotations.AppModeNonSdkSandbox;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.Settings;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -56,14 +60,18 @@ import com.android.compatibility.common.util.SystemUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 @RunWith(AndroidJUnit4.class)
 public class SettingsTest {
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private static final int sUserId = Process.myUserHandle().getIdentifier();
     private static final String sPackageName =
@@ -414,6 +422,35 @@ public class SettingsTest {
         } catch (SecurityException se) {
             // SecurityException is NOT allowed
             fail("SecurityException not expected when launching system update settings");
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(android.provider.Flags.FLAG_EXPOSE_SYSTEM_UPDATE_SETTINGS)
+    public void testSystemUpdateSettingsPriority() {
+        final PackageManager pm = getContext().getPackageManager();
+        final Intent intent = new Intent(Settings.ACTION_SYSTEM_UPDATE_SETTINGS);
+        final List<ResolveInfo> resolveInfos =
+                pm.queryIntentActivities(intent, PackageManager.MATCH_SYSTEM_ONLY);
+
+        if (resolveInfos == null || resolveInfos.isEmpty()) {
+            // No activity found, which is acceptable.
+            return;
+        }
+
+        for (ResolveInfo resolveInfo : resolveInfos) {
+            if (resolveInfo.activityInfo == null) {
+                continue;
+            }
+
+            assertWithMessage(
+                            "System component "
+                                    + resolveInfo.activityInfo.name
+                                    + " handling ACTION_SYSTEM_UPDATE_SETTINGS must have priority >"
+                                    + " 0. Actual priority: "
+                                    + resolveInfo.priority)
+                    .that(resolveInfo.priority)
+                    .isGreaterThan(0);
         }
     }
 

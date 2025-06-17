@@ -21,20 +21,23 @@ import android.Manifest.permission.QUERY_USERS
 import android.app.supervision.SupervisionManager
 import android.app.supervision.flags.Flags
 import android.content.Intent
-import android.content.pm.PackageManager
+import android.platform.test.annotations.AppModeFull
 import androidx.test.ext.junit.rules.ActivityScenarioRule
 import com.android.bedstead.flags.annotations.RequireFlagsEnabled
 import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.harrier.DeviceState
+import com.android.bedstead.harrier.annotations.RequireNotAutomotive
+import com.android.bedstead.harrier.annotations.RequireNotTv
+import com.android.bedstead.harrier.annotations.RequireNotWatch
 import com.android.bedstead.nene.TestApis
 import com.android.bedstead.permissions.annotations.EnsureDoesNotHavePermission
 import com.android.bedstead.permissions.annotations.EnsureHasPermission
 import com.android.compatibility.common.util.ApiTest
+import com.android.cts.install.lib.InstallUtils.getPackageInfo
 import com.android.xts.root.annotations.RequireRootInstrumentation
 import com.google.common.truth.Truth.assertThat
 import com.google.common.truth.TruthJUnit.assume
 import org.junit.ClassRule
-import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -80,11 +83,12 @@ class SupervisionStateTest {
 
     @Test
     @ApiTest(apis = ["android.app.supervision.SupervisionManager#ACTION_ENABLE_SUPERVISION"])
-    @Ignore("This test is flaky. See b/422209296.")
+    @AppModeFull(reason = "Test relies on seeing other apps")
+    @RequireNotAutomotive(reason = "Only phones and tablets have the activity")
+    @RequireNotWatch(reason = "Only phones and tablets have the activity")
+    @RequireNotTv(reason = "Only phones and tablets have the activity")
     fun enableSupervisionIntent_resolvesToSettings() {
-        assume().that(isAutomotive()).isFalse()
-        assume().that(isTV()).isFalse()
-        assume().that(isWatch()).isFalse()
+        assume().that(getPackageInfo("com.android.settings")).isNotNull()
 
         val intent = Intent(SupervisionManager.ACTION_ENABLE_SUPERVISION)
         val resolveInfos = context.packageManager.queryIntentActivities(intent, 0)
@@ -96,11 +100,12 @@ class SupervisionStateTest {
 
     @Test
     @ApiTest(apis = ["android.app.supervision.SupervisionManager#ACTION_DISABLE_SUPERVISION"])
-    @Ignore("This test is flaky. See b/422209296.")
+    @AppModeFull(reason = "Test relies on seeing other apps")
+    @RequireNotAutomotive(reason = "Only phones and tablets have the activity")
+    @RequireNotWatch(reason = "Only phones and tablets have the activity")
+    @RequireNotTv(reason = "Only phones and tablets have the activity")
     fun disableSupervisionIntent_resolvesToSettings() {
-        assume().that(isAutomotive()).isFalse()
-        assume().that(isTV()).isFalse()
-        assume().that(isWatch()).isFalse()
+        assume().that(getPackageInfo("com.android.settings")).isNotNull()
 
         val intent = Intent(SupervisionManager.ACTION_DISABLE_SUPERVISION)
         val resolveInfos = context.packageManager.queryIntentActivities(intent, 0)
@@ -109,13 +114,6 @@ class SupervisionStateTest {
         val resolveInfo = resolveInfos[0]
         assertThat(resolveInfo.activityInfo.packageName).isEqualTo("com.android.settings")
     }
-
-    private fun isAutomotive() =
-        context.packageManager.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE)
-
-    private fun isTV() = context.packageManager.hasSystemFeature(PackageManager.FEATURE_LEANBACK)
-
-    private fun isWatch() = context.packageManager.hasSystemFeature(PackageManager.FEATURE_WATCH)
 
     companion object {
         @[JvmField ClassRule Rule]

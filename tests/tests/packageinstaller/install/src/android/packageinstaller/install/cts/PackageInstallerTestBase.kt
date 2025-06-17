@@ -53,6 +53,7 @@ import androidx.test.uiautomator.UiScrollable
 import androidx.test.uiautomator.UiSelector
 import androidx.test.uiautomator.Until
 import com.android.compatibility.common.util.DisableAnimationRule
+import com.android.compatibility.common.util.FeatureUtil
 import com.android.compatibility.common.util.FutureResultActivity
 import com.android.compatibility.common.util.SystemUtil
 import java.io.ByteArrayOutputStream
@@ -101,7 +102,9 @@ open class PackageInstallerTestBase {
         val context: Context = InstrumentationRegistry.getTargetContext()
         val testUserId: Int = context.user.identifier
 
-        var usePiaV2: Boolean = Flags.usePiaV2()
+        // Currently, PIA V2 is not enabled on other form factors.
+        var usePiaV2: Boolean = Flags.usePiaV2() && !FeatureUtil.isAutomotive() &&
+                !FeatureUtil.isTV() && !FeatureUtil.isWatch()
     }
 
     @get:Rule

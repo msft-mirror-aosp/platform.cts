@@ -406,6 +406,35 @@ public class CallLogTest extends InstrumentationTestCase {
         }
     }
 
+    @RequiresFlagsEnabled(Flags.FLAG_INTEGRATED_CALL_LOGS)
+    public void testInsertUuidValue() {
+        final String[] uuidSelection = new String[] {Calls.NUMBER, Calls.TYPE, Calls.UUID};
+        try {
+            // needed in order to populate call log database
+            ShellUtils.runShellCommand(
+                    "telecom set-default-dialer %s",
+                    getInstrumentation().getContext().getPackageName());
+
+            // Add a business call to the call logs via the ContentResolver
+            String uuid = "testUid123";
+            Uri newlyCreatedCallLogRow =
+                    mContentResolver.insert(
+                            CallLog.Calls.CONTENT_URI, createCallLogIntegrationUuid(uuid));
+            // fetch the newly inserted call log and assert the values
+            Cursor cursor =
+                    mContentResolver.query(
+                            newlyCreatedCallLogRow,
+                            uuidSelection,
+                            Calls.NUMBER + " = " + TEST_NUMBER,
+                            null,
+                            Calls.DEFAULT_SORT_ORDER);
+            assertNotNull(cursor);
+            verifyUuid(cursor, uuid);
+        } finally {
+            deleteCallLogRowsWithNumber(TEST_NUMBER);
+        }
+    }
+
     public void testLocationStorageAndRetrieval() {
         Context context = getInstrumentation().getContext();
 
@@ -658,6 +687,19 @@ public class CallLogTest extends InstrumentationTestCase {
 
         assertEquals(displayName, cursor.getString(
                 cursor.getColumnIndex(Calls.ASSERTED_DISPLAY_NAME)));
+    }
+
+    private ContentValues createCallLogIntegrationUuid(String uuid) {
+        ContentValues values = new ContentValues();
+        values.put(Calls.NUMBER, TEST_NUMBER);
+        values.put(Calls.TYPE, Integer.valueOf(Calls.OUTGOING_TYPE));
+        values.put(Calls.UUID, uuid);
+        return values;
+    }
+
+    private void verifyUuid(Cursor cursor, String uuid) {
+        cursor.moveToFirst();
+        assertEquals(uuid, cursor.getString(cursor.getColumnIndex(Calls.UUID)));
     }
 
     private int getMaxCallLogEntriesPerSim(Context context) {
