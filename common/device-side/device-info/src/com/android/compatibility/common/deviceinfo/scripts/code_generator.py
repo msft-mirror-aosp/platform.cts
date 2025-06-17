@@ -21,3 +21,4 @@ import vulkan_device_info_gen
 
 if __name__ == '__main__':
   vulkan_device_info_gen.gen_vulkan_device_info_utils()
+  vulkan_device_info_gen.gen_vulkan_device_info()

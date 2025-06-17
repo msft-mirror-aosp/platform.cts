@@ -14,12 +14,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import sys
 import dataclasses
-import re
-from typing import get_origin, get_args
 import inspect
 import os
+import re
+import sys
+from typing import get_origin, get_args
 
 #import vk.py
 current_script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -152,8 +152,29 @@ modified_vkjson_field = {
     "queueFamilyProperties": "queues",
     "layerProperties": "layers",
     "memoryProperties": "memory",
-    "extensionProperties": "extensions"
+    "extensionProperties": "extensions",
+    "textureCompressionASTCHDRFeatures": "textureCompressionAstchdrFeatures"
 }
+
+# What datatype in vk.py will be mapped to which emit method in VulkanDeviceInfo
+datatypes_map = {
+    "c_ubyte": "Long",
+    "c_uint_Array_3": "LongArray",
+    "Enum": "Long",
+    "c_ubyte_Array_16": "LongArray",
+    "c_ubyte_Array_8": "LongArray",
+    "bool": "Boolean",
+    "c_float_Array_2": "DoubleArray",
+    "c_ulong": "String",
+    "c_uint": "Long",
+    "c_uint_Array_2": "LongArray",
+    "str": "String",
+    "int": "Long",
+    "List": "LongArray",
+    "float": "Double"
+}
+
+extension_types = ["EXT", "KHR", "IMG", "VALVE", "SEC", "QCOM", "NV", "NVX", "MSFT", "MESA", "INTEL", "HUAWEI", "ARM", "AMD", "ANDROID"]
 
 def get_copyright_warnings(year):
     """Returns the standard copyright and warning codes.
@@ -247,6 +268,31 @@ def convert_vkpy_name_to_vkjson(field_name):
         field_name = modified_vkjson_field[field_name]
 
     return field_name
+
+def get_json_object_name_from_key(constant_name):
+    """
+    Converts a constant name string (e.g., "KEY_FORMATS_4444_FEATURES_EXT")
+    to a camelCase JSON object name (e.g., "formats4444FeaturesEXT").
+    """
+
+    suffix_str = None
+    for ext in extension_types:
+        if constant_name.endswith("_" + ext):
+            suffix_str = ext
+            break
+
+    snake_case_part = constant_name.removeprefix("KEY_")
+
+    if suffix_str:
+        snake_case_part = snake_case_part.removesuffix("_" + suffix_str)
+
+    components = snake_case_part.split('_')
+    camel_case_name = components[0].lower() + ''.join(word.title() for word in components[1:])
+
+    if suffix_str:
+        camel_case_name = camel_case_name + suffix_str
+
+    return camel_case_name
 
 def get_constants_map():
     """
@@ -362,3 +408,265 @@ def generate_constants():
         template_code.append(INDENT + "public static final int "+ version_name + " = " + str(version) + ";")
 
     return "\n".join(template_code)
+
+def generate_vk_dependent_groups(vk_version):
+    """ Generates group for structs depending on vulkan versions
+    """
+    dependent_classes = []
+    for item in VK.VULKAN_VERSIONS_AND_STRUCTS_MAPPING[vk_version]:
+        for key in item.keys():
+            dependent_class_lines = create_group(key)
+            for line in dependent_class_lines:
+                dependent_classes.append(INDENT*5 + line)
+            dependent_classes.append("\n")
+    return "\n".join(dependent_classes)
+
+
+def start_vulkan_group(struct_type, version):
+    """ Generates vulkan properties and features
+        for a particular vulkan version
+
+        struct_type can be "features" or "properties"
+    """
+    vulkan_group = [""]
+    vulkan_group.append(INDENT*6 + "JSONObject core"+version+" = device.getJSONObject(KEY_CORE"+ version+");")
+    vulkan_group.append(INDENT*6 + "JSONObject vulkan"+version+ struct_type + " = core"+ version +".getJSONObject(KEY_"+struct_type.upper()+");")
+    vulkan_group.append(INDENT*6 + "store.startGroup(getConvertedName(KEY_VULKAN_"+version+"_" + struct_type.upper() + "));")
+    vulkan_group.append(INDENT*6 + "{")
+
+    obj_name = "vulkan" + version + struct_type.capitalize()
+    struct_name = "VkPhysicalDeviceVulkan" + version + struct_type.capitalize()
+    vulkan_members = emit_members(obj_name, struct_name)
+    for member in vulkan_members:
+        vulkan_group.append(INDENT*7 + member)
+    vulkan_group.append(INDENT*6 + "}")
+    vulkan_group.append(INDENT*6 + "store.endGroup();")
+    return "\n".join(vulkan_group)
+
+def emit_vk_features_properties(struct_type):
+    """ Calls start_vulkan_group method for features and properties
+        Of each Vulkan version.
+    """
+    vulkan_code = []
+
+    vulkan_versions = []
+
+    for core in VK.VULKAN_CORES_AND_STRUCTS_MAPPING["versions"].keys():
+        vulkan_versions.append(core.lstrip("Core"))
+
+    #print(len(vulkan_versions))
+    for version in vulkan_versions[1:]:
+        vulkan_code.append("\n")
+        vulkan_code.append(INDENT*5 + "if (properties.getLong(KEY_API_VERSION) >= VK_API_VERSION_" + version[0] + "_"+ version[1]+") {")
+        if version == '12':
+            vulkan_code.append(start_vulkan_group(struct_type, vulkan_versions[0]))
+        vulkan_code.append(start_vulkan_group(struct_type, version))
+        vulkan_code.append(INDENT*5 + "}")
+    return "\n".join(vulkan_code)
+
+def create_groups_with_indentation(struct_name,parent_obj_name="device", struct_type = None):
+    """
+    Takes the output of create_groups method and joins that into a string with proper indentation
+    """
+    groups = create_group(struct_name,parent_obj_name,struct_type)
+    return "\n                ".join(groups)
+
+def create_group(struct_name, parent_obj_name = "device", struct_type = None, obj_name = None):
+    """
+    Generates group for a class
+
+    Example:
+    struct_name: "VkPhysicalDeviceSubgroupProperties"
+
+    Output:
+    ["JSONObject pointClippingProperties = device.getJSONObject(KEY_POINT_CLIPPING_PROPERTIES);",
+    "store.startGroup(getConvertedName(KEY_POINT_CLIPPING_PROPERTIES));",
+    "{",
+    "    emitBoolean(store, pointClippingProperties, KEY_POINT_CLIPPING_BEHAVIOR);",
+    "}",
+    "store.endGroup();"]
+
+    """
+    group = []
+    constant_name = "KEY_" + convert_camel_to_snake(convert_vkpy_name_to_vkjson(struct_name)).upper()
+    if obj_name:
+        constant_name = "KEY_" + convert_camel_to_snake(obj_name).upper()
+    else:
+        obj_name = get_json_object_name_from_key(constant_name)
+
+    if obj_name in special_cases_constant_names:
+        constant_name = special_cases_constant_names[obj_name]
+
+    group.append("JSONObject "+obj_name+" = " + parent_obj_name + ".getJSONObject("+ constant_name +");")
+    group.append("store.startGroup(getConvertedName(" + constant_name +"));")
+    group.append("{")
+
+    struct_class = get_struct_obj(struct_name)
+
+    struct_fields = dataclasses.fields(struct_class)
+    for struct_field in struct_fields:
+        field_name = struct_field.name
+        field_type = struct_field.type.__name__
+        datatype = "Long"
+        if field_type in datatypes_map:
+            datatype = datatypes_map[field_type]
+
+        struct_name = get_struct_obj(field_type)
+        if get_struct_obj(field_type):
+            class_group_lines = create_group(str(field_type), obj_name,None, field_name)
+            for line in class_group_lines:
+                group.append(INDENT + line)
+        else:
+            group.append(INDENT + emit_member(obj_name,field_name,datatype))
+    if struct_type is not None:
+        group.append(emit_vk_features_properties(struct_type))
+    group.append("}")
+    group.append("store.endGroup();")
+
+    return group
+
+def generate_emit_methods():
+    """
+    Generates the emit for all the extensions.
+
+    example:
+
+    private static void emitVariablePointerFeaturesKHR(DeviceInfoStore store, JSONObject parent)
+            throws Exception {
+            ...
+    }
+
+    It takes the method name from the first struct of an extension.
+    """
+    emit_method = []
+    for extension_name, structs in VK.VULKAN_EXTENSIONS_AND_STRUCTS_MAPPING["extensions"].items():
+        flag = True  #To handle multiple structs in a single extension
+        obj_name = ""
+        for struct_dict in structs:
+            if len(struct_dict) > 1:
+                continue
+            for key in struct_dict.keys():
+                key_val = convert_vkpy_name_to_vkjson(key)
+                prefix_str = None
+                for ext in extension_types:
+                    if ext in key:
+                        prefix_str = ext.lower()
+                suffix_str = None
+                for ext in extension_types:
+                    if ext in key:
+                        suffix_str = ext
+                struct_class = get_struct_obj(key)
+                struct_class_name = struct_class.__name__.removeprefix("VkPhysicalDevice").removeprefix("Vk")
+                for ext_type in extension_types:
+                    struct_class_name = struct_class_name.removesuffix(ext_type)
+                method_name = "emit" + struct_class_name +suffix_str
+                if flag:
+                    flag = False
+                    obj_name = prefix_str + struct_class_name
+                    emit_method.append(INDENT + "private static void "+ method_name + "(DeviceInfoStore store, JSONObject parent)")
+                    emit_method.append(INDENT*4 + "throws Exception {")
+                    emit_method.append(INDENT*2 + "try {")
+                    emit_method.append(INDENT*3 + "JSONObject " + obj_name + " = parent.getJSONObject(KEY_"+ extension_name.upper()+");")
+                    emit_method.append(INDENT*3 + "try {")
+                    emit_method.append(INDENT*4 + "store.startGroup(getConvertedName(KEY_"+extension_name.upper()+"));\n                {")
+
+                constant_name = "KEY_" +  convert_camel_to_snake(key_val).upper()
+                if key_val in special_cases_constant_names:
+                    constant_name = special_cases_constant_names[key_val]
+
+                inner_object_name = get_json_object_name_from_key(constant_name)
+                emit_method.append(INDENT*5 + "JSONObject "+inner_object_name + " = " + obj_name + ".getJSONObject(" + constant_name +");")
+                emit_method.append(INDENT*5 + "store.startGroup(getConvertedName(" + constant_name + "));\n                    {" )
+
+                method_members = emit_members(inner_object_name, key)
+                for member in method_members:
+                    emit_method.append(INDENT * 6 + member)
+                emit_method.append("                    }\n                    store.endGroup();")
+        emit_method.append("""
+                }
+                store.endGroup();
+            } catch (JSONException e) {
+                e.printStackTrace();
+                throw new RuntimeException(e);
+            }
+        } catch (JSONException ok) {
+            // The tag is not present in vkjson; that's fine, just continue
+        }
+    }
+""")
+    return "\n".join(emit_method)
+
+def generate_emit_extensions():
+    """
+    Generates the emitExtension method of VulkanDeviceInfo
+    which is responsible for calling the emit method for
+    an extension based on  switch-case expressions.
+    """
+    emit_extension = [""]
+    emit_extension.append("""
+    private static void emitExtension(String key, DeviceInfoStore store, JSONObject parent)
+            throws Exception {
+        switch (key) {
+""")
+    for extension_name, structs in VK.VULKAN_EXTENSIONS_AND_STRUCTS_MAPPING["extensions"].items():
+        flag = True  #To handle multiple structs in a single extension
+        for struct_dict in structs:
+            for key in struct_dict.keys():
+                suffix_str = None
+                for ext in extension_types:
+                    if ext in key:
+                        suffix_str = ext
+                struct_class = get_struct_obj(key)
+                struct_class_name = struct_class.__name__.removeprefix("VkPhysicalDevice").removeprefix("Vk")
+                for ext_type in extension_types:
+                    struct_class_name = struct_class_name.removesuffix(ext_type)
+                emit_extension.append(INDENT*3 + "case KEY_" + extension_name.upper() + ":\n                emit" + struct_class_name + suffix_str + "(store, parent);")
+                emit_extension.append(INDENT*4 + "break;")
+                break
+            break
+    emit_extension.append("""
+        }
+    }
+""")
+    return "\n".join(emit_extension)
+
+def emit_member(obj_name, var_name, datatype):
+    """
+    Generates emit method call for a particular member variable
+    emitLong(store, limits, KEY_MAX_IMAGE_DIMENSION_1D);
+    """
+    constant_name = "KEY_" + convert_camel_to_snake(var_name).upper()
+    if var_name in special_cases_constant_names:
+        constant_name = special_cases_constant_names[var_name]
+    member = "emit" + datatype + "(store, " + obj_name + ", " + constant_name + ");"
+
+    if constant_name ==  'KEY_SUBGROUP_BROADCAST_DYNAMIC_ID':
+            member = f"""// subgroupBroadcastDynamicId was erroneously left out of vkjson reporting in Android T
+                            //   and later added in U, so we need to explicitly check if the feature is reported
+                            if (vulkan12Features.has(KEY_SUBGROUP_BROADCAST_DYNAMIC_ID)) {{
+                                {member}
+                            }}"""
+    return member
+
+def emit_members(obj_name, struct_name):
+    """
+    Generates emit method calls for all the members of a struct
+    """
+    members = []
+    struct_class = get_struct_obj(struct_name)
+    struct_fields = dataclasses.fields(struct_class)
+    for struct_field in struct_fields:
+        field_name = struct_field.name
+        field_type = struct_field.type.__name__
+        datatype = "Long"
+        if field_type in datatypes_map:
+            datatype = datatypes_map[field_type]
+
+        # The member itself is a struct
+        if(get_struct_obj(field_type)):
+            class_group_lines = create_group(str(field_type),obj_name, None, field_name)
+            for line in class_group_lines:
+                members.append(line)
+        else :
+            members.append(emit_member(obj_name, field_name, datatype,))
+    return members
