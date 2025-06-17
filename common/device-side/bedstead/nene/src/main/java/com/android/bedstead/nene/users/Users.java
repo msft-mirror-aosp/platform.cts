@@ -40,6 +40,7 @@ import static com.android.bedstead.testapisreflection.TestApisConstants.STOP_USE
 import android.annotation.SuppressLint;
 import android.app.ActivityManager;
 import android.content.Context;
+import android.content.res.Resources;
 import android.cts.testapisreflection.TestApisReflectionKt;
 import android.os.Build;
 import android.os.UserHandle;
@@ -76,6 +77,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -619,6 +621,60 @@ public final class Users {
     @Experimental
     public boolean supportsMultipleUsers() {
         return UserManager.supportsMultipleUsers();
+    }
+
+    /**
+     * Removes all other users, only keeping the users that can't be deleted.
+     *
+     * Users that can't be deleted are:
+     *    * The current user
+     *    * The system user
+     *    * The main user if it is non-removable, for example because the device is in HSUM mode.
+     *
+     * @throws NeneException if there is an error while trying to remove a user.
+     */
+    public void ensureNoOtherUsers() throws NeneException {
+        ensureNoOtherUsersExcept(u -> false);
+    }
+
+    /**
+     * Version of {@link ensureNoOtherUsers()} that takes a predicate selecting which users
+     * should not be deleted.
+     *
+     * <p>The current user, system user and main user (if non-removable) will always be kept,
+     * regardless of the predicate.</p>
+     *
+     * @param shouldKeepUser predicate to select which users should not be deleted.
+     * @throws NeneException if there is an error while trying to remove a user.
+     */
+    public void ensureNoOtherUsersExcept(Predicate<UserReference> shouldKeepUser)
+            throws NeneException {
+        try {
+            TestApis.users().all().stream()
+                    .filter(u -> (
+                            u != TestApis.users().instrumented() &&
+                                    u != TestApis.users().system() &&
+                                    u != TestApis.users().current() &&
+                                    !isNonRemovableMainUser(u) &&
+                                    !shouldKeepUser.test(u))
+                    ).forEach(UserReference::remove);
+        } catch (NeneException e) {
+            // Happens when we can't remove a user
+            throw new NeneException(
+                    "Error when removing user. Instrumented user is " +
+                            TestApis.users().instrumented() + ", current user is " +
+                            TestApis.users().current() + ", system user is " +
+                            TestApis.users().system(),
+                    e
+            );
+        }
+    }
+
+    private boolean isNonRemovableMainUser(UserReference u) {
+        return u.isMain() &&
+                TestApis.context().instrumentedContext().getResources().getBoolean(
+                        Resources.getSystem().getIdentifier("config_isMainUserPermanentAdmin",
+                                "bool", "android"));
     }
 
     /**

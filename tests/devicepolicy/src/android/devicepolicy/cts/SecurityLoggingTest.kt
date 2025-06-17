@@ -245,16 +245,9 @@ class SecurityLoggingTest {
     @EnsureHasProfileOwner(onUser = UserType.ADDITIONAL_USER, affiliationIds = ["affiliated"])
     @ApiTest(apis = ["android.app.admin.DevicePolicyManager#retrieveSecurityLogs"])
     fun retrieveSecurityLogs_affiliatedAdditionalUser_doesNotThrowException() {
-        // TODO(273474964): Move into infra
-        TestApis.users().all().stream()
-            .filter { u: UserReference ->
-                (u != TestApis.users().instrumented() &&
-                        u != TestApis.users().system() &&
-                        u != deviceState.additionalUser() &&
-                        u != TestApis.users().current() &&
-                        !u.isMain)
-            }
-            .forEach { obj: UserReference -> obj.remove() }
+        TestApis.users().ensureNoOtherUsersExcept { u: UserReference ->
+            u == deviceState.additionalUser() || u.isMain
+        }
         val affiliationIds: MutableSet<String> = HashSet(
             deviceState.dpcOnly().devicePolicyManager()
                 .getAffiliationIds(deviceState.dpcOnly().componentName())
@@ -330,15 +323,9 @@ class SecurityLoggingTest {
     @EnsureHasProfileOwner(onUser = UserType.ADDITIONAL_USER, affiliationIds = ["affiliated"])
     @ApiTest(apis = ["android.app.admin.DevicePolicyManager#retrievePreRebootSecurityLogs"])
     fun retrievePreRebootSecurityLogs_affiliatedAdditionalUser_doesNotThrowException() {
-        // TODO(273474964): Move into infra
-        TestApis.users().all().stream()
-            .filter { u: UserReference ->
-                (u != TestApis.users().instrumented() &&
-                        u != TestApis.users().system() &&
-                        u != deviceState.additionalUser() &&
-                        u != TestApis.users().current())
-            }
-            .forEach { obj: UserReference -> obj.remove() }
+        TestApis.users().ensureNoOtherUsersExcept { u: UserReference ->
+            u == deviceState.additionalUser()
+        }
         val affiliationIds: MutableSet<String> = HashSet(
             deviceState.dpcOnly().devicePolicyManager()
                 .getAffiliationIds(deviceState.dpcOnly().componentName())
@@ -532,8 +519,8 @@ class SecurityLoggingTest {
     @CanSetPolicyTest(policy = [GlobalSecurityLogging::class, SecurityLogging::class])
     @Postsubmit(reason = "new test")
     @ApiTest(
-            apis = ["android.app.admin.DevicePolicyManager#setAuditLogEnabled",
-                "android.app.admin.DevicePolicyManager#setAuditLogEventCallback"]
+        apis = ["android.app.admin.DevicePolicyManager#setAuditLogEnabled",
+            "android.app.admin.DevicePolicyManager#setAuditLogEventCallback"]
     )
     @EnsureHasPermission(CommonPermissions.MANAGE_DEVICE_POLICY_AUDIT_LOGGING)
     fun setAuditLogEventCallback_auditLoggingDisabled_withSecurityLoggingEnabled_notInvoked() {
@@ -568,8 +555,8 @@ class SecurityLoggingTest {
     @CanSetPolicyTest(policy = [GlobalSecurityLogging::class, SecurityLogging::class])
     @Postsubmit(reason = "new test")
     @ApiTest(
-            apis = ["android.app.admin.DevicePolicyManager#setAuditLogEnabled",
-                "android.app.admin.DevicePolicyManager#setAuditLogEventCallback"]
+        apis = ["android.app.admin.DevicePolicyManager#setAuditLogEnabled",
+            "android.app.admin.DevicePolicyManager#setAuditLogEventCallback"]
     )
     @EnsureHasPermission(CommonPermissions.MANAGE_DEVICE_POLICY_AUDIT_LOGGING)
     fun setAuditLogEventCallback_callbackCleared_notInvoked() {
@@ -624,10 +611,10 @@ class SecurityLoggingTest {
     @CanSetPolicyTest(policy = [GlobalSecurityLogging::class, SecurityLogging::class])
     @Postsubmit(reason = "new test")
     @ApiTest(
-            apis = ["android.app.admin.DevicePolicyManager#setSecurityLoggingEnabled",
-                "android.app.admin.DevicePolicyManager#retrieveSecurityLogs",
-                "android.app.admin.DevicePolicyManager#setAuditLogEnabled",
-                "android.app.admin.DevicePolicyManager#setAuditLogEventCallback"]
+        apis = ["android.app.admin.DevicePolicyManager#setSecurityLoggingEnabled",
+            "android.app.admin.DevicePolicyManager#retrieveSecurityLogs",
+            "android.app.admin.DevicePolicyManager#setAuditLogEnabled",
+            "android.app.admin.DevicePolicyManager#setAuditLogEventCallback"]
     )
     @EnsureHasPermission(CommonPermissions.MANAGE_DEVICE_POLICY_AUDIT_LOGGING)
     fun mixedLogging_securityAndAuditLoggingWorkTogether() {
@@ -778,29 +765,7 @@ class SecurityLoggingTest {
     }
 
     private fun ensureNoAdditionalFullUsers() {
-        // TODO(273474964): Move into infra
-        try {
-            TestApis.users().all().stream()
-                .filter { u: UserReference ->
-                    (u != TestApis.users().instrumented() &&
-                            u != TestApis.users().system() &&
-                            u != TestApis.users()
-                        .current() && // We can't remove the profile of the instrumented user for
-                            // the run on parent profile tests. But the profiles of other users
-                            // will be removed when the full-user is removed anyway.
-                            !u.isProfile)
-                }
-                .forEach { obj: UserReference -> obj.remove() }
-        } catch (e: NeneException) {
-            // Happens when we can't remove a user
-            throw NeneException(
-                "Error when removing user. Instrumented user is " +
-                        TestApis.users().instrumented() + ", current user is " +
-                        TestApis.users().current() + ", system user is " +
-                        TestApis.users().system(),
-                e
-            )
-        }
+        TestApis.users().ensureNoOtherUsersExcept { u: UserReference -> u.isProfile }
     }
 
     /**

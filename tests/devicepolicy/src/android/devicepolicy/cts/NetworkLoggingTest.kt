@@ -442,15 +442,9 @@ class NetworkLoggingTest {
     @EnsureHasProfileOwner(onUser = ADDITIONAL_USER, affiliationIds = ["affiliated"])
     @ApiTest(apis = ["android.app.admin.DevicePolicyManager#retrieveNetworkLogs"])
     fun retrieveNetworkLogs_affiliatedAdditionalUser_doesNotThrowException() {
-        // TODO(273474964): Move into infra
-        TestApis.users().all().stream()
-            .filter {
-                (it != TestApis.users().instrumented() &&
-                        it != TestApis.users().system() &&
-                        it != deviceState.additionalUser() &&
-                        it != TestApis.users().current())
-            }
-            .forEach { it.remove() }
+        TestApis.users().ensureNoOtherUsersExcept {
+            u: UserReference -> u == deviceState.additionalUser()
+        }
 
         val affiliationIds: MutableSet<String> = HashSet(
             deviceState.dpcOnly().devicePolicyManager()
@@ -479,8 +473,6 @@ class NetworkLoggingTest {
     }
 
     private fun ensureNoUnaffiliatedAdditionalUsers() {
-        // TODO(273474964): Move into infra
-
         // We need to skip tests on an unaffiliated user - this should be expressible in
         // annotation so it doesn't generate the incorrect test
 
@@ -489,16 +481,7 @@ class NetworkLoggingTest {
             TestApis.devicePolicy().isAffiliated()
         )
 
-        TestApis.users().all().stream()
-            .filter { u: UserReference ->
-                (u != TestApis.users().instrumented() &&
-                        u != TestApis.users().system() &&
-                        u != TestApis.users().current())
-            }
-            .forEach { obj: UserReference -> {
-                Log.d(TAG, "Removing user $obj")
-                obj.remove()
-            }}
+        TestApis.users().ensureNoOtherUsers()
     }
 
     companion object {
