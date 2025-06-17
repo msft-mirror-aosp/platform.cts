@@ -1504,6 +1504,7 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
      * is shown implicitly in fullscreen mode, it will not disappear after the user rotates screen.
      */
     @Test
+    @FlakyTest(bugId = 419921374)
     public void testRotateScreenWithKeyboardShownImplicitly() throws Exception {
         // Test only when both portrait and landscape mode are supported.
         final PackageManager pm = mInstrumentation.getTargetContext().getPackageManager();
