@@ -348,8 +348,10 @@ public class MediaProjectionMirroringTest {
     protected boolean supportsRotation() {
         final boolean supportsLandscape = hasDeviceFeature(FEATURE_SCREEN_LANDSCAPE);
         final boolean supportsPortrait = hasDeviceFeature(FEATURE_SCREEN_PORTRAIT);
-        return (supportsLandscape && supportsPortrait)
-                || (!supportsLandscape && !supportsPortrait);
+        mWmState.computeState();
+        final boolean isFixedToUserRotation = mWmState.isFixedToUserRotation();
+        return (supportsLandscape && supportsPortrait && !isFixedToUserRotation)
+                || (!supportsLandscape && !supportsPortrait && !isFixedToUserRotation);
     }
 
     protected boolean hasDeviceFeature(final String requiredFeature) {
