@@ -24,7 +24,6 @@ import static android.mediav2.common.cts.CodecTestBase.ComponentClass.HARDWARE;
 import static android.mediav2.common.cts.CodecTestBase.VNDK_IS_BEFORE_U;
 import static android.videocodec.cts.VideoEncoderInput.getRawResource;
 
-import static com.android.media.editing.flags.Flags.muxerMp4EnableApv;
 import static com.android.media.extractor.flags.Flags.extractorMp4EnableApv;
 
 import static org.junit.Assert.assertEquals;
@@ -262,7 +261,7 @@ public class VideoEncoderMinMaxTest extends VideoEncoderValidationTestBase {
         List<Object[]> defaultParams =
                 prepareParamList(defaultArgsList, true, false, true, false, HARDWARE);
         List<Object[]> finalParams = defaultParams;
-        if (IS_AT_LEAST_B && apvSupport() && muxerMp4EnableApv() && extractorMp4EnableApv()) {
+        if (IS_AT_LEAST_B && apvSupport() && extractorMp4EnableApv()) {
             addParamsAPV();
             List<Object[]> apvParams =
                     prepareParamList(apvArgsList, true, false, true, false, HARDWARE);

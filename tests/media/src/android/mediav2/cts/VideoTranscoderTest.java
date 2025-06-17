@@ -23,7 +23,6 @@ import static android.mediav2.common.cts.CodecTestBase.FIRST_SDK_IS_AT_LEAST_T;
 import static android.mediav2.common.cts.CodecTestBase.IS_AT_LEAST_B;
 import static android.mediav2.common.cts.MuxerUtils.getTempFilePath;
 
-import static com.android.media.editing.flags.Flags.muxerMp4EnableApv;
 import static com.android.media.extractor.flags.Flags.extractorMp4EnableApv;
 
 import static org.junit.Assert.assertTrue;
@@ -151,7 +150,7 @@ public class VideoTranscoderTest extends CodecEncoderSurfaceTestBase {
                         512000, 30, true},
         }));
 
-        if (IS_AT_LEAST_B && apvSupport() && muxerMp4EnableApv() && extractorMp4EnableApv()) {
+        if (IS_AT_LEAST_B && apvSupport() && extractorMp4EnableApv()) {
             mediaTypesHighBitDepth.add(MediaFormat.MIMETYPE_VIDEO_APV);
             argsHighBitDepth.addAll(Arrays.asList(new Object[][]{
                     {MediaFormat.MIMETYPE_VIDEO_APV, "pattern_640x480_30fps_16mbps_apv_10bit.mp4",
