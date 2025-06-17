@@ -106,13 +106,17 @@ public class ValidateTestsAbi {
         /**
          * These binaries are host side helpers, so we do not need to check them.
          */
-        BINARY_EXCEPTIONS.add("sepolicy-analyze");
         BINARY_EXCEPTIONS.add("avbtool");
         BINARY_EXCEPTIONS.add("img2simg");
         BINARY_EXCEPTIONS.add("initrd_bootconfig");
+        BINARY_EXCEPTIONS.add("llvm-cxxfilt");
+        BINARY_EXCEPTIONS.add("llvm-objcopy");
+        BINARY_EXCEPTIONS.add("llvm-strip");
+        BINARY_EXCEPTIONS.add("llvm-symbolizer");
         BINARY_EXCEPTIONS.add("lpmake");
         BINARY_EXCEPTIONS.add("lpunpack");
         BINARY_EXCEPTIONS.add("mk_payload");
+        BINARY_EXCEPTIONS.add("sepolicy-analyze");
         BINARY_EXCEPTIONS.add("sign_virt_apex");
         BINARY_EXCEPTIONS.add("simg2img");
 
