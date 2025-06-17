@@ -15,9 +15,7 @@
  */
 package com.android.bedstead.harrier
 
-import android.util.Log
 import com.google.errorprone.annotations.CanIgnoreReturnValue
-import com.android.bedstead.nene.utils.FailureDumper
 import kotlin.reflect.KClass
 import kotlin.reflect.KProperty
 
@@ -27,7 +25,7 @@ import kotlin.reflect.KProperty
  * Use of this service locator allows for the single entry point to
  * bedstead while allowing modularisation and loose coupling.
  */
-class BedsteadServiceLocator : DeviceStateComponent {
+open class BedsteadServiceLocator {
 
     private val dependenciesMap = mutableMapOf<KClass<*>, Any>()
 
@@ -43,13 +41,15 @@ class BedsteadServiceLocator : DeviceStateComponent {
         } else {
             createDependencyByReflection(clazz.java).also {
                 dependenciesMap[clazz] = it
-                if (it is DeviceStateComponent) {
-                    Log.v(LOG_TAG, "prepareTestState (after creation): " + it.javaClass)
-                    it.prepareTestState()
-                }
+                onDependencyCreated(it)
             }
         }
     }
+
+    /**
+     * Executed after the [dependency] is created by reflection.
+     */
+    protected open fun <T : Any> onDependencyCreated(dependency: T) {}
 
     /**
      * See [BedsteadServiceLocator.get]
@@ -128,61 +128,8 @@ class BedsteadServiceLocator : DeviceStateComponent {
     /**
      * Get all loaded dependencies of type T
      */
-    private inline fun <reified T : Any> getAllDependenciesOfType(): List<T> {
+    protected inline fun <reified T : Any> getAllDependenciesOfType(): List<T> {
         return getAllDependencies().filterIsInstance<T>()
-    }
-
-    /**
-     * Get all loaded FailureDumpers
-     */
-    fun getAllFailureDumpers(): List<FailureDumper> {
-        return getAllDependenciesOfType<FailureDumper>()
-    }
-
-    /**
-     * Get all loaded TestRuleExecutors
-     */
-    fun getAllTestRuleExecutors(): List<TestRuleExecutor> {
-        return getAllDependenciesOfType<TestRuleExecutor>()
-    }
-
-    override fun teardownShareableState() {
-        getAllDependenciesOfType<DeviceStateComponent>().forEach {
-            Log.v(LOG_TAG, "teardownShareableState: " + it.javaClass)
-            try {
-                it.teardownShareableState()
-            } catch (exception: Exception) {
-                Log.e(
-                    LOG_TAG,
-                    "an exception occurred while executing " +
-                            "teardownShareableState for ${it.javaClass}",
-                    exception
-                )
-            }
-        }
-    }
-
-    override fun teardownNonShareableState() {
-        getAllDependenciesOfType<DeviceStateComponent>().forEach {
-            Log.v(LOG_TAG, "teardownNonShareableState: " + it.javaClass)
-            try {
-                it.teardownNonShareableState()
-            } catch (exception: Exception) {
-                Log.e(
-                    LOG_TAG,
-                    "an exception occurred while executing " +
-                            "teardownNonShareableState for ${it.javaClass}",
-                    exception
-                )
-            }
-        }
-    }
-
-    override fun prepareTestState() {
-        getAllDependenciesOfType<DeviceStateComponent>().forEach {
-            Log.v(LOG_TAG, "prepareTestState: " + it.javaClass)
-            it.prepareTestState()
-        }
     }
 
     /**
@@ -190,9 +137,5 @@ class BedsteadServiceLocator : DeviceStateComponent {
      */
     fun clearDependencies() {
         dependenciesMap.clear()
-    }
-
-    companion object {
-        private const val LOG_TAG = "BedsteadServiceLocator"
     }
 }

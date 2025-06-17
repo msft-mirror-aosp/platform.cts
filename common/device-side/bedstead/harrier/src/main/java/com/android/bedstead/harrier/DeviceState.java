@@ -126,7 +126,7 @@ public final class DeviceState extends HarrierRule {
     private ExecutorService mTestExecutor;
     private Thread mTestThread;
 
-    private final BedsteadServiceLocator mLocator = new BedsteadServiceLocator();
+    private final DeviceStateLocator mLocator = new DeviceStateLocator();
 
     public DeviceState(Duration maxTestDuration) {
         mMaxTestDuration = maxTestDuration;
