@@ -22,18 +22,17 @@ import static android.cts.backup.KeyValueBackupRestoreHostSideTest.KEY_VALUE_RES
 
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeTrue;
 
 import android.platform.test.annotations.AppModeFull;
 
-import com.android.tradefed.device.DeviceNotAvailableException;
-import com.android.tradefed.log.LogUtil.CLog;
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import java.util.Locale;
 
 /**
  * Test for checking that backup/restore operations acquire wakelock at the start and release it at
@@ -43,23 +42,40 @@ import org.junit.runner.RunWith;
 @AppModeFull
 public class BackupWakelockHostSideTest extends BaseBackupHostSideTest {
     private static final String TAG = "BackupWakelockHostSideTest";
+
     private static final String LOGCAT_FILTER =
             "BackupManagerService:* PerformBackupTask:* KeyValueBackupTask:* PFTBT:* "
                     + TAG + ":* *:S";
-    private static final String WAKELOCK_ACQUIRED_LOG = "Acquired wakelock:*backup*-0";
-    private static final String WAKELOCK_RELEASED_LOG = "Released wakelock:*backup*-0";
     private static final String KEY_VALUE_START = "Beginning backup of ";
     private static final String KEY_VALUE_SUCCESS_LOG = "K/V backup pass finished";
     private static final String RESTOREATINSTALL_LOG =
             "restoreAtInstall pkg=" + KEY_VALUE_RESTORE_APP_PACKAGE;
     private static final String RESTORECOMPLETE_LOG = "Restore complete";
+
+    // %d should be replaced with user ID.
+    private static final String WAKELOCK_ACQUIRED_LOG_FORMAT = "Acquired wakelock:*backup*-%d";
+    private static final String WAKELOCK_RELEASED_LOG_FORMAT = "Released wakelock:*backup*-%d";
+
     private static final int TIMEOUT_SECS = 30;
+
+    private int mCurrentUserId;
+
+    private static String getWakelockAcquiredLog(int userId) {
+        return String.format(Locale.ENGLISH, WAKELOCK_ACQUIRED_LOG_FORMAT, userId);
+    }
+
+    private static String getWakelockReleasedLog(int userId) {
+        return String.format(Locale.ENGLISH, WAKELOCK_RELEASED_LOG_FORMAT, userId);
+    }
 
     @Before
     @Override
     public void setUp() throws Exception {
         super.setUp();
-        installPackage(KEY_VALUE_RESTORE_APP_APK);
+
+        mCurrentUserId = getBackupUtils().getCurrentUserId();
+        installPackageAsUser(
+                KEY_VALUE_RESTORE_APP_APK, /* grantPermission */ false, mCurrentUserId);
         clearPackageData(KEY_VALUE_RESTORE_APP_PACKAGE);
     }
 
@@ -80,9 +96,14 @@ public class BackupWakelockHostSideTest extends BaseBackupHostSideTest {
         String startLog = mLogcatInspector.mark(TAG);
         runDeviceSideProcedure("requestBackup");
 
-        mLogcatInspector.assertLogcatContainsInOrder(LOGCAT_FILTER, TIMEOUT_SECS, startLog,
-                WAKELOCK_ACQUIRED_LOG, KEY_VALUE_START, KEY_VALUE_SUCCESS_LOG,
-                WAKELOCK_RELEASED_LOG);
+        mLogcatInspector.assertLogcatContainsInOrder(
+                LOGCAT_FILTER,
+                TIMEOUT_SECS,
+                startLog,
+                getWakelockAcquiredLog(mCurrentUserId),
+                KEY_VALUE_START,
+                KEY_VALUE_SUCCESS_LOG,
+                getWakelockReleasedLog(mCurrentUserId));
     }
 
     /**
@@ -96,11 +117,17 @@ public class BackupWakelockHostSideTest extends BaseBackupHostSideTest {
         assertNull(uninstallPackage(KEY_VALUE_RESTORE_APP_PACKAGE));
 
         String startLog = mLogcatInspector.mark(TAG);
-        installPackage(KEY_VALUE_RESTORE_APP_APK);
+        installPackageAsUser(
+                KEY_VALUE_RESTORE_APP_APK, /* grantPermission */ false, mCurrentUserId);
 
-        mLogcatInspector.assertLogcatContainsInOrder(LOGCAT_FILTER, TIMEOUT_SECS, startLog,
-                RESTOREATINSTALL_LOG, WAKELOCK_ACQUIRED_LOG, RESTORECOMPLETE_LOG,
-                WAKELOCK_RELEASED_LOG);
+        mLogcatInspector.assertLogcatContainsInOrder(
+                LOGCAT_FILTER,
+                TIMEOUT_SECS,
+                startLog,
+                RESTOREATINSTALL_LOG,
+                getWakelockAcquiredLog(mCurrentUserId),
+                RESTORECOMPLETE_LOG,
+                getWakelockReleasedLog(mCurrentUserId));
     }
 
     private void runDeviceSideProcedure(String procedure) throws Exception {
