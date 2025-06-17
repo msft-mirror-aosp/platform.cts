@@ -304,16 +304,6 @@ public final class UserReference implements AutoCloseable {
                 }
             }
 
-            Poll.forValue("User running", this::isRunning)
-                    .toBeEqualTo(true)
-                    .errorOnFail()
-                    .timeout(Duration.ofMinutes(1))
-                    .await();
-            Poll.forValue("User unlocked", this::isUnlocked)
-                    .toBeEqualTo(true)
-                    .errorOnFail()
-                    .timeout(Duration.ofMinutes(1))
-                    .await();
             if (displayId != Display.INVALID_DISPLAY) {
                 Poll.forValue("User visible", this::isVisible)
                         .toBeEqualTo(true)
