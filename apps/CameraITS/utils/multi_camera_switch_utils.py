@@ -296,7 +296,7 @@ def find_crossover_point(cam, capture_results):
     )
     # Avoid getting HAL-simulated camera by checking field of view change
     camera_fov_before = image_fov_utils.calc_camera_fov_from_metadata(
-        capture_result, physical_props_id_before)
+        capture_results[counter - 2], physical_props_id_before)
     camera_fov = image_fov_utils.calc_camera_fov_from_metadata(
         capture_result, physical_props_id)
     physical_id_before = physical_id
