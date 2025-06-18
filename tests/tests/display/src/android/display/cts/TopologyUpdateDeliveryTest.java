@@ -20,6 +20,7 @@ import static android.view.WindowManager.DISPLAY_IME_POLICY_LOCAL;
 
 import static com.android.server.display.feature.flags.Flags.FLAG_DISPLAY_TOPOLOGY;
 import static com.android.server.display.feature.flags.Flags.FLAG_DISPLAY_TOPOLOGY_API;
+import static com.android.server.display.feature.flags.Flags.FLAG_ENABLE_DISPLAY_CONTENT_MODE_MANAGEMENT;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -189,7 +190,11 @@ public class TopologyUpdateDeliveryTest extends EventDeliveryTestBase {
     }
 
     @Test
-    @RequiresFlagsEnabled({FLAG_DISPLAY_TOPOLOGY, FLAG_DISPLAY_TOPOLOGY_API})
+    @RequiresFlagsEnabled({
+        FLAG_DISPLAY_TOPOLOGY,
+        FLAG_DISPLAY_TOPOLOGY_API,
+        FLAG_ENABLE_DISPLAY_CONTENT_MODE_MANAGEMENT
+    })
     public void testTopologyUpdate() {
         testTopologyUpdateInternal(false);
     }
@@ -199,7 +204,11 @@ public class TopologyUpdateDeliveryTest extends EventDeliveryTestBase {
      * app.
      */
     @Test
-    @RequiresFlagsEnabled({FLAG_DISPLAY_TOPOLOGY, FLAG_DISPLAY_TOPOLOGY_API})
+    @RequiresFlagsEnabled({
+        FLAG_DISPLAY_TOPOLOGY,
+        FLAG_DISPLAY_TOPOLOGY_API,
+        FLAG_ENABLE_DISPLAY_CONTENT_MODE_MANAGEMENT
+    })
     public void testTopologyUpdateCached() {
         testTopologyUpdateInternal(true);
     }
