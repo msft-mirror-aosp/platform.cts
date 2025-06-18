@@ -27,6 +27,7 @@ import static android.autofillservice.cts.activities.CheckoutActivity.INDEX_ADDR
 import static android.autofillservice.cts.activities.CheckoutActivity.INDEX_CC_EXPIRATION_NEVER;
 import static android.autofillservice.cts.activities.CheckoutActivity.INDEX_CC_EXPIRATION_TODAY;
 import static android.autofillservice.cts.activities.CheckoutActivity.INDEX_CC_EXPIRATION_TOMORROW;
+import static android.autofillservice.cts.testcore.Helper.AutofillCriticalInternal;
 import static android.autofillservice.cts.testcore.Helper.assertListValue;
 import static android.autofillservice.cts.testcore.Helper.assertTextAndValue;
 import static android.autofillservice.cts.testcore.Helper.assertTextIsSanitized;
@@ -101,6 +102,7 @@ public class CheckoutActivityTest
         };
     }
 
+    @AutofillCriticalInternal
     @Test
     public void testAutofill() throws Exception {
         // Set service.
@@ -225,6 +227,7 @@ public class CheckoutActivityTest
         mActivity.assertAutoFilled();
     }
 
+    @AutofillCriticalInternal
     @Test
     public void testSanitization() throws Exception {
         // Set service.
