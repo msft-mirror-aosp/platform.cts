@@ -686,6 +686,9 @@ public class ImageReaderTest extends Camera2AndroidTestCase {
 
     @Test
     public void testRepeatingHeic() throws Exception {
+        if(PropertyUtil.propertyEquals("ro.config.low_ram", "true")){
+            return;
+        }
         for (String id : getCameraIdsUnderTest()) {
             try {
                 Log.v(TAG, "Testing repeating heic capture for Camera " + id);
