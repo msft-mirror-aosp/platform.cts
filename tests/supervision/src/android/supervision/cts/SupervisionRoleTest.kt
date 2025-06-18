@@ -18,11 +18,9 @@ package android.supervision.cts
 
 import android.Manifest.permission.MANAGE_ROLE_HOLDERS
 import android.Manifest.permission.QUERY_USERS
-import android.app.supervision.SupervisionManager
 import android.app.supervision.flags.Flags
 import com.android.bedstead.flags.annotations.RequireFlagsEnabled
 import com.android.bedstead.harrier.BedsteadJUnit4
-import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.multiuser.annotations.EnsureCanAddUser
 import com.android.bedstead.multiuser.annotations.EnsureHasNoAdditionalUser
 import com.android.bedstead.multiuser.annotations.RequireMultiUserSupport
@@ -32,15 +30,13 @@ import com.android.bedstead.permissions.annotations.EnsureHasPermission
 import com.android.compatibility.common.util.ApiTest
 import com.android.xts.root.annotations.RequireRootInstrumentation
 import com.google.common.truth.Truth.assertThat
-import org.junit.ClassRule
-import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.testng.Assert.assertThrows
 
 @RunWith(BedsteadJUnit4::class)
 @RequireFlagsEnabled(Flags.FLAG_SUPERVISION_MANAGER_APIS)
-class SupervisionRoleTest {
+class SupervisionRoleTest : BaseSupervisionTest() {
 
     @Test
     @ApiTest(
@@ -122,18 +118,5 @@ class SupervisionRoleTest {
         assertThrows(SecurityException::class.java) {
             supervisionManager.shouldAllowBypassingSupervisionRoleQualification()
         }
-    }
-
-    private fun setSupervisionEnabled(enabled: Boolean) {
-        supervisionManager.setSupervisionEnabled(enabled)
-        assertThat(supervisionManager.isSupervisionEnabled()).isEqualTo(enabled)
-    }
-
-    companion object {
-        @[JvmField ClassRule Rule]
-        val deviceState = DeviceState()
-
-        private val context = TestApis.context().instrumentedContext()
-        private val supervisionManager = context.getSystemService(SupervisionManager::class.java)
     }
 }

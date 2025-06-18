@@ -22,8 +22,15 @@
 
     <application>
         <uses-library android:name="android.test.runner" />
-
         <activity android:name="android.supervision.cts.MainActivity" />
+        <service
+            android:name="android.supervision.cts.CtsSupervisionAppService"
+            android:exported="true"
+            android:permission="android.permission.BIND_SUPERVISION_APP_SERVICE">
+            <intent-filter>
+                <action android:name="android.app.action.SUPERVISION_APP_SERVICE" />
+            </intent-filter>
+        </service>
     </application>
 
     <instrumentation
