@@ -37,6 +37,13 @@ import static android.media.cts.MediaRouterTestConstants.MEDIA_ROUTER_TEST_APK;
 import static android.media.cts.MediaRouterTestConstants.MEDIA_ROUTER_TEST_PACKAGE;
 import static android.media.cts.MediaRouterTestConstants.MEDIA_ROUTER_TEST_WITH_MODIFY_AUDIO_ROUTING_APK;
 import static android.media.cts.MediaRouterTestConstants.MEDIA_ROUTER_TEST_WITH_MODIFY_AUDIO_ROUTING_PACKAGE;
+import static android.media.cts.MediaRouterTestConstants.PER_APP_DISCOVERY_CONSUMER_APP1_APK;
+import static android.media.cts.MediaRouterTestConstants.PER_APP_DISCOVERY_CONSUMER_APP1_PACKAGE;
+import static android.media.cts.MediaRouterTestConstants.PER_APP_DISCOVERY_CONSUMER_APP2_APK;
+import static android.media.cts.MediaRouterTestConstants.PER_APP_DISCOVERY_CONSUMER_APP2_PACKAGE;
+import static android.media.cts.MediaRouterTestConstants.PER_APP_DISCOVERY_PROVIDER_APK;
+import static android.media.cts.MediaRouterTestConstants.PER_APP_DISCOVERY_PROVIDER_PACKAGE;
+import static android.media.cts.MediaRouterTestConstants.PER_APP_DISCOVERY_PROVIDER_TEST_CLASS;
 import static android.media.cts.MediaRouterTestConstants.REQUIRED_PERMISSIONS_SET_1_1;
 import static android.media.cts.MediaRouterTestConstants.REQUIRED_PERMISSIONS_SET_2_1;
 import static android.media.cts.MediaRouterTestConstants.REQUIRED_PERMISSIONS_SET_2_2;
@@ -83,7 +90,9 @@ public class MediaRouter2HostSideTest extends BaseHostJUnit4Test {
         MEDIA_ROUTER_PROVIDER_1_PACKAGE,
         MEDIA_ROUTER_PROVIDER_2_PACKAGE,
         MEDIA_ROUTER_PROVIDER_3_PACKAGE,
-        MEDIA_ROUTER_PROVIDER_SELF_SCAN_ONLY_PACKAGE
+        MEDIA_ROUTER_PROVIDER_REQUIRES_PERMISSIONS_PACKAGE,
+        MEDIA_ROUTER_PROVIDER_SELF_SCAN_ONLY_PACKAGE,
+        PER_APP_DISCOVERY_PROVIDER_PACKAGE,
     };
 
     /** The maximum period of time to wait for a scan request to take effect, in milliseconds. */
@@ -108,6 +117,9 @@ public class MediaRouter2HostSideTest extends BaseHostJUnit4Test {
         installTestApp(testInfo, MEDIA_ROUTER_TEST_APK);
         installTestApp(testInfo, MEDIA_ROUTER_TEST_WITH_MODIFY_AUDIO_ROUTING_APK);
         installTestApp(testInfo, DEVICE_SIDE_TEST_REQUIRED_PERMISSIONS_APK);
+        installTestApp(testInfo, PER_APP_DISCOVERY_PROVIDER_APK);
+        installTestApp(testInfo, PER_APP_DISCOVERY_CONSUMER_APP1_APK);
+        installTestApp(testInfo, PER_APP_DISCOVERY_CONSUMER_APP2_APK);
     }
 
     @AfterClassWithInfo
@@ -121,6 +133,9 @@ public class MediaRouter2HostSideTest extends BaseHostJUnit4Test {
         device.uninstallPackage(MEDIA_ROUTER_TEST_PACKAGE);
         device.uninstallPackage(MEDIA_ROUTER_TEST_WITH_MODIFY_AUDIO_ROUTING_PACKAGE);
         device.uninstallPackage(DEVICE_SIDE_TEST_REQUIRED_PERMISSIONS_PACKAGE);
+        device.uninstallPackage(PER_APP_DISCOVERY_PROVIDER_PACKAGE);
+        device.uninstallPackage(PER_APP_DISCOVERY_CONSUMER_APP1_PACKAGE);
+        device.uninstallPackage(PER_APP_DISCOVERY_CONSUMER_APP2_PACKAGE);
     }
 
     @Before
@@ -347,6 +362,41 @@ public class MediaRouter2HostSideTest extends BaseHostJUnit4Test {
                 DEVICE_SIDE_TEST_REQUIRED_PERMISSIONS_PACKAGE,
                 DEVICE_SIDE_TEST_REQUIRED_PERMISSIONS_CLASS,
                 "requiredPermissions_routeNotVisibleWhenSecondOfThirdSetIsNotHeld");
+    }
+
+    @ApiTest(apis = {"android.media.MediaRoute2ProviderService#onDiscoveryPreferenceChanged"})
+    @AppModeFull
+    @RequiresDevice
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_ROUTE_VISIBILITY_CONTROL_API)
+    @Test
+    public void testPerAppPreferences_providerWithoutPermissionDoesNotSeePerAppPrefs()
+            throws Throwable {
+        waitForPackageRunningStatus(PER_APP_DISCOVERY_PROVIDER_PACKAGE, false);
+        runDeviceTests(
+                PER_APP_DISCOVERY_PROVIDER_PACKAGE,
+                PER_APP_DISCOVERY_PROVIDER_TEST_CLASS,
+                "perAppPreferences_providerWithoutPermissionDoesNotSeePerAppPrefs");
+        assertThat(forceStopAndWaitForRunningStatus(PER_APP_DISCOVERY_CONSUMER_APP1_PACKAGE))
+                .isTrue();
+        assertThat(forceStopAndWaitForRunningStatus(PER_APP_DISCOVERY_CONSUMER_APP2_PACKAGE))
+                .isTrue();
+    }
+
+    @ApiTest(apis = {"android.media.MediaRoute2ProviderService#onDiscoveryPreferenceChanged"})
+    @AppModeFull
+    @RequiresDevice
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_ROUTE_VISIBILITY_CONTROL_API)
+    @Test
+    public void testPerAppPreferences_providerWithPermissionSeesPerAppPrefs() throws Throwable {
+        waitForPackageRunningStatus(PER_APP_DISCOVERY_PROVIDER_PACKAGE, false);
+        runDeviceTests(
+                PER_APP_DISCOVERY_PROVIDER_PACKAGE,
+                PER_APP_DISCOVERY_PROVIDER_TEST_CLASS,
+                "perAppPreferences_providerWithPermissionSeesPerAppPrefs");
+        assertThat(forceStopAndWaitForRunningStatus(PER_APP_DISCOVERY_CONSUMER_APP1_PACKAGE))
+                .isTrue();
+        assertThat(forceStopAndWaitForRunningStatus(PER_APP_DISCOVERY_CONSUMER_APP2_PACKAGE))
+                .isTrue();
     }
 
     @ApiTest(apis = {"android.media.MediaRoute2Info#getProviderPackageName"})

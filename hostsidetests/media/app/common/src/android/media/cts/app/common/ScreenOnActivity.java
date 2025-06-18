@@ -26,7 +26,7 @@ import android.view.WindowManager;
  *
  * <p>{@link android.media.MediaRouter2} disables app scan requests while the screen is off.
  */
-public final class ScreenOnActivity extends Activity {
+public class ScreenOnActivity extends Activity {
 
     @Override
     public void onCreate(Bundle bundle) {

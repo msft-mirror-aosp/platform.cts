@@ -63,5 +63,8 @@ java_test_host {
         ":CtsMediaSessionTestHelper",
         ":CtsProxyMediaRouterSecondaryUserTestHelperApp",
         ":CtsProxyMediaRouterTestHelperApp",
+        ":CtsMediaRouterHostSideTestPerAppDiscoveryPrefsConsumer1",
+        ":CtsMediaRouterHostSideTestPerAppDiscoveryPrefsConsumer2",
+        ":CtsMediaRouterHostSideTestProviderPerApp",
     ],
 }

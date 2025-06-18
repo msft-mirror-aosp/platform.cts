@@ -31,6 +31,28 @@ public final class MediaRouterTestConstants {
             "android.media.router.cts.provider3";
     public static final String MEDIA_ROUTER_PROVIDER_3_APK =
             "CtsMediaRouterHostSideTestProviderApp3.apk";
+
+    public static final String PER_APP_DISCOVERY_PROVIDER_PACKAGE =
+            "android.media.router.cts.provider.per_app";
+    public static final String PER_APP_DISCOVERY_PROVIDER_APK =
+            "CtsMediaRouterHostSideTestProviderPerApp.apk";
+    public static final String PER_APP_DISCOVERY_PROVIDER_TEST_CLASS =
+            "android.media.router.cts.provider.PerAppDiscoveryDeviceTest";
+
+    public static final String PER_APP_DISCOVERY_CONSUMER_APP1_PACKAGE =
+            "android.media.router.cts.consumer.app1";
+    public static final String PER_APP_DISCOVERY_CONSUMER_APP1_ACTIVITY =
+            "android.media.router.cts.consumer.App1Scanner";
+    public static final String PER_APP_DISCOVERY_CONSUMER_APP1_APK =
+            "CtsMediaRouterHostSideTestPerAppDiscoveryPrefsConsumer1.apk";
+
+    public static final String PER_APP_DISCOVERY_CONSUMER_APP2_PACKAGE =
+            "android.media.router.cts.consumer.app2";
+    public static final String PER_APP_DISCOVERY_CONSUMER_APP2_ACTIVITY =
+            "android.media.router.cts.consumer.App2Scanner";
+    public static final String PER_APP_DISCOVERY_CONSUMER_APP2_APK =
+            "CtsMediaRouterHostSideTestPerAppDiscoveryPrefsConsumer2.apk";
+
     public static final String MEDIA_ROUTER_PROVIDER_WITH_PACKAGE_MANAGER_SPAM_PACKAGE =
             "android.media.router.cts.providerwithpackagemanagerspam";
     public static final String MEDIA_ROUTER_PROVIDER_WITH_PACKAGE_MANAGER_SPAM_APK =
