@@ -1115,29 +1115,7 @@ public final class CompatChangeTests extends MultiDisplayTestBase {
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_SIZE_COMPAT_MODE_IMPROVEMENTS_FOR_CONNECTED_DISPLAYS)
     @FlakyTest(bugId = 415631133)
     public void testSizeCompatDoesNotRestartWithDisplayMove() {
-        assumeTrue(supportsMultiDisplay());
-        final int secondaryDisplayId =
-                createManagedVirtualDisplaySession()
-                        .setSimulateDisplay(true)
-                        .setSimulationDisplaySize(1920 /* width */, 1080 /* height */)
-                        .setDisplayImePolicy(DISPLAY_IME_POLICY_LOCAL)
-                        .createDisplay()
-                        .mId;
-
-        final ComponentName activity = NON_RESIZEABLE_PORTRAIT_ACTIVITY;
-        startActivityOnDisplay(DEFAULT_DISPLAY, activity);
-        waitForActivityFocused(ACTIVITY_FOCUS_TIMEOUT_MS, activity);
-
-        separateTestJournal();
-        startActivityOnDisplay(secondaryDisplayId, activity);
-        assertTrue(
-                mWmState.waitFor(
-                        state ->
-                                state.getDisplayByActivity(activity) == secondaryDisplayId
-                                        && state.hasActivityState(activity, STATE_RESUMED),
-                        "Waiting for the activity to move to a secondary display"));
-
-        assertRelaunchOrConfigChanged(activity, 0 /* numRelaunch */, 0 /* numConfigChange */);
+        runDisplayCompatTest(NON_RESIZEABLE_PORTRAIT_ACTIVITY);
     }
 
     /** Test that a DCM app does not relaunch with display move. */
@@ -1147,30 +1125,7 @@ public final class CompatChangeTests extends MultiDisplayTestBase {
             Flags.FLAG_ENABLE_RESTART_MENU_FOR_CONNECTED_DISPLAYS
     })
     public void testDisplayCompatGameDoesNotRestartWithDisplayMove() {
-        assumeTrue(supportsMultiDisplay());
-        final int secondaryDisplayId =
-                createManagedVirtualDisplaySession()
-                        .setSimulateDisplay(true)
-                        .setSimulationDisplaySize(1920 /* width */, 1080 /* height */)
-                        .setDisplayImePolicy(DISPLAY_IME_POLICY_LOCAL)
-                        .setDensityDpi(123)
-                        .createDisplay()
-                        .mId;
-
-        final ComponentName activity = NO_DISPLAY_CONFIG_CHANGE_SUPPORT_GAME_ACTIVITY;
-        startActivityOnDisplay(DEFAULT_DISPLAY, activity);
-        waitForActivityFocused(ACTIVITY_FOCUS_TIMEOUT_MS, activity);
-
-        separateTestJournal();
-        startActivityOnDisplay(secondaryDisplayId, activity);
-        assertTrue(
-                mWmState.waitFor(
-                        state ->
-                                state.getDisplayByActivity(activity) == secondaryDisplayId
-                                        && state.hasActivityState(activity, STATE_RESUMED),
-                        "Waiting for the activity to move to a secondary display"));
-
-        assertRelaunchOrConfigChanged(activity, 0 /* numRelaunch */, 0 /* numConfigChange */);
+        runDisplayCompatTest(NO_DISPLAY_CONFIG_CHANGE_SUPPORT_GAME_ACTIVITY);
     }
 
      // =================
@@ -1937,6 +1892,37 @@ public final class CompatChangeTests extends MultiDisplayTestBase {
     private boolean getBooleanConfig(String configName) {
         return mContext.getResources().getBoolean(
                 Resources.getSystem().getIdentifier(configName, "bool", "android"));
+    }
+
+    /**
+     * Launches the provided activity and verifies no relaunch with display move.
+     *
+     * @param activity the activity under test.
+     */
+    private void runDisplayCompatTest(ComponentName activity) {
+        assumeTrue(supportsMultiDisplay());
+        final int secondaryDisplayId =
+                createManagedVirtualDisplaySession()
+                        .setSimulateDisplay(true)
+                        .setSimulationDisplaySize(1920 /* width */, 1080 /* height */)
+                        .setDisplayImePolicy(DISPLAY_IME_POLICY_LOCAL)
+                        .setDensityDpi(123)
+                        .createDisplay()
+                        .mId;
+
+        startActivityOnDisplay(DEFAULT_DISPLAY, activity);
+        waitForActivityFocused(ACTIVITY_FOCUS_TIMEOUT_MS, activity);
+
+        separateTestJournal();
+        startActivityOnDisplay(secondaryDisplayId, activity);
+        assertTrue(
+                mWmState.waitFor(
+                        state ->
+                                state.getDisplayByActivity(activity) == secondaryDisplayId
+                                        && state.hasActivityState(activity, STATE_RESUMED),
+                        "Waiting for the activity to move to a secondary display"));
+
+        assertRelaunchOrConfigChanged(activity, 0 /* numRelaunch */, 0 /* numConfigChange */);
     }
 
     /**
