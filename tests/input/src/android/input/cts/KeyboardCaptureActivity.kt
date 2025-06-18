@@ -23,7 +23,7 @@ import com.android.cts.input.CaptureEventActivity
 class KeyboardCaptureActivity : CaptureEventActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        window.attributes.setHasKeyboardCapture(true)
+        window.attributes.setKeyboardCaptureEnabled(true)
         shouldHandleKeyEvents = true
         super.onCreate(savedInstanceState)
     }
