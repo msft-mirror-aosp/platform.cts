@@ -137,14 +137,25 @@ class AbsoluteMouseTest {
                 commonMatcher
             )
         )
-        verifier.assertReceivedMotion(
-            allOf(
-                withMotionAction(MotionEvent.ACTION_BUTTON_PRESS),
-                withCoords(PointF(10f, 10f)),
-                withButtonState(MotionEvent.BUTTON_PRIMARY),
-                commonMatcher
+        if (com.android.input.flags.Flags.disableTouchInputMapperPointerUsage()) {
+            verifier.assertReceivedMotion(
+                allOf(
+                    withMotionAction(MotionEvent.ACTION_BUTTON_PRESS),
+                    withCoords(PointF(10f, 10f)),
+                    withButtonState(MotionEvent.BUTTON_PRIMARY),
+                    commonMatcher
+                )
             )
-        )
+        } else {
+            verifier.assertReceivedMotion(
+                allOf(
+                    withMotionAction(MotionEvent.ACTION_MOVE),
+                    withCoords(PointF(10f, 10f)),
+                    withButtonState(MotionEvent.BUTTON_PRIMARY),
+                    commonMatcher
+                )
+            )
+        }
 
         // Inject and verify mouse button release
         absoluteMouse.sendUp(pointerId)
@@ -152,21 +163,32 @@ class AbsoluteMouseTest {
         absoluteMouse.sendBtn(BTN_LEFT, false)
         absoluteMouse.sync()
 
-        verifier.assertReceivedMotion(
-            allOf(
-                withMotionAction(MotionEvent.ACTION_BUTTON_RELEASE),
-                withCoords(PointF(10f, 10f)),
-                withButtonState(0),
-                commonMatcher
+        if (com.android.input.flags.Flags.disableTouchInputMapperPointerUsage()) {
+            verifier.assertReceivedMotion(
+                allOf(
+                    withMotionAction(MotionEvent.ACTION_BUTTON_RELEASE),
+                    withCoords(PointF(10f, 10f)),
+                    withButtonState(0),
+                    commonMatcher
+                )
             )
-        )
-        verifier.assertReceivedMotion(
-            allOf(
-                withMotionAction(MotionEvent.ACTION_UP),
-                withCoords(PointF(10f, 10f)),
-                withButtonState(0),
-                commonMatcher
+            verifier.assertReceivedMotion(
+                allOf(
+                    withMotionAction(MotionEvent.ACTION_UP),
+                    withCoords(PointF(10f, 10f)),
+                    withButtonState(0),
+                    commonMatcher
+                )
             )
-        )
+        } else {
+            verifier.assertReceivedMotion(
+                allOf(
+                    withMotionAction(MotionEvent.ACTION_UP),
+                    withCoords(PointF(10f, 10f)),
+                    withButtonState(MotionEvent.BUTTON_PRIMARY),
+                    commonMatcher
+                )
+            )
+        }
     }
 }
