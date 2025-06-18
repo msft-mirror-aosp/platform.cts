@@ -46,19 +46,25 @@ import androidx.test.filters.SmallTest;
 import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.MediaUtils;
 
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.List;
 import java.util.stream.IntStream;
 
+@RunWith(Parameterized.class)
 public class CodecRequirementsTest {
     private static final String LOG_TAG = CodecRequirementsTest.class.getSimpleName();
+    private final String mMediaType;
 
     @Rule
     public final TestName mTestName = new TestName();
@@ -66,6 +72,19 @@ public class CodecRequirementsTest {
     @Before
     public void isPerformanceClassCandidate() {
         Utils.assumeDeviceMeetsPerformanceClassPreconditions();
+    }
+
+    public CodecRequirementsTest(String mediaType) {
+        mMediaType = mediaType;
+    }
+
+    @Parameterized.Parameters(name = "{index}_{0}")
+    public static List<String> input() {
+        final String[] mediaTypes = new String[]{MediaFormat.MIMETYPE_VIDEO_AVC,
+                MediaFormat.MIMETYPE_VIDEO_HEVC, MediaFormat.MIMETYPE_VIDEO_AV1,
+                MediaFormat.MIMETYPE_VIDEO_VP9};
+
+        return new ArrayList<>(Arrays.asList(mediaTypes));
     }
 
     @Nullable
@@ -99,8 +118,9 @@ public class CodecRequirementsTest {
     @Test(timeout = CodecTestBase.PER_TEST_TIMEOUT_SMALL_TEST_MS)
     @CddTest(requirements = {"5.1/H-1-20"})
     public void testHlgEditingSupport() throws CameraAccessException, IOException {
-        final String[] mediaTypes =
-                {MediaFormat.MIMETYPE_VIDEO_HEVC, MediaFormat.MIMETYPE_VIDEO_AV1};
+        Assume.assumeTrue("Test is limited to HEVC and AV1 mediaTypes only",
+                mMediaType.equals(MediaFormat.MIMETYPE_VIDEO_HEVC)
+                        || mMediaType.equals(MediaFormat.MIMETYPE_VIDEO_AV1));
 
         boolean isFeatureSupported = true;
         Size size4k = new Size(3840, 2160);
@@ -113,21 +133,17 @@ public class CodecRequirementsTest {
             maxRecordingSize = frameSize < frameSize4k ? maxRecordingSize : size4k;
         }
 
-        outerloop:
-        for (String mediaType : mediaTypes) {
-            ArrayList<String> hwEncoders = selectHardwareCodecs(mediaType, null, null, true);
-            for (String encoder : hwEncoders) {
-                if (!isDefaultCodec(encoder, mediaType, true)) {
-                    continue;
-                }
-                MediaFormat format =
-                        MediaFormat.createVideoFormat(mediaType, maxRecordingSize.getWidth(),
-                                maxRecordingSize.getHeight());
-                format.setFeatureEnabled(FEATURE_HlgEditing, true);
-                if (!MediaUtils.supports(encoder, format)) {
-                    isFeatureSupported = false;
-                    break outerloop;
-                }
+        ArrayList<String> hwEncoders = selectHardwareCodecs(mMediaType, null, null, true);
+        for (String encoder : hwEncoders) {
+            if (!isDefaultCodec(encoder, mMediaType, true)) {
+                continue;
+            }
+            MediaFormat format = MediaFormat.createVideoFormat(mMediaType,
+                    maxRecordingSize.getWidth(), maxRecordingSize.getHeight());
+            format.setFeatureEnabled(FEATURE_HlgEditing, true);
+            if (!MediaUtils.supports(encoder, format)) {
+                isFeatureSupported = false;
+                break;
             }
         }
 
@@ -148,22 +164,12 @@ public class CodecRequirementsTest {
     @Test(timeout = CodecTestBase.PER_TEST_TIMEOUT_SMALL_TEST_MS)
     @CddTest(requirements = {"5.1/H-1-21"})
     public void testDynamicColorAspectFeature() {
-        final String[] mediaTypes =
-                {MediaFormat.MIMETYPE_VIDEO_AVC, MediaFormat.MIMETYPE_VIDEO_HEVC,
-                 MediaFormat.MIMETYPE_VIDEO_VP9, MediaFormat.MIMETYPE_VIDEO_AV1};
-
-        boolean isSupported = true;
-        for (String mediaType : mediaTypes) {
-            isSupported = selectHardwareCodecs(mediaType, null, null, false).stream()
-                    .allMatch(decoder -> {
-                        CodecCapabilities caps =
-                                getCodecInfo(decoder).getCapabilitiesForType(mediaType);
-                        return caps != null && caps.isFeatureSupported(FEATURE_DynamicColorAspects);
-                    });
-            if (!isSupported) {
-                break;
-            }
-        }
+        boolean isSupported = selectHardwareCodecs(mMediaType, null, null, false).stream()
+                .allMatch(decoder -> {
+                    CodecCapabilities caps =
+                            getCodecInfo(decoder).getCapabilitiesForType(mMediaType);
+                    return caps != null && caps.isFeatureSupported(FEATURE_DynamicColorAspects);
+                });
 
         PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
         Requirements.VideoCodecDynamicColorAspectRequirement dynamicColorAspectsReq =
@@ -182,36 +188,28 @@ public class CodecRequirementsTest {
     @Test(timeout = CodecTestBase.PER_TEST_TIMEOUT_SMALL_TEST_MS)
     @CddTest(requirements = {"5.1/H-1-22"})
     public void testPortraitResolutionSupport() throws CameraAccessException {
-        final String[] mediaTypes =
-                {MediaFormat.MIMETYPE_VIDEO_AVC, MediaFormat.MIMETYPE_VIDEO_HEVC,
-                 MediaFormat.MIMETYPE_VIDEO_AV1, MediaFormat.MIMETYPE_VIDEO_VP9};
-
         boolean isSupported = true;
         Size requiredSize, maxRequiredSize, maxRecordingSize;
 
-        outerloop:
-        for (String mediaType : mediaTypes) {
-            maxRequiredSize = mediaType.equals(MediaFormat.MIMETYPE_VIDEO_AV1)
-                    ? new Size(1920, 1080) : new Size(3840, 2160);
-            maxRecordingSize = getMaxSupportedRecordingSize();
-            if (maxRecordingSize == null) {
-                requiredSize = maxRequiredSize;
-            } else {
-                int maxRequiredFrameSize = maxRequiredSize.getWidth() * maxRequiredSize.getHeight();
-                int maxRecFrameSize = maxRecordingSize.getWidth() * maxRecordingSize.getHeight();
-                requiredSize = maxRequiredFrameSize < maxRecFrameSize
-                        ? maxRequiredSize : maxRecordingSize;
-            }
-            for (boolean isEncoder : new boolean[] {true, false}) {
-                Size finalRequiredSize = requiredSize;
-                Size rotatedSize = new Size(requiredSize.getHeight(), requiredSize.getWidth());
-                isSupported = selectHardwareCodecs(mediaType, null, null, isEncoder).stream()
-                        .filter(codec -> MediaUtils.supports(codec, mediaType, finalRequiredSize))
-                        .allMatch(codec -> MediaUtils.supports(codec, mediaType, rotatedSize));
-                if (!isSupported) {
-                    break outerloop;
-                }
-            }
+        maxRequiredSize = mMediaType.equals(MediaFormat.MIMETYPE_VIDEO_AV1)
+                ? new Size(1920, 1080) : new Size(3840, 2160);
+        maxRecordingSize = getMaxSupportedRecordingSize();
+        if (maxRecordingSize == null) {
+            requiredSize = maxRequiredSize;
+        } else {
+            int maxRequiredFrameSize = maxRequiredSize.getWidth() * maxRequiredSize.getHeight();
+            int maxRecFrameSize = maxRecordingSize.getWidth() * maxRecordingSize.getHeight();
+            requiredSize = maxRequiredFrameSize < maxRecFrameSize
+                    ? maxRequiredSize : maxRecordingSize;
+        }
+
+        for (boolean isEncoder : new boolean[] {true, false}) {
+            Size finalRequiredSize = requiredSize;
+            Size rotatedSize = new Size(requiredSize.getHeight(), requiredSize.getWidth());
+            isSupported = selectHardwareCodecs(mMediaType, null, null, isEncoder).stream()
+                    .allMatch(codec -> MediaUtils.supports(codec, mMediaType, finalRequiredSize)
+                            && MediaUtils.supports(codec, mMediaType, rotatedSize));
+            if (!isSupported) break;
         }
 
         PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
@@ -230,20 +228,16 @@ public class CodecRequirementsTest {
     @Test(timeout = CodecTestBase.PER_TEST_TIMEOUT_SMALL_TEST_MS)
     @CddTest(requirements = {"5.12/H-1-2"})
     public void testColorFormatSupport() throws IOException {
-        final String[] mediaTypes =
-                {MediaFormat.MIMETYPE_VIDEO_HEVC, MediaFormat.MIMETYPE_VIDEO_AV1};
-
+        Assume.assumeTrue("Test is limited to HEVC and AV1 mediaTypes only",
+                mMediaType.equals(MediaFormat.MIMETYPE_VIDEO_HEVC)
+                        || mMediaType.equals(MediaFormat.MIMETYPE_VIDEO_AV1));
         boolean isSupported = true;
-        outerloop:
-        for (String mediaType : mediaTypes) {
-            ArrayList<String> hwEncoders = selectHardwareCodecs(mediaType, null, null, true);
-            for (String encoder : hwEncoders) {
-                CodecCapabilities caps = getCodecInfo(encoder).getCapabilitiesForType(mediaType);
-                if (IntStream.of(caps.colorFormats)
-                        .noneMatch(x -> x == COLOR_Format32bitABGR2101010)) {
-                    isSupported = false;
-                    break outerloop;
-                }
+        ArrayList<String> hwEncoders = selectHardwareCodecs(mMediaType, null, null, true);
+        for (String encoder : hwEncoders) {
+            CodecCapabilities caps = getCodecInfo(encoder).getCapabilitiesForType(mMediaType);
+            if (IntStream.of(caps.colorFormats).noneMatch(x -> x == COLOR_Format32bitABGR2101010)) {
+                isSupported = false;
+                break;
             }
         }
 
