@@ -16,6 +16,8 @@
 
 package android.devicepolicy.cts;
 
+import static android.content.pm.PackageManager.FEATURE_DEVICE_ADMIN;
+
 import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpc;
 import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.workProfile;
 import static com.android.bedstead.harrier.UserType.INITIAL_USER;
@@ -35,6 +37,7 @@ import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.Postsubmit;
+import com.android.bedstead.harrier.annotations.RequireFeature;
 import com.android.bedstead.harrier.annotations.RequireRunOnInitialUser;
 import com.android.bedstead.multiuser.annotations.EnsureHasAdditionalUser;
 import com.android.bedstead.multiuser.annotations.EnsureHasNoAdditionalUser;
@@ -73,6 +76,7 @@ public final class WipeDataTest {
 
     @Postsubmit(reason = "new test")
     @Test
+    @RequireFeature(FEATURE_DEVICE_ADMIN)
     @ApiTest(apis = "android.app.admin.DevicePolicyManager#wipeData")
     @EnsureDoesNotHavePermission({MANAGE_DEVICE_POLICY_WIPE_DATA, MASTER_CLEAR})
     public void wipeData_notAuthorized_throwsException() {
