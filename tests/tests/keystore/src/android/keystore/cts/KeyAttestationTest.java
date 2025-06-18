@@ -74,17 +74,13 @@ import android.content.pm.PackageManager.NameNotFoundException;
 import android.keystore.cts.util.TestUtils;
 import android.os.Build;
 import android.os.SystemProperties;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.annotations.RestrictedBuildTest;
-import android.platform.test.flag.junit.CheckFlagsRule;
-import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.security.KeyStoreException;
 import android.security.keystore.AttestationUtils;
 import android.security.keystore.DeviceIdAttestationException;
 import android.security.keystore.KeyGenParameterSpec;
 import android.security.keystore.KeyProperties;
 import android.security.keystore.KeyStoreManager;
-import android.security.keystore2.Flags;
 import android.util.ArraySet;
 import android.util.Log;
 
@@ -101,7 +97,6 @@ import com.google.common.collect.ImmutableSet;
 
 import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.cert.jcajce.JcaX509CertificateHolder;
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -144,9 +139,6 @@ import javax.crypto.KeyGenerator;
  */
 @RunWith(AndroidJUnit4.class)
 public class KeyAttestationTest {
-
-    @Rule
-    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private static final String TAG = AndroidKeyStoreTest.class.getSimpleName();
 
@@ -192,7 +184,6 @@ public class KeyAttestationTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(android.security.keystore2.Flags.FLAG_ATTEST_MODULES)
     public void testSupplementaryAttestationInfoAbsence() throws Exception {
         // Valid tag IDs that have no supplementary info.
         checkAbsentSupplementaryInfo(805307074); // OS_PATCHLEVEL = TagType.UINT | 706
@@ -1906,10 +1897,6 @@ public class KeyAttestationTest {
     private void checkModuleHash(Attestation attestation) {
         if (attestation.getKeymasterVersion() < Attestation.KM_VERSION_KEYMINT_4) {
             // Module hash will only be populated if the underlying device is KeyMint v4 or later.
-            return;
-        }
-        if (!Flags.attestModules()) {
-            // Module hash will only be populated if the flag is on.
             return;
         }
 
