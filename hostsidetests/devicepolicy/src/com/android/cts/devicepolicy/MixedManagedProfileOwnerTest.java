@@ -41,8 +41,6 @@ public final class MixedManagedProfileOwnerTest extends DeviceAndProfileOwnerTes
     private static final String CLEAR_PROFILE_OWNER_NEGATIVE_TEST_CLASS =
             DEVICE_ADMIN_PKG + ".ClearProfileOwnerNegativeTest";
 
-    private static final String DELEGATION_NETWORK_LOGGING = "delegation-network-logging";
-
     private int mParentUserId = -1;
 
     @Override
@@ -270,18 +268,6 @@ public final class MixedManagedProfileOwnerTest extends DeviceAndProfileOwnerTes
     public void testPermissionGrantOfDisallowedPermissionWhileOtherPermIsGranted()
             throws Exception {
         super.testPermissionGrantOfDisallowedPermissionWhileOtherPermIsGranted();
-    }
-
-    @Override
-    @Test
-    public void testLockTaskAfterReboot() {
-        // Managed profiles are not allowed to use lock task
-    }
-
-    @Override
-    @Test
-    public void testLockTaskAfterReboot_tryOpeningSettings() {
-        // Managed profiles are not allowed to use lock task
     }
 
     @Override

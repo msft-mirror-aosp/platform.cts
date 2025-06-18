@@ -100,6 +100,7 @@ java_test_host {
         ":TestApp3",
         ":TestApp4",
         ":TestIme",
+        ":CtsLockTaskApp",
     ],
     per_testcase_directory: true,
 }

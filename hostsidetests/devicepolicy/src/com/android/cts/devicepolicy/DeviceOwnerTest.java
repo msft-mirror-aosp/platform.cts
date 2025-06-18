@@ -69,6 +69,9 @@ public final class DeviceOwnerTest extends BaseDeviceOwnerTest {
     private static final String TEST_APP_PKG = "android.packageinstaller.emptytestapp.cts";
     private static final String TEST_APP_LOCATION = "/data/local/tmp/cts/packageinstaller/";
 
+    private static final String LOCK_TASK_APP_PKG = "com.android.cts.locktask";
+    private static final String LOCK_TASK_APP_APK = "CtsLockTaskApp.apk";
+
     private static final String ARG_NETWORK_LOGGING_BATCH_COUNT = "batchCount";
     private static final String ARG_PID_BEFORE_STOP = "pidOfSimpleapp";
 
@@ -1149,6 +1152,42 @@ public final class DeviceOwnerTest extends BaseDeviceOwnerTest {
         executeDeviceOwnerTest("WifiNetworkConfigurationWithoutFineLocationPermissionTest");
     }
 
+    @LargeTest
+    @Test
+    public void testLockTaskAfterReboot() throws Exception {
+        try {
+            installAppAsUser(LOCK_TASK_APP_APK, mMainUserId);
+            // Just start kiosk mode
+            executeDeviceTestMethod(".LockTaskHostDrivenTest", "testStartLockTask");
+
+            // Reboot while in kiosk mode and then unlock the device
+            rebootAndWaitUntilReady();
+
+            // Wait for the lock task activity to start and enter lock task mode following reboot.
+            executeDeviceTestMethod(".LockTaskHostDrivenTest", "testLockTaskIsActive");
+
+            // Verify that the lock task isn't interrupted by HOME button.
+            executeShellCommand("input keyevent KEYCODE_HOME");
+            executeDeviceTestMethod(".LockTaskHostDrivenTest", "testLockTaskIsActive");
+
+            // Verify that the lock task isn't interrupted by MENU/recents button.
+            executeShellCommand("input keyevent KEYCODE_MENU");
+            executeDeviceTestMethod(".LockTaskHostDrivenTest", "testLockTaskIsActive");
+
+            // Verify that the lock task isn't interrupted by BACK button.
+            executeShellCommand("input keyevent KEYCODE_BACK");
+            executeDeviceTestMethod(".LockTaskHostDrivenTest", "testLockTaskIsActive");
+
+            // Verify that the lock task isn't interrupted by an attempt to launch settings.
+            executeShellCommand("am start -a android.settings.SETTINGS");
+            executeDeviceTestMethod(".LockTaskHostDrivenTest", "testLockTaskIsActive");
+        } finally {
+            executeDeviceTestMethod(".LockTaskHostDrivenTest", "testCleanupLockTask_noAsserts");
+            getDevice().uninstallPackage(LOCK_TASK_APP_PKG);
+            executeShellCommand("input keyevent KEYCODE_HOME");
+        }
+    }
+
     /** Install a package and wait for system to stop all processes for this package. */
     private void installAppAndWaitForKill(String apkName, String packageName, int userId)
             throws Exception {
@@ -1165,8 +1204,10 @@ public final class DeviceOwnerTest extends BaseDeviceOwnerTest {
         long deadlineNs = System.nanoTime() + TimeUnit.SECONDS.toNanos(20);
         while (System.nanoTime() <= deadlineNs) {
             // Retrieve recent logcat messages.
-            String logcatOutput = getDevice().executeShellCommand(
-                            "logcat -t %s -v epoch -b system".formatted(lastLogTimestamp));
+            String logcatOutput =
+                    getDevice()
+                            .executeShellCommand(
+                                    "logcat -t %s -v epoch -b system".formatted(lastLogTimestamp));
             List<String> logLines = logcatOutput
                     .lines()
                     .filter(l -> !l.startsWith("-")) // Filter out "beginning of system" lines.

@@ -19,13 +19,11 @@ package com.android.cts.devicepolicy;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import android.platform.test.annotations.FlakyTest;
 import android.platform.test.annotations.LargeTest;
 
 import com.android.cts.devicepolicy.DeviceAdminFeaturesCheckerRule.RequiresProfileOwnerSupport;
 import com.android.tradefed.log.LogUtil.CLog;
 
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -69,21 +67,5 @@ public final class MixedProfileOwnerTest extends DeviceAndProfileOwnerTest {
     @Test
     public void testPackageInstallUserRestrictions() throws Exception {
         super.testPackageInstallUserRestrictions();
-    }
-
-    @Override
-    @FlakyTest(bugId = 140932104)
-    @Ignore("Ignored while migrating to new infrastructure b/175377361")
-    @Test
-    public void testLockTaskAfterReboot() throws Exception {
-        super.testLockTaskAfterReboot();
-    }
-
-    @Override
-    @FlakyTest(bugId = 140932104)
-    @Ignore("Ignored while migrating to new infrastructure b/175377361")
-    @Test
-    public void testLockTaskAfterReboot_tryOpeningSettings() throws Exception {
-        super.testLockTaskAfterReboot_tryOpeningSettings();
     }
 }
