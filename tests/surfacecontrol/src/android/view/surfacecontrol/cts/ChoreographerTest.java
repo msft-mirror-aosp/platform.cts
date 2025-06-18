@@ -220,7 +220,8 @@ public class ChoreographerTest {
             ArgumentCaptor<Long> frameTimeNanosCaptor2 = ArgumentCaptor.forClass(Long.class);
             verify(addedFrameCallback1, timeout(NOMINAL_VSYNC_PERIOD * 10).times(1))
                     .doFrame(frameTimeNanosCaptor1.capture());
-            verify(addedFrameCallback2, times(1)).doFrame(frameTimeNanosCaptor2.capture());
+            verify(addedFrameCallback2, timeout(NOMINAL_VSYNC_PERIOD).times(1))
+                    .doFrame(frameTimeNanosCaptor2.capture());
             verifyNoMoreInteractions(removedFrameCallback);
 
             assertTimeDeltaLessThan(frameTimeNanosCaptor1.getValue() - postTimeNanos,
@@ -237,7 +238,8 @@ public class ChoreographerTest {
 
             verify(addedFrameCallback1, timeout(NOMINAL_VSYNC_PERIOD * 10).times(2))
                     .doFrame(frameTimeNanosCaptor1.capture());
-            verify(addedFrameCallback2, times(1)).doFrame(frameTimeNanosCaptor2.capture());
+            verify(addedFrameCallback2, timeout(NOMINAL_VSYNC_PERIOD).times(1))
+                    .doFrame(frameTimeNanosCaptor2.capture());
             verifyNoMoreInteractions(removedFrameCallback);
             assertTimeDeltaLessThan(frameTimeNanosCaptor1.getAllValues().get(1) - postTimeNanos,
                     NOMINAL_VSYNC_PERIOD * 10 * NANOS_PER_MS);
