@@ -29,7 +29,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-const size_t kOffset = 4096;
+const size_t kOffset = sysconf(_SC_PAGESIZE);
 
 // Verify that we can mmap a region of a file with a non-zero offset executable
 static jboolean mmap_executable(JNIEnv *env, jobject, jstring jfilename) {
