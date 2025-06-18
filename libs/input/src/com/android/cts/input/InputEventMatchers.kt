@@ -228,6 +228,16 @@ fun withSource(source: Int): Matcher<MotionEvent> = object : TypeSafeMatcher<Mot
     }
 }
 
+fun withKeySource(source: Int): Matcher<KeyEvent> = object : TypeSafeMatcher<KeyEvent>() {
+    override fun describeTo(description: Description) {
+        description.appendText("With source = 0x${source.toString(16)}")
+    }
+
+    override fun matchesSafely(event: KeyEvent): Boolean {
+        return event.source == source
+    }
+}
+
 fun withSourceIncluding(source: Int): Matcher<MotionEvent> =
     object : TypeSafeMatcher<MotionEvent>() {
         override fun describeTo(description: Description) {
@@ -396,6 +406,16 @@ fun withKeyAction(keyAction: Int): Matcher<KeyEvent> = object : TypeSafeMatcher<
 
     override fun matchesSafely(event: KeyEvent): Boolean {
         return event.action == keyAction
+    }
+}
+
+fun withRepeatCount(repeatCount: Int): Matcher<KeyEvent> = object : TypeSafeMatcher<KeyEvent>() {
+    override fun describeTo(description: Description) {
+        description.appendText("With repeat count = $repeatCount")
+    }
+
+    override fun matchesSafely(event: KeyEvent): Boolean {
+        return event.repeatCount == repeatCount
     }
 }
 
