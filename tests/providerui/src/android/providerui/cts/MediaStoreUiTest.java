@@ -361,6 +361,7 @@ public class MediaStoreUiTest {
 
     @Test
     public void testOpenDocumentTree_disabledForAndroidDataDirWithZwsChars() throws Exception {
+        assumeTrue(isFuseBpfEnabled());
         assumeTrue(supportsHardware());
         clearDocumentsUi();
         mDevice.waitForIdle();
@@ -378,6 +379,10 @@ public class MediaStoreUiTest {
         } finally {
             clearDocumentsUi();
         }
+    }
+
+    private boolean isFuseBpfEnabled() throws Exception {
+        return executeShellCommand("getprop ro.fuse.bpf.is_running").trim().equals("true");
     }
 
     @Test
