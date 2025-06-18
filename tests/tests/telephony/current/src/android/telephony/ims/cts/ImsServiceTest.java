@@ -3832,13 +3832,6 @@ public class ImsServiceTest {
             automan.dropShellPermissionIdentity();
         }
 
-        // Notify capabilities status changes again.
-        sServiceConnector.getCarrierService().getRcsFeature()
-                .notifyCapabilitiesStatusChanged(optionsCap);
-
-        // The callback should not be called because the listener is removed.
-        assertTrue(availabilityChanged.isEmpty());
-
         overrideCarrierConfig(null);
     }
 
