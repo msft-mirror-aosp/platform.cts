@@ -46,9 +46,15 @@ import androidx.window.extensions.embedding.SplitAttributes;
 import androidx.window.extensions.embedding.SplitAttributesCalculatorParams;
 import androidx.window.extensions.embedding.SplitPairRule;
 
+import com.android.bedstead.harrier.BedsteadJUnit4;
+import com.android.bedstead.harrier.DeviceState;
+import com.android.bedstead.harrier.annotations.RequireNotAutomotive;
 import com.android.compatibility.common.util.ApiTest;
 
+import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.util.Collections;
 import java.util.concurrent.CountDownLatch;
@@ -69,9 +75,14 @@ import java.util.concurrent.TimeUnit;
                     + "#clearSplitAttributesCalculator"
         })
 @Presubmit
+@RunWith(BedsteadJUnit4.class)
 public class SplitAttributesCalculatorTest extends ActivityEmbeddingTestBase {
     private static final String ACTIVITY_A_ID = "activityA";
     private static final String ACTIVITY_B_ID = "activityB";
+
+    @ClassRule
+    @Rule
+    public static final DeviceState sDeviceState = new DeviceState();
 
     /**
      * Verifies whether setting and clearing splitAttributes calculator function is expected.
@@ -222,6 +233,7 @@ public class SplitAttributesCalculatorTest extends ActivityEmbeddingTestBase {
 
     /** Verify the calculator function is called when the device is rotated.  */
     @Test
+    @RequireNotAutomotive(reason = "Automotive screens don't support rotation")
     public void testSplitAttributesCalculatorInvocation_screenRotation()
             throws InterruptedException {
         final String tag = "testSplitAttributesCalculatorInvocation_screenRotation";

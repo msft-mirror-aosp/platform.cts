@@ -98,6 +98,7 @@ android_test {
         "com.android.window.flags.window-aconfig-java",
         "android.hardware.devicestate.feature.flags-aconfig-java",
         "truth",
+        "bedstead",
     ],
     libs: [
         "android.test.base.stubs.test",
