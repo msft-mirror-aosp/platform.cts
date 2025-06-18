@@ -77,10 +77,12 @@ public class CallSequencingBasicCallTest extends BaseAppVerifier {
 
     /**
      * Verify that when there's a managed unholdable call and an incoming managed call is received
-     * on another sim that we add the EXTRA_ANSWERING_DROPS_FG_CALL extra to that call to indicate
-     * that answering it will drop the unholdable call.
+     * on another sim that we do not add the EXTRA_ANSWERING_DROPS_FG_CALL extra to that call to
+     * indicate that answering it will drop the unholdable call. Telephony would handle this
+     * same phone account case.
      */
     @Test
+    @RequiresFlagsEnabled({Flags.FLAG_ADD_DROPS_FG_EXTRA_DIFF_ACCOUNTS})
     public void testAnswerIncomingDropsFg_BothManaged() throws Exception {
         if (!mShouldTestTelecom) {
             return;
@@ -88,7 +90,7 @@ public class CallSequencingBasicCallTest extends BaseAppVerifier {
         verifyAnswerIncomingDropsFg(
                 ManagedConnectionServiceApp,
                 ManagedConnectionServiceApp,
-                true /* verifyExtraPresent */);
+                false /* verifyExtraPresent */);
     }
 
     /**
