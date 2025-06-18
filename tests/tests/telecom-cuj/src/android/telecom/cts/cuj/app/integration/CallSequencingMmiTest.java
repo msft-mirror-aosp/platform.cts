@@ -23,12 +23,9 @@ import static android.telecom.Call.STATE_HOLDING;
 import static android.telecom.cts.apps.TelecomTestApp.ManagedConnectionServiceApp;
 import static android.telecom.cts.apps.TelecomTestApp.ManagedConnectionServiceAppClone;
 
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.telecom.CallAttributes;
 import android.telecom.cts.apps.AppControlWrapper;
 import android.telecom.cts.cuj.BaseAppVerifier;
-
-import com.android.server.telecom.flags.Flags;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -41,7 +38,6 @@ import java.util.List;
 public class CallSequencingMmiTest extends BaseAppVerifier {
 
     @Test
-    @RequiresFlagsEnabled({Flags.FLAG_ENABLE_CALL_SEQUENCING})
     public void testInCallMmiCodeBlocked() throws Exception {
         if (!mShouldTestTelecom) {
             return;
@@ -82,7 +78,6 @@ public class CallSequencingMmiTest extends BaseAppVerifier {
     }
 
     @Test
-    @RequiresFlagsEnabled({Flags.FLAG_ENABLE_CALL_SEQUENCING})
     public void testInCallMmiCodeAllowed() throws Exception {
         if (!mShouldTestTelecom) {
             return;
@@ -111,7 +106,6 @@ public class CallSequencingMmiTest extends BaseAppVerifier {
     }
 
     @Test
-    @RequiresFlagsEnabled({Flags.FLAG_ENABLE_CALL_SEQUENCING})
     public void testMmiCodeAllowed_SingleSim() throws Exception {
         if (!mShouldTestTelecom) {
             return;
@@ -140,7 +134,6 @@ public class CallSequencingMmiTest extends BaseAppVerifier {
     }
 
     @Test
-    @RequiresFlagsEnabled({Flags.FLAG_ENABLE_CALL_SEQUENCING})
     public void testMmiCodeAllowed_DualSim() throws Exception {
         if (!mShouldTestTelecom) {
             return;

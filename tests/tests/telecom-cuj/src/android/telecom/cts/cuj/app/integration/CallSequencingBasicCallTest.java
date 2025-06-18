@@ -48,7 +48,6 @@ import java.util.List;
 
 /** Basic call sequencing call tests */
 @RunWith(JUnit4.class)
-@RequiresFlagsEnabled({Flags.FLAG_ENABLE_CALL_SEQUENCING})
 public class CallSequencingBasicCallTest extends BaseAppVerifier {
     public static final String TAG = CallSequencingBasicCallTest.class.getSimpleName();
 
