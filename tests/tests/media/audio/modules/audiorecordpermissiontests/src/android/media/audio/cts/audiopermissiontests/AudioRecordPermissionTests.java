@@ -250,7 +250,6 @@ public class AudioRecordPermissionTests extends StsExtraBusinessLogicTestCase {
         }
     }
 
-    @AsbSecurityTest(cveBugId = 268724205)
     @Test
     public void testMovingFromTopToForegroundServiceWithMicCapabilities_isNotSilenced()
             throws Exception {
@@ -292,7 +291,6 @@ public class AudioRecordPermissionTests extends StsExtraBusinessLogicTestCase {
         assertFalse(getOpState(TEST_PACKAGE));
     }
 
-    @AsbSecurityTest(cveBugId = 268724205)
     @Test
     public void testIfTargetPre34_MovingFromTopToBackground_isNotSilenced() throws Exception {
         final var TEST_PACKAGE = API_33_PACKAGE;
@@ -331,7 +329,6 @@ public class AudioRecordPermissionTests extends StsExtraBusinessLogicTestCase {
         assertFalse(getOpState(ATTRIBUTED_PACKAGE));
     }
 
-    @AsbSecurityTest(cveBugId = {325912429})
     @Test
     public void testStartRecording_whenTopMissingCapabilities_isSilenced() throws Exception {
         final var ATTRIBUTED_PACKAGE = API_34_PACKAGE;
@@ -375,7 +372,6 @@ public class AudioRecordPermissionTests extends StsExtraBusinessLogicTestCase {
         assertFalse(getOpState(ATTRIBUTED_PACKAGE));
     }
 
-    @AsbSecurityTest(cveBugId = {325912429})
     @Test
     public void testTopOfChainLosesCapabilities_isSilenced() throws Exception {
         final var ATTRIBUTED_PACKAGE = API_34_PACKAGE;
