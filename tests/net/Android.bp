@@ -25,6 +25,7 @@ java_library {
     srcs: ["src/**/*.java"],
     static_libs: [
         "androidx.test.rules",
+        "com.android.net.thread.platform.flags-aconfig-java",
     ],
     libs: [
         "net-tests-utils",
