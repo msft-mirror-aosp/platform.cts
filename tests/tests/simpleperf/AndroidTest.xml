@@ -21,7 +21,7 @@
     <option name="config-descriptor:metadata" key="parameter" value="secondary_user" />
     <option name="config-descriptor:metadata" key="parameter" value="no_foldable_states" />
     <target_preparer class="com.android.tradefed.targetprep.SwitchUserTargetPreparer">
-        <option name="user-type" value="system" />
+        <option name="user-type" value="full" />
     </target_preparer>
     <target_preparer class="com.android.compatibility.common.tradefed.targetprep.FilePusher">
         <option name="cleanup" value="true" />
