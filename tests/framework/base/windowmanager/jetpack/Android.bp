@@ -96,6 +96,7 @@ android_test {
         "cts_window-extensions-core",
         "com.android.window.flags.window-aconfig-java",
         "truth",
+        "Harrier",
     ],
     libs: [
         "android.test.base",
