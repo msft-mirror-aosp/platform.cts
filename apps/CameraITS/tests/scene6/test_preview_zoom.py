@@ -15,7 +15,6 @@
 
 import logging
 import os.path
-import subprocess
 
 import cv2
 from mobly import test_runner
@@ -29,7 +28,6 @@ import video_processing_utils
 import zoom_capture_utils
 
 
-_CRF = 23
 _CV2_RED = (0, 0, 255)  # color (B, G, R) in cv2 to draw lines
 _CV2_FLIP_ACROSS_X_AXIS = 0
 _CV2_FLIP_ACROSS_Y_AXIS = 1
@@ -106,24 +104,6 @@ def get_largest_video_size(cam, camera_id):
 
   logging.debug('Largest video size: %s', max_size)
   return size_to_area(max_size)
-
-
-def compress_video(input_filename, output_filename, crf=_CRF):
-  """Compresses the given video using ffmpeg."""
-
-  ffmpeg_cmd = [
-      'ffmpeg',
-      '-i', input_filename,   # Input file
-      '-c:v', 'libx264',      # Use H.264 codec
-      '-crf', str(crf),       # Set Constant Rate Factor (adjust for quality)
-      '-preset', 'medium',    # Encoding speed/compression balance
-      '-c:a', 'copy',         # Copy audio stream without re-encoding
-      output_filename         # Output file
-  ]
-
-  with open(os.devnull, 'w') as devnull:
-    subprocess.run(ffmpeg_cmd, stdout=devnull,
-                   stderr=subprocess.STDOUT, check=False)
 
 
 class PreviewZoomTest(its_base_test.ItsBaseTest):
@@ -315,7 +295,8 @@ class PreviewZoomTest(its_base_test.ItsBaseTest):
 
       # --- Compress Video ---
       compressed_video = os.path.join(log_path, 'output_frames.mp4')
-      compress_video(uncompressed_video, compressed_video)
+      video_processing_utils.compress_video(uncompressed_video,
+                                            compressed_video)
 
       os.remove(uncompressed_video)
 

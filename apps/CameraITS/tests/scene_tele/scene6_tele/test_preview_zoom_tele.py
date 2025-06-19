@@ -15,7 +15,6 @@
 
 import logging
 import os.path
-import subprocess
 
 import cv2
 from mobly import test_runner
@@ -29,7 +28,6 @@ import video_processing_utils
 import zoom_capture_utils
 
 
-_CRF = 23  # Constant rate factor for video compression
 _CV2_RED = (0, 0, 255)  # color (B, G, R) in cv2 to draw lines
 _FPS = 30
 _MP4V = 'mp4v'
@@ -37,25 +35,6 @@ _NAME = os.path.splitext(os.path.basename(__file__))[0]
 _NUM_STEPS = 50
 _NUMBER_OF_CAMERAS_TO_TEST = 0
 _WIDE_ZOOM_RATIO_MAX = 2.5
-
-
-# TODO: b/390003966 - move compress_video() to video_processing_utils.
-def compress_video(input_filename, output_filename, crf=_CRF):
-  """Compresses the given video using ffmpeg."""
-
-  ffmpeg_cmd = [
-      'ffmpeg',
-      '-i', input_filename,   # Input file
-      '-c:v', 'libx264',      # Use H.264 codec
-      '-crf', str(crf),       # Set Constant Rate Factor (adjust for quality)
-      '-preset', 'medium',    # Encoding speed/compression balance
-      '-c:a', 'copy',         # Copy audio stream without re-encoding
-      output_filename         # Output file
-  ]
-
-  with open(os.devnull, 'w') as devnull:
-    subprocess.run(ffmpeg_cmd, stdout=devnull,
-                   stderr=subprocess.STDOUT, check=False)
 
 
 def _get_test_tols(cam, props, chart_distance, debug):
@@ -224,7 +203,8 @@ class PreviewZoomTestTELE(its_base_test.ItsBaseTest):
 
       # --- Compress Video ---
       compressed_video = os.path.join(log_path, 'output_frames.mp4')
-      compress_video(uncompressed_video, compressed_video)
+      video_processing_utils.compress_video(uncompressed_video,
+                                            compressed_video)
 
       os.remove(uncompressed_video)
 
