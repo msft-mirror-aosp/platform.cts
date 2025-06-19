@@ -20,8 +20,16 @@ import static android.media.RoutingSessionInfo.TRANSFER_REASON_APP;
 import static android.media.RoutingSessionInfo.TRANSFER_REASON_SYSTEM_REQUEST;
 import static android.media.cts.MediaRouterTestConstants.FEATURE_SAMPLE;
 import static android.media.cts.MediaRouterTestConstants.MEDIA_ROUTER_PROVIDER_1_PACKAGE;
+import static android.media.cts.MediaRouterTestConstants.PROXY_MEDIA_ROUTER_SCANNING_TEST_APP_PACKAGE;
+import static android.media.cts.MediaRouterTestConstants.PROXY_MEDIA_ROUTER_SCANNING_TEST_APP_TEST_CLASS;
+import static android.media.cts.MediaRouterTestConstants.ROUTE_ID_APP_1_ROUTE_1;
+import static android.media.cts.MediaRouterTestConstants.ROUTE_ID_RESTRICTED_ALLOW_PRIVILEGED;
+import static android.media.cts.MediaRouterTestConstants.ROUTE_ID_VISIBILITY_RESTRICTED;
+import static android.media.cts.app.common.MediaRouter2TestUtils.fetchRoutes;
+import static android.media.cts.app.common.MediaRouter2TestUtils.waitForAndGetRoutes;
 
 import static com.android.media.flags.Flags.FLAG_ENABLE_BUILT_IN_SPEAKER_ROUTE_SUITABILITY_STATUSES;
+import static com.android.media.flags.Flags.FLAG_ENABLE_ROUTE_VISIBILITY_CONTROL_API;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -60,10 +68,13 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 /** Device-side test for privileged {@link MediaRouter2} functionality. */
 @LargeTest
@@ -585,5 +596,71 @@ public class MediaRouter2DeviceTest {
         assertThrows(
                 SecurityException.class,
                 () -> MediaRouter2.getInstance(mContext, MEDIA_ROUTER_PROVIDER_1_PACKAGE));
+    }
+
+    @Test
+    public void getInstance_withMediaRoutingControl_cannotSeeVisibilityRestrictedRoute() {
+        mInstrumentation
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(Manifest.permission.MEDIA_ROUTING_CONTROL);
+        loadScreenOnActivity();
+
+        MediaRouter2 instance = MediaRouter2.getInstance(mContext);
+        RouteDiscoveryPreference discoveryPreference =
+                new RouteDiscoveryPreference.Builder(List.of(FEATURE_SAMPLE), true).build();
+        Map<String, MediaRoute2Info> routes =
+                fetchRoutes(
+                        instance,
+                        discoveryPreference,
+                        Set.of(ROUTE_ID_APP_1_ROUTE_1, ROUTE_ID_VISIBILITY_RESTRICTED),
+                        mExecutor,
+                        TIMEOUT_MS);
+        assertThat(routes).containsKey(ROUTE_ID_APP_1_ROUTE_1);
+        assertThat(routes).doesNotContainKey(ROUTE_ID_VISIBILITY_RESTRICTED);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_ENABLE_ROUTE_VISIBILITY_CONTROL_API)
+    public void getProxyInstance_withMediaRoutingControl_canSeeVisibilityRestrictedRoute()
+            throws TimeoutException {
+        mInstrumentation
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(Manifest.permission.MEDIA_ROUTING_CONTROL);
+
+        // Launch a scanning activity in the package we will get a proxy router for.
+        Intent intent = new Intent();
+        intent.setClassName(
+                PROXY_MEDIA_ROUTER_SCANNING_TEST_APP_PACKAGE,
+                PROXY_MEDIA_ROUTER_SCANNING_TEST_APP_TEST_CLASS);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        mContext.startActivity(intent);
+
+        // Create a proxy router for that test app. We should see the restricted route.
+        MediaRouter2 proxyInstance =
+                MediaRouter2.getInstance(mContext, PROXY_MEDIA_ROUTER_SCANNING_TEST_APP_PACKAGE);
+        waitForAndGetRoutes(
+                proxyInstance,
+                RouteDiscoveryPreference.EMPTY,
+                Set.of(ROUTE_ID_VISIBILITY_RESTRICTED),
+                mExecutor);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_ENABLE_ROUTE_VISIBILITY_CONTROL_API)
+    public void getInstance_withMediaRoutingControl_canSeePrivilegeAllowedRoute()
+            throws TimeoutException {
+        mInstrumentation
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(Manifest.permission.MEDIA_ROUTING_CONTROL);
+        loadScreenOnActivity();
+
+        MediaRouter2 instance = MediaRouter2.getInstance(mContext);
+        RouteDiscoveryPreference discoveryPreference =
+                new RouteDiscoveryPreference.Builder(List.of(FEATURE_SAMPLE), true).build();
+        waitForAndGetRoutes(
+                instance,
+                discoveryPreference,
+                Set.of(ROUTE_ID_RESTRICTED_ALLOW_PRIVILEGED),
+                mExecutor);
     }
 }

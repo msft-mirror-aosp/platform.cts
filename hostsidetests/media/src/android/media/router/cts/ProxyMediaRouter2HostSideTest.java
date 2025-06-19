@@ -20,6 +20,8 @@ import static android.media.cts.MediaRouterTestConstants.MEDIA_ROUTER_PROVIDER_1
 import static android.media.cts.MediaRouterTestConstants.MEDIA_ROUTER_PROVIDER_1_PACKAGE;
 import static android.media.cts.MediaRouterTestConstants.MEDIA_ROUTER_SECONDARY_USER_HELPER_APK;
 import static android.media.cts.MediaRouterTestConstants.MEDIA_ROUTER_SECONDARY_USER_HELPER_PACKAGE;
+import static android.media.cts.MediaRouterTestConstants.PROXY_MEDIA_ROUTER_SCANNING_TEST_APP_APK;
+import static android.media.cts.MediaRouterTestConstants.PROXY_MEDIA_ROUTER_SCANNING_TEST_APP_PACKAGE;
 import static android.media.cts.MediaRouterTestConstants.PROXY_MEDIA_ROUTER_WITH_MEDIA_CONTENT_CONTROL_HELPER_APK;
 import static android.media.cts.MediaRouterTestConstants.PROXY_MEDIA_ROUTER_WITH_MEDIA_CONTENT_CONTROL_HELPER_PACKAGE;
 import static android.media.cts.MediaRouterTestConstants.PROXY_MEDIA_ROUTER_WITH_MEDIA_CONTENT_CONTROL_HELPER_TEST_CLASS;
@@ -29,6 +31,7 @@ import static android.media.cts.MediaRouterTestConstants.PROXY_MEDIA_ROUTER_WITH
 import static android.media.cts.MediaRouterTestConstants.TARGET_USER_ID_KEY;
 
 import static com.android.media.flags.Flags.FLAG_ENABLE_BUILT_IN_SPEAKER_ROUTE_SUITABILITY_STATUSES;
+import static com.android.media.flags.Flags.FLAG_ENABLE_ROUTE_VISIBILITY_CONTROL_API;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
@@ -44,17 +47,17 @@ import com.android.tradefed.invoker.TestInformation;
 import com.android.tradefed.log.LogUtil;
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
 import com.android.tradefed.testtype.junit4.AfterClassWithInfo;
-import com.android.tradefed.testtype.junit4.BaseHostJUnit4Test;
 import com.android.tradefed.testtype.junit4.BeforeClassWithInfo;
 import com.android.tradefed.testtype.junit4.DeviceTestRunOptions;
 
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.io.FileNotFoundException;
 
 @RunWith(DeviceJUnit4ClassRunner.class)
-public class ProxyMediaRouter2HostSideTest extends BaseHostJUnit4Test {
+public class ProxyMediaRouter2HostSideTest extends BaseMediaRouter2HostSideTest {
 
     private static int secondaryUser = -1;
 
@@ -83,6 +86,9 @@ public class ProxyMediaRouter2HostSideTest extends BaseHostJUnit4Test {
                 testInformation,
                 PROXY_MEDIA_ROUTER_WITH_MEDIA_ROUTING_CONTROL_APP_APK,
                 device.getCurrentUser());
+
+        installTestAppAsUser(
+                testInformation, PROXY_MEDIA_ROUTER_SCANNING_TEST_APP_APK, device.getCurrentUser());
     }
 
     @AfterClassWithInfo
@@ -92,6 +98,7 @@ public class ProxyMediaRouter2HostSideTest extends BaseHostJUnit4Test {
 
         device.uninstallPackage(PROXY_MEDIA_ROUTER_WITH_MEDIA_CONTENT_CONTROL_HELPER_PACKAGE);
         device.uninstallPackage(PROXY_MEDIA_ROUTER_WITH_MEDIA_ROUTING_CONTROL_APP_PACKAGE);
+        device.uninstallPackage(PROXY_MEDIA_ROUTER_SCANNING_TEST_APP_PACKAGE);
 
         if (device.isMultiUserSupported()) {
             device.uninstallPackageForUser(
@@ -101,6 +108,15 @@ public class ProxyMediaRouter2HostSideTest extends BaseHostJUnit4Test {
 
         // This uninstalls package across all users.
         device.uninstallPackage(MEDIA_ROUTER_PROVIDER_1_PACKAGE);
+    }
+
+    @Before
+    public void setUp() throws Throwable {
+        forceStopAndWaitForRunningStatus(MEDIA_ROUTER_PROVIDER_1_PACKAGE);
+        forceStopAndWaitForRunningStatus(
+                PROXY_MEDIA_ROUTER_WITH_MEDIA_CONTENT_CONTROL_HELPER_PACKAGE);
+        forceStopAndWaitForRunningStatus(PROXY_MEDIA_ROUTER_WITH_MEDIA_ROUTING_CONTROL_APP_PACKAGE);
+        forceStopAndWaitForRunningStatus(PROXY_MEDIA_ROUTER_SCANNING_TEST_APP_PACKAGE);
     }
 
     @Test
@@ -360,6 +376,40 @@ public class ProxyMediaRouter2HostSideTest extends BaseHostJUnit4Test {
                 PROXY_MEDIA_ROUTER_WITH_MEDIA_ROUTING_CONTROL_APP_PACKAGE,
                 PROXY_MEDIA_ROUTER_WITH_MEDIA_ROUTING_CONTROL_APP_TEST_CLASS,
                 "getTransferReason_afterAppRestart_returnsPreviouslySelectedTransferReason");
+    }
+
+    @Test
+    @AppModeFull
+    @RequiresDevice
+    public void getInstance_withMediaRoutingControl_cannotSeeVisibilityRestrictedRoute()
+            throws DeviceNotAvailableException {
+        runDeviceTests(
+                PROXY_MEDIA_ROUTER_WITH_MEDIA_ROUTING_CONTROL_APP_PACKAGE,
+                PROXY_MEDIA_ROUTER_WITH_MEDIA_ROUTING_CONTROL_APP_TEST_CLASS,
+                "getInstance_withMediaRoutingControl_cannotSeeVisibilityRestrictedRoute");
+    }
+
+    @Test
+    @AppModeFull
+    @RequiresDevice
+    public void getProxyInstance_withMediaRoutingControl_canSeeVisibilityRestrictedRoute()
+            throws DeviceNotAvailableException {
+        runDeviceTests(
+                PROXY_MEDIA_ROUTER_WITH_MEDIA_ROUTING_CONTROL_APP_PACKAGE,
+                PROXY_MEDIA_ROUTER_WITH_MEDIA_ROUTING_CONTROL_APP_TEST_CLASS,
+                "getProxyInstance_withMediaRoutingControl_canSeeVisibilityRestrictedRoute");
+    }
+
+    @Test
+    @AppModeFull
+    @RequiresDevice
+    @RequiresFlagsEnabled(FLAG_ENABLE_ROUTE_VISIBILITY_CONTROL_API)
+    public void getInstance_withMediaRoutingControl_canSeePrivilegeAllowedRoute()
+            throws DeviceNotAvailableException {
+        runDeviceTests(
+                PROXY_MEDIA_ROUTER_WITH_MEDIA_ROUTING_CONTROL_APP_PACKAGE,
+                PROXY_MEDIA_ROUTER_WITH_MEDIA_ROUTING_CONTROL_APP_TEST_CLASS,
+                "getInstance_withMediaRoutingControl_canSeePrivilegeAllowedRoute");
     }
 
     private static void installTestAppAsUser(
