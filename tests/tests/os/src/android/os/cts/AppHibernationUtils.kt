@@ -19,7 +19,6 @@ package android.os.cts
 import android.app.Activity
 import android.app.ActivityManager
 import android.app.ActivityManager.RunningAppProcessInfo.IMPORTANCE_TOP_SLEEPING
-import android.app.Instrumentation
 import android.app.UiAutomation
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -28,7 +27,6 @@ import android.content.pm.PackageManager
 import android.graphics.Point
 import android.os.Handler
 import android.os.Looper
-import android.os.ParcelFileDescriptor
 import android.os.Process
 import android.provider.DeviceConfig
 import android.support.test.uiautomator.By
@@ -42,7 +40,6 @@ import android.util.Log
 import androidx.test.InstrumentationRegistry
 import com.android.compatibility.common.util.ExceptionUtils.wrappingExceptions
 import com.android.compatibility.common.util.FeatureUtil
-import com.android.compatibility.common.util.LogcatInspector
 import com.android.compatibility.common.util.SystemUtil.eventually
 import com.android.compatibility.common.util.SystemUtil.runShellCommandOrThrow
 import com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity
@@ -76,6 +73,8 @@ const val CLEAR_ALL_BUTTON_ID = "dismiss_text"
 // time to find the notification we're looking for
 const val NOTIF_FIND_TIMEOUT = 20000L
 const val VIEW_WAIT_TIMEOUT = 3000L
+const val JOB_RUN_TIMEOUT = 60000L
+const val JOB_RUN_WAIT_TIME = 3000L
 
 const val CMD_EXPAND_NOTIFICATIONS = "cmd statusbar expand-notifications"
 const val CMD_COLLAPSE = "cmd statusbar collapse"
@@ -124,21 +123,22 @@ fun runBootCompleteReceiver(context: Context, testTag: String) {
 }
 
 fun runAppHibernationJob(context: Context, tag: String) {
-    val logcat = Logcat()
-
     // Sometimes first run observes stale package data
     // so run twice to prevent that
     repeat(2) {
-        val mark = logcat.mark(tag)
-        eventually {
-            runShellCommandOrThrow("cmd jobscheduler run -u " +
-                "${Process.myUserHandle().identifier} -f " +
-                "${context.packageManager.permissionControllerPackageName} 2")
-        }
-        logcat.assertLogcatContainsInOrder("*:*", 30_000,
-            mark,
-            "onStartJob",
-            "Done auto-revoke for user")
+        val userId = Process.myUserHandle().identifier
+        val permissionControllerPackageName =
+            context.packageManager.permissionControllerPackageName
+        runShellCommandOrThrow("cmd jobscheduler run -u " +
+                "$userId -f " +
+                "$permissionControllerPackageName 2")
+        eventually({
+            Thread.sleep(JOB_RUN_WAIT_TIME)
+            val jobState = runShellCommandOrThrow("cmd jobscheduler get-job-state -u " +
+                "$userId " +
+                "$permissionControllerPackageName 2")
+            assertTrue("Job expected waiting but is $jobState", jobState.contains("waiting"))
+        }, JOB_RUN_TIMEOUT)
     }
 }
 
@@ -341,13 +341,5 @@ fun waitFindObject(uiAutomation: UiAutomation, selector: BySelector): UiObject2 
         } else {
             throw e
         }
-    }
-}
-
-class Logcat() : LogcatInspector() {
-    override fun executeShellCommand(command: String?): InputStream {
-        val instrumentation: Instrumentation = InstrumentationRegistry.getInstrumentation()
-        return ParcelFileDescriptor.AutoCloseInputStream(
-            instrumentation.uiAutomation.executeShellCommand(command))
     }
 }
