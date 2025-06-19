@@ -25,6 +25,8 @@ import static android.mediav2.common.cts.CodecTestBase.isDefaultCodec;
 
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 
+import static com.google.common.truth.TruthJUnit.assume;
+
 import android.content.Context;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCharacteristics;
@@ -46,25 +48,29 @@ import androidx.test.filters.SmallTest;
 import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.MediaUtils;
 
-import org.junit.Assume;
+import com.google.testing.junit.testparameterinjector.TestParameter;
+import com.google.testing.junit.testparameterinjector.TestParameterInjector;
+
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
 import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
-import java.util.List;
 import java.util.stream.IntStream;
 
-@RunWith(Parameterized.class)
+@RunWith(TestParameterInjector.class)
 public class CodecRequirementsTest {
-    private static final String LOG_TAG = CodecRequirementsTest.class.getSimpleName();
-    private final String mMediaType;
+
+    @TestParameter({
+        MediaFormat.MIMETYPE_VIDEO_AVC, MediaFormat.MIMETYPE_VIDEO_HEVC,
+        MediaFormat.MIMETYPE_VIDEO_AV1, MediaFormat.MIMETYPE_VIDEO_VP9
+    })
+    private String mMediaType;
 
     @Rule
     public final TestName mTestName = new TestName();
@@ -72,19 +78,6 @@ public class CodecRequirementsTest {
     @Before
     public void isPerformanceClassCandidate() {
         Utils.assumeDeviceMeetsPerformanceClassPreconditions();
-    }
-
-    public CodecRequirementsTest(String mediaType) {
-        mMediaType = mediaType;
-    }
-
-    @Parameterized.Parameters(name = "{index}_{0}")
-    public static List<String> input() {
-        final String[] mediaTypes = new String[]{MediaFormat.MIMETYPE_VIDEO_AVC,
-                MediaFormat.MIMETYPE_VIDEO_HEVC, MediaFormat.MIMETYPE_VIDEO_AV1,
-                MediaFormat.MIMETYPE_VIDEO_VP9};
-
-        return new ArrayList<>(Arrays.asList(mediaTypes));
     }
 
     @Nullable
@@ -118,9 +111,9 @@ public class CodecRequirementsTest {
     @Test(timeout = CodecTestBase.PER_TEST_TIMEOUT_SMALL_TEST_MS)
     @CddTest(requirements = {"5.1/H-1-20"})
     public void testHlgEditingSupport() throws CameraAccessException, IOException {
-        Assume.assumeTrue("Test is limited to HEVC and AV1 mediaTypes only",
-                mMediaType.equals(MediaFormat.MIMETYPE_VIDEO_HEVC)
-                        || mMediaType.equals(MediaFormat.MIMETYPE_VIDEO_AV1));
+        assume().withMessage("Test is limited to HEVC and AV1 mediaTypes only")
+                .that(mMediaType)
+                .isAnyOf(MediaFormat.MIMETYPE_VIDEO_HEVC, MediaFormat.MIMETYPE_VIDEO_AV1);
 
         boolean isFeatureSupported = true;
         Size size4k = new Size(3840, 2160);
@@ -228,9 +221,9 @@ public class CodecRequirementsTest {
     @Test(timeout = CodecTestBase.PER_TEST_TIMEOUT_SMALL_TEST_MS)
     @CddTest(requirements = {"5.12/H-1-2"})
     public void testColorFormatSupport() throws IOException {
-        Assume.assumeTrue("Test is limited to HEVC and AV1 mediaTypes only",
-                mMediaType.equals(MediaFormat.MIMETYPE_VIDEO_HEVC)
-                        || mMediaType.equals(MediaFormat.MIMETYPE_VIDEO_AV1));
+        assume().withMessage("Test is limited to HEVC and AV1 mediaTypes only")
+                .that(mMediaType)
+                .isAnyOf(MediaFormat.MIMETYPE_VIDEO_HEVC, MediaFormat.MIMETYPE_VIDEO_AV1);
         boolean isSupported = true;
         ArrayList<String> hwEncoders = selectHardwareCodecs(mMediaType, null, null, true);
         for (String encoder : hwEncoders) {
