@@ -28,7 +28,6 @@ import android.platform.test.annotations.RestrictedBuildTest;
 import com.android.compatibility.common.tradefed.build.CompatibilityBuildHelper;
 import com.android.compatibility.common.tradefed.targetprep.DeviceInfoCollector;
 import com.android.compatibility.common.util.CddTest;
-import com.android.compatibility.common.util.FeatureUtil;
 import com.android.compatibility.common.util.PropertyUtil;
 import com.android.tradefed.build.IBuildInfo;
 import com.android.tradefed.device.CollectingOutputReceiver;
@@ -508,8 +507,7 @@ public class SELinuxHostTest extends BaseHostJUnit4Test {
     public static boolean isFullTrebleDevice(ITestDevice device)
             throws DeviceNotAvailableException {
         return PropertyUtil.getFirstApiLevel(device) > 26 &&
-                PropertyUtil.propertyEquals(device, "ro.treble.enabled", "true") &&
-                !FeatureUtil.isXrHeadset(device);
+                PropertyUtil.propertyEquals(device, "ro.treble.enabled", "true");
     }
 
     private boolean isFullTrebleDevice() throws DeviceNotAvailableException {
