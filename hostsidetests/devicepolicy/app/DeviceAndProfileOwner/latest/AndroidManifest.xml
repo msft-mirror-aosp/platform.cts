@@ -77,18 +77,6 @@
         <activity android:name="com.android.cts.deviceandprofileowner.KeyManagementActivity"
              android:theme="@android:style/Theme.Translucent.NoTitleBar"/>
 
-        <activity android:name="com.android.cts.deviceandprofileowner.LockTaskUtilityActivity"/>
-        <activity android:name="com.android.cts.deviceandprofileowner.LockTaskUtilityActivityIfAllowed"
-             android:launchMode="singleInstance"
-             android:directBootAware="true"
-             android:lockTaskMode="if_whitelisted"
-             android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN"/>
-                <category android:name="android.intent.category.HOME"/>
-                <category android:name="android.intent.category.DEFAULT"/>
-            </intent-filter>
-        </activity>
         <activity android:name="android.app.Activity"
              android:exported="true">
             <intent-filter>
@@ -125,11 +113,6 @@
                 <action android:name="android.app.action.BIND_SECONDARY_LOCKSCREEN_SERVICE" />
             </intent-filter>
         </service>
-
-        <!--  TODO(b/176993670): remove if DpmWrapper goes away -->
-        <receiver android:name="com.android.bedstead.dpmwrapper.TestAppCallbacksReceiver"
-             android:exported="true">
-        </receiver>
     </application>
 
     <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner"

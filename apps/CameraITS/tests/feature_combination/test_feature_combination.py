@@ -91,6 +91,15 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
 
     return feature_combo_for_camera
 
+  def _stabilization_mode_to_proto_enum(self, stabilization):
+    """Convert stabilization mode to the protobuf enum"""
+    if stabilization == camera_properties_utils.STABILIZATION_MODE_ON:
+      return feature_combination_info_pb2.STABILIZATION_ON
+    elif stabilization == camera_properties_utils.STABILIZATION_MODE_PREVIEW:
+      return feature_combination_info_pb2.STABILIZATION_PREVIEW
+    else:
+      return feature_combination_info_pb2.STABILIZATION_OFF
+
   def _add_feature_combo_entry_to_proto(self, feature_combo_for_camera,
                                         output_surfaces,
                                         support_claimed,
@@ -112,8 +121,8 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
           else feature_combination_info_pb2.PROFILE_STANDARD)
       entry.session_configuration.output_configurations.append(config_entry)
     entry.session_configuration.stabilization = (
-        feature_combination_info_pb2.STABILIZATION_PREVIEW if stabilization
-        else feature_combination_info_pb2.STABILIZATION_OFF)
+        self._stabilization_mode_to_proto_enum(stabilization)
+    )
     entry.session_configuration.frame_rate_range.max = fps_range[1]
     entry.session_configuration.frame_rate_range.min = fps_range[0]
 
@@ -147,7 +156,7 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
     print(f'feature_query_proto:{txtpb_file_name}')
 
   def _finish_combination(
-      self, combination_name, is_stabilized, support_claimed,
+      self, combination_name, stabilize_mode, support_claimed,
       passed, recording_obj, gyro_events, test_name, log_path,
       facing, output_surfaces, fps_range, hlg10,
       features_passed, streams_name, fps_range_tuple
@@ -156,9 +165,12 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
     result = {'name': combination_name,
               'output_surfaces': output_surfaces,
               'fps_range': fps_range,
-              'is_stabilized': is_stabilized,
+              'stabilize_mode': stabilize_mode,
               'support_claimed': support_claimed,
               'passed': passed}
+    is_stabilized = (
+        stabilize_mode != camera_properties_utils.STABILIZATION_MODE_OFF
+    )
     if is_stabilized:
       stabilization_result = (
           preview_processing_utils.verify_preview_stabilization(
@@ -202,7 +214,7 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
 
     self._add_feature_combo_entry_to_proto(
         database, result['output_surfaces'], result['support_claimed'],
-        result['passed'], result['fps_range'], result['is_stabilized']
+        result['passed'], result['fps_range'], result['stabilize_mode']
     )
     gc.collect()
 
@@ -428,7 +440,7 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
                 if skip_test:
                   self._add_feature_combo_entry_to_proto(
                       database, output_surfaces, support_claimed,
-                      passed, fps_range, is_stabilized)
+                      passed, fps_range, stabilize_mode)
                   continue
 
               # In case collect_data_with_surfaces throws an exception, treat it
@@ -456,7 +468,7 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
                 passed = False
                 self._add_feature_combo_entry_to_proto(
                     database, output_surfaces, support_claimed,
-                    passed, fps_range, is_stabilized)
+                    passed, fps_range, stabilize_mode)
                 cam.reset_socket_and_camera()
                 continue
 
@@ -534,14 +546,14 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
 
               if not self.parallel_execution:
                 self._finish_combination(
-                    combination_name, is_stabilized,
+                    combination_name, stabilize_mode,
                     support_claimed, passed, recording_obj, gyro_events, _NAME,
                     log_path, facing, output_surfaces, fps_range, hlg10,
                     features_passed, streams_name, fps_range_tuple
                 )
               else:
                 future = executor.submit(
-                    self._finish_combination, combination_name, is_stabilized,
+                    self._finish_combination, combination_name, stabilize_mode,
                     support_claimed, passed, recording_obj, gyro_events, _NAME,
                     log_path, facing, output_surfaces, fps_range, hlg10,
                     features_passed, streams_name, fps_range_tuple

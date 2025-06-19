@@ -403,24 +403,6 @@ public final class MixedDeviceOwnerTest extends DeviceAndProfileOwnerTest {
         super.testPermissionGrantOfDisallowedPermissionWhileOtherPermIsGranted();
     }
 
-    @Ignore("b/330134976")
-    @LargeTest
-    @Test
-    public void testLockTaskCantBeInterrupted() throws Exception {
-        try {
-            // Just start kiosk mode
-            executeDeviceTestMethod(
-                    ".LockTaskHostDrivenTest", "testStartLockTask_noAsserts");
-
-            // Check that kiosk mode is working and can't be interrupted
-            executeDeviceTestMethod(".LockTaskHostDrivenTest",
-                    "testLockTaskIsActiveAndCantBeInterrupted");
-        } finally {
-            executeDeviceTestMethod(".LockTaskHostDrivenTest", "testCleanupLockTask_noAsserts");
-        }
-    }
-
-
     @Override
     protected void installDelegateApp() throws Exception {
         // TODO(b/176993670): must call installDeviceOwnerApp() - even though it's not one - so

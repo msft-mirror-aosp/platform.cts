@@ -21,6 +21,8 @@ import static android.hardware.camera2.cts.CameraTestUtils.MaxStreamSizes.JPEG;
 import static android.hardware.camera2.cts.CameraTestUtils.MaxStreamSizes.JPEG_R;
 import static android.hardware.camera2.cts.CameraTestUtils.MaxStreamSizes.MAXIMUM_16_9;
 import static android.hardware.camera2.cts.CameraTestUtils.MaxStreamSizes.PRIV;
+import static android.hardware.camera2.cts.CameraTestUtils.MaxStreamSizes.S1080P;
+import static android.hardware.camera2.cts.CameraTestUtils.MaxStreamSizes.S720P;
 import static android.hardware.camera2.cts.CameraTestUtils.MaxStreamSizes.YUV;
 import static android.hardware.camera2.cts.CameraTestUtils.SimpleCaptureCallback;
 import static android.hardware.camera2.cts.CameraTestUtils.SimpleImageReaderListener;
@@ -550,16 +552,16 @@ public final class FeatureCombinationTest extends Camera2AndroidTestCase {
                 new MaxStreamSizes(
                         mAllStaticInfo.get(rearId), rearId, mContext, /*matchSize*/ true);
         Size maxSize_16_9 = maxStreamSizes.getOutputSizeForFormat(JPEG, MAXIMUM_16_9);
+        Size size1080P = maxStreamSizes.getOutputSizeForFormat(PRIV, S1080P);
+        Size size720P = maxStreamSizes.getOutputSizeForFormat(PRIV, S720P);
         final int[][] hlg10Combinations = {
             // HLG10 preview + JPEG Snapshot
             {
-                PRIV, CameraTestUtils.SIZE_BOUND_1080P.getWidth(),
-                        CameraTestUtils.SIZE_BOUND_1080P.getHeight(),
+                PRIV, size1080P.getWidth(), size1080P.getHeight(),
                 JPEG, maxSize_16_9.getWidth(), maxSize_16_9.getHeight(),
             },
             {
-                PRIV, CameraTestUtils.SIZE_BOUND_720P.getWidth(),
-                        CameraTestUtils.SIZE_BOUND_720P.getHeight(),
+                PRIV, size720P.getWidth(), size720P.getHeight(),
                 JPEG, maxSize_16_9.getWidth(), maxSize_16_9.getHeight(),
             },
         };

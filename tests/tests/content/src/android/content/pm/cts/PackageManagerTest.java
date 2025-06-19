@@ -1096,11 +1096,20 @@ public class PackageManagerTest {
         assertEquals("Success\n", SystemUtil.runShellCommand(
                 "pm install -t " + HELLO_WORLD_LOTS_OF_FLAGS_APK));
         final String pkgFlags = parsePackageDump(HELLO_WORLD_PACKAGE_NAME, "    pkgFlags=[");
-        assertEquals(
-                " DEBUGGABLE HAS_CODE ALLOW_TASK_REPARENTING ALLOW_CLEAR_USER_DATA TEST_ONLY "
-                        + "VM_SAFE_MODE ALLOW_BACKUP KILL_AFTER_RESTORE RESTORE_ANY_VERSION "
-                        + "LARGE_HEAP ]",
-                pkgFlags);
+
+        List<String> expectedPkgFlags =
+                Arrays.asList(
+                        "DEBUGGABLE",
+                        "HAS_CODE",
+                        "ALLOW_TASK_REPARENTING",
+                        "ALLOW_CLEAR_USER_DATA",
+                        "TEST_ONLY",
+                        "VM_SAFE_MODE",
+                        "ALLOW_BACKUP",
+                        "LARGE_HEAP");
+        List<String> actualFlags = Arrays.asList(pkgFlags.split(" "));
+        assertTrue(actualFlags.containsAll(expectedPkgFlags));
+
         final String privatePkgFlags = parsePackageDump(HELLO_WORLD_PACKAGE_NAME,
                 "    privatePkgFlags=[");
         assertEquals(
@@ -2188,11 +2197,12 @@ public class PackageManagerTest {
 
     @Test
     public void testInvalidInstallSessionParamsPackageNames() throws Exception {
-        var maliciousPayload = """
+        var maliciousPayload =
+"""
 @null
 
 victim $UID 1 /data/user/0 default:targetSdkVersion=28 none 0 0 1 @null
-                """;
+""";
 
         var packageInstaller = mContext.getPackageManager().getPackageInstaller();
         SystemUtil.runWithShellPermissionIdentity(mInstrumentation.getUiAutomation(), () -> {

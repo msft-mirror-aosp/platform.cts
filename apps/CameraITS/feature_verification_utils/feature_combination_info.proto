@@ -26,6 +26,7 @@ enum Stabilization {
   STABILIZATION_ANY = 0;
   STABILIZATION_OFF = 1;
   STABILIZATION_PREVIEW = 2;
+  STABILIZATION_ON = 3;
 }
 
 // Must match values in ImageFormat.java and PixelFormat.java

@@ -356,6 +356,15 @@ public class DropBoxTests {
         assertNotNull(mDropBoxManager.getNextEntry(GET_ENTRY_TAG, currTime - 1));
     }
 
+    @Test
+    public void testGetNextEntryWithNullTag() throws Exception {
+        final long currTime = System.currentTimeMillis();
+        mDropBoxManager.addText(GET_ENTRY_TAG, "0");
+
+        assertTrue(mTestPermissionLatch.await(BROADCAST_RATE_LIMIT * 3 / 2, TimeUnit.MILLISECONDS));
+        assertNotNull(mDropBoxManager.getNextEntry(null, currTime - 1));
+    }
+
     private void setTagLowPriority(String tag) throws IOException {
         final String putCmd = MessageFormat.format(ADD_LOW_PRIORITY_SHELL_COMMAND, tag);
         SystemUtil.runShellCommand(putCmd);

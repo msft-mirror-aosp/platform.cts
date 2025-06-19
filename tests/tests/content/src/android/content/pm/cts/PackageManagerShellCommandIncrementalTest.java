@@ -243,6 +243,24 @@ public class PackageManagerShellCommandIncrementalTest {
     @Test
     @FlakyTest
     public void testSpaceAllocatedForPackage() throws Exception {
+        // This test verifies that IncFS driver allocates enough disk space for the APKs
+        // that are about to be streamed in before any of the pages arrive, so that later when
+        // the installation is completed, no page writes can error out with "out of space".
+        //
+        // The way it's doing it is inherently flaky: we capture the free space before the
+        // installation starts, and then one more time right before writing the first page in, but
+        // when driver's preallocation is already done. If no other process wrote anything to
+        // the same partition the difference gives us exactly the preallocation size, and that's
+        // what the test checks for.
+        //
+        // Unfortunately, we don't control the whole device, and this means the test may fail
+        // just because of other process disk activity, when those frees up enough space and we
+        // don't detect IncFS's preallocation.
+        //
+        // If this wasn't a CTS case we could find the proper backing file and check its size
+        // directly, but CTS doesn't have visibility into that - IncrementalService adds a random
+        // identifier to the name on top of PackageManager's one.
+
         final String apk = createApkPath(TEST_APK);
         final String idsig = createApkPath(TEST_APK_IDSIG);
         final long appFileSize = new File(apk).length();
@@ -250,8 +268,9 @@ public class PackageManagerShellCommandIncrementalTest {
 
         getUiAutomation().adoptShellPermissionIdentity();
 
-        final long blockSize = Os.statvfs("/data/incremental").f_bsize;
-        final long preFreeBlocks = Os.statvfs("/data/incremental").f_bfree;
+        final var statvfs = Os.statvfs("/data/incremental");
+        final long blockSize = statvfs.f_bsize;
+        final long preFreeBlocks = statvfs.f_bfree;
 
         final AtomicLong freeSpaceDifference = new AtomicLong(-1L);
 

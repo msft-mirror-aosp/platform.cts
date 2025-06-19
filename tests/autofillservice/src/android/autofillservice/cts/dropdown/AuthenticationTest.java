@@ -19,6 +19,7 @@ package android.autofillservice.cts.dropdown;
 import static android.app.Activity.RESULT_CANCELED;
 import static android.app.Activity.RESULT_OK;
 import static android.autofillservice.cts.activities.LoginActivity.getWelcomeMessage;
+import static android.autofillservice.cts.testcore.Helper.AutofillCriticalInternal;
 import static android.autofillservice.cts.testcore.Helper.ID_PASSWORD;
 import static android.autofillservice.cts.testcore.Helper.ID_USERNAME;
 import static android.autofillservice.cts.testcore.Helper.UNUSED_AUTOFILL_VALUE;
@@ -59,6 +60,7 @@ import java.util.regex.Pattern;
 public class AuthenticationTest extends AbstractLoginActivityTestCase {
 
     @Presubmit
+    @AutofillCriticalInternal
     @Test
     public void testDatasetAuthTwoFields() throws Exception {
         datasetAuthTwoFields(false);
@@ -668,6 +670,7 @@ public class AuthenticationTest extends AbstractLoginActivityTestCase {
     }
 
     @Presubmit
+    @AutofillCriticalInternal
     @Test
     public void testDatasetAuthClientStateSetOnIntentOnly() throws Exception {
         fillDatasetAuthWithClientState(ClientStateLocation.INTENT_ONLY);
@@ -748,6 +751,7 @@ public class AuthenticationTest extends AbstractLoginActivityTestCase {
             bugId = 292002615,
             detail = "Meet July-31-23 trunk stable no flaky SLO. Deflake asap")
     @Presubmit
+    @AutofillCriticalInternal
     @Test
     public void testFillResponseAuthBothFields() throws Exception {
         fillResponseAuthBothFields(false);
@@ -1057,6 +1061,7 @@ public class AuthenticationTest extends AbstractLoginActivityTestCase {
     }
 
     @Presubmit
+    @AutofillCriticalInternal
     @Test
     public void testFillResponseAuthClientStateSetOnIntentOnly() throws Exception {
         fillResponseAuthWithClientState(ClientStateLocation.INTENT_ONLY);
@@ -1219,6 +1224,7 @@ public class AuthenticationTest extends AbstractLoginActivityTestCase {
         assertThat(extraValue).isEqualTo("4815162342");
     }
 
+    @AutofillCriticalInternal
     @Test
     public void testDatasetAuthThenModifyAndSaveOnViewsInvisible()
             throws Exception {

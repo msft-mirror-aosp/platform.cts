@@ -20,53 +20,39 @@ import static com.google.common.truth.Truth.assertThat;
 
 import android.mediapc.cts.common.Requirements.HDRDisplayRequirement;
 
-import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
 import org.junit.runner.RunWith;
-import org.mockito.Mock;
-import org.mockito.Mockito;
-import org.mockito.MockitoAnnotations;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.junit.runners.JUnit4;
 
-@RunWith(MockitoJUnitRunner.class)
+@RunWith(JUnit4.class)
 public class PerformanceClassEvaluatorTest {
 
-    @Mock TestName mMockTestName;
-
-    @Before
-    public void setUp() throws Exception {
-        MockitoAnnotations.initMocks(this);
-    }
+    @Rule public final TestName testName = new TestName();
 
     @Test
     public void constructorTest_replacesNullWithEmpty() {
-        Mockito.when(mMockTestName.getMethodName()).thenReturn(null);
-
-        PerformanceClassEvaluator pce = new PerformanceClassEvaluator(mMockTestName);
+        PerformanceClassEvaluator pce = new PerformanceClassEvaluator(new FakeTestName(null));
         assertThat(pce.getTestName()).isEqualTo("");
     }
 
     @Test
     public void constructorTest_replacesCurlyBraces() {
-        Mockito.when(mMockTestName.getMethodName()).thenReturn("{}");
-
-        PerformanceClassEvaluator pce = new PerformanceClassEvaluator(mMockTestName);
+        PerformanceClassEvaluator pce = new PerformanceClassEvaluator(new FakeTestName("{}"));
         assertThat(pce.getTestName()).isEqualTo("()");
     }
 
     @Test
     public void isReadyToSubmitItsResults_hasNoRequirements_returnsFalse() {
-        Mockito.when(mMockTestName.getMethodName()).thenReturn("");
-        var pce = new PerformanceClassEvaluator(mMockTestName);
+        var pce = new PerformanceClassEvaluator(testName);
 
         assertThat(pce.isReadyToSubmitItsResults()).isEqualTo(false);
     }
 
     @Test
     public void isReadyToSubmitItsResults_notAllReqMeasurementsSet_returnsFalse() {
-        Mockito.when(mMockTestName.getMethodName()).thenReturn("");
-        var pce = new PerformanceClassEvaluator(mMockTestName);
+        var pce = new PerformanceClassEvaluator(testName);
 
         // DRDisplayRequirement has two required measurements. Only one is set here.
         HDRDisplayRequirement req = Requirements.addR7_1_1_3__H_3_1().to(pce);
@@ -77,8 +63,7 @@ public class PerformanceClassEvaluatorTest {
 
     @Test
     public void isReadyToSubmitItsResults_allReqMeasurementsSet_returnsTrue() {
-        Mockito.when(mMockTestName.getMethodName()).thenReturn("");
-        var pce = new PerformanceClassEvaluator(mMockTestName);
+        var pce = new PerformanceClassEvaluator(testName);
 
         // DRDisplayRequirement has two required measurements. Both are set here.
         HDRDisplayRequirement req = Requirements.addR7_1_1_3__H_3_1().to(pce);
@@ -86,5 +71,18 @@ public class PerformanceClassEvaluatorTest {
         req.setDisplayLuminanceNits(1000);
 
         assertThat(pce.isReadyToSubmitItsResults()).isEqualTo(true);
+    }
+
+    private static final class FakeTestName extends TestName {
+        private final String mMethodName;
+
+        FakeTestName(String methodName) {
+            mMethodName = methodName;
+        }
+
+        @Override
+        public String getMethodName() {
+            return mMethodName;
+        }
     }
 }

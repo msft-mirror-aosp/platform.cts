@@ -29,7 +29,6 @@ import static android.telecom.cts.apps.TelecomTestApp.ManagedConnectionServiceAp
 
 import static junit.framework.Assert.assertNotNull;
 
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.telecom.CallAttributes;
 import android.telecom.PhoneAccountHandle;
 import android.telecom.VideoProfile;
@@ -38,12 +37,9 @@ import android.telecom.cts.apps.CallSequencingValidator;
 import android.telecom.cts.apps.CallStateTransitionOperation;
 import android.telecom.cts.apps.TelecomTestApp;
 import android.telecom.cts.cuj.BaseAppVerifier;
-import android.util.Pair;
 
-import com.android.server.telecom.flags.Flags;
-
-import org.junit.runner.RunWith;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import java.util.Arrays;
@@ -79,7 +75,6 @@ public class CallSequencingSingleCallingTests extends BaseAppVerifier {
     }
 
     @Test
-    @RequiresFlagsEnabled({Flags.FLAG_ENABLE_CALL_SEQUENCING})
     public void testSingleCallOperations() throws Exception {
         if (!mShouldTestTelecom) {
             return;
