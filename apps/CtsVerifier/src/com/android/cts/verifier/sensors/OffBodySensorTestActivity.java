@@ -16,9 +16,11 @@
 package com.android.cts.verifier.sensors;
 
 import android.app.AlarmManager;
+import android.app.AlertDialog;
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.hardware.Sensor;
@@ -27,21 +29,23 @@ import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.hardware.cts.helpers.SensorNotSupportedException;
 import android.hardware.cts.helpers.SuspendStateMonitor;
+import android.os.Bundle;
 import android.os.PowerManager;
 import android.os.SystemClock;
-import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import android.util.Log;
+import android.widget.Toast;
+
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 import com.android.cts.verifier.R;
-import com.android.cts.verifier.sensors.helpers.SensorTestScreenManipulator;
+import com.android.cts.verifier.features.FeatureUtil;
 import com.android.cts.verifier.sensors.base.SensorCtsVerifierTestActivity;
+import com.android.cts.verifier.sensors.helpers.SensorTestScreenManipulator;
+
+import junit.framework.Assert;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
-import junit.framework.Assert;
-import static junit.framework.Assert.fail;
-
 
 /**
  * Manual test for testing the low-latency offbody detect sensor. This test consists of 3
@@ -280,6 +284,36 @@ public class OffBodySensorTestActivity
         super(OffBodySensorTestActivity.class);
     }
 
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        if (FeatureUtil.isXrHeadset(this)) {
+            showPrecursorDialog();
+        }
+        super.onCreate(savedInstanceState);
+    }
+
+    private void showPrecursorDialog() {
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.snsr_offbody_dialog_title)
+                .setMessage(R.string.snsr_offbody_dialog_message)
+                .setPositiveButton(R.string.snsr_offbody_dialog_positive,
+                        new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                            }
+                        })
+                .setNegativeButton(R.string.snsr_offbody_dialog_negative,
+                        new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                Toast.makeText(OffBodySensorTestActivity.this,
+                                        "Test Pass!", Toast.LENGTH_SHORT).show();
+                                setTestResultAndFinish(true);
+                            }
+                        })
+                .setCancelable(false)
+                .show();
+    }
 
     @Override
     protected void activitySetUp() throws InterruptedException {
