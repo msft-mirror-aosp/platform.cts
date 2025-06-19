@@ -90,13 +90,13 @@ public class ComponentStateChangedReportedStatsTestsHelper {
                 FAKE_NO_LAUNCHER_ACTIVITY_NAME);
         SystemUtil.runWithShellPermissionIdentity(() ->
                 mPackageManager.setComponentEnabledSetting(componentName,
-                        COMPONENT_ENABLED_STATE_ENABLED, DONT_KILL_APP));
+                        COMPONENT_ENABLED_STATE_ENABLED, 0 /* flags */));
         assertEquals(COMPONENT_ENABLED_STATE_ENABLED,
                 mPackageManager.getComponentEnabledSetting(componentName));
 
         SystemUtil.runWithShellPermissionIdentity(() ->
                 mPackageManager.setComponentEnabledSetting(componentName,
-                        COMPONENT_ENABLED_STATE_DISABLED, DONT_KILL_APP));
+                        COMPONENT_ENABLED_STATE_DISABLED, 0 /* flags */));
         assertEquals(COMPONENT_ENABLED_STATE_DISABLED,
                 mPackageManager.getComponentEnabledSetting(componentName));
     }
@@ -125,7 +125,7 @@ public class ComponentStateChangedReportedStatsTestsHelper {
 
         SystemUtil.runWithShellPermissionIdentity(() ->
                 mPackageManager.setComponentEnabledSetting(firstComponentName,
-                        COMPONENT_ENABLED_STATE_DISABLED, DONT_KILL_APP));
+                        COMPONENT_ENABLED_STATE_DISABLED, 0 /* flags */));
         assertEquals(COMPONENT_ENABLED_STATE_DISABLED,
                 mPackageManager.getComponentEnabledSetting(firstComponentName));
 
@@ -134,7 +134,7 @@ public class ComponentStateChangedReportedStatsTestsHelper {
 
         SystemUtil.runWithShellPermissionIdentity(() ->
                 mPackageManager.setComponentEnabledSetting(secondComponentName,
-                        COMPONENT_ENABLED_STATE_ENABLED, DONT_KILL_APP));
+                        COMPONENT_ENABLED_STATE_ENABLED, 0 /* flags */));
         assertEquals(COMPONENT_ENABLED_STATE_ENABLED,
                 mPackageManager.getComponentEnabledSetting(secondComponentName));
     }
