@@ -29,6 +29,7 @@ import image_processing_utils
 
 
 COLORSPACE_HDR = 'bt2020'
+CONSTANT_RATE_FACTOR = 23  # for video compression
 HR_TO_SEC = 3600
 INDEX_FIRST_SUBGROUP = 1
 MIN_TO_SEC = 60
@@ -445,3 +446,21 @@ def get_video_colorspace(log_path, video_file_name):
     return colorspace
   else:
     raise AssertionError('ffprobe failed to provide color space')
+
+
+def compress_video(input_filename, output_filename, crf=CONSTANT_RATE_FACTOR):
+  """Compresses the given video using ffmpeg."""
+
+  ffmpeg_cmd = [
+      'ffmpeg',
+      '-i', input_filename,   # Input file
+      '-c:v', 'libx264',      # Use H.264 codec
+      '-crf', str(crf),       # Set Constant Rate Factor (adjust for quality)
+      '-preset', 'medium',    # Encoding speed/compression balance
+      '-c:a', 'copy',         # Copy audio stream without re-encoding
+      output_filename         # Output file
+  ]
+
+  with open(os.devnull, 'w') as devnull:
+    subprocess.run(ffmpeg_cmd, stdout=devnull,
+                   stderr=subprocess.STDOUT, check=False)
