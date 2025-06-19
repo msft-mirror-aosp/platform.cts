@@ -29,7 +29,7 @@
     -->
     <option name="config-descriptor:metadata" key="parameter" value="not_secondary_user" />
     <target_preparer class="com.android.tradefed.targetprep.SwitchUserTargetPreparer">
-        <option name="user-type" value="system" />
+        <option name="user-type" value="full" />
     </target_preparer>
     <target_preparer class="com.android.tradefed.targetprep.DeviceSetup">
         <!-- Disable install verifier so it doesn't block test app installs as unsafe. -->

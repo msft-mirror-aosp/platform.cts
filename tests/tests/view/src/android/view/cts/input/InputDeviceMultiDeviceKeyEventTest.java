@@ -18,6 +18,14 @@ package android.view.cts.input;
 
 import static com.android.cts.input.EvdevInputEventCodes.KEY_1;
 import static com.android.cts.input.EvdevInputEventCodes.KEY_2;
+import static com.android.cts.input.inputeventmatchers.InputEventMatchersKt.withDeviceId;
+import static com.android.cts.input.inputeventmatchers.InputEventMatchersKt.withKeyAction;
+import static com.android.cts.input.inputeventmatchers.InputEventMatchersKt.withKeyCode;
+import static com.android.cts.input.inputeventmatchers.InputEventMatchersKt.withKeySource;
+import static com.android.cts.input.inputeventmatchers.InputEventMatchersKt.withRepeatCount;
+
+import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
@@ -31,7 +39,6 @@ import android.platform.test.annotations.AppModeSdkSandbox;
 import android.view.InputDevice;
 import android.view.KeyEvent;
 
-import androidx.annotation.NonNull;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.MediumTest;
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -148,47 +155,23 @@ public class InputDeviceMultiDeviceKeyEventTest {
 
     /**
      * Asserts that the application received a {@link android.view.KeyEvent} with the given
-     * metadata.
-     *
+     * properties.
+     * <p>
      * If other KeyEvents are received by the application prior to the expected KeyEvent, or no
      * KeyEvents are received within a reasonable amount of time, then this will throw an
      * {@link AssertionError}.
-     *
-     * Only action, source, keyCode and metaState are being compared.
      */
-    private void assertReceivedKeyEvent(@NonNull KeyEvent expectedKeyEvent) {
-        assertNotEquals(expectedKeyEvent.getKeyCode(), KeyEvent.KEYCODE_UNKNOWN);
+    private void assertReceivedKeyEvent(int deviceId, int action, String label, int repeatCount) {
+        int keyCode = KeyEvent.keyCodeFromString(LABEL_PREFIX + label);
+        assertNotEquals(keyCode, KeyEvent.KEYCODE_UNKNOWN);
 
         KeyEvent receivedKeyEvent = getKeyEvent(RETRY_COUNT);
-        String log = "Expected " + expectedKeyEvent + " Received " + receivedKeyEvent;
-        assertNotNull(log, receivedKeyEvent);
-        assertEquals("DeviceId: " + log, expectedKeyEvent.getDeviceId(),
-                receivedKeyEvent.getDeviceId());
-        assertEquals("Action: " + log, expectedKeyEvent.getAction(),
-                receivedKeyEvent.getAction());
-        assertEquals("Source: " + log, expectedKeyEvent.getSource(),
-                receivedKeyEvent.getSource());
-        assertEquals("KeyCode: " + log, expectedKeyEvent.getKeyCode(),
-                receivedKeyEvent.getKeyCode());
-        assertEquals("RepeatCount: " + log, expectedKeyEvent.getRepeatCount(),
-                receivedKeyEvent.getRepeatCount());
-    }
-
-    /**
-     * Generate a key event from the key label and action.
-     * @param action KeyEvent.ACTION_DOWN or KeyEvent.ACTION_UP
-     * @param label Key label from key layout mapping definition
-     * @return KeyEvent expected to receive
-     */
-    private KeyEvent generateKeyEvent(int deviceId, int action, String label, int repeat) {
-        int source = InputDevice.SOURCE_KEYBOARD;
-        int keyCode = KeyEvent.keyCodeFromString(LABEL_PREFIX + label);
-        // We will only check select fields of the KeyEvent. Times are not checked.
-        KeyEvent event = new KeyEvent(/* downTime */ 0, /* eventTime */ 0, action, keyCode,
-                repeat, /* metaState */ 0, mInputManagerDeviceIds[deviceId], /* scanCode */ 0,
-                /* flags */ 0, source);
-
-        return event;
+        assertThat(receivedKeyEvent, allOf(
+            withKeySource(InputDevice.SOURCE_KEYBOARD),
+            withDeviceId(mInputManagerDeviceIds[deviceId]),
+            withKeyAction(action),
+            withKeyCode(keyCode),
+            withRepeatCount(repeatCount)));
     }
 
     /**
@@ -209,16 +192,12 @@ public class InputDeviceMultiDeviceKeyEventTest {
 
     private void assertKeyRepeat(int deviceId, String label, int repeat, int count) {
         for (int i = 0; i < count; i++) {
-            KeyEvent expectedDownEvent = generateKeyEvent(deviceId,
-                    KeyEvent.ACTION_DOWN, label, repeat + i);
-            assertReceivedKeyEvent(expectedDownEvent);
+            assertReceivedKeyEvent(deviceId, KeyEvent.ACTION_DOWN, label, repeat + i);
         }
     }
 
     private void assertKeyUp(int deviceId, String label) {
-        KeyEvent expectedUpEvent = generateKeyEvent(deviceId,
-                KeyEvent.ACTION_UP, label, /* repeat */ 0);
-        assertReceivedKeyEvent(expectedUpEvent);
+        assertReceivedKeyEvent(deviceId, KeyEvent.ACTION_UP, label, /* repeat */ 0);
     }
 
     @Test

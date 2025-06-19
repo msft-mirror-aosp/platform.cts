@@ -18,6 +18,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     package="com.android.cts.appsearch">
 
+    <uses-permission android:name="android.permission.EXECUTE_APP_FUNCTIONS" />
+
     <!--The Harrier library uses the READ_EXTERNAL_STORAGE permission. We have a test that
         assumes this test app does not have this permission. So removes it. -->
     <uses-permission
