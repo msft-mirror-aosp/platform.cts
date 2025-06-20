@@ -32,6 +32,7 @@ import android.hardware.Camera.ShutterCallback;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraManager;
+import android.hardware.camera2.CameraMetadata;
 import android.os.Bundle;
 import android.os.PowerManager;
 import android.os.PowerManager.WakeLock;
@@ -50,6 +51,7 @@ import android.widget.Toast;
 
 import com.android.cts.verifier.R;
 import com.android.cts.verifier.TestResult;
+import com.android.cts.verifier.features.FeatureUtil;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -113,7 +115,7 @@ public class PhotoCaptureActivity extends Activity
 
         int cameraToBeTested = 0;
         for (int cameraId = 0; cameraId < Camera.getNumberOfCameras(); ++cameraId) {
-            if (!isExternalCamera(cameraId)) {
+            if (!isExternalCamera(cameraId) && !isXRVirtualCamera(cameraId)) {
                 cameraToBeTested++;
             }
         }
@@ -149,7 +151,7 @@ public class PhotoCaptureActivity extends Activity
                 mPreviewSizeCamerasToProcess.clear();
                 mPreviewSizes =  new Size[Camera.getNumberOfCameras()];
                 for (int cameraId = 0; cameraId < Camera.getNumberOfCameras(); ++cameraId) {
-                    if (!isExternalCamera(cameraId)) {
+                    if (!isExternalCamera(cameraId) && !isXRVirtualCamera(cameraId)) {
                         mPreviewSizeCamerasToProcess.add(cameraId);
                     }
                 }
@@ -221,7 +223,7 @@ public class PhotoCaptureActivity extends Activity
             mSupportedResolutions = new ArrayList<SelectableResolution>();
             int numCameras = Camera.getNumberOfCameras();
             for (int cameraId = 0; cameraId < numCameras; ++cameraId) {
-                if (isExternalCamera(cameraId)) {
+                if (isExternalCamera(cameraId) || isXRVirtualCamera(cameraId)) {
                     continue;
                 }
 
@@ -639,6 +641,29 @@ public class PhotoCaptureActivity extends Activity
             if (characteristics.get(CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL) ==
                             CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL_EXTERNAL) {
                 // External camera doesn't support FOV informations
+                return true;
+            }
+        } catch (CameraAccessException e) {
+            Toast.makeText(this, "Could not access camera " + cameraId +
+                    ": " + e.getMessage(), Toast.LENGTH_LONG).show();
+        }
+        return false;
+    }
+
+    private boolean isXRVirtualCamera(int cameraId) {
+        if (!FeatureUtil.isXrHeadset(this)) {
+            return false;
+        }
+
+        CameraManager manager = this.getSystemService(CameraManager.class);
+        try {
+            String cameraIdStr = manager.getCameraIdList()[cameraId];
+            CameraCharacteristics characteristics = manager.getCameraCharacteristics(cameraIdStr);
+
+            Integer facing = characteristics.get(CameraCharacteristics.LENS_FACING);
+            if (facing != null && facing == CameraMetadata.LENS_FACING_FRONT && cameraId >= 1) {
+                // Virtual camera doesn't support FOV informations
+                // TODO: (b/418840326)Need to check if the camera is a virtual camera more accurately.
                 return true;
             }
         } catch (CameraAccessException e) {
