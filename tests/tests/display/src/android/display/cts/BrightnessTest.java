@@ -467,7 +467,9 @@ public class BrightnessTest extends TestBase {
         try (var brtClosable = new BrightnessClosable()) {
             mDisplayManager.setBrightness(
                     Display.DEFAULT_DISPLAY, brightness, DisplayManager.BRIGHTNESS_UNIT_PERCENTAGE);
-            float actualBrightness = getDisplayBrightness("percentage");
+            float actualBrightness =
+                    mDisplayManager.getBrightness(
+                            Display.DEFAULT_DISPLAY, DisplayManager.BRIGHTNESS_UNIT_PERCENTAGE);
             assertEquals(actualBrightness, brightness, /* delta= */ 0.05);
         }
     }
@@ -562,15 +564,6 @@ public class BrightnessTest extends TestBase {
 
     private void setSystemSetting(String setting, int value) {
         runShellCommand("settings put system " + setting + " " + value);
-    }
-
-    private float getDisplayBrightness(String brightnessUnit) {
-        return Float.parseFloat(
-                runShellCommand(
-                        "cmd display get-brightness "
-                                + Display.DEFAULT_DISPLAY
-                                + " "
-                                + brightnessUnit));
     }
 
     private List<BrightnessChangeEvent> setDisplayBrightness(float value) {
