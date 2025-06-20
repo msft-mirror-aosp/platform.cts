@@ -190,8 +190,8 @@ public class InputDeviceMultiDeviceKeyEventTest {
         mUinputKeyboards[deviceId].injectKeyUp(evKeyCode);
     }
 
-    private void assertKeyRepeat(int deviceId, String label, int repeat, int count) {
-        for (int i = 0; i < count; i++) {
+    private void assertKeyRepeat(int deviceId, String label, int repeat) {
+        for (int i = 0; i < 10; i++) {
             assertReceivedKeyEvent(deviceId, KeyEvent.ACTION_DOWN, label, repeat + i);
         }
     }
@@ -206,11 +206,11 @@ public class InputDeviceMultiDeviceKeyEventTest {
         // Press the key from device 0
         pressKeyDown(/* deviceId */ 0, KEY_1);
         // KeyDown repeat driven by device 0
-        assertKeyRepeat(/* deviceId */ 0, keyOne, /* repeat */ 0, /* count */ 10);
+        assertKeyRepeat(/* deviceId */ 0, keyOne, /* repeat */ 0);
         // Press the key from device 1
         pressKeyDown(/* deviceId */ 1, KEY_1);
         // KeyDown repeat driven by device 1
-        assertKeyRepeat(/* deviceId */ 1, keyOne, /* repeat */ 0, /* count */ 10);
+        assertKeyRepeat(/* deviceId */ 1, keyOne, /* repeat */ 0);
     }
 
     @Test
@@ -220,12 +220,12 @@ public class InputDeviceMultiDeviceKeyEventTest {
         // Press the key 1 from device 0
         pressKeyDown(/* deviceId */ 0, KEY_1);
         // KeyDown repeat driven by device 0
-        assertKeyRepeat(/* deviceId */ 0, keyOne, /* repeat */ 0, /* count */ 10);
+        assertKeyRepeat(/* deviceId */ 0, keyOne, /* repeat */ 0);
 
         // Press the key 2 from device 1
         pressKeyDown(/* deviceId */ 1, KEY_2);
         // KeyDown repeat driven by device 1
-        assertKeyRepeat(/* deviceId */ 1, keyTwo, /* repeat */ 0, /* count */ 10);
+        assertKeyRepeat(/* deviceId */ 1, keyTwo, /* repeat */ 0);
 
         // Release the key 2 from device 1
         // Generate expected key up event and verify
@@ -247,12 +247,12 @@ public class InputDeviceMultiDeviceKeyEventTest {
         // Press the key from device 0
         pressKeyDown(/* deviceId */ 0, KEY_1);
         // KeyDown repeat driven by device 0
-        assertKeyRepeat(/* deviceId */ 0, keyOne, /* repeat */ 0, /* count */ 10);
+        assertKeyRepeat(/* deviceId */ 0, keyOne, /* repeat */ 0);
 
         // Press the key from device 1
         pressKeyDown(/* deviceId */ 1, KEY_1);
         // KeyDown repeat driven by device 1
-        assertKeyRepeat(/* deviceId */ 1, keyOne, /* repeat */ 0, /* count */ 10);
+        assertKeyRepeat(/* deviceId */ 1, keyOne, /* repeat */ 0);
 
         // Release the key from device 0
         // Generate expected key up event and verify
@@ -260,7 +260,7 @@ public class InputDeviceMultiDeviceKeyEventTest {
         assertKeyUp(/* deviceId */ 0, keyOne);
 
         // KeyDown kept repeating by device 1
-        assertKeyRepeat(/* deviceId */ 1, keyOne, /* repeat */ 10, /* count */ 10);
+        assertKeyRepeat(/* deviceId */ 1, keyOne, /* repeat */ 10);
 
         // Release the key from device 1
         // Generate expected key up event and verify
@@ -274,12 +274,12 @@ public class InputDeviceMultiDeviceKeyEventTest {
         // Press the key from device 0
         pressKeyDown(/* deviceId */ 0, KEY_1);
         // KeyDown repeat driven by device 0
-        assertKeyRepeat(/* deviceId */ 0, keyOne, /* repeat */ 0, /* count */ 10);
+        assertKeyRepeat(/* deviceId */ 0, keyOne, /* repeat */ 0);
 
         // Press the key from device 1
         pressKeyDown(/* deviceId */ 1, KEY_1);
         // KeyDown repeat driven by device 1
-        assertKeyRepeat(/* deviceId */ 1, keyOne, /* repeat */ 0, /* count */ 10);
+        assertKeyRepeat(/* deviceId */ 1, keyOne, /* repeat */ 0);
 
         // Release the key from device 1
         // Generate expected key up event and verify
