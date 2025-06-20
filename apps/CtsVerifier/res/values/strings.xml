@@ -1608,6 +1608,10 @@
     <string name="snsr_offbody_detect_test_countdown">Countdown: %1$d.</string>
     <string name="snsr_onbody_detect_test_instr">Click Next button, then immediately attach the watch on your wrist.</string>
     <string name="snsr_ap_wake_offbody_detect_test_instr">Click Next button, then palm the screen. Wait a few seconds after screen blackens, then remove watch from wrist.</string>
+    <string name="snsr_offbody_dialog_title">Android XR Off Body Check</string>
+    <string name="snsr_offbody_dialog_message">Does this Android XR headset support standard AOSP API behavior for detection such as implemented on a watch?</string>
+    <string name="snsr_offbody_dialog_positive">Yes</string>
+    <string name="snsr_offbody_dialog_negative">No</string>
 
     <!-- Strings for Sensor CTS tests inside CtsVerifier -->
     <string name="snsr_single_sensor_tests">CTS Single Sensor Tests</string>
