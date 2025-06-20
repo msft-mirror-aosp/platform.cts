@@ -111,6 +111,256 @@ class AppFunctionManagerAccessEnabledTest {
 
     private lateinit var mManager: AppFunctionManager
 
+    @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#executeAppFunction"])
+    @Test
+    @EnsureHasNoDeviceOwner
+    @IncludeRunOnSecondaryUser
+    @IncludeRunOnPrimaryUser
+    @Throws(Exception::class)
+    fun executeAppFunction_withPermissionButNoAccess_fails() = doBlocking {
+        runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
+            val request = ExecuteAppFunctionRequest.Builder(TEST_HELPER_PKG, "noOp").build()
+
+            val response = executeAppFunctionAndWait(mManager, request)
+
+            assertThat(response.isSuccess).isFalse()
+            assertThat(response.appFunctionException().errorCode)
+                .isEqualTo(AppFunctionException.ERROR_DENIED)
+            assertThat(response.appFunctionException().errorMessage)
+                .contains("does not have permission to execute the appfunction")
+            assertServiceWasNotCreated()
+        }
+    }
+
+    @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#executeAppFunction"])
+    @Test
+    @EnsureHasNoDeviceOwner
+    @IncludeRunOnSecondaryUser
+    @IncludeRunOnPrimaryUser
+    @RequireRootInstrumentation(reason = "Remove EXECUTE_APP_FUNCTIONS permission from test app")
+    @Throws(Exception::class)
+    fun executeAppFunction_withoutPermissionButWithAccess_fails() = doBlocking {
+        runWithoutPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
+            grantAppFunctionAccess(CURRENT_PKG, TEST_HELPER_PKG)
+            try {
+                val request = ExecuteAppFunctionRequest.Builder(TEST_HELPER_PKG, "noOp").build()
+
+                val response = executeAppFunctionAndWait(mManager, request)
+
+                assertThat(response.isSuccess).isFalse()
+                assertThat(response.appFunctionException().errorCode)
+                    .isEqualTo(AppFunctionException.ERROR_DENIED)
+                assertThat(response.appFunctionException().errorMessage)
+                    .contains("does not have permission to execute the appfunction")
+                assertServiceWasNotCreated()
+            } finally {
+                revokeAppFunctionAccess(CURRENT_PKG, TEST_HELPER_PKG)
+            }
+        }
+    }
+
+    @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#executeAppFunction"])
+    @Test
+    @EnsureHasNoDeviceOwner
+    @IncludeRunOnSecondaryUser
+    @IncludeRunOnPrimaryUser
+    @RequireRootInstrumentation(reason = "Remove EXECUTE_APP_FUNCTIONS permission from test app")
+    @Throws(Exception::class)
+    fun executeAppFunction_withoutPermissionAndAccess_fails() = doBlocking {
+        runWithoutPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
+            val request = ExecuteAppFunctionRequest.Builder(TEST_HELPER_PKG, "noOp").build()
+
+            val response = executeAppFunctionAndWait(mManager, request)
+
+            assertThat(response.isSuccess).isFalse()
+            assertThat(response.appFunctionException().errorCode)
+                .isEqualTo(AppFunctionException.ERROR_DENIED)
+            assertServiceWasNotCreated()
+        }
+    }
+
+    @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#executeAppFunction"])
+    @Test
+    @EnsureHasNoDeviceOwner
+    @IncludeRunOnSecondaryUser
+    @IncludeRunOnPrimaryUser
+    @Throws(Exception::class)
+    fun executeAppFunction_withPermissionAndAccess_succeeds() = doBlocking {
+        runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
+            grantAppFunctionAccess(CURRENT_PKG, TEST_HELPER_PKG)
+            try {
+                val parameters: GenericDocument =
+                    GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
+                        .setPropertyLong("a", 1)
+                        .setPropertyLong("b", 2)
+                        .build()
+
+                val request =
+                    ExecuteAppFunctionRequest.Builder(TEST_HELPER_PKG, "add")
+                        .setParameters(parameters)
+                        .build()
+
+                val response = executeAppFunctionAndWait(mManager, request)
+
+                assertThat(response.isSuccess).isTrue()
+                assertThat(
+                        response
+                            .getOrNull()!!
+                            .resultDocument
+                            .getPropertyLong(ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE)
+                    )
+                    .isEqualTo(3)
+                assertServiceDestroyed()
+            } finally {
+                revokeAppFunctionAccess(CURRENT_PKG, TEST_HELPER_PKG)
+            }
+        }
+    }
+
+    @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#executeAppFunction"])
+    @Test
+    @EnsureHasNoDeviceOwner
+    @IncludeRunOnSecondaryUser
+    @IncludeRunOnPrimaryUser
+    @RequireRootInstrumentation(reason = "Remove EXECUTE_APP_FUNCTIONS permission from test app")
+    @Throws(Exception::class)
+    fun executeAppFunction_withoutPermissionAndAccessButSamePackage_succeeds() = doBlocking {
+        runWithoutPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
+            val parameters: GenericDocument =
+                GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
+                    .setPropertyLong("a", 1)
+                    .setPropertyLong("b", 2)
+                    .build()
+
+            val request =
+                ExecuteAppFunctionRequest.Builder(CURRENT_PKG, "add")
+                    .setParameters(parameters)
+                    .build()
+
+            val response = executeAppFunctionAndWait(mManager, request)
+
+            assertThat(response.isSuccess).isTrue()
+            assertThat(
+                    response
+                        .getOrNull()!!
+                        .resultDocument
+                        .getPropertyLong(ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE)
+                )
+                .isEqualTo(3)
+            assertServiceDestroyed()
+        }
+    }
+
+    @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#executeAppFunction"])
+    @Test
+    @EnsureHasNoDeviceOwner
+    @IncludeRunOnSecondaryUser
+    @IncludeRunOnPrimaryUser
+    @RequireRootInstrumentation(reason = "Remove EXECUTE_APP_FUNCTIONS permission from test app")
+    @Throws(Exception::class)
+    fun executeAppFunction_withoutPermissionButWithAccessAndSamePackage_succeeds() = doBlocking {
+        runWithoutPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
+            grantAppFunctionAccess(CURRENT_PKG, CURRENT_PKG)
+            try {
+                val parameters: GenericDocument =
+                    GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
+                        .setPropertyLong("a", 1)
+                        .setPropertyLong("b", 2)
+                        .build()
+
+                val request =
+                    ExecuteAppFunctionRequest.Builder(CURRENT_PKG, "add")
+                        .setParameters(parameters)
+                        .build()
+
+                val response = executeAppFunctionAndWait(mManager, request)
+
+                assertThat(response.isSuccess).isTrue()
+                assertThat(
+                        response
+                            .getOrNull()!!
+                            .resultDocument
+                            .getPropertyLong(ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE)
+                    )
+                    .isEqualTo(3)
+                assertServiceDestroyed()
+            } finally {
+                revokeAppFunctionAccess(CURRENT_PKG, CURRENT_PKG)
+            }
+        }
+    }
+
+    @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#executeAppFunction"])
+    @Test
+    @EnsureHasNoDeviceOwner
+    @IncludeRunOnSecondaryUser
+    @IncludeRunOnPrimaryUser
+    @Throws(Exception::class)
+    fun executeAppFunction_withPermissionAndSamePackageButNoAccess_succeeds() = doBlocking {
+        runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
+            val parameters: GenericDocument =
+                GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
+                    .setPropertyLong("a", 1)
+                    .setPropertyLong("b", 2)
+                    .build()
+
+            val request =
+                ExecuteAppFunctionRequest.Builder(CURRENT_PKG, "add")
+                    .setParameters(parameters)
+                    .build()
+
+            val response = executeAppFunctionAndWait(mManager, request)
+
+            assertThat(response.isSuccess).isTrue()
+            assertThat(
+                    response
+                        .getOrNull()!!
+                        .resultDocument
+                        .getPropertyLong(ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE)
+                )
+                .isEqualTo(3)
+            assertServiceDestroyed()
+        }
+    }
+
+    @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#executeAppFunction"])
+    @Test
+    @EnsureHasNoDeviceOwner
+    @IncludeRunOnSecondaryUser
+    @IncludeRunOnPrimaryUser
+    @Throws(Exception::class)
+    fun executeAppFunction_withPermissionAndAccess_samePackage_succeeds() = doBlocking {
+        runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
+            grantAppFunctionAccess(CURRENT_PKG, CURRENT_PKG)
+            try {
+                val parameters: GenericDocument =
+                    GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
+                        .setPropertyLong("a", 1)
+                        .setPropertyLong("b", 2)
+                        .build()
+
+                val request =
+                    ExecuteAppFunctionRequest.Builder(CURRENT_PKG, "add")
+                        .setParameters(parameters)
+                        .build()
+
+                val response = executeAppFunctionAndWait(mManager, request)
+
+                assertThat(response.isSuccess).isTrue()
+                assertThat(
+                        response
+                            .getOrNull()!!
+                            .resultDocument
+                            .getPropertyLong(ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE)
+                    )
+                    .isEqualTo(3)
+                assertServiceDestroyed()
+            } finally {
+                revokeAppFunctionAccess(CURRENT_PKG, CURRENT_PKG)
+            }
+        }
+    }
+
     @Before
     fun setup() = doBlocking {
         TestAppFunctionServiceLifecycleReceiver.reset()
@@ -242,25 +492,30 @@ class AppFunctionManagerAccessEnabledTest {
     @Throws(Exception::class)
     fun executeAppFunction_verifyPackageVisibilityFromRequest() = doBlocking {
         runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
-            val request = ExecuteAppFunctionRequest.Builder(TEST_HELPER_PKG, "noOp").build()
+            grantAppFunctionAccess(CURRENT_PKG, TEST_HELPER_PKG)
+            try {
+                val request = ExecuteAppFunctionRequest.Builder(TEST_HELPER_PKG, "noOp").build()
 
-            val response = executeAppFunctionAndWait(mManager, request)
+                val response = executeAppFunctionAndWait(mManager, request)
 
-            assertThat(response.isSuccess).isTrue()
-            assertThat(
-                    response
-                        .getOrNull()!!
-                        .resultDocument
-                        .getPropertyString("TEST_PROPERTY_CALLING_PACKAGE")
-                )
-                .isEqualTo(CURRENT_PKG)
-            assertThat(
-                    response
-                        .getOrNull()!!
-                        .resultDocument
-                        .getPropertyBoolean("TEST_PROPERTY_HAS_CALLER_VISIBILITY")
-                )
-                .isEqualTo(true)
+                assertThat(response.isSuccess).isTrue()
+                assertThat(
+                        response
+                            .getOrNull()!!
+                            .resultDocument
+                            .getPropertyString("TEST_PROPERTY_CALLING_PACKAGE")
+                    )
+                    .isEqualTo(CURRENT_PKG)
+                assertThat(
+                        response
+                            .getOrNull()!!
+                            .resultDocument
+                            .getPropertyBoolean("TEST_PROPERTY_HAS_CALLER_VISIBILITY")
+                    )
+                    .isEqualTo(true)
+            } finally {
+                revokeAppFunctionAccess(CURRENT_PKG, TEST_HELPER_PKG)
+            }
         }
     }
 
@@ -843,32 +1098,38 @@ class AppFunctionManagerAccessEnabledTest {
     @IncludeRunOnSecondaryUser
     @IncludeRunOnPrimaryUser
     @EnsureHasNoDeviceOwner
-    fun executeAppFunction_withExecuteAppFunctionPermission_restrictCallersWithExecuteAppFunctionsFalse_success() =
+    fun executeAppFunction_withPermissionAndAccess_restrictCallersWithExecuteAppFunctionsFalse_success() =
         doBlocking {
             runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
-                val parameters: GenericDocument =
-                    GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
-                        .setPropertyLong("a", 1)
-                        .setPropertyLong("b", 2)
-                        .build()
-                val request =
-                    ExecuteAppFunctionRequest.Builder(
-                            TEST_HELPER_PKG,
-                            "addWithRestrictCallersWithExecuteAppFunctionsFalse",
+                grantAppFunctionAccess(CURRENT_PKG, TEST_HELPER_PKG)
+
+                try {
+                    val parameters: GenericDocument =
+                        GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
+                            .setPropertyLong("a", 1)
+                            .setPropertyLong("b", 2)
+                            .build()
+                    val request =
+                        ExecuteAppFunctionRequest.Builder(
+                                TEST_HELPER_PKG,
+                                "addWithRestrictCallersWithExecuteAppFunctionsFalse",
+                            )
+                            .setParameters(parameters)
+                            .build()
+
+                    val response = executeAppFunctionAndWait(mManager, request)
+
+                    assertThat(response.isSuccess).isTrue()
+                    assertThat(
+                            response
+                                .getOrNull()!!
+                                .resultDocument
+                                .getPropertyLong(ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE)
                         )
-                        .setParameters(parameters)
-                        .build()
-
-                val response = executeAppFunctionAndWait(mManager, request)
-
-                assertThat(response.isSuccess).isTrue()
-                assertThat(
-                        response
-                            .getOrNull()!!
-                            .resultDocument
-                            .getPropertyLong(ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE)
-                    )
-                    .isEqualTo(3)
+                        .isEqualTo(3)
+                } finally {
+                    revokeAppFunctionAccess(CURRENT_PKG, TEST_HELPER_PKG)
+                }
             }
         }
 
@@ -898,17 +1159,23 @@ class AppFunctionManagerAccessEnabledTest {
     @IncludeRunOnSecondaryUser
     @IncludeRunOnPrimaryUser
     @EnsureHasNoDeviceOwner
-    fun executeAppFunction_withExecuteAppFunctionPermission_functionMetadataNotFound_failsWithAppSearchException() =
+    fun executeAppFunction_withPermissionAndAccess_functionMetadataNotFound_failsWithAppSearchException() =
         doBlocking {
             runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
-                val request =
-                    ExecuteAppFunctionRequest.Builder(TEST_HELPER_PKG, "random_function").build()
+                grantAppFunctionAccess(CURRENT_PKG, TEST_HELPER_PKG)
+                try {
+                    val request =
+                        ExecuteAppFunctionRequest.Builder(TEST_HELPER_PKG, "random_function")
+                            .build()
 
-                val response = executeAppFunctionAndWait(mManager, request)
+                    val response = executeAppFunctionAndWait(mManager, request)
 
-                assertThat(response.isSuccess).isFalse()
-                assertThat(response.appFunctionException().errorCode)
-                    .isEqualTo(AppFunctionException.ERROR_FUNCTION_NOT_FOUND)
+                    assertThat(response.isSuccess).isFalse()
+                    assertThat(response.appFunctionException().errorCode)
+                        .isEqualTo(AppFunctionException.ERROR_FUNCTION_NOT_FOUND)
+                } finally {
+                    revokeAppFunctionAccess(CURRENT_PKG, TEST_HELPER_PKG)
+                }
             }
         }
 
@@ -1141,8 +1408,10 @@ class AppFunctionManagerAccessEnabledTest {
     @IncludeRunOnPrimaryUser
     @EnsureHasNoDeviceOwner
     @Throws(Exception::class)
-    fun executeAppFunctionWithPermission_processStateIsBfgs() = doBlocking {
+    fun executeAppFunctionWithPermissionAndAccess_processStateIsBfgs() = doBlocking {
         runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
+            grantAppFunctionAccess(CURRENT_PKG, CURRENT_PKG)
+
             val parameters: GenericDocument =
                 GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "").build()
             val request =
@@ -1157,6 +1426,7 @@ class AppFunctionManagerAccessEnabledTest {
                 assertProcessState(isBfgs = true)
             } finally {
                 cancellationSignal.cancel()
+                revokeAppFunctionAccess(CURRENT_PKG, CURRENT_PKG)
             }
         }
     }
@@ -1219,31 +1489,50 @@ class AppFunctionManagerAccessEnabledTest {
     @IncludeRunOnSecondaryUser
     @IncludeRunOnPrimaryUser
     @Throws(Exception::class)
-    fun executeAppFunction_getUris() = doBlocking {
-        val readOnlyUri =
-            Uri.parse(
-                "content://android.app.appfunctions.cts.helper.provider/read_only_test_file.txt"
-            )
-        val writeOnlyUri =
-            Uri.parse(
-                "content://android.app.appfunctions.cts.helper.provider/write_only_test_file.txt"
-            )
-        val readWriteUri =
-            Uri.parse(
-                "content://android.app.appfunctions.cts.helper.provider/read_write_test_file.txt"
-            )
-        val request = ExecuteAppFunctionRequest.Builder(TEST_HELPER_PKG, "getUris").build()
+    fun executeAppFunction_withPermissionAndAccess_getUris() = doBlocking {
+        grantAppFunctionAccess(CURRENT_PKG, TEST_HELPER_PKG)
+        try {
+            val readOnlyUri =
+                Uri.parse(
+                    "content://android.app.appfunctions.cts.helper.provider/read_only_test_file.txt"
+                )
+            val writeOnlyUri =
+                Uri.parse(
+                    "content://android.app.appfunctions.cts.helper.provider/write_only_test_file.txt"
+                )
+            val readWriteUri =
+                Uri.parse(
+                    "content://android.app.appfunctions.cts.helper.provider/read_write_test_file.txt"
+                )
+            val request = ExecuteAppFunctionRequest.Builder(TEST_HELPER_PKG, "getUris").build()
 
-        val response = executeAppFunctionAndWait(mManager, request)
+            val response = executeAppFunctionAndWait(mManager, request)
 
-        assertThat(response.isSuccess).isTrue()
-        assertThat(response.getOrNull()).isNotNull()
-        assertReadAccessible(readOnlyUri)
-        assertReadAccessible(readWriteUri)
-        assertReadInaccessible(writeOnlyUri)
-        assertWriteAccessible(writeOnlyUri)
-        assertWriteAccessible(readWriteUri)
-        assertWriteInaccessible(readOnlyUri)
+            assertThat(response.isSuccess).isTrue()
+            assertThat(response.getOrNull()).isNotNull()
+            assertReadAccessible(readOnlyUri)
+            assertReadAccessible(readWriteUri)
+            assertReadInaccessible(writeOnlyUri)
+            assertWriteAccessible(writeOnlyUri)
+            assertWriteAccessible(readWriteUri)
+            assertWriteInaccessible(readOnlyUri)
+        } finally {
+            revokeAppFunctionAccess(CURRENT_PKG, TEST_HELPER_PKG)
+        }
+    }
+
+    private fun grantAppFunctionAccess(agentPackage: String, targetPackage: String) {
+        ShellCommand.builder("cmd app_function grant-app-function-access")
+            .addOption("--agent-package", agentPackage)
+            .addOption("--target-package", targetPackage)
+            .execute()
+    }
+
+    private fun revokeAppFunctionAccess(agentPackage: String, targetPackage: String) {
+        ShellCommand.builder("cmd app_function revoke-app-function-access")
+            .addOption("--agent-package", agentPackage)
+            .addOption("--target-package", targetPackage)
+            .execute()
     }
 
     private fun assertReadAccessible(uri: Uri) {

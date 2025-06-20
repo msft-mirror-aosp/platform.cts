@@ -23,7 +23,6 @@ import android.app.appfunctions.ExecuteAppFunctionRequest
 import android.app.appfunctions.ExecuteAppFunctionResponse
 import android.app.appfunctions.cts.AppFunctionUtils.executeAppFunctionAndWait
 import android.app.appfunctions.cts.AppFunctionUtils.setAppFunctionEnabled
-import android.app.appfunctions.flags.Flags
 import android.app.appfunctions.testutils.CtsTestUtil.runWithShellPermission
 import android.app.appfunctions.testutils.TestAppFunctionServiceLifecycleReceiver
 import android.app.appfunctions.testutils.TestAppFunctionServiceLifecycleReceiver.waitForOperationCancellation
@@ -32,7 +31,9 @@ import android.app.appsearch.GenericDocument
 import android.content.Context
 import android.os.CancellationSignal
 import android.os.OutcomeReceiver
-import android.platform.test.annotations.RequiresFlagsEnabled
+import android.permission.flags.Flags.FLAG_APP_FUNCTION_ACCESS_API_ENABLED
+import android.permission.flags.Flags.FLAG_APP_FUNCTION_ACCESS_SERVICE_ENABLED
+import android.platform.test.annotations.RequiresFlagsDisabled
 import android.platform.test.flag.junit.CheckFlagsRule
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import androidx.core.os.asOutcomeReceiver
@@ -64,7 +65,10 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(BedsteadJUnit4::class)
-@RequiresFlagsEnabled(Flags.FLAG_ENABLE_APP_FUNCTION_MANAGER)
+@RequiresFlagsDisabled(
+    FLAG_APP_FUNCTION_ACCESS_API_ENABLED,
+    FLAG_APP_FUNCTION_ACCESS_SERVICE_ENABLED,
+)
 class SidecarManagerTest {
     @get:Rule val checkFlagsRule: CheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
 
@@ -277,8 +281,7 @@ class SidecarManagerTest {
         const val TEST_SIDECAR_HELPER_PKG: String = "android.app.appfunctions.cts.helper.sidecar"
         const val TEST_HELPER_PKG: String = "android.app.appfunctions.cts.helper"
         const val CURRENT_PKG: String = "android.app.appfunctions.cts"
-        const val EXECUTE_APP_FUNCTIONS_PERMISSION =
-            Manifest.permission.EXECUTE_APP_FUNCTIONS
+        const val EXECUTE_APP_FUNCTIONS_PERMISSION = Manifest.permission.EXECUTE_APP_FUNCTIONS
         const val LONG_TIMEOUT_SECOND: Long = 5
 
         suspend fun sidecarExecuteFunction(
