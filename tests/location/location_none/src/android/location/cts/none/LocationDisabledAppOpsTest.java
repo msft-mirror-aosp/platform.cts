@@ -88,7 +88,7 @@ public class LocationDisabledAppOpsTest {
                                     OPSTR_FINE_LOCATION, ai.uid, ai.packageName);
                             isProvider[0] = mLm.isProviderPackage(null, pi.packageName, null);
                         });
-                        if (mode[0] == MODE_ALLOWED && !ignoreList.containsAll(pi.packageName)
+                        if (mode[0] == MODE_ALLOWED && !ignoreList.containsPackageWithAllTags(pi.packageName)
                                 && !isProvider[0]) {
                             bypassedNoteOps.add(pi.packageName);
                         }
@@ -99,7 +99,7 @@ public class LocationDisabledAppOpsTest {
                             mode[0] = mAom
                                     .checkOpNoThrow(OPSTR_FINE_LOCATION, ai.uid, ai.packageName);
                         });
-                        if (mode[0] == MODE_ALLOWED && !ignoreList.includes(pi.packageName)
+                        if (mode[0] == MODE_ALLOWED && !ignoreList.containsPackage(pi.packageName)
                                 && !isProvider[0]) {
                             bypassedCheckOps.add(pi.packageName);
                         }
