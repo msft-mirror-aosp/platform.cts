@@ -34,9 +34,6 @@ import androidx.test.uiautomator.By;
 import androidx.test.uiautomator.Direction;
 import androidx.test.uiautomator.UiDevice;
 import androidx.test.uiautomator.UiObject2;
-import androidx.test.uiautomator.UiObjectNotFoundException;
-import androidx.test.uiautomator.UiScrollable;
-import androidx.test.uiautomator.UiSelector;
 import androidx.test.uiautomator.Until;
 
 import java.util.List;
@@ -183,22 +180,24 @@ public class TestUtils {
     private boolean scrollToAndGetTextObject(String text) {
         UiObject2 appArea = mDevice.findObject(By.pkg(mPackageName).res("android:id/content"));
         List<UiObject2> scrollableViewList = appArea.findObjects(By.scrollable(true));
-        UiObject2 foundObject = null;
         for (UiObject2 scrollableView : scrollableViewList) {
             // Swipe far away from the edges to avoid triggering navigation gestures
             scrollableView.setGestureMarginPercentage(0.25f);
             // Scroll from the top to the bottom until the text object is found.
             scrollableView.scroll(Direction.UP, 1);
-            scrollableView.scrollUntil(Direction.DOWN, Until.findObject(By.textContains(text)));
-            foundObject = mDevice.findObject(By.text(text));
-            if (foundObject != null) {
-                // No need to look at other scrollables.
-                break;
+            boolean moreToScroll = true;
+            while (moreToScroll) {
+                if (mDevice.findObject(By.text(text)) != null) {
+                    return true;
+                }
+
+                // Scroll down incrementally to avoid skipping the view on slower systems
+                moreToScroll = scrollableView.scroll(Direction.DOWN, 0.2f);
+            }
+            if (mDevice.findObject(By.text(text)) != null) {
+                return true;
             }
         }
-        if (foundObject == null) {
-            throw new AssertionError("View with text '" + text + "' was not found!");
-        }
-        return true;
+        throw new AssertionError("View with text '" + text + "' was not found!");
     }
 }
