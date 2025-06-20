@@ -245,6 +245,9 @@ public class DeviceAdminTestReceiver extends DeviceAdminReceiver {
         dpm.setPermissionGrantState(getWho(context), context.getPackageName(),
                 Manifest.permission.POST_NOTIFICATIONS,
                 DevicePolicyManager.PERMISSION_GRANT_STATE_GRANTED);
+
+        // This restriction is set by default and interferes with adb within the profile.
+        dpm.clearUserRestriction(getWho(context), UserManager.DISALLOW_DEBUGGING_FEATURES);
     }
 
     private void wipeIfNecessary(Context context, Intent intent) {
