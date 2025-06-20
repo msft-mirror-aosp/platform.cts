@@ -37,8 +37,8 @@
         <option name="package" value="android.media.audio.cts" />
         <!-- setup can be expensive so limit the number of shards -->
         <option name="ajur-max-shard" value="5" />
-        <!-- test-timeout unit is ms, value = 240 min -->
-        <option name="test-timeout" value="14400000" />
+        <!-- test-timeout unit is ms, value = 500 min. 500 minutes is chosen for Android TV with many direct profiles -->
+        <option name="test-timeout" value="30000000" />
         <option name="runtime-hint" value="1h" />
         <option name="exclude-annotation" value="org.junit.Ignore" />
         <option name="hidden-api-checks" value="false" />
