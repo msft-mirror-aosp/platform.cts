@@ -53,9 +53,15 @@ import android.server.wm.Condition;
 import android.server.wm.RotationSession;
 import android.server.wm.TestJournalProvider.TestJournalContainer;
 
+import com.android.bedstead.harrier.BedsteadJUnit4;
+import com.android.bedstead.harrier.DeviceState;
+import com.android.bedstead.harrier.annotations.RequireNotAutomotive;
 import com.android.compatibility.common.util.SystemUtil;
 
+import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.util.Arrays;
 import java.util.List;
@@ -65,11 +71,17 @@ import java.util.List;
  *     atest CtsWindowManagerDeviceActivity:ConfigChangeTests
  */
 @Presubmit
+@RunWith(BedsteadJUnit4.class)
 public class ConfigChangeTests extends ActivityManagerTestBase {
 
     private static final float EXPECTED_FONT_SIZE_SP = 10.0f;
 
+    @ClassRule
+    @Rule
+    public static final DeviceState sDeviceState = new DeviceState();
+
     @Test
+    @RequireNotAutomotive(reason = "Automotive screens don't support rotation")
     public void testRotation90Relaunch() {
         assumeTrue("Skipping test: no rotation support", supportsOrientationRequest());
 
@@ -78,6 +90,7 @@ public class ConfigChangeTests extends ActivityManagerTestBase {
     }
 
     @Test
+    @RequireNotAutomotive(reason = "Automotive screens don't support rotation")
     public void testRotation90NoRelaunch() {
         assumeTrue("Skipping test: no rotation support", supportsOrientationRequest());
 
@@ -86,6 +99,7 @@ public class ConfigChangeTests extends ActivityManagerTestBase {
     }
 
     @Test
+    @RequireNotAutomotive(reason = "Automotive screens don't support rotation")
     public void testRotation180_RegularActivity() {
         assumeTrue("Skipping test: no rotation support", supportsOrientationRequest());
         assumeFalse("Skipping test: display cutout present, can't predict exact lifecycle",
@@ -96,6 +110,7 @@ public class ConfigChangeTests extends ActivityManagerTestBase {
     }
 
     @Test
+    @RequireNotAutomotive(reason = "Automotive screens don't support rotation")
     public void testRotation180_NoRelaunchActivity() {
         assumeTrue("Skipping test: no rotation support", supportsOrientationRequest());
         assumeFalse("Skipping test: display cutout present, can't predict exact lifecycle",
@@ -110,6 +125,7 @@ public class ConfigChangeTests extends ActivityManagerTestBase {
      * reverse-landscape rotations should result in same screen space available for apps.
      */
     @Test
+    @RequireNotAutomotive(reason = "Automotive screens don't support rotation")
     public void testRotation180RelaunchWithCutout() {
         assumeTrue("Skipping test: no rotation support", supportsOrientationRequest());
         assumeTrue("Skipping test: no display cutout", hasDisplayCutout());
@@ -118,6 +134,7 @@ public class ConfigChangeTests extends ActivityManagerTestBase {
     }
 
     @Test
+    @RequireNotAutomotive(reason = "Automotive screens don't support rotation")
     public void testRotation180NoRelaunchWithCutout() {
         assumeTrue("Skipping test: no rotation support", supportsOrientationRequest());
         assumeTrue("Skipping test: no display cutout", hasDisplayCutout());
