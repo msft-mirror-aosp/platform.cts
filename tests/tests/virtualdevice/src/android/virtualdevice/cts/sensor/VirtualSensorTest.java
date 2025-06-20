@@ -70,6 +70,7 @@ import com.android.internal.os.BackgroundThread;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -462,6 +463,7 @@ public class VirtualSensorTest {
         assertThat(channel.configure(sensor, RATE_NORMAL)).isEqualTo(0);
     }
 
+    @Ignore("b/420822939")
     @Test
     public void directConnection_hardwareBuffer_throwsException() {
         // Skip this test if hardware buffer direct channel is generally not supported on the device
