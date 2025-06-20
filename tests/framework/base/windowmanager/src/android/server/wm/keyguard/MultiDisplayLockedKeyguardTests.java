@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package android.server.wm.multidisplay;
+package android.server.wm.keyguard;
 
 import static android.server.wm.WindowManagerState.STATE_RESUMED;
 import static android.server.wm.WindowManagerState.STATE_STOPPED;
