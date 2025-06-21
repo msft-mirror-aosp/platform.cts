@@ -889,25 +889,13 @@ public class VehiclePropertyVerifier<T> {
 
     private void verifyReadPermissionGivesAccessToReadApis(
             String step, String readPermission, Class<?> exceptedExceptionClass) {
-        if (step.equals(STEP_VERIFY_READ_APIS_DISABLE_ADAS_FEATURE_VERIFY_STATE)) {
-            assumeTrue("Not an ADAS property", mDependentOnPropertyId.isPresent());
-            disableAdasFeatureIfAdasStatePropertyAndVerify(
-                    ImmutableSet.<String>builder()
-                            .add(readPermission)
-                            .addAll(mDependentOnPropertyPermissions)
-                            .build()
-                            .toArray(new String[0]),
-                    /* verifySet= */ false);
-            return;
-        }
-
         try {
-            enableAdasFeatureIfAdasStateProperty();
             runWithShellPermissionIdentity(
                     () -> {
                         assertThat(getCarPropertyConfig(/* useCache= */ false)).isNotNull();
-                        turnOnHvacPowerIfHvacPowerDependent();
                         if (step.equals(STEP_VERIFY_READ_APIS_GET_PROPERTY_SYNC)) {
+                            enableAdasFeatureIfAdasStateProperty();
+                            turnOnHvacPowerIfHvacPowerDependent();
                             verifyCarPropertyValueGetter();
                             if (exceptedExceptionClass != null) {
                                 assertWithMessage(
@@ -925,10 +913,14 @@ public class VehiclePropertyVerifier<T> {
                         }
 
                         if (step.equals(STEP_VERIFY_READ_APIS_GET_PROPERTY_ASYNC)) {
+                            enableAdasFeatureIfAdasStateProperty();
+                            turnOnHvacPowerIfHvacPowerDependent();
                             verifyGetPropertiesAsync();
                         }
 
                         if (step.equals(STEP_VERIFY_READ_APIS_SUBSCRIBE)) {
+                            enableAdasFeatureIfAdasStateProperty();
+                            turnOnHvacPowerIfHvacPowerDependent();
                             verifyCarPropertyValueCallback();
                         }
 
@@ -954,6 +946,19 @@ public class VehiclePropertyVerifier<T> {
                                     turnOffHvacPowerIfHvacPowerDependent();
                             if (!areaIdsTurnedOff.isEmpty()) {
                                 verifyGetNotAvailable(areaIdsTurnedOff);
+                            }
+                        }
+
+                        if (step.equals(STEP_VERIFY_READ_APIS_DISABLE_ADAS_FEATURE_VERIFY_STATE)) {
+                            assumeTrue("Not an ADAS property", mDependentOnPropertyId.isPresent());
+                            ImmutableSet<Integer> areaIdsDisabled =
+                                    disableAdasFeatureIfAdasStateProperty();
+                            if (!areaIdsDisabled.isEmpty()) {
+                                if (mVerifyErrorStates) {
+                                    verifyAdasPropertyErrorState(areaIdsDisabled);
+                                } else {
+                                    verifyGetNotAvailable(areaIdsDisabled);
+                                }
                             }
                         }
                     },
@@ -1116,29 +1121,15 @@ public class VehiclePropertyVerifier<T> {
                         .addAll(writePermissions)
                         .addAll(readPermissions)
                         .build();
-
-        if (step.equals(STEP_VERIFY_WRITE_APIS_DISABLE_ADAS_FEATURE_VERIFY_STATE)) {
-            assumeTrue("Not an ADAS property", mDependentOnPropertyId.isPresent());
-            disableAdasFeatureIfAdasStatePropertyAndVerify(
-                    propertyPermissions.toArray(new String[0]), /* verifySet= */ true);
-            return;
-        }
-
         try {
-            // Store the current value before we call enableAdasFeatureIfAdasStateProperty, which
-            // might change this.
             runWithShellPermissionIdentity(
                     () -> {
-                        storeCurrentValues();
-                    },
-                    propertyPermissions.toArray(new String[0]));
-            enableAdasFeatureIfAdasStateProperty();
-
-            runWithShellPermissionIdentity(
-                    () -> {
-                        turnOnHvacPowerIfHvacPowerDependent();
-
                         if (step.equals(STEP_VERIFY_WRITE_APIS_SET_PROPERTY_SYNC)) {
+                            // Store the current value before we call
+                            // enableAdasFeatureIfAdasStateProperty, which might change this.
+                            storeCurrentValues();
+                            enableAdasFeatureIfAdasStateProperty();
+                            turnOnHvacPowerIfHvacPowerDependent();
                             verifyCarPropertyValueSetter();
                             if (exceptedExceptionClass != null) {
                                 assertWithMessage(
@@ -1153,8 +1144,14 @@ public class VehiclePropertyVerifier<T> {
 
                         if (step.equals(STEP_VERIFY_WRITE_APIS_SET_PROPERTY_ASYNC)
                                 && exceptedExceptionClass == null) {
+                            // Store the current value before we call
+                            // enableAdasFeatureIfAdasStateProperty, which might change this.
+                            storeCurrentValues();
+                            enableAdasFeatureIfAdasStateProperty();
+                            turnOnHvacPowerIfHvacPowerDependent();
                             verifySetPropertiesAsync();
                         }
+
                         if (step.equals(STEP_VERIFY_WRITE_APIS_DISABLE_HVAC_SET_NOT_AVAILABLE)) {
                             assumeTrue(
                                     "Not depending on HVAC power", mPossiblyDependentOnHvacPowerOn);
@@ -1162,6 +1159,19 @@ public class VehiclePropertyVerifier<T> {
                                     turnOffHvacPowerIfHvacPowerDependent();
                             if (!areaIdsTurnedOff.isEmpty()) {
                                 verifySetNotAvailable(areaIdsTurnedOff);
+                            }
+                        }
+
+                        if (step.equals(STEP_VERIFY_WRITE_APIS_DISABLE_ADAS_FEATURE_VERIFY_STATE)) {
+                            assumeTrue("Not an ADAS property", mDependentOnPropertyId.isPresent());
+                            ImmutableSet<Integer> areaIdsDisabled =
+                                    disableAdasFeatureIfAdasStateProperty();
+                            if (!areaIdsDisabled.isEmpty()) {
+                                if (mVerifyErrorStates) {
+                                    verifyAdasPropertyErrorState(areaIdsDisabled);
+                                } else {
+                                    verifySetNotAvailable(areaIdsDisabled);
+                                }
                             }
                         }
                     },
@@ -1245,34 +1255,6 @@ public class VehiclePropertyVerifier<T> {
                             adasEnabledCarPropertyConfig, /* setValue: */ Boolean.TRUE);
                 },
                 mDependentOnPropertyPermissions.toArray(new String[0]));
-    }
-
-    private void disableAdasFeatureIfAdasStatePropertyAndVerify(
-            String[] enabledPermissionsList, boolean verifySet) {
-        try {
-            ImmutableSet<Integer> areaIdsDisabled = disableAdasFeatureIfAdasStateProperty();
-            if (areaIdsDisabled.isEmpty()) {
-                return;
-            }
-            runWithShellPermissionIdentity(
-                    () -> {
-                        if (mVerifyErrorStates) {
-                            verifyAdasPropertyErrorState(areaIdsDisabled);
-                        } else if (verifySet) {
-                            verifySetNotAvailable(areaIdsDisabled);
-                        } else {
-                            verifyGetNotAvailable(areaIdsDisabled);
-                        }
-                    },
-                    enabledPermissionsList);
-        } finally {
-            // Restore all property values even if test fails.
-            runWithShellPermissionIdentity(
-                    () -> {
-                        restoreInitialValues();
-                    },
-                    mDependentOnPropertyPermissions.toArray(new String[0]));
-        }
     }
 
     /**
