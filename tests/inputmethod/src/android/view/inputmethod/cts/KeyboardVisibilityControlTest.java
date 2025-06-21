@@ -50,6 +50,7 @@ import static com.android.cts.mockime.ImeEventStreamTestUtils.withDescription;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -1572,6 +1573,100 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
             setAutoRotateScreen(true);
             uiDevice.setOrientationNatural();
         }
+    }
+
+
+    /**
+     * Test case for Bug 425538294
+     *
+     * <p> This test ensures that the dialog position will still be centered after the IME is shown.
+     */
+    @Test
+    public void testDialogPositionChangedAfterImeIsShown() throws Exception {
+        final AtomicReference<AlertDialog> dialogRef = new AtomicReference<>();
+        try (MockImeSession imeSession = MockImeSession.create(
+                InstrumentationRegistry.getInstrumentation().getContext(),
+                InstrumentationRegistry.getInstrumentation().getUiAutomation(),
+                new ImeSettings.Builder().setInputViewHeight(
+                        NEW_KEYBOARD_HEIGHT).setDrawsBehindNavBar(true))) {
+            final ImeEventStream stream = imeSession.openEventStream();
+            final String marker = getTestMarker();
+            final AtomicReference<EditText> editTextRef = new AtomicReference<>();
+
+            final var testActivity = new TestActivity.Starter().withWindowingMode(
+                    WINDOWING_MODE_FULLSCREEN).startSync(activity -> {
+                openDialogAndShowIme(activity, marker, dialogRef, editTextRef);
+                return new LinearLayout(activity);
+            }, TestActivity.class);
+
+            expectEvent(stream, eventMatcher("onStartInput"), TIMEOUT);
+            expectEvent(stream, eventMatcher("onStartInputView"), TIMEOUT);
+            expectImeVisible(TIMEOUT);
+
+            int[] dialogPositionImeHidden = new int[2];
+            int[] dialogPositionImeShown = new int[2];
+
+            final AlertDialog dialog1 = dialogRef.get();
+            // Hide the IME first, then the dialog
+            TestUtils.runOnMainSync(() -> {
+                dialog1.getWindow().getDecorView().getLocationOnScreen(
+                        dialogPositionImeShown);
+                editTextRef.get().getWindowInsetsController().hide(WindowInsets.Type.ime());
+            });
+            expectEvent(stream, hideSoftInputMatcher(), TIMEOUT);
+            expectEvent(stream, onFinishInputViewMatcher(false /* expectedFinishingInput */),
+                    TIMEOUT);
+            expectImeInvisible(TIMEOUT);
+            expectEventWithKeyValue(stream, "onWindowVisibilityChanged", "visible",
+                    View.GONE, TIMEOUT);
+
+            TestUtils.runOnMainSync(() -> {
+                dialog1.getWindow().getDecorView().getLocationOnScreen(
+                        dialogPositionImeHidden);
+                dialog1.hide();
+            });
+            TestUtils.waitOnMainUntil(() -> !dialog1.isShowing() && !editTextRef.get().isShown(),
+                    TIMEOUT);
+            assertNotEquals("Dialog position when IME is hidden should be different",
+                    dialogPositionImeShown[1], dialogPositionImeHidden[1]);
+
+            TestUtils.runOnMainSync(() -> {
+                openDialogAndShowIme(testActivity, marker, dialogRef, editTextRef);
+            });
+
+            expectEvent(stream, eventMatcher("onStartInput"), TIMEOUT);
+            expectEvent(stream, eventMatcher("onStartInputView"), TIMEOUT);
+            expectImeVisible(TIMEOUT);
+
+            TestUtils.runOnMainSync(() -> {
+                // Position of the 2nd shown dialog
+                dialogRef.get().getWindow().getDecorView().getLocationOnScreen(
+                        dialogPositionImeShown);
+            });
+            assertNotEquals("Dialog position when IME is shown should be different",
+                    dialogPositionImeHidden[1], dialogPositionImeShown[1]);
+
+        } finally {
+            // dismiss dialog, in case it wasn't closed properly
+            if (dialogRef.get() != null) {
+                dialogRef.get().dismiss();
+            }
+        }
+    }
+
+    private static void openDialogAndShowIme(TestActivity activity, String marker,
+            AtomicReference<AlertDialog> dialogRef, AtomicReference<EditText> editTextRef) {
+        final EditText editText = new EditText(activity);
+        editText.setHint("focused editText");
+        editText.setPrivateImeOptions(marker);
+        final AlertDialog dialog = new AlertDialog.Builder(activity).setTitle(
+                "DialogWithEditText").setCancelable(false).setView(editText).create();
+        dialogRef.set(dialog);
+        editTextRef.set(editText);
+
+        dialog.show();
+        editText.requestFocus();
+        editText.getWindowInsetsController().show(WindowInsets.Type.ime());
     }
 
     /**

@@ -122,8 +122,13 @@
         android:protectionLevel="normal"/>
 
     <permission android:name="android.content.cts.permission.CURRENT_MAX_SDK"
-                android:maxSdkVersion="current"
-                android:protectionLevel="normal"/>
+        android:protectionLevel="normal"/>
+
+    <permission android:name="android.content.pm.cts.permission.NATIVE_TEST_PERMISSION"
+        android:protectionLevel="normal"
+        android:label="CTS test permission for PackageManagerNative"/>
+
+    <uses-permission android:name="android.content.pm.cts.permission.NATIVE_TEST_PERMISSION"/>
 
     <uses-permission android:name="android.content.cts.REQUIRED_FEATURE_DEFINED"
          android:requiredFeature="android.software.cts"/>
