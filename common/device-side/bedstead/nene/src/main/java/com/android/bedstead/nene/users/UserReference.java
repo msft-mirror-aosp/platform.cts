@@ -289,32 +289,22 @@ public final class UserReference implements AutoCloseable {
         return startUser(displayId);
     }
 
-    //TODO(scottjonathan): Deal with users who won't unlock
     private UserReference startUser(int displayId) {
-        boolean visibleOnDisplay = displayId != Display.INVALID_DISPLAY;
-
         try {
-            // Expected success string is "Success: user started"
-            Builder builder = ShellCommand.builder("am start-user")
-                    .addOperand("-w");
-            if (visibleOnDisplay) {
-                builder.addOperand("--display").addOperand(displayId);
+            try {
+                startUserInternal(displayId);
+            } catch (AdbException e) {
+                // When we attempt to start the user while it is being stopped, there is a chance it
+                // gets stuck in RUNNING_LOCKED state. Retrying should fix it.
+                if (isRunning() && !isUnlocked()) {
+                    Log.w(LOG_TAG, "User " + mId + " is running locked, retrying start-user");
+                    startUserInternal(displayId);
+                } else {
+                    throw e;
+                }
             }
-            builder.addOperand(mId) // NOTE: id MUST be the last argument
-                    .validate(ShellCommandUtils::startsWithSuccess)
-                    .execute();
 
-            Poll.forValue("User running", this::isRunning)
-                    .toBeEqualTo(true)
-                    .errorOnFail()
-                    .timeout(Duration.ofMinutes(1))
-                    .await();
-            Poll.forValue("User unlocked", this::isUnlocked)
-                    .toBeEqualTo(true)
-                    .errorOnFail()
-                    .timeout(Duration.ofMinutes(1))
-                    .await();
-            if (visibleOnDisplay) {
+            if (displayId != Display.INVALID_DISPLAY) {
                 Poll.forValue("User visible", this::isVisible)
                         .toBeEqualTo(true)
                         .errorOnFail()
@@ -331,6 +321,18 @@ public final class UserReference implements AutoCloseable {
         }
 
         return this;
+    }
+
+    private void startUserInternal(int displayId) throws AdbException {
+        // Expected success string is "Success: user started"
+        Builder builder = ShellCommand.builder("am start-user")
+                .addOperand("-w");
+        if (displayId != Display.INVALID_DISPLAY) {
+            builder.addOption("--display", displayId);
+        }
+        builder.addOperand(mId) // NOTE: id MUST be the last argument
+                .validate(ShellCommandUtils::startsWithSuccess)
+                .execute();
     }
 
     /**

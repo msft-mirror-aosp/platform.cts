@@ -46,9 +46,7 @@ import android.util.Pair;
 import android.view.WindowManager;
 import android.widget.TextView;
 import android.widget.Toast;
-
 import androidx.core.content.FileProvider;
-
 import com.android.compatibility.common.util.ResultType;
 import com.android.compatibility.common.util.ResultUnit;
 import com.android.cts.verifier.ArrayTestListAdapter;
@@ -56,12 +54,6 @@ import com.android.cts.verifier.CtsVerifierReportLog;
 import com.android.cts.verifier.DialogTestListActivity;
 import com.android.cts.verifier.R;
 import com.android.cts.verifier.TestResult;
-
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-import org.junit.rules.TestName;
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileDescriptor;
@@ -91,6 +83,10 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+import org.junit.rules.TestName;
 
 /**
  * Test for Camera features that require that the camera be aimed at a specific test scene.
@@ -350,8 +346,12 @@ public class ItsTestActivity extends DialogTestListActivity {
 
         @Override
         public boolean equals(final Object o) {
-            if (o == null) return false;
-            if (this == o) return true;
+            if (o == null) {
+                return false;
+            }
+            if (this == o) {
+                return true;
+            }
             if (o instanceof ResultKey) {
                 final ResultKey other = (ResultKey) o;
                 return cameraId.equals(other.cameraId) && sceneId.equals(other.sceneId);
@@ -377,8 +377,9 @@ public class ItsTestActivity extends DialogTestListActivity {
     private final Comparator<ResultKey> mComparator = new Comparator<ResultKey>() {
         @Override
         public int compare(ResultKey k1, ResultKey k2) {
-            if (k1.cameraId.equals(k2.cameraId))
+            if (k1.cameraId.equals(k2.cameraId)) {
                 return k1.sceneId.compareTo(k2.sceneId);
+            }
             return k1.cameraId.compareTo(k2.cameraId);
         }
     };
@@ -442,7 +443,7 @@ public class ItsTestActivity extends DialogTestListActivity {
                     }
                     */
                     JSONObject jsonResults = new JSONObject(results);
-                    Log.d(TAG,"Results received:" + jsonResults.toString());
+                    Log.d(TAG, "Results received:" + jsonResults.toString());
                     Set<String> scenes = new HashSet<>();
                     Iterator<String> keys = jsonResults.keys();
                     while (keys.hasNext()) {

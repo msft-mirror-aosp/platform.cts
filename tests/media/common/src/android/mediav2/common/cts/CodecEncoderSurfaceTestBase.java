@@ -19,6 +19,7 @@ package android.mediav2.common.cts;
 import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface;
 import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Flexible;
 import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatYUVP010;
+import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatYUVP210;
 import static android.mediav2.common.cts.CodecEncoderTestBase.colorFormatToString;
 import static android.mediav2.common.cts.CodecTestBase.BOARD_SDK_IS_BEFORE_U;
 import static android.mediav2.common.cts.CodecTestBase.PROFILE_HLG_MAP;
@@ -159,6 +160,14 @@ public class CodecEncoderSurfaceTestBase {
             Assume.assumeFalse(mDecoderName + "is hardware accelerated and " + mEncoderName
                             + "is software only.",
                     isHardwareAcceleratedCodec(mDecoderName) && isSoftwareCodec(mEncoderName));
+            // If decoder color format is chosen as opaque, APV decoders may prefer P210 format. Not
+            // all encoders support P210 format. Check before proceeding.
+            if (mTestFileMediaType.equals(MediaFormat.MIMETYPE_VIDEO_APV) && !mIsOutputToneMapped
+                    && hasSupportForColorFormat(
+                            mDecoderName, mTestFileMediaType, COLOR_FormatYUVP210)) {
+                assumeTrue(mEncoderName + " doesn't support P210 input",
+                        hasSupportForColorFormat(mEncoderName, mEncMediaType, COLOR_FormatYUVP210));
+            }
         } else {
             // findDecoderForFormat() ignores color-format and decoder returned may not be
             // supporting the color format set in mDecoderFormat. Following check will
