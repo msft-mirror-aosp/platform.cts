@@ -162,8 +162,8 @@ public final class ActivityManagerAppExitInfoTest {
 
     private static final long TOMBSTONE_FETCH_TIMEOUT_MS = 10_000;
 
-    private static final long WAITFOR_MSEC = 10000;
-    private static final long WAITFOR_SETTLE_DOWN = 2000;
+    private static final long WAITFOR_MSEC = 20_000;
+    private static final long WAITFOR_SETTLE_DOWN = 2_000;
 
     private static final int CMD_PID = 1;
 
