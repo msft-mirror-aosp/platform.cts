@@ -36,27 +36,14 @@ import androidx.test.runner.AndroidJUnit4;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import java.io.ByteArrayOutputStream;
-import java.io.InputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.security.KeyFactory;
-import java.security.KeyStore;
-import java.security.PrivateKey;
-import java.security.cert.Certificate;
-import java.security.cert.CertificateFactory;
-import java.security.cert.X509Certificate;
-import java.security.spec.PKCS8EncodedKeySpec;
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.concurrent.Callable;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeoutException;
 
-import javax.net.ssl.KeyManagerFactory;
-import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLServerSocket;
-import javax.net.ssl.TrustManagerFactory;
 
 @RunWith(AndroidJUnit4.class)
 public class DownloadManagerTest extends BaseTestCase {
@@ -67,14 +54,16 @@ public class DownloadManagerTest extends BaseTestCase {
 
     @Test
     public void testConfigTrustedCaAccepted() throws Exception {
-        SSLServerSocket serverSocket = bindTLSServer(R.raw.valid_chain, R.raw.test_key);
+        SSLServerSocket serverSocket =
+                TestUtils.bindTLSServer(mContext, R.raw.valid_chain, R.raw.test_key);
         runDownloadManagerTest(serverSocket, true);
     }
 
     @Test
     public void testUntrustedCaRejected() throws Exception {
         try {
-            SSLServerSocket serverSocket = bindTLSServer(R.raw.invalid_chain, R.raw.test_key);
+            SSLServerSocket serverSocket =
+                    TestUtils.bindTLSServer(mContext, R.raw.invalid_chain, R.raw.test_key);
             runDownloadManagerTest(serverSocket, true);
             fail("Invalid CA should be rejected");
         } catch (Exception expected) {
@@ -130,53 +119,6 @@ public class DownloadManagerTest extends BaseTestCase {
         s.getOutputStream().write(HTTP_RESPONSE.getBytes());
         s.getOutputStream().flush();
         s.close();
-    }
-
-    private SSLServerSocket bindTLSServer(int chainResId, int keyResId) throws Exception {
-        // Load certificate chain.
-        CertificateFactory fact = CertificateFactory.getInstance("X.509");
-        Collection<? extends Certificate> certs;
-        try (InputStream is = mContext.getResources().openRawResource(chainResId)) {
-            certs = fact.generateCertificates(is);
-        }
-        X509Certificate[] chain = new X509Certificate[certs.size()];
-        int i = 0;
-        for (Certificate cert : certs) {
-            chain[i++] = (X509Certificate) cert;
-        }
-
-        // Load private key for the leaf.
-        PrivateKey key;
-        try (InputStream is = mContext.getResources().openRawResource(keyResId)) {
-            ByteArrayOutputStream keyout = new ByteArrayOutputStream();
-            byte[] buffer = new byte[4096];
-            int chunk_size;
-            while ((chunk_size = is.read(buffer)) != -1) {
-                keyout.write(buffer, 0, chunk_size);
-            }
-            is.close();
-            byte[] keyBytes = keyout.toByteArray();
-            key = KeyFactory.getInstance("RSA")
-                    .generatePrivate(new PKCS8EncodedKeySpec(keyBytes));
-        }
-
-        // Create KeyStore based on the private key/chain.
-        KeyStore ks = KeyStore.getInstance(KeyStore.getDefaultType());
-        ks.load(null);
-        ks.setKeyEntry("name", key, null, chain);
-
-        // Create SSLContext.
-        TrustManagerFactory tmf = TrustManagerFactory.getInstance("PKIX");
-        tmf.init(ks);
-        KeyManagerFactory kmf =
-                KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
-        kmf.init(ks, null);
-        SSLContext context = SSLContext.getInstance("TLS");
-        context.init(kmf.getKeyManagers(), tmf.getTrustManagers(), null);
-
-        SSLServerSocket s = (SSLServerSocket) context.getServerSocketFactory().createServerSocket();
-        s.bind(null);
-        return s;
     }
 
     private void assertSuccessfulDownload(long id) throws Exception {
