@@ -36,5 +36,6 @@ android_test_helper_app {
         "flag-junit",
         "truth",
         "androidx.test.ext.junit",
+        "compatibility-device-util-axt",
     ],
 }
