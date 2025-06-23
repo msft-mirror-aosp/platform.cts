@@ -35,6 +35,7 @@ import android.os.SystemClock.sleep
 import android.os.SystemClock.uptimeMillis
 import android.os.UserHandle
 import android.util.Log
+import androidx.annotation.RequiresPermission
 import androidx.test.platform.app.InstrumentationRegistry
 import com.android.compatibility.common.util.SystemUtil
 import java.io.IOException
@@ -135,15 +136,20 @@ abstract class TestBase {
         }
     }
 
+    @RequiresPermission(Manifest.permission.REQUEST_COMPANION_SELF_MANAGED)
     protected fun createSelfManagedAssociation(
         displayName: String,
+        deviceProfile: String? = null,
         onAssociationCreatedAction: ((AssociationInfo) -> Unit)? = null
     ): Int {
         val callback = RecordingCallback(onAssociationCreatedAction = onAssociationCreatedAction)
-        val request: AssociationRequest = AssociationRequest.Builder()
+        var builder = AssociationRequest.Builder()
                 .setSelfManaged(true)
                 .setDisplayName(displayName)
-                .build()
+        if (deviceProfile != null) {
+            builder = builder.setDeviceProfile(deviceProfile)
+        }
+        val request = builder.build()
         callback.assertInvokedByActions {
             withShellPermissionIdentity(Manifest.permission.REQUEST_COMPANION_SELF_MANAGED) {
                 cdm.associate(request, SIMPLE_EXECUTOR, callback)
