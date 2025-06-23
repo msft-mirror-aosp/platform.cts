@@ -297,6 +297,23 @@ public class TaskMoveTests extends MultiDisplayTestBase {
     }
 
     /**
+     * Tests that the {@link android.app.ActivityManager.AppTask#isTaskMoveAllowedOnDisplay} method
+     * throws {@code IllegalArgumentException} when the display ID provided does not specify a valid
+     * display.
+     */
+    @ApiTest(apis = {"android.app.ActivityManager#isTaskMoveAllowedOnDisplay"})
+    @Test
+    public void testIsTaskMoveAllowedOnDisplay_throwsForInvalidDisplayId() {
+        final int badDisplayId = -93;
+
+        launchActivityOnDisplay(TEST_ACTIVITY, Display.DEFAULT_DISPLAY);
+        mWmState.computeState(TEST_ACTIVITY);
+
+        assertIsTaskMoveAllowedOnDisplayThrownException(
+                badDisplayId, IllegalArgumentException.class);
+    }
+
+    /**
      * Tests that a {@link android.app.ActivityManager.AppTask#moveTaskTo} call throws a {@link
      * SecurityException} when the caller does not hold the {@link
      * android.Manifest.permission.REPOSITION_SELF_WINDOWS} permission.
@@ -421,22 +438,14 @@ public class TaskMoveTests extends MultiDisplayTestBase {
     }
 
     private boolean getIsTaskMoveAllowedOnDisplay(int displayId) {
-        mContext.sendBroadcast(
-                new Intent(ACTION_CHECK_IS_TASK_MOVE_ALLOWED)
-                        .setFlags(Intent.FLAG_RECEIVER_FOREGROUND)
-                        .putExtra(EXTRA_DISPLAY_ID_KEY, displayId));
-        final boolean notified =
-                getBroadcastReceivedVariable(ACTION_NOTIFY_TASK_MOVE_ALLOWED_RESULT).block(1000);
-        getBroadcastReceivedVariable(ACTION_NOTIFY_TASK_MOVE_ALLOWED_RESULT).close();
-        final Intent intent =
-                mBroadcastsContentsReceived.get(ACTION_NOTIFY_TASK_MOVE_ALLOWED_RESULT);
+        final Intent response = askIfTaskMoveAllowedOnDisplay(displayId);
 
-        if (!notified || intent == null || !intent.hasExtra(EXTRA_TASK_MOVE_ALLOWED_RESULT)) {
-            if (intent != null && intent.hasExtra(EXTRA_SYNC_EXCEPTION_KEY)) {
+        if (!response.hasExtra(EXTRA_TASK_MOVE_ALLOWED_RESULT)) {
+            if (response.hasExtra(EXTRA_SYNC_EXCEPTION_KEY)) {
                 fail(
                         "The activity notified that the isTaskMoveAllowedOnDisplay request thrown"
-                            + " an exception: "
-                                + intent.getParcelableExtra(
+                                + " an exception: "
+                                + response.getParcelableExtra(
                                                 EXTRA_SYNC_EXCEPTION_KEY, Exception.class)
                                         .getMessage());
             } else {
@@ -447,7 +456,35 @@ public class TaskMoveTests extends MultiDisplayTestBase {
             }
         }
 
-        return intent.getBooleanExtra(EXTRA_TASK_MOVE_ALLOWED_RESULT, false);
+        return response.getBooleanExtra(EXTRA_TASK_MOVE_ALLOWED_RESULT, false);
+    }
+
+    private void assertIsTaskMoveAllowedOnDisplayThrownException(
+            int displayId, Class<?> exceptionClass) {
+        final Intent response = askIfTaskMoveAllowedOnDisplay(displayId);
+        assertTrue(response.getParcelableExtra(EXTRA_SYNC_EXCEPTION_KEY, exceptionClass) != null);
+    }
+
+    // Fails the test if the activity does not respond.
+    private Intent askIfTaskMoveAllowedOnDisplay(int displayId) {
+        mContext.sendBroadcast(
+                new Intent(ACTION_CHECK_IS_TASK_MOVE_ALLOWED)
+                        .setFlags(Intent.FLAG_RECEIVER_FOREGROUND)
+                        .putExtra(EXTRA_DISPLAY_ID_KEY, displayId));
+        final boolean notified =
+                getBroadcastReceivedVariable(ACTION_NOTIFY_TASK_MOVE_ALLOWED_RESULT).block(1000);
+        getBroadcastReceivedVariable(ACTION_NOTIFY_TASK_MOVE_ALLOWED_RESULT).close();
+        final Intent intent =
+                mBroadcastsContentsReceived.get(ACTION_NOTIFY_TASK_MOVE_ALLOWED_RESULT);
+
+        if (!notified || intent == null) {
+            fail(
+                    "The activity has not notified about task movability on display "
+                            + displayId
+                            + " .");
+        }
+
+        return intent;
     }
 
     private void assumeTaskMoveAllowedOnDisplay(int displayId) {
