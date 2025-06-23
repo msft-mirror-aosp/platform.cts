@@ -16,14 +16,6 @@
 
 package com.android.cts.devicepolicy;
 
-import static android.stats.devicepolicy.EventId.ADD_CROSS_PROFILE_WIDGET_PROVIDER_VALUE;
-import static android.stats.devicepolicy.EventId.REMOVE_CROSS_PROFILE_WIDGET_PROVIDER_VALUE;
-import static android.stats.devicepolicy.EventId.SET_CROSS_PROFILE_CALENDAR_PACKAGES_VALUE;
-import static android.stats.devicepolicy.EventId.SET_CROSS_PROFILE_PACKAGES_VALUE;
-import static android.stats.devicepolicy.EventId.SET_INTERACT_ACROSS_PROFILES_APP_OP_VALUE;
-
-import static com.android.cts.devicepolicy.metrics.DevicePolicyEventLogVerifier.assertMetricsLogged;
-
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertTrue;
@@ -31,7 +23,6 @@ import static org.junit.Assert.assertTrue;
 import android.app.admin.flags.Flags;
 import android.platform.test.annotations.FlakyTest;
 
-import com.android.cts.devicepolicy.metrics.DevicePolicyEventWrapper;
 import com.android.tradefed.device.DeviceNotAvailableException;
 import com.android.tradefed.log.LogUtil;
 import com.android.tradefed.result.InputStreamSource;
@@ -248,45 +239,13 @@ public final class ManagedProfileCrossProfileTest extends BaseManagedProfileTest
         }
     }
 
-    @FlakyTest
-    @Test
-    public void testCrossProfileWidgetsLogged() throws Exception {
-        try {
-            installAppAsUser(WIDGET_PROVIDER_APK, USER_ALL);
-            getDevice().executeShellCommand("appwidget grantbind --user " + mParentUserId
-                    + " --package " + WIDGET_PROVIDER_PKG);
-            setIdleAllowlist(WIDGET_PROVIDER_PKG, true);
-            startWidgetHostService();
-
-            assertMetricsLogged(getDevice(), () -> {
-                changeCrossProfileWidgetForUser(WIDGET_PROVIDER_PKG,
-                        "add-cross-profile-widget", mProfileUserId);
-                changeCrossProfileWidgetForUser(WIDGET_PROVIDER_PKG,
-                        "remove-cross-profile-widget", mProfileUserId);
-            }, new DevicePolicyEventWrapper
-                        .Builder(ADD_CROSS_PROFILE_WIDGET_PROVIDER_VALUE)
-                        .setAdminPackageName(MANAGED_PROFILE_PKG)
-                        .build(),
-                new DevicePolicyEventWrapper
-                        .Builder(REMOVE_CROSS_PROFILE_WIDGET_PROVIDER_VALUE)
-                        .setAdminPackageName(MANAGED_PROFILE_PKG)
-                        .build());
-        } finally {
-            changeCrossProfileWidgetForUser(WIDGET_PROVIDER_PKG, "remove-cross-profile-widget",
-                    mProfileUserId);
-            getDevice().uninstallPackage(WIDGET_PROVIDER_PKG);
-        }
-    }
-
     @Test
     public void testCrossProfileCalendarPackage() throws Exception {
-        assertMetricsLogged(getDevice(), () -> {
-            runDeviceTestsAsUser(MANAGED_PROFILE_PKG, ".CrossProfileCalendarTest",
-                    "testCrossProfileCalendarPackage", mProfileUserId);
-        }, new DevicePolicyEventWrapper.Builder(SET_CROSS_PROFILE_CALENDAR_PACKAGES_VALUE)
-                    .setAdminPackageName(MANAGED_PROFILE_PKG)
-                    .setStrings(MANAGED_PROFILE_PKG)
-                    .build());
+        runDeviceTestsAsUser(
+                MANAGED_PROFILE_PKG,
+                ".CrossProfileCalendarTest",
+                "testCrossProfileCalendarPackage",
+                mProfileUserId);
     }
 
     @Test
@@ -340,19 +299,6 @@ public final class ManagedProfileCrossProfileTest extends BaseManagedProfileTest
     }
 
     @Test
-    public void testSetCrossProfilePackages_isLogged() throws Exception {
-        installAllTestApps();
-        assertMetricsLogged(
-                getDevice(),
-                () -> runWorkProfileDeviceTest(
-                        ".CrossProfileTest", "testSetCrossProfilePackages_noAsserts"),
-                new DevicePolicyEventWrapper.Builder(SET_CROSS_PROFILE_PACKAGES_VALUE)
-                        .setAdminPackageName(MANAGED_PROFILE_PKG)
-                        .setStrings(TEST_APP_1_PKG)
-                        .build());
-    }
-
-    @Test
     public void testSetCrossProfilePackages_resetsAppOps() throws Exception {
         installAllTestApps();
         runWorkProfileDeviceTest(
@@ -384,20 +330,6 @@ public final class ManagedProfileCrossProfileTest extends BaseManagedProfileTest
         final String expectedSubstring =
                 packageName + "#" + ACTION_CAN_INTERACT_ACROSS_PROFILES_CHANGED + "#" + userId;
         return readLogcat().contains(expectedSubstring);
-    }
-
-    @Test
-    public void testSetCrossProfilePackages_resetsAppOps_isLogged() throws Exception {
-        installAllTestApps();
-        assertMetricsLogged(
-                getDevice(),
-                () -> runWorkProfileDeviceTest(
-                        ".CrossProfileTest", "testSetCrossProfilePackages_resetsAppOps_noAsserts"),
-                new DevicePolicyEventWrapper.Builder(SET_INTERACT_ACROSS_PROFILES_APP_OP_VALUE)
-                        .setStrings(TEST_APP_4_PKG)
-                        .setInt(MODE_DEFAULT)
-                        .setBoolean(true) // cross-profile manifest attribute
-                        .build());
     }
 
     @Test

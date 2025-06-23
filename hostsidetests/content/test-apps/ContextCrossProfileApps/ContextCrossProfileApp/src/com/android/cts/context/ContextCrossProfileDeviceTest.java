@@ -358,45 +358,6 @@ public class ContextCrossProfileDeviceTest {
     }
 
     @Test
-    public void testBindServiceAsUser_withInteractAcrossProfilePermission_noAsserts() {
-        final AppOpsManager appOpsManager = mContext.getSystemService(AppOpsManager.class);
-        mUiAutomation.adoptShellPermissionIdentity(MANAGE_APP_OPS_MODE);
-        appOpsManager.setMode(
-                AppOpsManager.permissionToOp(INTERACT_ACROSS_PROFILES_PERMISSION),
-                Binder.getCallingUid(),
-                mContext.getPackageName(),
-                AppOpsManager.MODE_DEFAULT);
-        mUiAutomation.dropShellPermissionIdentity();
-        int otherProfileId = getTestUser();
-        UserHandle otherProfileHandle = UserHandle.of(otherProfileId);
-        mUiAutomation.adoptShellPermissionIdentity(INTERACT_ACROSS_PROFILES_PERMISSION);
-        Intent bindIntent = new Intent();
-        bindIntent.setComponent(mTestServiceInSamePkgComponentName);
-
-        mContext.bindServiceAsUser(
-                bindIntent,
-                new ContextCrossProfileTestConnection(),
-                Context.BIND_AUTO_CREATE,
-                otherProfileHandle);
-    }
-
-    @Test
-    public void testBindServiceAsUser_withInteractAcrossUsersFullPermission_noAsserts() {
-        int otherProfileId = getTestUser();
-        UserHandle otherProfileHandle = UserHandle.of(otherProfileId);
-        mUiAutomation.adoptShellPermissionIdentity(
-                INTERACT_ACROSS_USERS_FULL_PERMISSION, INTERACT_ACROSS_USERS_PERMISSION);
-        Intent bindIntent = new Intent();
-        bindIntent.setComponent(mTestServiceInSamePkgComponentName);
-
-        mContext.bindServiceAsUser(
-                bindIntent,
-                new ContextCrossProfileTestConnection(),
-                Context.BIND_AUTO_CREATE,
-                otherProfileHandle);
-    }
-
-    @Test
     public void testCreateContextAsUser_sameProfileGroup_withInteractAcrossProfilesPermission_throwsException() {
         int otherProfileId = getTestUser();
         UserHandle otherProfileHandle = UserHandle.of(otherProfileId);

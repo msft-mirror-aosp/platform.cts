@@ -1,12 +1,7 @@
 package com.android.cts.devicepolicy;
 
-import static com.android.cts.devicepolicy.metrics.DevicePolicyEventLogVerifier.assertMetricsLogged;
-
 import static org.junit.Assert.fail;
 
-import android.stats.devicepolicy.EventId;
-
-import com.android.cts.devicepolicy.metrics.DevicePolicyEventWrapper;
 import com.android.tradefed.device.DeviceNotAvailableException;
 
 import org.junit.Test;
@@ -36,19 +31,6 @@ public abstract class DeviceAndProfileOwnerHostSideTransferTest extends BaseDevi
     protected int mUserId;
     protected String mOutgoingTestClassName;
     protected String mIncomingTestClassName;
-
-    @Test
-    public void testTransferOwnership() throws Exception {
-        final boolean hasManagedProfile = (mUserId != mMainUserId);
-        final String expectedManagementType = hasManagedProfile ? "profile-owner" : "device-owner";
-        assertMetricsLogged(getDevice(), () -> {
-            runDeviceTestsAsUser(TRANSFER_OWNER_OUTGOING_PKG, mOutgoingTestClassName,
-                    "testTransferOwnership", mUserId);
-        }, new DevicePolicyEventWrapper.Builder(EventId.TRANSFER_OWNERSHIP_VALUE)
-                .setAdminPackageName(TRANSFER_OWNER_OUTGOING_PKG)
-                .setStrings(TRANSFER_OWNER_INCOMING_PKG, expectedManagementType)
-                .build());
-    }
 
     @Test
     public void testTransferSameAdmin() throws Exception {

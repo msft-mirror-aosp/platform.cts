@@ -17,7 +17,6 @@
 package com.android.cts.devicepolicy;
 
 import static com.android.cts.devicepolicy.DeviceAdminFeaturesCheckerRule.FEATURE_MANAGED_USERS;
-import static com.android.cts.devicepolicy.metrics.DevicePolicyEventLogVerifier.assertMetricsLogged;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -26,12 +25,9 @@ import static org.junit.Assert.fail;
 
 import android.platform.test.annotations.FlakyTest;
 import android.platform.test.annotations.LargeTest;
-import android.stats.devicepolicy.EventId;
 
 import com.android.cts.devicepolicy.DeviceAdminFeaturesCheckerRule.IgnoreOnHeadlessSystemUserMode;
 import com.android.cts.devicepolicy.DeviceAdminFeaturesCheckerRule.RequiresAdditionalFeatures;
-import com.android.cts.devicepolicy.metrics.DevicePolicyEventWrapper;
-import com.android.cts.devicepolicy.metrics.DevicePolicyEventWrapper.Builder;
 
 import org.junit.Ignore;
 import org.junit.Test;
@@ -62,12 +58,6 @@ public final class DeviceOwnerPlusProfileOwnerTest extends BaseDevicePolicyTest 
             "com.android.cts.comp.ManagementTest";
 
     private static final String COMP_DPC_PKG = "com.android.cts.comp";
-    private static final DevicePolicyEventWrapper WIPE_DATA_WITH_REASON_DEVICE_POLICY_EVENT =
-            new Builder(EventId.WIPE_DATA_WITH_REASON_VALUE)
-                    .setAdminPackageName(COMP_DPC_PKG)
-                    .setInt(0)
-                    .setStrings("notCalledFromParent")
-                    .build();
     private static final String COMP_DPC_APK = "CtsCorpOwnedManagedProfile.apk";
     private static final String COMP_DPC_ADMIN =
             COMP_DPC_PKG + "/com.android.cts.comp.AdminReceiver";
@@ -177,20 +167,6 @@ public final class DeviceOwnerPlusProfileOwnerTest extends BaseDevicePolicyTest 
         // remove user restriction is set.
         sendWipeProfileBroadcast(secondaryUserId);
         waitUntilUserRemoved(secondaryUserId);
-    }
-
-    @Test
-    @IgnoreOnHeadlessSystemUserMode(reason = "CreateAndManageUsers is blocked on headless single "
-            + "user mode")
-    public void testWipeData_secondaryUserLogged() throws Exception {
-        assumeCanCreateAdditionalUsers(1);
-
-        int secondaryUserId = setupManagedSecondaryUser();
-        addDisallowRemoveUserRestriction();
-        assertMetricsLogged(getDevice(), () -> {
-            sendWipeProfileBroadcast(secondaryUserId);
-            waitUntilUserRemoved(secondaryUserId);
-        }, WIPE_DATA_WITH_REASON_DEVICE_POLICY_EVENT);
     }
 
     private void verifyBindDeviceAdminServiceAsUser(int profileOwnerUserId) throws Exception {

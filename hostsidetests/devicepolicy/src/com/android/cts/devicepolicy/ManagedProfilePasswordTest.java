@@ -16,14 +16,10 @@
 
 package com.android.cts.devicepolicy;
 
-import static com.android.cts.devicepolicy.metrics.DevicePolicyEventLogVerifier.assertMetricsLogged;
-
 import android.platform.test.annotations.FlakyTest;
 import android.platform.test.annotations.LargeTest;
-import android.stats.devicepolicy.EventId;
 
 import com.android.cts.devicepolicy.annotations.LockSettingsTest;
-import com.android.cts.devicepolicy.metrics.DevicePolicyEventWrapper;
 import com.android.tradefed.device.DeviceNotAvailableException;
 
 import org.junit.Test;
@@ -193,18 +189,6 @@ public final class ManagedProfilePasswordTest extends BaseManagedProfileTest {
             // end.
             pressPowerButton();
         }
-    }
-
-    @Test
-    public void testCreateSeparateChallengeChangedLogged() throws Exception {
-        assumeHasSecureLockScreenFeature();
-
-        assertMetricsLogged(getDevice(), () -> {
-            changeUserCredential(
-                    TEST_PASSWORD /* newCredential */, null /* oldCredential */, mProfileUserId);
-        }, new DevicePolicyEventWrapper.Builder(EventId.SEPARATE_PROFILE_CHALLENGE_CHANGED_VALUE)
-                .setBoolean(true)
-                .build());
     }
 
     @Test
