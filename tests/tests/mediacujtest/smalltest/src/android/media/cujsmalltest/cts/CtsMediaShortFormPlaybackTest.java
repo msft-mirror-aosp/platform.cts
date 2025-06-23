@@ -202,7 +202,8 @@ public class CtsMediaShortFormPlaybackTest extends CujTestBase {
             .setPlayerListener(new DeviceLockTestPlayerListener(MESSAGE_POSITION_THREE_SEC,
                 false /* isAudioOnlyClip */)).build(), "Hevc_720p_15sec_DeviceLockTest"},
         {CujTestParam.builder().setMediaUrls(prepareMp3_15secAudioPlaylistForDeviceLockTest())
-            .setDuration(CLIP_DURATION_FIFTEEN_SEC).setOverhead(TEST_OVERHEAD).setPlayerListener(
+            .setDuration(CLIP_DURATION_FIFTEEN_SEC).setOverhead(TEST_AUDIO_OVERHEAD)
+            .setPlayerListener(
                 new DeviceLockTestPlayerListener(MESSAGE_POSITION_THREE_SEC,
                     true /* isAudioOnlyClip */)).build(), "Mp3_15sec_DeviceLockTest"},
         {CujTestParam.builder().setMediaUrls(prepareHevc_720p_15sec_SingleVideoPlaylist())
@@ -211,36 +212,36 @@ public class CtsMediaShortFormPlaybackTest extends CujTestBase {
                 Duration.ofSeconds(6) /* messagePosition */)).build(),
             "Hevc_720p_15sec_LockPlaybackTest"},
         {CujTestParam.builder().setMediaUrls(prepareSineWave_70secAudioPlaylist())
-            .setDuration(Duration.ofSeconds(70) /* clipDuration */).setOverhead(TEST_OVERHEAD)
+            .setDuration(Duration.ofSeconds(70) /* clipDuration */).setOverhead(TEST_AUDIO_OVERHEAD)
             .setPlayerListener(
                 new AudioOffloadTestPlayerListener(TestType.AUDIO_OFFLOAD_TEST)).build(),
             MP3_SINE_AUDIO_OFFLOAD_TEST},
         {CujTestParam.builder().setMediaUrls(prepareOpus_AudioPlaylist())
-            .setDuration(Duration.ofSeconds(35) /* clipDuration */).setOverhead(TEST_OVERHEAD)
+            .setDuration(Duration.ofSeconds(35) /* clipDuration */).setOverhead(TEST_AUDIO_OVERHEAD)
             .setPlayerListener(
                 new AudioOffloadTestPlayerListener(TestType.AUDIO_OFFLOAD_TEST)).build(),
             OPUS_AUDIO_OFFLOAD_TEST},
         {CujTestParam.builder().setMediaUrls(preapreAac_SineWave_AudioPlaylist())
-            .setDuration(Duration.ofSeconds(71) /* clipDuration */).setOverhead(TEST_OVERHEAD)
+            .setDuration(Duration.ofSeconds(71) /* clipDuration */).setOverhead(TEST_AUDIO_OVERHEAD)
             .setPlayerListener(
                 new AudioOffloadTestPlayerListener(TestType.AUDIO_OFFLOAD_TEST)).build(),
             AAC_SINE_AUDIO_OFFLOAD_TEST},
         {CujTestParam.builder().setMediaUrls(prepareMp3Consecutive_65secAudioPlaylist())
-            .setDuration(Duration.ofSeconds(65) /* clipDuration */).setOverhead(TEST_OVERHEAD)
+            .setDuration(Duration.ofSeconds(65) /* clipDuration */).setOverhead(TEST_AUDIO_OVERHEAD)
             .setPlayerListener(
                 new AudioOffloadTestPlayerListener(TestType.AUDIO_OFFLOAD_TEST)).build(),
             MP3_CONSECUTIVE_AUDIO_OFFLOAD_TEST},
         {CujTestParam.builder().setMediaUrls(prepareOpus_AudioPlaylist())
             .setDuration(Duration.ofMillis(
                 (long) (35000/PLAYBACK_RATE_FOR_SPEED_CHANGE_TEST)) /* clipDuration */)
-            .setOverhead(TEST_OVERHEAD)
+            .setOverhead(TEST_AUDIO_OVERHEAD)
             .setPlayerListener(
                 new AudioOffloadTestPlayerListener(TestType.AUDIO_OFFLOAD_SPEED_CHANGE_TEST))
                 .build(),
             OPUS_AUDIO_OFFLOAD_SPEED_CHANGE_TEST},
         {CujTestParam.builder().setMediaUrls(prepareSineWave_70secAudioPlaylist())
-            .setDuration(Duration.ofMillis(70000) /* clip Duration */)
-            .setOverhead(TEST_OVERHEAD)
+            .setDuration(Duration.ofMillis(100000) /* clip Duration */)
+            .setOverhead(TEST_AUDIO_OVERHEAD)
             .setPlayerListener(
                 new AudioOffloadTestPlayerListener(TestType.AUDIO_OFFLOAD_SEEK_TEST,
                       SEEK_POSITION_FOR_SEEK_TEST /* SeekPosition */,
@@ -249,7 +250,7 @@ public class CtsMediaShortFormPlaybackTest extends CujTestBase {
             MP3_SINE_AUDIO_OFFLOAD_SEEK_TEST},
         {CujTestParam.builder().setMediaUrls(prepareMp3_SineWaveGapless_AudioPlaylist())
             .setDuration(Duration.ofMillis(36360 * 2) /* clip Duration */)
-            .setOverhead(TEST_OVERHEAD)
+            .setOverhead(TEST_AUDIO_OVERHEAD)
             .setPlayerListener(
                 new AudioOffloadTestPlayerListener(TestType.AUDIO_OFFLOAD_GAPLESS_TEST))
             .build(),
