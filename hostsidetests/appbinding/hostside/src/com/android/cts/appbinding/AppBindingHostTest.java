@@ -310,7 +310,7 @@ public class AppBindingHostTest extends BaseHostJUnit4Test implements IBuildRece
                     "^" + Pattern.quote("finder,[Default SMS app]," + userId + ",")
                             + "(?!" // Negative look ahead
                             + Pattern.quote(packageName + ",")
-                            + ")");
+                            + "ServiceInfo)");
         });
     }
 
