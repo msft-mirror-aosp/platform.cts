@@ -202,6 +202,8 @@ public class ActivityVisibilityTests extends ActivityManagerTestBase {
 
     @Test
     public void testTurnScreenOnActivity() {
+        // Allow auto devices to skip this test.
+        assumeFalse(isCar());
         final LockScreenSession lockScreenSession = createManagedLockScreenSession();
         final ActivitySessionClient activityClient = createManagedActivityClientSession();
         testTurnScreenOnActivity(lockScreenSession, activityClient,
@@ -247,7 +249,8 @@ public class ActivityVisibilityTests extends ActivityManagerTestBase {
 
     @Test
     public void testTurnScreenOnActivity_slowLaunch() {
-
+        // Allow auto devices to skip this test.
+        assumeFalse(isCar());
         final LockScreenSession lockScreenSession = createManagedLockScreenSession();
         final ActivitySessionClient activityClient = createManagedActivityClientSession();
         // The activity will be paused first because the flags turn-screen-on and show-when-locked
@@ -800,6 +803,9 @@ public class ActivityVisibilityTests extends ActivityManagerTestBase {
 
     @Test
     public void testTurnScreenOnActivity_withRelayout() {
+        // Allow auto devices to skip this test.
+        assumeFalse(isCar());
+
         assumeTrue(supportsLockScreen());
 
         final LockScreenSession lockScreenSession = createManagedLockScreenSession();
