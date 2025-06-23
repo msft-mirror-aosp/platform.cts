@@ -213,6 +213,16 @@ public class CtsIsolatedInferenceService extends OnDeviceSandboxedInferenceServi
             return;
         }
 
+        if (requestType
+                == OnDeviceIntelligenceManagerTest.REQUEST_TYPE_FETCH_FEATURE_METADATA) {
+            try {
+                callback.onResult(getFeatureMetadata(feature).get());
+            } catch (InterruptedException | ExecutionException e) {
+                throw new RuntimeException(e);
+            }
+            return;
+        }
+
         if (requestType == OnDeviceIntelligenceManagerTest.REQUEST_TYPE_GET_PACKAGE_NAME) {
             PackageManager mPm = getPackageManager();
             Bundle bundle = new Bundle();
@@ -361,6 +371,18 @@ public class CtsIsolatedInferenceService extends OnDeviceSandboxedInferenceServi
                             });
                     // Used only for debugging.
                     return "Fetch file contents from map";
+                });
+    }
+
+    private Future<Bundle> getFeatureMetadata(@NonNull Feature feature) {
+        return CallbackToFutureAdapter.getFuture(
+                completer -> {
+                    fetchFeatureMetadata(feature, getMainExecutor(),
+                            bundle -> {
+                                completer.set(bundle);
+                            });
+                    // Used only for debugging.
+                    return "Fetch feature metadata";
                 });
     }
 

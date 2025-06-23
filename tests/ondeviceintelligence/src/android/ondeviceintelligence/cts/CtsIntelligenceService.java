@@ -27,6 +27,7 @@ import android.app.ondeviceintelligence.FeatureDetails;
 import android.app.ondeviceintelligence.OnDeviceIntelligenceException;
 import android.content.Intent;
 import android.os.CancellationSignal;
+import android.os.Bundle;
 import android.os.Looper;
 import android.os.OutcomeReceiver;
 import android.os.ParcelFileDescriptor;
@@ -193,6 +194,14 @@ public class CtsIntelligenceService extends OnDeviceIntelligenceService {
     @Override
     public void onGetVersion(@NonNull LongConsumer versionConsumer) {
         versionConsumer.accept(1);
+    }
+
+    @Override
+    public void onGetFeatureMetadata(
+            @NonNull Feature feature, @NonNull Consumer<Bundle> metadataConsumer) {
+        Bundle bundle = new Bundle();
+        bundle.putString(TEST_KEY, "feature_metadata");
+        metadataConsumer.accept(bundle);
     }
 
     /**
