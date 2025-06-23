@@ -44,9 +44,15 @@ import android.view.Display;
 import android.view.WindowManager;
 import android.view.WindowMetrics;
 
+import com.android.bedstead.harrier.BedsteadJUnit4;
+import com.android.bedstead.harrier.DeviceState;
+import com.android.bedstead.harrier.annotations.RequireNotAutomotive;
 import com.android.compatibility.common.util.ApiTest;
 
+import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.util.function.Supplier;
 
@@ -60,9 +66,14 @@ import java.util.function.Supplier;
 @ApiTest(apis = {"android.view.WindowManager#getCurrentWindowMetrics",
         "android.view.WindowManager#getMaximumWindowMetrics",
         "android.app.Activity#getWindowManager"})
+@RunWith(BedsteadJUnit4.class)
 public class WindowMetricsActivityTests extends WindowManagerTestBase {
     private static final Rect WINDOW_BOUNDS = new Rect(100, 100, 900, 900);
     private static final int MOVE_OFFSET = 100;
+
+    @ClassRule
+    @Rule
+    public static final DeviceState sDeviceState = new DeviceState();
 
     @Test
     public void testMetricsMatchesLayoutOnActivityOnCreate() {
@@ -90,6 +101,7 @@ public class WindowMetricsActivityTests extends WindowManagerTestBase {
     }
 
     @Test
+    @RequireNotAutomotive(reason = "Automotive screens don't support rotation")
     public void testMetricsMatchesActivityBoundsOnNonresizableActivity() {
         assumeTrue("Skipping test: no rotation support", supportsRotation());
 
