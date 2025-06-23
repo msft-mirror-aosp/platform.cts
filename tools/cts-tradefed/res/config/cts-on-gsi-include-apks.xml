@@ -154,4 +154,12 @@
     <option name="compatibility:include-filter" value="CtsKeystoreTestCases android.keystore.cts.AttestKeyTest#testRsaAttestKey" />
     <option name="compatibility:include-filter" value="CtsKeystorePerformanceTestCases android.keystore.cts.performance.AttestationPerformanceTest#testEcKeyAttestation" />
     <option name="compatibility:include-filter" value="CtsKeystorePerformanceTestCases android.keystore.cts.performance.AttestationPerformanceTest#testRsaKeyAttestation" />
+    <!-- b/424151228 Include the tests which are excluded to run on GSI since `remote_provisioning.hostname` is unset on GSI -->
+    <option name="compatibility:include-filter" value="CtsKeystoreTestCases android.keystore.cts.DeviceOwnerKeyManagementTest#testAllVariationsOfDeviceIdAttestation" />
+    <option name="compatibility:include-filter" value="CtsIdentityTestCases android.security.identity.cts.AttestationTest" />
+    <option name="compatibility:include-filter" value="CtsIdentityTestCases android.security.identity.cts.DynamicAuthTest" />
+    <option name="compatibility:include-filter" value="CtsIdentityTestCases android.security.identity.cts.EphemeralKeyTest" />
+    <option name="compatibility:include-filter" value="CtsIdentityTestCases android.security.identity.cts.ProvisioningTest" />
+    <option name="compatibility:include-filter" value="CtsIdentityTestCases android.security.identity.cts.ReaderAuthTest" />
+    <option name="compatibility:include-filter" value="CtsIdentityTestCases android.security.identity.cts.UserAuthTest" />
 </configuration>
