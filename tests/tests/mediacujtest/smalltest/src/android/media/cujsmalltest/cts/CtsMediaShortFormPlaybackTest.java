@@ -75,6 +75,8 @@ public class CtsMediaShortFormPlaybackTest extends CujTestBase {
       "android.resource://android.media.cujsmalltest.cts/raw/testopus";
   private static final String AAC_SINE_ASSET_40DB_LONG_URI_STRING =
       "android.resource://android.media.cujsmalltest.cts/raw/sine40dblong_44k_128kbps_LC";
+  private static final String MP3_SINE_GAPLESS_ASSET_URI_STRING =
+      "android.resource://android.media.cujsmalltest.cts/raw/sine882hz3s";
   private static final String MP4_FORBIGGERJOYRIDES_ASSET_720P_HEVC_URI_STRING =
       "android.resource://android.media.cujsmalltest.cts/raw/ForBiggerJoyrides_720p_hevc_15s";
   private static final String MP4_FORBIGGERMELTDOWN_ASSET_720P_HEVC_URI_STRING =
@@ -120,6 +122,8 @@ public class CtsMediaShortFormPlaybackTest extends CujTestBase {
   private static final String OPUS_AUDIO_OFFLOAD_SPEED_CHANGE_TEST =
                                             "Opus_AudioOffloadSpeedChangeTest";
   private static final String MP3_SINE_AUDIO_OFFLOAD_SEEK_TEST = "Mp3_Sine_AudioOffloadSeekTest";
+  private static final String MP3_SINE_AUDIO_OFFLOAD_GAPLESS_TEST =
+                                            "Mp3_Sine_AudioOffloadGaplessTest";
 
   CujTestParam mCujTestParam;
   private final String mTestType;
@@ -243,6 +247,13 @@ public class CtsMediaShortFormPlaybackTest extends CujTestBase {
                       FIRST_PLAYBACK_DURATION_FOR_SEEK_TEST /* SendMessagePosition */))
             .build(),
             MP3_SINE_AUDIO_OFFLOAD_SEEK_TEST},
+        {CujTestParam.builder().setMediaUrls(prepareMp3_SineWaveGapless_AudioPlaylist())
+            .setDuration(Duration.ofMillis(36360 * 2) /* clip Duration */)
+            .setOverhead(TEST_OVERHEAD)
+            .setPlayerListener(
+                new AudioOffloadTestPlayerListener(TestType.AUDIO_OFFLOAD_GAPLESS_TEST))
+            .build(),
+            MP3_SINE_AUDIO_OFFLOAD_GAPLESS_TEST},
     }));
     return exhaustiveArgsList;
   }
@@ -403,6 +414,26 @@ public class CtsMediaShortFormPlaybackTest extends CujTestBase {
     return audioInput;
   }
 
+  /**
+   * Prepare MP3 sine gapless audio list.
+   */
+  public static List<String> prepareMp3_SineWaveGapless_AudioPlaylist() {
+    List<String> audioInput = Arrays.asList(
+        MP3_SINE_GAPLESS_ASSET_URI_STRING,
+        MP3_SINE_GAPLESS_ASSET_URI_STRING,
+        MP3_SINE_GAPLESS_ASSET_URI_STRING,
+        MP3_SINE_GAPLESS_ASSET_URI_STRING,
+        MP3_SINE_GAPLESS_ASSET_URI_STRING,
+        MP3_SINE_GAPLESS_ASSET_URI_STRING,
+        MP3_SINE_GAPLESS_ASSET_URI_STRING,
+        MP3_SINE_GAPLESS_ASSET_URI_STRING,
+        MP3_SINE_GAPLESS_ASSET_URI_STRING,
+        MP3_SINE_GAPLESS_ASSET_URI_STRING,
+        MP3_SINE_GAPLESS_ASSET_URI_STRING,
+        MP3_SINE_GAPLESS_ASSET_URI_STRING);
+    return audioInput;
+  }
+
 
   // Test to Verify video playback with and without seek
   @ApiTest(apis = {"android.media.MediaCodec#configure",
@@ -466,6 +497,9 @@ public class CtsMediaShortFormPlaybackTest extends CujTestBase {
         } else if (AAC_SINE_AUDIO_OFFLOAD_TEST.equals(mTestType)) {
             Assume.assumeTrue("Skipping " + mTestType + " as device doesn't support audio " +
                 "offloading", deviceSupportAudioOffload(AudioFormat.ENCODING_AAC_LC));
+        } else if (MP3_SINE_AUDIO_OFFLOAD_GAPLESS_TEST.equals(mTestType)) {
+            Assume.assumeTrue("Skipping " + mTestType + " as device doesn't support audio " +
+                "gapless offloading", deviceSupportGaplessAudioOffload(AudioFormat.ENCODING_MP3));
         }
     }
     play(mCujTestParam.getMediaUrls(),

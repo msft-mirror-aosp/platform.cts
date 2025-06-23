@@ -66,7 +66,9 @@ public abstract class PlayerListener implements Player.Listener {
     LOCK_PLAYBACK_CONTROLLER_TEST,
     AUDIO_OFFLOAD_TEST,
     AUDIO_OFFLOAD_SPEED_CHANGE_TEST,
-    AUDIO_OFFLOAD_SEEK_TEST
+    AUDIO_OFFLOAD_SEEK_TEST,
+    AUDIO_OFFLOAD_GAPLESS_TEST,
+    AUDIO_OFFLOAD_GAPLESS_TEST_HELPER,
   }
 
   public static boolean mPlaybackEnded;
@@ -74,6 +76,7 @@ public abstract class PlayerListener implements Player.Listener {
   protected MainActivity mActivity;
   protected ScrollTestActivity mScrollActivity;
   protected AudioOffloadTestActivity mAudioOffloadActivity;
+  protected GaplessTestActivity mGaplessActivity;
   protected Duration mSendMessagePosition;
   protected int mPreviousOrientation;
   protected int mOrientationIndex;
@@ -87,6 +90,7 @@ public abstract class PlayerListener implements Player.Listener {
   protected AudioManager mAudioManager;
   protected boolean mRingVolumeUpdated;
   protected Duration mTotalSeekOverhead;
+  protected long mPlaybackTime;
 
   public PlayerListener() {
     this.mSendMessagePosition = Duration.ofSeconds(0);
@@ -153,7 +157,8 @@ public abstract class PlayerListener implements Player.Listener {
   public final boolean isAudioOffloadTest() {
     return getTestType().equals(TestType.AUDIO_OFFLOAD_TEST)
           || getTestType().equals(TestType.AUDIO_OFFLOAD_SPEED_CHANGE_TEST)
-          || getTestType().equals(TestType.AUDIO_OFFLOAD_SEEK_TEST);
+          || getTestType().equals(TestType.AUDIO_OFFLOAD_SEEK_TEST)
+          || getTestType().equals(TestType.AUDIO_OFFLOAD_GAPLESS_TEST);
   }
 
   /**
@@ -161,6 +166,13 @@ public abstract class PlayerListener implements Player.Listener {
    */
   public final long getExpectedTotalTime() {
     return mExpectedTotalTime;
+  }
+
+  /**
+   * Returns total playback time for the playlist.
+   */
+  public final long getTotalPlaybackTime() {
+    return mPlaybackTime;
   }
 
   /**
@@ -200,6 +212,13 @@ public abstract class PlayerListener implements Player.Listener {
    */
   public final void setAudioOffloadActivity(AudioOffloadTestActivity activity) {
     this.mAudioOffloadActivity = activity;
+  }
+
+  /**
+   * Sets activity for gapless test.
+   */
+  public final void setGaplessActivity(GaplessTestActivity activity) {
+    this.mGaplessActivity = activity;
   }
 
   /**
@@ -252,7 +271,9 @@ public abstract class PlayerListener implements Player.Listener {
             mScrollActivity.removePlayerListener();
           } else if (isAudioOffloadTest()) {
             mAudioOffloadActivity.removePlayerListener();
-          } else {
+          } else if (getTestType().equals(TestType.AUDIO_OFFLOAD_GAPLESS_TEST_HELPER)) {
+            mGaplessActivity.removePlayerListener();
+            } else {
             mActivity.removePlayerListener();
           }
           // Verify the total time taken by the notification test
@@ -268,8 +289,10 @@ public abstract class PlayerListener implements Player.Listener {
                 .isWithin(NOTIFICATIONTEST_PLAYBACK_DELTA.toMillis()).of(mExpectedTotalTime);
           }
           if (isAudioOffloadTest()) {
-            assertTrue("Player did not sleep for audio offload",
+            if (!getTestType().equals(TestType.AUDIO_OFFLOAD_GAPLESS_TEST)) {
+              assertTrue("Player did not sleep for audio offload",
                 mAudioOffloadActivity.mIsSleepingForAudioOffloadEnabled);
+            }
             assertTrue("Audio offload was not enabled",
                 mAudioOffloadActivity.mIsAudioOffloadEnabled);
           }
