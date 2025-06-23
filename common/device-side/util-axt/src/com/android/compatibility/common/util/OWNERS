@@ -9,3 +9,4 @@ per-file ShellUtils.java = felipeal@google.com
 per-file *Settings*.java = felipeal@google.com
 per-file User*Helper*.java = felipeal@google.com
 per-file *State*er*.java = felipeal@google.com
+per-file CarrierPrivilegeUtils.java = file:platform/cts:/tests/tests/carrierapi/OWNERS
