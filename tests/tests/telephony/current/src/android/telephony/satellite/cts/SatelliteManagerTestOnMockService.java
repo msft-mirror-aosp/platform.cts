@@ -439,7 +439,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         sSatelliteManager.unregisterStateChangeListener(listener);
     }
 
-    @Ignore("b/405225616 - Need to fix and re-enable it.")
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_SATELLITE_STATE_CHANGE_LISTENER)
     public void testRegisterStateChangeListener_withReadPhoneStatePermission_noThrows() {
@@ -484,7 +483,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         }
     }
 
-    @Ignore("b/403572869 - This test is flaky. Need to fix and re-enable it.")
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_SATELLITE_STATE_CHANGE_LISTENER)
     public void testStateChangeListener_duringRegistration_getNotified() {
@@ -1665,7 +1663,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         revokeSatellitePermission();
     }
 
-    @Ignore("b/377926997 - This test is failing due to the recent change in capabilities.")
     @Test
     public void testRequestSatelliteCapabilities() {
         logd("testRequestSatelliteCapabilities");
@@ -3666,7 +3663,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         revokeSatellitePermission();
     }
 
-    @Ignore("b/377926997 - This test is failing due to the recent change in capabilities.")
     @Test
     public void testRegisterForCapabilitiesChanged() {
         logd("testRegisterForCapabilitiesChanged: start");
