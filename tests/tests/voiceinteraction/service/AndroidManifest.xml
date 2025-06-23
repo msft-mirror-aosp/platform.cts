@@ -18,7 +18,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="android.voiceinteraction.service">
 
-    <application android:label="Voice service">
+    <application android:label="Voice service" android:debuggable="true">
       <uses-library android:name="android.test.runner" />
       <service android:name=".MainInteractionService"
               android:label="CTS test voice interaction service"
