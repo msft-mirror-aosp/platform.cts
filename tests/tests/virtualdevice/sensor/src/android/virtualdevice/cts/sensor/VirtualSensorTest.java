@@ -17,6 +17,7 @@
 package android.virtualdevice.cts.sensor;
 
 import static android.hardware.Sensor.TYPE_ACCELEROMETER;
+import static android.hardware.Sensor.TYPE_ALL;
 import static android.hardware.SensorDirectChannel.RATE_NORMAL;
 import static android.hardware.SensorDirectChannel.RATE_STOP;
 import static android.hardware.SensorDirectChannel.TYPE_HARDWARE_BUFFER;
@@ -86,7 +87,6 @@ import java.util.Random;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
-
 
 @RunWith(AndroidJUnit4.class)
 @AppModeFull(reason = "VirtualDeviceManager cannot be accessed by instant apps")
@@ -199,6 +199,65 @@ public class VirtualSensorTest {
         mVirtualSensor = setUpVirtualSensor(/* sensorConfig= */ null);
         assertThat(mVirtualSensor).isNull();
         assertThat(mVirtualDeviceSensorManager.getSensorList(TYPE_ACCELEROMETER)).isEmpty();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_HANDLE_INVALID_DEVICE_ID)
+    public void getSensorList_virtualDeviceClosed_returnsEmptyList() {
+        setUpVirtualSensor(
+                new VirtualSensorConfig.Builder(TYPE_ACCELEROMETER, VIRTUAL_SENSOR_NAME)
+                        .setDirectChannelTypesSupported(TYPE_MEMORY_FILE)
+                        .setHighestDirectReportRateLevel(RATE_NORMAL)
+                        .build());
+        mVirtualDevice.close();
+
+        assertThat(mVirtualDeviceSensorManager.getSensorList(TYPE_ALL)).isEmpty();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_HANDLE_INVALID_DEVICE_ID)
+    public void getDefaultSensor_virtualDeviceClosed_returnsNull() {
+        mVirtualSensor =
+                setUpVirtualSensor(
+                        new VirtualSensorConfig.Builder(TYPE_ACCELEROMETER, VIRTUAL_SENSOR_NAME)
+                                .build());
+        mVirtualDevice.close();
+
+        assertThat(mVirtualDeviceSensorManager.getDefaultSensor(TYPE_ACCELEROMETER)).isNull();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_HANDLE_INVALID_DEVICE_ID)
+    public void createDirectChannel_withMemoryFile_virtualDeviceClosed_throwsException() {
+        setUpVirtualSensor(
+                new VirtualSensorConfig.Builder(TYPE_ACCELEROMETER, VIRTUAL_SENSOR_NAME)
+                        .setDirectChannelTypesSupported(TYPE_MEMORY_FILE)
+                        .setHighestDirectReportRateLevel(RATE_NORMAL)
+                        .build());
+        mVirtualDevice.close();
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () ->
+                        mVirtualDeviceSensorManager.createDirectChannel(
+                                new MemoryFile("test", SHARED_MEMORY_SIZE)));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_HANDLE_INVALID_DEVICE_ID)
+    public void createDirectChannel_withHardwareBuffer_virtualDeviceClosed_throwsException() {
+        setUpVirtualSensor(
+                new VirtualSensorConfig.Builder(TYPE_ACCELEROMETER, VIRTUAL_SENSOR_NAME)
+                        .setDirectChannelTypesSupported(TYPE_MEMORY_FILE)
+                        .setHighestDirectReportRateLevel(RATE_NORMAL)
+                        .build());
+        mVirtualDevice.close();
+
+        try (HardwareBuffer hardwareBuffer = createSensorsHardwareBuffer()) {
+            assertThrows(
+                    IllegalArgumentException.class,
+                    () -> mVirtualDeviceSensorManager.createDirectChannel(hardwareBuffer));
+        }
     }
 
     @Test
@@ -316,24 +375,6 @@ public class VirtualSensorTest {
         verify(mDynamicSensorCallback, never()).onDynamicSensorConnected(any());
 
         mSensorManager.unregisterDynamicSensorCallback(mDynamicSensorCallback);
-    }
-
-    @Test
-    public void closeVirtualDevice_removesSensor() {
-        mVirtualSensor = setUpVirtualSensor(
-                new VirtualSensorConfig.Builder(TYPE_ACCELEROMETER, VIRTUAL_SENSOR_NAME).build());
-        mVirtualDevice.close();
-
-        // The virtual device ID is no longer valid, SensorManager falls back to default device.
-        Sensor sensor = mVirtualDeviceSensorManager.getDefaultSensor(TYPE_ACCELEROMETER);
-        Sensor defaultDeviceSensor = mSensorManager.getDefaultSensor(TYPE_ACCELEROMETER);
-
-        if (defaultDeviceSensor == null) {
-          assertThat(sensor).isNull();
-        } else {
-          assertThat(sensor.getHandle()).isEqualTo(defaultDeviceSensor.getHandle());
-          assertThat(sensor.getName()).isEqualTo(defaultDeviceSensor.getName());
-        }
     }
 
     @Test
