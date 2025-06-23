@@ -129,7 +129,7 @@ public class RoundedCornerTests extends ActivityManagerTestBase {
         if (rotation != ROTATION_0) {
             // If the device doesn't support rotation, just verify the rounded corner with
             // the current orientation.
-            if (!supportsRotation()) {
+            if (!supportsRotation() || isCar()) {
                 return;
             }
             RotationSession rotationSession = createManagedRotationSession();

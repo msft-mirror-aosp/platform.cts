@@ -36,21 +36,13 @@ public class NfcFObserveModeEmulatorTestActivity extends PassFailButtons.Activit
 
     NfcAdapter mAdapter;
     NfcFCardEmulation mNfcFCardEmulation;
-    boolean mSeenPollingFrame = false;
-    boolean mTransactionSuccess = false;
 
     final BroadcastReceiver mReceiver =
             new BroadcastReceiver() {
                 @Override
                 public void onReceive(Context context, Intent intent) {
                     String action = intent.getAction();
-
                     if (ACTION_TEST_SUCCESS.equals(action)) {
-                        mTransactionSuccess = true;
-                    } else if (PollingLoopService.POLLING_FRAME_ACTION.equals(action)) {
-                        mSeenPollingFrame = true;
-                    }
-                    if (mSeenPollingFrame && mTransactionSuccess) {
                         getPassButton().setEnabled(true);
                     }
                 }

@@ -230,7 +230,6 @@ public class DisplayManagerTest {
     @Test
     @RequiresFlagsEnabled({Flags.FLAG_DISPLAY_TOPOLOGY, Flags.FLAG_DISPLAY_TOPOLOGY_API})
     public void testGetDisplayTopology() {
-        mInstrumentation.getUiAutomation().adoptShellPermissionIdentity();
         DisplayManager displayManager =
                 Objects.requireNonNull(mActivity.getSystemService(DisplayManager.class));
 

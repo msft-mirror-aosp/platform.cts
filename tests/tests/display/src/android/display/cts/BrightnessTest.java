@@ -18,6 +18,7 @@ package android.display.cts;
 
 import static android.hardware.display.BrightnessCorrection.createScaleAndTranslateLog;
 
+import static com.android.server.display.feature.flags.Flags.FLAG_DISPLAY_LISTENER_PERFORMANCE_IMPROVEMENTS;
 import static com.android.server.display.feature.flags.Flags.FLAG_SET_BRIGHTNESS_BY_UNIT;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -69,6 +70,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 
 @AppModeFull
@@ -471,6 +474,43 @@ public class BrightnessTest extends TestBase {
                     mDisplayManager.getBrightness(
                             Display.DEFAULT_DISPLAY, DisplayManager.BRIGHTNESS_UNIT_PERCENTAGE);
             assertEquals(actualBrightness, brightness, /* delta= */ 0.05);
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled({
+        FLAG_SET_BRIGHTNESS_BY_UNIT,
+        FLAG_DISPLAY_LISTENER_PERFORMANCE_IMPROVEMENTS
+    })
+    public void testBrightnessChangeListener() throws InterruptedException {
+        try (var brtClosable = new BrightnessClosable()) {
+            float brightness = 33.7f;
+            CountDownLatch signal = new CountDownLatch(1);
+            mDisplayManager.registerDisplayListener(
+                    mContext.getMainExecutor(),
+                    DisplayManager.EVENT_TYPE_DISPLAY_BRIGHTNESS,
+                    new DisplayManager.DisplayListener() {
+                        @Override
+                        public void onDisplayAdded(int displayId) {}
+
+                        @Override
+                        public void onDisplayRemoved(int displayId) {}
+
+                        @Override
+                        public void onDisplayChanged(int displayId) {
+                            if (mDisplayManager.getBrightness(
+                                            Display.DEFAULT_DISPLAY,
+                                            DisplayManager.BRIGHTNESS_UNIT_PERCENTAGE)
+                                    == brightness) {
+                                signal.countDown();
+                            }
+                        }
+                    });
+
+            mDisplayManager.setBrightness(
+                    Display.DEFAULT_DISPLAY, brightness, DisplayManager.BRIGHTNESS_UNIT_PERCENTAGE);
+
+            assertTrue(signal.await(5, TimeUnit.SECONDS));
         }
     }
 

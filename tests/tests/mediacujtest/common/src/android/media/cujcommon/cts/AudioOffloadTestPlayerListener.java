@@ -50,6 +50,9 @@ public class AudioOffloadTestPlayerListener extends PlayerListener {
       // At the first media transition player is not ready. So, add duration of
       // first clip when player is ready
       mExpectedTotalTime += player.getDuration();
+      mStartTime = System.currentTimeMillis();
+    } else if (player.getPlaybackState() == Player.STATE_ENDED) {
+        mPlaybackTime = System.currentTimeMillis() - mStartTime;
     }
   }
 

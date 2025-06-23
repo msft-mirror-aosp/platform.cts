@@ -45,6 +45,7 @@ public class AudioOffloadTestActivity extends AppCompatActivity {
   protected boolean mIsSleepingForAudioOffloadEnabled;
   protected boolean mIsAudioOffloadEnabled;
   protected boolean mIsAudioOffloadSpeedChangeRequired;
+  protected boolean mIsAudioOffloadGaplessRequired;
   protected float mPlaybackRate;
 
   @Override
@@ -54,6 +55,7 @@ public class AudioOffloadTestActivity extends AppCompatActivity {
     getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
     mPlaybackRate = getIntent().getFloatExtra("playback_rate", DEFAULT_PLAYBACK_RATE);
     mIsAudioOffloadSpeedChangeRequired = mPlaybackRate != DEFAULT_PLAYBACK_RATE;
+    mIsAudioOffloadGaplessRequired = getIntent().getBooleanExtra("gapless_audio_offload", false);
     buildPlayer();
   }
 
@@ -94,6 +96,7 @@ public class AudioOffloadTestActivity extends AppCompatActivity {
     AudioOffloadPreferences audioOffloadPreferences = new AudioOffloadPreferences.Builder()
         .setAudioOffloadMode(AudioOffloadPreferences.AUDIO_OFFLOAD_MODE_ENABLED)
         .setIsSpeedChangeSupportRequired(mIsAudioOffloadSpeedChangeRequired)
+        .setIsGaplessSupportRequired(mIsAudioOffloadGaplessRequired)
         .build();
     TrackSelectionParameters currentParameters = mPlayer.getTrackSelectionParameters();
     TrackSelectionParameters newParameters = currentParameters.buildUpon()
