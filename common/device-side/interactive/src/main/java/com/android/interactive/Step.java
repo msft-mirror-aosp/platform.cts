@@ -417,7 +417,8 @@ public abstract class Step<E> {
                                                     SYSTEM_APPLICATION_OVERLAY,
                                                     INTERNAL_SYSTEM_WINDOW)) {
                                 params.setSystemApplicationOverlay(true);
-                                setPrivateFlagsViaReflection();
+                                params.privateFlags =
+                                        WindowManager.LayoutParams.SYSTEM_FLAG_SHOW_FOR_ALL_USERS;
                                 sWindowManager.addView(mInstructionView, params);
                             }
                         });
