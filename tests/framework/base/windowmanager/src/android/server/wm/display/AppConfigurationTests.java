@@ -80,9 +80,15 @@ import android.util.Size;
 import android.view.Display;
 import android.window.WindowContainerTransaction;
 
+import com.android.bedstead.harrier.BedsteadJUnit4;
+import com.android.bedstead.harrier.DeviceState;
+import com.android.bedstead.harrier.annotations.RequireNotAutomotive;
 import com.android.compatibility.common.util.ApiTest;
 
+import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.util.function.Function;
 
@@ -91,10 +97,15 @@ import java.util.function.Function;
  *     atest CtsWindowManagerDeviceDisplay:AppConfigurationTests
  */
 @Presubmit
+@RunWith(BedsteadJUnit4.class)
 public class AppConfigurationTests extends MultiDisplayTestBase {
 
     private static final int SMALL_WIDTH_DP = 426;
     private static final int SMALL_HEIGHT_DP = 320;
+
+    @ClassRule
+    @Rule
+    public static final DeviceState sDeviceState = new DeviceState();
 
     /**
      * Tests that the WindowManager#getDefaultDisplay() and the Configuration of the Activity
@@ -148,6 +159,7 @@ public class AppConfigurationTests extends MultiDisplayTestBase {
      * Tests whether the Display sizes change when rotating the device.
      */
     @Test
+    @RequireNotAutomotive(reason = "Automotive screens don't support rotation")
     public void testConfigurationUpdatesWhenRotatingWhileFullscreen() {
         assumeTrue("Skipping test: no rotation support", supportsRotation());
 
@@ -170,6 +182,7 @@ public class AppConfigurationTests extends MultiDisplayTestBase {
      * is in the docked stack.
      */
     @Test
+    @RequireNotAutomotive(reason = "Automotive screens don't support rotation")
     public void testConfigurationUpdatesWhenRotatingWhileDocked() {
         assumeTrue("Skipping test: no multi-window support", supportsSplitScreenMultiWindow());
 
@@ -196,6 +209,7 @@ public class AppConfigurationTests extends MultiDisplayTestBase {
      * is launched to side from docked stack.
      */
     @Test
+    @RequireNotAutomotive(reason = "Automotive screens don't support rotation")
     public void testConfigurationUpdatesWhenRotatingToSideFromDocked() {
         assumeTrue("Skipping test: no multi-window support", supportsSplitScreenMultiWindow());
 
@@ -397,6 +411,7 @@ public class AppConfigurationTests extends MultiDisplayTestBase {
     }
 
     @Test
+    @RequireNotAutomotive(reason = "Automotive screens require ignoring orientation requests")
     public void testTranslucentAppOrientationRequests() {
         assumeTrue("Skipping test: no orientation request support", supportsOrientationRequest());
         disableIgnoreOrientationRequest();
@@ -641,6 +656,7 @@ public class AppConfigurationTests extends MultiDisplayTestBase {
      * Also verify that occluded activity will not get config changes.
      */
     @Test
+    @RequireNotAutomotive(reason = "Automotive screens don't support rotation")
     public void testAppOrientationWhenRotating() throws Exception {
         assumeFalse("Skipping test: square size may not have configuration changes",
                 isCloseToSquareDisplay());
@@ -687,6 +703,7 @@ public class AppConfigurationTests extends MultiDisplayTestBase {
      */
     @Test
     @ApiTest(apis = {"android.content.Context#createDisplayContext"})
+    @RequireNotAutomotive(reason = "Automotive screens don't support rotation")
     public void testAppContextDerivedDisplayContextWhenBaseContextChanged() {
         assumeTrue("Skipping test: no rotation support", supportsRotation());
         assumeTrue("Skipping test: no multi-display support", supportsMultiDisplay());
@@ -701,6 +718,7 @@ public class AppConfigurationTests extends MultiDisplayTestBase {
      */
     @Test
     @ApiTest(apis = {"android.content.Context#createDisplayContext"})
+    @RequireNotAutomotive(reason = "Automotive screens don't support rotation")
     public void testActivityContextDerivedDisplayContextWhenBaseContextChanged() {
         assumeTrue("Skipping test: no rotation support", supportsRotation());
         assumeTrue("Skipping test: no multi-display support", supportsMultiDisplay());
@@ -842,6 +860,7 @@ public class AppConfigurationTests extends MultiDisplayTestBase {
      * Also verify that occluded activity will not get config changes.
      */
     @Test
+    @RequireNotAutomotive(reason = "Automotive screens don't support rotation")
     public void testFixedOrientationWhenRotating() {
         assumeTrue("Skipping test: no orientation request support", supportsOrientationRequest());
         // TODO(b/110533226): Fix test on devices with display cutout
@@ -946,6 +965,7 @@ public class AppConfigurationTests extends MultiDisplayTestBase {
      * Test that device doesn't change device orientation by app request while in multi-window.
      */
     @Test
+    @RequireNotAutomotive(reason = "Automotive screens don't support rotation")
     public void testSplitscreenPortraitAppOrientationRequests() throws Exception {
         requestOrientationInSplitScreen(createManagedRotationSession(),
                 isDisplayPortrait() ? ROTATION_0 : ROTATION_90, LANDSCAPE_ORIENTATION_ACTIVITY);
@@ -955,6 +975,7 @@ public class AppConfigurationTests extends MultiDisplayTestBase {
      * Test that device doesn't change device orientation by app request while in multi-window.
      */
     @Test
+    @RequireNotAutomotive(reason = "Automotive screens don't support rotation")
     public void testSplitscreenLandscapeAppOrientationRequests() throws Exception {
         requestOrientationInSplitScreen(createManagedRotationSession(),
                 isDisplayPortrait() ? ROTATION_90 : ROTATION_0, PORTRAIT_ORIENTATION_ACTIVITY);
