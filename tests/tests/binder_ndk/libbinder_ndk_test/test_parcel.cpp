@@ -378,6 +378,96 @@ TEST_F(NdkBinderTest_AParcel, RewritePositions) {
   AIBinder_decStrong(binder);
 }
 
+static const char* StringArrayElementGetter(const void* arrayData, size_t index,
+                                            int32_t* outLength) {
+  const char* const* arr = static_cast<const char* const*>(arrayData);
+  *outLength = strlen(arr[index]);
+  return arr[index];
+}
+
+bool StringArrayAllocator(void* arrayData, int32_t length) {
+  if (length <= 0) return true;
+  *static_cast<char***>(arrayData) = static_cast<char**>(malloc(sizeof(char*) * length));
+  return true;
+}
+
+bool StringArrayAllocatorNonNull(void* arrayData, int32_t length) {
+  if (length <= 0) return false;
+  *static_cast<char***>(arrayData) = static_cast<char**>(malloc(sizeof(char*) * length));
+  return true;
+}
+
+bool StringArrayElementAllocator(void* arrayData, size_t index, int32_t length, char** buffer) {
+  if (length <= 0) return true;
+  char** arr = *static_cast<char***>(arrayData);
+  arr[index] = static_cast<char*>(malloc(sizeof(char) * length));
+  *buffer = arr[index];
+  return true;
+}
+
+TEST_F(NdkBinderTest_AParcel, ReadStringArrayEmptyNull) {
+  constexpr int32_t length = 0;
+  char* data[length] = {};
+  AParcel* p = AParcel_create();
+
+  auto res =
+      AParcel_writeStringArray(p, static_cast<const void*>(data), -1, StringArrayElementGetter);
+  EXPECT_EQ(res, STATUS_OK);
+
+  AParcel_setDataPosition(p, 0);
+  char** readData = nullptr;
+  res = AParcel_readStringArray(p, static_cast<void*>(&readData), StringArrayAllocator,
+                                StringArrayElementAllocator);
+  EXPECT_EQ(res, STATUS_OK);
+  AParcel_delete(p);
+}
+
+TEST_F(NdkBinderTest_AParcel, ReadStringArrayWithData) {
+  constexpr int32_t length = 2;
+  const char* data[length] = {"hello", "world"};
+  AParcel* p = AParcel_create();
+
+  auto res =
+      AParcel_writeStringArray(p, static_cast<const void*>(data), length, StringArrayElementGetter);
+  EXPECT_EQ(res, STATUS_OK);
+
+  AParcel_setDataPosition(p, 0);
+  char** readData = nullptr;
+  res = AParcel_readStringArray(p, static_cast<void*>(&readData), StringArrayAllocator,
+                                StringArrayElementAllocator);
+  EXPECT_EQ(res, STATUS_OK);
+  EXPECT_NE(readData, nullptr);
+  if (readData) {
+    EXPECT_NE(readData[0], nullptr);
+    EXPECT_NE(readData[1], nullptr);
+    if (readData[0] && readData[1]) {
+      EXPECT_EQ(0, strncmp(data[0], readData[0], sizeof("hello") - 1))
+          << std::string(data[0]) << " vs " << std::string(readData[0]);
+      EXPECT_EQ(0, strncmp(data[1], readData[1], sizeof("world") - 1))
+          << std::string(data[1]) << " vs " << std::string(readData[1]);
+    }
+    free(readData[0]);
+    free(readData[1]);
+    free(readData);
+  }
+  AParcel_delete(p);
+}
+
+TEST_F(NdkBinderTest_AParcel, ReadStringArrayUnexpectedNull) {
+  constexpr int32_t length = 0;
+  AParcel* p = AParcel_create();
+
+  auto res = AParcel_writeStringArray(p, nullptr, -1, StringArrayElementGetter);
+  EXPECT_EQ(res, STATUS_OK);
+
+  AParcel_setDataPosition(p, 0);
+  char** readData;
+  res = AParcel_readStringArray(p, static_cast<void*>(&readData), StringArrayAllocatorNonNull,
+                                StringArrayElementAllocator);
+  EXPECT_EQ(res, STATUS_UNEXPECTED_NULL);
+  AParcel_delete(p);
+}
+
 TEST_F(NdkBinderTest_AParcel, CreateParcelTest) {
   AParcel* p = AParcel_create();
   EXPECT_TRUE(p);
