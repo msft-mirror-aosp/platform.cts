@@ -28,6 +28,7 @@ import android.telecom.TelecomManager;
 import java.util.Random;
 
 public class AttributesUtil {
+    public static final String SUPPORTS_HOLD_CALL_SUBJECT_VALUE = "cts_sup_hold";
     private static final Random sRandom = new Random(0);
     private static final Uri TEST_URI_OUT = Uri.parse("tel:123-TEST");
     private static final String TEST_NAME_OUT = "Mike Tyson";
@@ -177,6 +178,11 @@ public class AttributesUtil {
      */
     public static Bundle getExtrasWithPhoneAccount(CallAttributes callAttributes) {
         Bundle extras = new Bundle();
+        if (hasSetInactiveCapabilities(callAttributes)) {
+            extras.putString(
+                    TelecomManager.EXTRA_CALL_SUBJECT,
+                    AttributesUtil.SUPPORTS_HOLD_CALL_SUBJECT_VALUE);
+        }
         extras.putParcelable(TelecomManager.EXTRA_PHONE_ACCOUNT_HANDLE,
                 callAttributes.getPhoneAccountHandle());
         if (!isOutgoing(callAttributes)) {

@@ -23,7 +23,6 @@ import static android.telecom.Call.STATE_HOLDING;
 import static android.telecom.Call.STATE_RINGING;
 import static android.telecom.cts.apps.AssertOutcome.assertCountDownLatchWasCalled;
 import static android.telecom.cts.apps.AttributesUtil.getExtrasWithPhoneAccount;
-import static android.telecom.cts.apps.AttributesUtil.hasSetInactiveCapabilities;
 import static android.telecom.cts.apps.AttributesUtil.isOutgoing;
 import static android.telecom.cts.apps.NotificationUtils.isTargetNotificationPosted;
 import static android.telecom.cts.apps.StackTraceUtil.appendStackTraceList;
@@ -248,7 +247,6 @@ public class VoipConnectionServiceControlMain extends Service {
                                     appendStackTraceList(
                                             stackTrace, mClassName + ".trackConnection"),
                                     connection);
-                    maybeClearHoldCapabilities(connection, callAttributes);
                     Log.i(
                             mTag,
                             String.format(
@@ -274,13 +272,6 @@ public class VoipConnectionServiceControlMain extends Service {
                     callResources.postInitialCallStyleNotification(getApplicationContext());
                     // clear out the last connection since it has been added to tracking
                     VoipConnectionServiceMain.sLastConnection = null;
-                }
-
-                private void maybeClearHoldCapabilities(
-                        VoipConnection c, CallAttributes callAttributes) {
-                    if (!hasSetInactiveCapabilities(callAttributes)) {
-                        c.clearHoldCapabilities();
-                    }
                 }
 
                 @Override

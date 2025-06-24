@@ -25,7 +25,6 @@ import static android.telecom.Call.STATE_RINGING;
 import static android.telecom.Call.STATE_SIMULATED_RINGING;
 import static android.telecom.cts.apps.AssertOutcome.assertCountDownLatchWasCalled;
 import static android.telecom.cts.apps.AttributesUtil.getExtrasWithPhoneAccount;
-import static android.telecom.cts.apps.AttributesUtil.hasSetInactiveCapabilities;
 import static android.telecom.cts.apps.AttributesUtil.isOutgoing;
 import static android.telecom.cts.apps.CallControlExtras.EXTRA_TELECOM_AUDIO_PROCESSING_USE_CASE;
 import static android.telecom.cts.apps.StackTraceUtil.appendStackTraceList;
@@ -264,7 +263,6 @@ public class ManagedAppControl extends Service {
                                     appendStackTraceList(
                                             stackTrace, CLASS_NAME + ".trackConnection"),
                                     connection);
-                    maybeClearHoldCapabilities(connection, callAttributes);
                     Log.i(
                             TAG,
                             String.format(
@@ -284,14 +282,6 @@ public class ManagedAppControl extends Service {
                     // tested when referenced
                     resetConnectionFields();
                 }
-
-                private void maybeClearHoldCapabilities(
-                        ManagedConnection c, CallAttributes callAttributes) {
-                    if (!hasSetInactiveCapabilities(callAttributes)) {
-                        c.clearHoldCapabilities();
-                    }
-                }
-
                 @Override
                 public CallExceptionTransaction transitionCallStateTo(
                         String id, int state, boolean expectSuccess, Bundle extras) {

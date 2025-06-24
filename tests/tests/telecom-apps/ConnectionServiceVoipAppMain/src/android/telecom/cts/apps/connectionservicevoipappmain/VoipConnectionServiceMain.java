@@ -16,11 +16,13 @@
 package android.telecom.cts.apps.connectionservicevoipappmain;
 
 import android.content.Intent;
+import android.os.Bundle;
 import android.telecom.Connection;
 import android.telecom.ConnectionRequest;
 import android.telecom.ConnectionService;
 import android.telecom.PhoneAccountHandle;
 import android.telecom.TelecomManager;
+import android.telecom.cts.apps.AttributesUtil;
 import android.telecom.cts.apps.VoipConnection;
 import android.util.Log;
 
@@ -91,18 +93,30 @@ public class VoipConnectionServiceMain extends ConnectionService {
     private Connection createConnection(ConnectionRequest request, boolean isOutgoing) {
         VoipConnection connection = new VoipConnection(getApplicationContext(), isOutgoing);
         sLastConnection = connection;
-
         if (isOutgoing) {
             connection.setDialing();
         } else {
             connection.setRinging();
         }
-
+        setHoldCapabilitiesIfPresent(request, connection);
         connection.setAddress(request.getAddress(), TelecomManager.PRESENTATION_ALLOWED);
-        connection.setConnectionCapabilities(
-                Connection.CAPABILITY_HOLD | Connection.CAPABILITY_SUPPORT_HOLD
-        );
         connection.setAudioModeIsVoip(true);
         return connection;
+    }
+
+    private void setHoldCapabilitiesIfPresent(ConnectionRequest request, Connection connection) {
+        Bundle e = request.getExtras();
+
+        if (e == null) {
+            Log.w(TAG, "createConnection: request extras are NULL");
+        } else {
+            if (request.getExtras().containsKey(TelecomManager.EXTRA_CALL_SUBJECT)
+                    && request.getExtras()
+                            .getString(TelecomManager.EXTRA_CALL_SUBJECT, "")
+                            .contains(AttributesUtil.SUPPORTS_HOLD_CALL_SUBJECT_VALUE)) {
+                connection.setConnectionCapabilities(
+                        Connection.CAPABILITY_HOLD | Connection.CAPABILITY_SUPPORT_HOLD);
+            }
+        }
     }
 }
