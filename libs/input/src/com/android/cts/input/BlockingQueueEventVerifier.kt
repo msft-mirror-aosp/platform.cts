@@ -48,17 +48,20 @@ class BlockingQueueEventVerifier(val queue: BlockingQueue<InputEvent>) {
     }
 
     /**
-     * Peeks at the next input event, and consumes it if it is a {@link MotionEvent} that matches
+     * Peeks at the next input event, and consumes it if it is a [MotionEvent] that matches
      * the given matcher. Otherwise, leaves it in the queue for the next assert or accept call.
+     * This returns the event if the matcher matches and consumes it, or null otherwise.
      *
-     * This is useful for skipping no-op events that might be present in a stream, such as {@code
-     * MOVE} events that don't actually move any pointers.
+     * This is useful for skipping no-op events that might be present in a stream, such as
+     * [MotionEvent.ACTION_MOVE] events that don't actually move any pointers.
      */
-    fun acceptOptionalMotion(matcher: Matcher<MotionEvent>) {
+    fun acceptOptionalMotion(matcher: Matcher<MotionEvent>): MotionEvent? {
         val event: InputEvent? = peekEvent(queue, Duration.ofMillis(5000))
         if (matcher.matches(event)) {
             queue.take()
+            return event as MotionEvent
         }
+        return null
     }
 
     @JvmOverloads
