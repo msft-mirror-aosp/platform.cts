@@ -19,7 +19,6 @@ package android.cts.credentials.backuprestore;
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeFalse;
 
 import android.platform.test.annotations.AppModeFull;
 
@@ -98,9 +97,6 @@ public class CredentialManagerRestoreSettingsHostSideTest extends BaseHostJUnit4
 
     @Before
     public void setUp() throws Exception {
-        assumeFalse("Skipping test not supported on HSUM devices.",
-                    getDevice().isHeadlessSystemUserMode());
-
         mOriginalFeatureFlagValue =
                 getSettingValue(GLOBAL_NAMESPACE, SETTINGS_DO_NOT_RESTORE_PRESERVED_SETTING_NAME);
         setSettingValue(
