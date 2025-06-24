@@ -31,7 +31,7 @@ java_genrule {
     name: "cts-current-api-gz",
     defaults: ["signature-cts-api-api-gz"],
     srcs: [
-        ":frameworks-base-api-current.txt",
+        ":frameworks-base-api-exportable-current.txt",
     ],
     out: [
         "current.api.gz",
@@ -42,7 +42,7 @@ java_genrule {
     name: "cts-system-current-api-gz",
     defaults: ["signature-cts-api-api-gz"],
     srcs: [
-        ":frameworks-base-api-system-current.txt",
+        ":frameworks-base-api-exportable-system-current.txt",
     ],
     out: [
         "system-current.api.gz",
@@ -53,7 +53,7 @@ java_genrule {
     name: "cts-system-removed-api-gz",
     defaults: ["signature-cts-api-api-gz"],
     srcs: [
-        ":frameworks-base-api-system-removed.txt",
+        ":frameworks-base-api-exportable-system-removed.txt",
     ],
     out: [
         "system-removed.api.gz",
