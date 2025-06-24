@@ -63,6 +63,7 @@ import android.app.stubs.R;
 import android.app.stubs.shared.FutureServiceConnection;
 import android.app.stubs.shared.NotificationHelper.SEARCH_TYPE;
 import android.app.stubs.shared.TestNotificationListener;
+import android.companion.Flags;
 import android.content.ComponentName;
 import android.content.ContentResolver;
 import android.content.Context;
@@ -3345,24 +3346,40 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
     public void testGrantRevokeNotificationManagerApis_works() {
         assumeFalse("NotificationListeners do not support visible background users",
                 mUserHelper.isVisibleBackgroundUser());
-        SystemUtil.runWithShellPermissionIdentity(() -> {
-            ComponentName componentName =
-                    new ComponentName(STUB_PACKAGE_NAME, TestNotificationListener.class.getName());
-            mNotificationManager.setNotificationListenerAccessGranted(
-                    componentName, true, true);
+        SystemUtil.runWithShellPermissionIdentity(
+                () -> {
+                    ComponentName componentName =
+                            new ComponentName(
+                                    STUB_PACKAGE_NAME, TestNotificationListener.class.getName());
+                    mNotificationManager.setNotificationListenerAccessGranted(
+                            componentName, true, true);
 
-            assertThat(
-                    mNotificationManager.getEnabledNotificationListeners(),
-                    hasItem(componentName));
+                    assertThat(
+                            mNotificationManager.getEnabledNotificationListeners(),
+                            hasItem(componentName));
 
-            mNotificationManager.setNotificationListenerAccessGranted(
-                    componentName, false, false);
+                    mNotificationManager.setNotificationListenerAccessGranted(
+                            componentName, false, false);
 
-            assertThat(
-                    "Non-user-set changes should not override user-set",
-                    mNotificationManager.getEnabledNotificationListeners(),
-                    hasItem(componentName));
-        });
+                    assertThat(
+                            "Non-user-set changes should not override user-set",
+                            mNotificationManager.getEnabledNotificationListeners(),
+                            hasItem(componentName));
+
+                    if (Flags.enableMedicalProfile()) {
+                        mNotificationManager.setNotificationPolicyAccessGranted(
+                                STUB_PACKAGE_NAME, true);
+                        assertTrue(
+                                mNotificationManager.isNotificationPolicyAccessGrantedForPackage(
+                                        STUB_PACKAGE_NAME));
+
+                        mNotificationManager.setNotificationPolicyAccessGranted(
+                                STUB_PACKAGE_NAME, false);
+                        assertFalse(
+                                mNotificationManager.isNotificationPolicyAccessGrantedForPackage(
+                                        STUB_PACKAGE_NAME));
+                    }
+                });
     }
 
     @Test
