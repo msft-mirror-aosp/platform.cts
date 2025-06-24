@@ -70,6 +70,7 @@ import kotlinx.coroutines.withTimeoutOrNull
 import org.junit.AfterClass
 import org.junit.Assume.assumeTrue
 import org.junit.BeforeClass
+import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.RuleChain
@@ -216,6 +217,7 @@ class DynamicColorsTest(
     }
 
     @Test
+    @Ignore("b/425343018")
     fun testDynamicColors() {
         assumeTrue(!FeatureUtil.isWatch())
 

@@ -439,6 +439,83 @@ public class MediaRoute2InfoTest {
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_ROUTE_VISIBILITY_CONTROL_API)
+    public void testSetVisibilityRestricted_allowPrivilegedPackages() {
+        MediaRoute2Info route =
+                new MediaRoute2Info.Builder(TEST_ID, TEST_NAME)
+                        .addFeature(TEST_ROUTE_TYPE_0)
+                        .setVisibilityRestricted(TEST_ALLOWED_PACKAGES, true)
+                        .build();
+        for (String allowedPackage : TEST_ALLOWED_PACKAGES) {
+            assertThat(route.isVisibleTo(allowedPackage, /* packageIsPrivileged= */ false))
+                    .isTrue();
+        }
+        assertThat(route.isVisibleTo("com.android.example.app", /* packageIsPrivileged= */ true))
+                .isTrue();
+        assertThat(route.isVisibleTo("com.android.example.app", /* packageIsPrivileged= */ false))
+                .isFalse();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_ROUTE_VISIBILITY_CONTROL_API)
+    public void testSetVisibilityRestricted_doNotAllowPrivilegedPackages() {
+        MediaRoute2Info route =
+                new MediaRoute2Info.Builder(TEST_ID, TEST_NAME)
+                        .addFeature(TEST_ROUTE_TYPE_0)
+                        .setVisibilityRestricted(TEST_ALLOWED_PACKAGES, false)
+                        .build();
+        for (String allowedPackage : TEST_ALLOWED_PACKAGES) {
+            assertThat(route.isVisibleTo(allowedPackage, /* packageIsPrivileged= */ false))
+                    .isTrue();
+        }
+        assertThat(route.isVisibleTo("com.android.example.app", /* packageIsPrivileged= */ true))
+                .isFalse();
+        assertThat(route.isVisibleTo("com.android.example.app", /* packageIsPrivileged= */ false))
+                .isFalse();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_ROUTE_VISIBILITY_CONTROL_API)
+    public void testSetVisibilityRestricted_allowPrivilegedPackages_parcelAndUnparcel() {
+        MediaRoute2Info routeToParcel =
+                new MediaRoute2Info.Builder(TEST_ID, TEST_NAME)
+                        .addFeature(TEST_ROUTE_TYPE_0)
+                        .setVisibilityRestricted(TEST_ALLOWED_PACKAGES, true)
+                        .build();
+        Parcel parcel = Parcel.obtain();
+        routeToParcel.writeToParcel(parcel, 0);
+        parcel.setDataPosition(0);
+        MediaRoute2Info route = MediaRoute2Info.CREATOR.createFromParcel(parcel);
+        parcel.recycle();
+        for (String allowedPackage : TEST_ALLOWED_PACKAGES) {
+            assertThat(route.isVisibleTo(allowedPackage, /* packageIsPrivileged= */ false))
+                    .isTrue();
+        }
+        assertThat(route.isVisibleTo("com.android.example.app", /* packageIsPrivileged= */ true))
+                .isTrue();
+        assertThat(route.isVisibleTo("com.android.example.app", /* packageIsPrivileged= */ false))
+                .isFalse();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_ROUTE_VISIBILITY_CONTROL_API)
+    public void testEqualsAndHashCodeWithPrivilegedPackagesVisibility() {
+        MediaRoute2Info allowsPrivilegedPackages =
+                new MediaRoute2Info.Builder(TEST_ID, TEST_NAME)
+                        .addFeature(TEST_ROUTE_TYPE_0)
+                        .setVisibilityRestricted(TEST_ALLOWED_PACKAGES, true)
+                        .build();
+        MediaRoute2Info doesNotAllowPrivilegedPackages =
+                new MediaRoute2Info.Builder(TEST_ID, TEST_NAME)
+                        .addFeature(TEST_ROUTE_TYPE_0)
+                        .setVisibilityRestricted(TEST_ALLOWED_PACKAGES, false)
+                        .build();
+        assertThat(allowsPrivilegedPackages).isNotEqualTo(doesNotAllowPrivilegedPackages);
+        assertThat(allowsPrivilegedPackages.hashCode())
+                .isNotEqualTo(doesNotAllowPrivilegedPackages.hashCode());
+    }
+
+    @Test
     public void testDescribeContents() {
         MediaRoute2Info routeInfo =
                 new MediaRoute2Info.Builder(TEST_ID, TEST_NAME)

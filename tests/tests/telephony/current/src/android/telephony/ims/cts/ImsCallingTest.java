@@ -2361,8 +2361,8 @@ public class ImsCallingTest extends ImsCallingBase {
                     public Object actual() {
                         TestMmTelFeature mmtelfeatue = sServiceConnector.getCarrierService()
                                 .getMmTelFeature();
-                        return (mmtelfeatue.getImsCallsession() != previousCallSession) ? true
-                                : false;
+                        return (mmtelfeatue != null && mmtelfeatue.getImsCallsession()
+                                != previousCallSession) ? true : false;
                     }
                 }, WAIT_FOR_CONDITION, "CallSession Created");
     }

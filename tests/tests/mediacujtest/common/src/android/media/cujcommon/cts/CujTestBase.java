@@ -51,6 +51,8 @@ public class CujTestBase {
 
   protected static final Duration TEST_OVERHEAD = Duration.ofSeconds(30);
 
+  protected static final Duration TEST_AUDIO_OVERHEAD = Duration.ofSeconds(1);
+
   protected static final float PLAYBACK_RATE_FOR_SPEED_CHANGE_TEST = 1.5f;
 
   protected static final Duration SEEK_POSITION_FOR_SEEK_TEST = Duration.ofMillis(40000);

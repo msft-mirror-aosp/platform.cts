@@ -30,14 +30,11 @@ import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.test_utils.BlockingBluetoothAdapter;
 import android.bluetooth.test_utils.Permissions;
 import android.content.Context;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
-
-import com.android.bluetooth.flags.Flags;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -61,7 +58,6 @@ public final class BluetoothHciVendorSpecificTest {
         assertThat(BlockingBluetoothAdapter.enable()).isTrue();
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_HCI_VENDOR_SPECIFIC_EXTENSION)
     @Test
     public void register() {
         BluetoothAdapter.BluetoothHciVendorSpecificCallback callback =
@@ -149,7 +145,6 @@ public final class BluetoothHciVendorSpecificTest {
         }
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_HCI_VENDOR_SPECIFIC_EXTENSION)
     @Test
     public void unregister() {
         BluetoothAdapter.BluetoothHciVendorSpecificCallback callback =
@@ -214,7 +209,6 @@ public final class BluetoothHciVendorSpecificTest {
         }
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_HCI_VENDOR_SPECIFIC_EXTENSION)
     @Test
     public void sendCommand() {
         BluetoothAdapter.BluetoothHciVendorSpecificCallback callback =
@@ -282,7 +276,6 @@ public final class BluetoothHciVendorSpecificTest {
         }
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_HCI_VENDOR_SPECIFIC_EXTENSION)
     @Test
     public void getVendorCapabilities() {
         BluetoothAdapter.BluetoothHciVendorSpecificCallback callback =

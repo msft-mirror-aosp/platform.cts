@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package android.server.wm.multidisplay;
+package android.server.wm.keyguard;
 
 import static android.server.wm.UiDeviceUtils.pressBackButton;
 import static android.server.wm.app.Components.DISMISS_KEYGUARD_ACTIVITY;

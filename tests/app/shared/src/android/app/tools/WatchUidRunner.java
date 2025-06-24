@@ -258,11 +258,20 @@ public class WatchUidRunner {
                         + ", timeout="
                         + timeout
                         + ")");
-        long waitUntil = SystemClock.uptimeMillis() + timeout;
+        final long startedAt = SystemClock.uptimeMillis();
+        final long waitUntil = startedAt + timeout;
         while (true) {
             String[] line = waitForNextLine(waitUntil, cmd, procState, capability);
             if (expectedPredicate.test(line)) {
-                Log.d(TAG, "Waited for: " + Arrays.toString(line));
+                long now = SystemClock.uptimeMillis();
+                Log.d(
+                        TAG,
+                        "Waited for: "
+                                + Arrays.toString(line)
+                                + " elapsed "
+                                + (now - startedAt)
+                                + "/"
+                                + timeout);
                 return;
             } else if (failurePredicate != null && failurePredicate.test(line)) {
                 String msg =

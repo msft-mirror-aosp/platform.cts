@@ -18,9 +18,8 @@ package android.cts.credentials.backuprestore;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assume.assumeFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeFalse;
 
 import android.platform.test.annotations.AppModeFull;
 
@@ -47,8 +46,6 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /** Verifies that Credential Manager settings are restored correctly. */
 @RunWith(DeviceJUnit4ClassRunner.class)
@@ -59,8 +56,6 @@ public class CredentialManagerRestoreSettingsHostSideTest extends BaseHostJUnit4
 
     /** Value of PackageManager.FEATURE_CREDENTIALS */
     private static final String FEATURE_CREDENTIALS = "android.software.credentials";
-
-    protected static final String LOCAL_TRANSPORT = "com.android.localtransport/.LocalTransport";
 
     @Rule
     public final RequiredFeatureRule mBackupRequiredRule =
@@ -91,6 +86,8 @@ public class CredentialManagerRestoreSettingsHostSideTest extends BaseHostJUnit4
 
     private String mOriginalFeatureFlagValue = "";
 
+    private int mCurrentUserId;
+
     private BackupUtils mBackupUtils =
             new BackupUtils() {
                 @Override
@@ -113,18 +110,18 @@ public class CredentialManagerRestoreSettingsHostSideTest extends BaseHostJUnit4
 
         BackupHostSideUtils.checkSetupComplete(getDevice());
 
+        mCurrentUserId = mBackupUtils.getCurrentUserId();
         mBackupUtils.enableBackup(true);
-        mBackupUtils.activateBackupForUser(true, 0);
-        mBackupUtils.setBackupTransportForUser(mBackupUtils.getLocalTransportName(), 0);
+        mBackupUtils.activateBackupForUser(true, mCurrentUserId);
+        mBackupUtils.setLocalTransport();
 
         // Check that the backup wasn't disabled and the transport wasn't switched unexpectedly.
         assertTrue(
                 "Backup was unexpectedly disabled during the module test run",
                 mBackupUtils.isBackupEnabled());
-        assertEquals(
+        assertTrue(
                 "LocalTransport should be selected at this point",
-                LOCAL_TRANSPORT,
-                getCurrentTransport());
+                mBackupUtils.isLocalTransportSelected());
         mBackupUtils.wakeAndUnlockDevice();
     }
 
@@ -153,7 +150,7 @@ public class CredentialManagerRestoreSettingsHostSideTest extends BaseHostJUnit4
 
         // 4. Install & remove a test app. This will trigger some logic in Credential Manager
         // that will update the setting values.
-        installPackage(TEST_APP_APK);
+        installPackageAsUser(TEST_APP_APK, /* grantPermission */ false, mCurrentUserId);
         assertThat(isPackageInstalled(TEST_APP_PACKAGE)).isTrue();
         uninstallPackage(TEST_APP_PACKAGE);
 
@@ -237,17 +234,6 @@ public class CredentialManagerRestoreSettingsHostSideTest extends BaseHostJUnit4
 
     private void setSettingValue(String namespace, String name, String value) throws Exception {
         getDevice().executeShellCommand("settings put " + namespace + " " + name + " " + value);
-    }
-
-    protected String getCurrentTransport() throws DeviceNotAvailableException {
-        String output = getDevice().executeShellCommand("bmgr list transports");
-        Pattern pattern = Pattern.compile("\\* (.*)");
-        Matcher matcher = pattern.matcher(output);
-        if (matcher.find()) {
-            return matcher.group(1);
-        } else {
-            throw new RuntimeException("non-parsable output setting bmgr transport: " + output);
-        }
     }
 
     static InputStream executeDeviceShellCommand(ITestDevice device, String command)

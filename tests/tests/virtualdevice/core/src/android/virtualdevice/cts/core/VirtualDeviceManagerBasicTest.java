@@ -18,6 +18,7 @@ package android.virtualdevice.cts.core;
 
 import static android.companion.virtual.VirtualDeviceParams.DEVICE_POLICY_CUSTOM;
 import static android.companion.virtual.VirtualDeviceParams.DEVICE_POLICY_DEFAULT;
+import static android.companion.virtual.VirtualDeviceParams.DEVICE_POLICY_INVALID;
 import static android.companion.virtual.VirtualDeviceParams.POLICY_TYPE_ACTIVITY;
 import static android.companion.virtual.VirtualDeviceParams.POLICY_TYPE_AUDIO;
 import static android.companion.virtual.VirtualDeviceParams.POLICY_TYPE_BLOCKED_ACTIVITY;
@@ -55,6 +56,7 @@ import android.companion.virtualdevice.flags.Flags;
 import android.content.Context;
 import android.hardware.display.VirtualDisplay;
 import android.platform.test.annotations.AppModeFull;
+import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.server.wm.Condition;
 import android.view.Display;
@@ -469,6 +471,7 @@ public class VirtualDeviceManagerBasicTest {
     }
 
     @Test
+    @RequiresFlagsDisabled(Flags.FLAG_HANDLE_INVALID_DEVICE_ID)
     public void getDevicePolicy_virtualDeviceClosed_shouldReturnDefault() {
         VirtualDeviceManager.VirtualDevice virtualDevice = mRule.createManagedVirtualDevice(
                 new VirtualDeviceParams.Builder()
@@ -480,6 +483,23 @@ public class VirtualDeviceManagerBasicTest {
                 mVirtualDeviceManager.getDevicePolicy(virtualDevice.getDeviceId(),
                         POLICY_TYPE_SENSORS))
                 .isEqualTo(DEVICE_POLICY_DEFAULT);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_HANDLE_INVALID_DEVICE_ID)
+    @Parameters(method = "allValidDevicePolicies")
+    public void getDevicePolicy_virtualDeviceClosed_shouldReturnInvalid(int policy) {
+        VirtualDeviceManager.VirtualDevice virtualDevice =
+                mRule.createManagedVirtualDevice(
+                        new VirtualDeviceParams.Builder()
+                                .setDevicePolicy(POLICY_TYPE_SENSORS, policy)
+                                .build());
+        virtualDevice.close();
+
+        assertThat(
+                        mVirtualDeviceManager.getDevicePolicy(
+                                virtualDevice.getDeviceId(), POLICY_TYPE_SENSORS))
+                .isEqualTo(DEVICE_POLICY_INVALID);
     }
 
     @Test
@@ -643,7 +663,7 @@ public class VirtualDeviceManagerBasicTest {
         assertThat(Condition.waitFor(message, waitCondition)).isTrue();
     }
 
-    private List<Integer> allDynamicPolicies() {
+    private static List<Integer> allDynamicPolicies() {
         List<Integer> dynamicPolicies = new ArrayList<>(Arrays.asList(
                 POLICY_TYPE_RECENTS,
                 POLICY_TYPE_ACTIVITY,
@@ -655,11 +675,11 @@ public class VirtualDeviceManagerBasicTest {
         return dynamicPolicies;
     }
 
-    private List<Integer> allDynamicDisplayPolicies() {
-        List<Integer> dynamicDisplayPolicies = new ArrayList<>(Arrays.asList(
-                POLICY_TYPE_RECENTS,
-                POLICY_TYPE_ACTIVITY
-        ));
-        return dynamicDisplayPolicies;
+    private static List<Integer> allDynamicDisplayPolicies() {
+        return Arrays.asList(POLICY_TYPE_RECENTS, POLICY_TYPE_ACTIVITY);
+    }
+
+    private static List<Integer> allValidDevicePolicies() {
+        return Arrays.asList(DEVICE_POLICY_CUSTOM, DEVICE_POLICY_DEFAULT);
     }
 }

@@ -70,7 +70,6 @@ import com.android.tradefed.invoker.TestInformation;
 import com.android.tradefed.log.LogUtil;
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
 import com.android.tradefed.testtype.junit4.AfterClassWithInfo;
-import com.android.tradefed.testtype.junit4.BaseHostJUnit4Test;
 import com.android.tradefed.testtype.junit4.BeforeClassWithInfo;
 
 import com.google.common.truth.Expect;
@@ -84,7 +83,7 @@ import java.io.FileNotFoundException;
 
 /** Installs route provider apps and runs tests in {@link MediaRouter2DeviceTest}. */
 @RunWith(DeviceJUnit4ClassRunner.class)
-public class MediaRouter2HostSideTest extends BaseHostJUnit4Test {
+public class MediaRouter2HostSideTest extends BaseMediaRouter2HostSideTest {
 
     private static final String[] ROUTE_PROVIDER_PACKAGES = {
         MEDIA_ROUTER_PROVIDER_1_PACKAGE,
@@ -94,9 +93,6 @@ public class MediaRouter2HostSideTest extends BaseHostJUnit4Test {
         MEDIA_ROUTER_PROVIDER_SELF_SCAN_ONLY_PACKAGE,
         PER_APP_DISCOVERY_PROVIDER_PACKAGE,
     };
-
-    /** The maximum period of time to wait for a scan request to take effect, in milliseconds. */
-    private static final long WAIT_MS_SCAN_PROPAGATION = 3000;
 
     @Rule public final Expect expect = Expect.create();
 
@@ -749,35 +745,6 @@ public class MediaRouter2HostSideTest extends BaseHostJUnit4Test {
         for (String providerPackage : ROUTE_PROVIDER_PACKAGES) {
             assertThat(forceStopAndWaitForRunningStatus(providerPackage)).isTrue();
         }
-    }
-
-    private boolean forceStopAndWaitForRunningStatus(String packageName) throws Throwable {
-        getDevice().executeShellCommand("am force-stop " + packageName);
-        return waitForPackageRunningStatus(
-                MEDIA_ROUTER_TEST_PACKAGE, /* isPackageExpectedToRun= */ false);
-    }
-
-    /**
-     * Blocks execution until the package with the given name has the given running status.
-     *
-     * @param packageName The name of the package to check the running status for.
-     * @param isPackageExpectedToRun True if the expected running status is "running", and false if
-     *     the expected running status is "not running".
-     */
-    private boolean waitForPackageRunningStatus(String packageName, boolean isPackageExpectedToRun)
-            throws Throwable {
-        long start = System.currentTimeMillis();
-        while (isPackageRunning(packageName) != isPackageExpectedToRun) {
-            if (System.currentTimeMillis() - start > WAIT_MS_SCAN_PROPAGATION) {
-                return false;
-            }
-            Thread.sleep(/* millis= */ 200); // Wait a bit before we call adb again.
-        }
-        return true;
-    }
-
-    private boolean isPackageRunning(String packageName) throws DeviceNotAvailableException {
-        return !getDevice().executeShellCommand("pidof " + packageName).isEmpty();
     }
 
     private static void installTestApp(TestInformation testInfo, String apkName)

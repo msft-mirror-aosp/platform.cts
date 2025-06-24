@@ -1,0 +1,11 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="android.media.router.cts.proxy_media_router_scanning_test_app"
+    android:versionCode="1"
+    android:versionName="1.0">
+
+    <application android:testOnly="true">
+        <activity android:name="android.media.router.cts.ScanningActivity"
+            android:exported="true"
+            android:turnScreenOn="true"/>
+    </application>
+</manifest>

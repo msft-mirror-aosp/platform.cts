@@ -16,6 +16,7 @@
 package android.cts.statsdatom.appfunctions;
 
 import static android.app.appfunctions.flags.Flags.FLAG_ENABLE_APP_FUNCTION_MANAGER;
+import static android.permission.flags.Flags.FLAG_APP_FUNCTION_ACCESS_API_ENABLED;
 import static android.permission.flags.Flags.FLAG_APP_FUNCTION_ACCESS_SERVICE_ENABLED;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -57,6 +58,8 @@ import java.util.List;
 public class AppFunctionsStatsTest extends BaseHostJUnit4Test implements IBuildReceiver {
     private static final String TEST_PKG = "android.app.appfunctions.cts";
     private static final String TEST_CLASS = TEST_PKG + ".AppFunctionManagerTest";
+    private static final String ACCESS_ENABLED_TEST_CLASS =
+            TEST_PKG + ".AppFunctionManagerAccessEnabledTest";
     private static final int ERROR_DENIED = 1000;
 
     private static final int ERROR_INVALID_ARGUMENT = 1001;
@@ -105,6 +108,10 @@ public class AppFunctionsStatsTest extends BaseHostJUnit4Test implements IBuildR
     }
 
     @Test
+    @RequiresFlagsDisabled({
+        FLAG_APP_FUNCTION_ACCESS_API_ENABLED,
+        FLAG_APP_FUNCTION_ACCESS_SERVICE_ENABLED
+    })
     public void testAtom_executeAppFunction_failed_uncaughtClientException() throws Exception {
         AppFunctionsRequestReported afRequestReported =
                 runTestAndGetAtom("executeAppFunction_failed_uncaughtClientException_nonParam");
@@ -113,7 +120,24 @@ public class AppFunctionsStatsTest extends BaseHostJUnit4Test implements IBuildR
     }
 
     @Test
-    @RequiresFlagsDisabled(FLAG_APP_FUNCTION_ACCESS_SERVICE_ENABLED)
+    @RequiresFlagsEnabled({
+        FLAG_APP_FUNCTION_ACCESS_API_ENABLED,
+        FLAG_APP_FUNCTION_ACCESS_SERVICE_ENABLED
+    })
+    public void testAtom_executeAppFunction_failed_uncaughtClientException_accessEnabled()
+            throws Exception {
+        AppFunctionsRequestReported afRequestReported =
+                runAccessEnabledTestAndGetAtom(
+                        "executeAppFunction_failed_uncaughtClientException_nonParam");
+
+        assertThat(afRequestReported.getErrorCode()).isEqualTo(ERROR_INVALID_ARGUMENT);
+    }
+
+    @Test
+    @RequiresFlagsDisabled({
+        FLAG_APP_FUNCTION_ACCESS_API_ENABLED,
+        FLAG_APP_FUNCTION_ACCESS_SERVICE_ENABLED
+    })
     public void testAtom_executeAppFunction_crossUser_success() throws Exception {
         if (!getDevice().isMultiUserSupported()) return;
 
@@ -124,12 +148,15 @@ public class AppFunctionsStatsTest extends BaseHostJUnit4Test implements IBuildR
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_APP_FUNCTION_ACCESS_SERVICE_ENABLED)
+    @RequiresFlagsEnabled({
+        FLAG_APP_FUNCTION_ACCESS_API_ENABLED,
+        FLAG_APP_FUNCTION_ACCESS_SERVICE_ENABLED
+    })
     public void testAtom_executeAppFunction_crossUser_fail() throws Exception {
         if (!getDevice().isMultiUserSupported()) return;
 
         AppFunctionsRequestReported afRequestReported =
-                runTestAndGetAtom(
+                runAccessEnabledTestAndGetAtom(
                         "executeAppFunction"
                                 + "_crossUserWithCrossProfileFullPermission_fail_nonParam");
 
@@ -137,6 +164,10 @@ public class AppFunctionsStatsTest extends BaseHostJUnit4Test implements IBuildR
     }
 
     @Test
+    @RequiresFlagsDisabled({
+        FLAG_APP_FUNCTION_ACCESS_API_ENABLED,
+        FLAG_APP_FUNCTION_ACCESS_SERVICE_ENABLED
+    })
     public void testAtom_executeAppFunction_platformManager_platformAppFunctionService_success()
             throws Exception {
         AppFunctionsRequestReported afRequestReported =
@@ -148,11 +179,57 @@ public class AppFunctionsStatsTest extends BaseHostJUnit4Test implements IBuildR
     }
 
     @Test
+    @RequiresFlagsEnabled({
+        FLAG_APP_FUNCTION_ACCESS_API_ENABLED,
+        FLAG_APP_FUNCTION_ACCESS_SERVICE_ENABLED
+    })
+    public void
+            testAtom_executeAppFunction_platformManager_platformAppFunctionService_success_accessEnabled()
+                    throws Exception {
+        AppFunctionsRequestReported afRequestReported =
+                runAccessEnabledTestAndGetAtom(
+                        "executeAppFunction_platformManager"
+                                + "_platformAppFunctionService_success_nonParam");
+
+        assertThat(afRequestReported.getErrorCode()).isEqualTo(SUCCESS_ERROR_CODE);
+    }
+
+    @Test
+    @RequiresFlagsDisabled({
+        FLAG_APP_FUNCTION_ACCESS_API_ENABLED,
+        FLAG_APP_FUNCTION_ACCESS_SERVICE_ENABLED
+    })
     public void testAtom_executeAppFunction_throwsException() throws Exception {
         AppFunctionsRequestReported afRequestReported =
                 runTestAndGetAtom("executeAppFunction_throwsException_nonParam");
 
         assertThat(afRequestReported.getErrorCode()).isEqualTo(THROWS_EXCEPTION_ERROR_CODE);
+    }
+
+    @Test
+    @RequiresFlagsEnabled({
+        FLAG_APP_FUNCTION_ACCESS_API_ENABLED,
+        FLAG_APP_FUNCTION_ACCESS_SERVICE_ENABLED
+    })
+    public void testAtom_executeAppFunction_throwsException_accessEnabled() throws Exception {
+        AppFunctionsRequestReported afRequestReported =
+                runAccessEnabledTestAndGetAtom("executeAppFunction_throwsException_nonParam");
+
+        assertThat(afRequestReported.getErrorCode()).isEqualTo(THROWS_EXCEPTION_ERROR_CODE);
+    }
+
+    private AppFunctionsRequestReported runAccessEnabledTestAndGetAtom(String testName)
+            throws Exception {
+        DeviceUtils.runDeviceTests(getDevice(), TEST_PKG, ACCESS_ENABLED_TEST_CLASS, testName);
+        RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
+
+        List<StatsLog.EventMetricData> data =
+                ReportUtils.getEventMetricDataList(getDevice(), mExtensionRegistry);
+        assertThat(data).hasSize(1);
+
+        return data.getFirst()
+                .getAtom()
+                .getExtension(AppFunctionsExtensionAtoms.appFunctionsRequestReported);
     }
 
     private AppFunctionsRequestReported runTestAndGetAtom(String testName) throws Exception {

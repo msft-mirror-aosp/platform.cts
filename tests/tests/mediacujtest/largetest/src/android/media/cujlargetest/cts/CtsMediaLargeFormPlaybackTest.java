@@ -98,7 +98,7 @@ public class CtsMediaLargeFormPlaybackTest extends CujTestBase {
     // CujTestParam, testId
     final List<Object[]> exhaustiveArgsList = new ArrayList<>(Arrays.asList(new Object[][]{
         {CujTestParam.builder().setMediaUrls(prepare_15minAudioPlaylist())
-            .setDuration(PLAYLIST_DURATION_FIFTEEN_MIN).setOverhead(TEST_OVERHEAD)
+            .setDuration(PLAYLIST_DURATION_FIFTEEN_MIN).setOverhead(TEST_AUDIO_OVERHEAD)
             .setPlayerListener(new PlaybackTestPlayerListener()).build(),
             "Audio_5min_3clips_PlaybackTest"},
         {CujTestParam.builder().setMediaUrls(prepareVP9_640x480_15minVideoPlaylist())
@@ -112,7 +112,7 @@ public class CtsMediaLargeFormPlaybackTest extends CujTestBase {
                 new SeekTestPlayerListener(SEEK_ITERATIONS, SEEK_DURATION,
                     SEEK_MESSAGE_POSITION)).build(), "VP9_640x480_5min_3clips_seekTest"},
         {CujTestParam.builder().setMediaUrls(prepare_30minAudioPlaylist())
-            .setDuration(PLAYLIST_DURATION_THIRTY_MIN).setOverhead(TEST_OVERHEAD)
+            .setDuration(PLAYLIST_DURATION_THIRTY_MIN).setOverhead(TEST_AUDIO_OVERHEAD)
             .setPlayerListener(new PlaybackTestPlayerListener()).build(),
             "Audio_30min_PlaybackTest"},
         {CujTestParam.builder().setMediaUrls(prepareAvc_1080p_30minVideoPlaylist())

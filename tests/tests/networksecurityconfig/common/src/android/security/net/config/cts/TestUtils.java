@@ -18,6 +18,7 @@ package android.security.net.config.cts;
 
 import static org.junit.Assert.fail;
 
+import android.content.Context;
 import android.net.http.AndroidHttpClient;
 
 import org.apache.http.HttpResponse;
@@ -29,15 +30,20 @@ import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.UnknownHostException;
+import java.security.KeyFactory;
 import java.security.KeyStore;
+import java.security.PrivateKey;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
+import java.security.spec.PKCS8EncodedKeySpec;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLHandshakeException;
+import javax.net.ssl.SSLServerSocket;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
@@ -89,6 +95,47 @@ public final class TestUtils {
             result.add((X509Certificate) c);
         }
         return result;
+    }
+
+    /**
+     * Binds a TLS server locally for testing.
+     *
+     * @param ctx the app context.
+     * @param chainResId the resource ID of the certificate chain (PEM file).
+     * @param keyResId the private key used to sign the certificates (PKCS8 file).
+     */
+    public static SSLServerSocket bindTLSServer(Context ctx, int chainResId, int keyResId)
+            throws Exception {
+        // Load certificate chain.
+        X509Certificate[] certs;
+        try (InputStream is = ctx.getResources().openRawResource(chainResId)) {
+            certs = loadCertificates(is).toArray(new X509Certificate[0]);
+        }
+
+        // Load private key for the leaf.
+        PrivateKey key;
+        try (InputStream is = ctx.getResources().openRawResource(keyResId)) {
+            byte[] keyBytes = is.readAllBytes();
+            key = KeyFactory.getInstance("RSA").generatePrivate(new PKCS8EncodedKeySpec(keyBytes));
+        }
+
+        // Create KeyStore based on the private key/chain.
+        KeyStore ks = KeyStore.getInstance(KeyStore.getDefaultType());
+        ks.load(null);
+        ks.setKeyEntry("name", key, null, certs);
+
+        // Create SSLContext.
+        TrustManagerFactory tmf = TrustManagerFactory.getInstance("PKIX");
+        tmf.init(ks);
+        KeyManagerFactory kmf =
+                KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
+        kmf.init(ks, null);
+        SSLContext context = SSLContext.getInstance("TLS");
+        context.init(kmf.getKeyManagers(), tmf.getTrustManagers(), null);
+
+        SSLServerSocket s = (SSLServerSocket) context.getServerSocketFactory().createServerSocket();
+        s.bind(null);
+        return s;
     }
 
     private static void assertSslSocketFails(String host, int port)

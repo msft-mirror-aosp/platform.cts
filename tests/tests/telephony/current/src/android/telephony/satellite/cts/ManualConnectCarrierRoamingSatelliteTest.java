@@ -37,7 +37,6 @@ import android.content.pm.PackageManager;
 import android.hardware.radio.RadioError;
 import android.os.PersistableBundle;
 import android.os.SystemClock;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.Telephony;
@@ -56,9 +55,6 @@ import android.text.TextUtils;
 import android.util.Pair;
 
 import com.android.internal.telephony.RILConstants;
-import com.android.internal.telephony.flags.Flags;
-
-import java.util.List;
 
 import org.junit.After;
 import org.junit.AfterClass;
@@ -151,7 +147,6 @@ public class ManualConnectCarrierRoamingSatelliteTest extends CarrierRoamingSate
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ROAMING_NB_IOT_NTN)
     public void testCarrierRoamingNtnEligible() throws Exception {
         if (!shouldTestManualConnectCarrierRoaming()) return;
 
@@ -217,7 +212,6 @@ public class ManualConnectCarrierRoamingSatelliteTest extends CarrierRoamingSate
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ROAMING_NB_IOT_NTN)
     public void testSendSms_success() throws Exception {
         logd(TAG, "testSendSms_success");
         if (!shouldTestManualConnectCarrierRoaming()) return;
@@ -232,7 +226,6 @@ public class ManualConnectCarrierRoamingSatelliteTest extends CarrierRoamingSate
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ROAMING_NB_IOT_NTN)
     public void testReceiveSms_success() throws Exception {
         logd(TAG, "testReceiveSms_success");
         if (!shouldTestManualConnectCarrierRoaming()) return;
@@ -241,7 +234,6 @@ public class ManualConnectCarrierRoamingSatelliteTest extends CarrierRoamingSate
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ROAMING_NB_IOT_NTN)
     public void testSendSms_failure() throws Exception {
         logd(TAG, "testSendSms_failure");
         if (!shouldTestManualConnectCarrierRoaming()) return;

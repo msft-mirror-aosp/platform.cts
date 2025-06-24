@@ -391,8 +391,8 @@ public class ItsTestActivity extends DialogTestListActivity {
             if (ACTION_ITS_RESULT.equals(intent.getAction())) {
                 String version = intent.getStringExtra(EXTRA_VERSION);
                 if (version == null || !version.equals(CURRENT_VERSION)) {
-                    Log.e(TAG, "Its result version mismatch: expect " + CURRENT_VERSION +
-                            ", got " + ((version == null) ? "null" : version));
+                    Log.e(TAG, "ITS result version mismatch. expect: " + CURRENT_VERSION
+                            + ", actual: " + ((version == null) ? "null" : version));
                     ItsTestActivity.this.showToast(R.string.its_version_mismatch);
                     return;
                 }
@@ -401,9 +401,9 @@ public class ItsTestActivity extends DialogTestListActivity {
                 String results = intent.getStringExtra(EXTRA_RESULTS);
                 String tabletName = intent.getStringExtra(EXTRA_TABLET_NAME);
                 if (cameraId == null || results == null) {
-                    Log.e(TAG, "cameraId = " + ((cameraId == null) ? "null" : cameraId) +
-                            ", results = " + ((results == null) ? "null" : results) +
-                            ", tabletName = " + ((tabletName == null) ? "null" : tabletName));
+                    Log.e(TAG, "cameraId = " + ((cameraId == null) ? "null" : cameraId)
+                            + ", results = " + ((results == null) ? "null" : results)
+                            + ", tabletName = " + ((tabletName == null) ? "null" : tabletName));
                     return;
                 }
 
@@ -476,8 +476,8 @@ public class ItsTestActivity extends DialogTestListActivity {
                             // Get start/end time per camera/scene for result history collection.
                             mStartTime = sceneResult.getLong("start");
                             mEndTime = sceneResult.getLong("end");
-                            setTestResult(testId(cameraId, scene), pass ?
-                                    TestResult.TEST_RESULT_PASSED : TestResult.TEST_RESULT_FAILED);
+                            setTestResult(testId(cameraId, scene), pass
+                                    ? TestResult.TEST_RESULT_PASSED : TestResult.TEST_RESULT_FAILED);
                             Log.e(
                                     TAG,
                                     "setTestResult for " + testId(cameraId, scene) + ": " + result);
@@ -687,8 +687,8 @@ public class ItsTestActivity extends DialogTestListActivity {
             if (!launchMatches && !jpegMatches && !gainmapMatches) {
                 return false;
             }
-            if (!cameraId.equals(mPrimaryRearCameraId) &&
-                    !cameraId.equals(mPrimaryFrontCameraId)) {
+            if (!cameraId.equals(mPrimaryRearCameraId)
+                    && !cameraId.equals(mPrimaryFrontCameraId)) {
                 return false;
             }
 

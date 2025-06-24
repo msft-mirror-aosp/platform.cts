@@ -6260,11 +6260,11 @@
     <option name="compatibility:include-filter" value="CtsWindowManagerDeviceKeyguard android.server.wm.keyguard.KeyguardLockedTests#testShowWhenLockedImeActivityAndShowSoftInput"/>
     <option name="compatibility:include-filter" value="CtsWindowManagerDeviceKeyguard android.server.wm.keyguard.KeyguardTests#testDismissKeyguardActivity_method_turnScreenOn"/>
     <option name="compatibility:include-filter" value="CtsWindowManagerDeviceKeyguard android.server.wm.keyguard.KeyguardTests#testTranslucentDoesntRevealBehind"/>
+    <option name="compatibility:include-filter" value="CtsWindowManagerDeviceKeyguard android.server.wm.keyguard.MultiDisplayKeyguardTests#testNoKeyguardDialogOnPrivateDisplay"/>
+    <option name="compatibility:include-filter" value="CtsWindowManagerDeviceKeyguard android.server.wm.keyguard.MultiDisplayKeyguardTests#testShowKeyguardDialogSecondaryDisplayChange"/>
     <!-- CtsWindowManagerDeviceMultiDisplay -->
     <option name="compatibility:include-filter" value="CtsWindowManagerDeviceMultiDisplay android.server.wm.multidisplay.MultiDisplayActivityLaunchTests#testLaunchActivityFromSecondaryDisplay"/>
     <option name="compatibility:include-filter" value="CtsWindowManagerDeviceMultiDisplay android.server.wm.multidisplay.MultiDisplayActivityLaunchTests#testNewTaskDefaultDisplay"/>
-    <option name="compatibility:include-filter" value="CtsWindowManagerDeviceMultiDisplay android.server.wm.multidisplay.MultiDisplayKeyguardTests#testNoKeyguardDialogOnPrivateDisplay"/>
-    <option name="compatibility:include-filter" value="CtsWindowManagerDeviceMultiDisplay android.server.wm.multidisplay.MultiDisplayKeyguardTests#testShowKeyguardDialogSecondaryDisplayChange"/>
     <option name="compatibility:include-filter" value="CtsWindowManagerDeviceMultiDisplay android.server.wm.multidisplay.MultiDisplayPolicyTests#testMoveTaskBetweenDisplays"/>
     <option name="compatibility:include-filter" value="CtsWindowManagerDeviceMultiDisplay android.server.wm.multidisplay.MultiDisplayPolicyTests#testStackFocusSwitchOnStackEmptied"/>
     <option name="compatibility:include-filter" value="CtsWindowManagerDeviceMultiDisplay android.server.wm.multidisplay.MultiDisplayPolicyTests#testStackFocusSwitchOnStackEmptiedInSleeping"/>

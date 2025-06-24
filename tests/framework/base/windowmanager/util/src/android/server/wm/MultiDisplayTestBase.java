@@ -64,8 +64,8 @@ import java.util.function.Predicate;
  *
  * @see android.server.wm.display.DisplayTests
  * @see android.server.wm.display.AppConfigurationTests
- * @see android.server.wm.multidisplay.MultiDisplayKeyguardTests
- * @see android.server.wm.multidisplay.MultiDisplayLockedKeyguardTests
+ * @see android.server.wm.keyguard.MultiDisplayKeyguardTests
+ * @see android.server.wm.keyguard.MultiDisplayLockedKeyguardTests
  */
 public class MultiDisplayTestBase extends ActivityManagerTestBase {
 
