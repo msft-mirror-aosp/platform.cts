@@ -17,15 +17,16 @@ package {
 }
 
 filegroup {
-    name: "cts-wm-app-util",
+    name: "cts-wm-components-util",
     srcs: [
         "src/android/server/wm/ActivityLauncher.java",
         "src/android/server/wm/CommandSession.java",
         "src/android/server/wm/ComponentNameUtils.java",
+        "src/android/server/wm/NestedShellPermission.java",
         "src/android/server/wm/TestJournalProvider.java",
         "src/android/server/wm/TestLogClient.java",
-        ":cts-wm-components",
     ],
+    visibility: ["//cts/tests/framework/base/windowmanager/test-apps/app_base"],
 }
 
 filegroup {
@@ -39,9 +40,8 @@ java_test_helper_library {
     srcs: [
         "src/**/*.java",
         "src/**/*.aidl",
-        ":cts-wm-components",
-        ":cts-wm-components-base",
     ],
+    exclude_srcs: [":cts-wm-components-util"],
 
     static_libs: [
         "CtsMockInputMethodLib",
@@ -50,6 +50,7 @@ java_test_helper_library {
         "androidx.test.rules",
         "com.android.window.flags.window-aconfig-java",
         "compatibility-device-util-axt",
+        "cts-wm-components-lib",
         "framework-annotations-lib",
         "hamcrest-library",
         "perfetto_winscope-lite",
