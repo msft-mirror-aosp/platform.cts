@@ -234,7 +234,7 @@ static dng_error_code dng_validate(const void* data, uint32_t count) {
 
                 // Skip preview if writing a compresssed main image to save space
                 // in this example code.
-                if (negative->RawLossyCompressedImage() != NULL && previewIndex > 0) {
+                if (negative->RawJPEGImage() != NULL && previewIndex > 0) {
                     break;
                 }
 
@@ -265,8 +265,8 @@ static dng_error_code dng_validate(const void* data, uint32_t count) {
 
                 // If we have compressed JPEG data, create a compressed thumbnail.  Otherwise
                 // save a uncompressed thumbnail.
-                bool useCompressedPreview =
-                        (negative->RawLossyCompressedImage() != NULL) || (previewIndex > 0);
+                bool useCompressedPreview = (negative->RawJPEGImage() != NULL) ||
+                        (previewIndex > 0);
 
                 AutoPtr<dng_preview> preview (useCompressedPreview ?
                         (dng_preview *) new dng_jpeg_preview :
@@ -287,7 +287,7 @@ static dng_error_code dng_validate(const void* data, uint32_t count) {
 
                 if (!useCompressedPreview) {
                     dng_image_preview *imagePreview = static_cast<dng_image_preview *>(preview.Get());
-                    imagePreview->SetImage(host, previewImage.Release());
+                    imagePreview->fImage.Reset(previewImage.Release());
                 } else {
                     dng_jpeg_preview *jpegPreview = static_cast<dng_jpeg_preview *>(preview.Get());
                     int32 quality = (previewIndex == 0 ? 8 : 5);
@@ -308,8 +308,12 @@ static dng_error_code dng_validate(const void* data, uint32_t count) {
                 dng_timer timer("Write DNG time");
                 dng_image_writer writer;
 
-                writer.WriteDNG(host, stream2, *negative.Get(), &previewList,
-                                dngVersion_SaveDefault, false);
+                writer.WriteDNG(host,
+                        stream2,
+                        *negative.Get(),
+                        &previewList,
+                        dngVersion_Current,
+                        false);
             }
 
             gDumpDNG.Clear();
@@ -347,8 +351,6 @@ static dng_error_code dng_validate(const void* data, uint32_t count) {
             if (negative->GetXMP()) {
                 negative->GetXMP()->RemoveProperties(XMP_NS_CRS);
                 negative->GetXMP()->RemoveProperties(XMP_NS_CRSS);
-                negative->GetXMP()->RemoveProperties(XMP_NS_CRD);
-                negative->GetXMP()->RemoveProperties(XMP_NS_CRLCP);
             }
 #endif
 
@@ -356,18 +358,17 @@ static dng_error_code dng_validate(const void* data, uint32_t count) {
             dng_file_stream stream2(gDumpTIF.Get(), true);
 
             {
-                const dng_camera_profile *profilePtr = nullptr;
-                dng_camera_profile profile;
-                if (!negative->IsMonochrome()) {
-                    const auto &profileID = render.CameraProfileID();
-                    if (negative->GetProfileByID(profileID, profile)) profilePtr = &profile;
-                }
                 dng_timer timer("Write TIFF time");
                 dng_image_writer writer;
 
-                writer.WriteTIFF(host, stream2, *finalImage.Get(),
-                                 finalImage->Planes() >= 3 ? piRGB : piBlackIsZero, ccUncompressed,
-                                 &negative->Metadata(), &render.FinalSpace(profilePtr));
+                writer.WriteTIFF(host,
+                        stream2,
+                        *finalImage.Get(),
+                        finalImage->Planes() >= 3 ? piRGB
+                        : piBlackIsZero,
+                        ccUncompressed,
+                        negative.Get(),
+                        &render.FinalSpace());
             }
             gDumpTIF.Clear();
         }
@@ -431,7 +432,7 @@ Java_android_hardware_camera2_cts_DngCreatorTest_validateDngNative(
         ALOGE("Error reading from dng_validate output pipe: %d", errno);
         return JNI_FALSE;
     }
-    close(pipeFds[0]);
+    close(pipeFds[1]);
 
     std::string line;
     int lineCount = 0;
@@ -456,8 +457,8 @@ Java_android_hardware_camera2_cts_DngCreatorTest_validateDngNative(
         }
     }
     // If no output is produced, assume something went wrong
-    if (lineCount > 0) {
-        ALOGE("Unexpected stderr output!");
+    if (lineCount < 3) {
+        ALOGE("Validation output less than expected!");
         dng_err = dng_error_unknown;
     }
     if (dng_err != dng_error_none) {
