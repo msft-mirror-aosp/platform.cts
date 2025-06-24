@@ -181,6 +181,38 @@ class TransportsListenerTest : CoreTestBase() {
         listener.clearRecordedInvocations()
     }
 
+    @Test
+    fun test_addOnTransportEventListener_requiresPermission() {
+        // Create a regular (not self-managed) association.
+        targetApp.associate(MAC_ADDRESS_A)
+        val associationId = cdm.myAssociations[0].id
+        val listener = Consumer<Int> { _: Int -> }
+
+        // Attempts to call addOnTransportEventListener without the
+        // USE_COMPANION_TRANSPORTS permission should lead to a SecurityException
+        // being thrown.
+        assertFailsWith(SecurityException::class) {
+            cdm.addOnTransportEventListener(SIMPLE_EXECUTOR, associationId, listener)
+        }
+
+        // Same call with the USE_COMPANION_TRANSPORTS permissions should succeed.
+        withShellPermissionIdentity(Manifest.permission.USE_COMPANION_TRANSPORTS) {
+            cdm.addOnTransportEventListener(SIMPLE_EXECUTOR, associationId, listener)
+        }
+
+        // Attempts to call removeOnTransportEventListener without the
+        // USE_COMPANION_TRANSPORTS permission should lead to a SecurityException
+        // being thrown.
+        assertFailsWith(SecurityException::class) {
+            cdm.removeOnTransportEventListener(associationId, listener)
+        }
+
+        // Same call with the USE_COMPANION_TRANSPORTS permissions should succeed.
+        withShellPermissionIdentity(Manifest.permission.USE_COMPANION_TRANSPORTS) {
+            cdm.removeOnTransportEventListener(associationId, listener)
+        }
+    }
+
     private class BlockedInputStream : FilterInputStream(ByteArrayInputStream(byteArrayOf(0))) {
 
         @Throws(IOException::class)
