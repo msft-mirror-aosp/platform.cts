@@ -28,6 +28,8 @@ android_test {
         "MediaPerformanceClassCommon",
         "mediapc-requirements",
         "mpc_proto",
+        "truth",
+        "TestParameterInjector",
     ],
     jni_libs: [
         "libctsmediapc_vulkan_jni",
