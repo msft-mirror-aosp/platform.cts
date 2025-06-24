@@ -932,7 +932,7 @@ public final class ActivityManagerTest {
         // Wait until it finishes and end the receiver then.
         assertThat(appEndReceiver.getResult()).isEqualTo(RESULT_OK);
 
-        if (isTestHomeActivityFocused()) {
+        if (isCurrentHomeActivityFocused()) {
             // At this time the timerReceiver should not fire, even though the activity has shut
             // down, because we are back to the home screen. Going to the home screen does not
             // qualify as the user leaving the activity's flow. The time tracking is considered
@@ -1078,7 +1078,7 @@ public final class ActivityManagerTest {
         assertThat(appEndReceiver.getResult()).isEqualTo(RESULT_OK);
         Log.e("SOSO", "Done waiting for activity exit");
 
-        if (isTestHomeActivityFocused()) {
+        if (isCurrentHomeActivityFocused()) {
             // At this time the timerReceiver should not fire, even though the activity has shut
             // down, because we are back to the home screen. Going to the home screen does not
             // qualify as the user leaving the activity's flow. The time tracking is considered
@@ -2658,7 +2658,7 @@ public final class ActivityManagerTest {
         HomeActivitySession(ComponentName sessionHome) throws Exception {
             mSessionHome = sessionHome;
             mPackageManager = mInstrumentation.getContext().getPackageManager();
-            mOrigHome = getDefaultHomeComponent();
+            mOrigHome = getCurrentHomeComponent();
 
             runWithShellPermissionIdentity(
                     () -> mPackageManager.setComponentEnabledSetting(mSessionHome,
@@ -2680,19 +2680,6 @@ public final class ActivityManagerTest {
             executeShellCommand("cmd package set-home-activity --user "
                     + android.os.Process.myUserHandle().getIdentifier() + " "
                     + componentName.flattenToString());
-        }
-
-        private ComponentName getDefaultHomeComponent() {
-            final Intent intent = new Intent(ACTION_MAIN);
-            intent.addCategory(CATEGORY_HOME);
-            intent.addFlags(FLAG_ACTIVITY_NEW_TASK);
-            final ResolveInfo resolveInfo = mInstrumentation.getContext()
-                    .getPackageManager().resolveActivity(intent, MATCH_DEFAULT_ONLY);
-            if (resolveInfo == null) {
-                throw new AssertionError("Home activity not found");
-            }
-            return new ComponentName(resolveInfo.activityInfo.packageName,
-                    resolveInfo.activityInfo.name);
         }
     }
 
@@ -2728,14 +2715,29 @@ public final class ActivityManagerTest {
                 UserManager.isHeadlessSystemUserMode());
     }
 
-    private boolean isTestHomeActivityFocused() {
+    private boolean isCurrentHomeActivityFocused() {
         if (noHomeScreen()) {
             return false;
         }
-        ComponentName homeActivity =
-                new ComponentName(STUB_PACKAGE_NAME, TestHomeActivity.class.getName());
+        ComponentName homeActivity = getCurrentHomeComponent();
         mWmState.waitForValidState(homeActivity);
         return mWmState.waitForFocusedActivity(homeActivity);
+    }
+
+    private ComponentName getCurrentHomeComponent() {
+        final Intent intent = new Intent(ACTION_MAIN);
+        intent.addCategory(CATEGORY_HOME);
+        intent.addFlags(FLAG_ACTIVITY_NEW_TASK);
+        final ResolveInfo resolveInfo =
+                mInstrumentation
+                        .getContext()
+                        .getPackageManager()
+                        .resolveActivity(intent, MATCH_DEFAULT_ONLY);
+        if (resolveInfo == null) {
+            throw new AssertionError("Home activity not found");
+        }
+        return new ComponentName(
+                resolveInfo.activityInfo.packageName, resolveInfo.activityInfo.name);
     }
 
     private boolean isAutomotive() {
