@@ -751,6 +751,19 @@ def private_reprocess(props):
       'android.request.availableCapabilities']
 
 
+def read_sensor_settings(props):
+  """Returns whether a device supports read sensor settings.
+
+  Args:
+    props: Camera properties object.
+
+  Returns:
+    Boolean. True if device supports read sensor settings.
+  """
+  return 'android.request.availableCapabilities' in props and 5 in props[
+      'android.request.availableCapabilities']
+
+
 def stream_use_case(props):
   """Returns whether a device has stream use case capability.
 

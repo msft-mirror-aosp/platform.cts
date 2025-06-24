@@ -15,14 +15,12 @@
 
 import logging
 import os
-
-from mobly import test_runner
-
-import its_base_test
 import camera_properties_utils
 import capture_request_utils
 import image_processing_utils
+import its_base_test
 import its_session_utils
+from mobly import test_runner
 
 _FRAME_TIME_DELTA_RTOL = 0.1  # allow 10% variation from reported value
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
@@ -102,8 +100,13 @@ class BurstCaptureTest(its_base_test.ItsBaseTest):
       first_api_level = its_session_utils.get_first_api_level(self.dut.serial)
       frame_time_duration_deltas = []
       if first_api_level >= its_session_utils.ANDROID15_API_LEVEL:
-        frame_times = [cap['metadata']['android.sensor.timestamp']
-                       for cap in caps]
+        if camera_properties_utils.read_sensor_settings(props):
+          frame_times = [cap['metadata']['android.sensor.timestamp']
+                         + cap['metadata']['android.sensor.exposureTime']
+                         for cap in caps]
+        else:
+          frame_times = [cap['metadata']['android.sensor.timestamp']
+                         for cap in caps]
         for i, time in enumerate(frame_times):
           if i < _START_FRAME:
             continue
@@ -113,7 +116,8 @@ class BurstCaptureTest(its_base_test.ItsBaseTest):
           frame_time_delta_atol = frame_duration * (1+_FRAME_TIME_DELTA_RTOL)
           frame_time_duration_deltas.append(frame_time_delta - frame_duration)
           logging.debug(
-              'frame_time-frameDuration: %d ns', frame_time_delta-frame_duration
+              'frame_time_delta-frameDuration: %d ns',
+              frame_time_delta-frame_duration
           )
           if frame_time_delta > frame_time_delta_atol:
             error_msg.append(
