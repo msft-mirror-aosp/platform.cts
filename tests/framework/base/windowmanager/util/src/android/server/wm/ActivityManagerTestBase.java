@@ -276,7 +276,7 @@ public abstract class ActivityManagerTestBase {
     protected final DisplayManager mDm = mContext.getSystemService(DisplayManager.class);
     protected final WindowManager mWm = mContext.getSystemService(WindowManager.class);
     protected final KeyguardManager mKm = mContext.getSystemService(KeyguardManager.class);
-    private final UserHelper mUserHelper = new UserHelper(mContext);
+    protected final UserHelper mUserHelper = new UserHelper(mContext);
 
     /** The tracker to manage objects (especially {@link AutoCloseable}) in a test method. */
     protected final ObjectTracker mObjectTracker = new ObjectTracker();
@@ -297,7 +297,6 @@ public abstract class ActivityManagerTestBase {
 
     /** Indicate to wait for all non-home activities to be destroyed when test finished. */
     protected boolean mShouldWaitForAllNonHomeActivitiesToDestroyed = false;
-    protected int mUserId;
 
     @NonNull
     private SplitScreenActivityUtils mSplitScreenActivityUtils;
@@ -730,8 +729,6 @@ public abstract class ActivityManagerTestBase {
             mAtm.clearLaunchParamsForPackages(TEST_PACKAGES);
         });
         mSplitScreenActivityUtils = new SplitScreenActivityUtils(mWmState, mTaskOrganizer);
-
-        mUserId = mContext.getUserId();
     }
 
     /** It always executes after {@link org.junit.After}. */
@@ -3657,7 +3654,7 @@ public abstract class ActivityManagerTestBase {
                         if (isVisibleBackgroundUserSupported()) {
                             // Ensure that the user who is running the test is assigned to the
                             // overlay display during its configuration when it is created.
-                            assignUserToExtraDisplay(mUserId, display.mId);
+                            assignUserToExtraDisplay(mUserHelper.getUserId(), display.mId);
                         }
                     }
                 });
@@ -3671,7 +3668,7 @@ public abstract class ActivityManagerTestBase {
                     waitForOrFail("display config show-IME to be restored",
                             () -> (mWm.getDisplayImePolicy(state.mId) == state.mImePolicy));
                     if (isVisibleBackgroundUserSupported()) {
-                        unassignUserToExtraDisplay(mUserId, state.mId);
+                        unassignUserToExtraDisplay(mUserHelper.getUserId(), state.mId);
                     }
                 }));
             }

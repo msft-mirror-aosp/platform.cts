@@ -48,8 +48,8 @@ public class AmStartOptionsTests extends ActivityManagerTestBase {
 
     @Test
     public void testDashD() {
-        executeShellCommand("am start --user " + mUserId + " -n " + getActivityName(TEST_ACTIVITY)
-                + " -D");
+        executeShellCommand("am start --user " + mUserHelper.getUserId()
+                + " -n " + getActivityName(TEST_ACTIVITY) + " -D");
 
         mWmState.waitForDebuggerWindowVisible(TEST_ACTIVITY);
         WindowManagerState.Activity activity = mWmState.getActivity(TEST_ACTIVITY);
@@ -80,8 +80,8 @@ public class AmStartOptionsTests extends ActivityManagerTestBase {
         // Start LaunchingActivity again and finish TestActivity
         final int flags =
                 FLAG_ACTIVITY_NEW_TASK | FLAG_ACTIVITY_CLEAR_TOP | FLAG_ACTIVITY_SINGLE_TOP;
-        executeShellCommand("am start --user " + mUserId + " -W -f " + flags + " -n "
-                + getActivityName(LAUNCHING_ACTIVITY));
+        executeShellCommand("am start --user " + mUserHelper.getUserId() + " -W -f " + flags
+                + " -n " + getActivityName(LAUNCHING_ACTIVITY));
         waitAndAssertResumedAndFocusedActivityOnDisplay(LAUNCHING_ACTIVITY, getMainDisplayId(),
                 "Activity must be launched.");
     }
@@ -107,7 +107,8 @@ public class AmStartOptionsTests extends ActivityManagerTestBase {
         // different in subsequent warm/hot launches, so that the entrypoint alias
         // activity is always started, but the actual activity is not started again
         // because of the NEW_TASK and singleTask flags.
-        executeShellCommand("am start --user " + mUserId + " -n " + getActivityName(entryActivity)
+        executeShellCommand("am start --user " + mUserHelper.getUserId()
+                + " -n " + getActivityName(entryActivity)
                 + " -W " + (shouldStart ? " -d about:blank" : ""));
 
         waitAndAssertResumedAndFocusedActivityOnDisplay(actualActivity, getMainDisplayId(),
