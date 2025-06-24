@@ -25,11 +25,13 @@ import static org.junit.Assume.assumeTrue;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.os.SystemProperties;
+import android.platform.test.annotations.DisableFlags;
 import android.platform.test.annotations.Presubmit;
 import android.server.wm.ActivityManagerTestBase;
 
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.SystemUtil;
+import com.android.systemui.Flags;
 
 import org.junit.After;
 import org.junit.Before;
@@ -72,6 +74,8 @@ public class DeprecatedAbiTest extends ActivityManagerTestBase {
     }
 
     @Test
+    // Re-enabling for flexiglass is tracked in b/419892060.
+    @DisableFlags(Flags.FLAG_SCENE_CONTAINER)
     public void testWarningDialog() throws Exception {
         // Skip the test if the device only supports 32-bit ABI
         List<String> deviceAbis = Arrays.asList(

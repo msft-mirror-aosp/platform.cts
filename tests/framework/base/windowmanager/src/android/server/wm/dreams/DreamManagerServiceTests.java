@@ -34,6 +34,7 @@ import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.content.ComponentName;
+import android.platform.test.annotations.DisableFlags;
 import android.platform.test.annotations.Presubmit;
 import android.provider.Settings;
 import android.server.wm.ActivityManagerTestBase;
@@ -48,6 +49,7 @@ import android.view.Surface;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.RequireNotAutomotive;
+import com.android.systemui.Flags;
 
 import org.junit.After;
 import org.junit.Before;
@@ -292,6 +294,8 @@ public class DreamManagerServiceTests extends ActivityManagerTestBase {
     }
 
     @Test
+    // Re-enabling for flexiglass is tracked in b/412769564.
+    @DisableFlags(Flags.FLAG_SCENE_CONTAINER)
     public void testStartActivityOnKeyguardLocked() {
         assumeTrue(supportsLockScreen());
         assumeFalse(dismissDreamOnActivityStart());
