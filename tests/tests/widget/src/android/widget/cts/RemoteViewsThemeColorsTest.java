@@ -34,7 +34,9 @@ import androidx.test.filters.MediumTest;
 import androidx.test.rule.ActivityTestRule;
 
 import com.android.compatibility.common.util.AdoptShellPermissionsRule;
+import com.android.compatibility.common.util.SystemUtil;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -42,6 +44,7 @@ import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
@@ -85,12 +88,23 @@ public class RemoteViewsThemeColorsTest {
 
     private RemoteViews mRemoteViews;
 
+    private String mPreviousNightMode;
+
     @Before
-    public void setUp() {
+    public void setUp() throws IOException {
         RemoteViewsUtil.checkRemoteViewsProtoFlag(isProtoTest);
         mInstrumentation = InstrumentationRegistry.getInstrumentation();
+        // TODO(b/413256468) remove once this test uses ColorResources.createWithOverlay
+        mPreviousNightMode =
+                SystemUtil.runShellCommand(mInstrumentation, "cmd uimode night").substring(12);
+        SystemUtil.runShellCommand(mInstrumentation, "cmd uimode night no");
         mContext = mInstrumentation.getTargetContext();
         mRemoteViews = new RemoteViews(PACKAGE_NAME, R.layout.remoteviews_good);
+    }
+
+    @After
+    public void after() throws IOException {
+        SystemUtil.runShellCommand(mInstrumentation, "cmd uimode night " + mPreviousNightMode);
     }
 
     @Test
