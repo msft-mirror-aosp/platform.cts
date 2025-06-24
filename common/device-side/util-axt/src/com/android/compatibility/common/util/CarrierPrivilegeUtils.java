@@ -145,14 +145,14 @@ public final class CarrierPrivilegeUtils {
             // SHELL permissions
             if (mIsShell) {
                 mTelephonyManager.registerCarrierPrivilegesCallback(
-                        slotIndex, mContext.getMainExecutor(), mCarrierPrivilegesCallback);
+                        slotIndex, Runnable::run, mCarrierPrivilegesCallback);
             } else {
-                runWithShellPermissionIdentity(() -> {
-                    mTelephonyManager.registerCarrierPrivilegesCallback(
-                            slotIndex,
-                            mContext.getMainExecutor(),
-                            mCarrierPrivilegesCallback);
-                }, Manifest.permission.READ_PRIVILEGED_PHONE_STATE);
+                runWithShellPermissionIdentity(
+                        () -> {
+                            mTelephonyManager.registerCarrierPrivilegesCallback(
+                                    slotIndex, Runnable::run, mCarrierPrivilegesCallback);
+                        },
+                        Manifest.permission.READ_PRIVILEGED_PHONE_STATE);
             }
         }
 
