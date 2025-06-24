@@ -50,10 +50,14 @@ _DEFAULT_ANGULAR_ACCELERATION = 35
 _DEFAULT_ANGULAR_DECELERATION = 20
 _DEFAULT_FILTER_POSITION_COUNT = 5
 
-# servo controller configuration for SF
+# servo controller configuration for sensor fusion (SF)
 _DEFAULT_MAX_SPEED_RPM_SF = 12
-_ANGULAR_ACCELERATIO_SF = 30
-_ANGULAR_DECELERATION_SF = 30
+_ANGULAR_ACCELERATION_STABILIZATION = 30
+_ANGULAR_DECELERATION_STABILIZATION = 30
+_ANGULAR_ACCELERATION_SF = 5
+_ANGULAR_DECELERATION_SF = 5
+_ANGULAR_STIFFNESS_SF = -6
+_ANGULAR_HOLDING_STIFFNESS_SF = -4
 _FILTER_POSITION_COUNT_SF = 2
 _OVERSHOOT_ANGLE_SF = 5
 _OVERSHOOT_LIMP_TIME = 0.05
@@ -80,6 +84,7 @@ _LIGHTS_STR = 'lights'
 _ROTATOR_STR = 'rotator'
 _STR_340 = '340'
 _MEGA_STR = 'Mega'
+DEFAULT_GEN2_ROTATOR_NAME = 'gen2_rotator'
 
 
 def _check_channel(channel):
@@ -170,8 +175,6 @@ def get_position(serial_port, channel):
   response = serial_port.readline().decode('utf-8').strip()
   logging.debug('Position response from rotator: %s', response)
   position = response.split(_LSS_ACTION_QUERY_POSITION)[-1]
-  if not position or not position.isdigit():
-    raise AssertionError('Failed to get position from rotator.')
   return int(position) / _SERVO_ANGLE_SCALE_FACTOR
 
 
@@ -288,6 +291,9 @@ def rotation_rig_sensor_fusion(rotate_cntl, rotate_ch, num_rotations, angles):
   channel = int(rotate_ch)
   _check_channel(channel)
 
+  # configure motor
+  _set_sensor_fusion_params(serial_port, channel)
+
   # initialize servo at starting angle
   logging.debug('Moving servo to starting position')
   _move_to(serial_port, channel, starting_angle * _SERVO_ANGLE_SCALE_FACTOR)
@@ -299,8 +305,54 @@ def rotation_rig_sensor_fusion(rotate_cntl, rotate_ch, num_rotations, angles):
     get_position(serial_port, channel)
     _move_to(serial_port, channel, starting_angle * _SERVO_ANGLE_SCALE_FACTOR)
     get_position(serial_port, channel)
+
+  # reset rotator parameters and move back to origin
+  _reset_params_to_default(serial_port, channel)
   logging.debug('Finished rotations for sensor fusion, moving to origin')
   _move_to(serial_port, channel, 0)
+  logging.debug(
+      'Position after moving to origin: %s', get_position(serial_port, channel)
+  )
+
+
+def _set_stabilization_params(serial_port, channel):
+  """Set parameters for the rotator for stabilization tests."""
+  _set_angular_stiffness(serial_port, channel, _ANGULAR_STIFFNESS_SF)
+  _set_angular_holding_stiffness(
+      serial_port, channel, _ANGULAR_HOLDING_STIFFNESS_SF)
+  _set_angular_acceleration(
+      serial_port, channel, _ANGULAR_ACCELERATION_STABILIZATION)
+  _set_angular_deceleration(
+      serial_port, channel, _ANGULAR_DECELERATION_STABILIZATION)
+  _set_filter_position_count(serial_port, channel, _FILTER_POSITION_COUNT_SF)
+
+
+def _set_sensor_fusion_params(serial_port, channel):
+  """Set parameters for the rotator for sensor fusion tests."""
+  _set_max_speed_rpm(serial_port, channel, _DEFAULT_MAX_SPEED_RPM_SF)
+  _set_angular_stiffness(serial_port, channel, _ANGULAR_STIFFNESS_SF)
+  _set_angular_holding_stiffness(
+      serial_port, channel, _ANGULAR_HOLDING_STIFFNESS_SF)
+  _set_angular_acceleration(
+      serial_port, channel, _ANGULAR_ACCELERATION_SF)
+  _set_angular_deceleration(
+      serial_port, channel, _ANGULAR_DECELERATION_SF)
+  _set_filter_position_count(serial_port, channel, _FILTER_POSITION_COUNT_SF)
+
+
+def _reset_params_to_default(serial_port, channel):
+  """Reset parameters to default for the rotator."""
+  _set_max_speed_rpm(serial_port, channel, _DEFAULT_MAX_SPEED_RPM)
+  _set_angular_stiffness(serial_port, channel, _DEFAULT_ANGULAR_STIFFNESS)
+  _set_angular_holding_stiffness(serial_port, channel,
+                                 _DEFAULT_ANGULAR_HOLDING_STIFFNESS)
+  _set_angular_acceleration(
+      serial_port, channel, _DEFAULT_ANGULAR_ACCELERATION)
+  _set_angular_deceleration(
+      serial_port, channel, _DEFAULT_ANGULAR_DECELERATION)
+  _set_filter_position_count(
+      serial_port, channel, _DEFAULT_FILTER_POSITION_COUNT)
+  time.sleep(_WAIT_FOR_CONFIG_COMPLETION)
 
 
 def rotation_rig(rotate_cntl, rotate_ch, num_rotations, angles):
@@ -331,15 +383,7 @@ def rotation_rig(rotate_cntl, rotate_ch, num_rotations, angles):
     channel = int(rotate_ch)
     _check_channel(channel)
 
-    # Configure motor
-    _set_max_speed_rpm(serial_port, channel, _DEFAULT_MAX_SPEED_RPM_SF)
-    _set_angular_stiffness(serial_port, channel, _DEFAULT_ANGULAR_STIFFNESS)
-    _set_angular_holding_stiffness(serial_port, channel,
-                                   _DEFAULT_ANGULAR_HOLDING_STIFFNESS)
-    _set_angular_acceleration(serial_port, channel, _ANGULAR_ACCELERATIO_SF)
-    _set_angular_deceleration(serial_port, channel, _ANGULAR_DECELERATION_SF)
-    _set_filter_position_count(serial_port, channel, _FILTER_POSITION_COUNT_SF)
-
+    _set_stabilization_params(serial_port, channel)
     # initialize servo at starting angle
     logging.debug('Moving servo to starting position')
     _move_to(serial_port, channel, angles[0] * _SERVO_ANGLE_SCALE_FACTOR)
@@ -363,13 +407,7 @@ def rotation_rig(rotate_cntl, rotate_ch, num_rotations, angles):
     logging.debug('Finished rotations')
 
     # reset rotator parameters and move back to origin
-    _set_angular_acceleration(
-        serial_port, channel, _DEFAULT_ANGULAR_ACCELERATION)
-    _set_angular_deceleration(
-        serial_port, channel, _DEFAULT_ANGULAR_DECELERATION)
-    _set_filter_position_count(
-        serial_port, channel, _DEFAULT_FILTER_POSITION_COUNT)
-    time.sleep(_WAIT_FOR_CONFIG_COMPLETION)
+    _reset_params_to_default(serial_port, channel)
     logging.debug('Moving servo to origin')
     _move_to(serial_port, channel, 0)
   except Exception as e:

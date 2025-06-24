@@ -30,6 +30,7 @@ import scipy.spatial
 import its_base_test
 import camera_properties_utils
 import capture_request_utils
+import gen2_rig_controller_utils
 import image_processing_utils
 import its_session_utils
 import sensor_fusion_utils
@@ -38,6 +39,7 @@ _CAM_FRAME_RANGE_MAX = 9.0  # Seconds: max allowed camera frame range.
 _GYRO_SAMP_RATE_MIN = 100.0  # Samples/second: min gyro sample rate.
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
 _ARDUINO_INIT_WAIT_TIME = 3.0  # Seconds to wait for Arduino comm
+_GEN2_INIT_WAIT_TIME = 1.0  # Seconds to wait for gen2 rig comm
 _NUM_ROTATIONS = 10
 _START_FRAME = 1
 _FRAME_DELTA_RTOL = 1.5  # 50% margin over nominal FPS of captures
@@ -66,7 +68,7 @@ _NUM_FRAMES_MAX = 300  # fps*test_length should be < this for smooth captures.
 
 
 def _collect_data(cam, fps, w, h, test_length, rot_rig, chart_dist,
-                  name_with_log_path):
+                  name_with_log_path, use_gen2=False):
   """Capture a new set of data from the device.
 
   Captures camera frames while the user is moving the device in the proscribed
@@ -82,6 +84,7 @@ def _collect_data(cam, fps, w, h, test_length, rot_rig, chart_dist,
     rot_rig: dict with 'cntl' and 'ch' defined.
     chart_dist: float value of distance to chart in meters.
     name_with_log_path: file name with location to save data.
+    use_gen2: bool; whether to use gen2 rotator.
 
   Returns:
     frames: list of RGB images as numpy arrays.
@@ -94,16 +97,23 @@ def _collect_data(cam, fps, w, h, test_length, rot_rig, chart_dist,
       cam.get_sensors().get('gyro'))
 
   # Start camera rotation.
+  rotation_rig_args = (
+      rot_rig['cntl'],
+      rot_rig['ch'],
+      _NUM_ROTATIONS,
+      sensor_fusion_utils.ARDUINO_ANGLES_SENSOR_FUSION,
+  )
+  if use_gen2:
+    rotate_func = gen2_rig_controller_utils.rotation_rig_sensor_fusion
+  else:
+    rotate_func = sensor_fusion_utils.rotation_rig
+    rotation_rig_args += (
+        sensor_fusion_utils.ARDUINO_SERVO_SPEED_SENSOR_FUSION,
+        sensor_fusion_utils.ARDUINO_MOVE_TIME_SENSOR_FUSION,
+    )
   p = threading.Thread(
-      target=sensor_fusion_utils.rotation_rig,
-      args=(
-          rot_rig['cntl'],
-          rot_rig['ch'],
-          _NUM_ROTATIONS,
-          sensor_fusion_utils.ARDUINO_ANGLES_SENSOR_FUSION,
-          sensor_fusion_utils.ARDUINO_SERVO_SPEED_SENSOR_FUSION,
-          sensor_fusion_utils.ARDUINO_MOVE_TIME_SENSOR_FUSION,
-      ),
+      target=rotate_func,
+      args=rotation_rig_args,
   )
   p.start()
 
@@ -113,6 +123,8 @@ def _collect_data(cam, fps, w, h, test_length, rot_rig, chart_dist,
   time.sleep(_GYRO_INIT_WAIT_TIME)
   if rot_rig['cntl'].lower() == 'arduino':
     time.sleep(_ARDUINO_INIT_WAIT_TIME)
+  elif use_gen2:
+    time.sleep(_GEN2_INIT_WAIT_TIME)
 
   # Raise error if not FRONT or REAR facing camera.
   facing = props['android.lens.facing']
@@ -334,6 +346,12 @@ class SensorFusionTest(its_base_test.ItsBaseTest):
         logging.info('test_sensor_fusion.py not run. Using existing data set.')
 
     rot_rig = {}
+    rot_rig['cntl'] = self.rotator_cntl
+    rot_rig['ch'] = self.rotator_ch
+    use_gen2 = (
+        rot_rig['cntl'] == gen2_rig_controller_utils.DEFAULT_GEN2_ROTATOR_NAME
+    )
+    logging.debug('use_gen2: %s', use_gen2)
     fps = float(self.fps)
     img_w, img_h = self.img_w, self.img_h
     test_length = float(self.test_length)
@@ -354,11 +372,16 @@ class SensorFusionTest(its_base_test.ItsBaseTest):
           camera_id=self.camera_id,
           hidden_physical_id=self.hidden_physical_id) as cam:
 
-        rot_rig['cntl'] = self.rotator_cntl
-        rot_rig['ch'] = self.rotator_ch
+        if use_gen2:
+          lights_channel = int(self.lighting_ch)
+          lights_port = gen2_rig_controller_utils.find_serial_port(
+              self.lighting_cntl)
+          sensor_fusion_utils.establish_serial_comm(lights_port)
+          gen2_rig_controller_utils.set_lighting_state(
+              lights_port, lights_channel, 'ON')
         events, frames = _collect_data(
             cam, fps, img_w, img_h, test_length, rot_rig, chart_distance,
-            name_with_log_path)
+            name_with_log_path, use_gen2=use_gen2)
     logging.debug('Start frame: %d', _START_FRAME)
 
     sensor_fusion_utils.plot_gyro_events(events['gyro'], _NAME, self.log_path)

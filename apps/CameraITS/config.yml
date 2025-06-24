@@ -64,7 +64,6 @@ TestBeds:
           - serial: <device-id>  # quotes needed if serial id entirely numeric
             label: dut
     TestParams:
-      debug_mode: "False"  # quotes are needed here
       chart_distance: 30
       rotator_cntl: gen2_rotator   # gen2 rig specific. "None" if gen2 rig not available
       rotator_ch: <controller-channel>
@@ -74,3 +73,8 @@ TestBeds:
       lighting_cntl: gen2_lights  # gen2 rig specific. "None" if gen2 rig not available
       lighting_ch: <controller-channel>
       scene: scene_ip
+      # For sensor fusion tests
+      fps: 30
+      img_size: 640,480  # width, height
+      test_length: 7
+      debug_mode: "False"  # quotes are needed here
