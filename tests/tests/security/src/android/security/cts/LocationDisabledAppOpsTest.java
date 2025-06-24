@@ -98,9 +98,9 @@ public class LocationDisabledAppOpsTest extends StsExtraBusinessLogicTestCase {
                             mode[0] = mAom.noteOpNoThrow(
                                     OPSTR_FINE_LOCATION, ai.uid, ai.packageName);
                         });
-                        if (mode[0] == MODE_ALLOWED && !ignoreList.containsAll(pi.packageName)) {
+                        if (mode[0] == MODE_ALLOWED && !ignoreList.containsPackageWithAllTags(pi.packageName)) {
                             if (mIsAutomotive) {
-                                if (!adasAllowlist.containsAll(pi.packageName)) {
+                                if (!adasAllowlist.containsPackageWithAllTags(pi.packageName)) {
                                     bypassedNoteOps.add(pi.packageName);
                                 }
                             } else {
@@ -114,9 +114,9 @@ public class LocationDisabledAppOpsTest extends StsExtraBusinessLogicTestCase {
                             mode[0] = mAom
                                     .checkOpNoThrow(OPSTR_FINE_LOCATION, ai.uid, ai.packageName);
                         });
-                        if (mode[0] == MODE_ALLOWED && !ignoreList.includes(pi.packageName)) {
+                        if (mode[0] == MODE_ALLOWED && !ignoreList.containsPackage(pi.packageName)) {
                             if (mIsAutomotive) {
-                                if (!adasAllowlist.includes(pi.packageName)) {
+                                if (!adasAllowlist.containsPackage(pi.packageName)) {
                                     bypassedCheckOps.add(pi.packageName);
                                 }
                             } else {
