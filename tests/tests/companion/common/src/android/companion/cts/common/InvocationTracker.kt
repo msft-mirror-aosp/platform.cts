@@ -51,7 +51,7 @@ interface InvocationTracker<T> {
     fun recordInvocation(invocation: T)
 }
 
-internal class InvocationContainer<T> : InvocationTracker<T> {
+class InvocationContainer<T> : InvocationTracker<T> {
     private val _invocations: MutableList<T> = mutableListOf()
     override val invocations: List<T>
         @Synchronized

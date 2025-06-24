@@ -86,14 +86,14 @@ class SystemDataTransferTest : UiAutomationTestBase(null, null) {
         }.apply { assumeTrue("This test requires Permission Transfer to be enabled.", this) }
 
         withShellPermissionIdentity(MANAGE_COMPANION_DEVICES) {
-            cdm.enableSecureTransport(false)
+            cdm.overrideTransportType(1) // Force raw transport
         }
     }
 
     @CallSuper
     override fun tearDown() {
         withShellPermissionIdentity(MANAGE_COMPANION_DEVICES) {
-            cdm.enableSecureTransport(true)
+            cdm.overrideTransportType(0) // Reset transport type
         }
         super.tearDown()
     }
