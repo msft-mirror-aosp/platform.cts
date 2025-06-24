@@ -69,6 +69,7 @@ java_defaults {
         "android.view.inputmethod.flags-aconfig-java",
         "ui-trace-collector",
         "flag-junit",
+        "Harrier",
     ],
 
     test_suites: [

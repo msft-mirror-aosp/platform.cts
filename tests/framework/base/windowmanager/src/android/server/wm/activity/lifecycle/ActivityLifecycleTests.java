@@ -88,9 +88,15 @@ import android.server.wm.RotationSession;
 
 import androidx.test.filters.MediumTest;
 
+import com.android.bedstead.harrier.BedsteadJUnit4;
+import com.android.bedstead.harrier.DeviceState;
+import com.android.bedstead.harrier.annotations.RequireNotAutomotive;
 import com.android.compatibility.common.util.AmUtils;
 
+import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -103,7 +109,12 @@ import java.util.List;
 @MediumTest
 @Presubmit
 @android.server.wm.annotation.Group3
+@RunWith(BedsteadJUnit4.class)
 public class ActivityLifecycleTests extends ActivityLifecycleClientTestBase {
+
+    @ClassRule
+    @Rule
+    public static final DeviceState sDeviceState = new DeviceState();
 
     @Test
     public void testSingleLaunch() throws Exception {
@@ -512,6 +523,7 @@ public class ActivityLifecycleTests extends ActivityLifecycleClientTestBase {
     }
 
     @Test
+    @RequireNotAutomotive(reason = "Automotive screens don't support rotation")
     public void testRelaunchConfigurationChangedWhileBecomingVisible() throws Exception {
         if (!supportsRotation()) {
             // Skip rotation test if device doesn't support it.
