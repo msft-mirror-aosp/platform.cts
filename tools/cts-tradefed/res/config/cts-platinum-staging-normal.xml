@@ -8847,6 +8847,8 @@
     <option name="compatibility:include-filter" value="CtsWindowManagerDeviceKeyguard android.server.wm.keyguard.KeyguardTests#testTranslucentDoesntRevealBehind"/>
     <option name="compatibility:include-filter" value="CtsWindowManagerDeviceKeyguard android.server.wm.keyguard.KeyguardTests#testTranslucentShowWhenLockedActivity"/>
     <option name="compatibility:include-filter" value="CtsWindowManagerDeviceKeyguard android.server.wm.keyguard.KeyguardTests#testUnoccludedRotationChange"/>
+    <option name="compatibility:include-filter" value="CtsWindowManagerDeviceKeyguard android.server.wm.keyguard.MultiDisplayKeyguardTests#testNoKeyguardDialogOnPrivateDisplay"/>
+    <option name="compatibility:include-filter" value="CtsWindowManagerDeviceKeyguard android.server.wm.keyguard.MultiDisplayKeyguardTests#testShowKeyguardDialogSecondaryDisplayChange"/>
     <!-- CtsWindowManagerDeviceMultiDisplay -->
     <option name="compatibility:include-filter" value="CtsWindowManagerDeviceMultiDisplay android.server.wm.multidisplay.MultiDisplayActivityLaunchTests#testConsequentLaunchActivity"/>
     <option name="compatibility:include-filter" value="CtsWindowManagerDeviceMultiDisplay android.server.wm.multidisplay.MultiDisplayActivityLaunchTests#testConsequentLaunchActivityFromSecondaryDisplay"/>
@@ -8869,8 +8871,6 @@
     <option name="compatibility:include-filter" value="CtsWindowManagerDeviceMultiDisplay android.server.wm.multidisplay.MultiDisplayClientTests#testDisplayIdUpdateWhenImeMove_RelaunchActivity"/>
     <option name="compatibility:include-filter" value="CtsWindowManagerDeviceMultiDisplay android.server.wm.multidisplay.MultiDisplayClientTests#testViewGetDisplayOnPrimaryDisplay"/>
     <option name="compatibility:include-filter" value="CtsWindowManagerDeviceMultiDisplay android.server.wm.multidisplay.MultiDisplayClientTests#testViewGetDisplayOnSecondaryDisplay"/>
-    <option name="compatibility:include-filter" value="CtsWindowManagerDeviceMultiDisplay android.server.wm.multidisplay.MultiDisplayKeyguardTests#testNoKeyguardDialogOnPrivateDisplay"/>
-    <option name="compatibility:include-filter" value="CtsWindowManagerDeviceMultiDisplay android.server.wm.multidisplay.MultiDisplayKeyguardTests#testShowKeyguardDialogSecondaryDisplayChange"/>
     <option name="compatibility:include-filter" value="CtsWindowManagerDeviceMultiDisplay android.server.wm.multidisplay.MultiDisplayPolicyTests#testMoveTaskBetweenDisplays"/>
     <option name="compatibility:include-filter" value="CtsWindowManagerDeviceMultiDisplay android.server.wm.multidisplay.MultiDisplayPolicyTests#testNoLeakOnExternalDisplay"/>
     <option name="compatibility:include-filter" value="CtsWindowManagerDeviceMultiDisplay android.server.wm.multidisplay.MultiDisplayPolicyTests#testPreQTopProcessResumedActivity"/>
