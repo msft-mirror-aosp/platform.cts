@@ -113,6 +113,13 @@ public final class MediaRouterTestConstants {
     public static final String PROXY_MEDIA_ROUTER_WITH_MEDIA_CONTENT_CONTROL_HELPER_TEST_CLASS =
             "android.media.router.cts.proxymediacontentcontrolapp.MediaRouter2DeviceTest";
 
+    public static final String PROXY_MEDIA_ROUTER_SCANNING_TEST_APP_APK =
+            "CtsMediaRouterHostSideTestProxyScanningTestApp.apk";
+    public static final String PROXY_MEDIA_ROUTER_SCANNING_TEST_APP_PACKAGE =
+            "android.media.router.cts.proxy_media_router_scanning_test_app";
+    public static final String PROXY_MEDIA_ROUTER_SCANNING_TEST_APP_TEST_CLASS =
+            "android.media.router.cts.ScanningActivity";
+
     public static final String ROUTE_ID_APP_1_ROUTE_1 = "route_1-1";
     public static final String ROUTE_ID_APP_1_ROUTE_2 = "route_1-2";
     public static final String ROUTE_ID_APP_1_ROUTE_3 = "route_1-3";
@@ -135,6 +142,9 @@ public final class MediaRouterTestConstants {
     public static final String ROUTE_ID_REQUIRES_ANY_PERMISSION_SET =
             "route_requires_any_permission_set";
 
+    public static final String ROUTE_ID_VISIBILITY_RESTRICTED = "route_visibility_restricted";
+    public static final String ROUTE_ID_RESTRICTED_ALLOW_PRIVILEGED = "route_allow_privileged";
+
     public static final String ROUTE_NAME_1 = "route 1";
     public static final String ROUTE_NAME_2 = "route 2";
     public static final String ROUTE_NAME_3 = "route 3";
@@ -144,6 +154,9 @@ public final class MediaRouterTestConstants {
     public static final String ROUTE_NAME_REQUIRES_ONE_PERMISSION = "requires_one_permission_route";
     public static final String ROUTE_NAME_REQUIRES_ANY_PERMISSION_SET =
             "requires_any_permission_set_route";
+
+    public static final String ROUTE_NAME_VISIBILITY_RESTRICTED = "visibility_restricted_route";
+    public static final String ROUTE_NAME_RESTRICTED_ALLOW_PRIVILEGED = "allow_privileged_route";
 
     public static final String ROUTE_DEDUPLICATION_ID_1 = "dedup_id_1";
     public static final String ROUTE_DEDUPLICATION_ID_2 = "dedup_id_2";

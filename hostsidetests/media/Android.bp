@@ -59,6 +59,7 @@ java_test_host {
         ":CtsMediaRouterHostSideTestProviderRequiresPermissionsApp",
         ":CtsMediaRouterHostSideTestProviderSelfScanOnlyApp",
         ":CtsMediaRouterHostSideTestProviderWithPackageManagerSpam",
+        ":CtsMediaRouterHostSideTestProxyScanningTestApp",
         ":CtsMediaSessionHostTestApp",
         ":CtsMediaSessionTestHelper",
         ":CtsProxyMediaRouterSecondaryUserTestHelperApp",

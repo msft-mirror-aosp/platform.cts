@@ -69,6 +69,19 @@ public abstract class BaseFakeRouteProviderService extends MediaRoute2ProviderSe
                 .build();
     }
 
+    protected static MediaRoute2Info createRestrictedRouteAllowPrivileged(
+            String id,
+            String name,
+            Set<String> allowedPackages,
+            boolean allowPrivileged,
+            String... deduplicationIds) {
+        return new MediaRoute2Info.Builder(id, name)
+                .addFeature(FEATURE_SAMPLE)
+                .setDeduplicationIds(Set.of(deduplicationIds))
+                .setVisibilityRestricted(allowedPackages, true)
+                .build();
+    }
+
     protected static MediaRoute2Info createPermissionsRequiredRoute(String id, String name,
             List<Set<String>> permissionSets, String... deduplicationIds) {
         if (Flags.enableRouteVisibilityControlApi()) {
