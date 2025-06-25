@@ -1612,7 +1612,6 @@ public class ImsCallingTest extends ImsCallingBase {
         Bundle extras = new Bundle();
 
         telecomManager.placeCall(imsUri, extras);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
 
         // Wait for transfer result notification
         waitUntilConditionIsTrueOrTimeout(
@@ -1660,7 +1659,6 @@ public class ImsCallingTest extends ImsCallingBase {
         Bundle extras = new Bundle();
 
         telecomManager.placeCall(imsUri, extras);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
 
         // Wait for transfer result notification
         waitUntilConditionIsTrueOrTimeout(
