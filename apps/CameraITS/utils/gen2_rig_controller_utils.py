@@ -317,6 +317,7 @@ def rotation_rig_sensor_fusion(rotate_cntl, rotate_ch, num_rotations, angles):
 
 def _set_stabilization_params(serial_port, channel):
   """Set parameters for the rotator for stabilization tests."""
+  _set_max_speed_rpm(serial_port, channel, _DEFAULT_MAX_SPEED_RPM_SF)
   _set_angular_stiffness(serial_port, channel, _ANGULAR_STIFFNESS_SF)
   _set_angular_holding_stiffness(
       serial_port, channel, _ANGULAR_HOLDING_STIFFNESS_SF)
