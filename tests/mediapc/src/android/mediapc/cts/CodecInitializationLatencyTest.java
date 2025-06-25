@@ -22,7 +22,6 @@ import static android.mediapc.cts.CodecTestBase.SELECT_HARDWARE;
 import static android.mediapc.cts.CodecTestBase.SELECT_VIDEO;
 import static android.mediapc.cts.CodecTestBase.codecFilter;
 import static android.mediapc.cts.CodecTestBase.codecPrefix;
-import static android.mediapc.cts.CodecTestBase.getCodecCapabilities;
 import static android.mediapc.cts.CodecTestBase.getCodecInfo;
 import static android.mediapc.cts.CodecTestBase.getMediaTypesOfAvailableCodecs;
 import static android.mediapc.cts.CodecTestBase.mediaTypePrefix;
@@ -31,17 +30,17 @@ import static android.mediapc.cts.CodecTestBase.selectHardwareCodecs;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
-import android.app.Instrumentation;
-import android.content.Context;
 import android.content.pm.PackageManager;
 import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
 import android.media.MediaFormat;
 import android.media.MediaRecorder;
 import android.mediapc.cts.common.PerformanceClassEvaluator;
+import android.mediapc.cts.common.PerformanceClassTestRule;
+import android.mediapc.cts.common.Precondition;
+import android.mediapc.cts.common.Preconditions;
 import android.mediapc.cts.common.Requirements;
 import android.mediapc.cts.common.Utils;
 import android.os.SystemClock;
@@ -59,7 +58,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TestName;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
@@ -90,9 +88,6 @@ public class CodecInitializationLatencyTest {
     private static String AVC_ENCODER_NAME;
     private static final Map<String, String> mTestFiles = new HashMap<>();
 
-    @Rule
-    public final TestName mTestName = new TestName();
-
     static {
         // TODO(b/222006626): Add tests vectors for remaining media types
         // Audio media types
@@ -121,6 +116,27 @@ public class CodecInitializationLatencyTest {
         mTestFiles.put(MediaFormat.MIMETYPE_VIDEO_VP9, "bbb_1920x1080_4mbps_30fps_vp9.webm");
     }
 
+    @Rule(order = 1)
+    public final PerformanceClassTestRule pcRule =
+            PerformanceClassTestRule.with(
+                    Preconditions.BASELINE,
+                    Precondition.create(
+                            "Test requires h/w avc decoder",
+                            CodecInitializationLatencyTest::initHwAvcEncoderName),
+                    Precondition.create(
+                            "Test requires h/w avc encoder",
+                            CodecInitializationLatencyTest::initHwAvcDecoderName),
+                    Precondition.create(
+                            "The device doesn't support running at least four 1920x1080 avc"
+                                    + " instances concurrently",
+                            Utils.MEETS_AVC_CODEC_PRECONDITIONS),
+                    Precondition.requireSystemFeature(PackageManager.FEATURE_CAMERA_ANY),
+                    Precondition.requireSystemFeature(PackageManager.FEATURE_MICROPHONE));
+
+    @Rule(order = 2)
+    public ActivityTestRule<TestActivity> mActivityRule =
+            new ActivityTestRule<>(TestActivity.class);
+
     private final String mMediaType;
     private final String mCodecName;
 
@@ -133,28 +149,26 @@ public class CodecInitializationLatencyTest {
 
     @Before
     public void setUp() throws Exception {
-        Utils.assumeDeviceMeetsPerformanceClassPreconditions();
-
-        ArrayList<String> listOfAvcHwDecoders = selectHardwareCodecs(AVC, null, null, false);
-        assumeFalse("Test requires h/w avc decoder", listOfAvcHwDecoders.isEmpty());
-        AVC_DECODER_NAME = listOfAvcHwDecoders.get(0);
-
-        ArrayList<String> listOfAvcHwEncoders = selectHardwareCodecs(AVC, null, null, true);
-        assumeFalse("Test requires h/w avc encoder", listOfAvcHwEncoders.isEmpty());
-        AVC_ENCODER_NAME = listOfAvcHwEncoders.get(0);
-
-        Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
-        Context context = instrumentation.getTargetContext();
-        PackageManager packageManager = context.getPackageManager();
-        assertNotNull(packageManager.getSystemAvailableFeatures());
-        assumeTrue("The device doesn't support running at least four 1920x1080 avc"
-                + "instances concurrently", Utils.MEETS_AVC_CODEC_PRECONDITIONS);
-        assumeTrue("The device doesn't have a camera",
-                packageManager.hasSystemFeature(PackageManager.FEATURE_CAMERA_ANY));
-        assumeTrue("The device doesn't have a microphone",
-                packageManager.hasSystemFeature(PackageManager.FEATURE_MICROPHONE));
         createSurface();
         startLoad();
+    }
+
+    private static boolean initHwAvcEncoderName() {
+        ArrayList<String> listOfAvcHwEncoders = selectHardwareCodecs(AVC, null, null, true);
+        if (listOfAvcHwEncoders.isEmpty()) {
+            return false;
+        }
+        AVC_ENCODER_NAME = listOfAvcHwEncoders.getFirst();
+        return true;
+    }
+
+    private static boolean initHwAvcDecoderName() {
+        ArrayList<String> listOfAvcHwDecoders = selectHardwareCodecs(AVC, null, null, false);
+        if (listOfAvcHwDecoders.isEmpty()) {
+            return false;
+        }
+        AVC_DECODER_NAME = listOfAvcHwDecoders.getFirst();
+        return true;
     }
 
     @After
@@ -168,9 +182,6 @@ public class CodecInitializationLatencyTest {
         mCodecName = codecName;
     }
 
-    @Rule
-    public ActivityTestRule<TestActivity> mActivityRule =
-            new ActivityTestRule<>(TestActivity.class);
 
     /**
      * Returns the list of parameters with mediaType and their codecs(for audio - all codecs,
@@ -362,7 +373,7 @@ public class CodecInitializationLatencyTest {
         Log.i(LOG_TAG, "Avg " + statsLog + (sumOfCodecInitializationLatencyMs / count));
         long initializationLatency = codecInitializationLatencyMs[percentile * count / 100];
 
-        PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
+        PerformanceClassEvaluator pce = pcRule.getPerformanceClassEvaluator();
         if (isEncoder) {
             if (isAudio) {
                 Requirements.addR5_1__H_1_8().to(pce).setCodecInitializationLatencyMs(
@@ -390,7 +401,6 @@ public class CodecInitializationLatencyTest {
                 }
             }
         }
-        pce.submitAndCheck();
     }
 
     /**

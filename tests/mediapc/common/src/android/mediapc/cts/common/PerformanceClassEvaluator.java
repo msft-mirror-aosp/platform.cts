@@ -24,6 +24,7 @@ import static org.junit.Assume.assumeTrue;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.annotation.VisibleForTesting;
 import androidx.test.platform.app.InstrumentationRegistry;
 
@@ -39,9 +40,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-/**
- * Logs a set of measurements and results for defined performance class requirements.
- */
+/** Logs a set of measurements and results for defined performance class requirements. */
 public class PerformanceClassEvaluator {
     private static final String TAG = PerformanceClassEvaluator.class.getSimpleName();
 
@@ -50,16 +49,29 @@ public class PerformanceClassEvaluator {
     private final String mTestName;
     private final Set<Requirement> mRequirements;
 
+    /**
+     * Creates a PerformanceClassEvaluator with the given test name.
+     *
+     * <p>Use {@link PerformanceClassTestRule} instead of creating this directly where possible.
+     */
     public PerformanceClassEvaluator(TestName testName) {
         this(testName, Utils.isPerfClass(), Utils.getPerfClass());
     }
 
+    public PerformanceClassEvaluator(@Nullable String testName) {
+        this(testName, Utils.isPerfClass(), Utils.getPerfClass());
+    }
+
+    private PerformanceClassEvaluator(TestName testName, boolean isPerfClass, int declaredPc) {
+        this(Preconditions.checkNotNull(testName).getMethodName(), isPerfClass, declaredPc);
+    }
+
     @VisibleForTesting
-    protected PerformanceClassEvaluator(TestName testName, boolean isPerfClass, int declaredPc) {
-        Preconditions.checkNotNull(testName);
+    protected PerformanceClassEvaluator(
+            @Nullable String testName, boolean isPerfClass, int declaredPc) {
         mIsPerfClass = isPerfClass;
         mDeclaredPc = declaredPc;
-        String baseTestName = testName.getMethodName() != null ? testName.getMethodName() : "";
+        String baseTestName = testName != null ? testName : "";
         this.mTestName = baseTestName.replace("{", "(").replace("}", ")");
         this.mRequirements = new HashSet<>();
     }
@@ -91,6 +103,7 @@ public class PerformanceClassEvaluator {
         return allMeasuredValuesSet && hasRequirements;
     }
 
+
     private enum SubmitType {
         TRADEFED, VERIFIER
     }
@@ -100,6 +113,8 @@ public class PerformanceClassEvaluator {
      * asserts that the requirements are met.
      *
      * <p>The set of requirements are cleared after submission.
+     *
+     * <p>Test should use {@link PerformanceClassTestRule} instead of calling this method directly.
      */
     public void submitAndCheck() {
         // submit clears the requirements so compute before submitting
