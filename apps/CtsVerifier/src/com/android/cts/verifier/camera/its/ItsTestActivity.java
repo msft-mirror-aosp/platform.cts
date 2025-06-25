@@ -664,6 +664,9 @@ public class ItsTestActivity extends DialogTestListActivity {
                     try {
                         reader.close();
                     } catch (IOException e) {
+                        String errorMessage = "IO exception when trying to close reader";
+                        Log.e(TAG, errorMessage);
+                        summary.append(errorMessage);
                     }
                 }
 
