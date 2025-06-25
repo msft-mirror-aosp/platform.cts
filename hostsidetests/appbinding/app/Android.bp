@@ -196,3 +196,31 @@ android_test_helper_app {
         "general-tests",
     ],
 }
+
+android_test_helper_app {
+    name: "CtsAppBindingServiceSupervision4",
+    defaults: [
+        "cts_hostside_appbinding_defaults",
+        "cts_defaults",
+    ],
+    srcs: ["src/**/*.java"],
+    manifest: "appsup4/AndroidManifest.xml",
+    test_suites: [
+        "cts",
+        "general-tests",
+    ],
+}
+
+android_test_helper_app {
+    name: "CtsAppBindingServiceSupervision5",
+    defaults: [
+        "cts_hostside_appbinding_defaults",
+        "cts_defaults",
+    ],
+    srcs: ["src/**/*.java"],
+    manifest: "appsup5/AndroidManifest.xml",
+    test_suites: [
+        "cts",
+        "general-tests",
+    ],
+}

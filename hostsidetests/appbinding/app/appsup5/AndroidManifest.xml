@@ -26,7 +26,7 @@
             android:process=":persistent"
             android:permission="android.permission.BIND_SUPERVISION_APP_SERVICE">
             <intent-filter>
-                <action android:name="android.app.action.SUPERVISION_APP_SERVICE"/>
+                <action android:name="android.app.action.WRONG_SUPERVISION_APP_SERVICE"/>
             </intent-filter>
         </service>
     </application>
