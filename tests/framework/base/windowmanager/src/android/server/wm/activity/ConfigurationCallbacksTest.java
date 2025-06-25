@@ -44,11 +44,17 @@ import android.view.Display;
 
 import androidx.annotation.NonNull;
 
+import com.android.bedstead.harrier.BedsteadJUnit4;
+import com.android.bedstead.harrier.DeviceState;
+import com.android.bedstead.harrier.annotations.RequireNotAutomotive;
 import com.android.compatibility.common.util.ApiTest;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 
 /**
  * Tests that verify the behavior of client side window configuration related state changed
@@ -59,6 +65,7 @@ import org.junit.Test;
  *     atest CtsWindowManagerDeviceActivity:ConfigurationCallbacksTest
  */
 @Presubmit
+@RunWith(BedsteadJUnit4.class)
 public class ConfigurationCallbacksTest extends WindowManagerTestBase {
 
     private static final String TAG = ConfigurationCallbacksTest.class.getSimpleName();
@@ -72,6 +79,10 @@ public class ConfigurationCallbacksTest extends WindowManagerTestBase {
     private TestComponentCallbacks mApplicationCallbacks;
     private TestDisplayListener mDisplayListener;
     private TestActivity mActivity;
+
+    @ClassRule
+    @Rule
+    public static final DeviceState sDeviceState = new DeviceState();
 
     @Before
     public void setUp() throws Exception {
@@ -124,6 +135,7 @@ public class ConfigurationCallbacksTest extends WindowManagerTestBase {
             "android.app.Activity#onConfigurationChanged",
             "android.content.ComponentCallbacks#onConfigurationChanged",
     })
+    @RequireNotAutomotive(reason = "Automotive screens don't support rotation")
     public void testDisplayRotate() {
         assumeTrue(supportsRotation());
         // Devices that always launch activities in multi-window may not be able to update

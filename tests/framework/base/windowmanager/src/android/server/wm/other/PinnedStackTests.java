@@ -148,6 +148,9 @@ import android.server.wm.settings.SettingsSession;
 import android.util.Log;
 import android.util.Size;
 
+import com.android.bedstead.harrier.BedsteadJUnit4;
+import com.android.bedstead.harrier.DeviceState;
+import com.android.bedstead.harrier.annotations.RequireNotAutomotive;
 import com.android.compatibility.common.util.AppOpsUtils;
 import com.android.compatibility.common.util.SystemUtil;
 
@@ -155,8 +158,10 @@ import com.google.common.truth.Truth;
 
 import org.junit.Before;
 import org.junit.Ignore;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
@@ -169,6 +174,7 @@ import java.util.concurrent.TimeUnit;
  */
 @Presubmit
 @android.server.wm.annotation.Group2
+@RunWith(BedsteadJUnit4.class)
 public class PinnedStackTests extends ActivityManagerTestBase {
     private static final String TAG = PinnedStackTests.class.getSimpleName();
 
@@ -195,6 +201,10 @@ public class PinnedStackTests extends ActivityManagerTestBase {
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
+    @ClassRule
+    @Rule
+    public static final DeviceState sDeviceState = new DeviceState();
 
     @Before
     @Override
@@ -286,6 +296,7 @@ public class PinnedStackTests extends ActivityManagerTestBase {
     }
 
     @Test
+    @RequireNotAutomotive(reason = "Automotive screens don't support rotation")
     public void testPinnedStackInBoundsAfterRotation() {
         assumeTrue("Skipping test: no rotation support", supportsRotation());
 
