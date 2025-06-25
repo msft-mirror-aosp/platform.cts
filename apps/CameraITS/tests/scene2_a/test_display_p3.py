@@ -91,8 +91,8 @@ class DisplayP3Test(its_base_test.ItsBaseTest):
         if not _check_icc(p3_jpeg_img, 'DISPLAY_P3', fmt_str, p3_img_icc):
           raise AssertionError('Failure: P3 JPEG does not contain correct '
                                'icc profile')
-        #TODO: b/414581990: Re-enable this once we have a wide gamut scene
-        #if not image_processing_utils.p3_img_has_wide_gamut(p3_jpeg_img):
+        # TODO: b/414581990 - Re-enable this once we have a wide gamut scene
+        # if not image_processing_utils.p3_img_has_wide_gamut(p3_jpeg_img):
         #  raise AssertionError('Failure: P3 JPEG does not contain wide gamut '
         #                       'pixels outside the SRGB color space.')
 

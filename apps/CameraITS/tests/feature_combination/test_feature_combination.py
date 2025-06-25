@@ -92,7 +92,7 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
     return feature_combo_for_camera
 
   def _stabilization_mode_to_proto_enum(self, stabilization):
-    """Convert stabilization mode to the protobuf enum"""
+    """Convert stabilization mode to the protobuf enum."""
     if stabilization == camera_properties_utils.STABILIZATION_MODE_ON:
       return feature_combination_info_pb2.STABILIZATION_ON
     elif stabilization == camera_properties_utils.STABILIZATION_MODE_PREVIEW:
