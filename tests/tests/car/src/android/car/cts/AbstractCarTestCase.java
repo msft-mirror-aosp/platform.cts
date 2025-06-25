@@ -50,10 +50,10 @@ import java.util.concurrent.TimeUnit;
 /**
  * Base class for tests that don't need to connect to a {@link android.car.Car} object.
  *
- * <p>For tests that don't need a {@link android.car.Car} object, use
- * {@link AbstractCarLessTestCase} instead.
+ * <p>For tests that don't need a {@link android.car.Car} object, use {@link
+ * AbstractCarLessTestCase} instead.
  */
-abstract class AbstractCarTestCase extends AbstractExpectableTestCase {
+public abstract class AbstractCarTestCase extends AbstractExpectableTestCase {
 
     private static final String TAG = AbstractCarTestCase.class.getSimpleName();
 

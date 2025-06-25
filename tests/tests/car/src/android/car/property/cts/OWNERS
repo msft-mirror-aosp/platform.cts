@@ -1,0 +1,5 @@
+# Bug component: 526266
+
+per-file *.java=tylertrephan@google.com
+per-file PropertyNotAvailableErrorCodeTest.java=evaschen@google.com
+per-file LocationCharacterizationTest.java=gracemc@google.com
