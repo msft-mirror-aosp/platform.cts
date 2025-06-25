@@ -1998,7 +1998,7 @@ public class RcsUceAdapterTest {
 
     @Test
     public void testOptionsRequestFromNetworkBlocked() throws Exception {
-        if (!ImsUtils.shouldTestImsService()) {
+        if (!ImsUtils.shouldTestImsService() || !ImsUtils.shouldRunSmsImsTests(sTestSub)) {
             return;
         }
         ImsManager imsManager = getContext().getSystemService(ImsManager.class);
