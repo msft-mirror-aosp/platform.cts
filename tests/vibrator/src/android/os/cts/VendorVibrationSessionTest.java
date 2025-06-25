@@ -23,10 +23,6 @@ import static com.google.common.truth.Truth.assertWithMessage;
 
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.clearInvocations;
-import static org.mockito.Mockito.timeout;
-import static org.mockito.Mockito.verify;
 
 import android.content.Context;
 import android.os.CancellationSignal;
@@ -35,6 +31,8 @@ import android.os.VibrationAttributes;
 import android.os.VibrationEffect;
 import android.os.Vibrator;
 import android.os.VibratorManager;
+import android.os.cts.vibrator.VibratorStateHelper;
+import android.os.cts.vibrator.VibratorStateListener;
 import android.os.vibrator.VendorVibrationSession;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
@@ -53,9 +51,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnit;
-import org.mockito.junit.MockitoRule;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -79,9 +74,6 @@ public class VendorVibrationSessionTest {
                     android.Manifest.permission.START_VIBRATION_SESSIONS,
                     android.Manifest.permission.VIBRATE_VENDOR_EFFECTS,
                     android.Manifest.permission.WRITE_SETTINGS);
-
-    @Rule(order = 2)
-    public final MockitoRule mMockitoRule = MockitoJUnit.rule();
 
     /**
      *  Provides the vibrator accessed with the given vibrator ID, at the time of test running.
@@ -134,12 +126,8 @@ public class VendorVibrationSessionTest {
     private final List<CancellationSignal> mCancellationSignals = new ArrayList<>();
     private final List<TestCallback> mPendingCallbacks = new ArrayList<>();
 
-    /**
-     * This listener is used for test helper methods like asserting it starts/stops vibrating.
-     * It's not strongly required that the interactions with this mock are validated by all tests.
-     */
-    @Mock
-    private Vibrator.OnVibratorStateChangedListener mStateListener;
+    /** This listener is used to ensure vibrator is idle before/after each test. */
+    private final VibratorStateListener mStateListener = new VibratorStateListener();
 
     // Test label is needed for execution history
     public VendorVibrationSessionTest(String testLabel, VibratorProvider vibratorProvider) {
@@ -149,15 +137,12 @@ public class VendorVibrationSessionTest {
     }
 
     @Before
-    public void setUp() {
+    public void setUp() throws InterruptedException {
         Context context = InstrumentationRegistry.getInstrumentation().getContext();
         Settings.System.putInt(context.getContentResolver(), Settings.System.VIBRATE_ON, 1);
 
-        mVibrator.addVibratorStateListener(mStateListener);
-        // Adding a listener to the Vibrator should trigger the callback once with the current
-        // vibrator state, so reset mocks to clear it for tests.
-        assertVibratorStateChangesTo(false);
-        clearInvocations(mStateListener);
+        VibratorStateHelper.addListenerAndAssertInitialStateIdle(
+                mVibrator, mStateListener, CALLBACK_TIMEOUT_MILLIS);
     }
 
     @After
@@ -176,15 +161,9 @@ public class VendorVibrationSessionTest {
                     .isTrue();
         }
 
-        // Clearing invocations so we can use this listener to wait for the vibrator to
-        // asynchronously cancel the ongoing vibration, if any was left pending by a test.
-        clearInvocations(mStateListener);
         mVibrator.cancel();
-
-        // Wait for cancel to take effect, if device is still vibrating.
-        if (mVibrator.isVibrating()) {
-            assertVibratorStateChangesTo(false);
-        }
+        VibratorStateHelper.removeListenerAndAssertStateIdle(
+                mVibrator, mStateListener, CALLBACK_TIMEOUT_MILLIS);
     }
 
     @Test
@@ -303,16 +282,19 @@ public class VendorVibrationSessionTest {
     })
     public void testSessionVibrate() throws Exception {
         assumeTrue(mVibrator.areVendorSessionsSupported());
+        assumeTrue(mVibrator.hasVibrator());
 
         TestCallback callback = startSession(TOUCH_ATTRIBUTES);
         VendorVibrationSession session = assertSessionRunning(callback);
 
         session.vibrate(VibrationEffect.createOneShot(100, VibrationEffect.DEFAULT_AMPLITUDE), "r");
-        assertVibratorStateChangesTo(true);
+        assertThat(mStateListener.getStartCountWithTimeout(1, CALLBACK_TIMEOUT_MILLIS))
+                .isAtLeast(1);
 
         session.close();
         assertSessionFinishingThenFinished(callback, VendorVibrationSession.STATUS_SUCCESS);
-        assertVibratorStateChangesTo(false);
+        VibratorStateHelper.assertVibratorState(
+                false, mVibrator, mStateListener, CALLBACK_TIMEOUT_MILLIS);
     }
 
     private TestCallback startSession(VibrationAttributes attrs) {
@@ -329,15 +311,6 @@ public class VendorVibrationSessionTest {
         mCancellationSignals.add(cancellationSignal);
         mPendingCallbacks.add(callback);
         return callback;
-    }
-
-    private void assertVibratorStateChangesTo(boolean expected) {
-        if (mVibrator.hasVibrator()) {
-            verify(mStateListener,
-                    timeout(CALLBACK_TIMEOUT_MILLIS).atLeastOnce().description(
-                            "Vibrator expected to turn " + (expected ? "on" : "off")))
-                    .onVibratorStateChanged(eq(expected));
-        }
     }
 
     private VendorVibrationSession assertSessionRunning(TestCallback callback)
