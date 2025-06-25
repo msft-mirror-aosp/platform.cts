@@ -34,6 +34,7 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.os.RemoteException;
+import android.os.SystemClock;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -54,6 +55,8 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import java.util.regex.Pattern;
 
 @RunWith(AndroidJUnit4.class)
 @RequiresFlagsEnabled(Flags.FLAG_INTERACTIVE_CHOOSER)
@@ -193,6 +196,7 @@ public class CtsChooserInteractiveSessionTest {
         clickLaunchChooser();
         waitForChooserToAppear();
         clickUpdateChooserButton();
+        mDevice.waitForIdle();
         clickChooserTarget("App Two");
         waitForChooserToBeGone();
         // check that the launch button is visible again
@@ -222,7 +226,7 @@ public class CtsChooserInteractiveSessionTest {
                                 By.pkg(mContext.getPackageName())
                                         .displayId(mMyDisplayId)
                                         .clickable(true)
-                                        .text(label)),
+                                        .text(Pattern.compile(label, Pattern.CASE_INSENSITIVE))),
                         WAIT_AND_ASSERT_FOUND_TIMEOUT_MS)
                 .click();
     }
@@ -233,7 +237,11 @@ public class CtsChooserInteractiveSessionTest {
                                 By.pkg(mChooserPackage)
                                         .displayId(mMyDisplayId)
                                         .clickable(true)
-                                        .hasDescendant(By.text(targetLabel))),
+                                        .hasDescendant(
+                                                By.text(
+                                                        Pattern.compile(
+                                                                targetLabel,
+                                                                Pattern.CASE_INSENSITIVE)))),
                         WAIT_AND_ASSERT_FOUND_TIMEOUT_MS)
                 .click();
     }
@@ -266,6 +274,9 @@ public class CtsChooserInteractiveSessionTest {
 
     private void waitForChooserToBeGone() {
         waitPackageGone(mChooserPackage);
+        // TODO: find a better way to wait for the window transition to be over
+        SystemClock.sleep(1_000);
+        mDevice.waitForIdle();
     }
 
     private void waitAndAssertPkgVisible(String pkg, String failureMessage) {
