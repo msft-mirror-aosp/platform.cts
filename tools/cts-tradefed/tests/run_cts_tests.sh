@@ -18,11 +18,8 @@
 
 CTS_DIR=`dirname $0`/../etc
 
-${CTS_DIR}/cts-tradefed run singleCommand host -n \
+USE_ATS=false ${CTS_DIR}/cts-tradefed run singleCommand host -n \
   --console-result-reporter:suppress-passed-tests \
-  --class com.android.compatibility.common.tradefed.UnitTests \
-  --class com.android.compatibility.common.util.HostUnitTests \
-  --class com.android.compatibility.common.util.UnitTests \
-  --class com.android.compatibility.tradefed.CtsTradefedTest \
+  --class com.android.compatibility.tradefed.CtsUnitTests \
   --class com.drawelements.deqp.runner.DeqpTestRunnerTest \
   "$@"
