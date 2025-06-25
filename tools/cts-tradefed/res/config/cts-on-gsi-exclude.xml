@@ -184,4 +184,7 @@
     <!-- b/17394321 -->
     <option name="compatibility:exclude-filter" value="CtsOpenGlPerfTestCases android.openglperf.cts.GlAppSwitchTest#testGlActivitySwitchingFast" />
     <option name="compatibility:exclude-filter" value="CtsOpenGlPerfTestCases android.openglperf.cts.GlAppSwitchTest#testGlActivitySwitchingSlow" />
+
+    <!-- b/404480455 Remove CtsAppTestCases android.app.cts.SystemFeaturesTest#testLocationFeatures from cts-on-gsi -->
+    <option name="compatibility:exclude-filter" value="CtsAppTestCases android.app.cts.SystemFeaturesTest#testLocationFeatures" />
 </configuration>

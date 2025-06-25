@@ -38,6 +38,7 @@ import android.provider.Settings;
 
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.BlockingBroadcastReceiver;
+import com.android.compatibility.common.util.FeatureUtil;
 import com.android.compatibility.common.util.SystemUtil;
 
 import org.junit.After;
@@ -97,10 +98,10 @@ public class KeepScreenOnTests extends MultiDisplayTestBase {
     @ApiTest(apis = "android.view.WindowManager.LayoutParams#FLAG_KEEP_SCREEN_ON")
     @Test
     public void testKeepScreenOn_activityOnDefaultDisplay_screenStaysOn() {
-        setScreenOffTimeoutMs("500");
         launchActivity(TURN_SCREEN_ON_ACTIVITY);
         assertTrue(mPowerManager.isInteractive());
 
+        setScreenOffTimeoutMs("500");
         SystemClock.sleep(getMinimumScreenOffTimeoutMs());
 
         assertTrue(mPowerManager.isInteractive());
@@ -112,6 +113,8 @@ public class KeepScreenOnTests extends MultiDisplayTestBase {
     public void testKeepScreenOn_activityNotForeground_screenTurnsOff() {
         assumeFalse("TVs may start screen saver instead of turning screen off - skipping test",
                 mIsTv);
+        assumeFalse("XR main display is always off unless worn - skipping test",
+                FeatureUtil.isXrHeadset());
         assumeSupportsSleep();
         setScreenOffTimeoutMs("500");
         launchActivity(TURN_SCREEN_ON_ACTIVITY);
