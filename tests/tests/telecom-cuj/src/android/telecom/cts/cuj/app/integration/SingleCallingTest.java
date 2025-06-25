@@ -478,12 +478,7 @@ public class SingleCallingTest extends BaseAppVerifier {
         try {
             managedApp = bindToApp(ManagedConnectionServiceApp);
             String mo = addOutgoingCallAndVerify(managedApp);
-            if (managedApp.isTransactionalControl()
-                && !Flags.disconnectSelfManagedStuckStartupCalls()) {
-                verifyCallIsInState(mo, STATE_CONNECTING);
-            } else {
-                verifyCallIsInState(mo, STATE_DIALING);
-            }
+            verifyCallIsInState(mo, STATE_DIALING);
             setCallStateAndVerify(managedApp, mo, STATE_ACTIVE);
             enterBackgroundAudioProcessingViaInCallServiceAndVerify(mo,
                 AUDIO_PROCESSING_USE_CASE_ASK_TO_HOLD);
@@ -1290,13 +1285,7 @@ public class SingleCallingTest extends BaseAppVerifier {
             AppControlWrapper appControlWrapper, AudioFocusRequest audioFocusRequest)
             throws Exception {
         String mo = addOutgoingCallAndVerify(appControlWrapper);
-
-        if (appControlWrapper.isTransactionalControl()
-                && !Flags.disconnectSelfManagedStuckStartupCalls()) {
-            verifyCallIsInState(mo, STATE_CONNECTING);
-        } else {
-            verifyCallIsInState(mo, STATE_DIALING);
-        }
+        verifyCallIsInState(mo, STATE_DIALING);
         setCallStateAndVerify(appControlWrapper, mo, STATE_ACTIVE);
         if (audioFocusRequest != null) {
             AudioManager audioManager = mContext.getSystemService(AudioManager.class);

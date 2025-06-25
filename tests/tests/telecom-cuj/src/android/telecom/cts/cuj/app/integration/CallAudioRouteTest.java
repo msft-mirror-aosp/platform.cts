@@ -48,8 +48,6 @@ import android.telecom.cts.cuj.BaseAppVerifier;
 
 import androidx.test.platform.app.InstrumentationRegistry;
 
-import com.android.server.telecom.flags.Flags;
-
 import org.junit.After;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -489,13 +487,7 @@ public class CallAudioRouteTest extends BaseAppVerifier {
     private void verifyOutgoingCallStateTransitionsWithAudioFocus(
             AppControlWrapper appControlWrapper) throws Exception {
         String mo = addOutgoingCallAndVerify(appControlWrapper);
-
-        if (appControlWrapper.isTransactionalControl()
-                && !Flags.disconnectSelfManagedStuckStartupCalls()) {
-            verifyCallIsInState(mo, STATE_CONNECTING);
-        } else {
-            verifyCallIsInState(mo, STATE_DIALING);
-        }
+        verifyCallIsInState(mo, STATE_DIALING);
         setCallStateAndVerify(appControlWrapper, mo, STATE_ACTIVE);
         waitForAndVerifyMusicFocus(
                 true, AudioManager.AUDIOFOCUS_LOSS, AudioManager.AUDIOFOCUS_LOSS_TRANSIENT);
