@@ -161,7 +161,6 @@ public class BluetoothSocketSettingsTest {
     }
 
     /* BluetoothSocketSettings interface related tests */
-    @RequiresFlagsEnabled(Flags.FLAG_SOCKET_SETTINGS_API)
     @Test
     public void createBluetoothSocketSettingsFromBuilder() {
         BluetoothSocketSettings.Builder builder =
@@ -176,7 +175,6 @@ public class BluetoothSocketSettingsTest {
         expect.that(settings.getRfcommUuid()).isEqualTo(TEST_UUID);
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_SOCKET_SETTINGS_API)
     @Test
     public void createBluetoothLeCoCSocketSettingsFromBuilder() {
         BluetoothSocketSettings.Builder builder =
@@ -189,7 +187,6 @@ public class BluetoothSocketSettingsTest {
         expect.that(settings.getL2capPsm()).isEqualTo(FAKE_PSM);
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_SOCKET_SETTINGS_API)
     @Test
     public void createBluetoothOffloadSocketSettingsFromBuilder() {
         BluetoothSocketSettings.Builder builder =
@@ -215,7 +212,6 @@ public class BluetoothSocketSettingsTest {
         expect.that(settings.getRequestedMaximumPacketSize()).isEqualTo(TEST_MAX_RX_PACKET_SIZE);
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_SOCKET_SETTINGS_API)
     @Test
     public void illegalArgumentsToBuilder() {
         BluetoothSocketSettings.Builder builder = new BluetoothSocketSettings.Builder();
@@ -258,7 +254,6 @@ public class BluetoothSocketSettingsTest {
                 () -> builder.setSocketType(BluetoothSocket.TYPE_LE).setL2capPsm(0).build());
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_SOCKET_SETTINGS_API)
     @Test
     public void illegalArgumentsForOffloadSocketToBuilder() {
         BluetoothSocketSettings.Builder builder = new BluetoothSocketSettings.Builder();
@@ -286,7 +281,6 @@ public class BluetoothSocketSettingsTest {
     }
 
     /* Server socket creation related tests : BluetoothAdapter#listenUsingSocketSettings*/
-    @RequiresFlagsEnabled(Flags.FLAG_SOCKET_SETTINGS_API)
     @Test
     public void createListeningInsecureRfcommSocket() throws IOException {
         BluetoothSocketSettings.Builder builder =
@@ -299,7 +293,6 @@ public class BluetoothSocketSettingsTest {
         createServerSocketUsingSettings(settings);
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_SOCKET_SETTINGS_API)
     @Test
     public void createListeningEncryptOnlyRfcommSocket() throws IOException {
         BluetoothSocketSettings.Builder builder =
@@ -313,7 +306,6 @@ public class BluetoothSocketSettingsTest {
         createServerSocketUsingSettings(settings);
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_SOCKET_SETTINGS_API)
     @Test
     public void createListeningEncryptedAndAuthenticatedRfcommSocket() throws IOException {
         BluetoothSocketSettings.Builder builder =
@@ -327,7 +319,6 @@ public class BluetoothSocketSettingsTest {
         createServerSocketUsingSettings(settings);
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_SOCKET_SETTINGS_API)
     @Test
     public void createListeningInsecureLeCocSocket() throws IOException {
         BluetoothSocketSettings.Builder builder =
@@ -340,7 +331,6 @@ public class BluetoothSocketSettingsTest {
         createServerSocketUsingSettings(settings);
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_SOCKET_SETTINGS_API)
     @Test
     public void createListeningEncryptOnlyLeCocSocket() throws IOException {
         BluetoothSocketSettings.Builder builder =
@@ -353,7 +343,6 @@ public class BluetoothSocketSettingsTest {
         createServerSocketUsingSettings(settings);
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_SOCKET_SETTINGS_API)
     @Test
     public void createListeningEncryptedAndAuthenticatedLeCocSocket() throws IOException {
         BluetoothSocketSettings.Builder builder =
@@ -366,7 +355,6 @@ public class BluetoothSocketSettingsTest {
         createServerSocketUsingSettings(settings);
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_SOCKET_SETTINGS_API)
     @Test
     public void createListeningInsecureRfcommOffloadSocket() throws IOException {
         assumeTrue(isRfcommSocketOffloadSupported());
@@ -386,7 +374,6 @@ public class BluetoothSocketSettingsTest {
         createServerSocketUsingSettings(settings, List.of(BLUETOOTH_PRIVILEGED, BLUETOOTH_CONNECT));
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_SOCKET_SETTINGS_API)
     @Test
     public void createListeningInsecureLeCocOffloadSocket() throws IOException {
         assumeTrue(isLeCocSocketOffloadSupported());
@@ -406,7 +393,6 @@ public class BluetoothSocketSettingsTest {
     }
 
     /* Client socket creation related tests : BluetoothDevice#createUsingSocketSettings */
-    @RequiresFlagsEnabled(Flags.FLAG_SOCKET_SETTINGS_API)
     @Test
     public void createClientInsecureRfcommSocket() throws IOException {
         BluetoothSocketSettings.Builder builder =
@@ -420,7 +406,6 @@ public class BluetoothSocketSettingsTest {
         createClientSocketUsingSettings(settings);
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_SOCKET_SETTINGS_API)
     @Test
     public void createClientEncryptOnlyRfcommSocket() throws IOException {
         BluetoothSocketSettings.Builder builder =
@@ -434,7 +419,6 @@ public class BluetoothSocketSettingsTest {
         createClientSocketUsingSettings(settings);
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_SOCKET_SETTINGS_API)
     @Test
     public void createClientEncryptedAndAuthenticatedRfcommSocket() throws IOException {
         BluetoothSocketSettings.Builder builder =
@@ -448,7 +432,6 @@ public class BluetoothSocketSettingsTest {
         createClientSocketUsingSettings(settings);
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_SOCKET_SETTINGS_API)
     @Test
     public void createClientInsecureLeCocSocket() throws IOException {
         BluetoothSocketSettings.Builder builder =
@@ -462,7 +445,6 @@ public class BluetoothSocketSettingsTest {
         createClientSocketUsingSettings(settings);
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_SOCKET_SETTINGS_API)
     @Test
     public void createClientEncryptOnlyLeCocSocket() throws IOException {
         BluetoothSocketSettings.Builder builder =
@@ -476,7 +458,6 @@ public class BluetoothSocketSettingsTest {
         createClientSocketUsingSettings(settings);
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_SOCKET_SETTINGS_API)
     @Test
     public void createClientEncryptedAndAuthenticatedLeCocSocket() throws IOException {
         BluetoothSocketSettings.Builder builder =
@@ -490,7 +471,6 @@ public class BluetoothSocketSettingsTest {
         createClientSocketUsingSettings(settings);
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_SOCKET_SETTINGS_API)
     @Test
     public void createClientInsecureRfcommOffloadSocket() throws IOException {
         assumeTrue(isRfcommSocketOffloadSupported());
@@ -511,7 +491,6 @@ public class BluetoothSocketSettingsTest {
         createClientSocketUsingSettings(settings);
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_SOCKET_SETTINGS_API)
     @Test
     public void createClientInsecureLeCocOffloadSocket() throws IOException {
         assumeTrue(isLeCocSocketOffloadSupported());
@@ -531,7 +510,6 @@ public class BluetoothSocketSettingsTest {
         createClientSocketUsingSettings(settings);
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_SOCKET_SETTINGS_API)
     @Test
     public void testRetrievingSocketIdOnDisconnectedSocket() throws IOException {
         assumeTrue(isLeCocSocketOffloadSupported());
