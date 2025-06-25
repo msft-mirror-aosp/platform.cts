@@ -26,13 +26,6 @@ import static org.junit.Assert.assertThrows;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeNotNull;
 import static org.junit.Assume.assumeTrue;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.after;
-import static org.mockito.Mockito.clearInvocations;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.timeout;
-import static org.mockito.Mockito.verify;
 
 import android.content.Context;
 import android.media.AudioAttributes;
@@ -43,6 +36,8 @@ import android.os.VibrationEffect;
 import android.os.Vibrator;
 import android.os.Vibrator.OnVibratorStateChangedListener;
 import android.os.VibratorManager;
+import android.os.cts.vibrator.VibratorStateHelper;
+import android.os.cts.vibrator.VibratorStateListener;
 import android.os.vibrator.Flags;
 import android.os.vibrator.VibratorEnvelopeEffectInfo;
 import android.os.vibrator.VibratorFrequencyProfile;
@@ -66,9 +61,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnit;
-import org.mockito.junit.MockitoRule;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -91,9 +83,6 @@ public class VibratorTest {
             new AdoptShellPermissionsRule(
                     InstrumentationRegistry.getInstrumentation().getUiAutomation(),
                     getRequiredPrivilegedPermissions());
-
-    @Rule(order = 2)
-    public final MockitoRule mMockitoRule = MockitoJUnit.rule();
 
     /**
      *  Provides the vibrator accessed with the given vibrator ID, at the time of test running.
@@ -186,14 +175,13 @@ public class VibratorTest {
     private final Vibrator mVibrator;
 
     /**
-     * This listener is used for test helper methods like asserting it starts/stops vibrating.
-     * It's not strongly required that the interactions with this mock are validated by all tests.
+     * This listener is used for test helper methods like asserting it starts/stops vibrating. It's
+     * not strongly required that the interactions with this are validated by all tests.
      */
-    @Mock
-    private OnVibratorStateChangedListener mStateListener;
+    private final VibratorStateListener mStateListener = new VibratorStateListener();
 
     /** Keep track of any listener created to be added to the vibrator, for cleanup purposes. */
-    private List<OnVibratorStateChangedListener> mStateListenersCreated = new ArrayList<>();
+    private final List<OnVibratorStateChangedListener> mStateListenersCreated = new ArrayList<>();
 
     // vibratorLabel is used by the parameterized test infrastructure.
     public VibratorTest(String vibratorLabel, VibratorProvider vibratorProvider) {
@@ -203,37 +191,22 @@ public class VibratorTest {
     }
 
     @Before
-    public void setUp() {
+    public void setUp() throws InterruptedException {
         Context context = InstrumentationRegistry.getInstrumentation().getContext();
         Settings.System.putInt(context.getContentResolver(), Settings.System.VIBRATE_ON, 1);
-
-        mVibrator.addVibratorStateListener(mStateListener);
-        // Adding a listener to the Vibrator should trigger the callback once with the current
-        // vibrator state, so reset mocks to clear it for tests.
-        assertVibratorStateChangesTo(false);
-        clearInvocations(mStateListener);
-        assertThat(mVibrator.isVibrating()).isFalse();
+        VibratorStateHelper.addListenerAndAssertInitialStateIdle(
+                mVibrator, mStateListener, CALLBACK_TIMEOUT_MILLIS);
     }
 
     @After
-    public void cleanUp() {
-        // Clearing invocations so we can use this listener to wait for the vibrator to
-        // asynchronously cancel the ongoing vibration, if any was left pending by a test.
-        clearInvocations(mStateListener);
+    public void cleanUp() throws InterruptedException {
         mVibrator.cancel();
-
-        // Wait for cancel to take effect, if device is still vibrating.
-        if (mVibrator.isVibrating()) {
-            assertStopsVibrating();
-        }
-
-        // Remove all listeners added by the tests.
-        mVibrator.removeVibratorStateListener(mStateListener);
+        VibratorStateHelper.removeListenerAndAssertStateIdle(
+                mVibrator, mStateListener, CALLBACK_TIMEOUT_MILLIS);
+        // Remove other listeners added by the tests.
         for (OnVibratorStateChangedListener listener : mStateListenersCreated) {
             mVibrator.removeVibratorStateListener(listener);
         }
-
-        assertThat(mVibrator.isVibrating()).isFalse();
     }
 
     @Test
@@ -270,26 +243,29 @@ public class VibratorTest {
     }
 
     @Test
-    public void testVibratorCancel() {
+    public void testVibratorCancel() throws InterruptedException {
         mVibrator.vibrate(10_000);
-        assertStartsVibrating();
+        VibratorStateHelper.assertVibratorState(
+                true, mVibrator, mStateListener, CALLBACK_TIMEOUT_MILLIS);
 
         mVibrator.cancel();
-        assertStopsVibrating();
+        VibratorStateHelper.assertVibratorState(
+                false, mVibrator, mStateListener, CALLBACK_TIMEOUT_MILLIS);
     }
 
     @Test
-    public void testVibratePattern() {
+    public void testVibratePattern() throws InterruptedException {
         long[] pattern = {100, 200, 400, 800, 1600};
         mVibrator.vibrate(pattern, 3);
-        assertStartsVibrating();
+        VibratorStateHelper.assertVibratorState(
+                true, mVibrator, mStateListener, CALLBACK_TIMEOUT_MILLIS);
 
         // Repeat index is invalid.
         assertThrows(ArrayIndexOutOfBoundsException.class, () -> mVibrator.vibrate(pattern, 10));
     }
 
     @Test
-    public void testVibrateMultiThread() throws Exception {
+    public void testVibrateMultiThread() throws InterruptedException {
         ThreadHelper thread1 = new ThreadHelper(() -> {
             mVibrator.vibrate(200);
         }).start();
@@ -301,73 +277,87 @@ public class VibratorTest {
         thread1.joinSafely();
         thread2.joinSafely();
 
-        assertStartsVibrating();
+        // Wait to see if both vibrations are triggered.
+        int startCount = mStateListener.getStartCountWithTimeout(2, CALLBACK_TIMEOUT_MILLIS);
+        // At least one of the threads should have started the vibrator.
+        assertThat(startCount).isAtLeast(1);
     }
 
     @LargeTest
     @Test
-    public void testVibrateOneShotStartsAndFinishesVibration() {
+    public void testVibrateOneShotStartsAndFinishesVibration() throws InterruptedException {
         VibrationEffect oneShot =
                 VibrationEffect.createOneShot(300, VibrationEffect.DEFAULT_AMPLITUDE);
         mVibrator.vibrate(oneShot);
-        assertStartsThenStopsVibrating(300);
+        VibratorStateHelper.assertStartsThenStopsVibrating(
+                mVibrator, mStateListener, CALLBACK_TIMEOUT_MILLIS);
     }
 
     @Test
-    public void testVibrateOneShotMaxAmplitude() {
+    public void testVibrateOneShotMaxAmplitude() throws InterruptedException {
         VibrationEffect oneShot = VibrationEffect.createOneShot(10_000, 255 /* Max amplitude */);
         mVibrator.vibrate(oneShot);
-        assertStartsVibrating();
-
-        mVibrator.cancel();
-        assertStopsVibrating();
+        VibratorStateHelper.assertVibratorState(
+                true, mVibrator, mStateListener, CALLBACK_TIMEOUT_MILLIS);
     }
 
     @Test
-    public void testVibrateOneShotMinAmplitude() {
-        VibrationEffect oneShot = VibrationEffect.createOneShot(300, 1 /* Min amplitude */);
+    public void testVibrateOneShotMinAmplitude() throws InterruptedException {
+        VibrationEffect oneShot = VibrationEffect.createOneShot(10_000, 1 /* Min amplitude */);
         mVibrator.vibrate(oneShot, AUDIO_ATTRIBUTES);
-        assertStartsVibrating();
+        VibratorStateHelper.assertVibratorState(
+                true, mVibrator, mStateListener, CALLBACK_TIMEOUT_MILLIS);
     }
 
     @LargeTest
     @Test
-    public void testVibrateWaveformStartsAndFinishesVibration() {
+    public void testVibrateWaveformStartsAndFinishesVibration() throws InterruptedException {
         final long[] timings = new long[]{100, 200, 300, 400, 500};
         final int[] amplitudes = new int[]{64, 128, 255, 128, 64};
         VibrationEffect waveform = VibrationEffect.createWaveform(timings, amplitudes, -1);
         mVibrator.vibrate(waveform);
-        assertStartsThenStopsVibrating(1500);
+        VibratorStateHelper.assertStartsThenStopsVibrating(
+                mVibrator, mStateListener, CALLBACK_TIMEOUT_MILLIS);
     }
 
     @LargeTest
     @Test
-    public void testVibrateWaveformRepeats() {
+    public void testVibrateWaveformRepeats() throws InterruptedException {
         final long[] timings = new long[] {100, 200, 300, 400, 500};
         final int[] amplitudes = new int[] {64, 128, 255, 128, 64};
         VibrationEffect waveform = VibrationEffect.createWaveform(timings, amplitudes, 0);
         mVibrator.vibrate(waveform, AUDIO_ATTRIBUTES);
-        assertStartsVibrating();
+        VibratorStateHelper.assertVibratorState(
+                true, mVibrator, mStateListener, CALLBACK_TIMEOUT_MILLIS);
 
-        SystemClock.sleep(2000);
         if (mVibrator.hasVibrator()) {
+            SystemClock.sleep(2_000);
             assertWithMessage(
                     "Expected repeating waveform to continue vibrating after initial duration")
                     .that(mVibrator.isVibrating()).isTrue();
         }
-
-        mVibrator.cancel();
-        assertStopsVibrating();
     }
 
     @Test
-    public void testVibratePredefined() {
+    public void testVibratePredefined() throws InterruptedException {
         int[] supported = mVibrator.areEffectsSupported(PREDEFINED_EFFECTS);
         for (int i = 0; i < PREDEFINED_EFFECTS.length; i++) {
+            int previousVibrateCount = mStateListener.getStartCount();
             mVibrator.vibrate(VibrationEffect.createPredefined(PREDEFINED_EFFECTS[i]));
+
+            // Wait to see if vibration is triggered.
+            int startCount =
+                    mStateListener.getStartCountWithTimeout(
+                            previousVibrateCount + 1, CALLBACK_TIMEOUT_MILLIS);
+
             if (supported[i] == Vibrator.VIBRATION_EFFECT_SUPPORT_YES) {
-                assertStartsVibrating("predefined effect id=" + PREDEFINED_EFFECTS[i]);
+                assertThat(startCount).isAtLeast(previousVibrateCount + 1);
             }
+
+            // Make sure vibrator is idle for next round.
+            mVibrator.cancel();
+            VibratorStateHelper.assertVibratorState(
+                    false, mVibrator, mStateListener, CALLBACK_TIMEOUT_MILLIS);
         }
     }
 
@@ -383,28 +373,39 @@ public class VibratorTest {
     }
 
     @Test
-    public void testVibrateComposed() {
+    public void testVibrateComposed() throws InterruptedException {
         boolean[] supported = mVibrator.arePrimitivesSupported(PRIMITIVE_EFFECTS);
-        int[] durations = mVibrator.getPrimitiveDurations(PRIMITIVE_EFFECTS);
         for (int i = 0; i < PRIMITIVE_EFFECTS.length; i++) {
+            int previousVibrateCount = mStateListener.getStartCount();
             mVibrator.vibrate(VibrationEffect.startComposition()
                     .addPrimitive(PRIMITIVE_EFFECTS[i])
                     .addPrimitive(PRIMITIVE_EFFECTS[i], 0.5f)
                     .addPrimitive(PRIMITIVE_EFFECTS[i], 0.8f, 10)
                     .compose());
+
             if (supported[i]) {
-                assertStartsThenStopsVibrating(
-                        durations[i] * 3 + 10, "primitive id=" + PRIMITIVE_EFFECTS[i]);
+                VibratorStateHelper.assertStartsThenStopsVibrating(
+                        previousVibrateCount,
+                        mVibrator,
+                        mStateListener,
+                        CALLBACK_TIMEOUT_MILLIS,
+                        "primitive id=" + PRIMITIVE_EFFECTS[i]);
             }
+
+            // Make sure vibrator is idle for next round.
+            mVibrator.cancel();
+            VibratorStateHelper.assertVibratorState(
+                    false, mVibrator, mStateListener, CALLBACK_TIMEOUT_MILLIS);
         }
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_PRIMITIVE_COMPOSITION_ABSOLUTE_DELAY)
     @Test
-    public void testVibrateComposedWithRelativeDelays() {
+    public void testVibrateComposedWithRelativeDelays() throws InterruptedException {
         boolean[] supported = mVibrator.arePrimitivesSupported(PRIMITIVE_EFFECTS);
         int[] durations = mVibrator.getPrimitiveDurations(PRIMITIVE_EFFECTS);
         for (int i = 0; i < PRIMITIVE_EFFECTS.length; i++) {
+            int previousVibrateCount = mStateListener.getStartCount();
             mVibrator.vibrate(VibrationEffect.startComposition()
                     // Starts after 10ms default delay
                     .addPrimitive(PRIMITIVE_EFFECTS[i], 1.0f, 10)
@@ -415,18 +416,28 @@ public class VibratorTest {
                     .addPrimitive(PRIMITIVE_EFFECTS[i], 0.5f, durations[i],
                             VibrationEffect.Composition.DELAY_TYPE_RELATIVE_START_OFFSET)
                     .compose());
+
             if (supported[i]) {
-                // Plays only one primitive after 10ms initial pause
-                assertStartsThenStopsVibrating(
-                        durations[i] * 2 + 10, "primitive id=" + PRIMITIVE_EFFECTS[i]);
+                VibratorStateHelper.assertStartsThenStopsVibrating(
+                        previousVibrateCount,
+                        mVibrator,
+                        mStateListener,
+                        CALLBACK_TIMEOUT_MILLIS,
+                        "primitive id=" + PRIMITIVE_EFFECTS[i]);
             }
+
+            // Make sure vibrator is idle for next round.
+            mVibrator.cancel();
+            VibratorStateHelper.assertVibratorState(
+                    false, mVibrator, mStateListener, CALLBACK_TIMEOUT_MILLIS);
         }
     }
 
     @Test
-    public void testVibrateWithAttributes() {
+    public void testVibrateWithAttributes() throws InterruptedException {
         mVibrator.vibrate(VibrationEffect.createOneShot(10, 10), VIBRATION_ATTRIBUTES);
-        assertStartsVibrating();
+        VibratorStateHelper.assertStartsThenStopsVibrating(
+                mVibrator, mStateListener, CALLBACK_TIMEOUT_MILLIS);
     }
 
     @Test
@@ -517,28 +528,31 @@ public class VibratorTest {
     }
 
     @Test
-    public void testVibratorIsVibrating() {
+    public void testVibratorIsVibrating() throws InterruptedException {
         assumeTrue(mVibrator.hasVibrator());
 
         assertThat(mVibrator.isVibrating()).isFalse();
 
-        mVibrator.vibrate(5000);
-        assertStartsVibrating();
+        mVibrator.vibrate(5_000);
+        VibratorStateHelper.assertVibratorState(
+                true, mVibrator, mStateListener, CALLBACK_TIMEOUT_MILLIS);
         assertThat(mVibrator.isVibrating()).isTrue();
 
         mVibrator.cancel();
-        assertStopsVibrating();
+        VibratorStateHelper.assertVibratorState(
+                false, mVibrator, mStateListener, CALLBACK_TIMEOUT_MILLIS);
         assertThat(mVibrator.isVibrating()).isFalse();
     }
 
     @LargeTest
     @Test
-    public void testVibratorVibratesNoLongerThanDuration() {
+    public void testVibratorVibratesNoLongerThanDuration() throws InterruptedException {
         assumeTrue(mVibrator.hasVibrator());
 
-        long durationMs = 1000;
+        long durationMs = 1_000;
         mVibrator.vibrate(durationMs);
-        assertStartsVibrating();
+        VibratorStateHelper.assertVibratorState(
+                true, mVibrator, mStateListener, CALLBACK_TIMEOUT_MILLIS);
 
         long timeoutMs = durationMs + 500;
         SystemClock.sleep(timeoutMs);
@@ -550,54 +564,54 @@ public class VibratorTest {
 
     @LargeTest
     @Test
-    public void testVibratorStateCallback() {
+    public void testVibratorStateCallback() throws InterruptedException {
         assumeTrue(mVibrator.hasVibrator());
 
-        OnVibratorStateChangedListener listener1 = newMockStateListener();
-        OnVibratorStateChangedListener listener2 = newMockStateListener();
+        VibratorStateListener listener1 = newStateListener();
+        VibratorStateListener listener2 = newStateListener();
         // Add listener1 on executor
         mVibrator.addVibratorStateListener(Executors.newSingleThreadExecutor(), listener1);
         // Add listener2 on main thread.
         mVibrator.addVibratorStateListener(listener2);
-        verify(listener1, timeout(CALLBACK_TIMEOUT_MILLIS)).onVibratorStateChanged(false);
-        verify(listener2, timeout(CALLBACK_TIMEOUT_MILLIS)).onVibratorStateChanged(false);
+        assertThat(listener1.getInitialStateWithTimeout(CALLBACK_TIMEOUT_MILLIS)).isFalse();
+        assertThat(listener2.getInitialStateWithTimeout(CALLBACK_TIMEOUT_MILLIS)).isFalse();
 
         mVibrator.vibrate(10);
-        assertStartsVibrating();
 
-        verify(listener1, timeout(CALLBACK_TIMEOUT_MILLIS)).onVibratorStateChanged(true);
-        verify(listener2, timeout(CALLBACK_TIMEOUT_MILLIS)).onVibratorStateChanged(true);
+        assertThat(listener1.getStartCountWithTimeout(1, CALLBACK_TIMEOUT_MILLIS)).isEqualTo(1);
+        assertThat(listener2.getStartCountWithTimeout(1, CALLBACK_TIMEOUT_MILLIS)).isEqualTo(1);
 
         // The state changes back to false after vibration ends.
-        verify(listener1, timeout(CALLBACK_TIMEOUT_MILLIS).times(2)).onVibratorStateChanged(false);
-        verify(listener2, timeout(CALLBACK_TIMEOUT_MILLIS).times(2)).onVibratorStateChanged(false);
+        assertThat(listener1.getStopCountWithTimeout(1, CALLBACK_TIMEOUT_MILLIS)).isEqualTo(1);
+        assertThat(listener2.getStopCountWithTimeout(1, CALLBACK_TIMEOUT_MILLIS)).isEqualTo(1);
+        assertThat(listener1.getCurrentStateWithTimeout(false, CALLBACK_TIMEOUT_MILLIS)).isFalse();
+        assertThat(listener2.getCurrentStateWithTimeout(false, CALLBACK_TIMEOUT_MILLIS)).isFalse();
     }
 
     @LargeTest
     @Test
-    public void testVibratorStateCallbackRemoval() {
+    public void testVibratorStateCallbackRemoval() throws InterruptedException {
         assumeTrue(mVibrator.hasVibrator());
 
-        OnVibratorStateChangedListener listener1 = newMockStateListener();
-        OnVibratorStateChangedListener listener2 = newMockStateListener();
+        VibratorStateListener listener1 = newStateListener();
+        VibratorStateListener listener2 = newStateListener();
         // Add listener1 on executor
         mVibrator.addVibratorStateListener(Executors.newSingleThreadExecutor(), listener1);
         // Add listener2 on main thread.
         mVibrator.addVibratorStateListener(listener2);
-        verify(listener1, timeout(CALLBACK_TIMEOUT_MILLIS)).onVibratorStateChanged(false);
-        verify(listener2, timeout(CALLBACK_TIMEOUT_MILLIS)).onVibratorStateChanged(false);
+        assertThat(listener1.getInitialStateWithTimeout(CALLBACK_TIMEOUT_MILLIS)).isFalse();
+        assertThat(listener2.getInitialStateWithTimeout(CALLBACK_TIMEOUT_MILLIS)).isFalse();
 
         // Remove listener1 & listener2
         mVibrator.removeVibratorStateListener(listener1);
         mVibrator.removeVibratorStateListener(listener2);
 
-        mVibrator.vibrate(1000);
-        assertStartsVibrating();
+        mVibrator.vibrate(10);
 
-        // Wait the timeout to assert there was no more interactions with the removed listeners.
-        verify(listener1, after(CALLBACK_TIMEOUT_MILLIS).never()).onVibratorStateChanged(true);
-        // Previous call was blocking, so no need to wait for a timeout here as well.
-        verify(listener2, never()).onVibratorStateChanged(true);
+        // Wait a short time to consider callbacks never triggered.
+        Thread.sleep(1000);
+        assertThat(listener1.getStartCount()).isEqualTo(0);
+        assertThat(listener2.getStartCount()).isEqualTo(0);
     }
 
     @Test
@@ -805,62 +819,10 @@ public class VibratorTest {
         return mVibratorLabel.equals(SYSTEM_VIBRATOR_LABEL);
     }
 
-    private boolean isMultiVibratorDevice() {
-        return InstrumentationRegistry.getInstrumentation().getContext()
-                .getSystemService(VibratorManager.class).getVibratorIds().length > 1;
-    }
-
-    private OnVibratorStateChangedListener newMockStateListener() {
-        OnVibratorStateChangedListener listener = mock(OnVibratorStateChangedListener.class);
+    private VibratorStateListener newStateListener() {
+        VibratorStateListener listener = new VibratorStateListener();
         mStateListenersCreated.add(listener);
         return listener;
-    }
-
-    private void assertStartsThenStopsVibrating(long duration) {
-        if (mVibrator.hasVibrator()) {
-            assertStartsVibrating();
-            SystemClock.sleep(duration);
-            assertStopsVibrating();
-        }
-    }
-
-    private void assertStartsThenStopsVibrating(long duration, String vibrateDescription) {
-        if (mVibrator.hasVibrator()) {
-            assertStartsVibrating(vibrateDescription);
-            SystemClock.sleep(duration);
-            assertStopsVibrating(vibrateDescription);
-        }
-    }
-
-    private void assertStartsVibrating() {
-        assertStartsVibrating(null);
-    }
-
-    private void assertStartsVibrating(String vibrateDescription) {
-        assertVibratorStateChangesTo(true, vibrateDescription);
-    }
-
-    private void assertStopsVibrating() {
-        assertStopsVibrating(null);
-    }
-
-    private void assertStopsVibrating(String vibrateDescription) {
-        assertVibratorStateChangesTo(false, vibrateDescription);
-    }
-
-    private void assertVibratorStateChangesTo(boolean expected) {
-        assertVibratorStateChangesTo(expected, null);
-    }
-
-    private void assertVibratorStateChangesTo(boolean expected, String vibrateDescription) {
-        if (mVibrator.hasVibrator()) {
-            verify(mStateListener,
-                    timeout(CALLBACK_TIMEOUT_MILLIS).atLeastOnce().description(
-                            String.format("Vibrator expected to turn %s %s",
-                                    expected ? "on" : "off",
-                                    vibrateDescription != null ? "for " + vibrateDescription : "")))
-                    .onVibratorStateChanged(eq(expected));
-        }
     }
 
     private static String[] getRequiredPrivilegedPermissions() {

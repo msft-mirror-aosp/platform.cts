@@ -16,6 +16,24 @@
 
 package android.hardware.camera2.cts;
 
+import static android.hardware.camera2.cts.CameraTestUtils.MaxStreamSizes;
+import static android.hardware.camera2.cts.CameraTestUtils.MaxStreamSizes.JPEG;
+import static android.hardware.camera2.cts.CameraTestUtils.MaxStreamSizes.MAXIMUM;
+import static android.hardware.camera2.cts.CameraTestUtils.MaxStreamSizes.MAX_RES;
+import static android.hardware.camera2.cts.CameraTestUtils.MaxStreamSizes.PREVIEW;
+import static android.hardware.camera2.cts.CameraTestUtils.MaxStreamSizes.PRIV;
+import static android.hardware.camera2.cts.CameraTestUtils.MaxStreamSizes.RAW;
+import static android.hardware.camera2.cts.CameraTestUtils.MaxStreamSizes.RECORD;
+import static android.hardware.camera2.cts.CameraTestUtils.MaxStreamSizes.S1440P_4_3;
+import static android.hardware.camera2.cts.CameraTestUtils.MaxStreamSizes.S720P;
+import static android.hardware.camera2.cts.CameraTestUtils.MaxStreamSizes.USE_CASE_CROPPED_RAW;
+import static android.hardware.camera2.cts.CameraTestUtils.MaxStreamSizes.USE_CASE_PREVIEW;
+import static android.hardware.camera2.cts.CameraTestUtils.MaxStreamSizes.USE_CASE_PREVIEW_VIDEO_STILL;
+import static android.hardware.camera2.cts.CameraTestUtils.MaxStreamSizes.USE_CASE_STILL_CAPTURE;
+import static android.hardware.camera2.cts.CameraTestUtils.MaxStreamSizes.USE_CASE_VIDEO_CALL;
+import static android.hardware.camera2.cts.CameraTestUtils.MaxStreamSizes.USE_CASE_VIDEO_RECORD;
+import static android.hardware.camera2.cts.CameraTestUtils.MaxStreamSizes.VGA;
+import static android.hardware.camera2.cts.CameraTestUtils.MaxStreamSizes.YUV;
 import static android.hardware.camera2.cts.CameraTestUtils.SessionConfigSupport;
 import static android.hardware.camera2.cts.CameraTestUtils.SimpleCaptureCallback;
 import static android.hardware.camera2.cts.CameraTestUtils.SimpleImageReaderListener;
@@ -29,24 +47,6 @@ import static android.hardware.camera2.cts.CameraTestUtils.configureReprocessabl
 import static android.hardware.camera2.cts.CameraTestUtils.fail;
 import static android.hardware.camera2.cts.CameraTestUtils.getUnavailablePhysicalCameras;
 import static android.hardware.camera2.cts.CameraTestUtils.isSessionConfigSupported;
-import static android.hardware.camera2.cts.CameraTestUtils.MaxStreamSizes;
-import static android.hardware.camera2.cts.CameraTestUtils.MaxStreamSizes.JPEG;
-import static android.hardware.camera2.cts.CameraTestUtils.MaxStreamSizes.MAXIMUM;
-import static android.hardware.camera2.cts.CameraTestUtils.MaxStreamSizes.MAX_RES;
-import static android.hardware.camera2.cts.CameraTestUtils.MaxStreamSizes.PREVIEW;
-import static android.hardware.camera2.cts.CameraTestUtils.MaxStreamSizes.PRIV;
-import static android.hardware.camera2.cts.CameraTestUtils.MaxStreamSizes.RAW;
-import static android.hardware.camera2.cts.CameraTestUtils.MaxStreamSizes.RECORD;
-import static android.hardware.camera2.cts.CameraTestUtils.MaxStreamSizes.S1440P_4_3;
-import static android.hardware.camera2.cts.CameraTestUtils.MaxStreamSizes.S720P;
-import static android.hardware.camera2.cts.CameraTestUtils.MaxStreamSizes.USE_CASE_PREVIEW;
-import static android.hardware.camera2.cts.CameraTestUtils.MaxStreamSizes.USE_CASE_PREVIEW_VIDEO_STILL;
-import static android.hardware.camera2.cts.CameraTestUtils.MaxStreamSizes.USE_CASE_STILL_CAPTURE;
-import static android.hardware.camera2.cts.CameraTestUtils.MaxStreamSizes.USE_CASE_VIDEO_CALL;
-import static android.hardware.camera2.cts.CameraTestUtils.MaxStreamSizes.USE_CASE_VIDEO_RECORD;
-import static android.hardware.camera2.cts.CameraTestUtils.MaxStreamSizes.USE_CASE_CROPPED_RAW;
-import static android.hardware.camera2.cts.CameraTestUtils.MaxStreamSizes.VGA;
-import static android.hardware.camera2.cts.CameraTestUtils.MaxStreamSizes.YUV;
 
 import static junit.framework.Assert.assertFalse;
 import static junit.framework.Assert.assertTrue;
@@ -91,6 +91,8 @@ import android.view.Surface;
 
 import com.android.ex.camera2.blocking.BlockingSessionCallback;
 import com.android.internal.camera.flags.Flags;
+
+import com.google.common.collect.ImmutableList;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -276,7 +278,11 @@ public class RobustnessTest extends Camera2AndroidTestCase {
                                 physicalStaticInfo.getCharacteristics().get(ck);
 
                         if (phyCombinations == null) {
-                            Log.i(TAG, "No mandatory stream combinations for physical camera device: " + id + " skip test");
+                            Log.i(
+                                    TAG,
+                                    "No mandatory stream combinations for physical camera device: "
+                                            + id
+                                            + " skip test");
                             continue;
                         }
 
@@ -1737,10 +1743,7 @@ public class RobustnessTest extends Camera2AndroidTestCase {
 
                         //
                         // Standard sequence - Part 1 AF trigger
-
-                        if (VERBOSE) {
-                            Log.v(TAG, String.format("Triggering AF"));
-                        }
+                        Log.d(TAG, String.format("Triggering AF"));
 
                         previewRequest.set(CaptureRequest.CONTROL_AF_TRIGGER,
                                 CaptureRequest.CONTROL_AF_TRIGGER_START);
@@ -1752,13 +1755,17 @@ public class RobustnessTest extends Camera2AndroidTestCase {
 
                         TotalCaptureResult[] triggerResults =
                                 captureListener.getTotalCaptureResultsForRequests(
-                                triggerRequests, MAX_RESULT_STATE_CHANGE_WAIT_FRAMES);
+                                        triggerRequests, MAX_RESULT_STATE_CHANGE_WAIT_FRAMES);
                         for (int i = 0; i < maxPipelineDepth; i++) {
                             TotalCaptureResult triggerResult = triggerResults[i];
                             int afState = triggerResult.get(CaptureResult.CONTROL_AF_STATE);
                             int afTrigger = triggerResult.get(CaptureResult.CONTROL_AF_TRIGGER);
 
-                            verifyStartingAfState(afMode, afState);
+                            verifyStartingAfState(
+                                    afMode,
+                                    afState,
+                                    triggerResult.getFrameNumber(),
+                                    ImmutableList.copyOf(triggerResults));
                             assertTrue(String.format("In AF mode %s, previous AF_TRIGGER must not "
                                     + "be START before TRIGGER_START",
                                     StaticMetadata.getAfModeName(afMode)),
@@ -1817,9 +1824,7 @@ public class RobustnessTest extends Camera2AndroidTestCase {
                         }
 
                         // Stand sequence - Part 3 Cancel AF trigger
-                        if (VERBOSE) {
-                            Log.v(TAG, String.format("Cancel AF trigger"));
-                        }
+                        Log.d(TAG, String.format("Cancel AF trigger"));
                         // Remove AE trigger request
                         triggerRequests.remove(maxPipelineDepth);
                         previewRequest.set(CaptureRequest.CONTROL_AF_TRIGGER,
@@ -2193,9 +2198,12 @@ public class RobustnessTest extends Camera2AndroidTestCase {
         int afState;
         int aeState;
 
+        // List to collect the CaptureResults of the trigger cancel request.
+        ImmutableList.Builder<CaptureResult> triggerResults = ImmutableList.builder();
         for (int i = 0; i < PREVIEW_WARMUP_FRAMES; i++) {
             previewResult = captureListener.getCaptureResult(
                     CameraTestUtils.CAPTURE_RESULT_TIMEOUT_MS);
+            triggerResults.add(previewResult);
             if (VERBOSE) {
                 afState = previewResult.get(CaptureResult.CONTROL_AF_STATE);
                 aeState = previewResult.get(CaptureResult.CONTROL_AE_STATE);
@@ -2210,7 +2218,8 @@ public class RobustnessTest extends Camera2AndroidTestCase {
         afState = previewResult.get(CaptureResult.CONTROL_AF_STATE);
         aeState = previewResult.get(CaptureResult.CONTROL_AE_STATE);
 
-        verifyStartingAfState(afMode, afState);
+        verifyStartingAfState(
+                afMode, afState, previewResult.getFrameNumber(), triggerResults.build());
 
         // After several frames, AE must no longer be in INACTIVE state
         assertTrue(String.format("AE state must be SEARCHING, CONVERGED, " +
@@ -2308,24 +2317,79 @@ public class RobustnessTest extends Camera2AndroidTestCase {
         }
     }
 
-    private void verifyStartingAfState(int afMode, int afState) {
+    /**
+     * {@return The list of af states sequence in the format {frameNumber-AfState}.}
+     *
+     * @param captureResults The list of CaptureResults with CaptureResult.CONTROL_AF_STATE.
+     */
+    private List<String> getAfStateSequence(ImmutableList<CaptureResult> captureResults) {
+        return captureResults.stream()
+                .map(
+                        result -> {
+                            Integer afState = result.get(CaptureResult.CONTROL_AF_STATE);
+                            Long frameNumber = result.getFrameNumber();
+                            if (afState == null) {
+                                Log.w(TAG, "CONTROL_AF_STATE was null in CaptureResult.");
+                                return String.format("%d-(NULL)", frameNumber);
+                            } else if (afState < 0
+                                    || afState >= StaticMetadata.AF_STATE_NAMES.length) {
+                                Log.w(
+                                        TAG,
+                                        String.format(
+                                                "Out-of-bounds AF_STATE value: %d . Max index is"
+                                                        + " %d",
+                                                afState,
+                                                (StaticMetadata.AF_STATE_NAMES.length - 1)));
+                                return String.format("%d-%d(UNKNOWN)", frameNumber, afState);
+                            } else {
+                                return String.format(
+                                        "%d-%s",
+                                        frameNumber, StaticMetadata.AF_STATE_NAMES[afState]);
+                            }
+                        })
+                .collect(ImmutableList.toImmutableList());
+    }
+
+    private void verifyStartingAfState(
+            int afMode,
+            int afState,
+            Long verifiedFrameNumber,
+            ImmutableList<CaptureResult> captureResults) {
+        List<String> afStateSequence = getAfStateSequence(/* captureResults= */ captureResults);
+        if (VERBOSE) {
+            Log.v(
+                    TAG,
+                    String.format(
+                            "verifiedFrameNumber=%d, AF_STATE sequence=%s",
+                            verifiedFrameNumber, afStateSequence.toString()));
+        }
         switch (afMode) {
             case CaptureResult.CONTROL_AF_MODE_AUTO:
             case CaptureResult.CONTROL_AF_MODE_MACRO:
-                assertTrue(String.format("AF state not INACTIVE, is %s",
-                                StaticMetadata.AF_STATE_NAMES[afState]),
+                assertTrue(
+                        String.format(
+                                "AF state not INACTIVE, is %s. verifiedFrameNumber=%d,"
+                                        + " afStateSequence=%s",
+                                StaticMetadata.AF_STATE_NAMES[afState],
+                                verifiedFrameNumber,
+                                afStateSequence.toString()),
                         afState == CaptureResult.CONTROL_AF_STATE_INACTIVE);
                 break;
             case CaptureResult.CONTROL_AF_MODE_CONTINUOUS_PICTURE:
             case CaptureResult.CONTROL_AF_MODE_CONTINUOUS_VIDEO:
                 // After several frames, AF must no longer be in INACTIVE state
-                assertTrue(String.format("In AF mode %s, AF state not PASSIVE_SCAN" +
-                                ", PASSIVE_FOCUSED, or PASSIVE_UNFOCUSED, is %s",
+                assertTrue(
+                        String.format(
+                                "In AF mode %s, AF state not PASSIVE_SCAN, PASSIVE_FOCUSED, or"
+                                        + " PASSIVE_UNFOCUSED, is %s. verifiedFrameNumber=%d,"
+                                        + " afStateSequence=%s",
                                 StaticMetadata.getAfModeName(afMode),
-                                StaticMetadata.AF_STATE_NAMES[afState]),
-                        afState == CaptureResult.CONTROL_AF_STATE_PASSIVE_SCAN ||
-                        afState == CaptureResult.CONTROL_AF_STATE_PASSIVE_FOCUSED ||
-                        afState == CaptureResult.CONTROL_AF_STATE_PASSIVE_UNFOCUSED);
+                                StaticMetadata.AF_STATE_NAMES[afState],
+                                verifiedFrameNumber,
+                                afStateSequence.toString()),
+                        afState == CaptureResult.CONTROL_AF_STATE_PASSIVE_SCAN
+                                || afState == CaptureResult.CONTROL_AF_STATE_PASSIVE_FOCUSED
+                                || afState == CaptureResult.CONTROL_AF_STATE_PASSIVE_UNFOCUSED);
                 break;
             default:
                 fail("unexpected af mode");

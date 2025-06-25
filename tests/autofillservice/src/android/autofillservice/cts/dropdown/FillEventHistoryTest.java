@@ -18,6 +18,7 @@ package android.autofillservice.cts.dropdown;
 
 import static android.autofillservice.cts.activities.LoginActivity.BACKDOOR_USERNAME;
 import static android.autofillservice.cts.activities.LoginActivity.getWelcomeMessage;
+import static android.autofillservice.cts.testcore.Helper.AutofillCriticalInternal;
 import static android.autofillservice.cts.testcore.Helper.ID_PASSWORD;
 import static android.autofillservice.cts.testcore.Helper.ID_USERNAME;
 import static android.autofillservice.cts.testcore.Helper.NULL_DATASET_ID;
@@ -89,6 +90,7 @@ public class FillEventHistoryTest extends FillEventHistoryCommonTestCase {
         InstrumentedAutoFillService.assertNoFillEventHistory();
     }
 
+    @AutofillCriticalInternal
     @Test
     public void textContextCommitted_withoutDatasets() throws Exception {
         enableService();
@@ -363,6 +365,7 @@ public class FillEventHistoryTest extends FillEventHistoryCommonTestCase {
      * Tests scenario where the context was committed, just one dataset was selected by the user,
      * and the user changed the values provided by the service.
      */
+    @AutofillCriticalInternal
     @Test
     public void testContextCommitted_oneDatasetSelected() throws Exception {
         enableService();
@@ -671,6 +674,7 @@ public class FillEventHistoryTest extends FillEventHistoryCommonTestCase {
      * Tests scenario where the context was committed, the user did not selected any dataset, but
      * the user manually entered values that match what was provided by the service.
      */
+    @AutofillCriticalInternal
     @Test
     public void testContextCommitted_noDatasetSelected_butManuallyEntered()
             throws Exception {

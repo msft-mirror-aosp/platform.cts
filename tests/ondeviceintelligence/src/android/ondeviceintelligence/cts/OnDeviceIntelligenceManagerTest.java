@@ -139,6 +139,7 @@ public class OnDeviceIntelligenceManagerTest {
     public static final int REQUEST_TYPE_GET_UPDATED_DEVICE_CONFIG = 1006;
     public static final int REQUEST_TYPE_GET_FILE_FROM_NON_FILES_DIRECTORY = 1007;
     public static final int REQUEST_TYPE_POPULATE_INFERENCE_INFO = 1008;
+    public static final int REQUEST_TYPE_FETCH_FEATURE_METADATA = 1009;
 
     private static final Executor EXECUTOR = InstrumentationRegistry.getContext().getMainExecutor();
     private static final String MODEL_LOADED_BROADCAST_ACTION =
@@ -956,6 +957,40 @@ public class OnDeviceIntelligenceManagerTest {
                 });
         assertThat(statusLatch.await(1, SECONDS)).isTrue();
         assertThat(fileContents.get()).isEqualTo(TEST_CONTENT);
+    }
+
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_ON_DEVICE_INTELLIGENCE_25Q4)
+    public void canFetchFeatureMetadata() throws Exception {
+        getInstrumentation()
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(Manifest.permission.USE_ON_DEVICE_INTELLIGENCE);
+        Feature feature = new Feature.Builder(1).build();
+        CountDownLatch featureMetadataLatch = new CountDownLatch(1);
+        CompletableFuture<Bundle> featureMetadataFuture = new CompletableFuture<>();
+        mOnDeviceIntelligenceManager.processRequest(
+                feature,
+                Bundle.EMPTY,
+                REQUEST_TYPE_FETCH_FEATURE_METADATA,
+                null,
+                null,
+                EXECUTOR,
+                new ProcessingCallback() {
+                    @Override
+                    public void onResult(@NonNull Bundle result) {
+                        Log.i(TAG, "Final Result : " + result);
+                        featureMetadataFuture.complete(result);
+                        featureMetadataLatch.countDown();
+                    }
+
+                    @Override
+                    public void onError(@NonNull OnDeviceIntelligenceException error) {
+                        Log.e(TAG, "Error Occurred", error);
+                    }
+                });
+        assertThat(featureMetadataLatch.await(1, SECONDS)).isTrue();
+        assertThat(featureMetadataFuture.get().getString(TEST_KEY)).isEqualTo("feature_metadata");
     }
 
     @Test

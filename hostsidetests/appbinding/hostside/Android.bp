@@ -49,5 +49,7 @@ java_test_host {
         ":CtsAppBindingServiceSupervision1",
         ":CtsAppBindingServiceSupervision2",
         ":CtsAppBindingServiceSupervision3",
+        ":CtsAppBindingServiceSupervision4",
+        ":CtsAppBindingServiceSupervision5",
     ],
 }

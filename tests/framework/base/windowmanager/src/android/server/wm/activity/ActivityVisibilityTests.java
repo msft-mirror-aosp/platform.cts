@@ -62,6 +62,7 @@ import static org.junit.Assume.assumeTrue;
 
 import android.content.ComponentName;
 import android.platform.test.annotations.Presubmit;
+import android.platform.test.annotations.DisableFlags;
 import android.server.wm.ActivityManagerTestBase;
 import android.server.wm.CommandSession.ActivitySession;
 import android.server.wm.CommandSession.ActivitySessionClient;
@@ -73,6 +74,7 @@ import android.server.wm.app.Components;
 import androidx.test.filters.FlakyTest;
 
 import com.android.compatibility.common.util.ApiTest;
+import com.android.systemui.Flags;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -713,6 +715,8 @@ public class ActivityVisibilityTests extends ActivityManagerTestBase {
     }
 
     @Test
+    // Re-enabling for flexiglass is tracked in b/416719233.
+    @DisableFlags(Flags.FLAG_SCENE_CONTAINER)
     public void testTurnScreenOnWithAttr_Freeform() {
         assumeTrue(supportsLockScreen());
         assumeTrue(supportsFreeform());
@@ -763,6 +767,8 @@ public class ActivityVisibilityTests extends ActivityManagerTestBase {
     }
 
     @Test
+    // Re-enabling for flexiglass is tracked in b/416719233.
+    @DisableFlags(Flags.FLAG_SCENE_CONTAINER)
     public void testTurnScreenOnWhenLockWithAttrInFreeform() {
         assumeTrue(supportsLockScreen());
         assumeTrue(supportsFreeform());

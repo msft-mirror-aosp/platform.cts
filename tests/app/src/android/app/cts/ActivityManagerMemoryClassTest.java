@@ -25,6 +25,7 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.graphics.Insets;
+import android.server.wm.ActivityManagerTestBase;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Display;
@@ -259,11 +260,10 @@ public final class ActivityManagerMemoryClassTest {
     }
 
     private int getScreenDensity() {
-        WindowManager windowManager = mContext.getSystemService(WindowManager.class);
-        Display display = windowManager.getDefaultDisplay();
-        DisplayMetrics metrics = new DisplayMetrics();
-        display.getMetrics(metrics);
-        return metrics.densityDpi;
+        // Use physical screen density to more accurately measure memory usage. Compat framework
+        // may scale the density of the context
+        return ActivityManagerTestBase.ReportedDisplayMetrics
+                .getDisplayMetrics(mContext.getDisplayId()).getPhysicalDensity();
     }
 
     private int getScreenSize() {

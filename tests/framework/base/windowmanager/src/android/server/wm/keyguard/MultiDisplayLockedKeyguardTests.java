@@ -131,6 +131,7 @@ public class MultiDisplayLockedKeyguardTests extends MultiDisplayTestBase {
                 "Expected stopped activity on secondary display");
         lockScreenSession.enterAndConfirmLockCredential();
         mWmState.waitAndAssertKeyguardGone();
+        waitAndAssertResumedActivity(DISMISS_KEYGUARD_ACTIVITY);
         mWmState.assertVisibility(DISMISS_KEYGUARD_ACTIVITY, true);
     }
 

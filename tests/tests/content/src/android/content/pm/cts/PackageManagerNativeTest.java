@@ -28,6 +28,7 @@ import android.os.Process;
 import android.os.RemoteException;
 import android.os.ServiceManager;
 import android.os.UserHandle;
+import android.platform.test.annotations.AppModeFull;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -36,6 +37,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+@AppModeFull(reason = "Instant apps do not use PackageManagerNative")
 @RunWith(AndroidJUnit4.class)
 public class PackageManagerNativeTest {
     // A permission the test package should have (declared in AndroidManifest.xml)
