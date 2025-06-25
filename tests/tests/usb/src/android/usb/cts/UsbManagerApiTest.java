@@ -69,16 +69,21 @@ public class UsbManagerApiTest {
     private Context mContext;
     private Executor mExecutor;
 
+    public static void commonUsbSetUp(PackageManager pm){
+        boolean hasUsbHost = pm.hasSystemFeature(PackageManager.FEATURE_USB_HOST);
+        boolean hasUsbAccessory =
+            pm.hasSystemFeature(PackageManager.FEATURE_USB_ACCESSORY);
+        Assume.assumeTrue(hasUsbHost || hasUsbAccessory);
+    }
+
     @Before
     public void setUp() {
         mContext = InstrumentationRegistry.getContext();
         mExecutor = mContext.getMainExecutor();
         PackageManager pm = mContext.getPackageManager();
 
-        boolean hasUsbHost = pm.hasSystemFeature(PackageManager.FEATURE_USB_HOST);
-        boolean hasUsbAccessory =
-            pm.hasSystemFeature(PackageManager.FEATURE_USB_ACCESSORY);
-        Assume.assumeTrue(hasUsbHost || hasUsbAccessory);
+        commonUsbSetUp(pm);
+
         Assert.assertNotNull(mUsbManagerSys);
     }
 
