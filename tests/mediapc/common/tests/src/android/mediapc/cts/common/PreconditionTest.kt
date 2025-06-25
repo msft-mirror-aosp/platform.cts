@@ -63,6 +63,30 @@ class PreconditionTest {
     }
 
     @Test
+    fun groupPrecondition_allFalse() {
+        val p = Precondition.group(
+            "g1",
+            Precondition.create("1", false),
+            Precondition.create("2", false)
+        )
+        assertThat(p.message).isEqualTo("""g1: {"1" then "2"}""")
+        assertThat(p.meetsPrecondition).isFalse()
+        assertThat(p.failureMessage).isEqualTo("g1: 1")
+    }
+
+    @Test
+    fun groupPrecondition_2ndFalse() {
+        val p = Precondition.group(
+            "g1",
+            Precondition.create("1", true),
+            Precondition.create("2", false)
+        )
+        assertThat(p.message).isEqualTo("""g1: {"1" then "2"}""")
+        assertThat(p.meetsPrecondition).isFalse()
+        assertThat(p.failureMessage).isEqualTo("g1: 2")
+    }
+
+    @Test
     fun lazyPrecondition_true_meetsPrecondition() {
         var called = false
         val p = Precondition.createLazy("lazy", { called = true; true })

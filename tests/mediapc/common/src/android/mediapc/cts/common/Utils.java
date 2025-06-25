@@ -171,6 +171,10 @@ public final class Utils {
      */
     private static final int LAST_PERFORMANCE_CLASS = Build.VERSION_CODES.VANILLA_ICE_CREAM;
 
+    /**
+     * @deprecated use android.mediapc.cts.common.Preconditions#IS_HANDHELD instead.
+     */
+    @Deprecated
     public static boolean isHandheld() {
         // handheld nature is not exposed to package manager, for now
         // we check for touchscreen and NOT watch and NOT tv
@@ -258,7 +262,10 @@ public final class Utils {
      * <p>The numbers here are slightly reduced from the strict thresholds so that we can gather
      * some information about "almost performance class" devices. This won't impact CTS results, but
      * will increase CTS runtime for those devices.
+     *
+     * @deprecated use android.mediapc.cts.common.Preconditions#BASELINE instead.
      */
+    @Deprecated
     public static boolean meetsPerformanceClassPreconditions() {
         if (isPerfClass()) {
             return true;
