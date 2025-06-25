@@ -43,11 +43,19 @@ import android.server.wm.RotationSession;
 import android.server.wm.app.Components;
 import android.view.Surface;
 
+import com.android.bedstead.harrier.BedsteadJUnit4;
+import com.android.bedstead.harrier.DeviceState;
+import com.android.bedstead.harrier.annotations.RequireNotAutomotive;
+
 import org.junit.After;
 import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 
 @Presubmit
+@RunWith(BedsteadJUnit4.class)
 public class DreamManagerServiceTests extends ActivityManagerTestBase {
 
     // Maximum timeout in seconds after which the dream should have finished willingly
@@ -59,6 +67,10 @@ public class DreamManagerServiceTests extends ActivityManagerTestBase {
     private ComponentName mDreamActivityName;
 
     private DreamCoordinator mDreamCoordinator = new DreamCoordinator(mContext);
+
+    @ClassRule
+    @Rule
+    public static final DeviceState sDeviceState = new DeviceState();
 
     @Before
     public void setup() {
@@ -185,6 +197,7 @@ public class DreamManagerServiceTests extends ActivityManagerTestBase {
     }
 
     @Test
+    @RequireNotAutomotive(reason = "Automotive screens don't support rotation")
     public void testDreamNotFinishAfterRotation() {
         assumeTrue("Skipping test: no rotation support", supportsRotation());
 
