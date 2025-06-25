@@ -346,6 +346,19 @@ TEST_P(AAudioInputStreamTest, testFlushFromFrame) {
     mHelper->stopStream();
 }
 
+TEST_P(AAudioInputStreamTest, testPlaybackParameters) {
+    if (!mmapPcmOffloadSupport()) {
+        // No need to run the test if the flag is not enabled.
+        return;
+    }
+    if (!mSetupSuccessful) return;
+    AAudioPlaybackParameters parameters;
+    EXPECT_EQ(AAUDIO_ERROR_ILLEGAL_ARGUMENT,
+              AAudioStream_getPlaybackParameters(stream(), &parameters));
+    EXPECT_EQ(AAUDIO_ERROR_ILLEGAL_ARGUMENT,
+              AAudioStream_setPlaybackParameters(stream(), &parameters));
+}
+
 TEST_P(AAudioInputStreamTest, testRelease) {
     if (!mSetupSuccessful) return;
 
@@ -615,6 +628,22 @@ TEST_P(AAudioOutputStreamTest, testFlushFromFrame) {
               AAudioStream_flushFromFrame(stream(), AAUDIO_FLUSH_FROM_ACCURACY_UNDEFINED,
                                           &position));
     mHelper->stopStream();
+}
+
+TEST_P(AAudioOutputStreamTest, testPlaybackParameters) {
+    if (!mmapPcmOffloadSupport()) {
+        // No need to run the test if the flag is not enabled.
+        return;
+    }
+    if (!mSetupSuccessful) return;
+    AAudioPlaybackParameters parameters;
+    aaudio_result_t result = AAudioStream_getPlaybackParameters(stream(), &parameters);
+    if (result == AAUDIO_ERROR_UNIMPLEMENTED) {
+        // The playback parameters is not supported for the given stream
+        return;
+    }
+    EXPECT_EQ(AAUDIO_OK, result);
+    EXPECT_EQ(AAUDIO_OK, AAudioStream_setPlaybackParameters(stream(), &parameters));
 }
 
 TEST_P(AAudioOutputStreamTest, testRelease) {
