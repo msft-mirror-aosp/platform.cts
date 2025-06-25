@@ -2491,5 +2491,22 @@ public final class ServiceTest {
         assertWithMessage("App hasn't come to the top of LRU list after gaining back focus again")
                 .that(doWaitWhile(() -> !isApp1Top.getAsBoolean(), DELAY / 10, DELAY))
                 .isTrue();
+
+        // bind several isolated services from app1 and assert that app2 doesn't get in between them
+        // in the LRU list by "not" providing the FLAG_SKIP_UNKNOWN option.
+        final IsolatedConnectionInfo[] connections = new IsolatedConnectionInfo[] {
+            new IsolatedConnectionInfo(0, 0, BINDING_ANY, "0"),
+            new IsolatedConnectionInfo(0, 0, BINDING_ANY, "1"),
+            new IsolatedConnectionInfo(0, 0, BINDING_ANY, "2"),
+        };
+        doBindAndWaitForService(mContext, connections, 0, BINDING_ANY);
+        verifyLruOrder(new LruOrderItem[] {
+            new LruOrderItem(Process.myUid(), 0),
+            new LruOrderItem(connections[2], 0),
+            new LruOrderItem(connections[1], com.android.server.am.Flags.removeLruSpamPrevention()
+                    ? 0 : LruOrderItem.FLAG_SKIP_UNKNOWN),
+            new LruOrderItem(connections[0], 0),
+        });
+        doUnbind(mContext, connections, 0, BINDING_ANY);
     }
 }
