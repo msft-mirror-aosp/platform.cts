@@ -2988,7 +2988,7 @@ def do_capture_with_latency(cam, req, sync_latency, fmt=None):
 
 
 def load_scene(cam, props, scene, tablet, chart_distance, lighting_check=True,
-               log_path=None):
+               log_path=None, chart_scaling=None):
   """Load the scene for the camera based on the FOV.
 
   Args:
@@ -2999,18 +2999,47 @@ def load_scene(cam, props, scene, tablet, chart_distance, lighting_check=True,
     chart_distance: distance to tablet
     lighting_check: Boolean for lighting check enabled
     log_path: [Optional] path to store artifacts
+    chart_scaling: [Optional] chart scaling factor to be used
+        for displaying scene image on the tablet
   """
   if not tablet:
     logging.info('Manual run: no tablet to load scene on.')
     return
-  # Calculate camera_fov, which determines the image/video to load on tablet.
+  file_name = ''
+  scene_name = scene
+  if 'scene' not in f'{scene}':
+    scene_name = f'scene{scene}'
+  scene_path = os.path.join(os.environ['CAMERA_ITS_TOP'], 'tests', scene_name)
   camera_fov = cam.calc_camera_fov(props)
-  file_name = cam.get_file_name_to_load(chart_distance, camera_fov, scene)
-  if 'scene' not in file_name:
-    file_name = f'scene{file_name}'
-  if scene in VIDEO_SCENES:
-    root_file_name, _ = os.path.splitext(file_name)
-    file_name = root_file_name + '.mp4'
+  if chart_scaling is not None:
+    logging.debug('Using chart_scaling specified in config file')
+    if math.isclose(chart_scaling, 1.0):
+      file_name = f'{scene}.png'
+    else:
+      file_name = f'{scene}_{chart_scaling}x_scaled.png'
+    if 'scene' not in file_name:
+      file_name = f'scene{file_name}'
+    if scene in VIDEO_SCENES:
+      root_file_name, _ = os.path.splitext(file_name)
+      file_name = root_file_name + '.mp4'
+
+    file_path = os.path.join(scene_path, file_name)
+    logging.debug('Loading file: %s', file_path)
+
+    if not os.path.exists(file_path):
+      raise AssertionError(
+          'Invalid scaling factor. '
+          'Please check the available scaling factor in scene directory.')
+  else:
+    # Calculate camera_fov, which determines the image/video to load on tablet.
+    file_name = cam.get_file_name_to_load(chart_distance, camera_fov, scene)
+    if 'scene' not in file_name:
+      file_name = f'scene{file_name}'
+
+    if scene in VIDEO_SCENES:
+      root_file_name, _ = os.path.splitext(file_name)
+      file_name = root_file_name + '.mp4'
+
   logging.debug('Displaying %s on the tablet', file_name)
 
   # Display the image/video on the tablet using the default media player.
