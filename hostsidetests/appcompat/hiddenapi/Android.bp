@@ -31,6 +31,9 @@ java_test_host {
         "cts-statsd-atom-host-test-utils",
         "cts-host-utils",
     ],
+    device_common_data: [
+        ":CtsHiddenApiApp",
+    ],
     // Tag this module as a cts test artifact
     test_suites: [
         "cts",
