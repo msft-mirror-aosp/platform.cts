@@ -28,7 +28,7 @@ java_test_host {
         // "mcts-art",
         "mts-art",
     ],
-    device_common_data: [":CtsJvmtiRunTest988DeviceApp"],
+    device_common_data: [":CtsJvmtiRunTestDeviceApp"],
     test_options: {
         unit_test: false,
     },
