@@ -1957,8 +1957,14 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
                 .setPairingSetupEnabled(true)
                 .setPairingVerificationEnabled(true)
                 .setBootstrappingMethods(PAIRING_BOOTSTRAPPING_OPPORTUNISTIC);
+        int highestSupportedCipherSuite = WIFI_AWARE_CIPHER_SUITE_NCS_PK_PASN_128;
+        if ((mWifiAwareManager.getCharacteristics().getSupportedPairingCipherSuites()
+                        & WIFI_AWARE_CIPHER_SUITE_NCS_PK_PASN_256)
+                != 0) {
+            highestSupportedCipherSuite = WIFI_AWARE_CIPHER_SUITE_NCS_PK_PASN_256;
+        }
         if (Flags.awarePairing()) {
-            builder.setSupportedCipherSuites(WIFI_AWARE_CIPHER_SUITE_NCS_PK_PASN_256);
+            builder.setSupportedCipherSuites(highestSupportedCipherSuite);
         }
         AwarePairingConfig config = builder.build();
         assertTrue(config.isPairingCacheEnabled());
@@ -1966,8 +1972,7 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
         assertTrue(config.isPairingVerificationEnabled());
         assertEquals(PAIRING_BOOTSTRAPPING_OPPORTUNISTIC, config.getBootstrappingMethods());
         if (Flags.awarePairing()) {
-            assertEquals(config.getSupportedCipherSuites(),
-                    WIFI_AWARE_CIPHER_SUITE_NCS_PK_PASN_256);
+            assertEquals(config.getSupportedCipherSuites(), highestSupportedCipherSuite);
         }
 
         if (!ApiLevelUtil.isAfter(Build.VERSION_CODES.TIRAMISU)) {
