@@ -37,6 +37,8 @@ import android.app.appfunctions.testutils.TestAppFunctionServiceLifecycleReceive
 import android.app.appsearch.GenericDocument
 import android.content.ContentValues
 import android.content.Context
+import android.content.pm.ApplicationInfo
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Bundle
 import android.os.CancellationSignal
@@ -1244,6 +1246,32 @@ class AppFunctionManagerAccessEnabledTest {
         assertWriteAccessible(writeOnlyUri)
         assertWriteAccessible(readWriteUri)
         assertWriteInaccessible(readOnlyUri)
+    }
+
+    @Test
+    fun deviceSettingPackages_canOnlyContainsSystemApps() {
+        val deviceSettingPackages = mManager.deviceSettingPackages
+
+        for (deviceSettingPackage in deviceSettingPackages) {
+            assertIsSystemApp(deviceSettingPackage)
+        }
+    }
+
+    private fun assertIsSystemApp(packageName: String) {
+        val pm = context.packageManager
+        if (pm.isSystemApp(packageName)) {
+            return
+        }
+        fail("$packageName is not a system app")
+    }
+
+    private fun PackageManager.isSystemApp(packageName: String): Boolean {
+        try {
+            val applicationInfo = getApplicationInfo(packageName, 0)
+            return (applicationInfo.flags and ApplicationInfo.FLAG_SYSTEM) != 0
+        } catch (e: PackageManager.NameNotFoundException) {
+            return false
+        }
     }
 
     private fun assertReadAccessible(uri: Uri) {
