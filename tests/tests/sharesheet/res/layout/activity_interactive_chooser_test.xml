@@ -32,26 +32,44 @@
             android:id="@+id/chooser_action_row"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal">
+            android:orientation="vertical">
 
-                <Button
-                    android:id="@+id/close_chooser"
-                    android:layout_width="wrap_content"
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Close" />
+                    android:orientation="horizontal">
 
-                <Button
-                    android:id="@+id/update_chooser"
-                    android:layout_width="wrap_content"
+                        <Button
+                            android:id="@+id/close_chooser"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Close" />
+
+                        <Button
+                            android:id="@+id/update_chooser"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Update" />
+
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Update" />
+                    android:orientation="horizontal">
+                        <Button
+                            android:id="@+id/unsubscribe"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Unsubscribe" />
 
-                <Button
-                    android:id="@+id/unsubscribe"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Unsubscribe" />
+                        <Button
+                            android:id="@+id/target_status"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Disable" />
 
+                </LinearLayout>
         </LinearLayout>
 
         <TextView

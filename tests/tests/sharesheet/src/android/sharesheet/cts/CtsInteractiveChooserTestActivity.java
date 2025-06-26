@@ -61,6 +61,7 @@ public class CtsInteractiveChooserTestActivity extends Activity {
     private Button mLaunchChooser;
     private ViewGroup mChooserActionRow;
     private View mBoundsLabel;
+    private boolean mIsTargetEnabled = true;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -98,6 +99,9 @@ public class CtsInteractiveChooserTestActivity extends Activity {
 
         Button unsubscribe = findViewById(R.id.unsubscribe);
         unsubscribe.setOnClickListener((v) -> removeSessionStateListener());
+
+        Button disableButton = findViewById(R.id.target_status);
+        disableButton.setOnClickListener((v) -> toggleTargetEnableStatus((Button) v));
 
         mBoundsLabel = findViewById(R.id.bounds_updated);
 
@@ -139,8 +143,16 @@ public class CtsInteractiveChooserTestActivity extends Activity {
         if (mChooserSession == null) {
             return;
         }
-
         mChooserSession.removeStateListener(mChooserSessionStateListener);
+    }
+
+    private void toggleTargetEnableStatus(Button button) {
+        if (mChooserSession == null) {
+            return;
+        }
+        mIsTargetEnabled = !mIsTargetEnabled;
+        mChooserSession.setTargetsEnabled(mIsTargetEnabled);
+        button.setText(mIsTargetEnabled ? "Disable" : "Enable");
     }
 
     private void maybeStartNewSession() {

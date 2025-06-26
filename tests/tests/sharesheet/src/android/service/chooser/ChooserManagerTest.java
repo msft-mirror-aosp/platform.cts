@@ -27,13 +27,16 @@ import static android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP;
 import static android.content.Intent.FLAG_ACTIVITY_TASK_ON_HOME;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assume.assumeFalse;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -60,10 +63,15 @@ public class ChooserManagerTest {
 
     @Before
     public void init() {
-        mChooserManager =
-                InstrumentationRegistry.getInstrumentation()
-                        .getTargetContext()
-                        .getSystemService(ChooserManager.class);
+        Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
+        PackageManager pm = context.getPackageManager();
+        assumeFalse(
+                "Skip test: Device is a wearable, TV or Auto",
+                pm.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE)
+                        || pm.hasSystemFeature(PackageManager.FEATURE_LEANBACK)
+                        || pm.hasSystemFeature(PackageManager.FEATURE_WATCH));
+        mChooserManager = context.getSystemService(ChooserManager.class);
+        assertNotNull("ChooserManager is not available", mChooserManager);
     }
 
     /** Test that only Intent#ACTION_CHOOSER intents is accepted by the startSession method. */
