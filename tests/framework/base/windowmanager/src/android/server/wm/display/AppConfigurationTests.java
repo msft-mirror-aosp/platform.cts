@@ -559,6 +559,7 @@ public class AppConfigurationTests extends MultiDisplayTestBase {
     }
 
     @Test
+    @RequireNotAutomotive(reason = "Automotive screens don't support rotation")
     public void testTranslucentActivityPermitted() throws Exception {
         assumeTrue("Skipping test: no orientation request support", supportsOrientationRequest());
 
