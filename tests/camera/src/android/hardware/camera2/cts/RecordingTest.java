@@ -54,6 +54,8 @@ import android.util.Log;
 import android.util.Range;
 import android.view.Surface;
 
+import androidx.test.filters.RequiresDevice;
+
 import com.android.compatibility.common.util.MediaUtils;
 import com.android.ex.camera2.blocking.BlockingSessionCallback;
 
@@ -227,6 +229,7 @@ public class RecordingTest extends Camera2SurfaceViewTestCase {
      * </p>
      */
     @Test(timeout=60*60*1000) // timeout = 60 mins for long running tests
+    @RequiresDevice
     public void testBasicRecording() throws Exception {
         doBasicRecording(/*useVideoStab*/false);
     }
@@ -260,6 +263,7 @@ public class RecordingTest extends Camera2SurfaceViewTestCase {
      * </p>
      */
     @Test(timeout=60*60*1000) // timeout = 60 mins for long running tests
+    @RequiresDevice
     public void testBasicEncoderProfilesRecording() throws Exception {
         doBasicRecording(/*useVideoStab*/false,  /*useIntermediateSurface*/false,
                 /*useEncoderProfiles*/true);
