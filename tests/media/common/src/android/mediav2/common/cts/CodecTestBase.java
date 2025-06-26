@@ -255,18 +255,16 @@ public abstract class CodecTestBase {
     static final int[] AAC_PROFILES = new int[]{AACObjectMain, AACObjectLC, AACObjectSSR,
             AACObjectLTP, AACObjectHE, AACObjectScalable, AACObjectERLC, AACObjectERScalable,
             AACObjectLD, AACObjectELD, AACObjectXHE};
-    public static final Context CONTEXT =
-            InstrumentationRegistry.getInstrumentation().getTargetContext();
 
     public static final int MAX_DISPLAY_HEIGHT_CURRENT =
-            Arrays.stream(CONTEXT.getSystemService(DisplayManager.class).getDisplays())
+            Arrays.stream(getContext().getSystemService(DisplayManager.class).getDisplays())
                     .map(Display::getSupportedModes)
                     .flatMap(Stream::of)
                     .max(Comparator.comparing(Display.Mode::getPhysicalHeight))
                     .orElseThrow(() -> new RuntimeException("Failed to determine max height"))
                     .getPhysicalHeight();
     public static final int MAX_DISPLAY_WIDTH_CURRENT =
-            Arrays.stream(CONTEXT.getSystemService(DisplayManager.class).getDisplays())
+            Arrays.stream(getContext().getSystemService(DisplayManager.class).getDisplays())
                     .map(Display::getSupportedModes)
                     .flatMap(Stream::of)
                     .max(Comparator.comparing(Display.Mode::getPhysicalHeight))
@@ -528,6 +526,10 @@ public abstract class CodecTestBase {
         return result;
     }
 
+    public static Context getContext() {
+        return InstrumentationRegistry.getInstrumentation().getTargetContext();
+    }
+
     public static boolean isMediaTypeLossless(String mediaType) {
         if (mediaType.equals(MediaFormat.MIMETYPE_AUDIO_FLAC)) return true;
         if (mediaType.equals(MediaFormat.MIMETYPE_AUDIO_RAW)) return true;
@@ -627,7 +629,7 @@ public abstract class CodecTestBase {
     public static boolean isHDRCaptureSupported() {
         // If the device supports HDR, hlg support should always return true
         if (!MediaUtils.hasCamera()) return false;
-        CameraManager cm = CONTEXT.getSystemService(CameraManager.class);
+        CameraManager cm = getContext().getSystemService(CameraManager.class);
         try {
             String[] cameraIds = cm.getCameraIdList();
             for (String id : cameraIds) {
@@ -703,7 +705,7 @@ public abstract class CodecTestBase {
     }
 
     public static boolean canDisplaySupportHDRContent() {
-        DisplayManager displayManager = CONTEXT.getSystemService(DisplayManager.class);
+        DisplayManager displayManager = getContext().getSystemService(DisplayManager.class);
         return displayManager.getDisplay(Display.DEFAULT_DISPLAY).getHdrCapabilities()
                 .getSupportedHdrTypes().length > 0;
     }
@@ -875,7 +877,8 @@ public abstract class CodecTestBase {
 
     public static int getMaxCodecInstances(String codecName, String mediaType) {
         int maxCodecLimit = 32;
-        boolean isLowRamDevice = CONTEXT.getSystemService(ActivityManager.class).isLowRamDevice();
+        boolean isLowRamDevice =
+                getContext().getSystemService(ActivityManager.class).isLowRamDevice();
         if (isLowRamDevice) {
             maxCodecLimit = LOW_RAM_DEVICE_MAX_INSTANCES;
         }
