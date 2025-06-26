@@ -171,9 +171,6 @@ public class CtsCredentialProviderServiceDeviceTest {
     @Before
     public void setUpTest() {
         Log.i(TAG, "Skipping all tests in the file if we are not on the right device type...");
-        assumeFalse("Skipping tests: Wear does not enable CredentialManager yet",
-                isWatch(mContext) &&
-                    !android.credentials.flags.Flags.wearCredentialManagerEnabled());
         assumeFalse("Skipping test: Auto does not support CredentialManager yet",
                 CtsCredentialManagerUtils.isAuto(mContext));
 
