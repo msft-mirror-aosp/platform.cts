@@ -438,7 +438,7 @@ public class MediaCodecListTest extends AndroidTestCase {
             if (!isAutomotive()) {
                 list.add(new VideoCodec(MediaFormat.MIMETYPE_VIDEO_H263, false));  // h263 decoder
             }
-            if (hasCamera()) {
+            if (hasCamera() && !isAutomotive()) {
                 list.add(new VideoCodec(MediaFormat.MIMETYPE_VIDEO_H263, true)); // h263 encoder
             }
         }
