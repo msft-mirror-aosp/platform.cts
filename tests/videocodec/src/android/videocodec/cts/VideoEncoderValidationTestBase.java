@@ -73,7 +73,7 @@ public class VideoEncoderValidationTestBase extends CodecEncoderTestBase {
 
     static void logAllFilesInCacheDir(boolean isStartOfTest) {
         if (isStartOfTest) DIAGNOSTICS.setLength(0);
-        String cacheDir = CONTEXT.getCacheDir().toString();
+        String cacheDir = getContext().getCacheDir().toString();
         DIAGNOSTICS.append(String.format("\nThe state of cache dir : %s, %s is :", cacheDir,
                 isStartOfTest ? "at start" : "now"));
         File dir = new File(cacheDir);
