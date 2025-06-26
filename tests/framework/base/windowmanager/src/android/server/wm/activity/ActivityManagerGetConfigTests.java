@@ -16,6 +16,9 @@
 
 package android.server.wm.activity;
 
+import static android.content.pm.PackageManager.FEATURE_AUTOMOTIVE;
+import static android.server.wm.activity.CarDisplayCompatConfig.FEATURE_CAR_DISPLAY_COMPATIBILITY;
+import static android.server.wm.activity.CarDisplayCompatConfig.getAutomotiveDisplayCompatScalingFactor;
 import static androidx.test.InstrumentationRegistry.getInstrumentation;
 
 import static org.junit.Assert.assertArrayEquals;
@@ -283,8 +286,21 @@ public class ActivityManagerGetConfigTests {
                 config.screenHeightDp, resConfig.configuration.screenHeightDp);
         assertEquals("Expected smallest screen width dp does not match",
                 config.smallestScreenWidthDp, resConfig.configuration.smallestScreenWidthDp);
-        assertEquals("Expected density dpi does not match",
-                config.densityDpi, resConfig.configuration.densityDpi);
+
+        // Automotive may have a compatibility layer that automatically dpi scales any
+        // non-automotive application. To account for this the config density should be scaled by
+        // the compatibility scaling factor.
+        if (mPm.hasSystemFeature(FEATURE_AUTOMOTIVE)
+                && mPm.hasSystemFeature(FEATURE_CAR_DISPLAY_COMPATIBILITY)) {
+            float scalingFactor = getAutomotiveDisplayCompatScalingFactor(mContext);
+            int automotiveDensity =
+                    (int) (resConfig.configuration.densityDpi * (1f / scalingFactor) + 0.5f);
+            assertEquals("Expected density dpi does not match",
+                    config.densityDpi, automotiveDensity);
+        } else {
+            assertEquals("Expected density dpi does not match",
+                    config.densityDpi, resConfig.configuration.densityDpi);
+        }
         // XXX not comparing windowConfiguration, since by definition this is contextual.
     }
 
