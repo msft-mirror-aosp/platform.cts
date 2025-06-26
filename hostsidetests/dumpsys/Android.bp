@@ -27,6 +27,9 @@ java_test_host {
         "tradefed",
         "truth",
     ],
+    device_common_data: [
+        ":CtsFramestatsTestApp",
+    ],
     // tag this module as a cts test artifact
     test_suites: [
         "cts",

@@ -30,6 +30,10 @@ java_test_host {
         "compatibility-host-util",
         "CtsDevicePolicyManagerTestCases",
     ],
+    device_common_data: [
+        ":CtsContextCrossProfileApp",
+        ":CtsContextCrossProfileTestServiceApp",
+    ],
     static_libs: [
         "device-policy-log-verifier-util",
     ],
