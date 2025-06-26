@@ -19,7 +19,9 @@ package android.net.wifi.rtt.cts;
 import static android.net.wifi.rtt.PasnConfig.AKM_PASN;
 import static android.net.wifi.rtt.PasnConfig.AKM_SAE;
 import static android.net.wifi.rtt.PasnConfig.CIPHER_GCMP_256;
+import static android.net.wifi.rtt.ResponderConfig.PREAMBLE_HE;
 import static android.net.wifi.rtt.ResponderConfig.RESPONDER_AP;
+import static android.net.wifi.rtt.ResponderConfig.RESPONDER_AWARE;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -819,6 +821,48 @@ public class WifiRttTest extends TestBase {
         }
     }
 
+    /** Verify ranging request with aware peer handle set by setPeerHandle(). */
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_IMPROVE_RANGING_API)
+    @ApiTest(apis = {"android.net.wifi.rtt.ResponderConfig.Builder#setPeerHandle"})
+    public void testAwareRttWithSetPeerHandle() throws InterruptedException {
+        if (!WifiFeature.isAwareSupported(getContext())) {
+            return;
+        }
+        WifiAwareManager awareManager = sContext.getSystemService(WifiAwareManager.class);
+        assertNotNull(awareManager);
+        CountDownLatch countDownLatch = new CountDownLatch(1);
+        final WifiAwareSession[] awareSession = {null};
+        awareManager.attach(
+                new AttachCallback() {
+                    @Override
+                    public void onAttached(WifiAwareSession session) {
+                        awareSession[0] = session;
+                        countDownLatch.countDown();
+                    }
+                },
+                mHandler);
+        countDownLatch.await();
+        try {
+            PeerHandle peerHandle = mock(PeerHandle.class);
+            ResponderConfig awareResponder =
+                    new ResponderConfig.Builder()
+                            .setPeerHandle(peerHandle)
+                            .setResponderType(RESPONDER_AWARE)
+                            .build();
+            RangingRequest request =
+                    new RangingRequest.Builder().addResponder(awareResponder).build();
+            ResultCallback callback = new ResultCallback();
+            mWifiRttManager.startRanging(request, mExecutor, callback);
+            assertTrue("Wi-Fi RTT results: no callback", callback.waitForCallback());
+            List<RangingResult> rangingResults = callback.getResults();
+            assertNotNull("Wi-Fi RTT results: null results", rangingResults);
+            assertEquals("Invalid peerHandle should return 0 result", 0, rangingResults.size());
+        } finally {
+            awareSession[0].close();
+        }
+    }
+
     /**
      * Test Wi-Fi One-sided RTT ranging operation using ScanResult in request:
      * - Scan for visible APs for the test AP (which do not support IEEE 802.11mc) and are operating
@@ -1400,6 +1444,112 @@ public class WifiRttTest extends TestBase {
         assertEquals(CIPHER_GCMP_256, pasnConfig.getCiphers());
         assertEquals(AKM_SAE | AKM_PASN, pasnConfig.getBaseAkms());
         assertArrayEquals(TEST_PASN_COMEBACK_COOKIE, pasnConfig.getPasnComebackCookie());
+    }
+
+    /**
+     * Test the copy constructor of {@link ResponderConfig.Builder}. Verifies that all fields from
+     * an existing {@link ResponderConfig} are correctly copied to a new {@link ResponderConfig}
+     * instance created via the builder's copy constructor. Also checks that modifications to the
+     * new builder do not affect the original configuration.
+     */
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_IMPROVE_RANGING_API)
+    @ApiTest(
+            apis = {
+                "android.net.wifi.rtt.ResponderConfig#Builder",
+                "android.net.wifi.rtt.ResponderConfig.Builder#setPeerHandle",
+                "android.net.wifi.rtt.ResponderConfig#getPeerHandle"
+            })
+    public void testResponderConfigBuilderCopyConstructor() {
+        // 1. Create an original ResponderConfig with specific values
+        MacAddress originalMac = MacAddress.fromString("A0:B1:C2:D3:E4:F5");
+        PasnConfig pasnConfig =
+                new PasnConfig.Builder(PasnConfig.AKM_SAE, PasnConfig.CIPHER_GCMP_256)
+                        .setWifiSsid(
+                                WifiSsid.fromBytes("TestSSID".getBytes(StandardCharsets.UTF_8)))
+                        .setPassword("TestPassword")
+                        .build();
+        SecureRangingConfig originalSecureConfig =
+                new SecureRangingConfig.Builder(pasnConfig)
+                        .setSecureHeLtfEnabled(true)
+                        .setRangingFrameProtectionEnabled(true)
+                        .build();
+
+        ResponderConfig originalConfig =
+                new ResponderConfig.Builder()
+                        .setMacAddress(originalMac)
+                        .setResponderType(ResponderConfig.RESPONDER_AP)
+                        .set80211mcSupported(true)
+                        .set80211azNtbSupported(false) // Test a mix of true/false
+                        .setChannelWidth(ScanResult.CHANNEL_WIDTH_40MHZ)
+                        .setFrequencyMhz(2437)
+                        .setCenterFreq0Mhz(2437)
+                        .setCenterFreq1Mhz(0)
+                        .setPreamble(ScanResult.PREAMBLE_HT)
+                        .setSecureRangingConfig(originalSecureConfig)
+                        .build();
+
+        // 2. Use the copy constructor in ResponderConfig.Builder
+        ResponderConfig.Builder copiedBuilder = new ResponderConfig.Builder(originalConfig);
+
+        // 3. Build the new ResponderConfig from the copied builder
+        ResponderConfig copiedConfig = copiedBuilder.build();
+
+        // 4. Assert that all fields are equal between originalConfig and copiedConfig
+        assertTrue(copiedConfig.equals(originalConfig));
+
+        // 5. Test that modifying the copiedBuilder does not affect the originalConfig
+        MacAddress newMac = MacAddress.fromString("FF:EE:DD:CC:BB:AA");
+        copiedBuilder
+                .setMacAddress(newMac)
+                .setFrequencyMhz(5200)
+                .setPreamble(PREAMBLE_HE)
+                .set80211azNtbSupported(true);
+
+        ResponderConfig modifiedFromCopiedBuilder = copiedBuilder.build();
+
+        // Assert changes in the newly built config
+        assertEquals(
+                "MAC address should be updated in modified config",
+                newMac,
+                modifiedFromCopiedBuilder.getMacAddress());
+        assertEquals(
+                "Frequency should be updated in modified config",
+                5200,
+                modifiedFromCopiedBuilder.getFrequencyMhz());
+        assertTrue(
+                "802.11az NTB support should be updated in modified config",
+                modifiedFromCopiedBuilder.is80211azNtbSupported());
+        assertEquals(
+                "Preamble should be updated in modified config",
+                PREAMBLE_HE,
+                modifiedFromCopiedBuilder.getPreamble());
+
+        // Assert that originalConfig remains unchanged
+        assertEquals(
+                "Original MAC address should NOT change",
+                originalMac,
+                originalConfig.getMacAddress());
+        assertEquals(
+                "Original frequency should NOT change", 2437, originalConfig.getFrequencyMhz());
+        assertFalse(
+                "Original 802.11az NTB support should NOT change",
+                originalConfig.is80211azNtbSupported());
+        assertEquals(
+                "Original preamble should NOT change",
+                ScanResult.PREAMBLE_HT,
+                originalConfig.getPreamble());
+
+        // 6. Test with Aware PeerHandle
+        PeerHandle peerHandle = mock(PeerHandle.class);
+        originalConfig =
+                new ResponderConfig.Builder()
+                        .setPeerHandle(peerHandle)
+                        .setResponderType(RESPONDER_AWARE)
+                        .build();
+        copiedBuilder = new ResponderConfig.Builder(originalConfig);
+        copiedConfig = copiedBuilder.build();
+        assertTrue(copiedConfig.equals(originalConfig));
     }
 }
 
