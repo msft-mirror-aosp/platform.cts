@@ -242,6 +242,33 @@ public class WifiP2pConfigTest extends AndroidTestCase {
         assertTrue(config.isAuthorizeConnectionFromPeerEnabled());
     }
 
+    @ApiTest(
+            apis = {
+                "android.net.wifi.p2p"
+                        + ".WifiP2pPairingBootstrappingConfig#GetPairingBootstrappingMethod"
+            })
+    @RequiresFlagsEnabled(
+            Flags.FLAG_EXTERNAL_APPROVER_SUPPORT_FOR_WFDR2_PASSWORD_BASED_BOOTSTRAPPING)
+    @SdkSuppress(minSdkVersion = 37)
+    public void testWifiP2pConfigGetPairingBootstrappingMethod() {
+        WifiP2pPairingBootstrappingConfig pairingBootstrappingConfig =
+                new WifiP2pPairingBootstrappingConfig(
+                        WifiP2pPairingBootstrappingConfig
+                                .PAIRING_BOOTSTRAPPING_METHOD_KEYPAD_PASSPHRASE,
+                        "");
+        WifiP2pConfig config =
+                new WifiP2pConfig.Builder()
+                        .setDeviceAddress(MacAddress.fromString(TEST_DEVICE_ADDRESS))
+                        .setPairingBootstrappingConfig(pairingBootstrappingConfig)
+                        .build();
+        WifiP2pPairingBootstrappingConfig retrievedPairingBootstrappingConfig =
+                config.getPairingBootstrappingConfig();
+        assertNotNull(retrievedPairingBootstrappingConfig);
+        assertEquals(
+                WifiP2pPairingBootstrappingConfig.PAIRING_BOOTSTRAPPING_METHOD_KEYPAD_PASSPHRASE,
+                retrievedPairingBootstrappingConfig.getPairingBootstrappingMethod());
+    }
+
     private static void assertWifiP2pConfigHasFields(WifiP2pConfig config,
             String networkName, String passphrase, int groupOwnerFrequency, String deviceAddress,
             int networkId, int groupClientIpProvisioningMode) {

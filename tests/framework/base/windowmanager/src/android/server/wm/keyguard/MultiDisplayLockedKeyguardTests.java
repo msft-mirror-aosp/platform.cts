@@ -16,7 +16,6 @@
 
 package android.server.wm.keyguard;
 
-import static android.server.wm.WindowManagerState.STATE_RESUMED;
 import static android.server.wm.WindowManagerState.STATE_STOPPED;
 import static android.server.wm.app.Components.DISMISS_KEYGUARD_ACTIVITY;
 import static android.server.wm.app.Components.SHOW_WHEN_LOCKED_ACTIVITY;
@@ -83,8 +82,7 @@ public class MultiDisplayLockedKeyguardTests extends MultiDisplayTestBase {
 
         lockScreenSession.enterAndConfirmLockCredential();
         mWmState.waitAndAssertKeyguardGone();
-        waitAndAssertActivityState(TEST_ACTIVITY, STATE_RESUMED,
-                "Expected resumed activity on secondary display");
+        waitAndAssertResumedActivity(TEST_ACTIVITY);
         mWmState.assertVisibility(TEST_ACTIVITY, true /* visible */);
     }
 

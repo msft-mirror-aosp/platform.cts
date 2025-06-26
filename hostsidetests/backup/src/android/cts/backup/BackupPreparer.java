@@ -84,8 +84,8 @@ public class BackupPreparer extends BaseTargetPreparer {
             BackupHostSideUtils.checkSetupComplete(mDevice);
 
             try {
-                mCurrentUser = mBackupUtils.getCurrentUserId();
-            } catch (IOException e) {
+                mCurrentUser = getCurrentUserId();
+            } catch (Exception e) {
                 throw new TargetSetupError("Failed to get current user ID", e);
             }
             CLog.i("Current user is " + mCurrentUser);
@@ -237,6 +237,11 @@ public class BackupPreparer extends BaseTargetPreparer {
                 // TODO: consider adding a reboot or recovery before failing if necessary
             }
         }
+    }
+
+    private int getCurrentUserId() throws Exception {
+        String output = mDevice.executeShellCommand("am get-current-user");
+        return Integer.parseInt(output.trim());
     }
 
     private boolean isBackupActiveForUser(int userId) {

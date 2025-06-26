@@ -217,22 +217,6 @@ public class ManagedConnection extends Connection {
         mIsMuted = isMuted;
     }
 
-    /**
-     * Helper that removes the Connection.CAPABILITY_HOLD && Connection.CAPABILITY_SUPPORT_HOLD
-     * capabilities from a given Connection.
-     */
-    public void clearHoldCapabilities() {
-        Log.i(TAG, String.format("Current capabilities as list=[%s]",
-                Connection.capabilitiesToString(this.getConnectionCapabilities())));
-        int mask = (1 << 31) - 1;
-        int holdCapabilities = Connection.CAPABILITY_HOLD | Connection.CAPABILITY_SUPPORT_HOLD;
-        int clearHold = (~holdCapabilities) & mask;
-        int finalCaps = this.getConnectionCapabilities() & clearHold;
-        this.setConnectionCapabilities(finalCaps);
-        Log.i(TAG, String.format("Final capabilities as list=[%s]",
-                Connection.capabilitiesToString(this.getConnectionCapabilities())));
-    }
-
     public void updateConnectionProperties(int newProperties) {
         int currentProperties = getConnectionProperties();
         setConnectionProperties(currentProperties | newProperties);

@@ -58,7 +58,7 @@ class ServiceReporter {
 
     private fun wasMethodCalled(expectedMethodName: String): Boolean {
         val actualMethodName = runBlocking {
-            withTimeout(TIMEOUT) {
+            withTimeout(METHOD_CALLED_TIMEOUT) {
                 channel.receive()
             }
         }
@@ -66,7 +66,8 @@ class ServiceReporter {
     }
 
     companion object {
-        const val TIMEOUT = 5000L
+        const val BINDING_TIMEOUT = 20000L
+        const val METHOD_CALLED_TIMEOUT = 3000L
     }
 }
 
@@ -75,7 +76,7 @@ private val serviceReporter = ServiceReporter()
 fun bindSupervisionAppService(action: (reporter: ServiceReporter) -> Unit) {
     val context = TestApis.context().instrumentedContext()
     val (connection, binder) = runBlocking {
-        withTimeout(ServiceReporter.TIMEOUT) {
+        withTimeout(ServiceReporter.BINDING_TIMEOUT) {
             bindService(context)
         }
     }

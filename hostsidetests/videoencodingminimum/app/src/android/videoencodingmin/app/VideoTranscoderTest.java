@@ -17,8 +17,8 @@
 package android.videoencodingmin.app;
 
 import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface;
-import static android.mediav2.common.cts.CodecTestBase.CONTEXT;
 import static android.mediav2.common.cts.CodecTestBase.MEDIA_CODEC_LIST_REGULAR;
+import static android.mediav2.common.cts.CodecTestBase.getContext;
 import static android.mediav2.common.cts.CodecTestBase.selectCodecs;
 import static android.mediav2.common.cts.DecodeStreamToYuv.getFormatInStream;
 import static android.os.Environment.buildPath;
@@ -187,7 +187,7 @@ public class VideoTranscoderTest {
         Assume.assumeTrue("Found no decoder supporting the config file", mDecoderName != null);
         Assert.assertEquals("Apk does not have permissions to write to external storage",
                 PackageManager.PERMISSION_GRANTED,
-                CONTEXT.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE));
+                getContext().checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE));
         File pub = new File(SDCARD_MOUNT_POINT + "/vqf/output/");
         File dir = buildPath(pub,
                 "output_" + ENC_CONFIG_FILE.substring(0, ENC_CONFIG_FILE.lastIndexOf('.')));

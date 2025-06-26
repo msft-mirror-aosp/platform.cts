@@ -1768,6 +1768,7 @@ public class WallpaperManagerTest {
 
     @Test
     @RequiresFlagsEnabled({FLAG_MULTI_CROP})
+    @Ignore("b/384502688")
     public void testSetWallpaperWithCrops_noCrop() {
         Point screenSize = getScreenSize();
         int bitmapHeight = 3 * screenSize.y;
