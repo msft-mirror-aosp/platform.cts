@@ -34,8 +34,10 @@ import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.content.ComponentName;
-import android.platform.test.annotations.DisableFlags;
 import android.platform.test.annotations.Presubmit;
+import android.platform.test.annotations.RequiresFlagsDisabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.Settings;
 import android.server.wm.ActivityManagerTestBase;
 import android.server.wm.Condition;
@@ -62,6 +64,9 @@ import org.junit.runner.RunWith;
 @Presubmit
 @RunWith(BedsteadJUnit4.class)
 public class DreamManagerServiceTests extends ActivityManagerTestBase {
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule =
+            DeviceFlagsValueProvider.createCheckFlagsRule();
 
     // Maximum timeout in seconds after which the dream should have finished willingly
     private static final int ACTIVITY_STOP_MAX_TIMEOUT = 3;
@@ -295,7 +300,7 @@ public class DreamManagerServiceTests extends ActivityManagerTestBase {
 
     @Test
     // Re-enabling for flexiglass is tracked in b/412769564.
-    @DisableFlags(Flags.FLAG_SCENE_CONTAINER)
+    @RequiresFlagsDisabled(Flags.FLAG_SCENE_CONTAINER)
     public void testStartActivityOnKeyguardLocked() {
         assumeTrue(supportsLockScreen());
         assumeFalse(dismissDreamOnActivityStart());
