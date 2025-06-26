@@ -206,11 +206,11 @@ public abstract class FillEventHistoryCommonTestCase extends AbstractLoginActivi
         mActivity.expectAutoFill("dude", "sweet");
 
         // Trigger autofill and IME.
-        mUiBot.focusByRelativeId(ID_USERNAME);
+        mUiBot.focusByRelativeId(ID_PASSWORD);
         mUiBot.waitForIdle();
 
-        // Re-focus on password field.
-        mUiBot.focusByRelativeId(ID_PASSWORD);
+        // Re-focus on username field.
+        mUiBot.focusByRelativeId(ID_USERNAME);
         mUiBot.waitForIdle();
 
         // Authenticate
