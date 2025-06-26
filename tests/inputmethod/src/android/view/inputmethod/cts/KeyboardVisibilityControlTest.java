@@ -1435,6 +1435,9 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
     public void testRotateScreenWithKeyboardShownImplicitly() throws Exception {
         // Test only when both portrait and landscape mode are supported.
         final PackageManager pm = mInstrumentation.getTargetContext().getPackageManager();
+        assumeFalse(
+                "Screen rotation is not supported on AAOS.",
+                pm.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE));
         assumeTrue(pm.hasSystemFeature(PackageManager.FEATURE_SCREEN_PORTRAIT));
         assumeTrue(pm.hasSystemFeature(PackageManager.FEATURE_SCREEN_LANDSCAPE));
         final boolean isFixedToUserRotation =
