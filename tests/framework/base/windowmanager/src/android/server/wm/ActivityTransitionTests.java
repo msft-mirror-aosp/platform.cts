@@ -581,9 +581,16 @@ public class ActivityTransitionTests extends ActivityManagerTestBase {
         // matches the most common wait time in CTS (2^0 + 2^1 + ... + 2^13 = about 8000).
         final ArrayList<AssertionResult> failedResults = new ArrayList<>();
         int sleepDurationMilliseconds = 1;
+        final int originalTransitionX = mTestBuilder.getTestBounds().transitionBounds.left;
+        final int originalTransitionY = mTestBuilder.getTestBounds().transitionBounds.top;
+        final int originalRectX = mTestBuilder.getTestBounds().rect.left;
+        final int originalRectY = mTestBuilder.getTestBounds().rect.top;
         for (int i = 0; i < 13; i++) {
             final Bitmap screenshot = mInstrumentation.getUiAutomation().takeScreenshot();
             dumpOnFailure.dumpOnFailure("screenshot-" + i, screenshot);
+            mTestBuilder.getTestBounds().transitionBounds.offsetTo(originalTransitionX,
+                    originalTransitionY);
+            mTestBuilder.getTestBounds().rect.offsetTo(originalRectX, originalRectY);
             final AssertionResult result = assertFunction.apply(screenshot);
             if (!result.isFailure) {
                 return;
