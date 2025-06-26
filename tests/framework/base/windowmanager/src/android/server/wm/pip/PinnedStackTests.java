@@ -39,9 +39,7 @@ import static android.server.wm.WindowManagerState.STATE_PAUSED;
 import static android.server.wm.WindowManagerState.STATE_RESUMED;
 import static android.server.wm.WindowManagerState.STATE_STOPPED;
 import static android.server.wm.WindowManagerState.dpToPx;
-import static android.server.wm.app.Components.ALWAYS_FOCUSABLE_PIP_ACTIVITY;
 import static android.server.wm.app.Components.LAUNCH_ENTER_PIP_ACTIVITY;
-import static android.server.wm.app.Components.LAUNCH_INTO_PINNED_STACK_PIP_ACTIVITY;
 import static android.server.wm.app.Components.LAUNCH_INTO_PIP_CONTAINER_ACTIVITY;
 import static android.server.wm.app.Components.LAUNCH_INTO_PIP_HOST_ACTIVITY;
 import static android.server.wm.app.Components.LAUNCH_PIP_ON_PIP_ACTIVITY;
@@ -92,6 +90,7 @@ import static android.server.wm.app.Components.PipActivity.UI_STATE_STASHED_RESU
 import static android.server.wm.app.Components.RESUME_WHILE_PAUSING_ACTIVITY;
 import static android.server.wm.app.Components.TEST_ACTIVITY;
 import static android.server.wm.app.Components.TEST_ACTIVITY_WITH_SAME_AFFINITY;
+import static android.server.wm.app.Components.TRANSLUCENT_PIP_ACTIVITY;
 import static android.server.wm.app.Components.TRANSLUCENT_TEST_ACTIVITY;
 import static android.server.wm.app.Components.TestActivity.EXTRA_CONFIGURATION;
 import static android.server.wm.app.Components.TestActivity.TEST_ACTIVITY_ACTION_FINISH_SELF;
@@ -326,28 +325,6 @@ public class PinnedStackTests extends ActivityManagerTestBase {
         mWmState.computeState(new WaitForValidActivityState(componentName));
         assertPinnedStackDoesNotExist();
         Truth.assertThat(future.get(5000, TimeUnit.MILLISECONDS)).isEqualTo(false);
-    }
-
-    // This test is black-listed in cts-known-failures.xml (b/35314835).
-    @Ignore
-    @Test
-    public void testAlwaysFocusablePipActivity() {
-        pinnedStackTester(
-                getAmStartCmd(ALWAYS_FOCUSABLE_PIP_ACTIVITY),
-                ALWAYS_FOCUSABLE_PIP_ACTIVITY,
-                ALWAYS_FOCUSABLE_PIP_ACTIVITY,
-                true /* isFocusable */);
-    }
-
-    // This test is black-listed in cts-known-failures.xml (b/35314835).
-    @Ignore
-    @Test
-    public void testLaunchIntoPinnedStack() {
-        pinnedStackTester(
-                getAmStartCmd(LAUNCH_INTO_PINNED_STACK_PIP_ACTIVITY),
-                LAUNCH_INTO_PINNED_STACK_PIP_ACTIVITY,
-                ALWAYS_FOCUSABLE_PIP_ACTIVITY,
-                true /* isFocusable */);
     }
 
     @Test
@@ -994,8 +971,8 @@ public class PinnedStackTests extends ActivityManagerTestBase {
     @Test
     public void testAutoEnterPictureInPictureOverPip() {
         // Launch another PIP activity
-        launchActivity(LAUNCH_INTO_PINNED_STACK_PIP_ACTIVITY);
-        waitForEnterPipAnimationComplete(ALWAYS_FOCUSABLE_PIP_ACTIVITY);
+        launchActivity(PIP_ACTIVITY2, extraString(EXTRA_ENTER_PIP, "true"));
+        waitForEnterPipAnimationComplete(PIP_ACTIVITY2);
         assertPinnedStackExists();
 
         // Launch the PIP activity on pause
@@ -1008,21 +985,7 @@ public class PinnedStackTests extends ActivityManagerTestBase {
         // Ensure that auto-enter pip failed and that the resumed activity in the pinned stack is
         // still the first activity
         final Task pinnedStack = getPinnedStack();
-        assertEquals(getActivityName(ALWAYS_FOCUSABLE_PIP_ACTIVITY), pinnedStack.getRealActivity());
-    }
-
-    @Test
-    public void testDismissPipWhenLaunchNewOne() {
-        // Launch another PIP activity
-        launchActivity(LAUNCH_INTO_PINNED_STACK_PIP_ACTIVITY);
-        waitForEnterPipAnimationComplete(ALWAYS_FOCUSABLE_PIP_ACTIVITY);
-        assertPinnedStackExists();
-        final Task pinnedStack = getPinnedStack();
-
-        launchActivityInNewTask(LAUNCH_INTO_PINNED_STACK_PIP_ACTIVITY);
-        waitForEnterPipAnimationComplete(ALWAYS_FOCUSABLE_PIP_ACTIVITY);
-
-        assertEquals(1, mWmState.countRootTasks(WINDOWING_MODE_PINNED, ACTIVITY_TYPE_STANDARD));
+        assertEquals(getActivityName(PIP_ACTIVITY2), pinnedStack.getRealActivity());
     }
 
     @Test
@@ -1653,13 +1616,13 @@ public class PinnedStackTests extends ActivityManagerTestBase {
         // translucent activity.
         enterPipAndAssertPinnedTaskExists(LAUNCH_PIP_ON_PIP_ACTIVITY);
         mWmState.waitForValidState(
-                new WaitForValidActivityState.Builder(ALWAYS_FOCUSABLE_PIP_ACTIVITY)
+                new WaitForValidActivityState.Builder(TRANSLUCENT_PIP_ACTIVITY)
                         .setWindowingMode(WINDOWING_MODE_PINNED)
                         .build());
 
         assertPinnedStackIsOnTop();
         mWmState.assertVisibility(LAUNCH_PIP_ON_PIP_ACTIVITY, true);
-        mWmState.assertVisibility(ALWAYS_FOCUSABLE_PIP_ACTIVITY, true);
+        mWmState.assertVisibility(TRANSLUCENT_PIP_ACTIVITY, true);
     }
 
     @Test
