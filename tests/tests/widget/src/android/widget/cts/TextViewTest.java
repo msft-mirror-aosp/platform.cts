@@ -33,6 +33,7 @@ import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.refEq;
@@ -5108,6 +5109,11 @@ public class TextViewTest {
     @UiThreadTest
     @Test
     public void testSetLineHeightInUnits() {
+        // TODO(b/428026853): make these work for font scales that are not 1.0 (some devices use a
+        //  different default font scale.)
+        assumeTrue(
+                "The values in this test only work when the font scale is 1.0",
+                mActivity.getResources().getConfiguration().fontScale == 1.0f);
 
         mTextView = new TextView(mActivity);
         mTextView.setText("This is some random text");
@@ -8788,6 +8794,12 @@ public class TextViewTest {
 
     @Test
     public void testAutoSizeUniform_equivalentConfigurations() throws Throwable {
+        // TODO(b/428026853): make these work for font scales that are not 1.0 (some devices use a
+        //  different default font scale.)
+        assumeTrue(
+                "The values in this test only work when the font scale is 1.0",
+                mActivity.getResources().getConfiguration().fontScale == 1.0f);
+
         final DisplayMetrics dm = mActivity.getResources().getDisplayMetrics();
         final int minTextSize = 10;
         final int maxTextSize = 20;
