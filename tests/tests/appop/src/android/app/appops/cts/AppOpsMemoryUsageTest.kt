@@ -23,6 +23,9 @@ import android.platform.test.annotations.AsbSecurityTest
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.android.compatibility.common.util.SystemUtil.callWithShellPermissionIdentity
+import kotlin.collections.component1
+import kotlin.collections.component2
+import kotlin.collections.iterator
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
@@ -36,41 +39,55 @@ class AppOpsMemoryUsageTest {
     val appOpsManager = context.getSystemService(AppOpsManager::class.java)!!
     val attributionTag = "cts_test_tag"
     val proxiedPkg = "com.android.shell"
+    val rootPkg = "root"
     val proxiedUid = Process.SHELL_UID
+    val op = AppOpsManager.OPSTR_VIBRATE
 
     // Proxy apps could use the attribution tag validation exemption for certain system apps to
     // overwhelm the app ops system memory
     @Test
     @AsbSecurityTest(cveBugId = [375623125])
     fun testCannotApplyArbitraryAttributionWithProxyOp() {
+        assertAttrTagOverwrittenToNull(proxiedUid, proxiedPkg)
+        // Test twice, to verify the call to finishOp doesn't incorrectly mark the op as verified
+        assertAttrTagOverwrittenToNull(proxiedUid, proxiedPkg)
+    }
+
+    // Proxy apps could use the attribution tag validation exemption for root uid to
+    // overwhelm the app ops system memory
+    @Test
+    @AsbSecurityTest(cveBugId = [416491779])
+    fun testCannotApplyArbitraryAttributionWithProxyOpForRoot() {
+        assertAttrTagOverwrittenToNull(Process.ROOT_UID, rootPkg)
+    }
+
+    private fun assertAttrTagOverwrittenToNull(proxiedUid: Int, proxiedPkg: String) {
         val result = appOpsManager.startProxyOpNoThrow(
-            AppOpsManager.OPSTR_READ_CONTACTS,
+            op,
             proxiedUid,
             proxiedPkg,
             attributionTag,
             null
         )
-        assertEquals("expected to be able to start a READ_CONTACTS op", MODE_ALLOWED, result)
+        assertEquals("expected to be able to start a VIBRATE op", MODE_ALLOWED, result)
         val activeOps = callWithShellPermissionIdentity {
             appOpsManager.getOpsForPackage(
                 proxiedUid,
                 proxiedPkg,
-                AppOpsManager.OPSTR_READ_CONTACTS
+                op
             )
         }
-
-        // We expect to find a running READ_CONTACTS app op, with a null attribution tag.
         var foundNullAttrOp = false
         for (pkgOp in activeOps) {
-            for (op in pkgOp.ops) {
-                if (op.opStr != AppOpsManager.OPSTR_READ_CONTACTS) {
+            for (opEntry in pkgOp.ops) {
+                if (opEntry.opStr != op) {
                     continue
                 }
-                for ((tag, attrOp) in op.attributedOpEntries) {
+                for ((tag, attrOp) in opEntry.attributedOpEntries) {
                     if (!attrOp.isRunning) {
                         continue
                     }
-                    assertNotEquals(attributionTag, tag)
+                    assertNotEquals("found $attributionTag running op", attributionTag, tag)
                     if (tag == null) {
                         foundNullAttrOp = true
                         // We found a null op, but don't break out of the loop yet. We need to
@@ -90,13 +107,13 @@ class AppOpsMemoryUsageTest {
 
     private fun finishOps() {
         appOpsManager.finishProxyOp(
-            AppOpsManager.OPSTR_READ_CONTACTS,
+            op,
             proxiedUid,
             proxiedPkg,
             attributionTag
         )
         appOpsManager.finishProxyOp(
-            AppOpsManager.OPSTR_READ_CONTACTS,
+            op,
             proxiedUid,
             proxiedPkg,
             null
