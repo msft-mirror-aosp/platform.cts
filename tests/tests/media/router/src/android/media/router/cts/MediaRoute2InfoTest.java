@@ -27,6 +27,8 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Parcel;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
 import androidx.test.core.app.ApplicationProvider;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -35,6 +37,7 @@ import androidx.test.filters.SmallTest;
 import com.android.compatibility.common.util.FrameworkSpecificTest;
 import com.android.media.flags.Flags;
 
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -68,6 +71,9 @@ public class MediaRoute2InfoTest {
 
     public static final String TEST_KEY = "test_key";
     public static final String TEST_VALUE = "test_value";
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Test
     public void testBuilderConstructorWithInvalidValues() {
