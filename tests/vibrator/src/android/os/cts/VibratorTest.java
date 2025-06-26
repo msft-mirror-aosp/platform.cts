@@ -266,6 +266,8 @@ public class VibratorTest {
 
     @Test
     public void testVibrateMultiThread() throws InterruptedException {
+        assumeTrue(mVibrator.hasVibrator());
+
         ThreadHelper thread1 = new ThreadHelper(() -> {
             mVibrator.vibrate(200);
         }).start();

@@ -29,9 +29,11 @@ public final class VibratorStateHelper {
             throws InterruptedException {
         // Adding a listener to the Vibrator should trigger the callback once with the current state
         vibrator.addVibratorStateListener(listener);
-        assertWithMessage("Expected vibrator initial state to be idle")
-                .that(listener.getInitialStateWithTimeout(timeoutMs))
-                .isFalse();
+        if (vibrator.hasVibrator()) {
+            assertWithMessage("Expected vibrator initial state to be idle")
+                    .that(listener.getInitialStateWithTimeout(timeoutMs))
+                    .isFalse();
+        }
         assertWithMessage("Vibrator is vibrating after initial state, expected it to be idle")
                 .that(vibrator.isVibrating())
                 .isFalse();
