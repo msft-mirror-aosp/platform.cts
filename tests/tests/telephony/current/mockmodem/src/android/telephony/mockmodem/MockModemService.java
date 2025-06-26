@@ -342,7 +342,7 @@ public class MockModemService extends Service {
             }
 
             // Sync modem configurations to radio modules
-            sMockModemConfigInterface.notifyAllRegistrantNotifications();
+            sMockModemConfigInterface.notifyAllRegistrantNotifications(i);
 
             // Connect to telephony framework
             sIRadioModemImpl[i].rilConnected();

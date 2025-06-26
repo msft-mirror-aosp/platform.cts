@@ -803,7 +803,7 @@ public class MockModemConfigBase implements MockModemConfigInterface {
     }
 
     @Override
-    public void notifyAllRegistrantNotifications() {
+    public void notifyAllRegistrantNotifications(int phoneId) {
         Log.d(mTAG, "notifyAllRegistrantNotifications");
 
         // IRadioConfig
@@ -821,20 +821,17 @@ public class MockModemConfigBase implements MockModemConfigInterface {
                 new AsyncResult(null, mBasebandVersion, null));
         mRadioStateChangedRegistrants.notifyRegistrants(new AsyncResult(null, mRadioState, null));
 
-        for (int i = 0; i < mNumOfPhone; i++) {
-            int physicalSlotId = getSimPhysicalSlotId(i);
+        int physicalSlotId = getSimPhysicalSlotId(phoneId);
+        synchronized (mConfigAccess[physicalSlotId]) {
+            // IRadioModem
+            notifyDeviceIdentityChangedRegistrants(phoneId);
+            notifyDeviceImeiTypeChangedRegistrants(phoneId);
 
-            synchronized (mConfigAccess[physicalSlotId]) {
-                // IRadioModem
-                notifyDeviceIdentityChangedRegistrants(i);
-                notifyDeviceImeiTypeChangedRegistrants(i);
-
-                // IRadioSim
-                mCardStatusChangedRegistrants[i].notifyRegistrants(
-                        new AsyncResult(null, mCardStatus[physicalSlotId], null));
-                mSimAppDataChangedRegistrants[i].notifyRegistrants(
-                        new AsyncResult(null, mSimAppList[physicalSlotId], null));
-            }
+            // IRadioSim
+            mCardStatusChangedRegistrants[phoneId].notifyRegistrants(
+                    new AsyncResult(null, mCardStatus[physicalSlotId], null));
+            mSimAppDataChangedRegistrants[phoneId].notifyRegistrants(
+                    new AsyncResult(null, mSimAppList[physicalSlotId], null));
         }
     }
 
