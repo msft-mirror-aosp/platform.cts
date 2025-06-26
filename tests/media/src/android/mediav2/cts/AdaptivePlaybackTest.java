@@ -20,6 +20,7 @@ import static android.media.codec.Flags.apvSupport;
 import static android.media.codec.Flags.dynamicColorAspects;
 import static android.mediav2.common.cts.CodecTestBase.IS_AT_LEAST_V;
 import static android.mediav2.common.cts.CodecTestBase.SupportClass.CODEC_ALL;
+import static android.mediav2.common.cts.CodecTestBase.SupportClass.CODEC_HW;
 import static android.mediav2.common.cts.CodecTestBase.SupportClass.CODEC_OPTIONAL;
 import static android.mediav2.common.cts.CodecTestBase.VNDK_IS_AT_MOST_U;
 import static android.mediav2.common.cts.DecodeStreamToYuv.getFormatInStream;
@@ -128,15 +129,16 @@ public class AdaptivePlaybackTest extends CodecDecoderTestBase {
                         "bbb_640x360_512kbps_30fps_hevc_2b.mp4",
                         "bbb_1280x720_1mbps_30fps_hevc_nob.mp4",
                         "bbb_640x360_512kbps_30fps_hevc_nob.mp4",
-                        "bbb_640x360_512kbps_30fps_hevc_2b.mp4"}, CODEC_ALL},
+                        "bbb_640x360_512kbps_30fps_hevc_2b.mp4"}, CODEC_HW},
                 {MediaFormat.MIMETYPE_VIDEO_VP8, new String[]{
                         "bbb_800x640_768kbps_30fps_vp8.webm",
                         "bbb_1280x720_1mbps_30fps_vp8.webm",
-                        "bbb_640x360_512kbps_30fps_vp8.webm"}, CODEC_ALL},
+                        "bbb_640x360_512kbps_30fps_vp8.webm"},
+                        MAX_DISPLAY_HEIGHT_LAND >= 720 ? CODEC_ALL : CODEC_OPTIONAL},
                 {MediaFormat.MIMETYPE_VIDEO_VP9, new String[]{
                         "bbb_800x640_768kbps_30fps_vp9.webm",
                         "bbb_1280x720_1mbps_30fps_vp9.webm",
-                        "bbb_640x360_512kbps_30fps_vp9.webm"}, CODEC_ALL},
+                        "bbb_640x360_512kbps_30fps_vp9.webm"}, CODEC_HW},
                 {MediaFormat.MIMETYPE_VIDEO_MPEG4, new String[]{
                         "bbb_128x96_64kbps_12fps_mpeg4.mp4",
                         "bbb_176x144_192kbps_15fps_mpeg4.mp4",
@@ -144,7 +146,8 @@ public class AdaptivePlaybackTest extends CodecDecoderTestBase {
                 {MediaFormat.MIMETYPE_VIDEO_AV1, new String[]{
                         "bbb_800x640_768kbps_30fps_av1.webm",
                         "bbb_1280x720_1mbps_30fps_av1.webm",
-                        "bbb_640x360_512kbps_30fps_av1.webm"}, CODEC_OPTIONAL},
+                        "bbb_640x360_512kbps_30fps_av1.webm"},
+                        MAX_DISPLAY_HEIGHT_LAND >= 720 ? CODEC_HW : CODEC_OPTIONAL},
                 {MediaFormat.MIMETYPE_VIDEO_MPEG2, new String[]{
                         "bbb_800x640_768kbps_30fps_mpeg2_2b.mp4",
                         "bbb_800x640_768kbps_30fps_mpeg2_nob.mp4",
@@ -187,7 +190,8 @@ public class AdaptivePlaybackTest extends CodecDecoderTestBase {
                     {MediaFormat.MIMETYPE_VIDEO_AV1, new String[]{
                             "cosmat_640x360_24fps_512kbps_av1_10bit.mkv",
                             "cosmat_1280x720_24fps_1200kbps_av1_10bit.mkv",
-                            "cosmat_800x640_24fps_768kbps_av1_10bit.mkv"}, CODEC_OPTIONAL},
+                            "cosmat_800x640_24fps_768kbps_av1_10bit.mkv"},
+                            MAX_DISPLAY_HEIGHT_LAND >= 720 ? CODEC_HW : CODEC_OPTIONAL},
             }));
         }
 
@@ -236,7 +240,8 @@ public class AdaptivePlaybackTest extends CodecDecoderTestBase {
                             "cosmat_640x360_24fps_512kbps_av1_10bit.mkv",
                             "bbb_1280x720_1mbps_30fps_av1.webm",
                             "cosmat_352x288_hdr10plus_av1.mkv",
-                            "cosmat_800x640_24fps_768kbps_av1_10bit.mkv"}, CODEC_OPTIONAL},
+                            "cosmat_800x640_24fps_768kbps_av1_10bit.mkv"},
+                            MAX_DISPLAY_HEIGHT_LAND >= 720 ? CODEC_HW : CODEC_OPTIONAL},
             });
             argsList.addAll(prepareParamList(dynamicColorAspectsArgs, isEncoder, needAudio,
                     needVideo, false /* mustTestAllCodecs */, ComponentClass.ALL,
@@ -353,12 +358,17 @@ public class AdaptivePlaybackTest extends CodecDecoderTestBase {
                     hasSupport);
         }
         List<String> resFiles = getSupportedFiles(mSrcFiles, mCodecName, mMediaType);
-        if (mSupportRequirements.equals(CODEC_ALL)) {
+        if (mSupportRequirements.equals(CODEC_ALL) || (mSupportRequirements.equals(CODEC_HW)
+                && isHardwareAcceleratedCodec(mCodecName))) {
             Assert.assertEquals("codec: " + mCodecName + " does not support all files in the"
                     + " input list", resFiles.size(), mSrcFiles.length);
         }
         Assume.assumeTrue("none of the given test clips are supported by the codec: "
                 + mCodecName, !resFiles.isEmpty());
+        Assert.assertTrue("To verify 'adaptive-playback' support at least 2 resources are needed, "
+                          + "selected only 1. This could be due to component limitations, raise a "
+                          + "test improvement request to add more resources to the list",
+                new HashSet<>(resFiles).size() > 1);
         ArrayList<MediaFormat> formats = new ArrayList<>();
         int totalSize = 0;
         for (String resFile : resFiles) {
