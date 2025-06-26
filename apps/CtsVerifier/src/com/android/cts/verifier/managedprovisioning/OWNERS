@@ -2,4 +2,4 @@
 file:platform/frameworks/base:/core/java/android/app/admin/EnterprisePlatformTest_OWNERS
 
 # Bug component: 801321 = per-file Screenshot*.java
-per-file Screenshot*.java = mrenouf@google.com, mrcasey@google.com
+per-file Screenshot*.java =mrcasey@google.com
