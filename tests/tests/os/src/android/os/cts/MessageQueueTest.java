@@ -42,6 +42,7 @@ import androidx.test.runner.AndroidJUnit4;
 
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -1031,6 +1032,93 @@ public class MessageQueueTest {
         };
 
         tester.doTest(TEST_TIMEOUT, TEST_INTERVAL);
+    }
+
+    /**
+     * Stress test to ensure that Loopers that block on a sync barrier are woken up when the barrier
+     * is removed.
+     *
+     * In this test, two HandlerThreads post work to each other behind a sync barrier.
+     * Each thread is responsible for removing the sync barrier so that the other thread can
+     * become unblocked.
+     */
+    @Test
+    public void testSyncBarriersWakeup() throws Throwable {
+        // Initialize two threads
+        AssertableHandlerThread t1 = new AssertableHandlerThread();
+        AssertableHandlerThread t2 = new AssertableHandlerThread();
+        t1.start();
+        t2.start();
+        Looper l1 = t1.getLooper();
+        Looper l2 = t2.getLooper();
+        MessageQueue q1 = l1.getQueue();
+        MessageQueue q2 = l2.getQueue();
+        Handler h1 = new Handler(l1);
+        Handler h2 = new Handler(l2);
+        Handler h1Async = Handler.createAsync(l1);
+
+        // The two threads will post to each other until the counter reaches the threshold
+        final AtomicInteger count = new AtomicInteger(0);
+        final int countThreshold = 10_000;
+
+        // Runnable that posts to the other handler behind a sync barrier,
+        // then removes the previous sync barrier.
+        // Progress is recorded by incrementing the counter.
+        class MyRunnable implements Runnable {
+            private final Handler mMyHandler;
+            private final Handler mOtherHandler;
+            private final MessageQueue mOtherQueue;
+            Runnable mOtherRunnable;
+            int mOtherBarrierToken;
+
+            MyRunnable(Handler myHandler, Handler otherHandler) {
+                mMyHandler = myHandler;
+                mOtherHandler = otherHandler;
+                mOtherQueue = otherHandler.getLooper().getQueue();
+            }
+
+            @Override
+            public void run() {
+                if (count.get() >= countThreshold) {
+                    return;
+                }
+
+                int lastToken = mOtherBarrierToken;
+                mOtherBarrierToken = mOtherQueue.postSyncBarrier();
+                mOtherHandler.post(mOtherRunnable);
+                mOtherQueue.removeSyncBarrier(lastToken);
+                count.incrementAndGet();
+            }
+        }
+
+        MyRunnable r1 = new MyRunnable(h1, h2);
+        MyRunnable r2 = new MyRunnable(h2, h1);
+        r1.mOtherRunnable = r2;
+        r2.mOtherRunnable = r1;
+
+        try {
+            // Post initial messages
+            r2.mOtherBarrierToken = q1.postSyncBarrier();
+            h1.post(r1);
+            r1.mOtherBarrierToken = q2.postSyncBarrier();
+            h2.post(r2);
+
+            // Kick off the first thread with an async message that will bypass
+            // the sync barrier
+            h1Async.post(r1);
+
+            final long endTime = System.currentTimeMillis() + JOIN_TIMEOUT;
+            while (count.get() < countThreshold && System.currentTimeMillis() < endTime) {
+                Thread.yield();
+            }
+            assertTrue(
+                    "Test timed out after " + count.get() + " increments",
+                    count.get() >= countThreshold);
+
+        } finally {
+            t1.quitAndRethrow();
+            t2.quitAndRethrow();
+        }
     }
 
     /**
