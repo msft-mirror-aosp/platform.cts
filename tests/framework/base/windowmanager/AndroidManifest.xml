@@ -643,6 +643,9 @@
         <activity android:name="android.server.wm.window.SnapshotTaskTests$TestActivity"
             android:theme="@style/WhiteBackgroundTheme"
             android:exported="true">
+            <property
+                android:name="android.window.PROPERTY_COMPAT_ALLOW_SAFE_REGION_LETTERBOXING"
+                android:value="false" />
         </activity>
         <activity android:name="android.server.wm.backnavigation.BackNavigationActivity"
                   android:enableOnBackInvokedCallback="true"
