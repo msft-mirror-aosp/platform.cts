@@ -23,6 +23,7 @@ import android.app.role.RoleManager.ROLE_SYSTEM_SUPERVISION
 import android.app.supervision.SupervisionManager
 import android.content.Context
 import com.android.bedstead.nene.TestApis
+import com.android.compatibility.common.util.SystemUtil.callWithShellPermissionIdentity
 import com.google.common.truth.Truth.assertThat
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.runBlocking
@@ -35,20 +36,29 @@ fun withSystemSupervisionRoleHeld(action: () -> Unit) =
 fun withSupervisionRoleHeld(action: () -> Unit) =
     withRoleHeld(ROLE_SUPERVISION, action)
 
+/**
+ * Executes the given [action] while this package holds the specified [roleName].
+ *
+ * This method utilizes the role bypassing mechanism available to the shell via the
+ * `BYPASS_ROLE_QUALIFICATION` permission. It disables supervision and verifies that
+ * role bypassing is available.
+ */
 private fun withRoleHeld(roleName: String, action: () -> Unit) {
-    val context = TestApis.context().instrumentedContext()
-    val roleManager = context.getSystemService(RoleManager::class.java)
-    val supervisionManager = context.getSystemService(SupervisionManager::class.java)
+    callWithShellPermissionIdentity {
+        val context = TestApis.context().instrumentedContext()
+        val roleManager = context.getSystemService(RoleManager::class.java)
+        val supervisionManager = context.getSystemService(SupervisionManager::class.java)
 
-    supervisionManager.setSupervisionEnabled(false)
-    assertThat(supervisionManager.shouldAllowBypassingSupervisionRoleQualification()).isTrue()
-
-    try {
-        roleManager.addRoleHolder(context, roleName)
-        action()
-    } finally {
-        roleManager.removeRoleHolder(context, roleName)
         supervisionManager.setSupervisionEnabled(false)
+        assertThat(supervisionManager.shouldAllowBypassingSupervisionRoleQualification()).isTrue()
+
+        try {
+            roleManager.addRoleHolder(context, roleName)
+            action()
+        } finally {
+            roleManager.removeRoleHolder(context, roleName)
+            supervisionManager.setSupervisionEnabled(false)
+        }
     }
 }
 

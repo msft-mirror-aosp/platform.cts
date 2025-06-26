@@ -16,17 +16,11 @@
 
 package android.supervision.cts
 
-import android.Manifest.permission.BYPASS_ROLE_QUALIFICATION
-import android.Manifest.permission.MANAGE_ROLE_HOLDERS
-import android.Manifest.permission.OBSERVE_ROLE_HOLDERS
-import android.Manifest.permission.QUERY_USERS
 import android.app.supervision.flags.Flags
 import com.android.bedstead.flags.annotations.RequireFlagsEnabled
 import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.multiuser.annotations.EnsureHasNoAdditionalUser
-import com.android.bedstead.permissions.annotations.EnsureHasPermission
 import com.android.compatibility.common.util.ApiTest
-import com.android.xts.root.annotations.RequireRootInstrumentation
 import com.google.common.truth.Truth.assertThat
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -43,15 +37,17 @@ class SupervisionAppServiceTest : BaseSupervisionTest() {
                 "android.app.supervision.SupervisionAppService#onSupervisionDisabled",
             ]
     )
-    @EnsureHasPermission(
-        BYPASS_ROLE_QUALIFICATION,
-        MANAGE_ROLE_HOLDERS,
-        QUERY_USERS,
-        OBSERVE_ROLE_HOLDERS
-    )
     @EnsureHasNoAdditionalUser
-    @RequireRootInstrumentation(reason = "Requires role permissions")
     fun testSupervisionAppService_withSystemSupervisionRoleHeld() {
+        /*
+        This test makes use of the internal workings of various system services. The
+        `AppBindingService` listens for role changes to rebind to the services.
+
+        `withSystemSupervisionRoleHeld` registers a listener and does not proceed with executing the
+        supplied `action` until its listener has been called. Binding to the service in the test
+        should happen after the binding in `AppBindingService`. Additionally, it provides a reliable
+        signal to start a timeout for `ServiceReporter.wasMethodCalled`, incresting reliability.
+         */
         withSystemSupervisionRoleHeld {
             bindSupervisionAppService { reporter ->
                 setSupervisionEnabled(true)
