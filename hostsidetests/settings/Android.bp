@@ -29,6 +29,9 @@ java_test_host {
         "guava",
         "truth",
     ],
+    device_common_data: [
+        ":CtsSettingsDeviceOwnerApp",
+    ],
     // tag this module as a cts test artifact
     test_suites: [
         "cts",
