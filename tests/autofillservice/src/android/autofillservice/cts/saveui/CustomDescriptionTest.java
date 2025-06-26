@@ -29,6 +29,7 @@ import android.autofillservice.cts.R;
 import android.autofillservice.cts.activities.LoginActivity;
 import android.autofillservice.cts.commontests.AbstractLoginActivityTestCase;
 import android.autofillservice.cts.testcore.CannedFillResponse;
+import android.autofillservice.cts.testcore.Helper.AutofillCriticalInternal;
 import android.autofillservice.cts.testcore.Visitor;
 import android.graphics.drawable.Icon;
 import android.platform.test.annotations.AppModeFull;
@@ -207,6 +208,7 @@ public class CustomDescriptionTest extends AbstractLoginActivityTestCase {
     }
 
     @Test
+    @AutofillCriticalInternal
     public void testSanitizationBeforeTransformations() throws Exception {
         enableService();
 
@@ -252,6 +254,7 @@ public class CustomDescriptionTest extends AbstractLoginActivityTestCase {
     }
 
     @Test
+    @AutofillCriticalInternal
     public void validTransformation() throws Exception {
         testCustomDescription((usernameId, passwordId) -> {
             RemoteViews presentation = newTemplate(R.layout.two_horizontal_text_fields);
