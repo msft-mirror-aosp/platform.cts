@@ -72,6 +72,8 @@ CANAKIT_VID = 0x04d8
 
 HS755HB_ANGLE_MAX = 202.0  # throw for rotation motor in degrees
 
+VALID_CONTROLLERS = ('arduino', 'gen2_rotator')
+
 # From test_sensor_fusion
 _FEATURE_MARGIN = 0.20  # Only take feature points from center 20% so that
                         # rotation measured has less rolling shutter effect.
