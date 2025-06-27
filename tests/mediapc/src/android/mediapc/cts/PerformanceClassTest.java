@@ -23,7 +23,9 @@ import static com.google.common.truth.Truth.assertWithMessage;
 
 import static org.junit.Assert.assertTrue;
 
+import android.content.Context;
 import android.content.pm.PackageManager;
+import android.hardware.display.DisplayManager;
 import android.media.MediaCodecInfo;
 import android.media.MediaCodecList;
 import android.media.MediaDrm;
@@ -169,16 +171,21 @@ public class PerformanceClassTest {
     }
 
     @Test
-    @CddTest(requirements={
-        "2.2.7.3/7.1.1.1/H-1-1",
-        "2.2.7.3/7.1.1.1/H-2-1",
-        "2.2.7.3/7.1.1.3/H-1-1",
-        "2.2.7.3/7.1.1.3/H-2-1",})
+    @CddTest(
+            requirements = {
+                "2.2.7.3/7.1.1.1/H-1-1",
+                "2.2.7.3/7.1.1.1/H-2-1",
+                "2.2.7.3/7.1.1.3/H-1-1",
+                "2.2.7.3/7.1.1.3/H-2-1",
+            })
     public void testMinimumResolutionAndDensity() {
-        int density =
-                Utils.getDisplayDpi(InstrumentationRegistry.getInstrumentation().getContext());
-        int longPix = Utils.DISPLAY_LONG_PIXELS;
-        int shortPix = Utils.DISPLAY_SHORT_PIXELS;
+        Context context = InstrumentationRegistry.getInstrumentation().getContext();
+        DisplayManager displayManager = context.getSystemService(DisplayManager.class);
+        int density = Utils.getDisplayDpi(context);
+        var size = Utils.getLargestDisplaySize(displayManager);
+
+        int longPix = Utils.getLongPixels(size);
+        int shortPix = Utils.getShortPixels(size);
 
         Log.i(TAG, String.format("dpi=%d size=%dx%dpix", density, longPix, shortPix));
 

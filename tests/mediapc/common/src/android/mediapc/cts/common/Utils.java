@@ -34,6 +34,7 @@ import android.os.Build;
 import android.os.SystemProperties;
 import android.util.DisplayMetrics;
 import android.util.Log;
+import android.util.Size;
 import android.view.Display;
 
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -50,8 +51,8 @@ import java.util.stream.Stream;
 public final class Utils {
 
     private static final int sDisplayDpi;
-    public static final int DISPLAY_LONG_PIXELS;
-    public static final int DISPLAY_SHORT_PIXELS;
+    private static final int sDisplayLongPixel;
+    private static final int sDisplayShortPixel;
     public static final boolean IS_HDR;
     public static final float HDR_DISPLAY_AVERAGE_LUMINANCE;
 
@@ -96,11 +97,9 @@ public final class Utils {
         if (context != null) {
             DisplayManager displayManager = context.getSystemService(DisplayManager.class);
             Display defaultDisplay = displayManager.getDisplay(Display.DEFAULT_DISPLAY);
-            Display.Mode maxResolutionDisplayMode = getMaxResolutionDisplayMode(displayManager);
-            int maxWidthPixels = maxResolutionDisplayMode.getPhysicalWidth();
-            int maxHeightPixels = maxResolutionDisplayMode.getPhysicalHeight();
-            DISPLAY_LONG_PIXELS = Math.max(maxWidthPixels, maxHeightPixels);
-            DISPLAY_SHORT_PIXELS = Math.min(maxWidthPixels, maxHeightPixels);
+            var size = getLargestDisplaySize(displayManager);
+            sDisplayLongPixel = getLongPixels(size);
+            sDisplayShortPixel = getShortPixels(size);
             sDisplayDpi = getDisplayDpi(context);
 
             IS_HDR = defaultDisplay.isHdr();
@@ -109,13 +108,31 @@ public final class Utils {
             sTotalMemoryMb = getTotalMemoryMb(context);
         } else {
             sDisplayDpi = 0;
-            DISPLAY_LONG_PIXELS = 0;
-            DISPLAY_SHORT_PIXELS = 0;
+            sDisplayLongPixel = 0;
+            sDisplayShortPixel = 0;
             sTotalMemoryMb = 0;
             IS_HDR = false;
             HDR_DISPLAY_AVERAGE_LUMINANCE = 0;
         }
         MEETS_AVC_CODEC_PRECONDITIONS = meetsAvcCodecPreconditions();
+    }
+
+    /** Get the size of the largest display. */
+    public static Size getLargestDisplaySize(DisplayManager displayManager) {
+        Display.Mode maxResolutionDisplayMode = getMaxResolutionDisplayMode(displayManager);
+        int maxWidthPixels = maxResolutionDisplayMode.getPhysicalWidth();
+        int maxHeightPixels = maxResolutionDisplayMode.getPhysicalHeight();
+        return new Size(maxWidthPixels, maxHeightPixels);
+    }
+
+    /** Get the max of width and height */
+    public static int getLongPixels(Size s) {
+        return Math.max(s.getWidth(), s.getHeight());
+    }
+
+    /** Get the min of width and height */
+    public static int getShortPixels(Size s) {
+        return Math.min(s.getWidth(), s.getHeight());
     }
 
     private static Display.Mode getMaxResolutionDisplayMode(DisplayManager displayManager) {
@@ -302,10 +319,10 @@ public final class Utils {
                 && sDisplayDpi >= DENSITY_HIGH
                 // MPC requires 1920. lowering to 1280 to report statistics on "mid tier" devices
                 // As of 2025 Q1 this is about 99% of daily active devices.
-                && DISPLAY_LONG_PIXELS >= 1280
+                && sDisplayLongPixel >= 1280
                 // MPC requires 1080. lowering to 720 to report statistics on "mid tier" devices
                 // As of 2025 Q1 this is about 99% of daily active devices.
-                && DISPLAY_SHORT_PIXELS >= 720;
+                && sDisplayShortPixel >= 720;
     }
 
     /**
