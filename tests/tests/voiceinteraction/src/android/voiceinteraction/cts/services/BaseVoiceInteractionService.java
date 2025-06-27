@@ -71,19 +71,19 @@ public abstract class BaseVoiceInteractionService extends VoiceInteractionServic
     //  keep the current name now.
     public CountDownLatch mDetectorInitializedLatch = null;
 
-    VisualQueryDetector mVisualQueryDetector = null;
-    HotwordDetector mSoftwareHotwordDetector = null;
+    volatile VisualQueryDetector mVisualQueryDetector = null;
+    volatile HotwordDetector mSoftwareHotwordDetector = null;
     // The AlwaysOnHotwordDetector created by createAlwaysOnHotwordDetector() API
-    AlwaysOnHotwordDetector mAlwaysOnHotwordDetector = null;
+    volatile AlwaysOnHotwordDetector mAlwaysOnHotwordDetector = null;
     // Throws IllegalStateException when calling createAlwaysOnHotwordDetector() API
-    private boolean mIsCreateDetectorIllegalStateExceptionThrow = false;
+    private volatile boolean mIsCreateDetectorIllegalStateExceptionThrow = false;
     // Whether the callback of the detector is running on main thread or not
-    private boolean mIsDetectorCallbackRunningOnMainThread = false;
+    private volatile boolean mIsDetectorCallbackRunningOnMainThread = false;
     // Throws SecurityException when calling createAlwaysOnHotwordDetector() API
-    private boolean mIsCreateDetectorSecurityExceptionThrow = false;
-    private Bundle mPrepareToShowSessionArgs = new Bundle();
-    private Bundle mShowSessionFailedArgs = new Bundle();
-    private int mPrepareToShowSessionFlags = -1;
+    private volatile boolean mIsCreateDetectorSecurityExceptionThrow = false;
+    private volatile Bundle mPrepareToShowSessionArgs = new Bundle();
+    private volatile Bundle mShowSessionFailedArgs = new Bundle();
+    private volatile int mPrepareToShowSessionFlags = -1;
     // the status of onHotwordDetectionServiceInitialized()
     int mInitializedStatus = STATUS_NO_CALLBACK_CALLED;
 
