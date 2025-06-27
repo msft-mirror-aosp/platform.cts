@@ -15,6 +15,7 @@
  */
 package android.mediapc.cts.common
 
+import android.content.Context
 import androidx.test.platform.app.InstrumentationRegistry
 
 /**
@@ -90,6 +91,11 @@ interface Precondition {
             return ChainedPreconditions(preconditions)
         }
 
+        /** Returns a Precondition that checks each precondition in the order given. */
+        @JvmStatic
+        fun group(name: String, vararg preconditions: Precondition): Precondition =
+            GroupedPreconditions(name, preconditions.asList())
+
         /** Creates a precondition that always passes or fails. */
         @JvmStatic
         @JvmOverloads
@@ -144,29 +150,55 @@ interface Precondition {
             return LazyPrecondition(message, minPerformanceClassLevel, fn)
         }
 
+        /**
+         *Creates a precondition that use a lazy result of the existing
+         * [Precondition.meetsPrecondition]
+         */
+        @JvmStatic
+        fun lazy(p: Precondition): Precondition {
+            return p as? LazyPrecondition ?: LazyPrecondition(p)
+        }
+
+        @JvmStatic
+        fun usingContext(
+            message: String,
+            minPerformanceClassLevel: Int,
+            fn: (Context) -> Boolean
+        ) = create(message, minPerformanceClassLevel) {
+            fn(InstrumentationRegistry.getInstrumentation().context)
+        }
+
         /** Creates a precondition that fails with the given message if the system feature is not available. */
         @JvmStatic
         @JvmOverloads
         fun requireSystemFeature(
             feature: String,
             minPerformanceClassLevel: Int = 30
-        ): Precondition {
-            return create("System feature $feature is not available", minPerformanceClassLevel) {
-                InstrumentationRegistry.getInstrumentation().context.getPackageManager()
-                    .hasSystemFeature(feature)
-            }
-        }
+        ): Precondition = usingContext(
+            "System feature $feature is not available",
+            minPerformanceClassLevel
+        ) { it.getPackageManager().hasSystemFeature(feature) }
+
+        /** Creates a precondition that fails with the given message if the system feature is available. */
+        @JvmStatic
+        @JvmOverloads
+        fun forbidSystemFeature(
+            feature: String,
+            minPerformanceClassLevel: Int = 30
+        ): Precondition = usingContext(
+            "Forbidden system feature $feature is available",
+            minPerformanceClassLevel
+        ) { it.getPackageManager().hasSystemFeature(feature) }
     }
 }
 
-private class ChainedPreconditions(val preconditions: List<Precondition> = emptyList()) :
-    Precondition {
-    constructor(vararg preconditions: Precondition) : this(flatten(preconditions.toList()))
+private abstract class PreconditionList(val preconditions: List<Precondition>) : Precondition {
     override val message: String
         get() {
             return preconditions.joinToString(" then ") { '"' + it.message + '"' }
         }
-
+    override val meetsPrecondition
+        get() = preconditions.all { it.meetsPrecondition }
     override val minPerformanceClassLevel: Int
         get() {
             if (preconditions.isEmpty()) {
@@ -174,6 +206,37 @@ private class ChainedPreconditions(val preconditions: List<Precondition> = empty
             }
             return preconditions.minOf { it.minPerformanceClassLevel }
         }
+    override val failureMessage: String?
+        get() {
+            return preconditions.firstOrNull { !it.meetsPrecondition }?.failureMessage
+        }
+    override val failurePerformanceClassLevel: Int
+        get() {
+            if (preconditions.isEmpty()) {
+                return Int.MAX_VALUE
+            }
+            return preconditions.minOf { it.minPerformanceClassLevel }
+        }
+}
+
+private class GroupedPreconditions(val name: String, preconditions: List<Precondition>) :
+    PreconditionList(preconditions) {
+    override val message: String
+        get() = "$name: {${super.message}}"
+
+    override val failureMessage: String?
+        get() {
+            if (meetsPrecondition) {
+                return null
+            }
+            return "$name: ${super.failureMessage}"
+        }
+}
+
+private class ChainedPreconditions(preconditions: List<Precondition> = emptyList()) :
+    PreconditionList(flatten(preconditions)) {
+    constructor(vararg preconditions: Precondition) : this(preconditions.toList())
+
     override fun then(next: Precondition): Precondition {
         val m = preconditions.toMutableList()
         if (next is ChainedPreconditions) {
@@ -183,20 +246,6 @@ private class ChainedPreconditions(val preconditions: List<Precondition> = empty
         }
         return ChainedPreconditions(m)
     }
-
-    override val meetsPrecondition
-        get() = preconditions.all { it.meetsPrecondition }
-
-    override val failureMessage
-        get() = preconditions.firstOrNull { !it.meetsPrecondition }?.failureMessage
-
-    override val failurePerformanceClassLevel: Int
-        get() {
-            if (meetsPrecondition) {
-                return Int.MAX_VALUE
-            }
-           return preconditions.first { !it.meetsPrecondition }.minPerformanceClassLevel
-        }
 }
 
 private fun flatten(preconditions: List<Precondition>): List<Precondition> {
@@ -239,7 +288,11 @@ private class LazyPrecondition(
         minPerformanceClassLevel: Int,
         fn: () -> Boolean
     ) : this(message, lazy { fn() }, minPerformanceClassLevel)
-
+    constructor(precondition: Precondition) : this(
+        message = precondition.message,
+        minPerformanceClassLevel = precondition.minPerformanceClassLevel,
+        fn = precondition::meetsPrecondition
+    )
     override val meetsPrecondition: Boolean
         get() {
             return lazyMeets.value
