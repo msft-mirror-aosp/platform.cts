@@ -19,6 +19,15 @@
           package="com.android.cts.packagemanager.stats.device">
     <application>
         <uses-library android:name="android.test.runner" />
+        <activity android:name="com.android.cts.packagemanager.stats.device.FakeGroupTestActivity"
+                  android:enabled="false"
+                  android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+                <data android:mimeGroup="group_test"/>
+            </intent-filter>
+        </activity>
     </application>
     <queries>
         <package android:name="com.android.server.cts.device.statsdatom" />
