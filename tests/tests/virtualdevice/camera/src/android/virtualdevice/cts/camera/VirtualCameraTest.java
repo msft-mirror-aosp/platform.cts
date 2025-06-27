@@ -26,6 +26,7 @@ import static android.companion.virtual.camera.VirtualCameraConfig.SENSOR_ORIENT
 import static android.content.Context.DEVICE_ID_DEFAULT;
 import static android.graphics.ImageFormat.RGB_565;
 import static android.graphics.ImageFormat.YUV_420_888;
+import static android.hardware.camera2.CameraMetadata.CONTROL_AE_MODE_ON;
 import static android.hardware.camera2.CameraMetadata.LENS_FACING_BACK;
 import static android.hardware.camera2.CameraMetadata.LENS_FACING_EXTERNAL;
 import static android.hardware.camera2.CameraMetadata.LENS_FACING_FRONT;
@@ -41,7 +42,9 @@ import static androidx.test.core.app.ApplicationProvider.getApplicationContext;
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.util.concurrent.MoreExecutors.directExecutor;
 
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.AdditionalMatchers.not;
 import static org.mockito.AdditionalMatchers.or;
 import static org.mockito.ArgumentMatchers.any;
@@ -59,6 +62,7 @@ import android.companion.virtual.camera.CameraCharacteristicsBuilder;
 import android.companion.virtual.camera.VirtualCamera;
 import android.companion.virtual.camera.VirtualCameraCallback;
 import android.companion.virtual.camera.VirtualCameraConfig;
+import android.companion.virtual.camera.VirtualCameraSessionConfig;
 import android.companion.virtualdevice.flags.Flags;
 import android.content.Context;
 import android.graphics.SurfaceTexture;
@@ -68,6 +72,7 @@ import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CameraManager;
+import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.params.OutputConfiguration;
 import android.hardware.camera2.params.SessionConfiguration;
 import android.hardware.camera2.params.StreamConfigurationMap;
@@ -76,6 +81,7 @@ import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.util.ArrayMap;
+import android.util.Range;
 import android.util.Size;
 import android.view.Surface;
 import android.virtualdevice.cts.common.VirtualDeviceRule;
@@ -112,9 +118,11 @@ public class VirtualCameraTest {
     private static final int CAMERA_HEIGHT = 480;
     private static final int CAMERA_FORMAT = YUV_420_888;
     private static final int CAMERA_MAX_FPS = 30;
+    private static final long CAMERA_MIN_FRAME_DURATION = 1_000_000_000L;
     private static final int CAMERA_SENSOR_ORIENTATION = SENSOR_ORIENTATION_0;
     private static final int CAMERA_LENS_FACING = LENS_FACING_FRONT;
     private static final int IMAGE_READER_MAX_IMAGES = 2;
+    private static final Range<Integer> CAMERA_FPS_RANGE = new Range<>(10, 20);
 
     @Rule
     public VirtualDeviceRule mRule =
@@ -140,6 +148,8 @@ public class VirtualCameraTest {
 
     @Captor
     private ArgumentCaptor<CameraCaptureSession> mCameraCaptureSessionCaptor;
+
+    @Captor private ArgumentCaptor<VirtualCameraSessionConfig> mVirtualCameraSessionConfigCaptor;
 
     @Captor
     private ArgumentCaptor<Surface> mSurfaceCaptor;
@@ -505,16 +515,7 @@ public class VirtualCameraTest {
         setupVirtualDeviceCameraManager();
         createVirtualCamera(lensFacing);
 
-        String cameraId = "";
-        if (lensFacing == LENS_FACING_BACK) {
-            cameraId = BACK_CAMERA_ID;
-        } else if (lensFacing == LENS_FACING_FRONT) {
-            cameraId = FRONT_CAMERA_ID;
-        } else {
-            // get the mapped cameraId from the list of cameras in the CameraManager
-            // there should be only one
-            cameraId = mCameraManager.getCameraIdList()[0];
-        }
+        String cameraId = getCameraIdForLensFacing(lensFacing);
 
         verifyCameraLensFacing(cameraId, lensFacing);
     }
@@ -808,23 +809,16 @@ public class VirtualCameraTest {
         verify(otherCallback, never()).onOpenCamera();
     }
 
+    @Parameters(method = "getAllLensFacingDirections")
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_CAMERA_METADATA)
-    public void createVirtualCamera_withCameraCharacteristics_succeeds() throws Exception {
+    public void createVirtualCamera_withCameraCharacteristics_succeeds(int lensFacing)
+            throws Exception {
         setupVirtualDeviceCameraManager();
 
-        CameraCharacteristics characteristics = new CameraCharacteristicsBuilder()
-                .set(CameraCharacteristics.LENS_FACING, LENS_FACING_BACK)
-                .set(CameraCharacteristics.SENSOR_ORIENTATION, SENSOR_ORIENTATION_180)
-                .build();
+        createVirtualCameraWithCharacteristics(createDefaultCameraCharacteristics(lensFacing));
 
-        createVirtualCameraWithCharacteristics(characteristics);
-        mCameraManager.openCamera(BACK_CAMERA_ID, mExecutor, mCameraStateCallback);
-        verify(mCameraStateCallback, timeout(TIMEOUT_MILLIS)).onOpened(
-                mCameraDeviceCaptor.capture());
-
-        // TODO: b371167033 - expand test
-        // verifyConfigureSessionForSupportedFormatSucceeds(BACK_CAMERA_ID);
+        verifyConfigureSessionForSupportedFormatSucceeds(getCameraIdForLensFacing(lensFacing));
     }
 
     @Test
@@ -843,6 +837,129 @@ public class VirtualCameraTest {
         mVirtualDevice.createVirtualCamera(config);
 
         verifyConfigureSessionForSupportedFormatSucceeds(BACK_CAMERA_ID);
+    }
+
+    @Parameters(method = "getAllLensFacingDirections")
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_CAMERA_METADATA)
+    public void createCharacteristicsVirtualCamera_withSessionParameters_succeeds(int lensFacing)
+            throws Exception {
+        List<CaptureRequest.Key<?>> availableSessionKeys =
+                List.of(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE);
+
+        setupVirtualDeviceCameraManager();
+
+        CameraCharacteristics characteristics =
+                new CameraCharacteristicsBuilder(createDefaultCameraCharacteristics(lensFacing))
+                        .setAvailableSessionKeys(availableSessionKeys)
+                        .build();
+
+        createVirtualCameraWithCharacteristics(characteristics);
+
+        mCameraManager.openCamera(
+                getCameraIdForLensFacing(lensFacing), mExecutor, mCameraStateCallback);
+        verify(mCameraStateCallback, timeout(TIMEOUT_MILLIS))
+                .onOpened(mCameraDeviceCaptor.capture());
+
+        CameraDevice cameraDevice = mCameraDeviceCaptor.getValue();
+        CameraCharacteristics cameraCharacteristics =
+                mCameraManager.getCameraCharacteristics(cameraDevice.getId());
+
+        assertTrue(
+                cameraCharacteristics.getAvailableSessionKeys() != null
+                        && cameraCharacteristics
+                                .getAvailableSessionKeys()
+                                .containsAll(availableSessionKeys));
+
+        try (ImageReader reader = createImageReader(YUV_420_888)) {
+            SessionConfiguration requestedSessionConfiguration = createSessionConfig(reader);
+
+            CaptureRequest.Builder captureRequestBuilder =
+                    cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
+            captureRequestBuilder.set(CaptureRequest.CONTROL_AE_MODE, CONTROL_AE_MODE_ON);
+            captureRequestBuilder.set(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE, CAMERA_FPS_RANGE);
+
+            CaptureRequest captureRequest = captureRequestBuilder.build();
+            requestedSessionConfiguration.setSessionParameters(captureRequest);
+
+            cameraDevice.createCaptureSession(requestedSessionConfiguration);
+
+            verify(mVirtualCameraCallback, timeout(TIMEOUT_MILLIS))
+                    .onConfigureSession(mVirtualCameraSessionConfigCaptor.capture(), any());
+
+            CaptureRequest sessionParameters =
+                    mVirtualCameraSessionConfigCaptor.getValue().getSessionParameters();
+            assertTrue(sessionParameters.getKeys().containsAll(availableSessionKeys));
+
+            verify(mSessionStateCallback, timeout(TIMEOUT_MILLIS))
+                    .onConfigured(mCameraCaptureSessionCaptor.capture());
+            CameraCaptureSession cameraCaptureSession = mCameraCaptureSessionCaptor.getValue();
+
+            cameraCaptureSession.close();
+        }
+        cameraDevice.close();
+
+        verify(mVirtualCameraCallback, timeout(TIMEOUT_MILLIS)).onStreamClosed(anyInt());
+    }
+
+    @Parameters(method = "getAllLensFacingDirections")
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_CAMERA_METADATA)
+    public void createDefaultVirtualCamera_withSessionParameters_succeeds(int lensFacing)
+            throws Exception {
+        setupVirtualDeviceCameraManager();
+
+        VirtualCameraConfig config =
+                new VirtualCameraConfig.Builder("SessionMetadataCamera")
+                        .addStreamConfig(CAMERA_WIDTH, CAMERA_HEIGHT, CAMERA_FORMAT, CAMERA_MAX_FPS)
+                        .setVirtualCameraCallback(mExecutor, mVirtualCameraCallback)
+                        .setSensorOrientation(SENSOR_ORIENTATION_180)
+                        .setLensFacing(lensFacing)
+                        .build();
+
+        mVirtualDevice.createVirtualCamera(config);
+        mCameraManager.openCamera(
+                getCameraIdForLensFacing(lensFacing), mExecutor, mCameraStateCallback);
+        verify(mCameraStateCallback, timeout(TIMEOUT_MILLIS))
+                .onOpened(mCameraDeviceCaptor.capture());
+
+        CameraDevice cameraDevice = mCameraDeviceCaptor.getValue();
+        CameraCharacteristics cameraCharacteristics =
+                mCameraManager.getCameraCharacteristics(cameraDevice.getId());
+
+        // Available session configuration keys are not set by default
+        assertNull(cameraCharacteristics.getAvailableSessionKeys());
+
+        try (ImageReader reader = createImageReader(YUV_420_888)) {
+            SessionConfiguration requestedSessionConfiguration = createSessionConfig(reader);
+
+            CaptureRequest.Builder captureRequestBuilder =
+                    cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
+            captureRequestBuilder.set(CaptureRequest.CONTROL_AE_MODE, CONTROL_AE_MODE_ON);
+            captureRequestBuilder.set(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE, CAMERA_FPS_RANGE);
+
+            CaptureRequest captureRequest = captureRequestBuilder.build();
+            requestedSessionConfiguration.setSessionParameters(captureRequest);
+
+            cameraDevice.createCaptureSession(requestedSessionConfiguration);
+
+            verify(mVirtualCameraCallback, timeout(TIMEOUT_MILLIS))
+                    .onConfigureSession(mVirtualCameraSessionConfigCaptor.capture(), any());
+
+            // even if set, the session params are filtered out
+            CaptureRequest sessionParameters =
+                    mVirtualCameraSessionConfigCaptor.getValue().getSessionParameters();
+            assertTrue(sessionParameters == null || sessionParameters.getKeys().isEmpty());
+
+            verify(mSessionStateCallback, timeout(TIMEOUT_MILLIS))
+                    .onConfigured(mCameraCaptureSessionCaptor.capture());
+            CameraCaptureSession cameraCaptureSession = mCameraCaptureSessionCaptor.getValue();
+
+            cameraCaptureSession.close();
+        }
+        cameraDevice.close();
+
+        verify(mVirtualCameraCallback, timeout(TIMEOUT_MILLIS)).onStreamClosed(anyInt());
     }
 
     private VirtualCamera createFrontVirtualCamera() {
@@ -973,6 +1090,27 @@ public class VirtualCameraTest {
         OutputConfiguration outputConfiguration = new OutputConfiguration(reader.getSurface());
         return new SessionConfiguration(SESSION_REGULAR,
                 List.of(outputConfiguration), mExecutor, mSessionStateCallback);
+    }
+
+    private CameraCharacteristics createDefaultCameraCharacteristics(int lensFacing) {
+        return new CameraCharacteristicsBuilder()
+                .set(CameraCharacteristics.LENS_FACING, lensFacing)
+                .build();
+    }
+
+    private String getCameraIdForLensFacing(int lensFacing) throws Exception {
+        String cameraId = "";
+        if (lensFacing == LENS_FACING_BACK) {
+            cameraId = BACK_CAMERA_ID;
+        } else if (lensFacing == LENS_FACING_FRONT) {
+            cameraId = FRONT_CAMERA_ID;
+        } else {
+            // get the mapped cameraId from the list of cameras in the CameraManager
+            // there should be only one
+            cameraId = mCameraManager.getCameraIdList()[0];
+        }
+
+        return cameraId;
     }
 
     private static ImageReader createImageReader(int pixelFormat) {

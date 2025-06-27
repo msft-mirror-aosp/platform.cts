@@ -47,6 +47,8 @@ import android.companion.virtual.camera.VirtualCameraCallback;
 import android.companion.virtual.camera.VirtualCameraConfig;
 import android.companion.virtualdevice.flags.Flags;
 import android.hardware.camera2.CameraCharacteristics;
+import android.hardware.camera2.CaptureRequest;
+import android.hardware.camera2.CaptureResult;
 import android.os.Parcel;
 import android.os.ServiceSpecificException;
 import android.platform.test.annotations.AppModeFull;
@@ -65,6 +67,7 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
+import java.util.List;
 import java.util.concurrent.Executor;
 
 @RunWith(AndroidJUnit4.class)
@@ -84,6 +87,18 @@ public class VirtualCameraConfigTest {
     private static final int CAMERA_LENS_FACING_CHARACTERISTIC = LENS_FACING_BACK;
     private static final int[] CAMERA_CONTROL_AE_MODES_CHARACTERISTIC = {CONTROL_AE_MODE_ON};
     private static final Float CAMERA_MAX_ZOOM_CHARACTERISTIC = 10.5f;
+    private static final List<CameraCharacteristics.Key<?>> CAMERA_AVAILABLE_CHARACTERISTICS_KEYS =
+            List.of(CameraCharacteristics.CONTROL_AE_AVAILABLE_MODES,
+                    CameraCharacteristics.CONTROL_AF_AVAILABLE_MODES,
+                    CameraCharacteristics.LENS_FACING, CameraCharacteristics.SENSOR_ORIENTATION);
+    private static final List<CaptureRequest.Key<?>> CAMERA_AVAILABLE_CAPTURE_REQUEST_KEYS =
+            List.of(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AF_MODE);
+    private static final List<CaptureResult.Key<?>> CAMERA_AVAILABLE_CAPTURE_RESULT_KEYS =
+            List.of(CaptureResult.CONTROL_AE_LOCK, CaptureResult.CONTROL_AE_STATE);
+    private static final List<CaptureRequest.Key<?>> CAMERA_AVAILABLE_SESSION_KEYS =
+            List.of(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE);
+    private static final List<CaptureRequest.Key<?>> CAMERA_UPDATED_AVAILABLE_CAPTURE_REQUEST_KEYS =
+            List.of(CaptureRequest.CONTROL_SCENE_MODE);
     private static final int CAMERA_INVALID_LENS_FACING = 5;
     private static final boolean CAMERA_PER_FRAME_METADATA_ENABLED = true;
 
@@ -339,6 +354,12 @@ public class VirtualCameraConfigTest {
                         CAMERA_CONTROL_AE_MODES_CHARACTERISTIC)
                 .set(CameraCharacteristics.SCALER_AVAILABLE_MAX_DIGITAL_ZOOM,
                         CAMERA_MAX_ZOOM_CHARACTERISTIC)
+                .set(CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL,
+                        CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL_EXTERNAL)
+                .setAvailableCharacteristicsKeys(CAMERA_AVAILABLE_CHARACTERISTICS_KEYS)
+                .setAvailableCaptureRequestKeys(CAMERA_AVAILABLE_CAPTURE_REQUEST_KEYS)
+                .setAvailableCaptureResultKeys(CAMERA_AVAILABLE_CAPTURE_RESULT_KEYS)
+                .setAvailableSessionKeys(CAMERA_AVAILABLE_SESSION_KEYS)
                 .build();
 
         assertThat(characteristics.get(CameraCharacteristics.LENS_FACING))
@@ -351,6 +372,14 @@ public class VirtualCameraConfigTest {
                 .isEqualTo(CAMERA_CONTROL_AE_MODES_CHARACTERISTIC);
         assertThat(characteristics.get(CameraCharacteristics.SCALER_AVAILABLE_MAX_DIGITAL_ZOOM))
                 .isEqualTo(CAMERA_MAX_ZOOM_CHARACTERISTIC);
+        assertThat(characteristics.get(CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL))
+                .isEqualTo(CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL_EXTERNAL);
+        assertThat(characteristics.getAvailableCaptureRequestKeys())
+                .containsAtLeastElementsIn(CAMERA_AVAILABLE_CAPTURE_REQUEST_KEYS);
+        assertThat(characteristics.getAvailableCaptureResultKeys())
+                .containsAtLeastElementsIn(CAMERA_AVAILABLE_CAPTURE_RESULT_KEYS);
+        assertThat(characteristics.getAvailableSessionKeys())
+                .containsAtLeastElementsIn(CAMERA_AVAILABLE_SESSION_KEYS);
     }
 
     @Test
@@ -360,6 +389,9 @@ public class VirtualCameraConfigTest {
                 .set(CameraCharacteristics.LENS_FACING, CAMERA_LENS_FACING_CHARACTERISTIC)
                 .set(CameraCharacteristics.SENSOR_ORIENTATION,
                         CAMERA_SENSOR_ORIENTATION_CHARACTERISTIC)
+                .setAvailableCaptureRequestKeys(CAMERA_AVAILABLE_CAPTURE_REQUEST_KEYS)
+                .setAvailableCaptureResultKeys(CAMERA_AVAILABLE_CAPTURE_RESULT_KEYS)
+                .setAvailableSessionKeys(CAMERA_AVAILABLE_SESSION_KEYS)
                 .build();
 
         VirtualCameraConfig original = new VirtualCameraConfig.Builder(CAMERA_NAME)
@@ -385,6 +417,12 @@ public class VirtualCameraConfigTest {
         assertThat(recreated.getCameraCharacteristics()
                 .get(CameraCharacteristics.SENSOR_ORIENTATION))
                 .isEqualTo(CAMERA_SENSOR_ORIENTATION_CHARACTERISTIC);
+        assertThat(recreated.getCameraCharacteristics().getAvailableCaptureRequestKeys())
+                .containsAtLeastElementsIn(CAMERA_AVAILABLE_CAPTURE_REQUEST_KEYS);
+        assertThat(recreated.getCameraCharacteristics().getAvailableCaptureResultKeys())
+                .containsAtLeastElementsIn(CAMERA_AVAILABLE_CAPTURE_RESULT_KEYS);
+        assertThat(recreated.getCameraCharacteristics().getAvailableSessionKeys())
+                .containsAtLeastElementsIn(CAMERA_AVAILABLE_SESSION_KEYS);
     }
 
     @Test
@@ -447,14 +485,13 @@ public class VirtualCameraConfigTest {
         };
         Range<Long> expectedExposureRange = new Range<>(100L, 64000L);
 
-        CameraCharacteristicsBuilder
-                characteristicsBuilder = new CameraCharacteristicsBuilder();
-        characteristicsBuilder.set(CameraCharacteristics.SENSOR_INFO_PIXEL_ARRAY_SIZE,
-                expectedPixelArraySize);
-        characteristicsBuilder.set(CameraCharacteristics.CONTROL_AF_AVAILABLE_MODES,
-                expectedAfModes);
-        characteristicsBuilder.set(CameraCharacteristics.CONTROL_AE_AVAILABLE_TARGET_FPS_RANGES,
-                expectedFpsRanges);
+        CameraCharacteristicsBuilder characteristicsBuilder = new CameraCharacteristicsBuilder()
+            .set(CameraCharacteristics.SENSOR_INFO_PIXEL_ARRAY_SIZE, expectedPixelArraySize)
+            .set(CameraCharacteristics.CONTROL_AF_AVAILABLE_MODES, expectedAfModes)
+            .set(CameraCharacteristics.CONTROL_AE_AVAILABLE_TARGET_FPS_RANGES, expectedFpsRanges)
+            .setAvailableCaptureRequestKeys(CAMERA_AVAILABLE_CAPTURE_REQUEST_KEYS)
+            .setAvailableCaptureResultKeys(CAMERA_AVAILABLE_CAPTURE_RESULT_KEYS)
+            .setAvailableSessionKeys(CAMERA_AVAILABLE_SESSION_KEYS);
 
         CameraCharacteristics characteristics1 = characteristicsBuilder.build();
         assertEquals(expectedPixelArraySize,
@@ -463,12 +500,21 @@ public class VirtualCameraConfigTest {
                 characteristics1.get(CameraCharacteristics.CONTROL_AF_AVAILABLE_MODES));
         assertArrayEquals(expectedFpsRanges,
                 characteristics1.get(CameraCharacteristics.CONTROL_AE_AVAILABLE_TARGET_FPS_RANGES));
+        assertThat(characteristics1.getAvailableCaptureRequestKeys())
+                .containsAtLeastElementsIn(CAMERA_AVAILABLE_CAPTURE_REQUEST_KEYS);
+        assertThat(characteristics1.getAvailableCaptureResultKeys())
+                .containsAtLeastElementsIn(CAMERA_AVAILABLE_CAPTURE_RESULT_KEYS);
+        assertThat(characteristics1.getAvailableSessionKeys())
+                .containsAtLeastElementsIn(CAMERA_AVAILABLE_SESSION_KEYS);
 
         CameraCharacteristicsBuilder secondCharacteristicsBuilder =
                 new CameraCharacteristicsBuilder(characteristics1);
         secondCharacteristicsBuilder.set(CameraCharacteristics.SENSOR_INFO_PIXEL_ARRAY_SIZE, null);
         secondCharacteristicsBuilder.set(CameraCharacteristics.SENSOR_INFO_EXPOSURE_TIME_RANGE,
                 expectedExposureRange);
+        secondCharacteristicsBuilder.setAvailableCaptureRequestKeys(
+                CAMERA_UPDATED_AVAILABLE_CAPTURE_REQUEST_KEYS);
+        secondCharacteristicsBuilder.setAvailableSessionKeys(null);
 
         CameraCharacteristics characteristics2 = secondCharacteristicsBuilder.build();
         assertNull(characteristics2.get(CameraCharacteristics.SENSOR_INFO_PIXEL_ARRAY_SIZE));
@@ -478,5 +524,12 @@ public class VirtualCameraConfigTest {
                 characteristics2.get(CameraCharacteristics.CONTROL_AE_AVAILABLE_TARGET_FPS_RANGES));
         assertEquals(expectedExposureRange,
                 characteristics2.get(CameraCharacteristics.SENSOR_INFO_EXPOSURE_TIME_RANGE));
+        assertThat(characteristics2.getAvailableCaptureRequestKeys())
+                .containsAtLeastElementsIn(CAMERA_UPDATED_AVAILABLE_CAPTURE_REQUEST_KEYS);
+        assertThat(characteristics2.getAvailableCaptureRequestKeys())
+                .containsNoneIn(CAMERA_AVAILABLE_CAPTURE_REQUEST_KEYS);
+        assertThat(characteristics2.getAvailableCaptureResultKeys())
+                .containsAtLeastElementsIn(CAMERA_AVAILABLE_CAPTURE_RESULT_KEYS);
+        assertNull(characteristics2.getAvailableSessionKeys());
     }
 }
