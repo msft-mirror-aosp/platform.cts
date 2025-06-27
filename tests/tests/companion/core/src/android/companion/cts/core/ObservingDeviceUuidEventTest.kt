@@ -23,7 +23,6 @@ import android.companion.DevicePresenceEvent.EVENT_BLE_APPEARED
 import android.companion.DevicePresenceEvent.EVENT_BLE_DISAPPEARED
 import android.companion.DevicePresenceEvent.EVENT_BT_CONNECTED
 import android.companion.DevicePresenceEvent.EVENT_BT_DISCONNECTED
-import android.companion.Flags
 import android.companion.ObservingDevicePresenceRequest
 import android.companion.cts.common.ASSOCIATION_ID
 import android.companion.cts.common.MAC_ADDRESS_A
@@ -35,13 +34,10 @@ import android.companion.cts.common.assertValidCompanionDeviceServicesBind
 import android.companion.cts.common.assertValidCompanionDeviceServicesRemainBound
 import android.companion.cts.common.assertValidCompanionDeviceServicesUnbind
 import android.platform.test.annotations.AppModeFull
-import android.platform.test.annotations.RequiresFlagsEnabled
-import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
-import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -56,11 +52,7 @@ import org.junit.runner.RunWith
  */
 @AppModeFull(reason = "CompanionDeviceManager APIs are not available to the instant apps.")
 @RunWith(AndroidJUnit4::class)
-@RequiresFlagsEnabled(Flags.FLAG_DEVICE_PRESENCE)
 class ObservingDeviceUuidEventTest : CoreTestBase() {
-    @get:Rule
-    val checkFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
-
     private val request_A = ObservingDevicePresenceRequest.Builder().setUuid(UUID_A).build()
 
     override fun tearDown() {

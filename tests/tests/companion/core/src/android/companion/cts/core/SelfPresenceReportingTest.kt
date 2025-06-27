@@ -19,7 +19,6 @@ package android.companion.cts.core
 import android.Manifest.permission.REQUEST_COMPANION_SELF_MANAGED
 import android.companion.DevicePresenceEvent.EVENT_SELF_MANAGED_APPEARED
 import android.companion.DevicePresenceEvent.EVENT_SELF_MANAGED_DISAPPEARED
-import android.companion.Flags
 import android.companion.cts.common.DEVICE_DISPLAY_NAME_A
 import android.companion.cts.common.DEVICE_DISPLAY_NAME_B
 import android.companion.cts.common.MAC_ADDRESS_A
@@ -51,7 +50,6 @@ import org.junit.runner.RunWith
 @AppModeFull(reason = "CompanionDeviceManager APIs are not available to the instant apps.")
 @RunWith(AndroidJUnit4::class)
 class SelfPresenceReportingTest : CoreTestBase() {
-
     @Test
     fun test_selfReporting_singleDevice_multipleServices() =
             withShellPermissionIdentity(REQUEST_COMPANION_SELF_MANAGED) {
@@ -70,12 +68,10 @@ class SelfPresenceReportingTest : CoreTestBase() {
 
         // Assert both valid CompanionDeviceServices stay bound
         assertValidCompanionDeviceServicesRemainBound()
-        if (Flags.devicePresence()) {
-            assertDevicePresenceEvent(
-                EVENT_SELF_MANAGED_APPEARED,
-                eventGetter = { PrimaryCompanionService.getCurrentEvent() }
+        assertDevicePresenceEvent(
+            EVENT_SELF_MANAGED_APPEARED,
+            eventGetter = { PrimaryCompanionService.getCurrentEvent() }
             )
-        }
 
         withShellPermissionIdentity(REQUEST_COMPANION_SELF_MANAGED) {
             cdm.notifyDeviceDisappeared(associationId)
@@ -83,12 +79,11 @@ class SelfPresenceReportingTest : CoreTestBase() {
 
         // Assert only the primary CompanionDeviceService is notified of device disappearance
         assertOnlyPrimaryCompanionDeviceServiceNotified(associationId, appeared = false)
-        if (Flags.devicePresence()) {
-            assertDevicePresenceEvent(
-                EVENT_SELF_MANAGED_DISAPPEARED,
-                eventGetter = { PrimaryCompanionService.getCurrentEvent() }
+        assertDevicePresenceEvent(
+            EVENT_SELF_MANAGED_DISAPPEARED,
+            eventGetter = { PrimaryCompanionService.getCurrentEvent() }
             )
-        }
+
         // Assert both services are unbound now
         assertValidCompanionDeviceServicesUnbind()
     }

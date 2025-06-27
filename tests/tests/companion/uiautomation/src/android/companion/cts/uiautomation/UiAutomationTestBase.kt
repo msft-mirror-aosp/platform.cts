@@ -196,28 +196,16 @@ open class UiAutomationTestBase(
         val expectedError = if (userRejected) REASON_USER_REJECTED else REASON_CANCELED
         val expectedResultCode = if (userRejected) RESULT_USER_REJECTED else RESULT_CANCELED
 
-        if (Flags.associationFailureCode()) {
-            // Check callback invocations: there should have been exactly 2 invocation of the
-            // onFailure(CharSequence) and onFailure(Int) method.
-            callback.assertInvokedByActions (minOccurrences = 2) {
-                cancelAction()
-            }
+        // Check callback invocations: there should have been exactly 2 invocation of the
+        // onFailure(CharSequence) and onFailure(Int) method.
+        callback.assertInvokedByActions (minOccurrences = 2) {
+            cancelAction()
+        }
 
-            assertTrue {
-                callback.invocations.contains(OnFailure(expectedError)) &&
-                        callback.invocations.contains(
-                            OnFailureCode(expectedResultCode, expectedError))
-            }
-        } else {
-            // Check callback invocations: there should have been exactly 1 invocation of the
-            // onFailure() method.
-            callback.assertInvokedByActions {
-                cancelAction()
-            }
-            assertContentEquals(
-                actual = callback.invocations,
-                expected = listOf(OnFailure(expectedError))
-            )
+        assertTrue {
+            callback.invocations.contains(OnFailure(expectedError)) &&
+                    callback.invocations.contains(
+                        OnFailureCode(expectedResultCode, expectedError))
         }
 
         // Wait until the Confirmation UI goes away.
