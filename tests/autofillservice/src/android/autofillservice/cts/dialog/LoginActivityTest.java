@@ -48,6 +48,7 @@ import android.autofillservice.cts.commontests.AutoFillServiceTestCase;
 import android.autofillservice.cts.testcore.CannedFillResponse;
 import android.autofillservice.cts.testcore.CannedFillResponse.CannedDataset;
 import android.autofillservice.cts.testcore.Helper;
+import android.autofillservice.cts.testcore.Helper.AutofillCriticalInternal;
 import android.autofillservice.cts.testcore.IdMode;
 import android.autofillservice.cts.testcore.InstrumentedAutoFillService.FillRequest;
 import android.autofillservice.cts.testcore.Repeat;
@@ -360,6 +361,7 @@ public class LoginActivityTest extends AutoFillServiceTestCase.ManualActivityLau
     }
 
     @RequiresFlagsEnabled("android.service.autofill.improve_fill_dialog_aconfig")
+    @AutofillCriticalInternal
     @Test
     public void testShowFillDialog_v2() throws Exception {
         // TODO(b/420943436): Skip this test in Automotive with multi-window until b/420943436 is
@@ -1063,6 +1065,7 @@ public class LoginActivityTest extends AutoFillServiceTestCase.ManualActivityLau
     }
 
     @RequiresFlagsEnabled("android.service.autofill.improve_fill_dialog_aconfig")
+    @AutofillCriticalInternal
     @Test
     public void testCancelFillDialog_showDropdown_v2() throws Exception {
         // TODO(b/420943436): Skip this test in Automotive with multi-window until b/420943436 is
