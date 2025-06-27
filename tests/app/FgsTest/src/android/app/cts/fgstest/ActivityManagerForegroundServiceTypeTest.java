@@ -23,7 +23,6 @@ import static android.app.fgstesthelper.LocalForegroundServiceBase.RESULT_SECURI
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeTrue;
 
 import android.app.ActivityManager;
 import android.app.AppOpsManager;
@@ -257,7 +256,6 @@ public final class ActivityManagerForegroundServiceTypeTest {
     @ApiTest(apis = {"android.content.pm.ServiceInfo#FOREGROUND_SERVICE_TYPE_MEDIA_PROCESSING"})
     @Test
     public void testForegroundServiceTypeMediaProcessingPermission() throws Exception {
-        assumeTrue(android.content.pm.Flags.introduceMediaProcessingType());
         testPermissionEnforcementCommon(ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROCESSING);
     }
 
