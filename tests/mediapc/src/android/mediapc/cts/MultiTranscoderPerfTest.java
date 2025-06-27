@@ -25,6 +25,8 @@ import static org.junit.Assert.assertTrue;
 import android.media.MediaFormat;
 import android.mediapc.cts.common.CodecMetrics;
 import android.mediapc.cts.common.PerformanceClassEvaluator;
+import android.mediapc.cts.common.PerformanceClassTestRule;
+import android.mediapc.cts.common.Preconditions;
 import android.mediapc.cts.common.Requirements;
 import android.mediapc.cts.common.Requirements.ConcurrentHDRTranscodingSessionsRequirement;
 import android.mediapc.cts.common.Requirements.ConcurrentVideoTranscodingSessionsRequirement;
@@ -41,7 +43,6 @@ import com.android.compatibility.common.util.CddTest;
 import org.junit.Assume;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TestName;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
@@ -68,7 +69,11 @@ public class MultiTranscoderPerfTest extends MultiCodecPerfTestBase {
     private final Pair<String, String> mDecoderPair;
     private final Pair<String, String> mEncoderPair;
 
-    @Rule
+    @Rule(order = 1)
+    public final PerformanceClassTestRule pcRule =
+            PerformanceClassTestRule.with(Preconditions.BASELINE);
+
+    @Rule(order = 2)
     public ActivityTestRule<TestActivity> mActivityRule =
             new ActivityTestRule<>(TestActivity.class);
 
@@ -78,9 +83,6 @@ public class MultiTranscoderPerfTest extends MultiCodecPerfTestBase {
         mDecoderPair = decoderPair;
         mEncoderPair = encoderPair;
     }
-
-    @Rule
-    public final TestName mTestName = new TestName();
 
     // Parameters {0}_{1}_{2} -- Pair(MediaType DecoderName)_Pair(MediaType EncoderName)_isAsync
     @Parameterized.Parameters(name = "{index}_{0}_{1}_{2}")
@@ -262,7 +264,7 @@ public class MultiTranscoderPerfTest extends MultiCodecPerfTestBase {
             achievedFrameRate = 0;
         }
 
-        PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
+        PerformanceClassEvaluator pce = pcRule.getPerformanceClassEvaluator();
         VideoTranscodingInstancesRequirement r5_1__H_1_5;
         ConcurrentVideoTranscodingSessionsRequirement r5_1__H_1_6;
         ConcurrentHDRTranscodingSessionsRequirement r5_1__H_1_19;
@@ -306,7 +308,5 @@ public class MultiTranscoderPerfTest extends MultiCodecPerfTestBase {
                 r5_1__H_1_6.setFrameDropsPerSec(frameDropsPerSec);
             }
         }
-
-        pce.submitAndCheck();
     }
 }

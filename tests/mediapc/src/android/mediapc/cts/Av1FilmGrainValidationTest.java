@@ -16,12 +16,14 @@
 
 package android.mediapc.cts;
 
-import static android.mediapc.cts.CodecTestBase.selectHardwareCodecs;
 import static android.mediapc.cts.CodecTestBase.PER_TEST_TIMEOUT_SMALL_TEST_MS;
+import static android.mediapc.cts.CodecTestBase.selectHardwareCodecs;
 
 import android.media.MediaFormat;
 import android.mediapc.cts.Av1FilmGrainValidationTestBase.FrameMetadata;
 import android.mediapc.cts.common.PerformanceClassEvaluator;
+import android.mediapc.cts.common.PerformanceClassTestRule;
+import android.mediapc.cts.common.Preconditions;
 import android.mediapc.cts.common.Requirements;
 import android.util.Log;
 
@@ -31,7 +33,6 @@ import com.android.compatibility.common.util.CddTest;
 
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TestName;
 
 import java.util.ArrayList;
 import java.util.Map;
@@ -53,7 +54,8 @@ public class Av1FilmGrainValidationTest {
     private static final double TOLERANCE = 0.05;
 
     @Rule
-    public final TestName mTestName = new TestName();
+    public final PerformanceClassTestRule pcRule =
+            PerformanceClassTestRule.with(Preconditions.EMPTY);
 
     /**
      * Check description of class {@link Av1FilmGrainValidationTest}
@@ -102,11 +104,10 @@ public class Av1FilmGrainValidationTest {
             }
         }
 
-        PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
+        PerformanceClassEvaluator pce = pcRule.getPerformanceClassEvaluator();
         Requirements.AV1HardwareDecoderRequirement rAV1DecoderReq =
                 Requirements.addR5_1__H_1_14().to(pce);
         rAV1DecoderReq.setAv1DecoderRequirementBoolean(isDecoded);
         rAV1DecoderReq.setAv1FramesWithoutFilmGrain(numFramesWithoutFilmGrain);
-        pce.submitAndCheck();
     }
 }

@@ -40,21 +40,19 @@ import android.media.MediaCodecInfo.CodecCapabilities;
 import android.media.MediaCodecInfo.VideoCapabilities.PerformancePoint;
 import android.media.MediaFormat;
 import android.mediapc.cts.common.PerformanceClassEvaluator;
+import android.mediapc.cts.common.PerformanceClassTestRule;
+import android.mediapc.cts.common.Preconditions;
 import android.mediapc.cts.common.Requirements;
-import android.mediapc.cts.common.Utils;
 import android.util.Log;
 import android.util.Range;
-import android.util.Size;
 
 import androidx.test.filters.LargeTest;
 import androidx.test.filters.SmallTest;
 
 import com.android.compatibility.common.util.CddTest;
 
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TestName;
 
 import java.io.File;
 import java.io.IOException;
@@ -68,12 +66,8 @@ public class VideoCodecRequirementsTest {
     private static final String INPUT_FILE = "bbb_3840x2160_AVIF.avif";
 
     @Rule
-    public final TestName mTestName = new TestName();
-
-    @Before
-    public void isPerformanceClassCandidate() {
-        Utils.assumeDeviceMeetsPerformanceClassPreconditions();
-    }
+    public final PerformanceClassTestRule pcRule =
+            PerformanceClassTestRule.with(Preconditions.BASELINE);
 
     private boolean decodeAVIF(File inputfile) throws IOException {
         ImageDecoder.Source src = ImageDecoder.createSource(inputfile);
@@ -117,12 +111,10 @@ public class VideoCodecRequirementsTest {
     public void test4k60Decoder() throws IOException {
         Set<String> decoderSet = get4k60HwCodecSet(false);
 
-        PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
+        PerformanceClassEvaluator pce = pcRule.getPerformanceClassEvaluator();
         Requirements.HardwareDecoder4K60Requirement r4k60HwDecoder =
                 Requirements.addR5_1__H_1_15().to(pce);
         r4k60HwDecoder.setNumber4KHwDecoders(decoderSet.size());
-
-        pce.submitAndCheck();
     }
 
     /**
@@ -134,12 +126,10 @@ public class VideoCodecRequirementsTest {
     public void test4k60Encoder() throws IOException {
         Set<String> encoderSet = get4k60HwCodecSet(true);
 
-        PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
+        PerformanceClassEvaluator pce = pcRule.getPerformanceClassEvaluator();
         Requirements.HardwareEncoder4K60Requirement r4k60HwEncoder =
                 Requirements.addR5_1__H_1_16().to(pce);
         r4k60HwEncoder.setNumber4KHwEncoders(encoderSet.size());
-
-        pce.submitAndCheck();
     }
 
     /**
@@ -164,12 +154,10 @@ public class VideoCodecRequirementsTest {
             isDecoded = decodeAVIF(new File(WorkDir.getMediaDirString() + INPUT_FILE));
         }
 
-        PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
+        PerformanceClassEvaluator pce = pcRule.getPerformanceClassEvaluator();
         Requirements.AVIFBaselineProfileRequirement rAVIFDecoderReq =
                 Requirements.addR5_1__H_1_17().to(pce);
         rAVIFDecoderReq.setAvifImageDecoderBoolean(isDecoded);
-
-        pce.submitAndCheck();
     }
 
     /**
@@ -223,9 +211,8 @@ public class VideoCodecRequirementsTest {
             }
         }
 
-        PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
+        PerformanceClassEvaluator pce = pcRule.getPerformanceClassEvaluator();
         Requirements.AV1EncoderRequirement rAV1EncoderReq = Requirements.addR5_1__H_1_18().to(pce);
         rAV1EncoderReq.setAv1EncoderFps(fps);
-        pce.submitAndCheck();
     }
 }
