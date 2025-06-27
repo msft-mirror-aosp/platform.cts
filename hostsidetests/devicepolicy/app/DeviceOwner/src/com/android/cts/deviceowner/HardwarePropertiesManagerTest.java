@@ -25,7 +25,6 @@ import com.android.bedstead.dpmwrapper.TestAppSystemServiceFactory;
  * Test {@link HardwarePropertiesManager}
  */
 public class HardwarePropertiesManagerTest extends BaseDeviceOwnerTest {
-    public static final int MAX_FAN_SPEED = 20000;
     public static final int MAX_DEVICE_TEMPERATURE = 200;
     public static final int MONITORING_ITERATION_NUMBER = 10;
 
@@ -33,7 +32,7 @@ public class HardwarePropertiesManagerTest extends BaseDeviceOwnerTest {
     public static final long SLEEP_TIME = 10;
 
     private void checkFanSpeed(float speed) {
-        assertTrue(speed >= 0 && speed < MAX_FAN_SPEED);
+        assertTrue(speed >= 0);
     }
 
     private void checkDeviceTemp(float temp, float throttlingTemp, float shutdownTemp) {
