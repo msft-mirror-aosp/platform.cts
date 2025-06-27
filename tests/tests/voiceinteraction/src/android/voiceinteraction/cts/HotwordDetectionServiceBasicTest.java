@@ -132,7 +132,7 @@ public class HotwordDetectionServiceBasicTest {
 
     private final CountDownLatch mLatch = new CountDownLatch(1);
 
-    private String mOpNoted = "";
+    private volatile String mOpNoted = "";
 
     private final AppOpsManager mAppOpsManager = sInstrumentation.getContext()
             .getSystemService(AppOpsManager.class);
