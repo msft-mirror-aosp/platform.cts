@@ -63,8 +63,6 @@ import android.platform.test.annotations.LargeTest;
 
 import androidx.test.platform.app.InstrumentationRegistry;
 
-import com.android.compatibility.common.util.ApiTest;
-
 import com.google.common.truth.Truth;
 
 import org.junit.After;
@@ -130,7 +128,6 @@ public class MediaRouter2DeviceTest {
         }
     }
 
-    @ApiTest(apis = {"android.media.RouteDiscoveryPreference, android.media.MediaRouter2"})
     @Test
     public void deduplicationIds_propagateAcrossApps() throws TimeoutException {
         RouteDiscoveryPreference preference =
@@ -168,7 +165,6 @@ public class MediaRouter2DeviceTest {
                                 ROUTE_DEDUPLICATION_ID_3));
     }
 
-    @ApiTest(apis = {"android.media.RouteDiscoveryPreference, android.media.MediaRouter2"})
     @Test
     public void deviceType_propagatesAcrossApps() throws TimeoutException {
         RouteDiscoveryPreference preference =
@@ -195,7 +191,6 @@ public class MediaRouter2DeviceTest {
                 .isEqualTo(MediaRoute2Info.TYPE_UNKNOWN);
     }
 
-    @ApiTest(apis = {"android.media.RouteListingPreference, android.media.MediaRouter2"})
     @Test
     public void setRouteListingPreference_propagatesToManager() {
         List<RouteListingPreference.Item> items =
@@ -254,7 +249,6 @@ public class MediaRouter2DeviceTest {
         Truth.assertThat(mediaRouter2ManagerCallback.mRouteListingPreference).isNull();
     }
 
-    @ApiTest(apis = {"android.media.RouteListingPreference, android.media.MediaRouter2"})
     @Test
     public void setRouteListingPreference_withCustomDisableReason_propagatesCorrectly() {
         List<RouteListingPreference.Item> item =
@@ -285,7 +279,6 @@ public class MediaRouter2DeviceTest {
                 .isEqualTo("Fake disable reason message");
     }
 
-    @ApiTest(apis = {"android.media.RouteListingPreference"})
     @Test
     public void newRouteListingPreference_withInvalidCustomSubtext_throws() {
         RouteListingPreference.Item.Builder builder =
@@ -306,7 +299,6 @@ public class MediaRouter2DeviceTest {
         Truth.assertThat(systemRouter).isNotNull();
     }
 
-    @ApiTest(apis = {"android.media.RouteDiscoveryPreference, android.media.MediaRouter2"})
     @Test
     public void visibilityAndAllowedPackages_propagateAcrossApps() throws TimeoutException {
         RouteDiscoveryPreference preference =
@@ -366,13 +358,12 @@ public class MediaRouter2DeviceTest {
                                 waitForAndGetRoutes(
                                                 SYSTEM_ROUTE_DISCOVERY_PREFERENCE,
                                                 /* expectedRouteIds= */ Set.of(
-                                                MediaRoute2Info.ROUTE_ID_DEFAULT))
+                                                MediaRoute2Info.ROUTE_ID_DEVICE))
                                         .keySet())
                         .containsExactly(MediaRoute2Info.ROUTE_ID_DEVICE);
         }
     }
 
-    @ApiTest(apis = {"android.media.MediaRouter2"})
     @Test
     public void selfScanOnlyProvider_notScannedByAnotherApp() {
         RouteDiscoveryPreference preference =
@@ -387,7 +378,6 @@ public class MediaRouter2DeviceTest {
                                 preference,
                                 /* expectedRouteIds= */ Set.of(ROUTE_ID_SELF_SCAN_ONLY)));
     }
-
 
     /**
      * Returns the next route list received via {@link MediaRouter2.RouteCallback#onRoutesUpdated}
