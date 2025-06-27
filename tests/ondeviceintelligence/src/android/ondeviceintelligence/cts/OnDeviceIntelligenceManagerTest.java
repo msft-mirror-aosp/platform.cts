@@ -56,6 +56,7 @@ import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.CancellationSignal;
 import android.os.IBinder;
+import android.os.OutcomeReceiver;
 import android.os.PersistableBundle;
 import android.os.Process;
 import android.os.UserHandle;
@@ -114,6 +115,7 @@ public class OnDeviceIntelligenceManagerTest {
     public static final String TOKEN_INFO_COUNT_KEY = "tokenInfo_count_key";
     public static final String TOKEN_INFO_PARAMS_KEY = "tokenInfo_params_key";
     public static final String TEST_OD_NAMESPACE = "test_od_namespace";
+    public static final String ID_FILTER_KEY = "id_filter";
 
 
     private static final String TAG = OnDeviceIntelligenceManagerTest.class.getSimpleName();
@@ -436,6 +438,59 @@ public class OnDeviceIntelligenceManagerTest {
                     statusLatch.countDown();
                 });
         assertThat(statusLatch.await(1, SECONDS)).isTrue();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_ON_DEVICE_INTELLIGENCE_25Q4)
+    public void resultPopulatedWhenListFeaturesWithFilter() throws Exception {
+        getInstrumentation()
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(Manifest.permission.USE_ON_DEVICE_INTELLIGENCE);
+        CountDownLatch statusLatch = new CountDownLatch(1);
+        PersistableBundle filter = new PersistableBundle();
+        filter.putInt(ID_FILTER_KEY, 0);
+
+        mOnDeviceIntelligenceManager.listFeatures(filter,
+                EXECUTOR,
+                result -> {
+                    assertThat(result).hasSize(1);
+                    assertThat(result.get(0).getId()).isEqualTo(0);
+                    statusLatch.countDown();
+                });
+        assertThat(statusLatch.await(1, SECONDS)).isTrue();
+
+        CountDownLatch statusLatch2 = new CountDownLatch(1);
+        mOnDeviceIntelligenceManager.listFeatures(PersistableBundle.EMPTY,
+                EXECUTOR,
+                new OutcomeReceiver<>() {
+                    @Override
+                    public void onResult(List<Feature> result) {
+                        assertThat(result).hasSize(2);
+                        statusLatch2.countDown();
+                    }
+
+                    @Override
+                    public void onError(OnDeviceIntelligenceException error) {
+                        // fail
+                    }
+                });
+        assertThat(statusLatch2.await(1, SECONDS)).isTrue();
+        CountDownLatch statusLatch3 = new CountDownLatch(1);
+
+        mOnDeviceIntelligenceManager.listFeatures(EXECUTOR,
+                new OutcomeReceiver<>() {
+                    @Override
+                    public void onResult(List<Feature> result) {
+                        assertThat(result).hasSize(1);
+                        statusLatch3.countDown();
+                    }
+
+                    @Override
+                    public void onError(OnDeviceIntelligenceException error) {
+                        // fail
+                    }
+                });
+        assertThat(statusLatch3.await(1, SECONDS)).isTrue();
     }
 
     @Test
