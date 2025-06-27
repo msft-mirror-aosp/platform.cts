@@ -24,7 +24,6 @@ package android.mediapc.cts.common
 import android.content.pm.PackageManager
 import android.hardware.display.DisplayManager
 import android.mediapc.cts.common.Precondition.Companion.create
-import android.mediapc.cts.common.Precondition.Companion.createLazy
 import android.mediapc.cts.common.Precondition.Companion.forbidSystemFeature
 import android.mediapc.cts.common.Precondition.Companion.requireSystemFeature
 import android.util.DisplayMetrics
@@ -79,15 +78,6 @@ private val LARGEST_DISPLAY_RESOLUTION =
     }
 
 /**
- * Meets [Utils.meetsPerformanceClassPreconditions].
- */
-@Deprecated("Use [BASELINE] instead.")
-private val LEGACY_MEETS_PC_PRECONDITIONS = createLazy(
-    message = "Default precondition failed",
-    fn = Utils::meetsPerformanceClassPreconditions
-)
-
-/**
  * The baseline set of preconditions for MPC.
  *
  * This includes minimum memory, DPI, and other fast to test conditions.
@@ -109,7 +99,6 @@ val BASELINE =
             AT_LEAST_2_5GB_MEMORY,
             DISPLAY_DPI,
             LARGEST_DISPLAY_RESOLUTION,
-            LEGACY_MEETS_PC_PRECONDITIONS
     )
 )
 

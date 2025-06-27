@@ -302,7 +302,7 @@ public final class Utils {
      * @deprecated use android.mediapc.cts.common.Preconditions#BASELINE instead.
      */
     @Deprecated
-    public static boolean meetsPerformanceClassPreconditions() {
+    private static boolean meetsPerformanceClassPreconditions() {
         if (isPerfClass()) {
             return true;
         }
@@ -328,7 +328,10 @@ public final class Utils {
     /**
      * Throws an {@link org.junit.AssumptionViolatedException} if the device does not {@link
      * #meetsPerformanceClassPreconditions()}
+     *
+     * @deprecated use android.mediapc.cts.common.Preconditions#BASELINE instead.
      */
+    @Deprecated
     public static void assumeDeviceMeetsPerformanceClassPreconditions() {
         assumeTrue(
                 "Test skipped because the device does not meet the hardware requirements for "
