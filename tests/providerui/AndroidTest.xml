@@ -21,12 +21,14 @@
     <option name="config-descriptor:metadata" key="parameter" value="not_multi_abi" />
     <option name="config-descriptor:metadata" key="parameter" value="secondary_user" />
     <option name="config-descriptor:metadata" key="parameter" value="run_on_sdk_sandbox" />
+    <option name="config-descriptor:metadata" key="parameter" value="multiuser" />
     <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">
         <option name="cleanup-apks" value="true" />
         <option name="test-file-name" value="CtsProviderUiTestCases.apk" />
     </target_preparer>
     <test class="com.android.tradefed.testtype.AndroidJUnitTest" >
         <option name="package" value="android.providerui.cts" />
+        <option name="exclude-annotation" value="com.android.bedstead.harrier.annotations.RequireRunOnSecondaryUser" />
     </test>
     <target_preparer class="com.android.tradefed.targetprep.RunCommandTargetPreparer">
         <option name="run-command" value="input keyevent KEYCODE_WAKEUP" />

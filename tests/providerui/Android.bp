@@ -28,8 +28,11 @@ android_test {
         "compatibility-device-util-axt",
         "ctstestrunner-axt",
         "androidx.test.uiautomator_uiautomator",
+        "bedstead-multiuser",
+        "bedstead-enterprise",
         "junit",
         "androidx.legacy_legacy-support-v4",
+        "android.multiuser.flags-aconfig-java",
     ],
     srcs: [
         "src/**/*.java",
