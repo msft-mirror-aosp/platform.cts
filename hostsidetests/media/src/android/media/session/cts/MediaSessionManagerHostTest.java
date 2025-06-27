@@ -182,10 +182,18 @@ public class MediaSessionManagerHostTest extends BaseMultiUserTest {
             return;
         }
 
+        Integer parentUser = getDevice().getMainUserId();
+        if (parentUser == null) {
+            // Only devices with a main user can have a restricted profile
+            CLog.logAndDisplay(LogLevel.INFO,
+                    "Device doesn't have a main user. Skipping restricted user test cases.");
+            return;
+        }
+
         // Test if another restricted profile can get the session.
         // Remove the created user first not to exceed system's user number limit.
         // Restricted profile's parent must be the primary user (the system user).
-        int newUser = createAndStartRestrictedProfile(getDevice().getPrimaryUserId());
+        int newUser = createAndStartRestrictedProfile(parentUser);
         installAppAsUser(DEVICE_SIDE_TEST_APK, DEVICE_SIDE_TEST_PKG, newUser, instant);
         setAllowGetActiveSessionForTest(true, newUser);
         runTestAsUser("testGetActiveSessions_noMediaSession", newUser);
