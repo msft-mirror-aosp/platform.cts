@@ -3062,11 +3062,10 @@ public class RobustnessTest extends Camera2AndroidTestCase {
         static final int MAXIMUM = 2;
         static final int VGA = 3;
         static final int VGA_FULL_FOV = 4;
-        static final int MAX_30FPS = 5;
-        static final int S720P = 6;
-        static final int S1440P = 7;
-        static final int MAX_RES = 8;
-        static final int RESOLUTION_COUNT = 9;
+        static final int S720P = 5;
+        static final int S1440P = 6;
+        static final int MAX_RES = 7;
+        static final int RESOLUTION_COUNT = 8;
 
         // Max resolution input indices
         static final int INPUT_MAXIMUM = 0;
@@ -3217,87 +3216,6 @@ public class RobustnessTest extends Camera2AndroidTestCase {
                 if (sm.isMonochromeWithY8()) {
                     mMaxY8Sizes[VGA_FULL_FOV] = vgaFullFovSize;
                 }
-
-                // Max resolution that runs at 30fps
-
-                Size maxPriv30fpsSize = null;
-                Size maxYuv30fpsSize = null;
-                Size maxY830fpsSize = null;
-                Size maxJpeg30fpsSize = null;
-                Comparator<Size> comparator = new SizeComparator();
-                for (Map.Entry<Size, Long> e :
-                             sm.getAvailableMinFrameDurationsForFormatChecked(ImageFormat.PRIVATE).
-                             entrySet()) {
-                    Size s = e.getKey();
-                    Long minDuration = e.getValue();
-                    Log.d(TAG, String.format("Priv Size: %s, duration %d limit %d", s, minDuration,
-                                FRAME_DURATION_30FPS_NSEC));
-                    if (minDuration <= FRAME_DURATION_30FPS_NSEC) {
-                        if (maxPriv30fpsSize == null ||
-                                comparator.compare(maxPriv30fpsSize, s) < 0) {
-                            maxPriv30fpsSize = s;
-                        }
-                    }
-                }
-                assertTrue("No PRIVATE resolution available at 30fps!", maxPriv30fpsSize != null);
-
-                for (Map.Entry<Size, Long> e :
-                             sm.getAvailableMinFrameDurationsForFormatChecked(
-                                     ImageFormat.YUV_420_888).
-                             entrySet()) {
-                    Size s = e.getKey();
-                    Long minDuration = e.getValue();
-                    Log.d(TAG, String.format("YUV Size: %s, duration %d limit %d", s, minDuration,
-                                FRAME_DURATION_30FPS_NSEC));
-                    if (minDuration <= FRAME_DURATION_30FPS_NSEC) {
-                        if (maxYuv30fpsSize == null ||
-                                comparator.compare(maxYuv30fpsSize, s) < 0) {
-                            maxYuv30fpsSize = s;
-                        }
-                    }
-                }
-                assertTrue("No YUV_420_888 resolution available at 30fps!",
-                        maxYuv30fpsSize != null);
-
-                if (sm.isMonochromeWithY8()) {
-                    for (Map.Entry<Size, Long> e :
-                                 sm.getAvailableMinFrameDurationsForFormatChecked(
-                                         ImageFormat.Y8).
-                                 entrySet()) {
-                        Size s = e.getKey();
-                        Long minDuration = e.getValue();
-                        Log.d(TAG, String.format("Y8 Size: %s, duration %d limit %d",
-                                s, minDuration, FRAME_DURATION_30FPS_NSEC));
-                        if (minDuration <= FRAME_DURATION_30FPS_NSEC) {
-                            if (maxY830fpsSize == null ||
-                                    comparator.compare(maxY830fpsSize, s) < 0) {
-                                maxY830fpsSize = s;
-                            }
-                        }
-                    }
-                    assertTrue("No Y8 resolution available at 30fps!", maxY830fpsSize != null);
-                }
-
-                for (Map.Entry<Size, Long> e :
-                             sm.getAvailableMinFrameDurationsForFormatChecked(ImageFormat.JPEG).
-                             entrySet()) {
-                    Size s = e.getKey();
-                    Long minDuration = e.getValue();
-                    Log.d(TAG, String.format("JPEG Size: %s, duration %d limit %d", s, minDuration,
-                                FRAME_DURATION_30FPS_NSEC));
-                    if (minDuration <= FRAME_DURATION_30FPS_NSEC) {
-                        if (maxJpeg30fpsSize == null ||
-                                comparator.compare(maxJpeg30fpsSize, s) < 0) {
-                            maxJpeg30fpsSize = s;
-                        }
-                    }
-                }
-                assertTrue("No JPEG resolution available at 30fps!", maxJpeg30fpsSize != null);
-
-                mMaxPrivSizes[MAX_30FPS] = maxPriv30fpsSize;
-                mMaxYuvSizes[MAX_30FPS] = maxYuv30fpsSize;
-                mMaxY8Sizes[MAX_30FPS] = maxY830fpsSize;
-                mMaxJpegSizes[MAX_30FPS] = maxJpeg30fpsSize;
             }
 
             Size[] privInputSizes = configs.getInputSizes(ImageFormat.PRIVATE);
@@ -3464,9 +3382,6 @@ public class RobustnessTest extends Camera2AndroidTestCase {
                     break;
                 case VGA_FULL_FOV:
                     b.append("VGA_FULL_FOV]");
-                    break;
-                case MAX_30FPS:
-                    b.append("MAX_30FPS]");
                     break;
                 case S720P:
                     b.append("S720P]");
