@@ -160,6 +160,9 @@ interface Precondition {
         }
 
         @JvmStatic
+        fun usingContext(message: String, fn: (Context) -> Boolean) = usingContext(message, 30, fn)
+
+        @JvmStatic
         fun usingContext(
             message: String,
             minPerformanceClassLevel: Int,

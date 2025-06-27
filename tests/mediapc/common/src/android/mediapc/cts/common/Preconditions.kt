@@ -27,7 +27,15 @@ import android.mediapc.cts.common.Precondition.Companion.createLazy
 import android.mediapc.cts.common.Precondition.Companion.forbidSystemFeature
 import android.mediapc.cts.common.Precondition.Companion.requireSystemFeature
 
+/**
+ * Setting the minimum memory to 2.5G so we get statistics on "Mid Tier Devices"
+ *
+ * As of 2025 Q1 this is about 80% of daily active devices.
+ */
 @JvmField
+val AT_LEAST_2_5GB_MEMORY: Precondition = Precondition.usingContext("At least 2.5Gb of memory") {
+    Utils.getTotalMemoryMb(it) > (2.5 * 1024L).toLong()
+}
 val IS_HANDHELD = Precondition.group(
     // handheld nature is not exposed to package manager, for now
     // we check for touchscreen and NOT watch, tv or automotive
@@ -39,18 +47,36 @@ val IS_HANDHELD = Precondition.group(
     )
 
 /**
- * The BASELINE set of preconditions for MPC.
+ * Meets [Utils.meetsPerformanceClassPreconditions].
+ */
+@Deprecated("Use [BASELINE] instead.")
+val LEGACY_MEETS_PC_PRECONDITIONS = createLazy(
+    message = "Default precondition failed",
+    fn = Utils::meetsPerformanceClassPreconditions
+)
+
+/**
+ * The baseline set of preconditions for MPC.
  *
  * This includes minimum memory, DPI, and other fast to test conditions.
- * See [Utils.meetsPerformanceClassPreconditions].
+ *
+ * Failing to meet these thresholds means we know that the device can't meet any performance
+ * class requirement. If the device doesn't meet these, we save time for everyone by skipping
+ * the tests that we know the device will fail.
+ *
+ * The numbers here are reduced from the strict thresholds so that we can gather
+ * some information about most devices. This won't impact CTS results, but
+ * will increase CTS runtime for those devices.
  */
 @JvmField
-val BASELINE = Precondition.group(
+val BASELINE =
+    Precondition.lazy( // BASELINE is called often enough to use lazy and cache the results.
+
+        Precondition.group(
     "baseline",
     IS_HANDHELD,
-    createLazy(
-        message = "Default precondition failed",
-        fn = Utils::meetsPerformanceClassPreconditions
+            AT_LEAST_2_5GB_MEMORY,
+            LEGACY_MEETS_PC_PRECONDITIONS
     )
 )
 

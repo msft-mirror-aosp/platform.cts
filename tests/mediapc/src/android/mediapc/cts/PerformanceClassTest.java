@@ -204,7 +204,8 @@ public class PerformanceClassTest {
         "2.2.7.3/7.6.1/H-1-1",
         "2.2.7.3/7.6.1/H-2-1",})
     public void testMinimumMemory() {
-        long totalMemoryMb = Utils.TOTAL_MEMORY_MB;
+        long totalMemoryMb =
+                Utils.getTotalMemoryMb(InstrumentationRegistry.getInstrumentation().getContext());
 
         Log.i(TAG, String.format("Total device memory = %,d MB", totalMemoryMb));
 
