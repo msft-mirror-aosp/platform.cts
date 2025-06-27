@@ -3957,10 +3957,6 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
                 mNotificationManager.setCanPostPromotedNotifications(
                         mContext.getPackageName(), android.os.Process.myUid(), true);
             });
-            try {
-                Thread.sleep(500);
-            } catch (InterruptedException e) {
-            }
 
             assertThat(mNotificationManager.canPostPromotedNotifications()).isTrue();
 
@@ -3968,10 +3964,6 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
                 mNotificationManager.setCanPostPromotedNotifications(
                         mContext.getPackageName(), android.os.Process.myUid(), false);
             });
-            try {
-                Thread.sleep(500);
-            } catch (InterruptedException e) {
-            }
 
             assertThat(mNotificationManager.canPostPromotedNotifications()).isFalse();
 
@@ -3980,10 +3972,6 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
                 mNotificationManager.setCanPostPromotedNotifications(
                         mContext.getPackageName(), android.os.Process.myUid(), initialValue);
             });
-            try {
-                Thread.sleep(500);
-            } catch (InterruptedException e) {
-            }
         }
     }
 
