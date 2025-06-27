@@ -44,6 +44,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.StringTokenizer;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Predicate;
+import java.util.regex.Pattern;
 
 /**
  * Set of tests for Device Owner use cases.
@@ -1198,8 +1200,15 @@ public final class DeviceOwnerTest extends BaseDeviceOwnerTest {
 
         installAppAsUser(apkName, userId);
 
-        // Log message emitted when killing all processes for a installed package.
-        String expected = "Force stopping " + packageName;
+        // Log message emitted when force stopping a package following install looks like this:
+        // "Force stopping <PACKAGE_NAME> appid=<NUMBER> user=<USER_ID>: installPackageLI"
+        // USER_ID can be -1 (all users) or the specific userId.
+        String regex =
+                "Force stopping %s appid=\\d+ user=(-1|%d): installPackageLI"
+                        .formatted(packageName, userId);
+        Predicate<String> predicate = Pattern.compile(regex).asPredicate();
+
+        CLog.i("Waiting for %s to be stopped in user %d after install", packageName, userId);
 
         long deadlineNs = System.nanoTime() + TimeUnit.SECONDS.toNanos(20);
         while (System.nanoTime() <= deadlineNs) {
@@ -1213,7 +1222,7 @@ public final class DeviceOwnerTest extends BaseDeviceOwnerTest {
                     .filter(l -> !l.startsWith("-")) // Filter out "beginning of system" lines.
                     .toList();
             if (!logLines.isEmpty()) {
-                if (logLines.stream().anyMatch(l -> l.contains(expected))) {
+                if (logLines.stream().anyMatch(predicate)) {
                     CLog.i("Processes were stopped following installation");
                     return;
                 } else {
@@ -1224,7 +1233,7 @@ public final class DeviceOwnerTest extends BaseDeviceOwnerTest {
             }
             RunUtil.getDefault().sleep(200);
         }
-        CLog.e("Failed to find expected log message: " + expected);
+        CLog.e("Failed to find matching log message: " + regex);
     }
 
     private int createAffiliatedSecondaryUser() throws Exception {
