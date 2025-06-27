@@ -23,7 +23,6 @@ import static android.media.codec.Flags.apvSupport;
 import static android.mediav2.common.cts.CodecTestBase.ComponentClass.HARDWARE;
 import static android.videocodec.cts.VideoEncoderInput.getRawResource;
 
-import static com.android.media.editing.flags.Flags.muxerMp4EnableApv;
 import static com.android.media.extractor.flags.Flags.extractorMp4EnableApv;
 
 import static org.junit.Assert.assertEquals;
@@ -116,7 +115,7 @@ public class VideoEncoderMultiResTest extends VideoEncoderValidationTestBase {
             }
         }
         // apv args list
-        if (IS_AT_LEAST_B && apvSupport() && muxerMp4EnableApv() && extractorMp4EnableApv()) {
+        if (IS_AT_LEAST_B && apvSupport() && extractorMp4EnableApv()) {
             final int APV_BIT_RATE = 30000000;
             // mediaType, cfg, label
             String label = String.format("%dx%d_%dfps_%s", width,
@@ -164,7 +163,7 @@ public class VideoEncoderMultiResTest extends VideoEncoderValidationTestBase {
         List<Object[]> defaultParams =
                 prepareParamList(defaultArgsList, true, false, true, false, HARDWARE);
         List<Object[]> finalParams = defaultParams;
-        if (IS_AT_LEAST_B && apvSupport() && muxerMp4EnableApv() && extractorMp4EnableApv()) {
+        if (IS_AT_LEAST_B && apvSupport() && extractorMp4EnableApv()) {
             List<Object[]> apvParams =
                     prepareParamList(apvArgsList, true, false, true, false, HARDWARE);
             finalParams = Stream.concat(apvParams.stream(), defaultParams.stream())

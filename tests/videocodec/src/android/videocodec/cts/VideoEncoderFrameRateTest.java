@@ -19,7 +19,6 @@ package android.videocodec.cts;
 import static android.media.codec.Flags.apvSupport;
 import static android.mediav2.common.cts.CodecTestBase.ComponentClass.HARDWARE;
 
-import static com.android.media.editing.flags.Flags.muxerMp4EnableApv;
 import static com.android.media.extractor.flags.Flags.extractorMp4EnableApv;
 
 import static org.junit.Assert.assertEquals;
@@ -114,7 +113,7 @@ public class VideoEncoderFrameRateTest extends VideoEncoderValidationTestBase {
         List<Object[]> defaultParams =
                 prepareParamList(defaultArgsList, true, false, true, false, HARDWARE);
         List<Object[]> finalParams = defaultParams;
-        if (IS_AT_LEAST_B && apvSupport() && muxerMp4EnableApv() && extractorMp4EnableApv()) {
+        if (IS_AT_LEAST_B && apvSupport() && extractorMp4EnableApv()) {
             addParamsAPV(352, 288, 4000000);
             addParamsAPV(640, 480, 16000000);
             addParamsAPV(1280, 720, 30000000);

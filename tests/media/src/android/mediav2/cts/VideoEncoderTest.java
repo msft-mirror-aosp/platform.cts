@@ -25,7 +25,6 @@ import static android.mediav2.common.cts.CodecTestBase.SupportClass.CODEC_HW_REC
 import static android.mediav2.common.cts.CodecTestBase.SupportClass.CODEC_OPTIONAL;
 import static android.mediav2.common.cts.CodecTestBase.SupportClass.CODEC_SHOULD;
 
-import static com.android.media.editing.flags.Flags.muxerMp4EnableApv;
 import static com.android.media.extractor.flags.Flags.extractorMp4EnableApv;
 
 import static org.junit.Assert.assertNotNull;
@@ -242,7 +241,7 @@ public class VideoEncoderTest extends CodecEncoderTestBase {
                             COLOR_FormatYUVP010, CODEC_SHOULD},
             }));
         }
-        if (IS_AT_LEAST_B && apvSupport() && muxerMp4EnableApv() && extractorMp4EnableApv()) {
+        if (IS_AT_LEAST_B && apvSupport() && extractorMp4EnableApv()) {
             defArgsList.addAll(Arrays.asList(new Object[][]{
                     {MediaFormat.MIMETYPE_VIDEO_APV, 1000000, 320, 240, 20, COLOR_FormatYUVP010,
                             CODEC_OPTIONAL},

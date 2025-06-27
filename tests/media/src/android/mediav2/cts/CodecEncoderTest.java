@@ -18,12 +18,11 @@ package android.mediav2.cts;
 
 import static android.media.codec.Flags.apvSupport;
 
-import static com.android.media.editing.flags.Flags.muxerMp4EnableApv;
 import static com.android.media.extractor.flags.Flags.extractorMp4EnableApv;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -289,7 +288,7 @@ public class CodecEncoderTest extends CodecEncoderTestBase {
                 {MediaFormat.MIMETYPE_VIDEO_AV1, getAv1CfgParams()},
         }));
 
-        if (IS_AT_LEAST_B && apvSupport() && muxerMp4EnableApv() && extractorMp4EnableApv()) {
+        if (IS_AT_LEAST_B && apvSupport() && extractorMp4EnableApv()) {
             exhaustiveArgsList.addAll(Arrays.asList(new Object[][]{
                     {MediaFormat.MIMETYPE_VIDEO_APV, getApvCfgParams()},
             }));
@@ -326,7 +325,9 @@ public class CodecEncoderTest extends CodecEncoderTestBase {
                 || mMediaType.equals(MediaFormat.MIMETYPE_VIDEO_AVC)
                 || mMediaType.equals(MediaFormat.MIMETYPE_VIDEO_HEVC)) {
             requireCSD = true;
-        } else if (IS_AT_LEAST_B && apvSupport() && muxerMp4EnableApv() && extractorMp4EnableApv()
+        } else if (IS_AT_LEAST_B
+                && apvSupport()
+                && extractorMp4EnableApv()
                 && mMediaType.equals(MediaFormat.MIMETYPE_VIDEO_APV)) {
             requireCSD = true;
         }

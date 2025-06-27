@@ -21,7 +21,6 @@ import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatYUVP010
 import static android.media.MediaCodecInfo.CodecProfileLevel.*;
 import static android.media.codec.Flags.apvSupport;
 
-import static com.android.media.editing.flags.Flags.muxerMp4EnableApv;
 import static com.android.media.extractor.flags.Flags.extractorMp4EnableApv;
 
 import static org.junit.Assert.assertEquals;
@@ -523,7 +522,7 @@ public class EncoderProfileLevelTest extends EncoderProfileLevelTestBase {
             argsList.addAll(prepareTestArgs(arg, new int[]{MPEG4ProfileAdvancedSimple},
                     COLOR_FormatYUV420Flexible));
         }
-        if (IS_AT_LEAST_B && apvSupport() && muxerMp4EnableApv() && extractorMp4EnableApv()) {
+        if (IS_AT_LEAST_B && apvSupport() && extractorMp4EnableApv()) {
             final Object[][] apvProfileArgsList = new Object[][]{
                     {MediaFormat.MIMETYPE_VIDEO_APV, 7000000, 352, 288, 30, APVLevel1Band0},
                     {MediaFormat.MIMETYPE_VIDEO_APV, 11000000, 352, 288, 30, APVLevel1Band1},
