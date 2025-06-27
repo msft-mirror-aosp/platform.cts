@@ -16,6 +16,7 @@
 
 package android.server.wm.app;
 
+import android.content.Intent;
 import android.content.res.Configuration;
 
 public class LaunchPipOnPipActivity extends PipActivity {
@@ -24,6 +25,6 @@ public class LaunchPipOnPipActivity extends PipActivity {
     public void onPictureInPictureModeChanged(boolean isInPictureInPictureMode,
             Configuration newConfig) {
         super.onPictureInPictureModeChanged(isInPictureInPictureMode, newConfig);
-        AlwaysFocusablePipActivity.launchAlwaysFocusablePipActivity(this, false);
+        startActivity(new Intent(this, TranslucentPipActivity.class));
     }
 }
