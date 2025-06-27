@@ -34,7 +34,9 @@
         <package android:name="android.server.wm.cts" />
     </queries>
 
-    <application android:debuggable="true">
+    <application
+        android:name=".TestApplication"
+        android:debuggable="true">
         <activity android:name=".TestActivity"
              android:resizeableActivity="true"
              android:supportsPictureInPicture="true"
