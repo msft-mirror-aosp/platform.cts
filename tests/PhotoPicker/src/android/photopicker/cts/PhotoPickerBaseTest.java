@@ -110,7 +110,8 @@ public class PhotoPickerBaseTest {
         PackageManager pm = sInstrumentation.getContext().getPackageManager();
         return !pm.hasSystemFeature(pm.FEATURE_EMBEDDED)
                 && !pm.hasSystemFeature(pm.FEATURE_WATCH)
-                && !pm.hasSystemFeature(pm.FEATURE_LEANBACK);
+                && !pm.hasSystemFeature(pm.FEATURE_LEANBACK)
+                && !pm.hasSystemFeature(pm.FEATURE_AUTOMOTIVE);
     }
 
     protected static void setCloudProvider(@Nullable String authority) throws Exception {
