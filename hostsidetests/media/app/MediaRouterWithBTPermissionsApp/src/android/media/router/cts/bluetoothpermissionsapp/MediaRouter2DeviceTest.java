@@ -75,7 +75,6 @@ import android.platform.test.annotations.RequiresFlagsEnabled;
 import androidx.annotation.NonNull;
 import androidx.test.platform.app.InstrumentationRegistry;
 
-import com.android.compatibility.common.util.ApiTest;
 import com.android.media.flags.Flags;
 
 import com.google.common.truth.Correspondence;
@@ -156,7 +155,6 @@ public class MediaRouter2DeviceTest {
         mExecutor.shutdown();
     }
 
-    @ApiTest(apis = {"android.media.RouteDiscoveryPreference, android.media.MediaRouter2"})
     @Test
     public void deduplicationIds_propagateAcrossApps() throws TimeoutException {
         launchScreenOnActivity();
@@ -199,7 +197,6 @@ public class MediaRouter2DeviceTest {
                                 ROUTE_DEDUPLICATION_ID_3));
     }
 
-    @ApiTest(apis = {"android.media.RouteDiscoveryPreference, android.media.MediaRouter2"})
     @Test
     public void deviceType_propagatesAcrossApps() throws TimeoutException {
         launchScreenOnActivity();
@@ -446,7 +443,6 @@ public class MediaRouter2DeviceTest {
                                 new ScanRequest.Builder().setScreenOffScan(true).build()));
     }
 
-    @ApiTest(apis = {"android.media.RouteListingPreference, android.media.MediaRouter2"})
     @Test
     public void setRouteListingPreference_propagatesToManager() {
         InstrumentationRegistry.getInstrumentation()
@@ -538,7 +534,6 @@ public class MediaRouter2DeviceTest {
                 .isEqualTo(MEDIA_ROUTER_PROVIDER_3_PACKAGE);
     }
 
-    @ApiTest(apis = {"android.media.RouteListingPreference, android.media.MediaRouter2"})
     @Test
     public void setRouteListingPreference_withCustomDisableReason_propagatesCorrectly() {
         InstrumentationRegistry.getInstrumentation()
@@ -576,7 +571,6 @@ public class MediaRouter2DeviceTest {
                 .isEqualTo("Fake disable reason message");
     }
 
-    @ApiTest(apis = {"android.media.RouteListingPreference"})
     @Test
     public void newRouteListingPreference_withInvalidCustomSubtext_throws() {
         RouteListingPreference.Item.Builder builder =
@@ -601,7 +595,6 @@ public class MediaRouter2DeviceTest {
         Truth.assertThat(systemRouter).isNotNull();
     }
 
-    @ApiTest(apis = {"android.media.RouteDiscoveryPreference, android.media.MediaRouter2"})
     @Test
     public void visibilityAndAllowedPackages_propagateAcrossApps() throws TimeoutException {
         launchScreenOnActivity();
@@ -777,7 +770,6 @@ public class MediaRouter2DeviceTest {
         }
     }
 
-    @ApiTest(apis = {"android.media.MediaRouter2"})
     @Test
     public void selfScanOnlyProvider_notScannedByAnotherApp() {
         launchScreenOnActivity();
