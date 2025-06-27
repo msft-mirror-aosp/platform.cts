@@ -26,6 +26,7 @@ import android.mediapc.cts.common.Precondition.Companion.create
 import android.mediapc.cts.common.Precondition.Companion.createLazy
 import android.mediapc.cts.common.Precondition.Companion.forbidSystemFeature
 import android.mediapc.cts.common.Precondition.Companion.requireSystemFeature
+import android.util.DisplayMetrics
 
 /**
  * Setting the minimum memory to 2.5G so we get statistics on "Mid Tier Devices"
@@ -36,6 +37,8 @@ import android.mediapc.cts.common.Precondition.Companion.requireSystemFeature
 val AT_LEAST_2_5GB_MEMORY: Precondition = Precondition.usingContext("At least 2.5Gb of memory") {
     Utils.getTotalMemoryMb(it) > (2.5 * 1024L).toLong()
 }
+
+@JvmField
 val IS_HANDHELD = Precondition.group(
     // handheld nature is not exposed to package manager, for now
     // we check for touchscreen and NOT watch, tv or automotive
@@ -45,6 +48,20 @@ val IS_HANDHELD = Precondition.group(
     forbidSystemFeature(PackageManager.FEATURE_TELEVISION),
     forbidSystemFeature(PackageManager.FEATURE_AUTOMOTIVE),
     )
+
+/**
+ * MPC requires 400 DPI. lowering to HIGH (320) to report statistics on
+ * "mid tier" devices
+ *
+ * As of 2025 Q1 this is about 85% of daily active devices.
+ */
+@JvmField
+val DISPLAY_DPI =
+    Precondition.usingContext(
+        "Requires default display DPI greater than ${DisplayMetrics.DENSITY_HIGH}"
+    ) {
+        Utils.getDisplayDpi(it) > DisplayMetrics.DENSITY_HIGH
+    }
 
 /**
  * Meets [Utils.meetsPerformanceClassPreconditions].
@@ -71,11 +88,11 @@ val LEGACY_MEETS_PC_PRECONDITIONS = createLazy(
 @JvmField
 val BASELINE =
     Precondition.lazy( // BASELINE is called often enough to use lazy and cache the results.
-
         Precondition.group(
     "baseline",
     IS_HANDHELD,
             AT_LEAST_2_5GB_MEMORY,
+            DISPLAY_DPI,
             LEGACY_MEETS_PC_PRECONDITIONS
     )
 )

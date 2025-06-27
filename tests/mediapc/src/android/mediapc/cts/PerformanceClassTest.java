@@ -175,7 +175,8 @@ public class PerformanceClassTest {
         "2.2.7.3/7.1.1.3/H-1-1",
         "2.2.7.3/7.1.1.3/H-2-1",})
     public void testMinimumResolutionAndDensity() {
-        int density = Utils.DISPLAY_DPI;
+        int density =
+                Utils.getDisplayDpi(InstrumentationRegistry.getInstrumentation().getContext());
         int longPix = Utils.DISPLAY_LONG_PIXELS;
         int shortPix = Utils.DISPLAY_SHORT_PIXELS;
 
@@ -200,9 +201,11 @@ public class PerformanceClassTest {
     }
 
     @Test
-    @CddTest(requirements={
-        "2.2.7.3/7.6.1/H-1-1",
-        "2.2.7.3/7.6.1/H-2-1",})
+    @CddTest(
+            requirements = {
+                "2.2.7.3/7.6.1/H-1-1",
+                "2.2.7.3/7.6.1/H-2-1",
+            })
     public void testMinimumMemory() {
         long totalMemoryMb =
                 Utils.getTotalMemoryMb(InstrumentationRegistry.getInstrumentation().getContext());
