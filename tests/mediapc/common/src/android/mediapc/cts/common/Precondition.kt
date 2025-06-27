@@ -150,6 +150,15 @@ interface Precondition {
             return LazyPrecondition(message, minPerformanceClassLevel, fn)
         }
 
+        /**
+         *Creates a precondition that use a lazy result of the existing
+         * [Precondition.meetsPrecondition]
+         */
+        @JvmStatic
+        fun lazy(p: Precondition): Precondition {
+            return p as? LazyPrecondition ?: LazyPrecondition(p)
+        }
+
         @JvmStatic
         fun usingContext(
             message: String,
@@ -279,7 +288,11 @@ private class LazyPrecondition(
         minPerformanceClassLevel: Int,
         fn: () -> Boolean
     ) : this(message, lazy { fn() }, minPerformanceClassLevel)
-
+    constructor(precondition: Precondition) : this(
+        message = precondition.message,
+        minPerformanceClassLevel = precondition.minPerformanceClassLevel,
+        fn = precondition::meetsPrecondition
+    )
     override val meetsPrecondition: Boolean
         get() {
             return lazyMeets.value

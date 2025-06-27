@@ -105,11 +105,22 @@ class PreconditionTest {
     }
 
     @Test
-    fun lazyPrecondition_failureMessage_lazyNotCalled() {
+    fun lazyPrecondition_failureMessage_lazyCalled() {
         var called = false
         val p = Precondition.createLazy("lazy") { called = true; true }
         assertThat(called).isFalse()
         assertThat(p.failureMessage).isNull()
         assertThat(called).isTrue()
+    }
+
+    @Test
+    fun wrappedLazy_true() {
+        var called = false
+        val p = Precondition.lazy(Precondition.create("wrapped") { called = true; true })
+        assertThat(p.message).isEqualTo("wrapped")
+        assertThat(called).isFalse()
+        assertThat(p.failureMessage).isNull()
+        assertThat(called).isTrue()
+        assertThat(p.meetsPrecondition).isTrue()
     }
 }
