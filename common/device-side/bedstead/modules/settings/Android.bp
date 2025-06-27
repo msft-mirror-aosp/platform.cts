@@ -1,0 +1,38 @@
+package {
+    default_team: "trendy_team_android_settings_app",
+    default_applicable_licenses: ["Android-Apache-2.0"],
+}
+
+android_library {
+    name: "bedstead-settings",
+    srcs: [
+        "src/main/kotlin/**/*.kt",
+    ],
+    manifest: "src/main/AndroidManifest.xml",
+    sdk_version: "system_current",
+    min_sdk_version: "33",
+    static_libs: [
+        "bedstead",
+    ],
+}
+
+android_test {
+    name: "bedstead-settings-test",
+    defaults: ["cts_defaults"],
+    srcs: [
+        "src/test/kotlin/**/*.kt",
+    ],
+    test_suites: [
+        "general-tests",
+    ],
+    libs: ["android.test.runner.stubs.test"],
+
+    static_libs: [
+        "aconfig_settingslib_flags_java_lib",
+        "bedstead-settings",
+        "bedstead-flags",
+    ],
+    manifest: "src/test/AndroidManifest.xml",
+    min_sdk_version: "36",
+    sdk_version: "test_current",
+}
