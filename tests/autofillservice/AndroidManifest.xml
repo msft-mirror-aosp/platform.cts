@@ -115,7 +115,9 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
-        <activity android:name=".activities.WebViewActivity"/>
+        <activity android:name=".activities.WebViewActivity"
+            android:theme="@android:style/Theme.Material.Light.NoActionBar">
+        </activity>
         <activity android:name=".activities.WebViewMultiScreenLoginActivity"/>
         <activity android:name=".activities.TrampolineWelcomeActivity"/>
         <activity android:name=".activities.AttachedContextActivity"/>
