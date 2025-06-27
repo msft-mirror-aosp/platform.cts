@@ -96,8 +96,8 @@ public class AlertWindowsTests extends ActivityManagerTestBase {
     public void tearDown() throws Exception {
         resetPermissionState(ALERT_WINDOW_TEST_ACTIVITY);
         resetPermissionState(SDK25_ALERT_WINDOW_TEST_ACTIVITY);
-        stopTestPackage(ALERT_WINDOW_TEST_ACTIVITY.getPackageName());
-        stopTestPackage(SDK25_ALERT_WINDOW_TEST_ACTIVITY.getPackageName());
+        android.server.wm.alertwindowapp.Components.forceStopPackage();
+        android.server.wm.alertwindowappsdk25.Components.forceStopPackage();
     }
 
     @Test

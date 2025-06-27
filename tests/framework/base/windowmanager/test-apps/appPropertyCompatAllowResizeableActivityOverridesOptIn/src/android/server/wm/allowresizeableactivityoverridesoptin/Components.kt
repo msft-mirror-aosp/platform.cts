@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,17 +14,18 @@
  * limitations under the License.
  */
 
-package android.server.wm.propertycameracompatallowsimulaterequestedorientationoptout;
+package android.server.wm.allowresizeableactivityoverridesoptin
 
-import android.content.ComponentName;
-import android.server.wm.component.ComponentsBase;
+import android.server.wm.component.ComponentsProvider
+import android.server.wm.component.forceStopPackage
 
-public class Components extends ComponentsBase {
+/** Constants for allow-resizeable-activity-overrides-opt-in test components. */
+object Components : ComponentsProvider() {
 
     /** Activity in the app with application level component property. */
-    public static final ComponentName
-            CAMERA_COMPAT_ALLOW_SIMULATE_REQUESTED_ORIENTATION_OPT_OUT_ACTIVITY =
-                    component(
-                            Components.class,
-                            "CameraCompatAllowSimulateRequestedOrientationOptOutActivity");
+    @JvmField
+    val ALLOW_RESIZEABLE_ACTIVITY_OVERRIDES_OPT_IN_ACTIVITY =
+        component("AllowResizeableActivityOverridesOptInActivity")
+
+    @JvmStatic fun forceStopPackage() = (this as ComponentsProvider).forceStopPackage()
 }

@@ -224,16 +224,14 @@ public abstract class ActivityManagerTestBase {
     private static final int EVENT_LOG_SEPARATOR_TAG = 42;
 
     private static final String TEST_PACKAGE = TEST_ACTIVITY.getPackageName();
-    private static final String SECOND_TEST_PACKAGE = SECOND_ACTIVITY.getPackageName();
-    private static final String THIRD_TEST_PACKAGE = THIRD_ACTIVITY.getPackageName();
-    private static final List<String> TEST_PACKAGES = List.of(
-            TEST_PACKAGE,
-            SECOND_TEST_PACKAGE,
-            THIRD_TEST_PACKAGE,
-            "android.server.wm.cts",
-            "android.server.wm.jetpack",
-            "android.server.wm.jetpack.second"
-    );
+    private static final List<String> TEST_PACKAGES =
+            List.of(
+                    TEST_PACKAGE,
+                    SECOND_ACTIVITY.getPackageName(),
+                    THIRD_ACTIVITY.getPackageName(),
+                    "android.server.wm.cts",
+                    "android.server.wm.jetpack",
+                    "android.server.wm.jetpack.second");
 
     protected static final String AM_START_HOME_ACTIVITY_COMMAND =
             "am start -a android.intent.action.MAIN -c android.intent.category.HOME --user "
@@ -769,8 +767,8 @@ public abstract class ActivityManagerTestBase {
 
     private void forceStopAllTestPackages() {
         stopTestPackage(TEST_PACKAGE);
-        stopTestPackage(SECOND_TEST_PACKAGE);
-        stopTestPackage(THIRD_TEST_PACKAGE);
+        android.server.wm.second.Components.forceStopPackage();
+        android.server.wm.third.Components.forceStopPackage();
     }
 
     /** This should only be called if keyguard is still locked unexpectedly. */

@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,17 +14,18 @@
  * limitations under the License.
  */
 
-package android.server.wm.propertycameracompatallowsimulaterequestedorientationdefault;
+package android.server.wm.allowignoringorientationrequestwhenloopdetectedoptin
 
-import android.content.ComponentName;
-import android.server.wm.component.ComponentsBase;
+import android.server.wm.component.ComponentsProvider
+import android.server.wm.component.forceStopPackage
 
-public class Components extends ComponentsBase {
+/** Constants for ignoring orientation requests test components. */
+object Components : ComponentsProvider() {
 
     /** Activity in the app with application level component property. */
-    public static final ComponentName
-            CAMERA_COMPAT_ALLOW_SIMULATE_REQUESTED_ORIENTATION_DEFAULT_ACTIVITY =
-                    component(
-                            Components.class,
-                            "CameraCompatAllowSimulateRequestedOrientationDefaultActivity");
+    @JvmField
+    val ALLOW_IGNORING_ORIENTATION_REQUEST_WHEN_LOOP_DETECTED_OPT_IN_ACTIVITY =
+        component("AllowIgnoringOrientationRequestWhenLoopDetectedOptInActivity")
+
+    @JvmStatic fun forceStopPackage() = (this as ComponentsProvider).forceStopPackage()
 }

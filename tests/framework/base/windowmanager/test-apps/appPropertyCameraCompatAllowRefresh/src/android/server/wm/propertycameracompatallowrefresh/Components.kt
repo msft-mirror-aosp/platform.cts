@@ -1,11 +1,11 @@
 /*
- * Copyright (C) 2024 The Android Open Source Project
+ * Copyright (C) 2025 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,15 +14,17 @@
  * limitations under the License.
  */
 
-package android.server.wm.allowuseraspectratiooverrideoptout;
+package android.server.wm.propertycameracompatallowrefresh
 
-import android.content.ComponentName;
-import android.server.wm.component.ComponentsBase;
+import android.server.wm.component.ComponentsProvider
+import android.server.wm.component.forceStopPackage
 
-public class Components extends ComponentsBase {
+/** Constants for camera compat allow refresh test components. */
+object Components : ComponentsProvider() {
 
     /** Activity in the app with application level component property. */
-    public static final ComponentName ALLOW_USER_ASPECT_RATIO_OVERRIDE_OPT_OUT_ACTIVITY =
-            component(Components.class, "AllowUserAspectRatioOverrideOptOutActivity");
+    @JvmField
+    val CAMERA_COMPAT_ALLOW_REFRESH_ACTIVITY = component("CameraCompatAllowRefreshActivity")
 
+    @JvmStatic fun forceStopPackage() = (this as ComponentsProvider).forceStopPackage()
 }
