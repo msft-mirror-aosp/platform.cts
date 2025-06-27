@@ -58,8 +58,11 @@ import android.app.KeyguardManager.KeyguardLockedStateListener;
 import android.app.WallpaperManager;
 import android.content.ComponentName;
 import android.content.res.Configuration;
-import android.platform.test.annotations.Presubmit;
 import android.platform.test.annotations.DisableFlags;
+import android.platform.test.annotations.Presubmit;
+import android.platform.test.annotations.RequiresFlagsDisabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.server.wm.CommandSession;
 import android.server.wm.CommandSession.ActivitySession;
 import android.server.wm.CommandSession.ActivitySessionClient;
@@ -74,6 +77,7 @@ import com.android.systemui.Flags;
 
 import org.junit.Before;
 import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
 
 /**
@@ -83,6 +87,9 @@ import org.junit.Test;
 @Presubmit
 @android.server.wm.annotation.Group2
 public class KeyguardTests extends KeyguardTestBase {
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule =
+            DeviceFlagsValueProvider.createCheckFlagsRule();
 
     boolean isLockscreenLiveWpEnabled() {
         WallpaperManager mWallpaperManager = mContext.getSystemService(WallpaperManager.class);
@@ -131,7 +138,7 @@ public class KeyguardTests extends KeyguardTestBase {
      */
     @Test
     // Re-enabling for flexiglass is tracked in b/416718983.
-    @DisableFlags(Flags.FLAG_SCENE_CONTAINER)
+    @RequiresFlagsDisabled(Flags.FLAG_SCENE_CONTAINER)
     public void testLaunchShowWhenLockedActivity_whileDismissingKeyguard_unlocksAndShows() {
         final LockScreenSession lockScreenSession = createManagedLockScreenSession();
 
@@ -281,7 +288,7 @@ public class KeyguardTests extends KeyguardTestBase {
      */
     @Test
     // Re-enabling for flexiglass is tracked in b/416718983.
-    @DisableFlags(Flags.FLAG_SCENE_CONTAINER)
+    @RequiresFlagsDisabled(Flags.FLAG_SCENE_CONTAINER)
     public void testTranslucentShowWhenLockedActivity() {
         final LockScreenSession lockScreenSession = createManagedLockScreenSession();
         launchActivity(SHOW_WHEN_LOCKED_TRANSLUCENT_ACTIVITY);
@@ -317,7 +324,7 @@ public class KeyguardTests extends KeyguardTestBase {
 
     @Test
     // Re-enabling for flexiglass is tracked in b/416718983.
-    @DisableFlags(Flags.FLAG_SCENE_CONTAINER)
+    @RequiresFlagsDisabled(Flags.FLAG_SCENE_CONTAINER)
     public void testDialogShowWhenLockedActivity() {
         final LockScreenSession lockScreenSession = createManagedLockScreenSession();
         launchActivity(SHOW_WHEN_LOCKED_DIALOG_ACTIVITY);
@@ -694,7 +701,7 @@ public class KeyguardTests extends KeyguardTestBase {
 
     @Test
     // Re-enabling for flexiglass is tracked in b/416718983.
-    @DisableFlags(Flags.FLAG_SCENE_CONTAINER)
+    @RequiresFlagsDisabled(Flags.FLAG_SCENE_CONTAINER)
     public void testDismissKeyguard_fromActivityOption_translucentDialog_dismissesKeyguard() {
         final LockScreenSession lockScreenSession = createManagedLockScreenSession();
         lockScreenSession.gotoKeyguard();
@@ -718,7 +725,7 @@ public class KeyguardTests extends KeyguardTestBase {
 
     @Test
     // Re-enabling for flexiglass is tracked in b/416718983.
-    @DisableFlags(Flags.FLAG_SCENE_CONTAINER)
+    @RequiresFlagsDisabled(Flags.FLAG_SCENE_CONTAINER)
     public void testDismissKeyguard_fromActivityOption_translucentActivity_dismissesKeyguard() {
         final LockScreenSession lockScreenSession = createManagedLockScreenSession();
         lockScreenSession.gotoKeyguard();
