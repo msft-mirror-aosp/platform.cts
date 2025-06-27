@@ -31,6 +31,7 @@ import android.telecom.cts.apps.TelecomTestApp;
 import android.telecom.cts.cuj.BaseAppVerifier;
 import android.util.Log;
 
+import org.junit.After;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -47,6 +48,12 @@ public class CallSequencingManagedHoldRestrictionTest extends BaseAppVerifier {
     private static final String TAG = "CallSeqMHRTest";
     private static final TelecomTestApp MANAGED_0 = ManagedConnectionServiceApp;
     private static final TelecomTestApp MANAGED_1 = ManagedConnectionServiceAppClone;
+
+    @After
+    public void tearDown() throws Exception {
+        dismissErrorDialogIfPresent();
+        super.tearDown();
+    }
 
     /**
      * Given there is an ACTIVE call on managed acct 0 that does NOT support hold, and a RINGING
