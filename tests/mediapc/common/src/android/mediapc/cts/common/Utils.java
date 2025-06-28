@@ -18,6 +18,8 @@ package android.mediapc.cts.common;
 
 import static android.util.DisplayMetrics.DENSITY_HIGH;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import static org.junit.Assume.assumeTrue;
 
 import android.app.ActivityManager;
@@ -32,6 +34,7 @@ import android.os.Build;
 import android.os.SystemProperties;
 import android.util.DisplayMetrics;
 import android.util.Log;
+import android.util.Size;
 import android.view.Display;
 
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -47,9 +50,9 @@ import java.util.stream.Stream;
 /** Test utilities. */
 public final class Utils {
 
-    public static final int DISPLAY_DPI;
-    public static final int DISPLAY_LONG_PIXELS;
-    public static final int DISPLAY_SHORT_PIXELS;
+    private static final int sDisplayDpi;
+    private static final int sDisplayLongPixel;
+    private static final int sDisplayShortPixel;
     public static final boolean IS_HDR;
     public static final float HDR_DISPLAY_AVERAGE_LUMINANCE;
 
@@ -94,44 +97,74 @@ public final class Utils {
         if (context != null) {
             DisplayManager displayManager = context.getSystemService(DisplayManager.class);
             Display defaultDisplay = displayManager.getDisplay(Display.DEFAULT_DISPLAY);
-            Display.Mode maxResolutionDisplayMode =
-                    Arrays.stream(displayManager.getDisplays())
-                            .map(Display::getSupportedModes)
-                            .flatMap(Stream::of)
-                            .max(Comparator.comparing(Display.Mode::getPhysicalHeight))
-                            .orElseThrow(
-                                    () -> new RuntimeException("Failed to determine max height"));
-            int maxWidthPixels = maxResolutionDisplayMode.getPhysicalWidth();
-            int maxHeightPixels = maxResolutionDisplayMode.getPhysicalHeight();
-            DISPLAY_LONG_PIXELS = Math.max(maxWidthPixels, maxHeightPixels);
-            DISPLAY_SHORT_PIXELS = Math.min(maxWidthPixels, maxHeightPixels);
-
-            int widthPixels = defaultDisplay.getMode().getPhysicalWidth();
-            int heightPixels = defaultDisplay.getMode().getPhysicalHeight();
-
-            DisplayMetrics metrics = context.getResources().getDisplayMetrics();
-            final double widthInch = (double) widthPixels / (double) metrics.xdpi;
-            final double heightInch = (double) heightPixels / (double) metrics.ydpi;
-            final double diagonalInch = Math.sqrt(widthInch * widthInch + heightInch * heightInch);
-            final double maxDiagonalPixels =
-                    Math.sqrt(maxWidthPixels * maxWidthPixels + maxHeightPixels * maxHeightPixels);
-            // Use max of computed dpi and advertised dpi as these values differ in some devices.
-            DISPLAY_DPI = Math.max((int) (maxDiagonalPixels / diagonalInch),
-                    context.getResources().getConfiguration().densityDpi);
+            var size = getLargestDisplaySize(displayManager);
+            sDisplayLongPixel = getLongPixels(size);
+            sDisplayShortPixel = getShortPixels(size);
+            sDisplayDpi = getDisplayDpi(context);
 
             IS_HDR = defaultDisplay.isHdr();
             HDR_DISPLAY_AVERAGE_LUMINANCE =
                 defaultDisplay.getHdrCapabilities().getDesiredMaxAverageLuminance();
             sTotalMemoryMb = getTotalMemoryMb(context);
         } else {
-            DISPLAY_DPI = 0;
-            DISPLAY_LONG_PIXELS = 0;
-            DISPLAY_SHORT_PIXELS = 0;
+            sDisplayDpi = 0;
+            sDisplayLongPixel = 0;
+            sDisplayShortPixel = 0;
             sTotalMemoryMb = 0;
             IS_HDR = false;
             HDR_DISPLAY_AVERAGE_LUMINANCE = 0;
         }
         MEETS_AVC_CODEC_PRECONDITIONS = meetsAvcCodecPreconditions();
+    }
+
+    /** Get the size of the largest display. */
+    public static Size getLargestDisplaySize(DisplayManager displayManager) {
+        Display.Mode maxResolutionDisplayMode = getMaxResolutionDisplayMode(displayManager);
+        int maxWidthPixels = maxResolutionDisplayMode.getPhysicalWidth();
+        int maxHeightPixels = maxResolutionDisplayMode.getPhysicalHeight();
+        return new Size(maxWidthPixels, maxHeightPixels);
+    }
+
+    /** Get the max of width and height */
+    public static int getLongPixels(Size s) {
+        return Math.max(s.getWidth(), s.getHeight());
+    }
+
+    /** Get the min of width and height */
+    public static int getShortPixels(Size s) {
+        return Math.min(s.getWidth(), s.getHeight());
+    }
+
+    private static Display.Mode getMaxResolutionDisplayMode(DisplayManager displayManager) {
+        return Arrays.stream(displayManager.getDisplays())
+                .map(Display::getSupportedModes)
+                .flatMap(Stream::of)
+                .max(Comparator.comparing(Display.Mode::getPhysicalHeight))
+                .orElseThrow(() -> new RuntimeException("Failed to determine max height"));
+    }
+
+    /** Get the DPI of the default display or zero if there is none */
+    public static int getDisplayDpi(Context context) {
+        DisplayManager displayManager = context.getSystemService(DisplayManager.class);
+        checkNotNull(displayManager);
+        Display defaultDisplay = displayManager.getDisplay(Display.DEFAULT_DISPLAY);
+        Display.Mode maxResolutionDisplayMode = getMaxResolutionDisplayMode(displayManager);
+        int maxWidthPixels = maxResolutionDisplayMode.getPhysicalWidth();
+        int maxHeightPixels = maxResolutionDisplayMode.getPhysicalHeight();
+
+        int widthPixels = defaultDisplay.getMode().getPhysicalWidth();
+        int heightPixels = defaultDisplay.getMode().getPhysicalHeight();
+
+        DisplayMetrics metrics = context.getResources().getDisplayMetrics();
+        final double widthInch = (double) widthPixels / (double) metrics.xdpi;
+        final double heightInch = (double) heightPixels / (double) metrics.ydpi;
+        final double diagonalInch = Math.sqrt(widthInch * widthInch + heightInch * heightInch);
+        final double maxDiagonalPixels =
+                Math.sqrt(maxWidthPixels * maxWidthPixels + maxHeightPixels * maxHeightPixels);
+        // Use max of computed dpi and advertised dpi as these values differ in some devices.
+        return Math.max(
+                (int) (maxDiagonalPixels / diagonalInch),
+                context.getResources().getConfiguration().densityDpi);
     }
 
     /** Get {@link ActivityManager.MemoryInfo#totalMem} in Mb. */
@@ -269,7 +302,7 @@ public final class Utils {
      * @deprecated use android.mediapc.cts.common.Preconditions#BASELINE instead.
      */
     @Deprecated
-    public static boolean meetsPerformanceClassPreconditions() {
+    private static boolean meetsPerformanceClassPreconditions() {
         if (isPerfClass()) {
             return true;
         }
@@ -283,19 +316,22 @@ public final class Utils {
                 // MPC requires 400 DPI. lowering to HIGH (320) to report statistics on
                 // "mid tier" devices
                 // As of 2025 Q1 this is about 85% of daily active devices.
-                && DISPLAY_DPI >= DENSITY_HIGH
+                && sDisplayDpi >= DENSITY_HIGH
                 // MPC requires 1920. lowering to 1280 to report statistics on "mid tier" devices
                 // As of 2025 Q1 this is about 99% of daily active devices.
-                && DISPLAY_LONG_PIXELS >= 1280
+                && sDisplayLongPixel >= 1280
                 // MPC requires 1080. lowering to 720 to report statistics on "mid tier" devices
                 // As of 2025 Q1 this is about 99% of daily active devices.
-                && DISPLAY_SHORT_PIXELS >= 720;
+                && sDisplayShortPixel >= 720;
     }
 
     /**
      * Throws an {@link org.junit.AssumptionViolatedException} if the device does not {@link
      * #meetsPerformanceClassPreconditions()}
+     *
+     * @deprecated use android.mediapc.cts.common.Preconditions#BASELINE instead.
      */
+    @Deprecated
     public static void assumeDeviceMeetsPerformanceClassPreconditions() {
         assumeTrue(
                 "Test skipped because the device does not meet the hardware requirements for "
