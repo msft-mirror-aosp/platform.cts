@@ -147,7 +147,10 @@ class DeviceEventTest : CoreTestBase() {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_NOTIFY_ASSOCIATION_REMOVED)
+    @RequiresFlagsEnabled(
+        Flags.FLAG_NOTIFY_ASSOCIATION_REMOVED,
+        Flags.FLAG_ASSOCIATION_VERIFICATION
+    )
     fun test_association_removed_event() {
         targetApp.associate(MAC_ADDRESS_A)
         val associationId = cdm.myAssociations[0].id
