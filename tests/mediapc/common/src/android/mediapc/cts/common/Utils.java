@@ -52,7 +52,8 @@ public final class Utils {
     public static final int DISPLAY_SHORT_PIXELS;
     public static final boolean IS_HDR;
     public static final float HDR_DISPLAY_AVERAGE_LUMINANCE;
-    public static final long TOTAL_MEMORY_MB;
+
+    private static final long sTotalMemoryMb;
     private static final int sPc;
 
     private static final String TAG = "PerformanceClassTestUtils";
@@ -121,20 +122,24 @@ public final class Utils {
             IS_HDR = defaultDisplay.isHdr();
             HDR_DISPLAY_AVERAGE_LUMINANCE =
                 defaultDisplay.getHdrCapabilities().getDesiredMaxAverageLuminance();
-
-            ActivityManager activityManager = context.getSystemService(ActivityManager.class);
-            ActivityManager.MemoryInfo memoryInfo = new ActivityManager.MemoryInfo();
-            activityManager.getMemoryInfo(memoryInfo);
-            TOTAL_MEMORY_MB = memoryInfo.totalMem / 1024 / 1024;
+            sTotalMemoryMb = getTotalMemoryMb(context);
         } else {
             DISPLAY_DPI = 0;
             DISPLAY_LONG_PIXELS = 0;
             DISPLAY_SHORT_PIXELS = 0;
-            TOTAL_MEMORY_MB = 0;
+            sTotalMemoryMb = 0;
             IS_HDR = false;
             HDR_DISPLAY_AVERAGE_LUMINANCE = 0;
         }
         MEETS_AVC_CODEC_PRECONDITIONS = meetsAvcCodecPreconditions();
+    }
+
+    /** Get {@link ActivityManager.MemoryInfo#totalMem} in Mb. */
+    public static long getTotalMemoryMb(Context context) {
+        ActivityManager activityManager = context.getSystemService(ActivityManager.class);
+        ActivityManager.MemoryInfo memoryInfo = new ActivityManager.MemoryInfo();
+        activityManager.getMemoryInfo(memoryInfo);
+        return memoryInfo.totalMem / 1024 / 1024;
     }
 
     /**
@@ -166,9 +171,7 @@ public final class Utils {
         return sPc == Build.VERSION_CODES.VANILLA_ICE_CREAM;
     }
 
-    /**
-     * Latest defined media performance class.
-     */
+    /** Latest defined media performance class. */
     private static final int LAST_PERFORMANCE_CLASS = Build.VERSION_CODES.VANILLA_ICE_CREAM;
 
     /**
@@ -276,7 +279,7 @@ public final class Utils {
         return isHandheld()
                 // Setting the minimum memory to 2.5G so we get statistics on "Mid Tier Devices"
                 // As of 2025 Q1 this is about 80% of daily active devices.
-                && TOTAL_MEMORY_MB >= (long)(2.5 * 1024L)
+                && sTotalMemoryMb >= (long) (2.5 * 1024L)
                 // MPC requires 400 DPI. lowering to HIGH (320) to report statistics on
                 // "mid tier" devices
                 // As of 2025 Q1 this is about 85% of daily active devices.
