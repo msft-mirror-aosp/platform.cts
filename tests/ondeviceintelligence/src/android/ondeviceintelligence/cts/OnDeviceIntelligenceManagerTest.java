@@ -56,6 +56,7 @@ import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.CancellationSignal;
 import android.os.IBinder;
+import android.os.OutcomeReceiver;
 import android.os.PersistableBundle;
 import android.os.Process;
 import android.os.UserHandle;
@@ -114,6 +115,7 @@ public class OnDeviceIntelligenceManagerTest {
     public static final String TOKEN_INFO_COUNT_KEY = "tokenInfo_count_key";
     public static final String TOKEN_INFO_PARAMS_KEY = "tokenInfo_params_key";
     public static final String TEST_OD_NAMESPACE = "test_od_namespace";
+    public static final String ID_FILTER_KEY = "id_filter";
 
 
     private static final String TAG = OnDeviceIntelligenceManagerTest.class.getSimpleName();
@@ -138,7 +140,7 @@ public class OnDeviceIntelligenceManagerTest {
     public static final int REQUEST_TYPE_GET_CALLER_UID = 1005;
     public static final int REQUEST_TYPE_GET_UPDATED_DEVICE_CONFIG = 1006;
     public static final int REQUEST_TYPE_GET_FILE_FROM_NON_FILES_DIRECTORY = 1007;
-    public static final int REQUEST_TYPE_POPULATE_INFERENCE_INFO = 1008;
+    public static final int REQUEST_TYPE_POPULATE_INFERENCE_INFO_CALLBACK = 1009;
     public static final int REQUEST_TYPE_FETCH_FEATURE_METADATA = 1009;
 
     private static final Executor EXECUTOR = InstrumentationRegistry.getContext().getMainExecutor();
@@ -436,6 +438,59 @@ public class OnDeviceIntelligenceManagerTest {
                     statusLatch.countDown();
                 });
         assertThat(statusLatch.await(1, SECONDS)).isTrue();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_ON_DEVICE_INTELLIGENCE_25Q4)
+    public void resultPopulatedWhenListFeaturesWithFilter() throws Exception {
+        getInstrumentation()
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(Manifest.permission.USE_ON_DEVICE_INTELLIGENCE);
+        CountDownLatch statusLatch = new CountDownLatch(1);
+        PersistableBundle filter = new PersistableBundle();
+        filter.putInt(ID_FILTER_KEY, 0);
+
+        mOnDeviceIntelligenceManager.listFeatures(filter,
+                EXECUTOR,
+                result -> {
+                    assertThat(result).hasSize(1);
+                    assertThat(result.get(0).getId()).isEqualTo(0);
+                    statusLatch.countDown();
+                });
+        assertThat(statusLatch.await(1, SECONDS)).isTrue();
+
+        CountDownLatch statusLatch2 = new CountDownLatch(1);
+        mOnDeviceIntelligenceManager.listFeatures(PersistableBundle.EMPTY,
+                EXECUTOR,
+                new OutcomeReceiver<>() {
+                    @Override
+                    public void onResult(List<Feature> result) {
+                        assertThat(result).hasSize(2);
+                        statusLatch2.countDown();
+                    }
+
+                    @Override
+                    public void onError(OnDeviceIntelligenceException error) {
+                        // fail
+                    }
+                });
+        assertThat(statusLatch2.await(1, SECONDS)).isTrue();
+        CountDownLatch statusLatch3 = new CountDownLatch(1);
+
+        mOnDeviceIntelligenceManager.listFeatures(EXECUTOR,
+                new OutcomeReceiver<>() {
+                    @Override
+                    public void onResult(List<Feature> result) {
+                        assertThat(result).hasSize(1);
+                        statusLatch3.countDown();
+                    }
+
+                    @Override
+                    public void onError(OnDeviceIntelligenceException error) {
+                        // fail
+                    }
+                });
+        assertThat(statusLatch3.await(1, SECONDS)).isTrue();
     }
 
     @Test
@@ -1021,7 +1076,6 @@ public class OnDeviceIntelligenceManagerTest {
         assertThat(statusLatch2.await(1, SECONDS)).isTrue();
     }
 
-
     @Test
     @RequiresFlagsEnabled(FLAG_ON_DEVICE_INTELLIGENCE_25Q4)
     public void getLatestInferenceInfoReturnSuccessfully() throws Exception {
@@ -1034,7 +1088,7 @@ public class OnDeviceIntelligenceManagerTest {
                         Manifest.permission.USE_ON_DEVICE_INTELLIGENCE);
         CountDownLatch statusLatch = new CountDownLatch(1);
         mOnDeviceIntelligenceManager.processRequest(new Feature.Builder(1).build(),
-                Bundle.EMPTY, REQUEST_TYPE_POPULATE_INFERENCE_INFO, null,
+                Bundle.EMPTY, REQUEST_TYPE_POPULATE_INFERENCE_INFO_CALLBACK, null,
                 null, EXECUTOR, new ProcessingCallback() {
                     @Override
                     public void onResult(@NonNull Bundle result) {
@@ -1051,6 +1105,74 @@ public class OnDeviceIntelligenceManagerTest {
         List<InferenceInfo> inferenceInfoList = mOnDeviceIntelligenceManager.getLatestInferenceInfo(
                 0);
         assertThat(inferenceInfoList).isNotEmpty();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_ON_DEVICE_INTELLIGENCE_25Q4)
+    public void inferenceInfoCallbackIsConditional() throws Exception {
+        getInstrumentation()
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(Manifest.permission.USE_ON_DEVICE_INTELLIGENCE);
+
+        // Case 1: No key in request, onInferenceInfo should not be called.
+        CountDownLatch resultLatch1 = new CountDownLatch(1);
+        CountDownLatch inferenceInfoLatch1 = new CountDownLatch(1);
+
+        mOnDeviceIntelligenceManager.processRequest(new Feature.Builder(1).build(),
+                Bundle.EMPTY, REQUEST_TYPE_POPULATE_INFERENCE_INFO_CALLBACK, null,
+                null, EXECUTOR, new ProcessingCallback() {
+                    @Override
+                    public void onResult(@NonNull Bundle result) {
+                        resultLatch1.countDown();
+                    }
+
+                    @Override
+                    public void onError(@NonNull OnDeviceIntelligenceException error) {
+                        resultLatch1.countDown();
+                    }
+
+                    @Override
+                    public void onInferenceInfo(@NonNull InferenceInfo info) {
+                        inferenceInfoLatch1.countDown();
+                    }
+                });
+        assertThat(resultLatch1.await(2, SECONDS)).isTrue();
+        // onInferenceInfo should not be called.
+        assertThat(inferenceInfoLatch1.await(200, java.util.concurrent.TimeUnit.MILLISECONDS)).isFalse();
+
+        // Case 2: Key in request is true, onInferenceInfo should be called.
+        CountDownLatch resultLatch2 = new CountDownLatch(1);
+        CountDownLatch inferenceInfoLatch2 = new CountDownLatch(1);
+        CompletableFuture<InferenceInfo> inferenceInfoFuture2 = new CompletableFuture<>();
+        Bundle request = new Bundle();
+        request.putBoolean(OnDeviceIntelligenceManager.KEY_REQUEST_INFERENCE_INFO, true);
+
+        mOnDeviceIntelligenceManager.processRequest(new Feature.Builder(1).build(),
+                request, REQUEST_TYPE_POPULATE_INFERENCE_INFO_CALLBACK, null,
+                null, EXECUTOR, new ProcessingCallback() {
+                    @Override
+                    public void onResult(@NonNull Bundle result) {
+                        resultLatch2.countDown();
+                    }
+
+                    @Override
+                    public void onError(@NonNull OnDeviceIntelligenceException error) {
+                        resultLatch2.countDown();
+                    }
+
+                    @Override
+                    public void onInferenceInfo(@NonNull InferenceInfo info) {
+                        inferenceInfoFuture2.complete(info);
+                        inferenceInfoLatch2.countDown();
+                    }
+                });
+        assertThat(resultLatch2.await(2, SECONDS)).isTrue();
+        assertThat(inferenceInfoLatch2.await(2, SECONDS)).isTrue();
+        InferenceInfo receivedInfo = inferenceInfoFuture2.get();
+        assertThat(receivedInfo).isNotNull();
+        assertThat(receivedInfo.getUid()).isEqualTo(1);
+        assertThat(receivedInfo.getStartTimeMillis()).isEqualTo(2);
+        assertThat(receivedInfo.getEndTimeMillis()).isEqualTo(3);
     }
 
     //===================== Tests data augmentation while processing request =====================

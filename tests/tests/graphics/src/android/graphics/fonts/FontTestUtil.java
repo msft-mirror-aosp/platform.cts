@@ -25,8 +25,6 @@ import android.platform.test.ravenwood.RavenwoodRule;
 import android.text.TextPaint;
 import android.util.Pair;
 
-import com.android.ravenwood.common.RavenwoodCommonUtils;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -353,7 +351,7 @@ public class FontTestUtil {
     /** Returns the correct fonts directory, either on device or running in Ravenwood. */
     public static String getFontsDir() {
         if (RavenwoodRule.isOnRavenwood()) {
-            return RavenwoodCommonUtils.getRavenwoodRuntimePath() + "/fonts/";
+            return RavenwoodRule.getRavenwoodRuntimePath() + "/fonts/";
         } else {
             return "/system/fonts/";
         }

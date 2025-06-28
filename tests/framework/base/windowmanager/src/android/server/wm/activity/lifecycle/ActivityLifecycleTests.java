@@ -84,8 +84,10 @@ import android.app.ActivityOptions;
 import android.content.ComponentName;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
-import android.platform.test.annotations.DisableFlags;
 import android.platform.test.annotations.Presubmit;
+import android.platform.test.annotations.RequiresFlagsDisabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.server.wm.LaunchActivityBuilder;
 import android.server.wm.RotationSession;
 
@@ -116,6 +118,9 @@ import java.util.List;
 @android.server.wm.annotation.Group3
 @RunWith(BedsteadJUnit4.class)
 public class ActivityLifecycleTests extends ActivityLifecycleClientTestBase {
+   @Rule
+    public final CheckFlagsRule mCheckFlagsRule =
+            DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @ClassRule
     @Rule
@@ -123,7 +128,7 @@ public class ActivityLifecycleTests extends ActivityLifecycleClientTestBase {
 
     @Test
     // Re-enabling for flexiglass is tracked in b/423954202.
-    @DisableFlags(Flags.FLAG_SCENE_CONTAINER)
+    @RequiresFlagsDisabled(Flags.FLAG_SCENE_CONTAINER)
     public void testSingleLaunch() throws Exception {
         launchActivityAndWait(FirstActivity.class);
 

@@ -25,7 +25,6 @@ import static android.mediav2.common.cts.MuxerUtils.getMuxerFormatForMediaType;
 import static android.mediav2.common.cts.MuxerUtils.getTempFilePath;
 import static android.mediav2.common.cts.MuxerUtils.muxOutput;
 
-import static com.android.media.editing.flags.Flags.muxerMp4EnableApv;
 import static com.android.media.extractor.flags.Flags.extractorMp4EnableApv;
 
 import static org.junit.Assert.assertNotNull;
@@ -198,7 +197,7 @@ public class EncoderColorAspectsTest extends CodecEncoderTestBase {
                     MediaFormat.MIMETYPE_VIDEO_HEVC,
                     MediaFormat.MIMETYPE_VIDEO_VP9
             ));
-            if (IS_AT_LEAST_B && apvSupport() && muxerMp4EnableApv() && extractorMp4EnableApv()) {
+            if (IS_AT_LEAST_B && apvSupport() && extractorMp4EnableApv()) {
                 mediaTypesHighBitDepth.add(MediaFormat.MIMETYPE_VIDEO_APV);
             }
             int[] standardsHighBitDepth = {-1,

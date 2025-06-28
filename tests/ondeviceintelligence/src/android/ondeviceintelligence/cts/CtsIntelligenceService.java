@@ -16,10 +16,10 @@
 
 package android.ondeviceintelligence.cts;
 
-
 import static android.ondeviceintelligence.cts.OnDeviceIntelligenceManagerTest.TEST_CONTENT;
 import static android.ondeviceintelligence.cts.OnDeviceIntelligenceManagerTest.TEST_FILE_NAME;
 import static android.ondeviceintelligence.cts.OnDeviceIntelligenceManagerTest.TEST_KEY;
+import static android.ondeviceintelligence.cts.OnDeviceIntelligenceManagerTest.ID_FILTER_KEY;
 
 import android.app.ondeviceintelligence.DownloadCallback;
 import android.app.ondeviceintelligence.Feature;
@@ -188,6 +188,22 @@ public class CtsIntelligenceService extends OnDeviceIntelligenceService {
             @NonNull OutcomeReceiver<List<Feature>, OnDeviceIntelligenceException> listFeaturesCallback) {
         List<Feature> featureList = new ArrayList<>();
         featureList.add(getSampleFeature(0));
+        listFeaturesCallback.onResult(featureList);
+    }
+
+    @Override
+    public void onListFeatures(int callerUid,
+            @NonNull PersistableBundle featureParamsFilter,
+            @NonNull OutcomeReceiver<List<Feature>,
+                    OnDeviceIntelligenceException> listFeaturesCallback) {
+        List<Feature> featureList = new ArrayList<>();
+        if (featureParamsFilter.containsKey(ID_FILTER_KEY)
+                && featureParamsFilter.getInt(ID_FILTER_KEY) == 0) {
+            featureList.add(getSampleFeature(0));
+        } else {
+            featureList.add(getSampleFeature(0));
+            featureList.add(getSampleFeature(1));
+        }
         listFeaturesCallback.onResult(featureList);
     }
 

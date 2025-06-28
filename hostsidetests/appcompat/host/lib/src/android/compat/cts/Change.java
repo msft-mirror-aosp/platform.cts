@@ -29,7 +29,6 @@ public class Change {
                                             + "(; enableSinceTargetSdk=(?<sinceSdk>[0-9]+))?"
                                             + "(; (?<disabled>disabled))?"
                                             + "(; (?<loggingOnly>loggingOnly))?"
-                                            + "(; (?<noLogging>noLogging))?"
                                             + "(; packageOverrides=(?<overrides>[^\\);]+))?"
                                             + "(; rawOverrides=(?<rawOverrides>[^\\);]+))?"
                                             + "(; (?<overridable>overridable))?"
@@ -39,7 +38,6 @@ public class Change {
     public int sinceSdk;
     public boolean disabled;
     public boolean loggingOnly;
-    public boolean noLogging;
     public boolean overridable;
     public boolean hasRawOverrides;
     public boolean hasOverrides;
@@ -47,15 +45,14 @@ public class Change {
     public String overridesStr;
 
     private Change(long changeId, String changeName, int sinceSdk,
-            boolean disabled, boolean loggingOnly, boolean noLogging,
-            boolean overridable, boolean hasRawOverrides, boolean hasOverrides,
+            boolean disabled, boolean loggingOnly, boolean overridable,
+            boolean hasRawOverrides, boolean hasOverrides,
             String rawOverrideStr, String overridesStr) {
         this.changeId = changeId;
         this.changeName = changeName;
         this.sinceSdk = sinceSdk;
         this.disabled = disabled;
         this.loggingOnly = loggingOnly;
-        this.noLogging = noLogging;
         this.overridable = overridable;
         this.hasRawOverrides = hasRawOverrides;
         this.hasOverrides = hasOverrides;
@@ -69,7 +66,6 @@ public class Change {
         int sinceSdk = -1;
         boolean disabled = false;
         boolean loggingOnly = false;
-        boolean noLogging = false;
         boolean overridable = false;
         boolean hasRawOverrides = false;
         boolean hasOverrides = false;
@@ -101,9 +97,6 @@ public class Change {
         if (matcher.group("loggingOnly") != null) {
             loggingOnly = true;
         }
-        if (matcher.group("noLogging") != null) {
-            noLogging = true;
-        }
         if (matcher.group("overrides") != null) {
             hasOverrides = true;
             overridesStr = matcher.group("overrides");
@@ -115,8 +108,8 @@ public class Change {
         if (matcher.group("overridable") != null) {
             overridable = true;
         }
-        return new Change(changeId, changeName, sinceSdk, disabled, loggingOnly, noLogging,
-                          overridable,hasRawOverrides, hasOverrides, rawOverridesStr,
+        return new Change(changeId, changeName, sinceSdk, disabled, loggingOnly, overridable,
+                          hasRawOverrides, hasOverrides, rawOverridesStr,
                           overridesStr);
     }
 
@@ -144,16 +137,13 @@ public class Change {
         if (element.hasAttribute("loggingOnly")) {
             loggingOnly = true;
         }
-        boolean noLogging = false;
-        if (element.hasAttribute("noLogging")) {
-            noLogging = true;
-        }
         boolean overridable = false;
         if (element.hasAttribute("overridable")) {
             overridable = true;
         }
-        return new Change(changeId, changeName, sinceSdk, disabled, loggingOnly, noLogging,
-                overridable, false, false, null, null);
+        return new Change(changeId, changeName, sinceSdk, disabled, loggingOnly, overridable,
+                /* hasRawOverrides= */ false, /* hasOverrides= */ false,
+                /* rawOverridesStr= */ null, /* overridesStr= */null);
     }
 
     @Override
@@ -175,7 +165,6 @@ public class Change {
             && this.sinceSdk == that.sinceSdk
             && this.disabled == that.disabled
             && this.loggingOnly == that.loggingOnly
-            && this.noLogging == that.noLogging
             && this.overridable == that.overridable;
     }
 
@@ -204,9 +193,6 @@ public class Change {
         }
         if (overridable) {
             sb.append("; overridable");
-        }
-        if (noLogging) {
-            sb.append("; noLogging");
         }
         sb.append(")");
         return sb.toString();

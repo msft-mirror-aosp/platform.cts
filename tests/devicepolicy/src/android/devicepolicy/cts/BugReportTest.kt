@@ -132,16 +132,11 @@ class BugReportTest {
     @ApiTest(apis = ["android.app.admin.DevicePolicyManager#requestBugreport"])
     @NotificationsTest
     fun requestBugReport_affiliatedAdditionalUser_doesNotThrowException() {
-        // TODO(273474964): Move into infra
-        TestApis.users().all().stream()
-            .filter { u: UserReference ->
-                (u != TestApis.users().instrumented()
-                        && u != deviceState.additionalUser()
-                        && u != TestApis.users().current()
-                        && u != TestApis.users().initial()
-                        && u != TestApis.users().system())
+        TestApis.users().ensureNoOtherUsersExcept {
+            u: UserReference ->
+                        u == deviceState.additionalUser() ||
+                        u == TestApis.users().initial()
             }
-            .forEach { obj: UserReference -> obj.remove() }
         val affiliationIds = HashSet(
             deviceState.dpcOnly().devicePolicyManager()
                 .getAffiliationIds(deviceState.dpcOnly().componentName())
@@ -236,15 +231,10 @@ class BugReportTest {
     }
 
     private fun removeOtherUsers() {
-        // TODO(273474964): Move into infra
-        TestApis.users().all().stream()
-            .filter { u: UserReference ->
-                (u != TestApis.users().instrumented()
-                        && u != TestApis.users().current()
-                        && u != TestApis.users().initial()
-                        && u != TestApis.users().system())
-            }
-            .forEach { obj: UserReference -> obj.remove() }
+        TestApis.users().ensureNoOtherUsersExcept {
+                u: UserReference ->
+                    u == TestApis.users().initial()
+        }
     }
 
     fun cleanupBugreportNotification(notifications: NotificationListener) {

@@ -19,6 +19,7 @@ package android.telephony.cts;
 import static android.app.AppOpsManager.MODE_ALLOWED;
 import static android.app.AppOpsManager.MODE_IGNORED;
 import static android.app.AppOpsManager.OPSTR_READ_PHONE_STATE;
+import static android.telephony.CarrierConfigManager.KEY_ALLOW_HOLD_IN_RTT_CALL_BOOL;
 import static android.telephony.CarrierConfigManager.KEY_CARRIER_NAME_OVERRIDE_BOOL;
 import static android.telephony.CarrierConfigManager.KEY_CARRIER_NAME_STRING;
 import static android.telephony.CarrierConfigManager.KEY_CARRIER_ROAMING_NTN_CONNECT_TYPE_INT;
@@ -314,6 +315,10 @@ public class CarrierConfigManagerTest {
                                 + "doesn't match static default.",
                         config.getLong(KEY_SATELLITE_CONNECTED_NOTIFICATION_THROTTLE_MILLIS_INT),
                         TimeUnit.DAYS.toMillis(7));
+            }
+            if (Flags.enableRttHoldCarrierConfig()) {
+                assertTrue("KEY_ALLOW_HOLD_IN_RTT_CALL_BOOL doesn't match static default.",
+                        config.getBoolean(KEY_ALLOW_HOLD_IN_RTT_CALL_BOOL));
             }
         }
 

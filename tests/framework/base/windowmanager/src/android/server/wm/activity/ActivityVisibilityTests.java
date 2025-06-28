@@ -61,8 +61,11 @@ import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.content.ComponentName;
-import android.platform.test.annotations.Presubmit;
 import android.platform.test.annotations.DisableFlags;
+import android.platform.test.annotations.Presubmit;
+import android.platform.test.annotations.RequiresFlagsDisabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.server.wm.ActivityManagerTestBase;
 import android.server.wm.CommandSession.ActivitySession;
 import android.server.wm.CommandSession.ActivitySessionClient;
@@ -91,6 +94,10 @@ public class ActivityVisibilityTests extends ActivityManagerTestBase {
 
     @Rule
     public final DisableScreenDozeRule mDisableScreenDozeRule = new DisableScreenDozeRule();
+
+   @Rule
+    public final CheckFlagsRule mCheckFlagsRule =
+            DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Override
     public void setUp() throws Exception {
@@ -716,7 +723,7 @@ public class ActivityVisibilityTests extends ActivityManagerTestBase {
 
     @Test
     // Re-enabling for flexiglass is tracked in b/416719233.
-    @DisableFlags(Flags.FLAG_SCENE_CONTAINER)
+    @RequiresFlagsDisabled(Flags.FLAG_SCENE_CONTAINER)
     public void testTurnScreenOnWithAttr_Freeform() {
         assumeTrue(supportsLockScreen());
         assumeTrue(supportsFreeform());
@@ -768,7 +775,7 @@ public class ActivityVisibilityTests extends ActivityManagerTestBase {
 
     @Test
     // Re-enabling for flexiglass is tracked in b/416719233.
-    @DisableFlags(Flags.FLAG_SCENE_CONTAINER)
+    @RequiresFlagsDisabled(Flags.FLAG_SCENE_CONTAINER)
     public void testTurnScreenOnWhenLockWithAttrInFreeform() {
         assumeTrue(supportsLockScreen());
         assumeTrue(supportsFreeform());

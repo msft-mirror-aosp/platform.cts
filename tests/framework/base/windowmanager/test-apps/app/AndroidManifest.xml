@@ -34,7 +34,9 @@
         <package android:name="android.server.wm.cts" />
     </queries>
 
-    <application android:debuggable="true">
+    <application
+        android:name=".TestApplication"
+        android:debuggable="true">
         <activity android:name=".TestActivity"
              android:resizeableActivity="true"
              android:supportsPictureInPicture="true"
@@ -133,18 +135,12 @@
              android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout"
              android:exported="true"
              android:taskAffinity="nobody.but.PipActivitySameAffinity"/>
-        <activity android:name=".AlwaysFocusablePipActivity"
+        <activity android:name=".TranslucentPipActivity"
              android:theme="@style/Theme.Transparent"
              android:resizeableActivity="false"
              android:supportsPictureInPicture="true"
-             androidprv:alwaysFocusable="true"
              android:exported="true"
-             android:taskAffinity="nobody.but.AlwaysFocusablePipActivity"/>
-        <activity android:name=".LaunchIntoPinnedStackPipActivity"
-             android:resizeableActivity="false"
-             androidprv:alwaysFocusable="true"
-             android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout"
-             android:exported="true"/>
+             android:taskAffinity="nobody.but.TranslucentPipActivity"/>
         <activity android:name=".LaunchPipOnPipActivity"
              android:resizeableActivity="false"
              android:supportsPictureInPicture="true"

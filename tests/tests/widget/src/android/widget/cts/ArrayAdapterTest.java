@@ -32,6 +32,7 @@ import android.content.res.Resources.Theme;
 import android.database.DataSetObserver;
 import android.widget.ArrayAdapter;
 import android.widget.Filter;
+import android.widget.FrameLayout;
 import android.widget.TextView;
 
 import androidx.test.InstrumentationRegistry;
@@ -153,6 +154,8 @@ public class ArrayAdapterTest {
     @Test
     public void testAccessView() {
         final TextView textView = new TextView(mContext);
+        final FrameLayout viewParent = new FrameLayout(mContext);
+        viewParent.addView(textView);
         textView.setText(STR3);
 
         assertNotNull(mArrayAdapter.getContext());
@@ -165,13 +168,14 @@ public class ArrayAdapterTest {
 
         assertEquals(3, mArrayAdapter.getCount());
 
-        assertEquals(STR1, ((TextView) mArrayAdapter.getView(0, null, null)).getText());
-        assertEquals(STR2, ((TextView) mArrayAdapter.getView(1, null, null)).getText());
-        assertEquals(STR3, ((TextView) mArrayAdapter.getDropDownView(2, null, null)).getText());
+        assertEquals(STR1, ((TextView) mArrayAdapter.getView(0, null, viewParent)).getText());
+        assertEquals(STR2, ((TextView) mArrayAdapter.getView(1, null, viewParent)).getText());
+        assertEquals(
+                STR3, ((TextView) mArrayAdapter.getDropDownView(2, null, viewParent)).getText());
 
         assertEquals(STR3, textView.getText());
-        assertSame(textView, mArrayAdapter.getView(0, textView, null));
-        assertSame(textView, mArrayAdapter.getDropDownView(0, textView, null));
+        assertSame(textView, mArrayAdapter.getView(0, textView, viewParent));
+        assertSame(textView, mArrayAdapter.getDropDownView(0, textView, viewParent));
         assertEquals(STR1, textView.getText());
     }
 

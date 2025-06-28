@@ -741,6 +741,22 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
                     || ((characteristics.getSupportedPairingCipherSuites()
                     & WIFI_AWARE_CIPHER_SUITE_NCS_PK_PASN_256) != 0));
         }
+        if (characteristics.getNumberOfSupportedDataPaths() > 1
+                && Flags.allowOverrideMaxNdpSession()) {
+            int deviceNdpNum = characteristics.getNumberOfSupportedDataPaths();
+            AwareParams params = new AwareParams();
+            params.setNdpSessionLimit(1);
+            assertEquals(1, params.getNdpSessionLimit());
+            ShellIdentityUtils.invokeWithShellPermissions(
+                    () -> mWifiAwareManager.setAwareParams(params));
+            assertEquals(1, mWifiAwareManager.getCharacteristics().getNumberOfSupportedDataPaths());
+            params.setNdpSessionLimit(0);
+            ShellIdentityUtils.invokeWithShellPermissions(
+                    () -> mWifiAwareManager.setAwareParams(params));
+            assertEquals(
+                    deviceNdpNum,
+                    mWifiAwareManager.getCharacteristics().getNumberOfSupportedDataPaths());
+        }
 
         if (WifiBuildCompat.isAtLeastB() && com.android.ranging.flags.Flags.rangingRttEnabled()) {
             if (characteristics.isPeriodicRangingSupported()) {

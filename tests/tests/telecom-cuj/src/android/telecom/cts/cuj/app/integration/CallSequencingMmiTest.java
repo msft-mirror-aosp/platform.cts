@@ -27,6 +27,7 @@ import android.telecom.CallAttributes;
 import android.telecom.cts.apps.AppControlWrapper;
 import android.telecom.cts.cuj.BaseAppVerifier;
 
+import org.junit.After;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -36,6 +37,12 @@ import java.util.List;
 
 @RunWith(JUnit4.class)
 public class CallSequencingMmiTest extends BaseAppVerifier {
+
+    @After
+    public void tearDown() throws Exception {
+        dismissErrorDialogIfPresent();
+        super.tearDown();
+    }
 
     @Test
     public void testInCallMmiCodeBlocked() throws Exception {

@@ -21,8 +21,22 @@
 
 package android.mediapc.cts.common
 
+import android.content.pm.PackageManager
 import android.mediapc.cts.common.Precondition.Companion.create
 import android.mediapc.cts.common.Precondition.Companion.createLazy
+import android.mediapc.cts.common.Precondition.Companion.forbidSystemFeature
+import android.mediapc.cts.common.Precondition.Companion.requireSystemFeature
+
+@JvmField
+val IS_HANDHELD = Precondition.group(
+    // handheld nature is not exposed to package manager, for now
+    // we check for touchscreen and NOT watch, tv or automotive
+    "is_handheld",
+    requireSystemFeature(PackageManager.FEATURE_TOUCHSCREEN),
+    forbidSystemFeature(PackageManager.FEATURE_WATCH),
+    forbidSystemFeature(PackageManager.FEATURE_TELEVISION),
+    forbidSystemFeature(PackageManager.FEATURE_AUTOMOTIVE),
+    )
 
 /**
  * The BASELINE set of preconditions for MPC.
@@ -31,12 +45,14 @@ import android.mediapc.cts.common.Precondition.Companion.createLazy
  * See [Utils.meetsPerformanceClassPreconditions].
  */
 @JvmField
-val BASELINE: Precondition =
+val BASELINE = Precondition.group(
+    "baseline",
+    IS_HANDHELD,
     createLazy(
         message = "Default precondition failed",
         fn = Utils::meetsPerformanceClassPreconditions
     )
+)
 
 @JvmField
-val EMPTY: Precondition =
-    create("No preconditions", true)
+val EMPTY = create("No preconditions", true)

@@ -16,6 +16,8 @@
 
 package android.bugreport.cts;
 
+import static android.os.Flags.FLAG_BLUETOOTH_BUGREPORT_MODE;
+
 import static com.android.compatibility.common.util.SystemUtil.runShellCommand;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -36,6 +38,7 @@ import android.os.Build;
 import android.os.ParcelFileDescriptor;
 import android.os.UserHandle;
 import android.platform.test.annotations.PlatinumTest;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.text.TextUtils;
 import android.util.Pair;
 
@@ -227,6 +230,21 @@ public class BugreportManagerTest {
         assertBugreportFileNameCorrect(bugreport, null /* suffixName */, false);
         assertThatFileisNotEmpty(bugreport);
         // onboarding bugreport does not take any screenshot
+        assertThat(screenshot).isNull();
+    }
+
+    @LargeTest
+    @Test
+    @RequiresFlagsEnabled(FLAG_BLUETOOTH_BUGREPORT_MODE)
+    @PlatinumTest(focusArea = "bugreport")
+    public void testBluetoothBugreport() throws Exception {
+        Pair<String, String> brFiles = triggerBugreport(BugreportParams.BUGREPORT_MODE_BLUETOOTH);
+        String bugreport = brFiles.first;
+        String screenshot = brFiles.second;
+
+        assertBugreportFileNameCorrect(bugreport, null /* suffixName */, false);
+        assertThatFileisNotEmpty(bugreport);
+        // bluetooth bugreport does not take any screenshot
         assertThat(screenshot).isNull();
     }
 

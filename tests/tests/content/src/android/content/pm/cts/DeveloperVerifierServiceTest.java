@@ -27,7 +27,9 @@ import static org.testng.Assert.expectThrows;
 import android.app.ActivityManager;
 import android.content.ComponentName;
 import android.content.Context;
+import android.content.pm.PackageInfo;
 import android.content.pm.PackageInstaller;
+import android.content.pm.PackageManager;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.AppModeNonSdkSandbox;
 import android.platform.test.annotations.RequiresFlagsEnabled;
@@ -51,16 +53,19 @@ public class DeveloperVerifierServiceTest {
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
+    private static final String SAMPLE_APK_BASE = "/data/local/tmp/cts/content/";
+    private static final String EMPTY_APP_APK = SAMPLE_APK_BASE + "CtsContentEmptyTestApp.apk";
+    private static final String EMPTY_APP_PACKAGE_NAME = "android.content.cts.emptytestapp";
+
     private final Context mContext = InstrumentationRegistry.getInstrumentation().getContext();
 
-    private final PackageInstaller mPackageInstaller =
-            mContext.getPackageManager().getPackageInstaller();
+    private final PackageManager mPackageManager = mContext.getPackageManager();
+    private final PackageInstaller mPackageInstaller = mPackageManager.getPackageInstaller();
 
     @Test
     public void testGetVerificationPolicy() throws Exception {
         // Test without permission
-        expectThrows(
-                SecurityException.class, () -> mPackageInstaller.getDeveloperVerificationPolicy());
+        expectThrows(SecurityException.class, mPackageInstaller::getDeveloperVerificationPolicy);
         // Test with permission
         SystemUtil.runWithShellPermissionIdentity(
                 () -> {
@@ -109,6 +114,28 @@ public class DeveloperVerifierServiceTest {
         // cannot set the policy to an invalid number. Either way, expect the command to fail.
         final int invalidPolicy = 100;
         assertThat(runSetDefaultVerificationPolicy(invalidPolicy)).startsWith("Failure");
+    }
+
+    @Test
+    public void testIsAppMetadataVerifiedDefaultIsFalse()
+            throws PackageManager.NameNotFoundException {
+        final int userId = mContext.getUserId();
+        try {
+            // Use adb to install an app. By default an app's metadata is not verified, if the
+            // installation didn't go through the developer verification process
+            assertThat(
+                            SystemUtil.runShellCommand(
+                                    String.format(
+                                            "pm install --user %d %s", userId, EMPTY_APP_APK)))
+                    .isEqualTo("Success\n");
+            final PackageInfo packageInfo =
+                    mPackageManager.getPackageInfo(EMPTY_APP_PACKAGE_NAME, 0);
+            assertThat(packageInfo).isNotNull();
+            assertThat(packageInfo.isAppMetadataVerified()).isFalse();
+        } finally {
+            SystemUtil.runShellCommand(
+                    String.format("pm uninstall --user %d %s", userId, EMPTY_APP_PACKAGE_NAME));
+        }
     }
 
     private static int getDefaultVerificationPolicy() {

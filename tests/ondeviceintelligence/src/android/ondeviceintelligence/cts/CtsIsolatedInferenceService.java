@@ -25,6 +25,7 @@ import static android.ondeviceintelligence.cts.OnDeviceIntelligenceManagerTest.T
 import static android.ondeviceintelligence.cts.OnDeviceIntelligenceManagerTest.TOKEN_INFO_PARAMS_KEY;
 
 import android.app.ondeviceintelligence.Feature;
+import android.app.ondeviceintelligence.InferenceInfo;
 import android.app.ondeviceintelligence.OnDeviceIntelligenceException;
 import android.app.ondeviceintelligence.ProcessingCallback;
 import android.app.ondeviceintelligence.ProcessingSignal;
@@ -263,10 +264,11 @@ public class CtsIsolatedInferenceService extends OnDeviceSandboxedInferenceServi
         }
 
         if (requestType
-                == OnDeviceIntelligenceManagerTest.REQUEST_TYPE_POPULATE_INFERENCE_INFO) {
-            Bundle bundle = new Bundle();
-            bundle.putByteArray(INFERENCE_INFO_BUNDLE_KEY, getInferenceInfoBytes(1, 2, 3));
-            callback.onResult(bundle);
+                == OnDeviceIntelligenceManagerTest.REQUEST_TYPE_POPULATE_INFERENCE_INFO_CALLBACK) {
+            callback.onInferenceInfo(
+                    new InferenceInfo.Builder(1).setStartTimeMillis(2).setEndTimeMillis(
+                            3).build());
+            callback.onResult(Bundle.EMPTY);
             return;
         }
 

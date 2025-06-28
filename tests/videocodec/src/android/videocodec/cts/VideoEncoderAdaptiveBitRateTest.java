@@ -21,7 +21,6 @@ import static android.media.MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_VBR;
 import static android.media.codec.Flags.apvSupport;
 import static android.mediav2.common.cts.CodecTestBase.ComponentClass.HARDWARE;
 
-import static com.android.media.editing.flags.Flags.muxerMp4EnableApv;
 import static com.android.media.extractor.flags.Flags.extractorMp4EnableApv;
 
 import static org.junit.Assert.assertEquals;
@@ -130,7 +129,7 @@ public class VideoEncoderAdaptiveBitRateTest extends VideoEncoderValidationTestB
         List<Object[]> defaultParams =
                 prepareParamList(defaultArgsList, true, false, true, false, HARDWARE);
         List<Object[]> finalParams = defaultParams;
-        if (IS_AT_LEAST_B && apvSupport() && muxerMp4EnableApv() && extractorMp4EnableApv()) {
+        if (IS_AT_LEAST_B && apvSupport() && extractorMp4EnableApv()) {
             addParamsAPV(640, 480, SEGMENT_BITRATES_APV);
             List<Object[]> apvParams =
                     prepareParamList(apvArgsList, true, false, true, false, HARDWARE);

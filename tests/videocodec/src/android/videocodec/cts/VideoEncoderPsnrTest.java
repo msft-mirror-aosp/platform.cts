@@ -23,7 +23,6 @@ import static android.media.codec.Flags.apvSupport;
 import static android.mediav2.common.cts.CodecTestBase.ComponentClass.HARDWARE;
 import static android.videocodec.cts.VideoEncoderInput.getRawResource;
 
-import static com.android.media.editing.flags.Flags.muxerMp4EnableApv;
 import static com.android.media.extractor.flags.Flags.extractorMp4EnableApv;
 
 import static org.junit.Assert.assertEquals;
@@ -118,7 +117,7 @@ public class VideoEncoderPsnrTest extends VideoEncoderValidationTestBase {
         List<Object[]> defaultParams =
                 prepareParamList(defaultArgsList, true, false, true, false, HARDWARE);
         List<Object[]> finalParams = defaultParams;
-        if (IS_AT_LEAST_B && apvSupport() && muxerMp4EnableApv() && extractorMp4EnableApv()) {
+        if (IS_AT_LEAST_B && apvSupport() && extractorMp4EnableApv()) {
             addParamsAPV(60000000, 1280, 720);
             addParamsAPV(60000000, 720, 1280);
             List<Object[]> apvParams =

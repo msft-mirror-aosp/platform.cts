@@ -199,7 +199,7 @@ public final class BackupTest {
         // Timestamp to filter out events from previous tests if any.
         long testStartTimeNanos = TimeUnit.MILLISECONDS.toNanos(System.currentTimeMillis());
 
-        ensureNoAdditionalUsers();
+        TestApis.users().ensureNoOtherUsers();
         var dpm = dpc(sDeviceState).devicePolicyManager();
         var who = dpc(sDeviceState).componentName();
 
@@ -247,26 +247,5 @@ public final class BackupTest {
             return;
         }
         fail("Wasn't able to find matching event");
-    }
-
-    private void ensureNoAdditionalUsers() {
-        // TODO(273474964): Move into infra
-        try {
-            TestApis.users().all().stream().filter(u -> (u != TestApis.users().instrumented()
-                    && u != TestApis.users().system()
-                    && u != TestApis.users().current() // We can't remove the profile of
-                    // the instrumented user for the run on parent profile tests. But the profiles
-                    // of other users will be removed when the full-user is removed anyway.
-//                    && !u.isProfile() - temporarily disabled as this would cause failures if there was a clone profile on the device
-            )).forEach(UserReference::remove);
-        } catch (NeneException e) {
-            // Happens when we can't remove a user
-            throw new NeneException(
-                    "Error when removing user. Instrumented user is "
-                            + TestApis.users().instrumented() + ", current user is "
-                            + TestApis.users().current() + ", system user is "
-                            + TestApis.users().system(), e
-            );
-        }
     }
 }

@@ -28,6 +28,7 @@ android_test {
         "permission-test-util-lib",
         "compatibility-device-util-axt",
         "cts_app_test_shared_lib",
+        "android.companion.flags-aconfig-java",
         "android.service.notification.flags-aconfig-java",
         "android.app.flags-aconfig-java",
         "flag-junit",

@@ -17,7 +17,6 @@ package android.companion.cts.multiprocess
 
 import android.Manifest.permission.REQUEST_COMPANION_SELF_MANAGED
 import android.companion.DevicePresenceEvent.EVENT_BT_CONNECTED
-import android.companion.Flags
 import android.companion.cts.common.DEVICE_DISPLAY_NAME_A
 import android.companion.cts.common.DEVICE_DISPLAY_NAME_B
 import android.companion.cts.common.PRIMARY_PROCESS_NAME
@@ -28,11 +27,8 @@ import android.companion.cts.common.assertApplicationBinds
 import android.companion.cts.common.killProcess
 import android.os.SystemClock
 import android.platform.test.annotations.AppModeFull
-import android.platform.test.annotations.RequiresFlagsEnabled
-import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import kotlin.test.fail
-import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -43,9 +39,6 @@ import org.junit.runner.RunWith
 @AppModeFull(reason = "CompanionDeviceManager APIs are not available to the instant apps.")
 @RunWith(AndroidJUnit4::class)
 class RebindServiceTest : TestBase() {
-    @get:Rule
-    val checkFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
-
     @Test
     fun test_rebind_primary() {
         // Create a self-managed association.
@@ -134,7 +127,6 @@ class RebindServiceTest : TestBase() {
         assertServiceBound("PrimaryCompanionService")
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_DEVICE_PRESENCE)
     @Test
     fun test_ObservingDeviceUuidPresence_rebind() {
         startObservingDevicePresenceByUuid(userId, targetPackageName, UUID_A.toString())

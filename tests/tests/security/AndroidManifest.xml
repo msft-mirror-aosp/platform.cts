@@ -339,6 +339,10 @@
             android:process=":pipActivity"
             android:supportsPictureInPicture="true" />
 
+        <!-- CVE-2025-22429 -->
+        <activity android:name=".CVE_2025_22429.PocActivity"
+            android:exported="true" />
+
         <service
             android:name="android.security.cts.CVE_2024_23713.PocNotificationListenerService"
             android:exported="false"
