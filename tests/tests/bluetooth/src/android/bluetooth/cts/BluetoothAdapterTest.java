@@ -345,7 +345,6 @@ public class BluetoothAdapterTest {
                 .isNotEqualTo(BluetoothStatusCodes.ERROR_UNKNOWN);
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_SOCKET_SETTINGS_API)
     @Test
     public void isLeCocSocketOffloadSupported() {
         assumeTrue(mHasBluetooth);
@@ -357,7 +356,6 @@ public class BluetoothAdapterTest {
         }
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_SOCKET_SETTINGS_API)
     @Test
     public void isRfcommSocketOffloadSupported() {
         assumeTrue(mHasBluetooth);

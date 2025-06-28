@@ -75,6 +75,7 @@ import android.util.Pair;
 import androidx.test.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.ShellIdentityUtils;
+import com.android.server.telecom.flags.Flags;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -1385,9 +1386,12 @@ public class BaseTelecomTestWithMockServices extends InstrumentationTestCase {
         // 2. They're self-managed and are configured to request logging.
         return (!isSelfManaged
                 || (isSelfManaged
-                && extras.getBoolean(PhoneAccount.EXTRA_LOG_SELF_MANAGED_CALLS)
-                && (phoneAccount.getSupportedUriSchemes().contains(PhoneAccount.SCHEME_TEL)
-                || phoneAccount.getSupportedUriSchemes().contains(PhoneAccount.SCHEME_SIP))));
+                        && !Flags.integratedCallLogs()
+                        && extras.getBoolean(PhoneAccount.EXTRA_LOG_SELF_MANAGED_CALLS)
+                        && (phoneAccount.getSupportedUriSchemes().contains(PhoneAccount.SCHEME_TEL)
+                                || phoneAccount
+                                        .getSupportedUriSchemes()
+                                        .contains(PhoneAccount.SCHEME_SIP))));
     }
 
     public CountDownLatch getCallLogEntryLatch() {

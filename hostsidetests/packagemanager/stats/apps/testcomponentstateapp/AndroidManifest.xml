@@ -17,7 +17,8 @@
 
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
           package="com.android.cts.packagemanager.stats.testcomponentstateapp">
-    <application>
+    <application
+        android:resetEnabledSettingsOnAppDataCleared="true">
         <activity android:name="com.android.cts.packagemanager.stats.testcomponentstateapp.FakeLauncherActivity"
                   android:enabled="false"
                   android:exported="true">

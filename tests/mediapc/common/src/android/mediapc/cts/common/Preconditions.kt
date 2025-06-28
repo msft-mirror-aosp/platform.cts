@@ -22,10 +22,11 @@
 package android.mediapc.cts.common
 
 import android.content.pm.PackageManager
+import android.hardware.display.DisplayManager
 import android.mediapc.cts.common.Precondition.Companion.create
-import android.mediapc.cts.common.Precondition.Companion.createLazy
 import android.mediapc.cts.common.Precondition.Companion.forbidSystemFeature
 import android.mediapc.cts.common.Precondition.Companion.requireSystemFeature
+import android.util.DisplayMetrics
 
 @JvmField
 val IS_HANDHELD = Precondition.group(
@@ -39,18 +40,65 @@ val IS_HANDHELD = Precondition.group(
     )
 
 /**
- * The BASELINE set of preconditions for MPC.
+ * Setting the minimum memory to 2.5G so we get statistics on "Mid Tier Devices"
+ *
+ * As of 2025 Q1 this is about 80% of daily active devices.
+ */
+private val AT_LEAST_2_5GB_MEMORY: Precondition =
+    Precondition.usingContext("At least 2.5Gb of memory") {
+        Utils.getTotalMemoryMb(it) > (2.5 * 1024L).toLong()
+    }
+
+/**
+ * MPC requires 400 DPI. lowering to HIGH (320) to report statistics on
+ * "mid tier" devices
+ *
+ * As of 2025 Q1 this is about 85% of daily active devices.
+ */
+private val DISPLAY_DPI =
+    Precondition.usingContext(
+        "Requires default display DPI greater than ${DisplayMetrics.DENSITY_HIGH}"
+    ) {
+        Utils.getDisplayDpi(it) > DisplayMetrics.DENSITY_HIGH
+    }
+
+/**
+ *  Require resolution of at least 1280x720
+ *
+ *  MPC requires 1920x1080 lowering to 1280x720 to report statistics on "mid tier" devices
+ *  As of 2025 Q1 this is about 99% of daily active devices.
+ */
+private val LARGEST_DISPLAY_RESOLUTION =
+    Precondition.usingContext("Largest display resolution must at least")
+    {
+        val displayManager: DisplayManager? = it.getSystemService(DisplayManager::class.java)
+        checkNotNull(displayManager)
+        val s = Utils.getLargestDisplaySize(displayManager)
+        Utils.getLongPixels(s) >= 1280 && Utils.getShortPixels(s) >= 720
+    }
+
+/**
+ * The baseline set of preconditions for MPC.
  *
  * This includes minimum memory, DPI, and other fast to test conditions.
- * See [Utils.meetsPerformanceClassPreconditions].
+ *
+ * Failing to meet these thresholds means we know that the device can't meet any performance
+ * class requirement. If the device doesn't meet these, we save time for everyone by skipping
+ * the tests that we know the device will fail.
+ *
+ * The numbers here are reduced from the strict thresholds so that we can gather
+ * some information about most devices. This won't impact CTS results, but
+ * will increase CTS runtime for those devices.
  */
 @JvmField
-val BASELINE = Precondition.group(
+val BASELINE =
+    Precondition.lazy( // BASELINE is called often enough to use lazy and cache the results.
+        Precondition.group(
     "baseline",
     IS_HANDHELD,
-    createLazy(
-        message = "Default precondition failed",
-        fn = Utils::meetsPerformanceClassPreconditions
+            AT_LEAST_2_5GB_MEMORY,
+            DISPLAY_DPI,
+            LARGEST_DISPLAY_RESOLUTION,
     )
 )
 
