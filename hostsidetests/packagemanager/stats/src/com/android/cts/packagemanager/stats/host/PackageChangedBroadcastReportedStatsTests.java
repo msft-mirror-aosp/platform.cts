@@ -46,6 +46,8 @@ import java.util.List;
 @RunWith(DeviceJUnit4ClassRunner.class)
 @AppModeFull
 public class PackageChangedBroadcastReportedStatsTests extends BaseHostJUnit4Test {
+    private static final int SYSTEM_UID = 1000;
+
     private static final String TEST_INSTALL_APK = "CtsStatsdAtomTestComponentStateApp.apk";
     private static final String TEST_INSTALL_PACKAGE =
             "com.android.cts.packagemanager.stats.testcomponentstateapp";
@@ -60,6 +62,7 @@ public class PackageChangedBroadcastReportedStatsTests extends BaseHostJUnit4Tes
             "testSetComponentEnabledSettingEnabledThenDisabled";
     private static final String TEST_METHOD_SET_COMPONENT_ENABLED_SETTING_TWO_LAUNCHER_ACTIVITIES =
             "testComponentStateChangedReportedForTwoDifferentStateLauncherActivities";
+    private static final String TEST_METHOD_CALL_SET_MIME_GROUP = "testCallSetMimeGroup";
 
     @Before
     public void setUp() throws Exception {
@@ -107,7 +110,9 @@ public class PackageChangedBroadcastReportedStatsTests extends BaseHostJUnit4Tes
                 ReportUtils.getEventMetricDataList(getDevice(), registry);
         data =
                 retrieveEventMetricDataChangeFromTestApp(
-                        data, PackageChangedReason.PACKAGE_CHANGED_REASON_PACKAGE_STATE_CHANGED);
+                        data,
+                        PackageChangedReason.PACKAGE_CHANGED_REASON_PACKAGE_STATE_CHANGED,
+                        TEST_INSTALL_PACKAGE);
         assertThat(data.isEmpty()).isFalse();
 
         PackageChangedBroadcastReported atom =
@@ -152,7 +157,9 @@ public class PackageChangedBroadcastReportedStatsTests extends BaseHostJUnit4Tes
                 ReportUtils.getEventMetricDataList(getDevice(), registry);
         data =
                 retrieveEventMetricDataChangeFromTestApp(
-                        data, PackageChangedReason.PACKAGE_CHANGED_REASON_COMPONENT_STATE_CHANGED);
+                        data,
+                        PackageChangedReason.PACKAGE_CHANGED_REASON_COMPONENT_STATE_CHANGED,
+                        TEST_INSTALL_PACKAGE);
         assertThat(data.isEmpty()).isFalse();
 
         PackageChangedBroadcastReported atom =
@@ -197,7 +204,9 @@ public class PackageChangedBroadcastReportedStatsTests extends BaseHostJUnit4Tes
                 ReportUtils.getEventMetricDataList(getDevice(), registry);
         data =
                 retrieveEventMetricDataChangeFromTestApp(
-                        data, PackageChangedReason.PACKAGE_CHANGED_REASON_COMPONENT_STATE_CHANGED);
+                        data,
+                        PackageChangedReason.PACKAGE_CHANGED_REASON_COMPONENT_STATE_CHANGED,
+                        TEST_INSTALL_PACKAGE);
         assertThat(data.size()).isEqualTo(2);
 
         PackageChangedBroadcastReported atom1 =
@@ -252,7 +261,9 @@ public class PackageChangedBroadcastReportedStatsTests extends BaseHostJUnit4Tes
                 ReportUtils.getEventMetricDataList(getDevice(), registry);
         data =
                 retrieveEventMetricDataChangeFromTestApp(
-                        data, PackageChangedReason.PACKAGE_CHANGED_REASON_COMPONENT_STATE_CHANGED);
+                        data,
+                        PackageChangedReason.PACKAGE_CHANGED_REASON_COMPONENT_STATE_CHANGED,
+                        TEST_INSTALL_PACKAGE);
         assertThat(data.size()).isEqualTo(2);
 
         PackageChangedBroadcastReported atom1 =
@@ -276,9 +287,150 @@ public class PackageChangedBroadcastReportedStatsTests extends BaseHostJUnit4Tes
                         PackageManagerStatsTestsBase.getAppUid(getDevice(), TEST_INSTALL_PACKAGE));
     }
 
+    @Test
+    public void testPackageChangedBroadcastReportedForResetComponentEnabledSettings()
+            throws Throwable {
+        ConfigUtils.uploadConfigForPushedAtom(
+                getDevice(),
+                DeviceUtils.STATSD_ATOM_TEST_PKG,
+                PackagemanagerExtensionAtoms.PACKAGE_CHANGED_BROADCAST_REPORTED_FIELD_NUMBER);
+        RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_SHORT);
+
+        ExtensionRegistry registry = ExtensionRegistry.newInstance();
+        PackagemanagerExtensionAtoms.registerAllExtensions(registry);
+
+        installPackage(TEST_INSTALL_APK);
+        assertThat(
+                        getDevice()
+                                .isPackageInstalled(
+                                        TEST_INSTALL_PACKAGE,
+                                        String.valueOf(getDevice().getCurrentUser())))
+                .isTrue();
+
+        // Run test in CTS package to change the component state.
+        runDeviceTests(
+                getDevice(),
+                HELPER_PACKAGE,
+                HELPER_CLASS,
+                TEST_METHOD_SET_COMPONENT_ENABLED_SETTING_FOR_LAUNCHER_ACTIVITY);
+        RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
+
+        // Clear the application user data to reset the component state
+        getDevice()
+                .executeShellCommand(
+                        "pm clear --user "
+                                + getDevice().getCurrentUser()
+                                + " "
+                                + TEST_INSTALL_PACKAGE);
+
+        // After resetting the component state, the PackageManagerService will delay 1 second to
+        // trigger package changed. Delay 3 seconds to make sure that the PackageManagerService
+        // has triggered package changed.
+        RunUtil.getDefault().sleep(3000);
+
+        List<StatsLog.EventMetricData> data =
+                ReportUtils.getEventMetricDataList(getDevice(), registry);
+        data =
+                retrieveEventMetricDataChangeFromTestApp(
+                        data,
+                        PackageChangedReason.PACKAGE_CHANGED_REASON_COMPONENT_STATE_RESET,
+                        TEST_INSTALL_PACKAGE);
+        assertThat(data.size()).isEqualTo(1);
+
+        PackageChangedBroadcastReported atom =
+                data.get(0)
+                        .getAtom()
+                        .getExtension(PackagemanagerExtensionAtoms.packageChangedBroadcastReported);
+        assertThat(atom.getCallingUid()).isEqualTo(SYSTEM_UID);
+        assertThat(atom.getChangedUid())
+                .isEqualTo(
+                        PackageManagerStatsTestsBase.getAppUid(getDevice(), TEST_INSTALL_PACKAGE));
+    }
+
+    @Test
+    public void testPackageChangedBroadcastReportedForMimeGroupChanged() throws Throwable {
+        ConfigUtils.uploadConfigForPushedAtom(
+                getDevice(),
+                DeviceUtils.STATSD_ATOM_TEST_PKG,
+                PackagemanagerExtensionAtoms.PACKAGE_CHANGED_BROADCAST_REPORTED_FIELD_NUMBER);
+        RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_SHORT);
+
+        ExtensionRegistry registry = ExtensionRegistry.newInstance();
+        PackagemanagerExtensionAtoms.registerAllExtensions(registry);
+
+        installPackage(TEST_INSTALL_APK);
+        assertThat(
+                        getDevice()
+                                .isPackageInstalled(
+                                        TEST_INSTALL_PACKAGE,
+                                        String.valueOf(getDevice().getCurrentUser())))
+                .isTrue();
+
+        // Run test in CTS package to change the mime group.
+        runDeviceTests(getDevice(), HELPER_PACKAGE, HELPER_CLASS, TEST_METHOD_CALL_SET_MIME_GROUP);
+        RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
+
+        List<StatsLog.EventMetricData> data =
+                ReportUtils.getEventMetricDataList(getDevice(), registry);
+        data =
+                retrieveEventMetricDataChangeFromTestApp(
+                        data,
+                        PackageChangedReason.PACKAGE_CHANGED_REASON_MIME_GROUP_CHANGED,
+                        HELPER_PACKAGE);
+        assertThat(data.size()).isEqualTo(1);
+
+        PackageChangedBroadcastReported atom =
+                data.get(0)
+                        .getAtom()
+                        .getExtension(PackagemanagerExtensionAtoms.packageChangedBroadcastReported);
+        final int callingUid = PackageManagerStatsTestsBase.getAppUid(getDevice(), HELPER_PACKAGE);
+        assertThat(atom.getCallingUid()).isEqualTo(callingUid);
+        assertThat(atom.getChangedUid()).isEqualTo(callingUid);
+    }
+
+    @Test
+    public void testPackageChangedBroadcastReportedForOverlayChanged() throws Throwable {
+        ConfigUtils.uploadConfigForPushedAtom(
+                getDevice(),
+                DeviceUtils.STATSD_ATOM_TEST_PKG,
+                PackagemanagerExtensionAtoms.PACKAGE_CHANGED_BROADCAST_REPORTED_FIELD_NUMBER);
+        RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_SHORT);
+
+        ExtensionRegistry registry = ExtensionRegistry.newInstance();
+        PackagemanagerExtensionAtoms.registerAllExtensions(registry);
+
+        // It will trigger overlay changed after installing the test apk.
+        installPackage(TEST_INSTALL_APK);
+        assertThat(
+                        getDevice()
+                                .isPackageInstalled(
+                                        TEST_INSTALL_PACKAGE,
+                                        String.valueOf(getDevice().getCurrentUser())))
+                .isTrue();
+
+        List<StatsLog.EventMetricData> data =
+                ReportUtils.getEventMetricDataList(getDevice(), registry);
+        data =
+                retrieveEventMetricDataChangeFromTestApp(
+                        data,
+                        PackageChangedReason.PACKAGE_CHANGED_REASON_OVERLAY_CHANGED,
+                        TEST_INSTALL_PACKAGE);
+        assertThat(data.size()).isEqualTo(1);
+
+        PackageChangedBroadcastReported atom =
+                data.get(0)
+                        .getAtom()
+                        .getExtension(PackagemanagerExtensionAtoms.packageChangedBroadcastReported);
+        assertThat(atom.getCallingUid()).isEqualTo(SYSTEM_UID);
+        assertThat(atom.getChangedUid())
+                .isEqualTo(
+                        PackageManagerStatsTestsBase.getAppUid(getDevice(), TEST_INSTALL_PACKAGE));
+    }
+
     List<StatsLog.EventMetricData> retrieveEventMetricDataChangeFromTestApp(
             List<StatsLog.EventMetricData> eventMetricData,
-            PackageChangedReason packageChangedReason)
+            PackageChangedReason packageChangedReason,
+            String testPackageName)
             throws Exception {
         List<StatsLog.EventMetricData> dataList = new ArrayList<>();
         if (eventMetricData == null || eventMetricData.size() == 0) {
@@ -293,8 +445,7 @@ public class PackageChangedBroadcastReportedStatsTests extends BaseHostJUnit4Tes
                                     PackagemanagerExtensionAtoms.packageChangedBroadcastReported);
             if (atom != null
                     && atom.getChangedUid()
-                            == PackageManagerStatsTestsBase.getAppUid(
-                                    getDevice(), TEST_INSTALL_PACKAGE)
+                            == PackageManagerStatsTestsBase.getAppUid(getDevice(), testPackageName)
                     && atom.getReason() == packageChangedReason) {
                 dataList.add(eventMetricData.get(i));
             }
