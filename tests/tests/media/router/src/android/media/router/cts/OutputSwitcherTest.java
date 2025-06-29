@@ -36,7 +36,7 @@ import static android.media.router.cts.StubMediaRoute2ProviderService.ROUTE_NAME
 
 import static com.google.common.truth.Truth.assertThat;
 
-import static org.junit.Assume.assumeFalse;
+import static org.junit.Assume.assumeTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.argThat;
@@ -55,7 +55,6 @@ import android.media.MediaRouter2.RoutingController;
 import android.media.RouteDiscoveryPreference;
 import android.media.session.MediaSession;
 import android.platform.test.annotations.AppModeFull;
-import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -106,9 +105,9 @@ public class OutputSwitcherTest {
     private static final String SYSTEM_UI_PACKAGE = "com.android.systemui";
     private static final int TIMEOUT_MS = 5000;
 
-    // This comes from the value of com.android.systemui.R.string.accessibility_cast_name
+    // This comes from the value of com.android.systemui.R.string.media_output_item_connected_state
     // (frameworks/base/packages/SystemUI/res/values/strings.xml)
-    private static final String CONNECTED_STRING_FORMAT = "Connected to %s";
+    private static final String CONNECTED_STATE = "Connected";
 
     // This comes from the value of com.android.settingslib.R.string.media_transfer_this_device_name
     // (frameworks/base/packages/SettingsLib/res/values/strings.xml)
@@ -259,7 +258,7 @@ public class OutputSwitcherTest {
     }
 
     @Test
-    @RequiresFlagsDisabled(Flags.FLAG_ENABLE_OUTPUT_SWITCHER_REDESIGN)
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_OUTPUT_SWITCHER_REDESIGN)
     public void selectOneRoute_closeAndOpenDialog_routeStillSelected() throws Exception {
         mService.removeAllRoutesExcept(List.of(ROUTE_ID1, ROUTE_ID2));
         registerRouteCallback(List.of(FEATURE_SAMPLE));
@@ -279,7 +278,7 @@ public class OutputSwitcherTest {
     }
 
     @Test
-    @RequiresFlagsDisabled(Flags.FLAG_ENABLE_OUTPUT_SWITCHER_REDESIGN)
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_OUTPUT_SWITCHER_REDESIGN)
     public void selectOneRoute_thenTransferToAnother_sessionTransferred() throws Exception {
         mService.removeAllRoutesExcept(List.of(ROUTE_ID1, ROUTE_ID5_TO_TRANSFER_TO));
         registerRouteCallback(List.of(FEATURE_SAMPLE));
@@ -298,7 +297,7 @@ public class OutputSwitcherTest {
     }
 
     @Test
-    @RequiresFlagsDisabled(Flags.FLAG_ENABLE_OUTPUT_SWITCHER_REDESIGN)
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_OUTPUT_SWITCHER_REDESIGN)
     public void selectOneRoute_thenTransferToThisDevice_sessionTransferred() throws Exception {
         mService.removeAllRoutesExcept(List.of(ROUTE_ID1, ROUTE_ID2));
         registerRouteCallback(List.of(FEATURE_SAMPLE, FEATURE_LIVE_AUDIO));
@@ -537,26 +536,39 @@ public class OutputSwitcherTest {
     }
 
     private static void assertDialogShowsConnectionTo(String routeName) throws Exception {
-        // The redesigned OutputSwitcher is missing the accessibility text we rely on for this to
-        // function properly. b/408304744
-        assumeFalse(Flags.enableOutputSwitcherRedesign());
-
-        assertThat(
-                        UiAutomatorUtils2.waitFindObject(
-                                By.descContains(String.format(CONNECTED_STRING_FORMAT, routeName))))
-                .isNotNull();
+        assumeTrue(Flags.enableOutputSwitcherRedesign());
+        assertConnectedState(
+                UiAutomatorUtils2.waitFindObject(
+                        By.text(routeName).pkg(SYSTEM_UI_PACKAGE), TIMEOUT_MS));
     }
 
     private static void assertDialogShowsConnectionToThisDevice() throws Exception {
-        // The OutputSwitcher redesign is missing some accessibility text needed for this to work
-        // properly. b/408304744
-        assumeFalse(Flags.enableOutputSwitcherRedesign());
-        assertThat(
-                        UiAutomatorUtils2.waitFindObject(
-                                By.descStartsWith(
-                                        String.format(
-                                                CONNECTED_STRING_FORMAT, THIS_DEVICE_PREFIX))))
-                .isNotNull();
+        assumeTrue(Flags.enableOutputSwitcherRedesign());
+        assertConnectedState(
+                UiAutomatorUtils2.waitFindObject(
+                        By.textStartsWith(THIS_DEVICE_PREFIX).pkg(SYSTEM_UI_PACKAGE), TIMEOUT_MS));
+    }
+
+    private static void assertConnectedState(UiObject2 routeNode) {
+        UiObject2 obj = routeNode;
+
+        // We're looking for a particular accessibility state description, either on the route node
+        // itself or one of its parents.
+        while (obj != null) {
+            CharSequence stateDescription = obj.getAccessibilityNodeInfo().getStateDescription();
+            if (stateDescription != null
+                    && CONNECTED_STATE.equalsIgnoreCase(stateDescription.toString())) {
+                return;
+            }
+            obj = obj.getParent();
+        }
+
+        UiAutomatorUtils2.assertWithUiDump(
+                () -> {
+                    throw new RuntimeException(
+                            "Failed to find node with accessibility state description: "
+                                    + CONNECTED_STATE);
+                });
     }
 
     private void clickButtonWithLabel(String label) throws Exception {
