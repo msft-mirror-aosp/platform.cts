@@ -49,13 +49,13 @@ public class PerformanceClassEvaluator {
     private static final String TAG = PerformanceClassEvaluator.class.getSimpleName();
 
     private final String mTestName;
-    private Set<Requirement> mRequirements;
+    private final Set<Requirement> mRequirements;
 
     public PerformanceClassEvaluator(TestName testName) {
         Preconditions.checkNotNull(testName);
         String baseTestName = testName.getMethodName() != null ? testName.getMethodName() : "";
         this.mTestName = baseTestName.replace("{", "(").replace("}", ")");
-        this.mRequirements = new HashSet<Requirement>();
+        this.mRequirements = new HashSet<>();
     }
 
     String getTestName() {
@@ -2422,6 +2422,13 @@ public class PerformanceClassEvaluator {
         TRADEFED, VERIFIER
     }
 
+
+    /**
+     * Submits the evaluation and checks them against the device's declared performance class, and
+     * asserts that the requirements are met.
+     *
+     * <p>The set of requirements are cleared after submission.
+     */
     public void submitAndCheck() {
         boolean perfClassMet = submit(SubmitType.TRADEFED);
 
@@ -2430,6 +2437,12 @@ public class PerformanceClassEvaluator {
         assertThat(perfClassMet).isTrue();
     }
 
+    /**
+     * Submits the evaluation results and logs warnings if requirements are not met for the declared
+     * performance class.
+     *
+     * <p>The set of requirements are cleared after submission.
+     */
     public void submitAndVerify() {
         boolean perfClassMet = submit(SubmitType.VERIFIER);
 
@@ -2439,6 +2452,14 @@ public class PerformanceClassEvaluator {
     }
 
     private boolean submit(SubmitType type) {
+        if (mRequirements.isEmpty()) {
+            Log.w(
+                    TAG,
+                    ("No requirements added to PerformanceClassEvaluator for test %s. Submission "
+                                    + "skipped.")
+                            .formatted(mTestName));
+            return true;
+        }
         boolean perfClassMet = true;
         for (Requirement req: this.mRequirements) {
             switch (type) {
