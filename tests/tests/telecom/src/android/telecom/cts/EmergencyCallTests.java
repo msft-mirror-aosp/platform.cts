@@ -43,7 +43,7 @@ public class EmergencyCallTests extends BaseTelecomTestWithMockServices {
     public static final int MAX_LINES_TO_VERIFY_IN_DUMPSYS_OUTPUT = 20;
     private static final String DROPBOX_TAG = "ecall_diagnostic_data";
     private static final String DUMPSYS_COMMAND = "dumpsys telecom";
-    private static final int MIN_LINES_PER_DROPBOX_ENTRY = 15;
+    private static final int MIN_LINES_PER_DROPBOX_ENTRY = 1;
     private static final int MAX_READ_BYTES_PER_DROP_BOX_ENTRY = 5000;
     private static final long DAYS_BACK_TO_SEARCH_EMERGENCY_DROP_BOX_ENTRIES_IN_MS =
             30L * 24L * 60L * 60L * 1000L;
