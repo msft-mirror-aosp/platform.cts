@@ -1965,6 +1965,120 @@ public class ImsCallingTest extends ImsCallingBase {
         waitForUnboundService();
     }
 
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_RTT_HOLD_CARRIER_CONFIG)
+    public void testRttHoldIsDisabledByCarrierConfig() throws Exception {
+        bindImsService();
+        PersistableBundle bundle = new PersistableBundle();
+        // Disable RTT hold.
+        bundle.putBoolean(CarrierConfigManager.KEY_ALLOW_HOLD_IN_RTT_CALL_BOOL, false);
+        bundle.putBoolean(CarrierConfigManager.KEY_ALLOW_HOLD_IN_IMS_CALL_BOOL, true);
+        overrideCarrierConfig(bundle);
+
+        // Place outgoing call.
+        Call call = placeOutgoingCall();
+        waitForCallSessionToNotBe(null);
+        TestImsCallSessionImpl callSession =
+                sServiceConnector.getCarrierService().getMmTelFeature().getImsCallsession();
+
+        isCallActive(call, callSession);
+
+        // Trigger the RTT session.
+        ImsCallProfile profile = callSession.getCallProfile();
+        ImsStreamMediaProfile mediaProfile = profile.getMediaProfile();
+        mediaProfile.setRttMode(ImsStreamMediaProfile.RTT_MODE_FULL);
+        callSession.update(profile.getCallType(), mediaProfile);
+
+        ImsUtils.waitInCurrentState(WAIT_IN_CURRENT_STATE);
+
+        // Verify that hold capabilities are NOT present.
+        int capabilities = call.getDetails().getCallCapabilities();
+        assertFalse(
+                "Call should NOT have CAPABILITY_SUPPORT_HOLD when RTT hold is disabled.",
+                (capabilities & Call.Details.CAPABILITY_SUPPORT_HOLD) != 0);
+        assertFalse(
+                "Call should NOT have CAPABILITY_HOLD when RTT hold is disabled.",
+                (capabilities & Call.Details.CAPABILITY_HOLD) != 0);
+
+        call.disconnect();
+        waitForUnboundService();
+        overrideCarrierConfig(null);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_RTT_HOLD_CARRIER_CONFIG)
+    public void testRttHoldIsEnabledByCarrierConfig() throws Exception {
+        bindImsService();
+        PersistableBundle bundle = new PersistableBundle();
+        // Enable RTT hold.
+        bundle.putBoolean(CarrierConfigManager.KEY_ALLOW_HOLD_IN_RTT_CALL_BOOL, true);
+        bundle.putBoolean(CarrierConfigManager.KEY_ALLOW_HOLD_IN_IMS_CALL_BOOL, true);
+        overrideCarrierConfig(bundle);
+
+        // Place outgoing call.
+        Call call = placeOutgoingCall();
+        waitForCallSessionToNotBe(null);
+        TestImsCallSessionImpl callSession =
+                sServiceConnector.getCarrierService().getMmTelFeature().getImsCallsession();
+
+        isCallActive(call, callSession);
+
+        // Trigger the RTT session.
+        ImsCallProfile profile = callSession.getCallProfile();
+        ImsStreamMediaProfile mediaProfile = profile.getMediaProfile();
+        mediaProfile.setRttMode(ImsStreamMediaProfile.RTT_MODE_FULL);
+        callSession.update(profile.getCallType(), mediaProfile);
+
+        ImsUtils.waitInCurrentState(WAIT_IN_CURRENT_STATE);
+
+        // Verify that hold capabilities are present.
+        int capabilities = call.getDetails().getCallCapabilities();
+        assertTrue(
+                "Call should have CAPABILITY_SUPPORT_HOLD when RTT hold is enabled.",
+                (capabilities & Call.Details.CAPABILITY_SUPPORT_HOLD) != 0);
+        assertTrue(
+                "Call should have CAPABILITY_HOLD when RTT hold is enabled and call is active.",
+                (capabilities & Call.Details.CAPABILITY_HOLD) != 0);
+
+        call.disconnect();
+        waitForUnboundService();
+        overrideCarrierConfig(null);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_RTT_HOLD_CARRIER_CONFIG)
+    public void testNonRttNormalCallHoldIsEnabled() throws Exception {
+        bindImsService();
+        PersistableBundle bundle = new PersistableBundle();
+        // Disable RTT hold.
+        bundle.putBoolean(CarrierConfigManager.KEY_ALLOW_HOLD_IN_RTT_CALL_BOOL, false);
+        bundle.putBoolean(CarrierConfigManager.KEY_ALLOW_HOLD_IN_IMS_CALL_BOOL, true);
+        overrideCarrierConfig(bundle);
+
+        // Place outgoing non-RTT call.
+        Call call = placeOutgoingCall();
+        waitForCallSessionToNotBe(null);
+        TestImsCallSessionImpl callSession =
+                sServiceConnector.getCarrierService().getMmTelFeature().getImsCallsession();
+
+        isCallActive(call, callSession);
+
+        ImsUtils.waitInCurrentState(WAIT_IN_CURRENT_STATE);
+
+        // Verify that hold capabilities are present.
+        int capabilities = call.getDetails().getCallCapabilities();
+        assertTrue(
+                "Call should have CAPABILITY_SUPPORT_HOLD for non-RTT call.",
+                (capabilities & Call.Details.CAPABILITY_SUPPORT_HOLD) != 0);
+        assertTrue(
+                "Call should have CAPABILITY_HOLD for non-RTT call.",
+                (capabilities & Call.Details.CAPABILITY_HOLD) != 0);
+
+        call.disconnect();
+        waitForUnboundService();
+        overrideCarrierConfig(null);
+    }
+
     private void verifySrvccStateChange(int state) throws Exception {
         assertTrue(sMockModemManager.srvccStateNotify(sTestSlot, state));
         sServiceConnector
