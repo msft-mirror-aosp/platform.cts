@@ -17,20 +17,6 @@ package {
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
-java_test_host {
-    name: "DeviceInfoUnitTests",
-    libs: ["junit"],
-    srcs: [
-        "tests/**/*.java",
-        "src/**/VulkanDeviceInfoUtils.java",
-    ],
-    test_options: {
-        unit_test: true,
-    },
-    test_suites: ["general-tests"],
-    team: "trendy_team_android_gpu",
-}
-
 android_test_helper_app {
     name: "CtsDeviceInfo",
     defaults: ["cts_support_defaults"],
@@ -118,7 +104,6 @@ genrule {
         " -a com.android.cts.deviceinfo.CameraDeviceInfo " +
         " -a com.android.cts.deviceinfo.DisplayDeviceInfo " +
         " -a com.android.cts.deviceinfo.SensorDeviceInfo " +
-        " -a com.android.cts.deviceinfo.VulkanDeviceInfo " +
         " -a com.android.compatibility.common.deviceinfo.AppStandbyDeviceInfo " +
         " -a com.android.compatibility.common.deviceinfo.BiometricsDeviceInfo " +
         " -a com.android.compatibility.common.deviceinfo.DeviceIdleDeviceInfo " +
@@ -146,6 +131,7 @@ genrule {
         " -a com.android.compatibility.common.deviceinfo.StorageDeviceInfo " +
         " -a com.android.compatibility.common.deviceinfo.UserDeviceInfo " +
         " -a com.android.compatibility.common.deviceinfo.VintfDeviceInfo " +
+        " -a com.android.compatibility.common.deviceinfo.VulkanDeviceInfo " +
         " -a com.android.compatibility.common.util.DummyActivity " +
         " -l android.test.runner " +
         " -lo androidx.window.sidecar " +
