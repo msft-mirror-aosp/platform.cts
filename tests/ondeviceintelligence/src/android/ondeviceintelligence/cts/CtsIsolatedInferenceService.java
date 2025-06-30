@@ -74,6 +74,7 @@ public class CtsIsolatedInferenceService extends OnDeviceSandboxedInferenceServi
 
     private PersistableBundle mReceivedDeviceConfig;
     private final CountDownLatch mConfigUpdateLatch = new CountDownLatch(1);
+    private LifecycleListener mLifecycleListener;
 
     public static TokenInfo constructTokenInfo(int status, PersistableBundle persistableBundle) {
         if (persistableBundle == null) {
@@ -290,6 +291,30 @@ public class CtsIsolatedInferenceService extends OnDeviceSandboxedInferenceServi
             return;
         }
 
+        if (requestType == OnDeviceIntelligenceManagerTest.REQUEST_TYPE_TRIGGER_MODEL_LOAD) {
+            if (mLifecycleListener != null) {
+                mAsyncRequestExecutor.execute(() -> mLifecycleListener.onLifecycleEvent(
+                        LifecycleListener.LIFECYCLE_EVENT_MODEL_LOADED, feature));
+                Log.d(TAG, "Invoking onModelLoaded from isolated service.");
+            } else {
+                Log.i(TAG, "Model listener is not registered.");
+            }
+            callback.onResult(Bundle.EMPTY);
+            return;
+        }
+
+        if (requestType == OnDeviceIntelligenceManagerTest.REQUEST_TYPE_TRIGGER_MODEL_UNLOAD) {
+            if (mLifecycleListener != null) {
+                mAsyncRequestExecutor.execute(() -> mLifecycleListener.onLifecycleEvent(
+                        LifecycleListener.LIFECYCLE_EVENT_MODEL_UNLOADED, feature));
+                Log.d(TAG, "Invoking onModelUnloaded from isolated service.");
+            } else {
+                Log.i(TAG, "Model listener is not registered.");
+            }
+            callback.onResult(Bundle.EMPTY);
+            return;
+        }
+
         if (request.containsKey(EXCEPTION_STATUS_CODE_KEY)) {
             populateExceptionInCallback(request, callback);
             return;
@@ -344,6 +369,12 @@ public class CtsIsolatedInferenceService extends OnDeviceSandboxedInferenceServi
         }
 
         callback.onResult(PersistableBundle.EMPTY);
+    }
+
+    @Override
+    public void onRegisterInferenceServiceLifecycleListener(@NonNull LifecycleListener listener) {
+        Log.i(TAG, "Lifecycle listener registered.");
+        mLifecycleListener = listener;
     }
 
     private Future<String> getFileContentFromFdMap(@NonNull Feature feature) {
