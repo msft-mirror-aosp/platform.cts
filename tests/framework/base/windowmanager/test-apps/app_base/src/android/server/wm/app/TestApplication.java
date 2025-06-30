@@ -50,7 +50,8 @@ public class TestApplication extends Application {
             implements Application.ActivityLifecycleCallbacks {
 
         private static final String TAG = "MainThreadMonitor";
-        private static final long UNRESPONSIVE_THRESHOLD_MS = 2000; // 2 seconds
+        private static final long UNRESPONSIVE_CHECK_DELAY_MS = 500; // 0.5 seconds
+        private static final long UNRESPONSIVE_THRESHOLD_MS = 2500; // 2.5 seconds
         private final Handler mMainHandler = new Handler(Looper.getMainLooper());
         private final ConcurrentMap<Activity, Thread> mMonitorThreads = new ConcurrentHashMap<>();
 
@@ -73,8 +74,8 @@ public class TestApplication extends Application {
             // Initialize a new CountDownLatch for each activity creation check
             final CountDownLatch latch = new CountDownLatch(1);
 
-            // Post a runnable to the main thread
-            mMainHandler.post(
+            // Post delay for 0.5s in case it is stuck on traversal, which is also posted.
+            mMainHandler.postDelayed(
                     () -> {
                         // This runnable executes on the main thread.
                         // If it runs, the main thread is responsive, so signal the latch.
@@ -83,7 +84,8 @@ public class TestApplication extends Application {
                                 TAG,
                                 "Main thread responsive. Latch counted down. Activity="
                                         + activityName);
-                    });
+                    },
+                    UNRESPONSIVE_CHECK_DELAY_MS);
 
             // Start a background thread to wait for the latch
             final Thread monitorThread =
