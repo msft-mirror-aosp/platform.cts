@@ -112,6 +112,8 @@ public final class AlertWindowsImportanceTests {
         context.unbindService(mConnection);
         mAm = null;
         mAm25 = null;
+        android.server.wm.alertwindowappsdk25.Components.forceStopPackage();
+        android.server.wm.alertwindowservice.Components.forceStopPackage();
     }
 
     @Test

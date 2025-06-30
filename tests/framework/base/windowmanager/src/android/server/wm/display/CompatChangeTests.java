@@ -119,6 +119,7 @@ import com.android.window.flags.Flags;
 import libcore.junit.util.compat.CoreCompatChangeRule.DisableCompatChanges;
 import libcore.junit.util.compat.CoreCompatChangeRule.EnableCompatChanges;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;
@@ -198,6 +199,45 @@ public final class CompatChangeTests extends MultiDisplayTestBase {
         mObjectTracker.manage(setAlwaysConstrainDisplayApisFlag(null));
         mObjectTracker.manage(setNeverConstrainDisplayApisAllPackagesFlag(null));
         mObjectTracker.manage(setNeverConstrainDisplayApisFlag(null));
+    }
+
+    @After
+    public void tearDown() {
+        android.server.wm.allowdisplayorientationoverride.Components.forceStopPackage();
+        android.server.wm.allowignoringorientationrequestwhenloopdetectedoptin.Components
+                .forceStopPackage();
+        android.server.wm.allowignoringorientationrequestwhenloopdetectedoptout.Components
+                .forceStopPackage();
+        android.server.wm.allowignoringorientationrequestwhenloopdetectedunset.Components
+                .forceStopPackage();
+        android.server.wm.allowminaspectratiooverrideoptin.Components.forceStopPackage();
+        android.server.wm.allowminaspectratiooverrideoptout.Components.forceStopPackage();
+        android.server.wm.alloworientationoverride.Components.forceStopPackage();
+        android.server.wm.allowresizeableactivityoverridesoptin.Components.forceStopPackage();
+        android.server.wm.allowresizeableactivityoverridesoptout.Components.forceStopPackage();
+        android.server.wm.allowsandboxingviewboundsapis.Components.forceStopPackage();
+        android.server.wm.allowuseraspectratiofullscreenoverrideoptin.Components.forceStopPackage();
+        android.server.wm.allowuseraspectratiofullscreenoverrideoptout.Components
+                .forceStopPackage();
+        android.server.wm.allowuseraspectratiooverrideoptin.Components.forceStopPackage();
+        android.server.wm.allowuseraspectratiooverrideoptout.Components.forceStopPackage();
+        android.server.wm.enablefakefocusoptin.Components.forceStopPackage();
+        android.server.wm.enablefakefocusoptout.Components.forceStopPackage();
+        android.server.wm.ignorerequestedorientationoverrideoptin.Components.forceStopPackage();
+        android.server.wm.ignorerequestedorientationoverrideoptout.Components.forceStopPackage();
+        android.server.wm.optoutsandboxingviewboundsapis.Components.forceStopPackage();
+        android.server.wm.propertycameracompatallowforcerotation.Components.forceStopPackage();
+        android.server.wm.propertycameracompatallowrefresh.Components.forceStopPackage();
+        android.server.wm.propertycameracompatallowsimulaterequestedorientationdefault.Components
+                .forceStopPackage();
+        android.server.wm.propertycameracompatallowsimulaterequestedorientationoptin.Components
+                .forceStopPackage();
+        android.server.wm.propertycameracompatallowsimulaterequestedorientationoptout.Components
+                .forceStopPackage();
+        android.server.wm.propertycameracompatenablerefreshviapauseoptin.Components
+                .forceStopPackage();
+        android.server.wm.propertycameracompatenablerefreshviapauseoptout.Components
+                .forceStopPackage();
     }
 
     @Test
