@@ -213,7 +213,7 @@ public class StreamingMediaPlayerTest extends MediaPlayerTestBase {
             return; // skip
         }
         MediaFormat format = MediaFormat.createVideoFormat(MediaFormat.MIMETYPE_VIDEO_AVC, 1920, 1080);
-        String[] decoderNames = MediaUtils.getDecoderNames(false, format);
+        String[] decoderNames = MediaUtils.getDecoderNames(format);
 
         if (decoderNames.length == 0) {
             MediaUtils.skipTest("No decoders for " + format);
