@@ -25,6 +25,7 @@ import android.mediapc.cts.common.CameraRequirement.*;
 import android.os.Build;
 import android.util.Log;
 
+import androidx.annotation.VisibleForTesting;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.DeviceReportLog;
@@ -48,11 +49,20 @@ import java.util.Set;
 public class PerformanceClassEvaluator {
     private static final String TAG = PerformanceClassEvaluator.class.getSimpleName();
 
+    private final boolean mIsPerfClass;
+    private final int mDeclaredPc;
     private final String mTestName;
     private final Set<Requirement> mRequirements;
 
     public PerformanceClassEvaluator(TestName testName) {
+        this(testName, Utils.isPerfClass(), Utils.getPerfClass());
+    }
+
+    @VisibleForTesting
+    protected PerformanceClassEvaluator(TestName testName, boolean isPerfClass, int declaredPc) {
         Preconditions.checkNotNull(testName);
+        mIsPerfClass = isPerfClass;
+        mDeclaredPc = declaredPc;
         String baseTestName = testName.getMethodName() != null ? testName.getMethodName() : "";
         this.mTestName = baseTestName.replace("{", "(").replace("}", ")");
         this.mRequirements = new HashSet<>();
@@ -1719,7 +1729,7 @@ public class PerformanceClassEvaluator {
         boolean perfClassMet = submit(SubmitType.TRADEFED);
 
         // check performance class
-        assumeTrue("Build.VERSION.MEDIA_PERFORMANCE_CLASS is not declared", Utils.isPerfClass());
+        assumeTrue("Build.VERSION.MEDIA_PERFORMANCE_CLASS is not declared", mIsPerfClass);
         assertThat(perfClassMet).isTrue();
     }
 
@@ -1732,8 +1742,8 @@ public class PerformanceClassEvaluator {
     public void submitAndVerify() {
         boolean perfClassMet = submit(SubmitType.VERIFIER);
 
-        if (!perfClassMet && Utils.isPerfClass()) {
-            Log.w(TAG, "Device did not meet specified performance class: " + Utils.getPerfClass());
+        if (!perfClassMet && mIsPerfClass) {
+            Log.w(TAG, "Device did not meet specified performance class: " + mDeclaredPc);
         }
     }
 
