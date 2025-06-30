@@ -4269,7 +4269,6 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
      * be present in the list of available AE modes.
      */
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_CAMERA_AE_MODE_LOW_LIGHT_BOOST)
     public void testLowLightBoostLuminanceRange() throws Exception {
         String[] allCameraIds = getAllCameraIds();
         for (int i = 0; i < allCameraIds.length; i++) {
