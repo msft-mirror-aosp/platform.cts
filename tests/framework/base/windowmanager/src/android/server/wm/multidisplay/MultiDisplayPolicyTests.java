@@ -62,6 +62,7 @@ import android.server.wm.WaitForValidActivityState;
 import android.server.wm.WindowManagerState.DisplayContent;
 import android.server.wm.WindowManagerState.Task;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -81,6 +82,12 @@ public class MultiDisplayPolicyTests extends MultiDisplayTestBase {
         super.setUp();
         assumeTrue(supportsMultiDisplay());
     }
+
+    @After
+    public void tearDown() throws Exception {
+        stopTestPackage(SDK_27_TEST_ACTIVITY.getPackageName());
+    }
+
     /**
      * Tests that all activities that were on the private display are destroyed on display removal.
      */
