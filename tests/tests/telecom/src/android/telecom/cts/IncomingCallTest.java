@@ -53,6 +53,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Tests valid/invalid incoming calls that are received from the ConnectionService
@@ -63,6 +64,8 @@ public class IncomingCallTest extends BaseTelecomTestWithMockServices {
     private static final PhoneAccountHandle TEST_INVALID_HANDLE = new PhoneAccountHandle(
             new ComponentName(PACKAGE, COMPONENT), "WRONG_ID");
     private static final String TEST_NUMBER = "5625698388";
+    private static final String TEST_DO_NOT_LOG_NUMBER = "5625698123";
+
     private ContentResolver mContentResolver;
 
     @Override
@@ -378,6 +381,41 @@ public class IncomingCallTest extends BaseTelecomTestWithMockServices {
     }
 
     /**
+     * Verifies that a call is NOT added to the call log when the {@link
+     * TelecomManager#EXTRA_DO_NOT_LOG_CALL} extra is set on a {@link Connection}.
+     */
+    public void testDoNotLogCall() throws Exception {
+        if (!mShouldTestTelecom) {
+            return;
+        }
+        UiAutomation automation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
+
+        try {
+            automation.adoptShellPermissionIdentity(
+                    "android.permission.MODIFY_PHONE_STATE",
+                    "android.permission.READ_CALL_LOG",
+                    "android.permission.WRITE_CALL_LOG");
+
+            // cleanup any previous tests that logged this number. We need to verify in this
+            // test that TEST_DO_NOT_LOG_NUMBER was not logged.
+            deleteCallLogsWithNumber(TEST_DO_NOT_LOG_NUMBER);
+
+            // create an incoming call
+            setupConnectionService(null, FLAG_REGISTER | FLAG_ENABLE);
+            addAndVerifyNewIncomingCall(Uri.parse(TEST_DO_NOT_LOG_NUMBER), null);
+
+            // wait for the call object and assert the extras have been populated
+            Call call = setAndVerifyDoNotLogCallExtras();
+
+            // look through the call logs and verify the call was NOT logged
+            verifyNumberNotLoggedWithTimeout(call, TEST_DO_NOT_LOG_NUMBER);
+        } finally {
+            deleteCallLogsWithNumber(TEST_DO_NOT_LOG_NUMBER);
+            automation.dropShellPermissionIdentity();
+        }
+    }
+
+    /**
      * Verifies that a call to {@link android.telecom.Call#answer(int)} with a passed video state of
      * {@link android.telecom.VideoProfile#STATE_AUDIO_ONLY} will result in a call to
      * {@link Connection#onAnswer()} where overridden.
@@ -436,9 +474,21 @@ public class IncomingCallTest extends BaseTelecomTestWithMockServices {
     // Note: The WRITE_CALL_LOG permission is needed in order to call this helper.
     private void deleteCallLogsWithNumber(String number) {
         mContentResolver.delete(
-                CallLog.Calls.CONTENT_URI,
-                CallLog.Calls.NUMBER + " = " + number,
-                null);
+                CallLog.Calls.CONTENT_URI, CallLog.Calls.NUMBER + " = ?", new String[] {number});
+    }
+
+    private Call setAndVerifyDoNotLogCallExtras() {
+        Bundle doNotLogCallExtras = new Bundle();
+        doNotLogCallExtras.putBoolean(mTelecomManager.EXTRA_DO_NOT_LOG_CALL, true);
+
+        // inject the doNotLogCallExtras and verify they are accessible
+        final MockConnection connection = verifyConnectionForIncomingCall();
+        connection.setExtras(doNotLogCallExtras);
+
+        // verify the Extras can be fetched from the Call object
+        Call call = mInCallCallbacks.getService().getLastCall();
+        assertCallExtrasKey(call, mTelecomManager.EXTRA_DO_NOT_LOG_CALL);
+        return call;
     }
 
     private Call setAndVerifyBusinessExtras(boolean isBusinessCall, String businessName) {
@@ -480,6 +530,57 @@ public class IncomingCallTest extends BaseTelecomTestWithMockServices {
 
         assertEquals(assertedDisplayName, cursor.getString(
                 cursor.getColumnIndex(CallLog.Calls.ASSERTED_DISPLAY_NAME)));
+    }
+
+    private void verifyNumberNotLoggedWithTimeout(Call call, String testNumber) {
+        final CountDownLatch latch = new CountDownLatch(1);
+        final AtomicBoolean wasLogged = new AtomicBoolean(false);
+        ContentObserver observer =
+                new ContentObserver(new Handler(Looper.getMainLooper())) {
+                    @Override
+                    public void onChange(boolean selfChange, Uri uri) {
+                        // A change was detected, now check if it's our number.
+                        if (isNumberInCallLog(testNumber)) {
+                            wasLogged.set(true);
+                        }
+                        latch.countDown();
+                    }
+                };
+
+        mContentResolver.registerContentObserver(CallLog.Calls.CONTENT_URI, true, observer);
+
+        disconnectCallAndVerify(call);
+
+        // Give the system some time to potentially (and incorrectly) log the call.
+        try {
+            latch.await(3, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            // This is expected
+        }
+
+        mContentResolver.unregisterContentObserver(observer);
+
+        assertFalse("The number was unexpectedly logged.", wasLogged.get());
+        assertFalse("The number should not be in the call log.", isNumberInCallLog(testNumber));
+    }
+
+    private void disconnectCallAndVerify(Call call) {
+        call.disconnect();
+        assertCallState(call, Call.STATE_DISCONNECTED);
+    }
+
+    // Helper method to check for the number in the call log
+    private boolean isNumberInCallLog(String testNumber) {
+        String[] projection = new String[] {CallLog.Calls.NUMBER};
+        try (Cursor cursor =
+                mContentResolver.query(
+                        CallLog.Calls.CONTENT_URI,
+                        projection,
+                        CallLog.Calls.NUMBER + " = ?",
+                        new String[] {testNumber},
+                        null)) {
+            return cursor != null && cursor.getCount() > 0;
+        }
     }
 
     /**
