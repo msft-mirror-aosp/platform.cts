@@ -324,7 +324,7 @@ public class WifiStatsTests extends DeviceTestCase implements IBuildReceiver {
         ConfigUtils.uploadConfigForPushedAtom(getDevice(), DeviceUtils.STATSD_ATOM_TEST_PKG,
                 AtomsProto.Atom.WIFI_SCAN_REPORTED_FIELD_NUMBER);
         DeviceUtils.runDeviceTestsOnStatsdApp(getDevice(), ".AtomTests", "testWifiScan");
-        RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
+        RunUtil.getDefault().sleep(5*AtomTestUtils.WAIT_TIME_LONG);
 
         List<StatsLog.EventMetricData> metricData = ReportUtils.getEventMetricDataList(getDevice());
         List<AtomsProto.WifiScanReported> wifiScanAtoms = metricData.stream()
