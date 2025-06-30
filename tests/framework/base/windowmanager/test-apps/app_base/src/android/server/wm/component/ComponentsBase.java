@@ -19,21 +19,42 @@ package android.server.wm.component;
 import android.content.ComponentName;
 
 /**
- * Base class for Components constants holding class.
+ * Base class for holding component constants.
  *
- * Every testing APK should have Components class in Java package that equals to package of APK.
- * Those Components class should extends {@link ComponentsBase}.
+ * <p>Note for Kotlin users: For new tests, it is strongly recommended to extend the {@link
+ * ComponentsProvider} abstract class on a singleton {@code object} instead of extending this class.
+ * It offers a more idiomatic Kotlin API and reduces boilerplate.
+ *
+ * <p>Legacy Java Usage: For Java-based tests, each test APK should contain a {@code Components}
+ * class that extends this base class. This provides a central place for component constants.
+ *
+ * <p>Example:
+ *
+ * <pre><code>
+ * package com.example.app;
+ *
+ * import android.content.ComponentName;
+ * import android.server.wm.component.ComponentsBase;
+ *
+ * public class Components extends ComponentsBase {
+ *   public static final ComponentName MY_ACTIVITY = component(Components.class, "MyActivity");
+ * }
+ * </code></pre>
+ *
+ * @see ComponentsProvider
  */
 public class ComponentsBase {
 
     /**
-     * Build {@link ComponentName} constant which belongs to {@code componentsClass}'s package.
-     * @param componentsClass Components class object which has the same package of APK.
-     * @param className simple class name (has no '.') or fully qualified class name.
-     * @return {@link ComponentName} object.
+     * Builds a {@link ComponentName} that belongs to the given {@code componentsClass}'s package.
+     *
+     * @param componentsClass the {@code .class} of a class named "Components". This is used to
+     *     determine the package name.
+     * @param className the simple class name (e.g., "MyActivity") or a fully qualified class name.
+     *     Must not start with a '.'.
+     * @return a {@link ComponentName} for the specified class.
      */
-    protected static ComponentName component(
-            Class<? extends ComponentsBase> componentsClass, String className) {
+    protected static ComponentName component(Class<?> componentsClass, String className) {
         if (className.startsWith(".")) {
             throw new AssertionError("Class name should not start with '.'");
         }
@@ -44,11 +65,13 @@ public class ComponentsBase {
     }
 
     /**
-     * Get package name of {@code componentsClass}.
-     * @param componentsClass Components class object which has the same package of APK.
-     * @return package name of APK.
+     * Gets the package name from a class named "Components".
+     *
+     * @param componentsClass the {@code .class} of a class named "Components".
+     * @return the package name of the class.
+     * @throws AssertionError if the class is not named exactly "Components".
      */
-    protected static String getPackageName(Class<? extends ComponentsBase> componentsClass) {
+    protected static String getPackageName(Class<?> componentsClass) {
         if (!"Components".equals(componentsClass.getSimpleName())) {
             throw new AssertionError("The class name must be 'Components'");
         }

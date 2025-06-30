@@ -22,8 +22,9 @@ android_test {
 
     srcs: [
         "src/**/*.java",
-        ":cts-wm-components-base",
+        "src/**/*.kt",
     ],
+    static_libs: ["cts-wm-app-base"],
 
     sdk_version: "test_current",
 
