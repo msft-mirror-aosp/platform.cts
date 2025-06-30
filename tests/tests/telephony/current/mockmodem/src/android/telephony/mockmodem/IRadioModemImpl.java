@@ -30,6 +30,7 @@ import android.os.AsyncResult;
 import android.os.Handler;
 import android.os.Message;
 import android.os.RemoteException;
+import android.text.TextUtils;
 import android.util.Log;
 
 import java.util.concurrent.CountDownLatch;
@@ -65,6 +66,7 @@ public class IRadioModemImpl extends IRadioModem.Stub {
     private String mMeid;
     private int mImeiType;
     private int mRadioState;
+    private final CountDownLatch mImeiLatch = new CountDownLatch(1);
 
     public IRadioModemImpl(
             MockModemService service, MockModemConfigInterface configInterface, int instanceId) {
@@ -159,6 +161,7 @@ public class IRadioModemImpl extends IRadioModem.Stub {
                             Log.e(mTag, msg.what + " failure. Not update device ImeiInfo."
                                     + ar.exception);
                         }
+                        mImeiLatch.countDown();
                         break;
                 }
             }
@@ -232,6 +235,14 @@ public class IRadioModemImpl extends IRadioModem.Stub {
         Log.d(mTag, "getImei");
         android.hardware.radio.modem.ImeiInfo imeiInfo =
                 new android.hardware.radio.modem.ImeiInfo();
+        if (TextUtils.isEmpty(mImei) && mImeiLatch.getCount() > 0) {
+            try {
+                // In case Imei is not yet initialized it is required to wait
+                mImeiLatch.await(2, TimeUnit.SECONDS);
+            } catch (InterruptedException ie) {
+                Log.d(mTag, "getImei() : InterruptedException = " + ie);
+            }
+        }
         synchronized (mCacheUpdateMutex) {
             imeiInfo.type = mImeiType;
             imeiInfo.imei = mImei;

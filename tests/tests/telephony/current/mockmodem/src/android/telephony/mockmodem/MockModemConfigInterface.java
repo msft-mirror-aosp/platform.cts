@@ -69,7 +69,7 @@ public interface MockModemConfigInterface {
     Handler getMockModemConfigHandler(int logicalSlotId);
 
     /** Broadcast all notifications */
-    void notifyAllRegistrantNotifications();
+    void notifyAllRegistrantNotifications(int phoneId);
 
     // ***** IRadioConfig
     /** Register/unregister notification handler for number of modem changed */
