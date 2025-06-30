@@ -14,19 +14,17 @@
  * limitations under the License.
  */
 
-package android.server.wm.shareuid.a
+package android.server.wm.shareuid.b
 
 import android.server.wm.component.ComponentsProvider
 import android.server.wm.component.forceStopPackage
 
-/** Constants for test components A in the shared user ID affinity. */
+/** Constants for test components B in the shared user ID affinity. */
 object Components : ComponentsProvider() {
-    /** Test activity with the shared user ID affinity. */
-    @JvmField val TEST_ACTIVITY_WITH_SAME_AFFINITY = component("TestActivityWithSameAffinity")
 
-    /** Another activity with the same shared user ID affinity in the same package. */
     @JvmField
-    val TEST_ACTIVITY_WITH_SAME_AFFINITY_SAME_APP = component("TestActivityWithSameAffinitySameApp")
+    val TEST_ACTIVITY_WITH_SAME_AFFINITY_SHARE_UID =
+        component("TestActivityWithSameAffinityShareUid")
 
     @JvmStatic fun forceStopPackage() = (this as ComponentsProvider).forceStopPackage()
 }

@@ -48,7 +48,6 @@ import org.junit.Test;
  */
 @Presubmit
 public class AmProfileTests extends ActivityManagerTestBase {
-    private static final String TEST_PACKAGE = PROFILEABLE_APP_ACTIVITY.getPackageName();
     private static final String FIRST_WORD_NO_STREAMING = "*version\n";
     private static final String FIRST_WORD_STREAMING = "SLOW";  // Magic word set by runtime.
 
@@ -65,7 +64,7 @@ public class AmProfileTests extends ActivityManagerTestBase {
 
     @After
     public void tearDown() {
-        stopTestPackage(TEST_PACKAGE);
+        android.server.wm.profileable.Components.forceStopPackage();
     }
 
     /**

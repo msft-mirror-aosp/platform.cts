@@ -1,11 +1,11 @@
 /*
- * Copyright (C) 2018 The Android Open Source Project
+ * Copyright (C) 2025 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,12 +14,15 @@
  * limitations under the License.
  */
 
-package android.server.wm.deprecatedsdk;
+package android.server.wm.dndtargetapp
 
-import android.content.ComponentName;
-import android.server.wm.component.ComponentsBase;
+import android.server.wm.component.ComponentsProvider
+import android.server.wm.component.forceStopPackage
 
-public class Components extends ComponentsBase {
+/** Constants for dnd target app test components. */
+object Components : ComponentsProvider() {
 
-    public static final ComponentName MAIN_ACTIVITY = component(Components.class, "MainActivity");
+    @JvmField val DROP_TARGET = component("DropTarget")
+
+    @JvmStatic fun forceStopPackage() = (this as ComponentsProvider).forceStopPackage()
 }

@@ -39,11 +39,13 @@ import android.os.IBinder;
 import android.platform.test.annotations.Presubmit;
 import android.server.wm.WindowManagerState;
 import android.server.wm.WindowManagerState.Task;
+import android.server.wm.jetpack.second.Components;
 import android.window.TaskFragmentInfo;
 import android.window.WindowContainerTransaction;
 
 import androidx.annotation.NonNull;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -65,6 +67,11 @@ public class TaskFragmentTrustedModeTest extends TaskFragmentOrganizerTestBase {
     public void setUp() throws Exception {
         super.setUp();
         assumeActivityEmbeddingSupportedDevice();
+    }
+
+    @After
+    public void tearDown() {
+        Components.forceStopPackage();
     }
 
     /**

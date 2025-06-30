@@ -14,19 +14,17 @@
  * limitations under the License.
  */
 
-package android.server.wm.shareuid.a
+package android.server.wm.scvh
 
 import android.server.wm.component.ComponentsProvider
 import android.server.wm.component.forceStopPackage
 
-/** Constants for test components A in the shared user ID affinity. */
+/** Constants for surface control view host test components. */
 object Components : ComponentsProvider() {
-    /** Test activity with the shared user ID affinity. */
-    @JvmField val TEST_ACTIVITY_WITH_SAME_AFFINITY = component("TestActivityWithSameAffinity")
 
-    /** Another activity with the same shared user ID affinity in the same package. */
-    @JvmField
-    val TEST_ACTIVITY_WITH_SAME_AFFINITY_SAME_APP = component("TestActivityWithSameAffinitySameApp")
+    object CrossProcessSurfaceControlViewHostTestService {
+        @JvmField val COMPONENT = component("CrossProcessSurfaceControlViewHostTestService")
+    }
 
     @JvmStatic fun forceStopPackage() = (this as ComponentsProvider).forceStopPackage()
 }

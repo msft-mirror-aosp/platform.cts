@@ -41,15 +41,12 @@ import org.junit.Test;
 @Presubmit
 @Group3
 public class ActivityTaskAffinityTests extends ActivityManagerTestBase {
-    private static final String TEST_PACKAGE_SHARE_UID_A =
-            TEST_ACTIVITY_WITH_SAME_AFFINITY.getPackageName();
-    private static final String TEST_PACKAGE_SHARE_UID_B =
-            TEST_ACTIVITY_WITH_SAME_AFFINITY_SHARE_UID.getPackageName();
 
     @After
     public void tearDown() {
-        stopTestPackage(TEST_PACKAGE_SHARE_UID_A);
-        stopTestPackage(TEST_PACKAGE_SHARE_UID_B);
+        android.server.wm.second.Components.forceStopPackage();
+        android.server.wm.shareuid.a.Components.forceStopPackage();
+        android.server.wm.shareuid.b.Components.forceStopPackage();
     }
 
     @Test

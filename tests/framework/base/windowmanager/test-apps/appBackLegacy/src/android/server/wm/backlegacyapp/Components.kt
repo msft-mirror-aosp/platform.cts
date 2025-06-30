@@ -14,19 +14,18 @@
  * limitations under the License.
  */
 
-package android.server.wm.shareuid.a
+package android.server.wm.backlegacyapp
 
 import android.server.wm.component.ComponentsProvider
 import android.server.wm.component.forceStopPackage
 
-/** Constants for test components A in the shared user ID affinity. */
+/** Constants for back legacy app test components. */
 object Components : ComponentsProvider() {
-    /** Test activity with the shared user ID affinity. */
-    @JvmField val TEST_ACTIVITY_WITH_SAME_AFFINITY = component("TestActivityWithSameAffinity")
 
-    /** Another activity with the same shared user ID affinity in the same package. */
-    @JvmField
-    val TEST_ACTIVITY_WITH_SAME_AFFINITY_SAME_APP = component("TestActivityWithSameAffinitySameApp")
+    @JvmField val BACK_LEGACY = component("BackNavigationLegacyActivity")
+
+    const val KEY_ON_BACK_PRESSED_CALLED = "KEY_ON_BACK_PRESSED_CALLED"
+    const val KEY_ON_BACK_INVOKED_CALLED = "KEY_ON_BACK_INVOKED_CALLED"
 
     @JvmStatic fun forceStopPackage() = (this as ComponentsProvider).forceStopPackage()
 }

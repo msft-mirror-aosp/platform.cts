@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package android.server.wm.backnavigation;
 
 import static android.server.wm.WindowManagerState.STATE_RESUMED;
@@ -29,6 +30,7 @@ import android.server.wm.Condition;
 import android.server.wm.TestJournalProvider.TestJournalContainer;
 import android.server.wm.backlegacyapp.Components;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -41,10 +43,16 @@ import org.junit.Test;
 @Presubmit
 public class BackNavigationLegacyGestureTest extends ActivityManagerTestBase {
     private static final int ACTIVITY_FOCUS_TIMEOUT_MS = 3000;
+
     @Before
     public void setup() throws Exception {
         super.setUp();
         enableAndAssumeGestureNavigationMode();
+    }
+
+    @After
+    public void tearDown() {
+        Components.forceStopPackage();
     }
 
     @Test

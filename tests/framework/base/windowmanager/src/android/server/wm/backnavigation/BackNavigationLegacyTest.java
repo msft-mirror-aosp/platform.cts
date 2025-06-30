@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package android.server.wm.backnavigation;
 
 import static android.server.wm.WindowManagerState.STATE_RESUMED;
@@ -21,28 +22,25 @@ import static android.server.wm.backlegacyapp.Components.BACK_LEGACY;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-import android.app.Instrumentation;
 import android.server.wm.ActivityManagerTestBase;
 import android.server.wm.TestJournalProvider.TestJournalContainer;
 import android.server.wm.TouchHelper;
 import android.server.wm.backlegacyapp.Components;
 import android.view.KeyEvent;
 
-import androidx.test.platform.app.InstrumentationRegistry;
-
-import org.junit.Before;
+import org.junit.After;
 import org.junit.Test;
 
 /**
- * Integration test for back navigation legacy mode
+ * Integration test for back navigation legacy mode.
+ *
+ * <p>Build/Install/Run: atest CtsWindowManagerDeviceBackNavigation:BackNavigationLegacyTest
  */
 public class BackNavigationLegacyTest extends ActivityManagerTestBase {
-    private Instrumentation mInstrumentation;
 
-    @Before
-    public void setup() {
-        mInstrumentation = InstrumentationRegistry.getInstrumentation();
-
+    @After
+    public void tearDown() {
+        Components.forceStopPackage();
     }
 
     @Test

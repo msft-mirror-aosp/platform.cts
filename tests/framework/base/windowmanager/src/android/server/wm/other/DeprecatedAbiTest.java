@@ -30,6 +30,7 @@ import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.server.wm.ActivityManagerTestBase;
+import android.server.wm.deprecatedabi.Components;
 
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.SystemUtil;
@@ -43,12 +44,11 @@ import org.junit.Test;
 import java.util.Arrays;
 import java.util.List;
 
-
 /**
- * Ensure that compatibility dialog is shown when launching an application
- * targeting a deprecated ABI.
- * <p>Build/Install/Run:
- *     atest CtsWindowManagerDeviceActivity:DeprecatedAbiTest
+ * Ensure that compatibility dialog is shown when launching an application targeting a deprecated
+ * ABI.
+ *
+ * <p>Build/Install/Run: atest CtsWindowManagerDeviceOther:DeprecatedAbiTest
  */
 @Presubmit
 @ApiTest(apis = {"android.content.pm.PackageInstaller#STATUS_FAILURE_INCOMPATIBLE"})
@@ -73,7 +73,7 @@ public class DeprecatedAbiTest extends ActivityManagerTestBase {
     @After
     public void tearDown() {
         // Ensure app process is stopped.
-        stopTestPackage(WARNING_DIALOG_ACTIVITY.getPackageName());
+        Components.forceStopPackage();
         executeShellCommand("pm uninstall " + TEST_PACKAGE_NAME);
         // Continue to disable DeprecatedAbi dialog so other tests can pass
         SystemUtil.runShellCommand("setprop debug.wm.disable_deprecated_abi_dialog 1");

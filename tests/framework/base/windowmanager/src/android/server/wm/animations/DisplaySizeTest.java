@@ -56,7 +56,7 @@ public class DisplaySizeTest extends ActivityManagerTestBase {
     @After
     public void tearDown() {
         // Ensure app process is stopped.
-        stopTestPackage(SMALLEST_WIDTH_ACTIVITY.getPackageName());
+        android.server.wm.displaysize.Components.forceStopPackage();
         stopTestPackage(TEST_ACTIVITY.getPackageName());
     }
 

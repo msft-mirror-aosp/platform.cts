@@ -14,19 +14,23 @@
  * limitations under the License.
  */
 
-package android.server.wm.shareuid.a
+package android.server.wm.profileable
 
 import android.server.wm.component.ComponentsProvider
 import android.server.wm.component.forceStopPackage
 
-/** Constants for test components A in the shared user ID affinity. */
+/** Constants for profileable app test components. */
 object Components : ComponentsProvider() {
-    /** Test activity with the shared user ID affinity. */
-    @JvmField val TEST_ACTIVITY_WITH_SAME_AFFINITY = component("TestActivityWithSameAffinity")
 
-    /** Another activity with the same shared user ID affinity in the same package. */
-    @JvmField
-    val TEST_ACTIVITY_WITH_SAME_AFFINITY_SAME_APP = component("TestActivityWithSameAffinitySameApp")
+    @JvmField val PROFILEABLE_APP_ACTIVITY = component("ProfileableAppActivity")
+
+    object ProfileableAppActivity {
+        /** @see android.os.ShellCommand#openFileForSystem */
+        const val OUTPUT_DIR = "/data/local/tmp/AmProfileTest/"
+        const val OUTPUT_NAME = "profile.trace"
+        const val OUTPUT_FILE_PATH = OUTPUT_DIR + OUTPUT_NAME
+        const val COMMAND_WAIT_FOR_PROFILE_OUTPUT = "wait_for_profile_output"
+    }
 
     @JvmStatic fun forceStopPackage() = (this as ComponentsProvider).forceStopPackage()
 }

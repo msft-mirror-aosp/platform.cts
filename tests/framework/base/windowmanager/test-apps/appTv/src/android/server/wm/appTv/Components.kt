@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,13 +14,17 @@
  * limitations under the License.
  */
 
-package android.server.wm.displaycompat;
+package android.server.wm.apptv
 
-import android.content.ComponentName;
-import android.server.wm.component.ComponentsBase;
+import android.server.wm.component.ComponentsProvider
+import android.server.wm.component.forceStopPackage
 
-public class Components extends ComponentsBase {
+/** Constants for TV test app components. */
+object Components : ComponentsProvider() {
 
-    public static final ComponentName NO_DISPLAY_CONFIG_CHANGE_SUPPORT_GAME_ACTIVITY =
-            component(Components.class, "NoDisplayConfigChangeSupportGameActivity");
+    @JvmField val TV_PIP_ACTIVITY = component("PipActivity")
+
+    @JvmField val TV_LAUNCH_ENTER_PIP_ACTIVITY = component("LaunchEnterPipActivity")
+
+    @JvmStatic fun forceStopPackage() = (this as ComponentsProvider).forceStopPackage()
 }

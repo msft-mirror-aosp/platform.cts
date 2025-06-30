@@ -1,11 +1,11 @@
 /*
- * Copyright (C) 2023 The Android Open Source Project
+ * Copyright (C) 2025 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,13 +14,14 @@
  * limitations under the License.
  */
 
-package android.server.wm.deskresources;
+package android.server.wm.deprecatedabi
 
-import android.content.ComponentName;
-import android.server.wm.component.ComponentsBase;
+import android.server.wm.component.ComponentsProvider
+import android.server.wm.component.forceStopPackage
 
-public class Components extends ComponentsBase {
-    /** A test activity in a test app that has resources with the -desk qualifier. */
-    public static final ComponentName DESK_RESOURCES_ACTIVITY =
-            component(Components.class, "DeskResourcesActivity");
+/** Constants for deprecated ABI test components. */
+object Components : ComponentsProvider() {
+    @JvmField val WARNING_DIALOG_ACTIVITY = component("WarningDialogActivity")
+
+    @JvmStatic fun forceStopPackage() = (this as ComponentsProvider).forceStopPackage()
 }

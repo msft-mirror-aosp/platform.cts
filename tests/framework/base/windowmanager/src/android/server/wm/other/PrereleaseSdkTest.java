@@ -21,6 +21,7 @@ import static android.server.wm.prerelease.Components.MAIN_ACTIVITY;
 
 import android.platform.test.annotations.Presubmit;
 import android.server.wm.ActivityManagerTestBase;
+import android.server.wm.prerelease.Components;
 
 import com.android.compatibility.common.util.SystemUtil;
 
@@ -51,7 +52,7 @@ public class PrereleaseSdkTest extends ActivityManagerTestBase {
     @After
     public void tearDown() {
         // Ensure app process is stopped.
-        stopTestPackage(MAIN_ACTIVITY.getPackageName());
+        Components.forceStopPackage();
     }
 
     @Test
