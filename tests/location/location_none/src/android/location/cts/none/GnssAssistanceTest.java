@@ -16,10 +16,12 @@
 
 package android.location.cts.none;
 
+import static android.location.flags.Flags.FLAG_FIX_GLONASS_ALMANAC_FREQUENCY_CHANNEL_RANGE;
 import static android.location.flags.Flags.FLAG_GNSS_ASSISTANCE_INTERFACE;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 import android.location.AuxiliaryInformation;
@@ -103,6 +105,31 @@ public class GnssAssistanceTest {
         assertTrue(verifyTestBeidouAssistance(newGnssAssistance.getBeidouAssistance()));
         assertTrue(verifyTestQzssAssistance(newGnssAssistance.getQzssAssistance()));
         parcel.recycle();
+    }
+
+    @RequiresFlagsEnabled(FLAG_FIX_GLONASS_ALMANAC_FREQUENCY_CHANNEL_RANGE)
+    @Test
+    public void testGlonassAlmanacFreqChannelRange() {
+        GlonassSatelliteAlmanac.Builder glonassSatelliteAlmanacBuilder =
+                new GlonassSatelliteAlmanac.Builder()
+                        .setSlotNumber(1)
+                        .setHealthState(GlonassSatelliteEphemeris.HEALTH_STATUS_HEALTHY)
+                        .setTau(-1.9e-5)
+                        .setTLambda(0.299)
+                        .setLambda(0.0)
+                        .setDeltaI(6.42e-3)
+                        .setDeltaT(-2.65e3)
+                        .setDeltaTDot(-6.10e-4)
+                        .setEccentricity(4.21e-4)
+                        .setOmega(0.16)
+                        .setCalendarDayNumber(100)
+                        .setGlonassM(true);
+        GlonassSatelliteAlmanac satelliteAlmanac =
+                glonassSatelliteAlmanacBuilder.setFrequencyChannelNumber(6).build();
+        assertEquals(6, satelliteAlmanac.getFrequencyChannelNumber());
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> glonassSatelliteAlmanacBuilder.setFrequencyChannelNumber(7).build());
     }
 
     private void assertEqualsWithDelta(final double expected, final double actual) {

@@ -341,9 +341,11 @@ class LensIntrinsicCalibrationTest(its_base_test.ItsBaseTest):
       # Initialize rotation rig
       rot_rig['cntl'] = self.rotator_cntl
       rot_rig['ch'] = self.rotator_ch
-      if rot_rig['cntl'].lower() != 'arduino':
+      if rot_rig['cntl'].lower() not in sensor_fusion_utils.VALID_CONTROLLERS:
         raise AssertionError(
-            f'You must use the arduino controller for {_NAME}.')
+            'You must use a valid controller from '
+            f'{sensor_fusion_utils.VALID_CONTROLLERS}.'
+        )
 
       largest_area = get_largest_video_size(cam, self.camera_id)
 

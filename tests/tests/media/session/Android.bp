@@ -37,6 +37,7 @@ java_defaults {
         "src/**/*.java",
         "aidl/**/*.aidl",
     ],
+    jarjar_rules: "jarjar-rules.txt",
     // TODO(b/387500109): This test uses private APIs. Replace with sdk_version.
     platform_apis: true,
     host_required: ["cts-dynamic-config"],

@@ -1,0 +1,1 @@
+rule android.os.UserManager.** android.os.internal.UserManager.@0

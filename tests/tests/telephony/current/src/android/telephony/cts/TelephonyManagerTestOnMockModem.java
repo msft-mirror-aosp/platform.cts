@@ -1079,7 +1079,9 @@ public class TelephonyManagerTestOnMockModem extends MockModemTestBase {
         // calling TM API with shell permissions.
         CarrierRestrictionRules carrierRules = ShellIdentityUtils.invokeMethodWithShellPermissions(
                 sTelephonyManager, tm -> tm.getCarrierRestrictionRules());
-
+        Log.d(
+                "TestonMockModem",
+                "CTS getCarrierRestrictionRules(): carrierRules = " + carrierRules);
         // Verify the received CarrierRestrictionRules
         assertTrue(carrierRules != null);
         assertTrue(carrierRules.getAllowedCarriersInfoList() != null);

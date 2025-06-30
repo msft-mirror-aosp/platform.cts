@@ -68,7 +68,7 @@ public class StreamingRoleBehaviorTest {
         mVirtualDevice = mRule.createManagedVirtualDevice();
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_LIMITED_VDM_ROLE)
+    @RequiresFlagsEnabled(Flags.FLAG_VDM_MIRROR_DISPLAY_PERMISSION)
     @Test
     public void createVirtualDisplay_public_withoutMirrorDisplayPermission_throws() {
         // DisplayManager creates an auto-mirror display by default for public virtual displays.
@@ -77,7 +77,7 @@ public class StreamingRoleBehaviorTest {
                         DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC));
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_LIMITED_VDM_ROLE)
+    @RequiresFlagsEnabled(Flags.FLAG_VDM_MIRROR_DISPLAY_PERMISSION)
     @Test
     public void createVirtualDisplay_autoMirror_withoutMirrorDisplayPermission_throws() {
         assertNeedsPermission(ADD_MIRROR_DISPLAY,
@@ -85,7 +85,7 @@ public class StreamingRoleBehaviorTest {
                         DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR));
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_LIMITED_VDM_ROLE)
+    @RequiresFlagsEnabled(Flags.FLAG_VDM_MIRROR_DISPLAY_PERMISSION)
     @Test
     public void createVirtualDisplay_publicAutoMirror_withoutMirrorDisplayPermission_throws() {
         assertNeedsPermission(ADD_MIRROR_DISPLAY,

@@ -18,7 +18,31 @@ package {
 
 filegroup {
     name: "cts-wm-components-base",
-    srcs: ["**/ComponentsBase.java"],
+    srcs: [
+        "**/ComponentsBase.java",
+        "**/ComponentsProvider.kt",
+        "**/ComponentsProviderExtension.kt",
+    ],
+    visibility: ["//visibility:private"],
+}
+
+java_test_helper_library {
+    name: "cts-wm-components-lib",
+
+    srcs: [
+        ":cts-wm-components",
+        ":cts-wm-components-base",
+        ":cts-wm-components-util",
+    ],
+
+    static_libs: [
+        "androidx.annotation_annotation",
+        "androidx.test.rules",
+        "compatibility-device-util-axt",
+    ],
+
+    sdk_version: "test_current",
+    visibility: ["//cts/tests/framework/base/windowmanager/util"],
 }
 
 java_test_helper_library {
@@ -26,13 +50,11 @@ java_test_helper_library {
 
     srcs: [
         "src/**/*.java",
-        ":cts-wm-app-util",
+        "src/**/*.kt",
     ],
+    exclude_srcs: [":cts-wm-components-base"],
 
-    static_libs: [
-        "androidx.annotation_annotation",
-        "cts-wm-shared",
-    ],
+    static_libs: ["cts-wm-components-lib"],
 
     sdk_version: "test_current",
 }

@@ -191,7 +191,7 @@ interface Precondition {
         ): Precondition = usingContext(
             "Forbidden system feature $feature is available",
             minPerformanceClassLevel
-        ) { it.getPackageManager().hasSystemFeature(feature) }
+        ) { !it.getPackageManager().hasSystemFeature(feature) }
     }
 }
 

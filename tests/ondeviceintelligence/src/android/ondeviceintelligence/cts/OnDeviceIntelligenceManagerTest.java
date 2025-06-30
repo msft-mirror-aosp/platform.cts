@@ -66,6 +66,8 @@ import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.DeviceConfig;
 import android.provider.Settings;
+import android.service.ondeviceintelligence.OnDeviceSandboxedInferenceService.LifecycleListener;
+import android.service.ondeviceintelligence.OnDeviceSandboxedInferenceService.LifecycleListener.LifecycleEvent;
 import android.service.ondeviceintelligence.OnDeviceIntelligenceService;
 import android.text.TextUtils;
 import android.util.Log;
@@ -75,6 +77,7 @@ import androidx.annotation.Nullable;
 import androidx.test.InstrumentationRegistry;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
+import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.DeviceConfigStateChangerRule;
 
 import org.junit.After;
@@ -140,16 +143,29 @@ public class OnDeviceIntelligenceManagerTest {
     public static final int REQUEST_TYPE_GET_CALLER_UID = 1005;
     public static final int REQUEST_TYPE_GET_UPDATED_DEVICE_CONFIG = 1006;
     public static final int REQUEST_TYPE_GET_FILE_FROM_NON_FILES_DIRECTORY = 1007;
-    public static final int REQUEST_TYPE_POPULATE_INFERENCE_INFO_CALLBACK = 1009;
-    public static final int REQUEST_TYPE_FETCH_FEATURE_METADATA = 1009;
+    public static final int REQUEST_TYPE_POPULATE_INFERENCE_INFO_CALLBACK = 1008;
+    public static final int REQUEST_TYPE_FETCH_FEATURE_METADATA = 1010;
+    public static final int REQUEST_TYPE_TRIGGER_MODEL_LOAD = 1011;
+    public static final int REQUEST_TYPE_TRIGGER_MODEL_UNLOAD = 1012;
 
-    private static final Executor EXECUTOR = InstrumentationRegistry.getContext().getMainExecutor();
+    private static final Executor EXECUTOR = Executors.newCachedThreadPool();
     private static final String MODEL_LOADED_BROADCAST_ACTION =
             "android.service.ondeviceintelligence.MODEL_LOADED";
 
     private Context mContext;
     public OnDeviceIntelligenceManager mOnDeviceIntelligenceManager;
-    private final Executor mExecutor = Executors.newCachedThreadPool();
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+    private final ProcessingCallback mNoOpProcessingCallback = new ProcessingCallback() {
+        @Override
+        public void onResult(@NonNull Bundle result) {
+        }
+
+        @Override
+        public void onError(@NonNull OnDeviceIntelligenceException error) {
+        }
+    };
 
     @Rule
     public final DeviceConfigStateChangerRule mDeviceConfigStateChangerRule =
@@ -159,8 +175,6 @@ public class OnDeviceIntelligenceManagerTest {
                     KEY_SERVICE_ENABLED,
                     "true");
 
-    @Rule
-    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Before
     public void setUp() throws Exception {
@@ -365,6 +379,25 @@ public class OnDeviceIntelligenceManagerTest {
                             public void onError(@NonNull OnDeviceIntelligenceException error) {
                                 Log.e(TAG, "Final Result : ", error);
                             }
+                        }));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_ON_DEVICE_INTELLIGENCE_25Q4)
+    public void noAccessWhenRegisteringLifecycleListener() {
+        assertEquals(
+                PackageManager.PERMISSION_DENIED,
+                mContext.checkCallingOrSelfPermission(
+                        Manifest.permission.USE_ON_DEVICE_INTELLIGENCE));
+
+        // Test non system app throws SecurityException
+        assertThrows(
+                "no access to registerInferenceServiceLifecycleListener from non system component",
+                SecurityException.class,
+                () -> mOnDeviceIntelligenceManager.registerInferenceServiceLifecycleListener(EXECUTOR,
+                        new LifecycleListener() {
+                            @Override
+                            public void onLifecycleEvent(@LifecycleEvent int event, @NonNull Feature feature) { }
                         }));
     }
 
@@ -1175,6 +1208,120 @@ public class OnDeviceIntelligenceManagerTest {
         assertThat(receivedInfo.getEndTimeMillis()).isEqualTo(3);
     }
 
+    //===================== Tests for Model Listener ============================================
+    @Test
+    @RequiresFlagsEnabled(FLAG_ON_DEVICE_INTELLIGENCE_25Q4)
+    @ApiTest(apis = {
+            "android.app.ondeviceintelligence.OnDeviceIntelligenceManager#registerInferenceServiceLifecycleListener",
+            "android.app.ondeviceintelligence.OnDeviceIntelligenceManager#unregisterInferenceServiceLifecycleListener"})
+    public void lifecycleListenerCallbacksAreInvoked() throws Exception {
+        getInstrumentation()
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(Manifest.permission.USE_ON_DEVICE_INTELLIGENCE);
+        final CountDownLatch loadedLatch = new CountDownLatch(1);
+        final CountDownLatch unloadedLatch = new CountDownLatch(2);
+        final Feature feature = new Feature.Builder(1).build();
+
+        final LifecycleListener listener = (event, eventFeature) -> {
+            if (event == LifecycleListener.LIFECYCLE_EVENT_MODEL_LOADED) {
+                Log.i(TAG, "Model Loaded callback received.");
+                assertThat(eventFeature.getId()).isEqualTo(feature.getId());
+                loadedLatch.countDown();
+            } else if (event == LifecycleListener.LIFECYCLE_EVENT_MODEL_UNLOADED) {
+                Log.i(TAG, "Model Unloaded callback received.");
+                assertThat(eventFeature.getId()).isEqualTo(feature.getId());
+                unloadedLatch.countDown();
+            }
+        };
+
+        mOnDeviceIntelligenceManager.registerInferenceServiceLifecycleListener(EXECUTOR, listener);
+
+        // Trigger model loaded
+        mOnDeviceIntelligenceManager.processRequest(feature,
+                Bundle.EMPTY, REQUEST_TYPE_TRIGGER_MODEL_LOAD, null,
+                null, EXECUTOR, mNoOpProcessingCallback);
+
+        assertThat(loadedLatch.await(2, SECONDS)).isTrue();
+
+        // The latch should not be counted down to 0.
+        assertThat(unloadedLatch.await(2, SECONDS)).isFalse();
+        // Should have only counted down once.
+        assertThat(unloadedLatch.getCount()).isEqualTo(1);
+
+        // Trigger model unloaded
+        mOnDeviceIntelligenceManager.processRequest(feature,
+                Bundle.EMPTY, REQUEST_TYPE_TRIGGER_MODEL_UNLOAD, null,
+                null, EXECUTOR, mNoOpProcessingCallback);
+
+        // Unregister the listener and verify no more callbacks are received.
+        mOnDeviceIntelligenceManager.unregisterInferenceServiceLifecycleListener(listener);
+
+        // Trigger model unloaded again
+        mOnDeviceIntelligenceManager.processRequest(feature,
+                Bundle.EMPTY, REQUEST_TYPE_TRIGGER_MODEL_UNLOAD, null,
+                null, EXECUTOR, mNoOpProcessingCallback);
+
+        // The latch should not be counted down to 0.
+        assertThat(unloadedLatch.await(2, SECONDS)).isFalse();
+        // Should have only counted down once.
+        assertThat(unloadedLatch.getCount()).isEqualTo(1);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_ON_DEVICE_INTELLIGENCE_25Q4)
+    @ApiTest(apis = {
+            "android.app.ondeviceintelligence.OnDeviceIntelligenceManager#registerInferenceServiceLifecycleListener"})
+    public void lifecycleListener_multipleListenersCanBeRegistered() throws Exception {
+        getInstrumentation()
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(Manifest.permission.USE_ON_DEVICE_INTELLIGENCE);
+        try {
+            CountDownLatch loadedLatchA = new CountDownLatch(1);
+            CountDownLatch loadedLatchB = new CountDownLatch(1);
+            Feature feature = new Feature.Builder(1).build();
+
+            LifecycleListener listenerA = getLifecycleListenerForLoaded(loadedLatchA, null);
+            LifecycleListener listenerB = getLifecycleListenerForLoaded(loadedLatchB, feature);
+
+            // Register listener A, then B, with the same UID (shell's). B should replace A.
+            mOnDeviceIntelligenceManager.registerInferenceServiceLifecycleListener(EXECUTOR, listenerA);
+            mOnDeviceIntelligenceManager.registerInferenceServiceLifecycleListener(EXECUTOR, listenerB);
+
+            // This is to ensure service connection is established and listeners are registered.
+            CountDownLatch readyLatch = new CountDownLatch(1);
+            mOnDeviceIntelligenceManager.getVersion(EXECUTOR, version -> readyLatch.countDown());
+            assertThat(readyLatch.await(2, SECONDS)).isTrue();
+
+            // Trigger model loaded
+            mOnDeviceIntelligenceManager.processRequest(feature, Bundle.EMPTY,
+                    REQUEST_TYPE_TRIGGER_MODEL_LOAD, null, null, EXECUTOR,
+                    mNoOpProcessingCallback);
+
+            // Listener B should receive the callback.
+            assertThat(loadedLatchB.await(2, SECONDS)).isTrue();
+            // Listener A should also receive the callback.
+            assertThat(loadedLatchA.await(2, SECONDS)).isTrue();
+        } finally {
+            getInstrumentation().getUiAutomation().dropShellPermissionIdentity();
+        }
+    }
+
+    private LifecycleListener getLifecycleListenerForLoaded(CountDownLatch latch,
+            @Nullable Feature expectedFeature) {
+        return new LifecycleListener() {
+            @Override
+            public void onLifecycleEvent(@LifecycleEvent int event, @NonNull Feature loadedFeature) {
+                if (event == LifecycleListener.LIFECYCLE_EVENT_MODEL_LOADED) {
+                    Log.i(TAG, "Model loaded callback received.");
+                    if (expectedFeature != null) {
+                        assertThat(loadedFeature.getId()).isEqualTo(expectedFeature.getId());
+                    }
+                    latch.countDown();
+                }
+            }
+        };
+    }
+
     //===================== Tests data augmentation while processing request =====================
     @Test
     @RequiresFlagsEnabled(FLAG_ENABLE_ON_DEVICE_INTELLIGENCE)
@@ -1410,19 +1557,19 @@ public class OnDeviceIntelligenceManagerTest {
 
     private boolean isServiceOverlayConfigured() {
         String sanboxedServiceComponentName = mContext.getResources()
-                        .getString(
-                                mContext.getResources()
-                                        .getIdentifier(
-                                                "config_defaultOnDeviceSandboxedInferenceService",
-                                                "string",
-                                                "android"));
+                .getString(
+                        mContext.getResources()
+                                .getIdentifier(
+                                        "config_defaultOnDeviceSandboxedInferenceService",
+                                        "string",
+                                        "android"));
         String intelligenceServiceComponentName = mContext.getResources()
-                        .getString(
-                                mContext.getResources()
-                                        .getIdentifier(
-                                                "config_defaultOnDeviceIntelligenceService",
-                                                "string",
-                                                "android"));
+                .getString(
+                        mContext.getResources()
+                                .getIdentifier(
+                                        "config_defaultOnDeviceIntelligenceService",
+                                        "string",
+                                        "android"));
 
         return !TextUtils.isEmpty(sanboxedServiceComponentName) || !TextUtils.isEmpty(
                 intelligenceServiceComponentName);

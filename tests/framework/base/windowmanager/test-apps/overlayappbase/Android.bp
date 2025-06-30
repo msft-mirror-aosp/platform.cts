@@ -26,6 +26,7 @@ android_library {
 
     static_libs: [
         "cts-wm-app-base",
+        "cts-wm-shared",
         "androidx.annotation_annotation",
     ],
 
