@@ -525,7 +525,7 @@ public class ConferenceTest extends BaseTelecomTestWithMockServices {
 
     private void verifyConferenceObject(Conference mConferenceObject, MockConnection connection1,
             MockConnection connection2) {
-        assertTrue(mConferenceObject.getConferenceableConnections().isEmpty());
+        assertTrue(mConferenceObject.getConferenceables().isEmpty());
         assertEquals(connection1.getConnectionCapabilities(),
                 mConferenceObject.getConnectionCapabilities());
         assertEquals(connection1.getState(), mConferenceObject.getState());

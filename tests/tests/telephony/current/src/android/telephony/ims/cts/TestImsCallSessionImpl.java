@@ -66,6 +66,8 @@ public class TestImsCallSessionImpl extends ImsCallSessionImplBase {
     public static final int TEST_TYPE_TRANSFERRED = 1 << 10;
     public static final int TEST_TYPE_TRANSFER_FAILED = 1 << 11;
     public static final int TEST_TYPE_MO_STAY_AT_ESTABLISHING = 1 << 12;
+    public static final int TEST_TYPE_MULTI_PARTY_ANCHOR_CONFERENCE = 1 << 13;
+
     private int mTestType = TEST_TYPE_NONE;
     private boolean mIsOnHold = false;
     private boolean mIsTransferResultNotified = false;
@@ -526,7 +528,8 @@ public class TestImsCallSessionImpl extends ImsCallSessionImplBase {
                 || isTestType(TEST_TYPE_CONFERENCE_FAILED_REMOTE_TERMINATED)) {
             mergeFailed();
         } else if (isTestType(TEST_TYPE_JOIN_EXIST_CONFERENCE)
-                || isTestType(TEST_TYPE_JOIN_EXIST_CONFERENCE_AFTER_SWAP)) {
+                || isTestType(TEST_TYPE_JOIN_EXIST_CONFERENCE_AFTER_SWAP)
+                || isTestType(TEST_TYPE_MULTI_PARTY_ANCHOR_CONFERENCE)) {
             mergeExistConference();
         } else {
             createConferenceSession();
@@ -619,6 +622,10 @@ public class TestImsCallSessionImpl extends ImsCallSessionImplBase {
                 Log.d(LOG_TAG, "invokeMergeComplete into an existing conference call");
                 TestImsCallSessionImpl newSession = null;
                 mListener.callSessionMergeComplete(newSession);
+
+                if (isTestType(TEST_TYPE_MULTI_PARTY_ANCHOR_CONFERENCE)) {
+                    mConferenceHelper.getBackGroundSession().resume(new ImsStreamMediaProfile());
+                }
 
                 if (isTestType(TEST_TYPE_JOIN_EXIST_CONFERENCE_AFTER_SWAP)) {
                     mConferenceHelper.getBackGroundSession().setState(State.TERMINATED);
