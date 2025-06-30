@@ -261,26 +261,21 @@ public final class VulkanDeviceInfo extends DeviceInfo {
                         JSONObject vulkan11Properties = core11.getJSONObject(KEY_PROPERTIES);
                         store.startGroup(getConvertedName(KEY_VULKAN_11_PROPERTIES));
                         {
+                            emitLongArray(store, vulkan11Properties, KEY_DEVICE_UUID);
+                            emitLongArray(store, vulkan11Properties, KEY_DRIVER_UUID);
+                            emitLongArray(store, vulkan11Properties, KEY_DEVICE_LUID);
                             emitLong(store, vulkan11Properties, KEY_DEVICE_NODE_MASK);
                             emitBoolean(store, vulkan11Properties, KEY_DEVICE_LUID_VALID);
                             emitLong(store, vulkan11Properties, KEY_SUBGROUP_SIZE);
-                            emitBoolean(
-                                    store,
-                                    vulkan11Properties,
-                                    KEY_SUBGROUP_QUAD_OPERATIONS_IN_ALL_STAGES);
-                            emitLong(store, vulkan11Properties, KEY_MAX_MULTIVIEW_INSTANCE_INDEX);
-                            emitLong(store, vulkan11Properties, KEY_MAX_MULTIVIEW_VIEW_COUNT);
-                            emitLong(store, vulkan11Properties, KEY_MAX_PER_SET_DESCRIPTORS);
-                            emitLong(store, vulkan11Properties, KEY_PROTECTED_NO_FAULT);
-
-                            emitLongArray(store, vulkan11Properties, KEY_DEVICE_LUID);
-
-                            emitLongArray(store, vulkan11Properties, KEY_DEVICE_UUID);
-                            emitLongArray(store, vulkan11Properties, KEY_DRIVER_UUID);
-                            emitString(store, vulkan11Properties, KEY_MAX_MEMORY_ALLOCATION_SIZE);
-                            emitLong(store, vulkan11Properties, KEY_POINT_CLIPPING_BEHAVIOR);
-                            emitLong(store, vulkan11Properties, KEY_SUBGROUP_SUPPORTED_OPERATIONS);
                             emitLong(store, vulkan11Properties, KEY_SUBGROUP_SUPPORTED_STAGES);
+                            emitLong(store, vulkan11Properties, KEY_SUBGROUP_SUPPORTED_OPERATIONS);
+                            emitBoolean(store, vulkan11Properties, KEY_SUBGROUP_QUAD_OPERATIONS_IN_ALL_STAGES);
+                            emitLong(store, vulkan11Properties, KEY_POINT_CLIPPING_BEHAVIOR);
+                            emitLong(store, vulkan11Properties, KEY_MAX_MULTIVIEW_VIEW_COUNT);
+                            emitLong(store, vulkan11Properties, KEY_MAX_MULTIVIEW_INSTANCE_INDEX);
+                            emitLong(store, vulkan11Properties, KEY_PROTECTED_NO_FAULT);
+                            emitLong(store, vulkan11Properties, KEY_MAX_PER_SET_DESCRIPTORS);
+                            emitString(store, vulkan11Properties, KEY_MAX_MEMORY_ALLOCATION_SIZE);
                         }
                         store.endGroup();
 
@@ -417,9 +412,9 @@ public final class VulkanDeviceInfo extends DeviceInfo {
                             emitBoolean(store, vulkan14Properties, KEY_SUPPORTS_NON_ZERO_FIRST_INSTANCE);
                             emitLong(store, vulkan14Properties, KEY_MAX_PUSH_DESCRIPTORS);
                             emitBoolean(store, vulkan14Properties, KEY_DYNAMIC_RENDERING_LOCAL_READ_DEPTH_STENCIL_ATTACHMENTS);
-                            emitBoolean(store, vulkan14Properties,  KEY_DYNAMIC_RENDERING_LOCAL_READ_MULTISAMPLED_ATTACHMENTS);
-                            emitBoolean(store, vulkan14Properties,  KEY_EARLY_FRAGMENT_MULTISAMPLE_COVERAGE_AFTER_SAMPLE_COUNTING);
-                            emitBoolean(store, vulkan14Properties,  KEY_EARLY_FRAGMENT_SAMPLE_MASK_TEST_BEFORE_SAMPLE_COUNTING);
+                            emitBoolean(store, vulkan14Properties, KEY_DYNAMIC_RENDERING_LOCAL_READ_MULTISAMPLED_ATTACHMENTS);
+                            emitBoolean(store, vulkan14Properties, KEY_EARLY_FRAGMENT_MULTISAMPLE_COVERAGE_AFTER_SAMPLE_COUNTING);
+                            emitBoolean(store, vulkan14Properties, KEY_EARLY_FRAGMENT_SAMPLE_MASK_TEST_BEFORE_SAMPLE_COUNTING);
                             emitBoolean(store, vulkan14Properties, KEY_DEPTH_STENCIL_SWIZZLE_ONE_SUPPORT);
                             emitBoolean(store, vulkan14Properties, KEY_POLYGON_MODE_POINT_SIZE);
                             emitBoolean(store, vulkan14Properties, KEY_NON_STRICT_SINGLE_PIXEL_WIDE_LINES_USE_PARALLELOGRAM);
@@ -508,18 +503,18 @@ public final class VulkanDeviceInfo extends DeviceInfo {
                         JSONObject vulkan11Features = core11.getJSONObject(KEY_FEATURES);
                         store.startGroup(getConvertedName(KEY_VULKAN_11_FEATURES));
                         {
+                            emitBoolean(store, vulkan11Features, KEY_STORAGE_BUFFER_16BIT_ACCESS);
+                            emitBoolean(store, vulkan11Features, KEY_UNIFORM_AND_STORAGE_BUFFER_16BIT_ACCESS);
+                            emitBoolean(store, vulkan11Features, KEY_STORAGE_PUSH_CONSTANT_16);
+                            emitBoolean(store, vulkan11Features, KEY_STORAGE_INPUT_OUTPUT_16);
                             emitBoolean(store, vulkan11Features, KEY_MULTIVIEW);
                             emitBoolean(store, vulkan11Features, KEY_MULTIVIEW_GEOMETRY_SHADER);
                             emitBoolean(store, vulkan11Features, KEY_MULTIVIEW_TESSELLATION_SHADER);
+                            emitBoolean(store, vulkan11Features, KEY_VARIABLE_POINTERS_STORAGE_BUFFER);
+                            emitBoolean(store, vulkan11Features, KEY_VARIABLE_POINTERS);
                             emitBoolean(store, vulkan11Features, KEY_PROTECTED_MEMORY);
                             emitBoolean(store, vulkan11Features, KEY_SAMPLER_YCBCR_CONVERSION);
                             emitBoolean(store, vulkan11Features, KEY_SHADER_DRAW_PARAMETERS);
-                            emitBoolean(store, vulkan11Features, KEY_STORAGE_BUFFER_16BIT_ACCESS);
-                            emitBoolean(store, vulkan11Features, KEY_STORAGE_INPUT_OUTPUT_16);
-                            emitBoolean(store, vulkan11Features, KEY_STORAGE_PUSH_CONSTANT_16);
-                            emitBoolean(store, vulkan11Features, KEY_UNIFORM_AND_STORAGE_BUFFER_16BIT_ACCESS);
-                            emitBoolean(store, vulkan11Features, KEY_VARIABLE_POINTERS);
-                            emitBoolean(store, vulkan11Features, KEY_VARIABLE_POINTERS_STORAGE_BUFFER);
                         }
                         store.endGroup();
 
@@ -732,40 +727,6 @@ public final class VulkanDeviceInfo extends DeviceInfo {
                     }
                     store.endGroup();
 
-                    JSONObject pointClippingProperties = device.getJSONObject(KEY_POINT_CLIPPING_PROPERTIES);
-                    store.startGroup(getConvertedName(KEY_POINT_CLIPPING_PROPERTIES));
-                    {
-                        emitLong(store, pointClippingProperties, KEY_POINT_CLIPPING_BEHAVIOR);
-                    }
-                    store.endGroup();
-
-                    JSONObject multiviewProperties = device.getJSONObject(KEY_MULTIVIEW_PROPERTIES);
-                    store.startGroup(getConvertedName(KEY_MULTIVIEW_PROPERTIES));
-                    {
-                        emitLong(store, multiviewProperties, KEY_MAX_MULTIVIEW_VIEW_COUNT);
-                        emitLong(store, multiviewProperties, KEY_MAX_MULTIVIEW_INSTANCE_INDEX);
-                    }
-                    store.endGroup();
-
-                    JSONObject idProperties = device.getJSONObject(KEY_ID_PROPERTIES);
-                    store.startGroup(getConvertedName(KEY_ID_PROPERTIES));
-                    {
-                        emitLongArray(store, idProperties, KEY_DEVICE_UUID);
-                        emitLongArray(store, idProperties, KEY_DRIVER_UUID);
-                        emitLongArray(store, idProperties, KEY_DEVICE_LUID);
-                        emitLong(store, idProperties, KEY_DEVICE_NODE_MASK);
-                        emitBoolean(store, idProperties, KEY_DEVICE_LUID_VALID);
-                    }
-                    store.endGroup();
-
-                    JSONObject maintenance3Properties = device.getJSONObject(KEY_MAINTENANCE_3_PROPERTIES);
-                    store.startGroup(getConvertedName(KEY_MAINTENANCE_3_PROPERTIES));
-                    {
-                        emitLong(store, maintenance3Properties, KEY_MAX_PER_SET_DESCRIPTORS);
-                        emitString(store, maintenance3Properties, KEY_MAX_MEMORY_ALLOCATION_SIZE);
-                    }
-                    store.endGroup();
-
                     JSONObject bit16StorageFeatures = device.getJSONObject(KEY_BIT16_STORAGE_FEATURES);
                     store.startGroup(getConvertedName(KEY_BIT16_STORAGE_FEATURES));
                     {
@@ -776,12 +737,27 @@ public final class VulkanDeviceInfo extends DeviceInfo {
                     }
                     store.endGroup();
 
+                    JSONObject pointClippingProperties = device.getJSONObject(KEY_POINT_CLIPPING_PROPERTIES);
+                    store.startGroup(getConvertedName(KEY_POINT_CLIPPING_PROPERTIES));
+                    {
+                        emitLong(store, pointClippingProperties, KEY_POINT_CLIPPING_BEHAVIOR);
+                    }
+                    store.endGroup();
+
                     JSONObject multiviewFeatures = device.getJSONObject(KEY_MULTIVIEW_FEATURES);
                     store.startGroup(getConvertedName(KEY_MULTIVIEW_FEATURES));
                     {
                         emitBoolean(store, multiviewFeatures, KEY_MULTIVIEW);
                         emitBoolean(store, multiviewFeatures, KEY_MULTIVIEW_GEOMETRY_SHADER);
                         emitBoolean(store, multiviewFeatures, KEY_MULTIVIEW_TESSELLATION_SHADER);
+                    }
+                    store.endGroup();
+
+                    JSONObject multiviewProperties = device.getJSONObject(KEY_MULTIVIEW_PROPERTIES);
+                    store.startGroup(getConvertedName(KEY_MULTIVIEW_PROPERTIES));
+                    {
+                        emitLong(store, multiviewProperties, KEY_MAX_MULTIVIEW_VIEW_COUNT);
+                        emitLong(store, multiviewProperties, KEY_MAX_MULTIVIEW_INSTANCE_INDEX);
                     }
                     store.endGroup();
 
@@ -804,6 +780,25 @@ public final class VulkanDeviceInfo extends DeviceInfo {
                     store.startGroup(getConvertedName(KEY_SAMPLER_YCBCR_CONVERSION_FEATURES));
                     {
                         emitBoolean(store, samplerYcbcrConversionFeatures, KEY_SAMPLER_YCBCR_CONVERSION);
+                    }
+                    store.endGroup();
+
+                    JSONObject idProperties = device.getJSONObject(KEY_ID_PROPERTIES);
+                    store.startGroup(getConvertedName(KEY_ID_PROPERTIES));
+                    {
+                        emitLongArray(store, idProperties, KEY_DEVICE_UUID);
+                        emitLongArray(store, idProperties, KEY_DRIVER_UUID);
+                        emitLongArray(store, idProperties, KEY_DEVICE_LUID);
+                        emitLong(store, idProperties, KEY_DEVICE_NODE_MASK);
+                        emitBoolean(store, idProperties, KEY_DEVICE_LUID_VALID);
+                    }
+                    store.endGroup();
+
+                    JSONObject maintenance3Properties = device.getJSONObject(KEY_MAINTENANCE_3_PROPERTIES);
+                    store.startGroup(getConvertedName(KEY_MAINTENANCE_3_PROPERTIES));
+                    {
+                        emitLong(store, maintenance3Properties, KEY_MAX_PER_SET_DESCRIPTORS);
+                        emitString(store, maintenance3Properties, KEY_MAX_MEMORY_ALLOCATION_SIZE);
                     }
                     store.endGroup();
 
@@ -881,6 +876,260 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         store.addResult(getConvertedName(KEY_INSTANCE_API_VERSION), parent.getLong(KEY_API_VERSION));
     }
 
+    private static void emitCustomBorderColorFeaturesEXT(DeviceInfoStore store, JSONObject parent)
+            throws Exception {
+        try {
+            JSONObject extCustomborderColorFeatures = parent.getJSONObject(KEY_VK_EXT_CUSTOM_BORDER_COLOR);
+            try {
+                store.startGroup(getConvertedName(KEY_VK_EXT_CUSTOM_BORDER_COLOR));
+                {
+                    JSONObject customBorderColorFeaturesEXT = extCustomborderColorFeatures.getJSONObject(KEY_CUSTOM_BORDER_COLOR_FEATURES_EXT);
+                    store.startGroup(getConvertedName(KEY_CUSTOM_BORDER_COLOR_FEATURES_EXT));
+                    {
+                        emitBoolean(store, customBorderColorFeaturesEXT, KEY_CUSTOM_BORDER_COLORS);
+                        emitBoolean(store, customBorderColorFeaturesEXT, KEY_CUSTOM_BORDER_COLOR_WITHOUT_FORMAT);
+                    }
+                    store.endGroup();
+                }
+                store.endGroup();
+            } catch (JSONException e) {
+                e.printStackTrace();
+                throw new RuntimeException(e);
+            }
+        } catch (JSONException ok) {
+            // The tag is not present in vkjson; that's fine, just continue
+        }
+    }
+
+    private static void emitImage2DViewOf3DFeaturesEXT(DeviceInfoStore store, JSONObject parent)
+            throws Exception {
+        try {
+            JSONObject extImage2DViewOf3DFeatures = parent.getJSONObject(KEY_VK_EXT_IMAGE_2D_VIEW_OF_3D);
+            try {
+                store.startGroup(getConvertedName(KEY_VK_EXT_IMAGE_2D_VIEW_OF_3D));
+                {
+                    JSONObject image2DViewOf3DFeaturesEXT = extImage2DViewOf3DFeatures.getJSONObject(KEY_IMAGE_2D_VIEW_OF_3D_FEATURES_EXT);
+                    store.startGroup(getConvertedName(KEY_IMAGE_2D_VIEW_OF_3D_FEATURES_EXT));
+                    {
+                        emitBoolean(store, image2DViewOf3DFeaturesEXT, KEY_IMAGE_2D_VIEW_OF_3D);
+                        emitBoolean(store, image2DViewOf3DFeaturesEXT, KEY_SAMPLER_2D_VIEW_OF_3D);
+                    }
+                    store.endGroup();
+                }
+                store.endGroup();
+            } catch (JSONException e) {
+                e.printStackTrace();
+                throw new RuntimeException(e);
+            }
+        } catch (JSONException ok) {
+            // The tag is not present in vkjson; that's fine, just continue
+        }
+    }
+
+    private static void emitIndexTypeUint8FeaturesEXT(DeviceInfoStore store, JSONObject parent)
+            throws Exception {
+        try {
+            JSONObject extIndexTypeUint8Features = parent.getJSONObject(KEY_VK_EXT_INDEX_TYPE_UINT8);
+            try {
+                store.startGroup(getConvertedName(KEY_VK_EXT_INDEX_TYPE_UINT8));
+                {
+                    JSONObject indexTypeUint8FeaturesEXT = extIndexTypeUint8Features.getJSONObject(KEY_INDEX_TYPE_UINT8_FEATURES_EXT);
+                    store.startGroup(getConvertedName(KEY_INDEX_TYPE_UINT8_FEATURES_EXT));
+                    {
+                        emitBoolean(store, indexTypeUint8FeaturesEXT, KEY_INDEX_TYPE_UINT8);
+                    }
+                    store.endGroup();
+                }
+                store.endGroup();
+            } catch (JSONException e) {
+                e.printStackTrace();
+                throw new RuntimeException(e);
+            }
+        } catch (JSONException ok) {
+            // The tag is not present in vkjson; that's fine, just continue
+        }
+    }
+
+    private static void emitLineRasterizationFeaturesEXT(DeviceInfoStore store, JSONObject parent)
+            throws Exception {
+        try {
+            JSONObject extLineRasterizationFeatures = parent.getJSONObject(KEY_VK_EXT_LINE_RASTERIZATION);
+            try {
+                store.startGroup(getConvertedName(KEY_VK_EXT_LINE_RASTERIZATION));
+                {
+                    JSONObject lineRasterizationFeaturesEXT = extLineRasterizationFeatures.getJSONObject(KEY_LINE_RASTERIZATION_FEATURES_EXT);
+                    store.startGroup(getConvertedName(KEY_LINE_RASTERIZATION_FEATURES_EXT));
+                    {
+                        emitBoolean(store, lineRasterizationFeaturesEXT, KEY_RECTANGULAR_LINES);
+                        emitBoolean(store, lineRasterizationFeaturesEXT, KEY_BRESENHAM_LINES);
+                        emitBoolean(store, lineRasterizationFeaturesEXT, KEY_SMOOTH_LINES);
+                        emitBoolean(store, lineRasterizationFeaturesEXT, KEY_STIPPLED_RECTANGULAR_LINES);
+                        emitBoolean(store, lineRasterizationFeaturesEXT, KEY_STIPPLED_BRESENHAM_LINES);
+                        emitBoolean(store, lineRasterizationFeaturesEXT, KEY_STIPPLED_SMOOTH_LINES);
+                    }
+                    store.endGroup();
+                }
+                store.endGroup();
+            } catch (JSONException e) {
+                e.printStackTrace();
+                throw new RuntimeException(e);
+            }
+        } catch (JSONException ok) {
+            // The tag is not present in vkjson; that's fine, just continue
+        }
+    }
+
+    private static void emitPrimitiveTopologyListRestartFeaturesEXT(
+            DeviceInfoStore store, JSONObject parent) throws Exception {
+        try {
+            JSONObject extPrimitiveTopologyListRestartFeatures = parent.getJSONObject(KEY_VK_EXT_PRIMITIVE_TOPOLOGY_LIST_RESTART);
+            try {
+                store.startGroup(getConvertedName(KEY_VK_EXT_PRIMITIVE_TOPOLOGY_LIST_RESTART));
+                {
+                    JSONObject primitiveTopologyListRestartFeaturesEXT = extPrimitiveTopologyListRestartFeatures.getJSONObject(KEY_PRIMITIVE_TOPOLOGY_LIST_RESTART_FEATURES_EXT);
+                    store.startGroup(getConvertedName(KEY_PRIMITIVE_TOPOLOGY_LIST_RESTART_FEATURES_EXT));
+                    {
+                        emitBoolean( store, primitiveTopologyListRestartFeaturesEXT, KEY_PRIMITIVE_TOPOLOGY_LIST_RESTART);
+                        emitBoolean( store, primitiveTopologyListRestartFeaturesEXT, KEY_PRIMITIVE_TOPOLOGY_PATCH_LIST_RESTART);
+                    }
+                    store.endGroup();
+                }
+                store.endGroup();
+            } catch (JSONException e) {
+                e.printStackTrace();
+                throw new RuntimeException(e);
+            }
+        } catch (JSONException ok) {
+            // The tag is not present in vkjson; that's fine, just continue
+        }
+    }
+
+    private static void emitPrimitivesGeneratedQueryFeaturesEXT(
+            DeviceInfoStore store, JSONObject parent) throws Exception {
+        try {
+            JSONObject extPrimitivesGeneratedQueryFeatures = parent.getJSONObject(KEY_VK_EXT_PRIMITIVES_GENERATED_QUERY);
+            try {
+                store.startGroup(getConvertedName(KEY_VK_EXT_PRIMITIVES_GENERATED_QUERY));
+                {
+                    JSONObject primitivesGeneratedQueryFeaturesEXT = extPrimitivesGeneratedQueryFeatures.getJSONObject(KEY_PRIMITIVES_GENERATED_QUERY_FEATURES_EXT);
+                    store.startGroup(getConvertedName(KEY_PRIMITIVES_GENERATED_QUERY_FEATURES_EXT));
+                    {
+                        emitBoolean(store, primitivesGeneratedQueryFeaturesEXT, KEY_PRIMITIVES_GENERATED_QUERY);
+                        emitBoolean(store, primitivesGeneratedQueryFeaturesEXT, KEY_PRIMITIVES_GENERATED_QUERY_WITH_RASTERIZER_DISCARD);
+                        emitBoolean(store, primitivesGeneratedQueryFeaturesEXT, KEY_PRIMITIVES_GENERATED_QUERY_WITH_NON_ZERO_STREAMS);
+                    }
+                    store.endGroup();
+                }
+                store.endGroup();
+            } catch (JSONException e) {
+                e.printStackTrace();
+                throw new RuntimeException(e);
+            }
+        } catch (JSONException ok) {
+            // The tag is not present in vkjson; that's fine, just continue
+        }
+    }
+
+    private static void emitProvokingVertexFeaturesEXT(DeviceInfoStore store, JSONObject parent)
+            throws Exception {
+        try {
+            JSONObject extProvokingVertexFeatures = parent.getJSONObject(KEY_VK_EXT_PROVOKING_VERTEX);
+            try {
+                store.startGroup(getConvertedName(KEY_VK_EXT_PROVOKING_VERTEX));
+                {
+                    JSONObject provokingVertexFeaturesEXT = extProvokingVertexFeatures.getJSONObject(KEY_PROVOKING_VERTEX_FEATURES_EXT);
+                    store.startGroup(getConvertedName(KEY_PROVOKING_VERTEX_FEATURES_EXT));
+                    {
+                        emitBoolean(store, provokingVertexFeaturesEXT, KEY_PROVOKING_VERTEX_LAST);
+                        emitBoolean(store, provokingVertexFeaturesEXT, KEY_TRANSFORM_FEEDBACK_PRESERVES_PROVOKING_VERTEX);
+                    }
+                    store.endGroup();
+                }
+                store.endGroup();
+            } catch (JSONException e) {
+                e.printStackTrace();
+                throw new RuntimeException(e);
+            }
+        } catch (JSONException ok) {
+            // The tag is not present in vkjson; that's fine, just continue
+        }
+    }
+
+    private static void emittransformFeedbackFeaturesEXT(DeviceInfoStore store, JSONObject parent)
+            throws Exception {
+        try {
+            JSONObject extTransformFeedbackFeatures = parent.getJSONObject(KEY_VK_EXT_TRANSFORM_FEEDBACK);
+            try {
+                store.startGroup(getConvertedName(KEY_VK_EXT_TRANSFORM_FEEDBACK));
+                {
+                    JSONObject transformFeedbackFeaturesEXT = extTransformFeedbackFeatures.getJSONObject(KEY_TRANSFORM_FEEDBACK_FEATURES_EXT);
+                    store.startGroup(getConvertedName(KEY_TRANSFORM_FEEDBACK_FEATURES_EXT));
+                    {
+                        emitBoolean(store, transformFeedbackFeaturesEXT, KEY_TRANSFORM_FEEDBACK);
+                        emitBoolean(store, transformFeedbackFeaturesEXT, KEY_GEOMETRY_STREAMS);
+                    }
+                    store.endGroup();
+                }
+                store.endGroup();
+            } catch (JSONException e) {
+                e.printStackTrace();
+                throw new RuntimeException(e);
+            }
+        } catch (JSONException ok) {
+            // The tag is not present in vkjson; that's fine, just continue
+        }
+    }
+
+    private static void emitRelaxedLineRasterizationFeaturesIMG(
+            DeviceInfoStore store, JSONObject parent) throws Exception {
+        try {
+            JSONObject imgRelaxedLineRasterizationFeatures = parent.getJSONObject(KEY_VK_IMG_RELAXED_LINE_RASTERIZATION);
+            try {
+                store.startGroup(getConvertedName(KEY_VK_IMG_RELAXED_LINE_RASTERIZATION));
+                {
+                    JSONObject relaxedLineRasterizationFeaturesIMG = imgRelaxedLineRasterizationFeatures.getJSONObject(KEY_RELAXED_LINE_RASTERIZATION_FEATURES_IMG);
+                    store.startGroup(getConvertedName(KEY_RELAXED_LINE_RASTERIZATION_FEATURES_IMG));
+                    {
+                        emitBoolean(store, relaxedLineRasterizationFeaturesIMG, KEY_RELAXED_LINE_RASTERIZATION);
+                    }
+                    store.endGroup();
+                }
+                store.endGroup();
+            } catch (JSONException e) {
+                e.printStackTrace();
+                throw new RuntimeException(e);
+            }
+        } catch (JSONException ok) {
+            // The tag is not present in vkjson; that's fine, just continue
+        }
+    }
+
+    private static void emit8bitStorageFeaturesKHR(DeviceInfoStore store, JSONObject parent)
+            throws Exception {
+        try {
+            JSONObject khr8bitStorageFeatures = parent.getJSONObject(KEY_VK_KHR_8BIT_STORAGE);
+            try {
+                store.startGroup(getConvertedName(KEY_VK_KHR_8BIT_STORAGE));
+                {
+                    JSONObject bit8StorageFeaturesKHR = khr8bitStorageFeatures.getJSONObject(KEY_BIT8_STORAGE_FEATURES_KHR);
+                    store.startGroup(getConvertedName(KEY_BIT8_STORAGE_FEATURES_KHR));
+                    {
+                        emitBoolean(store, bit8StorageFeaturesKHR, KEY_STORAGE_BUFFER_8BIT_ACCESS);
+                        emitBoolean(store, bit8StorageFeaturesKHR, KEY_UNIFORM_AND_STORAGE_BUFFER_8BIT_ACCESS);
+                        emitBoolean(store, bit8StorageFeaturesKHR, KEY_STORAGE_PUSH_CONSTANT8);
+                    }
+                    store.endGroup();
+                }
+                store.endGroup();
+            } catch (JSONException e) {
+                e.printStackTrace();
+                throw new RuntimeException(e);
+            }
+        } catch (JSONException ok) {
+            // The tag is not present in vkjson; that's fine, just continue
+        }
+    }
+
     private static void emitDriverPropertiesKHR(DeviceInfoStore store, JSONObject parent)
             throws Exception {
         try {
@@ -904,6 +1153,175 @@ public final class VulkanDeviceInfo extends DeviceInfo {
                             emitLong(store, conformanceVersion, KEY_PATCH);
                         }
                         store.endGroup();
+                    }
+                    store.endGroup();
+                }
+                store.endGroup();
+            } catch (JSONException e) {
+                e.printStackTrace();
+                throw new RuntimeException(e);
+            }
+        } catch (JSONException ok) {
+            // The tag is not present in vkjson; that's fine, just continue
+        }
+    }
+
+    private static void emitIndexTypeUint8FeaturesKHR(DeviceInfoStore store, JSONObject parent)
+            throws Exception {
+        try {
+            JSONObject khrIndexTypeUint8Features = parent.getJSONObject(KEY_VK_KHR_INDEX_TYPE_UINT8);
+            try {
+                store.startGroup(getConvertedName(KEY_VK_KHR_INDEX_TYPE_UINT8));
+                {
+                    JSONObject indexTypeUint8FeaturesKHR = khrIndexTypeUint8Features.getJSONObject(KEY_INDEX_TYPE_UINT8_FEATURES_KHR);
+                    store.startGroup(getConvertedName(KEY_INDEX_TYPE_UINT8_FEATURES_KHR));
+                    {
+                        emitBoolean(store, indexTypeUint8FeaturesKHR, KEY_INDEX_TYPE_UINT8);
+                    }
+                    store.endGroup();
+                }
+                store.endGroup();
+            } catch (JSONException e) {
+                e.printStackTrace();
+                throw new RuntimeException(e);
+            }
+        } catch (JSONException ok) {
+            // The tag is not present in vkjson; that's fine, just continue
+        }
+    }
+
+    private static void emitShaderFloat16Int8FeaturesKHR(DeviceInfoStore store, JSONObject parent)
+            throws Exception {
+        try {
+            JSONObject khrShaderFloat16Int8Features = parent.getJSONObject(KEY_VK_KHR_SHADER_FLOAT16_INT8);
+            try {
+                store.startGroup(getConvertedName(KEY_VK_KHR_SHADER_FLOAT16_INT8));
+                {
+                    JSONObject shaderFloat16Int8FeaturesKHR = khrShaderFloat16Int8Features.getJSONObject(KEY_SHADER_FLOAT16_INT8_FEATURES_KHR);
+                    store.startGroup(getConvertedName(KEY_SHADER_FLOAT16_INT8_FEATURES_KHR));
+                    {
+                        emitBoolean(store, shaderFloat16Int8FeaturesKHR, KEY_SHADER_FLOAT16);
+                        emitBoolean(store, shaderFloat16Int8FeaturesKHR, KEY_SHADER_INT8);
+                    }
+                    store.endGroup();
+
+                    JSONObject float16Int8FeaturesKHR = khrShaderFloat16Int8Features.getJSONObject(KEY_FLOAT16_INT8_FEATURES_KHR);
+                    store.startGroup(getConvertedName(KEY_FLOAT16_INT8_FEATURES_KHR));
+                    {
+                        emitBoolean(store, float16Int8FeaturesKHR, KEY_SHADER_FLOAT16);
+                        emitBoolean(store, float16Int8FeaturesKHR, KEY_SHADER_INT8);
+                    }
+                    store.endGroup();
+                }
+                store.endGroup();
+            } catch (JSONException e) {
+                e.printStackTrace();
+                throw new RuntimeException(e);
+            }
+        } catch (JSONException ok) {
+            // The tag is not present in vkjson; that's fine, just continue
+        }
+    }
+
+    private static void emitFloatControlsPropertiesKHR(DeviceInfoStore store, JSONObject parent)
+            throws Exception {
+        try {
+            JSONObject khrFloatControlsProperties = parent.getJSONObject(KEY_VK_KHR_SHADER_FLOAT_CONTROLS);
+            try {
+                store.startGroup(getConvertedName(KEY_VK_KHR_SHADER_FLOAT_CONTROLS));
+                {
+                    JSONObject floatControlsPropertiesKHR = khrFloatControlsProperties.getJSONObject(KEY_FLOAT_CONTROLS_PROPERTIES_KHR);
+                    store.startGroup(getConvertedName(KEY_FLOAT_CONTROLS_PROPERTIES_KHR));
+                    {
+                        emitLong(store, floatControlsPropertiesKHR, KEY_DENORM_BEHAVIOR_INDEPENDENCE);
+                        emitLong(store, floatControlsPropertiesKHR, KEY_ROUNDING_MODE_INDEPENDENCE);
+                        emitBoolean(store, floatControlsPropertiesKHR, KEY_SHADER_SIGNED_ZERO_INF_NAN_PRESERVE_FLOAT16);
+                        emitBoolean(store, floatControlsPropertiesKHR, KEY_SHADER_SIGNED_ZERO_INF_NAN_PRESERVE_FLOAT32);
+                        emitBoolean(store, floatControlsPropertiesKHR, KEY_SHADER_SIGNED_ZERO_INF_NAN_PRESERVE_FLOAT64);
+                        emitBoolean(store, floatControlsPropertiesKHR, KEY_SHADER_DENORM_PRESERVE_FLOAT16);
+                        emitBoolean(store, floatControlsPropertiesKHR, KEY_SHADER_DENORM_PRESERVE_FLOAT32);
+                        emitBoolean(store, floatControlsPropertiesKHR, KEY_SHADER_DENORM_PRESERVE_FLOAT64);
+                        emitBoolean(store, floatControlsPropertiesKHR, KEY_SHADER_DENORM_FLUSH_TO_ZERO_FLOAT16);
+                        emitBoolean(store, floatControlsPropertiesKHR, KEY_SHADER_DENORM_FLUSH_TO_ZERO_FLOAT32);
+                        emitBoolean(store, floatControlsPropertiesKHR, KEY_SHADER_DENORM_FLUSH_TO_ZERO_FLOAT64);
+                        emitBoolean(store, floatControlsPropertiesKHR, KEY_SHADER_ROUNDING_MODE_RTE_FLOAT16);
+                        emitBoolean(store, floatControlsPropertiesKHR, KEY_SHADER_ROUNDING_MODE_RTE_FLOAT32);
+                        emitBoolean(store, floatControlsPropertiesKHR, KEY_SHADER_ROUNDING_MODE_RTE_FLOAT64);
+                        emitBoolean(store, floatControlsPropertiesKHR, KEY_SHADER_ROUNDING_MODE_RTZ_FLOAT16);
+                        emitBoolean(store, floatControlsPropertiesKHR, KEY_SHADER_ROUNDING_MODE_RTZ_FLOAT32);
+                        emitBoolean(store, floatControlsPropertiesKHR, KEY_SHADER_ROUNDING_MODE_RTZ_FLOAT64);
+                    }
+                    store.endGroup();
+                }
+                store.endGroup();
+            } catch (JSONException e) {
+                e.printStackTrace();
+                throw new RuntimeException(e);
+            }
+        } catch (JSONException ok) {
+            // The tag is not present in vkjson; that's fine, just continue
+        }
+    }
+
+    private static void emitShaderIntegerDotProductFeaturesKHR(
+            DeviceInfoStore store, JSONObject parent) throws Exception {
+        try {
+            JSONObject khrShaderIntegerDotProductFeatures = parent.getJSONObject(KEY_VK_KHR_SHADER_INTEGER_DOT_PRODUCT);
+            try {
+                store.startGroup(getConvertedName(KEY_VK_KHR_SHADER_INTEGER_DOT_PRODUCT));
+                {
+                    JSONObject shaderIntegerDotProductFeaturesKHR = khrShaderIntegerDotProductFeatures.getJSONObject(KEY_SHADER_INTEGER_DOT_PRODUCT_FEATURES_KHR);
+                    store.startGroup(getConvertedName(KEY_SHADER_INTEGER_DOT_PRODUCT_FEATURES_KHR));
+                    {
+                        emitBoolean(store, shaderIntegerDotProductFeaturesKHR, KEY_SHADER_INTEGER_DOT_PRODUCT);
+                    }
+                    store.endGroup();
+                }
+                store.endGroup();
+            } catch (JSONException e) {
+                e.printStackTrace();
+                throw new RuntimeException(e);
+            }
+        } catch (JSONException ok) {
+            // The tag is not present in vkjson; that's fine, just continue
+        }
+    }
+
+    private static void emitShaderSubgroupExtendedTypesFeaturesKHR(
+            DeviceInfoStore store, JSONObject parent) throws Exception {
+        try {
+            JSONObject khrShaderSubgroupExtendedTypesFeatures = parent.getJSONObject(KEY_VK_KHR_SHADER_SUBGROUP_EXTENDED_TYPES);
+            try {
+                store.startGroup(getConvertedName(KEY_VK_KHR_SHADER_SUBGROUP_EXTENDED_TYPES));
+                {
+                    JSONObject shaderSubgroupExtendedTypesFeaturesKHR = khrShaderSubgroupExtendedTypesFeatures.getJSONObject(KEY_SHADER_SUBGROUP_EXTENDED_TYPES_FEATURES_KHR);
+                    store.startGroup(getConvertedName(KEY_SHADER_SUBGROUP_EXTENDED_TYPES_FEATURES_KHR));
+                    {
+                        emitBoolean(store, shaderSubgroupExtendedTypesFeaturesKHR, KEY_SHADER_SUBGROUP_EXTENDED_TYPES);
+                    }
+                    store.endGroup();
+                }
+                store.endGroup();
+            } catch (JSONException e) {
+                e.printStackTrace();
+                throw new RuntimeException(e);
+            }
+        } catch (JSONException ok) {
+            // The tag is not present in vkjson; that's fine, just continue
+        }
+    }
+
+    private static void emitShaderSubgroupUniformControlFlowFeaturesKHR(
+            DeviceInfoStore store, JSONObject parent) throws Exception {
+        try {
+            JSONObject extShaderSubgroupUniformControlFlowFeatures = parent.getJSONObject(KEY_VK_KHR_SHADER_SUBGROUP_UNIFORM_CONTROL_FLOW);
+            try {
+                store.startGroup(getConvertedName(KEY_VK_KHR_SHADER_SUBGROUP_UNIFORM_CONTROL_FLOW));
+                {
+                    JSONObject shaderSubgroupUniformControlFlowFeaturesKHR = extShaderSubgroupUniformControlFlowFeatures.getJSONObject(KEY_SHADER_SUBGROUP_UNIFORM_CONTROL_FLOW_FEATURES_KHR);
+                    store.startGroup(getConvertedName(KEY_SHADER_SUBGROUP_UNIFORM_CONTROL_FLOW_FEATURES_KHR));
+                    {
+                        emitBoolean(store, shaderSubgroupUniformControlFlowFeaturesKHR, KEY_SHADER_SUBGROUP_UNIFORM_CONTROL_FLOW);
                     }
                     store.endGroup();
                 }
@@ -950,31 +1368,6 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitImage2DViewOf3DFeaturesEXT(DeviceInfoStore store, JSONObject parent)
-            throws Exception {
-        try {
-            JSONObject extImage2DViewOf3DFeatures = parent.getJSONObject(KEY_VK_EXT_IMAGE_2D_VIEW_OF_3D);
-            try {
-                store.startGroup(getConvertedName(KEY_VK_EXT_IMAGE_2D_VIEW_OF_3D));
-                {
-                    JSONObject image2DViewOf3DFeaturesEXT = extImage2DViewOf3DFeatures.getJSONObject(KEY_IMAGE_2D_VIEW_OF_3D_FEATURES_EXT);
-                    store.startGroup(getConvertedName(KEY_IMAGE_2D_VIEW_OF_3D_FEATURES_EXT));
-                    {
-                        emitBoolean(store, image2DViewOf3DFeaturesEXT, KEY_IMAGE_2D_VIEW_OF_3D);
-                        emitBoolean(store, image2DViewOf3DFeaturesEXT, KEY_SAMPLER_2D_VIEW_OF_3D);
-                    }
-                    store.endGroup();
-                }
-                store.endGroup();
-            } catch (JSONException e) {
-                e.printStackTrace();
-                throw new RuntimeException(e);
-            }
-        } catch (JSONException ok) {
-            // The tag is not present in vkjson; that's fine, just continue
-        }
-    }
-
     private static void emitVertexAttributeDivisorFeaturesKHR(DeviceInfoStore store, JSONObject parent)
             throws Exception {
         try {
@@ -1000,594 +1393,62 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitCustomBorderColorFeaturesEXT(DeviceInfoStore store, JSONObject parent)
-            throws Exception {
-        try {
-            JSONObject extCustomborderColorFeatures =
-                    parent.getJSONObject(KEY_VK_EXT_CUSTOM_BORDER_COLOR);
-            try {
-                store.startGroup(getConvertedName(KEY_VK_EXT_CUSTOM_BORDER_COLOR));
-                {
-                    JSONObject customBorderColorFeaturesEXT =
-                            extCustomborderColorFeatures.getJSONObject(
-                                    KEY_CUSTOM_BORDER_COLOR_FEATURES_EXT);
-                    store.startGroup(getConvertedName(KEY_CUSTOM_BORDER_COLOR_FEATURES_EXT));
-                    {
-                        emitBoolean(
-                                store,
-                                customBorderColorFeaturesEXT,
-                                KEY_CUSTOM_BORDER_COLOR_WITHOUT_FORMAT);
-                        emitBoolean(store, customBorderColorFeaturesEXT, KEY_CUSTOM_BORDER_COLORS);
-                    }
-                    store.endGroup();
-                }
-                store.endGroup();
-            } catch (JSONException e) {
-                e.printStackTrace();
-                throw new RuntimeException(e);
-            }
-        } catch (JSONException ok) {
-            // The tag is not present in vkjson; that's fine, just continue
-        }
-    }
-
-    private static void emitPrimitiveTopologyListRestartFeaturesEXT(
-            DeviceInfoStore store, JSONObject parent) throws Exception {
-        try {
-            JSONObject extPrimitiveTopologyListRestartFeatures =
-                    parent.getJSONObject(KEY_VK_EXT_PRIMITIVE_TOPOLOGY_LIST_RESTART);
-            try {
-                store.startGroup(getConvertedName(KEY_VK_EXT_PRIMITIVE_TOPOLOGY_LIST_RESTART));
-                {
-                    JSONObject primitiveTopologyListRestartFeaturesEXT =
-                            extPrimitiveTopologyListRestartFeatures.getJSONObject(
-                                    KEY_PRIMITIVE_TOPOLOGY_LIST_RESTART_FEATURES_EXT);
-                    store.startGroup(getConvertedName(KEY_PRIMITIVE_TOPOLOGY_LIST_RESTART_FEATURES_EXT));
-                    {
-                        emitBoolean(
-                                store,
-                                primitiveTopologyListRestartFeaturesEXT,
-                                KEY_PRIMITIVE_TOPOLOGY_LIST_RESTART);
-                        emitBoolean(
-                                store,
-                                primitiveTopologyListRestartFeaturesEXT,
-                                KEY_PRIMITIVE_TOPOLOGY_PATCH_LIST_RESTART);
-                    }
-                    store.endGroup();
-                }
-                store.endGroup();
-            } catch (JSONException e) {
-                e.printStackTrace();
-                throw new RuntimeException(e);
-            }
-        } catch (JSONException ok) {
-            // The tag is not present in vkjson; that's fine, just continue
-        }
-    }
-
-    private static void emitransformFeedbackFeaturesEXT(DeviceInfoStore store, JSONObject parent)
-            throws Exception {
-        try {
-            JSONObject extTransformFeedbackFeatures =
-                    parent.getJSONObject(KEY_VK_EXT_TRANSFORM_FEEDBACK);
-            try {
-                store.startGroup(getConvertedName(KEY_VK_EXT_TRANSFORM_FEEDBACK));
-                {
-                    JSONObject transformFeedbackFeaturesEXT =
-                            extTransformFeedbackFeatures.getJSONObject(
-                                    KEY_TRANSFORM_FEEDBACK_FEATURES_EXT);
-                    store.startGroup(getConvertedName(KEY_TRANSFORM_FEEDBACK_FEATURES_EXT));
-                    {
-                        emitBoolean(store, transformFeedbackFeaturesEXT, KEY_GEOMETRY_STREAMS);
-                        emitBoolean(store, transformFeedbackFeaturesEXT, KEY_TRANSFORM_FEEDBACK);
-                    }
-                    store.endGroup();
-                }
-                store.endGroup();
-            } catch (JSONException e) {
-                e.printStackTrace();
-                throw new RuntimeException(e);
-            }
-        } catch (JSONException ok) {
-            // The tag is not present in vkjson; that's fine, just continue
-        }
-    }
-
-    private static void emitProvokingVertexFeaturesEXT(DeviceInfoStore store, JSONObject parent)
-            throws Exception {
-        try {
-            JSONObject extProvokingVertexFeatures =
-                    parent.getJSONObject(KEY_VK_EXT_PROVOKING_VERTEX);
-            try {
-                store.startGroup(getConvertedName(KEY_VK_EXT_PROVOKING_VERTEX));
-                {
-                    JSONObject provokingVertexFeaturesEXT =
-                            extProvokingVertexFeatures.getJSONObject(
-                                    KEY_PROVOKING_VERTEX_FEATURES_EXT);
-
-                    store.startGroup(getConvertedName(KEY_PROVOKING_VERTEX_FEATURES_EXT));
-                    {
-                        emitBoolean(store, provokingVertexFeaturesEXT, KEY_PROVOKING_VERTEX_LAST);
-
-                        emitBoolean(
-                                store,
-                                provokingVertexFeaturesEXT,
-                                KEY_TRANSFORM_FEEDBACK_PRESERVES_PROVOKING_VERTEX);
-                    }
-                    store.endGroup();
-                }
-                store.endGroup();
-            } catch (JSONException e) {
-                e.printStackTrace();
-                throw new RuntimeException(e);
-            }
-        } catch (JSONException ok) {
-            // The tag is not present in vkjson; that's fine, just continue
-        }
-    }
-
-    private static void emitIndexTypeUint8FeaturesEXT(DeviceInfoStore store, JSONObject parent)
-            throws Exception {
-        try {
-            JSONObject extIndexTypeUint8Features =
-                    parent.getJSONObject(KEY_VK_EXT_INDEX_TYPE_UINT8);
-            try {
-                store.startGroup(getConvertedName(KEY_VK_EXT_INDEX_TYPE_UINT8));
-                {
-                    JSONObject indexTypeUint8FeaturesEXT =
-                            extIndexTypeUint8Features.getJSONObject(
-                                    KEY_INDEX_TYPE_UINT8_FEATURES_EXT);
-                    store.startGroup(getConvertedName(KEY_INDEX_TYPE_UINT8_FEATURES_EXT));
-                    {
-                        emitBoolean(store, indexTypeUint8FeaturesEXT, KEY_INDEX_TYPE_UINT8);
-                    }
-                    store.endGroup();
-                }
-                store.endGroup();
-            } catch (JSONException e) {
-                e.printStackTrace();
-                throw new RuntimeException(e);
-            }
-        } catch (JSONException ok) {
-            // The tag is not present in vkjson; that's fine, just continue
-        }
-    }
-
-    private static void emitIndexTypeUint8FeaturesKHR(DeviceInfoStore store, JSONObject parent)
-            throws Exception {
-        try {
-            JSONObject khrIndexTypeUint8Features =
-                    parent.getJSONObject(KEY_VK_KHR_INDEX_TYPE_UINT8);
-            try {
-                store.startGroup(getConvertedName(KEY_VK_KHR_INDEX_TYPE_UINT8));
-                {
-                    JSONObject indexTypeUint8FeaturesKHR =
-                            khrIndexTypeUint8Features.getJSONObject(
-                                    KEY_INDEX_TYPE_UINT8_FEATURES_KHR);
-                    store.startGroup(getConvertedName(KEY_INDEX_TYPE_UINT8_FEATURES_KHR));
-                    {
-                        emitBoolean(store, indexTypeUint8FeaturesKHR, KEY_INDEX_TYPE_UINT8);
-                    }
-                    store.endGroup();
-                }
-                store.endGroup();
-            } catch (JSONException e) {
-                e.printStackTrace();
-                throw new RuntimeException(e);
-            }
-        } catch (JSONException ok) {
-            // The tag is not present in vkjson; that's fine, just continue
-        }
-    }
-
-    private static void emit8bitStorageFeaturesKHR(DeviceInfoStore store, JSONObject parent)
-            throws Exception {
-        try {
-            JSONObject khr8bitStorageFeatures = parent.getJSONObject(KEY_VK_KHR_8BIT_STORAGE);
-            try {
-                store.startGroup(getConvertedName(KEY_VK_KHR_8BIT_STORAGE));
-                {
-                    JSONObject bit8StorageFeaturesKHR=
-                            khr8bitStorageFeatures.getJSONObject(KEY_BIT8_STORAGE_FEATURES_KHR);
-                    store.startGroup(getConvertedName(KEY_BIT8_STORAGE_FEATURES_KHR));
-                    {
-                        emitBoolean(store, bit8StorageFeaturesKHR, KEY_STORAGE_BUFFER_8BIT_ACCESS);
-                        emitBoolean(store, bit8StorageFeaturesKHR, KEY_STORAGE_PUSH_CONSTANT8);
-                        emitBoolean(store, bit8StorageFeaturesKHR, KEY_UNIFORM_AND_STORAGE_BUFFER_8BIT_ACCESS);
-                    }
-                    store.endGroup();
-                }
-                store.endGroup();
-            } catch (JSONException e) {
-                e.printStackTrace();
-                throw new RuntimeException(e);
-            }
-        } catch (JSONException ok) {
-            // The tag is not present in vkjson; that's fine, just continue
-        }
-    }
-
-    private static void emitShaderFloat16Int8FeaturesKHR(DeviceInfoStore store, JSONObject parent)
-            throws Exception {
-        try {
-            JSONObject khrShaderFloat16Int8Features =
-                    parent.getJSONObject(KEY_VK_KHR_SHADER_FLOAT16_INT8);
-            try {
-                store.startGroup(getConvertedName(KEY_VK_KHR_SHADER_FLOAT16_INT8));
-                {
-                    JSONObject shaderFloat16Int8FeaturesKHR =
-                            khrShaderFloat16Int8Features.getJSONObject(
-                                    KEY_SHADER_FLOAT16_INT8_FEATURES_KHR);
-                    store.startGroup(getConvertedName(KEY_SHADER_FLOAT16_INT8_FEATURES_KHR));
-                    {
-                        emitBoolean(store, shaderFloat16Int8FeaturesKHR, KEY_SHADER_FLOAT16);
-                        emitBoolean(store, shaderFloat16Int8FeaturesKHR, KEY_SHADER_INT8);
-                    }
-                    store.endGroup();
-
-                    JSONObject float16Int8FeaturesKHR =
-                            khrShaderFloat16Int8Features.getJSONObject(
-                                    KEY_FLOAT16_INT8_FEATURES_KHR);
-                    store.startGroup(getConvertedName(KEY_FLOAT16_INT8_FEATURES_KHR));
-                    {
-                        emitBoolean(store, float16Int8FeaturesKHR, KEY_SHADER_FLOAT16);
-                        emitBoolean(store, float16Int8FeaturesKHR, KEY_SHADER_INT8);
-                    }
-                    store.endGroup();
-                }
-                store.endGroup();
-            } catch (JSONException e) {
-                e.printStackTrace();
-                throw new RuntimeException(e);
-            }
-        } catch (JSONException ok) {
-            // The tag is not present in vkjson; that's fine, just continue
-        }
-    }
-
-    private static void emitShaderIntegerDotProductFeaturesKHR(
-            DeviceInfoStore store, JSONObject parent) throws Exception {
-        try {
-            JSONObject khrShaderIntegerDotProductFeatures =
-                    parent.getJSONObject(KEY_VK_KHR_SHADER_INTEGER_DOT_PRODUCT);
-            try {
-                store.startGroup(getConvertedName(KEY_VK_KHR_SHADER_INTEGER_DOT_PRODUCT));
-                {
-                    JSONObject shaderIntegerDotProductFeaturesKHR =
-                            khrShaderIntegerDotProductFeatures.getJSONObject(
-                                    KEY_SHADER_INTEGER_DOT_PRODUCT_FEATURES_KHR);
-                    store.startGroup(getConvertedName(KEY_SHADER_INTEGER_DOT_PRODUCT_FEATURES_KHR));
-                    {
-                        emitBoolean(
-                                store,
-                                shaderIntegerDotProductFeaturesKHR,
-                                KEY_SHADER_INTEGER_DOT_PRODUCT);
-                    }
-                    store.endGroup();
-                }
-                store.endGroup();
-            } catch (JSONException e) {
-                e.printStackTrace();
-                throw new RuntimeException(e);
-            }
-        } catch (JSONException ok) {
-            // The tag is not present in vkjson; that's fine, just continue
-        }
-    }
-
-    private static void emitShaderSubgroupExtendedTypesFeaturesKHR(
-            DeviceInfoStore store, JSONObject parent) throws Exception {
-        try {
-            JSONObject khrShaderSubgroupExtendedTypesFeatures =
-                    parent.getJSONObject(KEY_VK_KHR_SHADER_SUBGROUP_EXTENDED_TYPES);
-            try {
-                store.startGroup(getConvertedName(KEY_VK_KHR_SHADER_SUBGROUP_EXTENDED_TYPES));
-                {
-                    JSONObject shaderSubgroupExtendedTypesFeaturesKHR =
-                            khrShaderSubgroupExtendedTypesFeatures.getJSONObject(
-                                    KEY_SHADER_SUBGROUP_EXTENDED_TYPES_FEATURES_KHR);
-                    store.startGroup(getConvertedName(KEY_SHADER_SUBGROUP_EXTENDED_TYPES_FEATURES_KHR));
-                    {
-                        emitBoolean(
-                                store,
-                                shaderSubgroupExtendedTypesFeaturesKHR,
-                                KEY_SHADER_SUBGROUP_EXTENDED_TYPES);
-                    }
-                    store.endGroup();
-                }
-                store.endGroup();
-            } catch (JSONException e) {
-                e.printStackTrace();
-                throw new RuntimeException(e);
-            }
-        } catch (JSONException ok) {
-            // The tag is not present in vkjson; that's fine, just continue
-        }
-    }
-
-    private static void emitShaderSubgroupUniformControlFlowFeaturesKHR(
-            DeviceInfoStore store, JSONObject parent) throws Exception {
-        try {
-            JSONObject extShaderSubgroupUniformControlFlowFeatures =
-                    parent.getJSONObject(KEY_VK_KHR_SHADER_SUBGROUP_UNIFORM_CONTROL_FLOW);
-            try {
-                store.startGroup(getConvertedName(KEY_VK_KHR_SHADER_SUBGROUP_UNIFORM_CONTROL_FLOW));
-                {
-                    JSONObject shaderSubgroupUniformControlFlowFeaturesKHR =
-                            extShaderSubgroupUniformControlFlowFeatures.getJSONObject(
-                                    KEY_SHADER_SUBGROUP_UNIFORM_CONTROL_FLOW_FEATURES_KHR);
-                    store.startGroup(
-                            getConvertedName(KEY_SHADER_SUBGROUP_UNIFORM_CONTROL_FLOW_FEATURES_KHR));
-                    {
-                        emitBoolean(
-                                store,
-                                shaderSubgroupUniformControlFlowFeaturesKHR,
-                                KEY_SHADER_SUBGROUP_UNIFORM_CONTROL_FLOW);
-                    }
-                    store.endGroup();
-                }
-                store.endGroup();
-            } catch (JSONException e) {
-                e.printStackTrace();
-                throw new RuntimeException(e);
-            }
-        } catch (JSONException ok) {
-            // The tag is not present in vkjson; that's fine, just continue
-        }
-    }
-
-    private static void emitLineRasterizationFeaturesEXT(DeviceInfoStore store, JSONObject parent)
-            throws Exception {
-        try {
-            JSONObject extLineRasterizationFeatures =
-                    parent.getJSONObject(KEY_VK_EXT_LINE_RASTERIZATION);
-            try {
-                store.startGroup(getConvertedName(KEY_VK_EXT_LINE_RASTERIZATION));
-                {
-                    JSONObject lineRasterizationFeaturesEXT =
-                            extLineRasterizationFeatures.getJSONObject(
-                                    KEY_LINE_RASTERIZATION_FEATURES_EXT);
-                    store.startGroup(getConvertedName(KEY_LINE_RASTERIZATION_FEATURES_EXT));
-                    {
-                        emitBoolean(store, lineRasterizationFeaturesEXT, KEY_BRESENHAM_LINES);
-                        emitBoolean(store, lineRasterizationFeaturesEXT, KEY_RECTANGULAR_LINES);
-                        emitBoolean(store, lineRasterizationFeaturesEXT, KEY_SMOOTH_LINES);
-                        emitBoolean(
-                                store, lineRasterizationFeaturesEXT, KEY_STIPPLED_BRESENHAM_LINES);
-                        emitBoolean(
-                                store,
-                                lineRasterizationFeaturesEXT,
-                                KEY_STIPPLED_RECTANGULAR_LINES);
-                        emitBoolean(store, lineRasterizationFeaturesEXT, KEY_STIPPLED_SMOOTH_LINES);
-                    }
-                    store.endGroup();
-                }
-                store.endGroup();
-            } catch (JSONException e) {
-                e.printStackTrace();
-                throw new RuntimeException(e);
-            }
-        } catch (JSONException ok) {
-            // The tag is not present in vkjson; that's fine, just continue
-        }
-    }
-
-    private static void emitPrimitivesGeneratedQueryFeaturesEXT(
-            DeviceInfoStore store, JSONObject parent) throws Exception {
-        try {
-            JSONObject extPrimitivesGeneratedQueryFeatures =
-                    parent.getJSONObject(KEY_VK_EXT_PRIMITIVES_GENERATED_QUERY);
-            try {
-                store.startGroup(getConvertedName(KEY_VK_EXT_PRIMITIVES_GENERATED_QUERY));
-                {
-                    JSONObject primitivesGeneratedQueryFeaturesEXT =
-                            extPrimitivesGeneratedQueryFeatures.getJSONObject(
-                                    KEY_PRIMITIVES_GENERATED_QUERY_FEATURES_EXT);
-                    store.startGroup(getConvertedName(KEY_PRIMITIVES_GENERATED_QUERY_FEATURES_EXT));
-                    {
-                        emitBoolean(
-                                store,
-                                primitivesGeneratedQueryFeaturesEXT,
-                                KEY_PRIMITIVES_GENERATED_QUERY);
-                        emitBoolean(
-                                store,
-                                primitivesGeneratedQueryFeaturesEXT,
-                                KEY_PRIMITIVES_GENERATED_QUERY_WITH_NON_ZERO_STREAMS);
-                        emitBoolean(
-                                store,
-                                primitivesGeneratedQueryFeaturesEXT,
-                                KEY_PRIMITIVES_GENERATED_QUERY_WITH_RASTERIZER_DISCARD);
-                    }
-                    store.endGroup();
-                }
-                store.endGroup();
-            } catch (JSONException e) {
-                e.printStackTrace();
-                throw new RuntimeException(e);
-            }
-        } catch (JSONException ok) {
-            // The tag is not present in vkjson; that's fine, just continue
-        }
-    }
-
-    private static void emitFloatControlsPropertiesKHR(DeviceInfoStore store, JSONObject parent)
-            throws Exception {
-        try {
-            JSONObject khrFloatControlsProperties =
-                    parent.getJSONObject(KEY_VK_KHR_SHADER_FLOAT_CONTROLS);
-            try {
-                store.startGroup(getConvertedName(KEY_VK_KHR_SHADER_FLOAT_CONTROLS));
-                {
-                    JSONObject floatControlsPropertiesKHR =
-                            khrFloatControlsProperties.getJSONObject(
-                                    KEY_FLOAT_CONTROLS_PROPERTIES_KHR);
-                    store.startGroup(getConvertedName(KEY_FLOAT_CONTROLS_PROPERTIES_KHR));
-                    {
-                        emitLong(
-                                store,
-                                floatControlsPropertiesKHR,
-                                KEY_DENORM_BEHAVIOR_INDEPENDENCE);
-                        emitLong(
-                                store, floatControlsPropertiesKHR, KEY_ROUNDING_MODE_INDEPENDENCE);
-                        emitBoolean(
-                                store,
-                                floatControlsPropertiesKHR,
-                                KEY_SHADER_DENORM_FLUSH_TO_ZERO_FLOAT16);
-                        emitBoolean(
-                                store,
-                                floatControlsPropertiesKHR,
-                                KEY_SHADER_DENORM_FLUSH_TO_ZERO_FLOAT32);
-                        emitBoolean(
-                                store,
-                                floatControlsPropertiesKHR,
-                                KEY_SHADER_DENORM_FLUSH_TO_ZERO_FLOAT64);
-                        emitBoolean(
-                                store,
-                                floatControlsPropertiesKHR,
-                                KEY_SHADER_DENORM_PRESERVE_FLOAT16);
-                        emitBoolean(
-                                store,
-                                floatControlsPropertiesKHR,
-                                KEY_SHADER_DENORM_PRESERVE_FLOAT32);
-                        emitBoolean(
-                                store,
-                                floatControlsPropertiesKHR,
-                                KEY_SHADER_DENORM_PRESERVE_FLOAT64);
-                        emitBoolean(
-                                store,
-                                floatControlsPropertiesKHR,
-                                KEY_SHADER_ROUNDING_MODE_RTE_FLOAT16);
-                        emitBoolean(
-                                store,
-                                floatControlsPropertiesKHR,
-                                KEY_SHADER_ROUNDING_MODE_RTE_FLOAT32);
-                        emitBoolean(
-                                store,
-                                floatControlsPropertiesKHR,
-                                KEY_SHADER_ROUNDING_MODE_RTE_FLOAT64);
-                        emitBoolean(
-                                store,
-                                floatControlsPropertiesKHR,
-                                KEY_SHADER_ROUNDING_MODE_RTZ_FLOAT16);
-                        emitBoolean(
-                                store,
-                                floatControlsPropertiesKHR,
-                                KEY_SHADER_ROUNDING_MODE_RTZ_FLOAT32);
-                        emitBoolean(
-                                store,
-                                floatControlsPropertiesKHR,
-                                KEY_SHADER_ROUNDING_MODE_RTZ_FLOAT64);
-                        emitBoolean(
-                                store,
-                                floatControlsPropertiesKHR,
-                                KEY_SHADER_SIGNED_ZERO_INF_NAN_PRESERVE_FLOAT16);
-                        emitBoolean(
-                                store,
-                                floatControlsPropertiesKHR,
-                                KEY_SHADER_SIGNED_ZERO_INF_NAN_PRESERVE_FLOAT32);
-                        emitBoolean(
-                                store,
-                                floatControlsPropertiesKHR,
-                                KEY_SHADER_SIGNED_ZERO_INF_NAN_PRESERVE_FLOAT64);
-                    }
-                    store.endGroup();
-                }
-                store.endGroup();
-            } catch (JSONException e) {
-                e.printStackTrace();
-                throw new RuntimeException(e);
-            }
-        } catch (JSONException ok) {
-            // The tag is not present in vkjson; that's fine, just continue
-        }
-    }
-
-    private static void emitRelaxedLineRasterizationFeaturesIMG(
-            DeviceInfoStore store, JSONObject parent) throws Exception {
-        try {
-            JSONObject imgRelaxedLineRasterizationFeatures =
-                    parent.getJSONObject(KEY_VK_IMG_RELAXED_LINE_RASTERIZATION);
-            try {
-                store.startGroup(getConvertedName(KEY_VK_IMG_RELAXED_LINE_RASTERIZATION));
-                {
-                    JSONObject relaxedLineRasterizationFeaturesIMG =
-                            imgRelaxedLineRasterizationFeatures.getJSONObject(
-                                    KEY_RELAXED_LINE_RASTERIZATION_FEATURES_IMG);
-                    store.startGroup(getConvertedName(KEY_RELAXED_LINE_RASTERIZATION_FEATURES_IMG));
-                    {
-                        emitBoolean(
-                                store,
-                                relaxedLineRasterizationFeaturesIMG,
-                                KEY_RELAXED_LINE_RASTERIZATION);
-                    }
-                    store.endGroup();
-                }
-                store.endGroup();
-            } catch (JSONException e) {
-                e.printStackTrace();
-                throw new RuntimeException(e);
-            }
-        } catch (JSONException ok) {
-            // The tag is not present in vkjson; that's fine, just continue
-        }
-    }
-
     private static void emitExtension(String key, DeviceInfoStore store, JSONObject parent)
             throws Exception {
         switch (key) {
-            case KEY_VK_KHR_VARIABLE_POINTERS:
-                emitVariablePointerFeaturesKHR(store, parent);
-                break;
-            case KEY_VK_KHR_DRIVER_PROPERTIES:
-                emitDriverPropertiesKHR(store, parent);
-                break;
             case KEY_VK_EXT_CUSTOM_BORDER_COLOR:
                 emitCustomBorderColorFeaturesEXT(store, parent);
                 break;
             case KEY_VK_EXT_IMAGE_2D_VIEW_OF_3D:
                 emitImage2DViewOf3DFeaturesEXT(store, parent);
                 break;
-            case KEY_VK_EXT_TRANSFORM_FEEDBACK:
-                emitransformFeedbackFeaturesEXT(store, parent);
-                break;
-            case KEY_VK_EXT_PRIMITIVE_TOPOLOGY_LIST_RESTART:
-                emitPrimitiveTopologyListRestartFeaturesEXT(store, parent);
-                break;
-            case KEY_VK_EXT_PROVOKING_VERTEX:
-                emitProvokingVertexFeaturesEXT(store, parent);
-                break;
             case KEY_VK_EXT_INDEX_TYPE_UINT8:
                 emitIndexTypeUint8FeaturesEXT(store, parent);
-                break;
-            case KEY_VK_KHR_INDEX_TYPE_UINT8:
-                emitIndexTypeUint8FeaturesKHR(store, parent);
-                break;
-            case KEY_VK_KHR_8BIT_STORAGE:
-                emit8bitStorageFeaturesKHR(store, parent);
-                break;
-            case KEY_VK_KHR_SHADER_FLOAT16_INT8:
-                emitShaderFloat16Int8FeaturesKHR(store, parent);
-                break;
-            case KEY_VK_KHR_SHADER_SUBGROUP_UNIFORM_CONTROL_FLOW:
-                emitShaderSubgroupUniformControlFlowFeaturesKHR(store, parent);
-                break;
-            case KEY_VK_KHR_SHADER_SUBGROUP_EXTENDED_TYPES:
-                emitShaderSubgroupExtendedTypesFeaturesKHR(store, parent);
-                break;
-            case KEY_VK_KHR_SHADER_INTEGER_DOT_PRODUCT:
-                emitShaderIntegerDotProductFeaturesKHR(store, parent);
                 break;
             case KEY_VK_EXT_LINE_RASTERIZATION:
                 emitLineRasterizationFeaturesEXT(store, parent);
                 break;
+            case KEY_VK_EXT_PRIMITIVE_TOPOLOGY_LIST_RESTART:
+                emitPrimitiveTopologyListRestartFeaturesEXT(store, parent);
+                break;
             case KEY_VK_EXT_PRIMITIVES_GENERATED_QUERY:
                 emitPrimitivesGeneratedQueryFeaturesEXT(store, parent);
+                break;
+            case KEY_VK_EXT_PROVOKING_VERTEX:
+                emitProvokingVertexFeaturesEXT(store, parent);
+                break;
+            case KEY_VK_EXT_TRANSFORM_FEEDBACK:
+                emittransformFeedbackFeaturesEXT(store, parent);
+                break;
+            case KEY_VK_IMG_RELAXED_LINE_RASTERIZATION:
+                emitRelaxedLineRasterizationFeaturesIMG(store, parent);
+                break;
+            case KEY_VK_KHR_8BIT_STORAGE:
+                emit8bitStorageFeaturesKHR(store, parent);
+                break;
+            case KEY_VK_KHR_DRIVER_PROPERTIES:
+                emitDriverPropertiesKHR(store, parent);
+                break;
+            case KEY_VK_KHR_INDEX_TYPE_UINT8:
+                emitIndexTypeUint8FeaturesKHR(store, parent);
+                break;
+            case KEY_VK_KHR_SHADER_FLOAT16_INT8:
+                emitShaderFloat16Int8FeaturesKHR(store, parent);
                 break;
             case KEY_VK_KHR_SHADER_FLOAT_CONTROLS:
                 emitFloatControlsPropertiesKHR(store, parent);
                 break;
-            case KEY_VK_IMG_RELAXED_LINE_RASTERIZATION:
-                emitRelaxedLineRasterizationFeaturesIMG(store, parent);
+            case KEY_VK_KHR_SHADER_INTEGER_DOT_PRODUCT:
+                emitShaderIntegerDotProductFeaturesKHR(store, parent);
+                break;
+            case KEY_VK_KHR_SHADER_SUBGROUP_EXTENDED_TYPES:
+                emitShaderSubgroupExtendedTypesFeaturesKHR(store, parent);
+                break;
+            case KEY_VK_KHR_SHADER_SUBGROUP_UNIFORM_CONTROL_FLOW:
+                emitShaderSubgroupUniformControlFlowFeaturesKHR(store, parent);
+                break;
+            case KEY_VK_KHR_VARIABLE_POINTERS:
+                emitVariablePointerFeaturesKHR(store, parent);
                 break;
             case KEY_VK_KHR_VERTEX_ATTRIBUTE_DIVISOR:
                 emitVertexAttributeDivisorFeaturesKHR(store, parent);
