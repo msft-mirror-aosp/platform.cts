@@ -23,6 +23,7 @@ import static android.autofillservice.cts.activities.LoginActivity.getWelcomeMes
 import static android.autofillservice.cts.testcore.CannedFillResponse.DO_NOT_REPLY_RESPONSE;
 import static android.autofillservice.cts.testcore.CannedFillResponse.FAIL;
 import static android.autofillservice.cts.testcore.CannedFillResponse.NO_RESPONSE;
+import static android.autofillservice.cts.testcore.Helper.AutofillCriticalInternal;
 import static android.autofillservice.cts.testcore.Helper.ID_CANCEL_FILL;
 import static android.autofillservice.cts.testcore.Helper.ID_EMPTY;
 import static android.autofillservice.cts.testcore.Helper.ID_PASSWORD;
@@ -417,6 +418,7 @@ public class LoginActivityTest extends LoginActivityCommonTestCase {
     }
 
     @Presubmit
+    @AutofillCriticalInternal
     @Test
     public void testAutoFillOneDataset_withHeaderAndFooter() throws Exception {
         autofillOneDatasetTest(BorderType.BOTH);
@@ -499,6 +501,7 @@ public class LoginActivityTest extends LoginActivityCommonTestCase {
         sReplier.setIdMode(IdMode.RESOURCE_ID);
     }
 
+    @AutofillCriticalInternal
     @Test
     public void testSanitization_dynamicallySetValueIsSanitized() throws Exception {
         // Dynamically set password to make sure it's sanitized.
@@ -617,6 +620,7 @@ public class LoginActivityTest extends LoginActivityCommonTestCase {
         mActivity.assertAutoFilled();
     }
 
+    @AutofillCriticalInternal
     @Test
     public void testDatasetPickerPosition() throws Exception {
         final boolean pickerAndViewBoundsMatches = !isAutofillWindowFullScreen(mContext);
@@ -886,6 +890,7 @@ public class LoginActivityTest extends LoginActivityCommonTestCase {
     }
 
     @Presubmit
+    @AutofillCriticalInternal
     @Test
     public void testAutoFillOneDatasetAndMoveFocusAround() throws Exception {
         // Set service.
@@ -923,6 +928,7 @@ public class LoginActivityTest extends LoginActivityCommonTestCase {
         mUiBot.assertNoDatasetsEver();
     }
 
+    @AutofillCriticalInternal
     @Test
     public void testUiNotShownAfterAutofilled() throws Exception {
         // Set service.
@@ -953,6 +959,7 @@ public class LoginActivityTest extends LoginActivityCommonTestCase {
     }
 
     @Presubmit
+    @AutofillCriticalInternal
     @Test
     public void testAutofillTapOutside() throws Exception {
         // Set service.
@@ -982,6 +989,7 @@ public class LoginActivityTest extends LoginActivityCommonTestCase {
         mUiBot.assertNoDatasets();
     }
 
+    @AutofillCriticalInternal
     @Test
     public void testUiNotShowAfterSessionEnds() throws Exception {
         // Set service.
@@ -1005,6 +1013,7 @@ public class LoginActivityTest extends LoginActivityCommonTestCase {
     }
 
     @Presubmit
+    @AutofillCriticalInternal
     @Test
     public void testAutofillCallbacks() throws Exception {
         // Set service.
@@ -1097,6 +1106,7 @@ public class LoginActivityTest extends LoginActivityCommonTestCase {
     }
 
     @Presubmit
+    @AutofillCriticalInternal
     @Test
     public void testAutoFillOneDatasetAndSave() throws Exception {
         // Set service.
@@ -1175,6 +1185,7 @@ public class LoginActivityTest extends LoginActivityCommonTestCase {
     }
 
     @Presubmit
+    @AutofillCriticalInternal
     @Test
     public void testAutoFillOneDatasetAndSaveHidingOverlays() throws Exception {
         // Set service.
@@ -1369,6 +1380,7 @@ public class LoginActivityTest extends LoginActivityCommonTestCase {
      * and password).
      */
     @Presubmit
+    @AutofillCriticalInternal
     @Test
     public void testAutofillOneDatasetCustomPresentation() throws Exception {
         // Set service.
@@ -1682,16 +1694,19 @@ public class LoginActivityTest extends LoginActivityCommonTestCase {
         }
     }
 
+    @AutofillCriticalInternal
     @Test
     public void testSaveGoesAwayWhenTappingHomeButton() throws Exception {
         saveGoesAway(DismissType.HOME_BUTTON);
     }
 
+    @AutofillCriticalInternal
     @Test
     public void testSaveGoesAwayWhenTappingBackButton() throws Exception {
         saveGoesAway(DismissType.BACK_BUTTON);
     }
 
+    @AutofillCriticalInternal
     @Test
     public void testSaveGoesAwayWhenTouchingOutside() throws Exception {
         mUiBot.assumeMinimumResolution(500);
@@ -2108,6 +2123,7 @@ public class LoginActivityTest extends LoginActivityCommonTestCase {
     }
 
     @Presubmit
+    @AutofillCriticalInternal
     @Test
     public void testDontTriggerSaveOnFinishWhenRequestedByFlag() throws Exception {
         enableService();
@@ -2142,6 +2158,7 @@ public class LoginActivityTest extends LoginActivityCommonTestCase {
     }
 
     @Presubmit
+    @AutofillCriticalInternal
     @Test
     public void testAutoFillOneDatasetAndSaveWhenFlagSecure() throws Exception {
         mActivity.setFlags(FLAG_SECURE);
@@ -2155,6 +2172,7 @@ public class LoginActivityTest extends LoginActivityCommonTestCase {
     }
 
     @Presubmit
+    @AutofillCriticalInternal
     @Test
     @AppModeFull(reason = "Service-specific test")
     public void testDisableSelf() throws Exception {
@@ -2169,17 +2187,20 @@ public class LoginActivityTest extends LoginActivityCommonTestCase {
     }
 
     @Presubmit
+    @AutofillCriticalInternal
     @Test
     public void testNeverRejectStyleNegativeSaveButton() throws Exception {
         negativeSaveButtonStyle(SaveInfo.NEGATIVE_BUTTON_STYLE_NEVER);
     }
 
     @Presubmit
+    @AutofillCriticalInternal
     @Test
     public void testRejectStyleNegativeSaveButton() throws Exception {
         negativeSaveButtonStyle(SaveInfo.NEGATIVE_BUTTON_STYLE_REJECT);
     }
 
+    @AutofillCriticalInternal
     @Test
     public void testCancelStyleNegativeSaveButton() throws Exception {
         negativeSaveButtonStyle(SaveInfo.NEGATIVE_BUTTON_STYLE_CANCEL);
@@ -2232,6 +2253,7 @@ public class LoginActivityTest extends LoginActivityCommonTestCase {
     }
 
     @Presubmit
+    @AutofillCriticalInternal
     @Test
     public void testContinueStylePositiveSaveButton() throws Exception {
         enableService();
@@ -2344,6 +2366,7 @@ public class LoginActivityTest extends LoginActivityCommonTestCase {
     }
 
     @Presubmit
+    @AutofillCriticalInternal
     @Test
     public void testAutofillManuallyOneDataset() throws Exception {
         // Set service.
@@ -2690,6 +2713,7 @@ public class LoginActivityTest extends LoginActivityCommonTestCase {
     }
 
     @Presubmit
+    @AutofillCriticalInternal
     @Test
     public void testCancelMultipleTimes() throws Throwable {
         // Set service.
@@ -2734,6 +2758,7 @@ public class LoginActivityTest extends LoginActivityCommonTestCase {
     }
 
     @Presubmit
+    @AutofillCriticalInternal
     @Test
     public void testClickCustomButton() throws Exception {
         // Set service.
@@ -2774,6 +2799,7 @@ public class LoginActivityTest extends LoginActivityCommonTestCase {
     }
 
     @Presubmit
+    @AutofillCriticalInternal
     @Test
     public void testIsServiceEnabled() throws Exception {
         disableService();
@@ -2788,6 +2814,7 @@ public class LoginActivityTest extends LoginActivityCommonTestCase {
     }
 
     @Presubmit
+    @AutofillCriticalInternal
     @Test
     public void testGetAutofillServiceComponentName() throws Exception {
         final AutofillManager afm = mActivity.getAutofillManager();
@@ -2802,6 +2829,7 @@ public class LoginActivityTest extends LoginActivityCommonTestCase {
     }
 
     @Presubmit
+    @AutofillCriticalInternal
     @Test
     public void testSetupComplete() throws Exception {
         enableService();
@@ -2847,6 +2875,7 @@ public class LoginActivityTest extends LoginActivityCommonTestCase {
 
     // TODO(b/70682223): add a new test to make sure service with BIND_AUTOFILL permission works
     @Presubmit
+    @AutofillCriticalInternal
     @Test
     @AppModeFull(reason = "Service-specific test")
     public void testServiceIsDisabledWhenNewServiceInfoIsInvalid() throws Exception {
@@ -2965,6 +2994,7 @@ public class LoginActivityTest extends LoginActivityCommonTestCase {
     }
 
     @Presubmit
+    @AutofillCriticalInternal
     @Test
     public void testCancellationSignalCalledAfterTimeout() throws Exception {
         // Set service.
@@ -3010,6 +3040,7 @@ public class LoginActivityTest extends LoginActivityCommonTestCase {
         assertThat(password.getMaxTextLength()).isEqualTo(5000);
     }
 
+    @AutofillCriticalInternal
     @Test
     public void testUiShowOnChangeAfterAutofill() throws Exception {
         // Set service.
@@ -3089,6 +3120,7 @@ public class LoginActivityTest extends LoginActivityCommonTestCase {
     }
 
     @Presubmit
+    @AutofillCriticalInternal
     @Test
     public void testCancelActionButton() throws Exception {
         // Set service.
