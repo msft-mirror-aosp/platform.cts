@@ -23,6 +23,7 @@ import its_base_test
 import camera_properties_utils
 import its_session_utils
 import preview_processing_utils
+import sensor_fusion_utils
 import video_processing_utils
 
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
@@ -143,9 +144,11 @@ class PreviewStabilizationTest(its_base_test.ItsBaseTest):
       # Initialize rotation rig
       rot_rig['cntl'] = self.rotator_cntl
       rot_rig['ch'] = self.rotator_ch
-      if rot_rig['cntl'].lower() != 'arduino':
+      if rot_rig['cntl'].lower() not in sensor_fusion_utils.VALID_CONTROLLERS:
         raise AssertionError(
-            f'You must use the arduino controller for {_NAME}.')
+            'You must use a valid controller from '
+            f'{sensor_fusion_utils.VALID_CONTROLLERS}.'
+        )
 
       # Determine preview sizes to test
       preview_sizes_to_test = _get_preview_sizes(cam, self.camera_id)

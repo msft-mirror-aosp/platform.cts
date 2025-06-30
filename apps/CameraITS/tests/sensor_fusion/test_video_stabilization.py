@@ -22,6 +22,7 @@ from mobly import test_runner
 
 import its_base_test
 import camera_properties_utils
+import gen2_rig_controller_utils
 import image_processing_utils
 import its_session_utils
 import sensor_fusion_utils
@@ -68,16 +69,23 @@ def _collect_data(cam, tablet_device, video_profile, video_quality, rot_rig):
   else:
     servo_speed = sensor_fusion_utils.ARDUINO_SERVO_SPEED_STABILIZATION
 
+  rotation_rig_args = (
+      rot_rig['cntl'],
+      rot_rig['ch'],
+      _NUM_ROTATIONS,
+      sensor_fusion_utils.ARDUINO_ANGLES_STABILIZATION,
+  )
+  if rot_rig['cntl'] == gen2_rig_controller_utils.DEFAULT_GEN2_ROTATOR_NAME:
+    rotate_func = gen2_rig_controller_utils.rotation_rig
+  else:
+    rotate_func = sensor_fusion_utils.rotation_rig
+    rotation_rig_args += (
+        servo_speed,
+        sensor_fusion_utils.ARDUINO_MOVE_TIME_STABILIZATION,
+    )
   p = threading.Thread(
-      target=sensor_fusion_utils.rotation_rig,
-      args=(
-          rot_rig['cntl'],
-          rot_rig['ch'],
-          _NUM_ROTATIONS,
-          sensor_fusion_utils.ARDUINO_ANGLES_STABILIZATION,
-          servo_speed,
-          sensor_fusion_utils.ARDUINO_MOVE_TIME_STABILIZATION,
-      ),
+      target=rotate_func,
+      args=rotation_rig_args,
   )
   p.start()
 
@@ -140,8 +148,11 @@ class VideoStabilizationTest(its_base_test.ItsBaseTest):
       # Initialize rotation rig
       rot_rig['cntl'] = self.rotator_cntl
       rot_rig['ch'] = self.rotator_ch
-      if rot_rig['cntl'].lower() != 'arduino':
-        raise AssertionError(f'You must use an arduino controller for {_NAME}.')
+      if rot_rig['cntl'].lower() not in sensor_fusion_utils.VALID_CONTROLLERS:
+        raise AssertionError(
+            'You must use a valid controller from '
+            f'{sensor_fusion_utils.VALID_CONTROLLERS}.'
+        )
 
       # Create list of video qualities to test
       excluded_sizes = video_processing_utils.LOW_RESOLUTION_SIZES
