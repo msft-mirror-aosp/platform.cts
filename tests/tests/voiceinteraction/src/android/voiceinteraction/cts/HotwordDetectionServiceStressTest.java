@@ -44,6 +44,7 @@ import android.service.voice.HotwordDetectionService;
 import android.service.voice.HotwordDetector;
 import android.util.Log;
 import android.voiceinteraction.common.Utils;
+import android.voiceinteraction.cts.HotwordDetectionServiceBasicTest.OpNotedListener;
 import android.voiceinteraction.cts.services.BaseVoiceInteractionService;
 import android.voiceinteraction.cts.services.CtsBasicVoiceInteractionService;
 import android.voiceinteraction.cts.testcore.Helper;
@@ -84,26 +85,10 @@ public class HotwordDetectionServiceStressTest {
     private static final String SERVICE_COMPONENT =
             "android.voiceinteraction.cts.services.CtsBasicVoiceInteractionService";
 
-    private CountDownLatch mLatch = null;
-
-    private String mOpNoted = "";
-
     private final AppOpsManager mAppOpsManager = sInstrumentation.getContext()
             .getSystemService(AppOpsManager.class);
 
-    private final AppOpsManager.OnOpNotedListener mOnOpNotedListener =
-            (op, uid, pkgName, attributionTag, flags, result) -> {
-                Log.d(TAG, "Get OnOpNotedListener callback op = " + op + ", uid = " + uid);
-                // We adopt ShellPermissionIdentity for RECORD_AUDIO to pass the permission check,
-                // so the uid should be the shell uid.
-                if (Process.myUserHandle().getUid(Process.SHELL_UID) == uid &&
-                        op.equals(AppOpsManager.OPSTR_RECORD_AUDIO)) {
-                    if (mLatch != null) {
-                        mLatch.countDown();
-                    }
-                }
-                mOpNoted = op;
-            };
+    private OpNotedListener mOpNotedListener = new OpNotedListener();
 
     private CtsBasicVoiceInteractionService mService;
 
@@ -198,7 +183,7 @@ public class HotwordDetectionServiceStressTest {
             adoptShellPermissionIdentityForHotword();
 
             for (int i = 0; i < NUMBER_OF_HDS_STRESS_LOOPS; i++) {
-                mLatch = new CountDownLatch(1);
+                mOpNotedListener.reset();
                 verifyOnDetectFromDspSuccess(alwaysOnHotwordDetector);
 
                 // Verify RECORD_AUDIO noted
@@ -225,7 +210,7 @@ public class HotwordDetectionServiceStressTest {
             adoptShellPermissionIdentityForHotword();
 
             for (int i = 0; i < NUMBER_OF_HDS_STRESS_LOOPS; i++) {
-                mLatch = new CountDownLatch(1);
+                mOpNotedListener.reset();
                 ParcelFileDescriptor audioStream = Helper.createFakeAudioStream();
                 mService.resetHotwordServiceOnDetectedAndOnRejectedResult();
                 mService.initDetectRejectLatch();
@@ -269,7 +254,7 @@ public class HotwordDetectionServiceStressTest {
                     Utils.EXTRA_HOTWORD_DETECTION_SERVICE_CLEAR_SOFTWARE_DETECTION_JOB);
 
             for (int i = 0; i < NUMBER_OF_HDS_STRESS_LOOPS; i++) {
-                mLatch = new CountDownLatch(1);
+                mOpNotedListener.reset();
                 verifySoftwareDetectorDetectSuccess(softwareHotwordDetector);
 
                 // Verify RECORD_AUDIO noted
@@ -418,7 +403,7 @@ public class HotwordDetectionServiceStressTest {
         runWithShellPermissionIdentity(() -> {
             if (mAppOpsManager != null) {
                 mAppOpsManager.startWatchingNoted(new String[]{AppOpsManager.OPSTR_RECORD_AUDIO},
-                        mOnOpNotedListener);
+                        mOpNotedListener);
             }
         });
     }
@@ -426,12 +411,12 @@ public class HotwordDetectionServiceStressTest {
     private void stopWatchingNoted() {
         runWithShellPermissionIdentity(() -> {
             if (mAppOpsManager != null) {
-                mAppOpsManager.stopWatchingNoted(mOnOpNotedListener);
+                mAppOpsManager.stopWatchingNoted(mOpNotedListener);
             }
         });
     }
 
-    private void verifyRecordAudioNote(boolean shouldNote) throws Exception {
+    private void verifyRecordAudioNote(boolean shouldOpBeNoted) throws Exception {
         if (sPkgMgr.hasSystemFeature(PackageManager.FEATURE_LEANBACK)) {
             // TODO: test TV indicator
         } else if (sPkgMgr.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE)) {
@@ -439,11 +424,8 @@ public class HotwordDetectionServiceStressTest {
         } else if (sPkgMgr.hasSystemFeature(PackageManager.FEATURE_WATCH)) {
             // The privacy chips/indicators are not implemented on Wear
         } else {
-            boolean isNoted = mLatch.await(Helper.CLEAR_CHIP_MS, TimeUnit.MILLISECONDS);
-            assertThat(isNoted).isEqualTo(shouldNote);
-            if (isNoted) {
-                assertThat(mOpNoted).isEqualTo(AppOpsManager.OPSTR_RECORD_AUDIO);
-            }
+            assertThat(mOpNotedListener.await(Helper.CLEAR_CHIP_MS))
+                    .isEqualTo(shouldOpBeNoted);
         }
     }
 }
