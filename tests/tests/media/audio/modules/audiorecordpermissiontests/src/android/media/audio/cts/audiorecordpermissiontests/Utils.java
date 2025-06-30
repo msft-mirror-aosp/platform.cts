@@ -31,6 +31,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.MoreExecutors;
 
 import java.lang.ref.WeakReference;
+import java.util.Collection;
 import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -76,6 +77,64 @@ public class Utils {
                             }
                         },
                 "Intent receiver future for action: " + action);
+    }
+
+    /**
+     * Return a future for an intent delivered by a broadcast receiver which matches one of a set of
+     * actions and predicate.
+     *
+     * @param context - Context to register the receiver with
+     * @param actionsCollection - Collection of actions which to listen for, completing on any
+     * @param pred - Predicate which sets the future if evaluates to true, otherwise, leaves the
+     *     future unset. If the predicate throws, the future is set exceptionally
+     * @return - The future representing intent delivery matching predicate.
+     */
+    public static ListenableFuture<Intent> getFutureForIntent(
+            Context context, Collection<String> actionsCollection, Predicate<Intent> pred) {
+        // These are evaluated async
+        Objects.requireNonNull(actionsCollection);
+        Objects.requireNonNull(pred);
+        if (actionsCollection.isEmpty()) {
+            throw new IllegalArgumentException("actionsCollection must not be empty");
+        }
+        return getFutureForListener(
+                (recv) ->
+                        context.registerReceiver(
+                                recv,
+                                actionsCollection.stream()
+                                        .reduce(
+                                                new IntentFilter(),
+                                                (IntentFilter filter, String x) -> {
+                                                    filter.addAction(x);
+                                                    return filter;
+                                                },
+                                                (x, y) -> {
+                                                    throw new IllegalStateException(
+                                                            "No parallel support");
+                                                }),
+                                Context.RECEIVER_EXPORTED),
+                (recv) -> {
+                    try {
+                        context.unregisterReceiver(recv);
+                    } catch (IllegalArgumentException e) {
+                        // Thrown when receiver is already unregistered, nothing to do
+                    }
+                },
+                (completer) ->
+                        new BroadcastReceiver() {
+                            @Override
+                            public void onReceive(Context context, Intent intent) {
+                                try {
+                                    if (actionsCollection.contains(intent.getAction())
+                                            && pred.test(intent)) {
+                                        completer.set(intent);
+                                    }
+                                } catch (Exception e) {
+                                    completer.setException(e);
+                                }
+                            }
+                        },
+                "Intent receiver future for actions: " + actionsCollection);
     }
 
     /**
