@@ -22,7 +22,9 @@
         <package android:name="android.server.wm.cts" />
     </queries>
 
-    <application android:debuggable="true">
+    <application
+        android:name="android.server.wm.app.TestApplication"
+        android:debuggable="true">
         <activity
             android:name=".EmbeddingActivity"
             android:resizeableActivity="true"
