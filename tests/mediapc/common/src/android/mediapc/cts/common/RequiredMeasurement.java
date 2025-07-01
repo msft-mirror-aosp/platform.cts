@@ -128,9 +128,9 @@ public abstract class RequiredMeasurement<T> {
     public final String toString() {
         return "Required Measurement with:"
             + "\n\tId: " + this.id()
-            + "\n\tPredicate: " + this.predicate()
             + "\n\tMeasured Value: " + this.measuredValue
-            + "\n\tExpected Values: " + this.expectedValues();
+            + "\n\tPredicate: " + this.predicate()
+            + "\n\tMap of Performance Class to Expected Values: " + this.expectedValues();
     }
 
     public void writeValue(ReportLog log) throws IllegalStateException {
@@ -138,7 +138,7 @@ public abstract class RequiredMeasurement<T> {
         if (expectedValues().isEmpty()) {
             // Some requirements include extra measurements when testing at a higher performance
             // class. For these measurements, when testing at lower performance classes, the
-            // generated code may produce a correspoding RequiredMeasurement with an empty expected
+            // generated code may produce a corresponding RequiredMeasurement with an empty expected
             // value map. If so, the measurement should just be ignored.
             return;
         } else if (!this.measuredValueSet) {
