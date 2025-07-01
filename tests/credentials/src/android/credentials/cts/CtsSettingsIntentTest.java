@@ -34,6 +34,7 @@ import android.content.pm.ResolveInfo;
 import android.credentials.cts.testcore.CtsCredentialManagerUtils;
 import android.credentials.cts.testcore.DeviceConfigStateRequiredRule;
 import android.net.Uri;
+import android.os.RemoteException;
 import android.os.StrictMode;
 import android.os.SystemClock;
 import android.platform.test.annotations.AppModeFull;
@@ -117,6 +118,18 @@ public class CtsSettingsIntentTest {
     public void setUp() {
         assumeFalse("Skipping test: Auto does not support CredentialManager yet",
                 CtsCredentialManagerUtils.isAuto(mContext));
+
+        // Wake up the device
+        try {
+            mDevice.wakeUp();
+            SystemClock.sleep(1000); // Wait for wake up
+            // KeyGuardManager isn't needed for CTS tests (for now).
+            mDevice.pressHome();
+            SystemClock.sleep(1000);
+        } catch (RemoteException e) {
+            Log.e(TAG, "RemoteException in setUp", e);
+            throw new RuntimeException(e);
+        }
     }
 
     @Test
