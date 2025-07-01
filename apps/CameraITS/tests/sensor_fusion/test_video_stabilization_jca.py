@@ -279,7 +279,7 @@ class VideoStabilizationJCATest(its_base_test.UiAutomatorItsBaseTest):
       rot_rig = _initialize_rotation_rig(
           rot_rig, self.rotator_cntl, self.rotator_ch)
       # Initialize connection with controller.
-      servo_speed = _get_servo_speed(self.tablet_device, rot_rig)
+      servo_speed = _get_servo_speed(self.tablet_device)
       max_cam_gyro_angles = {}
 
       for ratio_tested in ui_interaction_utils.RATIO_TO_UI_DESCRIPTION.keys():
