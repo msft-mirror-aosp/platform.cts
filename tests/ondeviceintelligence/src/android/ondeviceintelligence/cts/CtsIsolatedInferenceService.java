@@ -61,7 +61,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 public class CtsIsolatedInferenceService extends OnDeviceSandboxedInferenceService {
-    static final String TAG = "SampleIsolatedService";
+    static final String TAG = "CtsIsolatedInferenceService";
 
     // TODO(339594686): replace with API constants
     private static final String REGISTER_MODEL_UPDATE_CALLBACK_BUNDLE_KEY =
@@ -293,25 +293,30 @@ public class CtsIsolatedInferenceService extends OnDeviceSandboxedInferenceServi
 
         if (requestType == OnDeviceIntelligenceManagerTest.REQUEST_TYPE_TRIGGER_MODEL_LOAD) {
             if (mLifecycleListener != null) {
-                mAsyncRequestExecutor.execute(() -> mLifecycleListener.onLifecycleEvent(
-                        LifecycleListener.LIFECYCLE_EVENT_MODEL_LOADED, feature));
+                mAsyncRequestExecutor.execute(() -> {
+                    mLifecycleListener.onLifecycleEvent(
+                            LifecycleListener.LIFECYCLE_EVENT_MODEL_LOADED, feature);
+                    callback.onResult(Bundle.EMPTY);
+                });
                 Log.d(TAG, "Invoking onModelLoaded from isolated service.");
             } else {
                 Log.i(TAG, "Model listener is not registered.");
             }
-            callback.onResult(Bundle.EMPTY);
             return;
         }
 
         if (requestType == OnDeviceIntelligenceManagerTest.REQUEST_TYPE_TRIGGER_MODEL_UNLOAD) {
             if (mLifecycleListener != null) {
-                mAsyncRequestExecutor.execute(() -> mLifecycleListener.onLifecycleEvent(
-                        LifecycleListener.LIFECYCLE_EVENT_MODEL_UNLOADED, feature));
+                mAsyncRequestExecutor.execute(() -> {
+                    mLifecycleListener.onLifecycleEvent(
+                            LifecycleListener.LIFECYCLE_EVENT_MODEL_UNLOADED, feature);
+
+                    callback.onResult(Bundle.EMPTY);
+                });
                 Log.d(TAG, "Invoking onModelUnloaded from isolated service.");
             } else {
                 Log.i(TAG, "Model listener is not registered.");
             }
-            callback.onResult(Bundle.EMPTY);
             return;
         }
 
