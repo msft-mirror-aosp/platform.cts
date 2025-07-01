@@ -53,6 +53,7 @@ import androidx.test.uiautomator.UiObject2;
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.SystemUtil;
 
+import org.junit.After;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -62,6 +63,11 @@ import org.junit.Test;
 @Presubmit
 public class BiometricActivityTests extends BiometricTestBase {
     private static final String TAG = "BiometricTests/Activity";
+
+    @After
+    public void teardown() {
+        Components.forceStopPackage();
+    }
 
     @ApiTest(apis = {
             "android.hardware.biometrics."
@@ -478,10 +484,8 @@ public class BiometricActivityTests extends BiometricTestBase {
         }
     }
 
-
     private void goToSettings() {
         SystemUtil.runShellCommand(
                 "am start -W --user current -a " + Settings.ACTION_SETTINGS);
     }
-
 }
