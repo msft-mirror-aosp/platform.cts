@@ -61,8 +61,8 @@ import java.util.concurrent.TimeUnit;
 @AppModeFull(reason = "Instant apps cannot query the installed IMEs")
 public final class InputMethodManagerMultiDisplayTest extends MultiDisplayTestBase {
     private static final String TAG = "InputMethodManagerMultiDisplayTest";
-    private static final String MOCK_IME_ID =
-            "com.android.cts.mockimewithsubtypes/.MockImeWithSubtypes";
+    private static final String MOCK_IME_PACKAGE_NAME = "com.android.cts.mockimewithsubtypes";
+    private static final String MOCK_IME_ID = MOCK_IME_PACKAGE_NAME + "/.MockImeWithSubtypes";
     private static final String MOCK_IME_SUBTYPE_LABEL = "CTS Subtype 1 Test String";
     private static final String SETTINGS_ACTIVITY_PACKAGE = "com.android.settings";
 
@@ -85,6 +85,8 @@ public final class InputMethodManagerMultiDisplayTest extends MultiDisplayTestBa
     public void tearDown() {
         runShellCommandOrThrow("ime reset");
         launchHomeActivity();
+        stopTestPackage(MOCK_IME_PACKAGE_NAME);
+        stopTestPackage(SETTINGS_ACTIVITY_PACKAGE);
     }
 
     @Test

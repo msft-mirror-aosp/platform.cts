@@ -51,17 +51,20 @@ import java.util.concurrent.TimeUnit;
 @SmallTest
 @Ignore("b/325686454")
 public class SystemDreamTest extends ActivityManagerTestBase {
+    private static final String TEST_PACKAGE_DREAM_OVERLAY_TEST_APP = "android.app.dream.cts.app";
     private static final ComponentName USER_DREAM_COMPONENT =
-            ComponentName.unflattenFromString("android.app.dream.cts.app/.TestDreamService");
+            ComponentName.unflattenFromString(
+                    TEST_PACKAGE_DREAM_OVERLAY_TEST_APP + "/.TestDreamService");
     private static final ComponentName SYSTEM_DREAM_COMPONENT =
-            ComponentName.unflattenFromString("android.app.dream.cts.app/.TestSystemDreamService");
+            ComponentName.unflattenFromString(
+                    TEST_PACKAGE_DREAM_OVERLAY_TEST_APP + "/.TestSystemDreamService");
     private static final String ACTION_DREAM_SHOWN =
-            "android.app.dream.cts.app.action.dream_shown";
+            TEST_PACKAGE_DREAM_OVERLAY_TEST_APP + ".action.dream_shown";
     private static final String ACTION_SYSTEM_DREAM_SHOWN =
-            "android.app.dream.cts.app.action.system_dream_shown";
+            TEST_PACKAGE_DREAM_OVERLAY_TEST_APP + ".action.system_dream_shown";
     private static final ComponentName DREAM_ACTIVITY =
             ComponentName.unflattenFromString(
-                    "android.app.dream.cts.app/android.service.dreams.DreamActivity");
+                    TEST_PACKAGE_DREAM_OVERLAY_TEST_APP + "/android.service.dreams.DreamActivity");
 
     private final DreamCoordinator mDreamCoordinator = new DreamCoordinator(mContext);
 
@@ -100,10 +103,11 @@ public class SystemDreamTest extends ActivityManagerTestBase {
     }
 
     @After
-    public void reset() {
+    public void tearDown() {
         mDreamCoordinator.stopDream();
         mDreamCoordinator.setSystemDream(null);
         mDreamCoordinator.restoreDefaults();
+        stopTestPackage(TEST_PACKAGE_DREAM_OVERLAY_TEST_APP);
     }
 
     @Test
