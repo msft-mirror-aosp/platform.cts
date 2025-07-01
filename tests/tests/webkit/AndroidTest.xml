@@ -37,6 +37,7 @@
         <option name="run-command" value="svc power stayon true" />
         <option name="run-command" value="input keyevent MENU" />
     </target_preparer>
+    <target_preparer class="android.webkit.cts.preconditions.WebViewVersionPreparer" />
     <test class="com.android.tradefed.testtype.AndroidJUnitTest" >
         <option name="package" value="android.webkit.cts" />
         <option name="runtime-hint" value="8m10s" />
