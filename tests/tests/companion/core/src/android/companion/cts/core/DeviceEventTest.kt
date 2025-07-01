@@ -18,8 +18,10 @@ import android.companion.cts.common.toUpperCaseString
 import android.os.SystemClock
 import android.platform.test.annotations.AppModeFull
 import android.platform.test.annotations.RequiresFlagsEnabled
+import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import kotlin.test.assertEquals
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -34,6 +36,9 @@ import org.junit.runner.RunWith
 @AppModeFull(reason = "CompanionDeviceManager APIs are not available to the instant apps.")
 @RunWith(AndroidJUnit4::class)
 class DeviceEventTest : CoreTestBase() {
+    @get:Rule
+    val checkFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
+
     @Test
     fun test_DevicePresenceEvent() {
         val deviceEvent = DevicePresenceEvent(ASSOCIATION_ID, EVENT_BLE_APPEARED, UUID_A)
@@ -147,10 +152,7 @@ class DeviceEventTest : CoreTestBase() {
     }
 
     @Test
-    @RequiresFlagsEnabled(
-        Flags.FLAG_NOTIFY_ASSOCIATION_REMOVED,
-        Flags.FLAG_ASSOCIATION_VERIFICATION
-    )
+    @RequiresFlagsEnabled(Flags.FLAG_NOTIFY_ASSOCIATION_REMOVED)
     fun test_association_removed_event() {
         targetApp.associate(MAC_ADDRESS_A)
         val associationId = cdm.myAssociations[0].id
