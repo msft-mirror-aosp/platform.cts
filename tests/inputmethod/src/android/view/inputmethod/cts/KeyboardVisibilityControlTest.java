@@ -1014,6 +1014,9 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
     @AppModeInstant
     @Test
     public void testImeInvisibleWhenForceStopPkgProcess_Instant() throws Exception {
+        // The Insets Controller is impaired for the IME when using multi-window split-screen
+        // mode (including Scalable UI) on Android V.
+        assumeFalse(isAutomotiveScalableUI());
         runImeVisibilityTestWhenForceStopPackage(true /* instant */);
     }
 
