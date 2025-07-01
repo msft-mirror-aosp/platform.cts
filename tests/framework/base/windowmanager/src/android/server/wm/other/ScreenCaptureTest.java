@@ -26,14 +26,12 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
-import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.Insets;
 import android.graphics.Rect;
 import android.hardware.HardwareBuffer;
-import android.hardware.display.DisplayManager;
 import android.os.Bundle;
 import android.os.OutcomeReceiver;
 import android.platform.test.annotations.RequiresFlagsEnabled;
@@ -79,7 +77,7 @@ public class ScreenCaptureTest extends WindowManagerTestBase {
                 () -> {
                     launchActivity(false /*secure*/, contentBounds);
                     ScreenCaptureParams params =
-                            new ScreenCaptureParams.Builder(getDefaultDisplay()).build();
+                            new ScreenCaptureParams.Builder(Display.DEFAULT_DISPLAY).build();
                     Executor executor = runnable -> runnable.run();
                     ScreenCapture.capture(params, executor, receiver);
                 });
@@ -102,7 +100,8 @@ public class ScreenCaptureTest extends WindowManagerTestBase {
             })
     @Test
     public void capture_requiresReadFrameBufferPermission() throws Exception {
-        ScreenCaptureParams params = new ScreenCaptureParams.Builder(getDefaultDisplay()).build();
+        ScreenCaptureParams params =
+                new ScreenCaptureParams.Builder(Display.DEFAULT_DISPLAY).build();
         Executor executor = runnable -> runnable.run();
         SynchronousReceiver receiver = new SynchronousReceiver();
 
@@ -130,7 +129,7 @@ public class ScreenCaptureTest extends WindowManagerTestBase {
                 () -> {
                     launchActivity(false /*secure*/, contentBounds);
                     ScreenCaptureParams params =
-                            new ScreenCaptureParams.Builder(getDefaultDisplay())
+                            new ScreenCaptureParams.Builder(Display.DEFAULT_DISPLAY)
                                     .setCaptureMode(
                                             ScreenCaptureParams.CAPTURE_MODE_REQUIRE_OPTIMIZED)
                                     .build();
@@ -164,7 +163,7 @@ public class ScreenCaptureTest extends WindowManagerTestBase {
                     launchActivity(true /*secure*/, null /*contentBounds*/);
 
                     ScreenCaptureParams params =
-                            new ScreenCaptureParams.Builder(getDefaultDisplay())
+                            new ScreenCaptureParams.Builder(Display.DEFAULT_DISPLAY)
                                     .setCaptureMode(
                                             ScreenCaptureParams.CAPTURE_MODE_REQUIRE_OPTIMIZED)
                                     .build();
@@ -190,7 +189,7 @@ public class ScreenCaptureTest extends WindowManagerTestBase {
                 () -> {
                     launchActivity(true /*secure*/, contentBounds);
                     ScreenCaptureParams params =
-                            new ScreenCaptureParams.Builder(getDefaultDisplay()).build();
+                            new ScreenCaptureParams.Builder(Display.DEFAULT_DISPLAY).build();
                     Executor executor = runnable -> runnable.run();
                     ScreenCapture.capture(params, executor, receiver);
                 });
@@ -203,12 +202,6 @@ public class ScreenCaptureTest extends WindowManagerTestBase {
                 new BitmapPixelChecker(Color.BLACK, contentBounds)
                         .getNumMatchingPixels(bitmap, contentBounds);
         assertEquals(expectedMatchingPixels, actualMatchingPixels);
-    }
-
-    Display getDefaultDisplay() {
-        Context context = InstrumentationRegistry.getInstrumentation().getContext();
-        DisplayManager displayManager = context.getSystemService(DisplayManager.class);
-        return displayManager.getDisplay(Display.DEFAULT_DISPLAY);
     }
 
     void launchActivity(boolean secure, @Nullable Rect outContentBounds)
