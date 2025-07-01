@@ -25,7 +25,6 @@ import static android.server.wm.overlay.UntrustedTouchTestService.BACKGROUND_COL
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
-import android.os.Handler;
 import android.os.ResultReceiver;
 import android.view.View;
 import android.view.Window;
@@ -35,6 +34,7 @@ import androidx.annotation.Nullable;
 
 /** This is an activity for which android:windowIsTranslucent is true. */
 public class OverlayActivity extends Activity {
+
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -64,6 +64,4 @@ public class OverlayActivity extends Activity {
             });
         }
     }
-
-
 }

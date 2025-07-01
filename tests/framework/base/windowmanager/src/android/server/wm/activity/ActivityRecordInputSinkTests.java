@@ -18,6 +18,7 @@ package android.server.wm.activity;
 
 import static android.server.wm.WindowManagerState.STATE_PAUSED;
 import static android.server.wm.WindowManagerState.STATE_RESUMED;
+import static android.server.wm.cts.Components.SAME_UID_TRANSLUCENT_FLOATING_ACTIVITY;
 import static android.server.wm.overlay.Components.TranslucentFloatingActivity.ACTION_FINISH;
 import static android.server.wm.overlay.Components.TranslucentFloatingActivity.EXTRA_FADE_EXIT;
 
@@ -30,8 +31,6 @@ import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.server.wm.overlay.Components;
 
-import androidx.annotation.NonNull;
-
 import org.junit.Test;
 
 /**
@@ -41,25 +40,17 @@ import org.junit.Test;
 @Presubmit
 public class ActivityRecordInputSinkTests extends ActivityRecordInputSinkTestsBase {
 
-    private static final String APP_SELF = "android.server.wm.cts";
-
-    @Override
-    @NonNull
-    String getAppSelf() {
-        return APP_SELF;
-    }
-
     @Test
     public void testOverlappingActivityInNewTask_BlocksTouches() {
         launchActivity(mTestActivity);
         touchButtonsAndAssert(true /*expectTouchesToReachActivity*/);
 
-        launchActivityInNewTask(mOverlayInSameUid);
-        mWmState.waitAndAssertActivityState(mOverlayInSameUid, STATE_RESUMED);
+        launchActivityInNewTask(SAME_UID_TRANSLUCENT_FLOATING_ACTIVITY);
+        mWmState.waitAndAssertActivityState(SAME_UID_TRANSLUCENT_FLOATING_ACTIVITY, STATE_RESUMED);
         touchButtonsAndAssert(false /*expectTouchesToReachActivity*/);
 
-        mContext.sendBroadcast(new Intent(Components.TranslucentFloatingActivity.ACTION_FINISH));
-        mWmState.waitAndAssertActivityRemoved(mOverlayInSameUid);
+        mContext.sendBroadcast(new Intent(ACTION_FINISH));
+        mWmState.waitAndAssertActivityRemoved(SAME_UID_TRANSLUCENT_FLOATING_ACTIVITY);
         touchButtonsAndAssert(true /*expectTouchesToReachActivity*/);
     }
 
@@ -68,8 +59,8 @@ public class ActivityRecordInputSinkTests extends ActivityRecordInputSinkTestsBa
         launchActivity(mTestActivity);
         touchButtonsAndAssert(true /*expectTouchesToReachActivity*/);
 
-        launchActivityInSameTask(mOverlayInSameUid);
-        mWmState.waitAndAssertActivityState(mOverlayInSameUid, STATE_RESUMED);
+        launchActivityInSameTask(SAME_UID_TRANSLUCENT_FLOATING_ACTIVITY);
+        mWmState.waitAndAssertActivityState(SAME_UID_TRANSLUCENT_FLOATING_ACTIVITY, STATE_RESUMED);
         touchButtonsAndAssert(true /*expectTouchesToReachActivity*/);
     }
 
@@ -166,7 +157,7 @@ public class ActivityRecordInputSinkTests extends ActivityRecordInputSinkTestsBa
         mWmState.waitAndAssertActivityState(OVERLAY_IN_DIFFERENT_UID, STATE_RESUMED);
         touchButtonsAndAssert(false /*expectTouchesToReachActivity*/);
 
-        mContext.sendBroadcast(new Intent(Components.TranslucentFloatingActivity.ACTION_FINISH));
+        mContext.sendBroadcast(new Intent(ACTION_FINISH));
         mWmState.waitAndAssertActivityRemoved(OVERLAY_IN_DIFFERENT_UID);
         touchButtonsAndAssert(true /*expectTouchesToReachActivity*/);
     }

@@ -14,27 +14,27 @@
  * limitations under the License.
  */
 
-package android.server.wm.third
+package android.server.wm.cts
 
 import android.server.wm.component.ComponentsProvider
-import android.server.wm.component.forceStopPackage
+import android.server.wm.overlay.Components.EXIT_ANIMATION_ACTIVITY
 import android.server.wm.overlay.Components.OVERLAY_ACTIVITY
 import android.server.wm.overlay.Components.TOAST_ACTIVITY
+import android.server.wm.overlay.Components.TRANSLUCENT_FLOATING_ACTIVITY
 import android.server.wm.overlay.Components.UNTRUSTED_TOUCH_TEST_SERVICE
 
-/** Constants for the third device services test components. */
+/** Constants for test components under the instrumentation test's package. */
 object Components : ComponentsProvider() {
 
-    @JvmField val THIRD_ACTIVITY = component("ThirdActivity")
+    @JvmField val SAME_UID_TRANSLUCENT_FLOATING_ACTIVITY =
+        component(TRANSLUCENT_FLOATING_ACTIVITY.className)
 
-    @JvmField val THIRD_UNTRUSTED_TOUCH_TEST_SERVICE =
+    @JvmField val SAME_UID_UNTRUSTED_TOUCH_TEST_SERVICE =
         component(UNTRUSTED_TOUCH_TEST_SERVICE.className)
 
-    @JvmField val THIRD_OVERLAY_ACTIVITY = component(OVERLAY_ACTIVITY.className)
+    @JvmField val SAME_UID_OVERLAY_ACTIVITY = component(OVERLAY_ACTIVITY.className)
 
-    @JvmField val THIRD_TOAST_ACTIVITY = component(TOAST_ACTIVITY.className)
+    @JvmField val SAME_UID_TOAST_ACTIVITY = component(TOAST_ACTIVITY.className)
 
-    @JvmStatic fun getPackageName() = packageName
-
-    @JvmStatic fun forceStopPackage() = (this as ComponentsProvider).forceStopPackage()
+    @JvmField val SAME_UID_EXIT_ANIMATION_ACTIVITY = component(EXIT_ANIMATION_ACTIVITY.className)
 }

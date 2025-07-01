@@ -16,6 +16,9 @@
 
 package android.server.wm.activity;
 
+import static android.server.wm.second.Components.SECOND_TRAMPOLINE_ACTIVITY;
+import static android.server.wm.second.Components.SECOND_TRANSLUCENT_FLOATING_ACTIVITY;
+
 import static com.google.common.truth.Truth.assertThat;
 
 import android.content.ComponentName;
@@ -26,9 +29,8 @@ import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.server.wm.ActivityManagerTestBase;
 import android.server.wm.WindowManagerState;
-import android.server.wm.overlay.Components;
+import android.server.wm.second.Components;
 
-import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import org.junit.After;
@@ -36,28 +38,15 @@ import org.junit.Before;
 import org.junit.Rule;
 
 public abstract class ActivityRecordInputSinkTestsBase extends ActivityManagerTestBase {
-    private static final String APP_A =
-            android.server.wm.second.Components.class.getPackage().getName();
-
     final ComponentName mTestActivity =
-            new ComponentName(getAppSelf(),
-                    "android.server.wm.activity.ActivityRecordInputSinkTestsActivity");
-
-    final ComponentName mOverlayInSameUid =
-            Components.TranslucentFloatingActivity.getComponent(getAppSelf());
-    static final ComponentName OVERLAY_IN_DIFFERENT_UID =
-            Components.TranslucentFloatingActivity.getComponent(APP_A);
-    static final ComponentName TRAMPOLINE_DIFFERENT_UID =
-            Components.TrampolineActivity.getComponent(APP_A);
+            new ComponentName(mContext, ActivityRecordInputSinkTestsActivity.class);
+    static final ComponentName OVERLAY_IN_DIFFERENT_UID = SECOND_TRANSLUCENT_FLOATING_ACTIVITY;
+    static final ComponentName TRAMPOLINE_DIFFERENT_UID = SECOND_TRAMPOLINE_ACTIVITY;
 
     private int mTouchCount;
 
     @Rule
-    public final CheckFlagsRule mCheckFlagsRule =
-            DeviceFlagsValueProvider.createCheckFlagsRule();
-
-    @NonNull
-    abstract String getAppSelf();
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Before
     public void setUp() throws Exception {
@@ -67,7 +56,7 @@ public abstract class ActivityRecordInputSinkTestsBase extends ActivityManagerTe
 
     @After
     public void tearDown() {
-        stopTestPackage(APP_A);
+        Components.forceStopPackage();
         mWmState.waitForAppTransitionIdleOnDisplay(getMainDisplayId());
     }
 
@@ -82,7 +71,7 @@ public abstract class ActivityRecordInputSinkTestsBase extends ActivityManagerTe
     void launchActivityInSameTask(
             ComponentName componentName, @Nullable Bundle extras, @Nullable Bundle options) {
         final Intent intent = new Intent(ActivityRecordInputSinkTestsActivity.LAUNCH_ACTIVITY_ACTION);
-        intent.setPackage(getAppSelf());
+        intent.setPackage(mContext.getPackageName());
         intent.putExtra(ActivityRecordInputSinkTestsActivity.COMPONENT_EXTRA, componentName);
         intent.putExtra(ActivityRecordInputSinkTestsActivity.EXTRA_EXTRA, extras);
         intent.putExtra(ActivityRecordInputSinkTestsActivity.EXTRA_OPTIONS, options);
