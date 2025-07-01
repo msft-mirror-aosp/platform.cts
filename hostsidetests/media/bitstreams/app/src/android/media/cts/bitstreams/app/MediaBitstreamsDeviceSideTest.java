@@ -258,11 +258,8 @@ public class MediaBitstreamsDeviceSideTest {
                 ex.setDataSource(path);
                 MediaFormat format = ex.getTrackFormat(0);
                 fixFormat(format, path);
-                boolean[] vendors = new boolean[] {false, true};
-                for (boolean v : vendors) {
-                    for (String name : MediaUtils.getDecoderNames(v, format)) {
-                        decoders.add(name);
-                    }
+                for (String name : MediaUtils.getDecoderNames(format)) {
+                    decoders.add(name);
                 }
             } finally {
                 ex.release();
