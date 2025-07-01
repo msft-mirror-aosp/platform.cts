@@ -2027,6 +2027,8 @@ public class WindowManagerState {
             mShouldOverrideForceResizeApp = proto.getShouldOverrideForceResizeApp();
             mShouldEnableUserAspectRatioSettings = proto.getShouldEnableUserAspectRatioSettings();
             mIsUserFullscreenOverrideEnabled = proto.getIsUserFullscreenOverrideEnabled();
+            mRequestOpenInBrowserEducationTimestamp =
+                    proto.getRequestOpenInBrowserEducationTimestamp();
         }
 
         Activity(com.android.server.wm.nano.ActivityRecordProto proto, WindowContainer parent) {
