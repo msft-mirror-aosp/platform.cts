@@ -25,6 +25,7 @@ import android.media.ImageWriter;
 import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
 import android.media.MediaFormat;
+import android.os.Handler;
 import android.util.Log;
 import android.view.Surface;
 
@@ -44,11 +45,12 @@ public class SteadyTimestampCodec implements AutoCloseable {
 
     private static final int VIDEO_BITRATE = 4000000;
     private static final int FRAME_RATE = 30;
-    private static final int I_FRAME_INTERVAL = 1;
+    private static final int I_FRAME_INTERVAL = 0;
     private static final String MIMETYPE = MediaFormat.MIMETYPE_VIDEO_AVC;
-    private static final int TIMEOUT_MILLIS = 100;
+    private static final int TIMEOUT_MILLIS = 1000;
     private static final String TAG = "SteadyTimestampCodec";
     private static final boolean DEBUG = false;
+    public static final int TIMESTAMP_INCREMENT_NS = 1_000_000_000 / FRAME_RATE;
     private final AtomicReference<MediaCodec> mDecoderRef;
     private final AtomicReference<MediaCodec> mEncoderRef;
 
@@ -56,7 +58,11 @@ public class SteadyTimestampCodec implements AutoCloseable {
     private final LinkedBlockingDeque<byte[]> mBufferQueue = new LinkedBlockingDeque<>();
     private final int mWidth;
     private final int mHeight;
-    private long mRenderTimestampNs;
+    private long mRenderTimestampNs = 0;
+    private Handler mDecoderHandler;
+    private Handler mEncoderHandler;
+
+    private long mLastWrittenTimestampNs = -1L;
 
     private abstract static class MediaCodecCallback extends MediaCodec.Callback {
         @Override
@@ -73,16 +79,14 @@ public class SteadyTimestampCodec implements AutoCloseable {
     }
 
     /**
-     * Create a codec with presentation timestamp starting at renderTimestampNs.
+     * Create a codec with presentation timestamp starting at 0.
      *
      * @param width             The width of the video to encode/decode
      * @param height            The height of the video to encode/decode
-     * @param renderTimestampNs The timestamp to be associated with the first frame
      */
-    public SteadyTimestampCodec(int width, int height, long renderTimestampNs) {
+    public SteadyTimestampCodec(int width, int height) {
         mWidth = width;
         mHeight = height;
-        mRenderTimestampNs = renderTimestampNs;
         mEncoderRef = new AtomicReference<>(createEncoder());
         mDecoderRef = new AtomicReference<>(null);
     }
@@ -119,8 +123,7 @@ public class SteadyTimestampCodec implements AutoCloseable {
                             Log.d(TAG, "encoder queueInputBuffer() called with: codec = ["
                                     + encoder + "], i = [" + i + "]");
                         }
-                        encoder.queueInputBuffer(i, 0, blackFrameData.length, 0,
-                                0); // Custom PTS
+                        encoder.queueInputBuffer(i, 0, blackFrameData.length, 0, 0); // Custom PTS
                     }
                 } catch (IllegalStateException exception) {
                     mCodecRunning.set(false);
@@ -159,7 +162,8 @@ public class SteadyTimestampCodec implements AutoCloseable {
         try {
             MediaCodec encoder = MediaCodec.createEncoderByType(MIMETYPE);
             encoder.configure(format, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE);
-            encoder.setCallback(encoderCallback, createHandler("encoder-callback"));
+            mEncoderHandler = createHandler("encoder-callback");
+            encoder.setCallback(encoderCallback, mEncoderHandler);
             return encoder;
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -215,16 +219,19 @@ public class SteadyTimestampCodec implements AutoCloseable {
                 }
                 if (DEBUG) {
                     Log.d(TAG, "decoder onOutputBufferAvailable() mRenderTimestampNs:"
-                            + mRenderTimestampNs + 1);
+                            + mRenderTimestampNs);
                 }
-                mediaCodec.releaseOutputBuffer(i, mRenderTimestampNs++);
+                mediaCodec.releaseOutputBuffer(i, mRenderTimestampNs);
+                mLastWrittenTimestampNs = mRenderTimestampNs;
+                mRenderTimestampNs += TIMESTAMP_INCREMENT_NS;
             }
         };
         try {
             MediaFormat format = MediaFormat.createVideoFormat(MIMETYPE, mWidth, mHeight);
             MediaCodec decoder = MediaCodec.createDecoderByType(MIMETYPE);
             decoder.configure(format, surface, null, 0);
-            decoder.setCallback(decoderCallback, createHandler("decoder-callback"));
+            mDecoderHandler = createHandler("decoder-callback");
+            decoder.setCallback(decoderCallback, mDecoderHandler);
             return decoder;
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -248,6 +255,10 @@ public class SteadyTimestampCodec implements AutoCloseable {
         return data;
     }
 
+    public long getLastRenderTimestampNs() {
+        return mLastWrittenTimestampNs;
+    }
+
     /**
      * Set the output surface onto which the decoded data should be written and start the codec.
      */
@@ -269,5 +280,7 @@ public class SteadyTimestampCodec implements AutoCloseable {
         mEncoderRef.get().stop();
         mDecoderRef.get().release();
         mEncoderRef.get().release();
+        mDecoderHandler.getLooper().quit();
+        mEncoderHandler.getLooper().quit();
     }
 }

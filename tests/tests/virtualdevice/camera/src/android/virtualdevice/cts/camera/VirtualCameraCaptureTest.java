@@ -559,14 +559,13 @@ public class VirtualCameraCaptureTest {
                 .setOutputFormat(YUV_420_888)
                 .setWidth(width)
                 .setHeight(height);
+
         mCaptureHelper.createVirtualCamera(width, height, YUV_420_888, fps);
-        try (SteadyTimestampCodec steadyTimestampCodec = new SteadyTimestampCodec(width, height,
-                renderTimestamp)) {
+        try (SteadyTimestampCodec steadyTimestampCodec = new SteadyTimestampCodec(width, height)) {
             captureConfiguration.setInputSurfaceConsumer(steadyTimestampCodec::setSurfaceAndStart);
-            long startTime = SystemClock.uptimeMillis();
             Image image = mCaptureHelper.captureImages(captureConfiguration);
-            long endTimestamp = renderTimestamp + (SystemClock.uptimeMillis() - startTime);
-            Range<Long> timestampRange = Range.closed(renderTimestamp, endTimestamp);
+            Range<Long> timestampRange = Range.closed(renderTimestamp,
+                    steadyTimestampCodec.getLastRenderTimestampNs());
             assertThat(mCaptureHelper.getLastResult()
                     .get(CaptureResult.SENSOR_TIMESTAMP)).isIn(timestampRange);
             assertThat(image.getTimestamp()).isIn(timestampRange);
