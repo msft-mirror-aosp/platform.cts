@@ -26,6 +26,7 @@ android_test {
         "bedstead-flags",
         "bedstead-root",
         "cts-install-lib",
+        "kotlin-test",
     ],
     srcs: ["src/**/*.kt"],
     test_suites: [

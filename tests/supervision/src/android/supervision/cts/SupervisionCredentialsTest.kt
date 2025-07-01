@@ -19,23 +19,18 @@ package android.supervision.cts
 import android.Manifest.permission.CREATE_USERS
 import android.Manifest.permission.MANAGE_USERS
 import android.Manifest.permission.QUERY_USERS
-import android.app.supervision.SupervisionManager
 import android.app.supervision.flags.Flags
 import android.os.UserManager
 import androidx.test.platform.app.InstrumentationRegistry
 import com.android.bedstead.flags.annotations.RequireFlagsEnabled
 import com.android.bedstead.harrier.BedsteadJUnit4
-import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.multiuser.annotations.RequireMultiUserSupport
-import com.android.bedstead.nene.TestApis
 import com.android.bedstead.permissions.annotations.EnsureDoesNotHavePermission
 import com.android.bedstead.permissions.annotations.EnsureHasPermission
 import com.android.compatibility.common.util.ApiTest
 import com.android.compatibility.common.util.SystemUtil.runShellCommand
 import com.android.xts.root.annotations.RequireRootInstrumentation
 import com.google.common.truth.Truth.assertThat
-import org.junit.ClassRule
-import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.testng.Assert.assertThrows
@@ -45,7 +40,8 @@ import org.testng.Assert.assertThrows
     Flags.FLAG_SUPERVISION_MANAGER_APIS,
     android.multiuser.Flags.FLAG_ALLOW_SUPERVISING_PROFILE,
 )
-class SupervisionCredentialsTest {
+class SupervisionCredentialsTest : BaseSupervisionTest() {
+
     @Test
     @ApiTest(
         apis =
@@ -55,7 +51,7 @@ class SupervisionCredentialsTest {
     @RequireMultiUserSupport
     @RequireRootInstrumentation(reason = "Use of MANAGE_USERS")
     fun createConfirmSupervisionCredentialsIntent_hasManageUsersPermission_returnsValidIntent() {
-        supervisionManager.setSupervisionEnabled(true)
+        setSupervisionEnabled(true)
         val supervisingUser =
             userManager.createUser("Supervising", UserManager.USER_TYPE_PROFILE_SUPERVISING, 0)
         if (supervisingUser != null) {
@@ -84,7 +80,7 @@ class SupervisionCredentialsTest {
     @RequireMultiUserSupport
     @EnsureHasPermission(QUERY_USERS, CREATE_USERS)
     fun createConfirmSupervisionCredentialsIntent_hasQueryUsersPermission_returnsValidIntent() {
-        supervisionManager.setSupervisionEnabled(true)
+        setSupervisionEnabled(true)
         val supervisingUser =
             userManager.createUser("Supervising", UserManager.USER_TYPE_PROFILE_SUPERVISING, 0)
         if (supervisingUser != null) {
@@ -125,7 +121,7 @@ class SupervisionCredentialsTest {
     @RequireMultiUserSupport
     @EnsureHasPermission(QUERY_USERS, CREATE_USERS)
     fun createConfirmSupervisionCredentialsIntent_supervisionNotEnabled_returnsNull() {
-        supervisionManager.setSupervisionEnabled(false)
+        setSupervisionEnabled(false)
         val supervisingUser =
             userManager.createUser("Supervising", UserManager.USER_TYPE_PROFILE_SUPERVISING, 0)
 
@@ -146,7 +142,7 @@ class SupervisionCredentialsTest {
     )
     @EnsureHasPermission(QUERY_USERS)
     fun createConfirmSupervisionCredentialsIntent_noSupervisingUser_returnsNull() {
-        supervisionManager.setSupervisionEnabled(true)
+        setSupervisionEnabled(true)
 
         val intent = supervisionManager.createConfirmSupervisionCredentialsIntent()
         assertThat(intent).isNull()
@@ -160,7 +156,7 @@ class SupervisionCredentialsTest {
     @RequireMultiUserSupport
     @EnsureHasPermission(QUERY_USERS, CREATE_USERS)
     fun createConfirmSupervisionCredentialsIntent_supervisingUserMissingSecureLock_returnsNull() {
-        supervisionManager.isSupervisionEnabled = true
+        setSupervisionEnabled(true)
         val supervisingUser =
             userManager.createUser("Supervising", UserManager.USER_TYPE_PROFILE_SUPERVISING, 0)
 
@@ -175,14 +171,10 @@ class SupervisionCredentialsTest {
     }
 
     companion object {
-        @[JvmField ClassRule Rule]
-        val deviceState = DeviceState()
-
         private const val ACTION_CONFIRM_SUPERVISION_CREDENTIALS =
             "android.app.supervision.action.CONFIRM_SUPERVISION_CREDENTIALS"
         private const val APPLICATION_PACKAGE = "com.android.settings"
-        private val context = TestApis.context().instrumentedContext()
-        private val supervisionManager = context.getSystemService(SupervisionManager::class.java)
+
         private val userManager = context.getSystemService(UserManager::class.java)
     }
 }

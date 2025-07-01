@@ -16,6 +16,8 @@
 
 package android.supervision.cts
 
+import android.Manifest.permission.BYPASS_ROLE_QUALIFICATION
+import android.Manifest.permission.QUERY_USERS
 import android.app.supervision.SupervisionManager
 import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.nene.TestApis
@@ -27,8 +29,10 @@ import org.junit.Rule
 open class BaseSupervisionTest {
 
     fun setSupervisionEnabled(enabled: Boolean) {
-        supervisionManager.setSupervisionEnabled(enabled)
-        assertThat(supervisionManager.isSupervisionEnabled()).isEqualTo(enabled)
+        callWithShellPermissionIdentity(BYPASS_ROLE_QUALIFICATION, QUERY_USERS) {
+            supervisionManager.setSupervisionEnabled(enabled)
+            assertThat(supervisionManager.isSupervisionEnabled()).isEqualTo(enabled)
+        }
     }
 
     companion object {

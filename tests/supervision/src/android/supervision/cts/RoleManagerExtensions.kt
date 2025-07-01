@@ -23,12 +23,12 @@ import android.app.role.RoleManager.ROLE_SYSTEM_SUPERVISION
 import android.app.supervision.SupervisionManager
 import android.content.Context
 import com.android.bedstead.nene.TestApis
-import com.android.compatibility.common.util.SystemUtil.callWithShellPermissionIdentity
 import com.google.common.truth.Truth.assertThat
+import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.suspendCancellableCoroutine
-import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.withTimeoutOrNull
 
 fun withSystemSupervisionRoleHeld(action: () -> Unit) =
     withRoleHeld(ROLE_SYSTEM_SUPERVISION, action)
@@ -44,25 +44,21 @@ fun withSupervisionRoleHeld(action: () -> Unit) =
  * role bypassing is available.
  */
 private fun withRoleHeld(roleName: String, action: () -> Unit) {
-    callWithShellPermissionIdentity {
-        val context = TestApis.context().instrumentedContext()
-        val roleManager = context.getSystemService(RoleManager::class.java)
-        val supervisionManager = context.getSystemService(SupervisionManager::class.java)
-
+    val context = TestApis.context().instrumentedContext()
+    val roleManager = context.getSystemService(RoleManager::class.java)
+    val supervisionManager = context.getSystemService(SupervisionManager::class.java)
+    try {
         supervisionManager.setSupervisionEnabled(false)
         assertThat(supervisionManager.shouldAllowBypassingSupervisionRoleQualification()).isTrue()
-
-        try {
-            roleManager.addRoleHolder(context, roleName)
-            action()
-        } finally {
-            roleManager.removeRoleHolder(context, roleName)
-            supervisionManager.setSupervisionEnabled(false)
-        }
+        roleManager.addRoleHolder(context, roleName)
+        action()
+    } finally {
+        roleManager.removeRoleHolder(context, roleName)
+        supervisionManager.setSupervisionEnabled(false)
     }
 }
 
-private val TIMEOUT = 5000L
+private val TIMEOUT = 5.seconds
 
 /**
  * Adds this package as the role holder for the [roleName] role.
@@ -86,14 +82,14 @@ private fun RoleManager.addRoleHolder(context: Context, roleName: String) {
     try {
         setBypassingRoleQualification(true)
         val callbackResult = runBlocking {
-            withTimeout(TIMEOUT) {
+            withTimeoutOrNull(TIMEOUT) {
                 addRoleHolderInternal(context, roleName)
             }
         }
         assertThat(callbackResult).isTrue()
 
         val listenerResult = runBlocking {
-            withTimeout(TIMEOUT) {
+            withTimeoutOrNull(TIMEOUT) {
                 channel.receive()
             }
         }
@@ -108,7 +104,7 @@ private fun RoleManager.addRoleHolder(context: Context, roleName: String) {
 
 private fun RoleManager.removeRoleHolder(context: Context, roleName: String) {
     val result = runBlocking {
-        withTimeout(TIMEOUT) {
+        withTimeoutOrNull(TIMEOUT) {
             removeRoleHolderInternal(context, roleName)
         }
     }
