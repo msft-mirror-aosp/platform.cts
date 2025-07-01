@@ -75,6 +75,7 @@ import androidx.window.extensions.layout.WindowLayoutInfo;
 import androidx.window.sidecar.SidecarDisplayFeature;
 import androidx.window.sidecar.SidecarInterface;
 
+import com.android.bedstead.harrier.annotations.RequireNotAutomotive;
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.CddTest;
 
@@ -113,6 +114,11 @@ public class ExtensionWindowLayoutComponentTest extends WindowManagerJetpackTest
     @Rule
     public final WindowExtensionTestRule mWindowExtensionTestRule =
             new WindowExtensionTestRule(WindowLayoutComponent.class);
+
+    @ClassRule
+    @Rule
+    public static final com.android.bedstead.harrier.DeviceState sDeviceState =
+            new com.android.bedstead.harrier.DeviceState();
 
     // To disable special handling which prevents setRequestedOrientation from changing the screen
     // rotation for large screen devices.
@@ -354,6 +360,7 @@ public class ExtensionWindowLayoutComponentTest extends WindowManagerJetpackTest
     @ApiTest(apis = {"androidx.window.extensions.layout.WindowLayoutInfo#getDisplayFeatures"})
     @Test
     @PlatinumTest(focusArea = "windowmanager")
+    @RequireNotAutomotive(reason = "Automotive does not support rotation")
     public void testGetWindowLayoutInfo_configChanged_windowLayoutUpdates()
             throws InterruptedException {
         assumeSupportsRotation();
@@ -505,6 +512,7 @@ public class ExtensionWindowLayoutComponentTest extends WindowManagerJetpackTest
             "androidx.window.extensions.layout.WindowLayoutComponent#addWindowLayoutInfoListener",
             "androidx.window.extensions.layout.WindowLayoutComponent#removeWindowLayoutInfoListener"
     })
+    @RequireNotAutomotive(reason = "Automotive does not support rotation")
     public void testWindowLayoutComponent_updatesWindowLayoutFromContextAfterRotation()
             throws InterruptedException {
         assumeSupportsRotation();
@@ -564,6 +572,7 @@ public class ExtensionWindowLayoutComponentTest extends WindowManagerJetpackTest
     @PlatinumTest(focusArea = "windowmanager")
     @ApiTest(apis = {
             "androidx.window.extensions.layout.WindowLayoutComponent#addWindowLayoutInfoListener"})
+    @RequireNotAutomotive(reason = "Automotive screens don't support rotation")
     public void testGetWindowLayoutInfo_windowRecreated_windowLayoutUpdates()
             throws InterruptedException {
         assumeSupportsRotation();
