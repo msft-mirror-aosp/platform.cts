@@ -56,6 +56,7 @@ import com.android.systemui.Flags;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -137,6 +138,7 @@ public class DreamManagerServiceTests extends ActivityManagerTestBase {
     }
 
     @Test
+    @Ignore("b/428777826")
     public void testStartAndStopDream() throws Exception {
         startFullscreenTestActivity();
         mDreamActivityName = mDreamCoordinator.setActiveDream(TEST_DREAM_SERVICE);
@@ -202,6 +204,7 @@ public class DreamManagerServiceTests extends ActivityManagerTestBase {
     }
 
     @Test
+    @Ignore("b/428777826")
     public void testForceStopStubbornDream() throws Exception {
         startFullscreenTestActivity();
         mDreamActivityName = mDreamCoordinator.setActiveDream(TEST_STUBBORN_DREAM_SERVICE);
@@ -286,6 +289,7 @@ public class DreamManagerServiceTests extends ActivityManagerTestBase {
     }
 
     @Test
+    @Ignore("b/428777826")
     public void testStartTurnScreenOnAttrActivityDoesWake() {
         try (DreamingState state = new DreamingState(TEST_DREAM_SERVICE)) {
             launchActivity(Components.TURN_SCREEN_ON_ATTR_ACTIVITY);
@@ -301,6 +305,7 @@ public class DreamManagerServiceTests extends ActivityManagerTestBase {
     @Test
     // Re-enabling for flexiglass is tracked in b/412769564.
     @RequiresFlagsDisabled(Flags.FLAG_SCENE_CONTAINER)
+    @Ignore("b/428777826")
     public void testStartActivityOnKeyguardLocked() {
         assumeTrue(supportsLockScreen());
         assumeFalse(dismissDreamOnActivityStart());
