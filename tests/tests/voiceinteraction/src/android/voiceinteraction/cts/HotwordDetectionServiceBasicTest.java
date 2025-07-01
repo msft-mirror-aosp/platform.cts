@@ -130,26 +130,9 @@ public class HotwordDetectionServiceBasicTest {
     private static final int TEMPORARY_SERVICE_DURATION_MS = 10000;
     private static final String KEY_WEARABLE_SENSING_SERVICE_ENABLED = "service_enabled";
 
-    private final CountDownLatch mLatch = new CountDownLatch(1);
-
-    private volatile String mOpNoted = "";
-
-    private final AppOpsManager mAppOpsManager = sInstrumentation.getContext()
-            .getSystemService(AppOpsManager.class);
-
-    private final AppOpsManager.OnOpNotedListener mOnOpNotedListener =
-            (op, uid, pkgName, attributionTag, flags, result) -> {
-                Log.d(TAG, "Get OnOpNotedListener callback op = " + op + ", uid = " + uid);
-                // We adopt ShellPermissionIdentity for RECORD_AUDIO to pass the permission check,
-                // so the uid should be the shell uid.
-                if (Process.myUserHandle().getUid(Process.SHELL_UID) == uid &&
-                            op.equals(AppOpsManager.OPSTR_RECORD_AUDIO)) {
-                    if (mLatch != null) {
-                        mLatch.countDown();
-                    }
-                }
-                mOpNoted = op;
-            };
+    private final AppOpsManager mAppOpsManager =
+            sInstrumentation.getContext().getSystemService(AppOpsManager.class);
+    private OpNotedListener mOpNotedListener = new OpNotedListener();
 
     private CtsBasicVoiceInteractionService mService;
 
@@ -2180,7 +2163,7 @@ public class HotwordDetectionServiceBasicTest {
             if (mAppOpsManager != null) {
                 mAppOpsManager.startWatchingNoted(new String[]{
                         AppOpsManager.OPSTR_RECORD_AUDIO},
-                        mOnOpNotedListener);
+                        mOpNotedListener);
             }
         });
     }
@@ -2188,12 +2171,12 @@ public class HotwordDetectionServiceBasicTest {
     private void stopWatchingNoted() {
         runWithShellPermissionIdentity(() -> {
             if (mAppOpsManager != null) {
-                mAppOpsManager.stopWatchingNoted(mOnOpNotedListener);
+                mAppOpsManager.stopWatchingNoted(mOpNotedListener);
             }
         });
     }
 
-    private void verifyRecordAudioNote(boolean shouldNote) throws Exception {
+    private void verifyRecordAudioNote(boolean shouldOpBeNoted) throws Exception {
         if (sPkgMgr.hasSystemFeature(PackageManager.FEATURE_LEANBACK)) {
             // TODO: test TV indicator
         } else if (sPkgMgr.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE)) {
@@ -2201,11 +2184,48 @@ public class HotwordDetectionServiceBasicTest {
         } else if (sPkgMgr.hasSystemFeature(PackageManager.FEATURE_WATCH)) {
             // The privacy chips/indicators are not implemented on Wear
         } else {
-            boolean isNoted = mLatch.await(Helper.CLEAR_CHIP_MS, TimeUnit.MILLISECONDS);
-            assertThat(isNoted).isEqualTo(shouldNote);
-            if (isNoted) {
-                assertThat(mOpNoted).isEqualTo(AppOpsManager.OPSTR_RECORD_AUDIO);
+            assertThat(mOpNotedListener.await(Helper.CLEAR_CHIP_MS))
+                    .isEqualTo(shouldOpBeNoted);
+        }
+    }
+
+    // Package private for HotwordServiceStressTest
+    static final class OpNotedListener implements AppOpsManager.OnOpNotedListener {
+        private boolean mAwaited = false;
+        private boolean mOpNoted = false;
+
+        @Override
+        public synchronized void onOpNoted(
+                String op, int uid, String pkgName, String attributionTag, int flags, int result) {
+            if (Process.myUserHandle().getUid(Process.SHELL_UID) == uid
+                    && AppOpsManager.OPSTR_RECORD_AUDIO.equals(op)) {
+                mOpNoted = true;
+                notify();
             }
+        }
+
+        public synchronized void reset() {
+            mOpNoted = false;
+            mAwaited = false;
+        }
+
+        // Wait for an onOpNoted since the last reset() or construction. Times out after timeoutMs
+        // Must call reset() between subsequent invocations, or will throw
+        public synchronized boolean await(long timeoutMs) throws Exception {
+            if (mAwaited) {
+                throw new IllegalStateException("await() has already been called on this detector "
+                        + "instance. Call reset() before each await.");
+            }
+            mAwaited = true;
+            long deadline = SystemClock.uptimeMillis() + timeoutMs;
+            while (!mOpNoted) {
+                long delay = deadline - SystemClock.uptimeMillis();
+                if (delay <= 0) {
+                    break;
+                }
+                wait(delay);
+            }
+            return mOpNoted;
         }
     }
 

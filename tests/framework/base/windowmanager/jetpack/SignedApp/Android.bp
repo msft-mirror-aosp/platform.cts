@@ -19,7 +19,10 @@ package {
 android_test {
     name: "CtsWindowManagerJetpackSignedApp",
     certificate: ":ec-p256",
-    srcs: ["src/**/*.java"],
+    srcs: [
+        "src/**/*.java",
+        "src/**/*.kt",
+    ],
     static_libs: [
         "androidx.test.ext.junit",
         "androidx.test.rules",

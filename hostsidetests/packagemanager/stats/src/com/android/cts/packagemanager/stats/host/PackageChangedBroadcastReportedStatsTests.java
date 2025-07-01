@@ -54,6 +54,16 @@ public class PackageChangedBroadcastReportedStatsTests extends BaseHostJUnit4Tes
     private static final String HELPER_PACKAGE = "com.android.cts.packagemanager.stats.device";
     private static final String HELPER_CLASS =
             HELPER_PACKAGE + ".ComponentStateChangedReportedStatsTestsHelper";
+    private static final String STATIC_SHARED_LIB_PROVIDER1_APK =
+            "CtsStatsdAtomStaticSharedLibProviderApp1.apk";
+    private static final String STATIC_SHARED_LIB_PROVIDER2_APK =
+            "CtsStatsdAtomStaticSharedLibProviderApp2.apk";
+    private static final String STATIC_SHARED_LIB_PROVIDER_PACKAGE =
+            "com.android.cts.packagemanager.stats.staticsharedlibprovider";
+    private static final String STATIC_SHARED_LIB_CONSUMER_APK =
+            "CtsStatsdAtomStaticSharedLibConsumerApp.apk";
+    private static final String STATIC_SHARED_LIB_CONSUMER_PACKAGE =
+            "com.android.cts.packagemanager.stats.staticsharedlibconsumerapp";
     private static final String TEST_METHOD_SET_APPLICATION_ENABLED_SETTING =
             "testSetApplicationEnabledSetting";
     private static final String TEST_METHOD_SET_COMPONENT_ENABLED_SETTING_FOR_LAUNCHER_ACTIVITY =
@@ -75,6 +85,8 @@ public class PackageChangedBroadcastReportedStatsTests extends BaseHostJUnit4Tes
     @After
     public void tearDown() throws Exception {
         getDevice().uninstallPackage(TEST_INSTALL_PACKAGE);
+        getDevice().uninstallPackage(STATIC_SHARED_LIB_PROVIDER_PACKAGE);
+        getDevice().uninstallPackage(STATIC_SHARED_LIB_CONSUMER_PACKAGE);
         ConfigUtils.removeConfig(getDevice());
         ReportUtils.clearReports(getDevice());
     }
@@ -425,6 +437,47 @@ public class PackageChangedBroadcastReportedStatsTests extends BaseHostJUnit4Tes
         assertThat(atom.getChangedUid())
                 .isEqualTo(
                         PackageManagerStatsTestsBase.getAppUid(getDevice(), TEST_INSTALL_PACKAGE));
+    }
+
+    @Test
+    public void testPackageChangedBroadcastReportedForStaticSharedLibraryChanged()
+            throws Throwable {
+        ConfigUtils.uploadConfigForPushedAtom(
+                getDevice(),
+                DeviceUtils.STATSD_ATOM_TEST_PKG,
+                PackagemanagerExtensionAtoms.PACKAGE_CHANGED_BROADCAST_REPORTED_FIELD_NUMBER);
+        RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_SHORT);
+
+        ExtensionRegistry registry = ExtensionRegistry.newInstance();
+        PackagemanagerExtensionAtoms.registerAllExtensions(registry);
+
+        // Install the static shared library.
+        installPackage(STATIC_SHARED_LIB_PROVIDER1_APK);
+
+        // Install the client
+        installPackage(STATIC_SHARED_LIB_CONSUMER_APK);
+
+        // Update the static shared library.
+        installPackage(STATIC_SHARED_LIB_PROVIDER2_APK);
+
+        List<StatsLog.EventMetricData> data =
+                ReportUtils.getEventMetricDataList(getDevice(), registry);
+        data =
+                retrieveEventMetricDataChangeFromTestApp(
+                        data,
+                        PackageChangedReason.PACKAGE_CHANGED_REASON_STATIC_SHARED_LIBRARY_CHANGED,
+                        STATIC_SHARED_LIB_CONSUMER_PACKAGE);
+        assertThat(data.size()).isEqualTo(1);
+
+        PackageChangedBroadcastReported atom =
+                data.get(0)
+                        .getAtom()
+                        .getExtension(PackagemanagerExtensionAtoms.packageChangedBroadcastReported);
+        assertThat(atom.getCallingUid()).isEqualTo(SYSTEM_UID);
+        assertThat(atom.getChangedUid())
+                .isEqualTo(
+                        PackageManagerStatsTestsBase.getAppUid(
+                                getDevice(), STATIC_SHARED_LIB_CONSUMER_PACKAGE));
     }
 
     List<StatsLog.EventMetricData> retrieveEventMetricDataChangeFromTestApp(

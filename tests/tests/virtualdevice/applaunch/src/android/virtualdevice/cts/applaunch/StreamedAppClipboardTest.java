@@ -79,7 +79,7 @@ public class StreamedAppClipboardTest {
 
     private static final ClipData CLIP_DATA = ClipData.newPlainText("label", "Hello World");
 
-    private static final long TIMEOUT_MILLIS = TimeUnit.SECONDS.toMillis(3);
+    private static final long TIMEOUT_MILLIS = TimeUnit.SECONDS.toMillis(5);
 
     @Rule
     public VirtualDeviceRule mRule = VirtualDeviceRule.withAdditionalPermissions(

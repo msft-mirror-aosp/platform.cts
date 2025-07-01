@@ -67,10 +67,10 @@ public class LocationDisabledAppOpsTest extends StsExtraBusinessLogicTestCase {
     @AsbSecurityTest(cveBugId = 231496105)
     public void testLocationAppOpIsIgnoredForAppsWhenLocationIsDisabled() {
         PackageTagsList ignoreList = mLm.getIgnoreSettingsAllowlist();
-        PackageTagsList adasAllowlist = mLm.getAdasAllowlist();
-
+        PackageTagsList[] adasAllowlist = new PackageTagsList[1];
         UserHandle[] userArr = {UserHandle.SYSTEM};
         runWithShellPermissionIdentity(() -> {
+            adasAllowlist[0] = mLm.getAdasAllowlist();
             userArr[0] = UserHandle.of(ActivityManager.getCurrentUser());
         });
 
@@ -100,7 +100,7 @@ public class LocationDisabledAppOpsTest extends StsExtraBusinessLogicTestCase {
                         });
                         if (mode[0] == MODE_ALLOWED && !ignoreList.containsPackageWithAllTags(pi.packageName)) {
                             if (mIsAutomotive) {
-                                if (!adasAllowlist.containsPackageWithAllTags(pi.packageName)) {
+                                if (!adasAllowlist[0].containsPackageWithAllTags(pi.packageName)) {
                                     bypassedNoteOps.add(pi.packageName);
                                 }
                             } else {
@@ -116,7 +116,7 @@ public class LocationDisabledAppOpsTest extends StsExtraBusinessLogicTestCase {
                         });
                         if (mode[0] == MODE_ALLOWED && !ignoreList.containsPackage(pi.packageName)) {
                             if (mIsAutomotive) {
-                                if (!adasAllowlist.containsPackage(pi.packageName)) {
+                                if (!adasAllowlist[0].containsPackage(pi.packageName)) {
                                     bypassedCheckOps.add(pi.packageName);
                                 }
                             } else {

@@ -47,6 +47,9 @@ java_defaults {
         ":CtsStatsdAtomApp",
         ":CtsStatsdAtomTestComponentStateApp",
         ":PackageManagerStatsTestsHelper",
+        ":CtsStatsdAtomStaticSharedLibConsumerApp",
+        ":CtsStatsdAtomStaticSharedLibProviderApp1",
+        ":CtsStatsdAtomStaticSharedLibProviderApp2",
     ],
     java_resource_dirs: ["res"],
 }

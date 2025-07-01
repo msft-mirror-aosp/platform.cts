@@ -113,7 +113,6 @@ class ZoomTestTELE(its_base_test.ItsBaseTest):
       # Do captures over zoom range and find ArUco markers with cv2
       img_name_stem = f'{os.path.join(self.log_path, _NAME)}'
       req = capture_request_utils.auto_capture_request()
-      test_failed = False
 
       for fmt in _TEST_FORMATS:
         logging.debug('testing %s format', fmt)

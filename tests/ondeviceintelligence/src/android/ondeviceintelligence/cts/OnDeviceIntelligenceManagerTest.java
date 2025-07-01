@@ -1243,15 +1243,16 @@ public class OnDeviceIntelligenceManagerTest {
 
         assertThat(loadedLatch.await(2, SECONDS)).isTrue();
 
-        // The latch should not be counted down to 0.
-        assertThat(unloadedLatch.await(2, SECONDS)).isFalse();
-        // Should have only counted down once.
-        assertThat(unloadedLatch.getCount()).isEqualTo(1);
 
         // Trigger model unloaded
         mOnDeviceIntelligenceManager.processRequest(feature,
                 Bundle.EMPTY, REQUEST_TYPE_TRIGGER_MODEL_UNLOAD, null,
                 null, EXECUTOR, mNoOpProcessingCallback);
+
+        // The latch should not be counted down to 0.
+        assertThat(unloadedLatch.await(2, SECONDS)).isFalse();
+        // Should have only counted down once.
+        assertThat(unloadedLatch.getCount()).isEqualTo(1);
 
         // Unregister the listener and verify no more callbacks are received.
         mOnDeviceIntelligenceManager.unregisterInferenceServiceLifecycleListener(listener);

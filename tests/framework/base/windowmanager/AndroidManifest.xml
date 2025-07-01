@@ -716,6 +716,9 @@
                   android:theme="@style/MoveAnimationTestTheme.NoMove"/>
 
         <activity android:name="android.server.wm.window.ScreenRecordingCallbackTests$ScreenRecordingCallbackActivity" />
+
+        <activity android:name="android.server.wm.other.ScreenCaptureTest$TestActivity" />
+        <activity android:name="android.server.wm.other.ScreenCaptureTest$SecureTestActivity" />
     </application>
 
     <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner"

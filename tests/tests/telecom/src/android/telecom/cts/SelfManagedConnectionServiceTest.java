@@ -631,9 +631,20 @@ public class SelfManagedConnectionServiceTest extends BaseTelecomTestWithMockSer
         // Check that we see the expected log call.
         if (callsCursor.moveToNext()) {
             String number = callsCursor.getString(numberIndex);
-            assertEquals(loggedAddress.getSchemeSpecificPart(), number);
+            // Self-managed calls are not longer logged even with
+            // PhoneAccount.EXTRA_LOG_SELF_MANAGED_CALLS if the integrated call logs flag is
+            // enabled.
+            if (Flags.integratedCallLogs()) {
+                assertNotEquals(loggedAddress.getSchemeSpecificPart(), number);
+            } else {
+                assertEquals(loggedAddress.getSchemeSpecificPart(), number);
+            }
         } else {
-            fail("Expected a logged call.");
+            if (Flags.integratedCallLogs()) {
+                // This is great; there was nothing else in the call log!
+            } else {
+                fail("Expected a logged call.");
+            }
         }
 
         // Now check to ensure the call we DID NOT want to have logged is indeed not logged.

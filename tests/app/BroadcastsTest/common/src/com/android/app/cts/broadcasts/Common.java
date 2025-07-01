@@ -27,4 +27,10 @@ public class Common {
 
     public static final String ORDERED_BROADCAST_RESULT_DATA =
             "com.android.app.cts.broadcasts.helper.RESULT_DATA";
+
+    public static final String ACTION_QUERY_PACKAGE_NAME =
+            "com.android.app.cts.broadcasts.helper.QUERY_PACKAGE_NAME";
+
+    public static final String EXTRA_PACKAGE_NAMES =
+            "com.android.app.cts.broadcasts.helper.extra.PACKAGE_NAMES";
 }

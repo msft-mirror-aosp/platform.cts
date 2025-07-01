@@ -41,27 +41,27 @@ public class CtsInteractiveChooserTestActivity extends Activity {
     private static final String CTS_ALT_DATA_TYPE = "test/cts_alternate_interactive";
     private static final String TEST_CATEGORY = "android.sharesheet.cts.TEST_CATEGORY";
     @Nullable private ChooserSession mChooserSession;
+
     private final ChooserSession.StateListener mChooserSessionStateListener =
             new ChooserSession.StateListener() {
                 @Override
                 public void onStateChanged(int state) {
-                    if (state == ChooserSession.STATE_STARTED) {
-                        onSessionActiveStateChanged(true);
-                    } else if (state == ChooserSession.STATE_CLOSED) {
-                        mChooserSession = null;
-                        onSessionActiveStateChanged(false);
-                    }
+                    onChooserStateChanged(state);
                 }
 
                 @Override
-                public void onBoundsChanged(@NonNull Rect size) {
-                    mBoundsLabel.setVisibility(View.VISIBLE);
+                public void onBoundsChanged(@NonNull Rect bounds) {
+                    onChooserBoundsChanged(bounds);
                 }
             };
     private Button mLaunchChooser;
     private ViewGroup mChooserActionRow;
-    private View mBoundsLabel;
+    private View mBoundsUpdatedLabel;
+    private View mBoundsMovedLabel;
+    private Button mCollapseButton;
     private boolean mIsTargetEnabled = true;
+    @Nullable private Rect mCurrentBounds;
+    @Nullable private Rect mPreCollapseBounds;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -103,7 +103,11 @@ public class CtsInteractiveChooserTestActivity extends Activity {
         Button disableButton = findViewById(R.id.target_status);
         disableButton.setOnClickListener((v) -> toggleTargetEnableStatus((Button) v));
 
-        mBoundsLabel = findViewById(R.id.bounds_updated);
+        mCollapseButton = findViewById(R.id.collapse);
+        mCollapseButton.setOnClickListener((v) -> minimizeChooser());
+
+        mBoundsUpdatedLabel = findViewById(R.id.bounds_updated);
+        mBoundsMovedLabel = findViewById(R.id.bounds_moved);
 
         onSessionActiveStateChanged(mChooserSession != null);
     }
@@ -112,8 +116,25 @@ public class CtsInteractiveChooserTestActivity extends Activity {
     protected void onDestroy() {
         super.onDestroy();
         if (mChooserSession != null) {
-            mChooserSession.close();
+            mChooserSession.endSession();
             mChooserSession = null;
+        }
+    }
+
+    private void onChooserStateChanged(int state) {
+        if (state == ChooserSession.STATE_STARTED) {
+            onSessionActiveStateChanged(true);
+        } else if (state == ChooserSession.STATE_CLOSED) {
+            mChooserSession = null;
+            onSessionActiveStateChanged(false);
+        }
+    }
+
+    private void onChooserBoundsChanged(Rect bounds) {
+        mCurrentBounds = bounds;
+        mBoundsUpdatedLabel.setVisibility(View.VISIBLE);
+        if (mPreCollapseBounds != null && mPreCollapseBounds.top < bounds.top) {
+            mBoundsMovedLabel.setVisibility(View.VISIBLE);
         }
     }
 
@@ -126,7 +147,7 @@ public class CtsInteractiveChooserTestActivity extends Activity {
         if (mChooserSession == null) {
             return;
         }
-        mChooserSession.close();
+        mChooserSession.endSession();
         mChooserSession = null;
         onSessionActiveStateChanged(false);
     }
@@ -153,6 +174,14 @@ public class CtsInteractiveChooserTestActivity extends Activity {
         mIsTargetEnabled = !mIsTargetEnabled;
         mChooserSession.setTargetsEnabled(mIsTargetEnabled);
         button.setText(mIsTargetEnabled ? "Disable" : "Enable");
+    }
+
+    private void minimizeChooser() {
+        mPreCollapseBounds = mCurrentBounds == null ? null : mCurrentBounds;
+        mBoundsMovedLabel.setVisibility(View.GONE);
+        if (mChooserSession != null) {
+            mChooserSession.setMinimized(true);
+        }
     }
 
     private void maybeStartNewSession() {

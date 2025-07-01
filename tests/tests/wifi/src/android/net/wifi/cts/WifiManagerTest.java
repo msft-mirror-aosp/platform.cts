@@ -165,6 +165,7 @@ import java.net.InetAddress;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -577,9 +578,9 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
         synchronized (sMySync) {
             if (sNetworkInfo.getState() == state) return;
             long timeout = System.currentTimeMillis() + timeoutMillis;
-            while (System.currentTimeMillis() < timeout
-                    && sNetworkInfo.getState() != state)
+            while (System.currentTimeMillis() < timeout && sNetworkInfo.getState() != state) {
                 sMySync.wait(WAIT_MSEC);
+            }
             assertEquals(state, sNetworkInfo.getState());
         }
     }
@@ -616,16 +617,18 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
 
     private boolean existSSID(String ssid) {
         for (final WifiConfiguration w : sWifiManager.getConfiguredNetworks()) {
-            if (w.SSID.equals(ssid))
+            if (w.SSID.equals(ssid)) {
                 return true;
+            }
         }
         return false;
     }
 
     private int findConfiguredNetworks(String SSID, List<WifiConfiguration> networks) {
         for (final WifiConfiguration w : networks) {
-            if (w.SSID.equals(SSID))
+            if (w.SSID.equals(SSID)) {
                 return networks.indexOf(w);
+            }
         }
         return -1;
     }
@@ -4307,6 +4310,68 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
         new WifiNetworkConnectionStatistics(stats);
     }
 
+    public static class TestRestrictAutoJoinToSubIdCallback
+            implements WifiManager.RestrictAutoJoinToSubIdCallback {
+        private static class Event {}
+
+        private static class StartedEvent extends Event {
+            public final int subscriptionId;
+
+            StartedEvent(int subId) {
+                this.subscriptionId = subId;
+            }
+
+            @Override
+            public String toString() {
+                return "StartedEvent[subId=" + subscriptionId + "]";
+            }
+        }
+
+        private static class StoppedEvent extends Event {
+            @Override
+            public String toString() {
+                return "StoppedEvent";
+            }
+        }
+
+        private final Object mLock;
+        private final ArrayDeque<Event> mEvents = new ArrayDeque<>();
+
+        TestRestrictAutoJoinToSubIdCallback(Object lock) {
+            mLock = lock;
+        }
+
+        @Override
+        public void onRestrictionStarted(int subscriptionId) {
+            synchronized (mLock) {
+                mEvents.add(new StartedEvent(subscriptionId));
+                mLock.notifyAll();
+            }
+        }
+
+        @Override
+        public void onRestrictionStopped() {
+            synchronized (mLock) {
+                mEvents.add(new StoppedEvent());
+                mLock.notifyAll();
+            }
+        }
+
+        /** Waits for the next event and returns it. Fails the test if the timeout is exceeded. */
+        public Event waitForNextEvent(long timeoutMillis) throws InterruptedException {
+            synchronized (mLock) {
+                long deadline = System.currentTimeMillis() + timeoutMillis;
+                while (mEvents.isEmpty() && System.currentTimeMillis() < deadline) {
+                    mLock.wait(deadline - System.currentTimeMillis());
+                }
+                if (mEvents.isEmpty()) {
+                    fail("Timed out waiting for RestrictAutoJoinToSubIdCallback event.");
+                }
+                return mEvents.poll();
+            }
+        }
+    }
+
     /**
      * Verify that startRestrictingAutoJoinToSubscriptionId disconnects wifi and disables
      * auto-connect to non-carrier-merged networks. Then verify that
@@ -4314,18 +4379,63 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
      * again.
      */
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
+    @RequiresFlagsEnabled(Flags.FLAG_RESTRICT_AUTOJOIN_CALLBACK_API)
     @Test
     public void testStartAndStopRestrictingAutoJoinToSubscriptionId() throws Exception {
-        int fakeSubscriptionId = 5;
-        ShellIdentityUtils.invokeWithShellPermissions(() ->
-                sWifiManager.startRestrictingAutoJoinToSubscriptionId(fakeSubscriptionId));
-        waitForDisconnection();
-        startScan();
-        ensureNotConnected();
-        ShellIdentityUtils.invokeWithShellPermissions(() ->
-                sWifiManager.stopRestrictingAutoJoinToSubscriptionId());
-        startScan();
-        waitForConnection();
+        final int fakeSubscriptionId = 5;
+        final TestRestrictAutoJoinToSubIdCallback callback =
+                new TestRestrictAutoJoinToSubIdCallback(mLock);
+        UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
+
+        try {
+            uiAutomation.adoptShellPermissionIdentity();
+            sWifiManager.addRestrictAutoJoinToSubIdCallback(mExecutor, callback);
+
+            // Verify that the initial callback reports that the restriction is inactive.
+            TestRestrictAutoJoinToSubIdCallback.Event initialEvent =
+                    callback.waitForNextEvent(TEST_WAIT_DURATION_MS);
+            assertTrue(
+                    "Initial event should be StoppedEvent, but was " + initialEvent,
+                    initialEvent instanceof TestRestrictAutoJoinToSubIdCallback.StoppedEvent);
+
+            // Start the restriction.
+            sWifiManager.startRestrictingAutoJoinToSubscriptionId(fakeSubscriptionId);
+
+            // Verify the listener receives the 'started' event with the correct subId.
+            TestRestrictAutoJoinToSubIdCallback.Event startedEvent =
+                    callback.waitForNextEvent(TEST_WAIT_DURATION_MS);
+            assertTrue(
+                    "Event after starting should be StartedEvent, but was " + startedEvent,
+                    startedEvent instanceof TestRestrictAutoJoinToSubIdCallback.StartedEvent);
+            assertEquals(
+                    "Subscription ID should match",
+                    fakeSubscriptionId,
+                    ((TestRestrictAutoJoinToSubIdCallback.StartedEvent) startedEvent)
+                            .subscriptionId);
+
+            // Verify that the restriction prevents us from auto-joining our saved network.
+            waitForDisconnection();
+            startScan();
+            ensureNotConnected();
+
+            // Stop the restriction.
+            sWifiManager.stopRestrictingAutoJoinToSubscriptionId();
+
+            // Verify the listener receives the 'stopped' event.
+            TestRestrictAutoJoinToSubIdCallback.Event stoppedEvent =
+                    callback.waitForNextEvent(TEST_WAIT_DURATION_MS);
+            assertTrue(
+                    "Event after stopping should be StoppedEvent, but was " + stoppedEvent,
+                    stoppedEvent instanceof TestRestrictAutoJoinToSubIdCallback.StoppedEvent);
+
+            // Verify that we can auto-join the saved network again.
+            startScan();
+            waitForConnection();
+        } finally {
+            // Ensure the listener is always unregistered.
+            sWifiManager.removeRestrictAutoJoinToSubIdCallback(callback);
+            uiAutomation.dropShellPermissionIdentity();
+        }
     }
 
     private class TestActiveCountryCodeChangedCallback implements

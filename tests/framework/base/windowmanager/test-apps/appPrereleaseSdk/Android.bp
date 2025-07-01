@@ -19,10 +19,14 @@ package {
 android_test_helper_app {
     name: "CtsDevicePrereleaseSdkApp",
     defaults: ["cts_support_defaults"],
-    srcs: ["src/**/*.java"],
-    libs: [
-        "fake-framework",
+
+    srcs: [
+        "src/**/*.java",
+        "src/**/*.kt",
     ],
+    static_libs: ["cts-wm-app-base"],
+    libs: ["fake-framework"],
+
     // Tag this module as a cts test artifact
     test_suites: [
         "cts",

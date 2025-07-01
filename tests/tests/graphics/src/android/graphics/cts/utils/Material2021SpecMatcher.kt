@@ -32,8 +32,9 @@ class Material2021SpecMatcher : BitmapMatcher() {
         width: Int,
         height: Int,
         regions: List<Rect>,
+        excludedRegions: List<Rect>,
     ): MatchResult {
-        val filter = getFilter(width, height, regions)
+        val filter = getFilter(width, height, regions, excludedRegions)
         var different = 0
         var same = 0
         var similar = 0

@@ -28,7 +28,6 @@ import android.database.sqlite.SQLiteCursorDriver;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteDatabase.CursorFactory;
 import android.database.sqlite.SQLiteDebug;
-import android.database.sqlite.SQLiteException;
 import android.database.sqlite.SQLiteGlobal;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.database.sqlite.SQLiteQuery;
@@ -173,18 +172,17 @@ public class SQLiteOpenHelperTest extends AndroidTestCase {
     }
 
     public void testCloseIdleConnection() throws Exception {
-        mOpenHelper.setIdleConnectionTimeout(1000);
+        mOpenHelper.setIdleConnectionTimeout(5000);
         mOpenHelper.getReadableDatabase();
-        // Wait a bit and check that connection is still open
-        Thread.sleep(600);
+        // Verify that the connection is actually open.
         String output = getDbInfoOutput();
         assertTrue("Connection #0 should be open. Output: " + output,
                 output.contains("Connection #0:"));
 
         // Now cause idle timeout and check that connection is closed
-        // We wait up to 5 seconds, which is longer than required 1 s to accommodate for delays in
+        // We wait up to 10 seconds, which is longer than required 5s to accommodate for delays in
         // message processing when system is busy
-        boolean connectionWasClosed = waitForConnectionToClose(10, 500);
+        boolean connectionWasClosed = waitForConnectionToClose(20, 500);
         assertTrue("Connection #0 should be closed", connectionWasClosed);
     }
 

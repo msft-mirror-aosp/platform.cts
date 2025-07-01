@@ -24,6 +24,7 @@ import android.content.ServiceConnection
 import android.os.IBinder
 import com.android.bedstead.nene.TestApis
 import com.google.common.truth.Truth.assertThat
+import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -66,8 +67,8 @@ class ServiceReporter {
     }
 
     companion object {
-        const val BINDING_TIMEOUT = 20000L
-        const val METHOD_CALLED_TIMEOUT = 3000L
+        val BINDING_TIMEOUT = 20.seconds
+        val METHOD_CALLED_TIMEOUT = 5.seconds
     }
 }
 

@@ -26,6 +26,7 @@
                   android:exported="true">
             <intent-filter>
                 <action android:name="com.android.app.cts.broadcasts.helper.ORDERED" />
+                <action android:name="com.android.app.cts.broadcasts.helper.QUERY_PACKAGE_NAME" />
             </intent-filter>
         </receiver>
     </application>

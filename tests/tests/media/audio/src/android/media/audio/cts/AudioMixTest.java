@@ -20,8 +20,10 @@ import static android.media.AudioFormat.CHANNEL_OUT_MONO;
 import static android.media.AudioFormat.CHANNEL_OUT_STEREO;
 import static android.media.AudioFormat.ENCODING_DEFAULT;
 import static android.media.AudioFormat.ENCODING_PCM_16BIT;
+import static android.media.audio.Flags.FLAG_DAP_INJECTION_STARVE_MANAGEMENT;
 import static android.media.audiopolicy.AudioMixingRule.MIX_ROLE_INJECTOR;
 import static android.media.audiopolicy.AudioMixingRule.MIX_ROLE_PLAYERS;
+import static android.media.audiopolicy.AudioMixingRule.RULE_MATCH_ATTRIBUTE_CAPTURE_PRESET;
 import static android.media.audiopolicy.AudioMixingRule.RULE_MATCH_AUDIO_SESSION_ID;
 import static android.media.audiopolicy.AudioMixingRule.RULE_MATCH_UID;
 
@@ -31,10 +33,12 @@ import static org.junit.Assert.assertThrows;
 import android.media.AudioAttributes;
 import android.media.AudioFormat;
 import android.media.AudioSystem;
+import android.media.MediaRecorder;
 import android.media.audiopolicy.AudioMix;
 import android.media.audiopolicy.AudioMixingRule;
 import android.media.audiopolicy.AudioPolicyConfig;
 import android.os.Parcel;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
@@ -151,6 +155,33 @@ public class AudioMixTest {
                 .build();
         equalsTester.addEqualityGroup(playbackAudioMixWithMediaUsage,
                 writeToAndFromParcel(playbackAudioMixWithMediaUsage));
+
+        equalsTester.testEquals();
+    }
+
+    @RequiresFlagsEnabled(FLAG_DAP_INJECTION_STARVE_MANAGEMENT)
+    @Test
+    public void testEqualsInjectSilence() {
+        // TODO move this test to testEquals() test once flag is removed
+        final EqualsTester equalsTester = new EqualsTester();
+
+        final AudioAttributes camcorderAttr = new AudioAttributes.Builder()
+                .setCapturePreset(MediaRecorder.AudioSource.CAMCORDER)
+                .build();
+        final boolean injectSilenceOnStarvation = true;
+        final AudioMix recordAudioMixWithCamcorderPreset = new AudioMix.Builder(
+                new AudioMixingRule.Builder()
+                        .addRule(camcorderAttr, RULE_MATCH_ATTRIBUTE_CAPTURE_PRESET)
+                        .build())
+                .setFormat(OUTPUT_FORMAT_MONO_16KHZ_PCM)
+                .setRouteFlags(AudioMix.ROUTE_FLAG_LOOP_BACK)
+                .setInjectSilenceOnStarvation(injectSilenceOnStarvation)
+                .build();
+        assertEquals(OUTPUT_FORMAT_MONO_16KHZ_PCM, recordAudioMixWithCamcorderPreset.getFormat());
+        assertEquals(injectSilenceOnStarvation,
+                recordAudioMixWithCamcorderPreset.isInjectingSilenceOnStarvation());
+        equalsTester.addEqualityGroup(recordAudioMixWithCamcorderPreset,
+                writeToAndFromParcel(recordAudioMixWithCamcorderPreset));
 
         equalsTester.testEquals();
     }

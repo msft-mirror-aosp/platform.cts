@@ -16,10 +16,15 @@
 
 package android.supervision.cts
 
+import android.Manifest.permission.BYPASS_ROLE_QUALIFICATION
+import android.Manifest.permission.MANAGE_ROLE_HOLDERS
+import android.Manifest.permission.OBSERVE_ROLE_HOLDERS
+import android.Manifest.permission.QUERY_USERS
 import android.app.supervision.flags.Flags
 import com.android.bedstead.flags.annotations.RequireFlagsEnabled
 import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.multiuser.annotations.EnsureHasNoAdditionalUser
+import com.android.bedstead.permissions.annotations.EnsureHasPermission
 import com.android.compatibility.common.util.ApiTest
 import com.google.common.truth.Truth.assertThat
 import org.junit.Test
@@ -36,6 +41,12 @@ class SupervisionAppServiceTest : BaseSupervisionTest() {
                 "android.app.supervision.SupervisionAppService#onSupervisionEnabled",
                 "android.app.supervision.SupervisionAppService#onSupervisionDisabled",
             ]
+    )
+    @EnsureHasPermission(
+        BYPASS_ROLE_QUALIFICATION,
+        MANAGE_ROLE_HOLDERS,
+        QUERY_USERS,
+        OBSERVE_ROLE_HOLDERS
     )
     @EnsureHasNoAdditionalUser
     fun testSupervisionAppService_withSystemSupervisionRoleHeld() {

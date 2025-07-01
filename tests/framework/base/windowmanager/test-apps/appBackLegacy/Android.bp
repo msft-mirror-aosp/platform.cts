@@ -18,12 +18,15 @@ package {
 
 android_test {
     name: "CtsBackLegacyApp",
-    srcs: ["src/**/*.java"],
-    manifest: "AndroidManifest.xml",
-    sdk_version: "test_current",
     defaults: ["cts_defaults"],
 
+    srcs: [
+        "src/**/*.java",
+        "src/**/*.kt",
+    ],
     static_libs: ["cts-wm-app-base"],
+
+    sdk_version: "test_current",
 
     // Tag this module as a cts test artifact
     test_suites: [

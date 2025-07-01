@@ -20,6 +20,7 @@ import threading
 import time
 
 import camera_properties_utils
+import gen2_rig_controller_utils
 import image_processing_utils
 import its_base_test
 import its_session_utils
@@ -33,7 +34,7 @@ _IMG_FORMAT = 'png'
 _JETPACK_CAMERA_APP_PACKAGE_NAME = 'com.google.jetpackcamera'
 _MIN_PHONE_MOVEMENT_ANGLE = 5  # Degrees
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
-_NUM_ROTATIONS = 24
+_NUM_ROTATIONS = 36
 _START_FRAME = 30  # Give 3A 1s to warm up.
 _VIDEO_DELAY_TIME = 3  # Seconds
 _VIDEO_DURATION = 5.5  # Seconds
@@ -68,16 +69,23 @@ def _collect_data(cam, dut, lens_facing, log_path,
       stabilization_mode=camera_properties_utils.STABILIZATION_MODE_ON,
   )
   # Start camera movement.
+  rotation_rig_args = (
+      rot_rig['cntl'],
+      rot_rig['ch'],
+      _NUM_ROTATIONS,
+      sensor_fusion_utils.ARDUINO_ANGLES_STABILIZATION,
+  )
+  if rot_rig['cntl'] == gen2_rig_controller_utils.DEFAULT_GEN2_ROTATOR_NAME:
+    rotate_func = gen2_rig_controller_utils.rotation_rig
+  else:
+    rotate_func = sensor_fusion_utils.rotation_rig
+    rotation_rig_args += (
+        servo_speed,
+        sensor_fusion_utils.ARDUINO_MOVE_TIME_STABILIZATION,
+    )
   movement = threading.Thread(
-      target=sensor_fusion_utils.rotation_rig,
-      args=(
-          rot_rig['cntl'],
-          rot_rig['ch'],
-          _NUM_ROTATIONS,
-          sensor_fusion_utils.ARDUINO_ANGLES_STABILIZATION,
-          servo_speed,
-          sensor_fusion_utils.ARDUINO_MOVE_TIME_STABILIZATION,
-      ),
+      target=rotate_func,
+      args=rotation_rig_args,
   )
   movement.start()
   cam.start_sensor_events()
@@ -185,8 +193,11 @@ def _initialize_rotation_rig(rot_rig, rotator_cntl, rotator_ch):
   """
   rot_rig['cntl'] = rotator_cntl
   rot_rig['ch'] = rotator_ch
-  if rot_rig['cntl'].lower() != sensor_fusion_utils.ARDUINO_STRING.lower():
-    raise AssertionError(f'You must use an arduino controller for {_NAME}.')
+  if rot_rig['cntl'].lower() not in sensor_fusion_utils.VALID_CONTROLLERS:
+    raise AssertionError(
+        'You must use a valid controller from '
+        f'{sensor_fusion_utils.VALID_CONTROLLERS}.'
+    )
   logging.debug('video qualities tested: %s', str(
       ui_interaction_utils.RATIO_TO_UI_DESCRIPTION.keys()))
   return rot_rig
