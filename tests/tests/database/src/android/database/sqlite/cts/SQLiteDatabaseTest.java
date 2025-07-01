@@ -46,7 +46,6 @@ import android.database.sqlite.SQLiteStatement;
 import android.database.sqlite.SQLiteTransactionListener;
 import android.icu.text.Collator;
 import android.icu.util.ULocale;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.test.MoreAsserts;
@@ -1986,14 +1985,13 @@ public class SQLiteDatabaseTest {
         SQLiteDatabase.OpenParams params = new SQLiteDatabase.OpenParams.Builder()
                 .setIdleConnectionTimeout(5000).build();
         mDatabase = SQLiteDatabase.openDatabase(mDatabaseFile, params);
-        // Wait a bit and check that connection is still open
-        Thread.sleep(600);
+        // Verify that the connection is actually open.
         String output = getDbInfoOutput();
         assertTrue("Connection #0 should be open. Output: " + output,
                 output.contains("Connection #0:"));
 
         // Now cause idle timeout and check that connection is closed
-        // We wait up to 10 seconds, which is longer than required 1 s to accommodate for delays in
+        // We wait up to 10 seconds, which is longer than required 5s to accommodate for delays in
         // message processing when system is busy
         boolean connectionWasClosed = waitForConnectionToClose(20, 500);
         assertTrue("Connection #0 should be closed", connectionWasClosed);
