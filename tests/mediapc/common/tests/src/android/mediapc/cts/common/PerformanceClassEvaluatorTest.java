@@ -18,38 +18,39 @@ package android.mediapc.cts.common;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
 import org.junit.runner.RunWith;
-import org.mockito.Mock;
-import org.mockito.Mockito;
-import org.mockito.MockitoAnnotations;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.junit.runners.JUnit4;
 
-@RunWith(MockitoJUnitRunner.class)
+@RunWith(JUnit4.class)
 public class PerformanceClassEvaluatorTest {
 
-    @Mock TestName mMockTestName;
-
-    @Before
-    public void setUp() throws Exception {
-        MockitoAnnotations.initMocks(this);
-    }
+   @Rule public final TestName testName = new TestName();
 
     @Test
     public void constructorTest_replacesNullWithEmpty() {
-        Mockito.when(mMockTestName.getMethodName()).thenReturn(null);
-
-        PerformanceClassEvaluator pce = new PerformanceClassEvaluator(mMockTestName);
+        PerformanceClassEvaluator pce = new PerformanceClassEvaluator(new FakeTestName(null));
         assertThat(pce.getTestName()).isEqualTo("");
     }
 
     @Test
     public void constructorTest_replacesCurlyBraces() {
-        Mockito.when(mMockTestName.getMethodName()).thenReturn("{}");
-
-        PerformanceClassEvaluator pce = new PerformanceClassEvaluator(mMockTestName);
+        PerformanceClassEvaluator pce = new PerformanceClassEvaluator(new FakeTestName("{}"));
         assertThat(pce.getTestName()).isEqualTo("()");
+    }
+
+      private static final class FakeTestName extends TestName {
+        private final String mMethodName;
+
+        FakeTestName(String methodName) {
+            mMethodName = methodName;
+        }
+
+        @Override
+        public String getMethodName() {
+            return mMethodName;
+        }
     }
 }
