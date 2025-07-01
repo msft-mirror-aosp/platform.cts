@@ -111,7 +111,7 @@ public class CtsChooserInteractiveSessionTest {
     /** Tests that an application can close an interactive Chooser session. */
     @ApiTest(
             apis = {
-                "android.service.chooser.ChooserSession#close",
+                "android.service.chooser.ChooserSession#endSession",
                 "android.service.chooser.ChooserSession#addStateListener",
                 "android.service.chooser.ChooserSession.StateListener#onStateChanged"
             })
@@ -231,6 +231,25 @@ public class CtsChooserInteractiveSessionTest {
         mDevice.pressBack();
     }
 
+    @ApiTest(
+            apis = {
+                "android.service.chooser.ChooserSession#setMinimized",
+                "android.service.chooser.ChooserSession.StateListener#onBoundsChanged"
+            })
+    @Test
+    public void test_setMinimized() {
+        launchTestActivity();
+
+        clickLaunchChooser();
+        waitForChooserToAppear();
+        verifyChooserReportedItsBounds();
+
+        clickCollapseButton();
+        mDevice.waitForIdle();
+
+        verifyChooserMovedDown();
+    }
+
     private void clickLaunchChooser() {
         onView(withId(R.id.launch_chooser)).perform(click());
     }
@@ -249,6 +268,10 @@ public class CtsChooserInteractiveSessionTest {
 
     private void clickDisableChooserTargetsButton() {
         clickTestAppButton("Disable");
+    }
+
+    private void clickCollapseButton() {
+        clickTestAppButton("Collapse");
     }
 
     private void clickEnableChooserTargetsButton() {
@@ -288,6 +311,16 @@ public class CtsChooserInteractiveSessionTest {
                                 By.pkg(mContext.getPackageName())
                                         .displayId(mMyDisplayId)
                                         .text("Bounds Updated")),
+                        WAIT_AND_ASSERT_FOUND_TIMEOUT_MS)
+                .click();
+    }
+
+    private void verifyChooserMovedDown() {
+        mDevice.wait(
+                        Until.findObject(
+                                By.pkg(mContext.getPackageName())
+                                        .displayId(mMyDisplayId)
+                                        .text("Bounds Moved")),
                         WAIT_AND_ASSERT_FOUND_TIMEOUT_MS)
                 .click();
     }

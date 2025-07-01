@@ -124,7 +124,7 @@ public class ChooserManagerTest {
 
         assertEquals(session, mChooserManager.getSession(session.getToken()));
 
-        session.close();
+        session.endSession();
 
         assertNull(mChooserManager.getSession(session.getToken()));
     }
