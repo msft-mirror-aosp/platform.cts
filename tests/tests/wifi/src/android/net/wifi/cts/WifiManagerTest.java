@@ -7798,8 +7798,8 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
     public void testQueryPrivilegedConfiguredNetworks() throws Exception {
         Mutable<Boolean> onResultCalled = new Mutable<Boolean>(false);
         Mutable<Boolean> onErrorCalled = new Mutable<Boolean>(false);
-        OutcomeReceiver<List<WifiConfiguration>, Error> resultsCallback =
-                new OutcomeReceiver<List<WifiConfiguration>, Error>() {
+        OutcomeReceiver<List<WifiConfiguration>, Exception> resultsCallback =
+                new OutcomeReceiver<List<WifiConfiguration>, Exception>() {
                     @Override
                     public void onResult(List<WifiConfiguration> configs) {
                         synchronized (mLock) {
@@ -7811,7 +7811,7 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
                     ;
 
                     @Override
-                    public void onError(Error error) {
+                    public void onError(Exception ex) {
                         synchronized (mLock) {
                             onErrorCalled.value = true;
                             mLock.notify();
