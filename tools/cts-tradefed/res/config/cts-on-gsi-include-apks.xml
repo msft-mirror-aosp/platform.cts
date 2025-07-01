@@ -139,4 +139,6 @@
     <!-- b/238155422 -->
     <option name="compatibility:include-filter" value="CtsNetTestCases android.net.cts.ConnectivityManagerTest#testSetAirplaneMode" />
 
+    <!-- b/152359655: ResumeOnReboot can't work on GSI -->
+    <option name="compatibility:include-filter" value="CtsResumeOnRebootHostTestCases android.appsecurity.cts.ResumeOnRebootHostTest" />
 </configuration>
