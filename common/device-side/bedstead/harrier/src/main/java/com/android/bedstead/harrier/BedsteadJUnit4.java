@@ -29,6 +29,7 @@ import com.android.bedstead.harrier.annotations.PolicyArgument;
 import com.android.bedstead.harrier.annotations.RequireRunOnInitialUser;
 import com.android.bedstead.harrier.annotations.StringTestParameter;
 import com.android.bedstead.harrier.annotations.UsesParameterizedTestGenerator;
+import com.android.bedstead.harrier.annotations.UsesParameterizedTestWithArgumentGenerator;
 import com.android.bedstead.harrier.annotations.meta.ParameterizedAnnotation;
 import com.android.bedstead.harrier.annotations.meta.RepeatingAnnotation;
 import com.android.bedstead.harrier.annotations.parameterized.IncludeNone;
@@ -554,6 +555,27 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
 
                     expandedMethods = expandedMethods.flatMap(
                             i -> applyEnumTestParameter(i, enumTestParameter));
+                } else {
+                    var generatorAnnotation = annotation.annotationType()
+                            .getAnnotation(UsesParameterizedTestWithArgumentGenerator.class);
+                    if (generatorAnnotation != null) {
+
+                        if (hasParameterised) {
+                            throw new IllegalStateException(
+                                    "Each parameter can only have a single parameterised annotation"
+                            );
+                        }
+                        hasParameterised = true;
+
+                        ParameterizedTestWithArgumentGenerator generator =
+                                mLocator.get(generatorAnnotation.value());
+
+                        var list = new ArrayList<FrameworkMethod>();
+                        expandedMethods.forEach(item ->
+                                list.addAll(generator.handleFrameworkMethod(item, annotation))
+                        );
+                        expandedMethods = list.stream();
+                    }
                 }
             }
 
@@ -709,16 +731,14 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
     static List<Annotation> generateReplacementAnnotations(
             Annotation annotation) {
         Class<? extends Annotation> annotationType = annotation.annotationType();
-        if (annotationType != null) {
-            UsesParameterizedTestGenerator usesParameterizedTestGenerator =
-                    annotationType.getAnnotation(UsesParameterizedTestGenerator.class);
-            if (usesParameterizedTestGenerator != null) {
-                ParameterizedTestGenerator generator =
-                        mLocator.get(usesParameterizedTestGenerator.value());
-                var replacementAnnotations = generator.generateReplacementAnnotations(annotation);
-                replacementAnnotations.sort(BedsteadJUnit4::annotationSorter);
-                return replacementAnnotations;
-            }
+        UsesParameterizedTestGenerator usesParameterizedTestGenerator =
+                annotationType.getAnnotation(UsesParameterizedTestGenerator.class);
+        if (usesParameterizedTestGenerator != null) {
+            ParameterizedTestGenerator generator =
+                    mLocator.get(usesParameterizedTestGenerator.value());
+            var replacementAnnotations = generator.generateReplacementAnnotations(annotation);
+            replacementAnnotations.sort(BedsteadJUnit4::annotationSorter);
+            return replacementAnnotations;
         }
         return null;
     }

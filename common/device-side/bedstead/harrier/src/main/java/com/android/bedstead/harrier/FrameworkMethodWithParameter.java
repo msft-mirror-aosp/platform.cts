@@ -31,11 +31,21 @@ import java.util.Objects;
 public final class FrameworkMethodWithParameter extends FrameworkMethod {
     private final FrameworkMethod mWrappedFrameworkMethod;
     private final Object mInjectedParam;
+    private final String mParameterName;
 
     public FrameworkMethodWithParameter(FrameworkMethod frameworkMethod, Object injectedParam) {
+        this(frameworkMethod, injectedParam, injectedParam.toString());
+    }
+
+    public FrameworkMethodWithParameter(
+            FrameworkMethod frameworkMethod,
+            Object injectedParam,
+            String parameterName
+    ) {
         super(frameworkMethod.getMethod());
         mWrappedFrameworkMethod = frameworkMethod;
         mInjectedParam = injectedParam;
+        mParameterName = parameterName;
     }
 
     @Override
@@ -73,8 +83,8 @@ public final class FrameworkMethodWithParameter extends FrameworkMethod {
 
     @Override
     public String getName() {
-        if (mInjectedParam != null) {
-            return mWrappedFrameworkMethod.getName() + "[" + mInjectedParam + "]";
+        if (mParameterName != null) {
+            return mWrappedFrameworkMethod.getName() + "[" + mParameterName + "]";
         }
         return mWrappedFrameworkMethod.getName();
     }
