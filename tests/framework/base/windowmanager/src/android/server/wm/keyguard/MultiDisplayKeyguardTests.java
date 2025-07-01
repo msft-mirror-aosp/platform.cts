@@ -27,8 +27,10 @@ import android.server.wm.DisplayMetricsSession;
 import android.server.wm.LockScreenSession;
 import android.server.wm.MultiDisplayTestBase;
 import android.server.wm.WindowManagerState.DisplayContent;
+import android.server.wm.app.Components;
 import android.util.Size;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -51,6 +53,11 @@ public class MultiDisplayKeyguardTests extends MultiDisplayTestBase {
         assumeTrue(supportsInsecureLock());
 
         acquirePartialWakeLock();
+    }
+
+    @After
+    public void tearDown() {
+        Components.forceStopPackage();
     }
 
     /**

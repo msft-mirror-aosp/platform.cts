@@ -17,7 +17,6 @@
 package android.server.wm.other;
 
 import static android.server.wm.ShellCommandHelper.executeShellCommand;
-import static android.server.wm.app.Components.HOST_ACTIVITY;
 import static android.server.wm.app.Components.UNRESPONSIVE_ACTIVITY;
 import static android.server.wm.app.Components.UnresponsiveActivity;
 import static android.server.wm.app.Components.UnresponsiveActivity.EXTRA_ON_CREATE_DELAY_MS;
@@ -41,6 +40,7 @@ import android.provider.Settings;
 import android.server.wm.ActivityManagerTestBase;
 import android.server.wm.BuildUtils;
 import android.server.wm.WindowManagerState;
+import android.server.wm.app.Components;
 import android.server.wm.app.Components.RenderService;
 import android.server.wm.settings.SettingsSession;
 import android.util.EventLog;
@@ -66,11 +66,9 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 
 /**
- * Test scenarios that lead to "Application Not
- * Responding" (ANR) dialog being shown.
+ * Test scenarios that lead to "Application Not Responding" (ANR) dialog being shown.
  *
- * <p>Build/Install/Run:
- *     atest CtsWindowManagerDeviceActivity:AnrTests
+ * <p>Build/Install/Run: atest CtsWindowManagerDeviceOther:AnrTests
  */
 @Presubmit
 @android.server.wm.annotation.Group3
@@ -94,8 +92,7 @@ public class AnrTests extends ActivityManagerTestBase {
     @After
     public void teardown() {
         if (mHideDialogSetting != null) mHideDialogSetting.close();
-        stopTestPackage(UNRESPONSIVE_ACTIVITY.getPackageName());
-        stopTestPackage(HOST_ACTIVITY.getPackageName());
+        Components.forceStopPackage();
     }
 
     @Test

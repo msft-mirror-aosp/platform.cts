@@ -83,7 +83,6 @@ import java.util.stream.Stream;
  */
 @Presubmit
 public class StartActivityTests extends ActivityManagerTestBase {
-    private static final String TEST_PACKAGE_SDK_27 = SDK_27_LAUNCHING_ACTIVITY.getPackageName();
     private static final int[] ALL_ACTIVITY_TYPES = {
             ACTIVITY_TYPE_UNDEFINED,
             ACTIVITY_TYPE_STANDARD,
@@ -105,7 +104,9 @@ public class StartActivityTests extends ActivityManagerTestBase {
 
     @After
     public void tearDown() {
-        stopTestPackage(TEST_PACKAGE_SDK_27);
+        android.server.wm.app27.Components.forceStopPackage();
+        android.server.wm.second.Components.forceStopPackage();
+        android.server.wm.app.Components.forceStopPackage();
     }
 
     @Test

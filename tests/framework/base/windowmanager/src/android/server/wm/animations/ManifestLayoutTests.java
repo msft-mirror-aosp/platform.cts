@@ -24,7 +24,6 @@ import static android.server.wm.app.Components.BOTTOM_RIGHT_LAYOUT_ACTIVITY;
 import static android.server.wm.app.Components.TEST_ACTIVITY;
 import static android.server.wm.app.Components.TOP_LEFT_LAYOUT_ACTIVITY;
 import static android.server.wm.app.Components.TOP_RIGHT_LAYOUT_ACTIVITY;
-import static android.view.Display.DEFAULT_DISPLAY;
 import static android.view.WindowInsets.Type.captionBar;
 import static android.view.WindowInsets.Type.systemBars;
 
@@ -41,12 +40,14 @@ import android.platform.test.annotations.Presubmit;
 import android.server.wm.ActivityManagerTestBase;
 import android.server.wm.WindowManagerState;
 import android.server.wm.WindowManagerState.WindowState;
+import android.server.wm.app.Components;
 import android.util.DisplayMetrics;
 import android.util.Size;
 import android.view.WindowMetrics;
 
 import androidx.annotation.NonNull;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -83,6 +84,11 @@ public class ManifestLayoutTests extends ActivityManagerTestBase {
     public void setUp() throws Exception {
         super.setUp();
         launchHomeActivity();
+    }
+
+    @After
+    public void tearDown() {
+        Components.forceStopPackage();
     }
 
     @Test
@@ -274,7 +280,6 @@ public class ManifestLayoutTests extends ActivityManagerTestBase {
             assertEquals("Should be on the right", stableBounds.right,parentFrame.right);
         }
     }
-
 
     private void getDisplayAndWindowState(ComponentName activityName, boolean checkFocus)
             throws Exception {

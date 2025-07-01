@@ -40,6 +40,7 @@ import androidx.test.uiautomator.Until;
 
 import com.android.compatibility.common.util.SystemUtil;
 
+import org.junit.After;
 import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
@@ -62,6 +63,11 @@ public class UnsupportedErrorDialogTests extends ActivityManagerTestBase {
         Assume.assumeFalse(ActivityTaskManager.currentUiModeSupportsErrorDialogs(mContext));
         super.setUp();
         resetAppErrors();
+    }
+
+    @After
+    public void tearDown() {
+        Components.forceStopPackage();
     }
 
     /** Make sure the developer option applies correctly leading to the dialog being shown. */

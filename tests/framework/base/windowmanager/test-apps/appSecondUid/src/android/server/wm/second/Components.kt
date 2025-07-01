@@ -51,5 +51,7 @@ object Components : ComponentsProvider() {
 
     @JvmField val IMPLICIT_TARGET_SECOND_ACTIVITY = component("ImplicitTargetActivity")
 
+    @JvmStatic fun getPackageName() = packageName
+
     @JvmStatic fun forceStopPackage() = (this as ComponentsProvider).forceStopPackage()
 }

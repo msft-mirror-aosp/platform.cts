@@ -156,6 +156,7 @@ public class WindowInputTests {
         if (mTouchScreen != null) {
             mTouchScreen.close();
         }
+        Components.forceStopPackage();
     }
 
     /** Synchronously adds a window that is owned by the test activity. */

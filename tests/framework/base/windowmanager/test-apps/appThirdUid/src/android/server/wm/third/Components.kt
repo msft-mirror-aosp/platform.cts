@@ -24,5 +24,7 @@ object Components : ComponentsProvider() {
 
     @JvmField val THIRD_ACTIVITY = component("ThirdActivity")
 
+    @JvmStatic fun getPackageName() = packageName
+
     @JvmStatic fun forceStopPackage() = (this as ComponentsProvider).forceStopPackage()
 }

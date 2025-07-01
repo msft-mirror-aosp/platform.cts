@@ -43,6 +43,7 @@ import android.server.wm.WindowManagerState.Task;
 import android.server.wm.app.Components;
 import android.view.Display;
 
+import org.junit.After;
 import org.junit.Test;
 
 /**
@@ -52,16 +53,19 @@ import org.junit.Test;
 @Presubmit
 @android.server.wm.annotation.Group3
 public class FreeformWindowingModeTests extends MultiDisplayTestBase {
-
     private static final int TEST_TASK_OFFSET = 20;
     private static final int TEST_TASK_OFFSET_2 = 100;
     private static final int TEST_TASK_SIZE = 1000;
     private static final int TEST_TASK_SIZE_DP_1 = 220;
     private static final int TEST_TASK_SIZE_DP_2 = TEST_TASK_SIZE_DP_1 * 2;
 
+    @After
+    public void tearDown() {
+        Components.forceStopPackage();
+    }
+
     // NOTE: Launching the FreeformActivity will automatically launch the TestActivity
     // with bounds (0, 0, 1000, 1000)
-
     @Test
     public void testFreeformWindowManagementSupport() {
         final int displayId;

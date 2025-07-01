@@ -58,7 +58,6 @@ import android.app.KeyguardManager.KeyguardLockedStateListener;
 import android.app.WallpaperManager;
 import android.content.ComponentName;
 import android.content.res.Configuration;
-import android.platform.test.annotations.DisableFlags;
 import android.platform.test.annotations.Presubmit;
 import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
@@ -75,6 +74,7 @@ import android.server.wm.app.Components;
 
 import com.android.systemui.Flags;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;
@@ -104,6 +104,11 @@ public class KeyguardTests extends KeyguardTestBase {
         assertFalse(isUiModeLockedToVrHeadset());
         assumeRunNotOnVisibleBackgroundNonProfileUser(
                 "Keyguard not supported for visible background users");
+    }
+
+    @After
+    public void tearDown() {
+        Components.forceStopPackage();
     }
 
     @Test

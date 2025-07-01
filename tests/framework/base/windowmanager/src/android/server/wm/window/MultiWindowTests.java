@@ -56,6 +56,7 @@ import android.view.WindowManager;
 import android.window.WindowContainerToken;
 import android.window.WindowContainerTransaction;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -74,6 +75,12 @@ public class MultiWindowTests extends ActivityManagerTestBase {
 
         assumeTrue("Skipping test: no split multi-window support",
                 supportsSplitScreenMultiWindow());
+    }
+
+    @After
+    public void tearDown() {
+        android.server.wm.app27.Components.forceStopPackage();
+        android.server.wm.app.Components.forceStopPackage();
     }
 
     @Test

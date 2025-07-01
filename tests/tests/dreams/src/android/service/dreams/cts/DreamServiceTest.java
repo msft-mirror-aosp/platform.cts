@@ -44,6 +44,7 @@ import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.server.wm.ActivityManagerTestBase;
 import android.server.wm.DreamCoordinator;
 import android.server.wm.LockScreenSession;
+import android.server.wm.app.Components;
 import android.service.dreams.DreamService;
 import android.service.dreams.Flags;
 import android.view.ActionMode;
@@ -109,6 +110,7 @@ public class DreamServiceTest extends ActivityManagerTestBase {
     public void tearDown() {
         mDreamCoordinator.restoreDefaults();
         stopTestPackage(DREAM_APP_PACKAGE_NAME);
+        Components.forceStopPackage();
     }
 
     @Test

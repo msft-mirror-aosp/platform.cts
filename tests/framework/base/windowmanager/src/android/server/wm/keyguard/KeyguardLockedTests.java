@@ -62,6 +62,7 @@ import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.server.wm.ActivityManagerTestBase;
 import android.server.wm.KeyguardTestBase;
 import android.server.wm.LockScreenSession;
+import android.server.wm.app.Components;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.LinearLayout;
@@ -76,6 +77,7 @@ import com.android.compatibility.common.util.PollingCheck;
 import com.android.cts.mockime.ImeEventStream;
 import com.android.cts.mockime.MockImeSession;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -108,6 +110,11 @@ public class KeyguardLockedTests extends KeyguardTestBase {
         assumeRunNotOnVisibleBackgroundNonProfileUser(
                 "Keyguard not supported for visible background users");
         mUiDevice = UiDevice.getInstance(getInstrumentation());
+    }
+
+    @After
+    public void tearDown() {
+        Components.forceStopPackage();
     }
 
     @Test

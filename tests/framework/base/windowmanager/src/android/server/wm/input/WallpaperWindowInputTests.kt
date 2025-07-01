@@ -81,6 +81,7 @@ class WallpaperWindowInputTests : ActivityManagerTestBase() {
         if (this::touchScreen.isInitialized) {
             touchScreen.close()
         }
+        Components.forceStopPackage()
     }
 
     private fun checkWallpaperEvent(enableWallpaperTouch: Boolean) {
