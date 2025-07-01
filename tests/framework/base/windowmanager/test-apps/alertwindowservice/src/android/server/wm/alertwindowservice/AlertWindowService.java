@@ -11,7 +11,7 @@
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
- * limitations under the License
+ * limitations under the License.
  */
 
 package android.server.wm.alertwindowservice;
@@ -90,9 +90,10 @@ public final class AlertWindowService extends Service {
         final WindowManager wm = mWindowManager;
         mWindowContext.getDisplay().getSize(size);
 
-        final WindowManager.LayoutParams params = new WindowManager.LayoutParams(
-                TYPE_APPLICATION_OVERLAY,
-                FLAG_NOT_FOCUSABLE | FLAG_WATCH_OUTSIDE_TOUCH | FLAG_NOT_TOUCHABLE);
+        final WindowManager.LayoutParams params =
+                new WindowManager.LayoutParams(
+                        TYPE_APPLICATION_OVERLAY,
+                        FLAG_NOT_FOCUSABLE | FLAG_WATCH_OUTSIDE_TOUCH | FLAG_NOT_TOUCHABLE);
         params.width = size.x / 3;
         params.height = size.y / 3;
         params.gravity = TOP | LEFT;
@@ -140,8 +141,9 @@ public final class AlertWindowService extends Service {
     public void onCreate() {
         super.onCreate();
         final Display display = getSystemService(DisplayManager.class).getDisplay(DEFAULT_DISPLAY);
-        mWindowContext = createDisplayContext(display)
-                .createWindowContext(TYPE_APPLICATION_OVERLAY, null /* options */);
+        mWindowContext =
+                createDisplayContext(display)
+                        .createWindowContext(TYPE_APPLICATION_OVERLAY, null /* options */);
         mWindowManager = mWindowContext.getSystemService(WindowManager.class);
     }
 
