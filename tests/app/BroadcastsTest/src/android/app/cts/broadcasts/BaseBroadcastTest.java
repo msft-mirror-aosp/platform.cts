@@ -18,6 +18,7 @@ package android.app.cts.broadcasts;
 
 import static com.android.app.cts.broadcasts.Common.TAG;
 
+import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
 import static org.junit.Assert.assertNull;
@@ -346,14 +347,32 @@ abstract class BaseBroadcastTest {
 
     static class ResultReceiver extends BroadcastReceiver {
         private final BlockingQueue<String> mResultData = new ArrayBlockingQueue<>(1);
+        private final BlockingQueue<Bundle> mResultExtras = new ArrayBlockingQueue<>(1);
 
         @Override
         public void onReceive(Context context, Intent intent) {
-            mResultData.offer(getResultData());
+            final String resultData = getResultData();
+            if (resultData != null) {
+                mResultData.offer(resultData);
+            }
+            final Bundle resultExtras = getResultExtras(false);
+            if (resultExtras != null) {
+                mResultExtras.offer(resultExtras);
+            }
         }
 
         public String getResult() throws Exception {
             return mResultData.poll(BROADCAST_RECEIVE_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+        }
+
+        public Bundle getResultExtras() throws Exception {
+            return mResultExtras.poll(BROADCAST_RECEIVE_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+        }
+
+        public ArrayList<String> getStringArrayListExtra(String key) throws Exception {
+            final Bundle resultExtras = getResultExtras();
+            assertThat(resultExtras).isNotNull();
+            return resultExtras.getStringArrayList(key);
         }
     }
 }
