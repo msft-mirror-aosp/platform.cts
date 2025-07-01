@@ -446,7 +446,7 @@ android_test {
 
     srcs: [
         ":CtsWindowManagerDeviceOther-src",
-        "alertwindowservice/src/**/*.java",
+        ":CtsAlertWindowService-src",
         ":CtsVerifierMockVrListenerServiceFiles",
     ],
 }
@@ -492,7 +492,7 @@ android_test {
 
     srcs: [
         ":CtsWindowManagerDeviceWindow-src",
-        "alertwindowservice/src/**/*.java",
+        ":CtsAlertWindowService-src",
         ":CtsVerifierMockVrListenerServiceFiles",
     ],
 }

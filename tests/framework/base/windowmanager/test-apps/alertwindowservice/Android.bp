@@ -16,14 +16,20 @@ package {
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
-android_test {
-    name: "CtsAlertWindowService",
-    defaults: ["cts_support_defaults"],
-
+filegroup {
+    name: "CtsAlertWindowService-src",
     srcs: [
         "src/**/*.java",
         "src/**/*.kt",
     ],
+    visibility: ["//cts/tests/framework/base/windowmanager"],
+}
+
+android_test {
+    name: "CtsAlertWindowService",
+    defaults: ["cts_support_defaults"],
+
+    srcs: [":CtsAlertWindowService-src"],
     static_libs: ["cts-wm-app-base"],
 
     sdk_version: "test_current",
