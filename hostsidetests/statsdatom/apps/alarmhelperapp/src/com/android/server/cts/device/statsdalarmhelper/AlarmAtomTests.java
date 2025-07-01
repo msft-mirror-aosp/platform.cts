@@ -19,6 +19,7 @@ package com.android.server.cts.device.statsdalarmhelper;
 import static org.junit.Assert.assertTrue;
 
 import android.app.AlarmManager;
+import android.app.AlarmManager.OnAlarmListener;
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -92,6 +93,20 @@ public class AlarmAtomTests {
 
         final long trigger1 = SystemClock.elapsedRealtime() + 5_000;
         mAlarmManager.setExact(AlarmManager.ELAPSED_REALTIME_WAKEUP, trigger1, pi1);
+    }
+
+    @Test
+    public void testListenerAlarmScheduled() {
+        OnAlarmListener listener =
+                new OnAlarmListener() {
+                    @Override
+                    public void onAlarm() {
+                        Log.d(TAG, "Received alarm.");
+                    }
+                };
+
+        final long trigger1 = SystemClock.elapsedRealtime() + 50_000;
+        mAlarmManager.setExact(AlarmManager.ELAPSED_REALTIME, trigger1, "test", listener, null);
     }
 
     @Test
