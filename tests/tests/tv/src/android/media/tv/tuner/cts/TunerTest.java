@@ -2041,6 +2041,14 @@ public class TunerTest {
         List<Integer> ids = mTuner.getFrontendIds();
         assumeNotNull(ids);
         assertFalse(ids.isEmpty());
+        DemuxCapabilities dc = mTuner.getDemuxCapabilities();
+        assumeTrue(dc != null);
+        int numberOfDemux = dc.getDemuxCount();
+        assumeTrue(
+                "Skipping test: Device has "
+                        + numberOfDemux
+                        + " demux resource, but this test requires at least 2.",
+                numberOfDemux >= 2);
         int targetFrontendId = sTunerCtsConfiguration.getTargetFrontendId().intValueExact();
         FrontendInfo info = mTuner.getFrontendInfoById(ids.get(targetFrontendId));
         FrontendSettings feSettings = createFrontendSettings(info);
