@@ -16,6 +16,9 @@
 
 package android.virtualdevice.cts.applaunch;
 
+import static android.Manifest.permission.INTERACT_ACROSS_USERS_FULL;
+import static android.Manifest.permission.WRITE_SECURE_SETTINGS;
+
 import static org.junit.Assert.assertEquals;
 
 import android.app.Activity;
@@ -341,16 +344,28 @@ public class VirtualDeviceViewConfigurationTest {
     }
 
     private void verifyNewValueAfterSettingChange(
-            String settingKey, Function<ViewConfiguration, Integer> viewConfigurationValueProvider)
-            throws Exception {
-        Context context =
-                InstrumentationRegistry.getInstrumentation()
-                        .getTargetContext()
-                        .createContextAsUser(UserHandle.SYSTEM, 0);
-        ContentResolver contentResolver = context.getContentResolver();
-        int defaultValue = Settings.Secure.getInt(contentResolver, settingKey);
-        int newValue = defaultValue + 1000;
-        Settings.Secure.putInt(contentResolver, settingKey, newValue);
+            String settingKey,
+            Function<ViewConfiguration, Integer> viewConfigurationValueProvider) {
+        final int[] defaultValue = new int[1];
+        final int[] newValue = new int[1];
+        final ContentResolver[] contentResolver = new ContentResolver[1];
+        mRule.runWithTemporaryPermission(
+                () -> {
+                    Context context =
+                            InstrumentationRegistry.getInstrumentation()
+                                    .getTargetContext()
+                                    .createContextAsUser(UserHandle.SYSTEM, 0);
+                    contentResolver[0] = context.getContentResolver();
+                    try {
+                        defaultValue[0] = Settings.Secure.getInt(contentResolver[0], settingKey);
+                    } catch (Settings.SettingNotFoundException e) {
+                        throw new RuntimeException(e);
+                    }
+                    newValue[0] = defaultValue[0] + 1000;
+                    Settings.Secure.putInt(contentResolver[0], settingKey, newValue[0]);
+                },
+                INTERACT_ACROSS_USERS_FULL,
+                WRITE_SECURE_SETTINGS);
 
         try {
             VirtualDeviceManager.VirtualDevice virtualDevice = mRule.createManagedVirtualDevice();
@@ -364,9 +379,15 @@ public class VirtualDeviceViewConfigurationTest {
             Activity vdActivity = mRule.startActivityOnDisplaySync(displayId, Activity.class);
             ViewConfiguration viewconfiguration = ViewConfiguration.get(vdActivity);
             assertEquals(
-                    newValue, viewConfigurationValueProvider.apply(viewconfiguration).intValue());
+                    newValue[0],
+                    viewConfigurationValueProvider.apply(viewconfiguration).intValue());
         } finally {
-            Settings.Secure.putInt(contentResolver, settingKey, defaultValue);
+            mRule.runWithTemporaryPermission(
+                    () -> {
+                        Settings.Secure.putInt(contentResolver[0], settingKey, defaultValue[0]);
+                    },
+                    INTERACT_ACROSS_USERS_FULL,
+                    WRITE_SECURE_SETTINGS);
         }
     }
 
