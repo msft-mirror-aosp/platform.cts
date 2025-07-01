@@ -42,5 +42,5 @@
         <option name="teardown-command" value="cmd sdk_sandbox set-state --reset"/>
         <option name="teardown-command" value="device_config set_sync_disabled_for_tests none" />
     </target_preparer>
-    <target_preparer class="android.webkit.cts.preconditions.WebViewVersionPreparer" />
+
 </configuration>
