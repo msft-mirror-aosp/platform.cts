@@ -22,7 +22,10 @@ android_test {
 
     static_libs: ["cts-wm-app-base"],
 
-    srcs: ["src/**/*.java"],
+    srcs: [
+        "src/**/*.java",
+        "src/**/*.kt",
+    ],
 
     resource_dirs: ["res"],
 

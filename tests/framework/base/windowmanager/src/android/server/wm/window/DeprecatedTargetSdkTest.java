@@ -22,6 +22,7 @@ import static android.server.wm.deprecatedsdk.Components.MAIN_ACTIVITY;
 import android.platform.test.annotations.Presubmit;
 import android.server.wm.ActivityManagerTestBase;
 import android.server.wm.DeprecatedTargetSdkUtils;
+import android.server.wm.deprecatedsdk.Components;
 
 import androidx.test.filters.FlakyTest;
 
@@ -39,7 +40,7 @@ public class DeprecatedTargetSdkTest extends ActivityManagerTestBase {
     @After
     public void tearDown() {
         // Ensure app process is stopped.
-        stopTestPackage(MAIN_ACTIVITY.getPackageName());
+        Components.forceStopPackage();
     }
 
     @Test

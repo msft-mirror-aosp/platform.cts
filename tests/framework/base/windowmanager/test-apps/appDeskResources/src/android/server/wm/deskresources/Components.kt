@@ -14,19 +14,16 @@
  * limitations under the License.
  */
 
-package android.server.wm.shareuid.a
+package android.server.wm.deskresources
 
 import android.server.wm.component.ComponentsProvider
 import android.server.wm.component.forceStopPackage
 
-/** Constants for test components A in the shared user ID affinity. */
+/** Constants for desk resources test components. */
 object Components : ComponentsProvider() {
-    /** Test activity with the shared user ID affinity. */
-    @JvmField val TEST_ACTIVITY_WITH_SAME_AFFINITY = component("TestActivityWithSameAffinity")
 
-    /** Another activity with the same shared user ID affinity in the same package. */
-    @JvmField
-    val TEST_ACTIVITY_WITH_SAME_AFFINITY_SAME_APP = component("TestActivityWithSameAffinitySameApp")
+    /** A test activity in a test app that has resources with the -desk qualifier. */
+    @JvmField val DESK_RESOURCES_ACTIVITY = component("DeskResourcesActivity")
 
     @JvmStatic fun forceStopPackage() = (this as ComponentsProvider).forceStopPackage()
 }

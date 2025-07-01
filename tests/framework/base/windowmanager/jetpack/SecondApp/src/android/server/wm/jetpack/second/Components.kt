@@ -14,19 +14,33 @@
  * limitations under the License.
  */
 
-package android.server.wm.shareuid.a
+package android.server.wm.jetpack.second
 
 import android.server.wm.component.ComponentsProvider
 import android.server.wm.component.forceStopPackage
 
-/** Constants for test components A in the shared user ID affinity. */
+/** Constants for Jetpack second app test components. */
 object Components : ComponentsProvider() {
-    /** Test activity with the shared user ID affinity. */
-    @JvmField val TEST_ACTIVITY_WITH_SAME_AFFINITY = component("TestActivityWithSameAffinity")
 
-    /** Another activity with the same shared user ID affinity in the same package. */
+    @JvmField val SECOND_ACTIVITY = component("SecondActivity")
+
+    @JvmField val PORTRAIT_ACTIVITY = component("PortraitActivity")
+
     @JvmField
-    val TEST_ACTIVITY_WITH_SAME_AFFINITY_SAME_APP = component("TestActivityWithSameAffinitySameApp")
+    val SECOND_ACTIVITY_UNKNOWN_EMBEDDING_CERTS = component("SecondActivityUnknownEmbeddingCerts")
+
+    @JvmField
+    val SECOND_UNTRUSTED_EMBEDDING_ACTIVITY = component("SecondActivityAllowsUntrustedEmbedding")
+
+    @JvmField
+    val SECOND_UNTRUSTED_EMBEDDING_ACTIVITY_STATE_SHARE =
+        component("SecondActivityAllowsUntrustedEmbeddingStateShare")
+
+    const val EXTRA_LAUNCH_NON_EMBEDDABLE_ACTIVITY = "launch_non_embeddable"
+
+    const val ACTION_ENTER_PIP = "enter_pip"
+
+    const val ACTION_EXIT_PIP = "exit_pip"
 
     @JvmStatic fun forceStopPackage() = (this as ComponentsProvider).forceStopPackage()
 }

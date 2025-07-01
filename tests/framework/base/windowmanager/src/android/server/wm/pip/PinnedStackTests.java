@@ -183,8 +183,6 @@ import java.util.concurrent.TimeUnit;
 @RunWith(BedsteadJUnit4.class)
 public class PinnedStackTests extends ActivityManagerTestBase {
     private static final String TAG = PinnedStackTests.class.getSimpleName();
-    private static final String TEST_PACKAGE_SDK_27 = SDK_27_PIP_ACTIVITY.getPackageName();
-    private static final String TEST_PACKAGE_TV = TV_PIP_ACTIVITY.getPackageName();
 
     private static final String APP_OPS_OP_ENTER_PICTURE_IN_PICTURE = "PICTURE_IN_PICTURE";
     private static final int APP_OPS_MODE_IGNORED = 1;
@@ -222,8 +220,9 @@ public class PinnedStackTests extends ActivityManagerTestBase {
 
     @After
     public void tearDown() {
-        stopTestPackage(TEST_PACKAGE_SDK_27);
-        stopTestPackage(TEST_PACKAGE_TV);
+        stopTestPackage(android.server.wm.app.Components.getPackageName());
+        android.server.wm.app27.Components.forceStopPackage();
+        android.server.wm.apptv.Components.forceStopPackage();
     }
 
     @Test

@@ -44,12 +44,11 @@ import org.junit.Test;
  */
 @Presubmit
 public class DockConfigChangeTests extends ActivityManagerTestBase {
-    private static final String TEST_PACKAGE_DESK_RESOURCES =
-            DESK_RESOURCES_ACTIVITY.getPackageName();
 
     @After
     public void tearDown() {
-        stopTestPackage(TEST_PACKAGE_DESK_RESOURCES);
+        android.server.wm.deskresources.Components.forceStopPackage();
+        stopTestPackage(android.server.wm.app.Components.getPackageName());
     }
 
     @Test

@@ -20,7 +20,10 @@ android_test {
     name: "CtsDragAndDropTargetApp",
     defaults: ["cts_support_defaults"],
 
-    srcs: ["src/**/*.java"],
+    srcs: [
+        "src/**/*.java",
+        "src/**/*.kt",
+    ],
 
     sdk_version: "current",
 

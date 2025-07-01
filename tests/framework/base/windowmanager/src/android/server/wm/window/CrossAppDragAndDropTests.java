@@ -207,9 +207,9 @@ public class CrossAppDragAndDropTests extends ActivityManagerTestBase {
      * is in a good state.
      */
     private void cleanupState() {
-        stopTestPackage(DRAG_SOURCE.getPackageName());
-        stopTestPackage(DROP_TARGET.getPackageName());
-        stopTestPackage(DROP_TARGET_SDK23.getPackageName());
+        android.server.wm.dndsourceapp.Components.forceStopPackage();
+        android.server.wm.dndtargetapp.Components.forceStopPackage();
+        android.server.wm.dndtargetappsdk23.Components.forceStopPackage();
     }
 
     private void launchFreeformActivities(ComponentName sourceComponentName,
