@@ -2593,15 +2593,14 @@ public abstract class ActivityManagerTestBase {
         }
 
         /**
-         * @param activityName can be created with
-         *              {@link android.server.wm.component.ComponentsBase#component}.
+         * @param activityName can be created with {@link
+         *     android.server.wm.component.ComponentsProvider#component}.
          * @param windowingMode {@link WindowConfiguration.WindowingMode}
-         * @param forceCommandActivity sometimes Activity implements
-         *              {@link CommandSession.BasicTestActivity} but is defined in a different apk,
-         *              so can not be verified if it is a subclass of
-         *              {@link CommandSession.BasicTestActivity}. In this case forceCommandActivity
-         *              argument can be used to ensure that this activity is managed as
-         *              {@link CommandSession.BasicTestActivity}.
+         * @param forceCommandActivity sometimes Activity implements {@link
+         *     CommandSession.BasicTestActivity} but is defined in a different apk, so can not be
+         *     verified if it is a subclass of {@link CommandSession.BasicTestActivity}. In this
+         *     case forceCommandActivity argument can be used to ensure that this activity is
+         *     managed as {@link CommandSession.BasicTestActivity}.
          */
         public ActivitySessionCloseable(
                 final ComponentName activityName,
