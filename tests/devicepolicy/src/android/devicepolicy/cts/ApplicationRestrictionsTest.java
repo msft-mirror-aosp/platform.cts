@@ -48,6 +48,7 @@ import com.android.bedstead.enterprise.annotations.EnsureHasProfileOwner;
 import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile;
 import com.android.bedstead.enterprise.annotations.PolicyAppliesTest;
 import com.android.bedstead.enterprise.annotations.PolicyDoesNotApplyTest;
+import com.android.bedstead.flags.annotations.RequireFlagsEnabled;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.Postsubmit;
@@ -482,10 +483,8 @@ public final class ApplicationRestrictionsTest {
 
     @Postsubmit(reason = "New test")
     @CanSetPolicyTest(policy = DmrhOnlyApplicationRestrictions.class)
+    @RequireFlagsEnabled(Flags.FLAG_APP_RESTRICTIONS_COEXISTENCE)
     public void roleHolderSetApplicationRestrictions_UserManagerReturnsSameValue() {
-        // TODO(b/371032678): Remove assumption after flag rollout.
-        assumeFalse(Flags.appRestrictionsCoexistence());
-
         Bundle originalApplicationRestrictions =
                 dpc(sDeviceState).devicePolicyManager()
                         .getApplicationRestrictions(
