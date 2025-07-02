@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 The Android Open Source Project
+ * Copyright (C) 2025 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,20 +15,24 @@
  */
 package com.android.bedstead.enterprise
 
-import com.android.bedstead.harrier.HarrierToEnterpriseMediator
-import java.util.stream.Stream
+import com.android.bedstead.enterprise.annotations.PolicyArgument
+import com.android.bedstead.harrier.ParameterizedTestWithArgumentGenerator
 import org.junit.runners.model.FrameworkMethod
 
 /**
- * Allows to execute Enterprise methods from Harrier when the module is loaded
+ * [ParameterizedTestWithArgumentGenerator] for bedstead-enterprise.
  */
 @Suppress("unused")
-class HarrierToEnterpriseMediatorImpl : HarrierToEnterpriseMediator {
+class EnterpriseParameterizedTestWithArgumentGenerator : ParameterizedTestWithArgumentGenerator {
 
-    override fun generatePolicyArgumentTests(
+    override fun handleFrameworkMethod(
         frameworkMethod: FrameworkMethod,
-        expandedMethods: Stream<FrameworkMethod>
-    ): Stream<FrameworkMethod> {
-        return PolicyArgumentTestsGenerator.generate(frameworkMethod, expandedMethods)
+        annotation: Annotation
+    ): List<FrameworkMethod> {
+        return if (annotation is PolicyArgument) {
+            PolicyArgumentTestsGenerator.generate(frameworkMethod)
+        } else {
+            super.handleFrameworkMethod(frameworkMethod, annotation)
+        }
     }
 }

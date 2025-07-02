@@ -25,7 +25,6 @@ import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence;
 import com.android.bedstead.harrier.annotations.EnumTestParameter;
 import com.android.bedstead.harrier.annotations.HiddenApiTest;
 import com.android.bedstead.harrier.annotations.IntTestParameter;
-import com.android.bedstead.harrier.annotations.PolicyArgument;
 import com.android.bedstead.harrier.annotations.RequireRunOnInitialUser;
 import com.android.bedstead.harrier.annotations.StringTestParameter;
 import com.android.bedstead.harrier.annotations.UsesParameterizedTestGenerator;
@@ -510,19 +509,7 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
 
             for (Annotation annotation : annotations) {
 
-                if (annotation instanceof PolicyArgument) {
-                    if (hasParameterised) {
-                        throw new IllegalStateException(
-                                "Each parameter can only have a single parameterised annotation");
-                    }
-                    hasParameterised = true;
-
-                    HarrierToEnterpriseMediator mediator =
-                            HarrierToEnterpriseMediator.Companion.getMediatorOrThrowException(
-                                    "you can't use @PolicyArgument without the enterprise module"
-                            );
-                    expandedMethods = mediator.generatePolicyArgumentTests(method, expandedMethods);
-                } else if (annotation instanceof StringTestParameter) {
+                if (annotation instanceof StringTestParameter) {
                     if (hasParameterised) {
                         throw new IllegalStateException(
                                 "Each parameter can only have a single parameterised annotation");

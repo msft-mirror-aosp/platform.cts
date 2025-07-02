@@ -18,10 +18,10 @@ package com.android.bedstead.enterprise;
 import com.android.bedstead.enterprise.annotations.CanSetPolicyTest;
 import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest;
 import com.android.bedstead.enterprise.annotations.PolicyAppliesTest;
+import com.android.bedstead.enterprise.annotations.PolicyArgument;
 import com.android.bedstead.enterprise.annotations.PolicyDoesNotApplyTest;
 import com.android.bedstead.harrier.BedsteadFrameworkMethod;
 import com.android.bedstead.harrier.FrameworkMethodWithParameter;
-import com.android.bedstead.harrier.annotations.PolicyArgument;
 import com.android.bedstead.nene.exceptions.NeneException;
 
 import org.junit.runners.model.FrameworkMethod;
@@ -34,8 +34,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * Generate policy argument tests
@@ -46,8 +44,7 @@ public final class PolicyArgumentTestsGenerator {
      * Generates extra tests for test functions using
      * {@link PolicyArgument} annotation in the function parameter
      */
-    public static Stream<FrameworkMethod> generate(
-            FrameworkMethod frameworkMethod, Stream<FrameworkMethod> expandedMethods) {
+    public static List<FrameworkMethod> generate(FrameworkMethod frameworkMethod) {
         try {
             Class<?>[] policyClasses;
             PolicyAppliesTest policyAppliesTestAnnotation =
@@ -77,7 +74,6 @@ public final class PolicyArgumentTestsGenerator {
                     Policy.getAnnotationsForPolicies(
                             Policy.getEnterprisePolicyWithCallingClass(policyClasses));
 
-            List<FrameworkMethod> expandedMethodList = expandedMethods.collect(Collectors.toList());
             Set<FrameworkMethod> tempExpandedFrameworkMethodSet = new HashSet<>();
             for (Class<?> policyClass : policyClasses) {
                 Method validArgumentsMethod = policyClass.getDeclaredMethod("validArguments");
@@ -93,25 +89,23 @@ public final class PolicyArgumentTestsGenerator {
                 Set<Annotation> policyAnnotations =
                         policyClassToAnnotationsMap.get(policyClass.getName());
 
-                for (FrameworkMethod expandedMethod : expandedMethodList) {
-                    List<Annotation> parameterizedAnnotations =
-                            ((BedsteadFrameworkMethod) expandedMethod)
-                                    .getParameterizedAnnotations();
-                    for (Annotation parameterizedAnnotation : parameterizedAnnotations) {
-                        if ((policyAppliesTestAnnotation != null
-                                && policyAnnotations.contains((parameterizedAnnotation)))
-                                || (policyDoesNotApplyTestAnnotation != null)
-                                || (canSetPolicyTestAnnotation != null
-                                && policyAnnotations.contains(parameterizedAnnotation))
-                                || (cannotSetPolicyTestAnnotation != null)) {
-                            tempExpandedFrameworkMethodSet.addAll(
-                                    applyPolicyArgumentParameter(expandedMethod, validArguments));
-                        }
+                List<Annotation> parameterizedAnnotations =
+                        ((BedsteadFrameworkMethod) frameworkMethod)
+                                .getParameterizedAnnotations();
+                for (Annotation parameterizedAnnotation : parameterizedAnnotations) {
+                    if ((policyAppliesTestAnnotation != null
+                            && policyAnnotations.contains((parameterizedAnnotation)))
+                            || (policyDoesNotApplyTestAnnotation != null)
+                            || (canSetPolicyTestAnnotation != null
+                            && policyAnnotations.contains(parameterizedAnnotation))
+                            || (cannotSetPolicyTestAnnotation != null)) {
+                        tempExpandedFrameworkMethodSet.addAll(
+                                applyPolicyArgumentParameter(frameworkMethod, validArguments));
                     }
                 }
             }
 
-            return tempExpandedFrameworkMethodSet.stream();
+            return new ArrayList<>(tempExpandedFrameworkMethodSet);
         } catch (NoSuchMethodException
                  | InvocationTargetException
                  | IllegalAccessException

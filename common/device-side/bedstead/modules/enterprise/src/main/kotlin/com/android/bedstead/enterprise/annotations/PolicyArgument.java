@@ -14,7 +14,9 @@
  * limitations under the License.
  */
 
-package com.android.bedstead.harrier.annotations;
+package com.android.bedstead.enterprise.annotations;
+
+import com.android.bedstead.harrier.annotations.UsesParameterizedTestWithArgumentGenerator;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -23,5 +25,6 @@ import java.lang.annotation.Target;
 
 @Target({ElementType.ANNOTATION_TYPE, ElementType.PARAMETER})
 @Retention(RetentionPolicy.RUNTIME)
+@UsesParameterizedTestWithArgumentGenerator(UsesParameterizedTestWithArgumentGenerator.ENTERPRISE)
 public @interface PolicyArgument {
 }
