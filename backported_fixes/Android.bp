@@ -18,7 +18,10 @@ package {
 
 java_defaults {
     name: "cts_backported_fixes_java_defaults",
-    min_sdk_version: "33", // Min SDK where API for Backported Fixes is a GMS requirement.
+    // Min SDK where API for Backported Fixes is a GMS requirement.
+    // See GMS-2.2-002 at
+    // https://docs.partner.android.com/gms/policies/domains/reqs?hl=en#android-platform-fixes
+    min_sdk_version: "33",
     sdk_version: "test_current",
 }
 
@@ -45,7 +48,7 @@ java_library {
     ],
 }
 
-// TODO b/382721475 - use androidx libarary when available.
+// TODO b/382721475 - use androidx library when available.
 java_library {
     name: "cts_backported_fixes_resolver",
     defaults: ["cts_backported_fixes_java_defaults"],
