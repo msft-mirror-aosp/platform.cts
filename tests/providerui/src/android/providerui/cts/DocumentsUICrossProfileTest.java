@@ -27,6 +27,7 @@ import android.app.Instrumentation;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.os.UserHandle;
 import android.os.UserManager;
 import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
@@ -51,6 +52,9 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import java.util.ArrayList;
+import java.util.Arrays;
 
 @RunWith(BedsteadJUnit4.class)
 public class DocumentsUICrossProfileTest {
@@ -101,7 +105,9 @@ public class DocumentsUICrossProfileTest {
         assumeTrue(supportsHardware());
 
         final Intent intent = getBaseIntent();
-        intent.putExtra(DocumentsContract.EXTRA_EXCLUDED_USERS, new int[] {mContext.getUserId()});
+        intent.putExtra(
+                DocumentsContract.EXTRA_EXCLUDED_USERS,
+                new ArrayList<UserHandle>(Arrays.asList(mContext.getUser())));
         try (PermissionContext p = TestApis.permissions().withPermission(INTERACT_ACROSS_USERS)) {
 
             TestApis.activities().startActivity(intent);
@@ -117,7 +123,9 @@ public class DocumentsUICrossProfileTest {
         assumeTrue(supportsHardware());
 
         final Intent intent = getBaseIntent();
-        intent.putExtra(DocumentsContract.EXTRA_EXCLUDED_USERS, new int[] {mContext.getUserId()});
+        intent.putExtra(
+                DocumentsContract.EXTRA_EXCLUDED_USERS,
+                new ArrayList<UserHandle>(Arrays.asList(mContext.getUser())));
         try (PermissionContext p = TestApis.permissions().withPermission(INTERACT_ACROSS_USERS)) {
 
             TestApis.activities().startActivity(intent);
@@ -135,9 +143,9 @@ public class DocumentsUICrossProfileTest {
         final Intent intent = getBaseIntent();
         intent.putExtra(
                 DocumentsContract.EXTRA_EXCLUDED_USERS,
-                new int[] {
-                    mContext.getUserId(), TestApis.users().initial().userHandle().getIdentifier()
-                });
+                new ArrayList<UserHandle>(
+                        Arrays.asList(
+                                mContext.getUser(), TestApis.users().initial().userHandle())));
 
         try (PermissionContext p = TestApis.permissions().withPermission(INTERACT_ACROSS_USERS)) {
 
@@ -156,7 +164,9 @@ public class DocumentsUICrossProfileTest {
         assumeTrue(supportsHardware());
 
         final Intent intent = getBaseIntent();
-        intent.putExtra(DocumentsContract.EXTRA_EXCLUDED_USERS, new int[] {mContext.getUserId()});
+        intent.putExtra(
+                DocumentsContract.EXTRA_EXCLUDED_USERS,
+                new ArrayList<UserHandle>(Arrays.asList(mContext.getUser())));
         try (PermissionContext p = TestApis.permissions().withPermission(INTERACT_ACROSS_USERS)) {
 
             TestApis.activities().startActivity(intent);
