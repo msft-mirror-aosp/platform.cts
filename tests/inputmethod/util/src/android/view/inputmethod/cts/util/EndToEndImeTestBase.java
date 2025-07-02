@@ -255,6 +255,16 @@ public class EndToEndImeTestBase {
     }
 
     /**
+     * Returns {@code true} if device is Automotive Scalable UI.
+     */
+    protected static boolean isAutomotiveScalableUI() {
+        final var instrumentation = InstrumentationRegistry.getInstrumentation();
+        final var pm = instrumentation.getTargetContext().getPackageManager();
+        return pm.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE)
+                && pm.hasSystemFeature(FEATURE_CAR_SPLITSCREEN_MULTITASKING);
+    }
+
+    /**
      * Gets the verbose logging state in {@link android.view.inputmethod.ImeTracker}.
      *
      * @return {@code true} iff verbose logging is enabled.

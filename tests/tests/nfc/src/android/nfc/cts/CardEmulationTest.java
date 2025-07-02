@@ -1266,6 +1266,7 @@ public class CardEmulationTest {
             Flags.FLAG_NFC_OBSERVE_MODE,
             android.permission.flags.Flags.FLAG_WALLET_ROLE_ENABLED})
     public void testDisallowNonDefaultSetObserveMode() throws NoSuchFieldException {
+        assumeTrue(getVsrApiLevel() > Build.VERSION_CODES.UPSIDE_DOWN_CAKE);
         restoreOriginalService();
         runWithRole(mContext,  WalletRoleTestUtils.WALLET_HOLDER_PACKAGE_NAME, () -> {
             NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
