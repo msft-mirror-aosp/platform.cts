@@ -182,6 +182,35 @@ public class InstrumentedAccessibilityService extends AccessibilityService {
     }
 
     /**
+     * Checks if an accessibility service is installed on the device.
+     *
+     * <p>This method queries the {@link AccessibilityManager} for a list of installed accessibility
+     * services and checks if the service represented by the provided {@code clazz} is present in
+     * that list.
+     *
+     * @param clazz The {@link Class} object of the accessibility service to check.
+     * @return {@code true} if the service is installed, {@code false} otherwise.
+     */
+    public static boolean isServiceInstalled(Class clazz) {
+        final String serviceName = clazz.getSimpleName();
+        final Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
+        final AccessibilityManager manager =
+                (AccessibilityManager)
+                        instrumentation
+                                .getContext()
+                                .getSystemService(Context.ACCESSIBILITY_SERVICE);
+        final List<AccessibilityServiceInfo> serviceInfos =
+                manager.getInstalledAccessibilityServiceList();
+        for (AccessibilityServiceInfo serviceInfo : serviceInfos) {
+            final String serviceId = serviceInfo.getId();
+            if (serviceId.endsWith(serviceName)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
      * Enables the service.
      *
      * <p> This behaves like {@link #enableService(Class)} except it simply runs the shell command
