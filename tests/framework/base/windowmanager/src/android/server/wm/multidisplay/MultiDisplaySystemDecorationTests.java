@@ -48,10 +48,12 @@ import android.server.wm.TestJournalProvider.TestJournalContainer;
 import android.server.wm.WindowManagerState;
 import android.server.wm.WindowManagerState.DisplayContent;
 import android.server.wm.WindowManagerState.WindowState;
+import android.server.wm.app.Components;
 import android.util.Log;
 
 import com.android.compatibility.common.util.TestUtils;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -79,6 +81,11 @@ public class MultiDisplaySystemDecorationTests extends MultiDisplayTestBase {
 
         assumeTrue(supportsMultiDisplay());
         assumeTrue(supportsSystemDecorsOnSecondaryDisplays());
+    }
+
+    @After
+    public void tearDown() {
+        Components.forceStopPackage();
     }
 
     // Wallpaper related tests

@@ -36,10 +36,12 @@ import android.server.wm.ActivityManagerTestBase;
 import android.server.wm.MultiDisplayTestBase;
 import android.server.wm.WindowManagerState;
 import android.server.wm.WindowManagerState.DisplayContent;
+import android.server.wm.app.Components;
 import android.server.wm.settings.SettingsSession;
 
 import com.android.cts.verifier.vr.MockVrListenerService;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -56,13 +58,17 @@ public class VrDisplayTests extends MultiDisplayTestBase {
     private static final int VR_VIRTUAL_DISPLAY_HEIGHT = 900;
     private static final int VR_VIRTUAL_DISPLAY_DPI = 320;
 
-
     @Before
     @Override
     public void setUp() throws Exception {
         super.setUp();
 
         assumeTrue(supportsVrMode());
+    }
+
+    @After
+    public void tearDown() {
+        Components.forceStopPackage();
     }
 
     /**

@@ -1095,7 +1095,6 @@ public class CaptureRequestTest extends Camera2SurfaceViewTestCase {
      * Test AE mode ON_LOW_LIGHT_BOOST_BRIGHTNESS_PRIORITY.
      */
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_CAMERA_AE_MODE_LOW_LIGHT_BOOST)
     public void testAeModeOnLowLightBoostBrightnessPriority() throws Exception {
         for (String id : getCameraIdsUnderTest()) {
             try {

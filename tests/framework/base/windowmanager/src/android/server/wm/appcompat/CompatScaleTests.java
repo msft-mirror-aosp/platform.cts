@@ -43,7 +43,9 @@ import android.os.LocaleList;
 import android.server.wm.ActivityManagerTestBase;
 import android.server.wm.CommandSession;
 import android.server.wm.WindowManagerState;
+import android.server.wm.app.Components;
 
+import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ErrorCollector;
@@ -116,6 +118,11 @@ public class CompatScaleTests extends ActivityManagerTestBase {
         mCompatChangeName = compatChangeName;
         mCompatScale = compatScale;
         mInvCompatScale = 1 / mCompatScale;
+    }
+
+    @After
+    public void tearDown() {
+        Components.forceStopPackage();
     }
 
     @Test

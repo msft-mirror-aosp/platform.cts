@@ -30,7 +30,9 @@ import static org.junit.Assert.assertNotEquals;
 import android.content.ComponentName;
 import android.platform.test.annotations.Presubmit;
 import android.server.wm.ActivityManagerTestBase;
+import android.server.wm.app.Components;
 
+import org.junit.After;
 import org.junit.Test;
 
 @Presubmit
@@ -73,6 +75,11 @@ public class MinimalPostProcessingTests extends ActivityManagerTestBase {
         // it's supported once we have a separate API for disabling on-device processing.
         boolean requested = isMinimalPostProcessingRequested(displayId);
         assertEquals(requested, on);
+    }
+
+    @After
+    public void tearDown() {
+        Components.forceStopPackage();
     }
 
     @Test

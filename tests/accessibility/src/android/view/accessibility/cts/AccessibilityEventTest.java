@@ -27,7 +27,6 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import android.accessibility.cts.common.AccessibilityDumpOnFailureRule;
-import android.accessibility.cts.common.InstrumentedAccessibilityService;
 import android.accessibility.cts.common.InstrumentedAccessibilityServiceTestRule;
 import android.app.Instrumentation;
 import android.app.UiAutomation;
@@ -58,7 +57,6 @@ import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.ApiTest;
 
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -145,11 +143,6 @@ public class AccessibilityEventTest {
                 accessibilityEvent -> mPackageName.equals(accessibilityEvent.getPackageName()),
                 DEFAULT_TIMEOUT_MS);
         sUiAutomation.waitForIdle(IDLE_TIMEOUT_MS, DEFAULT_TIMEOUT_MS);
-    }
-
-    @After
-    public void tearDown() {
-        InstrumentedAccessibilityService.disableAllServices();
     }
 
     private static class EventReportingLinearLayout extends LinearLayout {

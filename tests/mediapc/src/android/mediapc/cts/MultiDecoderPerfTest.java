@@ -23,6 +23,8 @@ import static android.mediapc.cts.CodecTestBase.mediaTypePrefix;
 import android.media.MediaFormat;
 import android.mediapc.cts.common.CodecMetrics;
 import android.mediapc.cts.common.PerformanceClassEvaluator;
+import android.mediapc.cts.common.PerformanceClassTestRule;
+import android.mediapc.cts.common.Preconditions;
 import android.mediapc.cts.common.Requirements;
 import android.mediapc.cts.common.Requirements.ConcurrentVideoDecoderSessionsRequirement;
 import android.mediapc.cts.common.Requirements.SecureVideoDecoderSessionsRequirement;
@@ -37,7 +39,6 @@ import com.android.compatibility.common.util.CddTest;
 import org.junit.Assume;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TestName;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
@@ -58,13 +59,14 @@ public class MultiDecoderPerfTest extends MultiCodecPerfTestBase {
 
     private final String mDecoderName;
 
+    @Rule
+    public final PerformanceClassTestRule pcRule =
+            PerformanceClassTestRule.with(Preconditions.BASELINE);
+
     public MultiDecoderPerfTest(String mediaType, String decoderName, boolean isAsync) {
         super(mediaType, null, isAsync);
         mDecoderName = decoderName;
     }
-
-    @Rule
-    public final TestName mTestName = new TestName();
 
     // Returns the params list with the mediaType and corresponding hardware decoders in
     // both sync and async modes.
@@ -203,7 +205,7 @@ public class MultiDecoderPerfTest extends MultiCodecPerfTestBase {
             frameDropsPerSec = result.fdps();
         }
 
-        PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
+        PerformanceClassEvaluator pce = pcRule.getPerformanceClassEvaluator();
         if (isSecure) {
             SecureVideoDecoderSessionsRequirement r5_1__H_1_9 = (height > 1080)
                     ? Requirements.addR5_1__H_1_9().withConfigHdr().to(pce)
@@ -248,6 +250,5 @@ public class MultiDecoderPerfTest extends MultiCodecPerfTestBase {
                 }
             }
         }
-        pce.submitAndCheck();
     }
 }

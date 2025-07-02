@@ -50,7 +50,9 @@ import android.content.pm.PackageManager;
 import android.platform.test.annotations.Presubmit;
 import android.server.wm.ActivityManagerTestBase;
 import android.server.wm.Condition;
+import android.server.wm.app.Components;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -71,6 +73,11 @@ public class TransitionSelectionTests extends ActivityManagerTestBase {
     @Before
     public void setup() {
         assumeFalse(ENABLE_SHELL_TRANSITIONS);
+    }
+
+    @After
+    public void tearDown() {
+        Components.forceStopPackage();
     }
 
     // Test activity open/close under normal timing

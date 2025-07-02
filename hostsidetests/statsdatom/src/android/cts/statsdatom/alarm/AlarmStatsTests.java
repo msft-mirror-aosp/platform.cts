@@ -141,12 +141,23 @@ public class AlarmStatsTests extends DeviceTestCase implements IBuildReceiver {
 
         int count = 0;
         Predicate<AtomsProto.AlarmScheduled> alarm1 =
-                as -> (!as.getIsRtc() && !as.getIsExact() && as.getIsWakeup() && as.getIsRepeating()
-                        && !as.getIsAlarmClock() && !as.getIsAllowWhileIdle());
+                as ->
+                        (!as.getIsRtc()
+                                && !as.getIsExact()
+                                && as.getIsWakeup()
+                                && as.getIsRepeating()
+                                && !as.getIsAlarmClock()
+                                && !as.getIsAllowWhileIdle()
+                                && !as.getIsListener());
         Predicate<AtomsProto.AlarmScheduled> alarm2 =
-                as -> (as.getIsRtc() && !as.getIsExact() && !as.getIsWakeup()
-                        && !as.getIsRepeating() && !as.getIsAlarmClock()
-                        && !as.getIsAllowWhileIdle());
+                as ->
+                        (as.getIsRtc()
+                                && !as.getIsExact()
+                                && !as.getIsWakeup()
+                                && !as.getIsRepeating()
+                                && !as.getIsAlarmClock()
+                                && !as.getIsAllowWhileIdle()
+                                && !as.getIsListener());
         for (int i = 0; i < data.size(); i++) {
             AtomsProto.AlarmScheduled as = data.get(i).getAtom().getAlarmScheduled();
             if (as.getCallingUid() != uid) {
@@ -212,6 +223,45 @@ public class AlarmStatsTests extends DeviceTestCase implements IBuildReceiver {
             assertThat(as.getIsExact()).isTrue();
             assertThat(as.getExactAlarmAllowedReason()).isEqualTo(
                     AtomsProto.AlarmScheduled.ReasonCode.PERMISSION);
+            count++;
+        }
+        assertThat(count).isEqualTo(1);
+    }
+
+    public void testListenerAlarmScheduled() throws Exception {
+        final int atomId = AtomsProto.Atom.ALARM_SCHEDULED_FIELD_NUMBER;
+
+        ConfigUtils.uploadConfigForPushedAtom(getDevice(), ALARM_ATOM_TEST_PACKAGE, atomId);
+        DeviceUtils.runDeviceTests(
+                getDevice(),
+                ALARM_ATOM_TEST_PACKAGE,
+                DEVICE_TEST_CLASS,
+                "testListenerAlarmScheduled");
+
+        List<StatsLog.EventMetricData> data = ReportUtils.getEventMetricDataList(getDevice());
+        assertThat(data.size()).isAtLeast(1);
+        final int uid = getUid(ALARM_ATOM_TEST_PACKAGE);
+
+        int count = 0;
+        for (int i = 0; i < data.size(); i++) {
+            AtomsProto.AlarmScheduled as = data.get(i).getAtom().getAlarmScheduled();
+            if (as.getCallingUid() != uid) {
+                continue;
+            }
+            assertThat(as.getIsWakeup()).isFalse();
+            assertThat(as.getIsRepeating()).isFalse();
+            assertThat(as.getIsAlarmClock()).isFalse();
+            assertThat(as.getIsAllowWhileIdle()).isFalse();
+            assertThat(as.getIsRtc()).isFalse();
+
+            assertThat(as.getIsExact()).isTrue();
+            assertThat(as.getIsListener()).isTrue();
+            assertThat(as.getExactAlarmAllowedReason())
+                    .isEqualTo(AtomsProto.AlarmScheduled.ReasonCode.LISTENER);
+            assertThat(as.getCallingProcessState())
+                    .isNoneOf(
+                            ProcessStateEnum.PROCESS_STATE_UNKNOWN,
+                            ProcessStateEnum.PROCESS_STATE_UNKNOWN_TO_PROTO);
             count++;
         }
         assertThat(count).isEqualTo(1);

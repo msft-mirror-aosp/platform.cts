@@ -33,6 +33,8 @@ import android.media.MediaFormat;
 import android.media.UnsupportedSchemeException;
 import android.media.performanceclass.MediaPerformanceClass;
 import android.mediapc.cts.common.PerformanceClassEvaluator;
+import android.mediapc.cts.common.PerformanceClassTestRule;
+import android.mediapc.cts.common.Preconditions;
 import android.mediapc.cts.common.Requirements;
 import android.mediapc.cts.common.Requirements.Android11MemoryRequirement;
 import android.mediapc.cts.common.Requirements.HDRDisplayRequirement;
@@ -55,7 +57,6 @@ import com.android.compatibility.common.util.CddTest;
 import org.junit.Assume;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TestName;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -73,8 +74,8 @@ public class PerformanceClassTest {
     static ArrayList<String> mMediaTypeSecureSupport = new ArrayList<>();
 
     @Rule
-    public final TestName mTestName = new TestName();
-
+    public final PerformanceClassTestRule pcRule =
+            PerformanceClassTestRule.with(Preconditions.EMPTY);
 
     static {
         mMediaTypeSecureSupport.add(MediaFormat.MIMETYPE_VIDEO_AVC);
@@ -124,11 +125,9 @@ public class PerformanceClassTest {
 
         boolean secureDecodeSupportIfHwDecoderPresent = noSecureHwDecoderForMediaTypes.isEmpty();
 
-        PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
+        PerformanceClassEvaluator pce = pcRule.getPerformanceClassEvaluator();
         SecureHardwareDecodersRequirement r5_1__H_1_11 = Requirements.addR5_1__H_1_11().to(pce);
         r5_1__H_1_11.setSecureRequirementSatisfiedBoolean(secureDecodeSupportIfHwDecoderPresent);
-
-        pce.submitAndCheck();
     }
 
     @SmallTest
@@ -150,13 +149,11 @@ public class PerformanceClassTest {
             }
         }
 
-        PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
+        PerformanceClassEvaluator pce = pcRule.getPerformanceClassEvaluator();
         MediaDrmSecurityLevelHardwareSecureAllRequirement r5_7__H_1_2 =
                 Requirements.addR5_7__H_1_2().to(pce);
 
         r5_7__H_1_2.setNumberCryptoHwSecureAllSupport(supportedHwSecureAllSchemes.size());
-
-        pce.submitAndCheck();
     }
 
     @SmallTest
@@ -189,7 +186,7 @@ public class PerformanceClassTest {
 
         Log.i(TAG, String.format("dpi=%d size=%dx%dpix", density, longPix, shortPix));
 
-        PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
+        PerformanceClassEvaluator pce = pcRule.getPerformanceClassEvaluator();
         ScreenResolutionRRequirement r7_1_1_1__h_1_1 = Requirements.addR7_1_1_1__H_1_1().to(pce);
         ScreenResolutionRequirement r7_1_1_1__h_2_1 = Requirements.addR7_1_1_1__H_2_1().to(pce);
         ScreenDensityRRequirement r7_1_1_3__h_1_1 = Requirements.addR7_1_1_3__H_1_1().to(pce);
@@ -203,8 +200,6 @@ public class PerformanceClassTest {
 
         r7_1_1_3__h_1_1.setDisplayDensityDpi(density);
         r7_1_1_3__h_2_1.setDisplayDensityDpi(density);
-
-        pce.submitAndCheck();
     }
 
     @Test
@@ -219,26 +214,22 @@ public class PerformanceClassTest {
 
         Log.i(TAG, String.format("Total device memory = %,d MB", totalMemoryMb));
 
-        PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
+        PerformanceClassEvaluator pce = pcRule.getPerformanceClassEvaluator();
         Android11MemoryRequirement r7_6_1_h_1_1 = Requirements.addR7_6_1__H_1_1().to(pce);
         MemoryRequirement r7_6_1_h_2_1 = Requirements.addR7_6_1__H_2_1().to(pce);
 
         r7_6_1_h_1_1.setPhysicalMemoryMb(totalMemoryMb);
         r7_6_1_h_2_1.setPhysicalMemoryMb(totalMemoryMb);
-
-        pce.submitAndCheck();
     }
 
     @Test
     @CddTest(requirements = {"2.2.7.3/7.1.1.3/H-3-1"})
     public void testDisplayHdr() {
-        PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
+        PerformanceClassEvaluator pce = pcRule.getPerformanceClassEvaluator();
         HDRDisplayRequirement req = Requirements.addR7_1_1_3__H_3_1().to(pce);
 
         req.setIsHdr(Utils.IS_HDR);
         req.setDisplayLuminanceNits(Utils.HDR_DISPLAY_AVERAGE_LUMINANCE);
-
-        pce.submitAndCheck();
     }
 
     @Test

@@ -16,6 +16,8 @@
 package android.mediapc.cts;
 
 import android.mediapc.cts.common.PerformanceClassEvaluator;
+import android.mediapc.cts.common.PerformanceClassTestRule;
+import android.mediapc.cts.common.Preconditions;
 import android.mediapc.cts.common.Requirements;
 import android.mediapc.cts.common.Requirements.VulkanRequirement;
 import android.util.Log;
@@ -32,7 +34,6 @@ import org.json.JSONObject;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TestName;
 import org.junit.runner.RunWith;
 
 /**
@@ -52,7 +53,8 @@ public class VulkanTest {
     private static native String nativeGetVkJSON();
 
     @Rule
-    public final TestName mTestName = new TestName();
+    public final PerformanceClassTestRule pcRule =
+            PerformanceClassTestRule.with(Preconditions.EMPTY);
 
     static {
         System.loadLibrary("ctsmediapc_vulkan_jni");
@@ -81,7 +83,7 @@ public class VulkanTest {
     @Test
     public void checkVulkanProtectedMemoryAndGlobalPrioritySupport() throws Exception {
 
-        PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
+        PerformanceClassEvaluator pce = pcRule.getPerformanceClassEvaluator();
         VulkanRequirement req = Requirements.addR7_1_4_1__H_1_3().to(pce);
 
         var filteredDevices = mVulkanDevices.stream().filter(this::notCpuDevice).toList();
@@ -94,8 +96,6 @@ public class VulkanTest {
         req.setVkNonCpuDeviceCount(filteredDevices.size());
         req.setVkPhysicalDeviceProtectedMemory(hasProtectedMemory);
         req.setVkExtGlobalPriority(extGlobalPriority);
-
-        pce.submitAndCheck();
     }
 
     private boolean notCpuDevice(JSONObject device) {

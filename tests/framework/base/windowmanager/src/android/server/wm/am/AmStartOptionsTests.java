@@ -35,6 +35,7 @@ import android.content.ComponentName;
 import android.platform.test.annotations.Presubmit;
 import android.server.wm.ActivityManagerTestBase;
 import android.server.wm.WindowManagerState;
+import android.server.wm.app.Components;
 
 import org.junit.After;
 import org.junit.Test;
@@ -45,6 +46,13 @@ import org.junit.Test;
  */
 @Presubmit
 public class AmStartOptionsTests extends ActivityManagerTestBase {
+
+    @After
+    public void tearDown() {
+        // Ensure debug app is cleaned to avoid impacting other tests (b/271998036)
+        executeShellCommand("am clear-debug-app");
+        Components.forceStopPackage();
+    }
 
     @Test
     public void testDashD() {
@@ -113,11 +121,5 @@ public class AmStartOptionsTests extends ActivityManagerTestBase {
 
         waitAndAssertResumedAndFocusedActivityOnDisplay(actualActivity, getMainDisplayId(),
                 "Activity must be launched");
-    }
-
-    @After
-    public void tearDown() {
-        // Ensure debug app is cleaned to avoid impacting other tests (b/271998036)
-        executeShellCommand("am clear-debug-app");
     }
 }

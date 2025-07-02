@@ -30,19 +30,22 @@ import android.content.Intent;
 import android.platform.test.annotations.Presubmit;
 import android.server.wm.ActivityManagerTestBase;
 import android.server.wm.WindowManagerState.Task;
+import android.server.wm.app.Components;
 
 import com.android.compatibility.common.util.ApiTest;
 
+import org.junit.After;
 import org.junit.Test;
 
-/**
- * Build/Install/Run:
- * atest CtsWindowManagerDeviceActivity:LockTaskModeTests
- */
+/** Build/Install/Run: atest CtsWindowManagerDeviceOther:LockTaskModeTests */
 @Presubmit
 public class LockTaskModeTests extends ActivityManagerTestBase {
-    private static final String[] LOCK_TASK_PACKAGES_ALLOWLIST =
-        new String[] {"android.server.wm.app"};
+    private static final String[] LOCK_TASK_PACKAGES_ALLOWLIST = {Components.getPackageName()};
+
+    @After
+    public void tearDown() {
+        Components.forceStopPackage();
+    }
 
     @Test
     @ApiTest(apis = {"android.app.ActivityTaskManager#updateLockTaskPackages",

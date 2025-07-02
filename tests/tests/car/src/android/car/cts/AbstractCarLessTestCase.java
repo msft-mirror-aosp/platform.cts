@@ -23,7 +23,7 @@ import android.car.test.AbstractExpectableTestCase;
  * <p>Typically used to test POJO-like (Plain-Old Java Objects) classes; for tests that need a
  * {@link android.car.Car} object, use {@link AbstractCarTestCase} instead.
  */
-abstract class AbstractCarLessTestCase extends AbstractExpectableTestCase {
+public abstract class AbstractCarLessTestCase extends AbstractExpectableTestCase {
 
     private static final String TAG = AbstractCarLessTestCase.class.getSimpleName();
 }

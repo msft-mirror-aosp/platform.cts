@@ -49,7 +49,10 @@ android_test {
         "flag-junit",
     ],
 
-    srcs: ["src/android/server/biometrics/*.java"],
+    srcs: [
+        "src/android/server/biometrics/*.java",
+        "src/android/server/biometrics/*.kt",
+    ],
     data: [
         ":CtsBiometricServiceTestApp",
         ":CtsBiometricServiceUtilTestApp",
@@ -95,7 +98,10 @@ android_test {
         "truth",
     ],
 
-    srcs: ["src/android/server/biometrics/fingerprint/*.java"],
+    srcs: [
+        "src/android/server/biometrics/fingerprint/*.java",
+        "src/android/server/biometrics/fingerprint/*.kt",
+    ],
     data: [
         ":CtsFingerprintServiceTestApp",
         ":CtsBiometricServiceUtilTestApp",
@@ -117,7 +123,10 @@ java_test_helper_library {
         "android.hardware.biometrics.flags-aconfig-java",
     ],
 
-    srcs: ["src/android/server/biometrics/util/*.java"],
+    srcs: [
+        "src/android/server/biometrics/util/*.java",
+        "src/android/server/biometrics/util/*.kt",
+    ],
 }
 
 java_test_helper_library {

@@ -27,7 +27,9 @@ import android.platform.test.annotations.Presubmit;
 import android.server.wm.ActivityManagerTestBase;
 import android.server.wm.CommandSession.ActivityCallback;
 import android.server.wm.RotationSession;
+import android.server.wm.app.Components;
 
+import org.junit.After;
 import org.junit.Test;
 
 /**
@@ -36,6 +38,11 @@ import org.junit.Test;
  */
 @Presubmit
 public class OverrideConfigTests extends ActivityManagerTestBase {
+
+    @After
+    public void tearDown() {
+        Components.forceStopPackage();
+    }
 
     @Test
     public void testReceiveOverrideConfigFromRelayout() {

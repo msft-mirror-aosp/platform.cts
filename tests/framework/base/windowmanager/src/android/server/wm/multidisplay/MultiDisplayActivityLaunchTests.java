@@ -86,6 +86,7 @@ import android.server.wm.WindowManagerState.DisplayContent;
 import android.server.wm.WindowManagerState.Task;
 import android.view.SurfaceView;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -108,6 +109,13 @@ public class MultiDisplayActivityLaunchTests extends MultiDisplayTestBase {
         super.setUp();
         assumeTrue(supportsMultiDisplay());
         acquirePartialWakeLock();
+    }
+
+    @After
+    public void tearDown() {
+        android.server.wm.third.Components.forceStopPackage();
+        android.server.wm.second.Components.forceStopPackage();
+        android.server.wm.app.Components.forceStopPackage();
     }
 
     /**

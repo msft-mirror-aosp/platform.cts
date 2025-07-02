@@ -40,6 +40,7 @@ import android.os.Bundle;
 import android.platform.test.annotations.Presubmit;
 import android.server.wm.ActivityManagerTestBase;
 import android.server.wm.RotationSession;
+import android.server.wm.app.Components;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
@@ -53,6 +54,7 @@ import com.android.compatibility.common.util.WindowUtil;
 
 import org.hamcrest.CustomTypeSafeMatcher;
 import org.hamcrest.Matcher;
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -101,6 +103,11 @@ public class WindowInsetsPolicyTest extends ActivityManagerTestBase {
     public void setUp() throws Exception {
         super.setUp();
         mTestActivityComponentName = new ComponentName(mContext, TestActivity.class);
+    }
+
+    @After
+    public void tearDown() {
+        Components.forceStopPackage();
     }
 
     @Test

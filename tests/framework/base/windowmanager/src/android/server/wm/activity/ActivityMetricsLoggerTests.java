@@ -73,13 +73,13 @@ import android.server.wm.StateLogger;
 import android.support.test.metricshelper.MetricsAsserts;
 import android.util.EventLog.Event;
 
-
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import com.android.compatibility.common.util.SystemUtil;
 
 import org.hamcrest.collection.IsIn;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -119,6 +119,13 @@ public class ActivityMetricsLoggerTests extends ActivityManagerTestBase {
         mMetricsReader.checkpoint(); // clear out old logs
         mLogSeparator = separateLogs(); // add a new separator for logs
         mTestRunningUserId = Process.myUserHandle().getIdentifier();
+    }
+
+    @After
+    public void tearDown() {
+        android.server.wm.third.Components.forceStopPackage();
+        android.server.wm.second.Components.forceStopPackage();
+        android.server.wm.app.Components.forceStopPackage();
     }
 
     /**

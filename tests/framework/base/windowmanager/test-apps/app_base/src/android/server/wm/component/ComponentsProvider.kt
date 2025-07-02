@@ -52,7 +52,7 @@ abstract class ComponentsProvider {
      *
      * @throws AssertionError if the implementing class is not named exactly `Components`.
      */
-    val packageName: String = ComponentsBase.getPackageName(this.javaClass)
+    @JvmField val packageName: String = ComponentsBase.getPackageName(this.javaClass)
 
     /**
      * Builds a [ComponentName] for a class within this component's package.

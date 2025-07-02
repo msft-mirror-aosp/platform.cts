@@ -27,9 +27,11 @@ import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Typeface
 import android.graphics.cts.utils.Material2021SpecMatcher
+import android.os.Environment
 import android.platform.test.annotations.DisabledOnRavenwood
 import android.provider.Settings
 import androidx.annotation.ColorInt
+import androidx.annotation.NonNull
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntRect
 import androidx.core.graphics.ColorUtils
@@ -49,6 +51,7 @@ import com.android.systemui.monet.Style.VIBRANT
 import com.google.common.truth.Truth.assertWithMessage
 import com.google.ux.material.libmonet.contrast.Contrast
 import com.google.ux.material.libmonet.hct.Hct
+import java.io.File
 import java.io.Serializable
 import kotlin.math.ceil
 import org.junit.AfterClass
@@ -78,13 +81,23 @@ class SystemPaletteTest(
     val isOldSpec: Boolean =
         mContext.resources.getIdentifier("system_primary_dim_light", "color", "android") == 0
 
-    private val goldenPathManager = GoldenPathManager(
+    /** The output directory for generated goldens */
+    @NonNull
+    private val outDir: File =
+        File(Environment.getExternalStorageDirectory(), "android.graphics.cts")
+
+    private val goldenPathManager =
+        GoldenPathManager(
             appContext = mContext,
             assetsPathRelativeToBuildRoot = "cts/tests/tests/graphics/assets/",
-            pathConfig = PathConfig(PathElementNoContext("spec", true){
-                if (isOldSpec) "libmonet_2021" else "libmonet_2025"
-            })
-    )
+            deviceLocalPath = outDir.path,
+            pathConfig =
+                PathConfig(
+                    PathElementNoContext("spec", true) {
+                        if (isOldSpec) "libmonet_2021" else "libmonet_2025"
+                    }
+                ),
+        )
 
     @get:Rule val screenshotTestRule = ScreenshotTestRule(goldenPathManager)
 
@@ -200,7 +213,7 @@ class SystemPaletteTest(
             .createScreenshotAsserter(
                 ScreenshotAsserterConfig(
                     matcher = if (isOldSpec) Material2021SpecMatcher() else PixelPerfectMatcher(),
-                    captureStrategy = { generatePaletteBitmap() }
+                    captureStrategy = { generatePaletteBitmap() },
                 )
             )
             .assertGoldenImage(goldenName)

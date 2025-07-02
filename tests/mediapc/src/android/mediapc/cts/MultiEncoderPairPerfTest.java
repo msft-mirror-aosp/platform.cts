@@ -23,6 +23,8 @@ import static android.mediapc.cts.CodecTestBase.mediaTypePrefix;
 import android.media.MediaFormat;
 import android.mediapc.cts.common.CodecMetrics;
 import android.mediapc.cts.common.PerformanceClassEvaluator;
+import android.mediapc.cts.common.PerformanceClassTestRule;
+import android.mediapc.cts.common.Preconditions;
 import android.mediapc.cts.common.Requirements;
 import android.mediapc.cts.common.Requirements.ConcurrentVideoEncoderSessionsRequirement;
 import android.mediapc.cts.common.Requirements.VideoEncoderInstancesRequirement;
@@ -36,7 +38,6 @@ import com.android.compatibility.common.util.CddTest;
 import org.junit.Assume;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TestName;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
@@ -59,15 +60,16 @@ public class MultiEncoderPairPerfTest extends MultiCodecPerfTestBase {
     private final Pair<String, String> mFirstPair;
     private final Pair<String, String> mSecondPair;
 
+    @Rule
+    public final PerformanceClassTestRule pcRule =
+            PerformanceClassTestRule.with(Preconditions.BASELINE);
+
     public MultiEncoderPairPerfTest(Pair<String, String> firstPair, Pair<String, String> secondPair,
             boolean isAsync) {
         super(null, null, isAsync);
         mFirstPair = firstPair;
         mSecondPair = secondPair;
     }
-
-    @Rule
-    public final TestName mTestName = new TestName();
 
     // Returns the list of params with two hardware (mediaType - encoder) pairs in both
     // sync and async modes.
@@ -198,7 +200,7 @@ public class MultiEncoderPairPerfTest extends MultiCodecPerfTestBase {
             achievedFrameRate = result.fps();
             frameDropsPerSec = result.fdps();
         }
-        PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
+        PerformanceClassEvaluator pce = pcRule.getPerformanceClassEvaluator();
         VideoEncoderInstancesRequirement r5_1__H_1_3;
         ConcurrentVideoEncoderSessionsRequirement r5_1__H_1_4;
         // Achieved frame rate is not compared as this test runs in byte buffer mode.
@@ -235,7 +237,5 @@ public class MultiEncoderPairPerfTest extends MultiCodecPerfTestBase {
                 r5_1__H_1_3.setConcurrentSessions(maxInstances);
             }
         }
-
-        pce.submitAndCheck();
     }
 }

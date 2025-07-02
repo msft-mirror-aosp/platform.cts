@@ -59,6 +59,7 @@ import android.server.wm.WindowManagerState;
 import android.server.wm.app.Components;
 import android.server.wm.settings.SettingsSession;
 
+import org.junit.After;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -84,6 +85,11 @@ public class AssistantStackTests extends ActivityManagerTestBase {
                     mWmState.getRootTaskByActivityType(ACTIVITY_TYPE_ASSISTANT);
             mAssistantDisplayId = assistantStack.mDisplayId;
         }
+    }
+
+    @After
+    public void tearDown() {
+        Components.forceStopPackage();
     }
 
     @Test

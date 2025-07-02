@@ -30,10 +30,12 @@ import android.content.Intent;
 import android.platform.test.annotations.Presubmit;
 import android.server.wm.MultiDisplayTestBase;
 import android.server.wm.WindowManagerState.DisplayContent;
+import android.server.wm.app.Components;
 import android.util.Log;
 
 import com.android.compatibility.common.util.SystemUtil;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -63,6 +65,11 @@ public class MultiDisplayPrivateDisplayTests extends MultiDisplayTestBase {
         findPrivateDisplays();
         assumeFalse("Skipping test: no physical private display found.",
                 mPrivateDisplayIds.isEmpty());
+    }
+
+    @After
+    public void tearDown() {
+        Components.forceStopPackage();
     }
 
     /** Saves physical private displays in mPrivateDisplayIds */

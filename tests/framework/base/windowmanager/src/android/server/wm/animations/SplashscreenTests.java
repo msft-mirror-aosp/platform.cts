@@ -87,6 +87,7 @@ import android.server.wm.Condition;
 import android.server.wm.DumpOnFailure;
 import android.server.wm.TestJournalProvider;
 import android.server.wm.WindowManagerState;
+import android.server.wm.app.Components;
 import android.view.WindowInsets;
 import android.view.WindowManager;
 import android.view.WindowMetrics;
@@ -129,6 +130,7 @@ public class SplashscreenTests extends ActivityManagerTestBase {
     @After
     public void tearDown() {
         mWmState.setSanityCheckWithFocusedWindow(true);
+        Components.forceStopPackage();
     }
 
     /**

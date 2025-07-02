@@ -38,12 +38,6 @@ android_test {
         "src/**/*.java",
         "src/**/*.aidl",
     ],
-    host_required: [
-        "compatibility-host-webview-preconditions",
-    ],
-    host_common_data: [
-        ":compatibility-host-webview-preconditions",
-    ],
     test_suites: [
         "cts",
         "general-tests",

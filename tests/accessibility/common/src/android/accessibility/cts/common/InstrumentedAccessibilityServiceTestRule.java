@@ -24,6 +24,8 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.compatibility.common.util.TestUtils;
+
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
@@ -92,6 +94,28 @@ public class InstrumentedAccessibilityServiceTestRule<T extends InstrumentedAcce
             boolean enableService) {
         mAccessibilityServiceClass = clazz;
         mEnableService = enableService;
+    }
+
+    /**
+     * Checks if the instrumented accessibility service under test is installed.
+     *
+     * <p>This method determines if the accessibility service associated with this test rule has
+     * been installed on the device. It does not check if the service is currently enabled.
+     *
+     * <p>Usage:
+     *
+     * <pre>
+     *    &#064;Test
+     *    public void checkServiceInstallation() {
+     *        boolean installed = mServiceRule.isServiceInstalled();
+     *    }
+     * </pre>
+     *
+     * @return {@code true} if the instrumented accessibility service is installed, {@code false}
+     *     otherwise.
+     */
+    public boolean isServiceInstalled() {
+        return InstrumentedAccessibilityService.isServiceInstalled(mAccessibilityServiceClass);
     }
 
     /**
@@ -225,6 +249,11 @@ public class InstrumentedAccessibilityServiceTestRule<T extends InstrumentedAcce
 
         @Override
         public void evaluate() throws Throwable {
+            TestUtils.waitUntil(
+                    "Waiting for AccessibilityManager to recognize instrumented accessibility"
+                            + " service",
+                    () -> isServiceInstalled());
+
             try {
                 if (mEnableService) {
                     enableService();

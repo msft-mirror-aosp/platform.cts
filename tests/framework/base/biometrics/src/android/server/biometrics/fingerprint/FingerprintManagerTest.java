@@ -158,7 +158,7 @@ public class FingerprintManagerTest implements TestSessionList.Idler {
     }
 
     @After
-    public void cleanup() throws Exception {
+    public void teardown() throws Exception {
         if (mFingerprintManager == null) {
             return;
         }
@@ -167,6 +167,8 @@ public class FingerprintManagerTest implements TestSessionList.Idler {
         Utils.waitForIdleService(this::getSensorStates);
 
         mInstrumentation.getUiAutomation().dropShellPermissionIdentity();
+        android.server.biometrics.fingerprint.Components.forceStopPackage();
+        android.server.biometrics.util.Components.forceStopPackage();
     }
 
     @ApiTest(apis = {

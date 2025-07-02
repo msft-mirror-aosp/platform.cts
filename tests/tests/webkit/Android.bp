@@ -52,12 +52,6 @@ android_test {
     static_libs: [
         "CtsWebkitTestCasesSharedWithSdk",
     ],
-    host_required: [
-        "compatibility-host-webview-preconditions",
-    ],
-    host_common_data: [
-        ":compatibility-host-webview-preconditions",
-    ],
     // Tag this module as a cts test artifact
     test_suites: [
         "cts",

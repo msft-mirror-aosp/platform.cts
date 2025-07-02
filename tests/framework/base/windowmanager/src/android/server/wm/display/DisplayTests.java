@@ -38,12 +38,14 @@ import android.server.wm.LockScreenSession;
 import android.server.wm.MultiDisplayTestBase;
 import android.server.wm.WindowManagerState;
 import android.server.wm.WindowManagerState.DisplayContent;
+import android.server.wm.app.Components;
 import android.util.Size;
 import android.view.Display;
 
 import com.android.compatibility.common.util.CddTest;
 import com.android.window.flags.Flags;
 
+import org.junit.After;
 import org.junit.Test;
 
 import java.util.List;
@@ -60,6 +62,11 @@ public class DisplayTests extends MultiDisplayTestBase {
     public void setUp() throws Exception {
         super.setUp();
         acquirePartialWakeLock();
+    }
+
+    @After
+    public void tearDown() {
+        Components.forceStopPackage();
     }
 
     /**
@@ -84,7 +91,8 @@ public class DisplayTests extends MultiDisplayTestBase {
     public void testRemoteInsetsControllerNotControlSystemBarsForNonAutoDevies() {
         assumeFalse(isCar());
 
-        assertFalse("Non auto devices should not set config_remoteInsetsControllerControlsSystemBars",
+        assertFalse(
+                "Non auto devices should not set config_remoteInsetsControllerControlsSystemBars",
                 remoteInsetsControllerControlsSystemBars());
     }
 

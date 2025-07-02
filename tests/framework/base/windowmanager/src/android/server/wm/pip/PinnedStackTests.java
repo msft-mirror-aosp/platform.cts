@@ -220,7 +220,7 @@ public class PinnedStackTests extends ActivityManagerTestBase {
 
     @After
     public void tearDown() {
-        stopTestPackage(android.server.wm.app.Components.getPackageName());
+        android.server.wm.app.Components.forceStopPackage();
         android.server.wm.app27.Components.forceStopPackage();
         android.server.wm.apptv.Components.forceStopPackage();
     }

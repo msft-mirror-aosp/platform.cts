@@ -31,6 +31,7 @@ import android.graphics.Rect;
 import android.os.RemoteException;
 import android.platform.test.annotations.Presubmit;
 import android.provider.Settings;
+import android.server.wm.app.Components;
 import android.server.wm.settings.SettingsSession;
 import android.util.Log;
 import android.view.SurfaceControl;
@@ -86,6 +87,7 @@ public class SurfaceSyncGroupTests {
         ActivityManager am = mActivity.getSystemService(ActivityManager.class);
         SystemUtil.runWithShellPermissionIdentity(() -> am.forceStopPackage(
                 CRASHING_ACTIVITY.getPackageName()));
+        Components.forceStopPackage();
     }
 
     @Test

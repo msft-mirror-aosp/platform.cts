@@ -54,6 +54,7 @@ import android.server.wm.LockScreenSession;
 import android.server.wm.WaitForValidActivityState;
 import android.server.wm.app.Components;
 
+import org.junit.After;
 import org.junit.Test;
 
 /**
@@ -89,6 +90,10 @@ public class ActivityStarterTests extends ActivityLifecycleClientTestBase {
     private static final ComponentName RELINQUISHTASKIDENTITY_ACTIVITY
             = getComponentName(RelinquishTaskIdentityActivity.class);
 
+    @After
+    public void tearDown() {
+        Components.forceStopPackage();
+    }
 
     /**
      * Ensures that the following launch flag combination works when starting an activity which is

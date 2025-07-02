@@ -26,7 +26,6 @@ import static android.companion.virtual.camera.VirtualCameraConfig.SENSOR_ORIENT
 import static android.content.Context.DEVICE_ID_DEFAULT;
 import static android.graphics.ImageFormat.RGB_565;
 import static android.graphics.ImageFormat.YUV_420_888;
-import static android.hardware.camera2.CameraMetadata.CONTROL_AE_MODE_ON;
 import static android.hardware.camera2.CameraMetadata.LENS_FACING_BACK;
 import static android.hardware.camera2.CameraMetadata.LENS_FACING_EXTERNAL;
 import static android.hardware.camera2.CameraMetadata.LENS_FACING_FRONT;
@@ -118,7 +117,6 @@ public class VirtualCameraTest {
     private static final int CAMERA_HEIGHT = 480;
     private static final int CAMERA_FORMAT = YUV_420_888;
     private static final int CAMERA_MAX_FPS = 30;
-    private static final long CAMERA_MIN_FRAME_DURATION = 1_000_000_000L;
     private static final int CAMERA_SENSOR_ORIENTATION = SENSOR_ORIENTATION_0;
     private static final int CAMERA_LENS_FACING = LENS_FACING_FRONT;
     private static final int IMAGE_READER_MAX_IMAGES = 2;
@@ -876,7 +874,8 @@ public class VirtualCameraTest {
 
             CaptureRequest.Builder captureRequestBuilder =
                     cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
-            captureRequestBuilder.set(CaptureRequest.CONTROL_AE_MODE, CONTROL_AE_MODE_ON);
+            captureRequestBuilder.set(
+                    CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_ON);
             captureRequestBuilder.set(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE, CAMERA_FPS_RANGE);
 
             CaptureRequest captureRequest = captureRequestBuilder.build();
@@ -935,7 +934,8 @@ public class VirtualCameraTest {
 
             CaptureRequest.Builder captureRequestBuilder =
                     cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
-            captureRequestBuilder.set(CaptureRequest.CONTROL_AE_MODE, CONTROL_AE_MODE_ON);
+            captureRequestBuilder.set(
+                    CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_ON);
             captureRequestBuilder.set(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE, CAMERA_FPS_RANGE);
 
             CaptureRequest captureRequest = captureRequestBuilder.build();
