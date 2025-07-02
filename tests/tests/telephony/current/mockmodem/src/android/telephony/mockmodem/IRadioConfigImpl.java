@@ -32,6 +32,7 @@ import android.os.Build;
 import android.os.Handler;
 import android.os.Message;
 import android.os.RemoteException;
+import android.text.TextUtils;
 import android.util.Log;
 
 public class IRadioConfigImpl extends IRadioConfig.Stub {
@@ -125,6 +126,14 @@ public class IRadioConfigImpl extends IRadioConfig.Stub {
                             mSimSlotStatus = (SimSlotStatus[]) ar.result;
                             for (int i = 0; i < mSlotNum; i++) {
                                 Log.i(mTag, "Sim slot status: " + mSimSlotStatus[i]);
+                                // update sim type
+                                SimTypeInfo simtypeInfo = new SimTypeInfo();
+                                simtypeInfo.currentSimType =
+                                        TextUtils.isEmpty(mSimSlotStatus[i].eid)
+                                                ? SimType.PHYSICAL
+                                                : SimType.ESIM;
+                                simtypeInfo.supportedSimTypes = simtypeInfo.currentSimType;
+                                mSimTypeInfos[i] = simtypeInfo;
                             }
                             unsolSimSlotsStatusChanged();
                         } else {
