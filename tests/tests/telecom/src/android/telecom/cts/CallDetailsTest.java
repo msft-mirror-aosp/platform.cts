@@ -89,6 +89,8 @@ public class CallDetailsTest extends BaseTelecomTestWithMockServices {
     public static final String TEST_EVENT = "com.test.event.TEST";
     public static final Uri TEST_DEFLECT_URI = Uri.fromParts("tel", "+16505551212", null);
     private static final int ASYNC_TIMEOUT = 10000;
+    private static final float TEST_MIN_BITRATE_FOR_HD_PLUS = 24.4f;
+    ;
     private StatusHints mStatusHints;
     private Bundle mExtras = new Bundle();
     private Uri mContactUri;
@@ -1134,7 +1136,7 @@ public class CallDetailsTest extends BaseTelecomTestWithMockServices {
     }
 
     /**
-     * Tests whether the CallLogManager logs the features of a call(HD call, Wifi call, VoLTE)
+     * Tests whether the CallLogManager logs the features of a call(HD/HD+ call, Wifi call, VoLTE)
      * correctly.
      */
     public void testLogFeatures() throws Exception {
@@ -1146,13 +1148,14 @@ public class CallDetailsTest extends BaseTelecomTestWithMockServices {
         CountDownLatch callLogEntryLatch = getCallLogEntryLatch();
 
         Bundle testBundle = new Bundle();
-        testBundle.putInt(TelecomManager.EXTRA_CALL_NETWORK_TYPE,
-                          TelephonyManager.NETWORK_TYPE_LTE);
+        testBundle.putInt(
+                TelecomManager.EXTRA_CALL_NETWORK_TYPE, TelephonyManager.NETWORK_TYPE_LTE);
+        // To Verify the HD+ call log
+        testBundle.putInt(Connection.EXTRA_AUDIO_CODEC, Connection.AUDIO_CODEC_EVS_SWB);
         mConnection.putExtras(testBundle);
+
         // Wait for the 2nd invocation; setExtras is called in the setup method.
         mOnExtrasChangedCounter.waitForCount(2, WAIT_FOR_STATE_CHANGE_TIMEOUT_MS);
-
-        Bundle extra = mCall.getDetails().getExtras();
 
         mCall.disconnect();
 
@@ -1166,13 +1169,52 @@ public class CallDetailsTest extends BaseTelecomTestWithMockServices {
         int features = callsCursor.getInt(callsCursor.getColumnIndex("features"));
         assertEquals(CallLog.Calls.FEATURES_HD_CALL,
                 features & CallLog.Calls.FEATURES_HD_CALL);
+        if (Flags.hdPlusCall()) {
+            // To Verify the HD+ call log
+            assertEquals(
+                    CallLog.Calls.FEATURES_HD_PLUS_CALL,
+                    features & CallLog.Calls.FEATURES_HD_PLUS_CALL);
+        }
         assertEquals(CallLog.Calls.FEATURES_WIFI, features & CallLog.Calls.FEATURES_WIFI);
         assertEquals(CallLog.Calls.FEATURES_VOLTE, features & CallLog.Calls.FEATURES_VOLTE);
     }
 
     /**
-     * Verifies operation of the test telecom call ID system APIs.
+     * Tests whether the CallLogManager logs the features of a HD+ call correctly.
+     *
+     * @throws Exception
      */
+    public void testHdCallFeatures() throws Exception {
+        if (!mShouldTestTelecom || !Flags.hdPlusCall()) {
+            return;
+        }
+        // Register content observer on call log and get latch
+        CountDownLatch callLogEntryLatch = getCallLogEntryLatch();
+
+        Bundle testBundle = new Bundle();
+        testBundle.putInt(Connection.EXTRA_AUDIO_CODEC, Connection.AUDIO_CODEC_EVS_FB);
+        testBundle.putFloat(
+                Connection.EXTRA_AUDIO_CODEC_BITRATE_KBPS, TEST_MIN_BITRATE_FOR_HD_PLUS);
+        mConnection.putExtras(testBundle);
+
+        // Wait for the 2nd invocation; setExtras is called in the setup method.
+        mOnExtrasChangedCounter.waitForCount(2, WAIT_FOR_STATE_CHANGE_TIMEOUT_MS);
+        mCall.disconnect();
+        // Wait on the call log latch.
+        callLogEntryLatch.await(ASYNC_TIMEOUT, TimeUnit.MILLISECONDS);
+
+        // Verify the contents of the call log
+        Cursor callsCursor =
+                mContext.getContentResolver()
+                        .query(CallLog.Calls.CONTENT_URI, null, null, null, "_id DESC");
+        callsCursor.moveToFirst();
+        int features = callsCursor.getInt(callsCursor.getColumnIndex("features"));
+        assertEquals(
+                CallLog.Calls.FEATURES_HD_PLUS_CALL,
+                features & CallLog.Calls.FEATURES_HD_PLUS_CALL);
+    }
+
+    /** Verifies operation of the test telecom call ID system APIs. */
     public void testTelecomCallId() {
         if (!mShouldTestTelecom) {
             return;
