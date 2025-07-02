@@ -111,10 +111,17 @@ abstract class BiometricTestBase implements TestSessionList.Idler {
     protected static final String BUTTON_ID_NEGATIVE = "button_negative";
     protected static final String BUTTON_ID_USE_CREDENTIAL = "button_use_credential";
     protected static final String BUTTON_ID_FALLBACK = "button_fallback";
+    protected static final String BUTTON_ID_CANCEL = "button_cancel";
 
     // Positive-side (right) buttons
     protected static final String BUTTON_ID_CONFIRM = "button_confirm";
     protected static final String BUTTON_ID_TRY_AGAIN = "button_try_again";
+
+    // Fallback Page buttons
+    protected static final String FALLBACK_PAGE_CREDENTIAL_BUTTON = "fallback_credential_button";
+
+    // Credential screen buttons
+    protected static final String CREDENTIAL_FALLBACK_BUTTON = "fallback_button";
 
     // Biometric text contents
     protected static final String SCROLL_PARENT_VIEW = "scrollView";
