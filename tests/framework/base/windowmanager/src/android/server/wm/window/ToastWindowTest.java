@@ -102,6 +102,7 @@ public class ToastWindowTest extends ActivityManagerTestBase {
             Settings.Global.putString(mContext.getContentResolver(), SETTING_HIDDEN_API_POLICY,
                     mPreviousHiddenApiPolicy);
         });
+        Components.forceStopPackage();
     }
 
     @Test

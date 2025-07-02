@@ -98,6 +98,7 @@ public class HideOverlayWindowsTest extends ActivityManagerTestBase {
     public void tearDown() throws Exception {
         mContext.unregisterReceiver(mPongReceiver);
         mContext.unregisterReceiver(mTouchReceiver);
+        Components.forceStopPackage();
     }
 
     @Test

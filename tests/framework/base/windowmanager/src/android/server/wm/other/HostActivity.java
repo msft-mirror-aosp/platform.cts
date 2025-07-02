@@ -40,8 +40,8 @@ import android.widget.RelativeLayout;
 
 import java.util.concurrent.CountDownLatch;
 
-
-public class HostActivity extends Activity implements SurfaceHolder.Callback{
+/** Build/Install/Run: atest CtsWindowManagerDeviceOther:HostActivity */
+public class HostActivity extends Activity implements SurfaceHolder.Callback {
     private SurfaceView mSurfaceView;
     public CountDownLatch mEmbeddedViewAttachedLatch =  new CountDownLatch(1);
     private ServiceConnection mConnection = new ServiceConnection() {

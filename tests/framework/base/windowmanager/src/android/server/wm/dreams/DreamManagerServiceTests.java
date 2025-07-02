@@ -100,11 +100,12 @@ public class DreamManagerServiceTests extends ActivityManagerTestBase {
     }
 
     @After
-    public void reset() {
+    public void tearDown() {
         mDreamCoordinator.restoreDefaults();
         mDreamCoordinator.stopDream();
         mWmState.waitForDreamGone();
         if (mCommunalHubSetting != null) mCommunalHubSetting.close();
+        Components.forceStopPackage();
     }
 
     private void waitAndAssertDreamActivityGone(int maxTimeOutInSeconds) {

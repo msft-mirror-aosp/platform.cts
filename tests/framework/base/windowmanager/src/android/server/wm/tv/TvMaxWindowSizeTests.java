@@ -39,6 +39,7 @@ import android.server.wm.CommandSession;
 import android.server.wm.WaitForValidActivityState;
 import android.view.Display;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -71,6 +72,12 @@ public class TvMaxWindowSizeTests extends ActivityManagerTestBase {
         display.getRealSize(displaySize);
         mDisplayLongestWidth = Math.max(displaySize.x, displaySize.y);
         mDisplayShortestWidth = Math.min(displaySize.x, displaySize.y);
+    }
+
+    @After
+    public void tearDown() {
+        android.server.wm.app30.Components.forceStopPackage();
+        android.server.wm.app.Components.forceStopPackage();
     }
 
     @Test

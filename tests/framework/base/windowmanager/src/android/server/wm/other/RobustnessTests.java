@@ -20,14 +20,18 @@ import static android.server.wm.app.Components.RECURSIVE_ACTIVITY;
 import static android.server.wm.app.Components.TEST_ACTIVITY;
 
 import android.server.wm.ActivityManagerTestBase;
+import android.server.wm.app.Components;
 
+import org.junit.After;
 import org.junit.Test;
 
-/**
- * Build/Install/Run:
- *     atest CtsWindowManagerDeviceActivity:RobustnessTests
- */
+/** Build/Install/Run: atest CtsWindowManagerDeviceOther:RobustnessTests */
 public class RobustnessTests extends ActivityManagerTestBase {
+
+    @After
+    public void tearDown() {
+        Components.forceStopPackage();
+    }
 
     /**
      * Tests launching an activity that launches itself recursively limited number of times.

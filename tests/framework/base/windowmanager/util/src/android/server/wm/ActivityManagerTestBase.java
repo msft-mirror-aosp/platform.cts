@@ -88,7 +88,6 @@ import static android.server.wm.app.Components.PipActivity.EXTRA_SET_ASPECT_RATI
 import static android.server.wm.app.Components.PipActivity.EXTRA_SET_ASPECT_RATIO_WITH_DELAY_NUMERATOR;
 import static android.server.wm.app.Components.PipActivity.EXTRA_SET_PIP_CALLBACK;
 import static android.server.wm.app.Components.PipActivity.EXTRA_SET_PIP_STASHED;
-import static android.server.wm.app.Components.TEST_ACTIVITY;
 import static android.server.wm.app.Components.VIRTUAL_DISPLAY_ACTIVITY;
 import static android.server.wm.app.Components.VirtualDisplayActivity.COMMAND_CREATE_DISPLAY;
 import static android.server.wm.app.Components.VirtualDisplayActivity.COMMAND_DESTROY_DISPLAY;
@@ -103,8 +102,6 @@ import static android.server.wm.app.Components.VirtualDisplayActivity.KEY_RESIZE
 import static android.server.wm.app.Components.VirtualDisplayActivity.KEY_SHOW_SYSTEM_DECORATIONS;
 import static android.server.wm.app.Components.VirtualDisplayActivity.KEY_SUPPORTS_TOUCH;
 import static android.server.wm.app.Components.VirtualDisplayActivity.VIRTUAL_DISPLAY_PREFIX;
-import static android.server.wm.second.Components.SECOND_ACTIVITY;
-import static android.server.wm.third.Components.THIRD_ACTIVITY;
 import static android.view.Display.DEFAULT_DISPLAY;
 import static android.view.Surface.ROTATION_0;
 import static android.view.Surface.ROTATION_90;
@@ -223,12 +220,11 @@ public abstract class ActivityManagerTestBase {
     // Use one of the test tags as a separator
     private static final int EVENT_LOG_SEPARATOR_TAG = 42;
 
-    private static final String TEST_PACKAGE = TEST_ACTIVITY.getPackageName();
     private static final List<String> TEST_PACKAGES =
             List.of(
-                    TEST_PACKAGE,
-                    SECOND_ACTIVITY.getPackageName(),
-                    THIRD_ACTIVITY.getPackageName(),
+                    android.server.wm.app.Components.getPackageName(),
+                    android.server.wm.second.Components.getPackageName(),
+                    android.server.wm.third.Components.getPackageName(),
                     "android.server.wm.cts",
                     "android.server.wm.jetpack",
                     "android.server.wm.jetpack.second");
@@ -766,7 +762,7 @@ public abstract class ActivityManagerTestBase {
     }
 
     private void forceStopAllTestPackages() {
-        stopTestPackage(TEST_PACKAGE);
+        android.server.wm.app.Components.forceStopPackage();
         android.server.wm.second.Components.forceStopPackage();
         android.server.wm.third.Components.forceStopPackage();
     }

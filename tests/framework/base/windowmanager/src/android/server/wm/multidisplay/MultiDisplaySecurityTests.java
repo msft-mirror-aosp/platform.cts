@@ -73,6 +73,7 @@ import android.view.WindowManager;
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.compatibility.common.util.TestUtils;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -91,6 +92,13 @@ public class MultiDisplaySecurityTests extends MultiDisplayTestBase {
     public void setUp() throws Exception {
         super.setUp();
         assumeTrue(supportsMultiDisplay());
+    }
+
+    @After
+    public void tearDown() {
+        android.server.wm.third.Components.forceStopPackage();
+        android.server.wm.second.Components.forceStopPackage();
+        android.server.wm.app.Components.forceStopPackage();
     }
 
     /**

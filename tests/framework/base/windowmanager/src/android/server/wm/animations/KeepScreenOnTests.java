@@ -38,6 +38,7 @@ import android.provider.Settings;
 import android.server.wm.MultiDisplayTestBase;
 import android.server.wm.UiDeviceUtils;
 import android.server.wm.WindowManagerState;
+import android.server.wm.app.Components;
 
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.BlockingBroadcastReceiver;
@@ -93,6 +94,7 @@ public class KeepScreenOnTests extends MultiDisplayTestBase {
         Settings.Global.putInt(mContentResolver, STAY_ON_WHILE_PLUGGED_IN,
                 mInitialStayOnWhilePluggedInSetting);
         UiDeviceUtils.wakeUpAndUnlock(mContext);
+        Components.forceStopPackage();
     }
 
     @ApiTest(apis = "android.view.WindowManager.LayoutParams#FLAG_KEEP_SCREEN_ON")

@@ -37,6 +37,7 @@ import android.platform.test.annotations.Presubmit;
 import android.server.wm.LaunchActivityBuilder;
 import android.server.wm.WindowManagerState;
 import android.server.wm.WindowManagerTestBase;
+import android.server.wm.app.Components;
 import android.server.wm.cts.R;
 import android.view.Gravity;
 import android.view.View;
@@ -61,6 +62,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Callable;
 
+/** Build/Install/Run: atest CtsWindowManagerDeviceOther:KeepClearRectsTests */
 @Presubmit
 public class KeepClearRectsTests extends WindowManagerTestBase {
     private static final long SAME_ELEMENT_ASSERTION_TIMEOUT = 3000;
@@ -99,6 +101,7 @@ public class KeepClearRectsTests extends WindowManagerTestBase {
     @After
     public void tearDown() throws Exception {
         mWmState.setSuppressAccessibilityServices(true);
+        Components.forceStopPackage();
     }
 
     @Test

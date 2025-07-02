@@ -60,6 +60,7 @@ import android.server.wm.BuildUtils;
 import android.server.wm.Condition;
 import android.server.wm.DumpOnFailure;
 import android.server.wm.WindowManagerState;
+import android.server.wm.app.Components;
 import android.server.wm.cts.R;
 import android.server.wm.settings.SettingsSession;
 import android.util.Range;
@@ -159,6 +160,7 @@ public class ActivityTransitionTests extends ActivityManagerTestBase {
     @After
     public void tearDown() {
         mWmState.setSanityCheckWithFocusedWindow(true);
+        Components.forceStopPackage();
     }
 
     private LauncherActivity startLauncherActivity() {

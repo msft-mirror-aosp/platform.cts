@@ -48,7 +48,7 @@ public class DockConfigChangeTests extends ActivityManagerTestBase {
     @After
     public void tearDown() {
         android.server.wm.deskresources.Components.forceStopPackage();
-        stopTestPackage(android.server.wm.app.Components.getPackageName());
+        android.server.wm.app.Components.forceStopPackage();
     }
 
     @Test

@@ -88,7 +88,7 @@ public class MultiDisplayPolicyTests extends MultiDisplayTestBase {
     @After
     public void tearDown() throws Exception {
         android.server.wm.app27.Components.forceStopPackage();
-        stopTestPackage(android.server.wm.app.Components.getPackageName());
+        android.server.wm.app.Components.forceStopPackage();
     }
 
     /**

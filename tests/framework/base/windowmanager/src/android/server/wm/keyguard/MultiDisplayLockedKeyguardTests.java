@@ -28,7 +28,9 @@ import android.platform.test.annotations.Presubmit;
 import android.server.wm.LockScreenSession;
 import android.server.wm.MultiDisplayTestBase;
 import android.server.wm.WindowManagerState.DisplayContent;
+import android.server.wm.app.Components;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -51,6 +53,11 @@ public class MultiDisplayLockedKeyguardTests extends MultiDisplayTestBase {
         assumeTrue(supportsSecureLock());
         assumeRunNotOnVisibleBackgroundNonProfileUser(
                 "Keyguard not supported for visible background users");
+    }
+
+    @After
+    public void tearDown() {
+        Components.forceStopPackage();
     }
 
     /**

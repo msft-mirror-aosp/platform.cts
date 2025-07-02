@@ -61,7 +61,6 @@ import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.content.ComponentName;
-import android.platform.test.annotations.DisableFlags;
 import android.platform.test.annotations.Presubmit;
 import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
@@ -79,6 +78,7 @@ import androidx.test.filters.FlakyTest;
 import com.android.compatibility.common.util.ApiTest;
 import com.android.systemui.Flags;
 
+import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -103,6 +103,11 @@ public class ActivityVisibilityTests extends ActivityManagerTestBase {
     public void setUp() throws Exception {
         super.setUp();
         acquirePartialWakeLock();
+    }
+
+    @After
+    public void tearDown() {
+        Components.forceStopPackage();
     }
 
     /**

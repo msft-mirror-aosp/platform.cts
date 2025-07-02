@@ -39,6 +39,7 @@ import android.view.Display;
 import com.android.compatibility.common.util.ApiTest;
 import com.android.window.flags.Flags;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -70,6 +71,11 @@ public class PresentationTest extends MultiDisplayTestBase {
         assumeTrue(supportsMultiDisplay());
         super.setUp();
         mVirtualDisplaySession = createManagedVirtualDisplaySession();
+    }
+
+    @After
+    public void tearDown() {
+        Components.forceStopPackage();
     }
 
     /**

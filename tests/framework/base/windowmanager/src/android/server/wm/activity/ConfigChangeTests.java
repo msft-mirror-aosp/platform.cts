@@ -52,12 +52,14 @@ import android.server.wm.CommandSession.ActivityCallback;
 import android.server.wm.Condition;
 import android.server.wm.RotationSession;
 import android.server.wm.TestJournalProvider.TestJournalContainer;
+import android.server.wm.app.Components;
 
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.RequireNotAutomotive;
 import com.android.compatibility.common.util.SystemUtil;
 
+import org.junit.After;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -79,6 +81,11 @@ public class ConfigChangeTests extends ActivityManagerTestBase {
     @ClassRule
     @Rule
     public static final DeviceState sDeviceState = new DeviceState();
+
+    @After
+    public void tearDown() {
+        Components.forceStopPackage();
+    }
 
     @Test
     @RequireNotAutomotive(reason = "Automotive screens don't support rotation")

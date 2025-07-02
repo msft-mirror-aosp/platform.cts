@@ -76,6 +76,7 @@ import android.server.wm.RotationSession;
 import android.server.wm.TestJournalProvider.TestJournalContainer;
 import android.server.wm.WaitForValidActivityState;
 import android.server.wm.WindowManagerState;
+import android.server.wm.app.Components;
 import android.util.Size;
 import android.view.Display;
 import android.window.WindowContainerTransaction;
@@ -85,6 +86,7 @@ import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.RequireNotAutomotive;
 import com.android.compatibility.common.util.ApiTest;
 
+import org.junit.After;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -106,6 +108,11 @@ public class AppConfigurationTests extends MultiDisplayTestBase {
     @ClassRule
     @Rule
     public static final DeviceState sDeviceState = new DeviceState();
+
+    @After
+    public void tearDown() {
+        Components.forceStopPackage();
+    }
 
     /**
      * Tests that the WindowManager#getDefaultDisplay() and the Configuration of the Activity
