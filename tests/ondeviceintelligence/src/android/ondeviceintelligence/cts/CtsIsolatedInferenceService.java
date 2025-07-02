@@ -67,6 +67,7 @@ public class CtsIsolatedInferenceService extends OnDeviceSandboxedInferenceServi
     private static final String REGISTER_MODEL_UPDATE_CALLBACK_BUNDLE_KEY =
             "register_model_update_callback";
     private static final String MODEL_LOADED_BUNDLE_KEY = "model_loaded";
+    public static final String DEVICE_CONFIG_UPDATE_BUNDLE_KEY = "device_config_update";
     public static final String INFERENCE_INFO_BUNDLE_KEY = "inference_info";
 
     private final Executor mAsyncRequestExecutor = Executors.newCachedThreadPool();
@@ -361,9 +362,9 @@ public class CtsIsolatedInferenceService extends OnDeviceSandboxedInferenceServi
             return;
         }
 
-        if (processingState.containsKey(UpdateProcessingStateKeys.KEY_DEVICE_CONFIG_UPDATE)) {
+        if (processingState.containsKey(DEVICE_CONFIG_UPDATE_BUNDLE_KEY)) {
             Log.e(TAG, "DeviceConfig Update callback received.");
-            mReceivedDeviceConfig = processingState.getParcelable(UpdateProcessingStateKeys.KEY_DEVICE_CONFIG_UPDATE,
+            mReceivedDeviceConfig = processingState.getParcelable(DEVICE_CONFIG_UPDATE_BUNDLE_KEY,
                     PersistableBundle.class);
             PersistableBundle resultBundle = new PersistableBundle();
             resultBundle.putBoolean("deviceConfig", true);
