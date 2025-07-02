@@ -34,21 +34,31 @@ import android.app.appsearch.GenericDocument;
 import android.app.appsearch.GetByDocumentIdRequest;
 import android.app.appsearch.PackageIdentifier;
 import android.app.appsearch.PutDocumentsRequest;
+import android.app.appsearch.SearchResultsShim;
+import android.app.appsearch.SearchSpec;
 import android.app.appsearch.SetSchemaRequest;
 import android.app.appsearch.testutil.AppSearchSessionShimImpl;
 import android.os.Bundle;
+import android.util.Log;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.appsearch.flags.Flags;
+
 import com.google.common.io.BaseEncoding;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
 
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 @RunWith(AndroidJUnit4.class)
 public class AppSearchDeviceTest {
@@ -126,6 +136,116 @@ public class AppSearchDeviceTest {
         // It is expected that the set schema operations queued by a call to testRepeatedSetSchema
         // before the user restarted have all completed and we verify that here
         assertThat(mDb.getSchemaAsync().get().getVersion()).isEqualTo(500);
+    }
+
+    @Test
+    public void testReadWriteLockContention() throws Exception {
+        // With separate read and write executors, operations queued on the read executor can
+        // interleave with operations queued on the write executor. To demonstrate this, we create a
+        // backlog of write operations (setSchema calls) and queue up reads afterward. With only one
+        // executor, the reads will have to wait for the writes to finish. With separate executors,
+        // the reads should be able to finish before the writes finish.
+        ExecutorService executor = Executors.newCachedThreadPool();
+
+        AppSearchSessionShim db = AppSearchSessionShimImpl.createSearchSessionAsync(
+                new AppSearchManager.SearchContext.Builder("my_test_db").build()).get();
+        // Repeatedly call set schema without waiting for futures to complete to fill up the task
+        // queue so we have 30+ seconds of write operations to process.
+        for (int i = 1; i <= 100; i++) {
+            var unused = db.setSchemaAsync(
+                    new SetSchemaRequest.Builder().addSchemas(SCHEMA).build());
+            var unused2 = db.setSchemaAsync(new SetSchemaRequest.Builder().setVersion(
+                    i).addSchemas(ALTERNATE_SCHEMA).build());
+        }
+
+        List<ListenableFuture<?>> futures = new ArrayList<>();
+
+        long startTimeMs = System.currentTimeMillis();
+
+        for (int i = 0; i < 10; i++) {
+            SearchResultsShim shimResults = mDb.search("", new SearchSpec.Builder().build());
+            ListenableFuture<Void> future = Futures.transform(shimResults.getNextPageAsync(),
+                    results -> {
+                        shimResults.close();
+                        return null;
+                    }, executor);
+            futures.add(future);
+        }
+        List<?> unused = Futures.allAsList(futures).get();
+        Log.e("testReadWriteLock", "elapsed " + (System.currentTimeMillis() - startTimeMs) + " ms");
+
+        // We expect setSchema calls to have not finished yet with separate read and write
+        // executors enabled
+        if (Flags.enableSeparateReadWriteExecutors()) {
+            assertThat(db.getSchemaAsync().get().getVersion()).isLessThan(100);
+        } else {
+            assertThat(db.getSchemaAsync().get().getVersion()).isEqualTo(100);
+        }
+    }
+
+    @Test
+    public void testReadParallelism() throws Exception {
+        // Setup
+        AppSearchSessionShim db = AppSearchSessionShimImpl.createSearchSessionAsync(
+                new AppSearchManager.SearchContext.Builder("my_other_test_db").build()).get();
+        AppSearchSchema schema = new AppSearchSchema.Builder("fooBarSchema")
+                .addProperty(new AppSearchSchema.StringPropertyConfig.Builder("prop")
+                        .setCardinality(AppSearchSchema.PropertyConfig.CARDINALITY_OPTIONAL)
+                        .setIndexingType(
+                                AppSearchSchema.StringPropertyConfig.INDEXING_TYPE_EXACT_TERMS)
+                        .setTokenizerType(
+                                AppSearchSchema.StringPropertyConfig.TOKENIZER_TYPE_VERBATIM)
+                        .build())
+                .build();
+        db.setSchemaAsync(new SetSchemaRequest.Builder().addSchemas(schema).build()).get();
+
+        int suffix = 0;
+        for (int i = 0; i < 200; i++) {
+            List<GenericDocument> documents = new ArrayList<>();
+            for (int j = 0; j < 50; j++) {
+                GenericDocument document =
+                        new GenericDocument.Builder<>("namespace", "id" + suffix, "fooBarSchema")
+                                .setPropertyString("prop",
+                                        "mylongprefix" + ((suffix % 1000) + 1000))
+                                .build();
+                documents.add(document);
+                suffix++;
+            }
+            AppSearchBatchResult<String, Void> result = checkIsBatchResultSuccess(db.putAsync(
+                    new PutDocumentsRequest.Builder().addGenericDocuments(documents).build()));
+            assertThat(result.getSuccesses()).hasSize(50);
+            assertThat(result.getFailures()).isEmpty();
+        }
+
+        // Test read parallelism with a very large query consisting of many OR terms and VERBATIM
+        // matching. A single query is estimated to take around ~100 ms.
+        ExecutorService executor = Executors.newCachedThreadPool();
+
+        StringBuilder stringBuilder = new StringBuilder();
+        stringBuilder.append("\"mylongprefix1000\"");
+        for (int i = 1001; i < 2000; i++) {
+            stringBuilder.append(" OR \"mylongprefix").append(i).append("\"");
+        }
+        String query = stringBuilder.toString();
+        SearchSpec searchSpec = new SearchSpec.Builder().setListFilterQueryLanguageEnabled(
+                true).setVerbatimSearchEnabled(true).build();
+        List<ListenableFuture<?>> futures = new ArrayList<>();
+        long startTimeMs = System.currentTimeMillis();
+        for (int i = 0; i < 100; i++) {
+            SearchResultsShim shimResults = db.search(query, searchSpec);
+            ListenableFuture<Void> future = Futures.transform(shimResults.getNextPageAsync(),
+                    results -> {
+                        shimResults.close();
+                        return null;
+                    }, executor);
+            futures.add(future);
+        }
+        List<?> unused = Futures.allAsList(futures).get();
+        Log.e("testReadParallelism",
+                "elapsed time " + (System.currentTimeMillis() - startTimeMs) + " ms");
+
+        // Cleanup
+        db.setSchemaAsync(new SetSchemaRequest.Builder().setForceOverride(true).build()).get();
     }
 
     @Test
