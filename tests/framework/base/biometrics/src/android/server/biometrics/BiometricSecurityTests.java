@@ -64,6 +64,7 @@ public class BiometricSecurityTests extends BiometricTestBase {
     @After
     public void teardown() throws Exception {
         revertSensorStrengths();
+        Components.forceStopPackage();
     }
 
     /**
