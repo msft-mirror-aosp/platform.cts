@@ -23,6 +23,8 @@ import static android.mediapc.cts.CodecTestBase.mediaTypePrefix;
 import android.media.MediaFormat;
 import android.mediapc.cts.common.CodecMetrics;
 import android.mediapc.cts.common.PerformanceClassEvaluator;
+import android.mediapc.cts.common.PerformanceClassTestRule;
+import android.mediapc.cts.common.Preconditions;
 import android.mediapc.cts.common.Requirements;
 import android.mediapc.cts.common.Requirements.ConcurrentVideoEncoderSessionsRequirement;
 import android.mediapc.cts.common.Requirements.VideoEncoderInstancesRequirement;
@@ -36,7 +38,6 @@ import com.android.compatibility.common.util.CddTest;
 import org.junit.Assume;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TestName;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
@@ -57,13 +58,14 @@ public class MultiEncoderPerfTest extends MultiCodecPerfTestBase {
 
     private final String mEncoderName;
 
+    @Rule
+    public final PerformanceClassTestRule pcRule =
+            PerformanceClassTestRule.with(Preconditions.BASELINE);
+
     public MultiEncoderPerfTest(String mediaType, String encoderName, boolean isAsync) {
         super(mediaType, null, isAsync);
         mEncoderName = encoderName;
     }
-
-    @Rule
-    public final TestName mTestName = new TestName();
 
     // Returns the params list with the mediaType and their hardware encoders in
     // both sync and async modes.
@@ -168,7 +170,7 @@ public class MultiEncoderPerfTest extends MultiCodecPerfTestBase {
             achievedFrameRate = result.fps();
             frameDropsPerSec = result.fdps();
         }
-        PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
+        PerformanceClassEvaluator pce = pcRule.getPerformanceClassEvaluator();
         VideoEncoderInstancesRequirement r5_1__H_1_3;
         ConcurrentVideoEncoderSessionsRequirement r5_1__H_1_4;
         // Achieved frame rate is not compared as this test runs in byte buffer mode.
@@ -205,7 +207,5 @@ public class MultiEncoderPerfTest extends MultiCodecPerfTestBase {
                 r5_1__H_1_4.setFrameDropsPerSec(frameDropsPerSec);
             }
         }
-
-        pce.submitAndCheck();
     }
 }

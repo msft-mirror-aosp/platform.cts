@@ -17,6 +17,8 @@
 package android.mediapc.cts;
 
 import android.mediapc.cts.common.PerformanceClassEvaluator;
+import android.mediapc.cts.common.PerformanceClassTestRule;
+import android.mediapc.cts.common.Preconditions;
 import android.mediapc.cts.common.Requirements;
 import android.mediapc.cts.common.Requirements.ExtYuvTargetRequirement;
 import android.mediapc.cts.common.Utils;
@@ -33,7 +35,6 @@ import com.android.compatibility.common.util.CddTest;
 
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TestName;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
@@ -53,7 +54,8 @@ public class ExtYuvTargetSupportTest {
     private EGLSurface mEGLSurface = EGL14.EGL_NO_SURFACE;
 
     @Rule
-    public final TestName mTestName = new TestName();
+    public final PerformanceClassTestRule pcRule =
+            PerformanceClassTestRule.with(Preconditions.EMPTY);
 
     public ExtYuvTargetSupportTest(boolean useHighBitDepth) {
         mUseHighBitDepth = useHighBitDepth;
@@ -168,10 +170,8 @@ public class ExtYuvTargetSupportTest {
             }
         }
 
-        PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
+        PerformanceClassEvaluator pce = pcRule.getPerformanceClassEvaluator();
         ExtYuvTargetRequirement rExtensionSupported = Requirements.addR5_12__H_1_3().to(pce);
         rExtensionSupported.setExtYuvTargetSupported(isEXTYuvTargetSupported);
-
-        pce.submitAndCheck();
     }
 }

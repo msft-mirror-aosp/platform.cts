@@ -22,11 +22,10 @@ import static android.mediapc.cts.CodecTestBase.mediaTypePrefix;
 import static android.mediapc.cts.CodecTestBase.selectCodecs;
 import static android.mediapc.cts.CodecTestBase.selectHardwareCodecs;
 
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeFalse;
 
 import android.media.MediaFormat;
+import android.mediapc.cts.common.Precondition;
 import android.mediapc.cts.common.Utils;
 import android.os.Build;
 import android.view.Surface;
@@ -127,24 +126,55 @@ public class FrameDropTestBase {
         }
     }
 
+    private static boolean initAacDecoderName() {
+        ArrayList<String> listOfAacDecoders = selectCodecs(AAC, null, null, false);
+        if (listOfAacDecoders.isEmpty()) {
+            return false;
+        }
+        AAC_DECODER_NAME = listOfAacDecoders.getFirst();
+        return true;
+    }
+
+    private static boolean initHwAvcEncoderName() {
+        ArrayList<String> listOfAvcHwEncoders = selectHardwareCodecs(AVC, null, null, true);
+        if (listOfAvcHwEncoders.isEmpty()) {
+            return false;
+        }
+        AVC_ENCODER_NAME = listOfAvcHwEncoders.getFirst();
+        return true;
+    }
+
+    private static boolean initHwAvcDecoderName() {
+        ArrayList<String> listOfAvcHwDecoders = selectHardwareCodecs(AVC, null, null, false);
+        if (listOfAvcHwDecoders.isEmpty()) {
+            return false;
+        }
+        AVC_DECODER_NAME = listOfAvcHwDecoders.getFirst();
+        return true;
+    }
+
+    public static final Precondition REQUIRES_AAC_DECODER =
+            Precondition.create("Test requires aac decoder", FrameDropTestBase::initAacDecoderName);
+
+    public static final Precondition AVC_PRE_CONDITIONS =
+            Precondition.inOrder(
+                    Precondition.create(
+                            "Test requires h/w avc decoder",
+                            FrameDropTestBase::initHwAvcEncoderName),
+                    Precondition.create(
+                            "Test requires h/w avc encoder",
+                            FrameDropTestBase::initHwAvcDecoderName),
+                    Precondition.create(
+                            "The device doesn't support running at least four 1920x1080 avc"
+                                    + " instances concurrently",
+                            Utils.MEETS_AVC_CODEC_PRECONDITIONS));
+
+    @Rule(order = 2)
+    public ActivityTestRule<TestActivity> mActivityRule =
+            new ActivityTestRule<>(TestActivity.class);
+
     @Before
     public void setUp() throws Exception {
-        Utils.assumeDeviceMeetsPerformanceClassPreconditions();
-
-        ArrayList<String> listOfAvcHwDecoders = selectHardwareCodecs(AVC, null, null, false);
-        assumeFalse("Test requires h/w avc decoder", listOfAvcHwDecoders.isEmpty());
-        AVC_DECODER_NAME = listOfAvcHwDecoders.get(0);
-
-        ArrayList<String> listOfAvcHwEncoders = selectHardwareCodecs(AVC, null, null, true);
-        assumeFalse("Test requires h/w avc encoder", listOfAvcHwEncoders.isEmpty());
-        AVC_ENCODER_NAME = listOfAvcHwEncoders.get(0);
-
-        ArrayList<String> listOfAacDecoders = selectCodecs(AAC, null, null, false);
-        assertFalse("Test requires aac decoder", listOfAacDecoders.isEmpty());
-        AAC_DECODER_NAME = listOfAacDecoders.get(0);
-        assumeFalse("The device doesn't support running at least four 1920x1080 avc"
-                    + "instances concurrently", !Utils.MEETS_AVC_CODEC_PRECONDITIONS);
-
         createSurface();
         startLoad();
     }
@@ -154,10 +184,6 @@ public class FrameDropTestBase {
         stopLoad();
         releaseSurface();
     }
-
-    @Rule
-    public ActivityTestRule<TestActivity> mActivityRule =
-            new ActivityTestRule<>(TestActivity.class);
 
     public FrameDropTestBase(String mediaType, String decoderName, boolean isAsync) {
         mMediaType = mediaType;

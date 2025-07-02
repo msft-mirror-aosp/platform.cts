@@ -17,6 +17,8 @@
 package android.mediapc.cts;
 
 import android.mediapc.cts.common.PerformanceClassEvaluator;
+import android.mediapc.cts.common.PerformanceClassTestRule;
+import android.mediapc.cts.common.Preconditions;
 import android.mediapc.cts.common.Requirements;
 import android.mediapc.cts.common.Requirements.EGLRequirement;
 
@@ -28,7 +30,6 @@ import com.google.common.collect.ImmutableList;
 
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TestName;
 import org.junit.runner.RunWith;
 
 import javax.microedition.khronos.egl.EGL10;
@@ -43,7 +44,8 @@ import javax.microedition.khronos.egl.EGLDisplay;
 public class EglTest {
 
     @Rule
-    public final TestName mTestName = new TestName();
+    public final PerformanceClassTestRule pcRule =
+            PerformanceClassTestRule.with(Preconditions.EMPTY);
 
     /**
      * <b>7.1.4.1/H-1-2</b> MUST support the {@code EGL_IMG_context_priority} and
@@ -53,14 +55,12 @@ public class EglTest {
     @CddTest(requirements = {"7.1.4.1/H-1-2"})
     @Test
     public void requireGraphicsProtectedContent() {
-        PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
+        PerformanceClassEvaluator pce = pcRule.getPerformanceClassEvaluator();
         EGLRequirement req = Requirements.addR7_1_4_1__H_1_2().to(pce);
 
         var extensions = getExtensions();
         req.setEglImgContextPriority(extensions.contains("EGL_IMG_context_priority"));
         req.setEglExtProtectedContent(extensions.contains("EGL_EXT_protected_content"));
-
-        pce.submitAndCheck();
     }
 
     private ImmutableList<String> getExtensions() {

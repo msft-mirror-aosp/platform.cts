@@ -40,7 +40,6 @@ import android.util.Log;
 import android.util.Pair;
 
 import org.junit.Assume;
-import org.junit.Before;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -161,11 +160,6 @@ public class MultiCodecPerfTestBase {
     String mMediaType;
     String mTestFile;
     final boolean mIsAsync;
-
-    @Before
-    public void isPerformanceClassCandidate() {
-        Utils.assumeDeviceMeetsPerformanceClassPreconditions();
-    }
 
     public MultiCodecPerfTestBase(String mediaType, String testFile, boolean isAsync) {
         mMediaType = mediaType;

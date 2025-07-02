@@ -37,8 +37,9 @@ import android.media.MediaFormat;
 import android.media.MediaRecorder;
 import android.media.codec.Flags;
 import android.mediapc.cts.common.PerformanceClassEvaluator;
+import android.mediapc.cts.common.PerformanceClassTestRule;
+import android.mediapc.cts.common.Preconditions;
 import android.mediapc.cts.common.Requirements;
-import android.mediapc.cts.common.Utils;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.util.Size;
 
@@ -51,10 +52,8 @@ import com.android.compatibility.common.util.MediaUtils;
 import com.google.testing.junit.testparameterinjector.TestParameter;
 import com.google.testing.junit.testparameterinjector.TestParameterInjector;
 
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TestName;
 import org.junit.runner.RunWith;
 
 import java.io.IOException;
@@ -73,12 +72,8 @@ public class CodecRequirementsTest {
     private String mMediaType;
 
     @Rule
-    public final TestName mTestName = new TestName();
-
-    @Before
-    public void isPerformanceClassCandidate() {
-        Utils.assumeDeviceMeetsPerformanceClassPreconditions();
-    }
+    public final PerformanceClassTestRule pcRule =
+            PerformanceClassTestRule.with(Preconditions.BASELINE);
 
     @Nullable
     private static Size getMaxSupportedRecordingSize() throws CameraAccessException {
@@ -140,12 +135,10 @@ public class CodecRequirementsTest {
             }
         }
 
-        PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
+        PerformanceClassEvaluator pce = pcRule.getPerformanceClassEvaluator();
         Requirements.VideoCodecHlgEditingRequirement hlgEditingSupportReq =
                 Requirements.addR5_1__H_1_20().to(pce);
         hlgEditingSupportReq.setHlgEditing(isFeatureSupported);
-
-        pce.submitAndCheck();
     }
 
     /**
@@ -164,12 +157,10 @@ public class CodecRequirementsTest {
                     return caps != null && caps.isFeatureSupported(FEATURE_DynamicColorAspects);
                 });
 
-        PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
+        PerformanceClassEvaluator pce = pcRule.getPerformanceClassEvaluator();
         Requirements.VideoCodecDynamicColorAspectRequirement dynamicColorAspectsReq =
                 Requirements.addR5_1__H_1_21().to(pce);
         dynamicColorAspectsReq.setDynamicColorAspects(isSupported);
-
-        pce.submitAndCheck();
     }
 
     /**
@@ -205,12 +196,10 @@ public class CodecRequirementsTest {
             if (!isSupported) break;
         }
 
-        PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
+        PerformanceClassEvaluator pce = pcRule.getPerformanceClassEvaluator();
         Requirements.VideoCodecPortraitResolutionRequirement portraitResolutionSupportReq =
                 Requirements.addR5_1__H_1_22().to(pce);
         portraitResolutionSupportReq.setPortraitResolution(isSupported);
-
-        pce.submitAndCheck();
     }
 
     /**
@@ -234,11 +223,9 @@ public class CodecRequirementsTest {
             }
         }
 
-        PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
+        PerformanceClassEvaluator pce = pcRule.getPerformanceClassEvaluator();
         Requirements.RGBA1010102ColorFormatRequirement colorFormatSupportReq =
                 Requirements.addR5_12__H_1_2().to(pce);
         colorFormatSupportReq.setRgba1010102ColorFormat(isSupported);
-
-        pce.submitAndCheck();
     }
 }
