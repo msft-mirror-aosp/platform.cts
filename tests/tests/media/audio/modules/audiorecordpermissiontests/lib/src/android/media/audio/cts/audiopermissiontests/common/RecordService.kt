@@ -189,7 +189,7 @@ open class RecordService : Service() {
     suspend fun record(recordId: Int, channel: ReceiveChannel<Boolean>) {
         val channelConfig = AudioFormat.CHANNEL_IN_MONO
         val sampleRate = 32000
-        val RECORD_WARMUP = 800 // 25ms
+        val RECORD_WARMUP = 3200 // 100ms
         val format = AudioFormat.ENCODING_PCM_16BIT
         val bufferSizeInBytes = 2 * AudioRecord.getMinBufferSize(sampleRate, channelConfig, format)
         val audioRecord =
