@@ -25,6 +25,10 @@ java_test_host {
     libs: [
         "tradefed",
         "compatibility-host-util",
+        "compatibility-host-webview-preconditions",
+    ],
+    host_common_data: [
+        ":compatibility-host-webview-preconditions",
     ],
     static_libs: ["CompatChangeGatingTestBase"],
     // Tag this module as a cts test artifact

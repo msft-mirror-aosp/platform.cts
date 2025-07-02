@@ -1,4 +1,4 @@
-// Copyright (C) 2022 The Android Open Source Project
+// Copyright (C) 2025 The Android Open Source Project
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,36 +17,19 @@ package {
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
-android_test {
-    name: "CtsSdkSandboxWebkitTestCases",
-    resource_dirs: ["res"],
-    defaults: ["cts_defaults"],
-    libs: [
-        "android.test.runner.stubs",
-        "android.test.base.stubs",
-    ],
-    static_libs: [
-        "compatibility-device-util-axt",
-        "ctstestrunner-axt",
-        "CtsSdkSandboxTestScenario",
-        "ctswebkitsharedenv",
-    ],
-    data: [
-        ":WebViewSandboxTestSdk",
-    ],
-    srcs: [
-        "src/**/*.java",
-        "src/**/*.aidl",
-    ],
-    host_required: [
-        "compatibility-host-webview-preconditions",
-    ],
-    host_common_data: [
-        ":compatibility-host-webview-preconditions",
-    ],
+java_test_helper_library {
+    name: "compatibility-host-webview-preconditions",
+    srcs: ["src/**/*.java"],
+
+    libs: ["tradefed"],
+
+    // Tag this module as a cts test artifact
     test_suites: [
         "cts",
+        "mts",
         "general-tests",
     ],
+    host_supported: true,
+    device_supported: false,
     sdk_version: "current",
 }
