@@ -608,11 +608,11 @@ public class SelfManagedConnectionServiceTest extends BaseTelecomTestWithMockSer
         }
 
         // First, complete the call which should not be logged.
-        Uri unloggedAddress = getTestNumber();
+        Uri unloggedAddress = createTestNumber();
         placeAndVerifyOutgoingCall(TestUtils.TEST_SELF_MANAGED_HANDLE_1, unloggedAddress);
 
         // Next, place a call which we DO expect to be logged.
-        Uri loggedAddress = getTestNumber();
+        Uri loggedAddress = createTestNumber();
         placeAndVerifyOutgoingCall(TestUtils.TEST_SELF_MANAGED_HANDLE_2, loggedAddress);
 
         // The verification code for un-logged numbers doesn't actually wait on the call log latch
