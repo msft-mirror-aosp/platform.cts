@@ -50,10 +50,14 @@
         <option name="hidden-api-checks" value="false" />
     </test>
 
+    <!-- Create a place to store generated updated goldens on test failure -->
+    <target_preparer class="com.android.tradefed.targetprep.RunCommandTargetPreparer">
+        <option name="run-command" value="mkdir -p /sdcard/android.graphics.cts" />
+    </target_preparer>
+    <!-- Collect the generated updated goldens on test failure. -->
     <metrics_collector class="com.android.tradefed.device.metric.FilePullerLogCollector">
-        <option name="directory-keys"
-            value="/data/user/0/android.graphics.cts/files"/>
-        <option name="collect-on-run-ended-only" value="true"/>
+        <option name="directory-keys" value="/sdcard/android.graphics.cts" />
+        <option name="collect-on-run-ended-only" value="true" />
         <option name="clean-up" value="true"/>
     </metrics_collector>
 </configuration>

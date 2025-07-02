@@ -22,12 +22,14 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Color
 import android.graphics.cts.utils.Material2021SpecMatcher
+import android.os.Environment
 import android.platform.test.annotations.DisabledOnRavenwood
 import android.provider.Settings
 import android.testing.PollingCheck
 import android.view.View
 import android.view.ViewGroup
 import androidx.activity.ComponentActivity
+import androidx.annotation.NonNull
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -62,6 +64,7 @@ import com.android.compatibility.common.util.SystemUtil.runShellCommand
 import com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity
 import com.android.systemui.monet.Style
 import com.google.ux.material.libmonet.hct.Hct
+import java.io.File
 import java.io.Serializable
 import kotlin.math.abs
 import kotlinx.coroutines.CompletableDeferred
@@ -70,7 +73,6 @@ import kotlinx.coroutines.withTimeoutOrNull
 import org.junit.AfterClass
 import org.junit.Assume.assumeTrue
 import org.junit.BeforeClass
-import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.RuleChain
@@ -95,10 +97,17 @@ class DynamicColorsTest(
         mContext.resources.getIdentifier("system_primary_dim_light", "color", "android") == 0
 
     private val allTokenNames = if (isOldSpec) TOKEN_NAMES_2021 else TOKENS_NAMES_2025
+
+    /** The output directory for generated goldens */
+    @NonNull
+    private val outDir: File =
+        File(Environment.getExternalStorageDirectory(), "android.graphics.cts")
+
     private val goldenPathManager =
         GoldenPathManager(
             appContext = mContext,
             assetsPathRelativeToBuildRoot = "cts/tests/tests/graphics/assets/",
+            deviceLocalPath = outDir.path,
             pathConfig =
                 PathConfig(
                     PathElementNoContext("spec", true) {
@@ -217,7 +226,6 @@ class DynamicColorsTest(
     }
 
     @Test
-    @Ignore("b/425343018")
     fun testDynamicColors() {
         assumeTrue(!FeatureUtil.isWatch())
 
