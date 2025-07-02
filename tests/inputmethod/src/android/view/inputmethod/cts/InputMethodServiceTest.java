@@ -147,13 +147,6 @@ public final class InputMethodServiceTest extends EndToEndImeTestBase {
     // 1.2 is an arbitrary value.
     private static final String PUT_FONT_SCALE_CMD = "settings put system font_scale 1.2";
 
-    /**
-     * System property for disabling the IME navigation bar, matches the key
-     * from {@link InputMethodService}.
-     */
-    private static final String PROP_CAN_RENDER_GESTURAL_NAV_BUTTONS =
-            "persist.sys.ime.can_render_gestural_nav_buttons";
-
     @Rule
     public final UnlockScreenRule mUnlockScreenRule = new UnlockScreenRule();
     @Rule

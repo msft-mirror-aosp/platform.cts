@@ -31,8 +31,6 @@ import androidx.window.extensions.layout.DisplayFeature;
 import androidx.window.extensions.layout.FoldingFeature;
 import androidx.window.extensions.layout.WindowLayoutInfo;
 
-import org.junit.Assert;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
