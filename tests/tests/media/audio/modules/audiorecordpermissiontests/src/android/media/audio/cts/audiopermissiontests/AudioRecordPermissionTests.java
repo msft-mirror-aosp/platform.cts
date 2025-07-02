@@ -199,6 +199,7 @@ public class AudioRecordPermissionTests extends StsExtraBusinessLogicTestCase {
             assertTrue(getOpState(TEST_PACKAGE));
         } finally {
             SystemUtil.runShellCommand(mInstrumentation, "input keyevent KEYCODE_WAKEUP");
+            Thread.sleep(1000);
             SystemUtil.runShellCommand(mInstrumentation, "wm dismiss-keyguard");
         }
     }
@@ -245,6 +246,7 @@ public class AudioRecordPermissionTests extends StsExtraBusinessLogicTestCase {
             // Wait for unsilence after return to TOP
             final var receiveFuture = makeFuture(TEST_PACKAGE + ACTION_BEGAN_RECEIVE_AUDIO);
             SystemUtil.runShellCommand(mInstrumentation, "input keyevent KEYCODE_WAKEUP");
+            Thread.sleep(1000);
             SystemUtil.runShellCommand(mInstrumentation, "wm dismiss-keyguard");
             receiveFuture.get(FUTURE_WAIT_SECS, TimeUnit.SECONDS);
         }
@@ -443,13 +445,14 @@ public class AudioRecordPermissionTests extends StsExtraBusinessLogicTestCase {
         assertTrue(getOpState(TEST_PACKAGE));
 
         // For manual testing of the mic indicator
-        // Thread.sleep(3000);
+        // Thread.sleep(5000);
 
         // Stop the already silenced recording
         stopRecording(TEST_PACKAGE, 1);
 
         // First recording is ongoing, we should still see ops
         assertTrue(getOpState(TEST_PACKAGE));
+        // Thread.sleep(5000);
         stopRecording(TEST_PACKAGE, 0);
         assertFalse(getOpState(TEST_PACKAGE));
     }
@@ -711,7 +714,6 @@ public class AudioRecordPermissionTests extends StsExtraBusinessLogicTestCase {
         // AMS proc transition is ~5s
         for (int i = 0; i < 7 /* 7s */; i++) {
             final int opState = appOps.unsafeCheckOpNoThrow(OPSTR_RECORD_AUDIO, uid, packageName);
-            Log.i("capy", "op state is: " + opState);
             if (opState == state) return;
             Thread.sleep(1000);
         }
