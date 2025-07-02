@@ -17,6 +17,7 @@ import logging
 import math
 import os
 import pathlib
+import threading
 import types
 import subprocess
 
@@ -29,6 +30,7 @@ import its_base_test
 import its_device_utils
 import its_session_utils
 from mobly import test_runner
+from mobly.controllers.android_device_lib import adb
 import sensor_fusion_utils
 from snippet_uiautomator import uiautomator
 import ui_interaction_utils
@@ -72,11 +74,26 @@ class DefaultJcaImageParityClassTest(its_base_test.ItsBaseTest):
         uiautomator.ANDROID_SERVICE_NAME, uiautomator.UiAutomatorService
     )
     gen2_rig_controller_utils.get_usb_devices_connected()
+    # start screen recording
+    def start_screen_recording():
+      self.dut.adb.shell(
+          'screenrecord /sdcard/test_default_jca_ip_screen_recording.mp4')
+    self.thread = threading.Thread(target=start_screen_recording)
+    self.thread.start()
 
   def teardown_test(self):
     ui_interaction_utils.force_stop_app(
         self.dut, _JETPACK_CAMERA_APP_PACKAGE_NAME
     )
+    try:
+      self.dut.adb.shell(['pkill', '-SIGINT', 'screenrecord'])
+    except adb.AdbError as e:
+      logging.debug('Could not kill screenrecord process: %s', e)
+    if self.thread:
+      self.thread.join()
+
+    self.dut.adb.pull(['/sdcard/test_default_jca_ip_screen_recording.mp4',
+                       self.log_path])
 
     if self.rotator_cntl == 'gen2_rotator':
       # Release the serial ports properly after the test
