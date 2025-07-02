@@ -25,6 +25,8 @@ import android.mediapc.cts.common.CameraRequirement.*;
 import android.os.Build;
 import android.util.Log;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.annotation.VisibleForTesting;
 import androidx.test.platform.app.InstrumentationRegistry;
 
@@ -54,16 +56,29 @@ public class PerformanceClassEvaluator {
     private final String mTestName;
     private final Set<Requirement> mRequirements;
 
+    /**
+     * Creates a PerformanceClassEvaluator with the given test name.
+     *
+     * <p>Use {@link PerformanceClassTestRule} instead of creating this directly where possible.
+     */
     public PerformanceClassEvaluator(TestName testName) {
         this(testName, Utils.isPerfClass(), Utils.getPerfClass());
     }
 
+    public PerformanceClassEvaluator(@Nullable String testName) {
+        this(testName, Utils.isPerfClass(), Utils.getPerfClass());
+    }
+
+    private PerformanceClassEvaluator(TestName testName, boolean isPerfClass, int declaredPc) {
+        this(Preconditions.checkNotNull(testName).getMethodName(), isPerfClass, declaredPc);
+    }
+
     @VisibleForTesting
-    protected PerformanceClassEvaluator(TestName testName, boolean isPerfClass, int declaredPc) {
-        Preconditions.checkNotNull(testName);
+    protected PerformanceClassEvaluator(
+            @Nullable String testName, boolean isPerfClass, int declaredPc) {
         mIsPerfClass = isPerfClass;
         mDeclaredPc = declaredPc;
-        String baseTestName = testName.getMethodName() != null ? testName.getMethodName() : "";
+        String baseTestName = testName != null ? testName : "";
         this.mTestName = baseTestName.replace("{", "(").replace("}", ")");
         this.mRequirements = new HashSet<>();
     }
@@ -1724,6 +1739,8 @@ public class PerformanceClassEvaluator {
      * asserts that the requirements are met.
      *
      * <p>The set of requirements are cleared after submission.
+     *
+     * <p>Test should use {@link PerformanceClassTestRule} instead of calling this method directly.
      */
     public void submitAndCheck() {
         boolean perfClassMet = submit(SubmitType.TRADEFED);
