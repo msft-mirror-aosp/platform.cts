@@ -21,11 +21,12 @@ package {
 
 android_test {
     // STS only for backports
-    name: "CtsAudioRecordPermissionTests",
+    name: "CtsMediaAudioPermissionTestCases",
     defaults: ["cts_defaults"],
     static_libs: [
         "androidx.test.ext.junit",
         "compatibility-device-util-axt",
+        "sts-device-util",
         "audiorecordpermissiontests_shared",
         "androidx.concurrent_concurrent-futures",
         "junit",
@@ -35,14 +36,14 @@ android_test {
         "src/**/*.java",
         "src/**/*.kt",
     ],
-    platform_apis: true,
-    test_suites: [
-        "general-tests",
-        "sts",
-    ],
     data: [
         ":CtsRecordServiceApi34",
         ":CtsRecordServiceApi34NoCap",
         ":CtsRecordServiceApi33",
     ],
+    test_suites: [
+        "general-tests",
+        "sts",
+    ],
+    sdk_version: "test_33",
 }
