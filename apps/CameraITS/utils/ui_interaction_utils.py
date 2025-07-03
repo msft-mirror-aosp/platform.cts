@@ -66,6 +66,7 @@ FLASH_MODES = (
 IMG_CAPTURE_CMD = 'am start -a android.media.action.IMAGE_CAPTURE'
 ITS_ACTIVITY_TEXT = 'Camera ITS Test'
 JETPACK_CAMERA_APP_PACKAGE_NAME = 'com.google.jetpackcamera'
+JETPACK_CAMERA_APP_ZOOM_ATOL = 0.011  # to ensure a maximum diff of 0.01
 JPG_FORMAT_STR = '.jpg'
 LOCATION_ON_TXT = 'Turn on'
 OK_BUTTON_TXT = 'OK'
@@ -306,7 +307,8 @@ def jca_ui_zoom(dut, zoom_ratio, log_path):
   zoom_ratio_text_after_zoom = dut.ui(res=UI_ZOOM_RATIO_TEXT_RESOURCE_ID).text
   logging.debug('zoom ratio text after zoom: %s', zoom_ratio_text_after_zoom)
   zoom_ratio_after_zoom = float(zoom_ratio_text_after_zoom[:-1])  # remove `x`
-  if not math.isclose(zoom_ratio, zoom_ratio_after_zoom):
+  if not math.isclose(
+      zoom_ratio, zoom_ratio_after_zoom, abs_tol=JETPACK_CAMERA_APP_ZOOM_ATOL):
     dut.take_screenshot(
         log_path, prefix=f'failed_to_zoom_to_{zoom_ratio}'
     )
