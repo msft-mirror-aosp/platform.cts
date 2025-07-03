@@ -21,7 +21,6 @@ import static android.view.Display.DEFAULT_DISPLAY;
 import static android.window.OnBackInvokedDispatcher.PRIORITY_DEFAULT;
 import static android.window.OnBackInvokedDispatcher.PRIORITY_SYSTEM_NAVIGATION_OBSERVER;
 
-import static com.android.window.flags.Flags.FLAG_INTERCEPT_MOTION_FROM_MOVE_TO_CANCEL;
 import static com.android.window.flags.Flags.FLAG_PREDICTIVE_BACK_PRIORITY_SYSTEM_NAVIGATION_OBSERVER;
 import static com.android.window.flags.Flags.FLAG_PREDICTIVE_BACK_SWIPE_EDGE_NONE_API;
 import static com.android.window.flags.Flags.FLAG_PREDICTIVE_BACK_SYSTEM_OVERRIDE_CALLBACK;
@@ -369,31 +368,26 @@ public class OnBackInvokedCallbackGestureTest extends ActivityManagerTestBase {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_INTERCEPT_MOTION_FROM_MOVE_TO_CANCEL)
     public void testReceiveCancelEvent_default_cancel() throws InterruptedException {
         testReceivedCancelEvent(mActivity, false, false);
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_INTERCEPT_MOTION_FROM_MOVE_TO_CANCEL)
     public void testReceiveCancelEvent_default_finish() throws InterruptedException {
         testReceivedCancelEvent(mActivity, false, true);
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_INTERCEPT_MOTION_FROM_MOVE_TO_CANCEL)
     public void testReceiveCancelEvent_override_cancel() throws InterruptedException {
         testReceivedCancelEvent(mActivity, true, false);
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_INTERCEPT_MOTION_FROM_MOVE_TO_CANCEL)
     public void testReceiveCancelEvent_override_finish() throws InterruptedException {
         testReceivedCancelEvent(mActivity, true, true);
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_INTERCEPT_MOTION_FROM_MOVE_TO_CANCEL)
     public void testOptOutActivityReceiveCancelEvent_cancel() throws InterruptedException {
         try (TestActivitySession<OptOutBackNavigationActivity> activitySession =
                 createManagedTestActivitySession()) {
@@ -406,7 +400,6 @@ public class OnBackInvokedCallbackGestureTest extends ActivityManagerTestBase {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_INTERCEPT_MOTION_FROM_MOVE_TO_CANCEL)
     public void testOptOutActivityReceiveCancelEvent_finish() throws InterruptedException {
         try (TestActivitySession<OptOutBackNavigationActivity> activitySession =
                 createManagedTestActivitySession()) {
