@@ -16,6 +16,12 @@
 
 package android.server.wm;
 
+import static android.server.wm.backgroundactivity.appa.Components.APP_A_BACKGROUND_ACTIVITY;
+import static android.server.wm.backgroundactivity.appa.Components.APP_A_FOREGROUND_ACTIVITY;
+import static android.server.wm.backgroundactivity.appa.Components.APP_A_FOREGROUND_EMBEDDING_ACTIVITY;
+import static android.server.wm.backgroundactivity.appa.Components.ForegroundEmbeddedActivityAction.APP_A_LAUNCH_EMBEDDED_ACTIVITY;
+import static android.server.wm.backgroundactivity.appb.Components.APP_B_FOREGROUND_ACTIVITY;
+import static android.server.wm.backgroundactivity.appb.Components.ForegroundActivityAction.APP_B_LAUNCH_BACKGROUND_ACTIVITIES;
 import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.assumeActivityEmbeddingSupportedDevice;
 
 import android.content.ComponentName;
@@ -48,13 +54,13 @@ public class ActivitySecurityModelEmbeddingTest extends BackgroundActivityTestBa
 
         // Set up app a with A and B running embedded
         new ActivityStartVerifier()
-                .setupTaskWithEmbeddingActivity(APP_A)
-                .startFromEmbeddingActivity(APP_A)
-                .activity(APP_B.FOREGROUND_ACTIVITY)
+                .setupTaskWithEmbeddingActivity(APP_A_FOREGROUND_EMBEDDING_ACTIVITY)
+                .startFromEmbeddingActivity(APP_A_LAUNCH_EMBEDDED_ACTIVITY)
+                .activity(APP_B_FOREGROUND_ACTIVITY)
                 .executeAndAssertLaunch(/*succeeds*/ true)
-                .thenAssertEmbeddingTaskStack(new ComponentName[]{
-                        APP_B.FOREGROUND_ACTIVITY
-                }, APP_A.FOREGROUND_EMBEDDING_ACTIVITY);
+                .thenAssertEmbeddingTaskStack(
+                        new ComponentName[] {APP_B_FOREGROUND_ACTIVITY},
+                        APP_A_FOREGROUND_EMBEDDING_ACTIVITY);
     }
 
     @Test
@@ -63,8 +69,8 @@ public class ActivitySecurityModelEmbeddingTest extends BackgroundActivityTestBa
         // Base State:
         // | A.FGE (A1) | B.FG (B1) |   --> left | right
         new ActivityStartVerifier()
-                .startFromEmbeddingActivity(APP_A)
-                .activity(APP_A.FOREGROUND_ACTIVITY)
+                .startFromEmbeddingActivity(APP_A_LAUNCH_EMBEDDED_ACTIVITY)
+                .activity(APP_A_FOREGROUND_ACTIVITY)
                 // Test - A1 launches A.FG (A2) - succeeds
                 // As B allows itself to be embedded by A, A is may close or replace B with another
                 // activity (e.g, split-pane views)
@@ -72,10 +78,9 @@ public class ActivitySecurityModelEmbeddingTest extends BackgroundActivityTestBa
                 // Final State:
                 // |            | A.FG (A2) |   --> left | right
                 // | A.FGE (A1) | B.FG (B1) |   --> left | right
-                .thenAssertEmbeddingTaskStack(new ComponentName[]{
-                        APP_A.FOREGROUND_ACTIVITY,
-                        APP_B.FOREGROUND_ACTIVITY
-                }, APP_A.FOREGROUND_EMBEDDING_ACTIVITY);
+                .thenAssertEmbeddingTaskStack(
+                        new ComponentName[] {APP_A_FOREGROUND_ACTIVITY, APP_B_FOREGROUND_ACTIVITY},
+                        APP_A_FOREGROUND_EMBEDDING_ACTIVITY);
     }
 
     @Test
@@ -85,29 +90,27 @@ public class ActivitySecurityModelEmbeddingTest extends BackgroundActivityTestBa
         // Base State:
         // | A.FGE (A1) | B.FG (B1) |   --> left | right
         new ActivityStartVerifier()
-                .startFromForegroundActivity(APP_B)
-                .activity(APP_A.FOREGROUND_ACTIVITY)
+                .startFromForegroundActivity(APP_B_LAUNCH_BACKGROUND_ACTIVITIES)
+                .activity(APP_A_FOREGROUND_ACTIVITY)
                 // Test - B1 launches A.FG (A2) - succeeds
                 .executeAndAssertLaunch(/*succeeds*/ true)
                 // Final State:
                 // |            | A.FG (A2) |   --> left | right
                 // | A.FGE (A1) | B.FG (B1) |   --> left | right
-                .thenAssertEmbeddingTaskStack(new ComponentName[]{
-                        APP_A.FOREGROUND_ACTIVITY,
-                        APP_B.FOREGROUND_ACTIVITY
-                }, APP_A.FOREGROUND_EMBEDDING_ACTIVITY);
+                .thenAssertEmbeddingTaskStack(
+                        new ComponentName[] {APP_A_FOREGROUND_ACTIVITY, APP_B_FOREGROUND_ACTIVITY},
+                        APP_A_FOREGROUND_EMBEDDING_ACTIVITY);
 
         new ActivityStartVerifier()
-                .startFromForegroundActivity(APP_B)
-                .activity(APP_A.BACKGROUND_ACTIVITY)
+                .startFromForegroundActivity(APP_B_LAUNCH_BACKGROUND_ACTIVITIES)
+                .activity(APP_A_BACKGROUND_ACTIVITY)
                 // Test - B1 launches A.BG (A3) - fails
                 .executeAndAssertLaunch(/*succeeds*/ false)
                 // Final State (no change):
                 // |            | A.FG (A2) |   --> left | right
                 // | A.FGE (A1) | B.FG (B1) |   --> left | right
-                .thenAssertEmbeddingTaskStack(new ComponentName[]{
-                        APP_A.FOREGROUND_ACTIVITY,
-                        APP_B.FOREGROUND_ACTIVITY
-                }, APP_A.FOREGROUND_EMBEDDING_ACTIVITY);
+                .thenAssertEmbeddingTaskStack(
+                        new ComponentName[] {APP_A_FOREGROUND_ACTIVITY, APP_B_FOREGROUND_ACTIVITY},
+                        APP_A_FOREGROUND_EMBEDDING_ACTIVITY);
     }
 }

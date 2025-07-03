@@ -16,13 +16,13 @@
 
 package android.server.wm.backgroundactivity.appa;
 
-import static android.server.wm.backgroundactivity.common.CommonComponents.EVENT_NOTIFIER_EXTRA;
+import static android.server.wm.backgroundactivity.common.Components.EVENT_NOTIFIER_EXTRA;
 
 import android.app.Activity;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.ResultReceiver;
-import android.server.wm.backgroundactivity.common.CommonComponents;
+import android.server.wm.backgroundactivity.common.Components;
 
 public class StartNextMatchingActivity extends Activity {
 
@@ -31,7 +31,7 @@ public class StartNextMatchingActivity extends Activity {
         super.onCreate(savedInstanceState);
         ResultReceiver receiver = getIntent().getParcelableExtra(EVENT_NOTIFIER_EXTRA,
                 ResultReceiver.class);
-        receiver.send(CommonComponents.Event.APP_A_LAUNCHER_MOVING_TO_BACKGROUND_ACTIVITY, null);
+        receiver.send(Components.Event.APP_A_LAUNCHER_MOVING_TO_BACKGROUND_ACTIVITY, null);
 
         moveTaskToBack(true);
         new Handler().postDelayed(() -> {
