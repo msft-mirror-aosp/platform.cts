@@ -16,9 +16,11 @@
 
 package android.companion.cts.core
 
+import android.Manifest.permission.MANAGE_COMPANION_DEVICES
 import android.Manifest.permission.REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE
 import android.companion.DevicePresenceEvent.EVENT_BLE_APPEARED
 import android.companion.DevicePresenceEvent.EVENT_BLE_DISAPPEARED
+import android.companion.ObservingDevicePresenceRequest
 import android.companion.cts.common.MAC_ADDRESS_A
 import android.companion.cts.common.MAC_ADDRESS_B
 import android.companion.cts.common.PrimaryCompanionService
@@ -49,6 +51,25 @@ import org.junit.runner.RunWith
 @AppModeFull(reason = "CompanionDeviceManager APIs are not available to the instant apps.")
 @RunWith(AndroidJUnit4::class)
 class ObservingDevicePresenceTest : CoreTestBase() {
+    override fun tearDown() {
+        PrimaryCompanionService.clearConnectedDevices()
+        SecondaryCompanionService.clearConnectedDevices()
+        withShellPermissionIdentity(
+            MANAGE_COMPANION_DEVICES,
+            REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE
+        ) {
+            for (associationInfo in cdm.allAssociations) {
+                if (associationInfo.isNotifyOnDeviceNearby) {
+                    cdm.stopObservingDevicePresence(
+                        ObservingDevicePresenceRequest.Builder()
+                            .setAssociationId(associationInfo.id).build()
+                    )
+                }
+            }
+        }
+
+        super.tearDown()
+    }
 
     @Test
     fun test_observingDevicePresence_isOffByDefault() {

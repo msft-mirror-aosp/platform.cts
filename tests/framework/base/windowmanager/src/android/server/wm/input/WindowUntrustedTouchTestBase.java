@@ -37,7 +37,6 @@ import static junit.framework.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 
 import android.app.Activity;
-import android.app.ActivityManager;
 import android.app.ActivityOptions;
 import android.app.Instrumentation;
 import android.app.NotificationManager;
@@ -126,25 +125,19 @@ public abstract class WindowUntrustedTouchTestBase {
 
     private static final int OVERLAY_COLOR = 0xFFFF0000;
     private static final int ACTIVITY_COLOR = 0xFFFFFFFF;
-    static final String APP_A =
-            android.server.wm.second.Components.class.getPackage().getName();
-    static final String APP_B =
-            android.server.wm.third.Components.class.getPackage().getName();
     static final String WINDOW_1 = "W1";
     static final String WINDOW_2 = "W2";
 
-    private static final String[] APPS = {APP_A, APP_B};
-
     final WindowManagerStateHelper mWmState = new WindowManagerStateHelper();
-    private final Map<String, FutureConnection<IUntrustedTouchTestService>> mConnections =
+    private final Map<ComponentName, FutureConnection<IUntrustedTouchTestService>> mConnections =
             new ArrayMap<>();
     private Instrumentation mInstrumentation;
     private Context mContext;
+    private String mAppSelf;
     Resources mResources;
     TouchHelper mTouchHelper;
     private Handler mMainHandler;
     InputManager mInputManager;
-    private ActivityManager mActivityManager;
     private NotificationManager mNotificationManager;
     TestActivity mActivity;
     View mContainer;
@@ -177,9 +170,6 @@ public abstract class WindowUntrustedTouchTestBase {
     public ActivityScenarioRule<TestActivity> activityRule =
             new ActivityScenarioRule<>(TestActivity.class, createLaunchActivityOptionsBundle());
 
-    @NonNull
-    abstract String getAppSelf();
-
     @Before
     public void setUp() throws Exception {
         activityRule.getScenario().onActivity(activity -> {
@@ -192,15 +182,15 @@ public abstract class WindowUntrustedTouchTestBase {
         });
         mInstrumentation = getInstrumentation();
         mContext = mInstrumentation.getContext();
+        mAppSelf = mContext.getPackageName();
         mResources = mContext.getResources();
         mTouchHelper = new TouchHelper(mInstrumentation, mWmState);
         mMainHandler = new Handler(Looper.getMainLooper());
         mInputManager = mContext.getSystemService(InputManager.class);
-        mActivityManager = mContext.getSystemService(ActivityManager.class);
         mNotificationManager = mContext.getSystemService(NotificationManager.class);
 
-        mPreviousSawAppOp = AppOpsUtils.getOpMode(getAppSelf(), OPSTR_SYSTEM_ALERT_WINDOW);
-        AppOpsUtils.setOpMode(getAppSelf(), OPSTR_SYSTEM_ALERT_WINDOW, MODE_ALLOWED);
+        mPreviousSawAppOp = AppOpsUtils.getOpMode(mAppSelf, OPSTR_SYSTEM_ALERT_WINDOW);
+        AppOpsUtils.setOpMode(mAppSelf, OPSTR_SYSTEM_ALERT_WINDOW, MODE_ALLOWED);
         mPreviousTouchOpacity = setMaximumObscuringOpacityForTouch(MAXIMUM_OBSCURING_OPACITY);
         SystemUtil.runWithShellPermissionIdentity(
                 () -> mNotificationManager.setToastRateLimitingEnabled(false));
@@ -218,13 +208,11 @@ public abstract class WindowUntrustedTouchTestBase {
             mContext.unbindService(connection);
         }
         mConnections.clear();
-        for (String app : APPS) {
-            stopPackage(app);
-        }
+        forceStopAllTestPackages();
         SystemUtil.runWithShellPermissionIdentity(
                 () -> mNotificationManager.setToastRateLimitingEnabled(true));
         setMaximumObscuringOpacityForTouch(mPreviousTouchOpacity);
-        AppOpsUtils.setOpMode(getAppSelf(), OPSTR_SYSTEM_ALERT_WINDOW, mPreviousSawAppOp);
+        AppOpsUtils.setOpMode(mAppSelf, OPSTR_SYSTEM_ALERT_WINDOW, mPreviousSawAppOp);
     }
 
     private boolean onTouchEvent(View view, MotionEvent event) {
@@ -251,13 +239,13 @@ public abstract class WindowUntrustedTouchTestBase {
                 WindowManagerStateHelper.APP_STATE_RUNNING);
     }
 
-    void addToastOverlay(String packageName, boolean custom) throws Exception {
+    void addToastOverlay(@NonNull ComponentName component, boolean custom) throws Exception {
         // Making sure there are no toasts currently since we can only check for the presence of
         // *any* toast afterwards and we don't want to be in a situation where this method returned
         // because another toast was being displayed.
         waitForNoToastOverlays();
         if (custom) {
-            if (packageName.equals(getAppSelf())) {
+            if (component.getPackageName().equals(mAppSelf)) {
                 // We add the custom toast here because we already have foreground status due to
                 // the activity rule, so no need to start another activity.
                 addMyCustomToastOverlay();
@@ -265,11 +253,11 @@ public abstract class WindowUntrustedTouchTestBase {
                 // We have to use an activity that will display the toast then finish itself because
                 // custom toasts cannot be posted from the background.
                 Intent intent = new Intent();
-                intent.setComponent(repackage(packageName, Components.ToastActivity.COMPONENT));
+                intent.setComponent(component);
                 mActivity.startActivity(intent);
             }
         } else {
-            getService(packageName).showToast();
+            getService(component).showToast();
         }
 
         Condition.waitFor(
@@ -286,8 +274,10 @@ public abstract class WindowUntrustedTouchTestBase {
                                 toastWindow -> {
                                     String invalidReason = validateToastWindow(toastWindow);
                                     if (invalidReason != null) {
-                                        Log.d(TAG, "Failed to validate toast window: " +
-                                            invalidReason);
+                                        Log.d(
+                                                TAG,
+                                                "Failed to validate toast window: "
+                                                        + invalidReason);
                                         return false;
                                     }
                                     return true;
@@ -296,7 +286,7 @@ public abstract class WindowUntrustedTouchTestBase {
                                 toastWindow ->
                                         fail(
                                                 "Toast from app "
-                                                        + packageName
+                                                        + component.getPackageName()
                                                         + " did not appear on time or is outside of"
                                                         + " container bounds. Last reason: "
                                                         + validateToastWindow(toastWindow))));
@@ -363,75 +353,80 @@ public abstract class WindowUntrustedTouchTestBase {
         }
     }
 
-    void addExitAnimationActivity(String packageName) {
+    void addExitAnimationActivity(@NonNull ComponentName component) {
         // This activity responds to broadcasts to exit with animations and it's opaque (translucent
         // activities don't honor custom exit animations).
-        addActivity(repackage(packageName, Components.ExitAnimationActivity.COMPONENT),
-                /* extras */ null, /* options */ null);
+        addActivity(component, /* extras */ null, /* options */ null);
     }
 
-    void sendFinishToExitAnimationActivity(String packageName, int exitAnimation) {
+    void sendFinishToExitAnimationActivity(@NonNull ComponentName component, int exitAnimation) {
         Intent intent = new Intent(Components.ExitAnimationActivityReceiver.ACTION_FINISH);
-        intent.setPackage(packageName);
+        intent.setPackage(component.getPackageName());
         intent.putExtra(Components.ExitAnimationActivityReceiver.EXTRA_ANIMATION, exitAnimation);
         mContext.sendBroadcast(intent);
     }
 
-    void addAnimatedActivityOverlay(String packageName, boolean touchable,
-            @AnimRes int enterAnim, @AnimRes int exitAnim) {
+    void addAnimatedActivityOverlay(
+            @NonNull ComponentName component,
+            boolean touchable,
+            @AnimRes int enterAnim,
+            @AnimRes int exitAnim) {
         ConditionVariable animationsStarted = new ConditionVariable(false);
         ActivityOptions options = ActivityOptions.makeCustomAnimation(mContext, enterAnim, exitAnim,
                 0, mMainHandler, (t) -> animationsStarted.open(), /* finishedListener */ null);
         // We're testing the opacity coming from the animation here, not the one declared in the
         // activity, so we set its opacity to 1
-        addActivityOverlay(packageName, /* opacity */ 1, touchable, options.toBundle());
+        addActivityOverlay(component, /* opacity */ 1, touchable, options.toBundle());
         animationsStarted.block();
     }
 
-    void addActivityChildWindow(String packageName, String windowSuffix, IBinder token)
-            throws Exception {
-        String name = getWindowName(packageName, windowSuffix);
-        getService(packageName).showActivityChildWindow(name, token);
-        if (!mWmState.waitFor("activity child window " + name,
+    void addActivityChildWindow(
+            @NonNull ComponentName component, String windowSuffix, IBinder token) throws Exception {
+        String name = getWindowName(component, windowSuffix);
+        getService(component).showActivityChildWindow(name, token);
+        if (!mWmState.waitFor(
+                "activity child window " + name,
                 state -> state.isWindowVisible(name) && state.isWindowSurfaceShown(name))) {
             fail("Activity child window " + name + " did not appear on time");
         }
     }
 
-    void addActivityOverlay(String packageName, float opacity) {
-        addActivityOverlay(packageName, opacity, /* touchable */ false, /* options */ null);
+    void addActivityOverlay(@NonNull ComponentName component, float opacity) {
+        addActivityOverlay(component, opacity, /* touchable */ false, /* options */ null);
     }
 
-    void addActivityOverlay(String packageName, float opacity, boolean allowPassThrough) {
+    void addActivityOverlay(
+            @NonNull ComponentName component, float opacity, boolean allowPassThrough) {
         ActivityOptions options = ActivityOptions.makeBasic();
         options.setAllowPassThroughOnTouchOutside(allowPassThrough);
-        addActivityOverlay(packageName, opacity, /* touchable */ false, options.toBundle());
+        addActivityOverlay(component, opacity, /* touchable */ false, options.toBundle());
     }
 
-    private void addActivityOverlay(String packageName, float opacity, boolean touchable,
+    private void addActivityOverlay(
+            @NonNull ComponentName component,
+            float opacity,
+            boolean touchable,
             @Nullable Bundle options) {
         Bundle extras = new Bundle();
         extras.putFloat(Components.OverlayActivity.EXTRA_OPACITY, opacity);
         extras.putBoolean(Components.OverlayActivity.EXTRA_TOUCHABLE, touchable);
-        addActivityOverlay(packageName, extras, options);
+        addActivity(component, extras, options);
     }
 
-    void addActivityOverlay(String packageName, float opacity,
-            BlockingResultReceiver tokenReceiver) {
-        addActivityOverlay(packageName, opacity, tokenReceiver, /* options */ null);
+    void addActivityOverlay(
+            @NonNull ComponentName component, float opacity, BlockingResultReceiver tokenReceiver) {
+        addActivityOverlay(component, opacity, tokenReceiver, /* options */ null);
     }
 
-    void addActivityOverlay(String packageName, float opacity,
-            BlockingResultReceiver tokenReceiver, @Nullable Bundle options) {
+    void addActivityOverlay(
+            @NonNull ComponentName component,
+            float opacity,
+            BlockingResultReceiver tokenReceiver,
+            @Nullable Bundle options) {
         Bundle extras = new Bundle();
         extras.putFloat(Components.OverlayActivity.EXTRA_OPACITY, opacity);
         extras.putParcelable(Components.OverlayActivity.EXTRA_TOKEN_RECEIVER, tokenReceiver);
-        addActivityOverlay(packageName, extras, options);
-    }
-
-    private void addActivityOverlay(String packageName, @Nullable Bundle extras,
-            @Nullable Bundle options) {
-        addActivity(repackage(packageName, Components.OverlayActivity.COMPONENT), extras, options);
+        addActivity(component, extras, options);
     }
 
     private void addActivity(ComponentName component, @Nullable Bundle extras,
@@ -480,19 +475,21 @@ public abstract class WindowUntrustedTouchTestBase {
         // Base activity focused means no activities on top
         ComponentName component = mActivity.getComponentName();
         String name = ComponentNameUtils.getActivityName(component);
-        if (!mWmState.waitFor("test rule activity focused",
-                state -> name.equals(state.getFocusedActivity())
-                        && state.hasActivityState(component, STATE_RESUMED))) {
+        if (!mWmState.waitFor(
+                "test rule activity focused",
+                state ->
+                        name.equals(state.getFocusedActivity())
+                                && state.hasActivityState(component, STATE_RESUMED))) {
             fail(message);
         }
     }
 
-    void addSawOverlay(String packageName, String windowSuffix, float opacity)
+    void addSawOverlay(@NonNull ComponentName component, String windowSuffix, float opacity)
             throws Throwable {
-        String name = getWindowName(packageName, windowSuffix);
+        String name = getWindowName(component, windowSuffix);
         int[] viewXY = new int[2];
         mContainer.getLocationOnScreen(viewXY);
-        getService(packageName).showSystemAlertWindow(name, opacity, viewXY[0], viewXY[1]);
+        getService(component).showSystemAlertWindow(name, opacity, viewXY[0], viewXY[1]);
         mSawWindowsAdded.add(name);
         if (!mWmState.waitFor("saw window " + name,
                 state -> state.isWindowVisible(name) && state.isWindowSurfaceShown(name))) {
@@ -530,9 +527,7 @@ public abstract class WindowUntrustedTouchTestBase {
         }
         // We need to stop the app because not every overlay is created via the service (eg.
         // activity overlays and custom toasts)
-        for (String app : APPS) {
-            stopPackage(app);
-        }
+        forceStopAllTestPackages();
         waitForNoSawOverlays("SAWs not removed on time");
         removeActivityOverlays();
         waitForNoActivityOverlays("Activities not removed on time");
@@ -540,39 +535,38 @@ public abstract class WindowUntrustedTouchTestBase {
         waitForNoToastOverlays("Toasts not removed on time");
     }
 
-    private void stopPackage(String packageName) {
-        SystemUtil.runWithShellPermissionIdentity(
-                () -> mActivityManager.forceStopPackage(packageName));
+    private void forceStopAllTestPackages() {
+        android.server.wm.third.Components.forceStopPackage();
+        android.server.wm.second.Components.forceStopPackage();
+        android.server.wm.overlay.Components.forceStopPackage();
     }
 
     float setMaximumObscuringOpacityForTouch(float opacity) throws Exception {
-        return SystemUtil.callWithShellPermissionIdentity(() -> {
-            float previous = mInputManager.getMaximumObscuringOpacityForTouch();
-            InputSettings.setMaximumObscuringOpacityForTouch(mContext, opacity);
-            return previous;
-        });
+        return SystemUtil.callWithShellPermissionIdentity(
+                () -> {
+                    float previous = mInputManager.getMaximumObscuringOpacityForTouch();
+                    InputSettings.setMaximumObscuringOpacityForTouch(mContext, opacity);
+                    return previous;
+                });
     }
 
-    private IUntrustedTouchTestService getService(String packageName) throws Exception {
-        return mConnections.computeIfAbsent(packageName, this::connect).get(TIMEOUT_MS);
+    private IUntrustedTouchTestService getService(@NonNull ComponentName component)
+            throws Exception {
+        return mConnections.computeIfAbsent(component, this::connect).get(TIMEOUT_MS);
     }
 
-    private FutureConnection<IUntrustedTouchTestService> connect(String packageName) {
+    private FutureConnection<IUntrustedTouchTestService> connect(@NonNull ComponentName component) {
         FutureConnection<IUntrustedTouchTestService> connection =
                 new FutureConnection<>(IUntrustedTouchTestService.Stub::asInterface);
         Intent intent = new Intent();
         intent.putExtra(EXTRA_DISPLAY_ID, mActivity.getDisplay().getDisplayId());
-        intent.setComponent(repackage(packageName, Components.UntrustedTouchTestService.COMPONENT));
+        intent.setComponent(component);
         assertTrue(mContext.bindService(intent, connection, Context.BIND_AUTO_CREATE));
         return connection;
     }
 
-    private static String getWindowName(String packageName, String windowSuffix) {
-        return packageName + "." + windowSuffix;
-    }
-
-    private static ComponentName repackage(String packageName, ComponentName baseComponent) {
-        return new ComponentName(packageName, baseComponent.getClassName());
+    private static String getWindowName(@NonNull ComponentName component, String windowSuffix) {
+        return component.getPackageName() + "." + windowSuffix;
     }
 
     private static Bundle createLaunchActivityOptionsBundle() {

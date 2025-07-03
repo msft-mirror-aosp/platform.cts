@@ -24,8 +24,12 @@ import static android.telephony.cts.util.DefaultSmsAppHelper.assumeMessaging;
 import static android.telephony.cts.util.DefaultSmsAppHelper.assumeTelephony;
 import static android.telephony.cts.util.DefaultSmsAppHelper.stopBeingDefaultSmsApp;
 
+import static androidx.test.InstrumentationRegistry.getContext;
 import static androidx.test.InstrumentationRegistry.getInstrumentation;
 
+import static com.android.compatibility.common.util.ShellUtils.runShellCommand;
+import static com.android.compatibility.common.util.SystemUtil.callWithShellPermissionIdentity;
+import static com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity;
 import static com.android.internal.telephony.flags.Flags.FLAG_REDACT_OTP_SMS;
 import static com.android.internal.telephony.flags.Flags.FLAG_REDACT_OTP_SMS_API;
 
@@ -35,13 +39,20 @@ import static com.google.common.truth.Truth.assertWithMessage;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
+import static org.junit.Assume.assumeTrue;
 
+import android.annotation.SuppressLint;
+import android.app.role.RoleManager;
 import android.content.ContentResolver;
 import android.content.ContentValues;
+import android.content.Context;
+import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.net.Uri;
+import android.os.Process;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -53,6 +64,7 @@ import android.util.Log;
 import androidx.test.filters.SmallTest;
 
 import com.android.compatibility.common.util.ApiTest;
+import com.android.compatibility.common.util.CarrierPrivilegeUtils;
 import com.android.compatibility.common.util.SystemUtil;
 
 import org.junit.AfterClass;
@@ -61,6 +73,8 @@ import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 @SmallTest
@@ -72,7 +86,9 @@ public class SmsTest {
     private static final String TEST_ADDRESS = "+19998880001";
     private static final int TEST_THREAD_ID_1 = 101;
     private static final long OTP_HIDING_TIME_MS = TimeUnit.HOURS.toMillis(3);
+    private Context mContext;
     private ContentResolver mContentResolver;
+    private RoleManager mRoleManager;
     private SmsTestHelper mSmsTestHelper;
 
     @Rule
@@ -95,7 +111,9 @@ public class SmsTest {
         assumeTelephony();
         assumeMessaging();
         cleanup();
-        mContentResolver = getInstrumentation().getContext().getContentResolver();
+        mContext = getInstrumentation().getContext();
+        mContentResolver = mContext.getContentResolver();
+        mRoleManager = mContext.getSystemService(RoleManager.class);
         mSmsTestHelper = new SmsTestHelper();
     }
 
@@ -575,6 +593,32 @@ public class SmsTest {
 
     @Test
     @RequiresFlagsEnabled({FLAG_REDACT_OTP_SMS, FLAG_REDACT_OTP_SMS_API})
+    public void testOtpSms_RoleHoldingAppCanRead() throws Exception {
+        List<String> smsOtpReadingRoles =
+                List.of(RoleManager.ROLE_ASSISTANT, RoleManager.ROLE_DIALER);
+        Uri inserted =
+                mSmsTestHelper.insertTestOtpSmsAndWaitForOtpDetection(
+                        TEST_ADDRESS, TEST_OTP_SMS_BODY, System.currentTimeMillis());
+        for (String roleName : smsOtpReadingRoles) {
+            List<String> oldRoleHolders =
+                    callWithShellPermissionIdentity(
+                            () ->
+                                    mRoleManager.getRoleHoldersAsUser(
+                                            roleName, Process.myUserHandle()));
+            try {
+                addRoleHolder(roleName, mContext.getPackageName());
+                assertSmsPresence(inserted, TEST_OTP_SMS_BODY, true);
+            } finally {
+                removeRoleHolder(roleName, mContext.getPackageName());
+                for (String oldHolder : oldRoleHolders) {
+                    addRoleHolder(roleName, oldHolder);
+                }
+            }
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled({FLAG_REDACT_OTP_SMS, FLAG_REDACT_OTP_SMS_API})
     public void testOtpSms_DefaultSmsAppCantUpdate() {
         Uri inserted = mSmsTestHelper.insertTestOtpSmsAndWaitForOtpDetection(TEST_ADDRESS,
                 TEST_OTP_SMS_BODY, System.currentTimeMillis());
@@ -634,6 +678,43 @@ public class SmsTest {
 
     @Test
     @RequiresFlagsEnabled({FLAG_REDACT_OTP_SMS, FLAG_REDACT_OTP_SMS_API})
+    public void testOtpSms_AppWithCdmAssociationCanRead() {
+        Uri inserted =
+                mSmsTestHelper.insertTestOtpSmsAndWaitForOtpDetection(
+                        TEST_ADDRESS, TEST_OTP_SMS_BODY, System.currentTimeMillis());
+        associateCdm();
+        try {
+            stopBeingDefaultSmsApp();
+            assertSmsPresence(inserted, TEST_OTP_SMS_BODY, true);
+        } finally {
+            disassociateCdm();
+            ensureDefaultSmsApp();
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled({FLAG_REDACT_OTP_SMS, FLAG_REDACT_OTP_SMS_API})
+    public void testOtpSms_AppWithCarrierPrivilegeCanRead() throws Exception {
+        assumeTrue(
+                mContext.getPackageManager()
+                        .hasSystemFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
+        Uri inserted =
+                mSmsTestHelper.insertTestOtpSmsAndWaitForOtpDetection(
+                        TEST_ADDRESS, TEST_OTP_SMS_BODY, System.currentTimeMillis());
+        try {
+            stopBeingDefaultSmsApp();
+            CarrierPrivilegeUtils.withCarrierPrivileges(
+                    getContext(),
+                    SubscriptionManager.getDefaultSubscriptionId(),
+                    () -> assertSmsPresence(inserted, TEST_OTP_SMS_BODY, true));
+        } finally {
+            disassociateCdm();
+            ensureDefaultSmsApp();
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled({FLAG_REDACT_OTP_SMS, FLAG_REDACT_OTP_SMS_API})
     public void testOtpSms_UpdatesFromOtpPending() {
         Uri inserted = mSmsTestHelper.insertTestSms(TEST_ADDRESS, TEST_OTP_SMS_BODY);
         SystemUtil.eventually(() -> assertSmsOtpColumn(inserted, OTP_TYPE_CONTAINS_OTP));
@@ -681,6 +762,61 @@ public class SmsTest {
             loge("Exception for DefaultSmsAppHelper.getDefaultSmsApp, ex=" + ex);
         }
         return defaultSmsApp;
+    }
+
+    private void associateCdm() {
+        runShellCommand(
+                "cmd companiondevice associate %s %s 00:00:00:00:00:AA",
+                android.os.Process.myUserHandle().getIdentifier(), getContext().getPackageName());
+    }
+
+    private void disassociateCdm() {
+        runShellCommand(
+                "cmd companiondevice disassociate %s %s 00:00:00:00:00:AA",
+                android.os.Process.myUserHandle().getIdentifier(), mContext.getPackageName());
+    }
+
+    @SuppressLint("MissingPermission")
+    private void addRoleHolder(String roleName, String packageName) throws Exception {
+        CountDownLatch latch = new CountDownLatch(1);
+        runWithShellPermissionIdentity(
+                () ->
+                        mRoleManager.addRoleHolderAsUser(
+                                roleName,
+                                packageName,
+                                0,
+                                android.os.Process.myUserHandle(),
+                                getContext().getMainExecutor(),
+                                success -> {
+                                    assertTrue(
+                                            "Failed to set role " + roleName + " to " + packageName,
+                                            success);
+                                    latch.countDown();
+                                }));
+        latch.await();
+    }
+
+    @SuppressLint("MissingPermission")
+    private void removeRoleHolder(String roleName, String packageName) throws Exception {
+        CountDownLatch latch = new CountDownLatch(1);
+        runWithShellPermissionIdentity(
+                () ->
+                        mRoleManager.removeRoleHolderAsUser(
+                                roleName,
+                                packageName,
+                                0,
+                                Process.myUserHandle(),
+                                getContext().getMainExecutor(),
+                                success -> {
+                                    assertTrue(
+                                            "Failed to remove role holder "
+                                                    + packageName
+                                                    + " from "
+                                                    + roleName,
+                                            success);
+                                    latch.countDown();
+                                }));
+        latch.await();
     }
 
     private static void logd(String log) {

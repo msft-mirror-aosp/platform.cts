@@ -21,7 +21,6 @@ import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
 import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeFalse;
 
 import android.app.Instrumentation;
 import android.content.BroadcastReceiver;
@@ -522,12 +521,5 @@ public class LauncherAppsTests {
 
     private String toString(LauncherActivityInfo info) {
         return info == null ? null : info.getComponentName().flattenToShortString();
-    }
-
-    private void assumeNotHeadlessSystemUserMode() {
-        // On headless system user mode, the current user is a profile owner, and hence
-        // the synthetic activity is not listed by LauncherApps.getActivityList()
-        assumeFalse("test skipped on headless system user mode",
-                UserManager.isHeadlessSystemUserMode());
     }
 }

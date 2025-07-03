@@ -19,7 +19,7 @@ package android.server.wm.app
 import android.server.wm.component.ComponentsProvider
 import android.server.wm.component.forceStopPackage
 
-/** Constants for test components. */
+/** Constants for test app components. */
 object Components : ComponentsProvider() {
     @JvmField val ALT_LAUNCHING_ACTIVITY = component("AltLaunchingActivity")
     @JvmField val TRANSLUCENT_PIP_ACTIVITY = component("TranslucentPipActivity")

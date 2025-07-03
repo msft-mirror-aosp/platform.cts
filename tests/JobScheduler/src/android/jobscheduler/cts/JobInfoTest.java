@@ -408,52 +408,6 @@ public class JobInfoTest extends BaseJobSchedulerTest {
     }
 
     @SuppressWarnings("deprecation")
-    @RequiresFlagsDisabled(Flags.FLAG_IGNORE_IMPORTANT_WHILE_FOREGROUND)
-    @Test
-    public void testImportantWhileForeground_Legacy() {
-        // Assert the default value is false
-        JobInfo ji = new JobInfo.Builder(JOB_ID, kJobServiceComponent)
-                .build();
-
-        assertThat(ji.isImportantWhileForeground()).isFalse();
-        // Confirm JobScheduler accepts the JobInfo object.
-        mJobScheduler.schedule(ji);
-
-        ji = new JobInfo.Builder(JOB_ID, kJobServiceComponent)
-                .setImportantWhileForeground(true)
-                .build();
-        assertThat(ji.isImportantWhileForeground()).isTrue();
-        assertThat(ji.getPriority()).isEqualTo(JobInfo.PRIORITY_HIGH);
-        // Confirm JobScheduler accepts the JobInfo object.
-        mJobScheduler.schedule(ji);
-
-        ji = new JobInfo.Builder(JOB_ID, kJobServiceComponent)
-                .setImportantWhileForeground(false)
-                .build();
-        assertThat(ji.isImportantWhileForeground()).isFalse();
-        // Confirm JobScheduler accepts the JobInfo object.
-        mJobScheduler.schedule(ji);
-
-        //noinspection deprecation
-        assertBuildFails("Successfully built a low-priority JobInfo object with"
-                + " disallowed important while foreground flag",
-                new JobInfo.Builder(JOB_ID, kJobServiceComponent)
-                        .setPriority(JobInfo.PRIORITY_LOW)
-                        .setImportantWhileForeground(true));
-        assertBuildFails("Successfully built a user-initiated JobInfo object with"
-                + " disallowed important while foreground flag",
-                new JobInfo.Builder(JOB_ID, kJobServiceComponent)
-                        .setUserInitiated(true)
-                        .setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY)
-                        .setImportantWhileForeground(true));
-        assertBuildFails("Successfully built an expedited JobInfo object with"
-                + " disallowed important while foreground flag",
-                new JobInfo.Builder(JOB_ID, kJobServiceComponent)
-                        .setExpedited(true)
-                        .setImportantWhileForeground(true));
-    }
-
-    @SuppressWarnings("deprecation")
     @RequiresFlagsEnabled(android.app.job.Flags.FLAG_IGNORE_IMPORTANT_WHILE_FOREGROUND)
     @Test
     public void testImportantWhileForeground_Ignored() {

@@ -24,7 +24,6 @@ import static com.google.common.truth.Truth.assertThat;
 
 import static org.testng.Assert.expectThrows;
 
-import android.app.ActivityManager;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.pm.PackageInfo;
@@ -90,30 +89,16 @@ public class DeveloperVerifierServiceTest {
                 () ->
                         mPackageInstaller.setDeveloperVerificationPolicy(
                                 DEVELOPER_VERIFICATION_POLICY_BLOCK_FAIL_CLOSED));
-        // Test changing verification policy with permission
+        // Test changing verification policy with permission. API still throws SecurityException
+        // because the caller isn't the developer verifier.
         SystemUtil.runWithShellPermissionIdentity(
-                () -> {
-                    if (verifierPackageName == null) {
-                        // If there is no system verifier, the API returns false
-                        assertThat(
-                                        mPackageInstaller.setDeveloperVerificationPolicy(
-                                                DEVELOPER_VERIFICATION_POLICY_BLOCK_FAIL_CLOSED))
-                                .isFalse();
-                    } else {
-                        // Otherwise, the API throws IllegalStateException because the caller isn't
-                        // the system verifier.
+                () ->
                         expectThrows(
-                                IllegalStateException.class,
+                                SecurityException.class,
                                 () ->
                                         mPackageInstaller.setDeveloperVerificationPolicy(
-                                                DEVELOPER_VERIFICATION_POLICY_BLOCK_FAIL_CLOSED));
-                    }
-                },
+                                                DEVELOPER_VERIFICATION_POLICY_BLOCK_FAIL_CLOSED)),
                 android.Manifest.permission.DEVELOPER_VERIFICATION_AGENT);
-        // If there is no system verifier, even Shell cannot change the policy; otherwise, Shell
-        // cannot set the policy to an invalid number. Either way, expect the command to fail.
-        final int invalidPolicy = 100;
-        assertThat(runSetDefaultVerificationPolicy(invalidPolicy)).startsWith("Failure");
     }
 
     @Test
@@ -138,27 +123,17 @@ public class DeveloperVerifierServiceTest {
         }
     }
 
-    private static int getDefaultVerificationPolicy() {
-        String policyStr =
-                SystemUtil.runShellCommand(
-                                "pm get-developer-verification-policy --user "
-                                        + ActivityManager.getCurrentUser())
-                        .trim();
-        return Integer.parseInt(policyStr);
-    }
-
-    private static void setDefaultVerificationPolicy(
-            @PackageInstaller.DeveloperVerificationPolicy int policy) {
-        runSetDefaultVerificationPolicy(policy);
-        assertThat(getDefaultVerificationPolicy()).isEqualTo(policy);
-    }
-
-    private static String runSetDefaultVerificationPolicy(
-            @PackageInstaller.DeveloperVerificationPolicy int policy) {
-        return SystemUtil.runShellCommand(
-                "pm set-developer-verification-policy --user "
-                        + ActivityManager.getCurrentUser()
-                        + " "
-                        + policy);
+    @Test
+    public void testGetDeveloperVerificationPolicyDelegatePackageFails() {
+        // Only the developer verifier can query the policy delegate.
+        expectThrows(
+                SecurityException.class,
+                mPackageInstaller::getDeveloperVerificationPolicyDelegatePackage);
+        SystemUtil.runWithShellPermissionIdentity(
+                () ->
+                        expectThrows(
+                                SecurityException.class,
+                                mPackageInstaller::getDeveloperVerificationPolicyDelegatePackage),
+                android.Manifest.permission.DEVELOPER_VERIFICATION_AGENT);
     }
 }

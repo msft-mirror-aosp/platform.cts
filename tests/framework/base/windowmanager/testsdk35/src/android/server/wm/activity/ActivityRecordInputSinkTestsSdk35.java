@@ -21,8 +21,6 @@ import static android.server.wm.WindowManagerState.STATE_RESUMED;
 import android.platform.test.annotations.Presubmit;
 import android.server.wm.overlay.Components;
 
-import androidx.annotation.NonNull;
-
 import org.junit.Test;
 
 /**
@@ -34,13 +32,6 @@ import org.junit.Test;
  */
 @Presubmit
 public class ActivityRecordInputSinkTestsSdk35 extends ActivityRecordInputSinkTestsBase {
-    private static final String APP_SELF = "android.server.wm.cts.testsdk35";
-
-    @Override
-    @NonNull
-    String getAppSelf() {
-        return APP_SELF;
-    }
 
     @Test
     public void testOverlappingActivityInSameTaskDifferentUid_compat_AllowsTouches() {

@@ -1,7 +1,12 @@
 {
   "presubmit": [
     {
-      "name": "CtsMockingDebuggableTestCases"
+      "name": "CtsMockingDebuggableTestCases",
+      "options": [
+          {
+              "exclude-annotation": "androidx.test.filters.LargeTest"
+          }
+      ]
     }
   ]
 }

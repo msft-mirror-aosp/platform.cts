@@ -16,13 +16,13 @@
 
 package android.server.wm.input;
 
+import static android.server.wm.cts.testsdk35.Components.SDK_35_UNTRUSTED_TOUCH_TEST_SERVICE;
 import static android.server.wm.overlay.Components.OverlayActivity.EXTRA_TOKEN;
+import static android.server.wm.second.Components.SECOND_OVERLAY_ACTIVITY;
 
 import android.os.IBinder;
 import android.platform.test.annotations.Presubmit;
 import android.server.wm.shared.BlockingResultReceiver;
-
-import androidx.annotation.NonNull;
 
 import org.junit.Test;
 
@@ -35,13 +35,6 @@ import org.junit.Test;
  */
 @Presubmit
 public class WindowUntrustedTouchTestSdk35 extends WindowUntrustedTouchTestBase {
-    private static final String APP_SELF = "android.server.wm.cts.testsdk35";
-
-    @Override
-    @NonNull
-    String getAppSelf() {
-        return APP_SELF;
-    }
 
     /**
      * Tests that pass-through touches are allowed even without opt-in if the compat change is not
@@ -51,7 +44,7 @@ public class WindowUntrustedTouchTestSdk35 extends WindowUntrustedTouchTestBase 
     public void testWhenOneActivityWindowWithZeroOpacityNoOptIn_compat_allowsTouch()
             throws Exception {
         // No touch pass-through opt-in by default.
-        addActivityOverlay(APP_A, /* opacity */ 0f);
+        addActivityOverlay(SECOND_OVERLAY_ACTIVITY, /* opacity */ 0f);
 
         mTouchHelper.tapOnViewCenter(mContainer);
 
@@ -68,10 +61,10 @@ public class WindowUntrustedTouchTestSdk35 extends WindowUntrustedTouchTestBase 
             throws Exception {
         // Creates a new activity with 0 opacity
         BlockingResultReceiver receiver = new BlockingResultReceiver();
-        addActivityOverlay(APP_A, /* opacity */ 0f, receiver);
+        addActivityOverlay(SECOND_OVERLAY_ACTIVITY, /* opacity */ 0f, receiver);
         // Now get its token and put a child window owned by us
         IBinder token = receiver.getData(TIMEOUT_MS).getBinder(EXTRA_TOKEN);
-        addActivityChildWindow(getAppSelf(), WINDOW_1, token);
+        addActivityChildWindow(SDK_35_UNTRUSTED_TOUCH_TEST_SERVICE, WINDOW_1, token);
 
         mTouchHelper.tapOnViewCenter(mContainer);
 

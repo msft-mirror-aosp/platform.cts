@@ -34,6 +34,12 @@ public class WebViewHostSideURLUtilTest extends CompatChangeGatingTestCase {
         installPackage(TEST_APK, true);
     }
 
+    @Override
+    protected void tearDown() throws Exception {
+        // Uninstall the test package
+        uninstallPackage(TEST_PKG, true);
+    }
+
     @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     private boolean isVanillaIceCreamBuildFlagEnabled() throws DeviceNotAvailableException {
         String output =

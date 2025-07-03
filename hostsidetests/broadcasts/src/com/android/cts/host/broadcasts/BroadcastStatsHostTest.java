@@ -85,7 +85,6 @@ public class BroadcastStatsHostTest extends BaseHostJUnit4Test implements IBuild
         mCtsBuild = buildInfo;
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_LOG_BROADCAST_SENT_EVENT)
     @Test
     public void testBroadcastSent() throws Exception {
         uploadConfigForBroadcastSentEvent(TEST_PKG, TEST_BROADCAST_ACTION);

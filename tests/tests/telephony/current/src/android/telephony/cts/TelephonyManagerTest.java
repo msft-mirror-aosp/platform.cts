@@ -7237,4 +7237,50 @@ public class TelephonyManagerTest {
         final Matcher matcher = HEXADECIMAL_PATTERN.matcher(input);
         return matcher.matches();
     }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_SUPPORT_SLOT_SWITCHING_2PSIM_1ESIM_CONFIG)
+    public void testSimTypeInfo() {
+        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
+        if (mConfigHalVersion < RADIO_HAL_VERSION_2_3) {
+            Log.d(TAG, "Skipping test since SimTypeInfo is not supported until IRadioConfig 2.3.");
+            return;
+        }
+        InstrumentationRegistry.getInstrumentation()
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(
+                        android.Manifest.permission.READ_PRIVILEGED_PHONE_STATE);
+        UiccSlotInfo[] slotInfos = mTelephonyManager.getUiccSlotsInfo();
+        // Validate supported sim types and active sim type
+        for (UiccSlotInfo slotInfo : slotInfos) {
+            // Active sim type should be present in the supported sim types.
+            int[] supportedSimTypes = slotInfo.getSupportedSimTypes();
+            assertTrue(
+                    Arrays.stream(supportedSimTypes)
+                            .anyMatch(type -> type == slotInfo.getSimType()));
+        }
+
+        Collection<UiccSlotMapping> simSlotMapping = mTelephonyManager.getSimSlotMapping();
+        // Validate sim type, should be same between TelephonyManager#getSimSlotMapping
+        // and TelephonyManager#getUiccSlotsInfo
+        for (UiccSlotMapping slotMapping : simSlotMapping) {
+            assertTrue(slotMapping.getPhysicalSlotIndex() < slotInfos.length);
+            assertEquals(
+                    slotMapping.getSimType(),
+                    slotInfos[slotMapping.getPhysicalSlotIndex()].getSimType());
+        }
+
+        InstrumentationRegistry.getInstrumentation()
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(android.Manifest.permission.MODIFY_PHONE_STATE);
+        try {
+            mTelephonyManager.setSimSlotMapping(simSlotMapping);
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            fail("Exception is not expected");
+        }
+
+        InstrumentationRegistry.getInstrumentation()
+                .getUiAutomation()
+                .dropShellPermissionIdentity();
+    }
 }
