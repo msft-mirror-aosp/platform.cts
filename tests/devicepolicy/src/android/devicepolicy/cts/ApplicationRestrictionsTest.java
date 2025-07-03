@@ -489,8 +489,8 @@ public final class ApplicationRestrictionsTest {
                 dpc(sDeviceState).devicePolicyManager()
                         .getApplicationRestrictions(
                                 dpc(sDeviceState).componentName(), sTestApp.packageName());
-        Bundle bundle = BundleUtils.createBundle(
-                "roleHolderSetApplicationRestrictions_UserManagerReturnsThisValue");
+        String id = "roleHolderSetApplicationRestrictions_UserManagerReturnsThisValue";
+        Bundle bundle = BundleUtils.createBundle(id);
 
         try (TestAppInstance testApp = sTestApp.install()) {
             dpc(sDeviceState).devicePolicyManager()
@@ -498,8 +498,8 @@ public final class ApplicationRestrictionsTest {
                             dpc(sDeviceState).componentName(), sTestApp.packageName(),
                             bundle);
 
-            assertThat(testApp.userManager()
-                    .getApplicationRestrictions(testApp.packageName())).isEqualTo(bundle);
+            BundleUtils.assertEqualToBundle(
+                id, testApp.userManager().getApplicationRestrictions(testApp.packageName()));
         } finally {
             dpc(sDeviceState).devicePolicyManager().setApplicationRestrictions(
                     dpc(sDeviceState).componentName(),
