@@ -25,6 +25,7 @@ import static org.junit.Assume.assumeNoException;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import android.app.Activity;
 import android.companion.virtual.VirtualDeviceManager.VirtualDevice;
@@ -306,6 +307,7 @@ public class VirtualDevicePowerTest {
 
         mVirtualDevice.goToSleep();
         UiDeviceUtils.pressSleepButton();
+        mVirtualDeviceRule.getWmState().waitForKeyguardShowingAndNotOccluded();
         verify(mVirtualDisplayCallback, timeout(CALLBACK_TIMEOUT_MS).times(1)).onPaused();
 
         assertThat(mDisplay.getState()).isEqualTo(Display.STATE_OFF);
@@ -319,13 +321,9 @@ public class VirtualDevicePowerTest {
         assertThat(mVirtualDisplayPowerManager.isInteractive()).isTrue();
     }
 
-    /**
-     * Virtual device displays never show keyguard and are always considered "insecure" and
-     * "unlocked", so android:showWhenLocked is ignored for such displays.
-     */
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_DEVICE_AWARE_DISPLAY_POWER)
-    public void turnScreenOnWithoutShowWhenLocked_turnsOnVirtualDisplay() {
+    public void turnScreenOnWithoutShowWhenLocked_doesNotTurnOnVirtualDisplay() {
         createVirtualDeviceAndDisplay();
 
         mVirtualDeviceRule.startActivityOnDisplaySync(mDisplay.getDisplayId(), Activity.class);
@@ -335,6 +333,7 @@ public class VirtualDevicePowerTest {
 
         mVirtualDevice.goToSleep();
         UiDeviceUtils.pressSleepButton();
+        mVirtualDeviceRule.getWmState().waitForKeyguardShowingAndNotOccluded();
         verify(mVirtualDisplayCallback, timeout(CALLBACK_TIMEOUT_MS).times(1)).onPaused();
 
         assertThat(mDisplay.getState()).isEqualTo(Display.STATE_OFF);
@@ -342,10 +341,8 @@ public class VirtualDevicePowerTest {
 
         mVirtualDeviceRule.startActivityOnDisplaySync(
                 mDisplay.getDisplayId(), TurnScreenOnActivity.class);
-        verify(mVirtualDisplayCallback, timeout(CALLBACK_TIMEOUT_MS).times(++resumed)).onResumed();
-        assertThat(mDisplay.getState()).isEqualTo(Display.STATE_ON);
-
-        assertThat(mVirtualDisplayPowerManager.isInteractive()).isTrue();
+        verifyNoMoreInteractions(mVirtualDisplayCallback);
+        assertThat(mDisplay.getState()).isEqualTo(Display.STATE_OFF);
     }
 
     @Test

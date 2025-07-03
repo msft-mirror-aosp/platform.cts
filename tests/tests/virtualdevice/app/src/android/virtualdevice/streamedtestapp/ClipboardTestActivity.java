@@ -24,8 +24,10 @@ import static android.virtualdevice.cts.common.StreamedAppConstants.EXTRA_DEVICE
 import static android.virtualdevice.cts.common.StreamedAppConstants.EXTRA_HAS_CLIP_DATA;
 
 import android.app.Activity;
+import android.companion.virtual.VirtualDeviceManager;
 import android.content.ClipData;
 import android.content.ClipboardManager;
+import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.RemoteCallback;
@@ -53,6 +55,12 @@ public class ClipboardTestActivity extends Activity {
 
     private void processAction() {
         int deviceId = getIntent().getIntExtra(EXTRA_DEVICE_ID, getDeviceId());
+        if (deviceId != Context.DEVICE_ID_DEFAULT) {
+            VirtualDeviceManager vdm = getSystemService(VirtualDeviceManager.class);
+            if (vdm.getVirtualDevice(deviceId) == null) {
+                return;
+            }
+        }
         ClipboardManager clipboardManager =
                 createDeviceContext(deviceId).getSystemService(ClipboardManager.class);
 
@@ -73,6 +81,6 @@ public class ClipboardTestActivity extends Activity {
         if (resultReceiver != null) {
             resultReceiver.sendResult(result);
         }
-        finish();
+        finishAndRemoveTask();
     }
 }
