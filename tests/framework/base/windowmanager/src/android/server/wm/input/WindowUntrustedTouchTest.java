@@ -16,7 +16,21 @@
 
 package android.server.wm.input;
 
+import static android.server.wm.cts.Components.SAME_UID_EXIT_ANIMATION_ACTIVITY;
+import static android.server.wm.cts.Components.SAME_UID_OVERLAY_ACTIVITY;
+import static android.server.wm.cts.Components.SAME_UID_TOAST_ACTIVITY;
+import static android.server.wm.cts.Components.SAME_UID_UNTRUSTED_TOUCH_TEST_SERVICE;
+import static android.server.wm.overlay.Components.ExitAnimationActivityReceiver.EXTRA_VALUE_ANIMATION_0_7;
+import static android.server.wm.overlay.Components.ExitAnimationActivityReceiver.EXTRA_VALUE_ANIMATION_0_9;
+import static android.server.wm.overlay.Components.ExitAnimationActivityReceiver.EXTRA_VALUE_LONG_ANIMATION_0_7;
 import static android.server.wm.overlay.Components.OverlayActivity.EXTRA_TOKEN;
+import static android.server.wm.second.Components.SECOND_EXIT_ANIMATION_ACTIVITY;
+import static android.server.wm.second.Components.SECOND_OVERLAY_ACTIVITY;
+import static android.server.wm.second.Components.SECOND_TOAST_ACTIVITY;
+import static android.server.wm.second.Components.SECOND_UNTRUSTED_TOUCH_TEST_SERVICE;
+import static android.server.wm.third.Components.THIRD_OVERLAY_ACTIVITY;
+import static android.server.wm.third.Components.THIRD_TOAST_ACTIVITY;
+import static android.server.wm.third.Components.THIRD_UNTRUSTED_TOUCH_TEST_SERVICE;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -24,7 +38,6 @@ import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertTrue;
 
 import static org.junit.Assume.assumeFalse;
-import static org.junit.Assume.assumeTrue;
 
 import android.app.ActivityOptions;
 import android.graphics.Rect;
@@ -33,13 +46,11 @@ import android.os.SystemClock;
 import android.platform.test.annotations.Presubmit;
 import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
-import android.server.wm.overlay.Components;
 import android.server.wm.overlay.R;
 import android.server.wm.shared.BlockingResultReceiver;
 import android.view.Display;
 import android.view.WindowManager.LayoutParams;
 
-import androidx.annotation.NonNull;
 import androidx.test.filters.FlakyTest;
 
 import com.android.compatibility.common.util.FeatureUtil;
@@ -52,14 +63,6 @@ import org.junit.Test;
  */
 @Presubmit
 public class WindowUntrustedTouchTest extends WindowUntrustedTouchTestBase {
-
-    private static final String APP_SELF = "android.server.wm.cts";
-
-    @Override
-    @NonNull
-    String getAppSelf() {
-        return APP_SELF;
-    }
 
     @Test
     public void testMaximumObscuringOpacity() throws Throwable {
@@ -112,7 +115,7 @@ public class WindowUntrustedTouchTest extends WindowUntrustedTouchTestBase {
         assumeFalse("XR device uses a custom window occlusion check tested via CTS Verifier.",
                 FeatureUtil.isXrHeadset());
 
-        addSawOverlay(APP_A, WINDOW_1, .9f);
+        addSawOverlay(SECOND_UNTRUSTED_TOUCH_TEST_SERVICE, WINDOW_1, .9f);
 
         mTouchHelper.tapOnViewCenter(mContainer);
 
@@ -126,7 +129,7 @@ public class WindowUntrustedTouchTest extends WindowUntrustedTouchTestBase {
         assumeFalse("XR device uses a custom window occlusion check tested via CTS Verifier.",
                 FeatureUtil.isXrHeadset());
 
-        addSawOverlay(APP_A, WINDOW_1, .7f);
+        addSawOverlay(SECOND_UNTRUSTED_TOUCH_TEST_SERVICE, WINDOW_1, .7f);
 
         mTouchHelper.tapOnViewCenter(mContainer);
 
@@ -139,7 +142,7 @@ public class WindowUntrustedTouchTest extends WindowUntrustedTouchTestBase {
         assumeFalse("XR device uses a custom window occlusion check tested via CTS Verifier.",
                 FeatureUtil.isXrHeadset());
 
-        addSawOverlay(APP_A, WINDOW_1, 0f);
+        addSawOverlay(SECOND_UNTRUSTED_TOUCH_TEST_SERVICE, WINDOW_1, 0f);
 
         mTouchHelper.tapOnViewCenter(mContainer);
 
@@ -152,7 +155,7 @@ public class WindowUntrustedTouchTest extends WindowUntrustedTouchTestBase {
         assumeFalse("XR device uses a custom window occlusion check tested via CTS Verifier.",
                 FeatureUtil.isXrHeadset());
 
-        addSawOverlay(APP_A, WINDOW_1, MAXIMUM_OBSCURING_OPACITY);
+        addSawOverlay(SECOND_UNTRUSTED_TOUCH_TEST_SERVICE, WINDOW_1, MAXIMUM_OBSCURING_OPACITY);
 
         mTouchHelper.tapOnViewCenter(mContainer);
 
@@ -167,8 +170,8 @@ public class WindowUntrustedTouchTest extends WindowUntrustedTouchTestBase {
                 FeatureUtil.isXrHeadset());
 
         // Resulting opacity = 1 - (1 - 0.5)*(1 - 0.5) = .75
-        addSawOverlay(APP_A, WINDOW_1, .5f);
-        addSawOverlay(APP_A, WINDOW_2, .5f);
+        addSawOverlay(SECOND_UNTRUSTED_TOUCH_TEST_SERVICE, WINDOW_1, .5f);
+        addSawOverlay(SECOND_UNTRUSTED_TOUCH_TEST_SERVICE, WINDOW_2, .5f);
 
         mTouchHelper.tapOnViewCenter(mContainer);
 
@@ -183,8 +186,8 @@ public class WindowUntrustedTouchTest extends WindowUntrustedTouchTestBase {
                 FeatureUtil.isXrHeadset());
 
         // Resulting opacity = 1 - (1 - 0.7)*(1 - 0.7) = .91
-        addSawOverlay(APP_A, WINDOW_1, .7f);
-        addSawOverlay(APP_A, WINDOW_2, .7f);
+        addSawOverlay(SECOND_UNTRUSTED_TOUCH_TEST_SERVICE, WINDOW_1, .7f);
+        addSawOverlay(SECOND_UNTRUSTED_TOUCH_TEST_SERVICE, WINDOW_2, .7f);
 
         mTouchHelper.tapOnViewCenter(mContainer);
 
@@ -198,8 +201,8 @@ public class WindowUntrustedTouchTest extends WindowUntrustedTouchTestBase {
         assumeFalse("XR device uses a custom window occlusion check tested via CTS Verifier.",
                 FeatureUtil.isXrHeadset());
 
-        addSawOverlay(APP_A, WINDOW_1, .7f);
-        addSawOverlay(APP_B, WINDOW_2, .7f);
+        addSawOverlay(SECOND_UNTRUSTED_TOUCH_TEST_SERVICE, WINDOW_1, .7f);
+        addSawOverlay(THIRD_UNTRUSTED_TOUCH_TEST_SERVICE, WINDOW_2, .7f);
 
         mTouchHelper.tapOnViewCenter(mContainer);
 
@@ -213,8 +216,8 @@ public class WindowUntrustedTouchTest extends WindowUntrustedTouchTestBase {
         assumeFalse("XR device uses a custom window occlusion check tested via CTS Verifier.",
                 FeatureUtil.isXrHeadset());
 
-        addSawOverlay(APP_A, WINDOW_1, .9f);
-        addSawOverlay(getAppSelf(), WINDOW_1, .7f);
+        addSawOverlay(SECOND_UNTRUSTED_TOUCH_TEST_SERVICE, WINDOW_1, .9f);
+        addSawOverlay(SAME_UID_UNTRUSTED_TOUCH_TEST_SERVICE, WINDOW_1, .7f);
 
         mTouchHelper.tapOnViewCenter(mContainer);
 
@@ -229,8 +232,8 @@ public class WindowUntrustedTouchTest extends WindowUntrustedTouchTestBase {
         assumeFalse("XR device uses a custom window occlusion check tested via CTS Verifier.",
                 FeatureUtil.isXrHeadset());
 
-        addSawOverlay(APP_A, WINDOW_1, .7f);
-        addSawOverlay(getAppSelf(), WINDOW_1, .7f);
+        addSawOverlay(SECOND_UNTRUSTED_TOUCH_TEST_SERVICE, WINDOW_1, .7f);
+        addSawOverlay(SAME_UID_UNTRUSTED_TOUCH_TEST_SERVICE, WINDOW_1, .7f);
 
         mTouchHelper.tapOnViewCenter(mContainer);
 
@@ -245,9 +248,9 @@ public class WindowUntrustedTouchTest extends WindowUntrustedTouchTestBase {
                 FeatureUtil.isXrHeadset());
 
         // Resulting opacity for A = 1 - (1 - 0.5)*(1 - 0.5) = .75
-        addSawOverlay(APP_A, WINDOW_1, .5f);
-        addSawOverlay(APP_A, WINDOW_1, .5f);
-        addSawOverlay(getAppSelf(), WINDOW_1, .7f);
+        addSawOverlay(SECOND_UNTRUSTED_TOUCH_TEST_SERVICE, WINDOW_1, .5f);
+        addSawOverlay(SECOND_UNTRUSTED_TOUCH_TEST_SERVICE, WINDOW_1, .5f);
+        addSawOverlay(SAME_UID_UNTRUSTED_TOUCH_TEST_SERVICE, WINDOW_1, .7f);
 
         mTouchHelper.tapOnViewCenter(mContainer);
 
@@ -262,7 +265,7 @@ public class WindowUntrustedTouchTest extends WindowUntrustedTouchTestBase {
                 FeatureUtil.isXrHeadset());
 
         setMaximumObscuringOpacityForTouch(0);
-        addSawOverlay(APP_A, WINDOW_1, 0);
+        addSawOverlay(SECOND_UNTRUSTED_TOUCH_TEST_SERVICE, WINDOW_1, 0);
 
         mTouchHelper.tapOnViewCenter(mContainer);
 
@@ -277,7 +280,7 @@ public class WindowUntrustedTouchTest extends WindowUntrustedTouchTestBase {
                 FeatureUtil.isXrHeadset());
 
         setMaximumObscuringOpacityForTouch(0);
-        addSawOverlay(APP_A, WINDOW_1, .1f);
+        addSawOverlay(SECOND_UNTRUSTED_TOUCH_TEST_SERVICE, WINDOW_1, .1f);
 
         mTouchHelper.tapOnViewCenter(mContainer);
 
@@ -293,7 +296,7 @@ public class WindowUntrustedTouchTest extends WindowUntrustedTouchTestBase {
                 FeatureUtil.isXrHeadset());
 
         setMaximumObscuringOpacityForTouch(1);
-        addSawOverlay(APP_A, WINDOW_1, 1);
+        addSawOverlay(SECOND_UNTRUSTED_TOUCH_TEST_SERVICE, WINDOW_1, 1);
 
         mTouchHelper.tapOnViewCenter(mContainer);
 
@@ -308,7 +311,7 @@ public class WindowUntrustedTouchTest extends WindowUntrustedTouchTestBase {
                 FeatureUtil.isXrHeadset());
 
         setMaximumObscuringOpacityForTouch(1);
-        addSawOverlay(APP_A, WINDOW_1, .9f);
+        addSawOverlay(SECOND_UNTRUSTED_TOUCH_TEST_SERVICE, WINDOW_1, .9f);
 
         mTouchHelper.tapOnViewCenter(mContainer);
 
@@ -324,7 +327,7 @@ public class WindowUntrustedTouchTest extends WindowUntrustedTouchTestBase {
         assumeFalse("XR device uses a custom window occlusion check tested via CTS Verifier.",
                 FeatureUtil.isXrHeadset());
 
-        addActivityOverlay(APP_A, /* opacity */ .5f);
+        addActivityOverlay(SECOND_OVERLAY_ACTIVITY, /* opacity */ .5f);
 
         mTouchHelper.tapOnViewCenter(mContainer);
 
@@ -338,7 +341,7 @@ public class WindowUntrustedTouchTest extends WindowUntrustedTouchTestBase {
         assumeFalse("XR device uses a custom window occlusion check tested via CTS Verifier.",
                 FeatureUtil.isXrHeadset());
 
-        addActivityOverlay(APP_A, /* opacity */ .9f);
+        addActivityOverlay(SECOND_OVERLAY_ACTIVITY, /* opacity */ .9f);
 
         mTouchHelper.tapOnViewCenter(mContainer);
 
@@ -353,7 +356,7 @@ public class WindowUntrustedTouchTest extends WindowUntrustedTouchTestBase {
         assumeFalse("XR device uses a custom window occlusion check tested via CTS Verifier.",
                 FeatureUtil.isXrHeadset());
 
-        addActivityOverlay(APP_A, /* opacity */ 0f);
+        addActivityOverlay(SECOND_OVERLAY_ACTIVITY, /* opacity */ 0f);
 
         mTouchHelper.tapOnViewCenter(mContainer);
 
@@ -368,7 +371,7 @@ public class WindowUntrustedTouchTest extends WindowUntrustedTouchTestBase {
         assumeFalse("XR device uses a custom window occlusion check tested via CTS Verifier.",
                 FeatureUtil.isXrHeadset());
 
-        addActivityOverlay(APP_A, /* opacity */ 0f, /* allowPassThrough */ true);
+        addActivityOverlay(SECOND_OVERLAY_ACTIVITY, /* opacity */ 0f, /* allowPassThrough */ true);
 
         mTouchHelper.tapOnViewCenter(mContainer);
 
@@ -383,7 +386,7 @@ public class WindowUntrustedTouchTest extends WindowUntrustedTouchTestBase {
         assumeFalse("XR device uses a custom window occlusion check tested via CTS Verifier.",
                 FeatureUtil.isXrHeadset());
 
-        addActivityOverlay(APP_A, /* opacity */ 0f, /* allowPassThrough */ false);
+        addActivityOverlay(SECOND_OVERLAY_ACTIVITY, /* opacity */ 0f, /* allowPassThrough */ false);
 
         mTouchHelper.tapOnViewCenter(mContainer);
 
@@ -397,7 +400,7 @@ public class WindowUntrustedTouchTest extends WindowUntrustedTouchTestBase {
         assumeFalse("XR device uses a custom window occlusion check tested via CTS Verifier.",
                 FeatureUtil.isXrHeadset());
 
-        addActivityOverlay(APP_A, /* opacity */ MIN_POSITIVE_OPACITY);
+        addActivityOverlay(SECOND_OVERLAY_ACTIVITY, /* opacity */ MIN_POSITIVE_OPACITY);
 
         mTouchHelper.tapOnViewCenter(mContainer);
 
@@ -411,7 +414,7 @@ public class WindowUntrustedTouchTest extends WindowUntrustedTouchTestBase {
         assumeFalse("XR device uses a custom window occlusion check tested via CTS Verifier.",
                 FeatureUtil.isXrHeadset());
 
-        addActivityOverlay(APP_A, /* opacity */ .01f);
+        addActivityOverlay(SECOND_OVERLAY_ACTIVITY, /* opacity */ .01f);
 
         mTouchHelper.tapOnViewCenter(mContainer);
 
@@ -424,7 +427,7 @@ public class WindowUntrustedTouchTest extends WindowUntrustedTouchTestBase {
         assumeFalse("XR device uses a custom window occlusion check tested via CTS Verifier.",
                 FeatureUtil.isXrHeadset());
 
-        addActivityOverlay(getAppSelf(), /* opacity */ .9f);
+        addActivityOverlay(SAME_UID_OVERLAY_ACTIVITY, /* opacity */ .9f);
 
         mTouchHelper.tapOnViewCenter(mContainer);
 
@@ -438,8 +441,8 @@ public class WindowUntrustedTouchTest extends WindowUntrustedTouchTestBase {
         assumeFalse("XR device uses a custom window occlusion check tested via CTS Verifier.",
                 FeatureUtil.isXrHeadset());
 
-        addActivityOverlay(APP_A, /* opacity */ .7f);
-        addActivityOverlay(APP_B, /* opacity */ .7f);
+        addActivityOverlay(SECOND_OVERLAY_ACTIVITY, /* opacity */ .7f);
+        addActivityOverlay(THIRD_OVERLAY_ACTIVITY, /* opacity */ .7f);
 
         mTouchHelper.tapOnViewCenter(mContainer);
 
@@ -453,8 +456,8 @@ public class WindowUntrustedTouchTest extends WindowUntrustedTouchTestBase {
         assumeFalse("XR device uses a custom window occlusion check tested via CTS Verifier.",
                 FeatureUtil.isXrHeadset());
 
-        addActivityOverlay(APP_A, /* opacity */ .5f);
-        addSawOverlay(APP_A, WINDOW_1, .5f);
+        addActivityOverlay(SECOND_OVERLAY_ACTIVITY, /* opacity */ .5f);
+        addSawOverlay(SECOND_UNTRUSTED_TOUCH_TEST_SERVICE, WINDOW_1, .5f);
 
         mTouchHelper.tapOnViewCenter(mContainer);
 
@@ -469,8 +472,8 @@ public class WindowUntrustedTouchTest extends WindowUntrustedTouchTestBase {
                 FeatureUtil.isXrHeadset());
 
         // Toast has to be before otherwise it would be blocked from background
-        addToastOverlay(getAppSelf(), /* custom */ true);
-        addActivityOverlay(APP_A, /* opacity */ .5f);
+        addToastOverlay(SAME_UID_TOAST_ACTIVITY, /* custom */ true);
+        addActivityOverlay(SECOND_OVERLAY_ACTIVITY, /* opacity */ .5f);
 
         mTouchHelper.tapOnViewCenter(mContainer);
 
@@ -484,8 +487,8 @@ public class WindowUntrustedTouchTest extends WindowUntrustedTouchTestBase {
         assumeFalse("XR device uses a custom window occlusion check tested via CTS Verifier.",
                 FeatureUtil.isXrHeadset());
 
-        addActivityOverlay(APP_A, /* opacity */ .5f);
-        addSawOverlay(getAppSelf(), WINDOW_1, .5f);
+        addActivityOverlay(SECOND_OVERLAY_ACTIVITY, /* opacity */ .5f);
+        addSawOverlay(SAME_UID_UNTRUSTED_TOUCH_TEST_SERVICE, WINDOW_1, .5f);
 
         mTouchHelper.tapOnViewCenter(mContainer);
 
@@ -499,8 +502,8 @@ public class WindowUntrustedTouchTest extends WindowUntrustedTouchTestBase {
         assumeFalse("XR device uses a custom window occlusion check tested via CTS Verifier.",
                 FeatureUtil.isXrHeadset());
 
-        addActivityOverlay(APP_A, /* opacity */ .5f);
-        addSawOverlay(APP_A, WINDOW_1, .5f);
+        addActivityOverlay(SECOND_OVERLAY_ACTIVITY, /* opacity */ .5f);
+        addSawOverlay(SECOND_UNTRUSTED_TOUCH_TEST_SERVICE, WINDOW_1, .5f);
 
         mTouchHelper.tapOnViewCenter(mContainer);
 
@@ -514,8 +517,8 @@ public class WindowUntrustedTouchTest extends WindowUntrustedTouchTestBase {
         assumeFalse("XR device uses a custom window occlusion check tested via CTS Verifier.",
                 FeatureUtil.isXrHeadset());
 
-        addActivityOverlay(APP_A, /* opacity */ .5f);
-        addSawOverlay(APP_B, WINDOW_1, .5f);
+        addActivityOverlay(SECOND_OVERLAY_ACTIVITY, /* opacity */ .5f);
+        addSawOverlay(THIRD_UNTRUSTED_TOUCH_TEST_SERVICE, WINDOW_1, .5f);
 
         mTouchHelper.tapOnViewCenter(mContainer);
 
@@ -532,7 +535,7 @@ public class WindowUntrustedTouchTest extends WindowUntrustedTouchTestBase {
                 FeatureUtil.isXrHeadset());
 
         IBinder token = mActivity.getWindow().getAttributes().token;
-        addActivityChildWindow(APP_A, WINDOW_1, token);
+        addActivityChildWindow(SECOND_UNTRUSTED_TOUCH_TEST_SERVICE, WINDOW_1, token);
 
         mTouchHelper.tapOnViewCenter(mContainer);
 
@@ -548,11 +551,11 @@ public class WindowUntrustedTouchTest extends WindowUntrustedTouchTestBase {
 
         // Creates a new activity with 0 opacity
         BlockingResultReceiver receiver = new BlockingResultReceiver();
-        addActivityOverlay(APP_A, /* opacity */ 0f, receiver);
+        addActivityOverlay(SECOND_OVERLAY_ACTIVITY, /* opacity */ 0f, receiver);
 
         // Now get its token and put a child window from another app with it
         IBinder token = receiver.getData(TIMEOUT_MS).getBinder(EXTRA_TOKEN);
-        addActivityChildWindow(APP_B, WINDOW_1, token);
+        addActivityChildWindow(THIRD_UNTRUSTED_TOUCH_TEST_SERVICE, WINDOW_1, token);
 
         mTouchHelper.tapOnViewCenter(mContainer);
 
@@ -569,10 +572,10 @@ public class WindowUntrustedTouchTest extends WindowUntrustedTouchTestBase {
 
         // Creates a new activity with 0 opacity
         BlockingResultReceiver receiver = new BlockingResultReceiver();
-        addActivityOverlay(APP_A, /* opacity */ 0f, receiver);
+        addActivityOverlay(SECOND_OVERLAY_ACTIVITY, /* opacity */ 0f, receiver);
         // Now get its token and put a child window owned by us
         IBinder token = receiver.getData(TIMEOUT_MS).getBinder(EXTRA_TOKEN);
-        addActivityChildWindow(getAppSelf(), WINDOW_1, token);
+        addActivityChildWindow(SAME_UID_UNTRUSTED_TOUCH_TEST_SERVICE, WINDOW_1, token);
 
         mTouchHelper.tapOnViewCenter(mContainer);
 
@@ -591,13 +594,13 @@ public class WindowUntrustedTouchTest extends WindowUntrustedTouchTestBase {
         BlockingResultReceiver receiver = new BlockingResultReceiver();
         ActivityOptions options = ActivityOptions.makeBasic();
         options.setAllowPassThroughOnTouchOutside(true);
-        addActivityOverlay(APP_A, /* opacity */ 0f, receiver, options.toBundle());
+        addActivityOverlay(SECOND_OVERLAY_ACTIVITY, /* opacity */ 0f, receiver, options.toBundle());
         mTouchHelper.tapOnViewCenter(mContainer);
         assertTouchReceived();
 
         // Now get its token and put a child window owned by us
         IBinder token = receiver.getData(TIMEOUT_MS).getBinder(EXTRA_TOKEN);
-        addActivityChildWindow(getAppSelf(), WINDOW_1, token);
+        addActivityChildWindow(SAME_UID_UNTRUSTED_TOUCH_TEST_SERVICE, WINDOW_1, token);
 
         mTouchHelper.tapOnViewCenter(mContainer);
 
@@ -614,10 +617,10 @@ public class WindowUntrustedTouchTest extends WindowUntrustedTouchTestBase {
 
         // Creates a new activity with 0 opacity
         BlockingResultReceiver receiver = new BlockingResultReceiver();
-        addActivityOverlay(APP_A, /* opacity */ 0f, receiver);
+        addActivityOverlay(SECOND_OVERLAY_ACTIVITY, /* opacity */ 0f, receiver);
         // Now get its token and put a child window owned by us
         IBinder token = receiver.getData(TIMEOUT_MS).getBinder(EXTRA_TOKEN);
-        addActivityChildWindow(getAppSelf(), WINDOW_1, token);
+        addActivityChildWindow(SAME_UID_UNTRUSTED_TOUCH_TEST_SERVICE, WINDOW_1, token);
 
         mTouchHelper.tapOnViewCenter(mContainer);
 
@@ -635,7 +638,10 @@ public class WindowUntrustedTouchTest extends WindowUntrustedTouchTestBase {
         long durationSet = mResources.getInteger(R.integer.long_animation_duration);
         assertThat(durationSet).isGreaterThan(
                 MAX_ANIMATION_DURATION_MS + ANIMATION_DURATION_TOLERANCE_MS);
-        addAnimatedActivityOverlay(APP_A, /* touchable */ false, R.anim.long_alpha_0_7,
+        addAnimatedActivityOverlay(
+                SECOND_OVERLAY_ACTIVITY,
+                false /* touchable */,
+                R.anim.long_alpha_0_7,
                 R.anim.long_alpha_1);
         assertTrue(mWmState.waitForAppTransitionRunningOnDisplay(Display.DEFAULT_DISPLAY));
         long start = SystemClock.elapsedRealtime();
@@ -654,7 +660,7 @@ public class WindowUntrustedTouchTest extends WindowUntrustedTouchTestBase {
         long durationSet = mResources.getInteger(R.integer.long_animation_duration);
         assertThat(durationSet).isGreaterThan(
                 MAX_ANIMATION_DURATION_MS + ANIMATION_DURATION_TOLERANCE_MS);
-        addExitAnimationActivity(APP_A);
+        addExitAnimationActivity(SECOND_EXIT_ANIMATION_ACTIVITY);
 
         // Wait for ExitAnimationActivity open transition to complete to avoid counting this
         // transition in the duration of the exit animation below. Otherwise
@@ -662,8 +668,8 @@ public class WindowUntrustedTouchTest extends WindowUntrustedTouchTestBase {
         // done by then instead of waiting for the exit animation to start running.
         assertTrue(mWmState.waitForAppTransitionIdleOnDisplay(Display.DEFAULT_DISPLAY));
 
-        sendFinishToExitAnimationActivity(APP_A,
-                Components.ExitAnimationActivityReceiver.EXTRA_VALUE_LONG_ANIMATION_0_7);
+        sendFinishToExitAnimationActivity(
+                SECOND_EXIT_ANIMATION_ACTIVITY, EXTRA_VALUE_LONG_ANIMATION_0_7);
         assertTrue(mWmState.waitForAppTransitionRunningOnDisplay(Display.DEFAULT_DISPLAY));
         long start = SystemClock.elapsedRealtime();
 
@@ -679,7 +685,8 @@ public class WindowUntrustedTouchTest extends WindowUntrustedTouchTestBase {
         assumeFalse("XR device uses a custom window occlusion check tested via CTS Verifier.",
                 FeatureUtil.isXrHeadset());
 
-        addAnimatedActivityOverlay(APP_A, /* touchable */ false, R.anim.alpha_0_9, R.anim.alpha_1);
+        addAnimatedActivityOverlay(
+                SECOND_OVERLAY_ACTIVITY, false /* touchable */, R.anim.alpha_0_9, R.anim.alpha_1);
         assertTrue(mWmState.waitForAppTransitionRunningOnDisplay(Display.DEFAULT_DISPLAY));
 
         mTouchHelper.tapOnViewCenter(mContainer, /* waitAnimations*/ false);
@@ -695,7 +702,8 @@ public class WindowUntrustedTouchTest extends WindowUntrustedTouchTestBase {
         assumeFalse("XR device uses a custom window occlusion check tested via CTS Verifier.",
                 FeatureUtil.isXrHeadset());
 
-        addAnimatedActivityOverlay(APP_A, /* touchable */ false, R.anim.alpha_0_7, R.anim.alpha_1);
+        addAnimatedActivityOverlay(
+                SECOND_OVERLAY_ACTIVITY, false /* touchable */, R.anim.alpha_0_7, R.anim.alpha_1);
         assertTrue(mWmState.waitForAppTransitionRunningOnDisplay(Display.DEFAULT_DISPLAY));
 
         mTouchHelper.tapOnViewCenter(mContainer, /* waitAnimations*/ false);
@@ -711,7 +719,8 @@ public class WindowUntrustedTouchTest extends WindowUntrustedTouchTestBase {
         assumeFalse("XR device uses a custom window occlusion check tested via CTS Verifier.",
                 FeatureUtil.isXrHeadset());
 
-        addAnimatedActivityOverlay(APP_A, /* touchable */ true, R.anim.alpha_0_7, R.anim.alpha_1);
+        addAnimatedActivityOverlay(
+                SECOND_OVERLAY_ACTIVITY, true /* touchable */, R.anim.alpha_0_7, R.anim.alpha_1);
         assertTrue(mWmState.waitForAppTransitionRunningOnDisplay(Display.DEFAULT_DISPLAY));
 
         mTouchHelper.tapOnViewCenter(mContainer, /* waitAnimations*/ false);
@@ -727,15 +736,15 @@ public class WindowUntrustedTouchTest extends WindowUntrustedTouchTestBase {
         assumeFalse("XR device uses a custom window occlusion check tested via CTS Verifier.",
                 FeatureUtil.isXrHeadset());
 
-        addExitAnimationActivity(APP_A);
+        addExitAnimationActivity(SECOND_EXIT_ANIMATION_ACTIVITY);
 
         // Wait for ExitAnimationActivity open transition to complete to avoid
         // waitForAppTransitionRunningOnDisplay returning immediately if this transition is not
         // done by then instead of waiting for the exit animation to start running.
         assertTrue(mWmState.waitForAppTransitionIdleOnDisplay(Display.DEFAULT_DISPLAY));
 
-        sendFinishToExitAnimationActivity(APP_A,
-                Components.ExitAnimationActivityReceiver.EXTRA_VALUE_ANIMATION_0_7);
+        sendFinishToExitAnimationActivity(
+                SECOND_EXIT_ANIMATION_ACTIVITY, EXTRA_VALUE_ANIMATION_0_7);
         assertTrue(mWmState.waitForAppTransitionRunningOnDisplay(Display.DEFAULT_DISPLAY));
 
         mTouchHelper.tapOnViewCenter(mContainer, /* waitAnimations*/ false);
@@ -751,9 +760,9 @@ public class WindowUntrustedTouchTest extends WindowUntrustedTouchTestBase {
         assumeFalse("XR device uses a custom window occlusion check tested via CTS Verifier.",
                 FeatureUtil.isXrHeadset());
 
-        addExitAnimationActivity(APP_A);
-        sendFinishToExitAnimationActivity(APP_A,
-                Components.ExitAnimationActivityReceiver.EXTRA_VALUE_ANIMATION_0_9);
+        addExitAnimationActivity(SECOND_EXIT_ANIMATION_ACTIVITY);
+        sendFinishToExitAnimationActivity(
+                SECOND_EXIT_ANIMATION_ACTIVITY, EXTRA_VALUE_ANIMATION_0_9);
         assertTrue(mWmState.waitForAppTransitionRunningOnDisplay(Display.DEFAULT_DISPLAY));
 
         mTouchHelper.tapOnViewCenter(mContainer, /* waitAnimations*/ false);
@@ -769,9 +778,9 @@ public class WindowUntrustedTouchTest extends WindowUntrustedTouchTestBase {
         assumeFalse("XR device uses a custom window occlusion check tested via CTS Verifier.",
                 FeatureUtil.isXrHeadset());
 
-        addExitAnimationActivity(getAppSelf());
-        sendFinishToExitAnimationActivity(getAppSelf(),
-                Components.ExitAnimationActivityReceiver.EXTRA_VALUE_ANIMATION_0_9);
+        addExitAnimationActivity(SAME_UID_EXIT_ANIMATION_ACTIVITY);
+        sendFinishToExitAnimationActivity(
+                SAME_UID_EXIT_ANIMATION_ACTIVITY, EXTRA_VALUE_ANIMATION_0_9);
         assertTrue(mWmState.waitForAppTransitionRunningOnDisplay(Display.DEFAULT_DISPLAY));
 
         mTouchHelper.tapOnViewCenter(mContainer, /* waitAnimations*/ false);
@@ -788,7 +797,7 @@ public class WindowUntrustedTouchTest extends WindowUntrustedTouchTestBase {
         assumeFalse("XR device uses a custom window occlusion check tested via CTS Verifier.",
                 FeatureUtil.isXrHeadset());
 
-        addToastOverlay(getAppSelf(), /* custom */ false);
+        addToastOverlay(SAME_UID_UNTRUSTED_TOUCH_TEST_SERVICE, /* custom */ false);
         Rect toast = mWmState.waitForResult("toast bounds",
                 state -> state.findFirstWindowWithType(LayoutParams.TYPE_TOAST).getFrame());
 
@@ -804,7 +813,7 @@ public class WindowUntrustedTouchTest extends WindowUntrustedTouchTestBase {
                 FeatureUtil.isXrHeadset());
 
         assumeFalse("Watch does not support new Toast behavior yet.", FeatureUtil.isWatch());
-        addToastOverlay(APP_A, /* custom */ false);
+        addToastOverlay(SECOND_UNTRUSTED_TOUCH_TEST_SERVICE, /* custom */ false);
         Rect toast = mWmState.waitForResult("toast bounds",
                 state -> state.findFirstWindowWithType(LayoutParams.TYPE_TOAST).getFrame());
 
@@ -819,7 +828,7 @@ public class WindowUntrustedTouchTest extends WindowUntrustedTouchTestBase {
         assumeFalse("XR device uses a custom window occlusion check tested via CTS Verifier.",
                 FeatureUtil.isXrHeadset());
 
-        addToastOverlay(APP_A, /* custom */ true);
+        addToastOverlay(SECOND_TOAST_ACTIVITY, /* custom */ true);
 
         mTouchHelper.tapOnViewCenter(mContainer);
 
@@ -832,7 +841,7 @@ public class WindowUntrustedTouchTest extends WindowUntrustedTouchTestBase {
         assumeFalse("XR device uses a custom window occlusion check tested via CTS Verifier.",
                 FeatureUtil.isXrHeadset());
 
-        addToastOverlay(getAppSelf(), /* custom */ true);
+        addToastOverlay(SAME_UID_TOAST_ACTIVITY, /* custom */ true);
 
         mTouchHelper.tapOnViewCenter(mContainer);
 
@@ -846,8 +855,8 @@ public class WindowUntrustedTouchTest extends WindowUntrustedTouchTestBase {
         assumeFalse("XR device uses a custom window occlusion check tested via CTS Verifier.",
                 FeatureUtil.isXrHeadset());
 
-        addSawOverlay(getAppSelf(), WINDOW_1, .9f);
-        addToastOverlay(APP_A, /* custom */ true);
+        addSawOverlay(SAME_UID_UNTRUSTED_TOUCH_TEST_SERVICE, WINDOW_1, .9f);
+        addToastOverlay(SECOND_TOAST_ACTIVITY, /* custom */ true);
 
         mTouchHelper.tapOnViewCenter(mContainer);
 
@@ -861,8 +870,8 @@ public class WindowUntrustedTouchTest extends WindowUntrustedTouchTestBase {
         assumeFalse("XR device uses a custom window occlusion check tested via CTS Verifier.",
                 FeatureUtil.isXrHeadset());
 
-        addSawOverlay(APP_A, WINDOW_1, .5f);
-        addToastOverlay(APP_A, /* custom */ true);
+        addSawOverlay(SECOND_UNTRUSTED_TOUCH_TEST_SERVICE, WINDOW_1, .5f);
+        addToastOverlay(SECOND_TOAST_ACTIVITY, /* custom */ true);
 
         mTouchHelper.tapOnViewCenter(mContainer);
 
@@ -876,8 +885,8 @@ public class WindowUntrustedTouchTest extends WindowUntrustedTouchTestBase {
         assumeFalse("XR device uses a custom window occlusion check tested via CTS Verifier.",
                 FeatureUtil.isXrHeadset());
 
-        addSawOverlay(APP_A, WINDOW_1, .5f);
-        addToastOverlay(APP_B, /* custom */ true);
+        addSawOverlay(SECOND_UNTRUSTED_TOUCH_TEST_SERVICE, WINDOW_1, .5f);
+        addToastOverlay(THIRD_TOAST_ACTIVITY, /* custom */ true);
 
         mTouchHelper.tapOnViewCenter(mContainer);
 
@@ -891,9 +900,9 @@ public class WindowUntrustedTouchTest extends WindowUntrustedTouchTestBase {
         assumeFalse("XR device uses a custom window occlusion check tested via CTS Verifier.",
                 FeatureUtil.isXrHeadset());
 
-        addActivityOverlay(getAppSelf(), /* opacity */ .9f);
-        addSawOverlay(APP_A, WINDOW_1, .5f);
-        addToastOverlay(getAppSelf(), /* custom */ true);
+        addActivityOverlay(SAME_UID_OVERLAY_ACTIVITY, /* opacity */ .9f);
+        addSawOverlay(SECOND_UNTRUSTED_TOUCH_TEST_SERVICE, WINDOW_1, .5f);
+        addToastOverlay(SAME_UID_TOAST_ACTIVITY, /* custom */ true);
 
         mTouchHelper.tapOnViewCenter(mContainer);
 

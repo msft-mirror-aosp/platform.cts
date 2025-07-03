@@ -18,6 +18,12 @@ package android.server.wm.second
 
 import android.server.wm.component.ComponentsProvider
 import android.server.wm.component.forceStopPackage
+import android.server.wm.overlay.Components.EXIT_ANIMATION_ACTIVITY
+import android.server.wm.overlay.Components.OVERLAY_ACTIVITY
+import android.server.wm.overlay.Components.TOAST_ACTIVITY
+import android.server.wm.overlay.Components.TRAMPOLINE_ACTIVITY
+import android.server.wm.overlay.Components.TRANSLUCENT_FLOATING_ACTIVITY
+import android.server.wm.overlay.Components.UNTRUSTED_TOUCH_TEST_SERVICE
 
 /** Constants for the second device services test components. */
 object Components : ComponentsProvider() {
@@ -50,6 +56,20 @@ object Components : ComponentsProvider() {
     @JvmField val IMPLICIT_TARGET_SECOND_TEST_ACTION = "$packageName.TEST_ACTION"
 
     @JvmField val IMPLICIT_TARGET_SECOND_ACTIVITY = component("ImplicitTargetActivity")
+
+    @JvmField val SECOND_TRANSLUCENT_FLOATING_ACTIVITY =
+        component(TRANSLUCENT_FLOATING_ACTIVITY.className)
+
+    @JvmField val SECOND_TRAMPOLINE_ACTIVITY = component(TRAMPOLINE_ACTIVITY.className)
+
+    @JvmField val SECOND_UNTRUSTED_TOUCH_TEST_SERVICE =
+        component(UNTRUSTED_TOUCH_TEST_SERVICE.className)
+
+    @JvmField val SECOND_OVERLAY_ACTIVITY = component(OVERLAY_ACTIVITY.className)
+
+    @JvmField val SECOND_TOAST_ACTIVITY = component(TOAST_ACTIVITY.className)
+
+    @JvmField val SECOND_EXIT_ANIMATION_ACTIVITY = component(EXIT_ANIMATION_ACTIVITY.className)
 
     @JvmStatic fun getPackageName() = packageName
 

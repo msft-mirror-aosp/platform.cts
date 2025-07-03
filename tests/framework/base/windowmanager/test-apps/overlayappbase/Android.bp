@@ -22,6 +22,7 @@ android_library {
 
     srcs: [
         "src/**/*.java",
+        "src/**/*.kt",
     ],
 
     static_libs: [
@@ -31,4 +32,10 @@ android_library {
     ],
 
     sdk_version: "test_current",
+    visibility: [
+        "//cts/tests/framework/base/windowmanager",
+        "//cts/tests/framework/base/windowmanager/test-apps/appSecondUid",
+        "//cts/tests/framework/base/windowmanager/test-apps/appThirdUid",
+        "//cts/tests/framework/base/windowmanager/testsdk35",
+    ],
 }
