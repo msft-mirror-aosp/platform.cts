@@ -90,8 +90,9 @@ public class TestUtils {
             yToCut += navigationBarHeight;
         }
 
-        bt = Bitmap.createBitmap(
-            bt, 0, statusBarHeight, bt.getWidth() - xToCut, bt.getHeight() - yToCut);
+        bt =
+                Bitmap.createBitmap(
+                        bt, 0, statusBarHeight, bt.getWidth() - xToCut, bt.getHeight() - yToCut);
 
         return bt;
     }
@@ -184,17 +185,20 @@ public class TestUtils {
             // Swipe far away from the edges to avoid triggering navigation gestures
             scrollableView.setGestureMarginPercentage(0.25f);
             // Scroll from the top to the bottom until the text object is found.
-            scrollableView.scroll(Direction.UP, 1);
+            scrollableView.scroll(Direction.UP, 1, /* pixels per second to scroll */ 1000);
             boolean moreToScroll = true;
             while (moreToScroll) {
-                if (mDevice.findObject(By.text(text)) != null) {
+                if (scrollableView.findObject(By.text(text)) != null) {
                     return true;
                 }
 
                 // Scroll down incrementally to avoid skipping the view on slower systems
-                moreToScroll = scrollableView.scroll(Direction.DOWN, 0.2f);
+                moreToScroll =
+                        scrollableView.scroll(
+                                Direction.DOWN, 0.2f, /* pixels per second to scroll */ 1000);
+                mDevice.waitForIdle();
             }
-            if (mDevice.findObject(By.text(text)) != null) {
+            if (scrollableView.findObject(By.text(text)) != null) {
                 return true;
             }
         }
