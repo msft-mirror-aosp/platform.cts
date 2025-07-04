@@ -48,6 +48,7 @@ import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.permissions.PermissionContext;
 
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -97,6 +98,7 @@ public class DocumentsUICrossProfileTest {
     @Test
     @RequireRunOnPrivateProfile
     @RequiresFlagsEnabled(FLAG_ENABLE_MOVING_CONTENT_INTO_PRIVATE_SPACE)
+    @Ignore("b/429638500: Until excluding users work for SearchV2")
     public void testOpenDocumentsUi_excludeSelf_private() throws Exception {
         assumeTrue(supportsHardware());
 
@@ -113,6 +115,7 @@ public class DocumentsUICrossProfileTest {
     @Test
     @RequireRunOnWorkProfile
     @RequiresFlagsEnabled(FLAG_ENABLE_MOVING_CONTENT_INTO_PRIVATE_SPACE)
+    @Ignore("b/429638500: Until excluding users work for SearchV2")
     public void testOpenDocumentsUi_excludeSelf_work() throws Exception {
         assumeTrue(supportsHardware());
 
