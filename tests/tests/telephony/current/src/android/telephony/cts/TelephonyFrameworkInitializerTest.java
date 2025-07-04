@@ -111,4 +111,9 @@ public class TelephonyFrameworkInitializerTest {
         assertNotNull("SubscriptionManager should be registered", subscriptionService);
         assertTrue(subscriptionService instanceof SubscriptionManager);
     }
+
+    @Test(expected = IllegalStateException.class)
+    public void testRegisterServiceWrappers() {
+        TelephonyFrameworkInitializer.registerServiceWrappers();
+    }
 }
