@@ -1203,6 +1203,7 @@ public class WindowInsetsControllerTests extends WindowManagerTestBase {
 
         private static final long ANIMATION_TIMEOUT = 5000; // milliseconds
 
+        private WindowInsetsAnimation mAnimation;
         private boolean mFinished = false;
 
         AnimationCallback() {
@@ -1211,21 +1212,25 @@ public class WindowInsetsControllerTests extends WindowManagerTestBase {
 
         @Override
         public void onPrepare(@NonNull WindowInsetsAnimation animation) {
-            Log.d(TAG, "onPrepare animation=" + animation, new Throwable());
+            Log.d(TAG, "onPrepare animation=" + toString(animation), new Throwable());
+            mAnimation = animation;
         }
 
         @Override
-        public WindowInsets onProgress(WindowInsets insets,
-                List<WindowInsetsAnimation> runningAnimations) {
+        public WindowInsets onProgress(
+                @NonNull WindowInsets insets,
+                @NonNull List<WindowInsetsAnimation> runningAnimations) {
             return insets;
         }
 
         @Override
-        public void onEnd(WindowInsetsAnimation animation) {
+        public void onEnd(@NonNull WindowInsetsAnimation animation) {
             synchronized (this) {
-                Log.d(TAG, "onEnd animation=" + animation, new Throwable());
-                mFinished = true;
-                notify();
+                Log.d(TAG, "onEnd animation=" + toString(animation), new Throwable());
+                if (mAnimation == animation) {
+                    mFinished = true;
+                    notify();
+                }
             }
         }
 
@@ -1239,8 +1244,18 @@ public class WindowInsetsControllerTests extends WindowManagerTestBase {
 
         void reset() {
             synchronized (this) {
+                mAnimation = null;
                 mFinished = false;
             }
+        }
+
+        private static String toString(@NonNull WindowInsetsAnimation animation) {
+            return animation
+                    + "{insetsTypes=" + WindowInsets.Type.toString(animation.getTypeMask())
+                    + " fraction=" + animation.getFraction()
+                    + " alpha=" + animation.getAlpha()
+                    + " duration=" + animation.getDurationMillis()
+                    + "}";
         }
     }
 
