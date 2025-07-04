@@ -17,16 +17,17 @@
 package android.telephony.cts;
 
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThrows;
 
 import android.os.Binder;
 import android.os.IBinder;
 import android.os.TelephonyServiceManager;
 import android.os.TelephonyServiceManager.ServiceRegisterer;
-import android.provider.DeviceConfig;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 
 import androidx.test.runner.AndroidJUnit4;
+
+import com.android.internal.telephony.flags.Flags;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -34,6 +35,7 @@ import org.junit.runner.RunWith;
 
 /** CTS test class for verifying the functionality of TelephonyServiceManager. */
 @RunWith(AndroidJUnit4.class)
+@RequiresFlagsEnabled(Flags.FLAG_ENABLE_PHONE_NUMBER_PARSING_API)
 public class TelephonyServiceManagerTest {
 
     private static final String NAMESPACE_TELEPHONY = "telephony";
@@ -62,17 +64,7 @@ public class TelephonyServiceManagerTest {
                     registerer.publishBinderService(mockBinder);
                 });
 
-        boolean isFeatureEnabled =
-                DeviceConfig.getBoolean(
-                        NAMESPACE_TELEPHONY,
-                        FLAG_ENABLE_PHONE_NUMBER_PARSING_API,
-                        false /* defaultValue */);
-
         IBinder binder = registerer.get();
-        if (isFeatureEnabled) {
-            assertNotNull("Retrieved binder should not be null when feature is enabled.", binder);
-        } else {
-            assertNull("Retrieved binder should be null when feature is disabled.", binder);
-        }
+        assertNotNull("Retrieved binder should not be null when feature is enabled.", binder);
     }
 }
