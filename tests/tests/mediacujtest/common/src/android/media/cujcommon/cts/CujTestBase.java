@@ -69,7 +69,6 @@ public class CujTestBase {
       ActivityInfo.SCREEN_ORIENTATION_PORTRAIT,
       ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE,
   };
-  private static final int AUDIOTRACK_DEFAULT_SAMPLE_RATE = 48000;
   private static final int AUDIOTRACK_DEFAULT_CHANNEL_MASK = AudioFormat.CHANNEL_OUT_STEREO;
 
   protected MainActivity mActivity;
@@ -157,10 +156,10 @@ public class CujTestBase {
   /**
    * Whether the device supports audio offloading for particular encoding.
    */
-  public static boolean deviceSupportAudioOffload(int encoding) {
+  public static boolean deviceSupportAudioOffload(int encoding, int sampleRate) {
     AudioFormat audioFormat = new AudioFormat.Builder()
         .setEncoding(encoding)
-        .setSampleRate(AUDIOTRACK_DEFAULT_SAMPLE_RATE)
+        .setSampleRate(sampleRate)
         .setChannelMask(AUDIOTRACK_DEFAULT_CHANNEL_MASK)
         .build();
     AudioAttributes defaultAudioAttributes = new AudioAttributes.Builder().build();
@@ -183,16 +182,16 @@ public class CujTestBase {
   /**
    * Whether the device supports gapless offload playback.
    */
-  public static boolean deviceSupportGaplessAudioOffload(int encoding) {
+  public static boolean deviceSupportGaplessAudioOffload(int encoding, int sampleRate) {
     AudioFormat audioFormat = new AudioFormat.Builder()
         .setEncoding(encoding)
-        .setSampleRate(AUDIOTRACK_DEFAULT_SAMPLE_RATE)
+        .setSampleRate(sampleRate)
         .setChannelMask(AUDIOTRACK_DEFAULT_CHANNEL_MASK)
         .build();
     AudioAttributes defaultAudioAttributes = new AudioAttributes.Builder().build();
     int playbackOffloadSupport =
           AudioManager.getPlaybackOffloadSupport(audioFormat, defaultAudioAttributes);
-    return deviceSupportAudioOffload(encoding)
+    return deviceSupportAudioOffload(encoding, sampleRate)
           && Build.VERSION.SDK_INT > 32
           && playbackOffloadSupport == AudioManager.PLAYBACK_OFFLOAD_GAPLESS_SUPPORTED;
   }
