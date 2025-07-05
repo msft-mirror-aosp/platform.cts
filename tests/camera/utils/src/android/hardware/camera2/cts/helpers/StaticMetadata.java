@@ -595,8 +595,8 @@ public class StaticMetadata {
         boolean found50Hz = false;
         boolean found60Hz = false;
         for (int mode : modes) {
-            checkTrueForKey(key, "mode value " + mode + " is out if range",
-                    mode >= CameraMetadata.CONTROL_AE_ANTIBANDING_MODE_OFF ||
+            checkTrueForKey(key, "mode value " + mode + " is out of range",
+                    mode >= CameraMetadata.CONTROL_AE_ANTIBANDING_MODE_OFF &&
                     mode <= CameraMetadata.CONTROL_AE_ANTIBANDING_MODE_AUTO);
             if (mode == CameraMetadata.CONTROL_AE_ANTIBANDING_MODE_AUTO) {
                 foundAuto = true;
