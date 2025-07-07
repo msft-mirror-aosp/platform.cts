@@ -19,13 +19,17 @@ package android.keystore.cts;
 import static android.app.admin.DevicePolicyManager.ID_TYPE_SERIAL;
 
 import static com.google.common.truth.Truth.assertThat;
+
 import static org.testng.Assert.assertThrows;
 
 import android.app.admin.DevicePolicyManager;
 import android.content.ComponentName;
+import android.os.SystemProperties;
 import android.security.AttestedKeyPair;
 import android.security.keystore.KeyGenParameterSpec;
 import android.security.keystore.KeyProperties;
+
+import java.util.Locale;
 
 public class KeyGenerationUtils {
     private static final String ALIAS = "com.android.test.generated-rsa-1";
@@ -75,5 +79,17 @@ public class KeyGenerationUtils {
         assertThrows(SecurityException.class,
                 () -> dpm.generateKeyPair(admin, "RSA", buildRsaKeySpecWithKeyAttestation(ALIAS),
                         ID_TYPE_SERIAL));
+    }
+
+    /**
+     * Indicate whether the device under test appears to be a pre-production device. The behaviour
+     * of this method needs to stay in sync with KeyMint VTS (is_pre_production_device()) and
+     * Keystore VTS (is_pre_production_device()).
+     */
+    public static boolean isPreProductionDevice() {
+        String revision =
+                SystemProperties.get("ro.boot.hardware.revision", "")
+                        .toLowerCase(Locale.getDefault());
+        return (revision.startsWith("proto") || revision.startsWith("evt"));
     }
 }
