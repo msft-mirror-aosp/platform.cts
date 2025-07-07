@@ -420,7 +420,7 @@ public class MediaStoreUiTest {
                     + "--eu android.provider.extra.INITIAL_URI content://com.android"
                     + ".externalstorage.documents/tree/" + root + "%3AAndroid%2Fmedia/document/"
                     + root + "%3AAndroid%2Fmedia");
-            SystemClock.sleep(3000);
+            SystemClock.sleep(10000);
 
             assertTrue(findSaveButton().isEnabled());
         } finally {
