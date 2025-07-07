@@ -27,15 +27,18 @@ import android.accessibility.cts.common.AccessibilityDumpOnFailureRule;
 import android.accessibility.cts.common.InstrumentedAccessibilityService;
 import android.accessibilityservice.AccessibilityService;
 import android.accessibilityservice.AccessibilityServiceInfo;
+import android.app.UiAutomation;
 import android.os.Parcel;
 import android.platform.test.annotations.AsbSecurityTest;
 import android.platform.test.annotations.Presubmit;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
+import android.view.InputDevice;
 import android.view.accessibility.AccessibilityEvent;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.MediumTest;
+import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.CddTest;
 import com.android.sts.common.util.StsExtraBusinessLogicTestCase;
@@ -197,6 +200,54 @@ public class AccessibilityServiceInfoTest extends StsExtraBusinessLogicTestCase 
             setLargePackageNames(info);
 
             assertThrows(IllegalStateException.class, () -> service.setServiceInfo(info));
+        } finally {
+            InstrumentedAccessibilityService.disableAllServices();
+        }
+    }
+
+    @Test
+    @AsbSecurityTest(cveBugId = {419110583})
+    public void testSetObservedMotionEventSources_withPermission() {
+        UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
+        try {
+            uiAutomation.adoptShellPermissionIdentity(
+                    android.Manifest.permission.ACCESSIBILITY_MOTION_EVENT_OBSERVING);
+            final int requestedSource = InputDevice.SOURCE_TOUCHSCREEN;
+            final InstrumentedAccessibilityService service =
+                    InstrumentedAccessibilityService.enableService(
+                            InstrumentedAccessibilityService.class);
+            final AccessibilityServiceInfo info = service.getServiceInfo();
+
+            info.setMotionEventSources(requestedSource);
+            info.setObservedMotionEventSources(requestedSource);
+            service.setServiceInfo(info);
+
+            AccessibilityServiceInfo updatedInfo = service.getServiceInfo();
+            assertThat(updatedInfo.getMotionEventSources()).isEqualTo(requestedSource);
+            assertThat(updatedInfo.getObservedMotionEventSources()).isEqualTo(requestedSource);
+        } finally {
+            uiAutomation.dropShellPermissionIdentity();
+            InstrumentedAccessibilityService.disableAllServices();
+        }
+    }
+
+    @Test
+    @AsbSecurityTest(cveBugId = {419110583})
+    public void testSetObservedMotionEventSources_withoutPermission_doesNotSet() {
+        try {
+            final int requestedSource = InputDevice.SOURCE_TOUCHSCREEN;
+            final InstrumentedAccessibilityService service =
+                    InstrumentedAccessibilityService.enableService(
+                            InstrumentedAccessibilityService.class);
+            final AccessibilityServiceInfo info = service.getServiceInfo();
+
+            info.setMotionEventSources(requestedSource);
+            info.setObservedMotionEventSources(requestedSource);
+            service.setServiceInfo(info);
+
+            AccessibilityServiceInfo updatedInfo = service.getServiceInfo();
+            assertThat(updatedInfo.getMotionEventSources()).isEqualTo(requestedSource);
+            assertThat(updatedInfo.getObservedMotionEventSources()).isEqualTo(0);
         } finally {
             InstrumentedAccessibilityService.disableAllServices();
         }
