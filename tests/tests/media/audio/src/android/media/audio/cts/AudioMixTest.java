@@ -39,6 +39,8 @@ import android.media.audiopolicy.AudioMixingRule;
 import android.media.audiopolicy.AudioPolicyConfig;
 import android.os.Parcel;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
@@ -46,6 +48,7 @@ import com.android.compatibility.common.util.FrameworkSpecificTest;
 
 import com.google.common.testing.EqualsTester;
 
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -55,6 +58,9 @@ import java.util.List;
 @FrameworkSpecificTest
 @RunWith(AndroidJUnit4.class)
 public class AudioMixTest {
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private static final AudioFormat OUTPUT_FORMAT_STEREO_44KHZ_PCM =
             new AudioFormat.Builder()
