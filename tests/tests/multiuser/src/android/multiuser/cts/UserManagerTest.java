@@ -48,6 +48,7 @@ import static com.google.common.truth.Truth.assertWithMessage;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeNoException;
 import static org.junit.Assume.assumeNotNull;
 import static org.junit.Assume.assumeTrue;
@@ -1111,6 +1112,12 @@ public final class UserManagerTest {
     @EnsureHasNoAdditionalUser
     @EnsureHasPermission({QUERY_USERS})
     public void testGetPreviousForegroundUser_noAdditionalUser() {
+        // Skip the test if the device has a headless system user that can be switched to, as
+        // getPreviousForegroundUser() can return the headless system user on such devices.
+        assumeFalse(
+                UserManager.isHeadlessSystemUserMode()
+                        && getUser(UserHandle.USER_SYSTEM).supportsSwitchTo());
+
         assertWithMessage("getPreviousUser() with no additional user")
                 .that(mUserManager.getPreviousForegroundUser()).isNull();
     }
@@ -1122,6 +1129,12 @@ public final class UserManagerTest {
     @EnsureHasWorkProfile
     @EnsureHasPermission({QUERY_USERS})
     public void testGetPreviousForegroundUser_withWorkProfileButNoAdditionalUser() {
+        // Skip the test if the device has a headless system user that can be switched to, as
+        // getPreviousForegroundUser() can return the headless system user on such devices.
+        assumeFalse(
+                UserManager.isHeadlessSystemUserMode()
+                        && getUser(UserHandle.USER_SYSTEM).supportsSwitchTo());
+
         assertWithMessage("getPreviousForegroundUser() with work profile but no additional user")
                 .that(mUserManager.getPreviousForegroundUser()).isNull();
     }
