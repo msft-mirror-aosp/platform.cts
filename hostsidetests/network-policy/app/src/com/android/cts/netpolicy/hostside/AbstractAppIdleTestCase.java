@@ -22,6 +22,7 @@ import static com.android.cts.netpolicy.hostside.Property.BATTERY_SAVER_MODE;
 import static org.junit.Assert.assertEquals;
 
 import android.os.SystemClock;
+import android.os.UserHandle;
 
 import org.junit.After;
 import org.junit.Before;
@@ -129,7 +130,8 @@ abstract class AbstractAppIdleTestCase extends AbstractRestrictBackgroundNetwork
         setAppIdle(true);
         assertBackgroundNetworkAccess(false);
 
-        addTempPowerSaveModeWhitelist(TEST_APP2_PKG, TEMP_POWERSAVE_WHITELIST_DURATION_MS);
+        addTempPowerSaveModeWhitelist(
+                TEST_APP2_PKG, UserHandle.getUserId(mUid), TEMP_POWERSAVE_WHITELIST_DURATION_MS);
         assertBackgroundNetworkAccess(true);
         // Wait until the whitelist duration is expired.
         SystemClock.sleep(TEMP_POWERSAVE_WHITELIST_DURATION_MS);

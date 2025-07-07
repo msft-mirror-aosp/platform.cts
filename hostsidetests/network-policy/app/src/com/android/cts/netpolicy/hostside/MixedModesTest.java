@@ -24,6 +24,7 @@ import static com.android.cts.netpolicy.hostside.Property.METERED_NETWORK;
 import static com.android.cts.netpolicy.hostside.Property.NON_METERED_NETWORK;
 
 import android.os.SystemClock;
+import android.os.UserHandle;
 import android.util.Log;
 
 import org.junit.After;
@@ -261,7 +262,10 @@ public class MixedModesTest extends AbstractRestrictBackgroundNetworkTestCase {
         try {
             assertBackgroundNetworkAccess(false);
 
-            addTempPowerSaveModeWhitelist(TEST_APP2_PKG, TEMP_POWERSAVE_WHITELIST_DURATION_MS);
+            addTempPowerSaveModeWhitelist(
+                    TEST_APP2_PKG,
+                    UserHandle.getUserId(mUid),
+                    TEMP_POWERSAVE_WHITELIST_DURATION_MS);
             assertBackgroundNetworkAccess(true);
 
             // Wait until the whitelist duration is expired.
@@ -282,7 +286,10 @@ public class MixedModesTest extends AbstractRestrictBackgroundNetworkTestCase {
         try {
             assertBackgroundNetworkAccess(false);
 
-            addTempPowerSaveModeWhitelist(TEST_APP2_PKG, TEMP_POWERSAVE_WHITELIST_DURATION_MS);
+            addTempPowerSaveModeWhitelist(
+                    TEST_APP2_PKG,
+                    UserHandle.getUserId(mUid),
+                    TEMP_POWERSAVE_WHITELIST_DURATION_MS);
             assertBackgroundNetworkAccess(true);
 
             // Wait until the whitelist duration is expired.
@@ -330,7 +337,10 @@ public class MixedModesTest extends AbstractRestrictBackgroundNetworkTestCase {
             addAppIdleWhitelist(mUid);
             assertBackgroundNetworkAccess(false);
 
-            addTempPowerSaveModeWhitelist(TEST_APP2_PKG, TEMP_POWERSAVE_WHITELIST_DURATION_MS);
+            addTempPowerSaveModeWhitelist(
+                    TEST_APP2_PKG,
+                    UserHandle.getUserId(mUid),
+                    TEMP_POWERSAVE_WHITELIST_DURATION_MS);
             assertBackgroundNetworkAccess(true);
 
             // Wait until the whitelist duration is expired.
@@ -355,7 +365,10 @@ public class MixedModesTest extends AbstractRestrictBackgroundNetworkTestCase {
             addAppIdleWhitelist(mUid);
             assertBackgroundNetworkAccess(false);
 
-            addTempPowerSaveModeWhitelist(TEST_APP2_PKG, TEMP_POWERSAVE_WHITELIST_DURATION_MS);
+            addTempPowerSaveModeWhitelist(
+                    TEST_APP2_PKG,
+                    UserHandle.getUserId(mUid),
+                    TEMP_POWERSAVE_WHITELIST_DURATION_MS);
             assertBackgroundNetworkAccess(true);
 
             // Wait until the whitelist duration is expired.

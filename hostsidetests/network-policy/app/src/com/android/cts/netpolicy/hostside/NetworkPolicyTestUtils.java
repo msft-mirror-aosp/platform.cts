@@ -65,6 +65,9 @@ import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.ShellIdentityUtils;
 import com.android.compatibility.common.util.ThrowingRunnable;
 
+import com.google.errorprone.annotations.FormatMethod;
+import com.google.errorprone.annotations.FormatString;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -389,6 +392,12 @@ public class NetworkPolicyTestUtils {
 
     public static void clearSnoozeTimestamps() {
         executeShellCommand("dumpsys netpolicy --unsnooze");
+    }
+
+    @FormatMethod
+    public static String executeShellCommand(@FormatString String cmdFormat, Object... args) {
+        final String command = String.format(cmdFormat, args);
+        return executeShellCommand(command);
     }
 
     public static String executeShellCommand(String command) {

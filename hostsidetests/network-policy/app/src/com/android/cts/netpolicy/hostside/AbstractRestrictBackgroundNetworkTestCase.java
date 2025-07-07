@@ -692,10 +692,11 @@ public abstract class AbstractRestrictBackgroundNetworkTestCase {
                 + ". Full list: " + uids);
     }
 
-    protected void addTempPowerSaveModeWhitelist(String packageName, long duration)
+    protected void addTempPowerSaveModeWhitelist(String packageName, int userId, long duration)
             throws Exception {
         Log.i(TAG, "Adding pkg " + packageName + " to temp-power-save-mode whitelist");
-        executeShellCommand("dumpsys deviceidle tempwhitelist -d " + duration + " " + packageName);
+        executeShellCommand(
+                "dumpsys deviceidle tempwhitelist -u %d -d %d %s", userId, duration, packageName);
     }
 
     protected void assertPowerSaveModeWhitelist(String packageName, boolean expected)
