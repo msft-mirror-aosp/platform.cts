@@ -16,14 +16,14 @@
 
 package android.display.cts;
 
-import static android.view.WindowManager.DISPLAY_IME_POLICY_LOCAL;
-
 import static com.android.server.display.feature.flags.Flags.FLAG_DISPLAY_TOPOLOGY;
 import static com.android.server.display.feature.flags.Flags.FLAG_DISPLAY_TOPOLOGY_API;
 import static com.android.server.display.feature.flags.Flags.FLAG_ENABLE_DISPLAY_CONTENT_MODE_MANAGEMENT;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import android.content.Intent;
@@ -34,8 +34,6 @@ import android.os.Message;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
-import android.server.wm.ActivityManagerTestBase;
-import android.server.wm.WindowManagerState;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
@@ -43,7 +41,14 @@ import androidx.annotation.NonNull;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.util.List;
+import platform.test.desktop.DisplayDevice;
+import platform.test.desktop.DisplayPeripheral;
+import platform.test.desktop.DisplaySize;
+import platform.test.desktop.PeripheralDevice;
+import platform.test.desktop.PeripheralDeviceTestRule;
+import platform.test.desktop.PeripheralType;
+import platform.test.desktop.PeripheralsResponse;
+
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
@@ -54,6 +59,9 @@ public class TopologyUpdateDeliveryTest extends EventDeliveryTestBase {
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
+    @Rule
+    public final PeripheralDeviceTestRule mPeripheralDeviceRule = new PeripheralDeviceTestRule();
 
     private static final String TEST_PACKAGE = "com.android.servicestests.apps.topologytestapp";
     private static final String TEST_ACTIVITY = TEST_PACKAGE + ".TopologyUpdateActivity";
@@ -92,8 +100,14 @@ public class TopologyUpdateDeliveryTest extends EventDeliveryTestBase {
                         mExpectations.poll(TEST_FAILURE_TIMEOUT_MSEC, TimeUnit.MILLISECONDS);
                 assertNotNull(update);
                 if (predicate.test(update)) {
-                    Log.d(TAG, "Found " + update);
+                    Log.d(TAG, "Found topology that satisfies the predicate: " + update);
                     return;
+                } else {
+                    Log.d(
+                            TAG,
+                            "Found topology that does not satisfy the predicate, waiting for"
+                                    + " another one: "
+                                    + update);
                 }
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
@@ -161,32 +175,44 @@ public class TopologyUpdateDeliveryTest extends EventDeliveryTestBase {
         }
 
         // Create a new display that will be added to the topology
-        final List<WindowManagerState.DisplayContent> originalDs = getDisplaysStates();
-        int initialNumberOfDisplays = originalDs.size();
-        try (ActivityManagerTestBase.VirtualDisplaySession virtualDisplaySession =
-                new ActivityManagerTestBase.VirtualDisplaySession()) {
-            virtualDisplaySession.setSimulateDisplay(true);
-            virtualDisplaySession.setAllowContentModeSwitch(true);
-            virtualDisplaySession.setDisplayImePolicy(DISPLAY_IME_POLICY_LOCAL);
-            virtualDisplaySession.createDisplays(2);
-            getDisplayStateAfterChange(initialNumberOfDisplays + 2);
-            Predicate<DisplayTopology> predicate =
-                    topology -> topology.getAbsoluteBounds().size() > initialNumberOfDisplays;
-
-            if (cached) {
-                assertNoTopologyUpdates();
+        PeripheralsResponse response =
+                mPeripheralDeviceRule.requestPeripherals(
+                        new DisplayPeripheral(
+                                PeripheralType.PHYSICAL_OR_SIMULATED, DisplaySize.SIZE_1080P));
+        int connectedDevices = 0;
+        for (PeripheralDevice device : response.getDevices()) {
+            if (device.getConnected()) {
+                connectedDevices++;
+            }
+            if (device instanceof DisplayDevice d) {
+                assertTrue(d.getDisplayId() > 0);
             } else {
-                waitTopologyUpdate(predicate);
+                fail("Unexpected peripheral device: " + device);
             }
+        }
+        assertEquals(1, connectedDevices);
 
-            if (cached) {
-                // Always ensure the test activity is not cached.
-                bringTestActivityTop();
+        // Topology should contain the newly created display
+        Predicate<DisplayTopology> predicate =
+                topology ->
+                        topology.getAbsoluteBounds()
+                                .contains(
+                                        ((DisplayDevice) response.getDevices().getFirst())
+                                                .getDisplayId());
 
-                // The test activity becomes non-cached and should receive the pending topology
-                // updates
-                waitTopologyUpdate(predicate);
-            }
+        if (cached) {
+            assertNoTopologyUpdates();
+        } else {
+            waitTopologyUpdate(predicate);
+        }
+
+        if (cached) {
+            // Always ensure the test activity is not cached.
+            bringTestActivityTop();
+
+            // The test activity becomes non-cached and should receive the pending topology
+            // updates
+            waitTopologyUpdate(predicate);
         }
     }
 

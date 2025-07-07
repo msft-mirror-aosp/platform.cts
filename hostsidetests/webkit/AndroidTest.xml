@@ -25,6 +25,7 @@
         <option name="test-file-name" value="CtsWebViewStartupApp.apk" />
     </target_preparer>
 
+    <target_preparer class="android.webkit.cts.preconditions.WebViewVersionPreparer" />
     <target_preparer class="com.android.tradefed.targetprep.RunCommandTargetPreparer">
         <!-- Unlock and turn on the screen. -->
         <option name="run-command" value="svc power stayon true" />

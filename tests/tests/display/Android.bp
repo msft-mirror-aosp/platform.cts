@@ -38,6 +38,7 @@ android_test {
         "android.companion.virtualdevice.flags-aconfig-java",
         "display_flags_lib",
         "junit-params",
+        "desktop-test-lib",
     ],
     libs: ["android.test.base.stubs.test"],
     // Tag this module as a cts test artifact

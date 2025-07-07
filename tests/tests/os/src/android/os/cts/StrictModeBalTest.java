@@ -27,6 +27,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.StrictMode;
 import android.os.UserManager;
+import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.AppModeSdkSandbox;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 
@@ -39,6 +40,7 @@ import org.junit.runner.RunWith;
 
 /** Tests for {@link StrictMode} */
 @RunWith(AndroidJUnit4.class)
+@AppModeFull
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class StrictModeBalTest extends StrictModeTestBase {
     private static final String BACKGROUND_ACTIVITY_LAUNCH = "BackgroundActivityLaunch";

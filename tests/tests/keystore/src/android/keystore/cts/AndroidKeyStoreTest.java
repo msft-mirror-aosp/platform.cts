@@ -2840,4 +2840,16 @@ public class AndroidKeyStoreTest {
 
         importLargeNumberOfKeysValidateAliases(maxNumberOfKeys, aliasPrefix);
     }
+
+    /**
+     * Some VTS tests are skipped on pre-production devices. Ensure that a pre-production device
+     * does not pass CTS (so a passing CTS result implies that the full set of VTS tests apply).
+     */
+    @Test
+    public void testProductionDevice() throws Exception {
+        assertFalse(
+                "The device must not be marked as a pre-production device (in the "
+                        + "ro.boot.hardware.revision property)",
+                KeyGenerationUtils.isPreProductionDevice());
+    }
 }
