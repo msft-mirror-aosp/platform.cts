@@ -2235,23 +2235,11 @@ public class UsageStatsTest extends StsExtraBusinessLogicTestCase {
     }
 
     @AppModeFull(reason = "No usage events access in instant apps")
-    @RequiresFlagsDisabled(Flags.FLAG_REPORT_USAGE_STATS_PERMISSION)
     @Test
     @AsbSecurityTest(cveBugId = 229633537)
     public void testReportChooserSelection() throws Exception {
-        testReportChooserSelectionNoPermissionCheck();
-    }
-
-    @AppModeFull(reason = "No usage events access in instant apps")
-    @RequiresFlagsEnabled(Flags.FLAG_REPORT_USAGE_STATS_PERMISSION)
-    @Test
-    @AsbSecurityTest(cveBugId = 229633537)
-    public void testReportChooserSelectionWithPermission() throws Exception {
         mUiAutomation.adoptShellPermissionIdentity(Manifest.permission.REPORT_USAGE_STATS);
-        testReportChooserSelectionNoPermissionCheck();
-    }
 
-    private void testReportChooserSelectionNoPermissionCheck() throws Exception {
         // attempt to report an event with a null package, should fail.
         try {
             mUsageStatsManager.reportChooserSelection(
@@ -2341,7 +2329,6 @@ public class UsageStatsTest extends StsExtraBusinessLogicTestCase {
     }
 
     @AppModeFull(reason = "No usage events access in instant apps")
-    @RequiresFlagsEnabled(Flags.FLAG_REPORT_USAGE_STATS_PERMISSION)
     @Test
     public void testReportChooserSelectionAccess() throws Exception {
         try {
@@ -2365,7 +2352,6 @@ public class UsageStatsTest extends StsExtraBusinessLogicTestCase {
     }
 
     @AppModeFull(reason = "No usage events access in instant apps")
-    @RequiresFlagsEnabled(Flags.FLAG_REPORT_USAGE_STATS_PERMISSION)
     @Test
     public void testReportUserInteractionAccess() throws Exception {
         try {
@@ -2379,7 +2365,6 @@ public class UsageStatsTest extends StsExtraBusinessLogicTestCase {
     }
 
     @AppModeFull(reason = "No usage events access in instant apps")
-    @RequiresFlagsEnabled(Flags.FLAG_REPORT_USAGE_STATS_PERMISSION)
     @Test
     public void testCrossUserReportUserInteractionAccess() throws Exception {
         assumeTrue(UserManager.supportsMultipleUsers());
@@ -2433,8 +2418,7 @@ public class UsageStatsTest extends StsExtraBusinessLogicTestCase {
      */
     @AppModeFull(reason = "No usage events access in instant apps")
     @Test
-    @RequiresFlagsEnabled({Flags.FLAG_USER_INTERACTION_TYPE_API,
-            Flags.FLAG_REPORT_USAGE_STATS_PERMISSION})
+    @RequiresFlagsEnabled(Flags.FLAG_USER_INTERACTION_TYPE_API)
     public void testReportUserInteraction() throws Exception {
         mUiAutomation.adoptShellPermissionIdentity(Manifest.permission.REPORT_USAGE_STATS);
         // attempt to report an event with a null package, should fail.
