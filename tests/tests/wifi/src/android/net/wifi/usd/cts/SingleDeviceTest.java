@@ -20,6 +20,7 @@ import static org.junit.Assert.assertArrayEquals;
 
 import android.content.Context;
 import android.net.wifi.WifiManager;
+import android.net.wifi.cts.WifiFeature;
 import android.net.wifi.cts.WifiJUnit3TestBase;
 import android.net.wifi.flags.Flags;
 import android.net.wifi.usd.Characteristics;
@@ -120,7 +121,10 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
     @Override
     protected void setUp() throws Exception {
         super.setUp();
-
+        if (!WifiFeature.isWifiSupported(getContext())) {
+            // skip the test if WiFi is not supported
+            return;
+        }
         mWifiManager = (WifiManager) getContext().getSystemService(Context.WIFI_SERVICE);
         assertNotNull("Wi-Fi Manager", mWifiManager);
 
