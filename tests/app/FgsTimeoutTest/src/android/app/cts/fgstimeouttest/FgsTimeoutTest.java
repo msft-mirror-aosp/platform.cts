@@ -34,7 +34,6 @@ import static com.android.compatibility.common.util.TestUtils.waitUntil;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import android.app.Flags;
 import android.app.ForegroundServiceStartNotAllowedException;
 import android.app.Service;
 import android.app.cts.fgstimeouttesthelper.FgsTimeoutHelper;
@@ -46,8 +45,6 @@ import android.content.Intent;
 import android.os.SystemClock;
 import android.os.UserManager;
 import android.platform.test.annotations.Presubmit;
-import android.platform.test.annotations.RequiresFlagsDisabled;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.DeviceConfig;
@@ -119,7 +116,6 @@ public class FgsTimeoutTest {
      * Start MEDIA_PROCESSING FGS, and make sure the timeout callback is called.
      */
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_INTRODUCE_NEW_SERVICE_ONTIMEOUT_CALLBACK)
     public void testTimeout() {
         final long serviceStartTime = SystemClock.uptimeMillis();
         // Start the service
@@ -149,7 +145,6 @@ public class FgsTimeoutTest {
      * Then make sure onTimeout() is called.
      */
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_INTRODUCE_NEW_SERVICE_ONTIMEOUT_CALLBACK)
     public void testTimeout_startService() {
         final long serviceStartTime = SystemClock.uptimeMillis();
         // Start the service (using startService)
@@ -185,7 +180,6 @@ public class FgsTimeoutTest {
      * be the same.
      */
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_INTRODUCE_NEW_SERVICE_ONTIMEOUT_CALLBACK)
     public void testTimeout_withParallelNormalFgs() {
         final long serviceStartTime = SystemClock.uptimeMillis();
         // Start a time-restricted fgs
@@ -224,7 +218,6 @@ public class FgsTimeoutTest {
      * Test timeout is calculated correctly when running multiple FGS of the same type in parallel.
      */
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_INTRODUCE_NEW_SERVICE_ONTIMEOUT_CALLBACK)
     public void testTimeout_withParallelTimeRestrictedFgs() {
         final long firstServiceStartTime = SystemClock.uptimeMillis();
         // Start a time-restricted FGS
@@ -269,7 +262,6 @@ public class FgsTimeoutTest {
      * Make sure, if a media_processing fgs doesn't stop, the app crashes.
      */
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_INTRODUCE_NEW_SERVICE_ONTIMEOUT_CALLBACK)
     public void testCrash() throws Exception {
         final int crashExtraTimeout = 5000;
         updateDeviceConfig("fgs_crash_extra_wait_duration", crashExtraTimeout);
@@ -302,7 +294,6 @@ public class FgsTimeoutTest {
      * - Wait until the timeout time and make sure the timeout callback won't be called.
      */
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_INTRODUCE_NEW_SERVICE_ONTIMEOUT_CALLBACK)
     public void testStop_stopService() {
         // Start the service
         startForegroundService(FGS0, FOREGROUND_SERVICE_TYPE_MEDIA_PROCESSING);
@@ -329,7 +320,6 @@ public class FgsTimeoutTest {
      * - Wait until the timeout time and make sure the timeout callback won't be called.
      */
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_INTRODUCE_NEW_SERVICE_ONTIMEOUT_CALLBACK)
     public void testStop_stopSelf() {
         // Start the service
         startForegroundService(FGS0, FOREGROUND_SERVICE_TYPE_MEDIA_PROCESSING);
@@ -354,7 +344,6 @@ public class FgsTimeoutTest {
      * Make sure a normal FGS *can* be started, if an app has a time-restricted FGS running.
      */
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_INTRODUCE_NEW_SERVICE_ONTIMEOUT_CALLBACK)
     public void testStartService_fromTimeRestrictedFgs() {
         // Start a time-restricted FGS
         startForegroundService(FGS0, FOREGROUND_SERVICE_TYPE_MEDIA_PROCESSING);
@@ -386,7 +375,6 @@ public class FgsTimeoutTest {
      * Change the FGS type from a time-restricted fgs to a non-time-restricted type.
      */
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_INTRODUCE_NEW_SERVICE_ONTIMEOUT_CALLBACK)
     public void testTypeChange_fromTimeRestrictedToNormal() {
         // Start a time-restricted FGS
         startForegroundService(FGS0, FOREGROUND_SERVICE_TYPE_MEDIA_PROCESSING);
@@ -441,7 +429,6 @@ public class FgsTimeoutTest {
      * time limit has already been exhausted.
      */
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_INTRODUCE_NEW_SERVICE_ONTIMEOUT_CALLBACK)
     public void testStartService_throwsExceptionAfterTimeout() {
         final long serviceStartTime = SystemClock.uptimeMillis();
         // Start the service
@@ -474,28 +461,6 @@ public class FgsTimeoutTest {
         sContext.stopService(new Intent().setComponent(FGS0));
         waitForMethodCall(FGS0, "onDestroy");
         assertServiceNotRunning(FGS0);
-
-        CallProvider.ensureNoMoreMessages();
-    }
-
-    @Test
-    @RequiresFlagsDisabled(Flags.FLAG_INTRODUCE_NEW_SERVICE_ONTIMEOUT_CALLBACK)
-    public void testNoTimeout_whenFlagDisabled() {
-        // Start the service
-        startForegroundService(FGS2, FOREGROUND_SERVICE_TYPE_DATA_SYNC);
-        waitForMethodCall(FGS2, "onStartCommand");
-        assertFgsRunning(FGS2);
-
-        // Wait for the timeout + extra duration
-        SystemClock.sleep(SHORTENED_TIMEOUT + 5000);
-        // Make sure onTimeout() didn't happen. (If it did, onTimeout() would send a message,
-        // which would break the below ensureNoMoreMessages().)
-        CallProvider.ensureNoMoreMessages();
-
-        // Stop the service
-        sContext.stopService(new Intent().setComponent(FGS2));
-        waitForMethodCall(FGS2, "onDestroy");
-        assertServiceNotRunning(FGS2);
 
         CallProvider.ensureNoMoreMessages();
     }

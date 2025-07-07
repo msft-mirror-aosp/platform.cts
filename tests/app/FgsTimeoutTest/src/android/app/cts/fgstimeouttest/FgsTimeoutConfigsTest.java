@@ -17,10 +17,8 @@ package android.app.cts.fgstimeouttest;
 
 import static android.app.cts.fgstimeouttesthelper.FgsTimeoutHelper.TAG;
 
-import android.app.Flags;
 import android.os.SystemClock;
 import android.platform.test.annotations.Presubmit;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Log;
@@ -61,7 +59,6 @@ public class FgsTimeoutConfigsTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_INTRODUCE_NEW_SERVICE_ONTIMEOUT_CALLBACK)
     public void testDefaultTimeouts() {
         // When the main test class resets the device config values, it's propagated asynchronously
         // to ActivityManagerConstants, so we'll just retry up to this many seconds.
