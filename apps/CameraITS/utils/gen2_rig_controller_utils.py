@@ -85,6 +85,7 @@ _ROTATOR_STR = 'rotator'
 _STR_340 = '340'
 _MEGA_STR = 'Mega'
 DEFAULT_GEN2_ROTATOR_NAME = 'gen2_rotator'
+DEFAULT_GEN2_LIGHTS_NAME = 'gen2_lights'
 
 
 def _check_channel(channel):

@@ -26,6 +26,7 @@ import types
 
 import camera_properties_utils
 import capture_request_utils
+import gen2_rig_controller_utils
 import image_processing_utils
 import its_device_utils
 import its_session_utils
@@ -39,6 +40,7 @@ CONFIG_FILE = os.path.join(YAML_FILE_DIR, 'config.yml')
 TEST_KEY_TABLET = 'tablet'
 TEST_KEY_SENSOR_FUSION = 'sensor_fusion'
 TEST_KEY_GEN2 = 'gen2'
+PLACEHOLDER_DEVICE_TEXT = '<device-id>'
 ACTIVITY_START_WAIT = 1.5  # seconds
 MERGE_RESULTS_TIMEOUT = 3600  # seconds
 
@@ -62,7 +64,8 @@ EXTRA_RESULTS = 'camera.its.extra.RESULTS'
 EXTRA_TABLET_NAME = 'camera.its.extra.TABLET_NAME'
 TIME_KEY_START = 'start'
 TIME_KEY_END = 'end'
-VALID_CONTROLLERS = ('arduino', 'canakit')
+VALID_MOTOR_CONTROLLERS = ('arduino', 'gen2_rotator')
+VALID_LIGHTING_CONTROLLERS = ('arduino', 'gen2_lights')
 _FRONT_CAMERA_ID = '1'
 # recover replaced '_' in scene def
 _INT_STR_DICT = types.MappingProxyType({'11': '1_1', '12': '1_2', '13': '1_3'})
@@ -92,21 +95,28 @@ _MOTION_SCENES = ('sensor_fusion', 'feature_combination',)
 # Scenes that uses lighting control
 _FLASH_SCENES = ('scene_flash',)
 
-# Scenes that uses checkerboard as chart
-_CHECKERBOARD_SCENES = ('sensor_fusion', 'scene_flash', 'feature_combination',)
+# Scenes that uses checkerboard as chart in the gen1 rig
+_SENSOR_FUSION_RIG_SCENES = (
+    'sensor_fusion', 'scene_flash', 'feature_combination',
+)
 
 # Scenes that have to be run manually regardless of configuration
 _MANUAL_SCENES = ('scene5',)
 
 # Scene extensions
-_EXTENSIONS_SCENES = (os.path.join('scene_extensions', 'scene_hdr'),
-                      os.path.join('scene_extensions', 'scene_low_light'),
-                      )
+_EXTENSIONS_SCENES = (
+    os.path.join('scene_extensions', 'scene_hdr'),
+    os.path.join('scene_extensions', 'scene_low_light'),
+)
 # Scene tele
-_TELE_SCENES = (os.path.join('scene_tele', 'scene6_tele'),
-                os.path.join('scene_tele', 'scene7_tele'),
-                )
-_GEN2_RIG_SCENES = ('scene_ip',)
+_TELE_SCENES = (
+    os.path.join('scene_tele', 'scene6_tele'),
+    os.path.join('scene_tele', 'scene7_tele'),
+)
+_SCENE_IP_SCENES = ('scene_ip',)
+_GEN2_RIG_SCENES = (
+    'scene_ip', 'sensor_fusion', 'scene_flash', 'feature_combination'
+)
 # All possible scenes
 _ALL_SCENES = (_TABLET_SCENES + _MANUAL_SCENES + _MOTION_SCENES +
                _FLASH_SCENES + _GEN2_RIG_SCENES)
@@ -581,6 +591,78 @@ def augment_sub_camera_tests(first_api_level):
     SUB_CAMERA_TESTS['scene6'] = ('test_in_sensor_zoom',)
 
 
+def get_config_file_contents_for_scenes(config_file_contents, scenes):
+  """Returns pruned config file contents based on requested scenes.
+
+  Args:
+    config_file_contents: dict read from config.yml file
+    scenes: List of scenes to be executed.
+  Returns:
+    Pruned config file contents.
+  """
+  if not scenes:
+    logging.info('No scenes specified. Assuming tablet scenes requested. '
+                 'Please explicitly specify rotation scenes if desired.')
+  requested_gen2_scenes = (
+      set(scenes).intersection(set(_GEN2_RIG_SCENES)) or
+      scenes == ['gen2_scenes']
+  )
+  requested_gen1_scenes = (
+      set(scenes).intersection(set(_SENSOR_FUSION_RIG_SCENES)) or
+      scenes == ['checkerboard']
+  )
+  requested_tablet_scenes = (
+      set(scenes).intersection(set(_TABLET_SCENES)) or
+      scenes == ['<scene-name>'] or not scenes
+  )
+  testbed_index = None
+  for i, testbed in enumerate(config_file_contents['TestBeds']):
+    name = testbed['Name'].lower()
+    device_specified = PLACEHOLDER_DEVICE_TEXT not in str(testbed)
+    if (
+        requested_tablet_scenes and
+        TEST_KEY_TABLET in name and
+        device_specified
+    ):
+      testbed_index = i
+    elif (
+        requested_gen1_scenes and
+        TEST_KEY_SENSOR_FUSION in name and
+        device_specified
+    ):
+      if testbed_index is not None:
+        raise AssertionError(
+            'Multiple rotation testbeds have device information specified. '
+            'Please specify device information for only one testbed. '
+            'Previously defined testbed: '
+            f'Testbed {config_file_contents["TestBeds"][testbed_index]}.'
+        )
+      testbed_index = i
+    elif (
+        requested_gen2_scenes and
+        TEST_KEY_GEN2 in name and
+        device_specified
+    ):
+      if testbed_index is not None:
+        raise AssertionError(
+            'Multiple rotation testbeds have device information specified. '
+            'Please specify device information for only one testbed. '
+            'Previously defined testbed: '
+            f'Testbed {config_file_contents["TestBeds"][testbed_index]}.'
+        )
+      testbed_index = i
+
+  if testbed_index is None:
+    raise AssertionError(
+        'Devices must be specified for the testbed that corresponds '
+        'to the requested scenes.'
+    )
+  logging.debug('Chosen testbed index: %s', testbed_index)
+  return {
+      'TestBeds': [config_file_contents['TestBeds'][testbed_index]]
+  }
+
+
 def main():
   """Run all the Camera ITS automated tests.
 
@@ -630,7 +712,7 @@ def main():
   # Prepend 'scene' if not specified at cmd line
   for i, s in enumerate(scenes):
     if (not s.startswith('scene') and
-        not s.startswith(('checkerboard', 'sensor_fusion',
+        not s.startswith(('checkerboard', 'sensor_fusion', 'gen2_scenes',
                           'flash', 'feature_combination', '<scene-name>'))):
       scenes[i] = f'scene{s}'
     if (s.startswith('flash') or s.startswith('extensions')
@@ -649,21 +731,8 @@ def main():
   # Read config file and extract relevant TestBed
   config_file_contents = get_config_file_contents()
   if testbed_index is None:
-    testbed_to_remove = []
-    for i in config_file_contents['TestBeds']:
-      name = i['Name'].lower()
-      if scenes == ['scene_ip']:
-        if TEST_KEY_GEN2 not in name:
-          testbed_to_remove.append(i)
-      elif set(scenes).intersection(
-          set(_CHECKERBOARD_SCENES)) or scenes == ['checkerboard']:
-        if TEST_KEY_SENSOR_FUSION not in name:
-          testbed_to_remove.append(i)
-      else:
-        if TEST_KEY_SENSOR_FUSION in name or TEST_KEY_GEN2 in name:
-          testbed_to_remove.append(i)
-    for i in testbed_to_remove:
-      config_file_contents['TestBeds'].remove(i)
+    config_file_contents = get_config_file_contents_for_scenes(
+        config_file_contents, scenes)
   else:
     config_file_contents = {
         'TestBeds': [config_file_contents['TestBeds'][testbed_index]]
@@ -718,12 +787,18 @@ def main():
     tablet_name = 'sensor_fusion'
 
   testing_sensor_fusion_with_controller = False
-  if TEST_KEY_SENSOR_FUSION in config_file_test_key:
-    if test_params_content['rotator_cntl'].lower() in VALID_CONTROLLERS:
+  if (
+      TEST_KEY_SENSOR_FUSION in config_file_test_key or
+      TEST_KEY_GEN2 in config_file_test_key
+  ):
+    if test_params_content['rotator_cntl'].lower() in VALID_MOTOR_CONTROLLERS:
       testing_sensor_fusion_with_controller = True
 
   testing_flash_with_controller = False
-  if (test_params_content.get('lighting_cntl', 'None').lower() == 'arduino' and
+  lighting_controller = (
+      test_params_content.get('lighting_cntl', 'None').lower()
+  )
+  if (lighting_controller in VALID_LIGHTING_CONTROLLERS and
       'manual' not in config_file_test_key):
     testing_flash_with_controller = True
 
@@ -794,7 +869,7 @@ def main():
     # Run through all scenes if user does not supply one and config file doesn't
     # have specific scene name listed.
     if TEST_KEY_SENSOR_FUSION in config_file_test_key:
-      possible_scenes = _CHECKERBOARD_SCENES
+      possible_scenes = _SENSOR_FUSION_RIG_SCENES
     elif its_session_utils.SUB_CAMERA_SEPARATOR in camera_id:
       possible_scenes = list(SUB_CAMERA_TESTS.keys())
       if auto_scene_switch:
@@ -807,12 +882,14 @@ def main():
       elif 'scene_tele' in scenes:
         possible_scenes = _TELE_SCENES
       elif 'scene_ip' in scenes:
+        possible_scenes = _SCENE_IP_SCENES
+      elif 'gen2_scenes' in scenes:
         possible_scenes = _GEN2_RIG_SCENES
       else:
         possible_scenes = _TABLET_SCENES if auto_scene_switch else _ALL_SCENES
     if ('<scene-name>' in scenes or 'checkerboard' in scenes or
         'scene_extensions' in scenes or 'scene_tele' in scenes
-        or 'scene_ip' in scenes):
+        or 'scene_ip' in scenes or 'gen2_scenes' in scenes):
       per_camera_scenes = possible_scenes
     else:
       # Validate user input scene names
@@ -1123,12 +1200,15 @@ def main():
   # establish connection with lighting controller
   lighting_cntl = test_params_content.get('lighting_cntl', 'None')
   lighting_ch = test_params_content.get('lighting_ch', 'None')
-  arduino_serial_port = lighting_control_utils.lighting_control(
-      lighting_cntl, lighting_ch)
-
-  # turn OFF lights
-  lighting_control_utils.set_lighting_state(
-      arduino_serial_port, lighting_ch, 'OFF')
+  if lighting_cntl == gen2_rig_controller_utils.DEFAULT_GEN2_LIGHTS_NAME:
+    lights_port = gen2_rig_controller_utils.find_serial_port(lighting_cntl)
+    if lights_port:
+      lights_port.close()
+  else:
+    arduino_serial_port = lighting_control_utils.lighting_control(
+        lighting_cntl, lighting_ch)
+    lighting_control_utils.set_lighting_state(
+        arduino_serial_port, lighting_ch, 'OFF')
 
   if num_testbeds is not None:
     if testbed_index == _MAIN_TESTBED:

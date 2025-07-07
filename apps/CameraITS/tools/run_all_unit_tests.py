@@ -16,12 +16,40 @@
 import itertools
 import os
 import unittest
+import yaml
 
 import run_all_tests
 
 
 class RunAllUnitTests(unittest.TestCase):
   """Unit tests to verify run_all_tests tool."""
+
+  def setUp(self):
+    super().setUp()
+    blank_config_path = os.path.join(
+        os.environ['CAMERA_ITS_TOP'],
+        'tools', 'unit_test_configs', 'blank_config.yml'
+    )
+    sensor_fusion_and_gen2_config_path = os.path.join(
+        os.environ['CAMERA_ITS_TOP'],
+        'tools', 'unit_test_configs', 'sensor_fusion_and_gen2_config.yml'
+    )
+    tablet_and_sensor_fusion_config_path = os.path.join(
+        os.environ['CAMERA_ITS_TOP'],
+        'tools', 'unit_test_configs', 'tablet_and_sensor_fusion_config.yml'
+    )
+    tablet_scenes_config_path = os.path.join(
+        os.environ['CAMERA_ITS_TOP'],
+        'tools', 'unit_test_configs', 'tablet_scenes_config.yml'
+    )
+    with open(blank_config_path) as f:
+      self.blank_config_file_contents = yaml.safe_load(f)
+    with open(sensor_fusion_and_gen2_config_path) as f:
+      self.sensor_fusion_and_gen2_config_file_contents = yaml.safe_load(f)
+    with open(tablet_and_sensor_fusion_config_path) as f:
+      self.tablet_and_sensor_fusion_config_file_contents = yaml.safe_load(f)
+    with open(tablet_scenes_config_path) as f:
+      self.tablet_scenes_config_file_contents = yaml.safe_load(f)
 
   def _scene_folders_exist(self, scene_folders):
     """Asserts all scene_folders exist in tests directory."""
@@ -58,6 +86,148 @@ class RunAllUnitTests(unittest.TestCase):
     scene_folders = list(itertools.chain.from_iterable(
         run_all_tests._GROUPED_SCENES.values()))
     self._scene_folders_exist(scene_folders)
+
+  def test_blank_config_file_contents_invalid_with_all_tablet_scenes(self):
+    """Ensures invalid blank config raises error with all tablet scenes."""
+    with self.assertRaises(AssertionError):
+      run_all_tests.get_config_file_contents_for_scenes(
+          self.blank_config_file_contents, [])
+
+  def test_blank_config_file_contents_invalid_with_some_tablet_scenes(self):
+    """Ensures invalid blank config raises error with all tablet scenes."""
+    with self.assertRaises(AssertionError):
+      run_all_tests.get_config_file_contents_for_scenes(
+          self.blank_config_file_contents, ['scene4', 'scene6'])
+
+  def test_blank_config_file_contents_invalid_with_sensor_fusion_scenes(self):
+    """Ensures invalid blank config raises error with sensor fusion scenes."""
+    with self.assertRaises(AssertionError):
+      run_all_tests.get_config_file_contents_for_scenes(
+          self.blank_config_file_contents, ['sensor_fusion'])
+
+  def test_blank_config_file_contents_invalid_with_scene_ip_scenes(self):
+    """Ensures invalid blank config raises error with scene ip scenes."""
+    with self.assertRaises(AssertionError):
+      run_all_tests.get_config_file_contents_for_scenes(
+          self.blank_config_file_contents, ['scene_ip'])
+
+  def test_tablet_config_file_contents_valid_with_all_tablet_scenes(self):
+    """Ensures tablet config is valid with all tablet scenes."""
+    config_file_contents = (
+        run_all_tests.get_config_file_contents_for_scenes(
+            self.tablet_scenes_config_file_contents, ['<scene-name>']))
+    self.assertIn('TEST_BED_TABLET_SCENES', str(config_file_contents))
+    self.assertEqual(len(config_file_contents['TestBeds']), 1)
+
+  def test_tablet_config_file_contents_valid_with_some_tablet_scenes(self):
+    """Ensures tablet config is valid with some arbitrary tablet scenes."""
+    config_file_contents = run_all_tests.get_config_file_contents_for_scenes(
+        self.tablet_scenes_config_file_contents, ['scene4', 'scene6']
+    )
+    self.assertIn('TEST_BED_TABLET_SCENES', str(config_file_contents))
+    self.assertEqual(len(config_file_contents['TestBeds']), 1)
+
+  def test_tablet_config_file_contents_valid_with_implicit_tablet_scenes(self):
+    """Ensures tablet config is valid with implicit tablet scenes."""
+    config_file_contents = run_all_tests.get_config_file_contents_for_scenes(
+        self.tablet_scenes_config_file_contents, []
+    )
+    self.assertIn('TEST_BED_TABLET_SCENES', str(config_file_contents))
+    self.assertEqual(len(config_file_contents['TestBeds']), 1)
+
+  def test_tablet_config_file_contents_invalid_with_sensor_fusion_scenes(self):
+    """Ensures tablet config is invalid with sensor fusion scenes."""
+    with self.assertRaises(AssertionError):
+      run_all_tests.get_config_file_contents_for_scenes(
+          self.tablet_scenes_config_file_contents, ['sensor_fusion'])
+
+  def test_tablet_config_file_contents_invalid_with_gen2_scenes(self):
+    """Ensures tablet config is invalid with gen2 scenes."""
+    with self.assertRaises(AssertionError):
+      run_all_tests.get_config_file_contents_for_scenes(
+          self.tablet_scenes_config_file_contents, ['gen2_scenes'])
+
+  def test_tablet_sf_config_file_contents_valid_with_tablet_scenes(self):
+    """Ensures tablet and SF config is valid with tablet scenes."""
+    config_file_contents = run_all_tests.get_config_file_contents_for_scenes(
+        self.tablet_and_sensor_fusion_config_file_contents,
+        ['<scene-name>']
+    )
+    self.assertIn('TEST_BED_TABLET_SCENES', str(config_file_contents))
+    self.assertEqual(len(config_file_contents['TestBeds']), 1)
+
+  def test_tablet_sf_config_file_contents_valid_with_sf_scenes(self):
+    """Ensures tablet and SF config is valid with SF scenes."""
+    config_file_contents = run_all_tests.get_config_file_contents_for_scenes(
+        self.tablet_and_sensor_fusion_config_file_contents,
+        ['sensor_fusion']
+    )
+    self.assertIn('TEST_BED_SENSOR_FUSION', str(config_file_contents))
+    self.assertEqual(len(config_file_contents['TestBeds']), 1)
+
+  def test_tablet_sf_config_file_contents_invalid_with_gen2_scenes(self):
+    """Ensures tablet and SF config is valid with gen2 scenes."""
+    with self.assertRaises(AssertionError):
+      run_all_tests.get_config_file_contents_for_scenes(
+          self.tablet_and_sensor_fusion_config_file_contents,
+          ['scene_ip']
+      )
+
+  def test_tablet_sf_config_invalid_with_tablet_and_sf_scenes(self):
+    """Ensures tablet and SF config is invalid with tablet and SF scenes."""
+    with self.assertRaises(AssertionError):
+      run_all_tests.get_config_file_contents_for_scenes(
+          self.tablet_and_sensor_fusion_config_file_contents,
+          ['scene6', 'sensor_fusion']
+      )
+
+  def test_sf_gen2_config_invalid_with_tablet_scenes(self):
+    """Ensures SF and gen2 config is invalid with tablet scenes."""
+    with self.assertRaises(AssertionError):
+      run_all_tests.get_config_file_contents_for_scenes(
+          self.sensor_fusion_and_gen2_config_file_contents,
+          ['<scene-name>']
+      )
+
+  def test_sf_gen2_config_invalid_with_ambiguous_scene(self):
+    """Ensures SF and gen2 config is invalid with an ambiguous scene.
+
+    An ambiguous scene (sensor_fusion) is a scene that can be tested with
+    either the gen1 or gen2 rig.
+    """
+    with self.assertRaises(AssertionError):
+      run_all_tests.get_config_file_contents_for_scenes(
+          self.sensor_fusion_and_gen2_config_file_contents,
+          ['sensor_fusion']
+      )
+
+  def test_sf_gen2_config_valid_with_unambiguous_gen1_scenes(self):
+    """Ensures SF and gen2 config is valid with gen1-specific scene."""
+    config_file_contents = run_all_tests.get_config_file_contents_for_scenes(
+        self.sensor_fusion_and_gen2_config_file_contents,
+        ['checkerboard']
+    )
+    self.assertIn('TEST_BED_SENSOR_FUSION', str(config_file_contents))
+    self.assertEqual(len(config_file_contents['TestBeds']), 1)
+
+  def test_sf_gen2_config_valid_with_unambiguous_gen2_scenes(self):
+    """Ensures SF and gen2 config is valid with gen2-specific scene."""
+    config_file_contents = run_all_tests.get_config_file_contents_for_scenes(
+        self.sensor_fusion_and_gen2_config_file_contents,
+        ['gen2_scenes']
+    )
+    self.assertIn('TEST_BED_GEN2', str(config_file_contents))
+    self.assertEqual(len(config_file_contents['TestBeds']), 1)
+
+  def test_sf_gen2_config_valid_with_unambiguous_scene_ip_scene(self):
+    """Ensures SF and gen2 config is valid with gen2-specific `scene_ip`."""
+    config_file_contents = run_all_tests.get_config_file_contents_for_scenes(
+        self.sensor_fusion_and_gen2_config_file_contents,
+        ['scene_ip']
+    )
+    self.assertIn('TEST_BED_GEN2', str(config_file_contents))
+    self.assertEqual(len(config_file_contents['TestBeds']), 1)
+
 
 if __name__ == '__main__':
   unittest.main()
