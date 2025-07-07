@@ -30,6 +30,8 @@
     <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" />
     <!-- For listening to cached mode of the test activity. -->
     <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS" />
+    <!-- For simulating external displays and listening to display topology changes -->
+    <uses-permission android:name="android.permission.WRITE_SECURE_SETTINGS" />
 
     <application>
         <uses-library android:name="android.test.runner" />

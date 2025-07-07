@@ -21,27 +21,30 @@ import static android.app.ActivityManager.RunningAppProcessInfo.IMPORTANCE_CACHE
 import static org.junit.Assert.fail;
 
 import android.app.ActivityManager;
+import android.app.Instrumentation;
+import android.content.Context;
 import android.content.Intent;
-import android.hardware.display.DisplayManager;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Looper;
 import android.os.Messenger;
 import android.platform.test.annotations.AppModeSdkSandbox;
-import android.server.wm.MultiDisplayTestBase;
 import android.util.Log;
+
+import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.bedstead.nene.TestApis;
 import com.android.compatibility.common.util.SystemUtil;
 
 import org.junit.After;
+import org.junit.Before;
 
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
-public abstract class EventDeliveryTestBase extends MultiDisplayTestBase {
+public abstract class EventDeliveryTestBase {
     protected static final int MESSAGE_LAUNCHED = 1;
     protected static final int MESSAGE_CALLBACK = 2;
 
@@ -50,7 +53,8 @@ public abstract class EventDeliveryTestBase extends MultiDisplayTestBase {
 
     private static final String TEST_MESSENGER = "MESSENGER";
 
-    protected DisplayManager mDisplayManager;
+    private Instrumentation mInstrumentation;
+    private Context mContext;
     private ActivityManager mActivityManager;
     private ActivityManager.OnUidImportanceListener mUidImportanceListener;
     protected CountDownLatch mLatchActivityLaunch;
@@ -71,10 +75,10 @@ public abstract class EventDeliveryTestBase extends MultiDisplayTestBase {
 
     protected abstract void putExtra(Intent intent);
 
-    @Override
+    @Before
     public void setUp() throws Exception {
-        super.setUp();
-        mDisplayManager = mContext.getSystemService(DisplayManager.class);
+        mInstrumentation = InstrumentationRegistry.getInstrumentation();
+        mContext = mInstrumentation.getContext();
         mLatchActivityLaunch = new CountDownLatch(1);
         mLatchActivityCached = new CountDownLatch(1);
         mActivityManager = mContext.getSystemService(ActivityManager.class);
