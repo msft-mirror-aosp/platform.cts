@@ -142,7 +142,7 @@ class ZoomTest(its_base_test.UiAutomatorItsBaseTest):
         logging.debug('Physical IDs: %s', physical_ids)
         # Ignore captures at higher zooms where smooth zoom can affect results.
         if (tele_camera_found and
-            len(physical_ids) > _ULTRAWIDE_NUMBER_OF_CAMERAS_TO_TEST and
+            len(physical_ids) >= _ULTRAWIDE_NUMBER_OF_CAMERAS_TO_TEST and
             zoom_ratio > _WIDE_ZOOM_THIRD_CAMERA_CHECK_ZOOM_RATIO):
           logging.debug('Found enough zoom data, given that tele camera found: '
                         '%d physical IDs at zoom ratio %.2f, ignoring '
