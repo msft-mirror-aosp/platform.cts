@@ -13,14 +13,10 @@
      See the License for the specific language governing permissions and
      limitations under the License.
 -->
-<configuration description="Run high ROI CTS sim_uicc tests.">
+<configuration description="Run CTS high ROI sim_uicc tests.">
     <include name="cts-automated"/>
     <!-- CtsCarrierApiTestCases -->
-    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.ApnDatabaseTest#testDeleteConflictCase"/>
-    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.ApnDatabaseTest#testQueryConflictCase"/>
-    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.ApnDatabaseTest#testUpdateConflictCase"/>
-    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.ApnDatabaseTest#testValidCase"/>
-    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.BugreportManagerTest#cancelBugreport"/>
+    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.CarrierApiTest#testIccCloseLogicalChannel"/>
     <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.CarrierApiTest#testIccTransmitApduLogicalChannelWithInvalidChannel"/>
     <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.CarrierApiTest#testImsApisAreAccessibleWithFeatureMapping"/>
     <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.CarrierApiTest#testOpportunistic"/>
