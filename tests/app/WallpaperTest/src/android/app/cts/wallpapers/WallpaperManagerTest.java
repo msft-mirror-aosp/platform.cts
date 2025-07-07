@@ -1502,13 +1502,13 @@ public class WallpaperManagerTest {
                 WallpaperManagerTestUtils.goToState(mWallpaperManager,
                         WallpaperState.LIVE_DIFF_MULTI);
                 assertWallpaperIsShown(wallpaperWindowsHelper, FLAG_SYSTEM,
-                        true /* shouldBeShown */, "System wallpaper is hidden on home screen");
+                        true /* shouldBeShown */, "System wallpaper should be shown on home screen");
 
                 // Shared wallpaper
                 WallpaperManagerTestUtils.goToState(
                         mWallpaperManager, WallpaperState.LIVE_SAME_SINGLE);
                 assertWallpaperIsShown(wallpaperWindowsHelper, FLAG_SYSTEM | FLAG_LOCK,
-                        true /* shouldBeShown */, "Shared wallpaper is hidden on home screen");
+                        true /* shouldBeShown */, "Shared wallpaper should be shown on home screen");
             });
         }
     }
@@ -1540,15 +1540,15 @@ public class WallpaperManagerTest {
                 lockScreenSession.gotoKeyguard();
                 assertWallpaperIsShown(wallpaperWindowsHelper, FLAG_SYSTEM,
                         false /* shouldBeShown */,
-                        "System wallpaper is showing on lock screen");
+                        "System wallpaper should be hidden on lock screen");
                 assertWallpaperIsShown(wallpaperWindowsHelper, FLAG_LOCK, true /* shouldBeShown */,
-                        "Lock wallpaper is hidden on lock screen");
+                        "Lock wallpaper should be shown on lock screen");
 
                 // Shared wallpaper
                 WallpaperManagerTestUtils.goToState(
                         mWallpaperManager, WallpaperState.LIVE_SAME_SINGLE);
                 assertWallpaperIsShown(wallpaperWindowsHelper, FLAG_SYSTEM | FLAG_LOCK,
-                        true /* shouldBeShown */, "Shared wallpaper is hidden on lock screen");
+                        true /* shouldBeShown */, "Shared wallpaper should be shown on lock screen");
             });
         }
     }
