@@ -70,8 +70,8 @@ public class ScreenCaptureTest extends WindowManagerTestBase {
             })
     @Test
     public void capture_success() throws Exception {
-        SynchronousReceiver receiver = new SynchronousReceiver();
         Rect contentBounds = new Rect();
+        Bitmap[] bitmap = {null};
 
         SystemUtil.runWithShellPermissionIdentity(
                 () -> {
@@ -79,16 +79,16 @@ public class ScreenCaptureTest extends WindowManagerTestBase {
                     ScreenCaptureParams params =
                             new ScreenCaptureParams.Builder(Display.DEFAULT_DISPLAY).build();
                     Executor executor = runnable -> runnable.run();
+                    SynchronousReceiver receiver = new SynchronousReceiver();
                     ScreenCapture.capture(params, executor, receiver);
+                    ScreenCaptureResult result = receiver.waitForResult();
+                    bitmap[0] = makeSoftwareBitmap(result);
                 });
-
-        ScreenCaptureResult result = receiver.waitForResult();
-        Bitmap bitmap = makeSoftwareBitmap(result);
 
         int expectedMatchingPixels = contentBounds.width() * contentBounds.height();
         int actualMatchingPixels =
                 new BitmapPixelChecker(Color.RED, contentBounds)
-                        .getNumMatchingPixels(bitmap, contentBounds);
+                        .getNumMatchingPixels(bitmap[0], contentBounds);
         assertEquals(expectedMatchingPixels, actualMatchingPixels);
     }
 
@@ -122,8 +122,8 @@ public class ScreenCaptureTest extends WindowManagerTestBase {
     public void capture_CaptureModeOptimizedSucceeds() throws Exception {
         assumeTrue(ScreenCapture.isScreenCaptureOptimizationEnabled());
 
-        SynchronousReceiver receiver = new SynchronousReceiver();
         Rect contentBounds = new Rect();
+        Bitmap[] bitmap = {null};
 
         SystemUtil.runWithShellPermissionIdentity(
                 () -> {
@@ -134,16 +134,16 @@ public class ScreenCaptureTest extends WindowManagerTestBase {
                                             ScreenCaptureParams.CAPTURE_MODE_REQUIRE_OPTIMIZED)
                                     .build();
                     Executor executor = runnable -> runnable.run();
+                    SynchronousReceiver receiver = new SynchronousReceiver();
                     ScreenCapture.capture(params, executor, receiver);
+                    ScreenCaptureResult result = receiver.waitForResult();
+                    bitmap[0] = makeSoftwareBitmap(result);
                 });
-
-        ScreenCaptureResult result = receiver.waitForResult();
-        Bitmap bitmap = makeSoftwareBitmap(result);
 
         int expectedMatchingPixels = contentBounds.width() * contentBounds.height();
         int actualMatchingPixels =
                 new BitmapPixelChecker(Color.RED, contentBounds)
-                        .getNumMatchingPixels(bitmap, contentBounds);
+                        .getNumMatchingPixels(bitmap[0], contentBounds);
         assertEquals(expectedMatchingPixels, actualMatchingPixels);
     }
 
@@ -156,7 +156,7 @@ public class ScreenCaptureTest extends WindowManagerTestBase {
             })
     @Test
     public void capture_CaptureModeOptimizedFailsOnSecureWindow() throws Exception {
-        SynchronousReceiver receiver = new SynchronousReceiver();
+        Exception[] exception = {null};
 
         SystemUtil.runWithShellPermissionIdentity(
                 () -> {
@@ -168,10 +168,12 @@ public class ScreenCaptureTest extends WindowManagerTestBase {
                                             ScreenCaptureParams.CAPTURE_MODE_REQUIRE_OPTIMIZED)
                                     .build();
                     Executor executor = runnable -> runnable.run();
+                    SynchronousReceiver receiver = new SynchronousReceiver();
                     ScreenCapture.capture(params, executor, receiver);
+                    exception[0] = receiver.waitForError();
                 });
 
-        assertThat(receiver.waitForError(), instanceOf(IllegalStateException.class));
+        assertThat(exception[0], instanceOf(IllegalStateException.class));
     }
 
     @RequiresFlagsEnabled(FLAG_READBACK_SCREENSHOT)
@@ -182,8 +184,8 @@ public class ScreenCaptureTest extends WindowManagerTestBase {
             })
     @Test
     public void capture_CaptureModeDefaultRedactsSecure() throws Exception {
-        SynchronousReceiver receiver = new SynchronousReceiver();
         Rect contentBounds = new Rect();
+        Bitmap[] bitmap = {null};
 
         SystemUtil.runWithShellPermissionIdentity(
                 () -> {
@@ -191,16 +193,16 @@ public class ScreenCaptureTest extends WindowManagerTestBase {
                     ScreenCaptureParams params =
                             new ScreenCaptureParams.Builder(Display.DEFAULT_DISPLAY).build();
                     Executor executor = runnable -> runnable.run();
+                    SynchronousReceiver receiver = new SynchronousReceiver();
                     ScreenCapture.capture(params, executor, receiver);
+                    ScreenCaptureResult result = receiver.waitForResult();
+                    bitmap[0] = makeSoftwareBitmap(result);
                 });
-
-        ScreenCaptureResult result = receiver.waitForResult();
-        Bitmap bitmap = makeSoftwareBitmap(result);
 
         int expectedMatchingPixels = contentBounds.width() * contentBounds.height();
         int actualMatchingPixels =
                 new BitmapPixelChecker(Color.BLACK, contentBounds)
-                        .getNumMatchingPixels(bitmap, contentBounds);
+                        .getNumMatchingPixels(bitmap[0], contentBounds);
         assertEquals(expectedMatchingPixels, actualMatchingPixels);
     }
 
