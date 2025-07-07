@@ -248,10 +248,8 @@ public class ConferenceTest extends BaseTelecomTestWithMockServices {
         mConferenceObject.setVideoState(mConnection1, VideoProfile.STATE_BIDIRECTIONAL);
         assertVideoState(conf, VideoProfile.STATE_BIDIRECTIONAL);
 
-        // Dialing state is unsupported for conference calls. so, the state remains active.
         mConferenceObject.setDialing();
-        // just assert call state is not dialing, the state remains as previous one.
-        assertTrue(conf.getState() != Call.STATE_DIALING);
+        assertCallState(conf, Call.STATE_DIALING);
 
         mConferenceObject.setRinging();
         assertCallState(conf, Call.STATE_RINGING);
