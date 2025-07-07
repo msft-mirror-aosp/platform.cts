@@ -16,15 +16,19 @@
 
 package android.server.wm.display;
 
+import static android.view.Display.DEFAULT_DISPLAY;
 import static android.view.WindowManager.LayoutParams.TYPE_PRIVATE_PRESENTATION;
 
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.app.ActivityOptions;
 import android.content.Intent;
+import android.content.res.Resources;
+import android.hardware.display.DisplayManager;
 import android.os.Bundle;
 import android.platform.test.annotations.Presubmit;
 import android.platform.test.annotations.RequiresFlagsDisabled;
@@ -115,7 +119,8 @@ public class PresentationTest extends MultiDisplayTestBase {
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_PRESENTATION_FOR_CONNECTED_DISPLAYS)
     @Test
     public void testPresentationBlockedOverHostActivity() {
-        final WindowManagerState.DisplayContent displayForActivity = createDisplayForActivity();
+        final WindowManagerState.DisplayContent displayForActivity =
+                createPresentationDisplayForActivity();
         launchPresentationActivity(displayForActivity.mId, displayForActivity.mId);
         waitAndAssertNoPresentationDisplayed();
     }
@@ -138,19 +143,35 @@ public class PresentationTest extends MultiDisplayTestBase {
     }
 
     /**
-     * Asserts that a presentation is allowed even on a non-presentation display as long as the
-     * activity that's created the presentation is globally focused on another display.
+     * Asserts that a presentation is blocked on an internal display if the config overlay is
+     * disabled.
      */
     @ApiTest(apis = {"android.app.Presentation#show"})
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_PRESENTATION_FOR_CONNECTED_DISPLAYS)
     @Test
-    public void
-            testPresentationAllowedOnNonPresentationDisplayWithFocusedHostTaskOnAnotherDisplay() {
+    public void testPresentationDisallowedOnInternalWithConfigFlagDisabled() {
+        assumeDefaultDisplayIsInternal();
+        assumeFalse(getAllowPresentationOnInternalDisplay());
+
         final WindowManagerState.DisplayContent displayForActivity = createDisplayForActivity();
-        final WindowManagerState.DisplayContent nonPresentationDisplay =
-                createNonPresentationDisplay();
-        launchPresentationActivity(displayForActivity.mId, nonPresentationDisplay.mId);
-        waitAndAssertPesentationOnDisplayAndMatchesDisplayMetrics(nonPresentationDisplay.mId);
+        launchPresentationActivity(displayForActivity.mId, DEFAULT_DISPLAY);
+        waitAndAssertNoPresentationDisplayed();
+    }
+
+    /**
+     * Asserts that a presentation is allowed even on an internal display as long as the activity
+     * that's created the presentation is globally focused on another display.
+     */
+    @ApiTest(apis = {"android.app.Presentation#show"})
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_PRESENTATION_FOR_CONNECTED_DISPLAYS)
+    @Test
+    public void testPresentationAllowedOnInternalDisplayWithFocusedHostTaskOnAnotherDisplay() {
+        assumeDefaultDisplayIsInternal();
+        assumeTrue(getAllowPresentationOnInternalDisplay());
+
+        final WindowManagerState.DisplayContent displayForActivity = createDisplayForActivity();
+        launchPresentationActivity(displayForActivity.mId, DEFAULT_DISPLAY);
+        waitAndAssertPesentationOnDisplayAndMatchesDisplayMetrics(DEFAULT_DISPLAY);
     }
 
     /** Asserts that a presentation isn't dismissed with display resize. */
@@ -263,6 +284,14 @@ public class PresentationTest extends MultiDisplayTestBase {
                 true /* isPublic */);
     }
 
+    private WindowManagerState.DisplayContent createPresentationDisplayForActivity() {
+        return createDisplay(
+                true /* isSimulated */,
+                true /* isPresentation */,
+                true /* resizeDisplay */,
+                true /* isPublic */);
+    }
+
     private WindowManagerState.DisplayContent createPresentationDisplay() {
         return createDisplay(
                 false /* isSimulated */,
@@ -320,5 +349,21 @@ public class PresentationTest extends MultiDisplayTestBase {
                 Components.PRESENTATION_ACTIVITY,
                 displayIdForActivity,
                 "Launched activity must be on top");
+    }
+
+    private boolean getAllowPresentationOnInternalDisplay() {
+        return mContext.getResources()
+                .getBoolean(
+                        Resources.getSystem()
+                                .getIdentifier(
+                                        "config_allowPresentationOnInternalDisplay",
+                                        "bool",
+                                        "android"));
+    }
+
+    private void assumeDefaultDisplayIsInternal() {
+        final DisplayManager displayManager = mContext.getSystemService(DisplayManager.class);
+        final Display defaultDisplay = displayManager.getDisplay(DEFAULT_DISPLAY);
+        assumeTrue(defaultDisplay.isInternal());
     }
 }
