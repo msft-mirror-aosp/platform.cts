@@ -43,10 +43,13 @@ import com.android.compatibility.common.util.SystemUtil;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.Arrays;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 @AppModeFull(reason = "Instant apps cannot provide or host app widgets")
 public class RequestPinAppWidgetTest extends AppWidgetTestCase {
@@ -56,6 +59,7 @@ public class RequestPinAppWidgetTest extends AppWidgetTestCase {
     private static final String APPBAL_PACKAGE = "android.appwidget.cts.appbal";
 
     private String mDefaultLauncher;
+    private ExecutorService mWaitExecutor = Executors.newSingleThreadExecutor();
 
     protected WindowManagerStateHelper mWmState = new WindowManagerStateHelper();
 
@@ -67,7 +71,8 @@ public class RequestPinAppWidgetTest extends AppWidgetTestCase {
     @After
     public void tearDown() throws Exception {
         // Set the launcher back
-        setLauncher(mDefaultLauncher);
+        setLauncher(mDefaultLauncher, /* waitForLauncher= */ false);
+        mWaitExecutor.shutdownNow();
 
         // Close the activities opened in the test.
         SystemUtil.runWithShellPermissionIdentity(
@@ -94,8 +99,10 @@ public class RequestPinAppWidgetTest extends AppWidgetTestCase {
         PendingIntent pinResult = PendingIntent.getBroadcast(context, 0,
                 new Intent(ACTION_PIN_RESULT).setPackage(context.getPackageName()),
                 PendingIntent.FLAG_ONE_SHOT | PendingIntent.FLAG_MUTABLE);
-        AppWidgetManager.getInstance(context).requestPinAppWidget(
-                getFirstWidgetComponent(), extras, pinResult);
+        assertTrue(
+                "requestPinAppWidget returned false",
+                AppWidgetManager.getInstance(context)
+                        .requestPinAppWidget(getFirstWidgetComponent(), extras, pinResult));
 
         setupReceiver.await();
         // Verify that the confirmation dialog was opened
@@ -124,13 +131,11 @@ public class RequestPinAppWidgetTest extends AppWidgetTestCase {
         assertEquals("dummy-2", resultReceiver.result.getStringExtra("dummy"));
     }
 
-    //@Ignore("b/265187199")
     @Test
     public void testPinWidget_launcher1() throws Exception {
         runPinWidgetTest("android.appwidget.cts.packages.launcher1");
     }
 
-    @Ignore("b/265187199")
     @Test
     public void testPinWidget_launcher2() throws Exception {
         runPinWidgetTest("android.appwidget.cts.packages.launcher2");
@@ -146,19 +151,16 @@ public class RequestPinAppWidgetTest extends AppWidgetTestCase {
                 AppWidgetManager.getInstance(context).isRequestPinAppWidgetSupported());
     }
 
-    @Ignore("b/265187199")
     @Test
     public void testIsRequestPinAppWidgetSupported_launcher1() throws Exception {
         verifyIsRequestPinAppWidgetSupported("android.appwidget.cts.packages.launcher1", true);
     }
 
-    @Ignore("b/265187199")
     @Test
     public void testIsRequestPinAppWidgetSupported_launcher2() throws Exception {
         verifyIsRequestPinAppWidgetSupported("android.appwidget.cts.packages.launcher2", true);
     }
 
-    @Ignore("b/265187199")
     @Test
     public void testIsRequestPinAppWidgetSupported_launcher3() throws Exception {
         verifyIsRequestPinAppWidgetSupported("android.appwidget.cts.packages.launcher3", false);
@@ -176,11 +178,40 @@ public class RequestPinAppWidgetTest extends AppWidgetTestCase {
         throw new Exception("Default launcher not found");
     }
 
-    private void setLauncher(String component) throws Exception {
+    private void setLauncher(String component, boolean waitForLauncher) throws Exception {
         Log.i("BalActivity", "cmd package set-home-activity --user "
                 + getInstrumentation().getContext().getUserId() + " " + component);
         runShellCommand("cmd package set-home-activity --user "
                 + getInstrumentation().getContext().getUserId() + " " + component);
+        if (waitForLauncher) {
+            waitForLauncher(component);
+        }
+    }
+
+    private void setLauncher(String component) throws Exception {
+        setLauncher(component, /* waitForLauncher= */ true);
+    }
+
+    /**
+     * Poll for the launcher to match the specified component, timeout after 60s.
+     */
+    private void waitForLauncher(String component) {
+        Future<?> waitFuture = mWaitExecutor.submit(() -> {
+            // Poll until the default launcher is updated in shortcut service.
+            while (true) {
+                try {
+                    if (getDefaultLauncher().equals(component)) break;
+                    Thread.sleep(25);
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        });
+        try {
+            waitFuture.get(60, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            throw new RuntimeException("Error while waiting for launcher to be: " + component, e);
+        }
     }
 
     @Test
