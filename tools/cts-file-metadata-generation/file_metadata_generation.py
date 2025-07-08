@@ -56,10 +56,17 @@ def _get_args():
 
 def _get_module_name(file_path: str, top_directory: str) -> str:
     """Gets the module of the given file."""
-    # The module name is the first directory in the file path. For example,
-    # "android-cts/testcases/CtsAccessibilityTestCases/arm64/xxx.apk" belongs to the module
-    # "CtsAccessibilityTestCases".
-    return file_path.removeprefix(top_directory + '/').split('/')[0]
+    relative_file_path = file_path.removeprefix(top_directory + '/')
+    if '/' in relative_file_path:
+        # Case1: The file is under a module directory. For example,
+        # "android-cts/testcases/CtsAccessibilityTestCases/arm64/xxx.apk" belongs to the module
+        # "CtsAccessibilityTestCases".
+        return relative_file_path.split('/')[0]
+    else:
+        # Case2: The file doesn't belong to any module directory. For example,
+        # "android-cts/testcases/CtsAccessibilityTestCases.apk" belongs to the module
+        # CtsAccessibilityTestCases.
+        return _get_base_file_name(relative_file_path)
 
 
 def _get_base_file_name(file_name: str) -> str:
@@ -101,17 +108,17 @@ def _handle_config_file(metadata: metadata_pb2.FileMetadata, file_path: str) -> 
     sim_card_token = _get_values(root, 'option', {'key': 'token'}, 'value')
     runners = _get_values(root, 'test', {}, 'class')
     parameters = _get_values(root, 'option', {'key': 'parameter'}, 'value')
+    target_preparers = _get_values(root, 'target_preparer', {}, 'class')
     mainline_modules = set()
     for element in root.findall('object'):
-        mainline_modules = mainline_modules.union([
-            value
-            for value in _get_values(
+        mainline_modules = mainline_modules.union(
+            _get_values(
                 element,
                 'option',
                 {'name': 'mainline-module-package-name'},
                 'value',
             )
-        ])
+        )
 
 
     assert len(component) == 1 and len(sim_card_token) <= 1 and runners
@@ -122,6 +129,7 @@ def _handle_config_file(metadata: metadata_pb2.FileMetadata, file_path: str) -> 
         sim_card_token=sim_card_token[0] if sim_card_token else None,
         mainline_module_package_name=list(mainline_modules),
         parameter=parameters,
+        target_preparer=target_preparers,
     ))
 
 
