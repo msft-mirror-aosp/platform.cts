@@ -28,6 +28,7 @@ import static org.junit.Assert.assertNull;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.provider.Settings;
 import android.util.Log;
 
 import androidx.test.runner.AndroidJUnit4;
@@ -105,14 +106,19 @@ public class DeviceTest {
     }
 
     private void launchTapjackedActivity() {
-        Intent intent = new Intent();
-        intent.setAction("android.settings.action.MANAGE_WRITE_SETTINGS");
-        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
+        Intent intent = getActivityIntent();
         mContext.startActivity(intent);
 
         UiObject2 activityInstance = waitForView(By.pkg("com.android.car.settings").depth(0));
         assertNotNull("Activity under-test was not launched or found!", activityInstance);
         Log.d(LOG_TAG, "Started Activity under-test.");
+    }
+
+    private Intent getActivityIntent() {
+        Intent intent = new Intent();
+        intent.setAction(Settings.ACTION_MANAGE_WRITE_SETTINGS);
+        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
+        return intent;
     }
 
     private UiObject2 waitForView(BySelector selector) {
