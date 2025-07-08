@@ -36,7 +36,11 @@ import androidx.test.runner.AndroidJUnit4;
 
 import com.android.compatibility.common.util.FeatureUtil;
 import com.android.compatibility.common.util.SystemUtil;
+import com.android.compatibility.common.util.CtsDownstreamingTest;
 import com.android.graphics.surfaceflinger.flags.Flags;
+
+import com.android.bedstead.harrier.annotations.RequireSdkVersion;
+import com.android.bedstead.harrier.BedsteadJUnit4;
 
 import org.junit.After;
 import org.junit.Before;
@@ -47,7 +51,8 @@ import org.junit.runner.RunWith;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-@RunWith(AndroidJUnit4.class)
+@RunWith(BedsteadJUnit4.class)
+@RequireSdkVersion(min = 36)
 public class SurfaceFlingerTest {
 
     @Rule
@@ -91,12 +96,14 @@ public class SurfaceFlingerTest {
 
     /** Test that synthetic vsync is not enabled while the default display is ON. */
     @Test
+    @CtsDownstreamingTest
     public void defaultDisplayOn_syntheticVsyncDisabled() {
         assertSyntheticVsyncDisabled();
     }
 
     /** Test that synthetic vsync is enabled while the default display is OFF. */
     @Test
+    @CtsDownstreamingTest
     public void defaultDisplayOff_syntheticVsyncEnabled() {
         UiDeviceUtils.pressSleepButton();
         assertSyntheticVsyncEnabled();
@@ -105,6 +112,7 @@ public class SurfaceFlingerTest {
     /** Test that synthetic vsync is not enabled while the virtual display is ON. */
     @RequiresFlagsEnabled(Flags.FLAG_DISABLE_SYNTHETIC_VSYNC_FOR_PERFORMANCE)
     @Test
+    @CtsDownstreamingTest
     public void virtualDisplayOn_syntheticVsyncDisabled() {
         mVirtualDeviceRule.createManagedVirtualDisplay(
                 mVirtualDeviceRule.createManagedVirtualDevice(),
@@ -121,6 +129,7 @@ public class SurfaceFlingerTest {
         android.companion.virtualdevice.flags.Flags.FLAG_DEVICE_AWARE_DISPLAY_POWER
     })
     @Test
+    @CtsDownstreamingTest
     public void virtualDisplayOff_syntheticVsyncEnabled() {
         VirtualDeviceManager.VirtualDevice virtualDevice =
                 mVirtualDeviceRule.createManagedVirtualDevice();
