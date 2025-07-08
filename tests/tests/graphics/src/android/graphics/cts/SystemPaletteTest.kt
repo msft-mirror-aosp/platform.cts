@@ -28,6 +28,7 @@ import android.graphics.Paint
 import android.graphics.Typeface
 import android.graphics.cts.utils.Material2021SpecMatcher
 import android.os.Environment
+import android.os.UserManager
 import android.platform.test.annotations.DisabledOnRavenwood
 import android.provider.Settings
 import androidx.annotation.ColorInt
@@ -77,6 +78,13 @@ class SystemPaletteTest(
     private val mode: String,
 ) {
     val mContext: Context = getInstrumentation().targetContext
+
+    val isSupportedDevice =!(
+        FeatureUtil.isTV() ||
+        FeatureUtil.isWatch() ||
+        FeatureUtil.isAutomotive() ||
+        /* TODO:b/362682063 - Remove this once the bug is fixed */
+        UserManager.isHeadlessSystemUserMode())
 
     val isOldSpec: Boolean =
         mContext.resources.getIdentifier("system_primary_dim_light", "color", "android") == 0
@@ -205,7 +213,7 @@ class SystemPaletteTest(
     @Test
     @CddTest(requirements = ["3.8.6/C-1-4,C-1-5,C-1-6"])
     fun testSystemPalette() {
-        assumeTrue(!FeatureUtil.isWatch())
+        assumeTrue(isSupportedDevice)
 
         val goldenName = "Palette_${mode}_${color}_$style".replace("#", "")
 
