@@ -24,12 +24,15 @@ import android.os.IBinder;
 import android.os.TelephonyServiceManager;
 import android.os.TelephonyServiceManager.ServiceRegisterer;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
 import androidx.test.runner.AndroidJUnit4;
 
 import com.android.internal.telephony.flags.Flags;
 
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -37,6 +40,9 @@ import org.junit.runner.RunWith;
 @RunWith(AndroidJUnit4.class)
 @RequiresFlagsEnabled(Flags.FLAG_ENABLE_PHONE_NUMBER_PARSING_API)
 public class TelephonyServiceManagerTest {
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private static final String NAMESPACE_TELEPHONY = "telephony";
     private static final String FLAG_ENABLE_PHONE_NUMBER_PARSING_API =
