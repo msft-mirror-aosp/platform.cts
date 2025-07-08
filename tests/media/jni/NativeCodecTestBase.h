@@ -20,10 +20,14 @@
 #include <media/NdkMediaCodec.h>
 #include <zlib.h>
 
+#include <algorithm>
 #include <cmath>
+#include <condition_variable>
 #include <cstdint>
 #include <list>
+#include <memory>
 #include <mutex>
+#include <string>
 #include <vector>
 
 #include "NativeMediaCommon.h"

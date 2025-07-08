@@ -14,12 +14,14 @@
  * limitations under the License.
  */
 
+#include <android/log.h>
+#include <vulkan/vulkan.h>
+
+#include <cstdlib>
 #include <cstring>
 #include <string>
 
 #include "vk_layer_interface.h"
-#include <android/log.h>
-#include <vulkan/vulkan.h>
 
 #define xstr(a) str(a)
 #define str(a) #a

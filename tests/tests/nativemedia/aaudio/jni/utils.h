@@ -27,6 +27,7 @@
 #include <atomic>
 #include <map>
 #include <mutex>
+#include <set>
 #include <unordered_set>
 
 #include "test_aaudio.h" // NANOS_PER_MILLISECOND

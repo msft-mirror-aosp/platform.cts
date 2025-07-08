@@ -18,11 +18,13 @@
 
 #define LOG_TAG "SeccompTest"
 
-#include <functional>
 #include <android/log.h>
-#include <unistd.h>
+#include <stdlib.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <unistd.h>
+
+#include <functional>
 
 #define ALOG(priority, tag, ...) ((void)__android_log_print(ANDROID_##priority, tag, __VA_ARGS__))
 
