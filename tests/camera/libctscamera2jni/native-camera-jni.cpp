@@ -3589,8 +3589,17 @@ bool nativeCameraDeviceTestPrepareSurface(
         }
         // Wait for some time - we should've gotten onWindowPrepared callbacks for all the
         // ANativeWindows.
-        usleep(200000);
-        if (!testCase.gotAllPreparedCallbacksWithErrorLog()) {
+        bool gotPreparedCallbacks = false;
+        const int kMaxWaitIterations = 5;
+        const int kPrepareSleepTimeUs = 100'000;
+        for (int i = 0; i < kMaxWaitIterations; i++) {
+            usleep(kPrepareSleepTimeUs);
+            if (testCase.gotAllPreparedCallbacksWithErrorLog()) {
+                gotPreparedCallbacks = true;
+                break;
+            }
+        }
+        if (!gotPreparedCallbacks) {
             goto cleanup;
         }
         std::vector<ACameraOutputTarget* > readerOutputs = {readerOutput};
