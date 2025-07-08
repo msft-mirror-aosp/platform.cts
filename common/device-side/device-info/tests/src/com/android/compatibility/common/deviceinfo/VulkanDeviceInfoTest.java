@@ -13,8 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-package com.android.cts.deviceinfo;
+package com.android.compatibility.common.deviceinfo;
 
 import org.junit.Test;
 import static org.junit.Assert.assertTrue;
@@ -58,7 +57,7 @@ public class VulkanDeviceInfoTest {
         NoSuchMethodException, InvocationTargetException {
 
         // Getting hold of the vulkanDeviceInfoUtils class
-        Class vulkanDeviceInfoUtilsClass = Class.forName("com.android.cts.deviceinfo.VulkanDeviceInfoUtils");
+        Class vulkanDeviceInfoUtilsClass = Class.forName("com.android.compatibility.common.deviceinfo.VulkanDeviceInfoUtils");
 
         // Store the member variables of VulkanDeviceInfo class
         Field[] fields = vulkanDeviceInfoUtilsClass.getDeclaredFields();
