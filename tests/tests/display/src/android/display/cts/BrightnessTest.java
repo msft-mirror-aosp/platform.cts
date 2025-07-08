@@ -78,6 +78,7 @@ import java.util.function.Predicate;
 @MediumTest
 @RunWith(JUnitParamsRunner.class)
 public class BrightnessTest extends TestBase {
+    private static final float PERCENTAGE_DELTA = 0.05f;
 
     private Map<Long, BrightnessChangeEvent> mLastReadEvents = new HashMap<>();
     private DisplayManager mDisplayManager;
@@ -473,7 +474,7 @@ public class BrightnessTest extends TestBase {
             float actualBrightness =
                     mDisplayManager.getBrightness(
                             Display.DEFAULT_DISPLAY, DisplayManager.BRIGHTNESS_UNIT_PERCENTAGE);
-            assertEquals(actualBrightness, brightness, /* delta= */ 0.05);
+            assertEquals(actualBrightness, brightness, /* delta= */ PERCENTAGE_DELTA);
         }
     }
 
@@ -498,10 +499,11 @@ public class BrightnessTest extends TestBase {
 
                         @Override
                         public void onDisplayChanged(int displayId) {
-                            if (mDisplayManager.getBrightness(
+                            float newBrightness =
+                                    mDisplayManager.getBrightness(
                                             Display.DEFAULT_DISPLAY,
-                                            DisplayManager.BRIGHTNESS_UNIT_PERCENTAGE)
-                                    == brightness) {
+                                            DisplayManager.BRIGHTNESS_UNIT_PERCENTAGE);
+                            if (Math.abs(newBrightness - brightness) < PERCENTAGE_DELTA) {
                                 signal.countDown();
                             }
                         }
