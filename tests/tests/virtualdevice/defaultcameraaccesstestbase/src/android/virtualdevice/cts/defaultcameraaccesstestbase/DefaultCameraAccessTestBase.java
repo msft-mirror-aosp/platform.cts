@@ -24,11 +24,14 @@ import static org.junit.Assume.assumeNotNull;
 
 import android.app.Activity;
 import android.companion.virtual.VirtualDeviceManager.VirtualDevice;
+import android.graphics.ImageFormat;
 import android.hardware.camera2.CameraAccessException;
+import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CameraManager;
 import android.hardware.display.DisplayManager;
 import android.hardware.display.VirtualDisplay;
+import android.media.ImageReader;
 import android.os.ConditionVariable;
 import android.virtualdevice.cts.common.VirtualDeviceRule;
 
@@ -38,6 +41,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import org.junit.Rule;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -87,10 +91,31 @@ public abstract class DefaultCameraAccessTestBase {
         final CameraManager cameraManager = activity.getSystemService(CameraManager.class);
         final int[] cameraError = {NO_ERROR};
         final List<CameraDevice> cameraDevices = new ArrayList<>();
+
         final CameraDevice.StateCallback cameraCallback = new CameraDevice.StateCallback() {
             @Override
             public void onOpened(@NonNull CameraDevice cameraDevice) {
                 cameraDevices.add(cameraDevice);
+                final ImageReader imageReader = ImageReader.newInstance(640, 480,
+                        ImageFormat.JPEG, 1);
+                try {
+                    cameraDevice.createCaptureSession(
+                            Collections.singletonList(imageReader.getSurface()),
+                            new CameraCaptureSession.StateCallback() {
+                                @Override
+                                public void onConfigured(@NonNull CameraCaptureSession session) {}
+
+                                @Override
+                                public void onConfigureFailed(
+                                        @NonNull CameraCaptureSession session) {}
+                            }, null);
+                    cond.open();
+                } catch (CameraAccessException e) {
+                    cameraError[0] = e.getReason();
+                    cond.open();
+                } finally {
+                    imageReader.close();
+                }
             }
 
             @Override
@@ -110,7 +135,7 @@ public abstract class DefaultCameraAccessTestBase {
             try {
                 cameraManager.openCamera(cameraId, cameraCallback, null);
             } catch (CameraAccessException e) {
-                cameraError[0] = CameraDevice.StateCallback.ERROR_CAMERA_DISABLED;
+                cameraError[0] = e.getReason();
             }
         });
         cond.block(TIMEOUT_MILLIS);
