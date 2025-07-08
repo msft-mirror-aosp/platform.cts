@@ -65,26 +65,25 @@ public class NfcTestActivity extends PassFailButtons.TestListActivity {
             }
         }
 
-        if (getPackageManager().hasSystemFeature(PackageManager.FEATURE_NFC_HOST_CARD_EMULATION)) {
+        if (getPackageManager().hasSystemFeature(PackageManager.FEATURE_NFC_HOST_CARD_EMULATION)
+                && Build.VERSION.SDK_INT_FULL > Build.VERSION_CODES_FULL.BAKLAVA) {
             adapter.add(TestListItem.newCategory(this, R.string.nfc_hce));
-            if (Build.VERSION.SDK_INT_FULL > Build.VERSION_CODES_FULL.BAKLAVA) {
-                if (getPackageManager().hasSystemFeature(PackageManager.FEATURE_NFC)) {
-                    adapter.add(
-                            TestListItem.newTest(
-                                    this,
-                                    R.string.nfc_hce_reader_polling_loop_annotations,
-                                    HceReaderPollingLoopTestActivity.class.getName(),
-                                    new Intent(this, HceReaderPollingLoopTestActivity.class),
-                                    null));
-                }
+            if (getPackageManager().hasSystemFeature(PackageManager.FEATURE_NFC)) {
                 adapter.add(
                         TestListItem.newTest(
                                 this,
-                                R.string.nfc_hce_emulator_polling_loop_annotations,
-                                HceEmulatorPollingLoopTestActivity.class.getName(),
-                                new Intent(this, HceEmulatorPollingLoopTestActivity.class),
+                                R.string.nfc_hce_reader_polling_loop_annotations,
+                                HceReaderPollingLoopTestActivity.class.getName(),
+                                new Intent(this, HceReaderPollingLoopTestActivity.class),
                                 null));
             }
+            adapter.add(
+                    TestListItem.newTest(
+                            this,
+                            R.string.nfc_hce_emulator_polling_loop_annotations,
+                            HceEmulatorPollingLoopTestActivity.class.getName(),
+                            new Intent(this, HceEmulatorPollingLoopTestActivity.class),
+                            null));
         }
 
         if (getPackageManager().hasSystemFeature(PackageManager.FEATURE_NFC_HOST_CARD_EMULATION_NFCF)) {
