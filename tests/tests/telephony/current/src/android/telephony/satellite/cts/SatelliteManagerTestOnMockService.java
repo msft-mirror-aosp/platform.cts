@@ -424,7 +424,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_SATELLITE_STATE_CHANGE_LISTENER)
     public void testServiceIsPublicAccessible() {
         if (!shouldTestSatellite()) {
             return;
@@ -435,7 +434,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_SATELLITE_STATE_CHANGE_LISTENER)
     public void testRegisterStateChangeListener_unregisterNotRegistered_noOp() {
         if (!shouldTestSatelliteWithMockService()) {
             return;
@@ -446,7 +444,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_SATELLITE_STATE_CHANGE_LISTENER)
     public void testRegisterStateChangeListener_withReadPhoneStatePermission_noThrows() {
         if (!shouldTestSatelliteWithMockService()) {
             return;
@@ -465,7 +462,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_SATELLITE_STATE_CHANGE_LISTENER)
     public void testStateChangeListener_onRegistration_getNotified() {
         if (!shouldTestSatelliteWithMockService()) {
             return;
@@ -490,7 +486,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_SATELLITE_STATE_CHANGE_LISTENER)
     public void testStateChangeListener_duringRegistration_getNotified() {
         if (!shouldTestSatelliteWithMockService()) {
             return;
@@ -515,7 +510,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_SATELLITE_STATE_CHANGE_LISTENER)
     public void testStateChangeListener_afterRegistration_notNotified() {
         if (!shouldTestSatelliteWithMockService()) {
             return;
