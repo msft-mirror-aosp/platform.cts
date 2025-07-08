@@ -26,6 +26,7 @@ import numpy
 import its_base_test
 import camera_properties_utils
 import capture_request_utils
+import gen2_rig_controller_utils
 import image_processing_utils
 import its_session_utils
 import opencv_processing_utils
@@ -168,17 +169,26 @@ class MultiCameraFrameSyncTest(its_base_test.ItsBaseTest):
     else:
       req['android.lens.focusDistance'] = fd_chart
 
-    # Start camera rotation & sleep shortly to let rotations start
+    # Start camera rotation & wait to let rotations start
+    rotation_rig_args = (
+        rot_rig['cntl'],
+        rot_rig['ch'],
+        _NUM_ROTATIONS,
+        sensor_fusion_utils.ARDUINO_ANGLES_SENSOR_FUSION,
+    )
+    if rot_rig['cntl'] == gen2_rig_controller_utils.DEFAULT_GEN2_ROTATOR_NAME:
+      logging.debug('using gen2 rotator')
+      rotate_func = gen2_rig_controller_utils.rotation_rig_sensor_fusion
+    else:
+      logging.debug('using arduino rotator')
+      rotate_func = sensor_fusion_utils.rotation_rig
+      rotation_rig_args += (
+          sensor_fusion_utils.ARDUINO_SERVO_SPEED_SENSOR_FUSION,
+          sensor_fusion_utils.ARDUINO_MOVE_TIME_SENSOR_FUSION,
+      )
     p = threading.Thread(
-        target=sensor_fusion_utils.rotation_rig,
-        args=(
-            rot_rig['cntl'],
-            rot_rig['ch'],
-            _NUM_ROTATIONS,
-            sensor_fusion_utils.ARDUINO_ANGLES_SENSOR_FUSION,
-            sensor_fusion_utils.ARDUINO_SERVO_SPEED_SENSOR_FUSION,
-            sensor_fusion_utils.ARDUINO_MOVE_TIME_SENSOR_FUSION,
-        ),
+        target=rotate_func,
+        args=rotation_rig_args,
     )
     p.start()
     time.sleep(_ROT_INIT_WAIT_TIME)
