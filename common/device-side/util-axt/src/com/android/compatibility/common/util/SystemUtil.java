@@ -224,7 +224,13 @@ public class SystemUtil {
     }
 
     /**
-     * Runs a {@link ThrowingSupplier} adopting Shell's permissions, and returning the result.
+     * Runs a {@link ThrowingSupplier}, adopting Shell's permissions, and returning the result.
+     *
+     * <p><b>Note:</b> After this method is called, all previously adopted permissions will be
+     * dropped.
+     *
+     * @see UiAutomation#adoptShellPermissionIdentity()
+     * @see UiAutomation#dropShellPermissionIdentity()
      */
     public static <T> T runWithShellPermissionIdentity(@NonNull ThrowingSupplier<T> supplier) {
         final UiAutomation automan = InstrumentationRegistry.getInstrumentation().getUiAutomation();
@@ -234,8 +240,14 @@ public class SystemUtil {
     }
 
     /**
-     * Runs a {@link ThrowingSupplier} adopting a subset of Shell's permissions,
+     * Runs a {@link ThrowingSupplier}, adopting a subset of Shell's permissions,
      * and returning the result.
+     *
+     *<p><b>Note:</b> After this method is called, all previously adopted permissions will be
+     * dropped.
+     *
+     * @see UiAutomation#adoptShellPermissionIdentity(String...)
+     * @see UiAutomation#dropShellPermissionIdentity()
      */
     public static <T> T runWithShellPermissionIdentity(@NonNull ThrowingSupplier<T> supplier,
             String... permissions) {
@@ -246,7 +258,13 @@ public class SystemUtil {
     }
 
     /**
-     * Runs a {@link ThrowingRunnable} adopting Shell's permissions.
+     * Runs a {@link ThrowingRunnable}, adopting Shell's permissions.
+     *
+     * <p><b>Note:</b> After this method is called, all previously adopted permissions will be
+     * dropped.
+     *
+     * @see UiAutomation#adoptShellPermissionIdentity()
+     * @see UiAutomation#dropShellPermissionIdentity()
      */
     public static void runWithShellPermissionIdentity(@NonNull ThrowingRunnable runnable) {
         final UiAutomation automan = InstrumentationRegistry.getInstrumentation().getUiAutomation();
@@ -254,7 +272,10 @@ public class SystemUtil {
     }
 
     /**
-     * Runs a {@link ThrowingRunnable} adopting a subset of Shell's permissions.
+     * Runs a {@link ThrowingRunnable}, adopting a subset of Shell's permissions.
+     *
+     * @see UiAutomation#adoptShellPermissionIdentity(String...)
+     * @see UiAutomation#dropShellPermissionIdentity()
      */
     public static void runWithShellPermissionIdentity(@NonNull ThrowingRunnable runnable,
             String... permissions) {
@@ -263,8 +284,17 @@ public class SystemUtil {
     }
 
     /**
-     * Runs a {@link ThrowingRunnable} adopting Shell's permissions, where you can specify the
+     * Runs a {@link ThrowingRunnable}, adopting Shell's permissions, where you can specify the
      * uiAutomation used.
+     *
+     * <p><b>Note:</b> After this method is called, all previously adopted permissions will be
+     * dropped.
+     *
+     * @param automan UIAutomation to use.
+     * @param runnable The code to run with Shell's identity.
+     *
+     * @see UiAutomation#adoptShellPermissionIdentity()
+     * @see UiAutomation#dropShellPermissionIdentity()
      */
     public static void runWithShellPermissionIdentity(
             @NonNull UiAutomation automan, @NonNull ThrowingRunnable runnable) {
@@ -272,12 +302,19 @@ public class SystemUtil {
     }
 
     /**
-     * Runs a {@link ThrowingRunnable} adopting Shell's permissions, where you can specify the
+     * Runs a {@link ThrowingRunnable}, adopting Shell's permissions, where you can specify the
      * uiAutomation used.
+     *
+     * <p><b>Note:</b> After this method is called, all previously adopted permissions will be
+     * dropped.
+     *
      * @param automan UIAutomation to use.
      * @param runnable The code to run with Shell's identity.
      * @param permissions A subset of Shell's permissions. Passing {@code null} will use all
      *                    available permissions.
+     *
+     * @see UiAutomation#adoptShellPermissionIdentity(String...)
+     * @see UiAutomation#dropShellPermissionIdentity()
      */
     public static void runWithShellPermissionIdentity(@NonNull UiAutomation automan,
             @NonNull ThrowingRunnable runnable, String... permissions) {
@@ -292,7 +329,13 @@ public class SystemUtil {
     }
 
     /**
-     * Calls a {@link Callable} adopting Shell's permissions.
+     * Calls a {@link Callable}, adopting Shell's permissions.
+     *
+     * <p><b>Note:</b> After this method is called, all previously adopted permissions will be
+     * dropped.
+     *
+     * @see UiAutomation#adoptShellPermissionIdentity()
+     * @see UiAutomation#dropShellPermissionIdentity()
      */
     public static <T> T callWithShellPermissionIdentity(@NonNull Callable<T> callable)
             throws Exception {
@@ -306,11 +349,18 @@ public class SystemUtil {
     }
 
     /**
-     * Calls a {@link Callable} adopting Shell's permissions.
+     * Calls a {@link Callable}, adopting Shell's permissions.
+     *
+     * <p><b>Note:</b> After this method is called, all previously adopted permissions will be
+     * dropped.
      *
      * @param callable The code to call with Shell's identity.
      * @param permissions A subset of Shell's permissions. Passing {@code null} will use all
-     *                    available permissions.     */
+     *                    available permissions.
+     *
+     * @see UiAutomation#adoptShellPermissionIdentity(String...)
+     * @see UiAutomation#dropShellPermissionIdentity()
+     */
     public static <T> T callWithShellPermissionIdentity(@NonNull Callable<T> callable,
             String... permissions) throws Exception {
         final UiAutomation automan = InstrumentationRegistry.getInstrumentation().getUiAutomation();
