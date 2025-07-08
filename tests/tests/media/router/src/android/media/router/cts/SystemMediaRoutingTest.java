@@ -146,21 +146,25 @@ public class SystemMediaRoutingTest {
 
     @After
     public void tearDown() {
-        transferAndWaitForSessionUpdate(mSelectedRouteBeforeRunningTheTest);
-
-        // If the service failed to launch in time during setup, mService will be null, in which
-        // case we don't want to NPE here, otherwise the failure will spuriously point to tearDown.
+        // If something went wrong during setUp, some fields might have ended up uninitialized. If a
+        // null pointer exception happens during tearDown, then that's going to spuriously show up
+        // as the cause of the test failure. So we guard against null pointer exceptions here so
+        // that the setUp exception that caused the uninitialized fields gets surfaced instead.
+        if (mSelectedRouteBeforeRunningTheTest != null) {
+            transferAndWaitForSessionUpdate(mSelectedRouteBeforeRunningTheTest);
+        }
         if (mService != null) {
             // We wait for the service provider to be in a clean state before finishing. This
             // ensures a clean state for following test runs.
             waitForCondition(() -> mService.getSelectedRouteOriginalId() == null);
             assertThat(mService.getNoisyBytesCount()).isEqualTo(0);
+            mService = null;
         }
-        mService = null;
-        mSelfProxyRouter.cancelScanRequest(mScanToken);
-
-        waitForCondition(
-                () -> mSelfProxyRouter.getSystemController().getTransferableRoutes().isEmpty());
+        if (mSelfProxyRouter != null && mScanToken != null) {
+            mSelfProxyRouter.cancelScanRequest(mScanToken);
+            waitForCondition(
+                    () -> mSelfProxyRouter.getSystemController().getTransferableRoutes().isEmpty());
+        }
     }
 
     @AfterClass
