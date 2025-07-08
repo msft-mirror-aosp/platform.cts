@@ -44,6 +44,7 @@ import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.provider.Settings;
 import android.server.wm.UiDeviceUtils;
+import android.server.wm.WindowManagerStateHelper;
 import android.util.Log;
 import android.view.Display;
 import android.view.WindowManager;
@@ -339,10 +340,19 @@ public class VirtualDevicePowerTest {
         assertThat(mDisplay.getState()).isEqualTo(Display.STATE_OFF);
         assertThat(mVirtualDisplayPowerManager.isInteractive()).isFalse();
 
+        boolean isKeyguardShowing = WindowManagerStateHelper.isKeyguardShowingAndNotOccluded(
+                mVirtualDeviceRule.getWmState());
         mVirtualDeviceRule.startActivityOnDisplaySync(
                 mDisplay.getDisplayId(), TurnScreenOnActivity.class);
-        verifyNoMoreInteractions(mVirtualDisplayCallback);
-        assertThat(mDisplay.getState()).isEqualTo(Display.STATE_OFF);
+
+        if (isKeyguardShowing) {
+            verifyNoMoreInteractions(mVirtualDisplayCallback);
+            assertThat(mDisplay.getState()).isEqualTo(Display.STATE_OFF);
+        } else {
+            verify(mVirtualDisplayCallback, timeout(CALLBACK_TIMEOUT_MS).times(++resumed))
+                    .onResumed();
+            assertThat(mDisplay.getState()).isEqualTo(Display.STATE_ON);
+        }
     }
 
     @Test
