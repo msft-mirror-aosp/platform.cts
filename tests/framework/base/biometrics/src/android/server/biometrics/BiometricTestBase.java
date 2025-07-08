@@ -126,6 +126,7 @@ abstract class BiometricTestBase implements TestSessionList.Idler {
 
     protected static final String VIEW_ID_PASSWORD_FIELD = "lockPassword";
     protected static final String KEY_ENTER = "key_enter";
+    protected static final String WEAR_KEYPAD_ID_PREFIX = "key_";
     private static final int VIEW_WAIT_TIME_MS = 10000;
     @NonNull
     protected final Instrumentation mInstrumentation = getInstrumentation();
@@ -363,16 +364,29 @@ abstract class BiometricTestBase implements TestSessionList.Idler {
         // TODO(b/152240892)
         Thread.sleep(1000);
 
-        // Enter credential. AuthSession done, authentication callback received
         final UiObject2 passwordField = findView(VIEW_ID_PASSWORD_FIELD);
-        Log.d(TAG, "Focusing, entering, submitting credential");
-        passwordField.click();
-        passwordField.setText(LOCK_CREDENTIAL);
-        if (isCar()) {
-            final UiObject2 enterButton = findView(KEY_ENTER);
-            enterButton.click();
+        // Watch hides the password field, showing a custom view instead
+        if (isWatch() && passwordField == null) {
+            Log.d(TAG, "Entering pin digits");
+            for (int i = 0; i < LOCK_CREDENTIAL.length(); i++) {
+                char c = LOCK_CREDENTIAL.charAt(i);
+                final String keyId = WEAR_KEYPAD_ID_PREFIX + c;
+                final UiObject2 key = findView(keyId);
+                assertNotNull("Could not find PIN pad key: " + keyId, key);
+                key.click();
+            }
         } else {
-            mDevice.pressEnter();
+            // Enter credential. AuthSession done, authentication callback received
+            Log.d(TAG, "Focusing, entering, submitting credential");
+            assertNotNull("Could not find password field", passwordField);
+            passwordField.click();
+            passwordField.setText(LOCK_CREDENTIAL);
+            if (isCar()) {
+                final UiObject2 enterButton = findView(KEY_ENTER);
+                enterButton.click();
+            } else {
+                mDevice.pressEnter();
+            }
         }
         waitForState(STATE_AUTH_IDLE);
 
