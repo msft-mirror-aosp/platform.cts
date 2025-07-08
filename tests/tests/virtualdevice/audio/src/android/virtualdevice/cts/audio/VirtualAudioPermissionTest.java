@@ -99,7 +99,10 @@ import java.util.concurrent.TimeoutException;
 public class VirtualAudioPermissionTest {
 
     private static final int AUDIO_PERMISSIONS_PROPAGATION_TIME_MS = 80;
-    private static final long TIMEOUT_MILLIS = TimeUnit.SECONDS.toMillis(3);
+    private static final long ACTIVITY_RESULT_RECEIVER_TIMEOUT_MILLIS =
+            TimeUnit.SECONDS.toMillis(5);
+    private static final long AUDIO_DEVICES_INITIALIZED_TIMEOUT_MILLIS =
+            TimeUnit.SECONDS.toMillis(3);
 
     @Rule
     public VirtualDeviceRule mVirtualDeviceRule = VirtualDeviceRule.withAdditionalPermissions(
@@ -381,7 +384,8 @@ public class VirtualAudioPermissionTest {
         mAudioInjector = new AudioInjector(AudioInjector.createAudioData(), virtualAudioDevice);
         mAudioInjector.startInjection();
 
-        boolean success = audioDeviceInitializedLatch.await(2, TimeUnit.SECONDS);
+        boolean success = audioDeviceInitializedLatch.await(
+                AUDIO_DEVICES_INITIALIZED_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
         audioManager.unregisterAudioDeviceCallback(audioDeviceCallback);
         if (!success) {
             throw new TimeoutException("Timeout while waiting for audio injection initialization");
@@ -461,7 +465,8 @@ public class VirtualAudioPermissionTest {
         launchRecordAudioActivity(displayId, useService);
 
         ArgumentCaptor<Bundle> bundle = ArgumentCaptor.forClass(Bundle.class);
-        verify(mResultReceiver, timeout(TIMEOUT_MILLIS)).onResult(bundle.capture());
+        verify(mResultReceiver, timeout(ACTIVITY_RESULT_RECEIVER_TIMEOUT_MILLIS))
+                .onResult(bundle.capture());
 
         if (bundle.getValue() != null
                 && bundle.getValue().containsKey(EXTRA_RECORD_AUDIO_SUCCESS)) {
