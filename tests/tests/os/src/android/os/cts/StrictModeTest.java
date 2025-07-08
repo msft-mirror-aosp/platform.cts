@@ -1085,13 +1085,15 @@ public class StrictModeTest extends StrictModeTestBase {
     }
 
     @Presubmit
-    @ApiTest(apis = {
-            "android.app.Service#getSystemService",
-            "android.content.Context#getSystemService",
-            "android.view.ViewConfiguration#get",
-            "android.view.GestureDetector#GestureDetector",
-            "android.app.WallpaperManager#getDesiredMinimumWidth",
-    })
+    @ApiTest(
+            apis = {
+                "android.app.Service#getSystemService",
+                "android.content.Context#getSystemService",
+                "android.view.ViewConfiguration#get",
+                "android.view.GestureDetector#GestureDetector",
+                "android.app.WallpaperManager#getDesiredMinimumWidth",
+            })
+    @AppModeFull(reason = "Instant app cannot use background services")
     @Test
     public void testIncorrectContextUse_Service_ThrowViolation() throws Exception {
         StrictMode.setVmPolicy(
@@ -1133,14 +1135,16 @@ public class StrictModeTest extends StrictModeTestBase {
     }
 
     @Presubmit
-    @ApiTest(apis = {
-            "android.window.WindowProviderService#getSystemService",
-            "android.content.Context#getSystemService",
-            "android.view.ViewConfiguration#get",
-            "android.view.GestureDetector#GestureDetector",
-            "android.app.WallpaperManager#getDesiredMinimumWidth",
-            "android.view.WindowManager#addView",
-    })
+    @ApiTest(
+            apis = {
+                "android.window.WindowProviderService#getSystemService",
+                "android.content.Context#getSystemService",
+                "android.view.ViewConfiguration#get",
+                "android.view.GestureDetector#GestureDetector",
+                "android.app.WallpaperManager#getDesiredMinimumWidth",
+                "android.view.WindowManager#addView",
+            })
+    @AppModeFull(reason = "Instant app cannot use background services")
     @Test
     public void testIncorrectContextUse_WindowProviderService_NoViolation() throws Exception {
         StrictMode.setVmPolicy(
