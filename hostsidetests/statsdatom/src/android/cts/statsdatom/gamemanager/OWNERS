@@ -1,6 +1,2 @@
-# Owners of the GameStateChanged atom
-jimblackler@google.com
-
-# Owners of Game Mode related atoms
-chingtangyu@google.com
-xwxw@google.com
+# Bug component: 878256
+file:platform/frameworks/base:/GAME_MANAGER_OWNERS

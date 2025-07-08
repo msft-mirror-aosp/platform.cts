@@ -1,4 +1,2 @@
-# Owners of ADPF atoms and the CTS test
-chingtangyu@google.com
-mattbuckley@google.com
-xwxw@google.com
+# Bug component: 826709
+file:platform/frameworks/base:/ADPF_OWNERS
