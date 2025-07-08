@@ -18,15 +18,19 @@ package android.backup.cts;
 
 import static com.android.compatibility.common.util.BackupUtils.LOCAL_TRANSPORT_TOKEN;
 
-import androidx.test.runner.AndroidJUnit4;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.SetFlagsRule;
+
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+
+import com.android.server.backup.Flags;
 
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-/**
- * Verifies that key methods are called in expected order during backup / restore.
- */
+/** Verifies that key methods are called in expected order during backup / restore. */
 @RunWith(AndroidJUnit4.class)
 public class FullBackupLifecycleTest extends BaseBackupCtsTest {
 
@@ -35,6 +39,8 @@ public class FullBackupLifecycleTest extends BaseBackupCtsTest {
     private static final int LOCAL_TRANSPORT_CONFORMING_FILE_SIZE = 5 * 1024;
 
     private static final int TIMEOUT_SECONDS = 30;
+
+    @Rule public final SetFlagsRule mSetFlagsRule = new SetFlagsRule();
 
     @Before
     public void setUp() throws Exception {
@@ -54,22 +60,40 @@ public class FullBackupLifecycleTest extends BaseBackupCtsTest {
         // Request backup and wait for it to complete
         getBackupUtils().backupNowSync(BACKUP_APP_NAME);
 
-        waitForLogcat(TIMEOUT_SECONDS,
-            backupSeparator,
-            "onCreate",
-            "Full backup requested",
-            "onDestroy");
+        waitForLogcat(
+                TIMEOUT_SECONDS, backupSeparator, "onCreate", "Full backup requested", "onDestroy");
 
         String restoreSeparator = markLogcat();
 
         // Now request restore and wait for it to complete
         getBackupUtils().restoreSync(LOCAL_TRANSPORT_TOKEN, BACKUP_APP_NAME);
 
-        waitForLogcat(TIMEOUT_SECONDS,
-            restoreSeparator,
-            "onCreate",
-            "onRestoreFile",
-            "onRestoreFinished",
-            "onDestroy");
+        waitForLogcat(
+                TIMEOUT_SECONDS,
+                restoreSeparator,
+                "onCreate",
+                "onRestoreFile",
+                "onRestoreFinished",
+                "onDestroy");
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_CROSS_PLATFORM_TRANSFER)
+    @Test
+    public void testOnMeasureFullBackupCalled() throws Exception {
+        if (!isBackupSupported()) {
+            return;
+        }
+        String separator = markLogcat();
+        // Launch test app and create a small file
+        createTestFileOfSize(BACKUP_APP_NAME, 10);
+
+        // Request backup and wait for onMeasureFullBackup event in logcat
+        getBackupUtils().backupNowSync(BACKUP_APP_NAME);
+        waitForLogcat(
+                TIMEOUT_SECONDS,
+                separator,
+                "Full backup requested",
+                "Full backup requested",
+                "onMeasureFullBackup");
     }
 }

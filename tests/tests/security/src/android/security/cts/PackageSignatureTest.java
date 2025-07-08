@@ -44,7 +44,7 @@ public class PackageSignatureTest extends AndroidTestCase {
 
     private static final String TAG = PackageSignatureTest.class.getSimpleName();
     private static final Pattern TEST_PACKAGE_PATTERN =
-            Pattern.compile("android\\.[^\\.]+\\.cts(\\..*)?");
+            Pattern.compile("(com\\.)?android\\.([^\\.]+\\.)*cts(\\..*)?");
 
     @RestrictedBuildTest
     public void testPackageSignatures() throws Exception {
@@ -203,16 +203,8 @@ public class PackageSignatureTest extends AndroidTestCase {
     }
 
     private static final Set<String> WHITELISTED_PACKAGES = new HashSet<String>(Arrays.asList(
-            // APKS are installed before beigning test
-            "android.netsecpolicy.usescleartext_false.cts",
-            "android.netsecpolicy.usescleartext_unspecified.cts",
-            "android.netsecpolicy.usescleartext_true.cts",
-
             // The accessibility APK required to be installed while running CTS
             "android.accessibilityservice.delegate",
-
-            // The device management APK required to be installed while running CTS
-            "android.deviceadmin.cts",
 
             // APK for an activity that collects information printed in the CTS report header
             "android.tests.devicesetup",
@@ -235,23 +227,7 @@ public class PackageSignatureTest extends AndroidTestCase {
             "android.core.tests.libcore.package.sun",
             "android.core.tests.libcore.package.tests",
             "android.media.audio.app",
-            "android.permission.cts.storageescalation",
-            "com.android.cts.RemoteDPC",
-            "com.android.cts.RemoteDPCV23",
-            "com.android.cts.RemoteDPCV24",
-            "com.android.cts.RemoteDPCV28",
-            "com.android.cts.RemoteDPCV30",
-            "com.android.cts.crossprofilepermissioncontrol",
             "com.android.testutils.connectivitychecker",
-
-            // Test package to verify upgrades to privileged applications
-            "com.android.cts.priv.ctsshim",
-            "com.android.cts.ctsshim",
-            // Test APEX used in CTS tests.
-            "com.android.apex.cts.shim",
-
-            // Oom Catcher package to prevent tests from ooming device.
-            "com.android.cts.oomcatcher",
 
             // Collects device info at the start of the test
             "com.android.compatibility.common.deviceinfo",

@@ -13,12 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-package com.android.cts.deviceinfo;
+package com.android.compatibility.common.deviceinfo;
 
 import com.android.compatibility.common.deviceinfo.DeviceInfo;
 import com.android.compatibility.common.util.DeviceInfoStore;
-import static com.android.cts.deviceinfo.VulkanDeviceInfoUtils.*;
+import static com.android.compatibility.common.deviceinfo.VulkanDeviceInfoUtils.*;
 
 import org.json.JSONArray;
 import org.json.JSONException;

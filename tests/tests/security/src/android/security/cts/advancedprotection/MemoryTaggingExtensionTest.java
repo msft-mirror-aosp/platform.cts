@@ -25,8 +25,6 @@ import static org.junit.Assume.assumeTrue;
 
 import android.app.admin.DevicePolicyManager;
 import android.os.SystemProperties;
-import android.platform.test.annotations.RequiresFlagsEnabled;
-import android.security.Flags;
 
 import androidx.test.runner.AndroidJUnit4;
 
@@ -37,7 +35,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 @RunWith(AndroidJUnit4.class)
-@RequiresFlagsEnabled(Flags.FLAG_AAPM_FEATURE_MEMORY_TAGGING_EXTENSION)
 public class MemoryTaggingExtensionTest extends BaseAdvancedProtectionTest {
     private static final String MTE_CONTROL_PROPERTY = "arm64.memtag.bootctl";
 

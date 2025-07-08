@@ -2752,4 +2752,36 @@ public class SurfaceControlTest {
                 }
         );
     }
+
+    @Test
+    public void testSetPosition_invalidInfinitePosition() {
+        final AtomicBoolean caughtException = new AtomicBoolean(false);
+        verifyTest(
+                new BasicSurfaceHolderCallback() {
+                    @Override
+                    public void surfaceCreated(SurfaceHolder holder) {
+                        SurfaceControl surfaceControl = createFromWindow(holder);
+                        setSolidBuffer(
+                                surfaceControl,
+                                DEFAULT_LAYOUT_WIDTH,
+                                DEFAULT_LAYOUT_HEIGHT,
+                                Color.YELLOW);
+                        try {
+                            new SurfaceControl.Transaction()
+                                    .setPosition(surfaceControl, Float.POSITIVE_INFINITY, 0f)
+                                    .apply();
+                        } catch (IllegalArgumentException e) {
+                            caughtException.set(true);
+                        }
+                    }
+                },
+                new PixelChecker(Color.YELLOW) {
+                    @Override
+                    public boolean checkPixels(int matchingPixelCount, int width, int height) {
+                        // The color does not matter since we are testing for the caught exception
+                        return true;
+                    }
+                });
+        assertTrue("No exception thrown for an infinite position.", caughtException.get());
+    }
 }

@@ -39,20 +39,22 @@ public class FullBackupBackupAgent extends BackupAgent {
     }
 
     @Override
-    public void onBackup(ParcelFileDescriptor oldState, BackupDataOutput data,
-                         ParcelFileDescriptor newState) throws IOException {
+    public void onBackup(
+            ParcelFileDescriptor oldState, BackupDataOutput data, ParcelFileDescriptor newState)
+            throws IOException {
         throw new IllegalStateException("unexpected onBackup");
     }
 
     @Override
-    public void onRestore(BackupDataInput data, int appVersionCode,
-                          ParcelFileDescriptor newState) throws IOException {
+    public void onRestore(BackupDataInput data, int appVersionCode, ParcelFileDescriptor newState)
+            throws IOException {
         throw new IllegalStateException("unexpected onRestore");
     }
 
     @Override
-    public void onRestoreFile(ParcelFileDescriptor data, long size,
-            File destination, int type, long mode, long mtime) throws IOException {
+    public void onRestoreFile(
+            ParcelFileDescriptor data, long size, File destination, int type, long mode, long mtime)
+            throws IOException {
         super.onRestoreFile(data, size, destination, type, mode, mtime);
         Log.d(MainActivity.TAG, "onRestoreFile " + destination);
     }
@@ -61,6 +63,13 @@ public class FullBackupBackupAgent extends BackupAgent {
     public void onFullBackup(FullBackupDataOutput data) throws IOException {
         super.onFullBackup(data);
         Log.d(MainActivity.TAG, "Full backup requested, quota is " + data.getQuota());
+    }
+
+    @Override
+    public long onMeasureFullBackup(long quotaBytes, int transportFlags) throws IOException {
+        long size = super.onMeasureFullBackup(quotaBytes, transportFlags);
+        Log.d(MainActivity.TAG, "onMeasureFullBackup");
+        return size;
     }
 
     @Override
@@ -79,5 +88,4 @@ public class FullBackupBackupAgent extends BackupAgent {
     public void onDestroy() {
         Log.d(MainActivity.TAG, "onDestroy");
     }
-
 }

@@ -499,6 +499,7 @@ public class MediaStore_FilesTest {
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_OEM_METADATA_UPDATE)
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA)
     public void testOemMetadataUpdate_withPermission_updatesOemMetadata() throws Exception {
         InstrumentationRegistry.getInstrumentation()
                 .getUiAutomation()

@@ -2628,24 +2628,6 @@
     <option name="compatibility:include-filter" value="CtsPackageInstallerCUJInstallationTestCases android.packageinstaller.criticaluserjourney.cts.InstallationViaIntentActionViewTest#newInstall_launchGrantPermission_cancelButton_failed"/>
     <option name="compatibility:include-filter" value="CtsPackageInstallerCUJInstallationTestCases android.packageinstaller.criticaluserjourney.cts.InstallationViaIntentActionViewTest#newInstall_launchGrantPermission_installButton_success"/>
     <option name="compatibility:include-filter" value="CtsPackageInstallerCUJInstallationTestCases android.packageinstaller.criticaluserjourney.cts.InstallationViaIntentActionViewTest#newInstall_launchGrantPermission_touchOutside_failed"/>
-    <!-- CtsPackageManagerHostTestCases -->
-    <option name="compatibility:include-filter" value="CtsPackageManagerHostTestCases android.appsecurity.cts.ApplicationVisibilityTest#testApplicationListCrossUserGrant"/>
-    <option name="compatibility:include-filter" value="CtsPackageManagerHostTestCases android.appsecurity.cts.ApplicationVisibilityTest#testApplicationListCrossUserNoGrant"/>
-    <option name="compatibility:include-filter" value="CtsPackageManagerHostTestCases android.appsecurity.cts.ApplicationVisibilityTest#testApplicationListOtherUserCrossUserGrant"/>
-    <option name="compatibility:include-filter" value="CtsPackageManagerHostTestCases android.appsecurity.cts.ApplicationVisibilityTest#testApplicationListOtherUserCrossUserNoGrant"/>
-    <option name="compatibility:include-filter" value="CtsPackageManagerHostTestCases android.appsecurity.cts.ApplicationVisibilityTest#testGetPackageGidsCrossUserGrant"/>
-    <option name="compatibility:include-filter" value="CtsPackageManagerHostTestCases android.appsecurity.cts.MajorVersionTest#testInstallDowngradeAcrossMajorMinorVersion_full"/>
-    <option name="compatibility:include-filter" value="CtsPackageManagerHostTestCases android.appsecurity.cts.MajorVersionTest#testInstallMajorVersion_full"/>
-    <option name="compatibility:include-filter" value="CtsPackageManagerHostTestCases android.appsecurity.cts.MajorVersionTest#testInstallMinorVersion_full"/>
-    <option name="compatibility:include-filter" value="CtsPackageManagerHostTestCases android.appsecurity.cts.MajorVersionTest#testInstallUpdateAcrossMinorMajorVersion_full"/>
-    <option name="compatibility:include-filter" value="CtsPackageManagerHostTestCases android.appsecurity.cts.PackageResolutionHostTest#testResolveOrderedActivity_full"/>
-    <option name="compatibility:include-filter" value="CtsPackageManagerHostTestCases android.appsecurity.cts.PackageResolutionHostTest#testResolveOrderedReceiver_full"/>
-    <option name="compatibility:include-filter" value="CtsPackageManagerHostTestCases android.appsecurity.cts.PackageSetInstallerTest#immutablySoftRestrictedGranted[throwException]"/>
-    <option name="compatibility:include-filter" value="CtsPackageManagerHostTestCases android.appsecurity.cts.PackageVisibilityTest#testUninstalledPackageVisibility_full"/>
-    <option name="compatibility:include-filter" value="CtsPackageManagerHostTestCases android.appsecurity.cts.PrivilegedUpdateTests#testDisableSystemApp"/>
-    <option name="compatibility:include-filter" value="CtsPackageManagerHostTestCases android.appsecurity.cts.PrivilegedUpdateTests#testPrivilegedAppPriorities"/>
-    <option name="compatibility:include-filter" value="CtsPackageManagerHostTestCases android.appsecurity.cts.ReadableSettingsFieldsTest#testQueryGlobalSettingsNoHiddenKeysWithoutAnnotation"/>
-    <option name="compatibility:include-filter" value="CtsPackageManagerHostTestCases android.appsecurity.cts.ReadableSettingsFieldsTest#testQuerySystemSettingsNoHiddenKeysWithoutAnnotation"/>
     <!-- CtsPackageManagerStatsHostTestCases -->
     <option name="compatibility:include-filter" value="CtsPackageManagerStatsHostTestCases com.android.cts.packagemanager.stats.host.ComponentStateChangedReportedStatsTests#testComponentStateChangedReportedEnabledThenDisabled"/>
     <option name="compatibility:include-filter" value="CtsPackageManagerStatsHostTestCases com.android.cts.packagemanager.stats.host.ComponentStateChangedReportedStatsTests#testComponentStateChangedReportedForLauncherActivity"/>

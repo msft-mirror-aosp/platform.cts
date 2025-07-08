@@ -35,7 +35,7 @@ static JNINativeMethod gMethods[] = {
 } // anonymous namespace
 
 int register_com_android_cts_deviceinfo_VulkanDeviceInfo(JNIEnv* env) {
-    jclass clazz = env->FindClass("com/android/cts/deviceinfo/VulkanDeviceInfo");
+    jclass clazz = env->FindClass("com/android/compatibility/common/deviceinfo/VulkanDeviceInfo");
     return env->RegisterNatives(clazz, gMethods,
             sizeof(gMethods) / sizeof(JNINativeMethod));
 }

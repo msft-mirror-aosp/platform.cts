@@ -31,11 +31,14 @@ message ConfigFileSummary {
   // "UICC_SIM_CARD".
   string sim_card_token = 3;
 
-  // The mainline package that the test module depends on.
+  // The mainline packages that the test module depends on.
   repeated string mainline_module_package_name = 4;
 
   // The parameters of the test module.
   repeated string parameter = 5;
+
+  // The target preparers that the test module depends on.
+  repeated string target_preparer = 6;
 }
 
 // Summary information for an APK file.

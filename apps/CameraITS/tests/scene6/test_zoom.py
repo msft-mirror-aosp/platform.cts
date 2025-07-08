@@ -39,6 +39,8 @@ _ULTRAWIDE_NUMBER_OF_CAMERAS_TO_TEST = 2  # UW and W
 _WIDE_ZOOM_RATIO_MAX = 2.2
 _WIDE_ZOOM_THIRD_CAMERA_CHECK_ZOOM_RATIO = 2.0
 _ZOOM_RATIO_REQUEST_RESULT_DIFF_RTOL = 0.1
+_CTS_VERIFIER_PACKAGE_NAME = 'com.android.cts.verifier'
+_JETPACK_CAMERA_APP_PACKAGE_NAME = 'com.google.jetpackcamera'
 
 
 class ZoomTest(its_base_test.UiAutomatorItsBaseTest):
@@ -48,9 +50,29 @@ class ZoomTest(its_base_test.UiAutomatorItsBaseTest):
     super().setup_class()
     self.ui_app = ui_interaction_utils.JETPACK_CAMERA_APP_PACKAGE_NAME
     ui_interaction_utils.restart_cts_verifier(self.dut, self.ui_app)
-    # Disable accelerometer rotation to ensure intent result is delivered
+    # Disable refresh/force rotation to ensure intent result is delivered
     its_device_utils.run_adb_shell_command(
         self.dut.serial, 'settings put system accelerometer_rotation 0')
+    its_device_utils.run_adb_shell_command(
+        self.dut.serial,
+        'am compat enable OVERRIDE_CAMERA_COMPAT_DISABLE_REFRESH '
+        f'{_CTS_VERIFIER_PACKAGE_NAME}'
+    )
+    its_device_utils.run_adb_shell_command(
+        self.dut.serial,
+        'am compat enable OVERRIDE_CAMERA_COMPAT_DISABLE_REFRESH '
+        f'{_JETPACK_CAMERA_APP_PACKAGE_NAME}'
+    )
+    its_device_utils.run_adb_shell_command(
+        self.dut.serial,
+        'am compat enable OVERRIDE_CAMERA_COMPAT_DISABLE_FORCE_ROTATION '
+        f'{_CTS_VERIFIER_PACKAGE_NAME}'
+    )
+    its_device_utils.run_adb_shell_command(
+        self.dut.serial,
+        'am compat enable OVERRIDE_CAMERA_COMPAT_DISABLE_FORCE_ROTATION '
+        f'{_JETPACK_CAMERA_APP_PACKAGE_NAME}'
+    )
 
   def teardown_test(self):
     ui_interaction_utils.force_stop_app(self.dut, self.ui_app)
@@ -142,7 +164,7 @@ class ZoomTest(its_base_test.UiAutomatorItsBaseTest):
         logging.debug('Physical IDs: %s', physical_ids)
         # Ignore captures at higher zooms where smooth zoom can affect results.
         if (tele_camera_found and
-            len(physical_ids) > _ULTRAWIDE_NUMBER_OF_CAMERAS_TO_TEST and
+            len(physical_ids) >= _ULTRAWIDE_NUMBER_OF_CAMERAS_TO_TEST and
             zoom_ratio > _WIDE_ZOOM_THIRD_CAMERA_CHECK_ZOOM_RATIO):
           logging.debug('Found enough zoom data, given that tele camera found: '
                         '%d physical IDs at zoom ratio %.2f, ignoring '
