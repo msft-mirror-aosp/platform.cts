@@ -20,8 +20,11 @@ import android.app.backup.BackupAgent;
 import android.app.backup.BackupDataInput;
 import android.app.backup.BackupDataOutput;
 import android.app.backup.FullBackupDataOutput;
+import android.app.backup.FullRestoreDataInput;
 import android.os.ParcelFileDescriptor;
 import android.util.Log;
+
+import androidx.annotation.NonNull;
 
 import java.io.File;
 import java.io.IOException;
@@ -57,6 +60,12 @@ public class FullBackupBackupAgent extends BackupAgent {
             throws IOException {
         super.onRestoreFile(data, size, destination, type, mode, mtime);
         Log.d(MainActivity.TAG, "onRestoreFile " + destination);
+    }
+
+    @Override
+    public void onRestoreFile(@NonNull FullRestoreDataInput data) throws IOException {
+        super.onRestoreFile(data);
+        Log.d(MainActivity.TAG, "onRestoreFile with FullRestoreDataInput");
     }
 
     @Override

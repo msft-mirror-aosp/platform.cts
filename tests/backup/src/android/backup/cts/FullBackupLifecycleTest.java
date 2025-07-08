@@ -96,4 +96,36 @@ public class FullBackupLifecycleTest extends BaseBackupCtsTest {
                 "Full backup requested",
                 "onMeasureFullBackup");
     }
+
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_CROSS_PLATFORM_TRANSFER)
+    @Test
+    public void testOnRestoreFileWithFullRestoreDataInputCalled() throws Exception {
+        if (!isBackupSupported()) {
+            return;
+        }
+        String backupSeparator = markLogcat();
+
+        // Make sure there's something to backup
+        createTestFileOfSize(BACKUP_APP_NAME, LOCAL_TRANSPORT_CONFORMING_FILE_SIZE);
+
+        // Request backup and wait for it to complete
+        getBackupUtils().backupNowSync(BACKUP_APP_NAME);
+
+        waitForLogcat(
+                TIMEOUT_SECONDS, backupSeparator, "onCreate", "Full backup requested", "onDestroy");
+
+        String restoreSeparator = markLogcat();
+
+        // Now request restore and wait for it to complete
+        getBackupUtils().restoreSync(LOCAL_TRANSPORT_TOKEN, BACKUP_APP_NAME);
+
+        waitForLogcat(
+                TIMEOUT_SECONDS,
+                restoreSeparator,
+                "onCreate",
+                "onRestoreFile",
+                "onRestoreFile with FullRestoreDataInput",
+                "onRestoreFinished",
+                "onDestroy");
+    }
 }
