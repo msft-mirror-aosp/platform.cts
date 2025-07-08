@@ -40,6 +40,7 @@ import static android.content.pm.PackageManager.PERMISSION_GRANTED;
 import static android.opengl.cts.Egl14Utils.getMaxTextureSize;
 
 import static com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity;
+import static com.android.server.backup.Flags.FLAG_ENABLE_CROSS_PLATFORM_TRANSFER;
 import static com.android.window.flags.Flags.FLAG_MULTI_CROP;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -1999,6 +2000,44 @@ public class WallpaperManagerTest {
                     .isNotEqualTo(origHomeWallpaperId);
             assertThat(mWallpaperManager.getWallpaperId(FLAG_LOCK)).isLessThan(0);
             // TODO(b/380245309) Verify instance id and description
+        } finally {
+            tmpWallpaper.recycle();
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled({FLAG_ENABLE_CROSS_PLATFORM_TRANSFER,
+            FLAG_LIVE_WALLPAPER_CONTENT_HANDLING})
+    public void allowBackup_propagatesFalse() throws IOException {
+        Bitmap tmpWallpaper = Bitmap.createBitmap(100, 100, Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(tmpWallpaper);
+        canvas.drawColor(Color.GREEN);
+        WallpaperDescription description = new WallpaperDescription.Builder().setId("id").build();
+
+        try {
+            mWallpaperManager.setBitmapWithDescription(tmpWallpaper, description,
+                    /* allowBackup= */ false, FLAG_SYSTEM);
+
+            assertThat(mWallpaperManager.isWallpaperBackupEligible(FLAG_SYSTEM)).isFalse();
+        } finally {
+            tmpWallpaper.recycle();
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled({FLAG_ENABLE_CROSS_PLATFORM_TRANSFER,
+            FLAG_LIVE_WALLPAPER_CONTENT_HANDLING})
+    public void allowBackup_propagatesTrue() throws IOException {
+        Bitmap tmpWallpaper = Bitmap.createBitmap(100, 100, Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(tmpWallpaper);
+        canvas.drawColor(Color.GREEN);
+        WallpaperDescription description = new WallpaperDescription.Builder().setId("id").build();
+
+        try {
+            mWallpaperManager.setBitmapWithDescription(tmpWallpaper, description,
+                    /* allowBackup= */ true, FLAG_SYSTEM);
+
+            assertThat(mWallpaperManager.isWallpaperBackupEligible(FLAG_SYSTEM)).isTrue();
         } finally {
             tmpWallpaper.recycle();
         }
