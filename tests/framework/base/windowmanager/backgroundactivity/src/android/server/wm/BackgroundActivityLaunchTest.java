@@ -200,8 +200,10 @@ public class BackgroundActivityLaunchTest extends BackgroundActivityTestBase {
     }
 
     @Test
-    @RequiresFlagsEnabled(android.security.Flags.FLAG_ASM_RESTRICTIONS_V2)
-    @RequiresFlagsDisabled(android.security.Flags.FLAG_ASM_REINTRODUCE_GRACE_PERIOD)
+    @RequiresFlagsEnabled({
+        android.security.Flags.FLAG_ASM_RESTRICTIONS_V2,
+        android.security.Flags.FLAG_ASM_IGNORE_GRACE_PERIOD_EXEMPTION
+    })
     public void testBackgroundActivity_withinASMGracePeriod_isBlocked() throws Exception {
         assumeSdkNewerThanUpsideDownCake();
         // Start AppA foreground activity
@@ -214,7 +216,7 @@ public class BackgroundActivityLaunchTest extends BackgroundActivityTestBase {
     }
 
     @Test
-    @RequiresFlagsEnabled(android.security.Flags.FLAG_ASM_REINTRODUCE_GRACE_PERIOD)
+    @RequiresFlagsDisabled(android.security.Flags.FLAG_ASM_IGNORE_GRACE_PERIOD_EXEMPTION)
     public void testBackgroundActivity_withinASMGracePeriod_isNotBlocked() throws Exception {
         assumeSdkNewerThanUpsideDownCake();
         // Start AppA foreground activity
@@ -228,8 +230,10 @@ public class BackgroundActivityLaunchTest extends BackgroundActivityTestBase {
 
     @Test
     @FlakyTest(bugId = 297339382)
-    @RequiresFlagsDisabled(android.security.Flags.FLAG_ASM_REINTRODUCE_GRACE_PERIOD)
-    @RequiresFlagsEnabled(android.security.Flags.FLAG_ASM_RESTRICTIONS_V2)
+    @RequiresFlagsEnabled({
+        android.security.Flags.FLAG_ASM_IGNORE_GRACE_PERIOD_EXEMPTION,
+        android.security.Flags.FLAG_ASM_RESTRICTIONS_V2
+    })
     public void testBackgroundActivity_withinBalAfterAsmGracePeriod_isBlocked() throws Exception {
         assumeSdkNewerThanUpsideDownCake();
         // Start AppA foreground activity
@@ -244,7 +248,7 @@ public class BackgroundActivityLaunchTest extends BackgroundActivityTestBase {
 
     @Test
     @FlakyTest(bugId = 297339382)
-    @RequiresFlagsEnabled(android.security.Flags.FLAG_ASM_REINTRODUCE_GRACE_PERIOD)
+    @RequiresFlagsDisabled(android.security.Flags.FLAG_ASM_IGNORE_GRACE_PERIOD_EXEMPTION)
     public void testBackgroundActivity_withinBalAfterAsmGracePeriod_isNotBlocked()
             throws Exception {
         assumeSdkNewerThanUpsideDownCake();
