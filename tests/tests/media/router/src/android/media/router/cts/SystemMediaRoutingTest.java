@@ -417,7 +417,14 @@ public class SystemMediaRoutingTest {
 
     /** Retrieves the selected routes, asserts it contains one entry, and returns it. */
     private MediaRoute2Info getSelectedRoute() {
-        var selectedRoutes = mSelfProxyRouter.getSystemController().getSelectedRoutes();
+        var systemController = mSelfProxyRouter.getSystemController();
+        var selectedRoutes = systemController.getSelectedRoutes();
+        while (selectedRoutes.isEmpty()) {
+            // TODO: b/339583417 - Remove this busy wait once we fix the underlying bug in proxy
+            // routers. There's a race condition causing newly created proxy routers to briefly
+            // present an empty list of selected routes in the system routing controller.
+            selectedRoutes = systemController.getSelectedRoutes();
+        }
         assertWithMessage("Unexpected number of selected routes").that(selectedRoutes).hasSize(1);
         return selectedRoutes.getFirst();
     }
