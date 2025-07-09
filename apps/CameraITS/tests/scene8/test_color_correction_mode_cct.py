@@ -14,18 +14,15 @@
 """Verifies color temperature and color tint are applied to the image."""
 
 
-import logging
 import os.path
-
-from mobly import test_runner
 
 import camera_properties_utils
 import capture_request_utils
 import image_processing_utils
 import its_base_test
 import its_session_utils
+from mobly import test_runner
 import opencv_processing_utils
-import target_exposure_utils
 
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
 # The minimum required color temperature range is [2856K, 6500K] in
@@ -59,7 +56,7 @@ def _get_regions_of_interest(props, cam, test_name_with_log_path):
   fmt = capture_request_utils.get_near_vga_yuv_format(
       props, match_ar=match_ar)
 
-  cam.do_3a()
+  sens, exp, _, _, f_dist = cam.do_3a(get_results=True)
   req = capture_request_utils.auto_capture_request()
   cap = cam.do_capture(req, fmt)
 
@@ -75,7 +72,7 @@ def _get_regions_of_interest(props, cam, test_name_with_log_path):
   regions = opencv_processing_utils.define_regions(
       img, img_path, chart_path, props, match_ar[0], match_ar[1])
 
-  return regions
+  return regions, sens, exp, f_dist
 
 
 def _get_ratio(img, region, img_width, img_height, channel_one, channel_two):
@@ -107,15 +104,16 @@ def _get_ratio(img, region, img_width, img_height, channel_one, channel_two):
   return ratio
 
 
-def color_temperature_capture_request(color_temp, color_tint, log_path, cam,
-                                      props):
+def color_temperature_capture_request(
+    color_temp, color_tint, sens, exp, f_dist, props):
   """Returns capture request with requested color temperature and tint.
 
   Args:
    color_temp: The color temperature value to populate the request with.
    color_tint: The color tint value to populate the request with.
-   log_path: log path to store the captured images.
-   cam: its_session_utils.ItsSession object
+   sens:  The sensitivity value to populate the request with.
+   exp: The exposure time, in nanoseconds, to populate the request with.
+   f_dist: The focus distance to populate the request with.
    props: camera properties object.
 
   Returns:
@@ -123,9 +121,8 @@ def color_temperature_capture_request(color_temp, color_tint, log_path, cam,
     its_session_utils.device.do_capture function.
   """
   # Define baseline request
-  e, s = target_exposure_utils.get_target_exposure_combos(
-      log_path, cam)['midSensitivity']
-  req = capture_request_utils.manual_capture_request(s, e, 0.0, True, props)
+  req = capture_request_utils.manual_capture_request(
+      sens, exp, f_dist, linear_tonemap=True, props=props)
 
   # Add relevant CCT settings
   if color_temp != 0:
@@ -192,21 +189,22 @@ class ColorCorrectionModeCct(its_base_test.ItsBaseTest):
           cam, props, self.scene, self.tablet, self.chart_distance,
           log_path)
 
-      regions = _get_regions_of_interest(props, cam, test_name_with_log_path)
+      regions, sens, exp_time, f_dist = _get_regions_of_interest(
+          props, cam, test_name_with_log_path)
 
       capture_requests = []
       for test_color_temp_val in _COLOR_TEMPERATURE_TEST_VALUES:
         # Test with varying color temp values and no color tint
-        req = color_temperature_capture_request(test_color_temp_val,
-                                                _NO_COLOR_TINT,
-                                                log_path, cam, props)
+        req = color_temperature_capture_request(
+            test_color_temp_val, _NO_COLOR_TINT, sens, exp_time, f_dist,
+            props)
         capture_requests.append(req)
 
       for test_color_tint_val in _COLOR_TINT_TEST_VALUES:
         # Test with default color temp and vary color tint
         req = color_temperature_capture_request(
-            _DEFAULT_COLOR_TEMPERATURE, test_color_tint_val,
-            log_path, cam, props)
+            _DEFAULT_COLOR_TEMPERATURE, test_color_tint_val, sens, exp_time,
+            f_dist, props)
         capture_requests.append(req)
 
       # Define format
@@ -215,7 +213,7 @@ class ColorCorrectionModeCct(its_base_test.ItsBaseTest):
       fmt = capture_request_utils.get_near_vga_yuv_format(
           props, match_ar=match_ar)
 
-      caps = cam.do_capture(capture_requests, fmt)
+      caps = cam.do_capture(capture_requests, fmt, reuse_session=True)
 
       blue_ratios = []  # Ratios from blue region
       yellow_ratios = []  # Ratio from yellow region
