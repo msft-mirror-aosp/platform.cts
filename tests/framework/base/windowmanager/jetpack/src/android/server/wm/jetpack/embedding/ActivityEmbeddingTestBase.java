@@ -18,7 +18,11 @@ package android.server.wm.jetpack.embedding;
 
 import static android.server.wm.jetpack.extensions.util.ExtensionsUtil.getWindowExtensions;
 import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.assumeActivityEmbeddingSupportedDevice;
+import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.waitAndAssertResumed;
 import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.waitAndGetTaskBounds;
+
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 
 import android.app.Activity;
 import android.graphics.Rect;
@@ -33,6 +37,7 @@ import androidx.annotation.Nullable;
 import androidx.window.extensions.WindowExtensions;
 import androidx.window.extensions.embedding.ActivityEmbeddingComponent;
 import androidx.window.extensions.embedding.ActivityStack;
+import androidx.window.extensions.embedding.EmbeddedActivityWindowInfo;
 import androidx.window.extensions.embedding.SplitInfo;
 
 import org.junit.After;
@@ -120,5 +125,21 @@ public class ActivityEmbeddingTestBase extends WindowManagerJetpackTestBase {
         new WindowManagerStateHelper().waitAndAssertActivityRemoved(activity.getComponentName());
 
         return taskBounds;
+    }
+
+    /**
+     * Waits and asserts that the activity is resumed and not embedded.
+     *
+     * @param activity the activity name
+     */
+    protected void waitAndAssertActivityResumedAndNotEmbedded(@NonNull Activity activity) {
+        waitAndAssertResumed(activity);
+        mInstrumentation.runOnMainSync(
+                () -> {
+                    final EmbeddedActivityWindowInfo info =
+                            mActivityEmbeddingComponent.getEmbeddedActivityWindowInfo(activity);
+                    assertNotNull(info);
+                    assertFalse(info.isEmbedded());
+                });
     }
 }

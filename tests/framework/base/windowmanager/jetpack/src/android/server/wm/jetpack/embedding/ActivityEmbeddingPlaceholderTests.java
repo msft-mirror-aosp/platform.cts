@@ -30,9 +30,6 @@ import static android.server.wm.jetpack.utils.TestActivityLauncher.KEY_ACTIVITY_
 
 import static androidx.window.extensions.embedding.SplitRule.FINISH_ADJACENT;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-
 import android.app.Activity;
 import android.content.Intent;
 import android.graphics.Rect;
@@ -49,7 +46,6 @@ import android.view.WindowMetrics;
 import androidx.annotation.NonNull;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.window.extensions.embedding.ActivityEmbeddingComponent;
-import androidx.window.extensions.embedding.EmbeddedActivityWindowInfo;
 import androidx.window.extensions.embedding.SplitPlaceholderRule;
 
 import org.junit.Test;
@@ -122,17 +118,6 @@ public class ActivityEmbeddingPlaceholderTests extends ActivityEmbeddingTestBase
                 TestActivityWithId.class, PRIMARY_ACTIVITY_ID, null /* displayId */);
         waitAndAssertNotResumed(PLACEHOLDER_ACTIVITY_ID);
         waitAndAssertActivityResumedAndNotEmbedded(primaryActivity);
-    }
-
-    private void waitAndAssertActivityResumedAndNotEmbedded(@NonNull Activity activity) {
-        waitAndAssertResumed(activity);
-        mInstrumentation.runOnMainSync(
-                () -> {
-                    final EmbeddedActivityWindowInfo info =
-                            mActivityEmbeddingComponent.getEmbeddedActivityWindowInfo(activity);
-                    assertNotNull(info);
-                    assertFalse(info.isEmbedded());
-                });
     }
 
     /**
