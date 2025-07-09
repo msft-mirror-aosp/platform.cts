@@ -80,6 +80,15 @@ public class BackportedFixesTest {
                         + "will be an AssumptionFailure instead");
     }
 
+    @RequiresFlagsEnabled(Flags.FLAG_API_FOR_BACKPORTED_FIXES)
+    @BackportedFixTest(398591036)
+    @Test
+    public void ki398591036() {
+        // TODO: b/427212603 - Remove this once the test is implemented.
+        Assert.fail(
+                "Test for b/398591036 not implemented");
+    }
+
     private static void logFixesApplied(SortedSet<Integer> aliases) {
         var approvedFixes = ApprovedBackportedFixes.getInstance();
         DeviceReportLog reportLog =
