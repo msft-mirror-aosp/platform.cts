@@ -146,6 +146,12 @@ public class TestAppFunctionService extends AppFunctionService {
             case "getUris":
                 {
                     callback.onResult(getUris());
+                    break;
+                }
+            case "echoBytes":
+                {
+                    callback.onResult(echoBytes(request));
+                    break;
                 }
             default:
                 callback.onError(
@@ -190,6 +196,13 @@ public class TestAppFunctionService extends AppFunctionService {
                 new GenericDocument.Builder<>("", "", "")
                         .setPropertyLong(ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE, a + b)
                         .build();
+        return new ExecuteAppFunctionResponse(result);
+    }
+
+    private ExecuteAppFunctionResponse echoBytes(ExecuteAppFunctionRequest request) {
+        byte[] bytes = request.getParameters().getPropertyBytes("bytes");
+        GenericDocument result =
+                new GenericDocument.Builder<>("", "", "").setPropertyBytes("bytes", bytes).build();
         return new ExecuteAppFunctionResponse(result);
     }
 
