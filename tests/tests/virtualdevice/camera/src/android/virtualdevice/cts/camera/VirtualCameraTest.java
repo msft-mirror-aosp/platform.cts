@@ -41,6 +41,7 @@ import static androidx.test.core.app.ApplicationProvider.getApplicationContext;
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.util.concurrent.MoreExecutors.directExecutor;
 
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
@@ -58,6 +59,7 @@ import static org.mockito.Mockito.verify;
 import android.companion.virtual.VirtualDeviceManager.VirtualDevice;
 import android.companion.virtual.VirtualDeviceParams;
 import android.companion.virtual.camera.CameraCharacteristicsBuilder;
+import android.companion.virtual.camera.CaptureResultBuilder;
 import android.companion.virtual.camera.VirtualCamera;
 import android.companion.virtual.camera.VirtualCameraCallback;
 import android.companion.virtual.camera.VirtualCameraConfig;
@@ -72,6 +74,7 @@ import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.CaptureRequest;
+import android.hardware.camera2.CaptureResult;
 import android.hardware.camera2.params.OutputConfiguration;
 import android.hardware.camera2.params.SessionConfiguration;
 import android.hardware.camera2.params.StreamConfigurationMap;
@@ -106,6 +109,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
+import java.util.function.ObjLongConsumer;
 
 @RunWith(JUnitParamsRunner.class)
 @AppModeFull(reason = "VirtualDeviceManager cannot be accessed by instant apps")
@@ -147,7 +151,11 @@ public class VirtualCameraTest {
     @Captor
     private ArgumentCaptor<CameraCaptureSession> mCameraCaptureSessionCaptor;
 
-    @Captor private ArgumentCaptor<VirtualCameraSessionConfig> mVirtualCameraSessionConfigCaptor;
+    @Captor
+    private ArgumentCaptor<VirtualCameraSessionConfig> mVirtualCameraSessionConfigCaptor;
+
+    @Captor
+    private ArgumentCaptor<ObjLongConsumer<CaptureResult>> mCaptureResultConsumerCaptor;
 
     @Captor
     private ArgumentCaptor<Surface> mSurfaceCaptor;
@@ -266,7 +274,7 @@ public class VirtualCameraTest {
 
     @Test
     public void getCameraIdList_withDefaultContext_withVirtualCamera_doesNotIncludeVirtualCamera()
-        throws Exception {
+            throws Exception {
         setupDefaultDeviceCameraManager();
         VirtualCamera virtualCamera = createFrontVirtualCamera();
 
@@ -283,7 +291,7 @@ public class VirtualCameraTest {
 
     @Test
     public void getCameraIdList_withVdContext_withVirtualFrontCamera_includesOnlyVirtualCamera()
-        throws Exception {
+            throws Exception {
         setupVirtualDeviceCameraManager();
         createFrontVirtualCamera();
 
@@ -293,7 +301,7 @@ public class VirtualCameraTest {
 
     @Test
     public void getCameraIdList_withVdContext_withVirtualBackCamera_includesOnlyVirtualCamera()
-        throws Exception {
+            throws Exception {
         setupVirtualDeviceCameraManager();
         createVirtualCamera(LENS_FACING_BACK);
 
@@ -813,7 +821,6 @@ public class VirtualCameraTest {
     public void createVirtualCamera_withCameraCharacteristics_succeeds(int lensFacing)
             throws Exception {
         setupVirtualDeviceCameraManager();
-
         createVirtualCameraWithCharacteristics(createDefaultCameraCharacteristics(lensFacing));
 
         verifyConfigureSessionForSupportedFormatSucceeds(getCameraIdForLensFacing(lensFacing));
@@ -823,18 +830,74 @@ public class VirtualCameraTest {
     @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_CAMERA_METADATA)
     public void createVirtualCamera_withPerFrameMetadataEnabled_succeeds() throws Exception {
         setupVirtualDeviceCameraManager();
-
-        VirtualCameraConfig config =
-                new VirtualCameraConfig.Builder("FrameMetadataCamera")
-                        .addStreamConfig(CAMERA_WIDTH, CAMERA_HEIGHT, CAMERA_FORMAT, CAMERA_MAX_FPS)
-                        .setVirtualCameraCallback(mExecutor, mVirtualCameraCallback)
-                        .setSensorOrientation(SENSOR_ORIENTATION_180)
-                        .setLensFacing(LENS_FACING_BACK)
-                        .setPerFrameCameraMetadataEnabled(true)
-                        .build();
-        mVirtualDevice.createVirtualCamera(config);
+        createDefaultCameraWithMetadata(LENS_FACING_BACK, false);
 
         verifyConfigureSessionForSupportedFormatSucceeds(BACK_CAMERA_ID);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_CAMERA_METADATA)
+    public void virtualCamera_withPerFrameMetadataEnabled_canSendCaptureResults() throws Exception {
+        setupVirtualDeviceCameraManager();
+        createDefaultCameraWithMetadata(LENS_FACING_BACK, true);
+
+        mCameraManager.openCamera(BACK_CAMERA_ID, mExecutor, mCameraStateCallback);
+        verify(mCameraStateCallback, timeout(TIMEOUT_MILLIS))
+                .onOpened(mCameraDeviceCaptor.capture());
+        CameraDevice cameraDevice = mCameraDeviceCaptor.getValue();
+
+        try (ImageReader reader = createImageReader(YUV_420_888)) {
+            cameraDevice.createCaptureSession(createSessionConfig(reader));
+
+            verify(mVirtualCameraCallback, timeout(TIMEOUT_MILLIS))
+                    .onConfigureSession(any(VirtualCameraSessionConfig.class),
+                            mCaptureResultConsumerCaptor.capture());
+            ObjLongConsumer<CaptureResult> captureResultConsumer =
+                    mCaptureResultConsumerCaptor.getValue();
+            assertNotNull(captureResultConsumer);
+
+            verify(mSessionStateCallback, timeout(TIMEOUT_MILLIS))
+                    .onConfigured(mCameraCaptureSessionCaptor.capture());
+            CameraCaptureSession cameraCaptureSession = mCameraCaptureSessionCaptor.getValue();
+
+            final long timestamp = 12345L;
+            CaptureResult captureResult = new CaptureResultBuilder()
+                    .set(CaptureResult.CONTROL_AE_STATE, CaptureResult.CONTROL_AE_STATE_CONVERGED)
+                    .set(CaptureResult.CONTROL_AE_TARGET_FPS_RANGE, CAMERA_FPS_RANGE)
+                    .build();
+
+            captureResultConsumer.accept(captureResult, timestamp);
+
+            cameraCaptureSession.close();
+        }
+        cameraDevice.close();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_CAMERA_METADATA)
+    public void virtualCamera_withPerFrameMetadataDisabled_canNotSendCaptureResults()
+            throws Exception {
+        setupVirtualDeviceCameraManager();
+        createDefaultCameraWithMetadata(LENS_FACING_BACK, false);
+
+        mCameraManager.openCamera(BACK_CAMERA_ID, mExecutor, mCameraStateCallback);
+        verify(mCameraStateCallback, timeout(TIMEOUT_MILLIS)).onOpened(
+                mCameraDeviceCaptor.capture());
+        CameraDevice cameraDevice = mCameraDeviceCaptor.getValue();
+
+        try (ImageReader reader = createImageReader(YUV_420_888)) {
+            cameraDevice.createCaptureSession(createSessionConfig(reader));
+
+            verify(mVirtualCameraCallback, timeout(TIMEOUT_MILLIS))
+                    .onConfigureSession(any(VirtualCameraSessionConfig.class), eq(null));
+
+            verify(mSessionStateCallback, timeout(TIMEOUT_MILLIS))
+                    .onConfigured(mCameraCaptureSessionCaptor.capture());
+            CameraCaptureSession cameraCaptureSession = mCameraCaptureSessionCaptor.getValue();
+
+            cameraCaptureSession.close();
+        }
+        cameraDevice.close();
     }
 
     @Parameters(method = "getAllLensFacingDirections")
@@ -960,6 +1023,19 @@ public class VirtualCameraTest {
         cameraDevice.close();
 
         verify(mVirtualCameraCallback, timeout(TIMEOUT_MILLIS)).onStreamClosed(anyInt());
+    }
+
+    private VirtualCamera createDefaultCameraWithMetadata(int lensFacing,
+            boolean perFrameMetadata) {
+        VirtualCameraConfig config = new VirtualCameraConfig.Builder("DefaultMetadataCamera")
+                .addStreamConfig(CAMERA_WIDTH, CAMERA_HEIGHT, CAMERA_FORMAT, CAMERA_MAX_FPS)
+                .setVirtualCameraCallback(mExecutor, mVirtualCameraCallback)
+                .setSensorOrientation(SENSOR_ORIENTATION_0)
+                .setLensFacing(lensFacing)
+                .setPerFrameCameraMetadataEnabled(perFrameMetadata)
+                .build();
+
+        return mVirtualDevice.createVirtualCamera(config);
     }
 
     private VirtualCamera createFrontVirtualCamera() {
