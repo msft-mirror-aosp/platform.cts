@@ -17,6 +17,8 @@
 
 #include <android/imagedecoder.h>
 
+#include <algorithm>
+#include <iterator>
 #include <memory>
 #include <numeric>
 #include <string>

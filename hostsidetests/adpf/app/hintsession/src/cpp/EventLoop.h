@@ -18,7 +18,10 @@
 
 #include <functional>
 #include <future>
+#include <memory>
+#include <mutex>
 #include <optional>
+#include <queue>
 #include <thread>
 
 class EventLoop {

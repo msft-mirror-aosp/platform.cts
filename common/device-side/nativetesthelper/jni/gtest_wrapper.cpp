@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <algorithm>
 #include <sstream>
 #include <unordered_map>
 #include <vector>

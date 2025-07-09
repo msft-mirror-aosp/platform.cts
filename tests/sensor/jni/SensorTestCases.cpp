@@ -14,8 +14,12 @@
  * limitations under the License.
  */
 
-#include "SensorTest.h"
 #include <errno.h>
+
+#include <cmath>
+#include <memory>
+
+#include "SensorTest.h"
 
 namespace android {
 namespace SensorTest {

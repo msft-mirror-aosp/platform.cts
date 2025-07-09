@@ -17,16 +17,17 @@
 
 #define LOG_TAG "SystemFonts"
 
-#include <jni.h>
-
-#include <array>
-#include <string>
-#include <vector>
-
 #include <android/font.h>
 #include <android/font_matcher.h>
 #include <android/log.h>
 #include <android/system_fonts.h>
+#include <jni.h>
+
+#include <array>
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
 
 namespace {
 

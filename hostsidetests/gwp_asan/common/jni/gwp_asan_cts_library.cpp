@@ -20,10 +20,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include <algorithm>
 #include <fstream>
 #include <memory>
+#include <mutex>
 #include <shared_mutex>
 #include <string>
+#include <utility>
 #include <vector>
 
 // We can get all the GWP-ASan ranges ahead of time. GWP-ASan doesn't do an mmap() for each

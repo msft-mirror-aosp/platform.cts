@@ -22,6 +22,7 @@
 #include <assert.h>
 #include <vulkan/vulkan.h>
 
+#include <algorithm>
 #include <set>
 #include <string>
 #include <vector>

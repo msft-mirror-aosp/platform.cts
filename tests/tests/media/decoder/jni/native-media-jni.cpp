@@ -18,22 +18,25 @@
 
 //#define LOG_NDEBUG 0
 #define LOG_TAG "NativeMedia"
-#include <log/log.h>
-
+#include <android/native_window_jni.h>
 #include <assert.h>
 #include <jni.h>
-#include <mutex>
-#include <queue>
+#include <log/log.h>
 #include <stdio.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <unistd.h>
 
-#include <android/native_window_jni.h>
+#include <algorithm>
+#include <atomic>
+#include <memory>
+#include <mutex>
+#include <queue>
+#include <vector>
 
-#include "media/NdkMediaExtractor.h"
 #include "media/NdkMediaCodec.h"
 #include "media/NdkMediaDataSource.h"
+#include "media/NdkMediaExtractor.h"
 #include "media/NdkMediaFormat.h"
 template <class T>
 class simplevector {

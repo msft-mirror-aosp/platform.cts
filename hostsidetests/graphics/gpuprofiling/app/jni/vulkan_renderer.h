@@ -21,6 +21,7 @@
 #include <android/native_window.h>
 #include <vulkan/vulkan.h>
 
+#include <memory>
 #include <string>
 #include <vector>
 

@@ -17,6 +17,7 @@
 #ifndef COMMON_H
 #define COMMON_H
 
+#include <stdlib.h>
 #include <time.h>
 #define MAX_TEST_DURATION 300
 
