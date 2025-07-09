@@ -94,7 +94,7 @@ public class FullBackupLifecycleTest extends BaseBackupCtsTest {
                 separator,
                 "Full backup requested",
                 "Full backup requested",
-                "onMeasureFullBackup");
+                "onEstimateFullBackupBytes");
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_CROSS_PLATFORM_TRANSFER)

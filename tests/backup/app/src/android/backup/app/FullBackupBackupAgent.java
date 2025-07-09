@@ -75,9 +75,9 @@ public class FullBackupBackupAgent extends BackupAgent {
     }
 
     @Override
-    public long onMeasureFullBackup(long quotaBytes, int transportFlags) throws IOException {
-        long size = super.onMeasureFullBackup(quotaBytes, transportFlags);
-        Log.d(MainActivity.TAG, "onMeasureFullBackup");
+    public long onEstimateFullBackupBytes(long quotaBytes, int transportFlags) throws IOException {
+        long size = super.onEstimateFullBackupBytes(quotaBytes, transportFlags);
+        Log.d(MainActivity.TAG, "onEstimateFullBackupBytes");
         return size;
     }
 
