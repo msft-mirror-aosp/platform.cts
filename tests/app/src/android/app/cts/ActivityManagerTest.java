@@ -1410,12 +1410,10 @@ public final class ActivityManagerTest {
         }
     }
 
-
-    /**
-     * Verifies the system will trim app's child processes if there are too many
-     */
+    /** Verifies the system will trim app's child processes if there are too many */
     @LargeTest
     @Test
+    @Ignore("b/428002594 - flaky test")
     public void testTrimAppChildProcess() throws Exception {
         final long powerCheckInterval = 5 * 1000;
         final long processGoneTimeout = powerCheckInterval * 4;
