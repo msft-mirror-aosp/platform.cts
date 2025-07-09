@@ -148,7 +148,8 @@ class FlipMirrorTest(its_base_test.ItsBaseTest):
 
       # load chart for scene
       its_session_utils.load_scene(
-          cam, props, self.scene, self.tablet, self.chart_distance)
+          cam, props, self.scene, self.tablet, self.chart_distance,
+          chart_scaling=self.chart_scaling)
 
       # initialize chart class and locate chart in scene
       is_tele = cam.get_camera_type(props) == (

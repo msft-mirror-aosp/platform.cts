@@ -58,7 +58,8 @@ class BurstCaptureTest(its_base_test.ItsBaseTest):
 
       # Load chart for scene
       its_session_utils.load_scene(
-          cam, props, self.scene, self.tablet, self.chart_distance)
+          cam, props, self.scene, self.tablet, self.chart_distance,
+          chart_scaling=self.chart_scaling)
 
       req = capture_request_utils.auto_capture_request()
       if camera_properties_utils.noise_reduction_mode(props, _NR_MODE_FAST):
