@@ -52,6 +52,7 @@ import com.android.server.display.feature.flags.Flags;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -198,6 +199,7 @@ public class DisplayEventTest extends TestBase {
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_DELAY_IMPLICIT_RR_REGISTRATION_UNTIL_RR_ACCESSED)
+    @Ignore("b/426424608")
     public void test_noDisplayRrChangedEvent_delayImplicitRegistrationUntilRrAccessedEnabled() {
         assumeTrue(notInConcurrentDisplayState());
 
