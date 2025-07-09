@@ -57,7 +57,7 @@ class SupervisionAppServiceTest : BaseSupervisionTest() {
         `withSystemSupervisionRoleHeld` registers a listener and does not proceed with executing the
         supplied `action` until its listener has been called. Binding to the service in the test
         should happen after the binding in `AppBindingService`. Additionally, it provides a reliable
-        signal to start a timeout for `ServiceReporter.wasMethodCalled`, incresting reliability.
+        signal to start a timeout for `ServiceReporter.wasMethodCalled`, increasing reliability.
          */
         withSystemSupervisionRoleHeld {
             bindSupervisionAppService { reporter ->
