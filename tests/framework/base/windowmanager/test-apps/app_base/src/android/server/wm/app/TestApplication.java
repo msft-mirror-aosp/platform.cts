@@ -16,6 +16,10 @@
 
 package android.server.wm.app;
 
+import static android.os.Process.SIGNAL_QUIT;
+import static android.os.Process.myPid;
+import static android.os.Process.sendSignal;
+
 import android.app.Activity;
 import android.app.Application;
 import android.os.Bundle;
@@ -107,6 +111,7 @@ public class TestApplication extends Application {
                                                         + " Activity="
                                                         + activityName);
                                         dumpMainThreadCallStack();
+                                        dumpAllThreadCallStack();
                                     } else {
                                         Log.d(
                                                 TAG,
@@ -148,6 +153,12 @@ public class TestApplication extends Application {
                 }
             }
             Log.e(TAG, "--- End Main Thread Call Stack ---");
+        }
+
+        /** Dumps all threads to an ANR file stored as '/data/anr/trace_*' */
+        private void dumpAllThreadCallStack() {
+            Log.w(TAG, "Dumping all thread stacks now...");
+            sendSignal(myPid(), SIGNAL_QUIT);
         }
 
         @Override

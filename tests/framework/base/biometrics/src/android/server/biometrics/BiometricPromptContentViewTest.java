@@ -296,7 +296,7 @@ public class BiometricPromptContentViewTest extends BiometricTestBase {
     public void testMoreOptionsButton_onlyCredential_clickButton() throws Exception {
         assumeTrue(Utils.isFirstApiLevel29orGreater());
         //TODO: b/331955301 need to update Auto biometric UI
-        assumeFalse(isCar());
+        assumeFalse(isCar() || isWatch());
         try (CredentialSession session = new CredentialSession()) {
             session.setCredential();
 

@@ -17,9 +17,9 @@ import logging
 import math
 import os
 import pathlib
+import subprocess
 import threading
 import types
-import subprocess
 
 import camera_properties_utils
 import gen2_rig_controller_utils
@@ -47,6 +47,33 @@ _JETPACK_CAMERA_APP_PACKAGE_NAME = 'com.google.jetpackcamera'
 _AWB_DIFF_THRESHOLD = 4
 _BRIGHTNESS_DIFF_THRESHOLD = 10
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
+_COMMON_IMG_ARS_ATOL = 0.01
+
+
+def get_jca_ar(default_capture_path):
+  """Returns the aspect ratio to be used in JCA.
+
+  Args:
+    default_capture_path: default camera app capture path
+  Returns:
+    jca_ar: aspect ratio to be used by JCA
+  Raises:
+    AssertionError: If JCA does not support the aspect ratio
+  """
+  default_ar = ip_metrics_utils.get_aspect_ratio(default_capture_path)
+  logging.debug('Default camera app aspect ratio: %.2f', default_ar)
+  if (math.isclose(default_ar, 3/4, abs_tol=_COMMON_IMG_ARS_ATOL) or
+      math.isclose(default_ar, 4/3, abs_tol=_COMMON_IMG_ARS_ATOL)):
+    jca_ar = ui_interaction_utils.THREE_TO_FOUR_ASPECT_RATIO_DESC
+  elif (math.isclose(default_ar, 9/16, abs_tol=_COMMON_IMG_ARS_ATOL) or
+        math.isclose(default_ar, 16/9, abs_tol=_COMMON_IMG_ARS_ATOL)):
+    jca_ar = ui_interaction_utils.NINE_TO_SIXTEEN_ASPECT_RATIO_DESC
+  elif math.isclose(default_ar, 1, abs_tol=_COMMON_IMG_ARS_ATOL):
+    jca_ar = ui_interaction_utils.ONE_TO_ONE_ASPECT_RATIO_DESC
+  else:
+    raise AssertionError('Aspect ratio not supported by JCA')
+  logging.debug('Using %s for JCA captures.', jca_ar)
+  return jca_ar
 
 
 class DefaultJcaImageParityClassTest(its_base_test.ItsBaseTest):
@@ -199,6 +226,7 @@ class DefaultJcaImageParityClassTest(its_base_test.ItsBaseTest):
           self.log_path,
           ui_interaction_utils.DEFAULT_CAMERA_WATCH_DUMP_FILE
       )
+      jca_ar = get_jca_ar(default_capture_path)
       zoom_ratio = ui_interaction_utils.get_default_camera_zoom_ratio(
           default_watch_dump_file)
       logging.debug('Default camera captures zoomRatio value: %s', zoom_ratio)
@@ -234,7 +262,8 @@ class DefaultJcaImageParityClassTest(its_base_test.ItsBaseTest):
           self.log_path,
           camera_facing=props['android.lens.facing'],
           zoom_ratio=jca_zoom_ratio,
-          video_stabilization=video_stabilization
+          video_stabilization=video_stabilization,
+          jca_aspect_ratio=jca_ar
       )
       ui_interaction_utils.pull_img_files(
           device_id, jca_capture_path, self.log_path

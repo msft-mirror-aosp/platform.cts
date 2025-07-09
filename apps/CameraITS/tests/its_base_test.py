@@ -61,6 +61,12 @@ class ItsBaseTest(base_test.BaseTestClass):
     if self.user_params.get('chart_distance'):
       self.chart_distance = float(self.user_params['chart_distance'])
       logging.debug('Chart distance: %s cm', self.chart_distance)
+    if (self.user_params.get('chart_scaling') and
+        self.user_params.get('chart_scaling') != 'None'):
+      self.chart_scaling = float(self.user_params['chart_scaling'])
+    else:
+      self.chart_scaling = None
+    logging.debug('Chart scaling: %s', self.chart_scaling)
     if (self.user_params.get('lighting_cntl') != 'None' and
         isinstance(self.user_params.get('lighting_ch'), int)):
       self.lighting_cntl = self.user_params['lighting_cntl']

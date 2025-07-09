@@ -33,10 +33,12 @@ import kotlinx.coroutines.withTimeout
 /** SupervisionAppService used for CTS tests */
 class CtsSupervisionAppService : SupervisionAppService() {
     override fun onSupervisionEnabled() {
+        super.onSupervisionEnabled()
         serviceReporter.reportMethodCalled(::onSupervisionEnabled.name)
     }
 
     override fun onSupervisionDisabled() {
+        super.onSupervisionDisabled()
         serviceReporter.reportMethodCalled(::onSupervisionDisabled.name)
     }
 }

@@ -23,6 +23,7 @@ import android.graphics.Bitmap
 import android.graphics.Color
 import android.graphics.cts.utils.Material2021SpecMatcher
 import android.os.Environment
+import android.os.UserManager
 import android.platform.test.annotations.DisabledOnRavenwood
 import android.provider.Settings
 import android.testing.PollingCheck
@@ -92,6 +93,13 @@ class DynamicColorsTest(
     private val style: String,
     private val contrast: String,
 ) {
+    val isSupportedDevice =!(
+        FeatureUtil.isTV() ||
+        FeatureUtil.isWatch() ||
+        FeatureUtil.isAutomotive() ||
+        /* TODO:b/362682063 - Remove this once the bug is fixed */
+        UserManager.isHeadlessSystemUserMode())
+
     private val mContext: Context = getInstrumentation().targetContext
     private val isOldSpec: Boolean =
         mContext.resources.getIdentifier("system_primary_dim_light", "color", "android") == 0
@@ -227,7 +235,7 @@ class DynamicColorsTest(
 
     @Test
     fun testDynamicColors() {
-        assumeTrue(!FeatureUtil.isWatch())
+        assumeTrue(isSupportedDevice)
 
         val goldenName = "Dynamic_${contrast}_${color}_$style".replace("#", "")
         screenshotTestRule

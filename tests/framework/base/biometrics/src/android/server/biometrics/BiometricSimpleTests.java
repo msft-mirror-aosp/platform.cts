@@ -1092,13 +1092,15 @@ public class BiometricSimpleTests extends BiometricTestBase {
                     true /* shouldShow */, randomTitle, randomSubtitle, randomDescription,
                     null /* contentView */);
 
-            final UiObject2 actualTitle = findView(TITLE_VIEW);
-            final UiObject2 actualSubtitle = findView(SUBTITLE_VIEW);
-            final UiObject2 actualDescription = findView(DESCRIPTION_VIEW);
-            assertEquals(randomTitle, actualTitle.getText());
-            assertEquals(randomSubtitle, actualSubtitle.getText());
-            assertEquals(randomDescription, actualDescription.getText());
-
+            // These views aren't available on wear devices.
+            if (!isWatch()) {
+                final UiObject2 actualTitle = findView(TITLE_VIEW);
+                final UiObject2 actualSubtitle = findView(SUBTITLE_VIEW);
+                final UiObject2 actualDescription = findView(DESCRIPTION_VIEW);
+                assertEquals(randomTitle, actualTitle.getText());
+                assertEquals(randomSubtitle, actualSubtitle.getText());
+                assertEquals(randomDescription, actualDescription.getText());
+            }
             // Finish auth
             successfullyEnterCredential();
             latch.await(3, TimeUnit.SECONDS);

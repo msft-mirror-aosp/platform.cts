@@ -92,6 +92,8 @@ SETTINGS_MENU_STABILIZATION_HIGH_QUALITY_TEXT = 'Stabilization High Quality'
 SETTINGS_VIDEO_STABILIZATION_MODE_TEXT = 'Set Video Stabilization'
 SETTINGS_MENU_STABILIZATION_OFF_TEXT = 'Stabilization Off'
 THREE_TO_FOUR_ASPECT_RATIO_DESC = '3 to 4 aspect ratio'
+ONE_TO_ONE_ASPECT_RATIO_DESC = '1 to 1 aspect ratio'
+NINE_TO_SIXTEEN_ASPECT_RATIO_DESC = '9 to 16 aspect ratio'
 UI_DESCRIPTION_BACK_CAMERA = 'Back Camera'
 UI_DESCRIPTION_FRONT_CAMERA = 'Front Camera'
 UI_OBJECT_WAIT_TIME_SECONDS = datetime.timedelta(seconds=3)
@@ -519,7 +521,9 @@ def switch_default_camera(dut, facing, log_path):
       r'toggle_button|front_back_switcher|switch_camera_button|camera_switch_button)'
     )
   non_switch_pattern = (r'(flash|panorama|video|photo|portrait|supermode|mode|'
-                        r'beauty|night|more|quick_switcher|exposure|add)')
+                        r'beauty|night|more|quick_switcher|mode_chip_text|'
+                        r'exposure|add)'
+                       )
   default_ui_dump = dut.ui.dump()
   logging.debug('Default camera UI dump: %s', default_ui_dump)
   root = et.fromstring(default_ui_dump)
@@ -697,7 +701,7 @@ def default_camera_app_dut_setup(device_id, pkg_name):
 
 
 def launch_jca_and_capture(dut, log_path, camera_facing, zoom_ratio=None,
-                           video_stabilization=None):
+                           video_stabilization=None, jca_aspect_ratio=None):
   """Launches the jetpack camera app and takes still capture.
 
   Args:
@@ -708,6 +712,8 @@ def launch_jca_and_capture(dut, log_path, camera_facing, zoom_ratio=None,
     By default it will be set to 1 if the value is None.
     video_stabilization: optional; video stabilization mode to be set while
     taking the JCA capture. By default, JCA uses AUTO mode.
+    jca_aspect_ratio: optional; Aspect ratio used while taking JCA captures
+    By default 3:4 is used.
 
     AUTO in JCA will set the stabilization mode to PREVIEW_STABILIZATION,
     if the lens supports it, and if not, it will set it to OIS. If neither
@@ -731,8 +737,11 @@ def launch_jca_and_capture(dut, log_path, camera_facing, zoom_ratio=None,
     )
     its_device_utils.run_adb_shell_command(device_id, launch_cmd)
     switch_jca_camera(dut, log_path, camera_facing)
+    aspect_ratio = THREE_TO_FOUR_ASPECT_RATIO_DESC  # default value
+    if jca_aspect_ratio is not None:
+      aspect_ratio = jca_aspect_ratio
     change_jca_aspect_ratio(dut, log_path,
-                            aspect_ratio=THREE_TO_FOUR_ASPECT_RATIO_DESC)
+                            aspect_ratio=aspect_ratio)
     if video_stabilization is not None:
       _set_jca_video_stabilization(dut, log_path, video_stabilization)
     # Set zoom_ratio after setting video stabilization to avoid reset to default

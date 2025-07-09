@@ -33,6 +33,7 @@ TestBeds:
       camera: <camera-id>
       scene: <scene-name>  # if <scene-name> runs all scenes
       foldable_device: "False"  # "True" if testing foldable device
+      chart_scaling: "None"  # use the values available for scene to be tested
 
   - Name: TEST_BED_SENSOR_FUSION  # Need 'sensor_fusion' in name for
     # checkerboard scenes (SF, scene_flash, and feature_combination) tests
