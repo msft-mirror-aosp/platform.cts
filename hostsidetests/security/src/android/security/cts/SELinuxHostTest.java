@@ -550,6 +550,11 @@ public class SELinuxHostTest extends BaseHostJUnit4Test {
             return;
         }
 
+        // TODO(397610347): Remove after introducing a new exemption rule for HAL services on TV.
+        if (getDevice().hasFeature("feature:android.hardware.type.television")) {
+            return;
+        }
+
         Set<String> types = sepolicyAnalyzeGetTypesAssociatedWithAttribute(
                 "hal_automotive_socket_exemption");
         if (!types.isEmpty()) {
