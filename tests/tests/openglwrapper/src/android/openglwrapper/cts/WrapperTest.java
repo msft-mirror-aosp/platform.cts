@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package android.opengl.cts;
+package android.openglwrapper.cts;
 
 import android.opengl.EGL14;
 import android.opengl.EGLConfig;
@@ -29,9 +29,7 @@ import android.util.Log;
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 
-/**
- * Test some aspects of the Java-language wrappers generated for OpenGL.
- */
+/** Test some aspects of the Java-language wrappers generated for OpenGL. */
 public class WrapperTest extends AndroidTestCase {
     private static final String TAG = "WrapperTest";
 
@@ -39,12 +37,9 @@ public class WrapperTest extends AndroidTestCase {
     private EGLContext mEGLContext;
     private EGLSurface mEGLSurface;
 
-
-    /**
-     * Tests range-checking on glGetIntegerv in GLES 1.x.
-     */
+    /** Tests range-checking on glGetIntegerv in GLES 1.x. */
     public void testGetIntegerv1() {
-        eglSetup(1, 1, 1);  // GLES 1.x with 1x1 pbuffer
+        eglSetup(1, 1, 1); // GLES 1.x with 1x1 pbuffer
 
         checkGlError("start");
 
@@ -67,7 +62,7 @@ public class WrapperTest extends AndroidTestCase {
 
         // try with an oversized IntBuffer with an offset
         final int OFFSET = 5;
-        ByteBuffer oversizeByteBuf = ByteBuffer.allocateDirect(4 * (formatCount+OFFSET));
+        ByteBuffer oversizeByteBuf = ByteBuffer.allocateDirect(4 * (formatCount + OFFSET));
         IntBuffer oversizeIntBuf = oversizeByteBuf.asIntBuffer();
         oversizeIntBuf.position(OFFSET);
         GLES10.glGetIntegerv(GLES10.GL_COMPRESSED_TEXTURE_FORMATS, oversizeIntBuf);
@@ -86,7 +81,7 @@ public class WrapperTest extends AndroidTestCase {
         }
 
         try {
-            GLES10.glGetIntegerv(GLES10.GL_COMPRESSED_TEXTURE_FORMATS, new int[formatCount-1], 0);
+            GLES10.glGetIntegerv(GLES10.GL_COMPRESSED_TEXTURE_FORMATS, new int[formatCount - 1], 0);
             checkGlError("glGetIntegerv(partial2)");
             throw new RuntimeException("buffer has overrun (int[])");
         } catch (IllegalArgumentException iae) {
@@ -96,11 +91,9 @@ public class WrapperTest extends AndroidTestCase {
         eglRelease();
     }
 
-    /**
-     * Tests range-checking on glGetIntegerv in GLES 2.x.
-     */
+    /** Tests range-checking on glGetIntegerv in GLES 2.x. */
     public void testGetIntegerv2() {
-        eglSetup(2, 1, 1);  // GLES 2.x with 1x1 pbuffer
+        eglSetup(2, 1, 1); // GLES 2.x with 1x1 pbuffer
 
         checkGlError("start");
 
@@ -123,7 +116,7 @@ public class WrapperTest extends AndroidTestCase {
 
         // try with an oversized IntBuffer with an offset
         final int OFFSET = 5;
-        ByteBuffer oversizeByteBuf = ByteBuffer.allocateDirect(4 * (formatCount+OFFSET));
+        ByteBuffer oversizeByteBuf = ByteBuffer.allocateDirect(4 * (formatCount + OFFSET));
         IntBuffer oversizeIntBuf = oversizeByteBuf.asIntBuffer();
         oversizeIntBuf.position(OFFSET);
         GLES20.glGetIntegerv(GLES20.GL_COMPRESSED_TEXTURE_FORMATS, oversizeIntBuf);
@@ -142,7 +135,7 @@ public class WrapperTest extends AndroidTestCase {
         }
 
         try {
-            GLES20.glGetIntegerv(GLES20.GL_COMPRESSED_TEXTURE_FORMATS, new int[formatCount-1], 0);
+            GLES20.glGetIntegerv(GLES20.GL_COMPRESSED_TEXTURE_FORMATS, new int[formatCount - 1], 0);
             checkGlError("glGetIntegerv(partial2)");
             throw new RuntimeException("buffer has overrun (int[])");
         } catch (IllegalArgumentException iae) {
@@ -153,12 +146,11 @@ public class WrapperTest extends AndroidTestCase {
     }
 
     /**
-     * Tests whether EGL is releasing resources when the thread exits.  If
-     * it doesn't, we'll consume memory rapidly, and will fail or be
-     * killed within a couple hundred iterations.
-     * <p>
-     * It may be worthwhile to watch the memory growth with procrank or showmap
-     * while the test runs to detect smaller leaks.
+     * Tests whether EGL is releasing resources when the thread exits. If it doesn't, we'll consume
+     * memory rapidly, and will fail or be killed within a couple hundred iterations.
+     *
+     * <p>It may be worthwhile to watch the memory growth with procrank or showmap while the test
+     * runs to detect smaller leaks.
      */
     public void testThreadCleanup() throws Throwable {
         class WrappedTest implements Runnable {
@@ -215,9 +207,7 @@ public class WrapperTest extends AndroidTestCase {
         }
     }
 
-    /**
-     * Checks for GL errors.
-     */
+    /** Checks for GL errors. */
     public void checkGlError(String op) {
         int error;
         while ((error = GLES20.glGetError()) != GLES20.GL_NO_ERROR) {
@@ -227,9 +217,9 @@ public class WrapperTest extends AndroidTestCase {
     }
 
     /**
-     * Prepares EGL.  Pass in the desired GLES API version (1 or 2).
-     * <p>
-     * Sets mEGLDisplay, mEGLContext, and mEGLSurface, and makes them current.
+     * Prepares EGL. Pass in the desired GLES API version (1 or 2).
+     *
+     * <p>Sets mEGLDisplay, mEGLContext, and mEGLSurface, and makes them current.
      */
     private void eglSetup(int api, int width, int height) {
         mEGLDisplay = EGL14.eglGetDisplay(EGL14.EGL_DEFAULT_DISPLAY);
@@ -256,27 +246,25 @@ public class WrapperTest extends AndroidTestCase {
 
         // Configure EGL for OpenGL ES 1.0 or 2.0, with a pbuffer
         int[] attribList = {
-                EGL14.EGL_RED_SIZE, 8,
-                EGL14.EGL_GREEN_SIZE, 8,
-                EGL14.EGL_BLUE_SIZE, 8,
-                EGL14.EGL_SURFACE_TYPE, EGL14.EGL_PBUFFER_BIT,
-                EGL14.EGL_RENDERABLE_TYPE, renderableType,
-                EGL14.EGL_NONE
+            EGL14.EGL_RED_SIZE, 8,
+            EGL14.EGL_GREEN_SIZE, 8,
+            EGL14.EGL_BLUE_SIZE, 8,
+            EGL14.EGL_SURFACE_TYPE, EGL14.EGL_PBUFFER_BIT,
+            EGL14.EGL_RENDERABLE_TYPE, renderableType,
+            EGL14.EGL_NONE
         };
         EGLConfig[] configs = new EGLConfig[1];
         int[] numConfigs = new int[1];
-        if (!EGL14.eglChooseConfig(mEGLDisplay, attribList, 0, configs, 0, configs.length,
-                numConfigs, 0)) {
+        if (!EGL14.eglChooseConfig(
+                mEGLDisplay, attribList, 0, configs, 0, configs.length, numConfigs, 0)) {
             throw new RuntimeException("unable to find RGB888+pbuffer ES" + api + " EGL config");
         }
 
         // Create context
-        int[] attrib_list = {
-                EGL14.EGL_CONTEXT_CLIENT_VERSION, api,
-                EGL14.EGL_NONE
-        };
-        mEGLContext = EGL14.eglCreateContext(mEGLDisplay, configs[0], EGL14.EGL_NO_CONTEXT,
-                attrib_list, 0);
+        int[] attrib_list = {EGL14.EGL_CONTEXT_CLIENT_VERSION, api, EGL14.EGL_NONE};
+        mEGLContext =
+                EGL14.eglCreateContext(
+                        mEGLDisplay, configs[0], EGL14.EGL_NO_CONTEXT, attrib_list, 0);
         checkEglError("eglCreateContext");
         if (mEGLContext == null) {
             throw new RuntimeException("null context");
@@ -284,9 +272,9 @@ public class WrapperTest extends AndroidTestCase {
 
         // Create a 1x1 pbuffer surface
         int[] surfaceAttribs = {
-                EGL14.EGL_WIDTH, width,
-                EGL14.EGL_HEIGHT, height,
-                EGL14.EGL_NONE
+            EGL14.EGL_WIDTH, width,
+            EGL14.EGL_HEIGHT, height,
+            EGL14.EGL_NONE
         };
         mEGLSurface = EGL14.eglCreatePbufferSurface(mEGLDisplay, configs[0], surfaceAttribs, 0);
         checkEglError("eglCreatePbufferSurface");
@@ -300,9 +288,7 @@ public class WrapperTest extends AndroidTestCase {
         }
     }
 
-    /**
-     * Releases EGL goodies.
-     */
+    /** Releases EGL goodies. */
     private void eglRelease() {
         // Terminating the display will release most objects, but won't discard the current
         // surfaces and context until we release the thread.  It shouldn't matter what order
@@ -318,9 +304,7 @@ public class WrapperTest extends AndroidTestCase {
         mEGLSurface = null;
     }
 
-    /**
-     * Checks for EGL errors.
-     */
+    /** Checks for EGL errors. */
     private void checkEglError(String msg) {
         boolean failed = false;
         int error;
