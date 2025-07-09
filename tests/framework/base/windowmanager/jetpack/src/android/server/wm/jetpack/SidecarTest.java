@@ -45,11 +45,14 @@ import androidx.window.sidecar.SidecarDisplayFeature;
 import androidx.window.sidecar.SidecarInterface;
 import androidx.window.sidecar.SidecarWindowLayoutInfo;
 
+import com.android.bedstead.harrier.annotations.RequireNotAutomotive;
+
 import com.google.common.collect.BoundType;
 import com.google.common.collect.Range;
 
 import org.junit.Before;
 import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -76,6 +79,10 @@ public class SidecarTest extends WindowManagerJetpackTestBase {
     public static final SetRequestedOrientationRule sSetRequestedOrientationRule =
             new SetRequestedOrientationRule();
 
+    @ClassRule @Rule
+    public static final com.android.bedstead.harrier.DeviceState sDeviceState =
+            new com.android.bedstead.harrier.DeviceState();
+
     @Before
     @Override
     public void setUp() throws Exception {
@@ -88,10 +95,9 @@ public class SidecarTest extends WindowManagerJetpackTestBase {
         assertThat(mWindowToken).isNotNull();
     }
 
-    /**
-     * Test adding and removing a sidecar interface window layout change listener.
-     */
+    /** Test adding and removing a sidecar interface window layout change listener. */
     @Test
+    @RequireNotAutomotive(reason = "Automotive screens don't support rotation")
     public void testSidecarInterface_onWindowLayoutChangeListener() {
         // Set activity to portrait
         setActivityOrientationActivityDoesNotHandleOrientationChanges(mActivity,
