@@ -23,6 +23,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import android.graphics.Bitmap;
+import android.net.Uri;
 import android.os.Message;
 import android.platform.test.annotations.AppModeFull;
 import android.util.Base64;
@@ -31,9 +32,12 @@ import android.view.ViewParent;
 import android.webkit.ConsoleMessage;
 import android.webkit.JsPromptResult;
 import android.webkit.JsResult;
+import android.webkit.ValueCallback;
+import android.webkit.WebChromeClient.FileChooserParams;
 import android.webkit.WebIconDatabase;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
+import android.webkit.cts.WebViewSyncLoader.WaitForLoadedClient;
 import android.webkit.cts.WebViewSyncLoader.WaitForProgressClient;
 
 import androidx.test.ext.junit.rules.ActivityScenarioRule;
@@ -413,6 +417,64 @@ public class WebChromeClientTest extends SharedWebViewTest{
         }
     }
 
+    @Test
+    public void testOnShowFileChooserInputFile() {
+        final MockWebChromeClient webChromeClient = new MockWebChromeClient();
+        mOnUiThread.setWebChromeClient(webChromeClient);
+        final SettableFuture<String> pageCommitVisibleFuture = SettableFuture.create();
+        mOnUiThread.setWebViewClient(
+                new WaitForLoadedClient(mOnUiThread) {
+                    public void onPageCommitVisible(WebView view, String url) {
+                        pageCommitVisibleFuture.set(url);
+                    }
+                });
+
+        assertFalse(webChromeClient.hadOnShowFileChooser());
+        String url = mWebServer.getAssetUrl(TestHtmlConstants.INPUT_FILE_URL);
+        mOnUiThread.loadUrlAndWaitForCompletion(url);
+        WebkitUtils.waitForFuture(pageCommitVisibleFuture);
+        tapWebView();
+
+        new PollingCheck(WebkitUtils.TEST_TIMEOUT_MS) {
+            @Override
+            protected boolean check() {
+                return webChromeClient.hadOnShowFileChooser();
+            }
+        }.run();
+        FileChooserParams params = webChromeClient.getFileChooserParams();
+        assertEquals(params.getMode(), FileChooserParams.MODE_OPEN);
+        assertEquals(params.getPermissionMode(), FileChooserParams.PERMISSION_MODE_READ);
+    }
+
+    @Test
+    public void testOnShowFileChooserInputFileMultiple() {
+        final MockWebChromeClient webChromeClient = new MockWebChromeClient();
+        mOnUiThread.setWebChromeClient(webChromeClient);
+        final SettableFuture<String> pageCommitVisibleFuture = SettableFuture.create();
+        mOnUiThread.setWebViewClient(
+                new WaitForLoadedClient(mOnUiThread) {
+                    public void onPageCommitVisible(WebView view, String url) {
+                        pageCommitVisibleFuture.set(url);
+                    }
+                });
+
+        assertFalse(webChromeClient.hadOnShowFileChooser());
+        String url = mWebServer.getAssetUrl(TestHtmlConstants.INPUT_FILE_MULTIPLE_URL);
+        mOnUiThread.loadUrlAndWaitForCompletion(url);
+        WebkitUtils.waitForFuture(pageCommitVisibleFuture);
+        tapWebView();
+
+        new PollingCheck(WebkitUtils.TEST_TIMEOUT_MS) {
+            @Override
+            protected boolean check() {
+                return webChromeClient.hadOnShowFileChooser();
+            }
+        }.run();
+        FileChooserParams params = webChromeClient.getFileChooserParams();
+        assertEquals(params.getMode(), FileChooserParams.MODE_OPEN_MULTIPLE);
+        assertEquals(params.getPermissionMode(), FileChooserParams.PERMISSION_MODE_READ);
+    }
+
     /**
      * Taps in the the center of a webview.
      */
@@ -441,6 +503,8 @@ public class WebChromeClientTest extends SharedWebViewTest{
         private boolean mHadOnRequestFocus;
         private boolean mHadOnReceivedIcon;
         private WebView mChildWebView;
+        private boolean mHadOnShowFileChooser;
+        private FileChooserParams mFileChooserParams;
 
         public MockWebChromeClient() {
             super(mOnUiThread);
@@ -496,6 +560,14 @@ public class WebChromeClientTest extends SharedWebViewTest{
 
         public String getMessage() {
             return mMessage;
+        }
+
+        public boolean hadOnShowFileChooser() {
+            return mHadOnShowFileChooser;
+        }
+
+        public FileChooserParams getFileChooserParams() {
+            return mFileChooserParams;
         }
 
         @Override
@@ -594,6 +666,16 @@ public class WebChromeClientTest extends SharedWebViewTest{
         @Override
         public void onReceivedIcon(WebView view, Bitmap icon) {
             mHadOnReceivedIcon = true;
+        }
+
+        @Override
+        public boolean onShowFileChooser(
+                WebView webView,
+                ValueCallback<Uri[]> filePathCallback,
+                FileChooserParams fileChooserParams) {
+            mHadOnShowFileChooser = true;
+            mFileChooserParams = fileChooserParams;
+            return false;
         }
     }
 }
