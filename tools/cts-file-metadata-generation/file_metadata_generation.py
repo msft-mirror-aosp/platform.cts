@@ -121,10 +121,10 @@ def _handle_config_file(metadata: metadata_pb2.FileMetadata, file_path: str) -> 
         )
 
 
-    assert len(component) == 1 and len(sim_card_token) <= 1 and runners
+    assert len(component) <= 1 and len(sim_card_token) <= 1 and runners
 
     metadata.config_summary.CopyFrom(metadata_pb2.ConfigFileSummary(
-        component=component[0],
+        component=component[0] if component else None,
         test_runner=runners,
         sim_card_token=sim_card_token[0] if sim_card_token else None,
         mainline_module_package_name=list(mainline_modules),
