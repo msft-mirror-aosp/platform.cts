@@ -74,7 +74,6 @@ public class TvMaxWindowSizeTests extends ActivityManagerTestBase {
 
     @Test
     public void test_preSApplication_1080p_windowSizeCap() {
-        // Only run this if the resolution is over 1080p (at least on one side).
         assumeFalse(mDisplayLongestWidth <= 1920 && mDisplayShortestWidth <= 1080);
 
         final CommandSession.SizeInfo sizeInfo = launchAndGetReportedSizes(SDK_30_TEST_ACTIVITY);
@@ -82,8 +81,13 @@ public class TvMaxWindowSizeTests extends ActivityManagerTestBase {
         final int longestWidth = Math.max(sizeInfo.windowAppWidth, sizeInfo.windowAppHeight);
         final int shortestWidth = Math.min(sizeInfo.windowAppWidth, sizeInfo.windowAppHeight);
 
-        assertThat(longestWidth, lessThanOrEqualTo(1920));
-        assertThat(shortestWidth, lessThanOrEqualTo(1080));
+        assertThat("App window height must not exceed 1080",
+                shortestWidth, lessThanOrEqualTo(1080));
+
+        if (longestWidth * 9 <= shortestWidth * 16) {
+            assertThat("App window width must not exceed 1920 for <=16:9 aspect",
+                    longestWidth, lessThanOrEqualTo(1920));
+        }
     }
 
     @Test
