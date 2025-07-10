@@ -361,9 +361,11 @@ public class CtsIsolatedInferenceService extends OnDeviceSandboxedInferenceServi
             return;
         }
 
-        if (processingState.containsKey(UpdateProcessingStateKeys.KEY_DEVICE_CONFIG_UPDATE)) {
+        if (processingState.containsKey(
+                OnDeviceSandboxedInferenceService.KEY_DEVICE_CONFIG_UPDATE)) {
             Log.e(TAG, "DeviceConfig Update callback received.");
-            mReceivedDeviceConfig = processingState.getParcelable(UpdateProcessingStateKeys.KEY_DEVICE_CONFIG_UPDATE,
+            mReceivedDeviceConfig = processingState.getParcelable(
+                    OnDeviceSandboxedInferenceService.KEY_DEVICE_CONFIG_UPDATE,
                     PersistableBundle.class);
             PersistableBundle resultBundle = new PersistableBundle();
             resultBundle.putBoolean("deviceConfig", true);
