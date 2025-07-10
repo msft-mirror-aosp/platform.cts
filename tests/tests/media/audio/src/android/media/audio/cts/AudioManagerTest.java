@@ -19,6 +19,7 @@ package android.media.audio.cts;
 import static android.media.AudioManager.ADJUST_LOWER;
 import static android.media.AudioManager.ADJUST_RAISE;
 import static android.media.AudioManager.ADJUST_SAME;
+import static android.media.AudioManager.MODE_ASSISTANT_CONVERSATION;
 import static android.media.AudioManager.MODE_IN_CALL;
 import static android.media.AudioManager.MODE_IN_COMMUNICATION;
 import static android.media.AudioManager.MODE_NORMAL;
@@ -28,12 +29,14 @@ import static android.media.AudioManager.RINGER_MODE_SILENT;
 import static android.media.AudioManager.RINGER_MODE_VIBRATE;
 import static android.media.AudioManager.STREAM_ACCESSIBILITY;
 import static android.media.AudioManager.STREAM_ALARM;
+import static android.media.AudioManager.STREAM_ASSISTANT;
 import static android.media.AudioManager.STREAM_DTMF;
 import static android.media.AudioManager.STREAM_MUSIC;
 import static android.media.AudioManager.STREAM_NOTIFICATION;
 import static android.media.AudioManager.STREAM_RING;
 import static android.media.AudioManager.STREAM_SYSTEM;
 import static android.media.AudioManager.STREAM_VOICE_CALL;
+import static android.media.AudioManager.USE_DEFAULT_STREAM_TYPE;
 import static android.media.AudioManager.VIBRATE_SETTING_OFF;
 import static android.media.AudioManager.VIBRATE_SETTING_ON;
 import static android.media.AudioManager.VIBRATE_SETTING_ONLY_SILENT;
@@ -585,6 +588,21 @@ public class AudioManagerTest {
         assertEquals(MODE_RINGTONE, mAudioManager.getMode());
         mAudioManager.setMode(MODE_IN_COMMUNICATION);
         assertEquals(MODE_IN_COMMUNICATION, mAudioManager.getMode());
+
+        if (Flags.assistantVolumeControl()) {
+            try {
+                getInstrumentation()
+                        .getUiAutomation()
+                        .adoptShellPermissionIdentity(
+                                Manifest.permission.MODIFY_AUDIO_SETTINGS_PRIVILEGED);
+                mAudioManager.setMode(MODE_ASSISTANT_CONVERSATION);
+
+                assertEquals(MODE_ASSISTANT_CONVERSATION, mAudioManager.getMode());
+            } finally {
+                getInstrumentation().getUiAutomation().dropShellPermissionIdentity();
+            }
+        }
+
         mAudioManager.setMode(MODE_NORMAL);
         assertEquals(MODE_NORMAL, mAudioManager.getMode());
     }
@@ -1289,6 +1307,36 @@ public class AudioManagerTest {
                 () -> mAudioManager.adjustStreamVolume(STREAM_ACCESSIBILITY, ADJUST_RAISE, 0),
                 STREAM_ACCESSIBILITY,
                 "Setting accessibility vol requires perms");
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_ASSISTANT_VOLUME_CONTROL)
+    @Test
+    public void testAssistantVolume() throws Exception {
+        assumeFalse(
+                "AudioManagerTest testAssistantVolume() skipped: fixed volume", mUseFixedVolume);
+
+        getInstrumentation()
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(
+                        Manifest.permission.MODIFY_AUDIO_SETTINGS_PRIVILEGED,
+                        Manifest.permission.MODIFY_AUDIO_ROUTING);
+        int originalAssistantVolume = mAudioManager.getStreamVolume(STREAM_ASSISTANT);
+        mAudioManager.setStreamVolume(
+                STREAM_ASSISTANT, mAudioManager.getStreamMaxVolume(STREAM_ASSISTANT), 0);
+        mAudioManager.setMode(MODE_ASSISTANT_CONVERSATION);
+
+        assertCallChangesStreamVolume(
+                () ->
+                        mAudioManager.adjustSuggestedStreamVolume(
+                                ADJUST_LOWER, USE_DEFAULT_STREAM_TYPE, 0),
+                STREAM_ASSISTANT,
+                mAudioManager.getStreamVolume(STREAM_ASSISTANT) - getVolumeDelta(STREAM_ASSISTANT),
+                "Adjusting default stream should change STREAM_ASSISTANT");
+
+        mAudioManager.setMode(MODE_NORMAL);
+
+        mAudioManager.setStreamVolume(STREAM_ASSISTANT, originalAssistantVolume, 0);
+        getInstrumentation().getUiAutomation().dropShellPermissionIdentity();
     }
 
     @Test
