@@ -26,6 +26,7 @@ android_test {
         "TestParameterInjector",
         "com.android.window.flags.window-aconfig-java",
         "android.app.flags-aconfig-java",
+        "backup_flags_lib",
     ],
     srcs: [
         "src/**/*.java",
