@@ -35,13 +35,18 @@ import static androidx.test.core.app.ApplicationProvider.getApplicationContext;
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
+import static org.junit.Assert.assertTrue;
+
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.after;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.verify;
 
 import android.companion.virtual.VirtualDeviceManager;
 import android.companion.virtual.VirtualDeviceParams;
+import android.companion.virtual.camera.CaptureResultBuilder;
+import android.companion.virtual.camera.VirtualCameraCallback;
 import android.companion.virtualdevice.flags.Flags;
 import android.content.Context;
 import android.graphics.Bitmap;
@@ -56,6 +61,7 @@ import android.hardware.camera2.params.SessionConfiguration;
 import android.media.Image;
 import android.media.ImageWriter;
 import android.os.SystemClock;
+import android.os.Trace;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
@@ -85,7 +91,10 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.function.ObjLongConsumer;
 
 @AppModeFull(reason = "VirtualDeviceManager cannot be accessed by instant apps")
 @RunWith(JUnitParamsRunner.class)
@@ -658,6 +667,71 @@ public class VirtualCameraCaptureTest {
         assertThat(receivedTimestamps).containsAtLeastElementsIn(writtenTimestamps);
         assertThat(receivedTimestamps.size()).isGreaterThan(writtenTimestamps.size());
         assertThat(captureResults).hasSize(imageCount);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_CAMERA_METADATA)
+    public void captureImageWithFrameMetadata_withRequestAndResultMetadata_succeeds()
+            throws Exception {
+        Trace.beginSection("VirtualCameraMetadata.createVirtualCameraWithPerFrameCameraMetadata");
+        mCaptureHelper.createVirtualCameraWithPerFrameCameraMetadata();
+        Trace.endSection();
+        VirtualCameraCallback mockCallback = mCaptureHelper.getVirtualCameraCallback();
+        final CountDownLatch consumerLatch = new CountDownLatch(1);
+        final AtomicReference<ObjLongConsumer<CaptureResult>> consumer =
+                new AtomicReference<ObjLongConsumer<CaptureResult>>();
+        final int imageCount = 30;
+
+        doAnswer(invocation -> {
+            // The second argument to onConfigureSession is the result consumer.
+            consumer.set(invocation.getArgument(1));
+            consumerLatch.countDown();
+            return null;
+        }).when(mockCallback).onConfigureSession(any(), any());
+
+        CaptureConfiguration config = new CaptureConfiguration()
+                .setPerFrameCameraMetadataEnabled(true)
+                .setImageCount(imageCount)
+                .setCapturePeriod(Duration.ofNanos(
+                        SECOND_TO_NANOS / VirtualCameraCaptureHelper.CAMERA_MAX_FPS))
+                .setOutputFormat(YUV_420_888)
+                .setRequestBuilderModifier(builder ->
+                        builder.set(
+                                CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_OFF))
+                .setInputSurfaceConsumer(surface -> {
+                    try {
+                        assertTrue("CaptureResults consumer not available in time",
+                                consumerLatch.await(3, TimeUnit.SECONDS));
+                    } catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
+
+                    CaptureResult resultToSend = new CaptureResultBuilder()
+                            .set(CaptureResult.CONTROL_AE_STATE,
+                                    CaptureResult.CONTROL_AE_STATE_CONVERGED)
+                            .build();
+
+                    final long currentTimestamp = System.nanoTime();
+
+                    ImageWriter imageWriter = ImageWriter.newInstance(surface, 1, YUV_420_888);
+                    Image image = imageWriter.dequeueInputImage();
+                    image.setTimestamp(currentTimestamp);
+                    imageWriter.queueInputImage(image);
+                    imageWriter.close();
+
+                    Trace.beginSection("VirtualCameraMetadata.sendCaptureResult");
+                    consumer.get().accept(resultToSend, currentTimestamp);
+                    Trace.endSection();
+                });
+
+        Image image = mCaptureHelper.captureImages(config);
+        assertThat(image).isNotNull();
+        image.close();
+
+        TotalCaptureResult totalResult = mCaptureHelper.getLastResult();
+        assertThat(totalResult).isNotNull();
+
+        // TODO: b/371167033 - verify that the capture result metadata is received correctly
     }
 
     @SuppressWarnings("unused") // Parameter for parametrized tests
