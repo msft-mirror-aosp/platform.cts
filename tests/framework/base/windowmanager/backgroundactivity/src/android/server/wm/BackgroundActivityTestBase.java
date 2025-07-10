@@ -20,8 +20,17 @@ import static android.app.AppOpsManager.MODE_ERRORED;
 import static android.app.WindowConfiguration.ACTIVITY_TYPE_STANDARD;
 import static android.app.WindowConfiguration.WINDOWING_MODE_PINNED;
 import static android.server.wm.ComponentNameUtils.getActivityName;
-import static android.server.wm.backgroundactivity.common.CommonComponents.COMMON_FOREGROUND_ACTIVITY_EXTRAS;
-import static android.server.wm.backgroundactivity.common.CommonComponents.TEST_SERVICE;
+import static android.server.wm.backgroundactivity.appa.Components.APP_A_BACKGROUND_ACTIVITY;
+import static android.server.wm.backgroundactivity.appa.Components.APP_A_FOREGROUND_ACTIVITY;
+import static android.server.wm.backgroundactivity.appa.Components.APP_A_PACKAGE_NAME;
+import static android.server.wm.backgroundactivity.appa.Components.APP_A_SIMPLE_ADMIN_RECEIVER;
+import static android.server.wm.backgroundactivity.appa33.Components.APP_A_33_PACKAGE_NAME;
+import static android.server.wm.backgroundactivity.appa36.Components.APP_A_36_PACKAGE_NAME;
+import static android.server.wm.backgroundactivity.appb.Components.APP_B_PACKAGE_NAME;
+import static android.server.wm.backgroundactivity.appb33.Components.APP_B_33_PACKAGE_NAME;
+import static android.server.wm.backgroundactivity.appc.Components.APP_C_PACKAGE_NAME;
+import static android.server.wm.backgroundactivity.appc33.Components.APP_C_33_PACKAGE_NAME;
+import static android.server.wm.backgroundactivity.common.Components.CommonForegroundActivityExtras;
 
 import static com.android.compatibility.common.util.SystemUtil.runShellCommand;
 import static com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity;
@@ -39,7 +48,6 @@ import android.content.Intent;
 import android.os.SystemClock;
 import android.os.UserManager;
 import android.server.wm.WindowManagerState.Task;
-import android.server.wm.backgroundactivity.appa.Components;
 import android.server.wm.backgroundactivity.common.ITestService;
 import android.util.Log;
 
@@ -64,27 +72,15 @@ public abstract class BackgroundActivityTestBase extends ActivityManagerTestBase
 
     private static final String TAG = BackgroundActivityTestBase.class.getSimpleName();
 
-    static final String APP_A_PACKAGE = "android.server.wm.backgroundactivity.appa";
-    static final Components APP_A = Components.get(APP_A_PACKAGE);
-    static final Components APP_A_33 = Components.get(APP_A_PACKAGE + "33");
-    static final Components APP_A_36 = Components.get(APP_A_PACKAGE + "36");
-
-    static final String APP_B_PACKAGE = "android.server.wm.backgroundactivity.appb";
-    static final Components APP_B = Components.get(APP_B_PACKAGE);
-    static final Components APP_B_33 = Components.get(APP_B_PACKAGE + "33");
-
-    static final String APP_C_PACKAGE = "android.server.wm.backgroundactivity.appc";
-    static final Components APP_C = Components.get(APP_C_PACKAGE);
-    static final Components APP_C_33 = Components.get(APP_C_PACKAGE + "33");
-    static final Components APP_ASM_OPT_IN =
-            Components.get("android.server.wm.backgroundactivity.appasmoptin");
-
-    static final String APP_ASM_OPT_OUT_PACKAGE =
-            "android.server.wm.backgroundactivity.appasmoptout";
-    static final Components APP_ASM_OPT_OUT = Components.get(APP_ASM_OPT_OUT_PACKAGE);
-
-    static final List<Components> ALL_APPS =
-            List.of(APP_A, APP_A_33, APP_A_36, APP_B, APP_B_33, APP_C, APP_C_33, APP_ASM_OPT_OUT);
+    private static final List<String> ALL_APPS =
+            List.of(
+                    APP_A_PACKAGE_NAME,
+                    APP_A_33_PACKAGE_NAME,
+                    APP_A_36_PACKAGE_NAME,
+                    APP_B_PACKAGE_NAME,
+                    APP_B_33_PACKAGE_NAME,
+                    APP_C_PACKAGE_NAME,
+                    APP_C_33_PACKAGE_NAME);
 
     static final String SHELL_PACKAGE = "com.android.shell";
     // This can be long as the activity should start
@@ -103,21 +99,25 @@ public abstract class BackgroundActivityTestBase extends ActivityManagerTestBase
     @CallSuper
     public void setUp() throws Exception {
         // disable SAW appopp (it's granted automatically when installed in CTS)
-        for (Components components : ALL_APPS) {
-            AppOpsUtils.setOpMode(components.APP_PACKAGE_NAME, "android:system_alert_window",
-                    MODE_ERRORED);
-            assertEquals(AppOpsUtils.getOpMode(components.APP_PACKAGE_NAME,
-                            "android:system_alert_window"),
+        for (String packageName : ALL_APPS) {
+            AppOpsUtils.setOpMode(packageName, "android:system_alert_window", MODE_ERRORED);
+            assertEquals(
+                    AppOpsUtils.getOpMode(packageName, "android:system_alert_window"),
                     MODE_ERRORED);
         }
 
         super.setUp();
 
-        for (Components app : ALL_APPS) {
-            assertNull(mWmState.getTaskByActivity(app.BACKGROUND_ACTIVITY));
-            assertNull(mWmState.getTaskByActivity(app.FOREGROUND_ACTIVITY));
-            runShellCommand("cmd deviceidle tempwhitelist -d 100000 "
-                    + app.APP_PACKAGE_NAME);
+        for (String packageName : ALL_APPS) {
+            final ComponentName backgroundActivity =
+                    new ComponentName(packageName, APP_A_BACKGROUND_ACTIVITY.getClassName());
+            assertNull(mWmState.getTaskByActivity(backgroundActivity));
+
+            final ComponentName foregroundActivity =
+                    new ComponentName(packageName, APP_A_FOREGROUND_ACTIVITY.getClassName());
+            assertNull(mWmState.getTaskByActivity(foregroundActivity));
+
+            runShellCommand("cmd deviceidle tempwhitelist -d 100000 " + packageName);
         }
     }
 
@@ -125,19 +125,23 @@ public abstract class BackgroundActivityTestBase extends ActivityManagerTestBase
     public void tearDown() throws Exception {
         // We do this before anything else, because having an active device owner can prevent us
         // from being able to force stop apps. (b/142061276)
-        for (Components app : ALL_APPS) {
-            runWithShellPermissionIdentity(() -> {
-                runShellCommand("dpm remove-active-admin --user 0 "
-                        + app.SIMPLE_ADMIN_RECEIVER.flattenToString());
-                if (UserManager.isHeadlessSystemUserMode()) {
-                    // Must also remove the PO from current user
-                    runShellCommand("dpm remove-active-admin --user cur "
-                            + app.SIMPLE_ADMIN_RECEIVER.flattenToString());
-                }
-            });
-            stopTestPackage(app.APP_PACKAGE_NAME);
-            AppOpsUtils.reset(app.APP_PACKAGE_NAME);
-
+        for (String packageName : ALL_APPS) {
+            final ComponentName simpleAdminReceiver =
+                    new ComponentName(packageName, APP_A_SIMPLE_ADMIN_RECEIVER.getClassName());
+            runWithShellPermissionIdentity(
+                    () -> {
+                        runShellCommand(
+                                "dpm remove-active-admin --user 0 "
+                                        + simpleAdminReceiver.flattenToString());
+                        if (UserManager.isHeadlessSystemUserMode()) {
+                            // Must also remove the PO from current user
+                            runShellCommand(
+                                    "dpm remove-active-admin --user cur "
+                                            + simpleAdminReceiver.flattenToString());
+                        }
+                    });
+            stopTestPackage(packageName);
+            AppOpsUtils.reset(packageName);
         }
         AppOpsUtils.reset(SHELL_PACKAGE);
         for (FutureConnection<ITestService> fc : mServiceConnections.values()) {
@@ -200,45 +204,42 @@ public abstract class BackgroundActivityTestBase extends ActivityManagerTestBase
         private Intent mBroadcastIntent = new Intent();
         private Intent mLaunchIntent = new Intent();
 
-        ActivityStartVerifier setupTaskWithForegroundActivity(Components app) {
-            setupTaskWithForegroundActivity(app, -1);
-            return this;
+        ActivityStartVerifier setupTaskWithForegroundActivity(ComponentName component) {
+            return setupTaskWithForegroundActivity(component, -1);
         }
 
-        ActivityStartVerifier setupTaskWithForegroundActivity(Components app, int id) {
+        ActivityStartVerifier setupTaskWithForegroundActivity(ComponentName component, int id) {
             Intent intent = new Intent();
-            intent.setComponent(app.FOREGROUND_ACTIVITY);
+            intent.setComponent(component);
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            intent.putExtra(COMMON_FOREGROUND_ACTIVITY_EXTRAS.ACTIVITY_ID, id);
+            intent.putExtra(CommonForegroundActivityExtras.ACTIVITY_ID, id);
             mContext.startActivity(intent);
-            mWmState.waitForValidState(app.FOREGROUND_ACTIVITY);
+            mWmState.waitForValidState(component);
             return this;
         }
 
-        ActivityStartVerifier setupTaskWithEmbeddingActivity(Components app) {
+        ActivityStartVerifier setupTaskWithEmbeddingActivity(ComponentName component) {
             Intent intent = new Intent();
-            intent.setComponent(app.FOREGROUND_EMBEDDING_ACTIVITY);
+            intent.setComponent(component);
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             mContext.startActivity(intent);
-            mWmState.waitForValidState(app.FOREGROUND_EMBEDDING_ACTIVITY);
+            mWmState.waitForValidState(component);
             return this;
         }
 
-        ActivityStartVerifier startFromForegroundActivity(Components app) {
-            mBroadcastIntent.setAction(
-                    app.FOREGROUND_ACTIVITY_ACTIONS.LAUNCH_BACKGROUND_ACTIVITIES);
+        ActivityStartVerifier startFromForegroundActivity(String action) {
+            mBroadcastIntent.setAction(action);
             return this;
         }
 
-        ActivityStartVerifier startFromForegroundActivity(Components app, int id) {
-            startFromForegroundActivity(app);
-            mBroadcastIntent.putExtra(COMMON_FOREGROUND_ACTIVITY_EXTRAS.ACTIVITY_ID, id);
+        ActivityStartVerifier startFromForegroundActivity(String action, int id) {
+            startFromForegroundActivity(action);
+            mBroadcastIntent.putExtra(CommonForegroundActivityExtras.ACTIVITY_ID, id);
             return this;
         }
 
-        ActivityStartVerifier startFromEmbeddingActivity(Components app) {
-            mBroadcastIntent.setAction(
-                    app.FOREGROUND_EMBEDDING_ACTIVITY_ACTIONS.LAUNCH_EMBEDDED_ACTIVITY);
+        ActivityStartVerifier startFromEmbeddingActivity(String action) {
+            mBroadcastIntent.setAction(action);
             return this;
         }
 
@@ -249,14 +250,14 @@ public abstract class BackgroundActivityTestBase extends ActivityManagerTestBase
 
         ActivityStartVerifier activity(ComponentName to) {
             mLaunchIntent.setComponent(to);
-            mBroadcastIntent.putExtra(COMMON_FOREGROUND_ACTIVITY_EXTRAS.LAUNCH_INTENTS,
-                    new Intent[]{mLaunchIntent});
+            mBroadcastIntent.putExtra(
+                    CommonForegroundActivityExtras.LAUNCH_INTENTS, new Intent[] {mLaunchIntent});
             return this;
         }
 
         ActivityStartVerifier activity(ComponentName to, int id) {
             activity(to);
-            mLaunchIntent.putExtra(COMMON_FOREGROUND_ACTIVITY_EXTRAS.ACTIVITY_ID, id);
+            mLaunchIntent.putExtra(CommonForegroundActivityExtras.ACTIVITY_ID, id);
             return this;
         }
 
@@ -264,8 +265,8 @@ public abstract class BackgroundActivityTestBase extends ActivityManagerTestBase
         // for this action.
         ActivityStartVerifier action(String action) {
             mLaunchIntent.setAction(action);
-            mBroadcastIntent.putExtra(COMMON_FOREGROUND_ACTIVITY_EXTRAS.LAUNCH_INTENTS,
-                    new Intent[]{mLaunchIntent});
+            mBroadcastIntent.putExtra(
+                    CommonForegroundActivityExtras.LAUNCH_INTENTS, new Intent[] {mLaunchIntent});
             return this;
         }
 
@@ -276,7 +277,7 @@ public abstract class BackgroundActivityTestBase extends ActivityManagerTestBase
         }
 
         ActivityStartVerifier allowCrossUidLaunch() {
-            mLaunchIntent.putExtra(COMMON_FOREGROUND_ACTIVITY_EXTRAS.ALLOW_CROSS_UID, true);
+            mLaunchIntent.putExtra(CommonForegroundActivityExtras.ALLOW_CROSS_UID, true);
             return this;
         }
 
@@ -413,20 +414,18 @@ public abstract class BackgroundActivityTestBase extends ActivityManagerTestBase
         );
         recordTaskStateDump("assertActivityNotFocused " + componentName);
         assertWithMessage(
-                "activity " + activityName
-                        + " should NOT be focused within " + timeout + " but was after "
-                        + (Duration.between(mTestStartTime, Instant.now()))
-                        + allTaskStateDumps()
-        )
+                        "activity "
+                                + activityName
+                                + " should NOT be focused within "
+                                + timeout
+                                + " but was after "
+                                + (Duration.between(mTestStartTime, Instant.now()))
+                                + allTaskStateDumps())
                 .that(mWmState.getFocusedActivity())
                 .isNotEqualTo(activityName);
     }
 
-    protected TestServiceClient getTestService(Components c) throws Exception {
-        return getTestService(new ComponentName(c.APP_PACKAGE_NAME, TEST_SERVICE));
-    }
-
-    private TestServiceClient getTestService(ComponentName componentName) throws Exception {
+    protected TestServiceClient getTestService(ComponentName componentName) throws Exception {
         FutureConnection<ITestService> futureConnection = mServiceConnections.get(componentName);
         if (futureConnection == null) {
             // need to setup new test service connection for the component

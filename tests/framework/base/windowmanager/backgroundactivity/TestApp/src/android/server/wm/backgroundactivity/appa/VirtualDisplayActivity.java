@@ -16,6 +16,8 @@
 
 package android.server.wm.backgroundactivity.appa;
 
+import static android.server.wm.backgroundactivity.appa.Components.VirtualDisplayActivityExtra.USE_PUBLIC_PRESENTATION;
+
 import android.app.Presentation;
 import android.hardware.display.DisplayManager;
 import android.hardware.display.VirtualDisplay;
@@ -26,9 +28,7 @@ public class VirtualDisplayActivity extends RelaunchingActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        Components appA = Components.get(getApplicationContext());
-        boolean usePublicPresentation = getIntent().getBooleanExtra(
-                appA.VIRTUAL_DISPLAY_ACTIVITY_EXTRA.USE_PUBLIC_PRESENTATION, false);
+        boolean usePublicPresentation = getIntent().getBooleanExtra(USE_PUBLIC_PRESENTATION, false);
         if (usePublicPresentation) {
             createPublicVirtualDisplayAndShowPresentation();
         } else {

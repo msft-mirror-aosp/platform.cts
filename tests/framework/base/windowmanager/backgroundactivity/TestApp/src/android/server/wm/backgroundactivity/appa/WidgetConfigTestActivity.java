@@ -16,8 +16,8 @@
 
 package android.server.wm.backgroundactivity.appa;
 
-import static android.server.wm.backgroundactivity.common.CommonComponents.EVENT_NOTIFIER_EXTRA;
-import static android.server.wm.backgroundactivity.common.CommonComponents.Event.APP_A_START_WIDGET_CONFIG_ACTIVITY;
+import static android.server.wm.backgroundactivity.common.Components.EVENT_NOTIFIER_EXTRA;
+import static android.server.wm.backgroundactivity.common.Components.Event.APP_A_START_WIDGET_CONFIG_ACTIVITY;
 
 import android.app.Activity;
 import android.appwidget.AppWidgetHost;

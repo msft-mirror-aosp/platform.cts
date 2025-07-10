@@ -16,13 +16,13 @@
 
 package android.server.wm.backgroundactivity.appa;
 
-import static android.server.wm.backgroundactivity.common.CommonComponents.EVENT_NOTIFIER_EXTRA;
+import static android.server.wm.backgroundactivity.common.Components.EVENT_NOTIFIER_EXTRA;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.os.ResultReceiver;
-import android.server.wm.backgroundactivity.common.CommonComponents.Event;
+import android.server.wm.backgroundactivity.common.Components.Event;
 import android.util.Log;
 
 /**

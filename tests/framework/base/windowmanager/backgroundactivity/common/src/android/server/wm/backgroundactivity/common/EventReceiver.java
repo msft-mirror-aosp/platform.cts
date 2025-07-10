@@ -21,7 +21,7 @@ import android.os.ConditionVariable;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.ResultReceiver;
-import android.server.wm.backgroundactivity.common.CommonComponents.Event;
+import android.server.wm.backgroundactivity.common.Components.Event;
 
 import java.util.concurrent.TimeoutException;
 

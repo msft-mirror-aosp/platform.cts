@@ -16,6 +16,9 @@
 
 package android.server.wm.backgroundactivity.appa;
 
+import static android.server.wm.backgroundactivity.appa.Components.StartPendingIntentActivityExtra.PENDING_INTENT;
+import static android.server.wm.backgroundactivity.appa.Components.StartPendingIntentActivityExtra.START_BUNDLE;
+
 import android.app.Activity;
 import android.app.PendingIntent;
 import android.content.Intent;
@@ -32,14 +35,11 @@ public class StartPendingIntentActivity extends Activity {
     @Override
     protected void onCreate(Bundle b) {
         super.onCreate(b);
-        Components app = Components.get(getApplicationContext());
 
         Intent intent = getIntent();
-        final PendingIntent pendingIntent = intent.getParcelableExtra(
-                app.START_PENDING_INTENT_ACTIVITY_EXTRA.PENDING_INTENT);
+        final PendingIntent pendingIntent = intent.getParcelableExtra(PENDING_INTENT);
         try {
-            final Bundle bundle = intent.getBundleExtra(
-                        app.START_PENDING_INTENT_ACTIVITY_EXTRA.START_BUNDLE);
+            final Bundle bundle = intent.getBundleExtra(START_BUNDLE);
             Log.i(TAG, "pendingIntent.send with bundle: " + bundle);
             pendingIntent.send(bundle);
         } catch (PendingIntent.CanceledException e) {

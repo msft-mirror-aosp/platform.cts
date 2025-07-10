@@ -16,6 +16,11 @@
 
 package android.server.wm.backgroundactivity.appa;
 
+import static android.server.wm.backgroundactivity.appa.Components.ForegroundActivityExtra.ACTIVITY_ID;
+import static android.server.wm.backgroundactivity.appa.Components.ForegroundActivityExtra.LAUNCH_INTENTS;
+import static android.server.wm.backgroundactivity.appa.Components.ForegroundEmbeddedActivityAction.ACTION_FINISH_ACTIVITY_SUFFIX;
+import static android.server.wm.backgroundactivity.appa.Components.ForegroundEmbeddedActivityAction.ACTION_LAUNCH_EMBEDDED_ACTIVITY_SUFFIX;
+import static android.server.wm.backgroundactivity.appa.Components.buildFullActionName;
 import static android.server.wm.jetpack.extensions.util.ExtensionsUtil.getWindowExtensions;
 import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.EMBEDDED_ACTIVITY_ID;
 import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.createWildcardSplitPairRule;
@@ -36,7 +41,8 @@ import java.util.Collections;
 import java.util.List;
 
 public class ForegroundEmbeddingActivity extends Activity {
-    private Components mA;
+    private String mActionLaunchEmbeddedActivity;
+    private String mActionFinishActivity;
 
     private int mActivityId = -1;
 
@@ -45,23 +51,18 @@ public class ForegroundEmbeddingActivity extends Activity {
                 @Override
                 public void onReceive(Context context, Intent intent) {
                     String action = intent.getAction();
-                    int activityId =
-                            intent.getIntExtra(
-                                    mA.FOREGROUND_ACTIVITY_EXTRA.ACTIVITY_ID, mActivityId);
+                    int activityId = intent.getIntExtra(ACTIVITY_ID, mActivityId);
                     if (activityId != mActivityId) {
                         return;
                     }
-                    if (mA.FOREGROUND_EMBEDDING_ACTIVITY_ACTIONS.LAUNCH_EMBEDDED_ACTIVITY.equals(
-                            action)) {
+                    if (mActionLaunchEmbeddedActivity.equals(action)) {
                         // Need to copy as a new array instead of just casting to Intent[] since a
                         // new
                         // array of type Parcelable[] is created when deserializing.
                         Intent[] intents =
-                                intent.getParcelableArrayExtra(
-                                        mA.FOREGROUND_ACTIVITY_EXTRA.LAUNCH_INTENTS, Intent.class);
+                                intent.getParcelableArrayExtra(LAUNCH_INTENTS, Intent.class);
                         startActivityInSplit(intents);
-                    } else if (mA.FOREGROUND_EMBEDDING_ACTIVITY_ACTIONS.FINISH_ACTIVITY.equals(
-                            action)) {
+                    } else if (mActionFinishActivity.equals(action)) {
                         finish();
                     }
                 }
@@ -70,13 +71,16 @@ public class ForegroundEmbeddingActivity extends Activity {
     @Override
     public void onCreate(Bundle bundle) {
         super.onCreate(bundle);
-        mA = Components.get(getApplicationContext());
+        final String appPackageName = getApplicationContext().getPackageName();
+        mActionLaunchEmbeddedActivity =
+                buildFullActionName(appPackageName, ACTION_LAUNCH_EMBEDDED_ACTIVITY_SUFFIX);
+        mActionFinishActivity = buildFullActionName(appPackageName, ACTION_FINISH_ACTIVITY_SUFFIX);
 
         Intent intent = getIntent();
-        mActivityId = intent.getIntExtra(mA.FOREGROUND_ACTIVITY_EXTRA.ACTIVITY_ID, -1);
+        mActivityId = intent.getIntExtra(ACTIVITY_ID, -1);
 
         IntentFilter filter = new IntentFilter();
-        filter.addAction(mA.FOREGROUND_EMBEDDING_ACTIVITY_ACTIONS.LAUNCH_EMBEDDED_ACTIVITY);
+        filter.addAction(mActionLaunchEmbeddedActivity);
         // TODO(hanikazmi) Move this (and others) to onStart/onStop
         registerReceiver(mReceiver, filter, Context.RECEIVER_EXPORTED);
     }
