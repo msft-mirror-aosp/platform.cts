@@ -208,7 +208,7 @@ public class VirtualCameraBuildersTest {
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_CAMERA_METADATA)
-    public void captureRequestBuilder_buildsCopy() {
+    public void captureResultBuilder_buildsCopy() {
         CaptureResultBuilder captureResultBuilder = new CaptureResultBuilder()
                 .set(CaptureResult.CONTROL_AE_MODE, CaptureResult.CONTROL_AE_MODE_ON)
                 .set(CaptureResult.CONTROL_AF_MODE, CaptureResult.CONTROL_AF_MODE_OFF);

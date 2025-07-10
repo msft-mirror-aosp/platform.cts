@@ -18,6 +18,7 @@ package android.appwidget.cts
 
 import android.app.PendingIntent
 import android.app.PendingIntent.FLAG_IMMUTABLE
+import android.app.UiAutomation
 import android.appwidget.AppWidgetEvent
 import android.appwidget.AppWidgetHost
 import android.appwidget.AppWidgetHostView
@@ -44,12 +45,15 @@ import android.widget.ListView
 import android.widget.RemoteViews
 import androidx.test.ext.junit.rules.ActivityScenarioRule
 import com.android.compatibility.common.util.DeviceConfigStateHelper
+import com.android.compatibility.common.util.ProtoUtils
 import com.android.compatibility.common.util.SystemUtil
+import com.android.server.job.nano.JobSchedulerServiceDumpProto
 import com.google.common.truth.Truth.assertThat
 import com.google.common.truth.Truth.assertWithMessage
 import kotlin.coroutines.resume
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.toJavaDuration
 import kotlinx.coroutines.Dispatchers
@@ -248,6 +252,42 @@ class WidgetEventsTest : AppWidgetTestCase() {
         assertThat(event.visibleDuration).isGreaterThan(2.seconds.toJavaDuration())
     }
 
+    @Test
+    fun periodicJobIsScheduled() = runBlocking<Unit> {
+        // check for initial state with events jobs disabled
+        waitForJobSchedulerState(instrumentation.uiAutomation, "no events job") { state ->
+            state.registeredJobs.toList().none { job ->
+                job.dump.jobInfo.service.className ==
+                    "com.android.server.appwidget.ReportWidgetEventsJob"
+            }
+        }
+
+        // Set the reports interval, and check that a job is scheduled.
+        setWidgetEventsReportInterval(15.minutes.inWholeMilliseconds)
+        waitForJobSchedulerState(instrumentation.uiAutomation, "events job present") { state ->
+            state.registeredJobs.toList().any { job ->
+                job.dump.jobInfo.service.className ==
+                    "com.android.server.appwidget.ReportWidgetEventsJob" &&
+                    job.dump.jobInfo.periodIntervalMs == 15.minutes.inWholeMilliseconds
+            }
+        }
+
+        val hostView = bindWidgetWithRemoteViews(
+            RemoteViews(context.packageName, R.layout.remoteviews_adapter)
+        )
+
+        // Force-run the periodic job after the event is reported to app widget service.
+        fun onStop() {
+            SystemUtil.runShellCommandOrThrow(
+                "cmd jobscheduler run -n " +
+                    "com.android.server.appwidget.AppWidgetServiceImpl.ReportWidgetEventsJob " +
+                    "android 1"
+            )
+        }
+        // onImpression will wait for the event to be present in UsageStatsService, or fail.
+        hostView.onImpression(::onStop) {}
+    }
+
     /**
      * Create a widget that displays the given [remoteViews], and return the bound
      * [AppWidgetHostView].
@@ -317,6 +357,7 @@ class WidgetEventsTest : AppWidgetTestCase() {
      * Returns the first [AppWidgetEvent] that was generated since the start of the test.
      */
     private suspend fun AppWidgetHostView.onImpression(
+        onStop: () -> Unit = {},
         block: suspend AppWidgetHostView.() -> Unit,
     ): AppWidgetEvent = withContext(Dispatchers.Main) {
         val testStartTimeMs = System.currentTimeMillis()
@@ -330,6 +371,7 @@ class WidgetEventsTest : AppWidgetTestCase() {
 
         stopVisibilityTracking()
         host.stopListening()
+        onStop()
         val event = withTimeout(10.seconds) {
             widgetEventsForId(context, testStartTimeMs, appWidgetId).first()
         }
@@ -397,7 +439,7 @@ private suspend fun Context.waitForInteractive() {
 /**
  * Check AppWidgetManager for the next widget interaction event, polling every 250ms
  */
-private suspend fun widgetEventsForId(
+private fun widgetEventsForId(
     context: Context,
     testStartTimeMs: Long,
     appWidgetId: Int,
@@ -411,6 +453,29 @@ private suspend fun widgetEventsForId(
             delay(250.milliseconds)
         }
     }
+
+private suspend fun waitForJobSchedulerState(
+    uiAutomation: UiAutomation,
+    debugTag: String,
+    timeout: Duration = 10.seconds,
+    predicate: (JobSchedulerServiceDumpProto) -> Boolean,
+) {
+    val result = withTimeoutOrNull(timeout) {
+        do {
+            val dump = ProtoUtils.getProto(
+                uiAutomation,
+                JobSchedulerServiceDumpProto::class.java,
+                "dumpsys jobscheduler --proto",
+            )
+            if (predicate(dump)) break
+            delay(250.milliseconds)
+        } while (true)
+        return@withTimeoutOrNull Unit
+    }
+    assertWithMessage(
+        "Timed out while waiting for job scheduler to have expected state: $debugTag"
+    ).that(result).isNotNull()
+}
 
 /** Waits for the View to have a child with the expected ID */
 private suspend fun View.waitForViewId(id: Int): View {

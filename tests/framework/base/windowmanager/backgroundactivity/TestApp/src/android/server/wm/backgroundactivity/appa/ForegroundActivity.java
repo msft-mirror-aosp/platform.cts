@@ -16,6 +16,17 @@
 
 package android.server.wm.backgroundactivity.appa;
 
+import static android.server.wm.backgroundactivity.appa.Components.ForegroundActivityAction.ACTION_FINISH_ACTIVITY_SUFFIX;
+import static android.server.wm.backgroundactivity.appa.Components.ForegroundActivityAction.ACTION_LAUNCH_BACKGROUND_ACTIVITIES_SUFFIX;
+import static android.server.wm.backgroundactivity.appa.Components.ForegroundActivityExtra.ACTIVITY_ID;
+import static android.server.wm.backgroundactivity.appa.Components.ForegroundActivityExtra.ALLOW_CROSS_UID;
+import static android.server.wm.backgroundactivity.appa.Components.ForegroundActivityExtra.FINISH_FIRST;
+import static android.server.wm.backgroundactivity.appa.Components.ForegroundActivityExtra.LAUNCH_FOR_RESULT_AND_FINISH;
+import static android.server.wm.backgroundactivity.appa.Components.ForegroundActivityExtra.LAUNCH_INTENTS;
+import static android.server.wm.backgroundactivity.appa.Components.ForegroundActivityExtra.LAUNCH_PENDING_INTENTS;
+import static android.server.wm.backgroundactivity.appa.Components.ForegroundActivityExtra.RELAUNCH_FOREGROUND_ACTIVITY_EXTRA;
+import static android.server.wm.backgroundactivity.appa.Components.buildFullActionName;
+
 import android.app.Activity;
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
@@ -32,12 +43,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-/**
- * Foreground activity that makes AppA as foreground.
- */
+/** Foreground activity that makes AppA as foreground. */
 public class ForegroundActivity extends Activity {
     private static final String TAG = ForegroundActivity.class.getName();
-    private Components mA;
+    private String mAppPackageName;
+    private String mActionLaunchBackgroundActivities;
+    private String mActionFinishActivity;
 
     private int mActivityId = -1;
     private boolean mRelaunch = false;
@@ -46,43 +57,41 @@ public class ForegroundActivity extends Activity {
         @Override
         public void onReceive(Context context, Intent intent) {
             String action = intent.getAction();
-            int activityId = intent.getIntExtra(mA.FOREGROUND_ACTIVITY_EXTRA.ACTIVITY_ID,
-                    mActivityId);
+            int activityId = intent.getIntExtra(ACTIVITY_ID, mActivityId);
             if (activityId != mActivityId) {
                 return;
             }
 
-            if (mA.FOREGROUND_ACTIVITY_ACTIONS.FINISH_ACTIVITY.equals(action)
-                    || intent.getBooleanExtra(mA.FOREGROUND_ACTIVITY_EXTRA.FINISH_FIRST, false)) {
+            if (mActionFinishActivity.equals(action)
+                    || intent.getBooleanExtra(FINISH_FIRST, false)) {
                 finish();
             }
 
-            if (mA.FOREGROUND_ACTIVITY_ACTIONS.LAUNCH_BACKGROUND_ACTIVITIES.equals(action)) {
-                if (intent.hasExtra(mA.FOREGROUND_ACTIVITY_EXTRA.LAUNCH_INTENTS)) {
-                    // Need to copy as a new array instead of just casting to Intent[] since a new
-                    // array of type Parcelable[] is created when deserializing.
-                    Intent[] intents = intent.getParcelableArrayExtra(
-                            mA.FOREGROUND_ACTIVITY_EXTRA.LAUNCH_INTENTS, Intent.class);
-                    Log.d(TAG, mA + ":start " + Arrays.asList(intents));
+            if (mActionLaunchBackgroundActivities.equals(action)) {
+                if (intent.hasExtra(LAUNCH_INTENTS)) {
+                    // Need to copy as a new array instead of just casting to Intent[] since
+                    // a new array of type Parcelable[] is created when deserializing.
+                    Intent[] intents =
+                            intent.getParcelableArrayExtra(LAUNCH_INTENTS, Intent.class);
+                    Log.d(TAG, mAppPackageName + ":start " + Arrays.asList(intents));
                     startActivities(intents);
                 }
-                if (intent.hasExtra(mA.FOREGROUND_ACTIVITY_EXTRA.LAUNCH_PENDING_INTENTS)) {
-                    // Need to copy as a new array instead of just casting to Intent[] since a new
-                    // array of type Parcelable[] is created when deserializing.
-                    PendingIntent[] pendingIntents = intent.getParcelableArrayExtra(
-                            mA.FOREGROUND_ACTIVITY_EXTRA.LAUNCH_PENDING_INTENTS,
-                            PendingIntent.class);
-                    Log.d(TAG, mA + ":start " + Arrays.asList(pendingIntents));
-                    if (intent.getBooleanExtra(
-                            mA.FOREGROUND_ACTIVITY_EXTRA.LAUNCH_FOR_RESULT_AND_FINISH, false)) {
+                if (intent.hasExtra(LAUNCH_PENDING_INTENTS)) {
+                    // Need to copy as a new array instead of just casting to Intent[] since
+                    // a new array of type Parcelable[] is created when deserializing.
+                    PendingIntent[] pendingIntents =
+                            intent.getParcelableArrayExtra(
+                                    LAUNCH_PENDING_INTENTS, PendingIntent.class);
+                    Log.d(TAG, mAppPackageName + ":start " + Arrays.asList(pendingIntents));
+                    if (intent.getBooleanExtra(LAUNCH_FOR_RESULT_AND_FINISH, false)) {
                         // launch and then finish the activity
                         int nextRequestCode = 123;
                         List<Integer> requestCodesUsed = new ArrayList<>();
                         for (PendingIntent pi : pendingIntents) {
                             try {
                                 int requestCode = nextRequestCode++;
-                                startIntentSenderForResult(pi.getIntentSender(), requestCode, null,
-                                        0, 0, 0);
+                                startIntentSenderForResult(
+                                        pi.getIntentSender(), requestCode, null, 0, 0, 0);
                                 requestCodesUsed.add(requestCode);
                             } catch (Exception e) {
                                 throw new RuntimeException(e);
@@ -110,18 +119,19 @@ public class ForegroundActivity extends Activity {
     public void onCreate(Bundle bundle) {
         super.onCreate(bundle);
         TestService.onForegroundActivityCreated(mActivityId, this);
-        mA = Components.get(getApplicationContext());
+        mAppPackageName = getApplicationContext().getPackageName();
+        mActionLaunchBackgroundActivities =
+                buildFullActionName(mAppPackageName, ACTION_LAUNCH_BACKGROUND_ACTIVITIES_SUFFIX);
+        mActionFinishActivity = buildFullActionName(mAppPackageName, ACTION_FINISH_ACTIVITY_SUFFIX);
 
         Intent intent = getIntent();
-        mRelaunch = intent.getBooleanExtra(
-                mA.FOREGROUND_ACTIVITY_EXTRA.RELAUNCH_FOREGROUND_ACTIVITY_EXTRA, false);
-        mActivityId = intent.getIntExtra(mA.FOREGROUND_ACTIVITY_EXTRA.ACTIVITY_ID, -1);
-        setAllowCrossUidActivitySwitchFromBelow(
-                intent.getBooleanExtra(mA.FOREGROUND_ACTIVITY_EXTRA.ALLOW_CROSS_UID, false));
+        mRelaunch = intent.getBooleanExtra(RELAUNCH_FOREGROUND_ACTIVITY_EXTRA, false);
+        mActivityId = intent.getIntExtra(ACTIVITY_ID, -1);
+        setAllowCrossUidActivitySwitchFromBelow(intent.getBooleanExtra(ALLOW_CROSS_UID, false));
 
         IntentFilter filter = new IntentFilter();
-        filter.addAction(mA.FOREGROUND_ACTIVITY_ACTIONS.LAUNCH_BACKGROUND_ACTIVITIES);
-        filter.addAction(mA.FOREGROUND_ACTIVITY_ACTIONS.FINISH_ACTIVITY);
+        filter.addAction(mActionLaunchBackgroundActivities);
+        filter.addAction(mActionFinishActivity);
         registerReceiver(mReceiver, filter, Context.RECEIVER_EXPORTED);
     }
 

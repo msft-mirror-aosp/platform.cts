@@ -97,10 +97,18 @@ public class CallLogTest extends InstrumentationTestCase {
     private static final ComponentName TELEPHONY_COMPONENT_NAME =
             new ComponentName("com.android.phone",
                     "com.android.services.telephony.TelephonyConnectionService");
+
+    private static final ComponentName VOIP_COMPONENT_NAME =
+            new ComponentName(
+                    "android.provider.cts.contacts", "android.provider.cts.contacts.CallLogTest");
     private static final PhoneAccountHandle SIM_PHONE_ACCOUNT_HANDLE_1 =
             new PhoneAccountHandle(TELEPHONY_COMPONENT_NAME, "android.cts.CallLogTest.1");
     private static final PhoneAccountHandle SIM_PHONE_ACCOUNT_HANDLE_2 =
             new PhoneAccountHandle(TELEPHONY_COMPONENT_NAME, "android.cts.CallLogTest.2");
+
+    private static final PhoneAccountHandle VOIP_PHONE_ACCOUNT_HANDLE =
+            new PhoneAccountHandle(VOIP_COMPONENT_NAME, "android.cts.CallLogTest.3");
+
     // Instance vars
     private ContentResolver mContentResolver;
 
@@ -432,6 +440,42 @@ public class CallLogTest extends InstrumentationTestCase {
             verifyUuid(cursor, uuid);
         } finally {
             deleteCallLogRowsWithNumber(TEST_NUMBER);
+        }
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_INTEGRATED_CALL_LOGS)
+    public void testQueryAndDeleteVoIPCallLogs() {
+        final CallLogGenerator callLogGenerator =
+                new CallLogGenerator(getInstrumentation().getContext());
+
+        try {
+            getInstrumentation()
+                    .getUiAutomation()
+                    .adoptShellPermissionIdentity(
+                            Manifest.permission.READ_VOICEMAIL,
+                            Manifest.permission.MANAGE_OWN_CALLS);
+
+            // Verify that the application can not query non voip call logs
+            callLogGenerator.generateCallLogs(SIM_PHONE_ACCOUNT_HANDLE_1, 10);
+
+            assertEquals(0, callLogGenerator.getVoIPCallLogSize());
+
+            // Verify that the application can not query voip call logs belongs to others
+            callLogGenerator.generateVoIPCallLogs(SIM_PHONE_ACCOUNT_HANDLE_1, 10);
+
+            assertEquals(0, callLogGenerator.getVoIPCallLogSize());
+
+            // Verify that the application can query voip call logs properly
+            callLogGenerator.generateVoIPCallLogs(VOIP_PHONE_ACCOUNT_HANDLE, 10);
+
+            assertEquals(10, callLogGenerator.getVoIPCallLogSize());
+
+            // Verify that the application can delete voip call logs properly
+            assertEquals(10, callLogGenerator.deleteVoIPCallLogs());
+        } finally {
+            callLogGenerator.deleteCallLogs(VOIP_PHONE_ACCOUNT_HANDLE);
+            callLogGenerator.deleteCallLogs(SIM_PHONE_ACCOUNT_HANDLE_1);
+            getInstrumentation().getUiAutomation().dropShellPermissionIdentity();
         }
     }
 

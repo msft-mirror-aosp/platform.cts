@@ -17,7 +17,16 @@
 package android.server.wm;
 
 import static android.content.pm.PackageManager.MATCH_DEFAULT_ONLY;
-import static android.server.wm.backgroundactivity.common.CommonComponents.COMMON_FOREGROUND_ACTIVITY_EXTRAS;
+import static android.server.wm.backgroundactivity.appa.Components.APP_A_BACKGROUND_ACTIVITY;
+import static android.server.wm.backgroundactivity.appa.Components.APP_A_FOREGROUND_ACTIVITY;
+import static android.server.wm.backgroundactivity.appa.Components.ForegroundActivityAction.APP_A_LAUNCH_BACKGROUND_ACTIVITIES;
+import static android.server.wm.backgroundactivity.appa33.Components.APP_A_33_FOREGROUND_ACTIVITY;
+import static android.server.wm.backgroundactivity.appa33.Components.ForegroundActivityAction.APP_A_33_LAUNCH_BACKGROUND_ACTIVITIES;
+import static android.server.wm.backgroundactivity.appasmoptout.Components.APP_ASM_OPT_OUT_FOREGROUND_ACTIVITY;
+import static android.server.wm.backgroundactivity.appb.Components.APP_B_FOREGROUND_ACTIVITY;
+import static android.server.wm.backgroundactivity.appb.Components.ForegroundActivityAction.APP_B_LAUNCH_BACKGROUND_ACTIVITIES;
+import static android.server.wm.backgroundactivity.appb33.Components.APP_B_33_FOREGROUND_ACTIVITY;
+import static android.server.wm.backgroundactivity.common.Components.CommonForegroundActivityExtras;
 
 import android.content.ComponentName;
 import android.content.Intent;
@@ -82,24 +91,22 @@ public class ActivitySecurityModelTest extends BackgroundActivityTestBase {
     @Test
     public void testTopLaunchesActivity_launchAllowed() {
         new ActivityStartVerifier()
-                .setupTaskWithForegroundActivity(APP_A)
-                .startFromForegroundActivity(APP_A)
-                .activity(APP_B.FOREGROUND_ACTIVITY)
+                .setupTaskWithForegroundActivity(APP_A_FOREGROUND_ACTIVITY)
+                .startFromForegroundActivity(APP_A_LAUNCH_BACKGROUND_ACTIVITIES)
+                .activity(APP_B_FOREGROUND_ACTIVITY)
                 .executeAndAssertLaunch(/*succeeds*/ true)
-                .thenAssertTaskStack(
-                        APP_B.FOREGROUND_ACTIVITY,
-                        APP_A.FOREGROUND_ACTIVITY);
+                .thenAssertTaskStack(APP_B_FOREGROUND_ACTIVITY, APP_A_FOREGROUND_ACTIVITY);
 
         // Current State: A B | (bottom -- top)
         // Test - B launches A - succeeds
         new ActivityStartVerifier()
-                .startFromForegroundActivity(APP_B)
-                .activity(APP_A.FOREGROUND_ACTIVITY)
+                .startFromForegroundActivity(APP_B_LAUNCH_BACKGROUND_ACTIVITIES)
+                .activity(APP_A_FOREGROUND_ACTIVITY)
                 .executeAndAssertLaunch(/*succeeds*/ true)
                 .thenAssertTaskStack(
-                        APP_A.FOREGROUND_ACTIVITY,
-                        APP_B.FOREGROUND_ACTIVITY,
-                        APP_A.FOREGROUND_ACTIVITY);
+                        APP_A_FOREGROUND_ACTIVITY,
+                        APP_B_FOREGROUND_ACTIVITY,
+                        APP_A_FOREGROUND_ACTIVITY);
     }
 
     /*
@@ -112,23 +119,19 @@ public class ActivitySecurityModelTest extends BackgroundActivityTestBase {
     @RequiresFlagsEnabled(Flags.FLAG_ASM_RESTRICTIONS_V2)
     public void testActivitySandwich_launchBlocked() {
         new ActivityStartVerifier()
-                .setupTaskWithForegroundActivity(APP_A)
-                .startFromForegroundActivity(APP_A)
-                .activity(APP_B.FOREGROUND_ACTIVITY)
+                .setupTaskWithForegroundActivity(APP_A_FOREGROUND_ACTIVITY)
+                .startFromForegroundActivity(APP_A_LAUNCH_BACKGROUND_ACTIVITIES)
+                .activity(APP_B_FOREGROUND_ACTIVITY)
                 .executeAndAssertLaunch(/*succeeds*/ true)
-                .thenAssertTaskStack(
-                        APP_B.FOREGROUND_ACTIVITY,
-                        APP_A.FOREGROUND_ACTIVITY);
+                .thenAssertTaskStack(APP_B_FOREGROUND_ACTIVITY, APP_A_FOREGROUND_ACTIVITY);
 
         // Current State: A B
         // Test - A launches A - fails
         new ActivityStartVerifier()
-                .startFromForegroundActivity(APP_A)
-                .activity(APP_A.FOREGROUND_ACTIVITY)
+                .startFromForegroundActivity(APP_A_LAUNCH_BACKGROUND_ACTIVITIES)
+                .activity(APP_A_FOREGROUND_ACTIVITY)
                 .executeAndAssertLaunch(/*succeeds*/ false)
-                .thenAssertTaskStack(
-                        APP_B.FOREGROUND_ACTIVITY,
-                        APP_A.FOREGROUND_ACTIVITY);
+                .thenAssertTaskStack(APP_B_FOREGROUND_ACTIVITY, APP_A_FOREGROUND_ACTIVITY);
     }
 
     /*
@@ -141,24 +144,22 @@ public class ActivitySecurityModelTest extends BackgroundActivityTestBase {
     @RequiresFlagsDisabled(Flags.FLAG_ASM_RESTRICTIONS_V2)
     public void testActivitySandwich_launchAllowed() {
         new ActivityStartVerifier()
-                .setupTaskWithForegroundActivity(APP_A)
-                .startFromForegroundActivity(APP_A)
-                .activity(APP_B.FOREGROUND_ACTIVITY)
+                .setupTaskWithForegroundActivity(APP_A_FOREGROUND_ACTIVITY)
+                .startFromForegroundActivity(APP_A_LAUNCH_BACKGROUND_ACTIVITIES)
+                .activity(APP_B_FOREGROUND_ACTIVITY)
                 .executeAndAssertLaunch(/*succeeds*/ true)
-                .thenAssertTaskStack(
-                        APP_B.FOREGROUND_ACTIVITY,
-                        APP_A.FOREGROUND_ACTIVITY);
+                .thenAssertTaskStack(APP_B_FOREGROUND_ACTIVITY, APP_A_FOREGROUND_ACTIVITY);
 
         // Current State: A B
         // Test - A launches A - fails
         new ActivityStartVerifier()
-                .startFromForegroundActivity(APP_A)
-                .activity(APP_A.FOREGROUND_ACTIVITY)
+                .startFromForegroundActivity(APP_A_LAUNCH_BACKGROUND_ACTIVITIES)
+                .activity(APP_A_FOREGROUND_ACTIVITY)
                 .executeAndAssertLaunch(/*succeeds*/ true)
                 .thenAssertTaskStack(
-                        APP_A.FOREGROUND_ACTIVITY,
-                        APP_B.FOREGROUND_ACTIVITY,
-                        APP_A.FOREGROUND_ACTIVITY);
+                        APP_A_FOREGROUND_ACTIVITY,
+                        APP_B_FOREGROUND_ACTIVITY,
+                        APP_A_FOREGROUND_ACTIVITY);
     }
 
     /*
@@ -170,24 +171,22 @@ public class ActivitySecurityModelTest extends BackgroundActivityTestBase {
     @Test
     public void testActivitySandwich_started33_launchAllowed() {
         new ActivityStartVerifier()
-                .setupTaskWithForegroundActivity(APP_A)
-                .startFromForegroundActivity(APP_A)
-                .activity(APP_B_33.FOREGROUND_ACTIVITY)
+                .setupTaskWithForegroundActivity(APP_A_FOREGROUND_ACTIVITY)
+                .startFromForegroundActivity(APP_A_LAUNCH_BACKGROUND_ACTIVITIES)
+                .activity(APP_B_33_FOREGROUND_ACTIVITY)
                 .executeAndAssertLaunch(/*succeeds*/ true)
-                .thenAssertTaskStack(
-                        APP_B_33.FOREGROUND_ACTIVITY,
-                        APP_A.FOREGROUND_ACTIVITY);
+                .thenAssertTaskStack(APP_B_33_FOREGROUND_ACTIVITY, APP_A_FOREGROUND_ACTIVITY);
 
         // Current State: A B | (bottom -- top)
         // Test - A launches A - succeeds
         new ActivityStartVerifier()
-                .startFromForegroundActivity(APP_A)
-                .activity(APP_A.FOREGROUND_ACTIVITY)
+                .startFromForegroundActivity(APP_A_LAUNCH_BACKGROUND_ACTIVITIES)
+                .activity(APP_A_FOREGROUND_ACTIVITY)
                 .executeAndAssertLaunch(/*succeeds*/ true)
                 .thenAssertTaskStack(
-                        APP_A.FOREGROUND_ACTIVITY,
-                        APP_B_33.FOREGROUND_ACTIVITY,
-                        APP_A.FOREGROUND_ACTIVITY);
+                        APP_A_FOREGROUND_ACTIVITY,
+                        APP_B_33_FOREGROUND_ACTIVITY,
+                        APP_A_FOREGROUND_ACTIVITY);
     }
 
     /*
@@ -199,24 +198,22 @@ public class ActivitySecurityModelTest extends BackgroundActivityTestBase {
     @Test
     public void testActivitySandwich_launcher33_launchAllowed() {
         new ActivityStartVerifier()
-                .setupTaskWithForegroundActivity(APP_A_33)
-                .startFromForegroundActivity(APP_A_33)
-                .activity(APP_B.FOREGROUND_ACTIVITY)
+                .setupTaskWithForegroundActivity(APP_A_33_FOREGROUND_ACTIVITY)
+                .startFromForegroundActivity(APP_A_33_LAUNCH_BACKGROUND_ACTIVITIES)
+                .activity(APP_B_FOREGROUND_ACTIVITY)
                 .executeAndAssertLaunch(/*succeeds*/ true)
-                .thenAssertTaskStack(
-                        APP_B.FOREGROUND_ACTIVITY,
-                        APP_A_33.FOREGROUND_ACTIVITY);
+                .thenAssertTaskStack(APP_B_FOREGROUND_ACTIVITY, APP_A_33_FOREGROUND_ACTIVITY);
 
         // Current State: A B | (bottom -- top)
         // Test - A launches A - succeeds
         new ActivityStartVerifier()
-                .startFromForegroundActivity(APP_A_33)
-                .activity(APP_A_33.FOREGROUND_ACTIVITY)
+                .startFromForegroundActivity(APP_A_33_LAUNCH_BACKGROUND_ACTIVITIES)
+                .activity(APP_A_33_FOREGROUND_ACTIVITY)
                 .executeAndAssertLaunch(/*succeeds*/ true)
                 .thenAssertTaskStack(
-                        APP_A_33.FOREGROUND_ACTIVITY,
-                        APP_B.FOREGROUND_ACTIVITY,
-                        APP_A_33.FOREGROUND_ACTIVITY);
+                        APP_A_33_FOREGROUND_ACTIVITY,
+                        APP_B_FOREGROUND_ACTIVITY,
+                        APP_A_33_FOREGROUND_ACTIVITY);
     }
 
     /*
@@ -228,29 +225,29 @@ public class ActivitySecurityModelTest extends BackgroundActivityTestBase {
     @Test
     public void testTopUidButNonTopActivity_launchAllowed() {
         new ActivityStartVerifier()
-                .setupTaskWithForegroundActivity(APP_A, 1)
-                .startFromForegroundActivity(APP_A, 1)
-                .activity(APP_B.FOREGROUND_ACTIVITY, 1)
+                .setupTaskWithForegroundActivity(APP_A_FOREGROUND_ACTIVITY, 1)
+                .startFromForegroundActivity(APP_A_LAUNCH_BACKGROUND_ACTIVITIES, 1)
+                .activity(APP_B_FOREGROUND_ACTIVITY, 1)
                 .executeAndAssertLaunch(/*succeeds*/ true)
-                .startFromForegroundActivity(APP_B, 1)
-                .activity(APP_A.FOREGROUND_ACTIVITY, 2)
+                .startFromForegroundActivity(APP_B_LAUNCH_BACKGROUND_ACTIVITIES, 1)
+                .activity(APP_A_FOREGROUND_ACTIVITY, 2)
                 .executeAndAssertLaunch(/*succeeds*/ true)
                 .thenAssertTaskStack(
-                        APP_A.FOREGROUND_ACTIVITY,
-                        APP_B.FOREGROUND_ACTIVITY,
-                        APP_A.FOREGROUND_ACTIVITY);
+                        APP_A_FOREGROUND_ACTIVITY,
+                        APP_B_FOREGROUND_ACTIVITY,
+                        APP_A_FOREGROUND_ACTIVITY);
 
         // Current State: A1 B1 A2 | (bottom -- top)
         // Test - A1 launches A3 - succeeds
         new ActivityStartVerifier()
-                .startFromForegroundActivity(APP_A, 1)
-                .activity(APP_A.FOREGROUND_ACTIVITY, 3)
+                .startFromForegroundActivity(APP_A_LAUNCH_BACKGROUND_ACTIVITIES, 1)
+                .activity(APP_A_FOREGROUND_ACTIVITY, 3)
                 .executeAndAssertLaunch(/*succeeds*/ true)
                 .thenAssertTaskStack(
-                        APP_A.FOREGROUND_ACTIVITY,
-                        APP_A.FOREGROUND_ACTIVITY,
-                        APP_B.FOREGROUND_ACTIVITY,
-                        APP_A.FOREGROUND_ACTIVITY);
+                        APP_A_FOREGROUND_ACTIVITY,
+                        APP_A_FOREGROUND_ACTIVITY,
+                        APP_B_FOREGROUND_ACTIVITY,
+                        APP_A_FOREGROUND_ACTIVITY);
     }
 
     /*
@@ -262,17 +259,16 @@ public class ActivitySecurityModelTest extends BackgroundActivityTestBase {
     @Test
     public void testTopFinishesThenLaunchesActivity_launchAllowed() {
         new ActivityStartVerifier()
-                .setupTaskWithForegroundActivity(APP_A)
-                .thenAssertTaskStack(APP_A.FOREGROUND_ACTIVITY)
+                .setupTaskWithForegroundActivity(APP_A_FOREGROUND_ACTIVITY)
+                .thenAssertTaskStack(APP_A_FOREGROUND_ACTIVITY)
                 // Current State: A
                 // Test - A finishes, then launches A - succeeds
-                .startFromForegroundActivity(APP_A)
-                .withBroadcastExtra(COMMON_FOREGROUND_ACTIVITY_EXTRAS.FINISH_FIRST, true)
-                .activity(APP_A.BACKGROUND_ACTIVITY)
+                .startFromForegroundActivity(APP_A_LAUNCH_BACKGROUND_ACTIVITIES)
+                .withBroadcastExtra(CommonForegroundActivityExtras.FINISH_FIRST, true)
+                .activity(APP_A_BACKGROUND_ACTIVITY)
                 .executeAndAssertLaunch(/*succeeds*/ true)
-                .thenAssert(() -> mWmState.waitAndAssertActivityRemoved(APP_A.FOREGROUND_ACTIVITY))
-                .thenAssertTaskStack(
-                        APP_A.BACKGROUND_ACTIVITY);
+                .thenAssert(() -> mWmState.waitAndAssertActivityRemoved(APP_A_FOREGROUND_ACTIVITY))
+                .thenAssertTaskStack(APP_A_BACKGROUND_ACTIVITY);
     }
 
     /*
@@ -284,24 +280,23 @@ public class ActivitySecurityModelTest extends BackgroundActivityTestBase {
     @Test
     public void testActivitySandwich_asmPackageDisabled_launchAllowed() {
         new ActivityStartVerifier()
-                .setupTaskWithForegroundActivity(APP_A)
-                .startFromForegroundActivity(APP_A)
-                .activity(APP_ASM_OPT_OUT.FOREGROUND_ACTIVITY)
+                .setupTaskWithForegroundActivity(APP_A_FOREGROUND_ACTIVITY)
+                .startFromForegroundActivity(APP_A_LAUNCH_BACKGROUND_ACTIVITIES)
+                .activity(APP_ASM_OPT_OUT_FOREGROUND_ACTIVITY)
                 .executeAndAssertLaunch(/*succeeds*/ true)
                 .thenAssertTaskStack(
-                        APP_ASM_OPT_OUT.FOREGROUND_ACTIVITY,
-                        APP_A.FOREGROUND_ACTIVITY);
+                        APP_ASM_OPT_OUT_FOREGROUND_ACTIVITY, APP_A_FOREGROUND_ACTIVITY);
 
         // Current State: A B | (bottom -- top)
         // Test - A launches A - succeeds
         new ActivityStartVerifier()
-                .startFromForegroundActivity(APP_A)
-                .activity(APP_A.FOREGROUND_ACTIVITY)
+                .startFromForegroundActivity(APP_A_LAUNCH_BACKGROUND_ACTIVITIES)
+                .activity(APP_A_FOREGROUND_ACTIVITY)
                 .executeAndAssertLaunch(/*succeeds*/ true)
                 .thenAssertTaskStack(
-                        APP_A.FOREGROUND_ACTIVITY,
-                        APP_ASM_OPT_OUT.FOREGROUND_ACTIVITY,
-                        APP_A.FOREGROUND_ACTIVITY);
+                        APP_A_FOREGROUND_ACTIVITY,
+                        APP_ASM_OPT_OUT_FOREGROUND_ACTIVITY,
+                        APP_A_FOREGROUND_ACTIVITY);
     }
 
     /*
@@ -313,24 +308,21 @@ public class ActivitySecurityModelTest extends BackgroundActivityTestBase {
     @Test
     public void testActivitySandwich_asmPackageDisabledNewTask_launchAllowed() {
         new ActivityStartVerifier()
-                .setupTaskWithForegroundActivity(APP_A)
-                .startFromForegroundActivity(APP_A)
-                .activity(APP_ASM_OPT_OUT.FOREGROUND_ACTIVITY)
+                .setupTaskWithForegroundActivity(APP_A_FOREGROUND_ACTIVITY)
+                .startFromForegroundActivity(APP_A_LAUNCH_BACKGROUND_ACTIVITIES)
+                .activity(APP_ASM_OPT_OUT_FOREGROUND_ACTIVITY)
                 .executeAndAssertLaunch(/*succeeds*/ true)
                 .thenAssertTaskStack(
-                        APP_ASM_OPT_OUT.FOREGROUND_ACTIVITY,
-                        APP_A.FOREGROUND_ACTIVITY);
+                        APP_ASM_OPT_OUT_FOREGROUND_ACTIVITY, APP_A_FOREGROUND_ACTIVITY);
 
         // Current State: A B | (bottom -- top)
         // Test - A launches A - succeeds
         new ActivityStartVerifier()
-                .startFromForegroundActivity(APP_A)
-                .activityIntoNewTask(APP_B.FOREGROUND_ACTIVITY)
+                .startFromForegroundActivity(APP_A_LAUNCH_BACKGROUND_ACTIVITIES)
+                .activityIntoNewTask(APP_B_FOREGROUND_ACTIVITY)
                 .executeAndAssertLaunch(/*succeeds*/ true)
-                .thenAssertTaskStack(
-                        APP_ASM_OPT_OUT.FOREGROUND_ACTIVITY,
-                        APP_A.FOREGROUND_ACTIVITY)
-                .thenAssertTaskStack(APP_B.FOREGROUND_ACTIVITY);
+                .thenAssertTaskStack(APP_ASM_OPT_OUT_FOREGROUND_ACTIVITY, APP_A_FOREGROUND_ACTIVITY)
+                .thenAssertTaskStack(APP_B_FOREGROUND_ACTIVITY);
     }
 
     /*
@@ -342,27 +334,24 @@ public class ActivitySecurityModelTest extends BackgroundActivityTestBase {
     @Test
     public void testActivitySandwich_asmPackageEnabledActivityDisabled_launchAllowed() {
         new ActivityStartVerifier()
-                .setupTaskWithForegroundActivity(APP_A)
-                .startFromForegroundActivity(APP_A)
-                .activity(APP_B.FOREGROUND_ACTIVITY)
+                .setupTaskWithForegroundActivity(APP_A_FOREGROUND_ACTIVITY)
+                .startFromForegroundActivity(APP_A_LAUNCH_BACKGROUND_ACTIVITIES)
+                .activity(APP_B_FOREGROUND_ACTIVITY)
                 .allowCrossUidLaunch()
                 .executeAndAssertLaunch(/*succeeds*/ true)
-                .thenAssertTaskStack(
-                        APP_B.FOREGROUND_ACTIVITY,
-                        APP_A.FOREGROUND_ACTIVITY);
+                .thenAssertTaskStack(APP_B_FOREGROUND_ACTIVITY, APP_A_FOREGROUND_ACTIVITY);
 
         // Current State: A B | (bottom -- top)
         // Test - A launches A - succeeds
         new ActivityStartVerifier()
-                .startFromForegroundActivity(APP_A)
-                .activity(APP_A.FOREGROUND_ACTIVITY)
+                .startFromForegroundActivity(APP_A_LAUNCH_BACKGROUND_ACTIVITIES)
+                .activity(APP_A_FOREGROUND_ACTIVITY)
                 .executeAndAssertLaunch(/*succeeds*/ true)
                 .thenAssertTaskStack(
-                        APP_A.FOREGROUND_ACTIVITY,
-                        APP_B.FOREGROUND_ACTIVITY,
-                        APP_A.FOREGROUND_ACTIVITY);
+                        APP_A_FOREGROUND_ACTIVITY,
+                        APP_B_FOREGROUND_ACTIVITY,
+                        APP_A_FOREGROUND_ACTIVITY);
     }
-
 
     /*
      * Launch the Settings' MANAGE_UNKNOWN_APP_SOURCES action on top of the test app's
@@ -379,23 +368,21 @@ public class ActivitySecurityModelTest extends BackgroundActivityTestBase {
     public void testActivitySandwichWithSystem_launchBlocked() {
         BackgroundActivityLaunchTest.assumeSdkNewerThanUpsideDownCake();
 
-        ComponentName capturedSettingsActivity = new ActivityStartVerifier()
-                .setupTaskWithForegroundActivity(APP_A)
-                .startFromForegroundActivity(APP_A)
-                .action(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES)
-                .executeAndWaitForFocusLoss(APP_A.FOREGROUND_ACTIVITY)
-                .thenAssertTaskHasLostFocus(
-                        APP_A.FOREGROUND_ACTIVITY);
+        ComponentName capturedSettingsActivity =
+                new ActivityStartVerifier()
+                        .setupTaskWithForegroundActivity(APP_A_FOREGROUND_ACTIVITY)
+                        .startFromForegroundActivity(APP_A_LAUNCH_BACKGROUND_ACTIVITIES)
+                        .action(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES)
+                        .executeAndWaitForFocusLoss(APP_A_FOREGROUND_ACTIVITY)
+                        .thenAssertTaskHasLostFocus(APP_A_FOREGROUND_ACTIVITY);
 
         // Current State: A B
         // Test - A launches A - fails
         new ActivityStartVerifier()
-                .startFromForegroundActivity(APP_A)
-                .activity(APP_A.FOREGROUND_ACTIVITY)
+                .startFromForegroundActivity(APP_A_LAUNCH_BACKGROUND_ACTIVITIES)
+                .activity(APP_A_FOREGROUND_ACTIVITY)
                 .executeAndAssertLaunch(/*succeeds*/ false)
-                .thenAssertTaskStack(
-                        capturedSettingsActivity,
-                        APP_A.FOREGROUND_ACTIVITY);
+                .thenAssertTaskStack(capturedSettingsActivity, APP_A_FOREGROUND_ACTIVITY);
     }
 
     /*
@@ -413,23 +400,23 @@ public class ActivitySecurityModelTest extends BackgroundActivityTestBase {
     public void testActivitySandwichWithSystem_launchAllowed() {
         BackgroundActivityLaunchTest.assumeSdkNewerThanUpsideDownCake();
 
-        ComponentName capturedSettingsActivity = new ActivityStartVerifier()
-                .setupTaskWithForegroundActivity(APP_A)
-                .startFromForegroundActivity(APP_A)
-                .action(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES)
-                .executeAndWaitForFocusLoss(APP_A.FOREGROUND_ACTIVITY)
-                .thenAssertTaskHasLostFocus(
-                        APP_A.FOREGROUND_ACTIVITY);
+        ComponentName capturedSettingsActivity =
+                new ActivityStartVerifier()
+                        .setupTaskWithForegroundActivity(APP_A_FOREGROUND_ACTIVITY)
+                        .startFromForegroundActivity(APP_A_LAUNCH_BACKGROUND_ACTIVITIES)
+                        .action(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES)
+                        .executeAndWaitForFocusLoss(APP_A_FOREGROUND_ACTIVITY)
+                        .thenAssertTaskHasLostFocus(APP_A_FOREGROUND_ACTIVITY);
 
         // Current State: A B
         // Test - A launches A - fails
         new ActivityStartVerifier()
-                .startFromForegroundActivity(APP_A)
-                .activity(APP_A.FOREGROUND_ACTIVITY)
+                .startFromForegroundActivity(APP_A_LAUNCH_BACKGROUND_ACTIVITIES)
+                .activity(APP_A_FOREGROUND_ACTIVITY)
                 .executeAndAssertLaunch(/*succeeds*/ true)
                 .thenAssertTaskStack(
-                        APP_A.FOREGROUND_ACTIVITY,
+                        APP_A_FOREGROUND_ACTIVITY,
                         capturedSettingsActivity,
-                        APP_A.FOREGROUND_ACTIVITY);
+                        APP_A_FOREGROUND_ACTIVITY);
     }
 }

@@ -17,20 +17,25 @@
 package android.provider.cts.contacts;
 
 import static android.provider.CallLog.Calls.CONTENT_URI;
+import static android.provider.CallLog.Calls.CONTENT_VOIP_URI;
 import static android.provider.CallLog.Calls.MISSED_REASON_NOT_MISSED;
 import static android.provider.CallLog.Calls.PHONE_ACCOUNT_COMPONENT_NAME;
 import static android.provider.CallLog.Calls.PHONE_ACCOUNT_ID;
 import static android.provider.CallLog.Calls.PRESENTATION_ALLOWED;
 
+import static com.android.server.telecom.util.CallLogUtils.AddCallParams.AddCallParametersBuilder;
+
 import android.content.Context;
 import android.database.Cursor;
 import android.net.Uri;
+import android.provider.CallLog.Calls;
 import android.telecom.PhoneAccountHandle;
 
 import com.android.server.telecom.util.CallLogUtils;
 import com.android.server.telecom.util.CallerInfo;
 
 import java.util.Random;
+import java.util.UUID;
 
 /** A generator that generates random call log entries for testing purposes. */
 public final class CallLogGenerator {
@@ -118,6 +123,63 @@ public final class CallLogGenerator {
                 PHONE_ACCOUNT_COMPONENT_NAME + " = ? AND " + PHONE_ACCOUNT_ID + " = ?",
                 new String[] {accountComponentString, accountId},
                 null /* sortOrder */)) {
+            return cursor != null ? cursor.getCount() : 0;
+        }
+    }
+
+    /**
+     * Generates a specified number of VoIP call logs for a given phone account.
+     *
+     * @param phoneAccountHandle The handle to the phone account for which to generate call logs.
+     * @param size The number of call logs to generate.
+     */
+    public void generateVoIPCallLogs(PhoneAccountHandle phoneAccountHandle, int size) {
+        for (int i = 0; i < size; i++) {
+            addVoIPCallLog(phoneAccountHandle);
+        }
+    }
+
+    /**
+     * Adds a random VoIP call log entry.
+     *
+     * @param phoneAccountHandle The phone account associated with the call.
+     * @return The URI of the newly created call log entry.
+     */
+    public Uri addVoIPCallLog(PhoneAccountHandle phoneAccountHandle) {
+        final AddCallParametersBuilder builder = new AddCallParametersBuilder();
+        final CallerInfo callerInfo = new CallerInfo();
+        callerInfo.setName(getRandomName());
+        builder.setCallerInfo(callerInfo)
+                .setAccountHandle(phoneAccountHandle)
+                .setStart(System.currentTimeMillis())
+                .setDuration(getRandomDuration())
+                .setCallType(getRandomPhoneType())
+                .setUuid(UUID.randomUUID().toString());
+        return CallLogUtils.addCall(mContext, builder.build());
+    }
+
+    /**
+     * Deletes VoIP call logs associated with a specific phone account.
+     *
+     * @return The number of call log entries deleted.
+     */
+    public int deleteVoIPCallLogs() {
+        return mContext.getContentResolver().delete(CONTENT_VOIP_URI, null, null);
+    }
+
+    /**
+     * Get the number of VoIP call log entries with a specific phone account.
+     *
+     * @return The number of call log entries.
+     */
+    public int getVoIPCallLogSize() {
+        try (Cursor cursor =
+                mContext.getContentResolver()
+                        .query(
+                                CONTENT_VOIP_URI,
+                                new String[] {Calls.DATE, Calls.UUID},
+                                null,
+                                null)) {
             return cursor != null ? cursor.getCount() : 0;
         }
     }

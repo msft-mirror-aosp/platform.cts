@@ -19,10 +19,7 @@ package {
 
 filegroup {
     name: "cts-wm-components",
-    srcs: [
-        "**/Components.java",
-        "**/Components.kt",
-    ],
+    srcs: ["**/Components.kt"],
     visibility: ["//cts/tests/framework/base/windowmanager/test-apps/app_base"],
 }
 

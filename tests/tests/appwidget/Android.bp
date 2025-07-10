@@ -47,6 +47,7 @@ android_test {
         "androidx.core_core-ktx",
         "kotlin-test",
         "kotlinx_coroutines_test",
+        "platformprotosnano",
     ],
     libs: ["android.test.base.stubs.test"],
     // Tag this module as a cts test artifact

@@ -17,12 +17,13 @@
 
 #include <ChoreographerTestUtils.h>
 #include <android/choreographer.h>
-#include <android/looper.h>
 #include <android/log.h>
+#include <android/looper.h>
 #include <jni.h>
 #include <sys/time.h>
 #include <time.h>
 
+#include <algorithm>
 #include <chrono>
 #include <cmath>
 #include <cstdlib>

@@ -57,4 +57,11 @@ java_test_helper_library {
     static_libs: ["cts-wm-components-lib"],
 
     sdk_version: "test_current",
+    visibility: [
+        "//cts/tests/framework/base/biometrics/apps:__subpackages__",
+        "//cts/tests/framework/base/windowmanager/backgroundactivity:__subpackages__",
+        "//cts/tests/framework/base/windowmanager/jetpack:__subpackages__",
+        "//cts/tests/framework/base/windowmanager/test-apps:__subpackages__",
+        "//cts/tests/surfacecontrol/scvhapp",
+    ],
 }

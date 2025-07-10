@@ -347,6 +347,10 @@ public class CallDetailsTest extends BaseTelecomTestWithMockServices {
 
         mConnection.setConnectionProperties(Connection.PROPERTY_CROSS_SIM);
         assertCallProperties(mCall, Call.Details.PROPERTY_CROSS_SIM);
+
+        // Not flagged; this is just simple property translation -- the API itself is flagged.
+        mConnection.setConnectionProperties(Connection.PROPERTY_REMOTELY_HOSTED);
+        assertCallProperties(mCall, Call.Details.PROPERTY_REMOTELY_HOSTED);
     }
 
     /**

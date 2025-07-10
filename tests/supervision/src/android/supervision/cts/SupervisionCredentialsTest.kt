@@ -20,20 +20,17 @@ import android.Manifest.permission.CREATE_USERS
 import android.Manifest.permission.MANAGE_USERS
 import android.Manifest.permission.QUERY_USERS
 import android.app.supervision.flags.Flags
-import android.os.UserManager
-import androidx.test.platform.app.InstrumentationRegistry
 import com.android.bedstead.flags.annotations.RequireFlagsEnabled
 import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.multiuser.annotations.RequireMultiUserSupport
 import com.android.bedstead.permissions.annotations.EnsureDoesNotHavePermission
 import com.android.bedstead.permissions.annotations.EnsureHasPermission
 import com.android.compatibility.common.util.ApiTest
-import com.android.compatibility.common.util.SystemUtil.runShellCommand
 import com.android.xts.root.annotations.RequireRootInstrumentation
 import com.google.common.truth.Truth.assertThat
+import kotlin.test.assertFailsWith
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.testng.Assert.assertThrows
 
 @RunWith(BedsteadJUnit4::class)
 @RequireFlagsEnabled(
@@ -48,27 +45,10 @@ class SupervisionCredentialsTest : BaseSupervisionTest() {
             ["android.app.supervision.SupervisionManager#createConfirmSupervisionCredentialsIntent"]
     )
     @EnsureHasPermission(MANAGE_USERS)
-    @RequireMultiUserSupport
     @RequireRootInstrumentation(reason = "Use of MANAGE_USERS")
     fun createConfirmSupervisionCredentialsIntent_hasManageUsersPermission_returnsValidIntent() {
-        setSupervisionEnabled(true)
-        val supervisingUser =
-            userManager.createUser("Supervising", UserManager.USER_TYPE_PROFILE_SUPERVISING, 0)
-        if (supervisingUser != null) {
-            runShellCommand(
-                InstrumentationRegistry.getInstrumentation(),
-                "locksettings set-pin --user ${supervisingUser.userHandle.identifier} 1234",
-            )
-        }
-
-        try {
-            val intent = supervisionManager.createConfirmSupervisionCredentialsIntent()
-            assertThat(intent?.action).isEqualTo(ACTION_CONFIRM_SUPERVISION_CREDENTIALS)
-            assertThat(intent?.getPackage()).isEqualTo(APPLICATION_PACKAGE)
-        } finally {
-            if (supervisingUser != null) {
-                userManager.removeUser(supervisingUser.userHandle)
-            }
+        withSupervisingUser {
+            verifyCreateConfirmSupervisionCredentialsIntentIsValid()
         }
     }
 
@@ -77,27 +57,10 @@ class SupervisionCredentialsTest : BaseSupervisionTest() {
         apis =
             ["android.app.supervision.SupervisionManager#createConfirmSupervisionCredentialsIntent"]
     )
-    @RequireMultiUserSupport
-    @EnsureHasPermission(QUERY_USERS, CREATE_USERS)
+    @EnsureHasPermission(QUERY_USERS)
     fun createConfirmSupervisionCredentialsIntent_hasQueryUsersPermission_returnsValidIntent() {
-        setSupervisionEnabled(true)
-        val supervisingUser =
-            userManager.createUser("Supervising", UserManager.USER_TYPE_PROFILE_SUPERVISING, 0)
-        if (supervisingUser != null) {
-            runShellCommand(
-                InstrumentationRegistry.getInstrumentation(),
-                "locksettings set-pin --user ${supervisingUser.userHandle.identifier} 1234",
-            )
-        }
-
-        try {
-            val intent = supervisionManager.createConfirmSupervisionCredentialsIntent()
-            assertThat(intent?.action).isEqualTo(ACTION_CONFIRM_SUPERVISION_CREDENTIALS)
-            assertThat(intent?.getPackage()).isEqualTo(APPLICATION_PACKAGE)
-        } finally {
-            if (supervisingUser != null) {
-                userManager.removeUser(supervisingUser.userHandle)
-            }
+        withSupervisingUser {
+            verifyCreateConfirmSupervisionCredentialsIntentIsValid()
         }
     }
 
@@ -108,7 +71,7 @@ class SupervisionCredentialsTest : BaseSupervisionTest() {
     )
     @EnsureDoesNotHavePermission(MANAGE_USERS, QUERY_USERS)
     fun createConfirmSupervisionCredentialsIntent_noPermission_throwsException() {
-        assertThrows(SecurityException::class.java) {
+        assertFailsWith<SecurityException> {
             supervisionManager.createConfirmSupervisionCredentialsIntent()
         }
     }
@@ -121,17 +84,8 @@ class SupervisionCredentialsTest : BaseSupervisionTest() {
     @RequireMultiUserSupport
     @EnsureHasPermission(QUERY_USERS, CREATE_USERS)
     fun createConfirmSupervisionCredentialsIntent_supervisionNotEnabled_returnsNull() {
-        setSupervisionEnabled(false)
-        val supervisingUser =
-            userManager.createUser("Supervising", UserManager.USER_TYPE_PROFILE_SUPERVISING, 0)
-
-        try {
-            val intent = supervisionManager.createConfirmSupervisionCredentialsIntent()
-            assertThat(intent).isNull()
-        } finally {
-            if (supervisingUser != null) {
-                userManager.removeUser(supervisingUser.userHandle)
-            }
+        withSupervisingUser(supervisionEnabled = false) {
+            verifyCreateConfirmSupervisionCredentialsIntentIsNull()
         }
     }
 
@@ -143,9 +97,7 @@ class SupervisionCredentialsTest : BaseSupervisionTest() {
     @EnsureHasPermission(QUERY_USERS)
     fun createConfirmSupervisionCredentialsIntent_noSupervisingUser_returnsNull() {
         setSupervisionEnabled(true)
-
-        val intent = supervisionManager.createConfirmSupervisionCredentialsIntent()
-        assertThat(intent).isNull()
+        verifyCreateConfirmSupervisionCredentialsIntentIsNull()
     }
 
     @Test
@@ -156,25 +108,25 @@ class SupervisionCredentialsTest : BaseSupervisionTest() {
     @RequireMultiUserSupport
     @EnsureHasPermission(QUERY_USERS, CREATE_USERS)
     fun createConfirmSupervisionCredentialsIntent_supervisingUserMissingSecureLock_returnsNull() {
-        setSupervisionEnabled(true)
-        val supervisingUser =
-            userManager.createUser("Supervising", UserManager.USER_TYPE_PROFILE_SUPERVISING, 0)
-
-        try {
-            val intent = supervisionManager.createConfirmSupervisionCredentialsIntent()
-            assertThat(intent).isNull()
-        } finally {
-            if (supervisingUser != null) {
-                userManager.removeUser(supervisingUser.userHandle)
-            }
+        withSupervisingUser(hasPin = false) {
+            verifyCreateConfirmSupervisionCredentialsIntentIsNull()
         }
+    }
+
+    private fun verifyCreateConfirmSupervisionCredentialsIntentIsValid() {
+        val intent = supervisionManager.createConfirmSupervisionCredentialsIntent()
+        assertThat(intent?.action).isEqualTo(ACTION_CONFIRM_SUPERVISION_CREDENTIALS)
+        assertThat(intent?.getPackage()).isEqualTo(APPLICATION_PACKAGE)
+    }
+
+    private fun verifyCreateConfirmSupervisionCredentialsIntentIsNull() {
+        val intent = supervisionManager.createConfirmSupervisionCredentialsIntent()
+        assertThat(intent).isNull()
     }
 
     companion object {
         private const val ACTION_CONFIRM_SUPERVISION_CREDENTIALS =
             "android.app.supervision.action.CONFIRM_SUPERVISION_CREDENTIALS"
         private const val APPLICATION_PACKAGE = "com.android.settings"
-
-        private val userManager = context.getSystemService(UserManager::class.java)
     }
 }

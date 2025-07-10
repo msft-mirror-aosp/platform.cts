@@ -135,11 +135,12 @@ class DngNoiseModelTest(its_base_test.ItsBaseTest):
           # so the check remains correct even after the signal starts to clip.
           mean_minus_3sigma = mean_img_ch - math.sqrt(var_model) * 3
           if mean_minus_3sigma < 0:
-            if mean_minus_3sigma >= 0:
-              raise AssertionError(
-                  'Pixel distribution crosses 0. Likely black level over-clips.'
-                  f' Linear model is not valid. mean: {mean_img_ch:.3e},'
-                  f' var: {var_model:.3e}, u-3s: {mean_minus_3sigma:.3e}')
+            raise AssertionError(
+                f'{its_session_utils.NOT_YET_MANDATED_MESSAGE}\n\n'
+                'Pixel distribution crosses 0. Likely black level over-clips.'
+                f' Linear model is not valid. mean: {mean_img_ch:.3e},'
+                f' var: {var_model:.3e}, u-3s: {mean_minus_3sigma:.3e}'
+            )
           else:
             abs_diff = abs(var - var_model)
             logging.debug('%s mean: %.3f, var: %.3e, var_model: %.3e',

@@ -16,15 +16,16 @@
 
 //#define LOG_NDEBUG 0
 #define LOG_TAG "NativeExtractorTest"
-#include <log/log.h>
-
 #include <jni.h>
+#include <log/log.h>
 #include <media/NdkMediaExtractor.h>
 #include <sys/stat.h>
 #include <zlib.h>
 
+#include <algorithm>
 #include <cstdlib>
 #include <random>
+#include <vector>
 
 #include "NativeMediaCommon.h"
 

@@ -16,7 +16,7 @@
 
 package android.server.wm.backgroundactivity.common;
 
-import static android.server.wm.backgroundactivity.common.CommonComponents.EVENT_NOTIFIER_EXTRA;
+import static android.server.wm.backgroundactivity.common.Components.EVENT_NOTIFIER_EXTRA;
 
 import android.app.Activity;
 import android.app.PendingIntent;

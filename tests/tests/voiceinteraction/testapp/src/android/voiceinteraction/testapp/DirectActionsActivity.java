@@ -137,6 +137,11 @@ public final class DirectActionsActivity extends Activity {
     private void detectDestroyedInteractor(@NonNull RemoteCallback callback) {
         final CountDownLatch latch = new CountDownLatch(1);
         final VoiceInteractor interactor = waitForVoiceInteractorNonNull();
+        if(interactor == null) {
+            Log.e(TAG, "detectDestroyedInteractor(): Voice interactor is null");
+            callback.sendResult(new Bundle());
+            return;
+        }
         interactor.registerOnDestroyedCallback(AsyncTask.THREAD_POOL_EXECUTOR, latch::countDown);
         Utils.await(latch);
 

@@ -49,6 +49,7 @@ import android.media.Image;
 import android.media.ImageReader;
 import android.os.Handler;
 import android.os.SystemClock;
+import android.os.Trace;
 import android.view.Surface;
 
 import androidx.annotation.NonNull;
@@ -282,9 +283,12 @@ public class VirtualCameraCaptureHelper {
                                 return;
                             }
                             mRemainingCapture--;
+                            Trace.beginSection("VirtualCameraCaptureHelper.captureSingleRequest (fixed rate) metadata enabled: "
+                                                   + config.mPerFrameCameraMetadataEnabled);
                             cameraCaptureSession.captureSingleRequest(request.build(),
                                     mCameraExecutor,
                                     mCaptureCallback);
+                            Trace.endSection();
                         } catch (CameraAccessException e) {
                             throw new RuntimeException(e);
                         }
@@ -292,8 +296,11 @@ public class VirtualCameraCaptureHelper {
                 }, 0, capturePeriod.toMillis());
             } else {
                 for (int i = 0; i < config.mImageCount; i++) {
+                    Trace.beginSection("VirtualCameraCaptureHelper.captureSingleRequest (no rate) metadata enabled: "
+                                           + config.mPerFrameCameraMetadataEnabled);
                     cameraCaptureSession.captureSingleRequest(request.build(), mCameraExecutor,
                             mCaptureCallback);
+                    Trace.endSection();
                 }
             }
 

@@ -87,6 +87,7 @@ import org.mockito.junit.MockitoRule;
 
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
@@ -383,6 +384,48 @@ public class OutputSwitcherTest {
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_OUTPUT_SWITCHER_REDESIGN)
+    public void providerReleasesSessionWhileDialogOpen_dialogUpdates() throws Exception {
+        mService.removeAllRoutesExcept(List.of(ROUTE_ID1, ROUTE_ID2));
+        registerRouteCallback(List.of(FEATURE_SAMPLE));
+        mRouter2.registerTransferCallback(mExecutor, mTransferCallback);
+        assertThat(mRouter2.showSystemOutputSwitcher()).isTrue();
+
+        clickRouteInDialog(ROUTE_NAME1);
+        assertDialogShowsConnectionTo(ROUTE_NAME1);
+        ArgumentCaptor<RoutingController> controllerCaptor =
+                ArgumentCaptor.forClass(RoutingController.class);
+        verify(mTransferCallback, timeout(TIMEOUT_MS))
+                .onTransfer(any(), controllerCaptor.capture());
+        String originalSessionId = controllerCaptor.getValue().getOriginalId();
+        mService.onReleaseSession(-1 /* requestId */, originalSessionId);
+
+        assertDialogShowsConnectionToThisDevice();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_OUTPUT_SWITCHER_REDESIGN)
+    public void appCallsTransferToWhileDialogOpen_dialogUpdates() throws Exception {
+        mService.removeAllRoutesExcept(List.of(ROUTE_ID1, ROUTE_ID5_TO_TRANSFER_TO));
+        registerRouteCallback(List.of(FEATURE_SAMPLE));
+        mRouter2.registerTransferCallback(mExecutor, mTransferCallback);
+        assertThat(mRouter2.showSystemOutputSwitcher()).isTrue();
+
+        clickRouteInDialog(ROUTE_NAME1);
+        assertDialogShowsConnectionTo(ROUTE_NAME1);
+        // Transfer the route by calling transferTo from the client app instead of by clicking on
+        // the route in the UI.
+        Optional<MediaRoute2Info> route5 =
+                mRouter2.getRoutes().stream()
+                        .filter(r -> r.getName().toString().equals(ROUTE_NAME5))
+                        .findFirst();
+        assertThat(route5).isPresent();
+        mRouter2.transferTo(route5.get());
+
+        assertDialogShowsConnectionTo(ROUTE_NAME5);
+    }
+
+    @Test
     public void selectRemoteRoute_thenTapStopCastingButton_correctEventsFire() throws Exception {
         mService.removeAllRoutesExcept(List.of(ROUTE_ID1, ROUTE_ID9_REMOTE));
         registerRouteCallback(List.of(FEATURE_SAMPLE, MediaRoute2Info.FEATURE_REMOTE_PLAYBACK));
@@ -411,6 +454,7 @@ public class OutputSwitcherTest {
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_OUTPUT_SWITCHER_REDESIGN)
     public void streamExpansion_addSecondRoute_eventsFire() throws Exception {
         mService.removeAllRoutesExcept(List.of(ROUTE_ID1, ROUTE_ID4_TO_SELECT_AND_DESELECT));
         registerRouteCallback(List.of(FEATURE_SAMPLE));
@@ -446,6 +490,7 @@ public class OutputSwitcherTest {
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_OUTPUT_SWITCHER_REDESIGN)
     public void streamExpansion_addAndRemoveSecondRoute_eventsFire() throws Exception {
         mService.removeAllRoutesExcept(List.of(ROUTE_ID1, ROUTE_ID4_TO_SELECT_AND_DESELECT));
         registerRouteCallback(List.of(FEATURE_SAMPLE));

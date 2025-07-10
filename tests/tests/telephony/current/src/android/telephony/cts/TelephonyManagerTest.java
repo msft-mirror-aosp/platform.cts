@@ -6473,6 +6473,67 @@ public class TelephonyManagerTest {
                 TelephonyManager.APPTYPE_ISIM, getContext().getMainExecutor(), callback);
     }
 
+    /**
+     * Verifies that {@link TelephonyManager#requestUiccIari()} does not cause SecurityException
+     * when granted with READ_PRIVILEGED_PHONE_STATE permission.
+     */
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_SUPPORT_IMS_REGISTRATION_EVENT_DOWNLOAD)
+    public void requestIari_WithReadPrivilegedPermission() {
+        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
+        // make sure not to face any permission problem while calling the API
+        OutcomeReceiver<Set<String>, Exception> callback =
+                new OutcomeReceiver<>() {
+                    @Override
+                    public void onResult(Set<String> iari) {}
+
+                    @Override
+                    public void onError(@NonNull Exception ex) {
+                        if (ex instanceof SecurityException) {
+                            fail();
+                        } else if (ex instanceof IllegalStateException) {
+                            assumeNoException("Skipping test in case SIM do not support ISIM", ex);
+                        } else {
+                            Log.i(TAG, "Skipping test", ex);
+                        }
+                    }
+                };
+        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                mTelephonyManager,
+                tm -> tm.requestUiccIari(getContext().getMainExecutor(), callback),
+                Manifest.permission.READ_PRIVILEGED_PHONE_STATE);
+    }
+
+    /**
+     * Verifies that {@link TelephonyManager#requestUiccIari()} cause SecurityException when called
+     * without any permissions granted.
+     */
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_SUPPORT_IMS_REGISTRATION_EVENT_DOWNLOAD)
+    public void requestIari_NoPermissionGranted() {
+        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
+
+        OutcomeReceiver<Set<String>, Exception> callback =
+                new OutcomeReceiver<>() {
+                    @Override
+                    public void onResult(Set<String> iari) {
+                        fail(); // if no SecurityException then it fails()
+                    }
+
+                    @Override
+                    public void onError(@NonNull Exception ex) {
+                        if (ex instanceof SecurityException) {
+                            // SecurityException is expected
+                        } else if (ex instanceof IllegalStateException) {
+                            assumeNoException("Skipping test in case SIM do not support ISIM", ex);
+                        } else {
+                            Log.i(TAG, "Skipping test", ex);
+                        }
+                    }
+                };
+        mTelephonyManager.requestUiccIari(getContext().getMainExecutor(), callback);
+    }
+
     @Test
     public void testLastKnownCountryIso() throws Exception {
         assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));

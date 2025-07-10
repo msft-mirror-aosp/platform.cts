@@ -22,9 +22,12 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include <format>
 #include <future>
 #include <list>
+#include <memory>
 #include <sstream>
+#include <string>
 #include <vector>
 
 static jstring toJString(JNIEnv *env, const char* c_str) {
