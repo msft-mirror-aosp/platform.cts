@@ -342,7 +342,6 @@ public class BuildTest {
     /**
      * Verify that SDK_INT_FULL version is always non-zero and positive.
      */
-    @RequiresFlagsEnabled(android.sdk.Flags.FLAG_MAJOR_MINOR_VERSIONING_SCHEME)
     @Test
     public void testSdkIntFull() {
         assertTrue("Version " + Build.VERSION.SDK_INT_FULL
@@ -352,7 +351,6 @@ public class BuildTest {
     /**
      * Verify that Build.getMajorSdkVersion returns SDK_INT.
      */
-    @RequiresFlagsEnabled(android.sdk.Flags.FLAG_MAJOR_MINOR_VERSIONING_SCHEME)
     @Test
     public void testGetMajorSdkVersion() {
         assertEquals(
@@ -363,7 +361,6 @@ public class BuildTest {
     /**
      * Verify that Build.getMinorSdkVersion returns a non-negative value.
      */
-    @RequiresFlagsEnabled(android.sdk.Flags.FLAG_MAJOR_MINOR_VERSIONING_SCHEME)
     @Test
     public void testGetMinorSdkVersion() {
         assertTrue("Minor SDK version encoded in SDK_INT_FULL invalid; must be zero or positive",
