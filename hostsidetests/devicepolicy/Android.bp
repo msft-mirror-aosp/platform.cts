@@ -77,7 +77,6 @@ java_test_host {
         ":CtsMeteredDataTestApp",
         ":CtsNoLauncherActivityApp",
         ":CtsNoPermissionApp",
-        ":CtsNotificationSenderApp",
         ":CtsPackageInstallerApp",
         ":CtsPermissionApp",
         ":CtsProfileOwnerApp",
