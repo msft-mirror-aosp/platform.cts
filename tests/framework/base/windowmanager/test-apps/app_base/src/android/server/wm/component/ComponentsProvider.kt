@@ -19,26 +19,56 @@ package android.server.wm.component
 import android.content.ComponentName
 
 /**
- * An abstract class for a constants-holding object that provides an idiomatic Kotlin API.
+ * Base class for a constants-holding object that provides component definitions.
  *
- * This is the recommended contract for new test components written in Kotlin. This pattern uses a
- * singleton `object` to provide a single, well-known entry point for all component constants within
- * a test APK.
+ * This is the standard contract for providing component constants within a test APK. This pattern
+ * uses a singleton `object` named `Components` to provide a single, well-known entry point for
+ * all component constants. By extending this class, your `object` automatically gains the
+ * `.packageName` property and `.component()` function without boilerplate.
  *
- * By extending this class, your `object` automatically gains the `.packageName` property and
- * `.component()` function without any boilerplate for Kotlin callers.
+ * ### Basic Usage
  *
- * ### Example Usage
+ * Define a singleton `object` named `Components` in your test APK's main package. This object
+ * should extend `ComponentsProvider`.
  *
  * ```kotlin
  * package android.server.wm.app27
  *
- * import android.server.wm.component.ComponentProvider
+ * import android.server.wm.component.ComponentsProvider
  *
  * /** Constants for SDK 27 test components. */
- * object Components : ComponentProvider {
+ * object Components : ComponentsProvider() {
  *   @JvmField
  *   val SDK_27_HOME_ACTIVITY = component("HomeActivity")
+ * }
+ * ```
+ *
+ * ### Repackaging Components from Libraries
+ *
+ * A common pattern is to build test apps as libraries and package them in different test APKs
+ * to test different target SDK behaviors. In such cases, you can repackage components from
+ * library packages into the test APK's package using the `component(className)` function.
+ *
+ * **Library Components (android.server.wm.overlay):**
+ * ```kotlin
+ * package android.server.wm.overlay
+ *
+ * /** Constants for overlay test components. */
+ * object Components : ComponentsProvider() {
+ *     @JvmField val OVERLAY_ACTIVITY = component("OverlayActivity")
+ * }
+ * ```
+ *
+ * **Test APK Components (android.server.wm.third):**
+ * ```kotlin
+ * package android.server.wm.third
+ *
+ * import android.server.wm.component.ComponentsProvider
+ * import android.server.wm.overlay.Components.OVERLAY_ACTIVITY
+ *
+ * /** Constants for the third device services test components. */
+ * object Components : ComponentsProvider() {
+ *     @JvmField val THIRD_OVERLAY_ACTIVITY = component(OVERLAY_ACTIVITY.className)
  * }
  * ```
  *
@@ -50,9 +80,15 @@ abstract class ComponentsProvider {
      * The package name of the test APK, derived from the `Components` object that implements this
      * interface.
      *
-     * @throws AssertionError if the implementing class is not named exactly `Components`.
+     * @throws IllegalArgumentException if the implementing class is not named exactly `Components`.
      */
-    @JvmField val packageName: String = ComponentsBase.getPackageName(this.javaClass)
+    @JvmField
+    val packageName: String = javaClass.run {
+        require(simpleName == "Components") {
+            "The implementing class must be an 'object' named 'Components', but was '$simpleName'."
+        }
+        packageName
+    }
 
     /**
      * Builds a [ComponentName] for a class within this component's package.
@@ -61,8 +97,14 @@ abstract class ComponentsProvider {
      *   (e.g., "com.example.app.MyActivity"). If a simple name is provided, it will be prepended
      *   with the APK's package name.
      * @return A [ComponentName] object for the specified class.
-     * @throws AssertionError if the [className] starts with a '.'.
+     * @throws IllegalArgumentException if the [className] starts with a '.'.
      */
-    fun component(className: String): ComponentName =
-        ComponentsBase.component(this.javaClass, className)
+    fun component(className: String): ComponentName {
+        require(!className.startsWith(".")) {
+            "Class name must not start with a '.'. " +
+                    "For classes in sub-packages, provide the fully qualified name."
+        }
+        val fullClassName = if ('.' in className) className else "$packageName.$className"
+        return ComponentName(packageName, fullClassName)
+    }
 }
