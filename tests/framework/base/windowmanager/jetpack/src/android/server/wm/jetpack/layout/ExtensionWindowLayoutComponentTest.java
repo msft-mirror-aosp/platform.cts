@@ -152,11 +152,10 @@ public class ExtensionWindowLayoutComponentTest extends WindowManagerJetpackTest
         return windowContext;
     }
 
-    /**
-     * Test adding and removing a window layout change listener.
-     */
+    /** Test adding and removing a window layout change listener. */
     @Test
     @PlatinumTest(focusArea = "windowmanager")
+    @RequireNotAutomotive(reason = "Automotive screens don't support rotation")
     @ApiTest(apis = {
             "androidx.window.extensions.layout.WindowLayoutComponent#addWindowLayoutInfoListener"})
     public void testWindowLayoutComponent_onWindowLayoutChangeListener() throws Exception {
@@ -165,11 +164,10 @@ public class ExtensionWindowLayoutComponentTest extends WindowManagerJetpackTest
         changeActivityOrientationThenVerifyWindowLayout(testActivity, testActivity);
     }
 
-    /**
-     * Test adding and removing a window layout change listener with a wrapped activity context.
-     */
+    /** Test adding and removing a window layout change listener with a wrapped activity context. */
     @Test
     @PlatinumTest(focusArea = "windowmanager")
+    @RequireNotAutomotive(reason = "Automotive screens don't support rotation")
     @ApiTest(apis = {
             "androidx.window.extensions.layout.WindowLayoutComponent#addWindowLayoutInfoListener"})
     public void testWindowLayoutComponent_onWindowLayoutChangeListener_wrappedContext()

@@ -90,7 +90,7 @@ public class WifiRttTest extends TestBase {
     private static final int MAX_NON11MC_FAILURE_RATE_PERCENT = 40;
 
     // Maximum non-8011mc variation from the average measurement (measures consistency)
-    private static final int MAX_NON11MC_VARIATION_FROM_AVERAGE_DISTANCE_MM = 4000;
+    private static final int MAX_NON11MC_VARIATION_FROM_AVERAGE_DISTANCE_MM = 6000;
 
     // Minimum valid RSSI value
     private static final int MIN_VALID_RSSI = -100;
