@@ -742,7 +742,8 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
                     & WIFI_AWARE_CIPHER_SUITE_NCS_PK_PASN_256) != 0));
         }
         if (characteristics.getNumberOfSupportedDataPaths() > 1
-                && Flags.allowOverrideMaxNdpSession()) {
+                && Flags.allowOverrideMaxNdpSession()
+                && ApiLevelUtil.isAtLeast(Build.VERSION_CODES.TIRAMISU)) {
             int deviceNdpNum = characteristics.getNumberOfSupportedDataPaths();
             AwareParams params = new AwareParams();
             params.setNdpSessionLimit(1);
