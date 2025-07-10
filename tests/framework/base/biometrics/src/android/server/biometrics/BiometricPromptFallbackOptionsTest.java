@@ -552,7 +552,7 @@ public class BiometricPromptFallbackOptionsTest extends BiometricTestBase {
                 "android.hardware.biometrics.BiometricPrompt.Builder#addFallbackOption",
                 "android.hardware.biometrics.FallbackOption#getText",
                 "android.hardware.biometrics.FallbackOption#getIconType",
-                "android.hardware.biometrics.FallbackOption#FallbackOption(CharSequence)",
+                "android.hardware.biometrics.FallbackOption#FallbackOption",
             })
     @RequiresFlagsEnabled({Flags.FLAG_BP_FALLBACK_OPTIONS, Flags.FLAG_ADD_FALLBACK})
     @Test
