@@ -217,6 +217,27 @@ TEST_P(AAudioOffloadTest, testFlushFromFrame) {
     EXPECT_EQ(position, AAudioStream_getFramesWritten(mStream));
 }
 
+TEST_P(AAudioOffloadTest, testPlaybackParameters) {
+    if (!mmapPcmOffloadSupport()) {
+        // No need to run the test if the flag is not enabled.
+        return;
+    }
+    if (mStream == nullptr) {
+        // Offload is not supported for the requested configuration, no need to run the test.
+        return;
+    }
+
+    AAudioPlaybackParameters parameters;
+    aaudio_result_t result = AAudioStream_getPlaybackParameters(mStream, &parameters);
+    if (result == AAUDIO_ERROR_UNIMPLEMENTED) {
+        // The playback parameters is not supported for the given stream
+        return;
+    }
+    parameters.speed += 0.1f;
+    EXPECT_EQ(AAUDIO_OK, result);
+    EXPECT_EQ(AAUDIO_OK, AAudioStream_setPlaybackParameters(mStream, &parameters));
+}
+
 INSTANTIATE_TEST_CASE_P(Offload, AAudioOffloadTest,
                         ::testing::Values(AAUDIO_FORMAT_PCM_I16, AAUDIO_FORMAT_MP3,
                                           AAUDIO_FORMAT_AAC_LC, AAUDIO_FORMAT_AAC_HE_V1,
