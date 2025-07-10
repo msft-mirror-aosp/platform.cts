@@ -28,6 +28,9 @@ import org.junit.AssumptionViolatedException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.net.SocketException;
 import java.net.URL;
 import java.net.UnknownHostException;
 import java.security.KeyFactory;
@@ -97,6 +100,49 @@ public final class TestUtils {
         return result;
     }
 
+    private static final String HTTP_RESPONSE =
+            "HTTP/1.0 200 OK\r\nContent-Type: text/plain\r\nContent-length: 5\r\n\r\nhello";
+
+    /**
+     * Starts a fake TCP server using serverSocket on a separate thread. Callers can terminate the
+     * server by closing the serverSocket (see {@link ServerSocket.close}).
+     */
+    public static Thread startMockServer(ServerSocket serverSocket) {
+        Runnable serverRunnable =
+                new Runnable() {
+                    @Override
+                    public void run() {
+                        while (true) {
+                            try {
+                                Socket s = serverSocket.accept();
+                                s.getOutputStream().write(HTTP_RESPONSE.getBytes());
+                                s.getOutputStream().flush();
+                                s.close();
+                            } catch (SocketException e) {
+                                // If serverSocket has been closed, we will
+                                // receive this exception. Consider that the
+                                // test is now terminated.
+                                return;
+                            } catch (IOException e) {
+                                // Otherwise, ignore the error. Maybe the
+                                // client closed the socket will we were
+                                // writing. Let's get ready to serve another
+                                // client.
+                            }
+                        }
+                    }
+                };
+        Thread t = new Thread(serverRunnable);
+        t.start();
+        return t;
+    }
+
+    public static ServerSocket bindCleartextServer() throws IOException {
+        ServerSocket serverSocket = new ServerSocket();
+        serverSocket.bind(/* SocketAddress= */ null);
+        return serverSocket;
+    }
+
     /**
      * Binds a TLS server locally for testing.
      *
@@ -134,7 +180,7 @@ public final class TestUtils {
         context.init(kmf.getKeyManagers(), tmf.getTrustManagers(), null);
 
         SSLServerSocket s = (SSLServerSocket) context.getServerSocketFactory().createServerSocket();
-        s.bind(null);
+        s.bind(/* SocketAddress= */ null);
         return s;
     }
 
