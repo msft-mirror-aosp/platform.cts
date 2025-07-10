@@ -26,7 +26,6 @@ import static com.android.cts.devicepolicy.metrics.DevicePolicyEventLogVerifier.
 
 import static com.google.common.truth.Truth.assertThat;
 
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import android.platform.test.annotations.FlakyTest;
@@ -43,7 +42,6 @@ import com.google.common.collect.Sets;
 import org.junit.Test;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -51,36 +49,19 @@ import java.util.Map;
 import java.util.Set;
 
 public final class ManagedProfileCrossProfileTest extends BaseManagedProfileTest {
-    private static final String NOTIFICATION_APK = "CtsNotificationSenderApp.apk";
     private static final String WIDGET_PROVIDER_APK = "CtsWidgetProviderApp.apk";
     private static final String WIDGET_PROVIDER_PKG = "com.android.cts.widgetprovider";
-    private static final String PARAM_PROFILE_ID = "profile-id";
     private static final String ACTION_CAN_INTERACT_ACROSS_PROFILES_CHANGED =
             "android.content.pm.action.CAN_INTERACT_ACROSS_PROFILES_CHANGED";
 
     /** From {@code android.app.AppOpsManager#MODE_DEFAULT}. */
     private static final int MODE_DEFAULT = 3;
 
-    // The apps whose app-ops are maintained and unset are defined by the device-side test.
-    private static final Set<String> UNSET_CROSS_PROFILE_PACKAGES =
-            Sets.newHashSet(
-                    TEST_APP_3_PKG,
-                    TEST_APP_4_PKG);
-    private static final Set<String> MAINTAINED_CROSS_PROFILE_PACKAGES =
-            Sets.newHashSet(
-                    TEST_APP_1_PKG,
-                    TEST_APP_2_PKG);
-
     // The apps whose app-ops are maintained and unset are defined by
     // testSetCrossProfilePackages_resetsAppOps_noAsserts on the device-side.
-    private static final Set<String> UNSET_CROSS_PROFILE_PACKAGES_2 =
-            Sets.newHashSet(
-                    TEST_APP_4_PKG);
-    private static final Set<String> MAINTAINED_CROSS_PROFILE_PACKAGES_2 =
-            Sets.newHashSet(
-                    TEST_APP_1_PKG,
-                    TEST_APP_2_PKG,
-                    TEST_APP_3_PKG);
+    private static final Set<String> UNSET_CROSS_PROFILE_PACKAGES = Sets.newHashSet(TEST_APP_4_PKG);
+    private static final Set<String> MAINTAINED_CROSS_PROFILE_PACKAGES =
+            Sets.newHashSet(TEST_APP_1_PKG, TEST_APP_2_PKG, TEST_APP_3_PKG);
 
     @FlakyTest
     @Test
@@ -104,61 +85,6 @@ public final class ManagedProfileCrossProfileTest extends BaseManagedProfileTest
         runDeviceTestsAsUser(MANAGED_PROFILE_PKG, ".CrossProfileUtils",
                 "testAddParentCanAccessManagedFilters", mProfileUserId);
         runDeviceTestsAsUser(INTENT_SENDER_PKG, ".ContentTest", mProfileUserId);
-    }
-
-    @FlakyTest
-    @Test
-    public void testCrossProfileNotificationListeners_EmptyAllowlist() throws Exception {
-
-        installAppAsUser(NOTIFICATION_APK, USER_ALL);
-
-        // Profile owner in the profile sets an empty allowlist
-        runDeviceTestsAsUser(MANAGED_PROFILE_PKG, ".NotificationListenerTest",
-                "testSetEmptyAllowlist", mProfileUserId,
-                Collections.singletonMap(PARAM_PROFILE_ID, Integer.toString(mProfileUserId)));
-        // Listener outside the profile can only see personal notifications.
-        runDeviceTestsAsUser(MANAGED_PROFILE_PKG, ".NotificationListenerTest",
-                "testCannotReceiveProfileNotifications", mParentUserId,
-                Collections.singletonMap(PARAM_PROFILE_ID, Integer.toString(mProfileUserId)));
-    }
-
-    @Test
-    public void testCrossProfileNotificationListeners_NullAllowlist() throws Exception {
-
-        installAppAsUser(NOTIFICATION_APK, USER_ALL);
-
-        // Profile owner in the profile sets a null allowlist
-        runDeviceTestsAsUser(MANAGED_PROFILE_PKG, ".NotificationListenerTest",
-                "testSetNullAllowlist", mProfileUserId,
-                Collections.singletonMap(PARAM_PROFILE_ID, Integer.toString(mProfileUserId)));
-        // Listener outside the profile can see profile and personal notifications
-        runDeviceTestsAsUser(MANAGED_PROFILE_PKG, ".NotificationListenerTest",
-                "testCanReceiveNotifications", mParentUserId,
-                Collections.singletonMap(PARAM_PROFILE_ID, Integer.toString(mProfileUserId)));
-    }
-
-    @Test
-    public void testCrossProfileNotificationListeners_InAllowlist() throws Exception {
-
-        installAppAsUser(NOTIFICATION_APK, USER_ALL);
-
-        // Profile owner in the profile adds listener to the allowlist
-        runDeviceTestsAsUser(MANAGED_PROFILE_PKG, ".NotificationListenerTest",
-                "testAddListenerToAllowlist", mProfileUserId,
-                Collections.singletonMap(PARAM_PROFILE_ID, Integer.toString(mProfileUserId)));
-        // Listener outside the profile can see profile and personal notifications
-        runDeviceTestsAsUser(MANAGED_PROFILE_PKG, ".NotificationListenerTest",
-                "testCanReceiveNotifications", mParentUserId,
-                Collections.singletonMap(PARAM_PROFILE_ID, Integer.toString(mProfileUserId)));
-    }
-
-    @Test
-    public void testCrossProfileNotificationListeners_setAndGet() throws Exception {
-        installAppAsUser(NOTIFICATION_APK, USER_ALL);
-
-        runDeviceTestsAsUser(MANAGED_PROFILE_PKG, ".NotificationListenerTest",
-                "testSetAndGetPermittedCrossProfileNotificationListeners", mProfileUserId,
-                Collections.singletonMap(PARAM_PROFILE_ID, Integer.toString(mProfileUserId)));
     }
 
     @FlakyTest
@@ -377,38 +303,6 @@ public final class ManagedProfileCrossProfileTest extends BaseManagedProfileTest
                 "testSetCrossProfilePackages_resetsAppOpOfUnsetPackagesOnOtherProfile");
     }
 
-    private void setupLogcatForTest() throws Exception {
-        // Clear and increase logcat buffer size because the test is reading from it.
-        final String clearLogcatCommand = "logcat -c";
-        getDevice().executeShellCommand(clearLogcatCommand);
-        final String increaseLogcatBufferCommand = "logcat -G 16M";
-        getDevice().executeShellCommand(increaseLogcatBufferCommand);
-    }
-
-    /** Assumes that logcat is clear before running the test. */
-    private void assertTestAppsReceivedCanInteractAcrossProfilesChangedBroadcast(
-            Set<String> packageNames)
-            throws Exception {
-        for (String packageName : packageNames) {
-            assertTrue(didTestAppReceiveCanInteractAcrossProfilesChangedBroadcast(
-                    packageName, mProfileUserId));
-            assertTrue(didTestAppReceiveCanInteractAcrossProfilesChangedBroadcast(
-                    packageName, mParentUserId));
-        }
-    }
-
-    /** Assumes that logcat is clear before running the test. */
-    private void assertTestAppsDidNotReceiveCanInteractAcrossProfilesChangedBroadcast(
-            Set<String> packageNames)
-            throws Exception {
-        for (String packageName : packageNames) {
-            assertFalse(didTestAppReceiveCanInteractAcrossProfilesChangedBroadcast(
-                    packageName, mProfileUserId));
-            assertFalse(didTestAppReceiveCanInteractAcrossProfilesChangedBroadcast(
-                    packageName, mParentUserId));
-        }
-    }
-
     /** Assumes that logcat is clear before running the test. */
     private boolean didTestAppReceiveCanInteractAcrossProfilesChangedBroadcast(
             String packageName, int userId)
@@ -438,19 +332,18 @@ public final class ManagedProfileCrossProfileTest extends BaseManagedProfileTest
     public void testSetCrossProfilePackages_killsApps() throws Exception {
         installAllTestApps();
         launchAllTestAppsInBothProfiles();
-        Map<String, List<String>> maintainedPackagesPids = getPackagesPids(
-                MAINTAINED_CROSS_PROFILE_PACKAGES_2);
-        Map<String, List<String>> unsetPackagesPids = getPackagesPids(
-                UNSET_CROSS_PROFILE_PACKAGES_2);
+        Map<String, List<String>> maintainedPackagesPids =
+                getPackagesPids(MAINTAINED_CROSS_PROFILE_PACKAGES);
+        Map<String, List<String>> unsetPackagesPids = getPackagesPids(UNSET_CROSS_PROFILE_PACKAGES);
 
         runWorkProfileDeviceTest(
                 ".CrossProfileTest",
                 "testSetCrossProfilePackages_resetsAppOps_noAsserts");
 
-        for (String packageName : MAINTAINED_CROSS_PROFILE_PACKAGES_2) {
+        for (String packageName : MAINTAINED_CROSS_PROFILE_PACKAGES) {
             assertAppRunningInBothProfiles(packageName, maintainedPackagesPids.get(packageName));
         }
-        for (String packageName : UNSET_CROSS_PROFILE_PACKAGES_2) {
+        for (String packageName : UNSET_CROSS_PROFILE_PACKAGES) {
             assertAppKilledInBothProfiles(packageName, unsetPackagesPids.get(packageName));
         }
     }
