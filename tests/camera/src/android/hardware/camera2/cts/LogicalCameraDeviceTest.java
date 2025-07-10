@@ -699,7 +699,7 @@ public final class LogicalCameraDeviceTest extends Camera2SurfaceViewTestCase {
 
                     mSession.captureBurst(requests, listener, mHandler);
                     TotalCaptureResult[] results = listener.getTotalCaptureResultsForRequests(
-                            requests, /*numResultsWait*/0,
+                            requests, /*numResultsWait*/requests.size(),
                             /*timeoutForResult*/WAIT_FOR_RESULT_TIMEOUT_MS);
 
                     // Verify result metadata to produce similar field of view.

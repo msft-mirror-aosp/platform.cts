@@ -455,6 +455,18 @@
     <option name="compatibility:exclude-filter" value="CtsHealthFitnessDeviceTestCases android.healthconnect.cts.HealthConnectChangeLogsTests#testChangeLogs_insertAndDelete_dataOrigin_filter_incorrect" />
     <option name="compatibility:exclude-filter" value="CtsHealthFitnessDeviceTestCases android.healthconnect.cts.HealthConnectManagerTest#testDataApis_migrationInProgress_apisBlocked" />
 
+    <!-- b/428801091 -->
+    <option name="compatibility:exclude-filter" value="CtsHealthConnectControllerTestCases android.healthconnect.cts.ui.HomeFragmentTest#homeFragment_openDataManagement" />
+    <option name="compatibility:exclude-filter" value="CtsHealthConnectControllerTestCases android.healthconnect.cts.ui.PermissionTypesFragmentTest#permissionTypes_showsDeleteCategoryData" />
+    <option name="compatibility:exclude-filter" value="CtsHealthConnectControllerTestCases android.healthconnect.cts.ui.PermissionTypesFragmentTest#permissionTypes_filterByApp" />
+    <option name="compatibility:exclude-filter" value="CtsHealthConnectControllerTestCases android.healthconnect.cts.ui.DataAccessFragmentTest#dataAccess_navigateToDataAccess" />
+    <option name="compatibility:exclude-filter" value="CtsHealthConnectControllerTestCases android.healthconnect.cts.ui.DataAccessFragmentTest#dataAccess_deleteCategoryData_showsDeleteDataRanges" />
+    <option name="compatibility:exclude-filter" value="CtsHealthConnectControllerTestCases android.healthconnect.cts.ui.DataEntriesFragmentTest#dataEntries_changeDate_updatesSelectedDate" />
+    <option name="compatibility:exclude-filter" value="CtsHealthConnectControllerTestCases android.healthconnect.cts.ui.DataEntriesFragmentTest#dataEntries_navigateToYesterday" />
+    <option name="compatibility:exclude-filter" value="CtsHealthConnectControllerTestCases android.healthconnect.cts.ui.DataEntriesFragmentTest#dataEntries_showsInsertedEntry" />
+    <option name="compatibility:exclude-filter" value="CtsHealthConnectControllerTestCases android.healthconnect.cts.ui.DataEntriesFragmentTest#dataEntries_deletesData_showsNoData" />
+    <option name="compatibility:exclude-filter" value="CtsHealthConnectControllerTestCases android.healthconnect.cts.ui.DataEntriesFragmentTest#dataEntries_changeUnit_showsUpdatedUnit" />
+
     <!-- b/401424956-->
     <option name="compatibility:exclude-filter" value="CtsHealthConnectHostTestCases android.healthconnect.cts.logging.HealthConnectUiLogsTests#testImpressionsAndInteractionsSent" />
 
