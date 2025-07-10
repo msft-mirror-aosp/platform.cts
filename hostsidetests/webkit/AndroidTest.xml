@@ -29,6 +29,7 @@
         <!-- Unlock and turn on the screen. -->
         <option name="run-command" value="svc power stayon true" />
         <option name="run-command" value="input keyevent MENU" />
+        <option name="run-command" value="input keyevent HOME" />
     </target_preparer>
 
     <test class="com.android.compatibility.common.tradefed.testtype.JarHostTest" >
