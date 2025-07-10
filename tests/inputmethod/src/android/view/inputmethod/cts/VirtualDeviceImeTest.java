@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package android.virtualdevice.cts.applaunch;
+package android.view.inputmethod.cts;
 
 import static android.Manifest.permission.INTERNAL_SYSTEM_WINDOW;
 import static android.view.WindowManager.DISPLAY_IME_POLICY_FALLBACK_DISPLAY;
@@ -26,14 +26,15 @@ import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentat
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertThrows;
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.after;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
+import android.app.Activity;
 import android.companion.virtual.VirtualDeviceManager.VirtualDevice;
 import android.companion.virtual.VirtualDeviceParams;
 import android.content.ComponentName;
@@ -50,7 +51,6 @@ import android.view.Display;
 import android.view.WindowManager;
 import android.view.inputmethod.InputMethodInfo;
 import android.view.inputmethod.InputMethodManager;
-import android.virtualdevice.cts.applaunch.AppComponents.EmptyActivity;
 import android.virtualdevice.cts.common.VirtualDeviceRule;
 import android.widget.EditText;
 
@@ -60,6 +60,7 @@ import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.FeatureUtil;
 import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.SystemUtil;
+import com.android.compatibility.common.util.UserHelper;
 
 import org.junit.After;
 import org.junit.Before;
@@ -111,6 +112,7 @@ public class VirtualDeviceImeTest {
     @Before
     public void setUp() throws Exception {
         assumeTrue(FeatureUtil.hasSystemFeature(PackageManager.FEATURE_INPUT_METHODS));
+        assumeFalse(new UserHelper(mContext).isVisibleBackgroundUser());
 
         mUserId = android.os.Process.myUserHandle().getIdentifier();
 
@@ -186,7 +188,7 @@ public class VirtualDeviceImeTest {
     @Test
     public void invalidCustomImeComponent_noImeOnVirtualDisplay() {
         createVirtualDeviceAndDisplay(/* imeComponent= */ Optional.of(
-                new ComponentName(mContext, EmptyActivity.class.getName())));
+                new ComponentName(mContext, ImeActivity.class.getName())));
 
         showSoftInputOnDisplay(mVirtualDisplayId);
         verify(mDefaultDeviceImeListener, after(NO_IME_TIMEOUT_MILLIS).never()).onShow(anyInt());
@@ -557,7 +559,7 @@ public class VirtualDeviceImeTest {
     }
 
     /** An activity that shows IME. */
-    public static class ImeActivity extends EmptyActivity {
+    public static class ImeActivity extends Activity {
 
         EditText mEditText;
 
