@@ -28,6 +28,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowInsets;
 import android.widget.Button;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -57,10 +58,12 @@ public class CtsInteractiveChooserTestActivity extends Activity {
     private Button mLaunchChooser;
     private ViewGroup mChooserActionRow;
     private View mBoundsUpdatedLabel;
+    private TextView mGetBoundsLabel;
     private View mBoundsMovedLabel;
     private Button mCollapseButton;
     private boolean mIsTargetEnabled = true;
     @Nullable private Rect mCurrentBounds;
+    private boolean mIsGetBoundsFailed = false;
     @Nullable private Rect mPreCollapseBounds;
 
     @Override
@@ -107,6 +110,7 @@ public class CtsInteractiveChooserTestActivity extends Activity {
         mCollapseButton.setOnClickListener((v) -> minimizeChooser());
 
         mBoundsUpdatedLabel = findViewById(R.id.bounds_updated);
+        mGetBoundsLabel = findViewById(R.id.get_bounds_consistent);
         mBoundsMovedLabel = findViewById(R.id.bounds_moved);
 
         onSessionActiveStateChanged(mChooserSession != null);
@@ -132,6 +136,12 @@ public class CtsInteractiveChooserTestActivity extends Activity {
 
     private void onChooserBoundsChanged(Rect bounds) {
         mCurrentBounds = bounds;
+        if (!mIsGetBoundsFailed) {
+            Rect sessionBounds = mChooserSession == null ? null : mChooserSession.getBounds();
+            mIsGetBoundsFailed = !bounds.equals(sessionBounds);
+            mGetBoundsLabel.setVisibility(View.VISIBLE);
+            mGetBoundsLabel.setText(mIsGetBoundsFailed ? "getBounds() Failed" : "getBounds() OK");
+        }
         mBoundsUpdatedLabel.setVisibility(View.VISIBLE);
         if (mPreCollapseBounds != null && mPreCollapseBounds.top < bounds.top) {
             mBoundsMovedLabel.setVisibility(View.VISIBLE);

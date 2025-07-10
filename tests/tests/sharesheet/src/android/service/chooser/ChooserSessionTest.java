@@ -62,7 +62,7 @@ public class ChooserSessionTest {
     }
 
     /** Test that getToken method returns non-{@code null} reference. */
-    @ApiTest(apis = {"android.service.chooser.ChooserManager#getToken"})
+    @ApiTest(apis = {"android.service.chooser.ChooserSession#getToken"})
     @Test
     public void test_getTokenIsNotNull() {
         Context context = mock(Context.class);
@@ -75,8 +75,8 @@ public class ChooserSessionTest {
     /** Test the initial ChooserSession state. */
     @ApiTest(
             apis = {
-                "android.service.chooser.ChooserManager#getState",
-                "android.service.chooser.ChooserManager#STATE_INITIALIZED"
+                "android.service.chooser.ChooserSession#getState",
+                "android.service.chooser.ChooserSession#STATE_INITIALIZED"
             })
     @Test
     public void test_initialState() {
@@ -90,9 +90,9 @@ public class ChooserSessionTest {
     /** Test the initial ChooserSession state. */
     @ApiTest(
             apis = {
-                "android.service.chooser.ChooserManager#getState",
-                "android.service.chooser.ChooserManager#endSession",
-                "android.service.chooser.ChooserManager#STATE_CLOSED"
+                "android.service.chooser.ChooserSession#getState",
+                "android.service.chooser.ChooserSession#endSession",
+                "android.service.chooser.ChooserSession#STATE_CLOSED"
             })
     @Test
     public void test_closedSessionState() {

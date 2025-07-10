@@ -23,6 +23,7 @@ import static androidx.test.espresso.action.ViewActions.click;
 import static androidx.test.espresso.assertion.ViewAssertions.matches;
 import static androidx.test.espresso.matcher.ViewMatchers.isDisplayed;
 import static androidx.test.espresso.matcher.ViewMatchers.withId;
+import static androidx.test.espresso.matcher.ViewMatchers.withText;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
@@ -145,14 +146,10 @@ public class CtsChooserInteractiveSessionTest {
         onView(withId(R.id.launch_chooser)).check(matches(isDisplayed()));
     }
 
-    /**
-     * Test that the session is closed when the Chooser is dismissed. Also check that Chooser
-     * reports its bounds.
-     */
+    /** Test that the session is closed when the Chooser is dismissed. */
     @ApiTest(
             apis = {
                 "android.service.chooser.ChooserSession#addStateListener",
-                "android.service.chooser.ChooserSession.StateListener#onBoundsChanged",
                 "android.service.chooser.ChooserSession.StateListener#onStateChanged"
             })
     @Test
@@ -161,12 +158,37 @@ public class CtsChooserInteractiveSessionTest {
 
         clickLaunchChooser();
         waitForChooserToAppear();
-        verifyChooserReportedItsBounds();
         // dismiss Chooser
         mDevice.pressBack();
         waitForChooserToBeGone();
         // check that the launch button is visible again
         onView(withId(R.id.launch_chooser)).check(matches(isDisplayed()));
+    }
+
+    /** Test Chooser bounds reporting. */
+    @ApiTest(
+            apis = {
+                "android.service.chooser.ChooserSession#addStateListener",
+                "android.service.chooser.ChooserSession.StateListener#onBoundsChanged",
+                "android.service.chooser.ChooserSession#getBounds",
+            })
+    @Test
+    public void test_chooserReportsBounds() {
+        launchTestActivity();
+
+        clickLaunchChooser();
+        waitForChooserToAppear();
+        verifyChooserReportedItsBounds();
+
+        clickCollapseButton();
+        mDevice.waitForIdle();
+
+        // dismiss Chooser
+        mDevice.pressBack();
+        waitForChooserToBeGone();
+
+        // check that bounds were reported consistently.
+        onView(withId(R.id.get_bounds_consistent)).check(matches(withText("getBounds() OK")));
     }
 
     /**
