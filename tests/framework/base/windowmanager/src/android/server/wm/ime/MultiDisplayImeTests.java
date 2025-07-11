@@ -16,6 +16,7 @@
 
 package android.server.wm.ime;
 
+import static android.server.wm.BuildUtils.HW_TIMEOUT_MULTIPLIER;
 import static android.server.wm.InputMethodVisibilityVerifier.expectImeInvisible;
 import static android.server.wm.InputMethodVisibilityVerifier.expectImeVisible;
 import static android.server.wm.MockImeHelper.createManagedMockImeSession;
@@ -56,6 +57,7 @@ import android.os.SystemClock;
 import android.platform.test.annotations.Presubmit;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
+import android.server.wm.CtsWindowInfoUtils;
 import android.server.wm.MultiDisplayTestBase;
 import android.server.wm.WindowManagerState;
 import android.server.wm.WindowManagerState.DisplayContent;
@@ -77,6 +79,7 @@ import androidx.test.filters.FlakyTest;
 
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.PollingCheck;
+import com.android.cts.input.UinputTouchScreen;
 import com.android.cts.mockime.ImeCommand;
 import com.android.cts.mockime.ImeEventStream;
 import com.android.cts.mockime.MockImeSession;
@@ -86,6 +89,7 @@ import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -140,6 +144,9 @@ public class MultiDisplayImeTests extends MultiDisplayTestBase {
 
             activitySession1.launchTestActivityOnDisplaySync(ImeTestActivity.class, dc.mId);
             final var activity1 = activitySession1.getActivity();
+            assertWithMessage("Activity1 window is on top")
+                    .that(CtsWindowInfoUtils.waitForWindowOnTop(activity1.getWindow()))
+                    .isTrue();
 
             expectEvent(stream, editorMatcher("onStartInput",
                     activity1.getEditText().getPrivateImeOptions()), TIMEOUT);
@@ -153,19 +160,27 @@ public class MultiDisplayImeTests extends MultiDisplayTestBase {
 
             // Launch another activity on the main display of the user. When the test runs on the
             // current user, the display will be the default display.
-            activitySession2.launchTestActivityOnDisplaySync(ImeTestActivity2.class,
-                    getMainDisplayId());
+            final int defDisplayId = getMainDisplayId();
+            activitySession2.launchTestActivityOnDisplaySync(ImeTestActivity2.class, defDisplayId);
             final var activity2 = activitySession2.getActivity();
+            // The overlay for the virtual display is on the main display and on top of Activity2.
+            assertWithMessage("Activity2 window is 1st from top, below Overlay")
+                    .that(
+                            CtsWindowInfoUtils.waitForNthWindowFromTop(
+                                    Duration.ofSeconds(HW_TIMEOUT_MULTIPLIER * 5L),
+                                    () -> activity2.getWindow().getDecorView().getWindowToken(),
+                                    1 /* expectedOrder */))
+                    .isTrue();
             expectEvent(stream, editorMatcher("onStartInput",
                     activity2.getEditText().getPrivateImeOptions()), TIMEOUT);
 
             // Make the activity to show soft input.
-            showSoftInputAndAssertImeShownOnDisplay(getMainDisplayId(), activitySession2, stream);
+            showSoftInputAndAssertImeShownOnDisplay(defDisplayId, activitySession2, stream);
 
             // Assert the configuration of the IME window is the same as the configuration of the
             // main display of the user.
-            assertImeWindowAndDisplayConfiguration(mWmState.getImeWindowState(),
-                    mWmState.getDisplay(getMainDisplayId()));
+            assertImeWindowAndDisplayConfiguration(
+                    mWmState.getImeWindowState(), mWmState.getDisplay(defDisplayId));
         }
     }
 
@@ -186,6 +201,9 @@ public class MultiDisplayImeTests extends MultiDisplayTestBase {
 
             activitySession.launchTestActivityOnDisplaySync(ImeTestActivity.class, dc.mId);
             final var activity = activitySession.getActivity();
+            assertWithMessage("Activity window is on top")
+                    .that(CtsWindowInfoUtils.waitForWindowOnTop(activity.getWindow()))
+                    .isTrue();
             final var stream = imeSession.openEventStream();
 
             expectEvent(stream, editorMatcher("onStartInput",
@@ -213,6 +231,9 @@ public class MultiDisplayImeTests extends MultiDisplayTestBase {
             activitySession.launchTestActivityOnDisplaySync(
                     ImeTestActivityWithBrokenContextWrapper.class, dc.mId);
             final var activity = activitySession.getActivity();
+            assertWithMessage("Activity window is on top")
+                    .that(CtsWindowInfoUtils.waitForWindowOnTop(activity.getWindow()))
+                    .isTrue();
             final ImeEventStream stream = imeSession.openEventStream();
             final String privateImeOption = activity.getEditText().getPrivateImeOptions();
             expectEvent(stream, event -> {
@@ -252,38 +273,68 @@ public class MultiDisplayImeTests extends MultiDisplayTestBase {
 
             // Create a virtual display and launch an activity on virtual & default display.
             final DisplayContent dc = displaySession.createDisplay();
-            activitySession1.launchTestActivityOnDisplaySync(ImeTestActivity.class,
-                    getMainDisplayId());
-            final var activity1 = activitySession1.getActivity();
-            activitySession2.launchTestActivityOnDisplaySync(ImeTestActivity2.class, dc.mId);
-            final var activity2 = activitySession2.getActivity();
+            final int defDisplayId = getMainDisplayId();
+            try (var touch1 =
+                            new UinputTouchScreen(mInstrumentation, mDm.getDisplay(defDisplayId));
+                    var touch2 = new UinputTouchScreen(mInstrumentation, mDm.getDisplay(dc.mId))) {
 
-            final DisplayContent defDisplay = mWmState.getDisplay(getMainDisplayId());
-            final ImeEventStream stream = imeSession.openEventStream();
+                activitySession1.launchTestActivityOnDisplaySync(
+                        ImeTestActivity.class, defDisplayId);
+                final var activity1 = activitySession1.getActivity();
+                // The overlay for the virtual display is on the main display and on top
+                // of Activity1.
+                assertWithMessage("Activity2 window is 1st from top, below Overlay")
+                        .that(
+                                CtsWindowInfoUtils.waitForNthWindowFromTop(
+                                        Duration.ofSeconds(HW_TIMEOUT_MULTIPLIER * 5L),
+                                        () -> activity1.getWindow().getDecorView().getWindowToken(),
+                                        1 /* expectedOrder */))
+                        .isTrue();
+                activitySession2.launchTestActivityOnDisplaySync(ImeTestActivity2.class, dc.mId);
+                final var activity2 = activitySession2.getActivity();
+                assertWithMessage("Activity2 window is on top")
+                        .that(CtsWindowInfoUtils.waitForWindowOnTop(activity2.getWindow()))
+                        .isTrue();
 
-            // Tap on the imeTestActivity task center instead of the display center because
-            // the activity might not be spanning the entire display
-            WindowManagerState.Task imeTestActivityTask = mWmState
-                    .getTaskByActivity(activity1.getComponentName());
-            tapOnTaskCenter(imeTestActivityTask);
-            expectEvent(stream, editorMatcher("onStartInput",
-                    activity1.getEditText().getPrivateImeOptions()), TIMEOUT);
-            showSoftInputAndAssertImeShownOnDisplay(defDisplay.mId, activitySession1, stream);
+                final ImeEventStream stream = imeSession.openEventStream();
 
-            // Tap virtual display as top focused display & request focus on EditText to show
-            // soft input.
-            touchAndCancelOnDisplayCenterSync(dc.mId);
-            expectEvent(stream, editorMatcher("onStartInput",
-                    activity2.getEditText().getPrivateImeOptions()), TIMEOUT);
-            showSoftInputAndAssertImeShownOnDisplay(dc.mId, activitySession2, stream);
+                touch1.tapOnViewCenter(activity1.getWindow().getDecorView());
+                mWmState.waitForWithAmState(
+                        state -> state.getFocusedDisplayId() == defDisplayId,
+                        "Default display should be focused");
+                mWmState.waitAndAssertFocusedActivity(
+                        "Test activity 1 should be focused", activity1.getComponentName());
+                expectEvent(
+                        stream,
+                        editorMatcher(
+                                "onStartInput", activity1.getEditText().getPrivateImeOptions()),
+                        TIMEOUT);
+                showSoftInputAndAssertImeShownOnDisplay(defDisplayId, activitySession1, stream);
 
-            // Tap on the imeTestActivity task center instead of the display center because
-            // the activity might not be spanning the entire display
-            imeTestActivityTask = mWmState.getTaskByActivity(activity1.getComponentName());
-            tapOnTaskCenter(imeTestActivityTask);
-            expectEvent(stream, editorMatcher("onStartInput",
-                    activity1.getEditText().getPrivateImeOptions()), TIMEOUT);
-            showSoftInputAndAssertImeShownOnDisplay(defDisplay.mId, activitySession1, stream);
+                // Tap virtual display as top focused display & request focus on EditText to show
+                // soft input.
+                touchAndCancelOnDisplayCenter(dc, touch2);
+                mWmState.waitForWithAmState(
+                        state -> state.getFocusedDisplayId() == dc.mId,
+                        "Virtual display should be focused");
+                expectEvent(
+                        stream,
+                        editorMatcher(
+                                "onStartInput", activity2.getEditText().getPrivateImeOptions()),
+                        TIMEOUT);
+                showSoftInputAndAssertImeShownOnDisplay(dc.mId, activitySession2, stream);
+
+                touch1.tapOnViewCenter(activity1.getWindow().getDecorView());
+                mWmState.waitForWithAmState(
+                        state -> state.getFocusedDisplayId() == defDisplayId,
+                        "Default display should be focused");
+                expectEvent(
+                        stream,
+                        editorMatcher(
+                                "onStartInput", activity1.getEditText().getPrivateImeOptions()),
+                        TIMEOUT);
+                showSoftInputAndAssertImeShownOnDisplay(defDisplayId, activitySession1, stream);
+            }
         }
     }
 
@@ -295,11 +346,13 @@ public class MultiDisplayImeTests extends MultiDisplayTestBase {
     @Test
     public void testCrossDisplayBasicImeOperations() throws Exception {
         try (var imeSession = createManagedMockImeSession(this);
-             TestActivitySession<ImeTestActivity> activitySession =
-                     createManagedTestActivitySession();
-             var displaySession = createManagedVirtualDisplaySession()
-                     .setDisplayImePolicy(DISPLAY_IME_POLICY_FALLBACK_DISPLAY)
-                     .setPublicDisplay(true)) {
+                TestActivitySession<ImeTestActivity> activitySession =
+                        createManagedTestActivitySession();
+                var displaySession =
+                        createManagedVirtualDisplaySession()
+                                .setDisplayImePolicy(DISPLAY_IME_POLICY_FALLBACK_DISPLAY)
+                                .setPublicDisplay(true)
+                                .setSupportsTouch(true)) {
 
             // Create a virtual display by app and assume the display should not show IME window.
             final DisplayContent dc = displaySession.createDisplay();
@@ -307,12 +360,15 @@ public class MultiDisplayImeTests extends MultiDisplayTestBase {
             // Launch IME test activity in virtual display.
             activitySession.launchTestActivityOnDisplay(ImeTestActivity.class, dc.mId);
             final var activity = activitySession.getActivity();
+            assertWithMessage("Activity window is on top")
+                    .that(CtsWindowInfoUtils.waitForWindowOnTop(activity.getWindow()))
+                    .isTrue();
 
             final ImeEventStream stream = imeSession.openEventStream();
 
             // Expect onStartInput would be executed when user tapping on the
             // non-system created display intentionally.
-            tapAndAssertEditorFocusedOnImeActivity(activitySession, dc.mId);
+            tapAndAssertEditorFocusedOnImeActivity(activity, dc.mId);
             expectEvent(stream, editorMatcher("onStartInput",
                     activity.getEditText().getPrivateImeOptions()), TIMEOUT);
 
@@ -355,6 +411,9 @@ public class MultiDisplayImeTests extends MultiDisplayTestBase {
             // Launch IME test activity and initial the editor focus on virtual display.
             activitySession.launchTestActivityOnDisplaySync(ImeTestActivity.class, dc.mId);
             final var activity = activitySession.getActivity();
+            assertWithMessage("Activity window is on top")
+                    .that(CtsWindowInfoUtils.waitForWindowOnTop(activity.getWindow()))
+                    .isTrue();
 
             // Verify the activity is launched on the secondary display.
             assertThat(mWmState.hasActivityInDisplay(dc.mId, activity.getComponentName()))
@@ -390,8 +449,11 @@ public class MultiDisplayImeTests extends MultiDisplayTestBase {
             // Launch a test activity on that virtual display and show IME by tapping the editor.
             activitySession.launchTestActivityOnDisplay(ImeTestActivity.class, dc.mId);
             final var activity = activitySession.getActivity();
+            assertWithMessage("Activity window is on top")
+                    .that(CtsWindowInfoUtils.waitForWindowOnTop(activity.getWindow()))
+                    .isTrue();
 
-            tapAndAssertEditorFocusedOnImeActivity(activitySession, dc.mId);
+            tapAndAssertEditorFocusedOnImeActivity(activity, dc.mId);
             final ImeEventStream stream = imeSession.openEventStream();
             final String marker = activity.getEditText().getPrivateImeOptions();
             expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
@@ -421,8 +483,13 @@ public class MultiDisplayImeTests extends MultiDisplayTestBase {
         // may mis-touch the launcher icon that breaks the test expectation.
         try (TestActivitySession<Activities.RegularActivity> regularActivitySession =
                      createManagedTestActivitySession()) {
+            final int defDisplayId = getMainDisplayId();
             regularActivitySession.launchTestActivityOnDisplaySync(
-                    Activities.RegularActivity.class, getMainDisplayId());
+                    Activities.RegularActivity.class, defDisplayId);
+            final var regularActivity = regularActivitySession.getActivity();
+            assertWithMessage("Regular activity window is on top")
+                    .that(CtsWindowInfoUtils.waitForWindowOnTop(regularActivity.getWindow()))
+                    .isTrue();
 
             try (var imeSession = createManagedMockImeSession(this);
                  TestActivitySession<ImeTestActivity> activitySession =
@@ -437,44 +504,61 @@ public class MultiDisplayImeTests extends MultiDisplayTestBase {
                 // Launch IME test activity and initial the editor focus on virtual display.
                 activitySession.launchTestActivityOnDisplaySync(ImeTestActivity.class, dc.mId);
                 final var activity = activitySession.getActivity();
+                assertWithMessage("Activity window is on top")
+                        .that(CtsWindowInfoUtils.waitForWindowOnTop(activity.getWindow()))
+                        .isTrue();
 
                 // Verify the activity is launched to the secondary display.
-                final ComponentName imeTestActivityName = activity.getComponentName();
-                assertThat(mWmState.hasActivityInDisplay(dc.mId, imeTestActivityName)).isTrue();
+                final ComponentName componentName = activity.getComponentName();
+                assertWithMessage("Test activity should be in virtual display")
+                        .that(mWmState.hasActivityInDisplay(dc.mId, componentName))
+                        .isTrue();
 
-                // Tap default display, assume a pointer-out-side event will happened to change the
-                // top display.
-                final DisplayContent defDisplay = mWmState.getDisplay(getMainDisplayId());
-                tapOnDisplayCenter(defDisplay.mId);
-                mWmState.waitForAppTransitionIdleOnDisplay(getMainDisplayId());
-                mWmState.assertValidity();
+                try (var touch1 =
+                                new UinputTouchScreen(
+                                        mInstrumentation, mDm.getDisplay(defDisplayId));
+                        var touch2 =
+                                new UinputTouchScreen(mInstrumentation, mDm.getDisplay(dc.mId))) {
+                    final DisplayContent defDc = mWmState.getDisplay(defDisplayId);
+                    touchAndCancelOnDisplayCenter(defDc, touch1);
+                    mWmState.waitForWithAmState(
+                            state -> state.getFocusedDisplayId() == defDisplayId,
+                            "Default display should be focused");
+                    mWmState.waitForAppTransitionIdleOnDisplay(defDisplayId);
+                    mWmState.assertValidity();
 
-                // Reparent ImeTestActivity from virtual display to default display.
-                getLaunchActivityBuilder()
-                        .setUseInstrumentation()
-                        .setTargetActivity(activity.getComponentName())
-                        .setIntentFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                        .allowMultipleInstances(false)
-                        .setDisplayId(getMainDisplayId())
-                        .execute();
-                waitAndAssertResumedAndFocusedActivityOnDisplay(activity.getComponentName(),
-                        getMainDisplayId(), "Activity launched on default display and on top");
+                    // Reparent ImeTestActivity from virtual display to default display.
+                    getLaunchActivityBuilder()
+                            .setUseInstrumentation()
+                            .setTargetActivity(componentName)
+                            .setIntentFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                            .allowMultipleInstances(false)
+                            .setDisplayId(defDisplayId)
+                            .execute();
+                    waitAndAssertResumedAndFocusedActivityOnDisplay(
+                            componentName,
+                            defDisplayId,
+                            "Test activity should be top-resumed on displayId: " + defDisplayId);
 
-                // Activity is no longer on the secondary display
-                assertThat(mWmState.hasActivityInDisplay(dc.mId, imeTestActivityName)).isFalse();
+                    // Activity is no longer on the secondary display
+                    assertWithMessage("Test activity is no longer on virtual display")
+                            .that(mWmState.hasActivityInDisplay(dc.mId, componentName))
+                            .isFalse();
 
-                // Tap on the imeTestActivity task center instead of the display center because
-                // the activity might not be spanning the entire display
-                final ImeEventStream stream = imeSession.openEventStream();
-                final WindowManagerState.Task testActivityTask = mWmState
-                        .getTaskByActivity(activity.getComponentName());
-                tapOnTaskCenter(testActivityTask);
-                expectEvent(stream, editorMatcher("onStartInput",
-                        activity.getEditText().getPrivateImeOptions()), TIMEOUT);
+                    final ImeEventStream stream = imeSession.openEventStream();
+                    touch2.tapOnViewCenter(activity.getWindow().getDecorView());
+                    mWmState.waitForWithAmState(
+                            state -> state.getFocusedDisplayId() == defDisplayId,
+                            "Default display should be focused");
+                    expectEvent(
+                            stream,
+                            editorMatcher(
+                                    "onStartInput", activity.getEditText().getPrivateImeOptions()),
+                            TIMEOUT);
 
-                // Verify the activity shows soft input on the default display.
-                showSoftInputAndAssertImeShownOnDisplay(getMainDisplayId(), activitySession,
-                        stream);
+                    // Verify the activity shows soft input on the default display.
+                    showSoftInputAndAssertImeShownOnDisplay(defDisplayId, activitySession, stream);
+                }
             }
         }
     }
@@ -495,101 +579,137 @@ public class MultiDisplayImeTests extends MultiDisplayTestBase {
                      createManagedTestActivitySession()) {
             // Create two displays with the same display metrics
             final var newDcs = displaySession.createDisplays(2);
-            final DisplayContent firstDc = newDcs.get(0);
-            final DisplayContent secondDc = newDcs.get(1);
+            final DisplayContent dc1 = newDcs.get(0);
+            final DisplayContent dc2 = newDcs.get(1);
 
             // Skip if the test environment somehow didn't create 2 displays with identical size.
-            assumeTrue("Skip the test if the size of the created displays aren't identical",
-                    firstDc.getDisplayRect().equals(secondDc.getDisplayRect()));
+            assumeTrue(
+                    "Skip the test if the size of the created displays aren't identical",
+                    dc1.getDisplayRect().equals(dc2.getDisplayRect()));
 
-            activitySession2.launchTestActivityOnDisplaySync(ImeTestActivity2.class, secondDc.mId);
+            activitySession2.launchTestActivityOnDisplaySync(ImeTestActivity2.class, dc2.mId);
+            final var activity2 = activitySession2.getActivity();
+            assertWithMessage("Activity2 window is on top")
+                    .that(CtsWindowInfoUtils.waitForWindowOnTop(activity2.getWindow()))
+                    .isTrue();
 
-            // Make firstDisplay the top focus display.
-            touchAndCancelOnDisplayCenterSync(firstDc.mId);
+            try (var touch1 = new UinputTouchScreen(mInstrumentation, mDm.getDisplay(dc1.mId));
+                    var touch2 = new UinputTouchScreen(mInstrumentation, mDm.getDisplay(dc2.mId))) {
 
-            mWmState.waitForWithAmState(state -> state.getFocusedDisplayId() == firstDc.mId,
-                    "First display must be top focused.");
+                // Make firstDisplay the top focus display.
+                touchAndCancelOnDisplayCenter(dc1, touch1);
+                mWmState.waitForWithAmState(
+                        state -> state.getFocusedDisplayId() == dc1.mId,
+                        "First display should be focused");
 
-            try (var imeSession = createManagedMockImeSession(this);
-                 TestActivitySession<ImeTestActivity> activitySession1 =
-                         createManagedTestActivitySession()) {
-                ImeEventStream stream = imeSession.openEventStream();
-                // Filter out onConfigurationChanged events in case that IME is moved from the
-                // default display to the firstDisplay.
-                ImeEventStream configChangeVerifyStream =
-                        clearOnConfigurationChangedFromStream(stream);
+                try (var imeSession = createManagedMockImeSession(this);
+                        TestActivitySession<ImeTestActivity> activitySession1 =
+                                createManagedTestActivitySession()) {
+                    ImeEventStream stream = imeSession.openEventStream();
+                    // Filter out onConfigurationChanged events in case that IME is moved from the
+                    // default display to the firstDisplay.
+                    ImeEventStream configChangeVerifyStream =
+                            clearOnConfigurationChangedFromStream(stream);
 
-                activitySession1.launchTestActivityOnDisplaySync(ImeTestActivity.class,
-                        firstDc.mId);
-                final var activity1 = activitySession1.getActivity();
+                    activitySession1.launchTestActivityOnDisplaySync(
+                            ImeTestActivity.class, dc1.mId);
+                    final var activity1 = activitySession1.getActivity();
+                    assertWithMessage("Activity1 window is on top")
+                            .that(CtsWindowInfoUtils.waitForWindowOnTop(activity1.getWindow()))
+                            .isTrue();
 
-                // Wait until IME is ready for the IME client to call showSoftInput().
-                expectEvent(stream, editorMatcher("onStartInput",
-                        activity1.getEditText().getPrivateImeOptions()), TIMEOUT);
-
-                int imeDisplayId = expectCommand(stream, imeSession.callGetDisplayId(),
-                        TIMEOUT).getReturnIntegerValue();
-                assertThat(imeDisplayId).isEqualTo(firstDc.mId);
-
-                activitySession1.runOnMainSyncAndWait(activity1::showSoftInput);
-                waitOrderedImeEventsThenAssertImeShown(stream, firstDc.mId,
-                        event -> "showSoftInput".equals(event.getEventName()));
-                try {
-                    // Launch IME must not lead to screen size changes.
-                    waitAndAssertImeNoScreenSizeChanged(configChangeVerifyStream);
-
-                    final Rect currentBoundsOnFirstDisplay = expectCommand(stream,
-                            imeSession.callGetCurrentWindowMetricsBounds(), TIMEOUT)
-                            .getReturnParcelableValue();
-
-                    // Clear onConfigurationChanged events before IME moves to the secondary display
-                    // to prevent flaky because IME may receive configuration updates which we don't
-                    // care about. An example is CONFIG_KEYBOARD_HIDDEN.
-                    configChangeVerifyStream = clearOnConfigurationChangedFromStream(stream);
-
-                    // Tap secondDisplay to change it to the top focused display.
-                    touchAndCancelOnDisplayCenterSync(firstDc.mId);
-
-                    // Move ImeTestActivity from firstDisplay to secondDisplay.
-                    getLaunchActivityBuilder()
-                            .setUseInstrumentation()
-                            .setTargetActivity(activity1.getComponentName())
-                            .setIntentFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                            .allowMultipleInstances(false)
-                            .setDisplayId(secondDc.mId).execute();
-
-                    // Make sure ImeTestActivity is move from the firstDisplay to the secondDisplay
-                    waitAndAssertResumedAndFocusedActivityOnDisplay(activity1.getComponentName(),
-                            secondDc.mId,
-                            "ImeTestActivity must be top-resumed on display#" + secondDc.mId);
-                    assertThat(mWmState.hasActivityInDisplay(firstDc.mId,
-                            activity1.getComponentName())).isFalse();
                     // Wait until IME is ready for the IME client to call showSoftInput().
                     expectEvent(stream, editorMatcher("onStartInput",
                             activity1.getEditText().getPrivateImeOptions()), TIMEOUT);
-                    imeDisplayId = expectCommand(stream, imeSession.callGetDisplayId(),
-                            TIMEOUT).getReturnIntegerValue();
-                    assertThat(imeDisplayId).isEqualTo(secondDc.mId);
 
-                    // Moving IME to the display with the same display metrics must not lead to
-                    // screen size changes.
-                    waitAndAssertImeNoScreenSizeChanged(configChangeVerifyStream);
+                    int imeDisplayId =
+                            expectCommand(stream, imeSession.callGetDisplayId(), TIMEOUT)
+                                    .getReturnIntegerValue();
+                    assertThat(imeDisplayId).isEqualTo(dc1.mId);
 
-                    final Rect currentBoundsOnSecondDisplay = expectCommand(stream,
-                            imeSession.callGetCurrentWindowMetricsBounds(), TIMEOUT)
-                            .getReturnParcelableValue();
+                    activitySession1.runOnMainSyncAndWait(activity1::showSoftInput);
+                    waitOrderedImeEventsThenAssertImeShown(
+                            stream, dc1.mId, event -> "showSoftInput".equals(event.getEventName()));
+                    try {
+                        // Launch IME must not lead to screen size changes.
+                        waitAndAssertImeNoScreenSizeChanged(configChangeVerifyStream);
 
-                    assertWithMessage("The current WindowMetrics bounds of IME should not change")
-                            .that(currentBoundsOnFirstDisplay).isEqualTo(
-                                    currentBoundsOnSecondDisplay);
-                } catch (AssertionError e) {
-                    mWmState.computeState();
-                    final Rect displayRect1 = mWmState.getDisplay(firstDc.mId).getDisplayRect();
-                    final Rect displayRect2 = mWmState.getDisplay(secondDc.mId).getDisplayRect();
-                    assumeTrue(
-                            "Skip test since the size of one or both displays changed unexpectedly",
-                            displayRect1.equals(displayRect2));
-                    throw e;
+                        final Rect currentBoundsOnFirstDisplay =
+                                expectCommand(
+                                                stream,
+                                                imeSession.callGetCurrentWindowMetricsBounds(),
+                                                TIMEOUT)
+                                        .getReturnParcelableValue();
+
+                        // Clear onConfigurationChanged events before IME moves to the secondary
+                        // display to prevent flaky because IME may receive configuration updates
+                        // which we don't care about. An example is CONFIG_KEYBOARD_HIDDEN.
+                        configChangeVerifyStream = clearOnConfigurationChangedFromStream(stream);
+
+                        // Tap secondDisplay to change it to the top focused display.
+                        touchAndCancelOnDisplayCenter(dc2, touch2);
+                        mWmState.waitForWithAmState(
+                                state -> state.getFocusedDisplayId() == dc2.mId,
+                                "Second display should be focused");
+
+                        // Move ImeTestActivity from firstDisplay to secondDisplay.
+                        getLaunchActivityBuilder()
+                                .setUseInstrumentation()
+                                .setTargetActivity(activity1.getComponentName())
+                                .setIntentFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                .allowMultipleInstances(false)
+                                .setDisplayId(dc2.mId)
+                                .execute();
+
+                        // Make sure ImeTestActivity is move from the firstDisplay to the
+                        // secondDisplay
+                        waitAndAssertResumedAndFocusedActivityOnDisplay(
+                                activity1.getComponentName(),
+                                dc2.mId,
+                                "Test activity should be top-resumed on displayId: " + dc2.mId);
+                        assertThat(
+                                        mWmState.hasActivityInDisplay(
+                                                dc1.mId, activity1.getComponentName()))
+                                .isFalse();
+                        assertWithMessage("Activity1 window is on top")
+                                .that(CtsWindowInfoUtils.waitForWindowOnTop(activity1.getWindow()))
+                                .isTrue();
+                        // Wait until IME is ready for the IME client to call showSoftInput().
+                        expectEvent(
+                                stream,
+                                editorMatcher(
+                                        "onStartInput",
+                                        activity1.getEditText().getPrivateImeOptions()),
+                                TIMEOUT);
+                        imeDisplayId =
+                                expectCommand(stream, imeSession.callGetDisplayId(), TIMEOUT)
+                                        .getReturnIntegerValue();
+                        assertThat(imeDisplayId).isEqualTo(dc2.mId);
+
+                        // Moving IME to the display with the same display metrics must not lead to
+                        // screen size changes.
+                        waitAndAssertImeNoScreenSizeChanged(configChangeVerifyStream);
+
+                        final Rect currentBoundsOnSecondDisplay =
+                                expectCommand(
+                                                stream,
+                                                imeSession.callGetCurrentWindowMetricsBounds(),
+                                                TIMEOUT)
+                                        .getReturnParcelableValue();
+
+                        assertWithMessage(
+                                        "The current WindowMetrics bounds of IME should not change")
+                                .that(currentBoundsOnFirstDisplay)
+                                .isEqualTo(currentBoundsOnSecondDisplay);
+                    } catch (AssertionError e) {
+                        mWmState.computeState();
+                        final Rect displayRect1 = mWmState.getDisplay(dc1.mId).getDisplayRect();
+                        final Rect displayRect2 = mWmState.getDisplay(dc2.mId).getDisplayRect();
+                        assumeTrue(
+                                "Skip test since the size of displays changed unexpectedly",
+                                displayRect1.equals(displayRect2));
+                        throw e;
+                    }
                 }
             }
         }
@@ -640,13 +760,16 @@ public class MultiDisplayImeTests extends MultiDisplayTestBase {
                      .setShowSystemDecorations(true)
                      .setDisplayImePolicy(DISPLAY_IME_POLICY_LOCAL)) {
 
-            final int defaultDisplayId = getMainDisplayId();
-            activitySession.launchTestActivityOnDisplaySync(activityClass, defaultDisplayId);
+            final int defDisplayId = getMainDisplayId();
+            activitySession.launchTestActivityOnDisplaySync(activityClass, defDisplayId);
             var activity = activitySession.getActivity();
+            assertWithMessage("Activity window is on top")
+                    .that(CtsWindowInfoUtils.waitForWindowOnTop(activity.getWindow()))
+                    .isTrue();
 
             final ImeEventStream stream = imeSession.openEventStream();
 
-            assertImeMatchesDisplayId(activitySession, imeSession, stream, defaultDisplayId);
+            assertImeMatchesDisplayId(activitySession, imeSession, stream, defDisplayId);
 
             final DisplayContent dc = displaySession.createDisplay();
 
@@ -663,10 +786,15 @@ public class MultiDisplayImeTests extends MultiDisplayTestBase {
                         .setDisplayId(dc.mId)
                         .execute();
             }
+            assertWithMessage("Activity window is on top")
+                    .that(CtsWindowInfoUtils.waitForWindowOnTop(activity.getWindow()))
+                    .isTrue();
 
             // Make sure ImeTestActivity is move from the firstDisplay to the secondDisplay
-            waitAndAssertResumedAndFocusedActivityOnDisplay(activity.getComponentName(), dc.mId,
-                    "ImeTestActivity must be top-resumed on display#" + dc.mId);
+            waitAndAssertResumedAndFocusedActivityOnDisplay(
+                    activity.getComponentName(),
+                    dc.mId,
+                    "Test activity should be top-resumed on displayId: " + dc.mId);
 
             // Launch activity on the secondary display and make IME show.
             assertImeMatchesDisplayId(activitySession, imeSession, stream, dc.mId);
@@ -800,27 +928,50 @@ public class MultiDisplayImeTests extends MultiDisplayTestBase {
         final Rect displayBoundsForImeContainer =
                 configurationForImeContainer.windowConfiguration.getBounds();
 
-        assertEquals("Display density not the same",
-                displayDensityDpiForImeContainer, displayDensityDpiForIme);
-        assertEquals("Display bounds not the same",
-                displayBoundsForImeContainer, displayBoundsForIme);
+        assertEquals(
+                "Display density should be the same",
+                displayDensityDpiForImeContainer,
+                displayDensityDpiForIme);
+        assertEquals(
+                "Display bounds should be the same",
+                displayBoundsForImeContainer,
+                displayBoundsForIme);
     }
 
     private void tapAndAssertEditorFocusedOnImeActivity(
-            @NonNull TestActivitySession<? extends ImeTestActivity> activitySession,
-            int expectDisplayId) {
-        final var componentName = activitySession.getActivity().getComponentName();
-        waitAndAssertActivityStateOnDisplay(componentName, STATE_RESUMED, expectDisplayId,
-                "ImeActivity failed to appear on display#" + expectDisplayId);
-        final int[] location = new int[2];
-        activitySession.runOnMainSyncAndWait(() -> {
-            final EditText editText = activitySession.getActivity().getEditText();
-            editText.getLocationOnScreen(location);
-        });
-        tapOnDisplaySync(location[0], location[1], expectDisplayId);
-        mWmState.computeState(componentName);
-        mWmState.assertFocusedAppOnDisplay("Activity not focus on the display", componentName,
-                expectDisplayId);
+            @NonNull ImeTestActivity activity, int displayId) {
+        final var componentName = activity.getComponentName();
+        waitAndAssertActivityStateOnDisplay(
+                componentName,
+                STATE_RESUMED,
+                displayId,
+                "Test activity should be resumed on displayId: " + displayId);
+        try (var touch = new UinputTouchScreen(mInstrumentation, activity.getDisplay())) {
+            touch.tapOnViewCenter(activity.getEditText());
+            mWmState.waitForWithAmState(
+                    state -> state.getFocusedDisplayId() == displayId,
+                    "Focused displayId should be: " + displayId);
+            mWmState.computeState(componentName);
+            mWmState.assertFocusedAppOnDisplay(
+                    "Test activity should be focused on display", componentName, displayId);
+        }
+    }
+
+    /**
+     * Touches and then cancels the input event on the center of the given display. Used to set the
+     * display as focused, without accidentally launching any apps / pressing any buttons on the
+     * display.
+     *
+     * @param dc the display content of the display to touch and cancel.
+     * @param touch the touch screen device to use for the touch.
+     */
+    static void touchAndCancelOnDisplayCenter(
+            @NonNull DisplayContent dc, @NonNull UinputTouchScreen touch) {
+        final var bounds = dc.getBounds();
+        final int x = bounds.left + bounds.width() / 2;
+        final int y = bounds.top + bounds.height() / 2;
+        final var pointer = touch.touchDown(x, y);
+        pointer.close();
     }
 
     private void showSoftInputAndAssertImeShownOnDisplay(int displayId,
