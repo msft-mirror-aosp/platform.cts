@@ -72,9 +72,7 @@ import static android.view.Surface.ROTATION_0;
 import static android.view.Surface.ROTATION_180;
 import static android.view.Surface.ROTATION_270;
 import static android.view.Surface.ROTATION_90;
-
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
-
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
@@ -85,29 +83,21 @@ import android.content.ComponentName;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.platform.test.annotations.Presubmit;
-import android.platform.test.annotations.RequiresFlagsDisabled;
-import android.platform.test.flag.junit.CheckFlagsRule;
-import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.server.wm.LaunchActivityBuilder;
 import android.server.wm.RotationSession;
-
 import androidx.test.filters.MediumTest;
-
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.RequireNotAutomotive;
 import com.android.compatibility.common.util.AmUtils;
-import com.android.systemui.Flags;
-
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-
 import java.lang.ref.WeakReference;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import org.junit.ClassRule;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 /**
  * Build/Install/Run:
@@ -118,17 +108,12 @@ import java.util.List;
 @android.server.wm.annotation.Group3
 @RunWith(BedsteadJUnit4.class)
 public class ActivityLifecycleTests extends ActivityLifecycleClientTestBase {
-   @Rule
-    public final CheckFlagsRule mCheckFlagsRule =
-            DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @ClassRule
     @Rule
     public static final DeviceState sDeviceState = new DeviceState();
 
     @Test
-    // Re-enabling for flexiglass is tracked in b/423954202.
-    @RequiresFlagsDisabled(Flags.FLAG_SCENE_CONTAINER)
     public void testSingleLaunch() throws Exception {
         launchActivityAndWait(FirstActivity.class);
 
