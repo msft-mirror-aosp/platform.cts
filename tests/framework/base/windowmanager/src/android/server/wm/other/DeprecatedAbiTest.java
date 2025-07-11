@@ -53,9 +53,6 @@ import java.util.List;
 @Presubmit
 @ApiTest(apis = {"android.content.pm.PackageInstaller#STATUS_FAILURE_INCOMPATIBLE"})
 public class DeprecatedAbiTest extends ActivityManagerTestBase {
-   @Rule
-    public final CheckFlagsRule mCheckFlagsRule =
-            DeviceFlagsValueProvider.createCheckFlagsRule();
 
     /** @see com.android.server.wm.DeprecatedAbiDialog */
     private static final String DEPRECATED_ABI_DIALOG =
@@ -80,8 +77,6 @@ public class DeprecatedAbiTest extends ActivityManagerTestBase {
     }
 
     @Test
-    // Re-enabling for flexiglass is tracked in b/419892060.
-    @RequiresFlagsDisabled(Flags.FLAG_SCENE_CONTAINER)
     public void testWarningDialog() throws Exception {
         // Skip the test if the device only supports 32-bit ABI
         List<String> deviceAbis = Arrays.asList(
