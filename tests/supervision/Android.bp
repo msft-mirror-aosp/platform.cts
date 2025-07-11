@@ -38,3 +38,10 @@ android_test {
     ],
     sdk_version: "test_current",
 }
+
+team {
+    name: "trendy_team_android_parental_controls",
+
+    // go/trendy/manage/engineers/4974584391892992
+    trendy_team_id: "4974584391892992",
+}
