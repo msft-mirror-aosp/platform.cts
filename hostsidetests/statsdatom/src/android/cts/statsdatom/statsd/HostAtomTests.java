@@ -66,6 +66,7 @@ public class HostAtomTests extends DeviceTestCase implements IBuildReceiver {
 
     private static final String FEATURE_AUTOMOTIVE = "android.hardware.type.automotive";
     private static final String FEATURE_WATCH = "android.hardware.type.watch";
+    private static final String FEATURE_XR_API_FEATURE = "android.software.xr.api.spatial";
     private static final String FEATURE_TWM = "com.google.clockwork.hardware.traditional_watch_mode";
     private static final String FEATURE_WIFI = "android.hardware.wifi";
     private static final String FEATURE_LEANBACK_ONLY = "android.software.leanback_only";
@@ -417,6 +418,7 @@ public class HostAtomTests extends DeviceTestCase implements IBuildReceiver {
 
     public void testBatteryVoltage() throws Exception {
         if (DeviceUtils.hasFeature(getDevice(), FEATURE_WATCH)) return;
+        if (DeviceUtils.hasFeature(getDevice(), FEATURE_XR_API_FEATURE)) return;
 
         ConfigUtils.uploadConfigForPulledAtom(getDevice(), DeviceUtils.STATSD_ATOM_TEST_PKG,
                 Atom.BATTERY_VOLTAGE_FIELD_NUMBER);
