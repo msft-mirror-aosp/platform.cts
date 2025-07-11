@@ -27,6 +27,7 @@ import static android.media.cts.MediaRouterTestConstants.MEDIA_ROUTER_PROVIDER_S
 import static android.media.cts.MediaRouterTestConstants.MEDIA_ROUTER_TEST_APK;
 import static android.media.cts.MediaRouterTestConstants.MEDIA_ROUTER_TEST_PACKAGE;
 
+import static com.android.tradefed.targetprep.UserHelper.getRunTestsAsUser;
 import static com.google.common.truth.Truth.assertWithMessage;
 
 import android.platform.test.annotations.AppModeFull;
@@ -44,12 +45,14 @@ import com.android.tradefed.testtype.junit4.BeforeClassWithInfo;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.junit.Before;
 
 import java.io.FileNotFoundException;
 
 /** Installs route provider apps and runs tests in {@link MediaRouter2DeviceTest}. */
 @RunWith(DeviceJUnit4ClassRunner.class)
 public class MediaRouter2HostSideTest extends BaseHostJUnit4Test {
+    private int mUserId;
 
     @BeforeClassWithInfo
     public static void installApps(TestInformation testInfo)
@@ -69,6 +72,13 @@ public class MediaRouter2HostSideTest extends BaseHostJUnit4Test {
         device.uninstallPackage(MEDIA_ROUTER_PROVIDER_3_PACKAGE);
         device.uninstallPackage(MEDIA_ROUTER_PROVIDER_SELF_SCAN_ONLY_APK);
         device.uninstallPackage(MEDIA_ROUTER_TEST_PACKAGE);
+    }
+
+    @Before
+    public void setUp() throws Throwable {
+        // Set the userId that the tests are running as. Fall back to the current user if not set.
+        TestInformation testInfo = getTestInformation();
+        mUserId = testInfo == null ? getDevice().getCurrentUser() : getRunTestsAsUser(testInfo);
     }
 
     @ApiTest(apis = {"android.media.RouteDiscoveryPreference, android.media.MediaRouter2"})
@@ -157,21 +167,25 @@ public class MediaRouter2HostSideTest extends BaseHostJUnit4Test {
         setPermissionEnabled(
                 MEDIA_ROUTER_TEST_PACKAGE,
                 "android.permission.BLUETOOTH_SCAN",
-                /* enabled= */ true);
+                /* enabled= */ true,
+                mUserId);
         setPermissionEnabled(
                 MEDIA_ROUTER_TEST_PACKAGE,
                 "android.permission.BLUETOOTH_CONNECT",
-                /* enabled= */ true);
+                /* enabled= */ true,
+                mUserId);
         runDeviceTests(
                 MEDIA_ROUTER_TEST_PACKAGE, DEVICE_SIDE_TEST_CLASS, "getRoutes_returnDeviceRoute");
         setPermissionEnabled(
                 MEDIA_ROUTER_TEST_PACKAGE,
                 "android.permission.BLUETOOTH_SCAN",
-                /* enabled= */ false);
+                /* enabled= */ false,
+                mUserId);
         setPermissionEnabled(
                 MEDIA_ROUTER_TEST_PACKAGE,
                 "android.permission.BLUETOOTH_CONNECT",
-                /* enabled= */ false);
+                /* enabled= */ false,
+                mUserId);
         runDeviceTests(
                 MEDIA_ROUTER_TEST_PACKAGE,
                 DEVICE_SIDE_TEST_CLASS,
@@ -189,10 +203,13 @@ public class MediaRouter2HostSideTest extends BaseHostJUnit4Test {
                 "selfScanOnlyProvider_notScannedByAnotherApp");
     }
 
-    private void setPermissionEnabled(String packageName, String permission, boolean enabled)
+    private void setPermissionEnabled(
+            String packageName, String permission, boolean enabled, int userId)
             throws DeviceNotAvailableException {
         String action = enabled ? "grant" : "revoke";
-        getDevice().executeShellCommand("pm %s %s %s".formatted(action, packageName, permission));
+        getDevice()
+                .executeShellCommand(
+                        "pm %s --user %d %s %s".formatted(action, userId, packageName, permission));
     }
 
     private static void installTestApp(TestInformation testInfo, String apkName)
