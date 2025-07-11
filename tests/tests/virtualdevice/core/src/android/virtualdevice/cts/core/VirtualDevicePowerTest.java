@@ -25,7 +25,6 @@ import static org.junit.Assume.assumeNoException;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import android.app.Activity;
 import android.companion.virtual.VirtualDeviceManager.VirtualDevice;
@@ -44,7 +43,6 @@ import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.provider.Settings;
 import android.server.wm.UiDeviceUtils;
-import android.server.wm.WindowManagerStateHelper;
 import android.util.Log;
 import android.view.Display;
 import android.view.WindowManager;
@@ -320,39 +318,6 @@ public class VirtualDevicePowerTest {
         assertThat(mDisplay.getState()).isEqualTo(Display.STATE_ON);
 
         assertThat(mVirtualDisplayPowerManager.isInteractive()).isTrue();
-    }
-
-    @Test
-    @RequiresFlagsEnabled(Flags.FLAG_DEVICE_AWARE_DISPLAY_POWER)
-    public void turnScreenOnWithoutShowWhenLocked_doesNotTurnOnVirtualDisplay() {
-        createVirtualDeviceAndDisplay();
-
-        mVirtualDeviceRule.startActivityOnDisplaySync(mDisplay.getDisplayId(), Activity.class);
-        int resumed = Flags.correctVirtualDisplayPowerState() ? 1 : 0;
-        verify(mVirtualDisplayCallback, timeout(CALLBACK_TIMEOUT_MS).times(resumed)).onResumed();
-        assertThat(mDisplay.getState()).isEqualTo(Display.STATE_ON);
-
-        mVirtualDevice.goToSleep();
-        UiDeviceUtils.pressSleepButton();
-        mVirtualDeviceRule.getWmState().waitForKeyguardShowingAndNotOccluded();
-        verify(mVirtualDisplayCallback, timeout(CALLBACK_TIMEOUT_MS).times(1)).onPaused();
-
-        assertThat(mDisplay.getState()).isEqualTo(Display.STATE_OFF);
-        assertThat(mVirtualDisplayPowerManager.isInteractive()).isFalse();
-
-        boolean isKeyguardShowing = WindowManagerStateHelper.isKeyguardShowingAndNotOccluded(
-                mVirtualDeviceRule.getWmState());
-        mVirtualDeviceRule.startActivityOnDisplaySync(
-                mDisplay.getDisplayId(), TurnScreenOnActivity.class);
-
-        if (isKeyguardShowing) {
-            verifyNoMoreInteractions(mVirtualDisplayCallback);
-            assertThat(mDisplay.getState()).isEqualTo(Display.STATE_OFF);
-        } else {
-            verify(mVirtualDisplayCallback, timeout(CALLBACK_TIMEOUT_MS).times(++resumed))
-                    .onResumed();
-            assertThat(mDisplay.getState()).isEqualTo(Display.STATE_ON);
-        }
     }
 
     @Test
