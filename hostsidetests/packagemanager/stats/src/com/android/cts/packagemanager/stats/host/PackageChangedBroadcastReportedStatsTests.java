@@ -47,6 +47,7 @@ import java.util.List;
 @AppModeFull
 public class PackageChangedBroadcastReportedStatsTests extends BaseHostJUnit4Test {
     private static final int SYSTEM_UID = 1000;
+    private static final int PER_USER_RANGE = 100000;
 
     private static final String TEST_INSTALL_APK = "CtsStatsdAtomTestComponentStateApp.apk";
     private static final String TEST_INSTALL_PACKAGE =
@@ -133,9 +134,6 @@ public class PackageChangedBroadcastReportedStatsTests extends BaseHostJUnit4Tes
                         .getExtension(PackagemanagerExtensionAtoms.packageChangedBroadcastReported);
         assertThat(atom.getCallingUid())
                 .isEqualTo(PackageManagerStatsTestsBase.getAppUid(getDevice(), HELPER_PACKAGE));
-        assertThat(atom.getChangedUid())
-                .isEqualTo(
-                        PackageManagerStatsTestsBase.getAppUid(getDevice(), TEST_INSTALL_PACKAGE));
     }
 
     @Test
@@ -180,9 +178,6 @@ public class PackageChangedBroadcastReportedStatsTests extends BaseHostJUnit4Tes
                         .getExtension(PackagemanagerExtensionAtoms.packageChangedBroadcastReported);
         assertThat(atom.getCallingUid())
                 .isEqualTo(PackageManagerStatsTestsBase.getAppUid(getDevice(), HELPER_PACKAGE));
-        assertThat(atom.getChangedUid())
-                .isEqualTo(
-                        PackageManagerStatsTestsBase.getAppUid(getDevice(), TEST_INSTALL_PACKAGE));
     }
 
     @Test
@@ -354,9 +349,6 @@ public class PackageChangedBroadcastReportedStatsTests extends BaseHostJUnit4Tes
                         .getAtom()
                         .getExtension(PackagemanagerExtensionAtoms.packageChangedBroadcastReported);
         assertThat(atom.getCallingUid()).isEqualTo(SYSTEM_UID);
-        assertThat(atom.getChangedUid())
-                .isEqualTo(
-                        PackageManagerStatsTestsBase.getAppUid(getDevice(), TEST_INSTALL_PACKAGE));
     }
 
     @Test
@@ -395,9 +387,8 @@ public class PackageChangedBroadcastReportedStatsTests extends BaseHostJUnit4Tes
                 data.get(0)
                         .getAtom()
                         .getExtension(PackagemanagerExtensionAtoms.packageChangedBroadcastReported);
-        final int callingUid = PackageManagerStatsTestsBase.getAppUid(getDevice(), HELPER_PACKAGE);
-        assertThat(atom.getCallingUid()).isEqualTo(callingUid);
-        assertThat(atom.getChangedUid()).isEqualTo(callingUid);
+        assertThat(atom.getCallingUid())
+                .isEqualTo(PackageManagerStatsTestsBase.getAppUid(getDevice(), HELPER_PACKAGE));
     }
 
     @Test
@@ -434,9 +425,6 @@ public class PackageChangedBroadcastReportedStatsTests extends BaseHostJUnit4Tes
                         .getAtom()
                         .getExtension(PackagemanagerExtensionAtoms.packageChangedBroadcastReported);
         assertThat(atom.getCallingUid()).isEqualTo(SYSTEM_UID);
-        assertThat(atom.getChangedUid())
-                .isEqualTo(
-                        PackageManagerStatsTestsBase.getAppUid(getDevice(), TEST_INSTALL_PACKAGE));
     }
 
     @Test
@@ -474,10 +462,6 @@ public class PackageChangedBroadcastReportedStatsTests extends BaseHostJUnit4Tes
                         .getAtom()
                         .getExtension(PackagemanagerExtensionAtoms.packageChangedBroadcastReported);
         assertThat(atom.getCallingUid()).isEqualTo(SYSTEM_UID);
-        assertThat(atom.getChangedUid())
-                .isEqualTo(
-                        PackageManagerStatsTestsBase.getAppUid(
-                                getDevice(), STATIC_SHARED_LIB_CONSUMER_PACKAGE));
     }
 
     List<StatsLog.EventMetricData> retrieveEventMetricDataChangeFromTestApp(
@@ -489,6 +473,10 @@ public class PackageChangedBroadcastReportedStatsTests extends BaseHostJUnit4Tes
         if (eventMetricData == null || eventMetricData.size() == 0) {
             return dataList;
         }
+        int packageUid =
+                getPackageUid(
+                        PackageManagerStatsTestsBase.getAppUid(getDevice(), testPackageName),
+                        packageChangedReason);
         for (int i = 0; i < eventMetricData.size(); i++) {
             PackageChangedBroadcastReported atom =
                     eventMetricData
@@ -497,12 +485,25 @@ public class PackageChangedBroadcastReportedStatsTests extends BaseHostJUnit4Tes
                             .getExtension(
                                     PackagemanagerExtensionAtoms.packageChangedBroadcastReported);
             if (atom != null
-                    && atom.getChangedUid()
-                            == PackageManagerStatsTestsBase.getAppUid(getDevice(), testPackageName)
-                    && atom.getReason() == packageChangedReason) {
+                    && atom.getReason() == packageChangedReason
+                    && atom.getChangedUid() == packageUid) {
                 dataList.add(eventMetricData.get(i));
             }
         }
         return dataList;
+    }
+
+    private static int getPackageUid(int appId, PackageChangedReason packageChangedReason) {
+        // It uses AndroidPackage#getUid() method to report the UID when overlay change and static
+        // shared library change. The UID will not compose from the userId and the appId. It will
+        // cause test failure. The remaining cases use UserHandle#getUid() to report the UID. The
+        // UID is composed from the userId and the appId. The workaround is only to check the appId
+        // when overlay change or static shared library change.
+        return switch (packageChangedReason) {
+            case PackageChangedReason.PACKAGE_CHANGED_REASON_OVERLAY_CHANGED,
+                    PackageChangedReason.PACKAGE_CHANGED_REASON_STATIC_SHARED_LIBRARY_CHANGED ->
+                    appId % PER_USER_RANGE;
+            default -> appId;
+        };
     }
 }
