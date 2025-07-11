@@ -33,6 +33,7 @@
     <option name="compatibility:include-filter" value="CtsApexTestCases" />
     <option name="compatibility:include-filter" value="CtsAslrMallocTestCases" />
     <option name="compatibility:include-filter" value="CtsBionicTestCases" />
+    <option name="compatibility:include-filter" value="CtsEdiHostTestCases" />
     <option name="compatibility:include-filter" value="CtsFsMgrTestCases" />
     <option name="compatibility:include-filter" value="CtsKernelConfigTestCases" />
     <option name="compatibility:include-filter" value="CtsLiblogTestCases" />
@@ -49,4 +50,8 @@
     <option name="compatibility:exclude-filter" value="CtsBionicTestCases unistd_nofortify#lockf_zero" />
     <option name="compatibility:exclude-filter" value="CtsBionicTestCases dlext#ns_exempt_list_enabled" />
 
+    <!-- TODO(b/431206638): Investigate the Executor Device Interactions tests failure and restore them for SDV. -->
+    <option name="compatibility:exclude-filter" value="CtsEdiHostTestCases android.edi.cts.DynamicPartitionsDeviceInfo#testCollectDeviceInfo" />
+    <option name="compatibility:exclude-filter" value="CtsEdiHostTestCases android.edi.cts.StorageIoInterfaceDeviceInfo#testCollectDeviceInfo" />
+    <option name="compatibility:exclude-filter" value="CtsEdiHostTestCases android.edi.cts.VbmetaDeviceInfo#testCollectDeviceInfo" />
 </configuration>
