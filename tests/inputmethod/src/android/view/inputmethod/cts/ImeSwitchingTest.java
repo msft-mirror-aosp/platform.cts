@@ -24,9 +24,14 @@ import static com.android.cts.mockime.ImeEventStreamTestUtils.eventMatcher;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.expectCommand;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.expectEvent;
 
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
 
 import android.app.AlertDialog;
+import android.content.pm.PackageManager;
+import android.server.wm.LockScreenSession;
+import android.server.wm.WindowManagerStateHelper;
 import android.view.inputmethod.InputMethodManager;
 import android.view.inputmethod.cts.util.EndToEndImeTestBase;
 import android.view.inputmethod.cts.util.TestActivity;
@@ -39,6 +44,7 @@ import androidx.annotation.NonNull;
 import androidx.test.filters.MediumTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.compatibility.common.util.PollingCheck;
 import com.android.cts.mockime.ImeSettings;
 import com.android.cts.mockime.MockImePackageNames;
 import com.android.cts.mockime.MockImeSession;
@@ -54,12 +60,14 @@ public final class ImeSwitchingTest extends EndToEndImeTestBase {
 
     private static final long TIMEOUT = TimeUnit.SECONDS.toMillis(5);
 
+    private static final String FEATURE_TV_OPERATOR_TIER = "com.google.android.tv.operator_tier";
+
     @Rule
     public final UnlockScreenRule mUnlockScreenRule = new UnlockScreenRule();
 
     @Test
     public void testSwitchingIme() throws Exception {
-        testWithActivityAndTwoImes((session1, session2, editText, marker) -> {
+        testWithActivityAndTwoImes((session1, session2, activity, editText, marker) -> {
             final var stream1 = session1.openEventStream();
             final var stream2 = session2.openEventStream();
 
@@ -86,7 +94,7 @@ public final class ImeSwitchingTest extends EndToEndImeTestBase {
         // TODO(b/416752402): Re-enable this test once this bug is fixed.
         assumeFalse(isAutomotiveScalableUI());
 
-        testWithActivityAndTwoImes((session1, session2, editText, marker) -> {
+        testWithActivityAndTwoImes((session1, session2, activity, editText, marker) -> {
             final var stream1 = session1.openEventStream();
             final var stream2 = session2.openEventStream();
 
@@ -121,7 +129,7 @@ public final class ImeSwitchingTest extends EndToEndImeTestBase {
         // TODO(b/416752402): Re-enable this test once this bug is fixed.
         assumeFalse(isAutomotiveScalableUI());
 
-        testWithActivityAndTwoImes((session1, session2, editText, marker) -> {
+        testWithActivityAndTwoImes((session1, session2, activity, editText, marker) -> {
             final var stream1 = session1.openEventStream();
             final var stream2 = session2.openEventStream();
 
@@ -164,6 +172,79 @@ public final class ImeSwitchingTest extends EndToEndImeTestBase {
     }
 
     /**
+     * Test IME switching while another window (e.g. IME Switcher menu) is focused on top of the
+     * IME target window after turning off/on the screen.
+     *
+     * <p>Regression test for Bug 160391516.
+     */
+    @Test
+    public void testImeSwitchingWithoutWindowFocusAfterDisplayOffOn() throws Exception {
+        final var pm = InstrumentationRegistry.getInstrumentation().getTargetContext()
+                .getPackageManager();
+        // Skip on TV operator tier devices, as these may have the launch_on_wake feature, which
+        // starts another activity when turning on the screen.
+        assumeFalse("Operator tier TVs can start a different activity on wake, skipping the test",
+                pm.hasSystemFeature(FEATURE_TV_OPERATOR_TIER));
+        assumeFalse("Automotive will start launcher on wake, skipping the test",
+                pm.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE));
+
+        // TODO(b/416752402): Re-enable this test once this bug is fixed.
+        assumeFalse(isAutomotiveScalableUI());
+
+        final var wmState = new WindowManagerStateHelper();
+        try (var lockScreenSession = new LockScreenSession(
+                InstrumentationRegistry.getInstrumentation(), wmState)) {
+            testWithActivityAndTwoImes((session1, session2, activity, editText, marker) -> {
+                final var stream1 = session1.openEventStream();
+                final var stream2 = session2.openEventStream();
+
+                // Make sure that MockIme2 eventually becomes visible
+                expectEvent(stream2, eventMatcher("bindInput"), TIMEOUT);
+                expectEvent(stream2, editorMatcher("onStartInput", marker), TIMEOUT);
+                runOnMainSync(() -> editText
+                        .getContext()
+                        .getSystemService(InputMethodManager.class)
+                        .showSoftInput(editText, 0));
+                expectEvent(stream2, editorMatcher("onStartInputView", marker), TIMEOUT);
+                expectImeVisible(TIMEOUT);
+
+                // Disable lock screen as the test does not depend on it.
+                lockScreenSession.disableLockScreen().sleepDevice();
+                wmState.waitForNonActivityWindowFocused();
+
+                lockScreenSession.wakeUpDevice();
+                assertTrue("TestActivity should be focused after wakeup",
+                        wmState.waitForFocusedActivity(activity.getComponentName()));
+                assertTrue("EditText should remain focused after wakeup", editText.isFocused());
+
+                expectImeVisible(TIMEOUT);
+
+                // Emulating IME switching with the IME switcher dialog. An interesting point is
+                // that the IME target window is not focused when the IME switcher dialog is shown.
+                final var imm = editText.getContext().getSystemService(InputMethodManager.class);
+                assertNotNull("InputMethodManager should be found", imm);
+                imm.showInputMethodPicker();
+                PollingCheck.waitFor(() -> TestUtils.isInputMethodPickerShown(imm),
+                        "IME Switcher Menu should be shown");
+
+                wmState.waitForNonActivityWindowFocused();
+
+                // Then switch to MockIme1
+                stream1.skipAll();
+                expectCommand(stream2, session2.callSwitchInputMethod(session1.getImeId()),
+                        TIMEOUT);
+                expectEvent(stream2, eventMatcher("onDestroy"), TIMEOUT);
+
+                // Make sure that MockIme1 eventually becomes visible
+                expectEvent(stream1, eventMatcher("onCreate"), TIMEOUT);
+                expectEvent(stream1, editorMatcher("onStartInput", marker), TIMEOUT);
+                expectEvent(stream1, editorMatcher("onStartInputView", marker), TIMEOUT);
+                expectImeVisible(TIMEOUT);
+            });
+        }
+    }
+
+    /**
      * Starts the test activity with MockIme1 and MockIme2 enabled, and MockIme2 selected as the
      * current IME, and then runs the given test code.
      *
@@ -186,7 +267,7 @@ public final class ImeSwitchingTest extends EndToEndImeTestBase {
 
             // Launch an Activity that shows up an IME.
             final var editTextRef = new AtomicReference<EditText>();
-            TestActivity.startSync(activity -> {
+            final var testActivity = TestActivity.startSync(activity -> {
                 final var layout = new LinearLayout(activity);
                 layout.setOrientation(LinearLayout.VERTICAL);
 
@@ -200,7 +281,7 @@ public final class ImeSwitchingTest extends EndToEndImeTestBase {
                 return layout;
             });
 
-            testRunnable.run(session1, session2, editTextRef.get(), marker);
+            testRunnable.run(session1, session2, testActivity, editTextRef.get(), marker);
         }
     }
 
@@ -216,10 +297,12 @@ public final class ImeSwitchingTest extends EndToEndImeTestBase {
          *
          * @param session1 the first mock IME session.
          * @param session2 the second mock IME session.
+         * @param activity the launcher test activity.
          * @param editText the EditText from the launched test activity.
          * @param marker   the EditText test marker.
          */
         void run(@NonNull MockImeSession session1, @NonNull MockImeSession session2,
-                @NonNull EditText editText, @NonNull String marker) throws Exception;
+                @NonNull TestActivity activity, @NonNull EditText editText, @NonNull String marker)
+                throws Exception;
     }
 }
