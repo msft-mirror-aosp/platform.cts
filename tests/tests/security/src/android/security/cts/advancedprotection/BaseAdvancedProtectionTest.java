@@ -23,10 +23,6 @@ import android.Manifest;
 import android.app.Instrumentation;
 import android.content.Context;
 import android.content.pm.PackageManager;
-import android.platform.test.flag.junit.CheckFlagsRule;
-import android.platform.test.flag.junit.DeviceFlagsValueProvider;
-import android.platform.test.flag.junit.SetFlagsRule;
-import android.security.Flags;
 import android.security.advancedprotection.AdvancedProtectionManager;
 
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -34,7 +30,6 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import com.android.compatibility.common.util.SystemUtil;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Rule;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -46,17 +41,14 @@ public abstract class BaseAdvancedProtectionTest {
 
     private boolean mInitialApmState;
 
-    @Rule
-    public final SetFlagsRule mSetFlagsRule = new SetFlagsRule();
-
-    @Rule
-    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
-
     @Before
     public void setup() {
         assumeTrue(shouldTestAdvancedProtection(mInstrumentation.getContext()));
-        mManager = (AdvancedProtectionManager) mInstrumentation
-                .getContext().getSystemService(Context.ADVANCED_PROTECTION_SERVICE);
+        mManager =
+                (AdvancedProtectionManager)
+                        mInstrumentation
+                                .getContext()
+                                .getSystemService(Context.ADVANCED_PROTECTION_SERVICE);
 
         mInstrumentation
                 .getUiAutomation()
@@ -66,9 +58,6 @@ public abstract class BaseAdvancedProtectionTest {
                         Manifest.permission.MANAGE_DEVICE_POLICY_MTE);
 
         mInitialApmState = mManager.isAdvancedProtectionEnabled();
-        /* Disabling USB AAPM feature to avoid interference with non-related test as this
-         * function will be sever the tether connection. */
-        mSetFlagsRule.disableFlags(Flags.FLAG_AAPM_FEATURE_USB_DATA_PROTECTION);
     }
 
     private static boolean shouldTestAdvancedProtection(Context context) {
@@ -91,28 +80,31 @@ public abstract class BaseAdvancedProtectionTest {
             return;
         }
 
-        mInstrumentation.getUiAutomation().adoptShellPermissionIdentity(
-                Manifest.permission.MANAGE_ADVANCED_PROTECTION_MODE,
-                Manifest.permission.QUERY_ADVANCED_PROTECTION_MODE);
+        mInstrumentation
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(
+                        Manifest.permission.MANAGE_ADVANCED_PROTECTION_MODE,
+                        Manifest.permission.QUERY_ADVANCED_PROTECTION_MODE);
         setAdvancedProtectionEnabled(mInitialApmState);
         mInstrumentation.getUiAutomation().dropShellPermissionIdentity();
     }
 
     protected void setAdvancedProtectionEnabled(boolean enabled) throws InterruptedException {
         if (enabled == mManager.isAdvancedProtectionEnabled()) {
-          return;
+            return;
         }
 
         // Called once on register, then on set
         CountDownLatch onRegister = new CountDownLatch(1);
         CountDownLatch onSet = new CountDownLatch(1);
-        AdvancedProtectionManager.Callback callback = bool -> {
-            if (onRegister.getCount() > 0) {
-                onRegister.countDown();
-            } else {
-                onSet.countDown();
-            }
-        };
+        AdvancedProtectionManager.Callback callback =
+                bool -> {
+                    if (onRegister.getCount() > 0) {
+                        onRegister.countDown();
+                    } else {
+                        onSet.countDown();
+                    }
+                };
         mManager.registerAdvancedProtectionCallback(Runnable::run, callback);
         if (!onRegister.await(TIMEOUT_S, TimeUnit.SECONDS)) {
             fail("Callback not called on register");

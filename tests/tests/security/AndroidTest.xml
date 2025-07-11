@@ -99,4 +99,9 @@
         <option name="enable-backup-if-needed" value="true" />
         <option name="select-local-transport" value="true" />
     </target_preparer>
+
+    <target_preparer class="com.android.tradefed.targetprep.FeatureFlagTargetPreparer">
+        <option name="flag-value"
+            value="preload_safety/android.security.aapm_feature_usb_data_protection=false"/>
+    </target_preparer>
 </configuration>
