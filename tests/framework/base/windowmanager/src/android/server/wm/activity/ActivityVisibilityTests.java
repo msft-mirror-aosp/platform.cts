@@ -54,7 +54,6 @@ import static android.server.wm.app.Components.TopActivity.ACTION_CONVERT_FROM_T
 import static android.server.wm.app.Components.TopActivity.ACTION_CONVERT_TO_TRANSLUCENT;
 import static android.view.Display.DEFAULT_DISPLAY;
 import static android.window.DisplayAreaOrganizer.FEATURE_UNDEFINED;
-
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
@@ -62,9 +61,6 @@ import static org.junit.Assume.assumeTrue;
 
 import android.content.ComponentName;
 import android.platform.test.annotations.Presubmit;
-import android.platform.test.annotations.RequiresFlagsDisabled;
-import android.platform.test.flag.junit.CheckFlagsRule;
-import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.server.wm.ActivityManagerTestBase;
 import android.server.wm.CommandSession.ActivitySession;
 import android.server.wm.CommandSession.ActivitySessionClient;
@@ -72,17 +68,12 @@ import android.server.wm.LockScreenSession;
 import android.server.wm.WaitForValidActivityState;
 import android.server.wm.WindowManagerState.Task;
 import android.server.wm.app.Components;
-
 import androidx.test.filters.FlakyTest;
-
 import com.android.compatibility.common.util.ApiTest;
-import com.android.systemui.Flags;
-
+import java.util.function.Consumer;
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
-
-import java.util.function.Consumer;
 
 /**
  * Build/Install/Run:
@@ -94,10 +85,6 @@ public class ActivityVisibilityTests extends ActivityManagerTestBase {
 
     @Rule
     public final DisableScreenDozeRule mDisableScreenDozeRule = new DisableScreenDozeRule();
-
-   @Rule
-    public final CheckFlagsRule mCheckFlagsRule =
-            DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Override
     public void setUp() throws Exception {
@@ -727,8 +714,6 @@ public class ActivityVisibilityTests extends ActivityManagerTestBase {
     }
 
     @Test
-    // Re-enabling for flexiglass is tracked in b/416719233.
-    @RequiresFlagsDisabled(Flags.FLAG_SCENE_CONTAINER)
     public void testTurnScreenOnWithAttr_Freeform() {
         assumeTrue(supportsLockScreen());
         assumeTrue(supportsFreeform());
@@ -779,8 +764,6 @@ public class ActivityVisibilityTests extends ActivityManagerTestBase {
     }
 
     @Test
-    // Re-enabling for flexiglass is tracked in b/416719233.
-    @RequiresFlagsDisabled(Flags.FLAG_SCENE_CONTAINER)
     public void testTurnScreenOnWhenLockWithAttrInFreeform() {
         assumeTrue(supportsLockScreen());
         assumeTrue(supportsFreeform());
