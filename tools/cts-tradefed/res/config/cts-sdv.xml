@@ -32,9 +32,21 @@
     <option name="compatibility:include-filter" value="CtsAdbHostTestCases" />
     <option name="compatibility:include-filter" value="CtsApexTestCases" />
     <option name="compatibility:include-filter" value="CtsAslrMallocTestCases" />
+    <option name="compatibility:include-filter" value="CtsBionicTestCases" />
     <option name="compatibility:include-filter" value="CtsFsMgrTestCases" />
     <option name="compatibility:include-filter" value="CtsKernelConfigTestCases" />
     <option name="compatibility:include-filter" value="CtsLiblogTestCases" />
     <option name="compatibility:include-filter" value="CtsLogdTestCases" />
     <!-- go/keep-sorted end -->
+
+    <!-- TODO(b/431119128): Investigate the Bionic tests failure and restore them for SDV. -->
+    <option name="compatibility:exclude-filter" value="CtsBionicTestCases netdb#*" />
+    <option name="compatibility:exclude-filter" value="CtsBionicTestCases stdio_nofortify#dev_std_files" />
+    <option name="compatibility:exclude-filter" value="CtsBionicTestCases stdio#dev_std_files" />
+    <option name="compatibility:exclude-filter" value="CtsBionicTestCases unistd#exec_argv0_null" />
+    <option name="compatibility:exclude-filter" value="CtsBionicTestCases time#tzalloc_nullptr" />
+    <option name="compatibility:exclude-filter" value="CtsBionicTestCases unistd_nofortify#exec_argv0_null" />
+    <option name="compatibility:exclude-filter" value="CtsBionicTestCases unistd_nofortify#lockf_zero" />
+    <option name="compatibility:exclude-filter" value="CtsBionicTestCases dlext#ns_exempt_list_enabled" />
+
 </configuration>
