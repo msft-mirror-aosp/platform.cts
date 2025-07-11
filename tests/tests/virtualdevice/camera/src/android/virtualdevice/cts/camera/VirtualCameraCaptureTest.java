@@ -38,6 +38,7 @@ import static com.google.common.truth.Truth.assertWithMessage;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.after;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.verify;
@@ -80,7 +81,6 @@ import junitparams.naming.TestCaseName;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -667,7 +667,6 @@ public class VirtualCameraCaptureTest {
         assertThat(captureResults).hasSize(imageCount);
     }
 
-    @Ignore("b/371167033 - fix send capture results")
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_CAMERA_METADATA)
     public void captureImageWithFrameMetadata_withRequestAndResultMetadata_succeeds()
@@ -677,60 +676,89 @@ public class VirtualCameraCaptureTest {
         Trace.endSection();
         VirtualCameraCallback mockCallback = mCaptureHelper.getVirtualCameraCallback();
         final CountDownLatch consumerLatch = new CountDownLatch(1);
-        final AtomicReference<ObjLongConsumer<CaptureResult>> consumer =
+        final AtomicReference<ObjLongConsumer<CaptureResult>> captureResultConsumerRef =
                 new AtomicReference<ObjLongConsumer<CaptureResult>>();
-        final int imageCount = 30;
+        final int imageCount = 2;
+        final int requestAeMode = CaptureRequest.CONTROL_AE_MODE_OFF;
+        final int resultAePriorityMode =
+                CaptureResult.CONTROL_AE_PRIORITY_MODE_SENSOR_SENSITIVITY_PRIORITY;
+        final int resultAfState = CaptureResult.CONTROL_AF_STATE_FOCUSED_LOCKED;
+        final AtomicReference<ImageWriter> imageWriterRef = new AtomicReference<>();
 
         doAnswer(invocation -> {
             // The second argument to onConfigureSession is the result consumer.
-            consumer.set(invocation.getArgument(1));
+            captureResultConsumerRef.set(invocation.getArgument(1));
             consumerLatch.countDown();
             return null;
         }).when(mockCallback).onConfigureSession(any(), any());
+
+        doAnswer(invocation -> {
+            assertTrue("CaptureResults consumer not available in time",
+                    consumerLatch.await(3, TimeUnit.SECONDS));
+
+            final CaptureRequest request = invocation.getArgument(2);
+            assertThat(request).isNotNull();
+            final Integer aeMode = request.get(CaptureRequest.CONTROL_AE_MODE);
+            assertThat(aeMode).isNotNull();
+            assertThat(aeMode).isEqualTo(requestAeMode);
+
+            CaptureResult resultToSend = new CaptureResult.Builder()
+                    .set(CaptureResult.CONTROL_AE_PRIORITY_MODE, resultAePriorityMode)
+                    .set(CaptureResult.CONTROL_AF_STATE, resultAfState)
+                    .build();
+
+            long currentTimestamp = System.nanoTime();
+
+            Trace.beginSection("VirtualCameraMetadata.sendCaptureResult");
+            ObjLongConsumer<CaptureResult> captureResultConsumer = captureResultConsumerRef.get();
+            assertThat(captureResultConsumer).isNotNull();
+            captureResultConsumer.accept(resultToSend, currentTimestamp);
+            Trace.endSection();
+
+            ImageWriter imageWriter = imageWriterRef.get();
+            assertThat(imageWriter).isNotNull();
+
+            Image image = imageWriter.dequeueInputImage();
+            image.setTimestamp(currentTimestamp);
+            imageWriter.queueInputImage(image);
+            return null;
+        }).when(mockCallback).onProcessCaptureRequest(
+                anyInt(), anyLong(), any(CaptureRequest.class));
 
         CaptureConfiguration config = new CaptureConfiguration()
                 .setPerFrameCameraMetadataEnabled(true)
                 .setImageCount(imageCount)
                 .setCapturePeriod(Duration.ofNanos(
                         SECOND_TO_NANOS / VirtualCameraCaptureHelper.CAMERA_MAX_FPS))
-                .setOutputFormat(YUV_420_888)
-                .setRequestBuilderModifier(builder ->
-                        builder.set(
-                                CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_OFF))
-                .setInputSurfaceConsumer(surface -> {
-                    try {
-                        assertTrue("CaptureResults consumer not available in time",
-                                consumerLatch.await(3, TimeUnit.SECONDS));
-                    } catch (InterruptedException e) {
-                        throw new RuntimeException(e);
-                    }
-
-                    CaptureResult resultToSend = new CaptureResult.Builder()
-                            .set(CaptureResult.CONTROL_AE_STATE,
-                                    CaptureResult.CONTROL_AE_STATE_CONVERGED)
-                            .build();
-
-                    final long currentTimestamp = System.nanoTime();
-
-                    ImageWriter imageWriter = ImageWriter.newInstance(surface, 1, YUV_420_888);
-                    Image image = imageWriter.dequeueInputImage();
-                    image.setTimestamp(currentTimestamp);
-                    imageWriter.queueInputImage(image);
-                    imageWriter.close();
-
-                    Trace.beginSection("VirtualCameraMetadata.sendCaptureResult");
-                    consumer.get().accept(resultToSend, currentTimestamp);
-                    Trace.endSection();
-                });
+                 .setOutputFormat(YUV_420_888)
+                 .setRequestBuilderModifier(builder ->
+                         builder.set(CaptureRequest.CONTROL_AE_MODE, requestAeMode))
+                .setInputSurfaceConsumer(surface ->
+                        imageWriterRef.set(ImageWriter.newInstance(surface, 1, YUV_420_888)));
 
         Image image = mCaptureHelper.captureImages(config);
         assertThat(image).isNotNull();
         image.close();
 
-        TotalCaptureResult totalResult = mCaptureHelper.getLastResult();
-        assertThat(totalResult).isNotNull();
+        List<TotalCaptureResult> captureResults = mCaptureHelper.getCaptureResults();
+        assertThat(captureResults).isNotNull();
+        assertThat(captureResults).hasSize(imageCount);
 
-        // TODO: b/371167033 - verify that the capture result metadata is received correctly
+        // Verify that the capture result metadata is received correctly for all results.
+        for (TotalCaptureResult result : captureResults) {
+            Integer aePriorityModeResult =
+                    result.get(TotalCaptureResult.CONTROL_AE_PRIORITY_MODE);
+            assertThat(aePriorityModeResult).isNotNull();
+            assertThat(aePriorityModeResult).isEqualTo(resultAePriorityMode);
+            Integer afStateResult = result.get(TotalCaptureResult.CONTROL_AF_STATE);
+            assertThat(afStateResult).isNotNull();
+            assertThat(afStateResult).isEqualTo(resultAfState);
+        }
+
+        ImageWriter imageWriter = imageWriterRef.getAndSet(null);
+        if (imageWriter != null) {
+            imageWriter.close();
+        }
     }
 
     @SuppressWarnings("unused") // Parameter for parametrized tests
