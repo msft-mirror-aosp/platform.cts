@@ -15,6 +15,7 @@
 android_test {
     name: "CtsSupervisionTestCases",
     defaults: ["cts_defaults"],
+    team: "trendy_team_android_parental_controls",
     static_libs: [
         "compatibility-device-util-axt",
         "ctstestrunner-axt",
@@ -22,6 +23,7 @@ android_test {
         "androidx.test.ext.junit",
         "android.app.supervision.flags-aconfig-java",
         "android.multiuser.flags-aconfig-java",
+        "android.permission.flags-aconfig-java-export",
         "testng",
         "bedstead-flags",
         "bedstead-root",
