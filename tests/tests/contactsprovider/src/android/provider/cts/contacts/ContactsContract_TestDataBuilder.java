@@ -45,6 +45,8 @@ public class ContactsContract_TestDataBuilder {
     private ContentProviderClient mProvider;
     private ArrayList<Builder<?>> mCreatedRows = new ArrayList<>();
     private HashSet<Builder<?>> mLoadedRows = new HashSet<>();
+    private static final int POLLING_TIMEOUT_MS = 1000; // 1 seconds
+    private static final int POLLING_INTERVAL_MS = 200;    // 0.2 seconds
 
     private interface IdQuery {
         String[] COLUMNS = new String[] {
@@ -152,13 +154,23 @@ public class ContactsContract_TestDataBuilder {
         public T load() throws Exception {
             close();
             mLoadedRows.add(this);
-
-            mCursor = mProvider.query(getUri(), null, null, null, null, null);
-            if (mCursor == null || !mCursor.moveToFirst()) {
-                return null;
-            } else {
-                return (T) this;
+            // TODO(b/431189815): Identify why the data is not available
+            // immediately and see if we can remove the polling.
+            final long deadline =
+                System.currentTimeMillis() + POLLING_TIMEOUT_MS;
+            while (System.currentTimeMillis() < deadline) {
+                mCursor = mProvider.query(getUri(), null, null, null, null, null);
+                if (mCursor != null && mCursor.moveToFirst()) {
+                    return (T) this;
+                }
+                // Close the cursor as no data was found
+                close();
+                Thread.sleep(POLLING_INTERVAL_MS);
             }
+            Assert.fail("Timed out after " + POLLING_TIMEOUT_MS +
+                            "ms waiting for contact data at URI: " + getUri());
+
+            return null;
         }
 
         @SuppressWarnings("unchecked")
@@ -185,14 +197,25 @@ public class ContactsContract_TestDataBuilder {
                     selectionArgs.add(value.toString());
                 }
             }
-            mCursor = mProvider.query(getContentUri(), null,
+            // TODO(b/431189815): Identify why the data is not available
+            // immediately and see if we can remove the polling.
+            final long deadline =
+                System.currentTimeMillis() + POLLING_TIMEOUT_MS;
+            while (System.currentTimeMillis() < deadline) {
+                mCursor = mProvider.query(getContentUri(), null,
                     selection.toString(),
                     selectionArgs.toArray(new String[0]), null, null);
-            if (mCursor == null || !mCursor.moveToFirst()) {
-                fail("No data rows for " + getContentUri() + "[" + mValues.toString() + "]");
+                if (mCursor != null && mCursor.moveToFirst()) {
+                    mId = mCursor.getLong(getColumnIndex(BaseColumns._ID));
+                    return (T)this;
+                }
+                // Close the cursor as no data was found
+                close();
+                Thread.sleep(POLLING_INTERVAL_MS);
             }
-            mId = mCursor.getLong(getColumnIndex(BaseColumns._ID));
-            return (T)this;
+            fail("No data rows for " +
+                            getContentUri() + "[" + mValues.toString() + "]");
+            return null;
         }
 
         public boolean isNull(String columnName) {

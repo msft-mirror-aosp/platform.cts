@@ -430,7 +430,7 @@ public class ContactsContract_FrequentsStrequentsTest extends InstrumentationTes
                 .insert();
         mDataIds[0] = rawContact.newDataRow(Phone.CONTENT_ITEM_TYPE)
                 .with(Phone.DATA, "510-123-5769")
-                .with(Email.TYPE, Phone.TYPE_HOME)
+                .with(Phone.TYPE, Phone.TYPE_HOME)
                 .insert().load().getId();
         rawContact.load();
         TestContact contact = rawContact.getContact().load();
