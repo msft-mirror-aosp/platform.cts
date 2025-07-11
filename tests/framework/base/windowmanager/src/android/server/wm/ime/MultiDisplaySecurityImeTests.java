@@ -29,11 +29,8 @@ import static org.junit.Assume.assumeTrue;
 import android.platform.test.annotations.Presubmit;
 import android.server.wm.ActivityManagerTestBase;
 import android.server.wm.MultiDisplayTestBase;
-import android.server.wm.WindowManagerState;
-import android.widget.EditText;
 
 import com.android.cts.mockime.ImeEventStream;
-import com.android.cts.mockime.MockImeSession;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -43,6 +40,9 @@ import java.util.concurrent.TimeUnit;
 @Presubmit
 @android.server.wm.annotation.Group3
 public class MultiDisplaySecurityImeTests extends MultiDisplayTestBase {
+
+    private static final long NOT_EXPECT_TIMEOUT = TimeUnit.SECONDS.toMillis(2);
+
     @Before
     @Override
     public void setUp() throws Exception {
@@ -53,58 +53,53 @@ public class MultiDisplaySecurityImeTests extends MultiDisplayTestBase {
         super.setUp();
 
         assumeTrue(supportsMultiDisplay());
+        assumeTrue(MSG_NO_MOCK_IME, supportsInstallableIme());
     }
 
     @Test
     public void testNoInputConnectionForUntrustedVirtualDisplay() throws Exception {
-        assumeTrue(MSG_NO_MOCK_IME, supportsInstallableIme());
+        try (var imeSession = createManagedMockImeSession(this);
+             ActivityManagerTestBase.TestActivitySession<MultiDisplayImeTests.ImeTestActivity>
+                     activitySession = createManagedTestActivitySession();
+             var displaySession = createManagedVirtualDisplaySession()
+                     .setPublicDisplay(true)) {
+            // Create a untrusted virtual display and assume the display should not show IME window.
+            final var dc = displaySession.createDisplay();
 
-        final long NOT_EXPECT_TIMEOUT = TimeUnit.SECONDS.toMillis(2);
+            // Launch IME test activity in virtual display.
+            activitySession.launchTestActivityOnDisplay(MultiDisplayImeTests.ImeTestActivity.class,
+                    dc.mId);
+            final var activity = activitySession.getActivity();
+            // Verify that activity which lives in untrusted display should not be focused.
+            assertNotEquals("ImeTestActivity should not be focused",
+                    mWmState.getFocusedActivity(), activity.getComponentName().toString());
 
-        final MockImeSession mockImeSession = createManagedMockImeSession(this);
-        final ActivityManagerTestBase.TestActivitySession<MultiDisplayImeTests.ImeTestActivity>
-                imeTestActivitySession =
-                createManagedTestActivitySession();
-        // Create a untrusted virtual display and assume the display should not show IME window.
-        final WindowManagerState.DisplayContent newDisplay = createManagedVirtualDisplaySession()
-                .setPublicDisplay(true).createDisplay();
+            // Expect onStartInput won't executed in the IME client.
+            final ImeEventStream stream = imeSession.openEventStream();
+            final var editText = activity.getEditText();
+            activitySession.runOnMainSyncAndWait(activity::showSoftInput);
+            notExpectEvent(stream, editorMatcher("onStartInput",
+                    editText.getPrivateImeOptions()), NOT_EXPECT_TIMEOUT);
 
-        // Launch Ime test activity in virtual display.
-        imeTestActivitySession.launchTestActivityOnDisplay(MultiDisplayImeTests.ImeTestActivity.class,
-                newDisplay.mId);
-        // Verify that activity which lives in untrusted display should not be focused.
-        assertNotEquals("ImeTestActivity should not be focused",
-                mWmState.getFocusedActivity(),
-                imeTestActivitySession.getActivity().getComponentName().toString());
+            // Expect onStartInput / showSoftInput would be executed when user tapping on the
+            // untrusted display intentionally.
+            final int[] location = new int[2];
+            editText.getLocationOnScreen(location);
+            tapOnDisplaySync(location[0], location[1], dc.mId);
+            activitySession.runOnMainSyncAndWait(activity::showSoftInput);
+            waitOrderedImeEventsThenAssertImeShown(stream, DEFAULT_DISPLAY,
+                    editorMatcher("onStartInput", editText.getPrivateImeOptions()),
+                    event -> "showSoftInput".equals(event.getEventName()));
 
-        // Expect onStartInput won't executed in the IME client.
-        final ImeEventStream stream = mockImeSession.openEventStream();
-        final EditText editText = imeTestActivitySession.getActivity().mEditText;
-        imeTestActivitySession.runOnMainSyncAndWait(
-                imeTestActivitySession.getActivity()::showSoftInput);
-        notExpectEvent(stream, editorMatcher("onStartInput",
-                editText.getPrivateImeOptions()), NOT_EXPECT_TIMEOUT);
-
-        // Expect onStartInput / showSoftInput would be executed when user tapping on the
-        // untrusted display intentionally.
-        final int[] location = new int[2];
-        editText.getLocationOnScreen(location);
-        tapOnDisplaySync(location[0], location[1], newDisplay.mId);
-        imeTestActivitySession.runOnMainSyncAndWait(
-                imeTestActivitySession.getActivity()::showSoftInput);
-        waitOrderedImeEventsThenAssertImeShown(stream, DEFAULT_DISPLAY,
-                editorMatcher("onStartInput", editText.getPrivateImeOptions()),
-                event -> "showSoftInput".equals(event.getEventName()));
-
-        // Switch focus to top focused display as default display, verify onStartInput won't
-        // be called since the untrusted display should no longer get focus.
-        tapOnDisplayCenter(DEFAULT_DISPLAY);
-        mWmState.computeState();
-        assertEquals(DEFAULT_DISPLAY, mWmState.getFocusedDisplayId());
-        imeTestActivitySession.getActivity().resetPrivateImeOptionsIdentifier();
-        imeTestActivitySession.runOnMainSyncAndWait(
-                imeTestActivitySession.getActivity()::showSoftInput);
-        notExpectEvent(stream, editorMatcher("onStartInput",
-                editText.getPrivateImeOptions()), NOT_EXPECT_TIMEOUT);
+            // Switch focus to top focused display as default display, verify onStartInput won't
+            // be called since the untrusted display should no longer get focus.
+            tapOnDisplayCenter(DEFAULT_DISPLAY);
+            mWmState.computeState();
+            assertEquals(DEFAULT_DISPLAY, mWmState.getFocusedDisplayId());
+            activity.resetPrivateImeOptionsIdentifier();
+            activitySession.runOnMainSyncAndWait(activity::showSoftInput);
+            notExpectEvent(stream, editorMatcher("onStartInput",
+                    editText.getPrivateImeOptions()), NOT_EXPECT_TIMEOUT);
+        }
     }
 }
