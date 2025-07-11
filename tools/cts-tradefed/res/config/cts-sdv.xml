@@ -32,6 +32,7 @@
     <option name="compatibility:include-filter" value="CtsAdbHostTestCases" />
     <option name="compatibility:include-filter" value="CtsApexTestCases" />
     <option name="compatibility:include-filter" value="CtsAslrMallocTestCases" />
+    <option name="compatibility:include-filter" value="CtsFsMgrTestCases" />
     <option name="compatibility:include-filter" value="CtsKernelConfigTestCases" />
     <option name="compatibility:include-filter" value="CtsLiblogTestCases" />
     <!-- go/keep-sorted end -->
