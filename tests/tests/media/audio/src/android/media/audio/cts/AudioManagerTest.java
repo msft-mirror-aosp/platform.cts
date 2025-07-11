@@ -42,6 +42,7 @@ import static android.media.AudioManager.VIBRATE_SETTING_ON;
 import static android.media.AudioManager.VIBRATE_SETTING_ONLY_SILENT;
 import static android.media.AudioManager.VIBRATE_TYPE_NOTIFICATION;
 import static android.media.AudioManager.VIBRATE_TYPE_RINGER;
+import static android.media.audio.Flags.FLAG_SCO_MANAGED_BY_AUDIO;
 import static android.media.audio.cts.AudioTestUtil.resetVolumeIndex;
 import static android.media.audiopolicy.AudioProductStrategy.DEFAULT_ZONE_ID;
 import static android.media.audiopolicy.AudioVolumeGroup.DEFAULT_VOLUME_GROUP;
@@ -3197,6 +3198,20 @@ public class AudioManagerTest {
                                     volumeGroup.getId())).isEqualTo(DEFAULT_ZONE_ID);
                 }
             }
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_SCO_MANAGED_BY_AUDIO)
+    public void testIsScoManagedByAudio() {
+        try {
+            getInstrumentation()
+                    .getUiAutomation()
+                    .adoptShellPermissionIdentity(Manifest.permission.BLUETOOTH_PRIVILEGED);
+
+            boolean result = mAudioManager.isScoManagedByAudio();
+        } finally {
+            getInstrumentation().getUiAutomation().dropShellPermissionIdentity();
         }
     }
 
