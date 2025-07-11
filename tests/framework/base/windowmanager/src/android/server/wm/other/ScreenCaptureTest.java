@@ -206,6 +206,33 @@ public class ScreenCaptureTest extends WindowManagerTestBase {
         assertEquals(expectedMatchingPixels, actualMatchingPixels);
     }
 
+@RequiresFlagsEnabled(FLAG_READBACK_SCREENSHOT)
+    @ApiTest(
+            apis = {
+                "android.window.ScreenCapture.ScreenCaptureParams.Builder#build",
+                "android.window.ScreenCapture.ScreenCaptureParams.Builder#setPixelFormat",
+                "android.window.ScreenCapture#capture"
+            })
+    @Test
+    public void capture_setPixelFormat() throws Exception {
+        ScreenCaptureResult[] result = {null};
+        int pixelFormat = HardwareBuffer.RGB_888;
+
+        SystemUtil.runWithShellPermissionIdentity(
+                () -> {
+                    ScreenCaptureParams params =
+                            new ScreenCaptureParams.Builder(Display.DEFAULT_DISPLAY)
+                                    .setPixelFormat(pixelFormat)
+                                    .build();
+                    Executor executor = runnable -> runnable.run();
+                    SynchronousReceiver receiver = new SynchronousReceiver();
+                    ScreenCapture.capture(params, executor, receiver);
+                    result[0] = receiver.waitForResult();
+                });
+
+        assertEquals(pixelFormat, result[0].getHardwareBuffer().getFormat());
+    }
+
     void launchActivity(boolean secure, @Nullable Rect outContentBounds)
             throws InterruptedException {
         Class<?> activityClass = secure ? SecureTestActivity.class : TestActivity.class;
