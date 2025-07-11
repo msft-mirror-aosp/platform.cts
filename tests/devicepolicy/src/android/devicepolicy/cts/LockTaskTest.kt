@@ -61,6 +61,7 @@ import com.android.bedstead.harrier.annotations.Postsubmit
 import com.android.bedstead.harrier.annotations.RequireFeature
 import com.android.bedstead.harrier.policies.LockTask
 import com.android.bedstead.harrier.policies.LockTaskFinance
+import com.android.bedstead.harrier.policies.LockTaskSupervision
 import com.android.bedstead.metricsrecorder.EnterpriseMetricsRecorder
 import com.android.bedstead.metricsrecorder.truth.MetricQueryBuilderSubject.assertThat
 import com.android.bedstead.nene.TestApis
@@ -454,6 +455,50 @@ class LockTaskTest {
             deviceState.dpc().devicePolicyManager().setLockTaskPackages(
                 deviceState.dpc().componentName(),
                 arrayOf()
+            )
+        }
+    }
+
+    @CanSetPolicyTest(policy = [LockTaskSupervision::class])
+    @RequiresFlagsEnabled(
+        android.app.supervision.flags.Flags.FLAG_ENABLE_LOCK_TASK_FEATURE_QUICK_SETTINGS,
+        android.permission.flags.Flags.FLAG_ENABLE_SYSTEM_SUPERVISION_ROLE_BEHAVIOR
+    )
+    fun setLockTaskFeatures_quickSettingsFeature_setsFeatures() {
+        val componentName = deviceState.dpc().componentName()
+        try {
+            SystemUtil.runShellCommand(
+                "settings put global device_policy_constants " +
+                    "use_test_admin_as_supervision_component=true"
+            )
+            deviceState.dpc().devicePolicyManager()
+                .setLockTaskPackages(componentName, arrayOf(testApp.packageName()))
+            deviceState.dpc().devicePolicyManager().setLockTaskFeatures(
+                componentName,
+                DevicePolicyManager.LOCK_TASK_FEATURE_QUICK_SETTINGS or
+                DevicePolicyManager.LOCK_TASK_FEATURE_NOTIFICATIONS or
+                DevicePolicyManager.LOCK_TASK_FEATURE_HOME
+            )
+            assertThat(
+                deviceState.dpc().devicePolicyManager()
+                        .getLockTaskFeatures(deviceState.dpc().componentName())
+            ).isEqualTo(
+                DevicePolicyManager.LOCK_TASK_FEATURE_QUICK_SETTINGS or
+                DevicePolicyManager.LOCK_TASK_FEATURE_NOTIFICATIONS or
+                DevicePolicyManager.LOCK_TASK_FEATURE_HOME
+            )
+        } finally {
+            deviceState.dpc().devicePolicyManager().setLockTaskFeatures(
+                componentName,
+                LOCK_TASK_FEATURE_NONE
+            )
+            deviceState.dpc().devicePolicyManager().setLockTaskPackages(
+                componentName,
+                arrayOf()
+            )
+            SystemUtil.runShellCommand(
+                "settings put global device_policy_constants " +
+                    "use_test_admin_as_supervision_component=false"
             )
         }
     }
