@@ -35,5 +35,6 @@
     <option name="compatibility:include-filter" value="CtsFsMgrTestCases" />
     <option name="compatibility:include-filter" value="CtsKernelConfigTestCases" />
     <option name="compatibility:include-filter" value="CtsLiblogTestCases" />
+    <option name="compatibility:include-filter" value="CtsLogdTestCases" />
     <!-- go/keep-sorted end -->
 </configuration>
