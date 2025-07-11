@@ -8060,4 +8060,25 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
             uiAutomation.dropShellPermissionIdentity();
         }
     }
+
+    @SdkSuppress(minSdkVersion = 37)
+    @RequiresFlagsEnabled(Flags.FLAG_MULTI_USER_WIFI_ENHANCEMENT)
+    @ApiTest(
+            apis = {
+                "android.net.wifi.WifiConfiguration#getCreatorUserId",
+            })
+    @Test
+    public void testGetCreatorUserId() throws Exception {
+        UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
+        try {
+            uiAutomation.adoptShellPermissionIdentity();
+            List<WifiConfiguration> configuredNetworks = sWifiManager.getConfiguredNetworks();
+            for (WifiConfiguration config : configuredNetworks) {
+                // Make sure each network we have valid user id.
+                assertTrue(config.getCreatorUserId() >= 0);
+            }
+        } finally {
+            uiAutomation.dropShellPermissionIdentity();
+        }
+    }
 }
