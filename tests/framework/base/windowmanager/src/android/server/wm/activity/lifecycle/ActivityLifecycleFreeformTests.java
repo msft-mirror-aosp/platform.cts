@@ -34,9 +34,7 @@ import static android.server.wm.activity.lifecycle.TransitionVerifier.assertResu
 import static android.server.wm.activity.lifecycle.TransitionVerifier.assertSequence;
 import static android.server.wm.app27.Components.SDK_27_LAUNCHING_ACTIVITY;
 import static android.server.wm.app27.Components.SDK_27_TEST_ACTIVITY;
-
 import static com.google.common.truth.Truth.assertThat;
-
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assume.assumeTrue;
 
@@ -45,21 +43,11 @@ import android.app.ActivityOptions;
 import android.content.Intent;
 import android.os.Bundle;
 import android.platform.test.annotations.Presubmit;
-import android.platform.test.annotations.RequiresFlagsDisabled;
-import android.platform.test.flag.junit.CheckFlagsRule;
-import android.platform.test.flag.junit.DeviceFlagsValueProvider;
-
 import android.server.wm.WindowManagerState;
-
 import androidx.test.filters.MediumTest;
-
-import com.android.systemui.Flags;
-
+import java.util.Collections;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.Rule;
-
-import java.util.Collections;
 
 /**
  * Build/Install/Run:
@@ -69,9 +57,6 @@ import java.util.Collections;
 @Presubmit
 @android.server.wm.annotation.Group3
 public class ActivityLifecycleFreeformTests extends ActivityLifecycleClientTestBase {
-   @Rule
-    public final CheckFlagsRule mCheckFlagsRule =
-            DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Before
     public void setUp() throws Exception {
@@ -255,8 +240,6 @@ public class ActivityLifecycleFreeformTests extends ActivityLifecycleClientTestB
     }
 
     @Test
-    // Re-enabling for flexiglass is tracked in b/423954202.
-    @RequiresFlagsDisabled(Flags.FLAG_SCENE_CONTAINER)
     public void testPreQTopProcessResumedActivityInFreeform() throws Exception {
         // Resume app switches, so the activities that we are going to launch won't be deferred
         // since Home activity was started in #setUp().
