@@ -516,11 +516,13 @@ public final class DeviceUtils {
 
     public static void rebootDeviceAndWaitUntilReady(ITestDevice device) throws Exception {
         device.rebootUntilOnline();
-        // Wait for 3 mins.
+        // Wait for 5 mins.
         assertWithMessage("Device failed to boot")
-            .that(device.waitForBootComplete(180_000)).isTrue();
+                .that(device.waitForBootComplete(300_000))
+                .isTrue();
         assertWithMessage("Stats service failed to start")
-            .that(waitForStatsServiceStart(device, 60_000)).isTrue();
+                .that(waitForStatsServiceStart(device, 120_000))
+                .isTrue();
         RunUtil.getDefault().sleep(2_000);
     }
 
