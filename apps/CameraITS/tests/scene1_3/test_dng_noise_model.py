@@ -63,8 +63,9 @@ class DngNoiseModelTest(its_base_test.ItsBaseTest):
     plt.xlabel('Sensitivity')
     plt.ylabel('Center patch variance')
     plt.ticklabel_format(axis='y', style='sci', scilimits=(-6, -6))
-    plt.legend(loc=2)
+    plt.legend(loc='upper left')
     plt.savefig(f'{name_with_log_path}_plot.png')
+    plt.close()
 
   def write_images_on_error(self, imgs, sensitivities, name_with_log_path):
     for i, img in enumerate(imgs):
@@ -82,7 +83,7 @@ class DngNoiseModelTest(its_base_test.ItsBaseTest):
       props = cam.override_with_hidden_physical_camera_props(props)
       name_with_log_path = os.path.join(self.log_path, _NAME)
 
-      # check SKIP conditions
+      # Check SKIP conditions
       camera_properties_utils.skip_unless(
           camera_properties_utils.raw(props) and
           camera_properties_utils.raw16(props) and
@@ -131,9 +132,6 @@ class DngNoiseModelTest(its_base_test.ItsBaseTest):
           raise AssertionError(
               f'noise_profile wrong length! {len(noise_profile)}')
         for i, ch in enumerate(_BAYER_COLORS):
-          # Get the noise model parameters for this channel of this shot.
-          s, o = noise_profile[cfa_idxs[i]]
-
           # Use a very small patch to ensure gross uniformity (i.e. so
           # non-uniform lighting or vignetting doesn't affect the variance
           # calculation)
@@ -145,7 +143,10 @@ class DngNoiseModelTest(its_base_test.ItsBaseTest):
           patch_raw = plane * white_level
           patch_norm = ((patch_raw - black_level) / level_range)
 
-          # exit if distribution is clipped at 0, otherwise continue
+          # Get the noise model parameters for this channel of this shot.
+          s, o = noise_profile[cfa_idxs[i]]
+
+          # Exit if distribution is clipped at 0, otherwise continue
           mean_img_ch = patch_norm.mean()
           var_model = s * mean_img_ch + o
           var = image_processing_utils.compute_image_variances(patch_norm)[0]
@@ -179,7 +180,7 @@ class DngNoiseModelTest(its_base_test.ItsBaseTest):
             logging.debug('abs_diff: %.5f, rel_diff: %.3f', abs_diff, rel_diff)
         sens_valid.append(sens)
 
-    # plot data and models
+    # Plot data and models
     self.plot_data(sens_valid, var_exp, var_meas, name_with_log_path)
 
     # PASS/FAIL check
