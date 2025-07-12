@@ -50,6 +50,22 @@ class DngNoiseModelTest(its_base_test.ItsBaseTest):
   (since ITS doesn't require a perfectly uniformly lit scene).
   """
 
+  def plot_data(
+      self, sensitivities, vars_expected, vars_measured, name_with_log_path
+  ):
+    plt.figure(_NAME)
+    for i, ch in enumerate(_BAYER_COLORS):
+      plt.plot(sensitivities, vars_expected[i], 'rgkb'[i], label=ch+' expected')
+      plt.plot(
+          sensitivities, vars_measured[i], 'rgkb'[i]+'.--', label=ch+' measured'
+      )
+    plt.title(_NAME)
+    plt.xlabel('Sensitivity')
+    plt.ylabel('Center patch variance')
+    plt.ticklabel_format(axis='y', style='sci', scilimits=(-6, -6))
+    plt.legend(loc=2)
+    plt.savefig(f'{name_with_log_path}_plot.png')
+
   def test_dng_noise_model(self):
     logging.debug('Starting %s', _NAME)
     with its_session_utils.ItsSession(
@@ -153,16 +169,7 @@ class DngNoiseModelTest(its_base_test.ItsBaseTest):
         sens_valid.append(sens)
 
     # plot data and models
-    plt.figure(_NAME)
-    for i, ch in enumerate(_BAYER_COLORS):
-      plt.plot(sens_valid, var_exp[i], 'rgkb'[i], label=ch+' expected')
-      plt.plot(sens_valid, var_meas[i], 'rgkb'[i]+'.--', label=ch+' measured')
-    plt.title(_NAME)
-    plt.xlabel('Sensitivity')
-    plt.ylabel('Center patch variance')
-    plt.ticklabel_format(axis='y', style='sci', scilimits=(-6, -6))
-    plt.legend(loc=2)
-    plt.savefig(f'{name_with_log_path}_plot.png')
+    self.plot_data(sens_valid, var_exp, var_meas, name_with_log_path)
 
     # PASS/FAIL check
     for i, ch in enumerate(_BAYER_COLORS):

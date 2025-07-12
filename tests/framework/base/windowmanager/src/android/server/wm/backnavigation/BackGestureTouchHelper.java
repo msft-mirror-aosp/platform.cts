@@ -21,7 +21,6 @@ import android.app.Instrumentation;
 import android.content.Context;
 import android.graphics.Rect;
 import android.hardware.display.DisplayManager;
-import android.os.SystemClock;
 import android.server.wm.WindowManagerStateHelper;
 import android.view.Display;
 
@@ -47,8 +46,6 @@ public class BackGestureTouchHelper implements AutoCloseable {
     private int mStartY;
     private int mEndX;
     private int mEndY;
-    private long mStartDownTime = -1;
-    private long mNextEventTime = -1;
     private final UinputTouchScreen mTouchScreen;
     private UinputTouchDevice.Pointer mPointer;
     final int mDisplayId;
@@ -72,7 +69,6 @@ public class BackGestureTouchHelper implements AutoCloseable {
     public void beginSwipe(int startX, int startY) {
         mStartX = startX;
         mStartY = startY;
-        mStartDownTime = SystemClock.uptimeMillis();
         mPointer = mTouchScreen.touchDown(startX, startY);
     }
 
@@ -83,17 +79,13 @@ public class BackGestureTouchHelper implements AutoCloseable {
         }
         mEndX = endX;
         mEndY = endY;
-        // inject in every INJECT_INPUT_DELAY_MILLIS ms.
-        final int delayMillis = INJECT_INPUT_DELAY_MILLIS;
-        mNextEventTime = mStartDownTime + delayMillis;
         final int stepGapX = (mEndX - mStartX) / steps;
         final int stepGapY = (mEndY - mStartY) / steps;
         for (int i = 0; i < steps; i++) {
-            SystemClock.sleep(delayMillis);
+            mTouchScreen.delay(INJECT_INPUT_DELAY_MILLIS);
             final int nextX = mStartX + stepGapX * i;
             final int nextY = mStartY + stepGapY * i;
             mPointer.moveTo(nextX, nextY);
-            mNextEventTime += delayMillis;
         }
     }
 
@@ -117,17 +109,11 @@ public class BackGestureTouchHelper implements AutoCloseable {
     void quickSwipe(int startX, int startY, int endX, int endY) {
         beginSwipe(startX, startY);
         continueSwipe(endX, endY);
-        SystemClock.sleep(INJECT_INPUT_DELAY_MILLIS);
+        mTouchScreen.delay(INJECT_INPUT_DELAY_MILLIS);
         finishSwipe();
     }
 
     private void resetSwipe() {
-        mStartDownTime = -1;
-        mNextEventTime = -1;
         mPointer = null;
-    }
-
-    public boolean isSwipe() {
-        return mStartDownTime > 0 || mNextEventTime > 0;
     }
 }

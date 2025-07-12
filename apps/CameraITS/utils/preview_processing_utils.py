@@ -40,7 +40,8 @@ _PREVIEW_MAX_TESTED_AREA = 1920 * 1440
 _PREVIEW_MIN_TESTED_AREA = 320 * 240
 _PREVIEW_STABILIZATION_FACTOR = 0.7  # 70% of gyro movement allowed
 _RED_BLUE_TOL = 20  # 20 out of 255 Red or Blue value in RGB
-_SKIP_INITIAL_FRAMES = 15
+# TODO: b/431221553 - see if _SKIP_INITIAL_FRAMES can be removed
+_SKIP_INITIAL_FRAMES = 10
 _START_FRAME = 30  # give 3A some frames to warm up
 _VIDEO_DELAY_TIME = 5.5  # seconds
 _VIDEO_DURATION = 5.5  # seconds

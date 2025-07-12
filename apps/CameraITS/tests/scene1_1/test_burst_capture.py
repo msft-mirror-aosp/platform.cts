@@ -53,7 +53,7 @@ class BurstCaptureTest(its_base_test.ItsBaseTest):
       # Check SKIP conditions
       camera_properties_utils.skip_unless(
           camera_properties_utils.backward_compatible(props) and
-          camera_properties_utils.burst_capture_capable
+          camera_properties_utils.burst_capture_capable(props)
       )
 
       # Load chart for scene

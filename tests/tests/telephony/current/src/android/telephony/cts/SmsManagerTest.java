@@ -51,6 +51,7 @@ import android.Manifest;
 import android.annotation.NonNull;
 import android.annotation.Nullable;
 import android.annotation.SuppressLint;
+import android.app.ActivityManager;
 import android.app.AppOpsManager;
 import android.app.PendingIntent;
 import android.app.UiAutomation;
@@ -159,6 +160,7 @@ public class SmsManagerTest {
     private TelephonyManager mTelephonyManager;
     private SubscriptionManager mSubscriptionManager;
     private RoleManager mRoleManager;
+    private ActivityManager mActivityManager;
     private String mDestAddr;
     private String mText;
     private String mSelfPackageName;
@@ -199,6 +201,7 @@ public class SmsManagerTest {
         mSelfPackageName = mContext.getPackageName();
         mTelephonyManager = mContext.getSystemService(TelephonyManager.class);
         mSubscriptionManager = mContext.getSystemService(SubscriptionManager.class);
+        mActivityManager = mContext.getSystemService(ActivityManager.class);
         mRoleManager = mContext.getSystemService(RoleManager.class);
         mText = "This is a test message";
 
@@ -319,8 +322,11 @@ public class SmsManagerTest {
         return longText.equals(actualMessage);
     }
 
-    @Test
-    public void testSmsRetriever() throws Exception {
+    private String getSmsRetrieverHash() throws Exception  {
+        SystemUtil.runWithShellPermissionIdentity(() ->
+                mActivityManager.forceStopPackage(SMS_RETRIEVER_APP)
+        );
+
         assertFalse("[RERUN] SIM card does not provide phone number. Use a suitable SIM Card.",
                 TextUtils.isEmpty(mDestAddr));
 
@@ -330,8 +336,6 @@ public class SmsManagerTest {
                         + "loop back messages. Use another carrier.",
                 CarrierCapability.UNSUPPORT_LOOP_BACK_MESSAGES.contains(carrierId));
 
-        init();
-
         CompletableFuture<Bundle> callbackResult = new CompletableFuture<>();
 
         mContext.startActivity(new Intent()
@@ -340,11 +344,18 @@ public class SmsManagerTest {
                         SMS_RETRIEVER_APP, SMS_RETRIEVER_APP + ".MainActivity"))
                 .putExtra("callback", new RemoteCallback(callbackResult::complete)));
 
-
         Bundle bundle = callbackResult.get(200, TimeUnit.SECONDS);
         String token = bundle.getString("token");
         assertThat(bundle.getString("class"), startsWith(SMS_RETRIEVER_APP));
         assertNotNull(token);
+
+        return token;
+    }
+
+    @Test
+    public void testSmsRetriever() throws Exception {
+        init();
+        String token = getSmsRetrieverHash();
 
         String composedText = "testprefix1" + mText + token;
         sendTextMessage(mDestAddr, composedText, null, null);
@@ -538,7 +549,7 @@ public class SmsManagerTest {
         init();
         try {
             DefaultSmsAppHelper.ensureDefaultSmsApp();
-            sendOtpSmsMessage();
+            sendSmsRetrieverOtpMessage();
             assertTrue(
                     "Default SMS app should get SMS_RECEIVED for OTP calls",
                     mSmsReceivedReceiver.waitForCalls(1, TIME_OUT));
@@ -564,7 +575,7 @@ public class SmsManagerTest {
                                             roleName, Process.myUserHandle()));
             try {
                 addRoleHolder(roleName, mContext.getPackageName());
-                sendOtpSmsMessage();
+                sendSmsRetrieverOtpMessage();
                 assertTrue(
                         "Default " + roleName + " app should get SMS_RECEIVED for OTP calls",
                         mSmsReceivedReceiver.waitForCalls(1, TIME_OUT));
@@ -579,12 +590,13 @@ public class SmsManagerTest {
 
     @Test
     @RequiresFlagsEnabled({FLAG_REDACT_OTP_SMS, FLAG_REDACT_OTP_SMS_API})
-    public void testOtpSmsBroadcastReceivedByReceiveSensitiveApps() {
+    public void testOtpSmsBroadcastReceivedByReceiveSensitiveApps() throws Exception {
         init();
+        String message = OTP_SMS_TEXT + " " + getSmsRetrieverHash();
         SystemUtil.runWithShellPermissionIdentity(
                 () -> {
                     // Having the RECEIVE_SENSITIVE_NOTIFICATIONS permission
-                    sendOtpSmsMessage();
+                    sendSmsRetrieverOtpMessage(message);
                     assertTrue(
                             "Apps with RECEIVE_SENSITIVE_NOTIFICATIONS permission should get "
                                     + "SMS_RECEIVED for OTP calls",
@@ -599,7 +611,7 @@ public class SmsManagerTest {
         init();
         associateCdm();
         try {
-            sendOtpSmsMessage();
+            sendSmsRetrieverOtpMessage();
             assertTrue(
                     "Apps with CDM association should get SMS_RECEIVED for OTP calls",
                     mSmsReceivedReceiver.waitForCalls(1, TIME_OUT));
@@ -632,14 +644,19 @@ public class SmsManagerTest {
     @RequiresFlagsEnabled({FLAG_REDACT_OTP_SMS, FLAG_REDACT_OTP_SMS_API})
     public void testOtpSmsBroadcastNotReceivedByStandardApps() throws Exception {
         init();
-        sendOtpSmsMessage();
+        sendSmsRetrieverOtpMessage();
         assertTrue(
                 "Normal apps should not get SMS_RECEIVED for OTP calls",
                 mSmsReceivedReceiver.verifyNoCalls(NO_CALLS_TIMEOUT_MILLIS));
     }
 
-    private void sendOtpSmsMessage() throws Exception {
-        sendTextMessage(mDestAddr, OTP_SMS_TEXT, mSentIntent, mDeliveredIntent);
+    private void sendSmsRetrieverOtpMessage() throws Exception {
+        String message = OTP_SMS_TEXT + " " + getSmsRetrieverHash();
+        sendSmsRetrieverOtpMessage(message);
+    }
+
+    private void sendSmsRetrieverOtpMessage(String message) throws Exception {
+        sendTextMessage(mDestAddr, message, mSentIntent, mDeliveredIntent);
         assertTrue(
                 "[RERUN] Could not send SMS. Check signal.",
                 mSendReceiver.waitForCalls(1, TIME_OUT));

@@ -53,7 +53,6 @@ import android.view.WindowInsets;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import com.google.protobuf.ExtensionRegistryLite;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.nano.InvalidProtocolBufferNanoException;
 
@@ -62,9 +61,6 @@ import perfetto.protos.Enums.TransitionTypeEnum;
 import perfetto.protos.Insets.InsetsProto;
 import perfetto.protos.Insetssource.InsetsSourceProto;
 import perfetto.protos.Rect.RectProto;
-import perfetto.protos.TraceOuterClass.Trace;
-import perfetto.protos.TracePacketOuterClass.TracePacket;
-import perfetto.protos.Windowmanager.WindowManagerTraceEntry;
 import perfetto.protos.Windowmanagerservice.ActivityRecordProto;
 import perfetto.protos.Windowmanagerservice.AppTransitionProto;
 import perfetto.protos.Windowmanagerservice.BackNavigationProto;
@@ -89,8 +85,6 @@ import perfetto.protos.Windowmanagerservice.WindowStateAnimatorProto;
 import perfetto.protos.Windowmanagerservice.WindowStateProto;
 import perfetto.protos.Windowmanagerservice.WindowSurfaceControllerProto;
 import perfetto.protos.Windowmanagerservice.WindowTokenProto;
-import perfetto.protos.WinscopeExtensionsImplOuterClass.WinscopeExtensionsImpl;
-import perfetto.protos.WinscopeExtensionsOuterClass.WinscopeExtensions;
 
 import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
@@ -331,11 +325,7 @@ public class WindowManagerState {
                 SystemClock.sleep(500);
             }
 
-            if (isTracingFlagEnabled("perfettoWmDumpCts")) {
-                dump = new WindowManagerTraceMonitor().captureDump();
-            } else {
-                dump = executeShellCommand(DUMPSYS_WINDOW);
-            }
+            dump = executeShellCommand(DUMPSYS_WINDOW);
 
             try {
                 reset();
@@ -460,31 +450,7 @@ public class WindowManagerState {
     }
 
     private void parseDump(byte[] dump) throws InvalidProtocolBufferException {
-        reset();
-
-        Trace trace = Trace.parseFrom(dump);
-
-        for (int i = 0; i < trace.getPacketCount(); ++i) {
-            TracePacket packet = trace.getPacket(i);
-
-            if (packet.hasWinscopeExtensions()) {
-                ExtensionRegistryLite registry = ExtensionRegistryLite.newInstance();
-                registry.add(WinscopeExtensionsImpl.windowmanager);
-                WinscopeExtensions extensions = WinscopeExtensions.parseFrom(
-                        packet.getWinscopeExtensions().toByteArray(), registry);
-                if (extensions.hasExtension(WinscopeExtensionsImpl.windowmanager)) {
-                    WindowManagerTraceEntry entry =
-                            extensions.getExtension(WinscopeExtensionsImpl.windowmanager);
-                    parseWindowManagerServiceDumpProto(entry.getWindowManagerService());
-                    return;
-                }
-            }
-        }
-
-        throw new RuntimeException("Perfetto trace doesn't contain WM packets");
-    }
-
-    private void parseWindowManagerServiceDumpProto(WindowManagerServiceDumpProto state) {
+        WindowManagerServiceDumpProto state = WindowManagerServiceDumpProto.parseFrom(dump);
         final RootWindowContainerProto root = state.getRootWindowContainer();
         if (state.hasFocusedWindow()) {
             mFocusedWindow = state.getFocusedWindow().getTitle();

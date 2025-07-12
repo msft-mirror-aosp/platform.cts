@@ -17,7 +17,9 @@
 package android.view.inputmethod.cts;
 
 import static android.provider.InputMethodManagerDeviceConfig.KEY_HIDE_IME_WHEN_NO_EDITOR_FOCUS;
+import static android.server.wm.ComponentNameUtils.getWindowName;
 import static android.view.WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM;
+import static android.view.WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE;
 import static android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN;
 import static android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE;
 import static android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN;
@@ -71,6 +73,7 @@ import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.AppModeSdkSandbox;
 import android.provider.DeviceConfig;
 import android.server.wm.BuildUtils;
+import android.server.wm.WindowManagerStateHelper;
 import android.text.TextUtils;
 import android.view.KeyEvent;
 import android.view.View;
@@ -614,6 +617,78 @@ public final class FocusHandlingTest extends EndToEndImeTestBase {
                 // Make sure that the IME remains to be visible.
                 expectImeVisible(TIMEOUT);
             }
+        }
+    }
+
+    /**
+     * Verifies that previously having an IME Overlay Layering Target (IME Layering Target with
+     * FLAG_NOT_FOCUSABLE and FLAG_ALT_FOCUSABLE_IM) does not lead to an IME hide request when the
+     * IME Input Target becomes invisible.
+     */
+    @Test
+    public void testRemovedImeOverlayLayeringTargetDoesNotAffectImeVisibility() throws Exception {
+        final var wmState = new WindowManagerStateHelper();
+
+        try (var session = createTestImeSession()) {
+            final var stream = session.openEventStream();
+
+            // Launch activity with FLAG_NOT_FOCUSABLE and FLAG_ALT_FOCUSABLE_IM.
+            new TestActivity.Starter().startSync(activity -> {
+                final int flags = FLAG_NOT_FOCUSABLE | FLAG_ALT_FOCUSABLE_IM;
+                activity.getWindow().setFlags(flags, flags);
+                return new LinearLayout(activity);
+            }, TestActivity2.class);
+            notExpectEvent(stream, eventMatcher("onStartInputView"),
+                    NOT_EXPECT_TIMEOUT);
+            expectImeInvisible(TIMEOUT);
+
+            // Launch a focusable activity
+            final String marker = getTestMarker();
+            final AtomicReference<EditText> editTextRef = new AtomicReference<>();
+            final TestActivity focusableActivity = TestActivity.startSync(activity -> {
+                final LinearLayout layout = new LinearLayout(activity);
+                layout.setOrientation(LinearLayout.VERTICAL);
+                final EditText editText = new EditText(activity);
+                editTextRef.set(editText);
+                layout.addView(editText);
+                editText.setHint("focused editText");
+                editText.setPrivateImeOptions(marker);
+                editText.requestFocus();
+                return layout;
+            });
+            wmState.waitAndAssertFocusedActivity(
+                    "Focusable activity should be focused after launch",
+                    focusableActivity.getComponentName());
+            expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
+            notExpectEvent(stream, editorMatcher("onStartInputView", marker), NOT_EXPECT_TIMEOUT);
+            expectImeInvisible(TIMEOUT);
+
+            runOnMainSync(() -> {
+                final EditText editText = editTextRef.get();
+                editText.requestFocus();
+                editText.getContext().getSystemService(InputMethodManager.class)
+                        .showSoftInput(editText, 0);
+            });
+
+            expectEvent(stream, editorMatcher("onStartInputView", marker), TIMEOUT);
+            expectImeVisible(TIMEOUT);
+
+            runOnMainSync(() ->
+                    focusableActivity.getWindow().getDecorView().setVisibility(View.INVISIBLE));
+            wmState.waitAndAssertWindowSurfaceShown(
+                    getWindowName(focusableActivity.getComponentName()), false /* shown */);
+
+            // IME should remain visible after the IME Input Target becomes invisible, when an
+            // IME Overlay Layering Target was previously shown.
+            expectImeVisible(TIMEOUT);
+
+            runOnMainSync(() ->
+                    focusableActivity.getWindow().getDecorView().setVisibility(View.VISIBLE));
+            wmState.waitAndAssertWindowSurfaceShown(
+                    getWindowName(focusableActivity.getComponentName()), true /* shown */);
+
+            // IME should still be visible when the IME Input Target becomes visible again.
+            expectImeVisible(TIMEOUT);
         }
     }
 

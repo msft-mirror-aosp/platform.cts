@@ -90,12 +90,20 @@ class EntilementStatusResponseGenerator {
         mBarredPlmns = barredPlmns;
     }
 
-    public static List<SatelliteNetworkInfo> createDefaultValidSatelliteNetworkInfoList() {
+    public static List<SatelliteNetworkInfo> createDefaultValidSatelliteNetworkInfoList(
+            boolean isConstrained) {
         List<SatelliteNetworkInfo> satelliteNetworkInfoList = new ArrayList<>();
-        satelliteNetworkInfoList.add(new SatelliteNetworkInfo("40445",
-                SatelliteNetworkInfo.DATA_PLAN_TYPE_METERED,
-                new HashMap<>(ImmutableMap.of(SatelliteNetworkInfo.SERVICE_TYPE_DATA,
-                        SatelliteNetworkInfo.SERVICE_POLICY_UNCONSTRAINED))));
+        if (isConstrained) {
+            satelliteNetworkInfoList.add(new SatelliteNetworkInfo("46692",
+                    SatelliteNetworkInfo.DATA_PLAN_TYPE_METERED,
+                    new HashMap<>(ImmutableMap.of(SatelliteNetworkInfo.SERVICE_TYPE_DATA,
+                            SatelliteNetworkInfo.SERVICE_POLICY_CONSTRAINED))));
+        } else {
+            satelliteNetworkInfoList.add(new SatelliteNetworkInfo("40445",
+                    SatelliteNetworkInfo.DATA_PLAN_TYPE_METERED,
+                    new HashMap<>(ImmutableMap.of(SatelliteNetworkInfo.SERVICE_TYPE_DATA,
+                            SatelliteNetworkInfo.SERVICE_POLICY_UNCONSTRAINED))));
+        }
         satelliteNetworkInfoList.add(new SatelliteNetworkInfo("40446",
                 SatelliteNetworkInfo.DATA_PLAN_TYPE_UNMETERED,
                 new HashMap<>(ImmutableMap.of(SatelliteNetworkInfo.SERVICE_TYPE_VOICE,
