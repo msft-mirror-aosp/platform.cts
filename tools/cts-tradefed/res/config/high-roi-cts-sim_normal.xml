@@ -165,9 +165,6 @@
     <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases android.cts.statsdatom.sizecompatrestartbutton.SizeCompatRestartButtonStatsTests#testSizeCompatRestartButtonAppearedAndClicked"/>
     <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases android.cts.statsdatom.statsd.UidAtomTests#testAppCrashOccurred"/>
     <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases android.cts.statsdatom.statsd.UidAtomTests#testAppCrashOccurredNative"/>
-    <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases android.cts.statsdatom.telecom.CallStatsTests#testCallStats"/>
-    <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases android.cts.statsdatom.telecom.TelecomApiStatsTests#testApiStats"/>
-    <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases android.cts.statsdatom.telecom.TelecomEventStatsTests#testTelecomEventStats"/>
     <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases android.cts.statsdatom.wifi.WifiStatsTests#testWifiReconnect"/>
     <!-- CtsStatsdAtomHostTestCases[instant] -->
     <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases[instant] android.cts.statsdatom.appexit.AppExitHostTest#testLogStatsdOther"/>
@@ -177,6 +174,11 @@
     <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases[instant] android.cts.statsdatom.appfunctions.AppFunctionsStatsTest#testAtom_executeAppFunction_platformManager_platformAppFunctionService_success_accessEnabled"/>
     <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases[instant] android.cts.statsdatom.appfunctions.AppFunctionsStatsTest#testAtom_executeAppFunction_throwsException_accessEnabled"/>
     <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases[instant] android.cts.statsdatom.coregraphics.GraphicsAtomTests#surfaceControlRequestedHdrHeadroomEvents"/>
+    <!-- CtsTelecomAtomHostTestCases -->
+    <option name="compatibility:include-filter" value="CtsTelecomAtomHostTestCases android.cts.statsdatom.telecom.CallStatsTests#testCallStats"/>
+    <option name="compatibility:include-filter" value="CtsTelecomAtomHostTestCases android.cts.statsdatom.telecom.TelecomApiStatsTests#testApiStats"/>
+    <option name="compatibility:include-filter" value="CtsTelecomAtomHostTestCases android.cts.statsdatom.telecom.TelecomEventStatsTests#testTelecomEventStats"/>
+
     <!-- CtsStatsdHostTestCases -->
     <option name="compatibility:include-filter" value="CtsStatsdHostTestCases android.cts.statsd.metadata.MetadataTests#testAtomIdLossDistributionCollection"/>
     <option name="compatibility:include-filter" value="CtsStatsdHostTestCases android.cts.statsd.metadata.MetadataTests#testAtomLossInfoCollection"/>
