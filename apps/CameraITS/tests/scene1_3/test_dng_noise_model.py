@@ -66,6 +66,12 @@ class DngNoiseModelTest(its_base_test.ItsBaseTest):
     plt.legend(loc=2)
     plt.savefig(f'{name_with_log_path}_plot.png')
 
+  def write_images_on_error(self, imgs, sensitivities, name_with_log_path):
+    for i, img in enumerate(imgs):
+      image_processing_utils.write_image(
+          img, f'{name_with_log_path}_{sensitivities[i]}.png'
+      )
+
   def test_dng_noise_model(self):
     logging.debug('Starting %s', _NAME)
     with its_session_utils.ItsSession(
@@ -104,6 +110,7 @@ class DngNoiseModelTest(its_base_test.ItsBaseTest):
       var_exp = [[], [], [], []]
       var_meas = [[], [], [], []]
       sens_valid = []
+      imgs = []
       for sens in sensitivities:
         # Capture a raw frame with the desired sensitivity
         exp = int(s_e_prod / float(sens))
@@ -112,11 +119,11 @@ class DngNoiseModelTest(its_base_test.ItsBaseTest):
         planes = image_processing_utils.convert_capture_to_planes(cap, props)
         s_read = cap['metadata']['android.sensor.sensitivity']
         logging.debug('iso_write: %d, iso_read: %d', sens, s_read)
-        if self.debug_mode:
-          img = image_processing_utils.convert_capture_to_rgb_image(
-              cap, props=props)
-          image_processing_utils.write_image(
-              img, f'{name_with_log_path}_{sens}.jpg')
+        imgs.append(
+            image_processing_utils.convert_capture_to_rgb_image(
+                cap, props=props
+            )
+        )
 
         # Test each raw color channel (R, GR, GB, B)
         noise_profile = cap['metadata']['android.sensor.noiseProfile']
@@ -151,6 +158,7 @@ class DngNoiseModelTest(its_base_test.ItsBaseTest):
           # so the check remains correct even after the signal starts to clip.
           mean_minus_3sigma = mean_img_ch - math.sqrt(var_model) * 3
           if mean_minus_3sigma < 0:
+            self.write_images_on_error(imgs, sensitivities, name_with_log_path)
             raise AssertionError(
                 f'{its_session_utils.NOT_YET_MANDATED_MESSAGE}\n\n'
                 'Pixel distribution crosses 0. Likely black level over-clips.'
@@ -164,6 +172,9 @@ class DngNoiseModelTest(its_base_test.ItsBaseTest):
             if var_model:
               rel_diff = abs_diff / var_model
             else:
+              self.write_images_on_error(
+                  imgs, sensitivities, name_with_log_path
+              )
               raise AssertionError(f'{ch} model variance = 0!')
             logging.debug('abs_diff: %.5f, rel_diff: %.3f', abs_diff, rel_diff)
         sens_valid.append(sens)
@@ -179,6 +190,7 @@ class DngNoiseModelTest(its_base_test.ItsBaseTest):
       for j, diff in enumerate(var_diffs):
         thresh = max(_VAR_ATOL_THRESH, _VAR_RTOL_THRESH*var_exp[i][j])
         if diff > thresh:
+          self.write_images_on_error(imgs, sensitivities, name_with_log_path)
           raise AssertionError(f'var diff: {diff:.5f}, thresh: {thresh:.4f}')
 
 if __name__ == '__main__':

@@ -53,6 +53,8 @@ java_defaults {
         "cts_backported_fixes",
         "surfaceflinger_flags_java_lib",
         "ravenwood-junit",
+        "HarrierCommonAndroid",
+        "bedstead-enterprise",
     ],
 }
 
@@ -64,8 +66,10 @@ android_test {
     ],
 
     // Tag this module as a cts test artifact
+    // Adding the test SurfaceFlingerTest to CTS downstreaming to be run in GTS
     test_suites: [
         "cts",
+        "gts",
         "general-tests",
     ],
 
