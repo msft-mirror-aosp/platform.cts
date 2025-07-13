@@ -21,6 +21,7 @@ import android.Manifest.permission.TEST_BIOMETRIC
 import android.Manifest.permission.USE_BIOMETRIC_INTERNAL
 import android.app.Instrumentation
 import android.content.Context
+import android.cts.testapisreflection.userId
 import android.hardware.biometrics.BiometricManager
 import android.hardware.biometrics.BiometricTestSession
 import android.hardware.biometrics.SensorProperties
@@ -63,12 +64,10 @@ import org.junit.Assume.assumeNotNull
 import org.junit.Assume.assumeTrue
 import org.junit.Before
 import org.junit.ClassRule
-import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
-@Ignore("This will be re-enabled upon further investigation of b/420461434")
 @RunWith(BedsteadJUnit4::class)
 @Presubmit
 @SdkSuppress(minSdkVersion = 29)
@@ -149,14 +148,15 @@ class AuthenticationPolicyManagerTest {
         apis =
             [
                 ("android.security.authenticationpolicy.AuthenticationPolicyManager" +
-                    "#isSecureLockDeviceAvailable"),
+                    "#getSecureLockDeviceAvailability"),
                 ("android.security.authenticationpolicy.AuthenticationPolicyManager" +
                     "#enableSecureLockDevice"),
+                ("android.security.authenticationpolicy.AuthenticationPolicyManager" +
+                    "#EnableSecureLockDeviceParams"),
                 ("android.security.authenticationpolicy.AuthenticationPolicyManager" +
                     "#isSecureLockDeviceEnabled"),
             ]
     )
-    @Ignore("b/421113198, b/420188634")
     @Test
     @EnsureHasPermission(MANAGE_SECURE_LOCK_DEVICE)
     fun testEnableSecureLockDevice_withAllPrerequisites_returnsSuccess() {
@@ -171,7 +171,8 @@ class AuthenticationPolicyManagerTest {
         biometricManager.createTestSession(strongBiometricSensor!!.sensorId).use { session ->
             enrollForSensor(session, strongBiometricSensor.sensorId)
 
-            assertThat(authenticationPolicyManager.isSecureLockDeviceAvailable()).isEqualTo(SUCCESS)
+            assertThat(authenticationPolicyManager.getSecureLockDeviceAvailability())
+                .isEqualTo(SUCCESS)
             assertThat(authenticationPolicyManager.isSecureLockDeviceEnabled).isFalse()
 
             val enableStatus =
@@ -179,7 +180,8 @@ class AuthenticationPolicyManagerTest {
 
             assertThat(enableStatus).isEqualTo(SUCCESS)
             assertThat(authenticationPolicyManager.isSecureLockDeviceEnabled).isTrue()
-            assertThat(authenticationPolicyManager.isSecureLockDeviceAvailable()).isEqualTo(SUCCESS)
+            assertThat(authenticationPolicyManager.getSecureLockDeviceAvailability())
+                .isEqualTo(SUCCESS)
 
             cleanupSession(session)
         }
@@ -190,14 +192,15 @@ class AuthenticationPolicyManagerTest {
         apis =
             [
                 ("android.security.authenticationpolicy.AuthenticationPolicyManager" +
-                    "#isSecureLockDeviceAvailable"),
+                    "#getSecureLockDeviceAvailability"),
                 ("android.security.authenticationpolicy.AuthenticationPolicyManager" +
                     "#enableSecureLockDevice"),
+                ("android.security.authenticationpolicy.AuthenticationPolicyManager" +
+                    "#EnableSecureLockDeviceParams"),
                 ("android.security.authenticationpolicy.AuthenticationPolicyManager" +
                     "#isSecureLockDeviceEnabled"),
             ]
     )
-    @Ignore("b/421112670, b/420188634")
     @Test
     @EnsureHasPermission(MANAGE_SECURE_LOCK_DEVICE)
     fun testEnableSecureLockDevice_whenAlreadyEnabled_returnsAlreadyEnabled() {
@@ -212,7 +215,8 @@ class AuthenticationPolicyManagerTest {
         biometricManager.createTestSession(strongBiometricSensor!!.sensorId).use { session ->
             enrollForSensor(session, strongBiometricSensor.sensorId)
 
-            assertThat(authenticationPolicyManager.isSecureLockDeviceAvailable()).isEqualTo(SUCCESS)
+            assertThat(authenticationPolicyManager.getSecureLockDeviceAvailability())
+                .isEqualTo(SUCCESS)
             assertThat(authenticationPolicyManager.isSecureLockDeviceEnabled).isFalse()
 
             val enableStatus =
@@ -235,9 +239,11 @@ class AuthenticationPolicyManagerTest {
         apis =
             [
                 ("android.security.authenticationpolicy.AuthenticationPolicyManager" +
-                    "#isSecureLockDeviceAvailable"),
+                    "#getSecureLockDeviceAvailability"),
                 ("android.security.authenticationpolicy.AuthenticationPolicyManager" +
                     "#enableSecureLockDevice"),
+                ("android.security.authenticationpolicy.AuthenticationPolicyManager" +
+                    "#EnableSecureLockDeviceParams"),
                 ("android.security.authenticationpolicy.AuthenticationPolicyManager" +
                     "#isSecureLockDeviceEnabled"),
             ]
@@ -256,7 +262,7 @@ class AuthenticationPolicyManagerTest {
         biometricManager.createTestSession(nonStrongBiometricSensor!!.sensorId).use { session ->
             enrollForSensor(session, nonStrongBiometricSensor.sensorId)
 
-            assertThat(authenticationPolicyManager.isSecureLockDeviceAvailable())
+            assertThat(authenticationPolicyManager.getSecureLockDeviceAvailability())
                 .isEqualTo(AuthenticationPolicyManager.ERROR_INSUFFICIENT_BIOMETRICS)
             val enableStatus =
                 authenticationPolicyManager.enableSecureLockDevice(EnableSecureLockDeviceParams(""))
@@ -274,9 +280,11 @@ class AuthenticationPolicyManagerTest {
         apis =
             [
                 ("android.security.authenticationpolicy.AuthenticationPolicyManager" +
-                    "#isSecureLockDeviceAvailable"),
+                    "#getSecureLockDeviceAvailability"),
                 ("android.security.authenticationpolicy.AuthenticationPolicyManager" +
                     "#enableSecureLockDevice"),
+                ("android.security.authenticationpolicy.AuthenticationPolicyManager" +
+                    "#EnableSecureLockDeviceParams"),
                 ("android.security.authenticationpolicy.AuthenticationPolicyManager" +
                     "#isSecureLockDeviceEnabled"),
             ]
@@ -286,15 +294,21 @@ class AuthenticationPolicyManagerTest {
     fun testEnableSecureLockDevice_whenNoBiometricsEnrolled_returnsNoBiometricsEnrolled() {
         assumeNotNull("test requires non-null BiometricManager", biometricManager)
         assumeNotNull("test requires non-null SensorProperties", sensorProperties)
+        val strongBiometricSensor = sensorProperties.findFirstStrongBiometricSensor()
+        assumeTrue("Requires strong sensor", strongBiometricSensor != null)
+
+        biometricManager.createTestSession(strongBiometricSensor!!.sensorId).use { session ->
+            assertThat(authenticationPolicyManager.getSecureLockDeviceAvailability())
+                .isEqualTo(ERROR_NO_BIOMETRICS_ENROLLED)
+            val enableStatus =
+                authenticationPolicyManager.enableSecureLockDevice(EnableSecureLockDeviceParams(""))
+
+            assertThat(enableStatus).isEqualTo(ERROR_NO_BIOMETRICS_ENROLLED)
+            assertThat(authenticationPolicyManager.isSecureLockDeviceEnabled).isFalse()
+
+            cleanupSession(session)
+        }
         waitForAllUnenrolled()
-
-        assertThat(authenticationPolicyManager.isSecureLockDeviceAvailable())
-            .isEqualTo(ERROR_NO_BIOMETRICS_ENROLLED)
-        val enableStatus =
-            authenticationPolicyManager.enableSecureLockDevice(EnableSecureLockDeviceParams(""))
-
-        assertThat(enableStatus).isEqualTo(ERROR_NO_BIOMETRICS_ENROLLED)
-        assertThat(authenticationPolicyManager.isSecureLockDeviceEnabled).isFalse()
     }
 
     @ApiTest(
@@ -303,10 +317,9 @@ class AuthenticationPolicyManagerTest {
                 ("android.security.authenticationpolicy.AuthenticationPolicyManager" +
                     "#registerSecureLockDeviceStatusListener"),
                 ("android.security.authenticationpolicy.AuthenticationPolicyManager" +
-                    "#isSecureLockDeviceAvailable"),
+                    "#getSecureLockDeviceAvailability"),
             ]
     )
-    @Ignore("b/420998029, b/420680233, b/420327508, b/420188634")
     @Test
     @EnsureHasPermission(MANAGE_SECURE_LOCK_DEVICE)
     fun testAvailableStatusUpdate_notifiesSecureLockDeviceStatusListeners() {
@@ -346,14 +359,15 @@ class AuthenticationPolicyManagerTest {
         apis =
             [
                 ("android.security.authenticationpolicy.AuthenticationPolicyManager" +
-                    "#isSecureLockDeviceAvailable"),
+                    "#getSecureLockDeviceAvailability"),
                 ("android.security.authenticationpolicy.AuthenticationPolicyManager" +
                     "#disableSecureLockDevice"),
+                ("android.security.authenticationpolicy.AuthenticationPolicyManager" +
+                    "#DisableSecureLockDeviceParams"),
                 ("android.security.authenticationpolicy.AuthenticationPolicyManager" +
                     "#isSecureLockDeviceEnabled"),
             ]
     )
-    @Ignore("b/420952162, b/420188634")
     @Test
     @EnsureHasPermission(MANAGE_SECURE_LOCK_DEVICE)
     fun testDisableSecureLockDevice_returnsSuccess() {
@@ -383,7 +397,8 @@ class AuthenticationPolicyManagerTest {
 
             assertThat(disableStatus).isEqualTo(SUCCESS)
             assertThat(authenticationPolicyManager.isSecureLockDeviceEnabled).isFalse()
-            assertThat(authenticationPolicyManager.isSecureLockDeviceAvailable()).isEqualTo(SUCCESS)
+            assertThat(authenticationPolicyManager.getSecureLockDeviceAvailability())
+                .isEqualTo(SUCCESS)
             cleanupSession(session)
         }
         waitForAllUnenrolled()
@@ -395,14 +410,17 @@ class AuthenticationPolicyManagerTest {
                 ("android.security.authenticationpolicy.AuthenticationPolicyManager" +
                     "#enableSecureLockDevice"),
                 ("android.security.authenticationpolicy.AuthenticationPolicyManager" +
+                    "#EnableSecureLockDeviceParams"),
+                ("android.security.authenticationpolicy.AuthenticationPolicyManager" +
                     "#disableSecureLockDevice"),
+                ("android.security.authenticationpolicy.AuthenticationPolicyManager" +
+                    "#DisableSecureLockDeviceParams"),
                 ("android.security.authenticationpolicy.AuthenticationPolicyManager" +
                     "#registerSecureLockDeviceStatusListener"),
                 ("android.security.authenticationpolicy.AuthenticationPolicyManager" +
                     "#unregisterSecureLockDeviceStatusListener"),
             ]
     )
-    @Ignore("b/420711730, b/420188634")
     @Test
     @EnsureHasPermission(MANAGE_SECURE_LOCK_DEVICE)
     fun testEnabledStatusUpdate_notifiesSecureLockDeviceStatusListeners() {
@@ -465,9 +483,11 @@ class AuthenticationPolicyManagerTest {
         apis =
             [
                 ("android.security.authenticationpolicy.AuthenticationPolicyManager" +
-                    "#isSecureLockDeviceAvailable"),
+                    "#getSecureLockDeviceAvailability"),
                 ("android.security.authenticationpolicy.AuthenticationPolicyManager" +
                     "#disableSecureLockDevice"),
+                ("android.security.authenticationpolicy.AuthenticationPolicyManager" +
+                    "#DisableSecureLockDeviceParams"),
                 ("android.security.authenticationpolicy.AuthenticationPolicyManager" +
                     "#isSecureLockDeviceEnabled"),
             ]
@@ -502,7 +522,7 @@ class AuthenticationPolicyManagerTest {
         apis =
             [
                 ("android.security.authenticationpolicy.AuthenticationPolicyManager" +
-                        "#enableSecureLockDevice")
+                    "#enableSecureLockDevice")
             ]
     )
     @Test
@@ -536,10 +556,9 @@ class AuthenticationPolicyManagerTest {
         apis =
             [
                 ("android.security.authenticationpolicy.AuthenticationPolicyManager" +
-                        "#disableSecureLockDevice")
+                    "#disableSecureLockDevice")
             ]
     )
-    @Ignore("b/420461434")
     @Test
     fun testDisableSecureLockDevice_withoutPermission_throwsException() {
         TestApis.permissions().withoutPermission(MANAGE_SECURE_LOCK_DEVICE).use {
@@ -555,13 +574,13 @@ class AuthenticationPolicyManagerTest {
         apis =
             [
                 ("android.security.authenticationpolicy.AuthenticationPolicyManager" +
-                    "#isSecureLockDeviceAvailable")
+                    "#getSecureLockDeviceAvailability")
             ]
     )
     @Test
-    fun testIsSecureLockDeviceAvailable_withPermission_doesNotThrowException() {
+    fun testGetSecureLockDeviceAvailability_withPermission_doesNotThrowException() {
         TestApis.permissions().withPermission(MANAGE_SECURE_LOCK_DEVICE).use {
-            assertDoesNotThrow { authenticationPolicyManager.isSecureLockDeviceAvailable() }
+            assertDoesNotThrow { authenticationPolicyManager.getSecureLockDeviceAvailability() }
         }
     }
 
@@ -569,14 +588,14 @@ class AuthenticationPolicyManagerTest {
         apis =
             [
                 ("android.security.authenticationpolicy.AuthenticationPolicyManager" +
-                        "#isSecureLockDeviceAvailable")
+                    "#getSecureLockDeviceAvailability")
             ]
     )
     @Test
-    fun testIsSecureLockDeviceAvailable_withoutPermission_throwsException() {
+    fun testGetSecureLockDeviceAvailability_withoutPermission_throwsException() {
         TestApis.permissions().withoutPermission(MANAGE_SECURE_LOCK_DEVICE).use {
             assertThrows(SecurityException::class.java) {
-                authenticationPolicyManager.isSecureLockDeviceAvailable()
+                authenticationPolicyManager.getSecureLockDeviceAvailability()
             }
         }
     }
@@ -599,7 +618,7 @@ class AuthenticationPolicyManagerTest {
         apis =
             [
                 ("android.security.authenticationpolicy.AuthenticationPolicyManager" +
-                        "#isSecureLockDeviceEnabled")
+                    "#isSecureLockDeviceEnabled")
             ]
     )
     @Test
@@ -622,7 +641,7 @@ private class TestSecureLockDeviceStatusListener : SecureLockDeviceStatusListene
 
     private var onEnabledLatch = CountDownLatch(1)
     private var onAvailableLatch = CountDownLatch(1)
-    private val isSecureLockDeviceAvailable = AtomicReference<Int?>(null)
+    private val getSecureLockDeviceAvailability = AtomicReference<Int?>(null)
     private val isSecureLockDeviceEnabled = AtomicReference<Boolean?>(null)
 
     override fun onSecureLockDeviceEnabledStatusChanged(enabled: Boolean) {
@@ -645,14 +664,14 @@ private class TestSecureLockDeviceStatusListener : SecureLockDeviceStatusListene
                 "$availableCallbackReceivedTime",
         )
 
-        isSecureLockDeviceAvailable.set(available)
+        getSecureLockDeviceAvailability.set(available)
         onAvailableLatch.countDown()
     }
 
     fun reset() {
         onEnabledLatch = CountDownLatch(1)
         onAvailableLatch = CountDownLatch(1)
-        isSecureLockDeviceAvailable.set(null)
+        getSecureLockDeviceAvailability.set(null)
         isSecureLockDeviceEnabled.set(null)
     }
 
@@ -684,7 +703,7 @@ private class TestSecureLockDeviceStatusListener : SecureLockDeviceStatusListene
     }
 
     fun assertLastAvailableStatus(expectedAvailable: Int) {
-        assertThat(isSecureLockDeviceAvailable.get()).isEqualTo(expectedAvailable)
+        assertThat(getSecureLockDeviceAvailability.get()).isEqualTo(expectedAvailable)
     }
 
     fun assertLastEnabledStatus(expectedEnabled: Boolean) {
