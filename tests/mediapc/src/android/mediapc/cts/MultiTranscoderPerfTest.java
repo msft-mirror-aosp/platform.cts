@@ -50,9 +50,11 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 /**
  * The following test class validates the maximum number of concurrent Transcode sessions that
@@ -201,9 +203,8 @@ public class MultiTranscoderPerfTest extends MultiCodecPerfTestBase {
             achievedFrameRate = 0.0;
             maxInstances = 0;
         } else if (maxInstances >= requiredMinInstances) {
-            ExecutorService pool =
-                    Executors.newFixedThreadPool(maxInstances / 2 + maxInstances % 2);
             List<Transcode> transcodeList = new ArrayList<>();
+            boolean isTaskCancelled = false;
             if (height > 1080) {
                 String testFiles1080p = m1080pTestFiles.get(mDecoderPair.first);
                 for (int i = 0; i < (maxInstances / 2) - 1; i++) {
@@ -224,6 +225,7 @@ public class MultiTranscoderPerfTest extends MultiCodecPerfTestBase {
                 }
             }
             List<Future<CodecMetrics>> decodeResultList = null;
+            Collection<Callable<CodecMetrics>> allTasks = new ArrayList<>();
             if (maxInstances % 2 == 1) {
                 List<DecodeToSurface> decodeList = new ArrayList<>();
                 mActivityRule.getActivity().waitTillSurfaceIsCreated();
@@ -234,20 +236,17 @@ public class MultiTranscoderPerfTest extends MultiCodecPerfTestBase {
                 decodeList.add(new DecodeToSurface(mDecoderPair.first,
                         mTestFiles.get(mDecoderPair.first), mDecoderPair.second, surface,
                         mIsAsync));
-                decodeResultList = pool.invokeAll(decodeList);
+                allTasks.addAll(decodeList);
             }
-            List<Future<CodecMetrics>> transcodeResultList = pool.invokeAll(transcodeList);
-            for (Future<CodecMetrics> result : transcodeResultList) {
-                Double fps = result.get().fps();
-                if (fps < 0) {
-                    achievedFrameRate = -1;
-                } else if (achievedFrameRate >= 0) {
-                    achievedFrameRate += fps;
-                }
-                frameDropsPerSec += result.get().fdps();
-            }
-            if (decodeResultList != null) {
-                for (Future<CodecMetrics> result : decodeResultList) {
+            allTasks.addAll(transcodeList);
+            List<Future<CodecMetrics>> combinedResultList = null;
+            try (ExecutorService pool =
+                    Executors.newFixedThreadPool((maxInstances + 1) / 2)) {
+                combinedResultList = pool.invokeAll(allTasks, 60, TimeUnit.SECONDS);
+                for (Future<CodecMetrics> result : combinedResultList) {
+                    if (result.isCancelled()) {
+                        isTaskCancelled = true;
+                    }
                     Double fps = result.get().fps();
                     if (fps < 0) {
                         achievedFrameRate = -1;
@@ -256,6 +255,13 @@ public class MultiTranscoderPerfTest extends MultiCodecPerfTestBase {
                     }
                     frameDropsPerSec += result.get().fdps();
                 }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                isTaskCancelled = true;
+            }
+            if (isTaskCancelled) {
+                achievedFrameRate = 0.0;
+                frameDropsPerSec = 0.0;
             }
         }
 
