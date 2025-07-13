@@ -53,6 +53,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 public class MultiCodecPerfTestBase {
     private static final String LOG_TAG = MultiCodecPerfTestBase.class.getSimpleName();
@@ -216,16 +217,19 @@ public class MultiCodecPerfTestBase {
             Callable<CodecMetrics>> testList) throws ExecutionException, InterruptedException {
         double measuredParams = 0;
         double framesDroppedPerSecond = 0;
-        ExecutorService pool = Executors.newFixedThreadPool(maxInstances);
-        try {
-            List<Future<CodecMetrics>> resultList = pool.invokeAll(testList);
+        try (ExecutorService pool = Executors.newFixedThreadPool(maxInstances)) {
+            List<Future<CodecMetrics>> resultList = pool.invokeAll(testList, 60, TimeUnit.SECONDS);
             for (Future<CodecMetrics> result : resultList) {
+                if (result.isCancelled()) {
+                    return getMetrics(0.0, 0.0);
+                }
                 CodecMetrics metrics = result.get();
                 measuredParams += metrics.fps();
                 framesDroppedPerSecond += metrics.fdps();
             }
-        } finally {
-            pool.shutdown();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return getMetrics(0.0, 0.0);
         }
         return getMetrics(measuredParams, framesDroppedPerSecond);
     }
