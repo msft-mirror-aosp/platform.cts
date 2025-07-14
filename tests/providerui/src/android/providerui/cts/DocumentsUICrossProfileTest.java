@@ -48,8 +48,8 @@ import com.android.bedstead.multiuser.annotations.RequireRunOnPrivateProfile;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.permissions.PermissionContext;
 
+import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -62,8 +62,10 @@ public class DocumentsUICrossProfileTest {
     private Context mContext;
     private UserManager mUserManager;
     private UiDevice mDevice;
+    private GetResultActivity mActivity;
     private static final long TIMEOUT_MILLIS = 10 * DateUtils.SECOND_IN_MILLIS;
     private static final String PERSONAL_TAB_LABEL = "Personal";
+    private static final int REQUEST_CODE = 42;
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
@@ -74,7 +76,19 @@ public class DocumentsUICrossProfileTest {
         mContext = InstrumentationRegistry.getTargetContext();
         mUserManager = mContext.getSystemService(UserManager.class);
         mDevice = UiDevice.getInstance(mInstrumentation);
+        final Intent intent = new Intent(mContext, GetResultActivity.class);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        mActivity = (GetResultActivity) mInstrumentation.startActivitySync(intent);
+        mInstrumentation.waitForIdleSync();
+        mActivity.clearResult();
         mDevice.wakeUp();
+    }
+
+    @After
+    public void tearDown() throws Exception {
+        if (mActivity != null) {
+            mActivity.finish();
+        }
     }
 
     @Test
@@ -83,7 +97,7 @@ public class DocumentsUICrossProfileTest {
         assumeTrue(supportsHardware());
         final Intent intent = getBaseIntent();
 
-        TestApis.activities().startActivity(intent);
+        mActivity.startActivityForResult(intent, REQUEST_CODE);
 
         assertNotNull(findByLabel(mUserManager.getProfileLabel()));
     }
@@ -94,7 +108,7 @@ public class DocumentsUICrossProfileTest {
         assumeTrue(supportsHardware());
 
         final Intent intent = getBaseIntent();
-        TestApis.activities().startActivity(intent);
+        mActivity.startActivityForResult(intent, REQUEST_CODE);
 
         assertNotNull(findByLabel(mUserManager.getProfileLabel()));
     }
@@ -102,7 +116,6 @@ public class DocumentsUICrossProfileTest {
     @Test
     @RequireRunOnPrivateProfile
     @RequiresFlagsEnabled(FLAG_ENABLE_MOVING_CONTENT_INTO_PRIVATE_SPACE)
-    @Ignore("b/429638500: Until excluding users work for SearchV2")
     public void testOpenDocumentsUi_excludeSelf_private() throws Exception {
         assumeTrue(supportsHardware());
 
@@ -112,7 +125,7 @@ public class DocumentsUICrossProfileTest {
                 new ArrayList<UserHandle>(Arrays.asList(mContext.getUser())));
         try (PermissionContext p = TestApis.permissions().withPermission(INTERACT_ACROSS_USERS)) {
 
-            TestApis.activities().startActivity(intent);
+            mActivity.startActivityForResult(intent, REQUEST_CODE);
 
             assertNull(findByLabel(mUserManager.getProfileLabel()));
         }
@@ -121,7 +134,6 @@ public class DocumentsUICrossProfileTest {
     @Test
     @RequireRunOnWorkProfile
     @RequiresFlagsEnabled(FLAG_ENABLE_MOVING_CONTENT_INTO_PRIVATE_SPACE)
-    @Ignore("b/429638500: Until excluding users work for SearchV2")
     public void testOpenDocumentsUi_excludeSelf_work() throws Exception {
         assumeTrue(supportsHardware());
 
@@ -131,7 +143,7 @@ public class DocumentsUICrossProfileTest {
                 new ArrayList<UserHandle>(Arrays.asList(mContext.getUser())));
         try (PermissionContext p = TestApis.permissions().withPermission(INTERACT_ACROSS_USERS)) {
 
-            TestApis.activities().startActivity(intent);
+            mActivity.startActivityForResult(intent, REQUEST_CODE);
 
             assertNull(findByLabel(mUserManager.getProfileLabel()));
         }
@@ -152,7 +164,7 @@ public class DocumentsUICrossProfileTest {
 
         try (PermissionContext p = TestApis.permissions().withPermission(INTERACT_ACROSS_USERS)) {
 
-            TestApis.activities().startActivity(intent);
+            mActivity.startActivityForResult(intent, REQUEST_CODE);
 
             // If all users are excluded, no user should be hidden
             assertNotNull(findByLabel(mUserManager.getProfileLabel()));
@@ -172,7 +184,7 @@ public class DocumentsUICrossProfileTest {
                 new ArrayList<UserHandle>(Arrays.asList(mContext.getUser())));
         try (PermissionContext p = TestApis.permissions().withPermission(INTERACT_ACROSS_USERS)) {
 
-            TestApis.activities().startActivity(intent);
+            mActivity.startActivityForResult(intent, REQUEST_CODE);
 
             assertNotNull(findByLabel(mUserManager.getProfileLabel()));
         }
@@ -192,7 +204,6 @@ public class DocumentsUICrossProfileTest {
         return new Intent()
                 .setAction(Intent.ACTION_OPEN_DOCUMENT)
                 .addCategory(Intent.CATEGORY_OPENABLE)
-                .setType("*/*")
-                .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                .setType("*/*");
     }
 }
