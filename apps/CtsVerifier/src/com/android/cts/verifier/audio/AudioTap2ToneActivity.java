@@ -56,6 +56,7 @@ import org.hyphonate.megaaudio.duplex.DuplexAudioManager;
 import org.hyphonate.megaaudio.player.AudioSource;
 import org.hyphonate.megaaudio.player.AudioSourceProvider;
 import org.hyphonate.megaaudio.recorder.AudioSinkProvider;
+import org.hyphonate.megaaudio.recorder.Recorder;
 import org.hyphonate.megaaudio.recorder.sinks.AppCallback;
 import org.hyphonate.megaaudio.recorder.sinks.AppCallbackAudioSinkProvider;
 import org.junit.rules.TestName;
@@ -302,6 +303,7 @@ public class AudioTap2ToneActivity
             AudioSinkProvider sinkProvider = new AppCallbackAudioSinkProvider(this);
             mDuplexAudioManager = new DuplexAudioManager(sourceProvider, sinkProvider);
             mDuplexAudioManager.setNumRecorderChannels(NUM_RECORD_CHANNELS);
+            mDuplexAudioManager.setInputPreset(Recorder.INPUT_PRESET_UNPROCESSED);
         }
 
         int buildStatus = mDuplexAudioManager.buildStreams(mApi, BuilderBase.TYPE_JAVA);
