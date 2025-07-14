@@ -41,6 +41,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(BedsteadJUnit4::class)
+@AppModeFull(reason = "The SupervisionManager API is not available in instant apps.")
 @RequireFlagsEnabled(Flags.FLAG_SUPERVISION_MANAGER_APIS)
 class SupervisionStateTest : BaseSupervisionTest() {
     @get:Rule
