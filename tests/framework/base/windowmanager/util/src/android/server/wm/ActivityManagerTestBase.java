@@ -131,6 +131,7 @@ import android.app.ActivityOptions;
 import android.app.ActivityTaskManager;
 import android.app.Instrumentation;
 import android.app.KeyguardManager;
+import android.app.UiModeManager;
 import android.app.WallpaperManager;
 import android.app.WindowConfiguration;
 import android.content.ComponentName;
@@ -1546,6 +1547,10 @@ public abstract class ActivityManagerTestBase {
         return mObjectTracker.manage(new AodSession());
     }
 
+    protected ForceInvertSession createManagedForceInvertSession() {
+        return mObjectTracker.manage(new ForceInvertSession());
+    }
+
     /** @see ObjectTracker#manage(AutoCloseable) */
     protected DevEnableNonResizableMultiWindowSession
     createManagedDevEnableNonResizableMultiWindowSession() {
@@ -1758,6 +1763,48 @@ public abstract class ActivityManagerTestBase {
         public void close() {
             super.close();
             mScreenOffUnlockUdfpsEnabled.close();
+        }
+    }
+
+    protected class ForceInvertSession extends SettingsSession<Integer> {
+        private final UiModeManager mUiModeManager;
+        private final int mInitialNightModeConfig;
+
+        ForceInvertSession() {
+            super(Settings.Secure.getUriFor(
+                            Settings.Secure.ACCESSIBILITY_FORCE_INVERT_COLOR_ENABLED),
+                    Settings.Secure::getInt,
+                    Settings.Secure::putInt);
+            mUiModeManager = mContext.getSystemService(UiModeManager.class);
+            mInitialNightModeConfig = mUiModeManager.getNightMode();
+        }
+
+        public boolean isForceInvertEnabled() {
+            return mUiModeManager.getForceInvertState() == UiModeManager.FORCE_INVERT_TYPE_DARK;
+        }
+
+        public void setForceInvertEnabled(boolean enabled) {
+            if (enabled) {
+                // Set to dark theme when we enable ForceInvert.
+                // Otherwise, don't change the system theme settings.
+                if (mInitialNightModeConfig != UiModeManager.MODE_NIGHT_YES) {
+                    SystemUtil.runWithShellPermissionIdentity(
+                            () -> mUiModeManager.setNightMode(UiModeManager.MODE_NIGHT_YES),
+                            Manifest.permission.MODIFY_DAY_NIGHT_MODE);
+                }
+            }
+            set(enabled ? 1 : 0);
+        }
+
+        @Override
+        public void close() {
+            // Restore the system theme
+            if (mUiModeManager.getNightMode() != mInitialNightModeConfig) {
+                SystemUtil.runWithShellPermissionIdentity(
+                        () -> mUiModeManager.setNightMode(mInitialNightModeConfig),
+                        Manifest.permission.MODIFY_DAY_NIGHT_MODE);
+            }
+            super.close();
         }
     }
 
