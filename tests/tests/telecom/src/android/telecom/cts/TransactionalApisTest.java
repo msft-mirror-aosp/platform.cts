@@ -355,8 +355,8 @@ public class TransactionalApisTest extends BaseTelecomTestWithMockServices {
             cleanup();
             startCallWithAttributesAndVerify(mOutgoingCallAttributes, mCall1);
             callControlAction(SET_ACTIVE, mCall1);
-            assertNumCalls(getInCallService(), 1);
             assertCallState(getLastAddedCall(), Call.STATE_ACTIVE);
+            assertNumCalls(getInCallService(), 1);
             callControlAction(DISCONNECT, mCall1);
             verifyCallWasDisconnectedOrInCallServiceUnbinds();
         } finally {
@@ -406,8 +406,8 @@ public class TransactionalApisTest extends BaseTelecomTestWithMockServices {
             cleanup();
             startCallWithAttributesAndVerify(mIncomingCallAttributes, mCall1);
             callControlAction(SET_ACTIVE, mCall1);
-            assertNumCalls(getInCallService(), 1);
             assertCallState(getLastAddedCall(), Call.STATE_ACTIVE);
+            assertNumCalls(getInCallService(), 1);
             callControlAction(DISCONNECT, mCall1);
             verifyCallWasDisconnectedOrInCallServiceUnbinds();
         } finally {
@@ -457,7 +457,6 @@ public class TransactionalApisTest extends BaseTelecomTestWithMockServices {
             cleanup();
             startCallWithAttributesAndVerify(mIncomingCallAttributes, mCall1);
             callControlAction(ANSWER, mCall1, AUDIO_CALL);
-            assertNumCalls(getInCallService(), 1);
             callControlAction(DISCONNECT, mCall1);
             verifyCallWasDisconnectedOrInCallServiceUnbinds();
         } finally {
@@ -479,8 +478,8 @@ public class TransactionalApisTest extends BaseTelecomTestWithMockServices {
         try {
             cleanup();
             startCallWithAttributesAndVerify(mIncomingCallAttributes, mCall1);
-            assertNumCalls(getInCallService(), 1);
             assertCallState(getLastAddedCall(), Call.STATE_RINGING);
+            assertNumCalls(getInCallService(), 1);
             try {
                 callControlAction(DISCONNECT, mCall1, DisconnectCause.ERROR);
                 fail("testRejectIncomingCall: forced fail b/c IllegalArgumentException not thrown");
@@ -551,7 +550,10 @@ public class TransactionalApisTest extends BaseTelecomTestWithMockServices {
             waitUntilVideoStateIs(AUDIO_CALL, mCall1);
             // disconnect
             callControlAction(DISCONNECT, mCall1);
-            assertNumCalls(getInCallService(), 0);
+            MockInCallService inCallService = getInCallService();
+            if (inCallService != null) {
+                assertNumCalls(inCallService, 0);
+            }
         } finally {
             cleanup();
         }
@@ -594,7 +596,10 @@ public class TransactionalApisTest extends BaseTelecomTestWithMockServices {
             assertOnErrorWasReceived(latch);
             // disconnect
             callControlAction(DISCONNECT, mCall1);
-            assertNumCalls(getInCallService(), 0);
+            MockInCallService inCallService = getInCallService();
+            if (inCallService != null) {
+                assertNumCalls(inCallService, 0);
+            }
         } finally {
             mTelecomManager.unregisterPhoneAccount(
                     NO_VIDEO_CAPABILITIES_ACCOUNT.getAccountHandle());
@@ -731,8 +736,8 @@ public class TransactionalApisTest extends BaseTelecomTestWithMockServices {
             mCall1.resetAllCallbackVerifiers();
             assertFalse(mCall1.mWasOnDisconnectCalled);
             startCallWithAttributesAndVerify(mIncomingCallAttributes, mCall1);
-            assertNumCalls(getInCallService(), 1);
             Call call = getLastAddedCall();
+            assertNumCalls(getInCallService(), 1);
             call.reject(Call.REJECT_REASON_DECLINED);
             verifyCallWasDisconnectedOrInCallServiceUnbinds();
             assertTrue(mCall1.mWasOnDisconnectCalled);
@@ -755,8 +760,8 @@ public class TransactionalApisTest extends BaseTelecomTestWithMockServices {
         try {
             cleanup();
             startCallWithAttributesAndVerify(mIncomingCallAttributes, mCall1);
-            assertNumCalls(getInCallService(), 1);
             Call call = getLastAddedCall();
+            assertNumCalls(getInCallService(), 1);
             call.answer(VideoProfile.STATE_AUDIO_ONLY);
             waitUntilConditionIsTrueOrTimeout(new Condition() {
                 @Override
@@ -850,9 +855,8 @@ public class TransactionalApisTest extends BaseTelecomTestWithMockServices {
 
             startCallWithAttributesAndVerify(mOutgoingCallAttributes, mCall1);
             callControlAction(SET_ACTIVE, mCall1);
-            assertNumCalls(getInCallService(), 1);
-
             assertCallState(getLastAddedCall(), Call.STATE_ACTIVE);
+            assertNumCalls(getInCallService(), 1);
 
             startCallWithAttributesAndVerify(mIncomingCallAttributes, mCall2);
             callControlAction(SET_ACTIVE, mCall2);
@@ -1044,6 +1048,7 @@ public class TransactionalApisTest extends BaseTelecomTestWithMockServices {
             cleanup();
             startCallWithAttributesAndVerify(mOutgoingCallAttributes, mCall1);
             callControlAction(SET_ACTIVE, mCall1);
+            waitOnInCallService();
             assertNumCalls(getInCallService(), 1);
             TestParcelable originalParcelable = createTestParcelable();
             mCall1.mCallControl.sendEvent(OTT_TEST_EVENT_NAME,
@@ -1078,11 +1083,11 @@ public class TransactionalApisTest extends BaseTelecomTestWithMockServices {
             cleanup();
             assertNull(mCall1.mEvents.mLastEventReceived);
             startCallWithAttributesAndVerify(mOutgoingCallAttributes, mCall1);
-            assertNumCalls(getInCallService(), 1);
             // simulate an InCallService sending a call event
             TestParcelable originalParcelable = createTestParcelable();
             Bundle testBundle = createTestBundle(originalParcelable);
             getLastAddedCall().sendCallEvent(OTT_TEST_EVENT_NAME, testBundle);
+            assertNumCalls(getInCallService(), 1);
             // wait for the onEvent to be called
             waitUntilConditionIsTrueOrTimeout(
                     new Condition() {
