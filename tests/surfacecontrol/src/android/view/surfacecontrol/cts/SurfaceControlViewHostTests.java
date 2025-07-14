@@ -2102,7 +2102,6 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
         assertTrue("Failed to receive touch event in embedded window", embeddedGotEvent[0]);
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_UPDATE_HOST_INPUT_TRANSFER_TOKEN)
     @Test
     public void testAddScvhToDetachedView() throws Throwable {
         // Create a surface view and wait for its surface to be created.
