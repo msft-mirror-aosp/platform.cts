@@ -107,10 +107,13 @@ static void verifyRefreshRateCallback(JNIEnv* env, const T& cb, int expectedMin)
     ASSERT(cb.vsyncPeriod > ZERO,
            "Choreographer failed to report a nonzero refresh period invoking '%s'",
            cb.name.c_str());
-    ASSERT(gSupportedRefreshPeriods.count(cb.vsyncPeriod.count()) > 0,
-           "Choreographer failed to report a supported refresh period invoking '%s': supported "
-           "periods: %s, actual: %lu",
-           cb.name.c_str(), dumpSupportedRefreshPeriods().c_str(), cb.vsyncPeriod.count());
+    // TODO(b/431045537): We cannot check that vsyncPeriod is in gSupportedRefreshPeriods
+    // due to frame rate override. Instead, we should check against Display#getSuppotedRefreshRates,
+    // but we can't do that until b/431045537 is solved.
+    // ASSERT(gSupportedRefreshPeriods.count(cb.vsyncPeriod.count()) > 0,
+    //        "Choreographer failed to report a supported refresh period invoking '%s': supported "
+    //        "periods: %s, actual: %lu",
+    //        cb.name.c_str(), dumpSupportedRefreshPeriods().c_str(), cb.vsyncPeriod.count());
 }
 
 static void resetRefreshRateCallback(RefreshRateCallback& cb) {
