@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-# proto-file: wireless/android/mediapc_requirements/requirements.proto
+# proto-file: third_party/android/mediapc_requirements/requirements.proto
 # proto-message: RequirementList
 all_mpcs: [30, 31, 33, 34, 35]
 requirements {
@@ -5754,6 +5754,25 @@ requirements {
       measurement_type: MEASUREMENT_TYPE_DOUBLE
       comparison: COMPARISON_GREATER_THAN_OR_EQUAL
       proto_field_number: 4
+    }
+  }
+  specs {
+    key: 34
+    value {
+      mpc: MEDIA_PERFORMANCE_CLASS_INVALID
+      specification: "MUST have a HDR display supporting at least 1000 nits"
+      required_values: {
+        key: "display_luminance_nits"
+        value: {
+          double_value: 1000
+        }
+      }
+      required_values: {
+        key: "is_hdr"
+        value: {
+          bool_value: true
+        }
+      }
     }
   }
   specs {
