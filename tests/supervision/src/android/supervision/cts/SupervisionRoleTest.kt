@@ -19,6 +19,7 @@ package android.supervision.cts
 import android.Manifest.permission.MANAGE_ROLE_HOLDERS
 import android.Manifest.permission.QUERY_USERS
 import android.app.supervision.flags.Flags
+import android.platform.test.annotations.AppModeFull
 import com.android.bedstead.flags.annotations.RequireFlagsEnabled
 import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.multiuser.annotations.EnsureCanAddUser
@@ -35,6 +36,7 @@ import org.junit.runner.RunWith
 import org.testng.Assert.assertThrows
 
 @RunWith(BedsteadJUnit4::class)
+@AppModeFull(reason = "The SupervisionManager API is not available in instant apps.")
 @RequireFlagsEnabled(Flags.FLAG_SUPERVISION_MANAGER_APIS)
 class SupervisionRoleTest : BaseSupervisionTest() {
 

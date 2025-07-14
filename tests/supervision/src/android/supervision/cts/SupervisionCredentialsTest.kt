@@ -20,6 +20,7 @@ import android.Manifest.permission.CREATE_USERS
 import android.Manifest.permission.MANAGE_USERS
 import android.Manifest.permission.QUERY_USERS
 import android.app.supervision.flags.Flags
+import android.platform.test.annotations.AppModeFull
 import com.android.bedstead.flags.annotations.RequireFlagsEnabled
 import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.multiuser.annotations.RequireMultiUserSupport
@@ -33,6 +34,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(BedsteadJUnit4::class)
+@AppModeFull(reason = "The SupervisionManager API is not available in instant apps.")
 @RequireFlagsEnabled(
     Flags.FLAG_SUPERVISION_MANAGER_APIS,
     android.multiuser.Flags.FLAG_ALLOW_SUPERVISING_PROFILE,
