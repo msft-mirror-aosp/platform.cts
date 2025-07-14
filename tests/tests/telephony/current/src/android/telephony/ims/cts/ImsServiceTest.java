@@ -974,8 +974,8 @@ public class ImsServiceTest {
         Assert.assertArrayEquals(pduWithStatusReport, sServiceConnector.getCarrierService()
                 .getMmTelFeature().getSmsImplementation().sentPdu);
     }
-    @Ignore("The onMemoryAvailable and onMemoryAvailableResult Apis were moved back to @hide for"
-            + " now, so do not want to completely remove this test.")
+
+    @RequiresFlagsEnabled(Flags.FLAG_SUPPORT_IMS_SMS_SMMA)
     @Test
     public void testMmTelSendMemoryAvailabilityNotification() throws Exception {
         if (!ImsUtils.shouldRunSmsImsTests(sTestSub)) {
