@@ -54,6 +54,7 @@ import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.app.Activity;
+import android.app.ApplicationExitInfo;
 import android.app.Instrumentation;
 import android.content.Context;
 import android.content.Intent;
@@ -64,6 +65,7 @@ import android.graphics.RectF;
 import android.inputmethodservice.InputMethodService;
 import android.os.Bundle;
 import android.os.SystemClock;
+import android.os.UserHandle;
 import android.platform.test.annotations.AppModeSdkSandbox;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
@@ -121,6 +123,7 @@ import org.junit.Test;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -1410,6 +1413,46 @@ public final class InputMethodServiceTest extends EndToEndImeTestBase {
                     + " back to gesture nav")
                     .that(requestedVisibleGestureNav.getArguments().getBoolean("visible"))
                     .isFalse();
+        }
+    }
+
+    /**
+     * Verifies that force stopping the currently selected IME unbinds it, so that selecting it
+     * again can trigger the standard startInput/bindInput sequence.
+     */
+    @Test
+    public void testImeUnbindsOnImeStopped() throws Exception {
+        TestActivity.startSync(LinearLayout::new);
+
+        try (var session = MockImeSession.create(
+                InstrumentationRegistry.getInstrumentation().getContext(),
+                InstrumentationRegistry.getInstrumentation().getUiAutomation(),
+                new ImeSettings.Builder().setSuppressDeleteSettings(true))) {
+            final var stream = session.openEventStream();
+
+            expectEvent(stream, eventMatcher("onCreate"), TIMEOUT);
+            expectEvent(stream, eventMatcher("bindInput"), TIMEOUT);
+            expectEvent(stream, eventMatcher("onStartInput"), TIMEOUT);
+
+            SystemUtil.runShellCommand("am force-stop --user " + UserHandle.myUserId() + " "
+                    + session.getMockImePackageName());
+
+            final var exitInfo = PollingCheck.waitFor(TIMEOUT,
+                    session::findLatestMockImeSessionExitInfo, Objects::nonNull);
+            assertEquals("Expected MockImeSession to crash due to killed application",
+                    ApplicationExitInfo.REASON_USER_REQUESTED, exitInfo.getReason());
+        }
+
+        // Re-start MockIme, it should be able to bind again as the previous session unbound.
+        try (var session = MockImeSession.create(
+                InstrumentationRegistry.getInstrumentation().getContext(),
+                InstrumentationRegistry.getInstrumentation().getUiAutomation(),
+                new ImeSettings.Builder())) {
+            final var stream = session.openEventStream();
+
+            expectEvent(stream, eventMatcher("onCreate"), TIMEOUT);
+            expectEvent(stream, eventMatcher("bindInput"), TIMEOUT);
+            expectEvent(stream, eventMatcher("onStartInput"), TIMEOUT);
         }
     }
 
