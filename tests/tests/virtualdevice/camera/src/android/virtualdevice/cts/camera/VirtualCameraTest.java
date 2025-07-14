@@ -255,7 +255,8 @@ public class VirtualCameraTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_EXTERNAL_VIRTUAL_CAMERAS)
+    @RequiresFlagsEnabled({Flags.FLAG_EXTERNAL_VIRTUAL_CAMERAS,
+            Flags.FLAG_EXTERNAL_CAMERA_DEFAULT_POLICY})
     public void defaultContext_withVirtualExternalCamera_triggersCameraAvailabilityCallbacks() {
         // Create virtual device with default camera policy.
         mVirtualDevice = mRule.createManagedVirtualDevice();
@@ -561,7 +562,8 @@ public class VirtualCameraTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_EXTERNAL_VIRTUAL_CAMERAS)
+    @RequiresFlagsEnabled({Flags.FLAG_EXTERNAL_VIRTUAL_CAMERAS,
+            Flags.FLAG_EXTERNAL_CAMERA_DEFAULT_POLICY})
     public void createExternalVirtualCamera_withDefaultPolicy_succeeds() throws Exception {
         // Create virtual device with default camera policy.
         mVirtualDevice = mRule.createManagedVirtualDevice();
