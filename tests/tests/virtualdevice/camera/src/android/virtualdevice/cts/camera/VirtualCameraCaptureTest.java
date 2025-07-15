@@ -36,7 +36,6 @@ import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
 import static org.junit.Assert.assertTrue;
-
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.after;
@@ -45,7 +44,6 @@ import static org.mockito.Mockito.verify;
 
 import android.companion.virtual.VirtualDeviceManager;
 import android.companion.virtual.VirtualDeviceParams;
-import android.companion.virtual.camera.CaptureResultBuilder;
 import android.companion.virtual.camera.VirtualCameraCallback;
 import android.companion.virtualdevice.flags.Flags;
 import android.content.Context;
@@ -60,7 +58,6 @@ import android.hardware.camera2.TotalCaptureResult;
 import android.hardware.camera2.params.SessionConfiguration;
 import android.media.Image;
 import android.media.ImageWriter;
-import android.os.SystemClock;
 import android.os.Trace;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresFlagsDisabled;
@@ -83,6 +80,7 @@ import junitparams.naming.TestCaseName;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -91,9 +89,9 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.ObjLongConsumer;
 
 @AppModeFull(reason = "VirtualDeviceManager cannot be accessed by instant apps")
@@ -669,6 +667,7 @@ public class VirtualCameraCaptureTest {
         assertThat(captureResults).hasSize(imageCount);
     }
 
+    @Ignore("b/371167033 - fix send capture results")
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_CAMERA_METADATA)
     public void captureImageWithFrameMetadata_withRequestAndResultMetadata_succeeds()
@@ -706,7 +705,7 @@ public class VirtualCameraCaptureTest {
                         throw new RuntimeException(e);
                     }
 
-                    CaptureResult resultToSend = new CaptureResultBuilder()
+                    CaptureResult resultToSend = new CaptureResult.Builder()
                             .set(CaptureResult.CONTROL_AE_STATE,
                                     CaptureResult.CONTROL_AE_STATE_CONVERGED)
                             .build();

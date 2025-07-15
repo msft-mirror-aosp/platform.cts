@@ -23,8 +23,6 @@ import static junit.framework.Assert.assertNull;
 
 import static org.junit.Assert.assertArrayEquals;
 
-import android.companion.virtual.camera.CameraCharacteristicsBuilder;
-import android.companion.virtual.camera.CaptureResultBuilder;
 import android.companion.virtual.camera.VirtualCameraConfig;
 import android.companion.virtualdevice.flags.Flags;
 import android.hardware.camera2.CameraCharacteristics;
@@ -75,12 +73,12 @@ public class VirtualCameraBuildersTest {
     private static final List<CaptureRequest.Key<?>> CAMERA_UPDATED_AVAILABLE_CAPTURE_REQUEST_KEYS =
             List.of(CaptureRequest.CONTROL_SCENE_MODE);
 
-    // CameraCharacteristicsBuilder
+    // CameraCharacteristics.Builder
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_CAMERA_METADATA)
     public void buildCameraCharacteristics_matches() {
         CameraCharacteristics characteristics =
-                new CameraCharacteristicsBuilder()
+                new CameraCharacteristics.Builder()
                         .set(CameraCharacteristics.LENS_FACING, CAMERA_LENS_FACING_CHARACTERISTIC)
                         .set(CameraCharacteristics.SENSOR_ORIENTATION,
                                 CAMERA_SENSOR_ORIENTATION_CHARACTERISTIC)
@@ -127,8 +125,8 @@ public class VirtualCameraBuildersTest {
         Range<Integer>[] expectedFpsRanges = new Range[] {new Range<>(15, 30), new Range<>(20, 30)};
         Range<Long> expectedExposureRange = new Range<>(100L, 64000L);
 
-        CameraCharacteristicsBuilder characteristicsBuilder =
-                new CameraCharacteristicsBuilder()
+        CameraCharacteristics.Builder characteristicsBuilder =
+                new CameraCharacteristics.Builder()
                         .set(CameraCharacteristics.SENSOR_INFO_PIXEL_ARRAY_SIZE,
                                 expectedPixelArraySize)
                         .set(CameraCharacteristics.CONTROL_AF_AVAILABLE_MODES, expectedAfModes)
@@ -155,8 +153,8 @@ public class VirtualCameraBuildersTest {
         assertThat(characteristics1.getAvailableSessionKeys())
                 .containsAtLeastElementsIn(CAMERA_AVAILABLE_SESSION_KEYS);
 
-        CameraCharacteristicsBuilder secondCharacteristicsBuilder =
-                new CameraCharacteristicsBuilder(characteristics1);
+        CameraCharacteristics.Builder secondCharacteristicsBuilder =
+                new CameraCharacteristics.Builder(characteristics1);
         secondCharacteristicsBuilder.set(CameraCharacteristics.SENSOR_INFO_PIXEL_ARRAY_SIZE, null);
         secondCharacteristicsBuilder.set(
                 CameraCharacteristics.SENSOR_INFO_EXPOSURE_TIME_RANGE, expectedExposureRange);
@@ -171,7 +169,8 @@ public class VirtualCameraBuildersTest {
                 characteristics2.get(CameraCharacteristics.CONTROL_AF_AVAILABLE_MODES));
         assertArrayEquals(
                 expectedFpsRanges,
-                characteristics2.get(CameraCharacteristics.CONTROL_AE_AVAILABLE_TARGET_FPS_RANGES));
+                characteristics2.get(
+                        CameraCharacteristics.CONTROL_AE_AVAILABLE_TARGET_FPS_RANGES));
         assertEquals(
                 expectedExposureRange,
                 characteristics2.get(CameraCharacteristics.SENSOR_INFO_EXPOSURE_TIME_RANGE));
@@ -184,11 +183,11 @@ public class VirtualCameraBuildersTest {
         assertNull(characteristics2.getAvailableSessionKeys());
     }
 
-    // CaptureResultBuilder
+    // CaptureResult.Builder
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_CAMERA_METADATA)
     public void buildCaptureResult_matches() {
-        CaptureResult captureResult = new CaptureResultBuilder()
+        CaptureResult captureResult = new CaptureResult.Builder()
                 .set(CaptureResult.CONTROL_AE_MODE, CaptureResult.CONTROL_AE_MODE_ON)
                 .set(CaptureResult.COLOR_CORRECTION_MODE,
                         CaptureResult.COLOR_CORRECTION_ABERRATION_MODE_OFF)
@@ -209,7 +208,7 @@ public class VirtualCameraBuildersTest {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_CAMERA_METADATA)
     public void captureResultBuilder_buildsCopy() {
-        CaptureResultBuilder captureResultBuilder = new CaptureResultBuilder()
+        CaptureResult.Builder captureResultBuilder = new CaptureResult.Builder()
                 .set(CaptureResult.CONTROL_AE_MODE, CaptureResult.CONTROL_AE_MODE_ON)
                 .set(CaptureResult.CONTROL_AF_MODE, CaptureResult.CONTROL_AF_MODE_OFF);
 
@@ -221,7 +220,8 @@ public class VirtualCameraBuildersTest {
         assertThat(captureResult1.get(CaptureResult.CONTROL_AF_MODE))
                 .isEqualTo(CaptureResult.CONTROL_AF_MODE_OFF);
 
-        CaptureResultBuilder secondCaptureResultBuilder = new CaptureResultBuilder(captureResult1);
+        CaptureResult.Builder secondCaptureResultBuilder =
+                new CaptureResult.Builder(captureResult1);
         secondCaptureResultBuilder.set(CaptureResult.CONTROL_AE_MODE, null);
         secondCaptureResultBuilder.set(
                 CaptureResult.CONTROL_AE_STATE, CaptureResult.CONTROL_AE_STATE_LOCKED);

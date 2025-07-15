@@ -58,8 +58,6 @@ import static org.mockito.Mockito.verify;
 
 import android.companion.virtual.VirtualDeviceManager.VirtualDevice;
 import android.companion.virtual.VirtualDeviceParams;
-import android.companion.virtual.camera.CameraCharacteristicsBuilder;
-import android.companion.virtual.camera.CaptureResultBuilder;
 import android.companion.virtual.camera.VirtualCamera;
 import android.companion.virtual.camera.VirtualCameraCallback;
 import android.companion.virtual.camera.VirtualCameraConfig;
@@ -863,7 +861,7 @@ public class VirtualCameraTest {
             CameraCaptureSession cameraCaptureSession = mCameraCaptureSessionCaptor.getValue();
 
             final long timestamp = 12345L;
-            CaptureResult captureResult = new CaptureResultBuilder()
+            CaptureResult captureResult = new CaptureResult.Builder()
                     .set(CaptureResult.CONTROL_AE_STATE, CaptureResult.CONTROL_AE_STATE_CONVERGED)
                     .set(CaptureResult.CONTROL_AE_TARGET_FPS_RANGE, CAMERA_FPS_RANGE)
                     .build();
@@ -913,7 +911,7 @@ public class VirtualCameraTest {
         setupVirtualDeviceCameraManager();
 
         CameraCharacteristics characteristics =
-                new CameraCharacteristicsBuilder(createDefaultCameraCharacteristics(lensFacing))
+                new CameraCharacteristics.Builder(createDefaultCameraCharacteristics(lensFacing))
                         .setAvailableSessionKeys(availableSessionKeys)
                         .build();
 
@@ -1171,7 +1169,8 @@ public class VirtualCameraTest {
     }
 
     private CameraCharacteristics createDefaultCameraCharacteristics(int lensFacing) {
-        return new CameraCharacteristicsBuilder()
+        return new CameraCharacteristics.Builder(
+                VirtualCameraConfig.DEFAULT_VIRTUAL_CAMERA_CHARACTERISTICS)
                 .set(CameraCharacteristics.LENS_FACING, lensFacing)
                 .build();
     }
