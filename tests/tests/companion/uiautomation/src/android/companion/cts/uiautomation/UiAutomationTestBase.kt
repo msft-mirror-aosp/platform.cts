@@ -35,6 +35,7 @@ import android.companion.DeviceFilter
 import android.companion.Flags
 import android.companion.cts.common.CompanionActivity
 import android.companion.cts.common.DEVICE_PROFILES
+import android.companion.cts.common.DEVICE_PROFILE_ALIAS_TO_ROLE
 import android.companion.cts.common.DEVICE_PROFILE_TO_NAME
 import android.companion.cts.common.DEVICE_PROFILE_TO_PERMISSION
 import android.companion.cts.common.RecordingCallback
@@ -386,7 +387,8 @@ open class UiAutomationTestBase(
      * If the current CDM Device [profile] is not null, check that the application was "granted"
      * the corresponding role (all CDM device profiles are "backed up" by roles).
      */
-    protected fun assertIsProfileRoleHolder() = profile?.let { roleName ->
+    protected fun assertIsProfileRoleHolder() = profile?.let { profileName ->
+        val roleName = DEVICE_PROFILE_ALIAS_TO_ROLE[profileName] ?: profileName
         val roleHolders = withShellPermissionIdentity(Manifest.permission.MANAGE_ROLE_HOLDERS) {
             roleManager.getRoleHolders(roleName)
         }
