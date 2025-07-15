@@ -110,7 +110,6 @@ class DngNoiseModelTest(its_base_test.ItsBaseTest):
 
       var_exp = [[], [], [], []]
       var_meas = [[], [], [], []]
-      sens_valid = []
       imgs = []
       for sens in sensitivities:
         # Capture a raw frame with the desired sensitivity
@@ -178,15 +177,14 @@ class DngNoiseModelTest(its_base_test.ItsBaseTest):
               )
               raise AssertionError(f'{ch} model variance = 0!')
             logging.debug('abs_diff: %.5f, rel_diff: %.3f', abs_diff, rel_diff)
-        sens_valid.append(sens)
 
     # Plot data and models
-    self.plot_data(sens_valid, var_exp, var_meas, name_with_log_path)
+    self.plot_data(sensitivities, var_exp, var_meas, name_with_log_path)
 
     # PASS/FAIL check
     for i, ch in enumerate(_BAYER_COLORS):
       var_diffs = [abs(var_meas[i][j] - var_exp[i][j])
-                   for j in range(len(sens_valid))]
+                   for j in range(len(sensitivities))]
       logging.debug('%s variance diffs: %s', ch, str(var_diffs))
       for j, diff in enumerate(var_diffs):
         thresh = max(_VAR_ATOL_THRESH, _VAR_RTOL_THRESH*var_exp[i][j])
