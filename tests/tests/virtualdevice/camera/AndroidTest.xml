@@ -32,6 +32,9 @@
         <option name="run-command" value="timeout --foreground 2 cmd -w virtual_camera enable_test_camera" />
         <option name="run-command" value="timeout --foreground 2 cmd -w virtual_camera disable_test_camera" />
     </object>
+    <object type="module_controller" class="com.android.tradefed.testtype.suite.module.TestFailureModuleController">
+        <option name="screenshot-on-failure" value="true" />
+    </object>
 
     <option name="config-descriptor:metadata" key="component" value="framework" />
     <option name="config-descriptor:metadata" key="parameter" value="not_instant_app" />
