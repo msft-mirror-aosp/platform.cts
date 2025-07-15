@@ -30,6 +30,7 @@ android_test {
         "android-common",
         "android.security.flags-aconfig-java",
         "art-aconfig-rw-flags-java-lib",
+        "am_flags_lib",
         "wifi_aconfig_flags_lib",
         "ctstestserver",
         "ctstestrunner-axt",

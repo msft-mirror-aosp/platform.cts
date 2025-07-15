@@ -27,6 +27,7 @@ android_library {
         "androidx.test.core",
         "androidx.test.rules",
         "kotlin-test",
+        "am_flags_lib",
     ],
     aidl: {
         local_include_dirs: ["src"],

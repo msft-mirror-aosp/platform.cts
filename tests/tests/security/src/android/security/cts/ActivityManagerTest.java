@@ -35,6 +35,7 @@ import android.os.Process;
 import android.os.RemoteException;
 import android.os.UserHandle;
 import android.platform.test.annotations.AsbSecurityTest;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.util.Log;
 import android.view.SurfaceControl;
 import android.window.IRemoteTransitionFinishedCallback;
@@ -278,9 +279,162 @@ public class ActivityManagerTest extends StsExtraBusinessLogicTestCase {
         }
         if (unexpectedException != null) {
             Log.w("ActivityManagerTest", "Unexpected exception", unexpectedException);
-            fail("ActivityManagerNative.backupAgentCreated() API should have thrown "
-                    + "SecurityException when invoked from process with uid not matching target "
-                    + "package uid.");
+            fail(
+                    "ActivityManagerService.backupAgentCreated() API should have thrown"
+                            + " SecurityException when invoked from process with uid not matching"
+                            + " target package uid.");
+        }
+
+        assertNotNull(
+                "Expected SecurityException when caller's uid doesn't match package uid",
+                securityException);
+        assertEquals(
+                "android does not belong to uid " + Process.myUid(),
+                securityException.getMessage());
+    }
+
+    @AsbSecurityTest(cveBugId = 308138385)
+    @RequiresFlagsEnabled(com.android.server.am.Flags.FLAG_SERVICE_CHECK_CALLING_PKG)
+    @Test
+    public void testActivityManager_startService_rejectIfCallerUidNotEqualsPackageUid()
+            throws Exception {
+        SecurityException securityException = null;
+        Exception unexpectedException = null;
+        try {
+            final Object iam = ActivityManager.class.getDeclaredMethod("getService").invoke(null);
+            Class.forName("android.app.IActivityManager")
+                    .getDeclaredMethod(
+                            "startService",
+                            Class.forName("android.app.IApplicationThread"),
+                            Intent.class,
+                            String.class,
+                            boolean.class,
+                            String.class,
+                            String.class,
+                            int.class)
+                    .invoke(
+                            iam,
+                            /* caller= */ null,
+                            /* service= */ null,
+                            /* resolvedType= */ null,
+                            /* requireForeground= */ false,
+                            /* callingPackage= */ "android",
+                            /* callingFeatureId= */ null,
+                            /* userId= */ 0);
+        } catch (SecurityException e) {
+            securityException = e;
+        } catch (InvocationTargetException e) {
+            if (e.getCause() instanceof SecurityException) {
+                securityException = (SecurityException) e.getCause();
+            } else {
+                unexpectedException = e;
+            }
+        } catch (Exception e) {
+            unexpectedException = e;
+        }
+        if (unexpectedException != null) {
+            Log.w("ActivityManagerTest", "Unexpected exception", unexpectedException);
+            fail(
+                    "ActivityManagerService.startService() API should have thrown SecurityException"
+                        + " when invoked from process with uid not matching target package uid.");
+        }
+
+        assertNotNull(
+                "Expected SecurityException when caller's uid doesn't match package uid",
+                securityException);
+        assertEquals(
+                "android does not belong to uid " + Process.myUid(),
+                securityException.getMessage());
+    }
+
+    @AsbSecurityTest(cveBugId = 308138385)
+    @RequiresFlagsEnabled(com.android.server.am.Flags.FLAG_SERVICE_CHECK_CALLING_PKG)
+    @Test
+    public void testActivityManager_bindService_rejectIfCallerUidNotEqualsPackageUid()
+            throws Exception {
+        SecurityException securityException = null;
+        Exception unexpectedException = null;
+        try {
+            final Object iam = ActivityManager.class.getDeclaredMethod("getService").invoke(null);
+            Class.forName("android.app.IActivityManager")
+                    .getDeclaredMethod(
+                            "bindService",
+                            Class.forName("android.app.IApplicationThread"),
+                            IBinder.class,
+                            Intent.class,
+                            String.class,
+                            Class.forName("android.app.IServiceConnection"),
+                            long.class,
+                            String.class,
+                            int.class)
+                    .invoke(
+                            iam,
+                            /* caller= */ null,
+                            /* token= */ null,
+                            /* service= */ null,
+                            /* resolvedType= */ null,
+                            /* connection= */ null,
+                            /* flags= */ 0,
+                            /* callingPackage= */ "android",
+                            /* userId= */ 0);
+        } catch (SecurityException e) {
+            securityException = e;
+        } catch (InvocationTargetException e) {
+            if (e.getCause() instanceof SecurityException) {
+                securityException = (SecurityException) e.getCause();
+            } else {
+                unexpectedException = e;
+            }
+        } catch (Exception e) {
+            unexpectedException = e;
+        }
+        if (unexpectedException != null) {
+            Log.w("ActivityManagerTest", "Unexpected exception", unexpectedException);
+            fail(
+                    "ActivityManagerService.bindService() API should have thrown SecurityException"
+                        + " when invoked from process with uid not matching target package uid.");
+        }
+
+        assertNotNull(
+                "Expected SecurityException when caller's uid doesn't match package uid",
+                securityException);
+        assertEquals(
+                "android does not belong to uid " + Process.myUid(),
+                securityException.getMessage());
+    }
+
+    @AsbSecurityTest(cveBugId = 308138385)
+    @RequiresFlagsEnabled(com.android.server.am.Flags.FLAG_SERVICE_CHECK_CALLING_PKG)
+    @Test
+    public void testActivityManager_peekService_rejectIfCallerUidNotEqualsPackageUid()
+            throws Exception {
+        SecurityException securityException = null;
+        Exception unexpectedException = null;
+        try {
+            final Object iam = ActivityManager.class.getDeclaredMethod("getService").invoke(null);
+            Class.forName("android.app.IActivityManager")
+                    .getDeclaredMethod("peekService", Intent.class, String.class, String.class)
+                    .invoke(
+                            iam,
+                            /* service= */ null,
+                            /* resolvedType= */ null,
+                            /* callingPackage= */ "android");
+        } catch (SecurityException e) {
+            securityException = e;
+        } catch (InvocationTargetException e) {
+            if (e.getCause() instanceof SecurityException) {
+                securityException = (SecurityException) e.getCause();
+            } else {
+                unexpectedException = e;
+            }
+        } catch (Exception e) {
+            unexpectedException = e;
+        }
+        if (unexpectedException != null) {
+            Log.w("ActivityManagerTest", "Unexpected exception", unexpectedException);
+            fail(
+                    "ActivityManagerService.peekService() API should have thrown SecurityException"
+                        + " when invoked from process with uid not matching target package uid.");
         }
 
         assertNotNull("Expected SecurityException when caller's uid doesn't match package uid",

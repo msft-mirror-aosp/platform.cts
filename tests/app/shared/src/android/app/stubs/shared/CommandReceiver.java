@@ -551,8 +551,7 @@ public class CommandReceiver extends BroadcastReceiver {
     /**
      * Directly call IActivityManager.startService() using a spoofed packageName which is known to
      * be allowlisted by Android framework to be able to start foreground service from the
-     * background. Framework will disallow the foreground service to start from the background and a
-     * ForegroundServiceStartNotAllowedException will be caught.
+     * background. Framework will disallow the service from starting.
      *
      * @param context
      * @param commandIntent
@@ -587,7 +586,17 @@ public class CommandReceiver extends BroadcastReceiver {
                             spoofPackageName,
                             null,
                             android.os.Process.myUserHandle().getIdentifier());
+        } catch (SecurityException e) {
+            if (!com.android.server.am.Flags.serviceCheckCallingPkg()) {
+                // This is not expected when the flag is disabled
+                throw e;
+            }
+            Log.d(TAG, "startForegroundService gets a SecurityException", e);
         } catch (ForegroundServiceStartNotAllowedException e) {
+            if (com.android.server.am.Flags.serviceCheckCallingPkg()) {
+                // This is not expected when the flag is enabled
+                throw e;
+            }
             Log.d(
                     TAG,
                     "startForegroundService gets an "
