@@ -37,7 +37,6 @@ import static org.junit.Assert.assertThrows;
 
 import android.companion.virtual.VirtualDeviceManager.VirtualDevice;
 import android.companion.virtual.VirtualDeviceParams;
-import android.companion.virtual.camera.CameraCharacteristicsBuilder;
 import android.companion.virtual.camera.VirtualCameraCallback;
 import android.companion.virtual.camera.VirtualCameraConfig;
 import android.companion.virtualdevice.flags.Flags;
@@ -331,10 +330,9 @@ public class VirtualCameraConfigTest {
     @RequiresFlagsEnabled({Flags.FLAG_EXTERNAL_VIRTUAL_CAMERAS, Flags.FLAG_VIRTUAL_CAMERA_METADATA})
     public void virtualCameraConfigBuilder_multipleExternalCameraWithCharacteristics_succeeds() {
         CameraCharacteristics characteristics =
-                new CameraCharacteristicsBuilder()
+                new CameraCharacteristics.Builder()
                         .set(CameraCharacteristics.LENS_FACING, LENS_FACING_EXTERNAL)
-                        .set(
-                                CameraCharacteristics.SENSOR_ORIENTATION,
+                        .set(CameraCharacteristics.SENSOR_ORIENTATION,
                                 CAMERA_SENSOR_ORIENTATION_CHARACTERISTIC)
                         .build();
 
@@ -376,7 +374,7 @@ public class VirtualCameraConfigTest {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_CAMERA_METADATA)
     public void parcelAndUnparcelCharacteristics_matches() {
-        CameraCharacteristics characteristics = new CameraCharacteristicsBuilder()
+        CameraCharacteristics characteristics = new CameraCharacteristics.Builder()
                 .set(CameraCharacteristics.LENS_FACING, CAMERA_LENS_FACING_CHARACTERISTIC)
                 .set(CameraCharacteristics.SENSOR_ORIENTATION,
                         CAMERA_SENSOR_ORIENTATION_CHARACTERISTIC)
@@ -419,7 +417,7 @@ public class VirtualCameraConfigTest {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_CAMERA_METADATA)
     public void conflictingLensFacing_throws() {
-        CameraCharacteristics characteristics = new CameraCharacteristicsBuilder()
+        CameraCharacteristics characteristics = new CameraCharacteristics.Builder()
                 .set(CameraCharacteristics.LENS_FACING, CAMERA_LENS_FACING_CHARACTERISTIC)
                 .build();
 
