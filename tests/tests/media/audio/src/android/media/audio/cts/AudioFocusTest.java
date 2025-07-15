@@ -158,7 +158,7 @@ public class AudioFocusTest {
         Vibrator vibrator = mContext.getSystemService(Vibrator.class);
         mHasVibration = (vibrator != null) && vibrator.hasVibrator();
 
-        mMultiFocusEnabled = audioFocusDesktop() ? false : mAM.isMultiAudioFocusEnabled();
+        mMultiFocusEnabled = !audioFocusDesktop() ? false : mAM.isMultiAudioFocusEnabled();
 
         mInitialRingerMode = mAM.getRingerMode();
         // set Zen to off (interruption filter set to ALL) and ringer mode to NORMAL
