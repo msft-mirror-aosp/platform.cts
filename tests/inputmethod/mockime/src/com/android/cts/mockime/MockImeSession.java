@@ -1996,6 +1996,14 @@ public class MockImeSession implements AutoCloseable {
         return callCommandInternal("setImeCaptionBarVisible", params);
     }
 
+    /**
+     * Calls {@link android.inputmethodservice.InputMethodService#isImeNavigationBarShownForTesting}
+     */
+    @NonNull
+    public ImeCommand callIsImeCaptionBarVisible() {
+        return callCommandInternal("isImeCaptionBarVisible", new Bundle());
+    }
+
     @NonNull
     public ImeCommand callGetImeCaptionBarHeight() {
         return callCommandInternal("getImeCaptionBarHeight", new Bundle());
