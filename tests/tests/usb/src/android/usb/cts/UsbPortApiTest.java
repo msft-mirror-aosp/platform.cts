@@ -79,6 +79,8 @@ public class UsbPortApiTest {
         PackageManager pm = mContext.getPackageManager();
         MockitoAnnotations.initMocks(this);
 
+        UsbManagerApiTest.commonUsbSetUp(pm);
+
         Assert.assertNotNull(mUsbManagerSys);
         Assert.assertNotNull(mUsbManagerMock =
                 new UsbManager(mContext, mMockUsbService));
