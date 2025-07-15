@@ -38,10 +38,6 @@ public class BasicAdminReceiver extends DeviceAdminReceiver {
     final static String ACTION_USER_STOPPED = "com.android.cts.deviceowner.action.USER_STOPPED";
     final static String ACTION_USER_SWITCHED = "com.android.cts.deviceowner.action.USER_SWITCHED";
     final static String EXTRA_USER_HANDLE = "com.android.cts.deviceowner.extra.USER_HANDLE";
-    final static String ACTION_NETWORK_LOGS_AVAILABLE =
-            "com.android.cts.deviceowner.action.ACTION_NETWORK_LOGS_AVAILABLE";
-    final static String EXTRA_NETWORK_LOGS_BATCH_TOKEN =
-            "com.android.cts.deviceowner.extra.NETWORK_LOGS_BATCH_TOKEN";
 
     public static ComponentName getComponentName(Context context) {
         return new ComponentName(context, BasicAdminReceiver.class);
@@ -79,19 +75,6 @@ public class BasicAdminReceiver extends DeviceAdminReceiver {
     @Override
     public void onUserSwitched(Context context, Intent intent, UserHandle userHandle) {
         sendUserBroadcast(context, ACTION_USER_SWITCHED, userHandle);
-    }
-
-    @Override
-    public void onNetworkLogsAvailable(Context context, Intent intent, long batchToken,
-            int networkLogsCount) {
-        Log.d(TAG, "onNetworkLogsAvailable() on user " + context.getUserId()
-                + ": token=" + batchToken + ", count=" + networkLogsCount);
-        super.onNetworkLogsAvailable(context, intent, batchToken, networkLogsCount);
-        // send the broadcast, the rest of the test happens in NetworkLoggingTest
-        Intent batchIntent = new Intent(ACTION_NETWORK_LOGS_AVAILABLE);
-        batchIntent.putExtra(EXTRA_NETWORK_LOGS_BATCH_TOKEN, batchToken);
-
-        DeviceOwnerHelper.sendBroadcastToTestAppReceivers(context, batchIntent);
     }
 
     @Override

@@ -49,7 +49,6 @@ public final class OrgOwnedProfileOwnerTest extends BaseDevicePolicyTest {
     private static final String CERT_INSTALLER_APK = DeviceAndProfileOwnerTest.CERT_INSTALLER_APK;
     private static final String DELEGATE_APP_PKG = DeviceAndProfileOwnerTest.DELEGATE_APP_PKG;
     private static final String DELEGATE_APP_APK = DeviceAndProfileOwnerTest.DELEGATE_APP_APK;
-    private static final String LOG_TAG_PROFILE_OWNER = "profile-owner";
 
     private static final String ADMIN_RECEIVER_TEST_CLASS =
             DeviceAndProfileOwnerTest.ADMIN_RECEIVER_TEST_CLASS;
@@ -63,9 +62,7 @@ public final class OrgOwnedProfileOwnerTest extends BaseDevicePolicyTest {
     private static final String USER_IS_NOT_STARTED = "User is not started";
     private static final long USER_STOP_TIMEOUT_SEC = 60;
 
-    protected int mUserId;
-    private static final String DISALLOW_CONFIG_LOCATION = "no_config_location";
-    private static final String CALLED_FROM_PARENT = "calledFromParent";
+    private int mUserId;
 
     @Rule
     public DeviceJUnit4ClassRunner.TestLogData mLogger = new DeviceJUnit4ClassRunner.TestLogData();
@@ -456,59 +453,6 @@ public final class OrgOwnedProfileOwnerTest extends BaseDevicePolicyTest {
         runDeviceTestsAsUser(DEVICE_ADMIN_PKG, ".DeviceIdAttestationTest",
                 "testSucceedsWithProfileOwnerIdsGrant", mUserId);
 
-    }
-
-    @Test
-    public void testNetworkLogging() throws Exception {
-        installAppAsUser(DEVICE_ADMIN_APK, mMainUserId);
-        testNetworkLoggingOnWorkProfile(DEVICE_ADMIN_PKG, ".NetworkLoggingTest");
-    }
-
-    @Test
-    public void testNetworkLoggingDelegate() throws Exception {
-        installAppAsUser(DELEGATE_APP_APK, mUserId);
-        installAppAsUser(DEVICE_ADMIN_APK, mMainUserId);
-        try {
-            runDeviceTestsAsUser(DELEGATE_APP_PKG, ".WorkProfileNetworkLoggingDelegateTest",
-                    "testCannotAccessApis", mUserId);
-            // Set network logging delegate
-            runDeviceTestsAsUser(DEVICE_ADMIN_PKG, ".NetworkLoggingTest",
-                    "testSetDelegateScope_delegationNetworkLogging", mUserId);
-
-            testNetworkLoggingOnWorkProfile(DELEGATE_APP_PKG,
-                    ".WorkProfileNetworkLoggingDelegateTest");
-        } finally {
-            // Remove network logging delegate
-            runDeviceTestsAsUser(DEVICE_ADMIN_PKG, ".NetworkLoggingTest",
-                    "testSetDelegateScope_noDelegation", mUserId);
-        }
-    }
-
-    private void testNetworkLoggingOnWorkProfile(String packageName, String testClassName)
-            throws Exception {
-        try {
-            // Turn network logging on.
-            runDeviceTestsAsUser(packageName, testClassName,
-                    "testSetNetworkLogsEnabled_true", mUserId);
-
-            // Connect to websites from work profile, should be logged.
-            runDeviceTestsAsUser(packageName, testClassName,
-                    "testConnectToWebsites_shouldBeLogged", mUserId);
-            // Connect to websites from personal profile, should not be logged.
-            runDeviceTestsAsUser(
-                    DEVICE_ADMIN_PKG,
-                    ".NetworkLoggingTest",
-                    "testConnectToWebsites_shouldNotBeLogged",
-                    mMainUserId);
-
-            // Verify all work profile network logs have been received.
-            runDeviceTestsAsUser(packageName, testClassName,
-                    "testRetrieveNetworkLogs_forceNetworkLogs_receiveNetworkLogs", mUserId);
-        } finally {
-            // Turn network logging off.
-            runDeviceTestsAsUser(packageName, testClassName,
-                    "testSetNetworkLogsEnabled_false", mUserId);
-        }
     }
 
     private void toggleQuietMode(boolean quietModeEnable) throws Exception {
