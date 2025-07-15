@@ -32,25 +32,20 @@ import android.app.admin.DevicePolicyManager.LOCK_TASK_FEATURE_QUICK_SETTINGS
 import android.app.admin.DevicePolicyManager.LOCK_TASK_FEATURE_SYSTEM_INFO
 import android.app.supervision.flags.Flags.FLAG_ENABLE_LOCK_TASK_FEATURE_QUICK_SETTINGS
 import android.permission.flags.Flags.FLAG_ENABLE_SYSTEM_SUPERVISION_ROLE_BEHAVIOR
-import android.platform.test.annotations.RequiresFlagsEnabled
-import android.platform.test.flag.junit.CheckFlagsRule
-import android.platform.test.flag.junit.DeviceFlagsValueProvider
+import com.android.bedstead.flags.annotations.RequireFlagsEnabled
 import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.permissions.annotations.EnsureHasPermission
 import com.android.compatibility.common.util.ApiTest
 import com.google.common.truth.Truth.assertThat
-import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(BedsteadJUnit4::class)
-@RequiresFlagsEnabled(
+@RequireFlagsEnabled(
     FLAG_ENABLE_LOCK_TASK_FEATURE_QUICK_SETTINGS,
     FLAG_ENABLE_SYSTEM_SUPERVISION_ROLE_BEHAVIOR,
 )
 class LockTaskTest : BaseSupervisionTest() {
-    @get:Rule val checkFlagsRule: CheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
-
     @Test
     @ApiTest(
         apis =
