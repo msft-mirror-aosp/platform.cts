@@ -32,4 +32,5 @@ interface ITestService {
     void sendIntentSender(in IntentSender intentSender, in Bundle sendOptions);
     void startActivityIntent(in int activityId, in Intent intent, in Bundle options);
     void finishActivity(in int activityId);
+    void sendBroadcast(in Intent intent, in Bundle options);
 }

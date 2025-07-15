@@ -22,6 +22,7 @@ import android.app.Activity;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.content.ComponentName;
+import android.content.Context;
 import android.content.Intent;
 import android.content.IntentSender;
 import android.os.Binder;
@@ -39,12 +40,21 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class TestService extends Service {
+    public static final int DEFAULT_ACTIVITY_ID = -1;
+    public static final int BROADCAST_ID = -2;
+
     static final String TAG = TestService.class.getName();
     private final ITestService mBinder = new MyBinder();
 
     // The latest ForegroundActivity created. It is stored to start a PendingIntent.
     private static final ConcurrentHashMap<Integer, Activity> sForegroundActivities =
             new ConcurrentHashMap<>();
+    private static volatile Context sBroadcastReceiverContext = null;
+
+    /** Notify that a broadcast has been received. */
+    public static void onBroadcastReceived(Context broadcastReceiverContext) {
+        sBroadcastReceiverContext = broadcastReceiverContext;
+    }
 
     @Override
     public IBinder onBind(Intent intent) {
@@ -205,8 +215,18 @@ public class TestService extends Service {
         @Override
         public void startActivityIntent(int activityId, Intent intent, Bundle options) {
             try {
+                if (activityId == BROADCAST_ID) {
+                    if (sBroadcastReceiverContext == null) {
+                        throw new IllegalArgumentException(
+                                "startActivityIntent("
+                                        + intent
+                                        + ") in broadcast context, but no broadcast received.");
+                    }
+                    sBroadcastReceiverContext.startActivity(intent, options);
+                    return;
+                }
                 Activity activity = sForegroundActivities.get(activityId);
-                if (activity == null) {
+                if (activityId == DEFAULT_ACTIVITY_ID && activity == null) {
                     if ((intent.getFlags() & Intent.FLAG_ACTIVITY_NEW_TASK) == 0) {
                         throw new IllegalArgumentException(
                                 "startActivityIntent("
@@ -214,7 +234,7 @@ public class TestService extends Service {
                                         + ") without FLAG_ACTIVITY_NEW_TASK and no running"
                                         + " Activity.");
                     }
-                    startActivity(intent);
+                    startActivity(intent, options);
                 } else {
                     activity.startActivity(intent, options);
                 }
@@ -236,6 +256,19 @@ public class TestService extends Service {
                 throw e;
             } catch (Exception e) {
                 Log.e(TAG, "finishActivity failed", e);
+                throw new AssertionError(e);
+            }
+        }
+
+        @Override
+        public void sendBroadcast(Intent intent, Bundle bundle) {
+            try {
+                getApplicationContext().sendBroadcast(intent, null, bundle);
+            } catch (IllegalArgumentException e) {
+                Log.w(TAG, "sendBroadcast failed", e);
+                throw e;
+            } catch (Exception e) {
+                Log.e(TAG, "sendBroadcast failed", e);
                 throw new AssertionError(e);
             }
         }

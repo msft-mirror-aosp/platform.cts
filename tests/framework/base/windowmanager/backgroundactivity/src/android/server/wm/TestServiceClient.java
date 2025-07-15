@@ -149,6 +149,18 @@ public class TestServiceClient implements ITestService {
     }
 
     @Override
+    public void sendBroadcast(Intent intent, Bundle bundle) throws RemoteException {
+        mTestService.sendBroadcast(intent, bundle);
+    }
+
+    /**
+     * @see #sendBroadcast(Intent, Bundle)
+     */
+    public void sendBroadcast(Intent intent) throws RemoteException {
+        mTestService.sendBroadcast(intent, null);
+    }
+
+    @Override
     public IBinder asBinder() {
         throw new UnsupportedOperationException();
     }
