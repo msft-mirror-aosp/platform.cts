@@ -18,6 +18,7 @@ package android.content.pm.cts;
 
 import static android.content.pm.Flags.FLAG_VERIFICATION_SERVICE;
 import static android.content.pm.PackageInstaller.DEVELOPER_VERIFICATION_POLICY_BLOCK_FAIL_CLOSED;
+import static android.content.pm.PackageInstaller.DEVELOPER_VERIFICATION_POLICY_BLOCK_FAIL_OPEN;
 import static android.content.pm.PackageInstaller.DEVELOPER_VERIFICATION_POLICY_NONE;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -29,6 +30,7 @@ import android.content.Context;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageInstaller;
 import android.content.pm.PackageManager;
+import android.os.Parcel;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.AppModeNonSdkSandbox;
 import android.platform.test.annotations.RequiresFlagsEnabled;
@@ -135,5 +137,33 @@ public class DeveloperVerifierServiceTest {
                                 SecurityException.class,
                                 mPackageInstaller::getDeveloperVerificationPolicyDelegatePackage),
                 android.Manifest.permission.DEVELOPER_VERIFICATION_AGENT);
+    }
+
+    @Test
+    public void testGetDeveloperVerificationUserConfirmationInfoThrowsWithoutPermission() {
+        expectThrows(
+                SecurityException.class,
+                () ->
+                        mPackageInstaller.getDeveloperVerificationUserConfirmationInfo(
+                                100 // random session ID
+                                ));
+    }
+
+    @Test
+    public void testDeveloperVerificationUserConfirmationInfoParcel() {
+        PackageInstaller.DeveloperVerificationUserConfirmationInfo info =
+                new PackageInstaller.DeveloperVerificationUserConfirmationInfo(
+                        DEVELOPER_VERIFICATION_POLICY_BLOCK_FAIL_OPEN,
+                        PackageInstaller.DeveloperVerificationUserConfirmationInfo
+                                .DEVELOPER_VERIFICATION_USER_ACTION_NEEDED_REASON_UNKNOWN);
+        Parcel parcel = Parcel.obtain();
+        info.writeToParcel(parcel, 0);
+        parcel.setDataPosition(0);
+        PackageInstaller.DeveloperVerificationUserConfirmationInfo infoFromParcel =
+                PackageInstaller.DeveloperVerificationUserConfirmationInfo.CREATOR.createFromParcel(
+                        parcel);
+        assertThat(infoFromParcel.getVerificationPolicy()).isEqualTo(info.getVerificationPolicy());
+        assertThat(infoFromParcel.getUserActionNeededReason())
+                .isEqualTo(info.getUserActionNeededReason());
     }
 }
