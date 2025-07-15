@@ -43,6 +43,7 @@
     <!-- For AuthenticationPolicyManager CTS test -->
     <uses-permission android:name="android.permission.MANAGE_BIOMETRIC"/>
     <uses-permission android:name="android.permission.MANAGE_SECURE_LOCK_DEVICE"/>
+    <uses-permission android:name="android.permission.SET_BIOMETRIC_DIALOG_ADVANCED"/>
     <uses-permission android:name="android.permission.TEST_BIOMETRIC"/>
     <uses-permission android:name="android.permission.USE_BIOMETRIC"/>
     <uses-permission android:name="android.permission.USE_BIOMETRIC_INTERNAL"/>

@@ -19,7 +19,6 @@ package android.telephony4.cts;
 import static androidx.test.InstrumentationRegistry.getContext;
 
 import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.content.Context;
@@ -28,8 +27,6 @@ import android.os.AsyncTask;
 import android.telephony.SmsManager;
 import android.telephony.TelephonyManager;
 import android.telephony.data.NetworkSlicingConfig;
-
-import com.android.internal.telephony.flags.Flags;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -227,22 +224,6 @@ public class SimRestrictedApisTest {
         try {
             if (isSimCardPresent()) {
                 mTelephonyManager.sendEnvelopeWithStatus("");
-                fail("Expected SecurityException. App doesn't have carrier privileges.");
-            }
-        } catch (SecurityException expected) {
-        }
-    }
-
-    /**
-     * Tests the TelephonyManager.nvReadItem() API. This makes a call to nvReadItem() API and
-     * expects a SecurityException since the test apk is not signed by a certificate on the SIM.
-     */
-    @Test
-    public void testNvReadItem() {
-        assumeFalse(Flags.cleanupCdma());
-        try {
-            if (isSimCardPresent()) {
-                mTelephonyManager.nvReadItem(0);
                 fail("Expected SecurityException. App doesn't have carrier privileges.");
             }
         } catch (SecurityException expected) {

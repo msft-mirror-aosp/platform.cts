@@ -1,1 +1,3 @@
 include platform/frameworks/base:/services/core/java/com/android/server/notification/OWNERS
+
+per-file src/android/app/notification/current/cts/SensitiveNotificationRedactionTest.kt = file:platform/frameworks/base:/core/java/android/permission/OWNERS

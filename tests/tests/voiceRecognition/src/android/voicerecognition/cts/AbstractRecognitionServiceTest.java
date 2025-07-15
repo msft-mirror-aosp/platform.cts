@@ -71,6 +71,7 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -381,6 +382,7 @@ abstract class AbstractRecognitionServiceTest {
             List<SequenceExecutionInfo> sequenceExecutionInfos,
             boolean inOrder) {
         mUiDevice.waitForIdle();
+        boolean destroyTriggered = false;
 
         // Initialize the recognizers to be used and clear their invoked callbacks list.
         for (int recognizerIndex = 0;
@@ -444,11 +446,26 @@ abstract class AbstractRecognitionServiceTest {
 
             // If the flag is set, wait for the service to propagate the callback.
             if (sei.mExpectedRecognizerServiceMethodsToPropagate.get(executionStep)) {
-                expectedServiceMethodsRunCount++;
+                if (recognizerMethod.equals(RECOGNIZER_METHOD_DESTROY)) {
+                    if (!destroyTriggered) {
+                        // Destroy func calls can lead to unbind and hence the final count might
+                        // not match
+                        expectedServiceMethodsRunCount++;
+                        destroyTriggered = true;
+                    }
+                } else {
+                    expectedServiceMethodsRunCount++;
+                }
                 int finalExpectedServiceMethodsRunCount = expectedServiceMethodsRunCount;
-                PollingCheck.waitFor(SEQUENCE_TEST_WAIT_TIMEOUT_MS,
-                        () -> CtsRecognitionService.totalInvokedRecognizerMethodsCount()
-                                == finalExpectedServiceMethodsRunCount);
+                if (destroyTriggered) {
+                    PollingCheck.waitFor(SEQUENCE_TEST_WAIT_TIMEOUT_MS,
+                            () -> CtsRecognitionService.totalInvokedRecognizerMethodsCount()
+                                    >= finalExpectedServiceMethodsRunCount);
+                } else {
+                    PollingCheck.waitFor(SEQUENCE_TEST_WAIT_TIMEOUT_MS,
+                            () -> CtsRecognitionService.totalInvokedRecognizerMethodsCount()
+                                    == finalExpectedServiceMethodsRunCount);
+                }
             }
 
             // TODO(kiridza): Make this part of the sequence execution more robust.
