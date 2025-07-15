@@ -290,6 +290,7 @@ public class EmbeddedPhotoPickerTest {
                 sDevice.findObject(getUiObjectMatchingTextSelector(PHOTOS_TAB_LABEL, mDisplayId))
                         .getParent()
                         .getParent()
+                        .getParent()
                         .getParent();
         assertThat(surfacePackage).isNotNull();
         int oldWidth = surfacePackage.getVisibleBounds().width();
@@ -305,6 +306,7 @@ public class EmbeddedPhotoPickerTest {
         assertPhotosTabExists();
         UiObject2 newSurfacePackage =
                 sDevice.findObject(getUiObjectMatchingTextSelector(PHOTOS_TAB_LABEL, mDisplayId))
+                        .getParent()
                         .getParent()
                         .getParent()
                         .getParent();
