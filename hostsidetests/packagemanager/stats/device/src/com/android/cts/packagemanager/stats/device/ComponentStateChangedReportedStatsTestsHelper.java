@@ -18,7 +18,6 @@ package com.android.cts.packagemanager.stats.device;
 
 import static android.content.pm.PackageManager.COMPONENT_ENABLED_STATE_DISABLED;
 import static android.content.pm.PackageManager.COMPONENT_ENABLED_STATE_ENABLED;
-import static android.content.pm.PackageManager.DONT_KILL_APP;
 
 import static org.junit.Assert.assertEquals;
 
@@ -56,9 +55,12 @@ public class ComponentStateChangedReportedStatsTestsHelper {
 
     @Test
     public void testSetApplicationEnabledSetting() {
-        SystemUtil.runWithShellPermissionIdentity(() ->
-                mPackageManager.setApplicationEnabledSetting(TEST_COMPONENT_STATE_APP_PACKAGE_NAME,
-                        COMPONENT_ENABLED_STATE_ENABLED, DONT_KILL_APP));
+        SystemUtil.runWithShellPermissionIdentity(
+                () ->
+                        mPackageManager.setApplicationEnabledSetting(
+                                TEST_COMPONENT_STATE_APP_PACKAGE_NAME,
+                                COMPONENT_ENABLED_STATE_ENABLED,
+                                0 /* flags */));
         assertEquals(COMPONENT_ENABLED_STATE_ENABLED,
                 mPackageManager.getApplicationEnabledSetting(
                         TEST_COMPONENT_STATE_APP_PACKAGE_NAME));
@@ -68,9 +70,10 @@ public class ComponentStateChangedReportedStatsTestsHelper {
     public void testSetComponentEnabledSettingForLauncherActivity() {
         ComponentName componentName = new ComponentName(TEST_COMPONENT_STATE_APP_PACKAGE_NAME,
                 FAKE_LAUNCHER_ACTIVITY_NAME);
-        SystemUtil.runWithShellPermissionIdentity(() ->
-                mPackageManager.setComponentEnabledSetting(componentName,
-                        COMPONENT_ENABLED_STATE_ENABLED, DONT_KILL_APP));
+        SystemUtil.runWithShellPermissionIdentity(
+                () ->
+                        mPackageManager.setComponentEnabledSetting(
+                                componentName, COMPONENT_ENABLED_STATE_ENABLED, 0 /* flags */));
         assertEquals(COMPONENT_ENABLED_STATE_ENABLED,
                 mPackageManager.getComponentEnabledSetting(componentName));
     }
@@ -79,9 +82,10 @@ public class ComponentStateChangedReportedStatsTestsHelper {
     public void testSetComponentEnabledSettingForNoLauncherActivity() {
         ComponentName componentName = new ComponentName(TEST_COMPONENT_STATE_APP_PACKAGE_NAME,
                 FAKE_NO_LAUNCHER_ACTIVITY_NAME);
-        SystemUtil.runWithShellPermissionIdentity(() ->
-                mPackageManager.setComponentEnabledSetting(componentName,
-                        COMPONENT_ENABLED_STATE_ENABLED, DONT_KILL_APP));
+        SystemUtil.runWithShellPermissionIdentity(
+                () ->
+                        mPackageManager.setComponentEnabledSetting(
+                                componentName, COMPONENT_ENABLED_STATE_ENABLED, 0 /* flags */));
         assertEquals(COMPONENT_ENABLED_STATE_ENABLED,
                 mPackageManager.getComponentEnabledSetting(componentName));
     }
@@ -105,16 +109,22 @@ public class ComponentStateChangedReportedStatsTestsHelper {
 
     @Test
     public void testComponentStateChangedReportedEnabledThenDisabledWholeApp() {
-        SystemUtil.runWithShellPermissionIdentity(() ->
-                mPackageManager.setApplicationEnabledSetting(TEST_COMPONENT_STATE_APP_PACKAGE_NAME,
-                        COMPONENT_ENABLED_STATE_ENABLED, DONT_KILL_APP));
+        SystemUtil.runWithShellPermissionIdentity(
+                () ->
+                        mPackageManager.setApplicationEnabledSetting(
+                                TEST_COMPONENT_STATE_APP_PACKAGE_NAME,
+                                COMPONENT_ENABLED_STATE_ENABLED,
+                                0 /* flags */));
         assertEquals(COMPONENT_ENABLED_STATE_ENABLED,
                 mPackageManager.getApplicationEnabledSetting(
                         TEST_COMPONENT_STATE_APP_PACKAGE_NAME));
 
-        SystemUtil.runWithShellPermissionIdentity(() ->
-                mPackageManager.setApplicationEnabledSetting(TEST_COMPONENT_STATE_APP_PACKAGE_NAME,
-                        COMPONENT_ENABLED_STATE_DISABLED, DONT_KILL_APP));
+        SystemUtil.runWithShellPermissionIdentity(
+                () ->
+                        mPackageManager.setApplicationEnabledSetting(
+                                TEST_COMPONENT_STATE_APP_PACKAGE_NAME,
+                                COMPONENT_ENABLED_STATE_DISABLED,
+                                0 /* flags */));
         assertEquals(COMPONENT_ENABLED_STATE_DISABLED,
                 mPackageManager.getApplicationEnabledSetting(
                         TEST_COMPONENT_STATE_APP_PACKAGE_NAME));
