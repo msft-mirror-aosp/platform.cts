@@ -410,7 +410,7 @@ public final class Processor extends AbstractProcessor {
                     .map(CodeBlock::toString).collect(Collectors.joining(" || "));
 
             CodeBlock runLogic = CodeBlock.of(
-                    "$1T.logic($2L).terminalException(e -> $3L).run()",
+                    "$1T.logic($2L).terminalException(e -> $3L).timeout(java.time.Duration.ofMinutes(5)).run()",
                     RETRY_CLASSNAME,
                     logicLambda.build().toString(), terminalExceptionCode);
 
@@ -536,7 +536,7 @@ public final class Processor extends AbstractProcessor {
                     .map(CodeBlock::toString).collect(Collectors.joining(" || "));
 
             CodeBlock runLogic = CodeBlock.of(
-                    "$1T.logic($2L).terminalException(e -> $3L).run()",
+                    "$1T.logic($2L).terminalException(e -> $3L).timeout(java.time.Duration.ofMinutes(5)).run()",
                     RETRY_CLASSNAME,
                     logicLambda.build().toString(), terminalExceptionCode);
 
@@ -746,7 +746,7 @@ public final class Processor extends AbstractProcessor {
                     .map(CodeBlock::toString).collect(Collectors.joining(" || "));
 
             CodeBlock runLogic = CodeBlock.of(
-                    "$1T.logic($2L).terminalException(e -> $3L).run()",
+                    "$1T.logic($2L).terminalException(e -> $3L).timeout(java.time.Duration.ofMinutes(5)).run()",
                     RETRY_CLASSNAME,
                     logicLambda.build().toString(), terminalExceptionCode);
 
