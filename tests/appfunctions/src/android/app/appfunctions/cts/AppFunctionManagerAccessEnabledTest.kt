@@ -1234,6 +1234,38 @@ class AppFunctionManagerAccessEnabledTest {
         assertThat(blockingQueue).isEmpty()
     }
 
+    @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#executeAppFunction"])
+    @Test
+    @EnsureHasNoDeviceOwner
+    @Throws(Exception::class)
+    fun executeAppFunction_largeBytes_success() = doBlocking {
+        runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
+            grantAppFunctionAccess(CURRENT_PKG, TEST_HELPER_PKG)
+            assertThat(isAppFunctionEnabled(TEST_HELPER_PKG, "echoBytes")).isTrue()
+            try {
+                val fiveMb = 1024 * 1024 * 5
+                val largeByteArray = ByteArray(fiveMb)
+                val parameters: GenericDocument =
+                    GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
+                        .setPropertyBytes("bytes", largeByteArray)
+                        .build()
+                val request =
+                    ExecuteAppFunctionRequest.Builder(TEST_HELPER_PKG, "echoBytes")
+                        .setParameters(parameters)
+                        .build()
+
+                val response = executeAppFunctionAndWait(mManager, request)
+
+                assertThat(response.isSuccess).isTrue()
+                assertThat(response.getOrNull()!!.resultDocument.getPropertyBytes("bytes"))
+                    .isEqualTo(largeByteArray)
+                assertServiceDestroyed()
+            } finally {
+                revokeAppFunctionAccess(CURRENT_PKG, TEST_HELPER_PKG)
+            }
+        }
+    }
+
     @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#isAppFunctionEnabled"])
     @Test
     @IncludeRunOnSecondaryUser
