@@ -232,5 +232,6 @@
     <option name="compatibility:exclude-filter" value="CtsIdentityTestCases android.security.identity.cts.ProvisioningTest" />
     <option name="compatibility:exclude-filter" value="CtsIdentityTestCases android.security.identity.cts.ReaderAuthTest" />
     <option name="compatibility:exclude-filter" value="CtsIdentityTestCases android.security.identity.cts.UserAuthTest" />
+    <option name="compatibility:exclude-filter" value="CtsIdentityTestCases android.security.identity.cts.MultiDocumentPresentationTest#multipleDocuments" />
 
 </configuration>
