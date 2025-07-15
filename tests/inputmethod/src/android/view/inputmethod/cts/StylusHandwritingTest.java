@@ -95,6 +95,7 @@ import android.widget.LinearLayout;
 
 import androidx.annotation.ColorInt;
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.test.filters.FlakyTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
@@ -407,10 +408,7 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
 
             // Verify calling finishStylusHandwriting() calls onFinishStylusHandwriting().
             imeSession.callFinishStylusHandwriting();
-            expectEvent(
-                    stream,
-                    editorMatcher("onFinishStylusHandwriting", marker),
-                    TIMEOUT);
+            verifyOnFinishStylusHandwriting(stream, marker);
         }
     }
 
@@ -504,6 +502,17 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
                 () -> !expectCommand(
                         stream, imeSession.callGetStylusHandwritingWindowVisibility(), TIMEOUT)
                 .getReturnBooleanValue());
+    }
+
+    private void verifyOnFinishStylusHandwriting(
+            @NonNull ImeEventStream stream, @Nullable String marker)
+            throws TimeoutException {
+        expectEvent(
+                stream,
+                marker != null
+                        ? editorMatcher("onFinishStylusHandwriting", marker)
+                        : eventMatcher("onFinishStylusHandwriting"),
+                TIMEOUT);
     }
 
     private void testHandwritingStylusEvents(boolean verifyOnInkView) throws Exception {
@@ -688,10 +697,7 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
                         false /* verifyHandwritingWindowNotShown */);
 
                 imeSession.callFinishStylusHandwriting();
-                expectEvent(
-                        stream,
-                        editorMatcher("onFinishStylusHandwriting", marker),
-                        TIMEOUT);
+                verifyOnFinishStylusHandwriting(stream, marker);
             }
         }
     }
@@ -764,10 +770,7 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
 
             // Handwriting is finished if navigation gesture is executed.
             // Make sure handwriting isn't finished.
-            notExpectEvent(
-                    stream,
-                    editorMatcher("onFinishStylusHandwriting", marker),
-                    TIMEOUT_1_S);
+            notExpectEvent(stream, editorMatcher("onFinishStylusHandwriting", marker), TIMEOUT);
         }
     }
 
@@ -898,10 +901,7 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
 
             // Finish handwriting to remove test stylus id.
             imeSession.callFinishStylusHandwriting();
-            expectEvent(
-                    stream,
-                    editorMatcher("onFinishStylusHandwriting", marker),
-                    TIMEOUT_1_S);
+            verifyOnFinishStylusHandwriting(stream, marker);
         }
     }
 
@@ -1561,10 +1561,7 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
                     TestUtils.injectStylusUpEvent(stylusPointer);
                 }
                 imeSession.callFinishStylusHandwriting();
-                expectEvent(
-                        stream,
-                        editorMatcher("onFinishStylusHandwriting", focusedMarker),
-                        TIMEOUT_1_S);
+                verifyOnFinishStylusHandwriting(stream, focusedMarker);
 
                 addVirtualStylusIdForTestSession();
                 // Now start handwriting on unfocused editor and verify toolType is available in
@@ -1799,10 +1796,7 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
             imeSession.callFinishConnectionlessStylusHandwriting("abc");
 
             // Finishing the handwriting session triggers the transition to show the real edit text.
-            expectEvent(
-                    stream,
-                    eventMatcher("onFinishStylusHandwriting"),
-                    TIMEOUT);
+            verifyOnFinishStylusHandwriting(stream, null /* marker */);
             expectEvent(stream, editorMatcher("onStartInput", delegateMarker), TIMEOUT);
             // When the real edit text start its input connection, the recognised text from the
             // connectionless handwriting session is committed.
@@ -1860,10 +1854,7 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
             TestUtils.injectStylusUpEvent(view, 0, 0);
             imeSession.callFinishConnectionlessStylusHandwriting("abc");
 
-            expectEvent(
-                    stream,
-                    eventMatcher("onFinishStylusHandwriting"),
-                    TIMEOUT);
+            verifyOnFinishStylusHandwriting(stream, null /* marker */);
 
             view.post(() -> view.getHandwritingDelegatorCallback().run());
 
@@ -2315,10 +2306,7 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
 
                 imeSession.callFinishConnectionlessStylusHandwriting("abc");
 
-                expectEvent(
-                        stream,
-                        eventMatcher("onFinishStylusHandwriting"),
-                        TIMEOUT);
+                verifyOnFinishStylusHandwriting(stream, null /* marker */);
                 assertThat(callback.mResultText).isEqualTo("abc");
                 assertThat(callback.mErrorCode).isEqualTo(-1);
             } finally {
@@ -2367,10 +2355,7 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
                 // Finish the session with no text recognized.
                 imeSession.callFinishConnectionlessStylusHandwriting("");
 
-                expectEvent(
-                        stream,
-                        eventMatcher("onFinishStylusHandwriting"),
-                        TIMEOUT);
+                verifyOnFinishStylusHandwriting(stream, null /* marker */);
                 assertThat(callback.mResultText).isNull();
                 assertThat(callback.mErrorCode)
                         .isEqualTo(CONNECTIONLESS_HANDWRITING_ERROR_NO_TEXT_RECOGNIZED);
@@ -2461,10 +2446,7 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
                     false /* verifyHandwritingWindowNotShown */);
 
             // Handwriting should finish soon.
-            expectEvent(
-                    stream,
-                    editorMatcher("onFinishStylusHandwriting", marker),
-                    TIMEOUT_1_S);
+            verifyOnFinishStylusHandwriting(stream, marker);
 
             // test setting extremely large timeout and verify we limit it to
             // STYLUS_HANDWRITING_IDLE_TIMEOUT_MS
@@ -2519,10 +2501,7 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
                 ((Activity) editText.getContext()).finish();
 
                 // Handwriting should finish soon.
-                expectEvent(
-                        stream,
-                        editorMatcher("onFinishStylusHandwriting", marker),
-                        TIMEOUT_1_S);
+                verifyOnFinishStylusHandwriting(stream, marker);
                 verifyStylusHandwritingWindowIsNotShown(stream, imeSession);
             } finally {
                 TestUtils.injectStylusUpEvent(editText, endX, endY);
@@ -2582,10 +2561,7 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
             }
 
             // Handwriting should finish soon.
-            expectEvent(
-                    stream,
-                    editorMatcher("onFinishStylusHandwriting", marker),
-                    TIMEOUT_1_S);
+            verifyOnFinishStylusHandwriting(stream, marker);
             verifyStylusHandwritingWindowIsNotShown(stream, imeSession);
             // Verify handwriting window is removed.
             assertFalse(expectCommand(
@@ -2647,10 +2623,7 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
             }
 
             // Handwriting should finish soon.
-            notExpectEvent(
-                    stream,
-                    editorMatcher("onFinishStylusHandwriting", marker),
-                    TIMEOUT_1_S);
+            notExpectEvent(stream, editorMatcher("onFinishStylusHandwriting", marker), TIMEOUT);
             verifyStylusHandwritingWindowIsShown(stream, imeSession);
             // Verify handwriting window exists.
             assertTrue(expectCommand(
@@ -2714,10 +2687,7 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
 
             // Finish handwriting to remove test stylus id.
             imeSession.callFinishStylusHandwriting();
-            expectEvent(
-                    stream,
-                    editorMatcher("onFinishStylusHandwriting", marker),
-                    TIMEOUT_1_S);
+            verifyOnFinishStylusHandwriting(stream, marker);
 
             // Verify no handwriting window after stylus is removed from device.
             assertFalse(expectCommand(
@@ -2794,10 +2764,7 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
 
             // Finish handwriting to remove test stylus id.
             imeSession.callFinishStylusHandwriting();
-            expectEvent(
-                    stream,
-                    editorMatcher("onFinishStylusHandwriting", secondaryMarker),
-                    TIMEOUT_1_S);
+            verifyOnFinishStylusHandwriting(stream, secondaryMarker);
         }
     }
 
@@ -2882,10 +2849,7 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
 
             // Finish handwriting to remove test stylus id.
             imeSession.callFinishStylusHandwriting();
-            expectEvent(
-                    stream,
-                    editorMatcher("onFinishStylusHandwriting", primaryMarker),
-                    TIMEOUT_1_S);
+            verifyOnFinishStylusHandwriting(stream, primaryMarker);
         }
     }
 
@@ -2928,10 +2892,7 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
 
             // Finish handwriting to remove test stylus id.
             imeSession.callFinishStylusHandwriting();
-            expectEvent(
-                    stream,
-                    editorMatcher("onFinishStylusHandwriting", marker),
-                    TIMEOUT_1_S);
+            verifyOnFinishStylusHandwriting(stream, marker);
 
             // Verify handwriting window is removed after stylus handwriting idle-timeout.
             TestUtils.waitOnMainUntil(() -> {
@@ -2990,10 +2951,7 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
 
             // Finish handwriting to remove test stylus id.
             imeSession.callFinishStylusHandwriting();
-            expectEvent(
-                    stream,
-                    editorMatcher("onFinishStylusHandwriting", marker),
-                    TIMEOUT_1_S);
+            verifyOnFinishStylusHandwriting(stream, marker);
 
             // Just any stylus events to delay idle-timeout
             TestUtils.injectStylusDownEvent(editText, 0, 0);
@@ -3237,10 +3195,7 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
                 pointer = TestUtils.injectStylusDownEvent(stylus, startX, startY);
                 TestUtils.injectStylusMoveEvents(pointer, startX, startY, endX, endY, number);
                 // verify finish has been called.
-                expectEvent(
-                        stream,
-                        editorMatcher("onFinishStylusHandwriting", marker),
-                        TIMEOUT_1_S);
+                verifyOnFinishStylusHandwriting(stream, marker);
                 TestUtils.injectStylusUpEvent(pointer);
                 verifyStylusHandwritingWindowIsNotShown(stream, imeSession);
             }
