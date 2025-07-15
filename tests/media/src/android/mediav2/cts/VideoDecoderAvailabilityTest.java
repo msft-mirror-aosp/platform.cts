@@ -589,6 +589,18 @@ public class VideoDecoderAvailabilityTest extends CodecDecoderTestBase {
             ptsOffset = metadata.second + 1000000L;
             buffOffset = (list.get(list.size() - 1).offset) + (list.get(list.size() - 1).size);
         }
+        int expCbCount = 0;
+        int prevWidth = getWidth(formats.get(0));
+        int prevHeight = getHeight(formats.get(0));
+        for (int i = 1; i < formats.size(); i++) {
+            int currWidth = getWidth(formats.get(i));
+            int currHeight = getHeight(formats.get(i));
+            if (currWidth != prevWidth || currHeight != prevHeight) {
+                expCbCount += 1;
+                prevWidth = currWidth;
+                prevHeight = currHeight;
+            }
+        }
         mOutputBuff = new OutputManager();
         mCodec = MediaCodec.createByCodecName(mCodecName);
         MediaFormat format = formats.get(0);
@@ -603,11 +615,12 @@ public class VideoDecoderAvailabilityTest extends CodecDecoderTestBase {
         if (obj != null) {
             mDynamicActivity.markSurface(obj.first, true);
         }
-        if (asyncHandleResource.getResourceChangeCbCount() < resFiles.size() - 1) {
-            Assert.fail(String.format("number of resource change callbacks received is less than"
-                            + " number of files tried in apb test. exp >= %d, got %d \n",
-                    resFiles.size() - 1,
-                    asyncHandleResource.getResourceChangeCbCount()) + mTestEnv + mTestConfig);
+        if (asyncHandleResource.getResourceChangeCbCount() < expCbCount) {
+            Assert.fail(String.format(
+                                "number of resource change callbacks received is less than number "
+                                + "of resolution changes seen in apb test. exp >= %d, got %d \n",
+                                expCbCount, asyncHandleResource.getResourceChangeCbCount())
+                    + mTestEnv + mTestConfig);
         }
     }
 
