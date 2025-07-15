@@ -220,6 +220,9 @@ public class CarrierConfigManagerTest {
             assertEquals("KEY_SUPPORT_ADHOC_CONFERENCE_CALLS_BOOL doesn't match static default.",
                     config.getBoolean(CarrierConfigManager.KEY_SUPPORT_ADHOC_CONFERENCE_CALLS_BOOL),
                     false);
+            assertEquals("KEY_SUPPORT_MULTI_PARTY_ANCHOR_CONF_BOOL doesn't match static default.",
+                    config.getBoolean(CarrierConfigManager.KEY_SUPPORT_MULTI_PARTY_ANCHOR_CONFERENCE_BOOL),
+                    false);
             assertEquals("KEY_SUPPORTS_CALL_COMPOSER_BOOL doesn't match static default.",
                     config.getBoolean(CarrierConfigManager.KEY_SUPPORTS_CALL_COMPOSER_BOOL),
                             false);

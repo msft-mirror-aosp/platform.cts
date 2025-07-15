@@ -206,7 +206,7 @@ public class ScreenCaptureTest extends WindowManagerTestBase {
         assertEquals(expectedMatchingPixels, actualMatchingPixels);
     }
 
-@RequiresFlagsEnabled(FLAG_READBACK_SCREENSHOT)
+    @RequiresFlagsEnabled(FLAG_READBACK_SCREENSHOT)
     @ApiTest(
             apis = {
                 "android.window.ScreenCapture.ScreenCaptureParams.Builder#build",
@@ -216,7 +216,7 @@ public class ScreenCaptureTest extends WindowManagerTestBase {
     @Test
     public void capture_setPixelFormat() throws Exception {
         ScreenCaptureResult[] result = {null};
-        int pixelFormat = HardwareBuffer.RGB_888;
+        int pixelFormat = HardwareBuffer.RGB_565;
 
         SystemUtil.runWithShellPermissionIdentity(
                 () -> {

@@ -204,6 +204,8 @@ object Components : ComponentsProvider() {
     @JvmField
     val SPLASH_SCREEN_REPLACE_THEME_ACTIVITY = component("SplashScreenReplaceThemeActivity")
     @JvmField val SPLASH_SCREEN_STYLE_THEME_ACTIVITY = component("SplashScreenStyleThemeActivity")
+    @JvmField val SPLASH_SCREEN_BACKGROUND_LIGHT_ACTIVITY =
+        component("SplashScreenBackgroundLightActivity")
 
     @JvmField val TEST_DREAM_SERVICE = component("TestDream")
 

@@ -18,6 +18,7 @@ package android.location.cts.none;
 
 import static android.location.flags.Flags.FLAG_FIX_GLONASS_ALMANAC_FREQUENCY_CHANNEL_RANGE;
 import static android.location.flags.Flags.FLAG_GNSS_ASSISTANCE_INTERFACE;
+import static android.location.flags.Flags.FLAG_SUPPORT_TOA_IN_GNSS_SATELLITE_ALMANAC;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -130,6 +131,46 @@ public class GnssAssistanceTest {
         assertThrows(
                 IllegalArgumentException.class,
                 () -> glonassSatelliteAlmanacBuilder.setFrequencyChannelNumber(7).build());
+    }
+
+    @RequiresFlagsEnabled(FLAG_SUPPORT_TOA_IN_GNSS_SATELLITE_ALMANAC)
+    @Test
+    public void testGnssSatelliteAlmanacToa() {
+
+        GnssSatelliteAlmanac satelliteAlmanac =
+                new GnssSatelliteAlmanac.Builder()
+                        .setSvid(1)
+                        .setSvHealth(0)
+                        .setEccentricity(0.00035)
+                        .setInclination(0.00726)
+                        .setOmega(0.0)
+                        .setOmega0(0.21)
+                        .setOmegaDot(-1.74e-9)
+                        .setRootA(0.0)
+                        .setM0(-0.8778)
+                        .setAf0(1.52e-5)
+                        .setAf1(0.0)
+                        .setToaSeconds(503808)
+                        .build();
+
+        Parcel parcel = Parcel.obtain();
+        satelliteAlmanac.writeToParcel(parcel, 0);
+        parcel.setDataPosition(0);
+        GnssSatelliteAlmanac newSatelliteAlmanac =
+                GnssSatelliteAlmanac.CREATOR.createFromParcel(parcel);
+
+        assertEquals(1, newSatelliteAlmanac.getSvid());
+        assertEquals(0, newSatelliteAlmanac.getSvHealth());
+        assertEqualsWithDelta(503808, newSatelliteAlmanac.getToaSeconds());
+        assertEqualsWithDelta(0.00035, newSatelliteAlmanac.getEccentricity());
+        assertEqualsWithDelta(0.00726, newSatelliteAlmanac.getInclination());
+        assertEqualsWithDelta(0.0, newSatelliteAlmanac.getOmega());
+        assertEqualsWithDelta(0.21, newSatelliteAlmanac.getOmega0());
+        assertEqualsWithDelta(-1.74e-9, newSatelliteAlmanac.getOmegaDot());
+        assertEqualsWithDelta(0.0, newSatelliteAlmanac.getRootA());
+        assertEqualsWithDelta(-0.8778, newSatelliteAlmanac.getM0());
+        assertEqualsWithDelta(1.52e-5, newSatelliteAlmanac.getAf0());
+        assertEqualsWithDelta(0.0, newSatelliteAlmanac.getAf1());
     }
 
     private void assertEqualsWithDelta(final double expected, final double actual) {

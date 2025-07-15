@@ -18,9 +18,11 @@ package android.media.audio.cts;
 
 import static android.Manifest.permission.MODIFY_AUDIO_SETTINGS_PRIVILEGED;
 import static android.Manifest.permission.QUERY_AUDIO_STATE;
+import static android.Manifest.permission.RECORD_AUDIO;
 import static android.media.AudioManager.RINGER_MODE_NORMAL;
 import static android.media.AudioManager.RINGER_MODE_SILENT;
 import static android.media.AudioManager.RINGER_MODE_VIBRATE;
+import static android.media.audio.Flags.audioFocusDesktop;
 
 import static com.google.common.truth.Truth.assertWithMessage;
 
@@ -134,6 +136,7 @@ public class AudioFocusTest {
     /** ringer mode to restore */
     private int mInitialRingerMode;
     private boolean mHasVibration;
+    private boolean mMultiFocusEnabled;
 
     @ClassRule
     @Rule
@@ -154,6 +157,8 @@ public class AudioFocusTest {
 
         Vibrator vibrator = mContext.getSystemService(Vibrator.class);
         mHasVibration = (vibrator != null) && vibrator.hasVibrator();
+
+        mMultiFocusEnabled = audioFocusDesktop() ? false : mAM.isMultiAudioFocusEnabled();
 
         mInitialRingerMode = mAM.getRingerMode();
         // set Zen to off (interruption filter set to ALL) and ringer mode to NORMAL
@@ -176,8 +181,10 @@ public class AudioFocusTest {
 
         // for query of fade out duration, focus request/abandon test methods, and focus requests
         // independently of test runner procstate
-        mInstrumentation.getUiAutomation().adoptShellPermissionIdentity(
-                MODIFY_AUDIO_SETTINGS_PRIVILEGED, QUERY_AUDIO_STATE);
+        mInstrumentation
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(
+                        MODIFY_AUDIO_SETTINGS_PRIVILEGED, QUERY_AUDIO_STATE, RECORD_AUDIO);
     }
 
     @After
@@ -314,7 +321,6 @@ public class AudioFocusTest {
         final int AUDIOFOCUS_FLAGS_SYSTEM = AUDIOFOCUS_FLAGS_SDK
                 // LOCK is System, not SDK
                 | AudioManager.AUDIOFOCUS_FLAG_LOCK;
-        final int invalidFocusFlags = AUDIOFOCUS_FLAGS_SYSTEM | (AUDIOFOCUS_FLAGS_SYSTEM << 4);
         // only SDK flags allowed
         assertThrows(IllegalArgumentException.class, () ->
                 mAM.requestAudioFocus(
@@ -343,6 +349,7 @@ public class AudioFocusTest {
         // TODO(b/380497573): replace the skip directive with a verification that the focus
         // policy is installed.
         assumeCarIsNotEnabled();
+        assumeFalse(mMultiFocusEnabled);
         final AudioAttributes[] attributes = { ATTR_DRIVE_DIR, ATTR_MEDIA };
         doTestTwoPlayersGainLoss(AudioManager.AUDIOFOCUS_GAIN, attributes, false /*no handler*/);
     }
@@ -352,6 +359,7 @@ public class AudioFocusTest {
         // TODO(b/380497573): replace the skip directive with a verification that the focus
         // policy is installed.
         assumeCarIsNotEnabled();
+        assumeFalse(mMultiFocusEnabled);
         final AudioAttributes[] attributes = { ATTR_DRIVE_DIR, ATTR_MEDIA };
         doTestTwoPlayersGainLoss(AudioManager.AUDIOFOCUS_GAIN, attributes, true /*with handler*/);
     }
@@ -361,6 +369,7 @@ public class AudioFocusTest {
         // TODO(b/380497573): replace the skip directive with a verification that the focus
         // policy is installed.
         assumeCarIsNotEnabled();
+        assumeFalse(mMultiFocusEnabled);
         final AudioAttributes[] attributes = { ATTR_DRIVE_DIR, ATTR_MEDIA };
         doTestTwoPlayersGainLoss(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT, attributes,
                 false /*no handler*/);
@@ -371,6 +380,7 @@ public class AudioFocusTest {
         // TODO(b/380497573): replace the skip directive with a verification that the focus
         // policy is installed.
         assumeCarIsNotEnabled();
+        assumeFalse(mMultiFocusEnabled);
         final AudioAttributes[] attributes = { ATTR_DRIVE_DIR, ATTR_MEDIA };
         doTestTwoPlayersGainLoss(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT, attributes,
                 true /*with handler*/);
@@ -379,6 +389,7 @@ public class AudioFocusTest {
     @Test
     @RequireNotAutomotive(reason = "Auto has its own focus policy")
     public void testAudioFocusRequestGainLossTransientDuck() throws Exception {
+        assumeFalse(mMultiFocusEnabled);
         final AudioAttributes[] attributes = { ATTR_DRIVE_DIR, ATTR_MEDIA };
         doTestTwoPlayersGainLoss(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK, attributes,
                 false /*no handler*/);
@@ -387,6 +398,7 @@ public class AudioFocusTest {
     @Test
     @RequireNotAutomotive(reason = "Auto has its own focus policy")
     public void testAudioFocusRequestGainLossTransientDuckHandler() throws Exception {
+        assumeFalse(mMultiFocusEnabled);
         final AudioAttributes[] attributes = { ATTR_DRIVE_DIR, ATTR_MEDIA };
         doTestTwoPlayersGainLoss(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK, attributes,
                 true /*with handler*/);
@@ -395,6 +407,7 @@ public class AudioFocusTest {
     @Test
     @RequireNotAutomotive(reason = "Auto has its own focus policy")
     public void testAudioFocusRequestForceDuckNotA11y() throws Exception {
+        assumeFalse(mMultiFocusEnabled);
         // verify a request that is "force duck"'d still causes loss of focus because it doesn't
         // come from an A11y service, and requests are from same uid
         final AudioAttributes[] attributes = {ATTR_MEDIA, ATTR_A11Y};
@@ -423,6 +436,7 @@ public class AudioFocusTest {
      */
     @Test
     public void testAudioMediaFocusDelayedByCall() throws Exception {
+        assumeFalse(mMultiFocusEnabled);
         Log.i(TAG, "testAudioMediaFocusDelayedByCall");
         Handler handler = new Handler(Looper.getMainLooper());
 
@@ -474,6 +488,7 @@ public class AudioFocusTest {
     @RequireNotAutomotive(reason = "Auto has its own focus policy")
     @RequireDoesNotHaveFeature(value = PackageManager.FEATURE_PC) // not required for Desktop
     public void testAudioFocusDelayedByCall() throws Exception {
+        assumeFalse(mMultiFocusEnabled);
         Log.i(TAG, "testAudioFocusDelayedByCall");
         final HandlerThread handlerThread = new HandlerThread(TAG);
         handlerThread.start();
@@ -546,6 +561,7 @@ public class AudioFocusTest {
     @RequireNotAutomotive(reason = "Auto has its own focus policy")
     @RequireDoesNotHaveFeature(value = PackageManager.FEATURE_PC) // not required for Desktop
     public void testAudioFocusTransientDelayedByCall() throws Exception {
+        assumeFalse(mMultiFocusEnabled);
         Log.i(TAG, "testAudioFocusTransientDelayedByCall start");
         final HandlerThread handlerThread = new HandlerThread(TAG);
         handlerThread.start();
@@ -620,6 +636,7 @@ public class AudioFocusTest {
     @Test
     @RequireNotAutomotive(reason = "Auto has its own focus policy")
     public void testAudioFocusRequestMediaGainLossWithPlayer() throws Exception {
+        assumeFalse(mMultiFocusEnabled);
         Log.i(TAG, "testAudioFocusRequestMediaGainLossWithPlayer start");
 
         final int NB_FOCUS_OWNERS = 2;
@@ -1050,6 +1067,7 @@ public class AudioFocusTest {
     @AppModeFull(reason = "Instant apps cannot hold permission.MODIFY_AUDIO_SETTINGS_PRIVILEGED")
     @RequireNotAutomotive(reason = "Auto has its own focus policy")
     public void testDuckedUidsAfterMediaMusic() throws Exception {
+        assumeFalse(mMultiFocusEnabled);
         // the media requests are done on USAGE_MEDIA but CONTENT_TYPE_SPEECH so there is ducking
         final AudioAttributes mediaAttributes = new AudioAttributes.Builder()
                 .setUsage(AudioAttributes.USAGE_MEDIA)
@@ -1064,6 +1082,7 @@ public class AudioFocusTest {
     @AppModeFull(reason = "Instant apps cannot hold permission.MODIFY_AUDIO_SETTINGS_PRIVILEGED")
     @RequireNotAutomotive(reason = "Auto has its own focus policy")
     public void testDuckedUidsAfterMediaSpeech() throws Exception {
+        assumeFalse(mMultiFocusEnabled);
         // the media requests are done on USAGE_MEDIA but CONTENT_TYPE_SPEECH so there is no ducking
         final AudioAttributes mediaAttributes = new AudioAttributes.Builder()
                 .setUsage(AudioAttributes.USAGE_MEDIA)
@@ -1082,6 +1101,7 @@ public class AudioFocusTest {
     @AppModeFull(reason = "Instant apps cannot hold permission.QUERY_AUDIO_STATE")
     @RequireNotAutomotive(reason = "Auto has its own focus policy")
     public void testAudioFocusRequestMediaGainLossWithSpeechPlayer() throws Exception {
+        assumeFalse(mMultiFocusEnabled);
         doTwoFocusOwnerOnePlayerFocusLoss(
                 true /*playSpeech*/,
                 false /*speechFocus*/,
@@ -1097,6 +1117,7 @@ public class AudioFocusTest {
     @AppModeFull(reason = "Instant apps cannot hold permission.QUERY_AUDIO_STATE")
     @RequireNotAutomotive(reason = "Auto has its own focus policy")
     public void testAudioFocusRequestMediaGainLossWithSpeechFocusRequest() throws Exception {
+        assumeFalse(mMultiFocusEnabled);
         doTwoFocusOwnerOnePlayerFocusLoss(
                 false /*playSpeech*/,
                 true /*speechFocus*/,
@@ -1112,6 +1133,7 @@ public class AudioFocusTest {
     @AppModeFull(reason = "Instant apps cannot hold permission.QUERY_AUDIO_STATE")
     @RequireNotAutomotive(reason = "Auto has its own focus policy")
     public void testAudioFocusRequestMediaGainLossWithPauseOnDuckFocusRequest() throws Exception {
+        assumeFalse(mMultiFocusEnabled);
         doTwoFocusOwnerOnePlayerFocusLoss(
                 false /*playSpeech*/,
                 false /*speechFocus*/,

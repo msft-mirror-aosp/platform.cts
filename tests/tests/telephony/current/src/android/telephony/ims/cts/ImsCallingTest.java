@@ -75,6 +75,7 @@ import android.util.Pair;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.ShellIdentityUtils;
 import com.android.internal.telephony.flags.Flags;
 
@@ -348,6 +349,60 @@ public class ImsCallingTest extends ImsCallingBase {
         isCallDisconnected(call, callSession);
         assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
         waitForUnboundService();
+    }
+
+    @RequiresFlagsEnabled({Flags.FLAG_REUSE_ORIGINAL_CONN_REMOTE_CONF_BEHAVIOR,
+            com.android.server.telecom.flags.Flags.FLAG_MULTI_PARTY_ANCHOR_CONF})
+    @Test
+    @ApiTest(apis={"android.telecom.Conference#setConferenceables",
+            "android.telecom.Conference#onMerge"})
+    public void testMultiPartyAnchorConferenceCall() throws Exception {
+        if (!ImsUtils.shouldTestImsCall()) {
+            return;
+        }
+
+        bindImsService();
+        mServiceCallBack = new ServiceCallBack();
+        InCallServiceStateValidator.setCallbacks(mServiceCallBack);
+
+        PersistableBundle bundle = new PersistableBundle();
+        // Enable multi party anchor conference calling support:
+        bundle.putBoolean(CarrierConfigManager.KEY_SUPPORT_MULTI_PARTY_ANCHOR_CONFERENCE_BOOL, true);
+        overrideCarrierConfig(bundle);
+
+        // Create the initial locally hosted conference:
+        makeConferenceCall();
+
+        // Add the 3rd standalone call:
+        addThirdOutgoingCall();
+        mCallSession3.addTestType(TestImsCallSessionImpl.TEST_TYPE_MULTI_PARTY_ANCHOR_CONFERENCE);
+
+        // Initiate the third call becoming a remotely hosted conference call:
+        mCallSession3.changeMultipartyState(true);
+
+        // Ensure that the third call is converted into a conference:
+        waitForCallProperties(mCall3, Call.Details.PROPERTY_CONFERENCE);
+
+        // Merge the 2 conferences together:
+        mCall3.conference(mConferenceCall);
+
+        // Wait for the locally hosted conference to resume after merge and become ACTIVE:
+        isCallActive(mConferenceCall, mConfCallSession);
+        ImsUtils.waitInCurrentState(WAIT_IN_CURRENT_STATE);
+
+        // verify third call disconnected after the multi-party anchor conference call merged:
+         assertParticipantDisconnected(mCall3);
+
+        // verify all 3 conference participant connections are connected:
+        assertParticiapantAddedToConference(3);
+
+        // disconnect and cleanup the conference call
+        mConferenceCall.disconnect();
+        assertParticiapantAddedToConference(0);
+        isCallDisconnected(mConferenceCall, mConfCallSession);
+        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
+        waitForUnboundService();
+        overrideCarrierConfig(null);
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_REUSE_ORIGINAL_CONN_REMOTE_CONF_BEHAVIOR)
@@ -1184,7 +1239,7 @@ public class ImsCallingTest extends ImsCallingBase {
 
         ImsUtils.waitInCurrentState(WAIT_IN_CURRENT_STATE);
         // verify third call disconnected after conference Merge success
-        assertParticiapantDisconnected(mCall3);
+        assertParticipantDisconnected(mCall3);
 
         // verify conference participant connections are connected.
         assertParticiapantAddedToConference(3);
@@ -1229,7 +1284,7 @@ public class ImsCallingTest extends ImsCallingBase {
 
         // verify third call disconnected.
         assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
-        assertParticiapantDisconnected(mCall3);
+        assertParticipantDisconnected(mCall3);
 
         // verify conference participant connections are connected.
         assertTrue(callingTestLatchCountdown(LATCH_IS_ON_MERGE_COMPLETE, WAIT_FOR_CALL_STATE));
@@ -2313,7 +2368,7 @@ public class ImsCallingTest extends ImsCallingBase {
         );
     }
 
-    private void assertParticiapantDisconnected(Call call) {
+    private void assertParticipantDisconnected(Call call) {
         waitUntilConditionIsTrueOrTimeout(
                 new Condition() {
                     @Override
@@ -2553,8 +2608,8 @@ public class ImsCallingTest extends ImsCallingBase {
         assertTrue("Conference call is not Active", mConfCallSession.isInCall());
 
         //Verify mCall1 and mCall2 disconnected after conference Merge success
-        assertParticiapantDisconnected(mCall1);
-        assertParticiapantDisconnected(mCall2);
+        assertParticipantDisconnected(mCall1);
+        assertParticipantDisconnected(mCall2);
 
         //Verify conference participant connections are connected.
         assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CHILDREN_CHANGED, WAIT_FOR_CALL_STATE));

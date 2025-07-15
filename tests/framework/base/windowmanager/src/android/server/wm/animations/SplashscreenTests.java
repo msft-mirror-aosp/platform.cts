@@ -29,6 +29,7 @@ import static android.server.wm.CliIntentExtra.extraString;
 import static android.server.wm.WindowManagerState.STATE_RESUMED;
 import static android.server.wm.app.Components.HANDLE_SPLASH_SCREEN_EXIT_ACTIVITY;
 import static android.server.wm.app.Components.SPLASHSCREEN_ACTIVITY;
+import static android.server.wm.app.Components.SPLASH_SCREEN_BACKGROUND_LIGHT_ACTIVITY;
 import static android.server.wm.app.Components.SPLASH_SCREEN_REPLACE_ICON_ACTIVITY;
 import static android.server.wm.app.Components.SPLASH_SCREEN_REPLACE_THEME_ACTIVITY;
 import static android.server.wm.app.Components.SPLASH_SCREEN_STYLE_THEME_ACTIVITY;
@@ -58,6 +59,8 @@ import static android.server.wm.app.Components.TestStartingWindowKeys.REQUEST_SE
 import static android.server.wm.app.Components.TestStartingWindowKeys.STYLE_THEME_COMPONENT;
 import static android.view.Display.DEFAULT_DISPLAY;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
@@ -81,6 +84,9 @@ import android.graphics.Color;
 import android.graphics.Rect;
 import android.os.Bundle;
 import android.platform.test.annotations.Presubmit;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.server.wm.ActivityManagerTestBase;
 import android.server.wm.CommandSession;
 import android.server.wm.Condition;
@@ -116,15 +122,21 @@ public class SplashscreenTests extends ActivityManagerTestBase {
     private static final int CENTER_ICON_SIZE = 192;
     private static final int BRANDING_HEIGHT = 80;
     private static final int BRANDING_DEFAULT_MARGIN = 60;
+    private ForceInvertSession mForceInvertSession;
 
     @Rule
     public final DumpOnFailure dumpOnFailure = new DumpOnFailure();
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Before
     public void setUp() throws Exception {
         super.setUp();
         mWmState.setSanityCheckWithFocusedWindow(false);
         mWmState.waitForDisplayUnfrozen();
+        mForceInvertSession = createManagedForceInvertSession();
+        mForceInvertSession.setForceInvertEnabled(false);
     }
 
     @After
@@ -466,6 +478,61 @@ public class SplashscreenTests extends ActivityManagerTestBase {
                 intent -> intent.putExtra(DELAY_RESUME, true), noIconOptions);
 
         testSplashScreenColor(SPLASH_SCREEN_REPLACE_ICON_ACTIVITY, Color.BLUE, Color.WHITE);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(android.view.accessibility.Flags.FLAG_FORCE_INVERT_COLOR)
+    public void testSplashscreenBackgroundColor_forceInvertedOff() throws Exception {
+        // TODO(b/192431448): Allow Automotive to skip this test until Splash Screen is properly
+        // applied insets by system bars in AAOS.
+        assumeFalse(isCar());
+        assumeFalse(isLeanBack());
+
+        TestUtils.waitUntil(
+                "Waiting for force invert disabled",
+                /* timeoutSecond= */ 5,
+                () -> !mForceInvertSession.isForceInvertEnabled());
+
+        final CommandSession.ActivitySession starter = prepareTestStarter();
+        final ActivityOptions noIconOptions =
+                ActivityOptions.makeBasic()
+                        .setSplashScreenStyle(SplashScreen.SPLASH_SCREEN_STYLE_SOLID_COLOR);
+        noIconOptions.setLaunchWindowingMode(WINDOWING_MODE_FULLSCREEN);
+
+        // launch from app with no-icon options
+        startActivityFromStarter(
+                starter, SPLASH_SCREEN_BACKGROUND_LIGHT_ACTIVITY, intent -> {}, noIconOptions);
+        // The windowSplashScreenContent attribute is set to WHITE.
+        // We check that the background color is unchanged when forceInvert is disabled.
+        testSplashScreenColor(SPLASH_SCREEN_BACKGROUND_LIGHT_ACTIVITY, Color.WHITE, Color.BLUE);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(android.view.accessibility.Flags.FLAG_FORCE_INVERT_COLOR)
+    public void testSplashscreenBackgroundColor_forceInvertedOn() throws Exception {
+        // TODO(b/192431448): Allow Automotive to skip this test until Splash Screen is properly
+        // applied insets by system bars in AAOS.
+        assumeFalse(isCar());
+        assumeFalse(isLeanBack());
+
+        mForceInvertSession.setForceInvertEnabled(true);
+        TestUtils.waitUntil(
+                "Waiting for force invert enabled",
+                /* timeoutSecond= */ 5,
+                () -> mForceInvertSession.isForceInvertEnabled());
+
+        final CommandSession.ActivitySession starter = prepareTestStarter();
+        final ActivityOptions noIconOptions =
+                ActivityOptions.makeBasic()
+                        .setSplashScreenStyle(SplashScreen.SPLASH_SCREEN_STYLE_SOLID_COLOR);
+        noIconOptions.setLaunchWindowingMode(WINDOWING_MODE_FULLSCREEN);
+
+        // launch from app with no-icon options
+        startActivityFromStarter(
+                starter, SPLASH_SCREEN_BACKGROUND_LIGHT_ACTIVITY, intent -> {}, noIconOptions);
+        // The windowSplashScreenContent attribute is set to WHITE.
+        // We check that the background is turned into BLACK when forceInvert is enabled.
+        testSplashScreenColor(SPLASH_SCREEN_BACKGROUND_LIGHT_ACTIVITY, Color.BLACK, Color.BLUE);
     }
 
     @Test
