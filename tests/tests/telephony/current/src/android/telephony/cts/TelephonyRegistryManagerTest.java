@@ -14,8 +14,10 @@ import android.platform.test.annotations.AppModeNonSdkSandbox;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
+import android.telephony.AccessNetworkConstants;
 import android.telephony.CallAttributes;
 import android.telephony.CallState;
+import android.telephony.NetworkRegistrationInfo;
 import android.telephony.PhoneStateListener;
 import android.telephony.PreciseCallState;
 import android.telephony.ServiceState;
@@ -202,7 +204,16 @@ public class TelephonyRegistryManagerTest {
         Log.d(TAG, "initialResult: " + initialResult);
 
         ServiceState dummyState = new ServiceState();
-        dummyState.setCdmaSystemAndNetworkId(1234, 5678);
+
+        dummyState.setVoiceRegState(ServiceState.STATE_IN_SERVICE);
+        NetworkRegistrationInfo nri =
+                new NetworkRegistrationInfo.Builder()
+                        .setTransportType(AccessNetworkConstants.TRANSPORT_TYPE_WWAN)
+                        .setDomain(NetworkRegistrationInfo.DOMAIN_CS)
+                        .setAccessNetworkTechnology(TelephonyManager.NETWORK_TYPE_UMTS)
+                        .build();
+        dummyState.addNetworkRegistrationInfo(nri);
+
         ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyRegistryMgr,
                 (trm) -> trm.notifyServiceStateChanged(
                         SubscriptionManager.getSlotIndex(
