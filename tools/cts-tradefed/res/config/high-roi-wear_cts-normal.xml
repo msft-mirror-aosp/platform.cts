@@ -13,7 +13,7 @@
      See the License for the specific language governing permissions and
      limitations under the License.
 -->
-<configuration description="Run WEAR_CTS platinum candidate tests.">
+<configuration description="Run high ROI WEAR_CTS normal tests.">
     <include name="cts-automated"/>
     <!-- CtsAccessibilityServiceTestCases -->
     <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityDragAndDropTest#testDrop_eventSentAndActionsUpdated"/>
