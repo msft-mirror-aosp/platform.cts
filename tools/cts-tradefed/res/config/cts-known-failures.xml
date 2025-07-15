@@ -557,4 +557,7 @@
     <!-- b/419777959 -->
     <option name="compatibility:exclude-filter" value="CtsAdServicesExtDataStorageServiceTest com.android.adservices.tests.extdata.AdServicesExtDataServiceCtsTest#testAdServicesExtDataStorageService" />
 
+    <!-- b/428568285 b/427411967 -->
+    <option name="compatibility:exclude-filter" value="CtsHealthFitnessDeviceTestCases android.healthconnect.cts.HealthConnectManagerTest#testGetHealthConnectDataState_afterStagingAndMerge_returnsStateIdle" />
+
 </configuration>
