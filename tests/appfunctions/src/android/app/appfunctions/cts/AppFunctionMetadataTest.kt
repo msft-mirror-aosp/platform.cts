@@ -43,6 +43,7 @@ import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Before
 import org.junit.ClassRule
+import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -186,6 +187,19 @@ class AppFunctionMetadataTest {
             assertThat(queryAppFunctionInfos(TEST_APP_A_PKG)).isEmpty()
             assertThat(queryAppFunctionInfos(TEST_APP_B_PKG))
                 .containsExactly(AppFunctionInfo(TEST_APP_B_PKG, "com.example.utils#print5"))
+        }
+    }
+
+    @Test
+    @IncludeRunOnSecondaryUser
+    @IncludeRunOnPrimaryUser
+    @Ignore("b/420892441 - Enable when allowlist enforcement is added")
+    fun installPackageWithAppFunction_notValidAgent_runtimeMetadataNotVisible() = doBlocking {
+        installPackage(TEST_APP_A_V2_PATH)
+
+        // TODO(b/420892441): Use ADB command to remove CTS package from the allowlist
+        retryAssert {
+            assertThat(queryAppFunctionInfos(TEST_APP_A_PKG).isEmpty())
         }
     }
 

@@ -15,6 +15,7 @@
  */
 package android.app.appsearch.cts.app;
 
+import static android.Manifest.permission.EXECUTE_APP_FUNCTIONS;
 import static android.Manifest.permission.READ_CALENDAR;
 import static android.Manifest.permission.READ_CONTACTS;
 import static android.Manifest.permission.READ_EXTERNAL_STORAGE;
@@ -68,6 +69,7 @@ import android.content.ServiceConnection;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.os.ParcelFileDescriptor;
+import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.util.Log;
 
@@ -84,6 +86,7 @@ import com.google.common.util.concurrent.MoreExecutors;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -160,6 +163,9 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
 
     private static final String DB_NAME = "database";
 
+    // Manually match SetSchemaRequest.EXECUTE_APP_FUNCTION as it is a hidden API and unable to
+    // access directly in  CTS test.
+    private static final int SET_SCHEMA_REQUEST_EXECUTE_APP_FUNCTION = 9;
 
     private GlobalSearchSessionShim mGlobalSearchSession;
     private AppSearchSessionShim mDb;
@@ -699,6 +705,136 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
                     assertThat(result.getSuccesses()).hasSize(1);
                 },
                 READ_SMS);
+    }
+
+    @Test
+    @RequiresFlagsDisabled(Flags.FLAG_ENABLE_APP_FUNCTION_AGENT_ALLOWLIST_CHECK)
+    public void testRequireExecuteAppFunctionPermission_withoutPermission_cannotAccess()
+            throws Exception {
+        // index a global searchable document in pkg_A and set it needs EXECUTE_APP_FUNCTIONS to
+        // read it.
+        indexGloballySearchableDocument(
+                PKG_A,
+                DB_NAME,
+                NAMESPACE_NAME,
+                "id1",
+                ImmutableSet.of(ImmutableSet.of(SET_SCHEMA_REQUEST_EXECUTE_APP_FUNCTION)));
+
+        // Not having EXECUTE_APP_FUNCTIONS cannot access the document
+        mGlobalSearchSession = createGlobalSearchSessionAsync(mContext);
+
+        // Cannot get the document
+        AppSearchBatchResult<String, GenericDocument> result =
+                mGlobalSearchSession
+                        .getByDocumentIdAsync(
+                                PKG_A,
+                                "database",
+                                new GetByDocumentIdRequest.Builder("namespace")
+                                        .addIds("id1")
+                                        .build())
+                        .get();
+        assertThat(result.getSuccesses()).isEmpty();
+    }
+
+    @Test
+    @RequiresFlagsDisabled(Flags.FLAG_ENABLE_APP_FUNCTION_AGENT_ALLOWLIST_CHECK)
+    public void testRequireExecuteAppFunctionPermission_withPermission_canAccess()
+            throws Exception {
+        // index a global searchable document in pkg_A and set it needs EXECUTE_APP_FUNCTIONS to
+        // read it.
+        indexGloballySearchableDocument(
+                PKG_A,
+                DB_NAME,
+                NAMESPACE_NAME,
+                "id1",
+                ImmutableSet.of(ImmutableSet.of(SET_SCHEMA_REQUEST_EXECUTE_APP_FUNCTION)));
+
+        // Having EXECUTE_APP_FUNCTIONS can access the document
+        SystemUtil.runWithShellPermissionIdentity(
+                () -> {
+                    mGlobalSearchSession = createGlobalSearchSessionAsync(mContext);
+
+                    // Cannot get the document
+                    AppSearchBatchResult<String, GenericDocument> result =
+                            mGlobalSearchSession
+                                    .getByDocumentIdAsync(
+                                            PKG_A,
+                                            "database",
+                                            new GetByDocumentIdRequest.Builder("namespace")
+                                                    .addIds("id1")
+                                                    .build())
+                                    .get();
+                    assertThat(result.getSuccesses()).hasSize(1);
+                },
+                EXECUTE_APP_FUNCTIONS);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_APP_FUNCTION_AGENT_ALLOWLIST_CHECK)
+    @Ignore("b/420892441 - Enable the test once allowlist enforcement is ready")
+    public void testRequireExecuteAppFunctionPermission_invalidAgent_cannotAccess()
+            throws Exception {
+        // index a global searchable document in pkg_A and set it needs EXECUTE_APP_FUNCTIONS to
+        // read it.
+        indexGloballySearchableDocument(
+                PKG_A,
+                DB_NAME,
+                NAMESPACE_NAME,
+                "id1",
+                ImmutableSet.of(ImmutableSet.of(SET_SCHEMA_REQUEST_EXECUTE_APP_FUNCTION)));
+
+        // Having EXECUTE_APP_FUNCTIONS but not allowlisted cannot access the document
+        SystemUtil.runWithShellPermissionIdentity(
+                () -> {
+                    mGlobalSearchSession = createGlobalSearchSessionAsync(mContext);
+
+                    // Cannot get the document
+                    AppSearchBatchResult<String, GenericDocument> result =
+                            mGlobalSearchSession
+                                    .getByDocumentIdAsync(
+                                            PKG_A,
+                                            "database",
+                                            new GetByDocumentIdRequest.Builder("namespace")
+                                                    .addIds("id1")
+                                                    .build())
+                                    .get();
+                    assertThat(result.getSuccesses()).isEmpty();
+                },
+                EXECUTE_APP_FUNCTIONS);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_APP_FUNCTION_AGENT_ALLOWLIST_CHECK)
+    @Ignore("b/420892441 - Enable the test once allowlist enforcement is ready")
+    public void testRequireExecuteAppFunctionPermission_validAgent_canAccess() throws Exception {
+        // index a global searchable document in pkg_A and set it needs EXECUTE_APP_FUNCTIONS to
+        // read it.
+        indexGloballySearchableDocument(
+                PKG_A,
+                DB_NAME,
+                NAMESPACE_NAME,
+                "id1",
+                ImmutableSet.of(ImmutableSet.of(SET_SCHEMA_REQUEST_EXECUTE_APP_FUNCTION)));
+
+        // Having EXECUTE_APP_FUNCTIONS and allowlisted can access the document
+        // TODO(b/420892441): Use ADB command to add CTS package to allowlist
+        SystemUtil.runWithShellPermissionIdentity(
+                () -> {
+                    mGlobalSearchSession = createGlobalSearchSessionAsync(mContext);
+
+                    // Cannot get the document
+                    AppSearchBatchResult<String, GenericDocument> result =
+                            mGlobalSearchSession
+                                    .getByDocumentIdAsync(
+                                            PKG_A,
+                                            "database",
+                                            new GetByDocumentIdRequest.Builder("namespace")
+                                                    .addIds("id1")
+                                                    .build())
+                                    .get();
+                    assertThat(result.getSuccesses()).hasSize(1);
+                },
+                EXECUTE_APP_FUNCTIONS);
     }
 
     //TODO(b/202194495) add test for READ_HOME_APP_SEARCH_DATA and READ_ASSISTANT_APP_SEARCH_DATA
