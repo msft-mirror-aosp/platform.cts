@@ -41,7 +41,6 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(BedsteadJUnit4::class)
-@AppModeFull(reason = "The SupervisionManager API is not available in instant apps.")
 @RequireFlagsEnabled(Flags.FLAG_SUPERVISION_MANAGER_APIS)
 class SupervisionStateTest : BaseSupervisionTest() {
     @get:Rule
@@ -81,7 +80,6 @@ class SupervisionStateTest : BaseSupervisionTest() {
 
     @Test
     @ApiTest(apis = ["android.app.supervision.SupervisionManager#ACTION_ENABLE_SUPERVISION"])
-    @AppModeFull(reason = "Test relies on seeing other apps")
     @RequireNotAutomotive(reason = "Only phones and tablets have the activity")
     @RequireNotWatch(reason = "Only phones and tablets have the activity")
     @RequireNotTv(reason = "Only phones and tablets have the activity")
@@ -98,7 +96,6 @@ class SupervisionStateTest : BaseSupervisionTest() {
 
     @Test
     @ApiTest(apis = ["android.app.supervision.SupervisionManager#ACTION_DISABLE_SUPERVISION"])
-    @AppModeFull(reason = "Test relies on seeing other apps")
     @RequireNotAutomotive(reason = "Only phones and tablets have the activity")
     @RequireNotWatch(reason = "Only phones and tablets have the activity")
     @RequireNotTv(reason = "Only phones and tablets have the activity")

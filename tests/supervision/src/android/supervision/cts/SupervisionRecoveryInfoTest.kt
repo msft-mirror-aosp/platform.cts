@@ -20,7 +20,6 @@ import android.app.supervision.SupervisionRecoveryInfo
 import android.app.supervision.flags.Flags
 import android.os.Parcel
 import android.os.PersistableBundle
-import android.platform.test.annotations.AppModeFull
 import com.android.bedstead.flags.annotations.RequireFlagsEnabled
 import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.compatibility.common.util.ApiTest
@@ -30,9 +29,8 @@ import org.junit.runner.RunWith
 
 /** CTS tests for [SupervisionRecoveryInfo]. */
 @RunWith(BedsteadJUnit4::class)
-@AppModeFull(reason = "The SupervisionManager API is not available in instant apps.")
 @RequireFlagsEnabled(Flags.FLAG_SUPERVISION_MANAGER_APIS)
-class SupervisionRecoveryInfoTest {
+class SupervisionRecoveryInfoTest : BaseSupervisionTest() {
     private companion object {
         const val TEST_ACCOUNT_TYPE = "test"
         const val TEST_ACCOUNT_NAME = "test.account@example-domain.com"
