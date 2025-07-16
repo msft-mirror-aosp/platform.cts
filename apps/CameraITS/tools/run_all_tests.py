@@ -618,6 +618,9 @@ def get_config_file_contents_for_scenes(config_file_contents, scenes):
   testbed_index = None
   for i, testbed in enumerate(config_file_contents['TestBeds']):
     name = testbed['Name'].lower()
+    if 'manual' in name:  # If specified, manual testbed will be used.
+      testbed_index = i
+      break
     device_specified = PLACEHOLDER_DEVICE_TEXT not in str(testbed)
     if (
         requested_tablet_scenes and

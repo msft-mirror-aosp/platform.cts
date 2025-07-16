@@ -42,6 +42,10 @@ class RunAllUnitTests(unittest.TestCase):
         os.environ['CAMERA_ITS_TOP'],
         'tools', 'unit_test_configs', 'tablet_scenes_config.yml'
     )
+    manual_config_path = os.path.join(
+        os.environ['CAMERA_ITS_TOP'],
+        'tools', 'unit_test_configs', 'manual_config.yml'
+    )
     with open(blank_config_path) as f:
       self.blank_config_file_contents = yaml.safe_load(f)
     with open(sensor_fusion_and_gen2_config_path) as f:
@@ -50,6 +54,8 @@ class RunAllUnitTests(unittest.TestCase):
       self.tablet_and_sensor_fusion_config_file_contents = yaml.safe_load(f)
     with open(tablet_scenes_config_path) as f:
       self.tablet_scenes_config_file_contents = yaml.safe_load(f)
+    with open(manual_config_path) as f:
+      self.manual_config_file_contents = yaml.safe_load(f)
 
   def _scene_folders_exist(self, scene_folders):
     """Asserts all scene_folders exist in tests directory."""
@@ -226,6 +232,24 @@ class RunAllUnitTests(unittest.TestCase):
         ['scene_ip']
     )
     self.assertIn('TEST_BED_GEN2', str(config_file_contents))
+    self.assertEqual(len(config_file_contents['TestBeds']), 1)
+
+  def test_manual_config_file_contents_valid_with_all_scenes(self):
+    """Ensures manual config is valid with all scenes."""
+    config_file_contents = run_all_tests.get_config_file_contents_for_scenes(
+        self.manual_config_file_contents,
+        ['<scene-name>']
+    )
+    self.assertIn('TEST_BED_MANUAL', str(config_file_contents))
+    self.assertEqual(len(config_file_contents['TestBeds']), 1)
+
+  def test_manual_config_file_contents_valid_with_scene5(self):
+    """Ensures manual config is valid with scene5, a manual scene."""
+    config_file_contents = run_all_tests.get_config_file_contents_for_scenes(
+        self.manual_config_file_contents,
+        ['scene5']
+    )
+    self.assertIn('TEST_BED_MANUAL', str(config_file_contents))
     self.assertEqual(len(config_file_contents['TestBeds']), 1)
 
 
