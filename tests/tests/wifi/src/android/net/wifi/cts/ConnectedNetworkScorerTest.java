@@ -157,7 +157,6 @@ public class ConnectedNetworkScorerTest extends WifiJUnit4TestBase {
         sUiDevice = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
 
         sTestHelper = new TestHelper(sContext, sUiDevice);
-        sTestHelper.turnScreenOn();
 
         // check we have >= 1 saved network
         List<WifiConfiguration> savedNetworks = ShellIdentityUtils.invokeWithShellPermissions(
@@ -200,7 +199,6 @@ public class ConnectedNetworkScorerTest extends WifiJUnit4TestBase {
         if (!sWifiManager.isWifiEnabled()) {
             ShellIdentityUtils.invokeWithShellPermissions(() -> sWifiManager.setWifiEnabled(true));
         }
-        sTestHelper.turnScreenOff();
         ShellIdentityUtils.invokeWithShellPermissions(
                 () -> sWifiManager.setVerboseLoggingEnabled(sWasVerboseLoggingEnabled));
         ShellIdentityUtils.invokeWithShellPermissions(

@@ -106,9 +106,6 @@ public class MultiStaConcurrencyRestrictedWifiNetworkSuggestionTest extends Wifi
         sUiDevice = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
         sTestHelper = new TestHelper(sContext, sUiDevice);
 
-        // turn screen on
-        sTestHelper.turnScreenOn();
-
         // turn on verbose logging for tests
         sWasVerboseLoggingEnabled = ShellIdentityUtils.invokeWithShellPermissions(
                 () -> sWifiManager.isVerboseLoggingEnabled());
@@ -207,7 +204,6 @@ public class MultiStaConcurrencyRestrictedWifiNetworkSuggestionTest extends Wifi
         // Clear any existing app state after each test.
         ShellIdentityUtils.invokeWithShellPermissions(
                 () -> sWifiManager.removeAppState(myUid(), sContext.getPackageName()));
-        sTestHelper.turnScreenOff();
     }
 
     /**

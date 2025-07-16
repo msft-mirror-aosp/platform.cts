@@ -161,8 +161,6 @@ public class TestBase extends WifiJUnit4TestBase {
         ShellIdentityUtils.invokeWithShellPermissions(
                 () -> sWifiManager.allowAutojoinGlobal(false));
 
-        // turn screen on
-        sTestHelper.turnScreenOn();
         // enable Wifi
         sWasWifiEnabled = ShellIdentityUtils.invokeWithShellPermissions(
                 () -> sWifiManager.isWifiEnabled());
@@ -178,8 +176,6 @@ public class TestBase extends WifiJUnit4TestBase {
     public static void tearDownClass() throws Exception {
         if (!sShouldRunTest) return;
 
-        // turn screen off
-        sTestHelper.turnScreenOff();
         ShellIdentityUtils.invokeWithShellPermissions(
                 () -> sWifiManager.setScanThrottleEnabled(sWasScanThrottleEnabled));
         ShellIdentityUtils.invokeWithShellPermissions(

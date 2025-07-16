@@ -376,7 +376,6 @@ public class ScanResultTest extends WifiJUnit4TestBase {
         // re-enable scan throttling
         ShellIdentityUtils.invokeWithShellPermissions(
                 () -> sWifiManager.setScanThrottleEnabled(true));
-        sTestHelper.turnScreenOn();
 
         try {
             synchronized (sMySync) {

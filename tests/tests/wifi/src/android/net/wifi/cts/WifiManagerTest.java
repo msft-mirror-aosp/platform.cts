@@ -515,11 +515,10 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
         // enable Wifi
         if (!sWifiManager.isWifiEnabled()) {
             setWifiEnabled(true);
-            startScan();
         }
         PollingCheck.check("Wifi not enabled", TEST_WAIT_DURATION_MS,
                 () -> sWifiManager.isWifiEnabled());
-
+        ShellIdentityUtils.invokeWithShellPermissions(() -> sWifiManager.reconnect());
         waitForConnection();
     }
 
