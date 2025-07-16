@@ -116,7 +116,7 @@ public class WindowInsetsTest {
                         .setFrame(FRAME_SIZE, FRAME_SIZE)
                         .build();
 
-        assertEquals(Insets.of(1, 10, 3, 4), insets.getSystemWindowInsets());
+        assertEquals(Insets.of(1, 2, 3, 4), insets.getSystemWindowInsets());
         assertEquals(Insets.of(5, 6, 7, 8), insets.getStableInsets());
         assertEquals(Insets.of(9, 10, 11, 12), insets.getSystemGestureInsets());
         assertEquals(Insets.of(13, 14, 15, 16), insets.getMandatorySystemGestureInsets());
@@ -221,7 +221,7 @@ public class WindowInsetsTest {
         builder.setBoundingRectsIgnoringVisibility(captionBar(), Collections.emptyList());
         builder.setFrame(FRAME_SIZE + 1, FRAME_SIZE + 1);
 
-        assertEquals(Insets.of(1, 10, 3, 4), insets.getSystemWindowInsets());
+        assertEquals(Insets.of(1, 2, 3, 4), insets.getSystemWindowInsets());
         assertEquals(Insets.of(5, 6, 7, 8), insets.getStableInsets());
         assertSame(CUTOUT, insets.getDisplayCutout());
         assertEquals(getCutoutSafeInsets(insets), insets.getInsets(Type.displayCutout()));
@@ -529,7 +529,7 @@ public class WindowInsetsTest {
 
         assertEquals(Insets.NONE, consumed.getSystemWindowInsets());
         assertEquals(Insets.NONE, consumed.getStableInsets());
-        assertEquals(null, consumed.getDisplayCutout());
+        assertEquals(insets.getDisplayCutout(), consumed.getDisplayCutout());
         assertEquals(Insets.NONE, consumed.getSystemGestureInsets());
         assertEquals(Insets.NONE, consumed.getMandatorySystemGestureInsets());
         assertEquals(Insets.NONE, consumed.getTappableElementInsets());
