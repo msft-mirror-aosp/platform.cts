@@ -3395,7 +3395,6 @@
     <option name="compatibility:include-filter" value="CtsVirtualDevicesAppLaunchTestCases android.virtualdevice.cts.applaunch.VirtualDeviceHomeTest#virtualDeviceHome_noCustomHomeComponent_sendHomeIntent"/>
     <option name="compatibility:include-filter" value="CtsVirtualDevicesAppLaunchTestCases android.virtualdevice.cts.applaunch.VirtualDeviceHomeTest#virtualDeviceHome_noHomeComponent_showsWallpaper"/>
     <option name="compatibility:include-filter" value="CtsVirtualDevicesAppLaunchTestCases android.virtualdevice.cts.applaunch.VirtualDeviceHomeTest#virtualDeviceHome_withCustomHomeComponent"/>
-    <option name="compatibility:include-filter" value="CtsVirtualDevicesAppLaunchTestCases android.virtualdevice.cts.applaunch.VirtualDeviceImeTest#invalidCustomImeComponent_noImeOnVirtualDisplay"/>
     <option name="compatibility:include-filter" value="CtsVirtualDevicesAppLaunchTestCases android.virtualdevice.cts.applaunch.VirtualDevicePermissionTest#permissionDialogInBlocklist_streamingEnabled_showsBlockedDialog"/>
     <option name="compatibility:include-filter" value="CtsVirtualDevicesAppLaunchTestCases android.virtualdevice.cts.applaunch.VirtualDevicePermissionTest#permissionDialogInDynamicBlocklist_streamingEnabled_showsBlockedDialog"/>
     <option name="compatibility:include-filter" value="CtsVirtualDevicesAppLaunchTestCases android.virtualdevice.cts.applaunch.VirtualDevicePermissionTest#signaturePermissionGranted_appRunningOnVirtualDevice_hasPermissionGranted"/>
