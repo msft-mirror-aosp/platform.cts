@@ -148,6 +148,15 @@ class AuthenticationPolicyManagerTest {
         waitForAllUnenrolled()
     }
 
+    @Test
+    fun enableSecureLockDeviceParams_getMessage_returnsConstructedMessage() {
+        val expectedMessage: CharSequence = "test message"
+        val params = EnableSecureLockDeviceParams(expectedMessage)
+
+        assertThat(params).isNotNull()
+        assertThat(expectedMessage).isEqualTo(params.message)
+    }
+
     @ApiTest(
         apis =
             [
@@ -155,8 +164,10 @@ class AuthenticationPolicyManagerTest {
                     "#getSecureLockDeviceAvailability"),
                 ("android.security.authenticationpolicy.AuthenticationPolicyManager" +
                     "#enableSecureLockDevice"),
-                ("android.security.authenticationpolicy.AuthenticationPolicyManager" +
-                    "#EnableSecureLockDeviceParams"),
+                ("android.security.authenticationpolicy.EnableSecureLockDeviceParams#" +
+                        "EnableSecureLockDeviceParams(CharSequence)"),
+                ("android.security.authenticationpolicy.EnableSecureLockDeviceParams" +
+                        "#getMessage"),
                 ("android.security.authenticationpolicy.AuthenticationPolicyManager" +
                     "#isSecureLockDeviceEnabled"),
             ]
@@ -179,9 +190,12 @@ class AuthenticationPolicyManagerTest {
                 .isEqualTo(SUCCESS)
             assertThat(authenticationPolicyManager.isSecureLockDeviceEnabled).isFalse()
 
+            val testMsg = "Secure lock device enabled"
+            val enableParams = EnableSecureLockDeviceParams(testMsg)
             val enableStatus =
-                authenticationPolicyManager.enableSecureLockDevice(EnableSecureLockDeviceParams(""))
+                authenticationPolicyManager.enableSecureLockDevice(enableParams)
 
+            assertThat(enableParams.message).isEqualTo(testMsg)
             assertThat(enableStatus).isEqualTo(SUCCESS)
             assertThat(authenticationPolicyManager.isSecureLockDeviceEnabled).isTrue()
             assertThat(authenticationPolicyManager.getSecureLockDeviceAvailability())
@@ -361,8 +375,10 @@ class AuthenticationPolicyManagerTest {
                     "#getSecureLockDeviceAvailability"),
                 ("android.security.authenticationpolicy.AuthenticationPolicyManager" +
                     "#disableSecureLockDevice"),
-                ("android.security.authenticationpolicy.AuthenticationPolicyManager" +
-                    "#DisableSecureLockDeviceParams"),
+                ("android.security.authenticationpolicy.DisableSecureLockDeviceParams#" +
+                        "DisableSecureLockDeviceParams(CharSequence)"),
+                ("android.security.authenticationpolicy.DisableSecureLockDeviceParams" +
+                        "#getMessage"),
                 ("android.security.authenticationpolicy.AuthenticationPolicyManager" +
                     "#isSecureLockDeviceEnabled"),
             ]
@@ -389,11 +405,12 @@ class AuthenticationPolicyManagerTest {
                 .isEqualTo(SUCCESS)
             assertThat(authenticationPolicyManager.isSecureLockDeviceEnabled).isTrue()
 
+            val testMsg = "Secure lock device disabled"
+            val disableParams = DisableSecureLockDeviceParams(testMsg)
             val disableStatus =
-                authenticationPolicyManager.disableSecureLockDevice(
-                    DisableSecureLockDeviceParams("")
-                )
+                authenticationPolicyManager.disableSecureLockDevice(disableParams)
 
+            assertThat(disableParams.message).isEqualTo(testMsg)
             assertThat(disableStatus).isEqualTo(SUCCESS)
             assertThat(authenticationPolicyManager.isSecureLockDeviceEnabled).isFalse()
             assertThat(authenticationPolicyManager.getSecureLockDeviceAvailability())
