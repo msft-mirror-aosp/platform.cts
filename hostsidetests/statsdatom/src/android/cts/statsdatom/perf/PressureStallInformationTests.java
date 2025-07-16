@@ -16,17 +16,12 @@
 
 package android.cts.statsdatom.perf;
 
-import static com.android.server.stats.Flags.FLAG_ADD_PRESSURE_STALL_INFORMATION_PULLER;
-
 import static com.google.common.truth.Truth.assertThat;
 
 import android.cts.statsdatom.lib.AtomTestUtils;
 import android.cts.statsdatom.lib.ConfigUtils;
 import android.cts.statsdatom.lib.DeviceUtils;
 import android.cts.statsdatom.lib.ReportUtils;
-import android.platform.test.annotations.RequiresFlagsEnabled;
-import android.platform.test.flag.junit.CheckFlagsRule;
-import android.platform.test.flag.junit.host.HostFlagsValueProvider;
 
 import com.android.os.AtomsProto;
 import com.android.os.performance.PerformanceExtensionAtoms;
@@ -40,7 +35,6 @@ import com.google.protobuf.ExtensionRegistry;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -53,10 +47,6 @@ public class PressureStallInformationTests extends BaseHostJUnit4Test implements
     private ExtensionRegistry mRegistry;
 
     private static final int PSI_RESOURCE_NUMBER = 3;
-
-    @Rule
-    public final CheckFlagsRule mCheckFlagsRule =
-            HostFlagsValueProvider.createCheckFlagsRule(this::getDevice);
 
     @Before
     public void setUp() throws Exception {
@@ -83,7 +73,6 @@ public class PressureStallInformationTests extends BaseHostJUnit4Test implements
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_ADD_PRESSURE_STALL_INFORMATION_PULLER)
     public void testPressureStallInformation() throws Exception {
         List<AtomsProto.Atom> atoms = pullPSIAsGaugeMetric();
         assertThat(atoms).hasSize(3);

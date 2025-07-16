@@ -103,6 +103,12 @@ public class CodecDecoderMultiAccessUnitTest extends CodecDecoderMultiAccessUnit
                 "audio/bbb_1ch_32kHz_opus.ogg");
         RECONFIG_FILE_MEDIA_TYPE_MAP.put(MediaFormat.MIMETYPE_AUDIO_AAC,
                 "audio/bbb_1ch_32kHz_aac_lc.m4a");
+        RECONFIG_FILE_MEDIA_TYPE_MAP.put(MediaFormat.MIMETYPE_AUDIO_AC3,
+                "audio/ac3_200_48kHz_128.mp4");
+        RECONFIG_FILE_MEDIA_TYPE_MAP.put(MediaFormat.MIMETYPE_AUDIO_AC4,
+                "audio/ac4_200_48kHz_48.mp4");
+        RECONFIG_FILE_MEDIA_TYPE_MAP.put(MediaFormat.MIMETYPE_AUDIO_EAC3,
+                "audio/eac3_200_48kHz_128.mp4");
     }
 
     static final List<Object[]> exhaustiveArgsList = new ArrayList<>(Arrays.asList(new Object[][]{
@@ -157,6 +163,16 @@ public class CodecDecoderMultiAccessUnitTest extends CodecDecoderMultiAccessUnit
             {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_2ch_48kHz_aac_lc.m4a"},
             {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_5ch_48kHz_aac_lc.m4a"},
             {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_6ch_48kHz_aac_lc.m4a"},
+
+            {MediaFormat.MIMETYPE_AUDIO_AC3, "audio/ac3_200_48kHz_256.mp4"},
+            {MediaFormat.MIMETYPE_AUDIO_AC3, "audio/ac3_510_48kHz_256.mp4"},
+
+            {MediaFormat.MIMETYPE_AUDIO_AC4, "audio/ac4_510_48hkz_96.mp4"},
+            {MediaFormat.MIMETYPE_AUDIO_AC4, "audio/ac4_510_48kHz_128.mp4"},
+            {MediaFormat.MIMETYPE_AUDIO_AC4, "audio/ac4_510_48kHz_256.mp4"},
+
+            {MediaFormat.MIMETYPE_AUDIO_EAC3, "audio/eac3_200_48kHz_256.mp4"},
+            {MediaFormat.MIMETYPE_AUDIO_EAC3, "audio/eac3_510_48kHz_256.mp4"},
     }));
 
 

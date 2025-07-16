@@ -2071,12 +2071,12 @@ public final class ActivityManagerTest {
             installExistingPackageAsUser(newUserId);
             final int uidFromNewUser = UserHandle.getUid(newUserId, Process.myUid());
             // Verify that calling the API for a uid on a different user results in an exception.
-            assertThrows(SecurityException.class, () -> mActivityManager.getUidProcessState(
+            assertThrows(SecurityException.class, () -> mActivityManager.getUidProcessCapabilities(
                     uidFromNewUser));
 
             // Verify that calling the API with shell identity (which has
             // INTERACT_ACROSS_USERS_FULL permission) for a uid on a different user works.
-            runWithShellPermissionIdentity(() -> mActivityManager.getUidProcessState(
+            runWithShellPermissionIdentity(() -> mActivityManager.getUidProcessCapabilities(
                     uidFromNewUser));
         } finally {
             if (newUserId != UserHandle.USER_NULL) {

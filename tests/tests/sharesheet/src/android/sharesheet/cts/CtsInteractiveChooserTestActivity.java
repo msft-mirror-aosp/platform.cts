@@ -59,12 +59,8 @@ public class CtsInteractiveChooserTestActivity extends Activity {
     private ViewGroup mChooserActionRow;
     private View mBoundsUpdatedLabel;
     private TextView mGetBoundsLabel;
-    private View mBoundsMovedLabel;
-    private Button mCollapseButton;
     private boolean mIsTargetEnabled = true;
-    @Nullable private Rect mCurrentBounds;
     private boolean mIsGetBoundsFailed = false;
-    @Nullable private Rect mPreCollapseBounds;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -106,12 +102,8 @@ public class CtsInteractiveChooserTestActivity extends Activity {
         Button disableButton = findViewById(R.id.target_status);
         disableButton.setOnClickListener((v) -> toggleTargetEnableStatus((Button) v));
 
-        mCollapseButton = findViewById(R.id.collapse);
-        mCollapseButton.setOnClickListener((v) -> minimizeChooser());
-
         mBoundsUpdatedLabel = findViewById(R.id.bounds_updated);
         mGetBoundsLabel = findViewById(R.id.get_bounds_consistent);
-        mBoundsMovedLabel = findViewById(R.id.bounds_moved);
 
         onSessionActiveStateChanged(mChooserSession != null);
     }
@@ -135,7 +127,6 @@ public class CtsInteractiveChooserTestActivity extends Activity {
     }
 
     private void onChooserBoundsChanged(Rect bounds) {
-        mCurrentBounds = bounds;
         if (!mIsGetBoundsFailed) {
             Rect sessionBounds = mChooserSession == null ? null : mChooserSession.getBounds();
             mIsGetBoundsFailed = !bounds.equals(sessionBounds);
@@ -143,9 +134,6 @@ public class CtsInteractiveChooserTestActivity extends Activity {
             mGetBoundsLabel.setText(mIsGetBoundsFailed ? "getBounds() Failed" : "getBounds() OK");
         }
         mBoundsUpdatedLabel.setVisibility(View.VISIBLE);
-        if (mPreCollapseBounds != null && mPreCollapseBounds.top < bounds.top) {
-            mBoundsMovedLabel.setVisibility(View.VISIBLE);
-        }
     }
 
     private void launchChooser() {
@@ -184,14 +172,6 @@ public class CtsInteractiveChooserTestActivity extends Activity {
         mIsTargetEnabled = !mIsTargetEnabled;
         mChooserSession.setTargetsEnabled(mIsTargetEnabled);
         button.setText(mIsTargetEnabled ? "Disable" : "Enable");
-    }
-
-    private void minimizeChooser() {
-        mPreCollapseBounds = mCurrentBounds == null ? null : mCurrentBounds;
-        mBoundsMovedLabel.setVisibility(View.GONE);
-        if (mChooserSession != null) {
-            mChooserSession.setMinimized(true);
-        }
     }
 
     private void maybeStartNewSession() {

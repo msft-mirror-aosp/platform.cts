@@ -51,6 +51,7 @@ import static android.server.wm.backgroundactivity.appa36.Components.APP_A_36_TE
 import static android.server.wm.backgroundactivity.appb.Components.APP_B_BACKGROUND_ACTIVITY;
 import static android.server.wm.backgroundactivity.appb.Components.APP_B_FOREGROUND_ACTIVITY;
 import static android.server.wm.backgroundactivity.appb.Components.APP_B_PACKAGE_NAME;
+import static android.server.wm.backgroundactivity.appb.Components.APP_B_SIMPLE_BROADCAST_RECEIVER;
 import static android.server.wm.backgroundactivity.appb.Components.APP_B_START_PENDING_INTENT_ACTIVITY;
 import static android.server.wm.backgroundactivity.appb.Components.APP_B_TEST_SERVICE;
 import static android.server.wm.backgroundactivity.appb33.Components.APP_B_33_FOREGROUND_ACTIVITY;
@@ -931,6 +932,84 @@ public class BackgroundActivityLaunchTest extends BackgroundActivityTestBase {
 
         assertActivityNotFocused(APP_A_BACKGROUND_ACTIVITY);
         assertTaskStackHasComponents(APP_B_FOREGROUND_ACTIVITY, APP_B_FOREGROUND_ACTIVITY);
+    }
+
+    @Test
+    public void testBroadcastAllowsBalNegative() throws Exception {
+        TestServiceClient serviceB = getTestService(APP_B_TEST_SERVICE);
+
+        // Start AppB foreground activity
+        startActivity(APP_A_FOREGROUND_ACTIVITY);
+
+        // app B should not be able to start background activity, app A stays in foreground
+        serviceB.startActivityIntent(
+                new Intent()
+                        .setComponent(APP_B_BACKGROUND_ACTIVITY)
+                        .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+        assertActivityNotFocused(APP_B_BACKGROUND_ACTIVITY);
+        assertActivityFocused(APP_A_FOREGROUND_ACTIVITY);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_BAL_CHECK_BROADCAST_WHEN_DISPATCHED)
+    public void testBroadcastAllowsBalPendingIntentCreatedByReceivingApp() throws Exception {
+        TestServiceClient serviceA = getTestService(APP_A_TEST_SERVICE);
+        TestServiceClient serviceB = getTestService(APP_B_TEST_SERVICE);
+
+        // Start AppB foreground activity
+        startActivity(APP_A_FOREGROUND_ACTIVITY);
+
+        // send broadcast from app A to app B via PI with options
+        EventReceiver receiver = new EventReceiver(Event.BROADCAST_RECEIVED);
+        // works with service B?
+        PendingIntent pendingIntent =
+                serviceB.generatePendingIntentBroadcast(
+                        APP_B_SIMPLE_BROADCAST_RECEIVER, receiver.getNotifier());
+        serviceA.sendPendingIntent(
+                pendingIntent,
+                ActivityOptions.makeBasic()
+                        .setPendingIntentBackgroundActivityStartMode(
+                                MODE_BACKGROUND_ACTIVITY_START_ALLOW_ALWAYS)
+                        .toBundle());
+        receiver.waitForEventOrThrow(ACTIVITY_START_TIMEOUT_MS);
+
+        // app B should now be able to start background activity in response to the broadcast
+        serviceB.startActivityIntent(
+                new Intent()
+                        .setComponent(APP_B_BACKGROUND_ACTIVITY)
+                        .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+        assertActivityFocused(APP_B_BACKGROUND_ACTIVITY);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_BAL_CHECK_BROADCAST_WHEN_DISPATCHED)
+    public void testBroadcastAllowsBalPendingIntentCreatedBySendingApp() throws Exception {
+        TestServiceClient serviceA = getTestService(APP_A_TEST_SERVICE);
+        TestServiceClient serviceB = getTestService(APP_B_TEST_SERVICE);
+
+        // Start AppB foreground activity
+        startActivity(APP_A_FOREGROUND_ACTIVITY);
+
+        // send broadcast from app A to app B via PI with options
+        EventReceiver receiver = new EventReceiver(Event.BROADCAST_RECEIVED);
+        // does not work with service A?
+        PendingIntent pendingIntent =
+                serviceA.generatePendingIntentBroadcast(
+                        APP_B_SIMPLE_BROADCAST_RECEIVER, receiver.getNotifier());
+        serviceA.sendPendingIntent(
+                pendingIntent,
+                ActivityOptions.makeBasic()
+                        .setPendingIntentBackgroundActivityStartMode(
+                                MODE_BACKGROUND_ACTIVITY_START_ALLOW_ALWAYS)
+                        .toBundle());
+        receiver.waitForEventOrThrow(ACTIVITY_START_TIMEOUT_MS);
+
+        // app B should now be able to start background activity in response to the broadcast
+        serviceB.startActivityIntent(
+                new Intent()
+                        .setComponent(APP_B_BACKGROUND_ACTIVITY)
+                        .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+        assertActivityFocused(APP_B_BACKGROUND_ACTIVITY);
     }
 
     @Test

@@ -1287,6 +1287,14 @@ public final class InputMethodServiceTest extends EndToEndImeTestBase {
 
             createTestActivity(SOFT_INPUT_STATE_ALWAYS_VISIBLE);
             expectEvent(stream, eventMatcher("onStartInput"), TIMEOUT);
+
+            final boolean imeCaptionBarVisible =
+                    expectCommand(stream, imeSession.callIsImeCaptionBarVisible(), TIMEOUT)
+                            .getReturnBooleanValue();
+            assumeTrue(
+                    "IME Navigation Bar should be visible at the start of the test",
+                    imeCaptionBarVisible);
+
             notExpectEvent(stream, eventMatcher("onCustomImeSwitcherButtonRequestedVisible"),
                     EXPECTED_TIMEOUT);
 

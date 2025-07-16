@@ -36,37 +36,58 @@ import static android.media.cts.MediaRouterTestConstants.ROUTE_NAME_VISIBILITY_R
 
 import android.media.MediaRoute2Info;
 
+import com.android.media.flags.Flags;
+
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 
 /** Provides fake routes for testing route deduplication. */
 public final class FakeMediaRoute2ProviderService1 extends BaseFakeRouteProviderService {
 
     public FakeMediaRoute2ProviderService1() {
-        super(
-                createPublicRoute(
-                        ROUTE_ID_APP_1_ROUTE_1, ROUTE_NAME_1, MediaRoute2Info.TYPE_REMOTE_TV),
-                createPublicRoute(
-                        ROUTE_ID_APP_1_ROUTE_2,
-                        ROUTE_NAME_2,
-                        MediaRoute2Info.TYPE_UNKNOWN,
-                        /* deduplicationIds...= */ ROUTE_DEDUPLICATION_ID_1),
-                createPublicRoute(
-                        ROUTE_ID_APP_1_ROUTE_3,
-                        ROUTE_NAME_3,
-                        MediaRoute2Info.TYPE_UNKNOWN,
-                        /* deduplicationIds...= */ ROUTE_DEDUPLICATION_ID_2),
-                createPublicRoute(
-                        ROUTE_ID_APP_1_ROUTE_4, ROUTE_NAME_4, MediaRoute2Info.TYPE_UNKNOWN),
-                createActiveScanOnlyRoute(
-                        ROUTE_ID_APP_1_ROUTE_5, ROUTE_NAME_5, MediaRoute2Info.TYPE_UNKNOWN),
-                createRestrictedRoute(
-                        ROUTE_ID_VISIBILITY_RESTRICTED,
-                        ROUTE_NAME_VISIBILITY_RESTRICTED,
-                        Set.of(PROXY_MEDIA_ROUTER_SCANNING_TEST_APP_PACKAGE)),
-                createRestrictedRouteAllowPrivileged(
-                        ROUTE_ID_RESTRICTED_ALLOW_PRIVILEGED,
-                        ROUTE_NAME_RESTRICTED_ALLOW_PRIVILEGED,
-                        Set.of(PROXY_MEDIA_ROUTER_SCANNING_TEST_APP_PACKAGE),
-                        true));
+        super(createRoutes());
+    }
+
+    static List<MediaRoute2Info> createRoutes() {
+        ArrayList<MediaRoute2Info> routes =
+                new ArrayList<>(
+                        List.of(
+                                createPublicRoute(
+                                        ROUTE_ID_APP_1_ROUTE_1,
+                                        ROUTE_NAME_1,
+                                        MediaRoute2Info.TYPE_REMOTE_TV),
+                                createPublicRoute(
+                                        ROUTE_ID_APP_1_ROUTE_2,
+                                        ROUTE_NAME_2,
+                                        MediaRoute2Info.TYPE_UNKNOWN,
+                                        /* deduplicationIds...= */ ROUTE_DEDUPLICATION_ID_1),
+                                createPublicRoute(
+                                        ROUTE_ID_APP_1_ROUTE_3,
+                                        ROUTE_NAME_3,
+                                        MediaRoute2Info.TYPE_UNKNOWN,
+                                        /* deduplicationIds...= */ ROUTE_DEDUPLICATION_ID_2),
+                                createPublicRoute(
+                                        ROUTE_ID_APP_1_ROUTE_4,
+                                        ROUTE_NAME_4,
+                                        MediaRoute2Info.TYPE_UNKNOWN),
+                                createActiveScanOnlyRoute(
+                                        ROUTE_ID_APP_1_ROUTE_5,
+                                        ROUTE_NAME_5,
+                                        MediaRoute2Info.TYPE_UNKNOWN),
+                                createRestrictedRoute(
+                                        ROUTE_ID_VISIBILITY_RESTRICTED,
+                                        ROUTE_NAME_VISIBILITY_RESTRICTED,
+                                        Set.of(PROXY_MEDIA_ROUTER_SCANNING_TEST_APP_PACKAGE))));
+
+        if (Flags.enableRouteVisibilityControlApi()) {
+            routes.add(
+                    createRestrictedRouteAllowPrivileged(
+                            ROUTE_ID_RESTRICTED_ALLOW_PRIVILEGED,
+                            ROUTE_NAME_RESTRICTED_ALLOW_PRIVILEGED,
+                            Set.of(PROXY_MEDIA_ROUTER_SCANNING_TEST_APP_PACKAGE),
+                            true));
+        }
+        return routes;
     }
 }

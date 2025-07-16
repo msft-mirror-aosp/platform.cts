@@ -118,7 +118,6 @@ public class ForegroundActivity extends Activity {
     @Override
     public void onCreate(Bundle bundle) {
         super.onCreate(bundle);
-        TestService.onForegroundActivityCreated(mActivityId, this);
         mAppPackageName = getApplicationContext().getPackageName();
         mActionLaunchBackgroundActivities =
                 buildFullActionName(mAppPackageName, ACTION_LAUNCH_BACKGROUND_ACTIVITIES_SUFFIX);
@@ -127,6 +126,7 @@ public class ForegroundActivity extends Activity {
         Intent intent = getIntent();
         mRelaunch = intent.getBooleanExtra(RELAUNCH_FOREGROUND_ACTIVITY_EXTRA, false);
         mActivityId = intent.getIntExtra(ACTIVITY_ID, -1);
+        TestService.onForegroundActivityCreated(mActivityId, this);
         setAllowCrossUidActivitySwitchFromBelow(intent.getBooleanExtra(ALLOW_CROSS_UID, false));
 
         IntentFilter filter = new IntentFilter();

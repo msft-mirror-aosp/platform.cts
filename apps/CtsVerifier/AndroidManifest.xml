@@ -89,6 +89,7 @@
     <uses-permission android:name="android.permission.ACCESS_NOTIFICATION_POLICY" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.POST_PROMOTED_NOTIFICATIONS" />
 
     <uses-permission android:name="android.permission.READ_SMS"/>
     <uses-permission android:name="android.permission.READ_PHONE_NUMBERS"/>
@@ -3217,6 +3218,20 @@
             <meta-data android:name="CddTest" android:value="3.8.3.1/C-2-1" />
         </activity>
 
+        <activity android:name=".notifications.LiveUpdateNotificationVerifierActivity"
+            android:exported="true"
+            android:label="@string/live_update_notification_test">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.cts.intent.category.MANUAL_TEST" />
+            </intent-filter>
+            <meta-data android:name="test_category" android:value="@string/test_category_notifications" />
+            <meta-data android:name="test_excluded_features"
+                android:value="android.hardware.type.automotive:android.hardware.type.television:android.software.leanback:android.hardware.type.watch" />
+            <meta-data android:name="display_mode" android:value="multi_display_mode" />
+            <meta-data android:name="CddTest" android:value="3.8.3.1/H-0-1, H-0-2, H-0-3, H-0-4, H-0-5, H-0-6, H-0-7, H-0-8, H-0-9, H-0-10, H-0-11" />
+        </activity>
+        <receiver android:name=".notifications.LiveUpdateNotificationVerifierActivity.LiveUpdateNoOpReplyReceiver" android:exported="false"/>
         <activity android:name=".notifications.ShowWhenLockedActivity"
             android:exported="true"
             android:showWhenLocked="true">

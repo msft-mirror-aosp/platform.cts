@@ -255,6 +255,8 @@ public abstract class CodecTestBase {
     static final int[] AAC_PROFILES = new int[]{AACObjectMain, AACObjectLC, AACObjectSSR,
             AACObjectLTP, AACObjectHE, AACObjectScalable, AACObjectERLC, AACObjectERScalable,
             AACObjectLD, AACObjectELD, AACObjectXHE};
+    static final int[] AC4_PROFILES =
+            new int[]{AC4Profile00, AC4Profile10, AC4Profile11, AC4Profile21, AC4Profile22};
 
     public static final int MAX_DISPLAY_HEIGHT_CURRENT =
             Arrays.stream(getContext().getSystemService(DisplayManager.class).getDisplays())
@@ -461,6 +463,9 @@ public abstract class CodecTestBase {
         CODEC_SEL_KEY_MEDIA_TYPE_MAP.put("araw", MediaFormat.MIMETYPE_AUDIO_RAW);
         CODEC_SEL_KEY_MEDIA_TYPE_MAP.put("flac", MediaFormat.MIMETYPE_AUDIO_FLAC);
         CODEC_SEL_KEY_MEDIA_TYPE_MAP.put("gsm", MediaFormat.MIMETYPE_AUDIO_MSGSM);
+        CODEC_SEL_KEY_MEDIA_TYPE_MAP.put("ac3", MediaFormat.MIMETYPE_AUDIO_AC3);
+        CODEC_SEL_KEY_MEDIA_TYPE_MAP.put("eac3", MediaFormat.MIMETYPE_AUDIO_EAC3);
+        CODEC_SEL_KEY_MEDIA_TYPE_MAP.put("ac4", MediaFormat.MIMETYPE_AUDIO_AC4);
 
         android.os.Bundle args = InstrumentationRegistry.getArguments();
         mediaTypeSelKeys = args.getString(MEDIA_TYPE_SEL_KEY);
@@ -480,6 +485,7 @@ public abstract class CodecTestBase {
         PROFILE_SDR_MAP.put(MediaFormat.MIMETYPE_VIDEO_VP9, VP9_SDR_PROFILES);
         PROFILE_SDR_MAP.put(MediaFormat.MIMETYPE_VIDEO_AV1, AV1_SDR_PROFILES);
         PROFILE_SDR_MAP.put(MediaFormat.MIMETYPE_AUDIO_AAC, AAC_PROFILES);
+        PROFILE_SDR_MAP.put(MediaFormat.MIMETYPE_AUDIO_AC4, AC4_PROFILES);
 
         PROFILE_HLG_MAP.put(MediaFormat.MIMETYPE_VIDEO_AVC, AVC_HLG_PROFILES);
         PROFILE_HLG_MAP.put(MediaFormat.MIMETYPE_VIDEO_HEVC, HEVC_HLG_PROFILES);
@@ -514,6 +520,7 @@ public abstract class CodecTestBase {
         PROFILE_MAP.put(MediaFormat.MIMETYPE_VIDEO_AV1, AV1_PROFILES);
         PROFILE_MAP.put(MediaFormat.MIMETYPE_VIDEO_APV, APV_HDR_PROFILES);
         PROFILE_MAP.put(MediaFormat.MIMETYPE_AUDIO_AAC, AAC_PROFILES);
+        PROFILE_MAP.put(MediaFormat.MIMETYPE_AUDIO_AC4, AC4_PROFILES);
 
         HDR_INFO_IN_BITSTREAM_CODECS.add(MediaFormat.MIMETYPE_VIDEO_AV1);
         HDR_INFO_IN_BITSTREAM_CODECS.add(MediaFormat.MIMETYPE_VIDEO_AVC);

@@ -672,6 +672,9 @@ public final class MockIme extends InputMethodService {
                         }
                         return ImeEvent.RETURN_VALUE_UNAVAILABLE;
                     }
+                    case "isImeCaptionBarVisible": {
+                        return isImeNavigationBarShownForTesting();
+                    }
                     case "getImeCaptionBarHeight": {
                         return mView.getRootWindowInsets().getInsets(captionBar()).bottom;
                     }
