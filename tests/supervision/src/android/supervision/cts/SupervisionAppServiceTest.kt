@@ -27,6 +27,7 @@ import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.multiuser.annotations.EnsureHasNoAdditionalUser
 import com.android.bedstead.permissions.annotations.EnsureHasPermission
 import com.android.compatibility.common.util.ApiTest
+import com.android.compatibility.common.util.supervision.withSystemSupervisionRoleHeld
 import com.google.common.truth.Truth.assertThat
 import org.junit.Test
 import org.junit.runner.RunWith

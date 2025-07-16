@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package android.supervision.cts
+package com.android.compatibility.common.util.supervision
 
 import android.app.role.OnRoleHoldersChangedListener
 import android.app.role.RoleManager
@@ -22,10 +22,11 @@ import android.app.role.RoleManager.ROLE_SUPERVISION
 import android.app.role.RoleManager.ROLE_SYSTEM_SUPERVISION
 import android.app.supervision.SupervisionManager
 import android.content.Context
-import com.android.bedstead.nene.TestApis
+import androidx.test.platform.app.InstrumentationRegistry
 import com.google.common.truth.Truth.assertThat
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 import kotlin.time.Duration.Companion.seconds
-import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withTimeoutOrNull
@@ -33,18 +34,17 @@ import kotlinx.coroutines.withTimeoutOrNull
 fun withSystemSupervisionRoleHeld(action: () -> Unit) =
     withRoleHeld(ROLE_SYSTEM_SUPERVISION, action)
 
-fun withSupervisionRoleHeld(action: () -> Unit) =
-    withRoleHeld(ROLE_SUPERVISION, action)
+fun withSupervisionRoleHeld(action: () -> Unit) = withRoleHeld(ROLE_SUPERVISION, action)
 
 /**
  * Executes the given [action] while this package holds the specified [roleName].
  *
  * This method utilizes the role bypassing mechanism available to the shell via the
- * `BYPASS_ROLE_QUALIFICATION` permission. It disables supervision and verifies that
- * role bypassing is available.
+ * `BYPASS_ROLE_QUALIFICATION` permission. It disables supervision and verifies that role bypassing
+ * is available.
  */
 private fun withRoleHeld(roleName: String, action: () -> Unit) {
-    val context = TestApis.context().instrumentedContext()
+    val context = InstrumentationRegistry.getInstrumentation().getTargetContext()
     val roleManager = context.getSystemService(RoleManager::class.java)
     val supervisionManager = context.getSystemService(SupervisionManager::class.java)
     try {
@@ -68,13 +68,11 @@ private val TIMEOUT = 5.seconds
  * verifying that `getRoleHolders` includes this package.
  */
 private fun RoleManager.addRoleHolder(context: Context, roleName: String) {
-    val channel = Channel<String>()
+    val listenerLatch = CountDownLatch(1)
     val user = context.getUser()
     val listener = OnRoleHoldersChangedListener { changedRoleName, _ ->
         if (roleName == changedRoleName) {
-            runBlocking {
-                channel.send(roleName)
-            }
+            listenerLatch.countDown()
         }
     }
     addOnRoleHoldersChangedListenerAsUser(context.getMainExecutor(), listener, user)
@@ -88,13 +86,8 @@ private fun RoleManager.addRoleHolder(context: Context, roleName: String) {
         }
         assertThat(callbackResult).isTrue()
 
-        val listenerResult = runBlocking {
-            withTimeoutOrNull(TIMEOUT) {
-                channel.receive()
-            }
-        }
-        assertThat(listenerResult).isEqualTo(roleName)
-
+        val listenerCalled = listenerLatch.await(TIMEOUT.inWholeSeconds, TimeUnit.SECONDS)
+        assertThat(listenerCalled).isTrue()
         assertThat(getRoleHolders(roleName)).contains(context.packageName)
     } finally {
         setBypassingRoleQualification(false)
