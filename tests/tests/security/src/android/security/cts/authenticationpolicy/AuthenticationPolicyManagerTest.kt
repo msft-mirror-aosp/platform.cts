@@ -60,6 +60,7 @@ import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
 import org.junit.After
+import org.junit.Assert.fail
 import org.junit.Assume.assumeNotNull
 import org.junit.Assume.assumeTrue
 import org.junit.Before
@@ -109,6 +110,12 @@ class AuthenticationPolicyManagerTest {
             authenticationPolicyManager,
         )
 
+        try {
+            authenticationPolicyManager.setSecureLockDeviceTestStatus(true)
+        } catch (e: Exception) {
+            fail("Failed to enable test mode for secure lock device: $e")
+        }
+
         assumeTrue("setup | secure_lockdown flag must be enabled", secureLockdown())
         assumeTrue("setup | secure_lock_device flag must be enabled", secureLockDevice())
 
@@ -143,6 +150,12 @@ class AuthenticationPolicyManagerTest {
             Log.w(TAG, "tearDown() | SecurityException, likely permission issue", e)
         } catch (e: Exception) {
             Log.w(TAG, "tearDown() | Exception during tearDown(): ", e)
+        } finally {
+            try {
+                authenticationPolicyManager.setSecureLockDeviceTestStatus(false)
+            } catch (e: Exception) {
+                fail("Failed to disable test mode for secure lock device: $e")
+            }
         }
 
         waitForAllUnenrolled()
@@ -643,6 +656,25 @@ class AuthenticationPolicyManagerTest {
             assertThrows(SecurityException::class.java) {
                 authenticationPolicyManager.isSecureLockDeviceEnabled
             }
+        }
+    }
+
+    @ApiTest(
+        apis =
+            [
+                ("android.security.authenticationpolicy.AuthenticationPolicyManager" +
+                    "#setSecureLockDeviceTestStatus")
+            ]
+    )
+    @Test
+    fun testSetSecureLockDeviceTestStatus_withoutPermission_throwsException() {
+        TestApis.permissions().withoutPermission(TEST_BIOMETRIC).use {
+            assertThrows(SecurityException::class.java) {
+                authenticationPolicyManager.setSecureLockDeviceTestStatus(true)
+            }
+        }
+        TestApis.permissions().withPermission(TEST_BIOMETRIC).use {
+            assertDoesNotThrow { authenticationPolicyManager.setSecureLockDeviceTestStatus(true) }
         }
     }
 
