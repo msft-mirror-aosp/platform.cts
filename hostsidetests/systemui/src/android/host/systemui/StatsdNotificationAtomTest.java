@@ -80,7 +80,7 @@ public class StatsdNotificationAtomTest extends DeviceTestCase implements IBuild
 
         DeviceUtils.runActivity(getDevice(), NOTIFICATION_TEST_PKG,
                 TEST_NOTIFICATION_ACTIVITY, ACTION_KEY, ACTION_VALUE);
-        RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_SHORT);
+        RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
 
         // Sorted list of events in order in which they occurred.
         List<StatsLog.EventMetricData> data = ReportUtils.getEventMetricDataList(getDevice());
