@@ -2524,7 +2524,7 @@
     <string name="tiles_request_install_verify">This will automatically verify that the helper app
     is correctly installed.</string>
     <string name="tiles_request_tile_not_present">Open Quick Settings and pass this test
-    if there are no tiles named %1$s in any page.</string>
+    if there are no tiles named %1$s or with icon \"ICON\" in any page.</string>
     <string name="tiles_request_dismissed">After pressing \"Start request\", a dialog will appear
         requesting to add a quick settings tile. When it appears, dismiss it by tapping outside of
         it, or going back.</string>
@@ -2541,7 +2541,8 @@ When the buttons are enabled, pass this test if the information in the dialog wa
         add the tile.
     </string>
     <string name="tiles_request_tile_present">Open Quick Settings and pass this test if a tile named
-        %1$s is visible in some page.
+        %1$s or with icon \"ICON\" is visible in some page.\n
+You may also be able to edit the tile to make it large and show the name.
     </string>
     <string name="tiles_request_check_tile_already_added">Checking tile already added response
     </string>
