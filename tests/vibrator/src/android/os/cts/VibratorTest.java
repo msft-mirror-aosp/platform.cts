@@ -158,18 +158,7 @@ public class VibratorTest {
             VibrationEffect.Composition.PRIMITIVE_SPIN,
             VibrationEffect.Composition.PRIMITIVE_THUD,
     };
-    private static final int[] VIBRATION_USAGES = new int[] {
-            VibrationAttributes.USAGE_UNKNOWN,
-            VibrationAttributes.USAGE_ACCESSIBILITY,
-            VibrationAttributes.USAGE_ALARM,
-            VibrationAttributes.USAGE_COMMUNICATION_REQUEST,
-            VibrationAttributes.USAGE_HARDWARE_FEEDBACK,
-            VibrationAttributes.USAGE_MEDIA,
-            VibrationAttributes.USAGE_NOTIFICATION,
-            VibrationAttributes.USAGE_PHYSICAL_EMULATION,
-            VibrationAttributes.USAGE_RINGTONE,
-            VibrationAttributes.USAGE_TOUCH,
-    };
+    private static final List<Integer> VIBRATION_USAGES = getVibrationUsages();
 
     private final String mVibratorLabel;
     private final Vibrator mVibrator;
@@ -839,6 +828,26 @@ public class VibratorTest {
             android.Manifest.permission.ACCESS_VIBRATOR_STATE,
             android.Manifest.permission.WRITE_SETTINGS,
         };
+    }
+
+    private static List<Integer> getVibrationUsages() {
+        List<Integer> allUsages =
+                new ArrayList<>(
+                        List.of(
+                                VibrationAttributes.USAGE_UNKNOWN,
+                                VibrationAttributes.USAGE_ACCESSIBILITY,
+                                VibrationAttributes.USAGE_ALARM,
+                                VibrationAttributes.USAGE_COMMUNICATION_REQUEST,
+                                VibrationAttributes.USAGE_HARDWARE_FEEDBACK,
+                                VibrationAttributes.USAGE_MEDIA,
+                                VibrationAttributes.USAGE_NOTIFICATION,
+                                VibrationAttributes.USAGE_PHYSICAL_EMULATION,
+                                VibrationAttributes.USAGE_RINGTONE,
+                                VibrationAttributes.USAGE_TOUCH));
+        if (Flags.hapticFeedbackWithCustomUsage()) {
+            allUsages.add(VibrationAttributes.USAGE_GESTURE_INPUT);
+        }
+        return allUsages;
     }
 
     /**
