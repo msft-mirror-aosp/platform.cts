@@ -1315,6 +1315,9 @@ public class AudioManagerTest {
     public void testAssistantVolume() throws Exception {
         assumeFalse(
                 "AudioManagerTest testAssistantVolume() skipped: fixed volume", mUseFixedVolume);
+        assumeFalse(
+                "AudioManagerTest testAssistantVolume() skipping volume test on automotive",
+                mSkipAutoVolumeTests);
 
         getInstrumentation()
                 .getUiAutomation()
