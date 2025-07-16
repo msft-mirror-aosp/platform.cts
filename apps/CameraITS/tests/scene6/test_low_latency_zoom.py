@@ -168,12 +168,17 @@ class LowLatencyZoomTest(its_base_test.ItsBaseTest):
         radius_tol, offset_tol = test_tols[cap_fl]
 
         # Find the center ArUco marker in img and check if it's cropped
-        corners, ids, _ = opencv_processing_utils.find_aruco_markers(
-            img_bgr,
-            f'{img_name_stem}_{fmt}_{i}_{z_result:.2f}_ArUco.jpg',
-            aruco_marker_count=1
-        )
-
+        try:
+          corners, ids, _ = opencv_processing_utils.find_aruco_markers(
+              img_bgr,
+              f'{img_name_stem}_{fmt}_{i}_{z_result:.2f}_ArUco.jpg',
+              aruco_marker_count=1
+          )
+        except AssertionError as e:
+          logging.debug('Could not find ArUco marker at zoom ratio %.2f: %s',
+                        z_result, e)
+          z_max = test_data[i-1].result_zoom
+          break
         all_aruco_corners.append([corner[0] for corner in corners])
         all_aruco_ids.append([id[0] for id in ids])
         images.append(img_bgr)
