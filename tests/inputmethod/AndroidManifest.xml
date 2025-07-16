@@ -51,10 +51,6 @@
             android:label="CtsInputMethodStandaloneTestActivity"
             android:windowSoftInputMode="stateAlwaysHidden"/>
 
-        <activity
-            android:name=".VirtualDeviceImeTest$ImeActivity"
-            android:windowSoftInputMode="stateVisible" />
-
         <service android:name="android.view.inputmethod.cts.inprocime.InProcIme"
                  android:label="In-Process Test IME"
                  android:permission="android.permission.BIND_INPUT_METHOD"
@@ -73,25 +69,6 @@
                 <action android:name="android.view.InputMethod"/>
             </intent-filter>
             <meta-data android:name="android.view.im" android:resource="@xml/disapproveime"/>
-        </service>
-
-        <service android:name=".VirtualDeviceImeTest$DefaultDeviceTestIme"
-            android:label="Default device Test IME"
-            android:permission="android.permission.BIND_INPUT_METHOD"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.view.InputMethod"/>
-            </intent-filter>
-            <meta-data android:name="android.view.im" android:resource="@xml/defaultdevicetestime"/>
-        </service>
-        <service android:name=".VirtualDeviceImeTest$VirtualDeviceTestIme"
-            android:label="Virtual device Test IME"
-            android:permission="android.permission.BIND_INPUT_METHOD"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.view.InputMethod"/>
-            </intent-filter>
-            <meta-data android:name="android.view.im" android:resource="@xml/virtualdevicetestime"/>
         </service>
 
         <uses-library android:name="androidx.window.extensions"
