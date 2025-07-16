@@ -2426,8 +2426,65 @@
          \n\u2022 75% of the bar should look filled and the rest of it should look unfilled.
          \n\u2022 The progress bar color should be orange.
     </string>
+    <string name="live_update_notification_priority" formatted="false"> <b>Notification Priority</b>
+         \n Two notifications are posted, including one Live Update notification.
+         \n <b>Verification Instructions</b>:
+         \n\u2022 <b>Open the Notification Shade</b>, Confirm the <b>Live Update notification</b> is displayed at <b>top</b> of the shade.
+         \n\u2022 <b>Open the Lock Screen</b>, Confirm <b>the Live Update notification</b> is displayed at <b>top</b> of the lock screen.
+    </string>
+    <string name="live_update_notification_appearance" formatted="false"><b>Notification Appearance</b>
+         \n A ProgressStyle Live Update Notification is posted.
+         \n Text will be \"Styled text examples; <b>bold</b>, <u>underlined</u> and <i>italic</i>\".
+         \n <b>Verification Instructions</b>:
+         \n\u2022 <b>Open the Notification Shade</b>.
+         \n\u2022 Confirm the notification’s <b>progress bar</b> is visible.
+         \n\u2022 Confirm the notification does not have <b>an expander icon</b>.
+         \n\u2022 Confirm Styled text examples are <b>correctly styled</b>.
+    </string>
+    <string name="live_update_notification_styled_text">Styled text examples; <b>bold</b>, <u>underlined</u> and <i>italic</i></string>
+    <string name="live_update_notification_status_bar_chip" formatted="false"><b>Status Bar Chip</b>
+         \n A Live Update Notification is posted.
+         \n <b>Verification Instructions</b>:
+         \n\u2022 <b>Exit the app</b>.
+         \n\u2022 Confirm that <b>the chip</b> appears on <b>the status bar</b>.
+         \n\u2022 Confirm that the icon of the chip is \“S\”.
+         \n\u2022 Confirm the text on the chip is \“test\”.
+         \n\u2022 Tap <b>the chip</b> on the status bar and observe that either of the following behaviors happens:
+         \n\t\u2022 Option 1: <b>the app opens</b>.
+         \n\t\u2022 Option 2: <b>the notification appears</b>. In this case, tap <b>the chip</b> again and confirm <b>the notification disappears</b>.
+    </string>
+    <string name="live_update_notification_demotion_off_and_on" formatted="false"><b>Turn Off/On Demotion</b>
+         \n A Live Update Notification is posted.
+         \n <b>Verification Instructions</b>:
+         \n\u2022 <b>Open the Notification Shade</b> and <b>long-press</b> the Live Update notification to open its <b>demotion menu</b>.
+         \n\u2022 Tap the <b>"Turn off" button</b>. Confirm the notification <b>no longer appears as a Live Update</b>.
+         \n\u2022 <b>Open the notification settings</b> for this notification. Verify that <b>Live Updates settings</b> are present.
+         \n\u2022 <b>Turn Live Updates back on</b>. Confirm the notification <b>reverts to its Live Update appearance</b>.
+    </string>
+    <string name="live_update_notification_remote_input" formatted="false"><b>Remote Input</b>
+         \n A Live Update Notification is posted.
+         \n <b>Verification Instructions</b>:
+         \n\u2022 <b>Open the Notification Shade</b>.
+         \n\u2022 Confirm the Live Update notification <b>does not display the reply-capable action</b>.
+         \n\u2022 <b>Demote the Live Update notification.</b>.
+         \n\u2022 <b>Verify the reply action is now shown</b>.
+         \n <b>Post-test Action:</b>:
+         \n\u2022 Re-enable Live Updates for the tested notification.
+    </string>
+    <string name="live_update_notification_contextual_action" formatted="false"><b>Contextual Action</b>
+         \n A Live Update Notification is posted.
+         \n <b>Verification Instructions</b>:
+         \n\u2022 <b>Open the Notification Shade</b>.
+         \n\u2022 Confirm the Live Update notification <b>does not display the contextual action</b>.
+         \n\u2022 <b>Demote the Live Update notification.</b>.
+         \n\u2022 <b>Verify the contextual action is now shown</b>.
+         \n <b>Post-test Action:</b>:
+         \n\u2022 Re-enable Live Updates for the tested notification.
+    </string>
     <string name="notification_style_test">Notification Styles Test</string>
     <string name="notification_style_test_info">This test checks that Notification Styles are rendered as expected.</string>
+    <string name="live_update_notification_test">Live Update Notification Test</string>
+    <string name="live_update_notification_test_info">This test checks that Live Update Notifications are rendered as expected.</string>
     <string name="ns_custom_content_instructions">A notification with custom (app-provided) content was posted. Open the notification shade, collapse the notification (if it\'s expanded) and verify that:
         \n\u2022 There is appropriate padding between the blue section and all other visual elements.
         \n\u2022 The small icon (A) or the app\'s icon is clearly visible outside the blue region.
