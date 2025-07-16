@@ -38,7 +38,7 @@ public class CallScreeningServiceControl extends Service {
                     "android.telecom.cts.screeningtestapp.CallScreeningServiceControl");
 
     private static CallScreeningServiceControl sCallScreeningServiceControl = null;
-    private CountDownLatch mBindingLatch = new CountDownLatch(1);
+    private static CountDownLatch sBindingLatch = new CountDownLatch(1);
 
     /** mIsBound represents the binding status from the test class to the test app */
     public static boolean mIsBound = false;
@@ -55,7 +55,7 @@ public class CallScreeningServiceControl extends Service {
                                     .setSkipCallLog(false)
                                     .setSkipNotification(false)
                                     .build());
-                    mBindingLatch = new CountDownLatch(1);
+                    sBindingLatch = new CountDownLatch(1);
                     CtsPostCallActivity.resetPostCallActivity();
                 }
 
@@ -94,7 +94,7 @@ public class CallScreeningServiceControl extends Service {
                 @Override
                 public boolean waitForBind() {
                     try {
-                        return mBindingLatch.await(ASYNC_TIMEOUT, TimeUnit.MILLISECONDS);
+                        return sBindingLatch.await(ASYNC_TIMEOUT, TimeUnit.MILLISECONDS);
                     } catch (InterruptedException e) {
                         return false;
                     }
@@ -157,7 +157,7 @@ public class CallScreeningServiceControl extends Service {
     }
 
     public void onScreeningServiceBound() {
-        mBindingLatch.countDown();
+        sBindingLatch.countDown();
     }
 
     public CallScreeningService.CallResponse getCallResponse() {
