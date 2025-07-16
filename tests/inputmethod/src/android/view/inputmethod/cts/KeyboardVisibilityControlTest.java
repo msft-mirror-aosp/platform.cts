@@ -29,14 +29,12 @@ import static android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN;
 import static android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_UNCHANGED;
 import static android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_UNSPECIFIED;
 import static android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE;
-import static android.view.inputmethod.InputMethodManager.CLEAR_SHOW_FORCED_FLAG_WHEN_LEAVING;
 import static android.view.inputmethod.cts.util.InputMethodVisibilityVerifier.expectImeInvisible;
 import static android.view.inputmethod.cts.util.InputMethodVisibilityVerifier.expectImeVisible;
 import static android.view.inputmethod.cts.util.TestUtils.getOnMainSync;
 import static android.view.inputmethod.cts.util.TestUtils.runOnMainSync;
 import static android.view.inputmethod.cts.util.TestUtils.runOnMainSyncWithRethrowing;
 
-import static com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.editorMatcher;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.eventMatcher;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.expectCommand;
@@ -67,7 +65,6 @@ import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.RemoteInput;
-import android.app.compat.CompatChanges;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -76,7 +73,6 @@ import android.content.res.Resources;
 import android.graphics.Color;
 import android.graphics.Rect;
 import android.os.SystemClock;
-import android.os.UserHandle;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.AppModeInstant;
 import android.platform.test.annotations.AppModeSdkSandbox;
@@ -153,7 +149,6 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
@@ -768,17 +763,9 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
             // Finish testEditorActivity
             runOnMainSync(testEditorActivity::finish);
 
-            // Verify soft-keyboard will not visible when enabling the platform compat flag to
-            // clear SHOW_FOCED flag. Otherwise, keeping the legacy behavior of SHOW_FOCED that
-            // soft-keyboard remains visible if there is no explicit hiding request.
-            if (isClearShowForcedFlagEnabled(testActivity.getPackageName())) {
-                notExpectEvent(stream, eventMatcher("showSoftInput"),
-                        NOT_EXPECT_TIMEOUT);
-                expectImeInvisible(TIMEOUT);
-            } else {
-                expectEvent(stream, eventMatcher("showSoftInput"), TIMEOUT);
-                expectImeVisible(TIMEOUT);
-            }
+            notExpectEvent(stream, eventMatcher("showSoftInput"),
+                    NOT_EXPECT_TIMEOUT);
+            expectImeInvisible(TIMEOUT);
         }
     }
 
@@ -2500,20 +2487,6 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
         // to ensure it.
         builder.setNavigationBarColor(navigationBarColor);
         return builder;
-    }
-
-    /**
-     * Whether enabling a compatibility flag to clear {@link InputMethodManager#SHOW_FORCED} flag
-     * for the given {@code packageName} of the app when it's leaving.
-     *
-     * @return {@code true} if the compatibility flag is enabled.
-     */
-    private static boolean isClearShowForcedFlagEnabled(String packageName) {
-        AtomicBoolean result = new AtomicBoolean();
-        runWithShellPermissionIdentity(() -> result.set(
-                CompatChanges.isChangeEnabled(CLEAR_SHOW_FORCED_FLAG_WHEN_LEAVING, packageName,
-                        UserHandle.CURRENT)));
-        return result.get();
     }
 
     /** Whether the IME DisplayArea is organized by WM Shell. */
