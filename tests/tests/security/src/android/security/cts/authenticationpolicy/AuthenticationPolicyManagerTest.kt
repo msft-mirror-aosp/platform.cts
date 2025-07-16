@@ -111,6 +111,8 @@ class AuthenticationPolicyManagerTest {
 
         assumeTrue("setup | secure_lockdown flag must be enabled", secureLockdown())
         assumeTrue("setup | secure_lock_device flag must be enabled", secureLockDevice())
+
+        waitForAllUnenrolled()
     }
 
     @After
@@ -142,6 +144,8 @@ class AuthenticationPolicyManagerTest {
         } catch (e: Exception) {
             Log.w(TAG, "tearDown() | Exception during tearDown(): ", e)
         }
+
+        waitForAllUnenrolled()
     }
 
     @ApiTest(
@@ -185,7 +189,6 @@ class AuthenticationPolicyManagerTest {
 
             cleanupSession(session)
         }
-        waitForAllUnenrolled()
     }
 
     @ApiTest(
@@ -232,7 +235,6 @@ class AuthenticationPolicyManagerTest {
 
             cleanupSession(session)
         }
-        waitForAllUnenrolled()
     }
 
     @ApiTest(
@@ -273,7 +275,6 @@ class AuthenticationPolicyManagerTest {
 
             cleanupSession(session)
         }
-        waitForAllUnenrolled()
     }
 
     @ApiTest(
@@ -308,7 +309,6 @@ class AuthenticationPolicyManagerTest {
 
             cleanupSession(session)
         }
-        waitForAllUnenrolled()
     }
 
     @ApiTest(
@@ -352,7 +352,6 @@ class AuthenticationPolicyManagerTest {
             authenticationPolicyManager.unregisterSecureLockDeviceStatusListener(testListener)
             cleanupSession(session)
         }
-        waitForAllUnenrolled()
     }
 
     @ApiTest(
