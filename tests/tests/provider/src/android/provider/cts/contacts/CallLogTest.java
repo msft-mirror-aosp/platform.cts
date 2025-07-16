@@ -445,6 +445,10 @@ public class CallLogTest extends InstrumentationTestCase {
 
     @RequiresFlagsEnabled(Flags.FLAG_INTEGRATED_CALL_LOGS)
     public void testQueryAndDeleteVoIPCallLogs() {
+        if (!Flags.integratedCallLogs()) {
+            return;
+        }
+
         final CallLogGenerator callLogGenerator =
                 new CallLogGenerator(getInstrumentation().getContext());
 
