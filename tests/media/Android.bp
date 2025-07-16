@@ -29,6 +29,7 @@ java_defaults {
         "androidx.test.core",
         "com.android.media.flags.editing-aconfig-java",
         "compatibility-device-util-axt",
+        "ctsdeviceutillegacy-axt",
         "ctsmediav2common",
         "ctstestrunner-axt",
         "ctstestserver",
