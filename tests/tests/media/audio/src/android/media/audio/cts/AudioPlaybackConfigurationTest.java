@@ -88,7 +88,7 @@ public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
     private static final int TEST_AUDIO_TRACK_SAMPLERATE = 48000;
     private static final double TEST_AUDIO_TRACK_FREQUENCY = 440.0;
     private static final int TEST_AUDIO_TRACK_CHANNELS = 2;
-    private static final int TEST_AUDIO_TRACK_PLAY_SECONDS = 2;
+    private static final int TEST_AUDIO_TRACK_PLAY_SECONDS = 3;
     private static final double TEST_AUDIO_TRACK_SWEEP = 0;
 
     // volume shaper duration in milliseconds.
