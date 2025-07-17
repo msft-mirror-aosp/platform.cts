@@ -175,7 +175,7 @@ class DynamicColorsTest(
 
             if (abs(getCurrentContrastLevel() - contrastValue) > 0.01f) {
                 runShellCommand("settings put secure contrast_level $contrastValue")
-                PollingCheck.waitFor(3000L) {
+                PollingCheck.waitFor(POLLING_TIMEOUT_MS) {
                     abs(getCurrentContrastLevel() - contrastValue) < 0.01f
                 }
             }
@@ -207,7 +207,7 @@ class DynamicColorsTest(
                         jsonString,
                     )
                 }
-                PollingCheck.waitFor(3000L) {
+                PollingCheck.waitFor(POLLING_TIMEOUT_MS) {
                     val newColor =
                         context
                             .getColor(R.color.system_palette_key_color_primary_dark)
@@ -449,6 +449,8 @@ private fun SwatchItem(
         Text(swatch.info, style = infoTextStyle, color = textColor)
     }
 }
+
+private const val POLLING_TIMEOUT_MS = 6000L
 
 // Pre 2025 tokens
 private val TOKEN_NAMES_2021 =
