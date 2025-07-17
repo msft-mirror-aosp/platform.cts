@@ -16,22 +16,29 @@
 
 package android.media.audio.cts;
 
+import static android.media.Utils.VIBRATION_URI_PARAM;
+import static android.media.cts.Utils.RINGTONE_TEST_URI;
+import static android.media.cts.Utils.getTestVibrationFile;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import android.media.Utils;
+import android.net.Uri;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.platform.test.annotations.AppModeSdkSandbox;
 
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.FrameworkSpecificTest;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.io.IOException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
@@ -84,5 +91,24 @@ public class UtilsTest {
         listeners.notify(3, 4L);
         assertEquals("event code must match", 1, resultEventCode[0]);
         assertEquals("value must match", 2L, resultLong[0]);
+    }
+
+    @Test
+    @ApiTest(apis = {"android.media.Utils#hasVibrationParameter"})
+    public void testHasVibrationParameter() throws IOException {
+        Uri ringtoneUri;
+        ringtoneUri = RINGTONE_TEST_URI;
+
+        assertFalse(Utils.hasVibrationParameter(ringtoneUri));
+
+        // Make sure we have vibration uri
+        String vibrationUriString = getTestVibrationFile().toURI().toString();
+        ringtoneUri =
+                RINGTONE_TEST_URI
+                        .buildUpon()
+                        .appendQueryParameter(VIBRATION_URI_PARAM, vibrationUriString)
+                        .build();
+
+        assertTrue(Utils.hasVibrationParameter(ringtoneUri));
     }
 }
