@@ -19,8 +19,9 @@ package android.mediav2.cts;
 import static android.media.codec.Flags.FLAG_CODEC_AVAILABILITY;
 import static android.media.codec.Flags.codecAvailability;
 import static android.media.codec.Flags.codecAvailabilitySupport;
-import static android.mediav2.cts.AdaptivePlaybackTest.createInputList;
+import static android.mediav2.cts.AdaptivePlaybackTest.APBTestInputData;
 import static android.mediav2.cts.AdaptivePlaybackTest.getSupportedFiles;
+import static android.mediav2.cts.AdaptivePlaybackTest.prepareInputList;
 import static android.mediav2.cts.CodecResourceUtils.CodecState;
 import static android.mediav2.cts.CodecResourceUtils.LHS_RESOURCE_GE;
 import static android.mediav2.cts.CodecResourceUtils.RHS_RESOURCE_GE;
@@ -63,9 +64,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import java.io.File;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -572,23 +571,8 @@ public class VideoDecoderAvailabilityTest extends CodecDecoderTestBase {
         }
         CodecAsyncHandlerResource asyncHandleResource = new CodecAsyncHandlerResource();
         mAsyncHandle = asyncHandleResource;
-        ArrayList<MediaFormat> formats = new ArrayList<>();
-        int totalSize = 0;
-        for (String resFile : resFiles) {
-            File file = new File(resFile);
-            totalSize += (int) file.length();
-        }
-        long ptsOffset = 0;
-        int buffOffset = 0;
-        ArrayList<MediaCodec.BufferInfo> list = new ArrayList<>();
-        ByteBuffer buffer = ByteBuffer.allocate(totalSize);
-        for (String file : resFiles) {
-            Pair<MediaFormat, Long> metadata =
-                    createInputList(file, mMediaType, buffer, list, buffOffset, ptsOffset);
-            formats.add(metadata.first);
-            ptsOffset = metadata.second + 1000000L;
-            buffOffset = (list.get(list.size() - 1).offset) + (list.get(list.size() - 1).size);
-        }
+        APBTestInputData testInput = prepareInputList(resFiles, mMediaType);
+        List<MediaFormat> formats = testInput.mFormats;
         int expCbCount = 0;
         int prevWidth = getWidth(formats.get(0));
         int prevHeight = getHeight(formats.get(0));
@@ -603,11 +587,11 @@ public class VideoDecoderAvailabilityTest extends CodecDecoderTestBase {
         }
         mOutputBuff = new OutputManager();
         mCodec = MediaCodec.createByCodecName(mCodecName);
-        MediaFormat format = formats.get(0);
+        MediaFormat format = testInput.mFormats.get(0);
         mOutputBuff.reset();
         configureCodec(format, true, false, false);
         mCodec.start();
-        doWork(buffer, list);
+        doWork(testInput.mByteBuffer, (ArrayList<MediaCodec.BufferInfo>) testInput.mInfoList);
         queueEOS();
         waitForAllOutputs();
         mCodec.stop();

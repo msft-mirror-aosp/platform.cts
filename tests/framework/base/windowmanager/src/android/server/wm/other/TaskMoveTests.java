@@ -16,6 +16,7 @@
 
 package android.server.wm.other;
 
+import static android.server.wm.StateLogger.logAlways;
 import static android.server.wm.app.Components.MoveTaskToBoundsActivity.ACTION_CHECK_IS_TASK_MOVE_ALLOWED;
 import static android.server.wm.app.Components.MoveTaskToBoundsActivity.ACTION_NOTIFY_TASK_MOVE_ALLOWED_RESULT;
 import static android.server.wm.app.Components.MoveTaskToBoundsActivity.ACTION_NOTIFY_TASK_MOVE_REQUEST_RESULT;
@@ -42,6 +43,7 @@ import android.os.ConditionVariable;
 import android.os.UserHandle;
 import android.platform.test.annotations.Presubmit;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.server.wm.BuildUtils;
 import android.server.wm.MultiDisplayTestBase;
 import android.server.wm.ShellCommandHelper;
 import android.server.wm.WindowManagerState;
@@ -71,6 +73,7 @@ import java.util.Map;
 public class TaskMoveTests extends MultiDisplayTestBase {
 
     private static final ComponentName TEST_ACTIVITY = Components.MOVE_TASK_TO_BOUNDS_ACTIVITY;
+    private static final int TIMEOUT_MS = 2000 * BuildUtils.HW_TIMEOUT_MULTIPLIER;
     private Map<String, ConditionVariable> mBroadcastsReceived;
     private Map<String, Intent> mBroadcastsContentsReceived;
     private BroadcastReceiver mAppCommunicator =
@@ -452,7 +455,7 @@ public class TaskMoveTests extends MultiDisplayTestBase {
                 fail(
                         "The activity has not notified about task movability on display "
                                 + displayId
-                                + " .");
+                                + ".");
             }
         }
 
@@ -467,12 +470,14 @@ public class TaskMoveTests extends MultiDisplayTestBase {
 
     // Fails the test if the activity does not respond.
     private Intent askIfTaskMoveAllowedOnDisplay(int displayId) {
+        logAlways("Sending ACTION_CHECK_IS_TASK_MOVE_ALLOWED intent with displayId = " + displayId);
         mContext.sendBroadcast(
                 new Intent(ACTION_CHECK_IS_TASK_MOVE_ALLOWED)
                         .setFlags(Intent.FLAG_RECEIVER_FOREGROUND)
                         .putExtra(EXTRA_DISPLAY_ID_KEY, displayId));
         final boolean notified =
-                getBroadcastReceivedVariable(ACTION_NOTIFY_TASK_MOVE_ALLOWED_RESULT).block(1000);
+                getBroadcastReceivedVariable(ACTION_NOTIFY_TASK_MOVE_ALLOWED_RESULT)
+                        .block(TIMEOUT_MS);
         getBroadcastReceivedVariable(ACTION_NOTIFY_TASK_MOVE_ALLOWED_RESULT).close();
         final Intent intent =
                 mBroadcastsContentsReceived.get(ACTION_NOTIFY_TASK_MOVE_ALLOWED_RESULT);
@@ -481,7 +486,7 @@ public class TaskMoveTests extends MultiDisplayTestBase {
             fail(
                     "The activity has not notified about task movability on display "
                             + displayId
-                            + " .");
+                            + ".");
         }
 
         return intent;
@@ -495,7 +500,8 @@ public class TaskMoveTests extends MultiDisplayTestBase {
 
     private void assertTaskMoveRequestReportedSuccess() {
         final boolean notified =
-                getBroadcastReceivedVariable(ACTION_NOTIFY_TASK_MOVE_REQUEST_RESULT).block(1000);
+                getBroadcastReceivedVariable(ACTION_NOTIFY_TASK_MOVE_REQUEST_RESULT)
+                        .block(TIMEOUT_MS);
         getBroadcastReceivedVariable(ACTION_NOTIFY_TASK_MOVE_REQUEST_RESULT).close();
         final Intent intent =
                 mBroadcastsContentsReceived.get(ACTION_NOTIFY_TASK_MOVE_REQUEST_RESULT);
@@ -525,7 +531,8 @@ public class TaskMoveTests extends MultiDisplayTestBase {
 
     private void assertTaskMoveRequestReportedError(Class<?> exceptionClass) {
         final boolean notified =
-                getBroadcastReceivedVariable(ACTION_NOTIFY_TASK_MOVE_REQUEST_RESULT).block(1000);
+                getBroadcastReceivedVariable(ACTION_NOTIFY_TASK_MOVE_REQUEST_RESULT)
+                        .block(TIMEOUT_MS);
         getBroadcastReceivedVariable(ACTION_NOTIFY_TASK_MOVE_REQUEST_RESULT).close();
         final Intent intent =
                 mBroadcastsContentsReceived.get(ACTION_NOTIFY_TASK_MOVE_REQUEST_RESULT);
@@ -553,6 +560,7 @@ public class TaskMoveTests extends MultiDisplayTestBase {
     }
 
     private void grantBrowserRole() {
+        logAlways("Granting browser role");
         ShellCommandHelper.executeShellCommand(
                 "cmd role add-role-holder --user "
                         + UserHandle.myUserId()
@@ -561,6 +569,7 @@ public class TaskMoveTests extends MultiDisplayTestBase {
     }
 
     private void revokeBrowserRole() {
+        logAlways("Revoking browser role");
         ShellCommandHelper.executeShellCommand(
                 "cmd role remove-role-holder --user "
                         + UserHandle.myUserId()
@@ -569,6 +578,12 @@ public class TaskMoveTests extends MultiDisplayTestBase {
     }
 
     private void sendTaskMoveRequest(int displayId, Rect bounds) {
+        logAlways(
+                "Sending ACTION_REQUEST_TASK_MOVE intent with params {displayId: "
+                        + displayId
+                        + ", bounds: "
+                        + bounds
+                        + "}");
         mContext.sendBroadcast(
                 new Intent(ACTION_REQUEST_TASK_MOVE)
                         .setFlags(Intent.FLAG_RECEIVER_FOREGROUND)

@@ -1114,9 +1114,7 @@ public final class UserManagerTest {
     public void testGetPreviousForegroundUser_noAdditionalUser() {
         // Skip the test if the device has a headless system user that can be switched to, as
         // getPreviousForegroundUser() can return the headless system user on such devices.
-        assumeFalse(
-                UserManager.isHeadlessSystemUserMode()
-                        && getUser(UserHandle.USER_SYSTEM).supportsSwitchTo());
+        assumeNoInteractiveHeadlessSystemUser();
 
         assertWithMessage("getPreviousUser() with no additional user")
                 .that(mUserManager.getPreviousForegroundUser()).isNull();
@@ -1131,9 +1129,7 @@ public final class UserManagerTest {
     public void testGetPreviousForegroundUser_withWorkProfileButNoAdditionalUser() {
         // Skip the test if the device has a headless system user that can be switched to, as
         // getPreviousForegroundUser() can return the headless system user on such devices.
-        assumeFalse(
-                UserManager.isHeadlessSystemUserMode()
-                        && getUser(UserHandle.USER_SYSTEM).supportsSwitchTo());
+        assumeNoInteractiveHeadlessSystemUser();
 
         assertWithMessage("getPreviousForegroundUser() with work profile but no additional user")
                 .that(mUserManager.getPreviousForegroundUser()).isNull();
@@ -1363,5 +1359,12 @@ public final class UserManagerTest {
             // Assume the main user is not permanent admin.
             return false;
         }
+    }
+
+    private void assumeNoInteractiveHeadlessSystemUser() {
+        assumeFalse(
+                "Device has a headless system user that can be switched to",
+                UserManager.isHeadlessSystemUserMode()
+                        && getUser(UserHandle.USER_SYSTEM).supportsSwitchTo());
     }
 }

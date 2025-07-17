@@ -52,7 +52,7 @@ open class ContentProviderAppVisibilityTestsBase {
     val INSTALL_START_CLASS = "com.android.packageinstaller.InstallStart"
 
     private val INSTALL_FAIL_DIALOG_TEXT = "There was a problem parsing the package."
-    private val INSTALL_FAIL_DIALOG_TEXT_V2 = "There is a problem with the app file"
+    private val INSTALL_FAIL_DIALOG_TEXT_V2 = "There\'s a problem with the app file"
     private val DEFAULT_TIMEOUT: Long = 5000
 
     val TYPE_EXPORTED_CONTENT_PROVIDER = 1

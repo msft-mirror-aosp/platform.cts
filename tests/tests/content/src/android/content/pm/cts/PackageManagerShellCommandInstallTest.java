@@ -110,7 +110,6 @@ import com.android.internal.util.HexDump;
 
 import libcore.util.HexEncoding;
 
-import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -377,19 +376,6 @@ public class PackageManagerShellCommandInstallTest {
         setSystemProperty("debug.pm.prune_unused_shared_libraries_delay", "invalid");
 
         getDefaultSharedPreferences().edit().clear().commit();
-    }
-
-  @After
-  public void onAfter() throws Exception {
-        getUiAutomation()
-                .adoptShellPermissionIdentity(
-                        Manifest.permission.INTERACT_ACROSS_USERS_FULL,
-                        Manifest.permission.MANAGE_ROLE_HOLDERS);
-        try {
-            mRoleManager.setRoleFallbackEnabled(ROLE_SYSTEM_DEPENDENCY_INSTALLER, true);
-        } finally {
-            getUiAutomation().dropShellPermissionIdentity();
-        }
     }
 
     @AfterClass
@@ -1506,8 +1492,8 @@ public class PackageManagerShellCommandInstallTest {
         // existing user from a previous test. Create a new user to ensure that no DIS is bound.
         try (UserReference secondaryUser = TestApis.users().createUser().createAndStart()) {
             TestApis.packages().instrumented().installExisting(secondaryUser);
-            clearCurrentDependencyInstallerRoleHolder(secondaryUser.id());
             try {
+                clearCurrentDependencyInstallerRoleHolder(secondaryUser.userHandle());
                 String errorMsg =
                         installPackageAsUser(
                                 TEST_USING_SDK1,
@@ -1516,7 +1502,7 @@ public class PackageManagerShellCommandInstallTest {
                 assertThat(errorMsg).contains("Failure [INSTALL_FAILED_MISSING_SHARED_LIBRARY");
                 assertThat(errorMsg).contains("Dependency Installer Service not found");
             } finally {
-                resetDependencyInstallerRoleHolder(secondaryUser.id());
+                resetDependencyInstallerRoleHolder(secondaryUser.userHandle());
             }
         }
     }
@@ -1693,8 +1679,8 @@ public class PackageManagerShellCommandInstallTest {
         uninstallPackageSilently(TEST_SDK1_PACKAGE);
 
         // Verify we bind to current user's DIS and packages get installed on current user.
-        setDependencyInstallerRoleHolder();
         try {
+            setDependencyInstallerRoleHolder();
             setDependencyInstallerRunMethod(
                     TestDependencyInstallerService.METHOD_VERIFY_USER_ID);
             installPackageAsUser(TEST_USING_SDK1, mUserHelper.getUserId(), "Success");
@@ -1735,7 +1721,7 @@ public class PackageManagerShellCommandInstallTest {
                 assertThat(isPackageInstalledForUser(
                             TEST_SDK1_PACKAGE, mUserHelper.getUserId())).isFalse();
             } finally {
-                resetDependencyInstallerRoleHolder(secondaryUser.id());
+                resetDependencyInstallerRoleHolder(secondaryUser.userHandle());
             }
         }
     }
@@ -3549,7 +3535,17 @@ public class PackageManagerShellCommandInstallTest {
         return Long.toString(size) + " bytes" + formattedOutput;
     }
 
-    private void clearCurrentDependencyInstallerRoleHolder(int userId) throws Exception {
+    private RoleManager getRoleManagerAsUser(UserHandle userHandle) {
+        Context userContext =
+                InstrumentationRegistry.getInstrumentation()
+                        .getTargetContext()
+                        .createContextAsUser(userHandle, 0);
+        return userContext.getSystemService(RoleManager.class);
+    }
+
+    private void clearCurrentDependencyInstallerRoleHolder(UserHandle userHandle) throws Exception {
+        int userId = userHandle.getIdentifier();
+        RoleManager rm = getRoleManagerAsUser(userHandle);
         CountDownLatch latch = new CountDownLatch(1);
 
         getUiAutomation()
@@ -3561,9 +3557,9 @@ public class PackageManagerShellCommandInstallTest {
             assertThat(mPreviousDependencyInstallerRoleHolder).isNull();
             mPreviousDependencyInstallerRoleHolder = getDependencyInstallerRoleHolder(userId);
 
-            mRoleManager.setBypassingRoleQualification(true);
-            mRoleManager.setRoleFallbackEnabled(ROLE_SYSTEM_DEPENDENCY_INSTALLER, false);
-            mRoleManager.clearRoleHoldersAsUser(
+            rm.setBypassingRoleQualification(true);
+            rm.setRoleFallbackEnabled(ROLE_SYSTEM_DEPENDENCY_INSTALLER, false);
+            rm.clearRoleHoldersAsUser(
                     ROLE_SYSTEM_DEPENDENCY_INSTALLER,
                     RoleManager.MANAGE_HOLDERS_FLAG_DONT_KILL_APP,
                     UserHandle.of(userId),
@@ -3579,7 +3575,6 @@ public class PackageManagerShellCommandInstallTest {
                     .that(getDependencyInstallerRoleHolder(userId))
                     .isNull();
         } finally {
-            mRoleManager.setBypassingRoleQualification(false);
             getUiAutomation().dropShellPermissionIdentity();
         }
     }
@@ -3632,10 +3627,13 @@ public class PackageManagerShellCommandInstallTest {
     }
 
     private void resetDependencyInstallerRoleHolder() throws Exception {
-        resetDependencyInstallerRoleHolder(mUserHelper.getUserId());
+        resetDependencyInstallerRoleHolder(mUserHelper.getUser());
     }
 
-    private void resetDependencyInstallerRoleHolder(int userId) throws Exception {
+    private void resetDependencyInstallerRoleHolder(UserHandle userHandle) throws Exception {
+        int userId = userHandle.getIdentifier();
+        RoleManager rm = getRoleManagerAsUser(userHandle);
+
         getUiAutomation().adoptShellPermissionIdentity(
                 Manifest.permission.INTERACT_ACROSS_USERS_FULL,
                 Manifest.permission.MANAGE_ROLE_HOLDERS,
@@ -3644,7 +3642,8 @@ public class PackageManagerShellCommandInstallTest {
         CountDownLatch removeLatch = new CountDownLatch(1);
         CountDownLatch addLatch = new CountDownLatch(1);
         try {
-            mRoleManager.setBypassingRoleQualification(true);
+            rm.setBypassingRoleQualification(true);
+            rm.setRoleFallbackEnabled(ROLE_SYSTEM_DEPENDENCY_INSTALLER, true);
 
             mRoleManager.removeRoleHolderAsUser(
                     ROLE_SYSTEM_DEPENDENCY_INSTALLER,
@@ -3680,7 +3679,7 @@ public class PackageManagerShellCommandInstallTest {
                 mPreviousDependencyInstallerRoleHolder = null;
             }
         } finally {
-            mRoleManager.setBypassingRoleQualification(false);
+            rm.setBypassingRoleQualification(false);
             getUiAutomation().dropShellPermissionIdentity();
         }
     }

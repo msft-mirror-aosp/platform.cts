@@ -27,6 +27,8 @@ import android.view.SurfaceView;
 import android.view.ViewGroup;
 import android.view.WindowManager;
 
+import androidx.annotation.NonNull;
+
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
@@ -37,6 +39,7 @@ public class CodecTestActivity extends Activity implements SurfaceHolder.Callbac
     private SurfaceView mSurfaceView;
     private SurfaceHolder mHolder;
     private Surface mSurface;
+    private boolean mSurfaceChanged = false;
     private final Lock mLock = new ReentrantLock();
     private final Condition mCondition = mLock.newCondition();
 
@@ -55,43 +58,89 @@ public class CodecTestActivity extends Activity implements SurfaceHolder.Callbac
     }
 
     @Override
-    public void surfaceCreated(SurfaceHolder holder) {
+    public void surfaceCreated(@NonNull SurfaceHolder holder) {
         Log.v(LOG_TAG, "surface created");
         mLock.lock();
-        mSurface = mHolder.getSurface();
-        mLock.unlock();
+        try {
+            mSurface = mHolder.getSurface();
+        } finally {
+            mLock.unlock();
+        }
     }
 
     @Override
-    public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
+    public void surfaceChanged(@NonNull SurfaceHolder holder, int format, int width, int height) {
         Log.v(LOG_TAG, "surface changed " + format + " " + width + " " + height);
+        mLock.lock();
+        try {
+            mSurfaceChanged = true;
+        } finally {
+            mLock.unlock();
+        }
     }
 
     @Override
-    public void surfaceDestroyed(SurfaceHolder holder) {
+    public void surfaceDestroyed(@NonNull SurfaceHolder holder) {
         Log.v(LOG_TAG, "surface deleted");
         mLock.lock();
-        mSurface = null;
-        mLock.unlock();
+        try {
+            mSurface = null;
+        } finally {
+            mLock.unlock();
+        }
     }
 
     public void waitTillSurfaceIsCreated() throws InterruptedException {
         final long mWaitTimeMs = 1000;
         final int retries = 3;
         mLock.lock();
-        final long start = SystemClock.elapsedRealtime();
-        while ((SystemClock.elapsedRealtime() - start) < (retries * mWaitTimeMs)
-                && mSurface == null) {
-            mCondition.await(mWaitTimeMs, TimeUnit.MILLISECONDS);
+        try {
+            final long start = SystemClock.elapsedRealtime();
+            while ((SystemClock.elapsedRealtime() - start) < (retries * mWaitTimeMs)
+                    && mSurface == null) {
+                mCondition.await(mWaitTimeMs, TimeUnit.MILLISECONDS);
+            }
+        } finally {
+            mLock.unlock();
         }
-        mLock.unlock();
         if (mSurface == null) {
             throw new InterruptedException("Taking too long to attach a SurfaceView to a window.");
         }
     }
 
+    public void waitTillSurfaceIsChanged() throws InterruptedException {
+        final long mWaitTimeMs = 1000;
+        final int retries = 3;
+        mLock.lock();
+        try {
+            final long start = SystemClock.elapsedRealtime();
+            while ((SystemClock.elapsedRealtime() - start) < (retries * mWaitTimeMs)
+                    && !mSurfaceChanged) {
+                mCondition.await(mWaitTimeMs, TimeUnit.MILLISECONDS);
+            }
+        } finally {
+            mLock.unlock();
+        }
+        if (!mSurfaceChanged) {
+            throw new InterruptedException("Taking too long to receive surfaceChanged callback.");
+        }
+    }
+
+    public void resetSurfaceChanged() {
+        mLock.lock();
+        try {
+            mSurfaceChanged = false;
+        } finally {
+            mLock.unlock();
+        }
+    }
+
     public Surface getSurface() {
         return mSurface;
+    }
+
+    public SurfaceView getSurfaceView() {
+        return mSurfaceView;
     }
 
     public void setScreenParams(int width, int height, boolean noStretch) {

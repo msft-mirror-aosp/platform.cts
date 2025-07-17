@@ -554,7 +554,6 @@ public class TelephonyRegistryManagerTest {
         }
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_EMERGENCY_CALLBACK_MODE_NOTIFICATION)
     @Test
     public void testNotifyCallbackModeStarted() throws Exception {
         LinkedBlockingQueue<Pair<Integer, Long>> queue = new LinkedBlockingQueue<>(2);
@@ -595,7 +594,6 @@ public class TelephonyRegistryManagerTest {
         }
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_EMERGENCY_CALLBACK_MODE_NOTIFICATION)
     @Test
     public void testNotifyCallbackModeRestarted() throws Exception {
         LinkedBlockingQueue<Pair<Integer, Long>> queue = new LinkedBlockingQueue<>(2);
@@ -636,7 +634,6 @@ public class TelephonyRegistryManagerTest {
         }
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_EMERGENCY_CALLBACK_MODE_NOTIFICATION)
     @Test
     public void testNotifyCallbackModeStopped() throws Exception {
         LinkedBlockingQueue<Pair<Integer, Integer>> queue = new LinkedBlockingQueue<>(2);

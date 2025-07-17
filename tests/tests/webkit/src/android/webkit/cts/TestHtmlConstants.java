@@ -77,6 +77,9 @@ public class TestHtmlConstants {
     public static final String NON_EXISTENT_PAGE_URL = "webkit/generate_404.html";
     public static final String BAD_IMAGE_PAGE_URL = "webkit/test_bad_image_url.html";
 
+    public static final String INPUT_FILE_URL = "webkit/test_input_file.html";
+    public static final String INPUT_FILE_MULTIPLE_URL = "webkit/test_input_file_multiple.html";
+
     public static final String getFileUrl(String assetName) {
         if (assetName.contains(":") || assetName.startsWith("/")) {
             throw new IllegalArgumentException();

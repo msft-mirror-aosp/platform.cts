@@ -16,10 +16,54 @@ package {
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
+java_defaults {
+    name: "CtsStatsdAtomHostTest_defaults",
+    defaults: ["cts_defaults"],
+    test_suites: [
+        "cts",
+        "general-tests",
+    ],
+    libs: [
+        "compatibility-host-util",
+        "core_cts_test_resources",
+        "cts-tradefed",
+        "host-libprotobuf-java-full",
+        "tradefed",
+        "truth",
+    ],
+    static_libs: [
+        "stats_flags_lib_host",
+        "cts-statsd-atom-host-test-utils",
+        "flag-junit-host",
+        "truth-liteproto-extension",
+        "truth-proto-extension",
+    ],
+    device_common_data: [
+        ":CtsStatsdAtomApp",
+    ],
+    per_testcase_directory: true,
+}
+
+java_test_host {
+    name: "CtsTelecomAtomHostTestCases",
+    team: "trendy_team_fwk_telecom",
+    defaults: ["CtsStatsdAtomHostTest_defaults"],
+    srcs: [
+        "src/**/telecom/*.java",
+    ],
+    device_common_data: [
+        ":CtsTelecomTestCases",
+        ":CtsTelecomCujTestCases",
+        ":TransactionalVoipAppMain",
+        ":ManagedConnectionServiceApp",
+    ],
+    test_config: "configs/AndroidTestTelecom.xml",
+}
+
 java_test_host {
     name: "CtsStatsdAtomHostTestCases",
     team: "trendy_team_android_telemetry_client_infra",
-    defaults: ["cts_defaults"],
+    defaults: ["CtsStatsdAtomHostTest_defaults"],
     srcs: [
         "src/**/alarm/*.java",
         "src/**/appcompatstate/*.java",
@@ -57,7 +101,6 @@ java_test_host {
         "src/**/settingsstats/*.java",
         "src/**/sizecompatrestartbutton/*.java",
         "src/**/statsd/*.java",
-        "src/**/telecom/*.java",
         "src/**/telephony/*.java",
         "src/**/tls/*.java",
         "src/**/usb/*.java",
@@ -71,18 +114,7 @@ java_test_host {
     ],
 
     test_suites: [
-        "cts",
-        "general-tests",
         "mts-uprobestats",
-    ],
-
-    libs: [
-        "compatibility-host-util",
-        "core_cts_test_resources",
-        "cts-tradefed",
-        "host-libprotobuf-java-full",
-        "tradefed",
-        "truth",
     ],
 
     static_libs: [
@@ -94,20 +126,14 @@ java_test_host {
         "power_flags_lib_host",
         "backstage_power_flags_lib-host",
         "power_hint_flags_lib_host",
-        "stats_flags_lib_host",
         "uprobestats_mainline_flags_java_lib",
-        "cts-statsd-atom-host-test-utils",
-        "flag-junit-host",
         "perfetto_config-full",
         "cts_adpf_atom_common-host",
         "cts_adpf_atom_common-host2",
         "uprobestats-protos",
-        "truth-liteproto-extension",
-        "truth-proto-extension",
     ],
 
     device_common_data: [
-        ":CtsStatsdAtomApp",
         ":CtsAppExitTestCases",
         ":CtsStatsdAdpfApp",
         ":CtsStatsdAdpfApp2",
@@ -123,12 +149,9 @@ java_test_host {
         ":CtsAppFunctionTestCases",
         ":CtsAppFunctionsTestHelper",
         ":CtsAppFunctionsSidecarTestHelper",
-        ":CtsTelecomTestCases",
-        ":CtsTelecomCujTestCases",
         ":ManagedConnectionServiceApp",
         ":TransactionalVoipAppMain",
     ],
-    per_testcase_directory: true,
 }
 
 java_library_host {

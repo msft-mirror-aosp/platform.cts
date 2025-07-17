@@ -92,6 +92,35 @@ class ContextualSearchManagerTest {
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_SELF_INVOCATION)
+    fun testIsContextualSearchAvailable() {
+        // The default test package should always be available.
+        assertThat(mManager.isContextualSearchAvailable()).isTrue()
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_SELF_INVOCATION)
+    fun testIsContextualSearchAvailable_contextualSearchActivityNonexistent() {
+        setTemporaryPackage("com.nonexistent.package")
+        assertThat(mManager.isContextualSearchAvailable()).isFalse()
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_SELF_INVOCATION)
+    fun testIsContextualSearchAvailable_contextualSearchActivityDisabled() {
+        setTemporaryPackage(TEMPORARY_PACKAGE)
+        try {
+            runShellCommand("pm disable "
+                + "$TEMPORARY_PACKAGE/$TEMPORARY_PACKAGE.CtsContextualSearchActivity")
+            assertThat(mManager.isContextualSearchAvailable()).isFalse()
+        } finally {
+            // Re-enable the activity for subsequent tests
+            runShellCommand("pm enable "
+                + "$TEMPORARY_PACKAGE/$TEMPORARY_PACKAGE.CtsContextualSearchActivity")
+        }
+    }
+
+    @Test
     fun testContextualSearchInvocation() {
         mManager.startContextualSearch(ContextualSearchManager.ENTRYPOINT_LONG_PRESS_HOME)
         await(

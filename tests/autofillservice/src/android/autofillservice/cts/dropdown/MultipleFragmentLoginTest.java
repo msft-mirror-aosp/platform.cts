@@ -18,6 +18,7 @@ package android.autofillservice.cts.dropdown;
 
 import static android.autofillservice.cts.activities.FragmentContainerActivity.FRAGMENT_TAG;
 import static android.autofillservice.cts.testcore.CannedFillResponse.NO_RESPONSE;
+import static android.autofillservice.cts.testcore.Helper.AutofillCriticalInternal;
 import static android.autofillservice.cts.testcore.Helper.findNodeByResourceId;
 import static android.service.autofill.SaveInfo.SAVE_DATA_TYPE_GENERIC;
 
@@ -63,6 +64,7 @@ public class MultipleFragmentLoginTest
         };
     }
 
+    @AutofillCriticalInternal
     @Test
     public void loginOnTwoFragments() throws Exception {
         enableService();
@@ -201,11 +203,13 @@ public class MultipleFragmentLoginTest
         assertThat(editText5Node.getText().toString()).isEqualTo("editText5-manually-filled");
     }
 
+    @AutofillCriticalInternal
     @Test
     public void uiDismissedWhenNonSavableFragmentIsGone() throws Exception {
         uiDismissedWhenFragmentIsGoneText(false);
     }
 
+    @AutofillCriticalInternal
     @Test
     public void uiDismissedWhenSavableFragmentIsGone() throws Exception {
         uiDismissedWhenFragmentIsGoneText(true);
