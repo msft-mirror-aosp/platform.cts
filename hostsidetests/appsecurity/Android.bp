@@ -82,6 +82,23 @@ java_defaults {
     per_testcase_directory: true,
 }
 
+// Unit tests for utilities used by the CTS tests - not CTS itself
+java_test_host {
+    name: "AppSecurityHostUnitTestCases",
+    srcs: [
+        "src/**/Utils.java",
+        "src/**/UtilsTest.java",
+    ],
+    static_libs: [
+        "mockito-hostside-prebuilt",
+        "tradefed",
+    ],
+    test_suites: [
+        "general-tests",
+    ],
+    test_config: "AppSecurityHostUnitTestCases.xml",
+}
+
 java_test_host {
     name: "CtsAppSecurityHostTestCases",
     defaults: ["appsecurity_cts_defaults"],
