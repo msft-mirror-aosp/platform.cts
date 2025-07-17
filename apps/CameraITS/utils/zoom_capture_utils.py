@@ -481,7 +481,7 @@ def verify_zoom_results(test_data, size, z_max, z_min,
 def verify_zoom_data(test_data, size, plot_name_stem=None,
                      offset_plot_name_stem=None,
                      monotonicity_atol=_SMOOTH_ZOOM_OFFSET_MONOTONICITY_ATOL,
-                     number_of_cameras_to_test=0):
+                     is_tele=False):
   """Verify output images' zoom level reflects the correct zoom ratios.
 
   This test ensures accurate zoom functionality by verifying that ArUco marker
@@ -499,7 +499,7 @@ def verify_zoom_data(test_data, size, plot_name_stem=None,
     offset_plot_name_stem: Optional[str]; log path and name of the offset plot
     monotonicity_atol: Optional[float]; absolute tolerance for offset
       monotonicity
-    number_of_cameras_to_test: [Optional][int]; minimum cameras in ZoomTestData
+    is_tele: bool; whether the results include TELE camera captures.
 
   Returns:
     Boolean whether the test passes (True) or not (False)
@@ -511,12 +511,6 @@ def verify_zoom_data(test_data, size, plot_name_stem=None,
   used_smooth_offset = False
   check_final_monotonicity = False
   e_msg = ''
-  # assert that multiple cameras were tested where applicable
-  ids_tested = set([v.physical_id for v in test_data])
-  if len(ids_tested) < number_of_cameras_to_test:
-    range_success = False
-    logging.error('Expected at least %d physical cameras tested, '
-                  'found IDs: %s', number_of_cameras_to_test, ids_tested)
 
   # initialize relative size w/ zoom[0] for diff zoom ratio checks
   side_0 = opencv_processing_utils.get_aruco_marker_side_length(
@@ -641,6 +635,10 @@ def verify_zoom_data(test_data, size, plot_name_stem=None,
         used_smooth_offset = True
         offsets_while_transitioning.append(data.aruco_offset)
         if data.physical_id not in id_to_next_offset_and_zoom:
+          if is_tele:
+            raise AssertionError(
+                'With TELE testing, non-center cropping must have '
+                'a physical camera to verify offset changes.')
           check_final_monotonicity = True
           logging.warning(
               'No physical camera is available to explain offset changes!')
@@ -717,7 +715,7 @@ def verify_zoom_data(test_data, size, plot_name_stem=None,
 
 
 def verify_preview_zoom_results(test_data, size, z_max, z_min, z_step_size,
-                                plot_name_stem, number_of_cameras_to_test=0):
+                                plot_name_stem, is_tele=False):
   """Verify that the output images' zoom level reflects the correct zoom ratios.
 
   This test verifies that the center and radius of the circles in the output
@@ -733,7 +731,7 @@ def verify_preview_zoom_results(test_data, size, z_max, z_min, z_step_size,
     z_min: float; the minimum zoom ratio being tested.
     z_step_size: float; zoom step size to zoom from z_min to z_max.
     plot_name_stem: str; log path and name of the plot.
-    number_of_cameras_to_test: [Optional][int]; minimum cameras in ZoomTestData.
+    is_tele: bool; whether the results include TELE camera captures.
 
   Returns:
     test_success: boolean; whether the test passes (True) or not (False).
@@ -773,7 +771,7 @@ def verify_preview_zoom_results(test_data, size, z_max, z_min, z_step_size,
   zoom_data_check_success, e_msg = verify_zoom_data(
       test_data, size, plot_name_stem=plot_name_stem,
       monotonicity_atol=_PREVIEW_SMOOTH_ZOOM_OFFSET_MONOTONICITY_ATOL,
-      number_of_cameras_to_test=number_of_cameras_to_test)
+      is_tele=is_tele)
   logging.debug('Zoom data success: %s', zoom_data_check_success)
 
   return zoom_ratio_check_success and zoom_data_check_success, e_msg

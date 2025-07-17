@@ -31,7 +31,6 @@ import zoom_capture_utils
 
 
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
-_NUMBER_OF_CAMERAS_TO_TEST = 0
 _NUM_STEPS_PER_SECTION = 10
 # YUV only to improve marker detection, JPEG is tested in test_zoom
 _TEST_FORMATS = ('yuv',)
@@ -208,7 +207,7 @@ class ZoomTestTELE(its_base_test.ItsBaseTest):
         test_success, msg = zoom_capture_utils.verify_zoom_data(
             test_data, size,
             offset_plot_name_stem=test_artifacts_name_stem,
-            number_of_cameras_to_test=_NUMBER_OF_CAMERAS_TO_TEST)
+            is_tele=True)
 
     if not test_success:
       if first_api_level >= its_session_utils.ANDROID16_API_LEVEL:
