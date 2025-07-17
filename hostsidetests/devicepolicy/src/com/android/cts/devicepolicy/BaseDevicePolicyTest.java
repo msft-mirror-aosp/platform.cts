@@ -17,7 +17,6 @@
 package com.android.cts.devicepolicy;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -36,7 +35,6 @@ import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
 import com.android.tradefed.testtype.junit4.BaseHostJUnit4Test;
 import com.android.tradefed.util.RunUtil;
 
-import com.google.common.base.Strings;
 import com.google.common.io.ByteStreams;
 
 import org.junit.After;
@@ -74,14 +72,11 @@ import javax.annotation.Nullable;
 public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
 
     private static final String FEATURE_AUTOMOTIVE = "android.hardware.type.automotive";
-    private static final String FEATURE_BLUETOOTH = "android.hardware.bluetooth";
-    private static final String FEATURE_CAMERA = "android.hardware.camera";
     private static final String FEATURE_CONNECTION_SERVICE = "android.software.connectionservice";
     private static final String FEATURE_FBE = "android.software.file_based_encryption";
     private static final String FEATURE_LEANBACK = "android.software.leanback";
     private static final String FEATURE_NFC = "android.hardware.nfc";
     private static final String FEATURE_NFC_BEAM = "android.software.nfc.beam";
-    private static final String FEATURE_PRINT = "android.software.print";
     private static final String FEATURE_TELEPHONY = "android.hardware.telephony";
     private static final String FEATURE_SECURE_LOCK_SCREEN = "android.software.secure_lock_screen";
     private static final String FEATURE_WIFI = "android.hardware.wifi";
@@ -261,12 +256,6 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
         if (!verifyUserCredentialIsCorrect(null, mMainUserId)) {
             changeUserCredential(null, TEST_PASSWORD, mMainUserId);
         }
-    }
-
-    /** If package manager is not available, e.g. after system crash, wait for it a little bit. */
-    private void ensurePackageManagerReady() throws Exception {
-        waitForOutput("Package manager didn't become available", "service check package",
-                s -> s.trim().equals("Service package: found"), 120 /* seconds */);
     }
 
     protected void waitForUserUnlock(int userId) throws Exception {
@@ -650,7 +639,6 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
      */
     protected void assumeCanCreateAdditionalUsers(int numberOfUsers)
             throws DeviceNotAvailableException {
-        int maxUsers = getDevice().getMaxNumberOfUsersSupported();
         assumeTrue("Tests needs at least " + numberOfUsers + " extra users, but device supports "
                 + "at most " + getMaxNumberOfUsersSupported(),
                 canCreateAdditionalUsers(numberOfUsers));
@@ -754,10 +742,6 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
         assumeHasDeviceFeature(FEATURE_TELEPHONY);
     }
 
-    protected final void assumeSupportsSms() throws Exception {
-        assumeTrue("device doesn't support SMS", isSmsCapable());
-    }
-
     protected final void assumeHasNfcFeatures() throws DeviceNotAvailableException {
         assumeHasDeviceFeature(FEATURE_NFC);
         assumeHasDeviceFeature(FEATURE_NFC_BEAM);
@@ -782,18 +766,6 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
             throws DeviceNotAvailableException {
         assumeHasDeviceFeature(FEATURE_FBE);
         assumeHasSecureLockScreenFeature();
-    }
-
-    protected final void assumeHasPrintFeature() throws DeviceNotAvailableException {
-        assumeHasDeviceFeature(FEATURE_PRINT);
-    }
-
-    protected final void assumeHasCameraFeature() throws DeviceNotAvailableException {
-        assumeHasDeviceFeature(FEATURE_CAMERA);
-    }
-
-    protected final void assumeHasBluetoothFeature() throws DeviceNotAvailableException {
-        assumeHasDeviceFeature(FEATURE_BLUETOOTH);
     }
 
     protected final void assumeApiLevel(int min) throws DeviceNotAvailableException {
@@ -872,14 +844,6 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
         }
     }
 
-    protected void setProfileOwnerExpectingFailure(String componentName, int userId)
-            throws Exception {
-        if (setProfileOwner(componentName, userId, /* expectFailure =*/ true)) {
-            removeTestAddedUser(userId);
-            fail("Setting profile owner should have failed.");
-        }
-    }
-
     private String setDeviceAdminInner(String componentName, int userId)
             throws DeviceNotAvailableException {
         String command = "dpm set-active-admin --user " + userId + " '" + componentName + "'";
@@ -928,12 +892,6 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
         assertTrue(setDeviceOwner(componentName, userId, /* expectFailure =*/ false));
     }
 
-    protected void setDeviceOwnerExpectingFailure(String componentName, int userId)
-            throws Exception {
-        assertFalse(setDeviceOwner(componentName, userId, /* expectFailure =*/ true));
-    }
-
-
     protected void affiliateUsers(String deviceAdminPkg, int userId1, int userId2)
             throws Exception {
         CLog.d("Affiliating users %d and %d on admin package %s", userId1, userId2, deviceAdminPkg);
@@ -949,14 +907,6 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
         String commandOutput = getDevice().executeShellCommand(command);
         CLog.d("Output for command " + command + ": " + commandOutput);
         return commandOutput.replace("\n", "").replace("\r", "");
-    }
-
-    protected void putSettings(String namespace, String name, String value, int userId)
-            throws DeviceNotAvailableException {
-        String command = "settings --user " + userId + " put " + namespace + " " + name
-                + " " + value;
-        String commandOutput = getDevice().executeShellCommand(command);
-        CLog.d("Output for command " + command + ": " + commandOutput);
     }
 
     protected boolean removeAdmin(String componentName, int userId)
@@ -1007,28 +957,6 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
                         "Error finding a user id for this device owner in dumpsys.");
             }
         }
-    }
-
-    /**
-     * Runs pm enable command to enable a package or component. Returns the command result.
-     */
-    protected String enableComponentOrPackage(int userId, String packageOrComponent)
-            throws DeviceNotAvailableException {
-        String command = "pm enable --user " + userId + " " + packageOrComponent;
-        String result = getDevice().executeShellCommand(command);
-        CLog.d("Output for command " + command + ": " + result);
-        return result;
-    }
-
-    /**
-     * Runs pm disable command to disable a package or component. Returns the command result.
-     */
-    protected String disableComponentOrPackage(int userId, String packageOrComponent)
-            throws DeviceNotAvailableException {
-        String command = "pm disable --user " + userId + " " + packageOrComponent;
-        String result = getDevice().executeShellCommand(command);
-        CLog.d("Output for command " + command + ": " + result);
-        return result;
     }
 
     protected interface SuccessCondition {
@@ -1279,52 +1207,6 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
         executeShellCommand("pm revoke --user %d %s %s", userId, pkg, permission);
     }
 
-    /** Find effective restriction for user */
-    protected boolean isRestrictionSetOnUser(int userId, String restriction) throws Exception {
-        String commandOutput = getDevice().executeShellCommand("dumpsys user");
-        String[] outputLines = commandOutput.split("\\n");
-        Pattern userPattern = Pattern.compile("(^.*)UserInfo\\{" + userId + ":.*$");
-        Pattern restrictionPattern = Pattern.compile("(^.*)Effective\\srestrictions\\:.*$");
-
-        boolean userFound = false;
-        boolean restrictionsFound = false;
-        int lastIndent = -1;
-
-        for (String line : outputLines) {
-            // Starting a new block of user infos
-            if (!line.startsWith(Strings.repeat(" ", lastIndent + 1))) {
-                CLog.d("User %d restrictions found, no matched restriction.", userId);
-                return false;
-            }
-            //First, try matching user pattern
-            Matcher userMatcher = userPattern.matcher(line);
-            if (userMatcher.find()) {
-                CLog.d("User %d found in dumpsys, finding restrictions.", userId);
-                userFound = true;
-                lastIndent = userMatcher.group(1).length();
-            }
-
-            // Second, try matching restriction
-            Matcher restrictionMatcher = restrictionPattern.matcher(line);
-            if (userFound && restrictionMatcher.find()) {
-                CLog.d("User %d restrictions found, finding exact restriction.", userId);
-                restrictionsFound = true;
-                lastIndent = restrictionMatcher.group(1).length();
-            }
-
-            if (restrictionsFound && line.contains(restriction)) {
-                return true;
-            }
-        }
-        if (!userFound) {
-            CLog.e("User %d not found in dumpsys.", userId);
-        }
-        if (!restrictionsFound) {
-            CLog.d("User %d found in dumpsys, but restrictions not found.", userId);
-        }
-        return false;
-    }
-
     /**
      * Generates instrumentation arguments that indicate the device-side test is exercising device
      * owner APIs.
@@ -1374,15 +1256,5 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
     void sleep(int timeMs) throws InterruptedException {
         CLog.d("Sleeping %d ms", timeMs);
         RunUtil.getDefault().sleep(timeMs);
-    }
-
-    private boolean isSmsCapable() throws Exception {
-        String output = getDevice().executeShellCommand("dumpsys phone");
-        if (output.contains("isSmsCapable=true")) {
-            CLog.d("Device is SMS capable");
-            return true;
-        }
-        CLog.d("Device is not SMS capable");
-        return false;
     }
 }

@@ -19,8 +19,6 @@ package com.android.cts.devicepolicy;
 import static com.android.cts.devicepolicy.DeviceAdminFeaturesCheckerRule.FEATURE_MANAGED_USERS;
 
 import com.android.cts.devicepolicy.DeviceAdminFeaturesCheckerRule.RequiresAdditionalFeatures;
-import com.android.tradefed.device.DeviceNotAvailableException;
-import com.android.tradefed.log.LogUtil;
 
 // We need multi user to be supported in order to create a profile of the user owner.
 @RequiresAdditionalFeatures({FEATURE_MANAGED_USERS})
@@ -44,8 +42,6 @@ public abstract class BaseManagedProfileTest extends BaseDevicePolicyTest {
     protected static final String SHARING_APP_1_APK = "SharingApp1.apk";
     protected static final String SHARING_APP_2_APK = "SharingApp2.apk";
     private static final String MANAGED_PROFILE_APK = "CtsManagedProfileApp.apk";
-    private static final String NOTIFICATION_PKG =
-            "com.android.cts.managedprofiletests.notificationsender";
     protected int mParentUserId;
     // ID of the profile we'll create. This will always be a profile of the parent.
     protected int mProfileUserId;
@@ -77,7 +73,6 @@ public abstract class BaseManagedProfileTest extends BaseDevicePolicyTest {
         getDevice().uninstallPackage(MANAGED_PROFILE_PKG);
         getDevice().uninstallPackage(INTENT_SENDER_PKG);
         getDevice().uninstallPackage(INTENT_RECEIVER_PKG);
-        getDevice().uninstallPackage(NOTIFICATION_PKG);
         getDevice().uninstallPackage(TEST_APP_1_APK);
         getDevice().uninstallPackage(TEST_APP_2_APK);
         getDevice().uninstallPackage(TEST_APP_3_APK);
@@ -86,15 +81,5 @@ public abstract class BaseManagedProfileTest extends BaseDevicePolicyTest {
         getDevice().uninstallPackage(SHARING_APP_2_APK);
 
         super.tearDown();
-    }
-
-    protected void disableActivityForUser(String activityName, int userId)
-            throws DeviceNotAvailableException {
-        String command = "am start -W --user " + userId
-                + " --es extra-package " + MANAGED_PROFILE_PKG
-                + " --es extra-class-name " + MANAGED_PROFILE_PKG + "." + activityName
-                + " " + MANAGED_PROFILE_PKG + "/.ComponentDisablingActivity ";
-        LogUtil.CLog.d("Output for command " + command + ": "
-                + getDevice().executeShellCommand(command));
     }
 }
