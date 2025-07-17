@@ -1124,7 +1124,6 @@
   <option name="compatibility:exclude-filter" value="CtsUsageStatsTestCases android.app.usage.cts.UsageStatsTest#testUserLaunchRemovesFromRestricted"/>
   <option name="compatibility:exclude-filter" value="CtsViewTestCases android.view.cts.DisplayRefreshRateTest#testRefreshRate"/>
   <option name="compatibility:exclude-filter" value="CtsViewTestCases android.view.cts.TextureViewTest#testGetBitmap_8888_PassthroughP3"/>
-  <option name="compatibility:exclude-filter" value="CtsVirtualDevicesAppLaunchTestCases android.virtualdevice.cts.applaunch.VirtualDeviceImeTest#setDisplayImePolicy_changeAtRuntime"/>
   <option name="compatibility:exclude-filter" value="CtsVirtualDevicesAudioTestCases android.virtualdevice.cts.audio.TextToSpeechTest#textToSpeechWithVirtualDeviceContext_explicitSessionIdOverridesVdmSessionId"/>
   <option name="compatibility:exclude-filter" value="CtsVirtualDevicesAudioTestCases android.virtualdevice.cts.audio.TextToSpeechTest#textToSpeechWithVirtualDeviceContext_hasVdmSpecificSessionId"/>
   <option name="compatibility:exclude-filter" value="CtsVirtualDevicesAudioTestCases android.virtualdevice.cts.audio.VirtualAudioPermissionTest#audioInjection_virtualDevice_permissionNotGranted"/>
