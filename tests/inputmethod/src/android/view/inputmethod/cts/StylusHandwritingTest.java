@@ -2623,7 +2623,8 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
             }
 
             // Handwriting should finish soon.
-            notExpectEvent(stream, editorMatcher("onFinishStylusHandwriting", marker), TIMEOUT);
+            notExpectEvent(stream,
+                    editorMatcher("onFinishStylusHandwriting", marker), TIMEOUT_1_S);
             verifyStylusHandwritingWindowIsShown(stream, imeSession);
             // Verify handwriting window exists.
             assertTrue(expectCommand(
