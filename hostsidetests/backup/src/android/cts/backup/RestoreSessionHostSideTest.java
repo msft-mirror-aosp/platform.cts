@@ -17,6 +17,7 @@
 package android.cts.backup;
 
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.platform.test.annotations.AppModeFull;
@@ -25,7 +26,8 @@ import com.android.compatibility.common.tradefed.build.CompatibilityBuildHelper;
 import com.android.compatibility.common.util.BackupUtils;
 import com.android.tradefed.device.DeviceNotAvailableException;
 import com.android.tradefed.testtype.junit4.DeviceParameterizedRunner;
-import com.android.tradefed.util.FileUtil;
+import com.android.tradefed.util.CommandResult;
+import com.android.tradefed.util.CommandStatus;
 import com.android.tradefed.util.RunUtil;
 
 import junitparams.Parameters;
@@ -35,10 +37,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -214,12 +213,18 @@ public class RestoreSessionHostSideTest extends BaseBackupHostSideTest {
         }
 
         assumeTrue(hasIncrementalFeature());
-        String result = installWithAdb(apkFileName);
-        assumeTrue(result, !result.contains("Unknown option --incremental"));
-        assertTrue(result, result.contains("Success"));
+
+        CommandResult result = installWithAdb(apkFileName);
+
+        assumeFalse(result.getStderr().contains("Unknown option --incremental"));
+        assertTrue(
+                String.format(
+                        "adb install failed\nStdout: %s\nStderr: %s",
+                        result.getStdout(), result.getStderr()),
+                result.getStatus() == CommandStatus.SUCCESS);
     }
 
-    private String installWithAdb(String apkFileName) throws Exception {
+    private CommandResult installWithAdb(String apkFileName) throws Exception {
         final long DEFAULT_TEST_TIMEOUT_MS = 60 * 1000L;
 
         CompatibilityBuildHelper buildHelper = new CompatibilityBuildHelper(getBuild());
@@ -232,15 +237,9 @@ public class RestoreSessionHostSideTest extends BaseBackupHostSideTest {
         adbCmd.add("--incremental");
         adbCmd.add(buildHelper.getTestFile(apkFileName).getAbsolutePath());
 
-        // Using runUtil instead of executeAdbCommand() because the latter doesn't provide the
-        // option to get stderr or redirect stderr to stdout.
-        File outFile = FileUtil.createTempFile("stdoutredirect", ".txt");
-        OutputStream stdout = new FileOutputStream(outFile);
-        RunUtil runUtil = new RunUtil();
-        runUtil.setRedirectStderrToStdout(true);
-        runUtil.runTimedCmd(DEFAULT_TEST_TIMEOUT_MS, stdout, /* stderr= */ null,
-                adbCmd.toArray(new String[adbCmd.size()]));
-        return FileUtil.readStringFromFile(outFile);
+        // Using runTimedCmd() returns a CommandResult object with status, stdout, and stderr.
+        return RunUtil.getDefault()
+                .runTimedCmd(DEFAULT_TEST_TIMEOUT_MS, adbCmd.toArray(new String[adbCmd.size()]));
     }
 
     private boolean hasIncrementalFeature() throws Exception {
