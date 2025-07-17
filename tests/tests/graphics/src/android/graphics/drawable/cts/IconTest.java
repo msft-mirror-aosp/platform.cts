@@ -132,6 +132,7 @@ public class IconTest {
     }
 
     @Test
+    @DisabledOnRavenwood(reason = "DesktopExperienceFlags.class")
     public void testResourceIcon() {
         verifyIconValidity(Icon.createWithResource(mContext, R.drawable.bmp_test));
 
