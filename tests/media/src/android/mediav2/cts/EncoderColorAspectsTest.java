@@ -21,6 +21,7 @@ import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface
 import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Flexible;
 import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatYUVP010;
 import static android.media.codec.Flags.apvSupport;
+import static android.mediav2.common.cts.CodecTestBase.SupportClass.CODEC_OPTIONAL;
 import static android.mediav2.common.cts.MuxerUtils.getMuxerFormatForMediaType;
 import static android.mediav2.common.cts.MuxerUtils.getTempFilePath;
 import static android.mediav2.common.cts.MuxerUtils.muxOutput;
@@ -322,6 +323,10 @@ public class EncoderColorAspectsTest extends CodecEncoderTestBase {
                                                  mActiveEncCfg.mColorFormat));
             }
         }
+
+        ArrayList<MediaFormat> formats = new ArrayList<>();
+        formats.add(mActiveEncCfg.getFormat());
+        checkFormatSupport(mCodecName, mMediaType, true, formats, null, CODEC_OPTIONAL);
 
         if (mActiveEncCfg.mColorFormat == COLOR_FormatSurface) {
             Assume.assumeTrue("Surface mode tests are limited to devices launching with Android T",

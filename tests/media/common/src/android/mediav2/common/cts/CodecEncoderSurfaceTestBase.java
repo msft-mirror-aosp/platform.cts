@@ -147,8 +147,9 @@ public class CodecEncoderSurfaceTestBase {
         Assume.assumeTrue("Decoder: " + mDecoderName + " doesn't support format: " + mDecoderFormat,
                 CodecTestBase.areFormatsSupported(mDecoderName, mTestFileMediaType,
                         decoderFormatList));
-        if (CodecTestBase.doesAnyFormatHaveHDRProfile(mTestFileMediaType, decoderFormatList)
-                || mTestFile.contains("10bit")) {
+        if ((CodecTestBase.doesAnyFormatHaveHDRProfile(mTestFileMediaType, decoderFormatList)
+                        || mTestFile.contains("10bit"))
+                && !mIsOutputToneMapped) {
             // Check if encoder is capable of supporting HDR profiles.
             // Previous check doesn't verify this as profile isn't set in the format
             Assume.assumeTrue(mEncoderName + " doesn't support HDR encoding",
