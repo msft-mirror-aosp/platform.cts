@@ -253,17 +253,12 @@ public class DeveloperVerifierServiceTest {
         assertThat(sessionFromParcel.getExtensionParams()).isEqualTo(PersistableBundle.EMPTY);
         // Test binder methods
         // Test getTimeoutTimeMillis
-        int testVerificationId1 = 1;
         assertThat(sessionFromParcel.getTimeoutTime())
                 .isEqualTo(Instant.ofEpochMilli(TEST_TIMEOUT_MILLIS));
         // Test extendTimeoutMillis
-        int testVerificationId2 = 2;
-        long testAdditionalMillis = 500L;
         assertThat(sessionFromParcel.extendTimeout(Duration.ofMillis(0L)))
                 .isEqualTo(Duration.ofMillis(TEST_EXTENDED_TIMEOUT_MILLIS));
         // Test setVerificationPolicy
-        int testVerificationId3 = 3;
-        int testPolicy = DEVELOPER_VERIFICATION_POLICY_BLOCK_FAIL_CLOSED;
         assertThat(sessionFromParcel.setPolicy(DEVELOPER_VERIFICATION_POLICY_BLOCK_FAIL_OPEN))
                 .isTrue();
         // Test reportVerificationIncomplete
