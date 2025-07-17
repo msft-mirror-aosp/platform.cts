@@ -91,9 +91,6 @@ public final class ImeSwitchingTest extends EndToEndImeTestBase {
      */
     @Test
     public void testImeRemainsVisibleAfterSwitchingIme() throws Exception {
-        // TODO(b/416752402): Re-enable this test once this bug is fixed.
-        assumeFalse(isAutomotiveScalableUI());
-
         testWithActivityAndTwoImes((session1, session2, activity, editText, marker) -> {
             final var stream1 = session1.openEventStream();
             final var stream2 = session2.openEventStream();
@@ -126,9 +123,6 @@ public final class ImeSwitchingTest extends EndToEndImeTestBase {
      */
     @Test
     public void testImeUnboundAfterSwitchingWithoutInputFocus() throws Exception {
-        // TODO(b/416752402): Re-enable this test once this bug is fixed.
-        assumeFalse(isAutomotiveScalableUI());
-
         testWithActivityAndTwoImes((session1, session2, activity, editText, marker) -> {
             final var stream1 = session1.openEventStream();
             final var stream2 = session2.openEventStream();
@@ -187,9 +181,6 @@ public final class ImeSwitchingTest extends EndToEndImeTestBase {
                 pm.hasSystemFeature(FEATURE_TV_OPERATOR_TIER));
         assumeFalse("Automotive will start launcher on wake, skipping the test",
                 pm.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE));
-
-        // TODO(b/416752402): Re-enable this test once this bug is fixed.
-        assumeFalse(isAutomotiveScalableUI());
 
         final var wmState = new WindowManagerStateHelper();
         try (var lockScreenSession = new LockScreenSession(
