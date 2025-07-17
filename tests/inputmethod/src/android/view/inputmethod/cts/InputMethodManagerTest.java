@@ -48,16 +48,12 @@ import android.os.SystemClock;
 import android.os.UserHandle;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.AppModeSdkSandbox;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.annotations.SecurityTest;
-import android.platform.test.flag.junit.CheckFlagsRule;
-import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.server.wm.WindowManagerStateHelper;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
-import android.view.inputmethod.Flags;
 import android.view.inputmethod.InputConnection;
 import android.view.inputmethod.InputMethodInfo;
 import android.view.inputmethod.InputMethodManager;
@@ -82,7 +78,6 @@ import com.android.cts.mockime.MockImeSession;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
@@ -112,11 +107,6 @@ public final class InputMethodManagerTest {
 
     /** Percentage to scroll by, to reach the top of a scrollable item. */
     private static final float SCROLL_TOP_PERCENT = 100;
-
-    private final DeviceFlagsValueProvider mFlagsValueProvider = new DeviceFlagsValueProvider();
-
-    @Rule
-    public final CheckFlagsRule mCheckFlagsRule = new CheckFlagsRule(mFlagsValueProvider);
 
     private final WindowManagerStateHelper mWmStateHelper = new WindowManagerStateHelper();
 
@@ -351,7 +341,6 @@ public final class InputMethodManagerTest {
 
     /** Shows the IME Switcher menu and verifies switching to Mock IME by tapping on the item. */
     @AppModeFull(reason = "Instant apps cannot rely on ACTION_CLOSE_SYSTEM_DIALOGS")
-    @RequiresFlagsEnabled(Flags.FLAG_IME_SWITCHER_REVAMP)
     @Test
     public void testInputMethodPickerSwitchIme() throws Exception {
         assumeFalse(mContext.getPackageManager().hasSystemFeature(
