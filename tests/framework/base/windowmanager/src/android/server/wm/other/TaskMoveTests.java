@@ -80,8 +80,9 @@ public class TaskMoveTests extends MultiDisplayTestBase {
             new BroadcastReceiver() {
                 @Override
                 public void onReceive(Context context, Intent intent) {
-                    getBroadcastReceivedVariable(intent.getAction()).open();
+                    logAlways("Received an intent with action " + intent.getAction());
                     mBroadcastsContentsReceived.put(intent.getAction(), intent);
+                    getBroadcastReceivedVariable(intent.getAction()).open();
                 }
             };
 
