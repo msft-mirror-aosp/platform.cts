@@ -3,5 +3,10 @@
     {
       "name" : "CtsStatsdAtomHostTestCases"
     }
+  ],
+  "presubmit" : [
+    {
+      "name" : "CtsTelecomAtomHostTestCases"
+    }
   ]
 }
