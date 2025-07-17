@@ -201,10 +201,13 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
     else:
       failures['optional'].append(msg)
 
-  def _handle_one_completed_future(
-      self, pending_futures, future, test_failures, database):
-    result = future.result()
-    pending_futures.remove(future)
+  def _handle_one_verification_result(
+      self, result, test_failures, database):
+    """Handle the verification result for one combination.
+
+    This function appends test failure for video stabilization and store
+    the verification result to protobuf.
+    """
     logging.debug('Verification result: %s', result)
     if 'stabilization_failure' in result:
       failure_msg = f"{result['name']}: {result['stabilization_failure']}"
@@ -216,6 +219,12 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
         database, result['output_surfaces'], result['support_claimed'],
         result['passed'], result['fps_range'], result['stabilize_mode']
     )
+
+  def _handle_one_completed_future(
+      self, pending_futures, future, test_failures, database):
+    result = future.result()
+    pending_futures.remove(future)
+    self._handle_one_verification_result(result, test_failures, database)
     gc.collect()
 
   def _handle_completed_futures(self, verifications, test_failures, database):
@@ -545,12 +554,14 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
                 passed = False
 
               if not self.parallel_execution:
-                self._finish_combination(
+                verification_result = self._finish_combination(
                     combination_name, stabilize_mode,
                     support_claimed, passed, recording_obj, gyro_events, _NAME,
                     log_path, facing, output_surfaces, fps_range, hlg10,
                     features_passed, streams_name, fps_range_tuple
                 )
+                self._handle_one_verification_result(
+                    verification_result, test_failures, database)
               else:
                 future = executor.submit(
                     self._finish_combination, combination_name, stabilize_mode,
