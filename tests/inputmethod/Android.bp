@@ -43,6 +43,7 @@ android_test {
         "CtsMockSpellCheckerLib",
         "CtsLegacyImeClientTestLib",
         "CtsMockInputMethodWithSubtypesLib",
+        "CtsVirtualDeviceCommonLib",
         "testng",
         "kotlin-test",
         "cts-wm-util",
@@ -94,4 +95,11 @@ android_ravenwood_test {
     ],
     auto_gen_config: true,
     team: "trendy_team_ravenwood",
+}
+
+test_module_config {
+    name: "CtsInputMethodTestCases_cts_virtualdeviceimetest",
+    base: "CtsInputMethodTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.view.inputmethod.cts.VirtualDeviceImeTest"],
 }
