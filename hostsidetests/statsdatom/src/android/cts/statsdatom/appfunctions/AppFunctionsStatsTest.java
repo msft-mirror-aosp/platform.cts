@@ -58,6 +58,7 @@ import java.util.List;
 public class AppFunctionsStatsTest extends BaseHostJUnit4Test implements IBuildReceiver {
     private static final String TEST_PKG = "android.app.appfunctions.cts";
     private static final String TEST_CLASS = TEST_PKG + ".AppFunctionManagerTest";
+    private static final String FEATURE_AUTOMOTIVE = "android.hardware.type.automotive";
     private static final String ACCESS_ENABLED_TEST_CLASS =
             TEST_PKG + ".AppFunctionManagerAccessEnabledTest";
     private static final int ERROR_DENIED = 1000;
@@ -153,7 +154,8 @@ public class AppFunctionsStatsTest extends BaseHostJUnit4Test implements IBuildR
         FLAG_APP_FUNCTION_ACCESS_SERVICE_ENABLED
     })
     public void testAtom_executeAppFunction_crossUser_fail() throws Exception {
-        if (!getDevice().isMultiUserSupported()) return;
+        if (!getDevice().isMultiUserSupported()
+                || DeviceUtils.hasFeature(getDevice(), FEATURE_AUTOMOTIVE)) return;
 
         AppFunctionsRequestReported afRequestReported =
                 runAccessEnabledTestAndGetAtom(
