@@ -18,7 +18,7 @@ package android.view.surfacecontrol.cts;
 import static android.server.wm.BuildUtils.HW_TIMEOUT_MULTIPLIER;
 import static android.server.wm.CtsWindowInfoUtils.getWindowBoundsInDisplaySpace;
 import static android.server.wm.CtsWindowInfoUtils.getWindowCenter;
-import static android.server.wm.CtsWindowInfoUtils.waitForStableWindowGeometry;
+import static android.server.wm.CtsWindowInfoUtils.waitForNthWindowFromTop;
 import static android.server.wm.CtsWindowInfoUtils.waitForWindowFocus;
 import static android.server.wm.CtsWindowInfoUtils.waitForWindowInfo;
 import static android.server.wm.CtsWindowInfoUtils.waitForWindowInfos;
@@ -413,6 +413,32 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
         waitUntilViewDrawn(mEmbeddedView);
     }
 
+    private void waitForEmbeddedWindowComposited(boolean onTop, boolean remote) throws Throwable {
+        Duration timeout = Duration.ofSeconds(HW_TIMEOUT_MULTIPLIER * 5L);
+
+        Supplier<IBinder> windowTokenSupplier;
+        if (remote) {
+            windowTokenSupplier =
+                    () -> {
+                        try {
+                            return mTestService.getWindowToken();
+                        } catch (RemoteException e) {
+                            return null;
+                        }
+                    };
+        } else {
+            windowTokenSupplier = mEmbeddedView::getWindowToken;
+        }
+
+        boolean success =
+                onTop
+                        ? waitForWindowOnTop(timeout, windowTokenSupplier)
+                        : waitForNthWindowFromTop(
+                                timeout, windowTokenSupplier, 1 /*expectedOrder*/);
+
+        assertTrue("Failed to wait for the embedded window to be composited", success);
+    }
+
     private String getTouchableRegionFromDump() {
         final String output = runCommandAndPrintOutput("dumpsys window windows");
         boolean foundWindow = false;
@@ -505,6 +531,7 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
         addSurfaceView(DEFAULT_SURFACE_VIEW_WIDTH, DEFAULT_SURFACE_VIEW_HEIGHT);
         mInstrumentation.waitForIdleSync();
         waitUntilEmbeddedViewDrawn();
+        waitForEmbeddedWindowComposited(true /*onTop*/, false /*remote*/);
 
         mCtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mSurfaceView);
         assertTrue(mClicked);
@@ -538,7 +565,7 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
                     false /* asNewWindow */);
             mInstrumentation.waitForIdleSync();
             waitUntilEmbeddedViewDrawn();
-            waitForStableWindowGeometry(Duration.ofSeconds(WAIT_TIMEOUT_S));
+            waitForEmbeddedWindowComposited(true /*onTop*/, false /*remote*/);
 
             final int[] surfaceLocation = new int[2];
             mSurfaceView.getLocationOnScreen(surfaceLocation);
@@ -623,6 +650,7 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
         // on the embedded view.
         addSurfaceView(bigEdgeLength, bigEdgeLength);
         mInstrumentation.waitForIdleSync();
+        waitForEmbeddedWindowComposited(true /*onTop*/, false /*remote*/);
 
         mCtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mSurfaceView);
         assertFalse(mClicked);
@@ -647,6 +675,7 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
 
         addSurfaceView(DEFAULT_SURFACE_VIEW_WIDTH, DEFAULT_SURFACE_VIEW_HEIGHT);
         mInstrumentation.waitForIdleSync();
+        waitForEmbeddedWindowComposited(true /*onTop*/, false /*remote*/);
 
         mCtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mSurfaceView);
         assertTrue(mClicked);
@@ -674,6 +703,7 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
 
         addSurfaceView(DEFAULT_SURFACE_VIEW_WIDTH, DEFAULT_SURFACE_VIEW_HEIGHT);
         mInstrumentation.waitForIdleSync();
+        waitForEmbeddedWindowComposited(true /*onTop*/, false /*remote*/);
 
         mActivityRule.runOnUiThread(() -> {
             mEmbeddedLayoutParams.flags |= FLAG_NOT_TOUCHABLE;
@@ -719,6 +749,7 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
                 marginTop,
                 false /* asNewWindow */);
         mInstrumentation.waitForIdleSync();
+        waitForEmbeddedWindowComposited(true /*onTop*/, false /*remote*/);
 
         mActivityRule.runOnUiThread(() -> {
             mEmbeddedLayoutParams.flags |= FLAG_WATCH_OUTSIDE_TOUCH;
@@ -761,6 +792,7 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
         addSurfaceView(DEFAULT_SURFACE_VIEW_WIDTH, DEFAULT_SURFACE_VIEW_HEIGHT);
         mInstrumentation.waitForIdleSync();
         waitUntilEmbeddedViewDrawn();
+        waitForEmbeddedWindowComposited(true /*onTop*/, false /*remote*/);
 
         // Tap where the embedded window is placed to ensure focus is given via touch
         globalTapOnWindowCenter(mEmbeddedView::getWindowToken);
@@ -800,6 +832,11 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
         });
 
         waitUntilViewDrawn(embeddedViewChild);
+        assertTrue(
+                "Failed to wait for the embedded child window to be composited",
+                waitForWindowOnTop(
+                        Duration.ofSeconds(HW_TIMEOUT_MULTIPLIER * 5L),
+                        embeddedViewChild::getWindowToken));
 
         globalTapOnWindowCenter(embeddedViewChild::getWindowToken);
         // When tapping on the child embedded window, it should gain focus.
@@ -830,6 +867,7 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
 
         addSurfaceView(DEFAULT_SURFACE_VIEW_WIDTH, DEFAULT_SURFACE_VIEW_HEIGHT);
         mSvCreatedLatch.await(5, TimeUnit.SECONDS);
+        waitForEmbeddedWindowComposited(true /*onTop*/, true /*remote*/);
 
         // Tap where the embedded window is placed to ensure focus is given via touch
         globalTapOnWindowCenter(() -> {
@@ -896,6 +934,7 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
         addSurfaceView(DEFAULT_SURFACE_VIEW_WIDTH, DEFAULT_SURFACE_VIEW_HEIGHT);
         mInstrumentation.waitForIdleSync();
         waitUntilEmbeddedViewDrawn();
+        waitForEmbeddedWindowComposited(true /*onTop*/, false /*remote*/);
 
         // When surface view is focused, it should transfer focus to the embedded view.
         requestSurfaceViewFocus();
@@ -955,9 +994,10 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
         mEmbeddedView = editText;
         editText.setBackgroundColor(Color.BLUE);
         editText.setPrivateImeOptions(getImeTestMarker());
-        addSurfaceView(DEFAULT_SURFACE_VIEW_WIDTH, DEFAULT_SURFACE_VIEW_HEIGHT, /*onTop*/ false);
+        addSurfaceView(DEFAULT_SURFACE_VIEW_WIDTH, DEFAULT_SURFACE_VIEW_HEIGHT, false /*onTop*/);
         mInstrumentation.waitForIdleSync();
         waitUntilEmbeddedViewDrawn();
+        waitForEmbeddedWindowComposited(false /*onTop*/, false /*remote*/);
 
         // When surface view is focused, it should transfer focus to the embedded view.
         requestSurfaceViewFocus();
@@ -1179,6 +1219,7 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
 
         mInstrumentation.waitForIdleSync();
         waitUntilEmbeddedViewDrawn();
+        waitForEmbeddedWindowComposited(true /*onTop*/, false /*remote*/);
 
         // Check if SurfacePackage copy remains valid even though the original package has
         // been released.
@@ -1312,7 +1353,7 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
         hostReady.await();
         mInstrumentation.waitForIdleSync();
         waitUntilEmbeddedViewDrawn();
-
+        waitForEmbeddedWindowComposited(true /*onTop*/, false /*remote*/);
 
         // Check to see if the click went through - this only would happen if the surface package
         // was replaced
@@ -1455,6 +1496,8 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
             tpv.punchHoleInTouchableRegion();
         });
         mInstrumentation.waitForIdleSync();
+        waitForEmbeddedWindowComposited(true /*onTop*/, false /*remote*/);
+
         mCtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mSurfaceView);
         mInstrumentation.waitForIdleSync();
         assertTrue(mrsv.gotEvent());
@@ -1515,9 +1558,10 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
             mClicked = true;
         });
 
-        addSurfaceView(DEFAULT_SURFACE_VIEW_WIDTH, DEFAULT_SURFACE_VIEW_HEIGHT, false);
+        addSurfaceView(DEFAULT_SURFACE_VIEW_WIDTH, DEFAULT_SURFACE_VIEW_HEIGHT, false /*onTop*/);
         mInstrumentation.waitForIdleSync();
         waitUntilEmbeddedViewDrawn();
+        waitForEmbeddedWindowComposited(false /*onTop*/, false /*remote*/);
 
         // We should receive no input until we punch a hole
         globalTapOnViewCenter(mSurfaceView);
@@ -1539,7 +1583,6 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
         // everything, we should have a standard way to wait on the completion of async
         // operations
         waitForTouchableRegionChanged(originalRegion);
-        waitForStableWindowGeometry(Duration.ofSeconds(WAIT_TIMEOUT_S));
 
         globalTapOnViewCenter(mSurfaceView);
         PollingCheck.waitFor(() -> mClicked);
@@ -1578,7 +1621,7 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
         mTestService = getService();
         assertTrue(mTestService != null);
 
-        addSurfaceView(DEFAULT_SURFACE_VIEW_WIDTH, DEFAULT_SURFACE_VIEW_HEIGHT, false);
+        addSurfaceView(DEFAULT_SURFACE_VIEW_WIDTH, DEFAULT_SURFACE_VIEW_HEIGHT, false /*onTop*/);
         assertTrue("Failed to wait for SV to get created",
                 mSvCreatedLatch.await(5, TimeUnit.SECONDS));
         mActivityRule.runOnUiThread(() -> {
@@ -1592,7 +1635,7 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
                 waitForWindowVisible(mTestService.getWindowToken(),
                 mDisplayId));
 
-        waitForStableWindowGeometry(Duration.ofSeconds(WAIT_TIMEOUT_S));
+        waitForEmbeddedWindowComposited(false /*onTop*/, true /*remote*/);
         globalTapOnViewCenter(mSurfaceView);
 
         MotionEvent motionEvent = mTestService.getMotionEvent();
@@ -1646,18 +1689,25 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
         mInstrumentation.waitForIdleSync();
         waitUntilEmbeddedViewDrawn();
 
-        mActivityRule.runOnUiThread(() -> {
-            PopupWindow pw = new PopupWindow();
-            mPopupWindow = pw;
-            Button popupButton = new Button(mActivity);
-            popupButton.setOnClickListener((View v) -> {
-                mPopupClicked = true;
-            });
-            pw.setWidth(DEFAULT_SURFACE_VIEW_WIDTH);
-            pw.setHeight(DEFAULT_SURFACE_VIEW_HEIGHT);
-            pw.setContentView(popupButton);
-            pw.showAsDropDown(mEmbeddedView);
-        });
+        Button[] popupButton = {null};
+        mActivityRule.runOnUiThread(
+                () -> {
+                    PopupWindow pw = new PopupWindow();
+                    mPopupWindow = pw;
+                    popupButton[0] = new Button(mActivity);
+                    popupButton[0].setOnClickListener(
+                            (View v) -> {
+                                mPopupClicked = true;
+                            });
+                    pw.setWidth(DEFAULT_SURFACE_VIEW_WIDTH);
+                    pw.setHeight(DEFAULT_SURFACE_VIEW_HEIGHT);
+                    pw.setContentView(popupButton[0]);
+                    pw.showAsDropDown(mEmbeddedView);
+                });
+        assertTrue(
+                waitForWindowOnTop(
+                        Duration.ofSeconds(HW_TIMEOUT_MULTIPLIER * 5L),
+                        popupButton[0]::getWindowToken));
         mInstrumentation.waitForIdleSync();
 
         mCtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mSurfaceView);
@@ -1866,6 +1916,7 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
         addSurfaceView(DEFAULT_SURFACE_VIEW_WIDTH, DEFAULT_SURFACE_VIEW_HEIGHT);
         mInstrumentation.waitForIdleSync();
         waitUntilEmbeddedViewDrawn();
+        waitForEmbeddedWindowComposited(true /*onTop*/, false /*remote*/);
         // On the host SurfaceView, we set a motion consumer which expects to receive one event.
         mHostGotEvent = false;
         mSurfaceViewMotionConsumer = (ev) -> {
@@ -2064,6 +2115,7 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
         mEmbeddedView = new Button(mActivity);
         addSurfaceView(DEFAULT_SURFACE_VIEW_WIDTH, DEFAULT_SURFACE_VIEW_HEIGHT, false /* onTop */);
         waitUntilEmbeddedViewDrawn();
+        waitForEmbeddedWindowComposited(false /*onTop*/, false /*remote*/);
 
         CountDownLatch receivedTouches = new CountDownLatch(1);
         boolean[] hostGotEvent = new boolean[1];
