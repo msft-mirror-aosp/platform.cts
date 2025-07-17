@@ -207,9 +207,6 @@ public class WifiNetworkSpecifierTest extends WifiJUnit4TestBase {
         assertThat(sWifiManager).isNotNull();
         sConnectivityManager = sContext.getSystemService(ConnectivityManager.class);
 
-        // turn screen on
-        sTestHelper.turnScreenOn();
-
         // turn on verbose logging for tests
         sWasVerboseLoggingEnabled = ShellIdentityUtils.invokeWithShellPermissions(
                 () -> sWifiManager.isVerboseLoggingEnabled());

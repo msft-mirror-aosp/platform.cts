@@ -157,9 +157,6 @@ public class MultiStaConcurrencyWifiNetworkSpecifierTest extends WifiJUnit4TestB
                 .that(mContext.getSystemService(LocationManager.class).isLocationEnabled())
                 .isTrue();
 
-        // turn screen on
-        mTestHelper.turnScreenOn();
-
         // Clear any existing app state before each test.
         ShellIdentityUtils.invokeWithShellPermissions(
                 () -> mWifiManager.removeAppState(myUid(), mContext.getPackageName()));
@@ -226,7 +223,6 @@ public class MultiStaConcurrencyWifiNetworkSpecifierTest extends WifiJUnit4TestB
         // Clear any existing app state after each test.
         ShellIdentityUtils.invokeWithShellPermissions(
                 () -> mWifiManager.removeAppState(myUid(), mContext.getPackageName()));
-        mTestHelper.turnScreenOff();
     }
 
     private void testSuccessfulConnectionWithSpecifier(
