@@ -63,6 +63,7 @@ import android.text.BidiFormatter;
 import androidx.test.filters.LargeTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.uiautomator.By;
+import androidx.test.uiautomator.BySelector;
 import androidx.test.uiautomator.UiObject2;
 import androidx.test.uiautomator.UiObjectNotFoundException;
 
@@ -70,6 +71,7 @@ import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.RequireDoesNotHaveFeature;
 import com.android.compatibility.common.util.FrameworkSpecificTest;
+import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.UiAutomatorUtils2;
 import com.android.media.flags.Flags;
 
@@ -581,20 +583,28 @@ public class OutputSwitcherTest {
     }
 
     private static void assertDialogShowsConnectionTo(String routeName) throws Exception {
-        assumeTrue(Flags.enableOutputSwitcherRedesign());
-        assertConnectedState(
-                UiAutomatorUtils2.waitFindObject(
-                        By.text(routeName).pkg(SYSTEM_UI_PACKAGE), TIMEOUT_MS));
+        assertDialogShowsConnectionToRoute(By.text(routeName).pkg(SYSTEM_UI_PACKAGE));
     }
 
     private static void assertDialogShowsConnectionToThisDevice() throws Exception {
-        assumeTrue(Flags.enableOutputSwitcherRedesign());
-        assertConnectedState(
-                UiAutomatorUtils2.waitFindObject(
-                        By.textStartsWith(THIS_DEVICE_PREFIX).pkg(SYSTEM_UI_PACKAGE), TIMEOUT_MS));
+        assertDialogShowsConnectionToRoute(
+                By.textStartsWith(THIS_DEVICE_PREFIX).pkg(SYSTEM_UI_PACKAGE));
     }
 
-    private static void assertConnectedState(UiObject2 routeNode) {
+    private static void assertDialogShowsConnectionToRoute(BySelector selector) throws Exception {
+        assumeTrue(Flags.enableOutputSwitcherRedesign());
+        UiObject2 routeNode = UiAutomatorUtils2.waitFindObject(selector, TIMEOUT_MS);
+        UiAutomatorUtils2.assertWithUiDump(
+                () ->
+                        PollingCheck.waitFor(
+                                TIMEOUT_MS,
+                                () -> hasConnectedState(routeNode),
+                                "Timed out waiting for node to have state description '"
+                                        + CONNECTED_STATE
+                                        + "'"));
+    }
+
+    private static boolean hasConnectedState(UiObject2 routeNode) {
         UiObject2 obj = routeNode;
 
         // We're looking for a particular accessibility state description, either on the route node
@@ -603,17 +613,11 @@ public class OutputSwitcherTest {
             CharSequence stateDescription = obj.getAccessibilityNodeInfo().getStateDescription();
             if (stateDescription != null
                     && CONNECTED_STATE.equalsIgnoreCase(stateDescription.toString())) {
-                return;
+                return true;
             }
             obj = obj.getParent();
         }
-
-        UiAutomatorUtils2.assertWithUiDump(
-                () -> {
-                    throw new RuntimeException(
-                            "Failed to find node with accessibility state description: "
-                                    + CONNECTED_STATE);
-                });
+        return false;
     }
 
     private void clickButtonWithLabel(String label) throws Exception {
