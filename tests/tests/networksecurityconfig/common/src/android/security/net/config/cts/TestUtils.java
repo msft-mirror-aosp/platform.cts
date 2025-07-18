@@ -16,10 +16,20 @@
 
 package android.security.net.config.cts;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import android.app.DownloadManager;
+import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
+import android.database.Cursor;
+import android.net.Uri;
 import android.net.http.AndroidHttpClient;
+import android.os.SystemClock;
+import android.text.format.DateUtils;
 
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpGet;
@@ -41,7 +51,9 @@ import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.concurrent.TimeoutException;
 
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
@@ -257,6 +269,99 @@ public final class TestUtils {
         } catch (IOException expected) {
         } finally {
             httpClient.close();
+        }
+    }
+
+    private static final long DOWNLOAD_MANAGER_TIMEOUT = 3 * DateUtils.SECOND_IN_MILLIS;
+
+    /** Asserts that the DownloadManager is able to retrieve the root of a webserver. */
+    public static void assertDownloadManagerSucceeds(
+            Context ctx, String host, int port, boolean https) throws Exception {
+        Uri destination = Uri.parse((https ? "https://" : "http://") + host + ":" + port);
+        int result = startDownloadManager(ctx, destination);
+        assertEquals(DownloadManager.STATUS_SUCCESSFUL, result);
+    }
+
+    /**
+     * Asserts that the DownloadManager is not able to retrieve the root of a webserver.
+     *
+     * <p>The DownloadManager API is conservative in retrying to access a Uri. It won't return a
+     * failure after a certain amount of retry (5, by default) with a minimum of waiting time in
+     * between tries (30sec, by default). Since we expect the test to fail, only wait
+     * DOWNLOAD_MANAGER_TIMEOUT (3sec, by default) and validate that the download is PAUSED (i.e.,
+     * waiting to be retried.)
+     */
+    public static void assertDownloadManagerFails(Context ctx, String host, int port, boolean https)
+            throws Exception {
+        Uri destination = Uri.parse((https ? "https://" : "http://") + host + ":" + port);
+        int result = startDownloadManager(ctx, destination);
+        assertEquals(DownloadManager.STATUS_PAUSED, result);
+    }
+
+    private static int startDownloadManager(Context ctx, Uri destination) throws Exception {
+        DownloadCompleteReceiver receiver = new DownloadCompleteReceiver();
+        DownloadManager dm = ctx.getSystemService(DownloadManager.class);
+        try {
+            IntentFilter filter = new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE);
+            ctx.registerReceiver(receiver, filter, Context.RECEIVER_EXPORTED);
+            long id = dm.enqueue(new DownloadManager.Request(destination));
+            try {
+                // Check that the download was successful.
+                receiver.waitForDownloadComplete(DOWNLOAD_MANAGER_TIMEOUT, id);
+                return readDownloadManagerStatus(dm, id);
+            } catch (InterruptedException e) {
+                // Wrap InterruptedException since otherwise it gets eaten by AndroidTest
+                throw new RuntimeException(e);
+            } catch (TimeoutException e) {
+                return readDownloadManagerStatus(dm, id);
+            } finally {
+                dm.remove(id);
+            }
+        } finally {
+            ctx.unregisterReceiver(receiver);
+        }
+    }
+
+    private static int readDownloadManagerStatus(DownloadManager dm, long id) throws Exception {
+        Cursor cursor = null;
+        try {
+            cursor = dm.query(new DownloadManager.Query().setFilterById(id));
+            assertTrue(cursor.moveToNext());
+            return cursor.getInt(cursor.getColumnIndex(DownloadManager.COLUMN_STATUS));
+        } finally {
+            if (cursor != null) {
+                cursor.close();
+            }
+        }
+    }
+
+    private static final class DownloadCompleteReceiver extends BroadcastReceiver {
+        private HashSet<Long> mCompletedDownloads = new HashSet<>();
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            synchronized (mCompletedDownloads) {
+                mCompletedDownloads.add(intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1));
+                mCompletedDownloads.notifyAll();
+            }
+        }
+
+        public void waitForDownloadComplete(long timeout, long id)
+                throws TimeoutException, InterruptedException {
+            long deadline = SystemClock.elapsedRealtime() + timeout;
+            do {
+                synchronized (mCompletedDownloads) {
+                    long millisTillTimeout = deadline - SystemClock.elapsedRealtime();
+                    if (millisTillTimeout > 0) {
+                        mCompletedDownloads.wait(millisTillTimeout);
+                    }
+                    if (mCompletedDownloads.contains(id)) {
+                        return;
+                    }
+                }
+            } while (SystemClock.elapsedRealtime() < deadline);
+
+            throw new TimeoutException("Timed out waiting for download complete");
         }
     }
 }
