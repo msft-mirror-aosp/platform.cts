@@ -35,10 +35,10 @@ import android.widget.FrameLayout;
 import android.widget.FrameLayout.LayoutParams;
 
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executors;
 
 public class SurfaceControlLutsActivity extends Activity implements SurfaceHolder.Callback {
     private static final String TAG = "SurfaceControlLutsActivity";
+    private static final int MAX_FRAMES = 5;
     private static final int BUFFER_DIMENSION = 25;
 
     private FrameLayout mLayout;
@@ -46,6 +46,8 @@ public class SurfaceControlLutsActivity extends Activity implements SurfaceHolde
     private SurfaceControl mSurfaceControl;
     private RenderNode mRenderNode;
     private int mDataSpace;
+    private int mFrameCount;
+    private boolean mPushingLuts;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -75,6 +77,17 @@ public class SurfaceControlLutsActivity extends Activity implements SurfaceHolde
     public void surfaceCreated(SurfaceHolder holder) {
         Log.d(TAG, "surfaceCreated");
         mDataSpace = DataSpace.DATASPACE_BT2020_HLG;
+        mPushingLuts = true;
+        pushFrame();
+    }
+
+    @Override
+    public void surfaceDestroyed(SurfaceHolder holder) {
+        Log.d(TAG, "surfaceDestroyed");
+    }
+
+    private void pushFrame() {
+        Log.d(TAG, "pushing frame: " + mFrameCount + " with luts: " + mPushingLuts);
         HardwareBuffer buffer =
                 HardwareBuffer.create(
                         BUFFER_DIMENSION,
@@ -83,13 +96,6 @@ public class SurfaceControlLutsActivity extends Activity implements SurfaceHolde
                         1,
                         HardwareBuffer.USAGE_GPU_COLOR_OUTPUT
                                 | HardwareBuffer.USAGE_GPU_SAMPLED_IMAGE);
-        DisplayLuts displayLuts = new DisplayLuts();
-        DisplayLuts.Entry entry =
-                new DisplayLuts.Entry(
-                        new float[] {0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f},
-                        LutProperties.ONE_DIMENSION,
-                        LutProperties.SAMPLING_KEY_MAX_RGB);
-        displayLuts.set(entry);
 
         HardwareBufferRenderer renderer = new HardwareBufferRenderer(buffer);
         mRenderNode.setPosition(0, 0, buffer.getWidth(), buffer.getHeight());
@@ -103,25 +109,41 @@ public class SurfaceControlLutsActivity extends Activity implements SurfaceHolde
         renderer.obtainRenderRequest()
                 .setColorSpace(ColorSpace.getFromDataSpace(mDataSpace))
                 .draw(
-                        Executors.newSingleThreadExecutor(),
+                        getMainExecutor(),
                         renderResult -> {
+                            DisplayLuts displayLuts = null;
+                            if (mPushingLuts) {
+                                displayLuts = new DisplayLuts();
+                                DisplayLuts.Entry entry =
+                                        new DisplayLuts.Entry(
+                                                new float[] {
+                                                    0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f
+                                                },
+                                                LutProperties.ONE_DIMENSION,
+                                                LutProperties.SAMPLING_KEY_MAX_RGB);
+                                displayLuts.set(entry);
+                            }
+
+                            mFrameCount++;
+
                             new SurfaceControl.Transaction()
                                     .setBuffer(mSurfaceControl, buffer, renderResult.getFence())
                                     .setDataSpace(mSurfaceControl, mDataSpace)
                                     .setLuts(mSurfaceControl, displayLuts)
+                                    .addTransactionCommittedListener(
+                                            getMainExecutor(),
+                                            () -> {
+                                                if (mPushingLuts && mFrameCount == MAX_FRAMES) {
+                                                    mPushingLuts = false;
+                                                    mFrameCount = 0;
+                                                }
+
+                                                if (mFrameCount != MAX_FRAMES) {
+                                                    pushFrame();
+                                                }
+                                            })
                                     .apply();
-                            latch.countDown();
+                            buffer.close();
                         });
-        try {
-            latch.await();
-        } catch (InterruptedException ex) {
-            buffer.close();
-            return;
-        }
-
-        buffer.close();
     }
-
-    @Override
-    public void surfaceDestroyed(SurfaceHolder holder) {}
 }
