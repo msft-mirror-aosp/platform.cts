@@ -1437,7 +1437,6 @@ def extract_y(img_uint8, file_name):
     OpenCV image converted to Y.
   """
   y_uint8 = convert_to_y(img_uint8, 'RGB')
-  y_uint8 = numpy.expand_dims(y_uint8, axis=2)  # add plane to save image
   image_processing_utils.write_uint8_image(y_uint8, file_name)
   return y_uint8
 
