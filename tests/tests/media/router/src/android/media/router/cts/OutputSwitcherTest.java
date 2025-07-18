@@ -59,7 +59,9 @@ import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.text.BidiFormatter;
+import android.util.ArrayMap;
 
+import androidx.annotation.NonNull;
 import androidx.test.filters.LargeTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.uiautomator.By;
@@ -75,6 +77,8 @@ import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.UiAutomatorUtils2;
 import com.android.media.flags.Flags;
 
+import com.google.common.util.concurrent.SettableFuture;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -89,10 +93,12 @@ import org.mockito.junit.MockitoRule;
 
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -511,6 +517,63 @@ public class OutputSwitcherTest {
                 .onDeselectRoute(anyLong(), any(), eq(ROUTE_ID4_TO_SELECT_AND_DESELECT));
     }
 
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_OUTPUT_SWITCHER_REDESIGN)
+    public void streamExpansion_selectSecondRouteUsingController_dialogUpdates() throws Exception {
+        mService.removeAllRoutesExcept(List.of(ROUTE_ID1, ROUTE_ID4_TO_SELECT_AND_DESELECT));
+        registerRouteCallback(List.of(FEATURE_SAMPLE));
+        SettableFuture<RoutingController> controllerFuture = SettableFuture.create();
+        mRouter2.registerControllerCallback(
+                mExecutor,
+                new MediaRouter2.ControllerCallback() {
+                    @Override
+                    public void onControllerUpdated(@NonNull RoutingController controller) {
+                        if (selectedRoutes(controller).containsKey(ROUTE_ID1)
+                                && selectableRoutes(controller)
+                                        .containsKey(ROUTE_ID4_TO_SELECT_AND_DESELECT)) {
+                            controllerFuture.set(controller);
+                        }
+                    }
+                });
+        assertThat(mRouter2.showSystemOutputSwitcher()).isTrue();
+
+        clickRouteInDialog(ROUTE_NAME1);
+        RoutingController controller = controllerFuture.get(TIMEOUT_MS, TimeUnit.MILLISECONDS);
+        controller.selectRoute(selectableRoutes(controller).get(ROUTE_ID4_TO_SELECT_AND_DESELECT));
+
+        assertDialogShowsConnectionTo(ROUTE_NAME4);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_OUTPUT_SWITCHER_REDESIGN)
+    public void streamExpansion_deselectRouteUsingController_dialogUpdates() throws Exception {
+        mService.removeAllRoutesExcept(List.of(ROUTE_ID1, ROUTE_ID4_TO_SELECT_AND_DESELECT));
+        registerRouteCallback(List.of(FEATURE_SAMPLE));
+        SettableFuture<RoutingController> controllerFuture = SettableFuture.create();
+        mRouter2.registerControllerCallback(
+                mExecutor,
+                new MediaRouter2.ControllerCallback() {
+                    @Override
+                    public void onControllerUpdated(@NonNull RoutingController controller) {
+                        if (deselectableRoutes(controller)
+                                .containsKey(ROUTE_ID4_TO_SELECT_AND_DESELECT)) {
+                            controllerFuture.set(controller);
+                        }
+                    }
+                });
+        assertThat(mRouter2.showSystemOutputSwitcher()).isTrue();
+        assertDialogShowsConnectionToThisDevice();
+
+        clickRouteInDialog(ROUTE_NAME1);
+        clickAddDeviceToGroup(ROUTE_NAME4);
+        UiAutomatorUtils2.waitFindObject(removeDeviceFromGroupSelector(ROUTE_NAME4));
+        RoutingController controller = controllerFuture.get(TIMEOUT_MS, TimeUnit.MILLISECONDS);
+        controller.deselectRoute(
+                deselectableRoutes(controller).get(ROUTE_ID4_TO_SELECT_AND_DESELECT));
+
+        UiAutomatorUtils2.waitFindObject(addDeviceToGroupSelector(ROUTE_NAME4));
+    }
+
     private void registerRouteCallback(List<String> features) {
         mRouter2.registerRouteCallback(
                 mExecutor,
@@ -546,9 +609,7 @@ public class OutputSwitcherTest {
         UiObject2 route =
                 UiAutomatorUtils2.waitFindObject(
                         By.text(routeName).pkg(SYSTEM_UI_PACKAGE), TIMEOUT_MS);
-        clickNearestElementWithDescription(route,
-               String.format("Add %s to group",
-                        BidiFormatter.getInstance().unicodeWrap(routeName)));
+        clickNearestElementMatchingSelector(route, addDeviceToGroupSelector(routeName));
     }
 
     // Similar to the above, but searches for "Remove device from group".
@@ -557,13 +618,27 @@ public class OutputSwitcherTest {
         UiObject2 route =
                 UiAutomatorUtils2.waitFindObject(
                         By.text(routeName).pkg(SYSTEM_UI_PACKAGE), TIMEOUT_MS);
-        clickNearestElementWithDescription(route,
-                String.format("Remove %s from group",
-                        BidiFormatter.getInstance().unicodeWrap(routeName)));
+        clickNearestElementMatchingSelector(route, removeDeviceFromGroupSelector(routeName));
     }
 
-    private static void clickNearestElementWithDescription(
-            UiObject2 startNode, String description) {
+    private static BySelector addDeviceToGroupSelector(String routeName) {
+        return By.descContains(
+                        String.format(
+                                "Add %s to group",
+                                BidiFormatter.getInstance().unicodeWrap(routeName)))
+                .pkg(SYSTEM_UI_PACKAGE);
+    }
+
+    private static BySelector removeDeviceFromGroupSelector(String routeName) {
+        return By.descContains(
+                        String.format(
+                                "Remove %s from group",
+                                BidiFormatter.getInstance().unicodeWrap(routeName)))
+                .pkg(SYSTEM_UI_PACKAGE);
+    }
+
+    private static void clickNearestElementMatchingSelector(
+            UiObject2 startNode, BySelector selector) {
         UiObject2[] foundElement = {null};
         UiAutomatorUtils2.assertWithUiDump(
                 () ->
@@ -571,18 +646,17 @@ public class OutputSwitcherTest {
                                 TIMEOUT_MS,
                                 () -> {
                                     foundElement[0] =
-                                            findNearestElementWithDescription(
-                                                    startNode, description);
+                                            findNearestElementMatchingSelector(startNode, selector);
                                     return foundElement[0] != null;
                                 },
-                                "Unable to find element with description: " + description));
+                                "Unable to find element matching selector : " + selector));
         foundElement[0].click();
     }
 
-    private static UiObject2 findNearestElementWithDescription(
-            UiObject2 startNode, String description) {
+    private static UiObject2 findNearestElementMatchingSelector(
+            UiObject2 startNode, BySelector selector) {
         while (startNode != null) {
-            UiObject2 element = startNode.findObject(By.descContains(description));
+            UiObject2 element = startNode.findObject(selector);
             if (element != null) {
                 return element;
             }
@@ -640,5 +714,23 @@ public class OutputSwitcherTest {
                                 .pkg(SYSTEM_UI_PACKAGE),
                         TIMEOUT_MS);
         button.click();
+    }
+
+    private static Map<String, MediaRoute2Info> routeMap(List<MediaRoute2Info> routes) {
+        Map<String, MediaRoute2Info> map = new ArrayMap<>();
+        routes.forEach(route -> map.put(route.getOriginalId(), route));
+        return map;
+    }
+
+    private Map<String, MediaRoute2Info> selectedRoutes(RoutingController controller) {
+        return routeMap(controller.getSelectedRoutes());
+    }
+
+    private Map<String, MediaRoute2Info> selectableRoutes(RoutingController controller) {
+        return routeMap(controller.getSelectableRoutes());
+    }
+
+    private Map<String, MediaRoute2Info> deselectableRoutes(RoutingController controller) {
+        return routeMap(controller.getDeselectableRoutes());
     }
 }
