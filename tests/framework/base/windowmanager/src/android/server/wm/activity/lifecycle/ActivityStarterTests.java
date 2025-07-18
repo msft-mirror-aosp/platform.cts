@@ -65,6 +65,7 @@ import org.junit.Test;
 @android.server.wm.annotation.Group3
 public class ActivityStarterTests extends ActivityLifecycleClientTestBase {
 
+    private static final String CLASS_NAME = ActivityStarterTests.class.getName();
     private static final ComponentName STANDARD_ACTIVITY
             = getComponentName(HelperActivities.StandardActivity.class);
     private static final ComponentName SECOND_STANDARD_ACTIVITY
@@ -87,6 +88,8 @@ public class ActivityStarterTests extends ActivityLifecycleClientTestBase {
             = getComponentName(FinishOnTaskLaunchActivity.class);
     private static final ComponentName DOCUMENT_INTO_EXISTING_ACTIVITY
             = getComponentName(DocumentIntoExistingActivity.class);
+    private static final ComponentName DOCUMENT_INTO_EXISTING_ALIAS_ACTIVITY
+            = getComponentName(CLASS_NAME + "$DocumentIntoExistingAliasActivity");
     private static final ComponentName RELINQUISHTASKIDENTITY_ACTIVITY
             = getComponentName(RelinquishTaskIdentityActivity.class);
 
@@ -703,29 +706,51 @@ public class ActivityStarterTests extends ActivityLifecycleClientTestBase {
         mWmState.waitAndAssertActivityRemoved(FINISH_ON_TASK_LAUNCH_ACTIVITY);
     }
 
+    /**
+     * This test case tests behavior of an activity with {@code documentLaunchMode="intoExisting"}
+     * when the target task already exists. It verifies that the existing task is brought to the
+     * front, cleared of activities above the root, and the root activity is restarted.
+     */
     @Test
-    public void testActivityWithDocumentIntoExisting() {
-        // Launch a documentLaunchMode="intoExisting" activity
-        launchActivityWithData(DOCUMENT_INTO_EXISTING_ACTIVITY, "test");
-        waitAndAssertActivityState(DOCUMENT_INTO_EXISTING_ACTIVITY, STATE_RESUMED,
-                "Activity should be resumed");
-        final int taskId = mWmState.getTaskByActivity(DOCUMENT_INTO_EXISTING_ACTIVITY).getTaskId();
+    public void testActivityWithDocumentIntoExisting_whenTaskExists_clearsAndRestartsTask() {
+        //  Create a task with a root activity that uses android:documentLaunchMode="intoExisting".
+        final String intentData = "testDataForDocumentLaunchModeIntoExisting";
+        launchActivityWithData(DOCUMENT_INTO_EXISTING_ACTIVITY, intentData);
+        waitAndAssertActivityState(
+                DOCUMENT_INTO_EXISTING_ACTIVITY,
+                STATE_RESUMED,
+                "Root document activity should launch successfully");
+        final int originalTaskId =
+                mWmState.getTaskByActivity(DOCUMENT_INTO_EXISTING_ACTIVITY).getTaskId();
 
-        // Navigate home
+        // Launch a second activity to the task stack. This is the activity we expect to be cleared.
+        launchActivityWithData(STANDARD_ACTIVITY, intentData);
+        waitAndAssertActivityState(
+                STANDARD_ACTIVITY,
+                STATE_RESUMED,
+                "Second activity should be placed on top of the root");
+
+        // Navigate home to simulate a realistic relaunch scenario.
         launchHomeActivity();
 
-        // Launch the alias activity.
-        final ComponentName componentName = new ComponentName(mContext.getPackageName(),
-                DocumentIntoExistingActivity.class.getPackageName()
-                        + ".ActivityStarterTests$DocumentIntoExistingAliasActivity");
-        launchActivityWithData(componentName, "test");
+        // Relaunch with alias activity matching the task's base intent component and data.
+        launchActivityWithData(DOCUMENT_INTO_EXISTING_ALIAS_ACTIVITY, intentData);
 
-        waitAndAssertActivityState(DOCUMENT_INTO_EXISTING_ACTIVITY, STATE_RESUMED,
-                "Activity should be resumed");
-        final int taskId2 = mWmState.getTaskByActivity(DOCUMENT_INTO_EXISTING_ACTIVITY).getTaskId();
-        assertEquals("Activity must be in the same task.", taskId, taskId2);
-        assertEquals("Activity is the only member of its task", 1,
-                mWmState.getActivityCountInTask(taskId2, null));
+        // The original task is brought forward and reset, leaving only the root activity.
+        waitAndAssertActivityState(
+                DOCUMENT_INTO_EXISTING_ACTIVITY,
+                STATE_RESUMED,
+                "Root document activity should be brought to the front after relaunch");
+        final int relaunchedTaskId =
+                mWmState.getTaskByActivity(DOCUMENT_INTO_EXISTING_ACTIVITY).getTaskId();
+        assertEquals(
+                "The existing task should be reused, not a new one created.",
+                originalTaskId,
+                relaunchedTaskId);
+        assertEquals(
+                "Task should be cleared, leaving only the root activity",
+                1,
+                mWmState.getActivityCountInTask(relaunchedTaskId, null /* activityName */));
     }
 
     /**

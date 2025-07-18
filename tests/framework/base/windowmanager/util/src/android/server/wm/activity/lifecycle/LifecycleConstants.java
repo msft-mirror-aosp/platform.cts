@@ -23,6 +23,8 @@ import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentat
 import android.app.Activity;
 import android.content.ComponentName;
 
+import androidx.annotation.NonNull;
+
 public final class LifecycleConstants {
 
     public static final String ON_CREATE = "ON_CREATE";
@@ -61,6 +63,10 @@ public final class LifecycleConstants {
     static final String EXTRA_SKIP_TOP_RESUMED_STATE = "skip_top_resumed_state";
 
     static ComponentName getComponentName(Class<? extends Activity> activity) {
+        return new ComponentName(getInstrumentation().getContext(), activity);
+    }
+
+    static ComponentName getComponentName(@NonNull String activity) {
         return new ComponentName(getInstrumentation().getContext(), activity);
     }
 }
