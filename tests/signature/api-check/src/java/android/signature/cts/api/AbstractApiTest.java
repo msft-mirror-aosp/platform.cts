@@ -125,6 +125,13 @@ public abstract class AbstractApiTest {
                                     "android.net.connectivity.org.chromium.base.TraceEvent")) {
                                 return true;
                             }
+
+                            // http://b/427875918: This class refers to code that's only present in
+                            // Android V+.
+                            if (name.startsWith(
+                                    "android.net.connectivity.org.chromium.base.PowerMonitor")) {
+                                return true;
+                            }
                             return false;
                         });
 
