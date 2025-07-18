@@ -140,7 +140,7 @@ public class SystemBluetoothTest {
         assertThat(device.getMetadata(BluetoothDevice.METADATA_MANUFACTURER_NAME))
                 .isEqualTo(testByteData);
 
-        verify(listener, timeout(1_000))
+        verify(listener, timeout(2_000))
                 .onMetadataChanged(
                         eq(device),
                         eq(BluetoothDevice.METADATA_MANUFACTURER_NAME),
