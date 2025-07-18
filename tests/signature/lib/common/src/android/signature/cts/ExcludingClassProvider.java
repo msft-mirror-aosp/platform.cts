@@ -18,9 +18,7 @@ package android.signature.cts;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
-/**
- * A filtered class provider which excludes classes by their canonical names
- */
+/** A filtered class provider which excludes classes by their names */
 public class ExcludingClassProvider extends ClassProvider {
     private final ClassProvider base;
     private final Predicate<String> testForExclusion;
@@ -43,7 +41,14 @@ public class ExcludingClassProvider extends ClassProvider {
     @Override
     public Stream<Class<?>> getAllClasses() {
         return base.getAllClasses()
-                .filter(clazz -> !testForExclusion.test(clazz.getCanonicalName()));
+                .filter(
+                        clazz -> {
+                            String className = clazz.getCanonicalName();
+                            if (className == null) {
+                                className = clazz.getName();
+                            }
+                            return !testForExclusion.test(className);
+                        });
     }
 
     @Override
