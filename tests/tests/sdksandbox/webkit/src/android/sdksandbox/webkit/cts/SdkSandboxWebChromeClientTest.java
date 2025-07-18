@@ -81,6 +81,16 @@ public class SdkSandboxWebChromeClientTest {
     }
 
     @Test
+    public void testOnShowFileChooserInputFile() throws Throwable {
+        sSdkTestSuiteSetup.assertSdkTestRunPasses("testOnShowFileChooserInputFile");
+    }
+
+    @Test
+    public void testOnShowFileChooserInputFileMultiple() throws Throwable {
+        sSdkTestSuiteSetup.assertSdkTestRunPasses("testOnShowFileChooserInputFileMultiple");
+    }
+
+    @Test
     public void testOnJsBeforeUnloadIsCalled() throws Throwable {
         sSdkTestSuiteSetup.assertSdkTestRunPasses("testOnJsBeforeUnloadIsCalled");
     }
