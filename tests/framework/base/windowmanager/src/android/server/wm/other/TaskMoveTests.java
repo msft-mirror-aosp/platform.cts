@@ -49,7 +49,6 @@ import android.server.wm.ShellCommandHelper;
 import android.server.wm.WindowManagerState;
 import android.server.wm.WindowManagerState.Task;
 import android.server.wm.app.Components;
-import android.view.Display;
 
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.CddTest;
@@ -123,7 +122,7 @@ public class TaskMoveTests extends MultiDisplayTestBase {
             })
     @Test
     public void testMoveTaskTo_move10PxRight() {
-        final int displayId = Display.DEFAULT_DISPLAY;
+        final int displayId = getMainDisplayId();
         launchActivityOnDisplay(TEST_ACTIVITY, displayId);
         mWmState.computeState(TEST_ACTIVITY);
 
@@ -153,7 +152,7 @@ public class TaskMoveTests extends MultiDisplayTestBase {
     @CddTest(requirements = "3.8.14/C-1-4")
     @Test
     public void testMoveTaskTo_resizeToTooSmallBounds() {
-        final int displayId = Display.DEFAULT_DISPLAY;
+        final int displayId = getMainDisplayId();
         launchActivityOnDisplay(TEST_ACTIVITY, displayId);
         mWmState.computeState(TEST_ACTIVITY);
 
@@ -191,7 +190,7 @@ public class TaskMoveTests extends MultiDisplayTestBase {
             })
     @Test
     public void testMoveTaskTo_moveToPartiallyOffscreenBounds() {
-        final int displayId = Display.DEFAULT_DISPLAY;
+        final int displayId = getMainDisplayId();
         launchActivityOnDisplay(TEST_ACTIVITY, displayId);
         mWmState.computeState(TEST_ACTIVITY);
 
@@ -226,7 +225,7 @@ public class TaskMoveTests extends MultiDisplayTestBase {
             })
     @Test
     public void testMoveTaskTo_moveToFullyOffscreenBounds() {
-        final int displayId = Display.DEFAULT_DISPLAY;
+        final int displayId = getMainDisplayId();
         launchActivityOnDisplay(TEST_ACTIVITY, displayId);
         mWmState.computeState(TEST_ACTIVITY);
 
@@ -264,7 +263,7 @@ public class TaskMoveTests extends MultiDisplayTestBase {
         assumeTrue("Only test on device with multi-display support", supportsMultiDisplay());
         final int targetDisplayId = createNewDisplay();
 
-        final int sourceDisplayId = Display.DEFAULT_DISPLAY;
+        final int sourceDisplayId = getMainDisplayId();
         launchActivityOnDisplay(TEST_ACTIVITY, sourceDisplayId);
         mWmState.computeState(TEST_ACTIVITY);
         final Rect initialBounds = mWmState.getTaskByActivity(TEST_ACTIVITY).getBounds();
@@ -287,7 +286,7 @@ public class TaskMoveTests extends MultiDisplayTestBase {
     @ApiTest(apis = {"android.app.ActivityManager#isTaskMoveAllowedOnDisplay"})
     @Test
     public void testIsTaskMoveAllowedOnDisplay_withoutPermission() {
-        final int displayId = Display.DEFAULT_DISPLAY;
+        final int displayId = getMainDisplayId();
 
         revokeBrowserRole();
 
@@ -310,7 +309,7 @@ public class TaskMoveTests extends MultiDisplayTestBase {
     public void testIsTaskMoveAllowedOnDisplay_throwsForInvalidDisplayId() {
         final int badDisplayId = -93;
 
-        launchActivityOnDisplay(TEST_ACTIVITY, Display.DEFAULT_DISPLAY);
+        launchActivityOnDisplay(TEST_ACTIVITY, getMainDisplayId());
         mWmState.computeState(TEST_ACTIVITY);
 
         assertIsTaskMoveAllowedOnDisplayThrownException(
@@ -329,7 +328,7 @@ public class TaskMoveTests extends MultiDisplayTestBase {
             })
     @Test
     public void testMoveTaskTo_withoutPermission() {
-        final int displayId = Display.DEFAULT_DISPLAY;
+        final int displayId = getMainDisplayId();
         launchActivityOnDisplay(TEST_ACTIVITY, displayId);
         mWmState.computeState(TEST_ACTIVITY);
 
