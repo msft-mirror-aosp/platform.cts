@@ -19,15 +19,17 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
         package="com.android.cts.netsecpolicy.usescleartext_unspecified">
 
-  <uses-permission android:name="android.permission.DISABLE_KEYGUARD" />
+  <uses-permission android:name="android.permission.INTERNET"/>
+  <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+
   <application>
       <uses-library android:name="android.test.runner"/>
       <uses-library android:name="org.apache.http.legacy" />
   </application>
 
   <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner"
-                   android:targetPackage="android.netsecpolicy.usescleartext_unspecified.cts"
+                   android:targetPackage="com.android.cts.netsecpolicy.usescleartext_unspecified"
                    android:label="Tests for NetworkSecurityPolicy cleartext traffic policy when it is not specified.">
-    </instrumentation>
+  </instrumentation>
 
 </manifest>
