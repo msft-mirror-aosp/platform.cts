@@ -40,6 +40,10 @@ android_library {
         "src/**/*.java",
         "src/**/*.aidl",
     ],
+    // Some CTS tests legitimately need to use setJavaScriptEnabled().
+    lint: {
+        disabled_checks: ["SetJavaScriptEnabled"],
+    },
     // uncomment when dalvik.annotation.Test* are removed or part of SDK
     //sdk_version: "current"
     platform_apis: true,
@@ -64,6 +68,10 @@ android_test {
         "general-tests",
         "mts-webviewbootstrap",
     ],
+    // Some CTS tests legitimately need to use setJavaScriptEnabled().
+    lint: {
+        disabled_checks: ["SetJavaScriptEnabled"],
+    },
     // uncomment when dalvik.annotation.Test* are removed or part of SDK
     //sdk_version: "current"
     platform_apis: true,
