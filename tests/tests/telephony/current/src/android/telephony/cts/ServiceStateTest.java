@@ -56,8 +56,6 @@ public class ServiceStateTest {
     private static final String OPERATOR_ALPHA_LONG = "CtsOperatorLong";
     private static final String OPERATOR_ALPHA_SHORT = "CtsOp";
     private static final String OPERATOR_NUMERIC = "02871";
-    private static final int SYSTEM_ID = 123;
-    private static final int NETWORK_ID = 456;
     private static final int CHANNEL_NUMBER_BAND_66 = 66436;
     private static final int CHANNEL_NUMBER_BAND_33 = 36000;
     private static final int[] CELL_BANDWIDTH = {1, 2, 3};
