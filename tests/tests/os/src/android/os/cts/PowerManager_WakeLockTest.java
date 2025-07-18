@@ -74,9 +74,9 @@ public class PowerManager_WakeLockTest extends AndroidTestCase {
         assertFalse(wl.isHeld());
 
         // test acquire(long)
-        wl.acquire(PowerManagerTest.TIME);
+        wl.acquire(PowerManagerTest.THREE_SECONDS);
         assertTrue(wl.isHeld());
-        Thread.sleep(PowerManagerTest.TIME + PowerManagerTest.MORE_TIME);
+        Thread.sleep(PowerManagerTest.THREE_SECONDS + PowerManagerTest.SHORT_TIME);
         assertFalse(wl.isHeld());
     }
 

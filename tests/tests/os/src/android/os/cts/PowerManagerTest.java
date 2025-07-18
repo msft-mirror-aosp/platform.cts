@@ -25,26 +25,39 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeTrue;
 
+import android.Manifest;
+import android.app.Instrumentation;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.PowerManager;
 import android.os.PowerManager.WakeLock;
+import android.os.RemoteException;
+import android.os.SystemClock;
 import android.platform.test.annotations.AppModeFull;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.Settings.Global;
+import android.view.Display;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.LargeTest;
 import androidx.test.platform.app.InstrumentationRegistry;
+import androidx.test.uiautomator.UiDevice;
 
 import com.android.compatibility.common.util.BatteryUtils;
 import com.android.compatibility.common.util.CallbackAsserter;
+import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.SystemUtil;
 
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -55,15 +68,21 @@ import java.time.Duration;
 @RunWith(AndroidJUnit4.class)
 public class PowerManagerTest {
     private static final String TAG = "PowerManagerTest";
-    public static final long TIME = 3000;
-    public static final int MORE_TIME = 300;
+    public static final long THREE_SECONDS = 3000;
+    public static final int ONE_SECOND = 1000;
+    public static final int SHORT_TIME = 300;
+    public static final int EXTRA_SHORT_TIME = 30;
     private static final int BROADCAST_TIMEOUT_SECONDS = 70;
     private static final Duration LONG_DISCHARGE_DURATION = Duration.ofMillis(2000);
     private static final Duration SHORT_DISCHARGE_DURATION = Duration.ofMillis(1000);
+    private static final int GO_TO_SLEEP_FLAG_NO_DOZE = 1;
 
     private int mInitialPowerSaverMode;
     private int mInitialDynamicPowerSavingsEnabled;
     private int mInitialThreshold;
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     /**
      * test points:
@@ -76,9 +95,9 @@ public class PowerManagerTest {
         PowerManager pm = (PowerManager) getContext().getSystemService(Context.POWER_SERVICE);
 
         WakeLock wl = pm.newWakeLock(PowerManager.SCREEN_BRIGHT_WAKE_LOCK, TAG);
-        wl.acquire(TIME);
+        wl.acquire(THREE_SECONDS);
         assertTrue(wl.isHeld());
-        Thread.sleep(TIME + MORE_TIME);
+        Thread.sleep(THREE_SECONDS + SHORT_TIME);
         assertFalse(wl.isHeld());
 
         try {
@@ -87,10 +106,6 @@ public class PowerManagerTest {
         } catch (SecurityException e) {
             // expected
         }
-    }
-
-    private Context getContext() {
-        return InstrumentationRegistry.getInstrumentation().getContext();
     }
 
     @Before
@@ -218,6 +233,119 @@ public class PowerManagerTest {
         assertDischargePrediction(SHORT_DISCHARGE_DURATION, false);
         predictionChangedBroadcastAsserter.assertCalled("Prediction changed broadcast not received",
                 BROADCAST_TIMEOUT_SECONDS);
+    }
+
+    @RequiresFlagsEnabled(com.android.server.power.feature.flags.Flags.FLAG_PARTIAL_SLEEP_WAKELOCKS)
+    @Test
+    public void testSleepLock_deviceDoesntWake() {
+        assumeTrue(
+                "Skipping test due to partial sleep wake locks disabled on this device",
+                getContext()
+                        .getResources()
+                        .getBoolean(
+                                getContext()
+                                        .getResources()
+                                        .getIdentifier(
+                                                "config_allowPartialSleepWakeLocks",
+                                                "bool",
+                                                "android")));
+        final PowerManager pm = getContext().getSystemService(PowerManager.class);
+        Assert.assertNotNull(pm);
+        UiDevice uiDevice;
+        Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
+        uiDevice = UiDevice.getInstance(instrumentation);
+        final PowerManager.SleepLock sleeplock = pm.newSleepLock(Display.DEFAULT_DISPLAY, TAG);
+        try {
+            SystemUtil.runWithShellPermissionIdentity(
+                    () -> {
+                        // acquire sleeplock with long timeout
+                        sleeplock.acquire(THREE_SECONDS * 10);
+
+                        // put device to sleep
+                        pm.goToSleep(SystemClock.uptimeMillis(), 0, GO_TO_SLEEP_FLAG_NO_DOZE);
+
+                        // wait for device to sleep
+                        PollingCheck.check(
+                                "Device is still interactive",
+                                ONE_SECOND,
+                                () -> !pm.isInteractive(Display.DEFAULT_DISPLAY));
+                        PollingCheck.check(
+                                "Sleeplock is not yet held", ONE_SECOND, sleeplock::isHeld);
+                        PollingCheck.check(
+                                "Device screen did not go off.",
+                                ONE_SECOND,
+                                () -> {
+                                    try {
+                                        return !uiDevice.isScreenOn();
+                                    } catch (RemoteException e) {
+                                        throw new RuntimeException(e);
+                                    }
+                                });
+
+                        // try to wake device - should stay asleep
+                        executeShellCommand("input keyevent KEYCODE_WAKEUP");
+                        // required sleep time to allow for device to turn on (if it would)
+                        Thread.sleep(ONE_SECOND);
+                        assertFalse(
+                                "Device didn't stay asleep",
+                                pm.isInteractive(Display.DEFAULT_DISPLAY));
+
+                        // release sleeplock
+                        sleeplock.release();
+
+                        PollingCheck.check(
+                                "SleepLock is still held.", ONE_SECOND, () -> !sleeplock.isHeld());
+
+                        // try to wake device - should wake
+                        executeShellCommand("input keyevent KEYCODE_WAKEUP");
+                        PollingCheck.check(
+                                "Device didn't wake up",
+                                ONE_SECOND,
+                                () -> pm.isInteractive(Display.DEFAULT_DISPLAY));
+                    },
+                    Manifest.permission.ACQUIRE_SLEEP_LOCK,
+                    Manifest.permission.DEVICE_POWER);
+
+        } finally {
+            sleeplock.release();
+        }
+    }
+
+    @RequiresFlagsEnabled(com.android.server.power.feature.flags.Flags.FLAG_PARTIAL_SLEEP_WAKELOCKS)
+    @Test
+    public void testSleepLock_timeoutWorks() {
+        assumeTrue(
+                "Skipping test due to partial sleep wake locks disabled on this device",
+                getContext()
+                        .getResources()
+                        .getBoolean(
+                                getContext()
+                                        .getResources()
+                                        .getIdentifier(
+                                                "config_allowPartialSleepWakeLocks",
+                                                "bool",
+                                                "android")));
+        SystemUtil.runWithShellPermissionIdentity(
+                () -> {
+                    final PowerManager pm = getContext().getSystemService(PowerManager.class);
+                    Assert.assertNotNull(pm);
+                    final PowerManager.SleepLock sleeplock =
+                            pm.newSleepLock(Display.DEFAULT_DISPLAY, TAG);
+                    sleeplock.acquire(ONE_SECOND);
+                    assertTrue("SleepLock is not held", sleeplock.isHeld());
+
+                    Thread.sleep(ONE_SECOND + EXTRA_SHORT_TIME);
+                    assertFalse("SleepLock is still held", sleeplock.isHeld());
+                },
+                Manifest.permission.ACQUIRE_SLEEP_LOCK);
+    }
+
+    private void executeShellCommand(String cmd) throws Exception {
+        UiDevice.getInstance(InstrumentationRegistry.getInstrumentation()).executeShellCommand(cmd);
+    }
+
+    private Context getContext() {
+        return InstrumentationRegistry.getInstrumentation().getContext();
     }
 
     private void setDischargePrediction(Duration d, boolean isPersonalized) {
