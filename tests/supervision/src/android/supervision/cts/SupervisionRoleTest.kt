@@ -19,7 +19,6 @@ package android.supervision.cts
 import android.Manifest.permission.MANAGE_ROLE_HOLDERS
 import android.Manifest.permission.QUERY_USERS
 import android.app.supervision.flags.Flags
-import android.platform.test.annotations.AppModeFull
 import com.android.bedstead.flags.annotations.RequireFlagsEnabled
 import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.multiuser.annotations.EnsureCanAddUser
@@ -36,14 +35,13 @@ import org.junit.runner.RunWith
 import org.testng.Assert.assertThrows
 
 @RunWith(BedsteadJUnit4::class)
-@AppModeFull(reason = "The SupervisionManager API is not available in instant apps.")
 @RequireFlagsEnabled(Flags.FLAG_SUPERVISION_MANAGER_APIS)
+@ApiTest(
+    apis = ["android.app.supervision.SupervisionManager#shouldAllowBypassingSupervisionRoleQualification"]
+)
 class SupervisionRoleTest : BaseSupervisionTest() {
 
     @Test
-    @ApiTest(
-        apis = ["android.app.supervision.SupervisionManager#shouldAllowBypassingSupervisionRoleQualification"]
-    )
     @EnsureHasPermission(MANAGE_ROLE_HOLDERS, QUERY_USERS)
     @EnsureHasNoAdditionalUser
     @RequireMultiUserSupport
@@ -55,9 +53,6 @@ class SupervisionRoleTest : BaseSupervisionTest() {
     }
 
     @Test
-    @ApiTest(
-        apis = ["android.app.supervision.SupervisionManager#shouldAllowBypassingSupervisionRoleQualification"]
-    )
     @EnsureHasPermission(MANAGE_ROLE_HOLDERS, QUERY_USERS)
     @EnsureCanAddUser
     @EnsureHasNoAdditionalUser
@@ -75,9 +70,6 @@ class SupervisionRoleTest : BaseSupervisionTest() {
     }
 
     @Test
-    @ApiTest(
-        apis = ["android.app.supervision.SupervisionManager#shouldAllowBypassingSupervisionRoleQualification"]
-    )
     @EnsureHasPermission(MANAGE_ROLE_HOLDERS, QUERY_USERS)
     @EnsureCanAddUser
     @EnsureHasNoAdditionalUser
@@ -93,9 +85,6 @@ class SupervisionRoleTest : BaseSupervisionTest() {
     }
 
     @Test
-    @ApiTest(
-        apis = ["android.app.supervision.SupervisionManager#shouldAllowBypassingSupervisionRoleQualification"]
-    )
     @EnsureHasPermission(MANAGE_ROLE_HOLDERS, QUERY_USERS)
     @EnsureHasNoAdditionalUser
     @RequireMultiUserSupport
@@ -107,9 +96,6 @@ class SupervisionRoleTest : BaseSupervisionTest() {
     }
 
     @Test
-    @ApiTest(
-        apis = ["android.app.supervision.SupervisionManager#shouldAllowBypassingSupervisionRoleQualification"]
-    )
     @EnsureDoesNotHavePermission(MANAGE_ROLE_HOLDERS)
     @EnsureHasNoAdditionalUser
     @EnsureHasPermission(QUERY_USERS)

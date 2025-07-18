@@ -22,6 +22,7 @@ import android.Manifest.permission.QUERY_USERS
 import android.app.supervision.SupervisionManager
 import android.os.UserHandle
 import android.os.UserManager
+import android.platform.test.annotations.AppModeFull
 import androidx.test.platform.app.InstrumentationRegistry
 import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.nene.TestApis
@@ -31,6 +32,7 @@ import org.junit.ClassRule
 import org.junit.Rule
 
 /** Base class for supervision CTS tests. */
+@AppModeFull(reason = "The SupervisionManager API is not available in instant apps.")
 open class BaseSupervisionTest {
 
     fun setSupervisionEnabled(enabled: Boolean) {
