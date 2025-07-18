@@ -266,7 +266,8 @@ class VideoStabilizationJCATest(its_base_test.UiAutomatorItsBaseTest):
       camera_properties_utils.skip_unless(
           first_api_level >= its_session_utils.ANDROID16_API_LEVEL and
           camera_properties_utils.STABILIZATION_MODE_ON
-          in supported_stabilization_modes)
+          in supported_stabilization_modes and
+          camera_properties_utils.stream_use_case(props))
 
       # Log ffmpeg version being used.
       video_processing_utils.log_ffmpeg_version()
