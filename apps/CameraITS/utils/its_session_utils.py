@@ -3009,10 +3009,10 @@ def load_scene(cam, props, scene, tablet, chart_distance, lighting_check=True,
   scene_name = scene
   if 'scene' not in f'{scene}':
     scene_name = f'scene{scene}'
-  scene_path = os.path.join(os.environ['CAMERA_ITS_TOP'], 'tests', scene_name)
   camera_fov = cam.calc_camera_fov(props)
   if chart_scaling is not None:
     logging.debug('Using chart_scaling specified in config file')
+    scene_path = os.path.join(os.environ['CAMERA_ITS_TOP'], 'tests', scene_name)
     if math.isclose(chart_scaling, 1.0):
       file_name = f'{scene}.png'
     else:

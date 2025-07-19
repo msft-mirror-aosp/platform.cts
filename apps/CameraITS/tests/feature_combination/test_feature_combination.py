@@ -105,11 +105,13 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
                                         support_claimed,
                                         is_supported,
                                         fps_range,
-                                        stabilization):
+                                        stabilization,
+                                        failure_msg):
     """Log whether a feature combination is supported."""
     entry = feature_combination_info_pb2.FeatureCombinationEntry()
     entry.is_supported = is_supported
     entry.support_claimed = support_claimed
+    entry.failure_message = failure_msg
     for surface in output_surfaces:
       config_entry = feature_combination_info_pb2.OutputConfiguration()
       config_entry.image_format = surface['format_code']
@@ -159,7 +161,7 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
       self, combination_name, stabilize_mode, support_claimed,
       passed, recording_obj, gyro_events, test_name, log_path,
       facing, output_surfaces, fps_range, hlg10,
-      features_passed, streams_name, fps_range_tuple
+      features_passed, streams_name, fps_range_tuple, failure_msg
   ):
     """Finish verifying a feature combo & preview stabilization if necessary."""
     result = {'name': combination_name,
@@ -167,7 +169,8 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
               'fps_range': fps_range,
               'stabilize_mode': stabilize_mode,
               'support_claimed': support_claimed,
-              'passed': passed}
+              'passed': passed,
+              'failure_msg': failure_msg}
     is_stabilized = (
         stabilize_mode != camera_properties_utils.STABILIZATION_MODE_OFF
     )
@@ -195,11 +198,12 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
 
     return result
 
-  def _append_test_failure(self, failures, support_claimed, msg):
+  def _append_test_failure(self, failures, support_claimed, combination, msg):
+    msg_for_combination = f'{combination}:{msg}'
     if (support_claimed == feature_combination_info_pb2.SUPPORT_YES):
-      failures['required'].append(msg)
+      failures['required'].append(msg_for_combination)
     else:
-      failures['optional'].append(msg)
+      failures['optional'].append(msg_for_combination)
 
   def _handle_one_verification_result(
       self, result, test_failures, database):
@@ -210,14 +214,16 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
     """
     logging.debug('Verification result: %s', result)
     if 'stabilization_failure' in result:
-      failure_msg = f"{result['name']}: {result['stabilization_failure']}"
+      result['failure_msg'] += result['stabilization_failure']
       self._append_test_failure(
-          test_failures, result['support_claimed'], failure_msg
+          test_failures, result['support_claimed'], result['name'],
+          result['stabilization_failure']
       )
 
     self._add_feature_combo_entry_to_proto(
         database, result['output_surfaces'], result['support_claimed'],
-        result['passed'], result['fps_range'], result['stabilize_mode']
+        result['passed'], result['fps_range'], result['stabilize_mode'],
+        result['failure_msg']
     )
 
   def _handle_one_completed_future(
@@ -434,6 +440,7 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
                   logging.debug('%s not supported', combination_name)
 
               passed = True
+              combined_failure_msg = ""
               # If a superset of features are already tested, skip and assuming
               # the subset of those features are supported. Do not skip [60, *]
               # even if its superset feature passes (b/385753212).
@@ -449,7 +456,7 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
                 if skip_test:
                   self._add_feature_combo_entry_to_proto(
                       database, output_surfaces, support_claimed,
-                      passed, fps_range, stabilize_mode)
+                      passed, fps_range, stabilize_mode, combined_failure_msg)
                   continue
 
               # In case collect_data_with_surfaces throws an exception, treat it
@@ -467,17 +474,16 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
                     support_claimed == feature_combination_info_pb2.SUPPORT_YES
                    ):
                   raise e
-                failure_msg = (
-                    f'{combination_name}: collect_data_with_surfaces throws '
-                    f'exception: {e}')
+                failure_msg = f'collect_data_with_surfaces throws exception: {e}'
                 logging.debug(failure_msg)
                 self._append_test_failure(
-                    test_failures, support_claimed, failure_msg
+                    test_failures, support_claimed, combination_name, failure_msg
                 )
                 passed = False
+                combined_failure_msg += f'{failure_msg};'
                 self._add_feature_combo_entry_to_proto(
                     database, output_surfaces, support_claimed,
-                    passed, fps_range, stabilize_mode)
+                    passed, fps_range, stabilize_mode, combined_failure_msg)
                 cam.reset_socket_and_camera()
                 continue
 
@@ -506,12 +512,13 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
               if (avg_frame_rate_codec > fps_range[1] + _FPS_ATOL_CODEC or
                   avg_frame_rate_codec < fps_range[0] - _FPS_ATOL_CODEC):
                 failure_msg = (
-                    f'{combination_name}: Average video clip frame rate '
-                    f'{avg_frame_rate_codec} exceeding the allowed range of '
+                    f'Average video clip frame rate {avg_frame_rate_codec} '
+                    f'exceeding the allowed range of '
                     f'({fps_range[0]}-{_FPS_ATOL_CODEC}, '
                     f'{fps_range[1]}+{_FPS_ATOL_CODEC})')
+                combined_failure_msg += f'{failure_msg};'
                 self._append_test_failure(
-                    test_failures, support_claimed, failure_msg
+                    test_failures, support_claimed, combination_name, failure_msg
                 )
                 passed = False
 
@@ -531,12 +538,13 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
               if (avg_frame_rate_metadata > fps_range[1] + _FPS_ATOL_METADATA or
                   avg_frame_rate_metadata < fps_range[0] - _FPS_ATOL_METADATA):
                 failure_msg = (
-                    f'{combination_name}: Average frame rate '
-                    f'{avg_frame_rate_metadata} exceeding the allowed range of '
+                    f'Average frame rate {avg_frame_rate_metadata} '
+                    f'exceeding the allowed range of '
                     f'({fps_range[0]}-{_FPS_ATOL_METADATA}, '
                     f'{fps_range[1]}+{_FPS_ATOL_METADATA})')
+                combined_failure_msg += f'{failure_msg};'
                 self._append_test_failure(
-                    test_failures, support_claimed, failure_msg
+                    test_failures, support_claimed, combination_name, failure_msg
                 )
                 passed = False
 
@@ -546,10 +554,11 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
               if (hlg10 and
                   video_processing_utils.COLORSPACE_HDR not in color_space):
                 failure_msg = (
-                    f'{combination_name}: video color space {color_space} '
+                    f'video color space {color_space} '
                     'is missing COLORSPACE_HDR')
+                combined_failure_msg += f'{failure_msg};'
                 self._append_test_failure(
-                    test_failures, support_claimed, failure_msg
+                    test_failures, support_claimed, combination_name, failure_msg
                 )
                 passed = False
 
@@ -558,7 +567,8 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
                     combination_name, stabilize_mode,
                     support_claimed, passed, recording_obj, gyro_events, _NAME,
                     log_path, facing, output_surfaces, fps_range, hlg10,
-                    features_passed, streams_name, fps_range_tuple
+                    features_passed, streams_name, fps_range_tuple,
+                    combined_failure_msg
                 )
                 self._handle_one_verification_result(
                     verification_result, test_failures, database)
@@ -567,7 +577,8 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
                     self._finish_combination, combination_name, stabilize_mode,
                     support_claimed, passed, recording_obj, gyro_events, _NAME,
                     log_path, facing, output_surfaces, fps_range, hlg10,
-                    features_passed, streams_name, fps_range_tuple
+                    features_passed, streams_name, fps_range_tuple,
+                    combined_failure_msg
                 )
                 # Handle completed feature verification futures
                 self._handle_completed_futures(

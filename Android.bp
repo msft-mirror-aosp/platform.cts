@@ -86,7 +86,10 @@ java_defaults {
             "AndroidFrameworkLintChecker",
             "CtsLintChecker",
         ],
-        disabled_checks: ["NonUserGetterCalled"],
+        disabled_checks: [
+            "JavaStream",
+            "NonUserGetterCalled",
+        ],
     },
 }
 

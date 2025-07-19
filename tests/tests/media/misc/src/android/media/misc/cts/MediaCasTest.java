@@ -79,6 +79,7 @@ public class MediaCasTest {
     private boolean mIsAtLeastS = ApiLevelUtil.isAtLeast(Build.VERSION_CODES.S);
     private boolean mIsAtLeastU =
             ApiLevelUtil.isAtLeast(Build.VERSION_CODES.UPSIDE_DOWN_CAKE);
+    private TunerResourceManager mTunerResourceManager = null;
 
     // ClearKey CAS/Descrambler test vectors
     private static final String sProvisionStr =
@@ -179,6 +180,14 @@ public class MediaCasTest {
         // MediaCas. It is used by all tests, then adopt it from shell in setup
         InstrumentationRegistry
             .getInstrumentation().getUiAutomation().adoptShellPermissionIdentity();
+        if (mTunerResourceManager == null) {
+            mTunerResourceManager =
+                    (TunerResourceManager)
+                            InstrumentationRegistry.getContext()
+                                    .getSystemService(Context.TV_TUNER_RESOURCE_MGR_SERVICE);
+        }
+        // Reset the CAS resource.
+        mTunerResourceManager.updateCasInfo(sClearKeySystemId, 0);
     }
 
     @After
@@ -417,7 +426,6 @@ public class MediaCasTest {
         MediaCas mediaCasA = null;
         MediaCas mediaCasB = null;
         Session resourceHolderSession = null, resourceChallengerSession = null;
-        TunerResourceManager mTunerResourceManager = null;
 
         try {
             if (mIsAtLeastR) {
@@ -435,9 +443,6 @@ public class MediaCasTest {
                 mediaCasA = new MediaCas(sClearKeySystemId);
                 mediaCasB = new MediaCas(sClearKeySystemId);
             }
-            mTunerResourceManager =
-                    (TunerResourceManager) InstrumentationRegistry.getContext().getSystemService(
-                            Context.TV_TUNER_RESOURCE_MGR_SERVICE);
             mTunerResourceManager.updateCasInfo(sClearKeySystemId, 1);
 
             resourceHolderSession = mediaCasA.openSession();
@@ -452,12 +457,6 @@ public class MediaCasTest {
                         + "setResourceOwnershipRetention API is enabled");
             }
         } finally {
-            if (resourceHolderSession != null) {
-                resourceHolderSession.close();
-            }
-            if (resourceChallengerSession != null) {
-                resourceChallengerSession.close();
-            }
             if (mediaCasA != null) {
                 mediaCasA.close();
             }
@@ -483,7 +482,6 @@ public class MediaCasTest {
         MediaCas mediaCasA = null;
         MediaCas mediaCasB = null;
         Session resourceHolderSession = null, resourceChallengerSession = null;
-        TunerResourceManager mTunerResourceManager = null;
 
         try {
             if (mIsAtLeastR) {
@@ -501,9 +499,6 @@ public class MediaCasTest {
                 mediaCasA = new MediaCas(sClearKeySystemId);
                 mediaCasB = new MediaCas(sClearKeySystemId);
             }
-            mTunerResourceManager =
-                    (TunerResourceManager) InstrumentationRegistry.getContext().getSystemService(
-                            Context.TV_TUNER_RESOURCE_MGR_SERVICE);
             mTunerResourceManager.updateCasInfo(sClearKeySystemId, 1);
 
             resourceHolderSession = mediaCasA.openSession();
@@ -524,12 +519,6 @@ public class MediaCasTest {
                                 + "and held by resource holder");
             }
         } finally {
-            if (resourceHolderSession != null) {
-                resourceHolderSession.close();
-            }
-            if (resourceChallengerSession != null) {
-                resourceChallengerSession.close();
-            }
             if (mediaCasA != null) {
                 mediaCasA.close();
             }
