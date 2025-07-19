@@ -36,7 +36,6 @@ import android.net.NetworkRequest;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.PersistableBundle;
-import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -408,9 +407,8 @@ public class JobInfoTest extends BaseJobSchedulerTest {
     }
 
     @SuppressWarnings("deprecation")
-    @RequiresFlagsEnabled(android.app.job.Flags.FLAG_IGNORE_IMPORTANT_WHILE_FOREGROUND)
     @Test
-    public void testImportantWhileForeground_Ignored() {
+    public void testImportantWhileForeground() {
         // Assert the value is false always
         final JobInfo ji = new JobInfo.Builder(JOB_ID, kJobServiceComponent)
                 .setImportantWhileForeground(true)

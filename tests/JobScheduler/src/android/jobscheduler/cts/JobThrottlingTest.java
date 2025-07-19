@@ -29,7 +29,6 @@ import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.app.AppOpsManager;
-import android.app.job.Flags;
 import android.app.job.JobInfo;
 import android.app.job.JobParameters;
 import android.content.Context;
@@ -40,8 +39,6 @@ import android.os.SystemClock;
 import android.os.Temperature;
 import android.os.UserHandle;
 import android.platform.test.annotations.RequiresDevice;
-import android.platform.test.annotations.RequiresFlagsDisabled;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.DeviceConfig;
@@ -202,23 +199,7 @@ public class JobThrottlingTest {
     }
 
     @Test
-    @RequiresFlagsDisabled(Flags.FLAG_IGNORE_IMPORTANT_WHILE_FOREGROUND)
-    public void testAllowWhileIdleJobInTempallowlist_Legacy() throws Exception {
-        assumeTrue("device idle not enabled", mDeviceIdleEnabled);
-
-        toggleDozeState(true);
-        Thread.sleep(DEFAULT_WAIT_TIMEOUT);
-        sendScheduleJobBroadcast(true);
-        assertFalse("Job started without being tempallowlisted",
-                mTestAppInterface.awaitJobStart(5_000));
-        tempAllowlistTestApp(5_000);
-        assertTrue("Job with allow_while_idle flag did not start when the app was tempallowlisted",
-                mTestAppInterface.awaitJobStart(5_000));
-    }
-
-    @Test
-    @RequiresFlagsEnabled(Flags.FLAG_IGNORE_IMPORTANT_WHILE_FOREGROUND)
-    public void testAllowWhileIdleJobInTempallowlist_Ignore() throws Exception {
+    public void testAllowWhileIdleJobInTempallowlist() throws Exception {
         assumeTrue("device idle not enabled", mDeviceIdleEnabled);
 
         toggleDozeState(true);
