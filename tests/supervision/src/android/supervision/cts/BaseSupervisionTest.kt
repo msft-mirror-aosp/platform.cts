@@ -57,7 +57,7 @@ open class BaseSupervisionTest {
     fun withSupervisingUser(
         supervisionEnabled: Boolean = true,
         hasPin: Boolean = true,
-        action: () -> Unit
+        action: () -> Unit,
     ) {
         setSupervisionEnabled(supervisionEnabled)
 
@@ -65,16 +65,17 @@ open class BaseSupervisionTest {
         try {
             if (hasPin) {
                 val pin = "1234"
-                val result = runShellCommand(
-                    InstrumentationRegistry.getInstrumentation(),
-                    "locksettings set-pin --user ${userHandle.identifier} $pin",
-                )
+                val result =
+                    runShellCommand(
+                        InstrumentationRegistry.getInstrumentation(),
+                        "locksettings set-pin --user ${userHandle.identifier} $pin",
+                    )
                 assertThat(result).contains(pin)
             }
             action()
         } finally {
-            userManager.removeSupervisingUser(userHandle)
             setSupervisionEnabled(false)
+            userManager.removeSupervisingUser(userHandle)
         }
     }
 
