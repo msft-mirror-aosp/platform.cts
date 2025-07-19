@@ -20,9 +20,11 @@ import android.Manifest.permission.CREATE_USERS
 import android.Manifest.permission.MANAGE_USERS
 import android.Manifest.permission.QUERY_USERS
 import android.app.supervision.flags.Flags
-import android.platform.test.annotations.AppModeFull
 import com.android.bedstead.flags.annotations.RequireFlagsEnabled
 import com.android.bedstead.harrier.BedsteadJUnit4
+import com.android.bedstead.harrier.annotations.RequireNotAutomotive
+import com.android.bedstead.harrier.annotations.RequireNotTv
+import com.android.bedstead.harrier.annotations.RequireNotWatch
 import com.android.bedstead.multiuser.annotations.RequireMultiUserSupport
 import com.android.bedstead.permissions.annotations.EnsureDoesNotHavePermission
 import com.android.bedstead.permissions.annotations.EnsureHasPermission
@@ -34,18 +36,20 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(BedsteadJUnit4::class)
-@AppModeFull(reason = "The SupervisionManager API is not available in instant apps.")
 @RequireFlagsEnabled(
     Flags.FLAG_SUPERVISION_MANAGER_APIS,
     android.multiuser.Flags.FLAG_ALLOW_SUPERVISING_PROFILE,
 )
+@RequireNotAutomotive(reason = "Supervision credentials are only supported on phones and tablets")
+@RequireNotWatch(reason = "Supervision credentials are only supported on phones and tablets")
+@RequireNotTv(reason = "Supervision credentials are only supported on phones and tablets")
+@ApiTest(
+    apis =
+        ["android.app.supervision.SupervisionManager#createConfirmSupervisionCredentialsIntent"]
+)
 class SupervisionCredentialsTest : BaseSupervisionTest() {
 
     @Test
-    @ApiTest(
-        apis =
-            ["android.app.supervision.SupervisionManager#createConfirmSupervisionCredentialsIntent"]
-    )
     @EnsureHasPermission(MANAGE_USERS)
     @RequireRootInstrumentation(reason = "Use of MANAGE_USERS")
     fun createConfirmSupervisionCredentialsIntent_hasManageUsersPermission_returnsValidIntent() {
@@ -55,10 +59,6 @@ class SupervisionCredentialsTest : BaseSupervisionTest() {
     }
 
     @Test
-    @ApiTest(
-        apis =
-            ["android.app.supervision.SupervisionManager#createConfirmSupervisionCredentialsIntent"]
-    )
     @EnsureHasPermission(QUERY_USERS)
     fun createConfirmSupervisionCredentialsIntent_hasQueryUsersPermission_returnsValidIntent() {
         withSupervisingUser {
@@ -67,10 +67,6 @@ class SupervisionCredentialsTest : BaseSupervisionTest() {
     }
 
     @Test
-    @ApiTest(
-        apis =
-            ["android.app.supervision.SupervisionManager#createConfirmSupervisionCredentialsIntent"]
-    )
     @EnsureDoesNotHavePermission(MANAGE_USERS, QUERY_USERS)
     fun createConfirmSupervisionCredentialsIntent_noPermission_throwsException() {
         assertFailsWith<SecurityException> {
@@ -79,10 +75,6 @@ class SupervisionCredentialsTest : BaseSupervisionTest() {
     }
 
     @Test
-    @ApiTest(
-        apis =
-            ["android.app.supervision.SupervisionManager#createConfirmSupervisionCredentialsIntent"]
-    )
     @RequireMultiUserSupport
     @EnsureHasPermission(QUERY_USERS, CREATE_USERS)
     fun createConfirmSupervisionCredentialsIntent_supervisionNotEnabled_returnsNull() {
@@ -92,10 +84,6 @@ class SupervisionCredentialsTest : BaseSupervisionTest() {
     }
 
     @Test
-    @ApiTest(
-        apis =
-            ["android.app.supervision.SupervisionManager#createConfirmSupervisionCredentialsIntent"]
-    )
     @EnsureHasPermission(QUERY_USERS)
     fun createConfirmSupervisionCredentialsIntent_noSupervisingUser_returnsNull() {
         setSupervisionEnabled(true)
@@ -103,10 +91,6 @@ class SupervisionCredentialsTest : BaseSupervisionTest() {
     }
 
     @Test
-    @ApiTest(
-        apis =
-            ["android.app.supervision.SupervisionManager#createConfirmSupervisionCredentialsIntent"]
-    )
     @RequireMultiUserSupport
     @EnsureHasPermission(QUERY_USERS, CREATE_USERS)
     fun createConfirmSupervisionCredentialsIntent_supervisingUserMissingSecureLock_returnsNull() {

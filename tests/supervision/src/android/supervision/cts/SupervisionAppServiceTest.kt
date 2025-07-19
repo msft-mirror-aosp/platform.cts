@@ -21,18 +21,17 @@ import android.Manifest.permission.MANAGE_ROLE_HOLDERS
 import android.Manifest.permission.OBSERVE_ROLE_HOLDERS
 import android.Manifest.permission.QUERY_USERS
 import android.app.supervision.flags.Flags
-import android.platform.test.annotations.AppModeFull
 import com.android.bedstead.flags.annotations.RequireFlagsEnabled
 import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.multiuser.annotations.EnsureHasNoAdditionalUser
 import com.android.bedstead.permissions.annotations.EnsureHasPermission
 import com.android.compatibility.common.util.ApiTest
+import com.android.compatibility.common.util.supervision.withSystemSupervisionRoleHeld
 import com.google.common.truth.Truth.assertThat
 import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(BedsteadJUnit4::class)
-@AppModeFull(reason = "The SupervisionManager API is not available in instant apps.")
 @RequireFlagsEnabled(Flags.FLAG_ENABLE_SUPERVISION_APP_SERVICE)
 class SupervisionAppServiceTest : BaseSupervisionTest() {
 

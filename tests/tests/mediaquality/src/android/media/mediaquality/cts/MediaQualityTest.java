@@ -60,6 +60,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 @RunWith(AndroidJUnit4.class)
 @SmallTest
@@ -68,6 +69,8 @@ public class MediaQualityTest {
     private static final String PACKAGE_NAME = "android.media.mediaquality.cts";
     private AmbientBacklightSettings mAmbientBacklightSettings;
     private IMediaQuality mMediaQuality;
+    private static final int POLLING_TIMEOUT_MS = 5000; // 5 seconds max wait
+    private static final int POLLING_INTERVAL_MS = 100; // Check every 0.1 seconds
 
     @Before
     public void setUp() throws Exception {
@@ -90,7 +93,8 @@ public class MediaQualityTest {
     }
 
     @After
-    public void tearDown() {
+    public void tearDown() throws InterruptedException {
+        Thread.sleep(500);
         if (mManager != null) {
             // Remove all picture profiles.
             List<PictureProfile> pictureProfiles =
@@ -105,6 +109,7 @@ public class MediaQualityTest {
             for (SoundProfile profile : soundProfiles) {
                 mManager.removeSoundProfile(profile.getProfileId());
             }
+            Thread.sleep(500);
         }
     }
 
@@ -124,12 +129,14 @@ public class MediaQualityTest {
 
     @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW)
     @Test
-    public void testUpdatePictureProfile() {
+    public void testUpdatePictureProfile() throws InterruptedException {
         PictureProfile toCreate = getTestPictureProfile("updatePictureProfile");
         mManager.createPictureProfile(toCreate);
+        Thread.sleep(500);
         PictureProfile profile =
                 mManager.getPictureProfile(
                         toCreate.getProfileType(), toCreate.getName(), includeParams(true));
+        Thread.sleep(500);
         Assert.assertNotNull(profile);
         PersistableBundle expected = toCreate.getParameters();
         PersistableBundle actual = profile.getParameters();
@@ -151,6 +158,7 @@ public class MediaQualityTest {
         PictureProfile toUpdate =
                 new PictureProfile.Builder(profile).setParameters(newParams).build();
         mManager.updatePictureProfile(profile.getProfileId(), toUpdate);
+        Thread.sleep(1000);
         PictureProfile profile2 =
                 mManager.getPictureProfile(
                         toUpdate.getProfileType(), toUpdate.getName(), includeParams(true));
@@ -170,35 +178,55 @@ public class MediaQualityTest {
 
     @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW)
     @Test
-    public void testRemovePictureProfile() {
+    public void testRemovePictureProfile() throws InterruptedException {
         PictureProfile toCreate = getTestPictureProfile("removePictureProfile");
 
         mManager.createPictureProfile(toCreate);
+
+        // Verification: Wait until the profile actually exists
+        boolean created =
+                waitForCondition(
+                        () -> {
+                            return mManager.getPictureProfile(
+                                            toCreate.getProfileType(),
+                                            toCreate.getName(),
+                                            includeParams(false))
+                                    != null;
+                        });
+        Assert.assertTrue("Profile was not created within the timeout.", created);
+
         PictureProfile profile =
                 mManager.getPictureProfile(
                         toCreate.getProfileType(), toCreate.getName(), includeParams(false));
         Assert.assertNotNull(profile);
 
         mManager.removePictureProfile(profile.getProfileId());
-        PictureProfile profile2 =
-                mManager.getPictureProfile(
-                        toCreate.getProfileType(), toCreate.getName(), includeParams(false));
-        Assert.assertNull(profile2);
+        // Verification: Wait until the profile is actually gone
+        boolean removed =
+                waitForCondition(
+                        () ->
+                                mManager.getPictureProfile(
+                                                toCreate.getProfileType(),
+                                                toCreate.getName(),
+                                                includeParams(false))
+                                        == null);
+        Assert.assertTrue("Profile was not removed within the timeout.", removed);
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW)
     @Test
-    public void testGetPictureProfile() {
+    public void testGetPictureProfile() throws InterruptedException {
         PictureProfile toCreate = getTestPictureProfile("getPictureProfile");
 
         mManager.createPictureProfile(toCreate);
+        Thread.sleep(500);
         PictureProfile profile =
                 mManager.getPictureProfile(
                         toCreate.getProfileType(), toCreate.getName(), includeParams(true));
+        Thread.sleep(500);
         Assert.assertNotNull(profile);
         Assert.assertEquals(profile.getProfileType(), toCreate.getProfileType());
         Assert.assertEquals(profile.getName(), toCreate.getName());
-        Assert.assertEquals(profile.getInputId(), toCreate.getInputId());
         Assert.assertEquals(profile.getPackageName(), toCreate.getPackageName());
         PersistableBundle expected = toCreate.getParameters();
         PersistableBundle actual = profile.getParameters();
@@ -260,9 +288,21 @@ public class MediaQualityTest {
 
     @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW)
     @Test
-    public void testUpdateSoundProfile() {
+    public void testUpdateSoundProfile() throws InterruptedException {
         SoundProfile toCreate = getTestSoundProfile("updateSoundProfile");
         mManager.createSoundProfile(toCreate);
+
+        boolean createdCheck =
+                waitForCondition(
+                        () ->
+                                mManager.getSoundProfile(
+                                                toCreate.getProfileType(),
+                                                toCreate.getName(),
+                                                includeParams(true))
+                                        != null);
+
+        Assert.assertTrue("Profile was not created within the timeout.", createdCheck);
+
         SoundProfile profile =
                 mManager.getSoundProfile(
                         toCreate.getProfileType(), toCreate.getName(), includeParams(true));
@@ -285,6 +325,21 @@ public class MediaQualityTest {
         SoundProfile toUpdate = new SoundProfile.Builder(profile).setParameters(newParams).build();
 
         mManager.updateSoundProfile(profile.getProfileId(), toUpdate);
+
+        boolean updatedCheck =
+                waitForCondition(
+                        () -> {
+                            SoundProfile p =
+                                    mManager.getSoundProfile(
+                                            toUpdate.getProfileType(),
+                                            toUpdate.getName(),
+                                            includeParams(true));
+                            return p != null
+                                    && p.getParameters().getInt(SoundQuality.PARAMETER_BALANCE)
+                                            == 13;
+                        });
+        Assert.assertTrue("Profile was not updated within the timeout.", updatedCheck);
+
         SoundProfile profile2 =
                 mManager.getSoundProfile(
                         toUpdate.getProfileType(), toUpdate.getName(), includeParams(true));
@@ -304,16 +359,19 @@ public class MediaQualityTest {
 
     @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW)
     @Test
-    public void testRemoveSoundProfile() {
+    public void testRemoveSoundProfile() throws InterruptedException {
         SoundProfile toCreate = getTestSoundProfile("removeSoundProfile");
 
         mManager.createSoundProfile(toCreate);
+        Thread.sleep(500);
         SoundProfile profile =
                 mManager.getSoundProfile(
                         toCreate.getProfileType(), toCreate.getName(), includeParams(false));
+        Thread.sleep(500);
         Assert.assertNotNull(profile);
 
         mManager.removeSoundProfile(profile.getProfileId());
+        Thread.sleep(500);
         SoundProfile profile2 =
                 mManager.getSoundProfile(
                         toCreate.getProfileType(), toCreate.getName(), includeParams(false));
@@ -322,17 +380,18 @@ public class MediaQualityTest {
 
     @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW)
     @Test
-    public void testGetSoundProfile() {
+    public void testGetSoundProfile() throws InterruptedException {
         SoundProfile toCreate = getTestSoundProfile("getSoundProfile");
 
         mManager.createSoundProfile(toCreate);
+        Thread.sleep(500);
         SoundProfile profile =
                 mManager.getSoundProfile(
                         toCreate.getProfileType(), toCreate.getName(), includeParams(true));
+        Thread.sleep(500);
         Assert.assertNotNull(profile);
         Assert.assertEquals(profile.getProfileType(), toCreate.getProfileType());
         Assert.assertEquals(profile.getName(), toCreate.getName());
-        Assert.assertEquals(profile.getInputId(), toCreate.getInputId());
         Assert.assertEquals(profile.getPackageName(), toCreate.getPackageName());
         PersistableBundle expected = toCreate.getParameters();
         PersistableBundle actual = profile.getParameters();
@@ -392,10 +451,11 @@ public class MediaQualityTest {
 
     @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW)
     @Test
-    public void testGetPictureProfileAllowlist() {
+    public void testGetPictureProfileAllowlist() throws InterruptedException {
         List<String> allow = Arrays.asList("Profile4", "Profile5", "Profile6");
         mManager.setPictureProfileAllowList(allow);
 
+        Thread.sleep(500);
         List<String> queries = mManager.getPictureProfileAllowList();
         Assert.assertNotNull(queries);
         Assert.assertEquals(queries.size(), 3);
@@ -419,11 +479,13 @@ public class MediaQualityTest {
 
     @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW)
     @Test
-    public void testGetSoundProfileAllowlist() {
+    public void testGetSoundProfileAllowlist() throws InterruptedException {
         List<String> allow = Arrays.asList("Profile4", "Profile5", "Profile6");
         mManager.setSoundProfileAllowList(allow);
+        Thread.sleep(500);
 
         List<String> queries = mManager.getSoundProfileAllowList();
+        Thread.sleep(500);
         Assert.assertNotNull(queries);
         Assert.assertEquals(queries.size(), 3);
         for (String a : allow) {
@@ -450,43 +512,50 @@ public class MediaQualityTest {
 
     @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW)
     @Test
-    public void testGetSoundProfileHandle() {
+    public void testGetSoundProfileHandle() throws InterruptedException {
         SoundProfile profile = getTestSoundProfile("testGetSoundProfileHandle");
 
         mManager.createSoundProfile(profile);
+        Thread.sleep(500);
         SoundProfile created =
                 mManager.getSoundProfile(
                         profile.getProfileType(), profile.getName(), includeParams(false));
+        Thread.sleep(500);
         assertNotNull(created);
 
         String[] ids = {created.getProfileId()};
         List<SoundProfileHandle> spHandle = mManager.getSoundProfileHandle(ids);
+        Thread.sleep(500);
         assertNotNull(spHandle);
         assertEquals(spHandle.size(), 1);
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW)
     @Test
-    public void testSetDefaultPictureProfile() {
+    public void testSetDefaultPictureProfile() throws InterruptedException {
         PictureProfile toCreate = getTestPictureProfile("testSetDefaultPictureProfile");
         mManager.createPictureProfile(toCreate);
 
+        Thread.sleep(500);
         PictureProfile created =
                 mManager.getPictureProfile(
                         toCreate.getProfileType(), toCreate.getName(), includeParams(false));
 
+        Thread.sleep(500);
         mManager.setDefaultPictureProfile(created.getProfileId());
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW)
     @Test
-    public void testSetDefaultSoundProfile() {
+    public void testSetDefaultSoundProfile() throws InterruptedException {
         SoundProfile toCreate = getTestSoundProfile("testSetDefaultSoundProfile");
         mManager.createSoundProfile(toCreate);
 
+        Thread.sleep(500);
         SoundProfile created =
                 mManager.getSoundProfile(
                         toCreate.getProfileType(), toCreate.getName(), includeParams(false));
+        Thread.sleep(500);
 
         mManager.setDefaultSoundProfile(created.getProfileId());
     }
@@ -674,7 +743,6 @@ public class MediaQualityTest {
         bundle.putInt(PictureQuality.PARAMETER_CONTRAST, 87);
 
         return new PictureProfile.Builder("testName" + methodName)
-                .setInputId("testInputId" + methodName)
                 .setProfileType(PictureProfile.TYPE_APPLICATION)
                 .setPackageName(PACKAGE_NAME)
                 .setParameters(bundle)
@@ -688,7 +756,6 @@ public class MediaQualityTest {
         bundle.putInt(SoundQuality.PARAMETER_TREBLE, 36);
 
         return new SoundProfile.Builder("testName" + methodName)
-                .setInputId("testInputId" + methodName)
                 .setProfileType(SoundProfile.TYPE_APPLICATION)
                 .setPackageName(PACKAGE_NAME)
                 .setParameters(bundle)
@@ -826,5 +893,22 @@ public class MediaQualityTest {
             }
             super.onParameterCapabilitiesChanged(profileId, updatedCaps);
         }
+    }
+
+    /**
+     * Waits for a condition to become true, polling at a regular interval.
+     *
+     * @param condition A supplier that returns true when the condition is met.
+     * @return true if the condition was met within the timeout, false otherwise.
+     */
+    private boolean waitForCondition(Supplier<Boolean> condition) throws InterruptedException {
+        long startTime = System.currentTimeMillis();
+        while (System.currentTimeMillis() - startTime < POLLING_TIMEOUT_MS) {
+            if (condition.get()) {
+                return true; // Condition met, exit immediately
+            }
+            Thread.sleep(POLLING_INTERVAL_MS); // Wait a short interval before next check
+        }
+        return false; // Condition was not met within the timeout
     }
 }

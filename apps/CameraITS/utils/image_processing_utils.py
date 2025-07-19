@@ -860,17 +860,24 @@ def write_uint8_image(img, file_name):
   Supported output formats: PNG, JPEG, & others; see PIL docs for more.
 
   Args:
-   img: numpy.uint8 array. Can be depth 3 (RGB) or 1 (Y).
-   file_name: file name w/ path to save to; extension specifies format.
+    img: numpy.uint8 array. Can be depth 3 (RGB), 1 (Y), or 2D (grayscale).
+    file_name: file name w/ path to save to; extension specifies format.
   """
   if img.dtype == 'uint8':
-    _, _, chans = img.shape
-    if chans == 3:  # RGB image
-      Image.fromarray(img, 'RGB').save(file_name)
-    elif chans == 1:  # B&W (luminance) image
-      Image.fromarray(img, 'Y').save(file_name)
+    if img.ndim == 2:  # 2D grayscale image (height, width)
+      Image.fromarray(img, 'L').save(file_name)  # 'L' mode for black & white
+    elif img.ndim == 3:
+      _, _, chans = img.shape
+      if chans == 3:  # RGB image
+        Image.fromarray(img, 'RGB').save(file_name)
+      elif chans == 1:  # B&W image (H, W, 1)
+        Image.fromarray(img.squeeze(), 'L').save(file_name)  # squeeze to 2D
+      else:
+        raise AssertionError(
+             f'Unsupported image type: 3D array with {chans} channels')
     else:
-      raise error_util.CameraItsError('Unsupported image type')
+      raise AssertionError(
+          f'Unsupported image dimensions: {img.ndim}! Expected 2 or 3.')
   else:
     raise AssertionError(f'Incorrect input type: {img.dtype}! Expected: uint8')
 

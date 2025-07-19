@@ -155,9 +155,6 @@ public class WifiNetworkSuggestionTest extends WifiJUnit4TestBase {
                 () -> sWifiManager.isScanThrottleEnabled());
         ShellIdentityUtils.invokeWithShellPermissions(
                 () -> sWifiManager.setScanThrottleEnabled(false));
-        // turn screen on
-        sTestHelper.turnScreenOn();
-
 
         // enable Wifi
         sWasWifiEnabled = ShellIdentityUtils.invokeWithShellPermissions(

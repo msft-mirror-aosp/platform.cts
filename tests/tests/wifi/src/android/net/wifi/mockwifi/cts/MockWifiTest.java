@@ -250,7 +250,7 @@ public class MockWifiTest {
         int retryNum = 1;
         while (true) {
             try {
-                sWifiManager.startScan();
+                ShellIdentityUtils.invokeWithShellPermissions(() -> sWifiManager.reconnect());
                 waitForConnection(); // ensures that there is at-least 1 saved network on the
                 // device.
                 break;

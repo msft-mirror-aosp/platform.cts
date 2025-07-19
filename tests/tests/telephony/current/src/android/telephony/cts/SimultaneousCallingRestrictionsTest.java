@@ -30,6 +30,7 @@ import static org.junit.Assume.assumeTrue;
 
 import android.app.UiAutomation;
 import android.content.Context;
+import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.SystemProperties;
 import android.platform.test.annotations.RequiresFlagsEnabled;
@@ -101,6 +102,7 @@ public class SimultaneousCallingRestrictionsTest {
     private static boolean sIsMockModemAllowed;
     private static Throwable sCapturedSetupThrowable;
     private static boolean sFeatureEnabled;
+    private static boolean sHasCallingFeature;
     private static int sTestSubSlot0 = SubscriptionManager.INVALID_SUBSCRIPTION_ID;
     private static int sTestSubSlot1 = SubscriptionManager.INVALID_SUBSCRIPTION_ID;
     private static final String ALLOW_MOCK_MODEM_PROPERTY = "persist.radio.allow_mock_modem";
@@ -140,6 +142,11 @@ public class SimultaneousCallingRestrictionsTest {
         sFeatureEnabled = Flags.simultaneousCallingIndications();
         if (!ImsUtils.shouldTestTelephony()) {
             Log.d(TAG, "beforeAllTests: Telephony Feature is not enabled on this device. ");
+            return;
+        }
+        sHasCallingFeature = hasFeature(PackageManager.FEATURE_TELEPHONY_CALLING);
+        if (!sHasCallingFeature) {
+            Log.d(TAG, "beforeAllTests: FEATURE_TELEPHONY_CALLING is not enabled on this device");
             return;
         }
         if (!sFeatureEnabled) {
@@ -209,7 +216,7 @@ public class SimultaneousCallingRestrictionsTest {
     @AfterClass
     public static void afterAllTests() {
         if (!ImsUtils.shouldTestTelephony() || !sIsMultiSimDevice || !sFeatureEnabled
-                || !sIsMockModemAllowed) {
+                || !sIsMockModemAllowed || !sHasCallingFeature) {
             Log.d(TAG, "afterAllTests: Skipping - previous assumption failures");
             return;
         }
@@ -264,7 +271,7 @@ public class SimultaneousCallingRestrictionsTest {
 
     @Before
     public void beforeTest() throws Throwable {
-        if (!ImsUtils.shouldTestImsService() || !sIsMultiSimDevice) {
+        if (!ImsUtils.shouldTestImsService() || !sIsMultiSimDevice || !sHasCallingFeature) {
             return;
         }
         Log.d(TAG, "beforeTest");
@@ -295,7 +302,7 @@ public class SimultaneousCallingRestrictionsTest {
 
     @After
     public void afterTest() throws Exception {
-        if (!ImsUtils.shouldTestImsService() || !sIsMultiSimDevice) {
+        if (!ImsUtils.shouldTestImsService() || !sIsMultiSimDevice || !sHasCallingFeature) {
             return;
         }
         Log.d(TAG, "afterTest");
@@ -321,6 +328,7 @@ public class SimultaneousCallingRestrictionsTest {
         assumeTrue("Skip test: Not test on single SIM device", sIsMultiSimDevice);
         assumeTrue("Skip test: FEATURE_TELEPHONY not setup",
                 ImsUtils.shouldTestTelephony());
+        assumeTrue("Skip test: FEATURE_TELEPHONY_CALLING not setup", sHasCallingFeature);
 
         // Set the enabled logical slots to be returned from the modem:
         setSimultaneousCallingEnabledLogicalSlots(new int[]{TEST_SLOT_0, TEST_SLOT_1});
@@ -344,6 +352,7 @@ public class SimultaneousCallingRestrictionsTest {
         assumeTrue("Skip test: Not test on single SIM device", sIsMultiSimDevice);
         assumeTrue("Skip test: FEATURE_TELEPHONY not setup",
                 ImsUtils.shouldTestTelephony());
+        assumeTrue("Skip test: FEATURE_TELEPHONY_CALLING not setup", sHasCallingFeature);
 
         // Set an empty array as the enabled logical slots to be returned from the modem:
         setSimultaneousCallingEnabledLogicalSlots(new int[]{});
@@ -362,6 +371,7 @@ public class SimultaneousCallingRestrictionsTest {
         assumeTrue("Skip test: Not test on single SIM device", sIsMultiSimDevice);
         assumeTrue("Skip test: ImsService and/or FEATURE_TELEPHONY are not setup",
                 ImsUtils.shouldTestImsService());
+        assumeTrue("Skip test: FEATURE_TELEPHONY_CALLING not setup", sHasCallingFeature);
 
         // Set the enabled logical slots to be returned from the modem:
         setSimultaneousCallingEnabledLogicalSlots(new int[]{TEST_SLOT_0, TEST_SLOT_1});
@@ -408,6 +418,7 @@ public class SimultaneousCallingRestrictionsTest {
         assumeTrue("Skip test: Not test on single SIM device", sIsMultiSimDevice);
         assumeTrue("Skip test: ImsService and/or FEATURE_TELEPHONY are not setup",
                 ImsUtils.shouldTestImsService());
+        assumeTrue("Skip test: FEATURE_TELEPHONY_CALLING not setup", sHasCallingFeature);
 
         Pair<RegistrationManager.RegistrationCallback,
                 LinkedBlockingQueue<ImsRegistrationAttributes>> result_0 = null;
@@ -447,6 +458,7 @@ public class SimultaneousCallingRestrictionsTest {
         assumeTrue("Skip test: Not test on single SIM device", sIsMultiSimDevice);
         assumeTrue("Skip test: ImsService and/or FEATURE_TELEPHONY are not setup",
                 ImsUtils.shouldTestImsService());
+        assumeTrue("Skip test: FEATURE_TELEPHONY_CALLING not setup", sHasCallingFeature);
 
         Pair<RegistrationManager.RegistrationCallback,
                 LinkedBlockingQueue<ImsRegistrationAttributes>> result_0 = null;
@@ -840,5 +852,10 @@ public class SimultaneousCallingRestrictionsTest {
         assertEquals(tech, attrResult.getRegistrationTechnology());
         assertEquals(expectedTransport, attrResult.getTransportType());
         assertEquals(expectedAttrFlags, attrResult.getAttributeFlags());
+    }
+
+    private static boolean hasFeature(String feature) {
+        PackageManager pm = getContext().getPackageManager();
+        return (pm != null) && pm.hasSystemFeature(feature);
     }
 }

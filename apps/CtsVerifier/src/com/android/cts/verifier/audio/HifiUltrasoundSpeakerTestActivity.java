@@ -269,6 +269,7 @@ public class HifiUltrasoundSpeakerTestActivity extends PassFailButtons.Activity 
     recorderButton.setEnabled(false);
 
     XYPlot plot = (XYPlot) popupView.findViewById(R.id.responseChart);
+    plot.clear();
     plot.setDomainStep(XYStepMode.INCREMENT_BY_VAL, 2000);
 
     Double[] frequencies = new Double[Common.PIP_NUM];

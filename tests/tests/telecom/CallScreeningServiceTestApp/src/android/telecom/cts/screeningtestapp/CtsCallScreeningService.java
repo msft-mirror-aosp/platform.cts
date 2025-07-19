@@ -36,7 +36,6 @@ public class CtsCallScreeningService extends CallScreeningService {
     public IBinder onBind(Intent intent) {
         Log.i(TAG, "onBind: to call screening service");
         mCallScreeningServiceControl = CallScreeningServiceControl.getInstance();
-        mCallScreeningServiceControl.onScreeningServiceBound();
         return super.onBind(intent);
     }
 
@@ -52,6 +51,7 @@ public class CtsCallScreeningService extends CallScreeningService {
     public void onScreenCall(Call.Details callDetails) {
         Log.i(TAG, "onScreenCall");
         if (mCallScreeningServiceControl != null) {
+            mCallScreeningServiceControl.onScreeningServiceBound();
             CallScreeningService.CallResponse r = mCallScreeningServiceControl.getCallResponse();
             Log.i(
                     TAG,

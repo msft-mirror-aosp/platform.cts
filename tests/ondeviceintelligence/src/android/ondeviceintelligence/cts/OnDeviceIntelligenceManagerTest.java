@@ -16,6 +16,7 @@
 
 package android.ondeviceintelligence.cts;
 
+import static android.app.ondeviceintelligence.flags.Flags.FLAG_DMABUF_INFO;
 import static android.app.ondeviceintelligence.flags.Flags.FLAG_ENABLE_ON_DEVICE_INTELLIGENCE;
 import static android.app.ondeviceintelligence.flags.Flags.FLAG_ON_DEVICE_INTELLIGENCE_25Q4;
 import static android.content.Context.RECEIVER_EXPORTED;
@@ -37,6 +38,7 @@ import static java.util.concurrent.TimeUnit.HOURS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 import android.Manifest;
+import android.app.ondeviceintelligence.DmaBufEntry;
 import android.app.ondeviceintelligence.DownloadCallback;
 import android.app.ondeviceintelligence.Feature;
 import android.app.ondeviceintelligence.InferenceInfo;
@@ -53,6 +55,10 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Rect;
+import android.graphics.SurfaceTexture;
 import android.os.Bundle;
 import android.os.CancellationSignal;
 import android.os.IBinder;
@@ -66,15 +72,15 @@ import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.DeviceConfig;
 import android.provider.Settings;
+import android.service.ondeviceintelligence.OnDeviceIntelligenceService;
 import android.service.ondeviceintelligence.OnDeviceSandboxedInferenceService.LifecycleListener;
 import android.service.ondeviceintelligence.OnDeviceSandboxedInferenceService.LifecycleListener.LifecycleEvent;
-import android.service.ondeviceintelligence.OnDeviceIntelligenceService;
 import android.text.TextUtils;
 import android.util.Log;
+import android.view.Surface;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.test.InstrumentationRegistry;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import com.android.compatibility.common.util.ApiTest;
@@ -92,6 +98,8 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
@@ -1527,6 +1535,174 @@ public class OnDeviceIntelligenceManagerTest {
         DeviceConfig.deleteProperty(TEST_OD_NAMESPACE, "key1");
     }
 
+    @Test
+    @ApiTest(apis = {
+        "android.app.ondeviceintelligence.OnDeviceIntelligenceManager#getDmaBufInfoForPid"})
+    @RequiresFlagsEnabled(FLAG_DMABUF_INFO)
+    public void testDmaBufInfoPerPid() throws InterruptedException {
+        getInstrumentation()
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(Manifest.permission.USE_ON_DEVICE_INTELLIGENCE);
+        int pid = Process.myPid();
+        CountDownLatch statusLatch1 = new CountDownLatch(1);
+
+        final ArrayList list = new ArrayList();
+        mOnDeviceIntelligenceManager.getDmaBufInfoForPid(
+                pid,
+                EXECUTOR,
+                new OutcomeReceiver<>() {
+                    @Override
+                    public void onResult(DmaBufEntry[] entries) {
+                        list.addAll(Arrays.asList(entries));
+                        statusLatch1.countDown();
+                    }
+
+                    @Override
+                    public void onError(OnDeviceIntelligenceException error) {
+                        // fail
+                    }
+                });
+        assertThat(statusLatch1.await(10, SECONDS)).isTrue();
+        SurfaceTexture texture = new SurfaceTexture(true);
+        texture.setDefaultBufferSize(100, 100);
+        Surface surface = new Surface(texture);
+        Canvas canvas = surface.lockCanvas(new Rect(0, 0, 100, 100));
+        canvas.drawColor(Color.RED);
+        surface.unlockCanvasAndPost(canvas);
+
+        CountDownLatch statusLatch2 = new CountDownLatch(1);
+
+        mOnDeviceIntelligenceManager.getDmaBufInfoForPid(
+                pid,
+                EXECUTOR,
+                new OutcomeReceiver<>() {
+                    @Override
+                    public void onResult(DmaBufEntry[] entries) {
+                        var unused = assertThat((entries.length - list.size()) == 2);
+                        statusLatch2.countDown();
+                    }
+
+                    @Override
+                    public void onError(OnDeviceIntelligenceException error) {
+                        // fail
+                    }
+                });
+        assertThat(statusLatch2.await(10, SECONDS)).isTrue();
+
+        surface.release();
+        texture.release();
+    }
+
+    @Test
+    @ApiTest(apis = {
+        "android.app.ondeviceintelligence.OnDeviceIntelligenceManager#getDmaBufInfo"})
+    @RequiresFlagsEnabled(FLAG_DMABUF_INFO)
+    public void testDmaBufInfo() throws InterruptedException {
+        getInstrumentation()
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(Manifest.permission.USE_ON_DEVICE_INTELLIGENCE);
+        CountDownLatch statusLatch1 = new CountDownLatch(1);
+
+        final ArrayList list = new ArrayList();
+        mOnDeviceIntelligenceManager.getDmaBufInfo(
+                EXECUTOR,
+                new OutcomeReceiver<>() {
+                    @Override
+                    public void onResult(DmaBufEntry[] entries) {
+                        list.addAll(Arrays.asList(entries));
+                        statusLatch1.countDown();
+                    }
+
+                    @Override
+                    public void onError(OnDeviceIntelligenceException error) {
+                        // fail
+                    }
+                });
+        assertThat(statusLatch1.await(10, SECONDS)).isTrue();
+        SurfaceTexture texture = new SurfaceTexture(true);
+        texture.setDefaultBufferSize(100, 100);
+        Surface surface = new Surface(texture);
+        Canvas canvas = surface.lockCanvas(new Rect(0, 0, 100, 100));
+        canvas.drawColor(Color.RED);
+        surface.unlockCanvasAndPost(canvas);
+
+        CountDownLatch statusLatch2 = new CountDownLatch(1);
+
+        mOnDeviceIntelligenceManager.getDmaBufInfo(
+                EXECUTOR,
+                new OutcomeReceiver<>() {
+                    @Override
+                    public void onResult(DmaBufEntry[] entries) {
+                        var unused = assertThat((entries.length - list.size()) == 2);
+                        statusLatch2.countDown();
+                    }
+
+                    @Override
+                    public void onError(OnDeviceIntelligenceException error) {
+                        // fail
+                    }
+                });
+        assertThat(statusLatch2.await(10, SECONDS)).isTrue();
+
+        surface.release();
+        texture.release();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_DMABUF_INFO)
+    @ApiTest(apis = {
+        "android.app.ondeviceintelligence.OnDeviceIntelligenceManager#getTotalDmaBufExportedKb"})
+    public void testDmaBufTotal() throws InterruptedException {
+        getInstrumentation()
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(Manifest.permission.USE_ON_DEVICE_INTELLIGENCE);
+        int pid = Process.myPid();
+        CountDownLatch statusLatch1 = new CountDownLatch(1);
+
+        final long[] totals = new long[1];
+        mOnDeviceIntelligenceManager.getTotalDmaBufExportedKb(
+                EXECUTOR,
+                new OutcomeReceiver<>() {
+                    @Override
+                    public void onResult(Long total) {
+                        totals[0] = total.longValue();
+                        statusLatch1.countDown();
+                    }
+
+                    @Override
+                    public void onError(OnDeviceIntelligenceException error) {
+                        // fail
+                    }
+                });
+        assertThat(statusLatch1.await(10, SECONDS)).isTrue();
+        SurfaceTexture texture = new SurfaceTexture(true);
+        texture.setDefaultBufferSize(100, 100);
+        Surface surface = new Surface(texture);
+        Canvas canvas = surface.lockCanvas(new Rect(0, 0, 100, 100));
+        canvas.drawColor(Color.RED);
+        surface.unlockCanvasAndPost(canvas);
+
+        CountDownLatch statusLatch2 = new CountDownLatch(1);
+
+        mOnDeviceIntelligenceManager.getTotalDmaBufExportedKb(
+                EXECUTOR,
+                new OutcomeReceiver<>() {
+                    @Override
+                    public void onResult(Long total) {
+                        var unused = assertThat(total.longValue() > totals[0]);
+                        statusLatch2.countDown();
+                    }
+
+                    @Override
+                    public void onError(OnDeviceIntelligenceException error) {
+                        // fail
+                    }
+                });
+        assertThat(statusLatch2.await(10, SECONDS)).isTrue();
+
+        surface.release();
+        texture.release();
+    }
 
     public static void clearTestableOnDeviceIntelligenceService() {
         runShellCommand("cmd on_device_intelligence set-temporary-services");

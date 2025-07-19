@@ -65,6 +65,7 @@ public abstract class BaseAdvancedProtectionTest {
                         Manifest.permission.MANAGE_DEVICE_POLICY_MTE);
 
         mInitialApmState = mManager.isAdvancedProtectionEnabled();
+        disableUsbDataProtection();
     }
 
     private static void disableUsbDataProtection() {
@@ -105,6 +106,7 @@ public abstract class BaseAdvancedProtectionTest {
     }
 
     protected void setAdvancedProtectionEnabled(boolean enabled) throws InterruptedException {
+        disableUsbDataProtection();
         if (enabled == mManager.isAdvancedProtectionEnabled()) {
             return;
         }

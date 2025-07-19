@@ -592,13 +592,13 @@ public class CameraTestUtils extends Assert {
                 image = reader.acquireNextImage();
             } finally {
                 if (image != null) {
-                    // Should only do some quick validity checks in callback, as the ImageReader
-                    // could be closed asynchronously, which will close all images acquired from
-                    // this ImageReader.
-                    checkImage(image, mSize.getWidth(), mSize.getHeight(), mFormat);
-                    // checkAndroidImageFormat calls into underlying Image object, which could
-                    // become invalid if the ImageReader is destroyed.
+                    // checkAndroidImageFormat and checkImage calls into underlying Image object,
+                    // which could become invalid if the ImageReader is destroyed.
                     if (mReaderIsValid) {
+                        // Should only do some quick validity checks in callback, as the ImageReader
+                        // could be closed asynchronously, which will close all images acquired from
+                        // this ImageReader.
+                        checkImage(image, mSize.getWidth(), mSize.getHeight(), mFormat);
                         checkAndroidImageFormat(image);
                     }
                     image.close();

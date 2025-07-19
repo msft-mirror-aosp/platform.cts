@@ -187,9 +187,6 @@ public class MultiStaConcurrencyMultiInternetWifiNetworkTest extends WifiJUnit4T
         mExecutorService = Executors.newSingleThreadScheduledExecutor();
         mTestHelper = new TestHelper(mContext, mUiDevice);
 
-        // Turn screen on
-        mTestHelper.turnScreenOn();
-
         // Clear any existing app state before each test.
         ShellIdentityUtils.invokeWithShellPermissions(
                 () -> mWifiManager.removeAppState(myUid(), mContext.getPackageName()));
@@ -250,7 +247,6 @@ public class MultiStaConcurrencyMultiInternetWifiNetworkTest extends WifiJUnit4T
         // Clear any existing app state after each test.
         ShellIdentityUtils.invokeWithShellPermissions(
                 () -> mWifiManager.removeAppState(myUid(), mContext.getPackageName()));
-        mTestHelper.turnScreenOff();
     }
 
     private boolean isPrimaryWifiNetwork(@Nullable NetworkCapabilities networkCapabilities) {
