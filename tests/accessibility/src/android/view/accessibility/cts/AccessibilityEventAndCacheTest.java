@@ -23,6 +23,7 @@ import static org.junit.Assert.assertEquals;
 
 import android.accessibility.cts.common.AccessibilityDumpOnFailureRule;
 import android.accessibility.cts.common.InstrumentedAccessibilityServiceTestRule;
+import android.accessibilityservice.cts.utils.ActivityLaunchUtils;
 import android.app.Instrumentation;
 import android.app.UiAutomation;
 import android.os.Bundle;
@@ -38,6 +39,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -72,10 +74,16 @@ public class AccessibilityEventAndCacheTest {
                     .around(mInstrumentedAccessibilityServiceRule)
                     .around(mDumpOnFailureRule);
 
-    @Before
-    public void setUp() throws Throwable {
+    @BeforeClass
+    public static void oneTimeSetup() throws Throwable {
         sInstrumentation = InstrumentationRegistry.getInstrumentation();
         sUiAutomation = sInstrumentation.getUiAutomation();
+        // Remove all system dialogs and go back home
+        ActivityLaunchUtils.homeScreenOrBust(sInstrumentation.getContext(), sUiAutomation);
+    }
+
+    @Before
+    public void setUp() throws Throwable {
         mActivityRule.getScenario().moveToState(Lifecycle.State.RESUMED);
         mInstrumentedAccessibilityServiceRule.enableService();
 
