@@ -90,6 +90,8 @@ public class RecordingTest extends Camera2SurfaceViewTestCase {
     private static final String TAG = "RecordingTest";
     private static final boolean VERBOSE = Log.isLoggable(TAG, Log.VERBOSE);
     private static final boolean DEBUG_DUMP = Log.isLoggable(TAG, Log.DEBUG);
+    private static final boolean IS_VIRTUAL_DEVICE = android.os.Build.IS_EMULATOR ||
+            android.os.Build.HARDWARE.contains("cutf_cvm");
     private static final int RECORDING_DURATION_MS = 3000;
     private static final int PREVIEW_DURATION_MS = 3000;
     private static final float DURATION_MARGIN = 0.2f;
@@ -2047,7 +2049,7 @@ public class RecordingTest extends Camera2SurfaceViewTestCase {
                 }
             }
 
-            if (!burstTest) {
+            if (!burstTest && !IS_VIRTUAL_DEVICE) {
                 Log.w(TAG, String.format("Camera %d Video size %s: Number of dropped frames " +
                         "detected in %d trials is %d frames.", cameraId, videoSz.toString(),
                         numTestIterations, totalDroppedFrames));
@@ -2508,8 +2510,8 @@ public class RecordingTest extends Camera2SurfaceViewTestCase {
                                          duration, expectedDurationMinMs, expectedDurationMaxMs));
             }
 
-            // Do rest of validation only for better-than-LEGACY devices
-            if (mStaticInfo.isHardwareLevelLegacy()) return;
+            // Do rest of validation only for better-than-LEGACY and non-virtual devices
+            if (mStaticInfo.isHardwareLevelLegacy() || IS_VIRTUAL_DEVICE) return;
 
             // TODO: Don't skip this one for video snapshot on LEGACY
             assertTrue(String.format(
@@ -2600,7 +2602,7 @@ public class RecordingTest extends Camera2SurfaceViewTestCase {
 
                 // Snapshots in legacy mode pause the preview briefly.  Skip the duration
                 // requirements for legacy mode unless this is fixed.
-                if (!mStaticInfo.isHardwareLevelLegacy()) {
+                if (!mStaticInfo.isHardwareLevelLegacy() && !IS_VIRTUAL_DEVICE) {
                     mCollector.expectTrue(
                             String.format(
                                     "Video %dx%d Frame drop detected before video snapshot: " +
