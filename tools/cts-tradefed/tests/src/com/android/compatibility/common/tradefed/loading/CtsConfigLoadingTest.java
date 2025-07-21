@@ -72,6 +72,7 @@ public class CtsConfigLoadingTest {
                             "bluetooth",
                             "camera",
                             "deviceinfo",
+                            "devicepolicy",
                             "deqp",
                             "devtools",
                             "framework",
