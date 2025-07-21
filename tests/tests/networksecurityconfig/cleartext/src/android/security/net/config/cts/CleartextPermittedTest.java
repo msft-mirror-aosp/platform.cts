@@ -26,8 +26,8 @@ public class CleartextPermittedTest extends BaseTestCase {
 
     @Test
     public void testDefaultDenied() throws Exception {
-        TestUtils.assertCleartextConnectionFails("example.com", 80);
-        TestUtils.assertTlsConnectionSucceeds("example.com", 443);
+        TestUtils.assertCleartextConnectionFails("google.com", 80);
+        TestUtils.assertTlsConnectionSucceeds("google.com", 443);
     }
 
     @Test
