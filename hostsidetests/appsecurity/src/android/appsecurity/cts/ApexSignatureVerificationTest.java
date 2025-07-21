@@ -19,8 +19,6 @@ package android.appsecurity.cts;
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
-import static org.junit.Assume.assumeTrue;
-
 import android.platform.test.annotations.RestrictedBuildTest;
 
 import com.android.tradefed.device.DeviceNotAvailableException;
@@ -54,15 +52,13 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipException;
 import java.util.zip.ZipFile;
 
 /**
- * Tests for APEX signature verification to ensure preloaded APEXes
- * DO NOT signed with well-known keys.
+ * Tests for APEX signature verification to ensure all APEXes DO NOT signed with well-known keys.
  */
 @RunWith(DeviceJUnit4ClassRunner.class)
 public class ApexSignatureVerificationTest extends BaseHostJUnit4Test {
@@ -79,7 +75,6 @@ public class ApexSignatureVerificationTest extends BaseHostJUnit4Test {
     private static File mWellKnownKeyStorePath;
     private static File mArchiveZip;
 
-    private static Map<String, String> mPreloadedApexPathMap = new HashMap<>();
     private static Map<String, File> mLocalApexFileMap = new HashMap<>();
     private static Map<String, File> mExtractedTestDirMap = new HashMap<>();
     private static List<File> mWellKnownKeyFileList = new ArrayList<>();
@@ -98,7 +93,6 @@ public class ApexSignatureVerificationTest extends BaseHostJUnit4Test {
             mWellKnownKeyStorePath = FileUtil.createTempDir("wellknownsignatures", mBasePath);
             mWellKnownKeyStorePath.deleteOnExit();
             pullWellKnownSignatures();
-            getApexPackageList();
             pullApexFiles();
             extractApexFiles();
         }
@@ -188,24 +182,6 @@ public class ApexSignatureVerificationTest extends BaseHostJUnit4Test {
         }
     }
 
-    private void getApexPackageList() {
-        Set<ITestDevice.ApexInfo> apexes;
-        try {
-            apexes = mDevice.getActiveApexes();
-            for (ITestDevice.ApexInfo ap : apexes) {
-                // Compressed APEXes on /system are decompressed to /data/apex/decompressed
-                if (!ap.sourceDir.startsWith("/data/apex/active")) {
-                    mPreloadedApexPathMap.put(ap.name, ap.sourceDir);
-                }
-            }
-
-            assumeTrue("No active APEX packages or all APEX packages have been already updated",
-                    mPreloadedApexPathMap.size() > 0);
-        } catch (DeviceNotAvailableException e) {
-            throw new AssertionError("getApexPackageList DeviceNotAvailableException" + e);
-        }
-    }
-
     private static Collection<String> getResourcesFromJarFile(final File file,
             final Pattern pattern) {
         final ArrayList<String> candidateList = new ArrayList<>();
@@ -236,13 +212,13 @@ public class ApexSignatureVerificationTest extends BaseHostJUnit4Test {
 
     private void pullApexFiles() {
         try {
-            for (Map.Entry<String, String> entry : mPreloadedApexPathMap.entrySet()) {
-                final File localTempFile = File.createTempFile(entry.getKey(), "", mBasePath);
+            for (ITestDevice.ApexInfo apex : mDevice.getActiveApexes()) {
+                final File localTempFile = File.createTempFile(apex.name, "", mBasePath);
 
                 assertThat(localTempFile).isNotNull();
-                assertThat(mDevice.pullFile(entry.getValue(), localTempFile)).isTrue();
+                assertThat(mDevice.pullFile(apex.sourceDir, localTempFile)).isTrue();
 
-                mLocalApexFileMap.put(entry.getKey(), localTempFile);
+                mLocalApexFileMap.put(apex.name, localTempFile);
             }
         } catch (DeviceNotAvailableException e) {
             throw new AssertionError("pullApexFile DeviceNotAvailableException" + e);
