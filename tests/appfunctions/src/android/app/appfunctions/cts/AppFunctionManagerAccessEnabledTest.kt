@@ -63,7 +63,6 @@ import com.android.bedstead.harrier.annotations.Postsubmit
 import com.android.bedstead.harrier.policies.AppFunctionsPolicy
 import com.android.bedstead.multiuser.additionalUser
 import com.android.bedstead.multiuser.annotations.EnsureHasAdditionalUser
-import com.android.bedstead.multiuser.annotations.EnsureHasSecondaryUser
 import com.android.bedstead.multiuser.annotations.parameterized.IncludeRunOnPrimaryUser
 import com.android.bedstead.multiuser.annotations.parameterized.IncludeRunOnSecondaryUser
 import com.android.bedstead.multiuser.secondaryUser
@@ -83,8 +82,8 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.suspendCancellableCoroutine
 import org.junit.After
 import org.junit.Assert.fail
-import org.junit.Assume.assumeFalse
 import org.junit.Assume.assumeNotNull
+import org.junit.Assume.assumeTrue
 import org.junit.Before
 import org.junit.ClassRule
 import org.junit.Rule
@@ -524,7 +523,7 @@ class AppFunctionManagerAccessEnabledTest {
     @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#executeAppFunction"])
     @Test
     @EnsureHasNoDeviceOwner
-    @EnsureHasSecondaryUser
+    @EnsureHasAdditionalUser
     @IncludeRunOnPrimaryUser
     @Throws(Exception::class)
     fun executeAppFunction_crossUserWithCrossProfileFullPermission_fail() =
@@ -532,14 +531,18 @@ class AppFunctionManagerAccessEnabledTest {
 
     @Test
     @EnsureHasNoDeviceOwner
-    @EnsureHasSecondaryUser
+    @EnsureHasAdditionalUser
     @Throws(Exception::class)
     fun executeAppFunction_crossUserWithCrossProfileFullPermission_fail_nonParam() = doBlocking {
         runWithShellPermission(
             INTERACT_ACROSS_USERS_FULL_PERMISSION,
             EXECUTE_APP_FUNCTIONS_PERMISSION,
         ) {
-            val secondaryUser = sDeviceState.secondaryUser()
+            val secondaryUser = sDeviceState.additionalUser()
+            assumeTrue(
+                "Test requires a secondary user different from the primary user.",
+                secondaryUser != TestApis.users().instrumented(),
+            )
             installExistingPackageAsUser(CURRENT_PKG, secondaryUser)
             retryAssert {
                 assertThat(
@@ -572,13 +575,17 @@ class AppFunctionManagerAccessEnabledTest {
     @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#executeAppFunction"])
     @Test
     @EnsureHasNoDeviceOwner
-    @EnsureHasSecondaryUser
+    @EnsureHasAdditionalUser
     @IncludeRunOnPrimaryUser
     @Throws(Exception::class)
     fun executeAppFunction_crossUser_cannotInteractAcrossUser_fail() = doBlocking {
         runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
             assertFailsWith<SecurityException>() {
-                val secondaryUser = sDeviceState.secondaryUser()
+                val secondaryUser = sDeviceState.additionalUser()
+                assumeTrue(
+                    "Test requires a secondary user different from the primary user.",
+                    secondaryUser != TestApis.users().instrumented(),
+                )
                 installExistingPackageAsUser(CURRENT_PKG, secondaryUser)
                 retryAssert {
                     assertThat(
@@ -823,6 +830,10 @@ class AppFunctionManagerAccessEnabledTest {
             INTERACT_ACROSS_USERS_FULL_PERMISSION
         ) {
             val workProfileUser = sDeviceState.workProfile()
+            assumeTrue(
+                "Work profile user must be different from the primary user.",
+                workProfileUser != TestApis.users().instrumented(),
+            )
             val remoteDpm = sDeviceState.dpc().devicePolicyManager()
             val originalPolicy = remoteDpm.getAppFunctionsPolicy()
             try {
@@ -873,6 +884,10 @@ class AppFunctionManagerAccessEnabledTest {
             EXECUTE_APP_FUNCTIONS_PERMISSION,
         ) {
             val workProfileUser = sDeviceState.workProfile()
+            assumeTrue(
+                "Work profile user must be different from the primary user.",
+                workProfileUser != TestApis.users().instrumented(),
+            )
             installExistingPackageAsUser(CURRENT_PKG, workProfileUser)
             retryAssert {
                 assertThat(
@@ -909,12 +924,15 @@ class AppFunctionManagerAccessEnabledTest {
     @Throws(Exception::class)
     fun executeAppFunction_crossUser_targetWorkProfileRestricted_crossUserNotAllowed_fail() =
         doBlocking {
-            assumeFalse(TestApis.users().instrumented() == sDeviceState.additionalUser())
             runWithShellPermission(
                 INTERACT_ACROSS_USERS_FULL_PERMISSION,
                 EXECUTE_APP_FUNCTIONS_PERMISSION,
             ) {
                 val additionalUser = sDeviceState.additionalUser()
+                assumeTrue(
+                    "Test requires an additional user different from the primary user.",
+                    additionalUser != TestApis.users().instrumented(),
+                )
                 val remoteDpm = sDeviceState.dpc().devicePolicyManager()
                 val originalPolicy = remoteDpm.getAppFunctionsPolicy()
                 try {

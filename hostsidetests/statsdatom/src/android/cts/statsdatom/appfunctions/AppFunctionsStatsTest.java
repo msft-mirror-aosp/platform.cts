@@ -154,8 +154,7 @@ public class AppFunctionsStatsTest extends BaseHostJUnit4Test implements IBuildR
         FLAG_APP_FUNCTION_ACCESS_SERVICE_ENABLED
     })
     public void testAtom_executeAppFunction_crossUser_fail() throws Exception {
-        if (!getDevice().isMultiUserSupported()
-                || DeviceUtils.hasFeature(getDevice(), FEATURE_AUTOMOTIVE)) return;
+        if (!getDevice().isMultiUserSupported()) return;
 
         AppFunctionsRequestReported afRequestReported =
                 runAccessEnabledTestAndGetAtom(
