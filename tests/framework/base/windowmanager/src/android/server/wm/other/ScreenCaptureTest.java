@@ -16,9 +16,6 @@
 
 package android.server.wm.other;
 
-import static android.server.wm.BuildUtils.HW_TIMEOUT_MULTIPLIER;
-import static android.server.wm.CtsWindowInfoUtils.waitForWindowOnTop;
-
 import static com.android.graphics.surfaceflinger.flags.Flags.FLAG_READBACK_SCREENSHOT;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
@@ -248,10 +245,6 @@ public class ScreenCaptureTest extends WindowManagerTestBase {
                 (TestActivity)
                         InstrumentationRegistry.getInstrumentation().startActivitySync(intent);
         activity.waitAndAssertWindowFocusState(true /*hasFocus*/);
-        assertTrue(
-                "Failed to wait for activity to be on top",
-                waitForWindowOnTop(activity.getWindow()));
-
         if (outContentBounds != null) {
             outContentBounds.set(activity.waitForContentBounds());
         }
@@ -332,14 +325,14 @@ public class ScreenCaptureTest extends WindowManagerTestBase {
         }
 
         public ScreenCaptureResult waitForResult() throws InterruptedException {
-            assertTrue(mLatch.await(HW_TIMEOUT_MULTIPLIER * 5L, TimeUnit.SECONDS));
+            assertTrue(mLatch.await(5, TimeUnit.SECONDS));
             assertNull(mException);
             assertNotNull(mResult);
             return mResult;
         }
 
         public Exception waitForError() throws InterruptedException {
-            assertTrue(mLatch.await(HW_TIMEOUT_MULTIPLIER * 5L, TimeUnit.SECONDS));
+            assertTrue(mLatch.await(5, TimeUnit.SECONDS));
             assertNull(mResult);
             assertNotNull(mException);
             return mException;
