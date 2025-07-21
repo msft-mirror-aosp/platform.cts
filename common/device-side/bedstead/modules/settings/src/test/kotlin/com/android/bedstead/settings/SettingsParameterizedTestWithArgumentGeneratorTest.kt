@@ -50,8 +50,9 @@ class SettingsParameterizedTestWithArgumentGeneratorTest {
         fun checkTheNumberOfTestRuns() {
             val flagValueProvider = DeviceFlagsValueProvider()
             if (flagValueProvider.getBoolean(FLAG_SETTINGS_CATALYST)) {
-                val sizeOfAllMetadata = deviceState.settingsPreferenceAllMetadata().size
-                Truth.assertThat(numberOfTestRuns).isEqualTo(sizeOfAllMetadata)
+                Truth.assertThat(numberOfTestRuns).isEqualTo(
+                    deviceState.getBlockingSettingsPreferenceServiceClient().allMetadata.size
+                )
             }
         }
     }

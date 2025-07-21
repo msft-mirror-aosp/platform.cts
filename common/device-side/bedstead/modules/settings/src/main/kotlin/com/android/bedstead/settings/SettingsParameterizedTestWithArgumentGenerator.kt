@@ -15,10 +15,14 @@
  */
 package com.android.bedstead.settings
 
+import android.service.settings.preferences.GetValueResult
 import android.service.settings.preferences.SettingsPreferenceMetadata
 import com.android.bedstead.harrier.BedsteadServiceLocator
 import com.android.bedstead.harrier.FrameworkMethodWithParameter
 import com.android.bedstead.harrier.ParameterizedTestWithArgumentGenerator
+import com.android.bedstead.settings.SettingsPreferenceMetadataParameter.Companion.PREFERENCE_FILTER_LAUNCH_INTENT_NOT_NULL
+import com.android.bedstead.settings.SettingsPreferenceMetadataParameter.Companion.PREFERENCE_FILTER_READ_PERMISSIONS_NOT_EMPTY
+import com.android.bedstead.settings.SettingsPreferenceMetadataParameter.Companion.PREFERENCE_FILTER_WRITE_PERMISSIONS_NOT_EMPTY
 import org.junit.runners.model.FrameworkMethod
 
 /**
@@ -36,7 +40,7 @@ class SettingsParameterizedTestWithArgumentGenerator(
         annotation: Annotation
     ): List<FrameworkMethod> {
         if (annotation is SettingsPreferenceMetadataParameter) {
-            return handleSettingsPreferenceMetadataParameter(frameworkMethod)
+            return annotation.logic(frameworkMethod)
         } else {
             throw IllegalStateException(
                 "annotation $annotation isn't handled by " +
@@ -45,11 +49,64 @@ class SettingsParameterizedTestWithArgumentGenerator(
         }
     }
 
-    private fun handleSettingsPreferenceMetadataParameter(
-        frameworkMethod: FrameworkMethod,
-    ): List<FrameworkMethod> {
-        return clientComponent.allMetadata.map {
-            FrameworkMethodWithParameter(frameworkMethod, it, it.nameWithKeys())
+    private fun SettingsPreferenceMetadataParameter.logic(
+        frameworkMethod: FrameworkMethod
+    ): List<FrameworkMethod> = clientComponent.allMetadata(packageName)
+        .applyWriteSensitivityFilter(writeSensitivity)
+        .applyOtherFilters(otherFilters)
+        .applySkipUnsupportedPreferences(skipUnsupportedPreferences)
+        .map { metadata ->
+            FrameworkMethodWithParameter(frameworkMethod, metadata, metadata.nameWithKeys())
+        }
+
+    private fun List<SettingsPreferenceMetadata>.applyWriteSensitivityFilter(
+        writeSensitivity: IntArray
+    ): List<SettingsPreferenceMetadata> {
+        if (writeSensitivity.isNotEmpty()) {
+            return filter {
+                it.writeSensitivity in writeSensitivity
+            }
+        }
+        return this
+    }
+
+    private fun List<SettingsPreferenceMetadata>.applyOtherFilters(
+        otherFilters: IntArray
+    ): List<SettingsPreferenceMetadata> {
+        var filteredMetadata = this
+        otherFilters.forEach { filter ->
+            filteredMetadata = when (filter) {
+                PREFERENCE_FILTER_READ_PERMISSIONS_NOT_EMPTY -> filteredMetadata.filter {
+                    it.readPermissions.isNotEmpty()
+                }
+
+                PREFERENCE_FILTER_WRITE_PERMISSIONS_NOT_EMPTY -> filteredMetadata.filter {
+                    it.writePermissions.isNotEmpty()
+                }
+
+                PREFERENCE_FILTER_LAUNCH_INTENT_NOT_NULL -> filteredMetadata.filter {
+                    it.launchIntent != null
+                }
+
+                else -> {
+                    throw IllegalStateException("$filter is not a supported preference filter")
+                }
+            }
+        }
+        return filteredMetadata
+    }
+
+    private fun List<SettingsPreferenceMetadata>.applySkipUnsupportedPreferences(
+        skipUnsupportedPreferences: Boolean
+    ): List<SettingsPreferenceMetadata> {
+        return if (skipUnsupportedPreferences) {
+            filter {
+                clientComponent
+                    .getBlockingClient(SETTINGS_PACKAGE_NAME)
+                    .getValueResult(it).resultCode != GetValueResult.RESULT_UNSUPPORTED
+            }
+        } else {
+            this
         }
     }
 }

@@ -522,6 +522,12 @@ supported_modules = {
         "runner": "androidx.test.runner.AndroidJUnitRunner",
         "states": [RUN_ON_SYSTEM_USER],
     },
+    "bedstead-settings-test": {
+        "package": "com.android.bedstead.settings.test",
+        "path": "com.android.bedstead.settings",
+        "runner": "androidx.test.runner.AndroidJUnitRunner",
+        "states": [RUN_ON_SYSTEM_USER],
+    },
 }
 
 TARGET_NAME = "target"
