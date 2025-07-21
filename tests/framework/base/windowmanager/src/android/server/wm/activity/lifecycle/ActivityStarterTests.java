@@ -44,8 +44,12 @@ import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.app.Activity;
+import android.content.BroadcastReceiver;
 import android.content.ComponentName;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
+import android.net.Uri;
 import android.os.Bundle;
 import android.platform.test.annotations.Presubmit;
 import android.server.wm.ActivityLauncher;
@@ -56,6 +60,9 @@ import android.server.wm.app.Components;
 
 import org.junit.After;
 import org.junit.Test;
+
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Build/Install/Run:
@@ -754,6 +761,31 @@ public class ActivityStarterTests extends ActivityLifecycleClientTestBase {
     }
 
     /**
+     * This test case tests behavior of an activity with {@code documentLaunchMode="intoExisting"}
+     * when relaunched. It verifies that the root activity receives a call to {@code onNewIntent}.
+     */
+    @Test
+    public void testActivityWithDocumentIntoExisting_whenRelaunched_deliversNewIntentToRoot()
+            throws InterruptedException {
+        final Intent intent = new Intent()
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                .setComponent(DOCUMENT_INTO_EXISTING_ACTIVITY)
+                .setData(Uri.parse("test_uri://data"));
+
+        // First launch: Expect onResume to be called.
+        try (var receiver = DocumentIntoExistingActivity.createOnResumeReceiver(mContext)) {
+            mContext.startActivity(intent);
+            assertTrue("Activity should be created and resumed on first launch", receiver.await());
+        }
+
+        // Second launch (relaunch): Expect onNewIntent to be called.
+        try (var receiver = DocumentIntoExistingActivity.createOnNewIntentReceiver(mContext)) {
+            mContext.startActivity(intent);
+            assertTrue("Relaunching the activity should deliver onNewIntent", receiver.await());
+        }
+    }
+
+    /**
      * This test case tests behavior of activity with relinquishTaskIdentify attribute. Ensure the
      * relinquishTaskIdentity work if the activities are in the same app.
      */
@@ -885,6 +917,55 @@ public class ActivityStarterTests extends ActivityLifecycleClientTestBase {
 
     // Test activity
     public static class DocumentIntoExistingActivity extends Activity {
+        private static final String NOTIFY_RESUME =
+                DOCUMENT_INTO_EXISTING_ACTIVITY.getClassName() + ".NOTIFY_RESUME";
+        private static final String NOTIFY_NEW_INTENT =
+                DOCUMENT_INTO_EXISTING_ACTIVITY.getClassName() + ".NOTIFY_NEW_INTENT";
+
+        @Override
+        public void onResume() {
+            super.onResume();
+            sendBroadcast(new Intent(NOTIFY_RESUME));
+        }
+
+        @Override
+        public void onNewIntent(Intent intent) {
+            sendBroadcast(new Intent(NOTIFY_NEW_INTENT));
+        }
+
+        static Receiver createOnResumeReceiver(Context context) {
+            return new Receiver(context, NOTIFY_RESUME);
+        }
+
+        static Receiver createOnNewIntentReceiver(Context context) {
+            return new Receiver(context, NOTIFY_NEW_INTENT);
+        }
+
+        static class Receiver extends BroadcastReceiver implements AutoCloseable {
+            private static final long TIMEOUT_MS = 3000;
+            private final Context mContext;
+            private final CountDownLatch latch = new CountDownLatch(1);
+
+            private Receiver(Context context, String action) {
+                mContext = context;
+                mContext.registerReceiver(this, new IntentFilter(action),
+                        Context.RECEIVER_EXPORTED);
+            }
+
+            boolean await() throws InterruptedException {
+                return latch.await(TIMEOUT_MS, TimeUnit.MILLISECONDS);
+            }
+
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                latch.countDown();
+            }
+
+            @Override
+            public void close() {
+                mContext.unregisterReceiver(this);
+            }
+        }
     }
 
     // Launching activity
