@@ -39,6 +39,12 @@ import static com.android.compatibility.common.util.AppOpsUtils.getOpMode;
 import static com.android.compatibility.common.util.AppOpsUtils.setOpMode;
 import static com.android.media.audio.Flags.FLAG_RING_MY_CAR;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import android.Manifest;
 import android.annotation.NonNull;
 import android.annotation.Nullable;
@@ -63,12 +69,19 @@ import android.os.HandlerThread;
 import android.os.Parcel;
 import android.os.Process;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Log;
 
 import com.android.compatibility.common.util.ApiTest;
-import com.android.compatibility.common.util.CtsAndroidTestCase;
 import com.android.compatibility.common.util.FrameworkSpecificTest;
 import com.android.internal.annotations.GuardedBy;
+
+import org.junit.After;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import java.io.IOException;
 import java.lang.reflect.Method;
@@ -84,8 +97,12 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 @FrameworkSpecificTest
-public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
+@RunWith(JUnit4.class)
+public class AudioPlaybackConfigurationTest {
     private static final String TAG = "AudioPlaybackConfigurationTest";
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private static final int TEST_TIMING_TOLERANCE_MS = 150;
     /** acceptable timeout for the time it takes for a prepared MediaPlayer to have an audio device
@@ -132,9 +149,10 @@ public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
     private final int mPid = Process.myPid();
 
     private final SafeWaitObject mMediaPlayerLock = new SafeWaitObject();
+    private final Context mContext = getInstrumentation().getTargetContext();
 
-    @Override
-    protected void tearDown() throws Exception {
+    @After
+    public void tearDown() throws Exception {
         dropShellPermissionIdentity();
         // try/catch for every method in case the tests left the objects in various states
         if (mMp != null) {
@@ -159,18 +177,18 @@ public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
             mAt.release();
             mAt = null;
         }
-        super.tearDown();
     }
 
     // test writing to/ reading from a Parcel for an AudioPlaybackConfiguration instance.
     // Since we can't create an AudioPlaybackConfiguration directly, we first need to
     // play something to get one.
     // FIXME: b/402529329 create and use AudioPlaybackConfiguration test API to test serialization
+    @Test
     public void testParcelableWriteToParcel() throws Exception {
         if (!isValidPlatform("testParcelableWriteToParcel")) return;
 
         // create a player, make it play so we can get an AudioPlaybackConfiguration instance
-        AudioManager am = new AudioManager(getContext());
+        AudioManager am = new AudioManager(mContext);
         assertNotNull("Could not create AudioManager", am);
         if (isRingerModeSilent(am)) {
             Log.w(TAG, "skipping testParcelableWriteToParcel for RINGER_MODE_SILENT");
@@ -210,10 +228,11 @@ public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
                 configToParcel.getAudioAttributes(), restoredConfig.getAudioAttributes());
     }
 
+    @Test
     public void testGetterMediaPlayer() throws Exception {
         if (!isValidPlatform("testGetterMediaPlayer")) return;
 
-        AudioManager am = new AudioManager(getContext());
+        AudioManager am = new AudioManager(mContext);
         assertNotNull("Could not create AudioManager", am);
         if (isRingerModeSilent(am)) {
             Log.w(TAG, "skipping testGetterMediaPlayer for RINGER_MODE_SILENT");
@@ -263,12 +282,14 @@ public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
         assertEquals("channel mask field isn't protected", 0, config.getChannelMask());
     }
 
+    @Test
     public void testCallbackMediaPlayer() throws Exception {
         if (!isValidPlatform("testCallbackMediaPlayer")) return;
 
         doTestCallbackMediaPlayer(false /* no custom Handler for callback */);
     }
 
+    @Test
     public void testCallbackMediaPlayerHandler() throws Exception {
         if (!isValidPlatform("testCallbackMediaPlayerHandler")) return;
         doTestCallbackMediaPlayer(true /* use custom Handler for callback */);
@@ -284,7 +305,7 @@ public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
             h = null;
         }
 
-        AudioManager am = new AudioManager(getContext());
+        AudioManager am = new AudioManager(mContext);
         assertNotNull("Could not create AudioManager", am);
         if (isRingerModeSilent(am)) {
             Log.w(TAG, "skipping doTestCallbackMediaPlayer for RINGER_MODE_SILENT");
@@ -322,13 +343,14 @@ public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
         }
     }
 
+    @Test
     public void testCallbackMediaPlayerRelease() throws Exception {
 
         final HandlerThread handlerThread = new HandlerThread(TAG);
         handlerThread.start();
         final Handler h = new Handler(handlerThread.getLooper());
 
-        AudioManager am = new AudioManager(getContext());
+        AudioManager am = new AudioManager(mContext);
         assertNotNull("Could not create AudioManager", am);
         if (isRingerModeSilent(am)) {
             Log.w(TAG, "skipping testCallbackMediaPlayerRelease for RINGER_MODE_SILENT");
@@ -367,9 +389,10 @@ public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
         }
     }
 
+    @Test
     public void testGetterSoundPool() throws Exception {
         if (!isValidPlatform("testSoundPool")) return;
-        AudioManager am = new AudioManager(getContext());
+        AudioManager am = new AudioManager(mContext);
         assertNotNull("Could not create AudioManager", am);
 
         final int sessionId = am.generateAudioSessionId();
@@ -388,7 +411,7 @@ public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
             registeredCallback = callback;
 
             mSp = createSoundPool(sessionId, spAttributes);
-            streamId = playSoundPool(mSp, getContext());
+            streamId = playSoundPool(mSp, mContext);
 
             Thread.sleep(TEST_TIMING_TOLERANCE_MS);
 
@@ -418,10 +441,11 @@ public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
 
     @ApiTest(apis = {"android.media.AudioManager#getActivePlaybackConfigurations",
             "android.media.AudioManager.AudioPlaybackCallback#onPlaybackConfigChanged"})
+    @Test
     public void testGetterAndCallbackConsistency() throws Exception {
         if (!isValidPlatform("testGetterAndCallbackConsistency")) return;
 
-        AudioManager am = new AudioManager(getContext());
+        AudioManager am = new AudioManager(mContext);
         assertNotNull("Could not create AudioManager", am);
         if (isRingerModeSilent(am)) {
             Log.w(TAG, "skipping testGetterAndCallbackConsistency for RINGER_MODE_SILENT");
@@ -445,7 +469,7 @@ public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
         mMp = createPreparedMediaPlayer(R.raw.sine1khzs40dblong, aa, mediaSessionId);
         int streamId = 0; // SoundPool.play() return non-zero streamID if successful
         try {
-            streamId = playSoundPool(mSp, getContext());
+            streamId = playSoundPool(mSp, mContext);
             callback.reset();
             startMediaPlayerWithCheck(am, mMp, aa, mediaSessionId, callback);
 
@@ -465,7 +489,7 @@ public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
         handlerThread.start();
         final Handler h = new Handler(handlerThread.getLooper());
 
-        AudioManager am = new AudioManager(getContext());
+        AudioManager am = new AudioManager(mContext);
         assertNotNull("Could not create AudioManager", am);
         if (isRingerModeSilent(am)) {
             Log.w(TAG, "skipping testGetAudioDeviceInfoMediaPlayerStart for RINGER_MODE_SILENT");
@@ -508,11 +532,13 @@ public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
         }
     }
 
+    @Test
     public void testGetAudioDeviceInfoMediaPlayerStart() throws Exception {
         testGetAudioDeviceInfoMediaPlayerStart(false /*enableRoutedDeviceIdsFlag*/);
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_ROUTED_DEVICE_IDS)
+    @Test
     public void testGetAudioDeviceInfosMediaPlayerStart() throws Exception {
         testGetAudioDeviceInfoMediaPlayerStart(true /*enableRoutedDeviceIdsFlag*/);
     }
@@ -521,6 +547,7 @@ public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
             "android.media.AudioManager.AudioPlaybackCallback#onPlaybackConfigChanged",
             "android.media.AudioManager.AudioPlaybackCallback#isMuted",
             "android.media.AudioManager.AudioPlaybackCallback#getMutedBy"})
+    @Test
     public void testAudioTrackMuteFromAppOpsNotification() throws Exception {
         if (isWatch()) {
             Log.w(TAG, "Skip testAudioTrackMuteFromAppOpsNotification for Wear");
@@ -528,7 +555,7 @@ public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
         }
         if (!isValidPlatform("testAudioTrackMuteFromAppOpsNotification")) return;
 
-        AudioManager am = new AudioManager(getContext());
+        AudioManager am = new AudioManager(mContext);
         final int sessionId = am.generateAudioSessionId();
         final AudioAttributes aa = createTestAudioAttributes(sessionId);
         initializeAudioTrack(aa, sessionId);
@@ -539,6 +566,7 @@ public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
             "android.media.AudioManager.AudioPlaybackCallback#onPlaybackConfigChanged",
             "android.media.AudioManager.AudioPlaybackCallback#isMuted",
             "android.media.AudioManager.AudioPlaybackCallback#getMutedBy"})
+    @Test
     public void testMediaPlayerMuteFromAppOpsNotification() throws Exception {
         if (isWatch()) {
             Log.w(TAG, "Skip testMediaPlayerMuteFromAppOpsNotification for Wear");
@@ -546,7 +574,7 @@ public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
         }
         if (!isValidPlatform("testMediaPlayerMuteFromAppOpsNotification")) return;
 
-        AudioManager am = new AudioManager(getContext());
+        AudioManager am = new AudioManager(mContext);
         final int sessionId = am.generateAudioSessionId();
         final AudioAttributes aa = createTestAudioAttributes(sessionId);
         initializeMediaPlayer(aa, sessionId);
@@ -559,17 +587,17 @@ public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
                 /* start= */ player.mPlay,
                 /* mute= */ () -> {
                     try {
-                        setOpMode(getContext().getPackageName(), OPSTR_PLAY_AUDIO, MODE_IGNORED);
+                        setOpMode(mContext.getPackageName(), OPSTR_PLAY_AUDIO, MODE_IGNORED);
                     } catch (IOException e) {
                         fail("Failed to set AppOps ignore for play audio: " + e);
                     }
                 },
                 /* unmute= */ () -> {
                     try {
-                        if (getOpMode(getContext().getPackageName(), OPSTR_PLAY_AUDIO)
+                        if (getOpMode(mContext.getPackageName(), OPSTR_PLAY_AUDIO)
                                 != MODE_ALLOWED) {
                             setOpMode(
-                                    getContext().getPackageName(), OPSTR_PLAY_AUDIO, MODE_ALLOWED);
+                                    mContext.getPackageName(), OPSTR_PLAY_AUDIO, MODE_ALLOWED);
                         }
                     } catch (IOException e) {
                         fail("Failed to set AppOps allow for play audio: " + e);
@@ -585,6 +613,7 @@ public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
             "android.media.AudioManager.AudioPlaybackCallback#onPlaybackConfigChanged",
             "android.media.AudioManager.AudioPlaybackCallback#isMuted",
             "android.media.AudioManager.AudioPlaybackCallback#getMutedBy"})
+    @Test
     public void testAudioTrackMuteFromStreamVolumeNotification() throws Exception {
         if (isAutomotive()) {
             Log.w(TAG, "Skip testAudioTrackMuteFromStreamVolumeNotification for Auto");
@@ -592,7 +621,7 @@ public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
         }
         if (!isValidPlatform("testAudioTrackMuteFromStreamVolumeNotification")) return;
 
-        AudioManager am = new AudioManager(getContext());
+        AudioManager am = new AudioManager(mContext);
         final int sessionId = am.generateAudioSessionId();
         final AudioAttributes aa = createTestAudioAttributes(sessionId);
         initializeAudioTrack(aa, sessionId);
@@ -605,13 +634,14 @@ public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
      */
     @RequiresFlagsEnabled(FLAG_RING_MY_CAR)
     @ApiTest(apis = {"android.media.AudioAttributes#FLAG_BYPASS_MUTE"})
+    @Test
     public void testAudioTrackBypassMute() throws Exception {
         if (isAutomotive()) {
             Log.w(TAG, "Skip testAudioTrackBypassMute for Auto");
             return;
         }
         if (!isValidPlatform("testAudioTrackBypassMute")) return;
-        AudioManager am = new AudioManager(getContext());
+        AudioManager am = new AudioManager(mContext);
         final int sessionId = am.generateAudioSessionId();
         final AudioAttributes aa = new AudioAttributes.Builder()
                 .setUsage(TEST_USAGE)
@@ -623,8 +653,7 @@ public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
                 + (am.getStreamMaxVolume(TEST_STREAM_FOR_USAGE)
                 - am.getStreamMinVolume(TEST_STREAM_FOR_USAGE)) / 2;
         final SleepAssertIntEquals volumeCheck = new SleepAssertIntEquals(
-                /*maxWaitMs=*/ 2000, /*periodMs*/ 100, getContext());
-
+                /*maxWaitMs=*/ 2000, /*periodMs*/ 100, mContext);
         try {
             // prepare playback and playback monitoring callback
             adoptShellPermissionIdentity(Manifest.permission.MODIFY_AUDIO_ROUTING);
@@ -690,6 +719,7 @@ public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
             "android.media.AudioManager.AudioPlaybackCallback#onPlaybackConfigChanged",
             "android.media.AudioManager.AudioPlaybackCallback#isMuted",
             "android.media.AudioManager.AudioPlaybackCallback#getMutedBy"})
+    @Test
     public void testMediaPlayerMuteFromStreamVolumeNotification() throws Exception {
         if (isAutomotive()) {
             Log.w(TAG, "Skip testMediaPlayerMuteFromStreamVolumeNotification for Auto");
@@ -697,7 +727,7 @@ public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
         }
         if (!isValidPlatform("testMediaPlayerMuteFromStreamVolumeNotification")) return;
 
-        AudioManager am = new AudioManager(getContext());
+        AudioManager am = new AudioManager(mContext);
         final int sessionId = am.generateAudioSessionId();
         final AudioAttributes aa = createTestAudioAttributes(sessionId);
         initializeMediaPlayer(aa, sessionId);
@@ -706,7 +736,7 @@ public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
 
     private void checkMuteFromStreamVolumeNotification(MyPlayer player, @NonNull AudioAttributes aa)
             throws Exception {
-        AudioManager am = new AudioManager(getContext());
+        AudioManager am = new AudioManager(mContext);
         assertNotNull("Could not create AudioManager", am);
 
         if (am.isVolumeFixed()) {
@@ -728,10 +758,11 @@ public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
             "android.media.AudioManager.AudioPlaybackCallback#onPlaybackConfigChanged",
             "android.media.AudioManager.AudioPlaybackCallback#isMuted",
             "android.media.AudioManager.AudioPlaybackCallback#getMutedBy"})
+    @Test
     public void testAudioTrackMuteFromClientVolumeNotification() throws Exception {
         if (!isValidPlatform("testAudioTrackMuteFromClientVolumeNotification")) return;
 
-        AudioManager am = new AudioManager(getContext());
+        AudioManager am = new AudioManager(mContext);
         final int sessionId = am.generateAudioSessionId();
         final AudioAttributes aa = createTestAudioAttributes(sessionId);
         initializeAudioTrack(aa, sessionId);
@@ -742,10 +773,11 @@ public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
             "android.media.AudioManager.AudioPlaybackCallback#onPlaybackConfigChanged",
             "android.media.AudioManager.AudioPlaybackCallback#isMuted",
             "android.media.AudioManager.AudioPlaybackCallback#getMutedBy"})
+    @Test
     public void testMediaPlayerMuteFromClientVolumeNotification() throws Exception {
         if (!isValidPlatform("testMediaPlayerMuteFromClientVolumeNotification")) return;
 
-        AudioManager am = new AudioManager(getContext());
+        AudioManager am = new AudioManager(mContext);
         final int sessionId = am.generateAudioSessionId();
         final AudioAttributes aa = createTestAudioAttributes(sessionId);
         initializeMediaPlayer(aa, sessionId);
@@ -768,10 +800,11 @@ public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
             "android.media.AudioManager.AudioPlaybackCallback#onPlaybackConfigChanged",
             "android.media.AudioManager.AudioPlaybackCallback#isMuted",
             "android.media.AudioManager.AudioPlaybackCallback#getMutedBy"})
+    @Test
     public void testAudioTrackMuteFromVolumeShaperNotification() throws Exception {
         if (!isValidPlatform("testAudioTrackMuteFromVolumeShaperNotification")) return;
 
-        AudioManager am = new AudioManager(getContext());
+        AudioManager am = new AudioManager(mContext);
         final int sessionId = am.generateAudioSessionId();
         final AudioAttributes aa = createTestAudioAttributes(sessionId);
         initializeAudioTrack(aa, sessionId);
@@ -782,10 +815,11 @@ public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
             "android.media.AudioManager.AudioPlaybackCallback#onPlaybackConfigChanged",
             "android.media.AudioManager.AudioPlaybackCallback#isMuted",
             "android.media.AudioManager.AudioPlaybackCallback#getMutedBy"})
+    @Test
     public void testMediaPlayerMuteFromVolumeShaperNotification() throws Exception {
         if (!isValidPlatform("testMediaPlayerMuteFromVolumeShaperNotification")) return;
 
-        AudioManager am = new AudioManager(getContext());
+        AudioManager am = new AudioManager(mContext);
         final int sessionId = am.generateAudioSessionId();
         final AudioAttributes aa = createTestAudioAttributes(sessionId);
         initializeMediaPlayer(aa, sessionId);
@@ -823,7 +857,7 @@ public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
             int sessionId,
             @NonNull AudioAttributes aa)
             throws Exception {
-        AudioManager am = new AudioManager(getContext());
+        AudioManager am = new AudioManager(mContext);
         assertNotNull("Could not create AudioManager", am);
         if (isRingerModeSilent(am)) {
             Log.w(TAG, "skipping verifyMuteUnmuteNotifications for RINGER_MODE_SILENT");
@@ -936,7 +970,7 @@ public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
     }
 
     private AudioPlaybackConfiguration findConfiguration(int muteHint, int sessionId) {
-        AudioManager am = new AudioManager(getContext());
+        AudioManager am = new AudioManager(mContext);
         List<AudioPlaybackConfiguration> configList = am.getActivePlaybackConfigurations();
         AudioPlaybackConfiguration result = null;
         for (AudioPlaybackConfiguration config : configList) {
@@ -998,7 +1032,7 @@ public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
 
     private void initializeMediaPlayer(@NonNull AudioAttributes aa, int sessionId)
             throws Exception {
-        AudioManager am = new AudioManager(getContext());
+        AudioManager am = new AudioManager(mContext);
         assertNotNull("Could not create AudioManager", am);
 
         mMp = createPreparedMediaPlayer(R.raw.sine1khzs40dblong, aa, sessionId);
@@ -1023,7 +1057,7 @@ public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
         MediaPlayer mp = new MediaPlayer();
         mp.setAudioAttributes(aa);
         mp.setAudioSessionId(session);
-        AssetFileDescriptor afd = getContext().getResources().openRawResourceFd(resID);
+        AssetFileDescriptor afd = mContext.getResources().openRawResourceFd(resID);
         try {
             mp.setDataSource(afd.getFileDescriptor(), afd.getStartOffset(), afd.getLength());
         } finally {
@@ -1452,7 +1486,7 @@ public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
     }
 
     private boolean isValidPlatform(String testName) {
-        if (!getContext().getPackageManager()
+        if (!mContext.getPackageManager()
                 .hasSystemFeature(PackageManager.FEATURE_AUDIO_OUTPUT)) {
             Log.w(TAG,"AUDIO_OUTPUT feature not found. This system might not have a valid "
                     + "audio output HAL, skipping test " + testName);
@@ -1462,11 +1496,11 @@ public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
     }
 
     private boolean isWatch() {
-        return getContext().getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH);
+        return mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH);
     }
 
     private boolean isAutomotive() {
-        return getContext().getPackageManager().hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE);
+        return mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE);
     }
 
     private void adoptShellPermissionIdentity(String permission) {
@@ -1527,7 +1561,7 @@ public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
 
     private boolean isRingerModeSilent(AudioManager am) {
         if (am == null) {
-            am = new AudioManager(getContext());
+            am = new AudioManager(mContext);
         }
         assertNotNull("Could not create AudioManager", am);
 
