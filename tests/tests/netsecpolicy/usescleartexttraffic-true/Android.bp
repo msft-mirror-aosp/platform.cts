@@ -33,15 +33,10 @@ android_test {
         "src/**/*.java",
         "common/**/*.java",
     ],
-    instrumentation_for: "CtsNetSecPolicyUsesCleartextTrafficTrue",
     // Tag this module as a cts test artifact
     test_suites: [
         "cts",
         "general-tests",
     ],
     sdk_version: "current",
-    data: [
-        ":CtsNetSecPolicyUsesCleartextTrafficTrue",
-    ],
-    per_testcase_directory: true,
 }
