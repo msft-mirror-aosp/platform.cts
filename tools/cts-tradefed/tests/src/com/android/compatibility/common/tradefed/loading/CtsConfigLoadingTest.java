@@ -73,6 +73,7 @@ public class CtsConfigLoadingTest {
                             "camera",
                             "contentcapture",
                             "deviceinfo",
+                            "devicepolicy",
                             "deqp",
                             "devtools",
                             "framework",
