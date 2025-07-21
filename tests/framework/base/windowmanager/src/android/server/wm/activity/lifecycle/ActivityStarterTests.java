@@ -44,8 +44,12 @@ import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.app.Activity;
+import android.content.BroadcastReceiver;
 import android.content.ComponentName;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
+import android.net.Uri;
 import android.os.Bundle;
 import android.platform.test.annotations.Presubmit;
 import android.server.wm.ActivityLauncher;
@@ -57,6 +61,9 @@ import android.server.wm.app.Components;
 import org.junit.After;
 import org.junit.Test;
 
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+
 /**
  * Build/Install/Run:
  *     atest CtsWindowManagerDeviceActivity:ActivityStarterTests
@@ -65,6 +72,7 @@ import org.junit.Test;
 @android.server.wm.annotation.Group3
 public class ActivityStarterTests extends ActivityLifecycleClientTestBase {
 
+    private static final String CLASS_NAME = ActivityStarterTests.class.getName();
     private static final ComponentName STANDARD_ACTIVITY
             = getComponentName(HelperActivities.StandardActivity.class);
     private static final ComponentName SECOND_STANDARD_ACTIVITY
@@ -87,6 +95,8 @@ public class ActivityStarterTests extends ActivityLifecycleClientTestBase {
             = getComponentName(FinishOnTaskLaunchActivity.class);
     private static final ComponentName DOCUMENT_INTO_EXISTING_ACTIVITY
             = getComponentName(DocumentIntoExistingActivity.class);
+    private static final ComponentName DOCUMENT_INTO_EXISTING_ALIAS_ACTIVITY
+            = getComponentName(CLASS_NAME + "$DocumentIntoExistingAliasActivity");
     private static final ComponentName RELINQUISHTASKIDENTITY_ACTIVITY
             = getComponentName(RelinquishTaskIdentityActivity.class);
 
@@ -703,29 +713,76 @@ public class ActivityStarterTests extends ActivityLifecycleClientTestBase {
         mWmState.waitAndAssertActivityRemoved(FINISH_ON_TASK_LAUNCH_ACTIVITY);
     }
 
+    /**
+     * This test case tests behavior of an activity with {@code documentLaunchMode="intoExisting"}
+     * when the target task already exists. It verifies that the existing task is brought to the
+     * front, cleared of activities above the root, and the root activity is restarted.
+     */
     @Test
-    public void testActivityWithDocumentIntoExisting() {
-        // Launch a documentLaunchMode="intoExisting" activity
-        launchActivityWithData(DOCUMENT_INTO_EXISTING_ACTIVITY, "test");
-        waitAndAssertActivityState(DOCUMENT_INTO_EXISTING_ACTIVITY, STATE_RESUMED,
-                "Activity should be resumed");
-        final int taskId = mWmState.getTaskByActivity(DOCUMENT_INTO_EXISTING_ACTIVITY).getTaskId();
+    public void testActivityWithDocumentIntoExisting_whenTaskExists_clearsAndRestartsTask() {
+        //  Create a task with a root activity that uses android:documentLaunchMode="intoExisting".
+        final String intentData = "testDataForDocumentLaunchModeIntoExisting";
+        launchActivityWithData(DOCUMENT_INTO_EXISTING_ACTIVITY, intentData);
+        waitAndAssertActivityState(
+                DOCUMENT_INTO_EXISTING_ACTIVITY,
+                STATE_RESUMED,
+                "Root document activity should launch successfully");
+        final int originalTaskId =
+                mWmState.getTaskByActivity(DOCUMENT_INTO_EXISTING_ACTIVITY).getTaskId();
 
-        // Navigate home
+        // Launch a second activity to the task stack. This is the activity we expect to be cleared.
+        launchActivityWithData(STANDARD_ACTIVITY, intentData);
+        waitAndAssertActivityState(
+                STANDARD_ACTIVITY,
+                STATE_RESUMED,
+                "Second activity should be placed on top of the root");
+
+        // Navigate home to simulate a realistic relaunch scenario.
         launchHomeActivity();
 
-        // Launch the alias activity.
-        final ComponentName componentName = new ComponentName(mContext.getPackageName(),
-                DocumentIntoExistingActivity.class.getPackageName()
-                        + ".ActivityStarterTests$DocumentIntoExistingAliasActivity");
-        launchActivityWithData(componentName, "test");
+        // Relaunch with alias activity matching the task's base intent component and data.
+        launchActivityWithData(DOCUMENT_INTO_EXISTING_ALIAS_ACTIVITY, intentData);
 
-        waitAndAssertActivityState(DOCUMENT_INTO_EXISTING_ACTIVITY, STATE_RESUMED,
-                "Activity should be resumed");
-        final int taskId2 = mWmState.getTaskByActivity(DOCUMENT_INTO_EXISTING_ACTIVITY).getTaskId();
-        assertEquals("Activity must be in the same task.", taskId, taskId2);
-        assertEquals("Activity is the only member of its task", 1,
-                mWmState.getActivityCountInTask(taskId2, null));
+        // The original task is brought forward and reset, leaving only the root activity.
+        waitAndAssertActivityState(
+                DOCUMENT_INTO_EXISTING_ACTIVITY,
+                STATE_RESUMED,
+                "Root document activity should be brought to the front after relaunch");
+        final int relaunchedTaskId =
+                mWmState.getTaskByActivity(DOCUMENT_INTO_EXISTING_ACTIVITY).getTaskId();
+        assertEquals(
+                "The existing task should be reused, not a new one created.",
+                originalTaskId,
+                relaunchedTaskId);
+        assertEquals(
+                "Task should be cleared, leaving only the root activity",
+                1,
+                mWmState.getActivityCountInTask(relaunchedTaskId, null /* activityName */));
+    }
+
+    /**
+     * This test case tests behavior of an activity with {@code documentLaunchMode="intoExisting"}
+     * when relaunched. It verifies that the root activity receives a call to {@code onNewIntent}.
+     */
+    @Test
+    public void testActivityWithDocumentIntoExisting_whenRelaunched_deliversNewIntentToRoot()
+            throws InterruptedException {
+        final Intent intent = new Intent()
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                .setComponent(DOCUMENT_INTO_EXISTING_ACTIVITY)
+                .setData(Uri.parse("test_uri://data"));
+
+        // First launch: Expect onResume to be called.
+        try (var receiver = DocumentIntoExistingActivity.createOnResumeReceiver(mContext)) {
+            mContext.startActivity(intent);
+            assertTrue("Activity should be created and resumed on first launch", receiver.await());
+        }
+
+        // Second launch (relaunch): Expect onNewIntent to be called.
+        try (var receiver = DocumentIntoExistingActivity.createOnNewIntentReceiver(mContext)) {
+            mContext.startActivity(intent);
+            assertTrue("Relaunching the activity should deliver onNewIntent", receiver.await());
+        }
     }
 
     /**
@@ -860,6 +917,55 @@ public class ActivityStarterTests extends ActivityLifecycleClientTestBase {
 
     // Test activity
     public static class DocumentIntoExistingActivity extends Activity {
+        private static final String NOTIFY_RESUME =
+                DOCUMENT_INTO_EXISTING_ACTIVITY.getClassName() + ".NOTIFY_RESUME";
+        private static final String NOTIFY_NEW_INTENT =
+                DOCUMENT_INTO_EXISTING_ACTIVITY.getClassName() + ".NOTIFY_NEW_INTENT";
+
+        @Override
+        public void onResume() {
+            super.onResume();
+            sendBroadcast(new Intent(NOTIFY_RESUME));
+        }
+
+        @Override
+        public void onNewIntent(Intent intent) {
+            sendBroadcast(new Intent(NOTIFY_NEW_INTENT));
+        }
+
+        static Receiver createOnResumeReceiver(Context context) {
+            return new Receiver(context, NOTIFY_RESUME);
+        }
+
+        static Receiver createOnNewIntentReceiver(Context context) {
+            return new Receiver(context, NOTIFY_NEW_INTENT);
+        }
+
+        static class Receiver extends BroadcastReceiver implements AutoCloseable {
+            private static final long TIMEOUT_MS = 3000;
+            private final Context mContext;
+            private final CountDownLatch latch = new CountDownLatch(1);
+
+            private Receiver(Context context, String action) {
+                mContext = context;
+                mContext.registerReceiver(this, new IntentFilter(action),
+                        Context.RECEIVER_EXPORTED);
+            }
+
+            boolean await() throws InterruptedException {
+                return latch.await(TIMEOUT_MS, TimeUnit.MILLISECONDS);
+            }
+
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                latch.countDown();
+            }
+
+            @Override
+            public void close() {
+                mContext.unregisterReceiver(this);
+            }
+        }
     }
 
     // Launching activity
