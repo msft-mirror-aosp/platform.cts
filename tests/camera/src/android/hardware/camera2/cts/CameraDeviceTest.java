@@ -441,6 +441,69 @@ public class CameraDeviceTest extends Camera2AndroidTestCase {
     }
 
     /**
+     * Precondition: Device must be in known OPENED state (has been waited for).
+     *
+     * Creates an OutputConfiguration with a Surface and changes the size of the
+     * Surface after creating the OutputConfiguration.
+     *
+     *  Then verifies that session is configured successfully.
+     *
+     * <p>Any existing capture session will be closed as a result of calling this.</p>
+     */
+    private void prepareChangedSurfaceSession() throws Exception {
+        if (VERBOSE) Log.v(TAG, "prepareChangedSurfaceSession");
+
+        assertTrue("Bad initial state for preparing to capture",
+                mLatestDeviceState == STATE_OPENED);
+
+        // Create a new session listener each time, it's not reusable across cameras
+        mSessionMockListener = spy(new BlockingSessionCallback());
+        mSessionWaiter = mSessionMockListener.getStateWaiter();
+
+        SurfaceTexture outputTexture = new SurfaceTexture(/* random texture ID*/ 5);
+        Size textureSize = mOrderedPreviewSizes.get(0);
+        OutputConfiguration outputConfig = new OutputConfiguration(new Surface(outputTexture));
+        List<OutputConfiguration> outputConfigs = new ArrayList<>();
+        outputConfigs.add(outputConfig);
+        // change surface size after creating OutputConfiguration
+        outputTexture.setDefaultBufferSize(textureSize.getWidth(), textureSize.getHeight());
+        SessionConfiguration sessionConfig = new SessionConfiguration(
+                    SessionConfiguration.SESSION_REGULAR, outputConfigs,
+                    new HandlerExecutor(mHandler), mSessionMockListener);
+        mCamera.createCaptureSession(sessionConfig);
+
+        mSession = mSessionMockListener.waitAndGetSession(SESSION_CONFIGURE_TIMEOUT_MS);
+        waitForSessionState(SESSION_CONFIGURED, SESSION_CONFIGURE_TIMEOUT_MS);
+        waitForSessionState(SESSION_READY, SESSION_READY_TIMEOUT_MS);
+    }
+
+    /**
+     * Test that changing a Surface's size before creating a capture session
+     * does not make the session configuration fail as long as the new size
+     * is supported by the camera device
+     */
+    @Test
+    public void testSurfaceSizeChange() throws Exception {
+        String[] cameraIdsUnderTest = getCameraIdsUnderTest();
+        for (int i = 0; i < cameraIdsUnderTest.length; i++) {
+            try {
+                if (!mAllStaticInfo.get(cameraIdsUnderTest[i]).isColorOutputSupported()) {
+                    continue;
+                }
+
+                openDevice(cameraIdsUnderTest[i], mCameraMockListener);
+                waitForDeviceState(STATE_OPENED, CAMERA_OPEN_TIMEOUT_MS);
+
+                prepareChangedSurfaceSession();
+                closeSession();
+            }
+            finally {
+                closeDevice(cameraIdsUnderTest[i], mCameraMockListener);
+            }
+        }
+    }
+
+    /**
      * Test invalid capture (e.g. null or empty capture request).
      */
     @Test
