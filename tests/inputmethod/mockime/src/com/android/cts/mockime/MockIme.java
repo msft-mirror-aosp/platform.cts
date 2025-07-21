@@ -740,14 +740,12 @@ public final class MockIme extends InputMethodService {
     private class MockInputMethodImpl extends InputMethodImpl {
         @Override
         public void showSoftInput(int flags, ResultReceiver resultReceiver) {
-            getTracer().showSoftInput(flags, resultReceiver,
-                    () -> super.showSoftInput(flags, resultReceiver));
+            getTracer().showSoftInput(flags, () -> super.showSoftInput(flags, resultReceiver));
         }
 
         @Override
         public void hideSoftInput(int flags, ResultReceiver resultReceiver) {
-            getTracer().hideSoftInput(flags, resultReceiver,
-                    () -> super.hideSoftInput(flags, resultReceiver));
+            getTracer().hideSoftInput(flags, () -> super.hideSoftInput(flags, resultReceiver));
         }
 
         @Override
@@ -1708,17 +1706,15 @@ public final class MockIme extends InputMethodService {
             recordEventInternal("unbindInput", runnable);
         }
 
-        void showSoftInput(int flags, ResultReceiver resultReceiver, @NonNull Runnable runnable) {
+        void showSoftInput(int flags, @NonNull Runnable runnable) {
             final Bundle arguments = new Bundle();
             arguments.putInt("flags", flags);
-            arguments.putParcelable("resultReceiver", resultReceiver);
             recordEventInternal("showSoftInput", runnable, arguments);
         }
 
-        void hideSoftInput(int flags, ResultReceiver resultReceiver, @NonNull Runnable runnable) {
+        void hideSoftInput(int flags, @NonNull Runnable runnable) {
             final Bundle arguments = new Bundle();
             arguments.putInt("flags", flags);
-            arguments.putParcelable("resultReceiver", resultReceiver);
             recordEventInternal("hideSoftInput", runnable, arguments);
         }
 
