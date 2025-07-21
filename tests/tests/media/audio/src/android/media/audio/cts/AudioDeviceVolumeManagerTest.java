@@ -32,6 +32,7 @@ import android.app.Instrumentation;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.content.res.Resources;
+import android.media.AudioAttributes;
 import android.media.AudioDeviceAttributes;
 import android.media.AudioDeviceInfo;
 import android.media.AudioDeviceVolumeManager;
@@ -42,6 +43,7 @@ import android.platform.test.annotations.AppModeSdkSandbox;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
+import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -59,6 +61,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -66,10 +69,11 @@ import java.util.concurrent.TimeUnit;
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 @RunWith(AndroidJUnit4.class)
 public class AudioDeviceVolumeManagerTest {
+    private static final String TAG = "AudioDeviceVolumeManagerTest";
+
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
-    private static final String TAG = "AudioDeviceVolumeManagerTest";
     private AudioDeviceVolumeManager mADVmgr;
     private AudioManager mAm;
     private final HashMap<AudioDeviceAttributes, VolumeInfo> mPrevVolume = new HashMap<>();
@@ -77,7 +81,7 @@ public class AudioDeviceVolumeManagerTest {
     private boolean mUseFixedVolume;
     private boolean mIsTelevision;
     private boolean mIsSingleVolume;
-    private boolean mSkipRingerTests;
+    private boolean mSkipAdvmTests;
     private Context mContext;
 
     private static final AudioDeviceAttributes BT_DEV = new AudioDeviceAttributes(
@@ -164,12 +168,13 @@ public class AudioDeviceVolumeManagerTest {
                         && (packageManager.hasSystemFeature(PackageManager.FEATURE_LEANBACK)
                                 || packageManager.hasSystemFeature(
                                         PackageManager.FEATURE_TELEVISION));
+
         mIsSingleVolume =
                 mContext.getResources()
                         .getBoolean(
                                 Resources.getSystem()
                                         .getIdentifier("config_single_volume", "bool", "android"));
-        mSkipRingerTests = mUseFixedVolume || mIsTelevision || mIsSingleVolume;
+        mSkipAdvmTests = mUseFixedVolume || mIsTelevision || mIsSingleVolume;
 
         final VolumeInfo volMedia = new VolumeInfo.Builder(AudioManager.STREAM_MUSIC).build();
         mPrevVolume.put(BT_DEV, mADVmgr.getDeviceVolume(volMedia, BT_DEV));
@@ -269,7 +274,7 @@ public class AudioDeviceVolumeManagerTest {
         VolumeInfo defVolInfo = VolumeInfo.getDefaultVolumeInfo();
         VolumeInfo vi =
                 new VolumeInfo.Builder(defVolInfo).setVolumeIndex(VolumeInfo.INDEX_NOT_SET).build();
-        android.util.Log.i(TAG, "testVolumeInfoArguments using VI:" + vi);
+        Log.i(TAG, "testVolumeInfoArguments using VI:" + vi);
         assertThrows(
                 "Able to call setDeviceVolume with VolumeInfo without index",
                 IllegalArgumentException.class,
@@ -287,7 +292,7 @@ public class AudioDeviceVolumeManagerTest {
         VolumeInfo defVolInfo = VolumeInfo.getDefaultVolumeInfo();
         VolumeInfo vi =
                 new VolumeInfo.Builder(defVolInfo).setVolumeIndex(VolumeInfo.INDEX_NOT_SET).build();
-        android.util.Log.i(TAG, "testVolumeInfoArguments_newApi using VI:" + vi);
+        Log.i(TAG, "testVolumeInfoArguments_newApi using VI:" + vi);
 
         assertThrows(
                 "Able to call setVolumeForDevice with VolumeInfo without index",
@@ -307,7 +312,7 @@ public class AudioDeviceVolumeManagerTest {
         VolumeInfo defVolInfo = VolumeInfo.getDefaultVolumeInfo();
         VolumeInfo vi =
                 new VolumeInfo.Builder(defVolInfo).setVolumeIndex(VolumeInfo.INDEX_NOT_SET).build();
-        android.util.Log.i(TAG, "testVolumeInfoArguments_setVolumeForDevice using VI:" + vi);
+        Log.i(TAG, "testVolumeInfoArguments_setVolumeForDevice using VI:" + vi);
         assertThrows(
                 "Able to call setVolumeForDevice with VolumeInfo without index",
                 IllegalArgumentException.class,
@@ -335,7 +340,7 @@ public class AudioDeviceVolumeManagerTest {
     }
 
     public void testSetGetAdjustVolume(boolean useVolumeForDevice) throws Exception {
-        if (mSkipRingerTests) {
+        if (mSkipAdvmTests) {
             return;
         }
 
@@ -428,7 +433,7 @@ public class AudioDeviceVolumeManagerTest {
 
     public void testSetDeviceAbsoluteVolumeBehavior_noMatchingStreamType(
             boolean useVolumeForDevice) {
-        if (mSkipRingerTests) {
+        if (mSkipAdvmTests) {
             return;
         }
         final VolumeInfo volMedia = new VolumeInfo.Builder(AudioManager.STREAM_MUSIC).build();
@@ -475,7 +480,7 @@ public class AudioDeviceVolumeManagerTest {
     }
 
     public void testSetDeviceAbsoluteVolumeBehavior_matchingStreamType(boolean useVolumeForDevice) {
-        if (mSkipRingerTests) {
+        if (mSkipAdvmTests) {
             return;
         }
         final int minIndex = mAm.getStreamMinVolume(AudioManager.STREAM_MUSIC);
@@ -512,7 +517,7 @@ public class AudioDeviceVolumeManagerTest {
             })
     @Test
     public void setDeviceAbsoluteVolumeBehavior_muteOnActiveDevice() {
-        if (mSkipRingerTests) {
+        if (mSkipAdvmTests) {
             return;
         }
         final int minIndex = mAm.getStreamMinVolume(AudioManager.STREAM_MUSIC);
@@ -525,12 +530,23 @@ public class AudioDeviceVolumeManagerTest {
         // when muting we get a callback for the mute state and then for the index adjustment
         final AudioDeviceVolumeChangedListener listener =
                 new AudioDeviceVolumeChangedListener(/* numberOfCallbacks= */ 2);
+        AudioDeviceAttributes deviceAttributes = SPEAKER_DEV;
+        final List<AudioDeviceInfo> mediaDevices =
+                mAm.getAudioDevicesForAttributes(
+                        new AudioAttributes.Builder()
+                                .setLegacyStreamType(AudioManager.STREAM_MUSIC)
+                                .build());
+        if (!mediaDevices.isEmpty()) {
+            deviceAttributes = new AudioDeviceAttributes(mediaDevices.get(0));
+        }
+
+        Log.i(TAG, "Using attributes for active device: " + deviceAttributes);
         final VolumeInfo nextVolume =
-                computeNewVolumeWithMute(volMedia, /* mute= */ true, SPEAKER_DEV);
+                computeNewVolumeWithMute(volMedia, /* mute= */ true, deviceAttributes);
 
         mADVmgr.setDeviceAbsoluteVolumeBehavior(
-                SPEAKER_DEV, volMedia, mContext.getMainExecutor(), listener);
-        mADVmgr.setVolumeForDevice(nextVolume, SPEAKER_DEV);
+                deviceAttributes, volMedia, mContext.getMainExecutor(), listener);
+        mADVmgr.setVolumeForDevice(nextVolume, deviceAttributes);
 
         checkIsMutedVolumeInfo(
                 listener.waitForVolumeChanged(VOLUME_UPDATE_TIME_MAX_MS, TimeUnit.MILLISECONDS),
@@ -564,7 +580,7 @@ public class AudioDeviceVolumeManagerTest {
     }
 
     public void testSetDeviceAbsoluteMultiVolumeBehavior(boolean useVolumeForDevice) {
-        if (mSkipRingerTests) {
+        if (mSkipAdvmTests) {
             return;
         }
         final int minIndex = mAm.getStreamMinVolume(AudioManager.STREAM_MUSIC);
@@ -609,7 +625,7 @@ public class AudioDeviceVolumeManagerTest {
             })
     @Test
     public void testNotifyAbsoluteVolumeChanged() {
-        if (mSkipRingerTests) {
+        if (mSkipAdvmTests) {
             return;
         }
         final int minIndex = mAm.getStreamMinVolume(AudioManager.STREAM_MUSIC);
@@ -659,7 +675,7 @@ public class AudioDeviceVolumeManagerTest {
     }
 
     public void testCallbackForSameTypeDifferentVolumeBehaviour(boolean useVolumeForDevice) {
-        if (mSkipRingerTests) {
+        if (mSkipAdvmTests) {
             return;
         }
         final int minIndex = mAm.getStreamMinVolume(AudioManager.STREAM_MUSIC);
