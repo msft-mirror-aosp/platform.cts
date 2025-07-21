@@ -21,11 +21,39 @@ import com.android.bedstead.harrier.annotations.UsesParameterizedTestWithArgumen
 
 /**
  * Mark a [SettingsPreferenceMetadata] parameter as being parameterised with all available
- * preferences.
+ * preferences. Optionally, you can use filters to handle only preferences that meet specific
+ * conditions.
  *
  * You must be using the [BedsteadJUnit4] test runner to use this annotation.
  */
 @Target(AnnotationTarget.VALUE_PARAMETER)
 @Retention(AnnotationRetention.RUNTIME)
 @UsesParameterizedTestWithArgumentGenerator(UsesParameterizedTestWithArgumentGenerator.SETTINGS)
-annotation class SettingsPreferenceMetadataParameter
+annotation class SettingsPreferenceMetadataParameter(
+    /**
+     * Package name of the application for which tests will be generated.
+     */
+    val packageName: String = SETTINGS_PACKAGE_NAME,
+
+    /**
+     * Generates test only for preferences with any of these write sensitivity values.
+     */
+    val writeSensitivity: IntArray = [],
+
+    /**
+     * Generates test only for preferences that meet all of the declared filters.
+     */
+    val otherFilters: IntArray = [],
+
+    /**
+     * Skip unsupported preferences. Caution! This parameter is very expensive!
+     */
+    // TODO(karzelek) cache it or make it available in SettingsPreferenceMetadata
+    val skipUnsupportedPreferences: Boolean = false
+) {
+    companion object {
+        const val PREFERENCE_FILTER_READ_PERMISSIONS_NOT_EMPTY: Int = 0
+        const val PREFERENCE_FILTER_WRITE_PERMISSIONS_NOT_EMPTY: Int = 1
+        const val PREFERENCE_FILTER_LAUNCH_INTENT_NOT_NULL: Int = 2
+    }
+}
