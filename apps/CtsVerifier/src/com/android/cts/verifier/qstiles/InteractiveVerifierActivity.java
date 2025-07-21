@@ -262,6 +262,13 @@ public abstract class InteractiveVerifierActivity extends PassFailButtons.Activi
         return item;
     }
 
+    protected View createUserPassFail(ViewGroup parent, CharSequence message) {
+        View item = mInflater.inflate(R.layout.tiles_item, parent, false);
+        TextView instructions = (TextView) item.findViewById(R.id.tiles_instructions);
+        instructions.setText(message);
+        return item;
+    }
+
     protected View createAutoItem(ViewGroup parent, int stringId) {
         View item = mInflater.inflate(R.layout.tiles_item, parent, false);
         TextView instructions = (TextView) item.findViewById(R.id.tiles_instructions);
