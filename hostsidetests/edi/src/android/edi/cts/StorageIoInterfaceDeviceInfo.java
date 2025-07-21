@@ -18,6 +18,7 @@ package android.edi.cts;
 import com.android.compatibility.common.util.DeviceInfo;
 import com.android.compatibility.common.util.HostInfoStore;
 import com.android.compatibility.common.util.PropertyUtil;
+import com.android.tradefed.log.LogUtil.CLog;
 import com.android.tradefed.util.CommandResult;
 import com.android.tradefed.util.CommandStatus;
 import com.android.tradefed.util.ResourceUtil;
@@ -25,13 +26,15 @@ import com.android.tradefed.util.ResourceUtil;
 import java.io.File;
 
 public class StorageIoInterfaceDeviceInfo extends DeviceInfo {
+    // We populate this at runtime, depending on which DEVICE_TMP_DIRS we use.
+    private String mScriptPathOnDevice = null;
+
     private static final String INTERFACE_FIELD = "storage_io_interface";
     private static final String CONTEXT_FIELD = "storage_io_script_context";
 
     private static final String SCRIPT_BASE_NAME = "check_for_ufs";
     private static final String SCRIPT_EXT = ".sh";
-    private static final String DEVICE_DIR = "/tmp/";
-    private static final String FULL_PATH = DEVICE_DIR + SCRIPT_BASE_NAME + SCRIPT_EXT;
+    private static final String[] DEVICE_TMP_DIRS = {"/tmp/", "/data/local/tmp/"};
 
     // "Android 15" release.
     private static final int ANDROID_V_API_LEVEL = 35;
@@ -53,26 +56,27 @@ public class StorageIoInterfaceDeviceInfo extends DeviceInfo {
 
     @Override
     protected void collectDeviceInfo(HostInfoStore store) throws Exception {
-        if (PropertyUtil.getFirstApiLevel(getDevice()) < ANDROID_V_API_LEVEL) {
-            // Older devices may not have "/tmp" directory.  We also aren't really
-            // interested in eMMC vs. UFS for older devices.
+        pushScriptToDevice();
+        if (mScriptPathOnDevice == null) {
+            // Not able to push script to device; nothing more to do.
             return;
         }
-
-        pushResourceFileToDevice(SCRIPT_BASE_NAME, SCRIPT_EXT);
 
         try {
             chmodScript();
             storeScriptResult(store);
         } finally {
             // Best effort for cleanup here.  If this fails, there's not
-            // much we can do.  The impact is minimal since this is in /tmp.
-            getDevice().executeShellV2Command("rm " + FULL_PATH);
+            // much we can do.  The impact is minimal since this is in
+            // a tmp directory.
+            getDevice().executeShellV2Command("rm " + mScriptPathOnDevice);
         }
     }
 
     private void chmodScript() throws Exception {
-        final String cmd = "chmod 755 " + FULL_PATH;
+        assert mScriptPathOnDevice != null;
+
+        final String cmd = "chmod 755 " + mScriptPathOnDevice;
         CommandResult result = getDevice().executeShellV2Command(cmd);
         if (result.getStatus() != CommandStatus.SUCCESS) {
             throw new IllegalStateException(
@@ -81,7 +85,9 @@ public class StorageIoInterfaceDeviceInfo extends DeviceInfo {
     }
 
     private void storeScriptResult(HostInfoStore store) throws Exception {
-        CommandResult result = getDevice().executeShellV2Command(FULL_PATH);
+        assert mScriptPathOnDevice != null;
+
+        CommandResult result = getDevice().executeShellV2Command(mScriptPathOnDevice);
         store.addResult(INTERFACE_FIELD, getInterfaceStringFromExitCode(result.getExitCode()));
         // We want everything after the ": ".  This format is encoded in
         // system/core/storaged/tests/check_for_ufs.sh
@@ -96,15 +102,36 @@ public class StorageIoInterfaceDeviceInfo extends DeviceInfo {
         store.addResult(CONTEXT_FIELD, context.strip());
     }
 
-    /** Push a resource onto device */
-    private void pushResourceFileToDevice(String resourceName, String ext) throws Exception {
-        String fullResourceName = resourceName + ext;
-        File outputFile = File.createTempFile(resourceName, ext);
+    /**
+     * Push the script onto device, trying multiple tmp directories. If we succeed, we'll populate
+     * mScriptPathOnDevice with the full path, otherwise it will remain null.
+     */
+    private void pushScriptToDevice() throws Exception {
+        String fullResourceName = SCRIPT_BASE_NAME + SCRIPT_EXT;
+        File outputFile = File.createTempFile(SCRIPT_BASE_NAME, SCRIPT_EXT);
         try {
             ResourceUtil.extractResourceToFile("/" + fullResourceName, outputFile);
-            getDevice().pushFile(outputFile, DEVICE_DIR + fullResourceName);
+            for (String tmpDir : DEVICE_TMP_DIRS) {
+                String scriptPathOnDevice = tmpDir + fullResourceName;
+                if (getDevice().pushFile(outputFile, scriptPathOnDevice)) {
+                    // Success.  No need to try any other paths.
+                    mScriptPathOnDevice = scriptPathOnDevice;
+                    return;
+                }
+            }
         } finally {
             outputFile.delete();
         }
+
+        // None of our paths worked.  This is a bummer, but not unexpected
+        // for some older devices.
+        final int firstApi = PropertyUtil.getFirstApiLevel(getDevice());
+        if (firstApi >= ANDROID_V_API_LEVEL) {
+            // We expect devices starting with Android V to all have "/tmp".
+            CLog.e("Failed to find tmp directory on device with first API " + firstApi);
+        } else {
+            CLog.i("Unable to find tmp directory for our script.");
+        }
+        mScriptPathOnDevice = null;
     }
 }
