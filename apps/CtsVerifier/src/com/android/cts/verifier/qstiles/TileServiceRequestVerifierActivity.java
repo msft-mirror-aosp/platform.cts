@@ -24,7 +24,11 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageInstaller;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
+import android.text.SpannableString;
+import android.text.Spanned;
+import android.text.style.ImageSpan;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
@@ -52,6 +56,7 @@ public class TileServiceRequestVerifierActivity extends InteractiveVerifierActiv
     private static final ComponentName HELPER_ACTIVITY_COMPONENT =
             ComponentName.createRelative(HELPER_PACKAGE_NAME, HELPER_ACTIVITY_NAME);
     private static final Intent INTENT = new Intent().setComponent(HELPER_ACTIVITY_COMPONENT);
+    private static final String ICON_SPAN_MARKER = "\"ICON\"";
 
     // Keep track of activity started codes to handle results.
     private final Map<Integer, Consumer<Integer>> mResultRegistry = new HashMap<>();
@@ -231,7 +236,20 @@ public class TileServiceRequestVerifierActivity extends InteractiveVerifierActiv
     private class TileNotPresent extends InteractiveTestCase {
         @Override
         protected View inflate(ViewGroup parent) {
-            return createUserPassFail(parent, R.string.tiles_request_tile_not_present, mTileLabel);
+            String message =
+                    mContext.getString(R.string.tiles_request_tile_not_present, mTileLabel);
+            SpannableString ss = new SpannableString(message);
+            Drawable icon = mContext.getDrawable(android.R.drawable.ic_dialog_alert);
+            icon.setBounds(0, 0, icon.getIntrinsicWidth(), icon.getIntrinsicHeight());
+            int index = message.indexOf(ICON_SPAN_MARKER);
+
+            ss.setSpan(
+                    new ImageSpan(icon, ImageSpan.ALIGN_BASELINE),
+                    index,
+                    index + ICON_SPAN_MARKER.length(),
+                    Spanned.SPAN_INCLUSIVE_EXCLUSIVE);
+
+            return createUserPassFail(parent, ss);
         }
 
         @Override
@@ -347,7 +365,19 @@ public class TileServiceRequestVerifierActivity extends InteractiveVerifierActiv
     private class TilePresentAfterRequest extends InteractiveTestCase {
         @Override
         protected View inflate(ViewGroup parent) {
-            return createUserPassFail(parent, R.string.tiles_request_tile_present, mTileLabel);
+            String message = mContext.getString(R.string.tiles_request_tile_present, mTileLabel);
+            SpannableString ss = new SpannableString(message);
+            Drawable icon = mContext.getDrawable(android.R.drawable.ic_dialog_alert);
+            icon.setBounds(0, 0, icon.getIntrinsicWidth(), icon.getIntrinsicHeight());
+            int index = message.indexOf(ICON_SPAN_MARKER);
+
+            ss.setSpan(
+                    new ImageSpan(icon, ImageSpan.ALIGN_BASELINE),
+                    index,
+                    index + ICON_SPAN_MARKER.length(),
+                    Spanned.SPAN_INCLUSIVE_EXCLUSIVE);
+
+            return createUserPassFail(parent, ss);
         }
 
         @Override

@@ -15,97 +15,55 @@
  */
 package com.android.bedstead.settings
 
-import android.Manifest
-import android.os.OutcomeReceiver
-import android.service.settings.preferences.MetadataRequest
 import android.service.settings.preferences.SettingsPreferenceMetadata
 import android.service.settings.preferences.SettingsPreferenceServiceClient
-import android.util.Log
 import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.harrier.DeviceStateComponent
-import com.android.bedstead.nene.TestApis
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit
 
 /**
  * Simplifies usage of [SettingsPreferenceServiceClient] from Bedstead tests.
  */
 class SettingsPreferenceServiceClientComponent : DeviceStateComponent {
 
-    private val context by lazy { TestApis.context().instrumentedContext() }
-    private var clientInitialized = false
-    internal val client: SettingsPreferenceServiceClient by lazy {
-        initClient()
-    }
+    private val clients: MutableMap<String, BlockingSettingsPreferenceServiceClient> =
+        mutableMapOf()
 
-    internal val allMetadata: List<SettingsPreferenceMetadata> by lazy {
-        initMetadata()
-    }
-
-    private fun initClient(): SettingsPreferenceServiceClient {
-        val connectionLatch = CountDownLatch(1)
-        var client: SettingsPreferenceServiceClient? = null
-        TestApis.permissions().withPermission(Manifest.permission.READ_SYSTEM_PREFERENCES).use {
-            SettingsPreferenceServiceClient(
-                context,
-                "com.android.settings",
-                context.mainExecutor,
-                object : OutcomeReceiver<SettingsPreferenceServiceClient, Exception> {
-                    override fun onResult(result: SettingsPreferenceServiceClient) {
-                        client = result
-                        clientInitialized = true
-                        Log.d("bedstead-settings", "SettingsPreferenceServiceClient initialized")
-                        connectionLatch.countDown()
-                    }
-
-                    override fun onError(error: Exception) {
-                        throw IllegalStateException("Binding failed")
-                    }
-                }
-            )
-            if (!connectionLatch.await(TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
-                throw IllegalStateException("Binding timeout")
-            }
-
-            return client ?: throw IllegalStateException("client shouldn't be null")
+    internal fun getBlockingClient(packageName: String): BlockingSettingsPreferenceServiceClient {
+        return clients[packageName] ?: BlockingSettingsPreferenceServiceClient(packageName).also {
+            clients[packageName] = it
         }
     }
 
-    private fun initMetadata(): List<SettingsPreferenceMetadata> {
-        var metadataList: List<SettingsPreferenceMetadata>? = null
-        val connectionLatch = CountDownLatch(1)
-        TestApis.permissions().withPermission(Manifest.permission.READ_SYSTEM_PREFERENCES).use {
-            client.getAllPreferenceMetadata(
-                MetadataRequest.Builder().build(),
-                context.mainExecutor
-            ) { result ->
-                result.resultCode
-                metadataList = result.metadataList
-                connectionLatch.countDown()
-            }
-
-            if (!connectionLatch.await(TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
-                throw IllegalStateException("Binding timeout")
-            }
-        }
-        return metadataList ?: throw IllegalStateException("metadataList shouldn't be null")
+    internal fun allMetadata(packageName: String): List<SettingsPreferenceMetadata> {
+        return getBlockingClient(packageName).allMetadata
     }
 
     override fun teardownShareableState() {
-        if (clientInitialized) {
-            client.close()
+        clients.values.forEach {
+            it.client.close()
         }
-    }
-
-    companion object {
-        private const val TIMEOUT_SECONDS = 10L
+        clients.clear()
     }
 }
 
-fun DeviceState.settingsPreferenceServiceClient(): SettingsPreferenceServiceClient {
-    return getDependency(SettingsPreferenceServiceClientComponent::class.java).client
+/**
+ * Get a BlockingSettingsPreferenceServiceClient for the [packageName]
+ */
+fun DeviceState.getBlockingSettingsPreferenceServiceClient(
+    packageName: String = SETTINGS_PACKAGE_NAME
+): BlockingSettingsPreferenceServiceClient {
+    return getDependency(
+        SettingsPreferenceServiceClientComponent::class.java
+    ).getBlockingClient(packageName)
 }
 
-fun DeviceState.settingsPreferenceAllMetadata(): List<SettingsPreferenceMetadata> {
-    return getDependency(SettingsPreferenceServiceClientComponent::class.java).allMetadata
+/**
+ * Get a SettingsPreferenceServiceClient for the [packageName].
+ */
+fun DeviceState.settingsPreferenceServiceClient(
+    packageName: String = SETTINGS_PACKAGE_NAME
+): SettingsPreferenceServiceClient {
+    return getBlockingSettingsPreferenceServiceClient(packageName).client
 }
+
+const val SETTINGS_PACKAGE_NAME = "com.android.settings"

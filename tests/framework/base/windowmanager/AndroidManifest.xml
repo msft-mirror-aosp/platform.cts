@@ -171,6 +171,7 @@
         <activity android:name="android.server.wm.keyguard.KeyguardLockedTests$ShowWhenLockedImeActivity"/>
 
         <activity android:name="android.server.wm.HelperActivities$StandardActivity"
+             android:label="StandardActivity"
              android:exported="true"/>
 
         <activity android:name="android.server.wm.HelperActivities$SecondStandardActivity"
@@ -193,6 +194,7 @@
 
         <activity android:name="android.server.wm.activity.lifecycle.ActivityStarterTests$DocumentIntoExistingActivity"
                   android:documentLaunchMode="intoExisting"
+                  android:label="DocumentIntoExistingActivity"
                   android:exported="true"/>
         <activity-alias
             android:name="android.server.wm.activity.lifecycle.ActivityStarterTests$DocumentIntoExistingAliasActivity"

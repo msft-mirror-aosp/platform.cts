@@ -46,6 +46,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import com.android.compatibility.common.util.CtsTouchUtils;
 import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.SystemUtil;
+import com.android.compatibility.common.util.ThrowingRunnable;
 import com.android.internal.annotations.GuardedBy;
 
 import java.time.Duration;
@@ -102,21 +103,34 @@ public class CtsWindowInfoUtils {
                     }
                 };
 
-        var waitForWindow =
-                new InterruptableRunnable() {
-                    @Override
-                    public void run() throws InterruptedException {
-                        var listener = new WindowInfosListenerForTest();
-                        try {
-                            listener.addWindowInfosListener(checkPredicate);
-                            latch.await(timeout.toMillis(), TimeUnit.MILLISECONDS);
-                        } finally {
-                            listener.removeWindowInfosListener(checkPredicate);
-                        }
-                    }
-                };
+        var waitForWindow = new ThrowingRunnable() {
+            @Override
+            public void run() throws InterruptedException {
+                var listener = new WindowInfosListenerForTest();
+                try {
+                    listener.addWindowInfosListener(checkPredicate);
+                    latch.await(timeout.toMillis(), TimeUnit.MILLISECONDS);
+                } finally {
+                    listener.removeWindowInfosListener(checkPredicate);
+                }
+            }
+        };
 
-        runWithSurfaceFlingerPermission(waitForWindow);
+        if (uiAutomation == null) {
+            uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
+        }
+        Set<String> shellPermissions = uiAutomation.getAdoptedShellPermissions();
+        if (shellPermissions.isEmpty()) {
+            SystemUtil.runWithShellPermissionIdentity(uiAutomation, waitForWindow,
+                    Manifest.permission.ACCESS_SURFACE_FLINGER);
+        } else if (shellPermissions.contains(Manifest.permission.ACCESS_SURFACE_FLINGER)) {
+            waitForWindow.run();
+        } else {
+            throw new IllegalStateException(
+                    "waitForWindowOnTop called with adopted shell permissions that don't include "
+                            + "ACCESS_SURFACE_FLINGER");
+        }
+
         return satisfied.get();
     }
 
@@ -547,19 +561,14 @@ public class CtsWindowInfoUtils {
         Set<String> shellPermissions =
                 InstrumentationRegistry.getInstrumentation().getUiAutomation()
                         .getAdoptedShellPermissions();
-
-        boolean hasAccessSurfaceFlinger =
-                shellPermissions.equals(UiAutomation.ALL_PERMISSIONS)
-                        || shellPermissions.contains(Manifest.permission.ACCESS_SURFACE_FLINGER);
-
-        if (hasAccessSurfaceFlinger) {
-            runnable.run();
-        } else if (shellPermissions.isEmpty()) {
+        if (shellPermissions.isEmpty()) {
             SystemUtil.runWithShellPermissionIdentity(runnable::run,
                     Manifest.permission.ACCESS_SURFACE_FLINGER);
+        } else if (shellPermissions.contains(Manifest.permission.ACCESS_SURFACE_FLINGER)) {
+            runnable.run();
         } else {
             throw new IllegalStateException(
-                    "CtsWindowInfoUtils called with adopted shell permissions that don't include "
+                    "waitForWindowOnTop called with adopted shell permissions that don't include "
                             + "ACCESS_SURFACE_FLINGER");
         }
     }
@@ -1023,7 +1032,7 @@ public class CtsWindowInfoUtils {
                 };
 
         var waitForState =
-                new InterruptableRunnable() {
+                new ThrowingRunnable() {
                     @Override
                     public void run() throws InterruptedException {
                         var listener = new WindowInfosListenerForTest();
@@ -1036,7 +1045,19 @@ public class CtsWindowInfoUtils {
                     }
                 };
 
-        runWithSurfaceFlingerPermission(waitForState);
+        var uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
+        Set<String> shellPermissions = uiAutomation.getAdoptedShellPermissions();
+        if (shellPermissions.isEmpty()) {
+            SystemUtil.runWithShellPermissionIdentity(
+                    uiAutomation, waitForState, Manifest.permission.ACCESS_SURFACE_FLINGER);
+        } else if (shellPermissions.contains(Manifest.permission.ACCESS_SURFACE_FLINGER)) {
+            waitForState.run();
+        } else {
+            throw new IllegalStateException(
+                    "getWindowAndDisplayState called with adopted shell permissions that don't"
+                            + " include ACCESS_SURFACE_FLINGER");
+        }
+
         return consumer.getState();
     }
 

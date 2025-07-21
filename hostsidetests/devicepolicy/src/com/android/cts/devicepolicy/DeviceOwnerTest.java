@@ -1158,6 +1158,9 @@ public final class DeviceOwnerTest extends BaseDeviceOwnerTest {
     @Test
     public void testLockTaskAfterReboot() throws Exception {
         try {
+            // Skip this test on TV
+            assumeFalse("Test does not apply to TV", isTv());
+
             installAppAsUser(LOCK_TASK_APP_APK, mMainUserId);
             // Just start kiosk mode
             executeDeviceTestMethod(".LockTaskHostDrivenTest", "testStartLockTask");

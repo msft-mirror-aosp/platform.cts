@@ -42,6 +42,7 @@ import android.os.Environment;
 import android.os.FileUtils;
 import android.os.ParcelFileDescriptor;
 import android.os.SystemClock;
+import android.os.UserHandle;
 import android.os.storage.StorageManager;
 import android.os.storage.StorageVolume;
 import android.provider.DocumentsContract;
@@ -414,7 +415,7 @@ public class MediaStoreUiTest {
         String volumeName = mVolumeName.toUpperCase();
         String root = Set.of(MediaStore.VOLUME_EXTERNAL,
                 MediaStore.VOLUME_EXTERNAL_PRIMARY).contains(mVolumeName) ? "primary" : volumeName;
-
+        assumeTrue(androidMediaDirExists(volumeName));
         try {
             mDevice.executeShellCommand("am start -a android.intent.action.OPEN_DOCUMENT_TREE "
                     + "--eu android.provider.extra.INITIAL_URI content://com.android"
@@ -426,6 +427,16 @@ public class MediaStoreUiTest {
         } finally {
             clearDocumentsUi();
         }
+    }
+
+    private boolean androidMediaDirExists(String volumeName) throws Exception {
+        File file =
+                new File(
+                        MediaProviderTestUtils.resolveVolumeName(volumeName)
+                                        .equals(MediaStore.VOLUME_EXTERNAL_PRIMARY)
+                                ? "/storage/emulated/" + UserHandle.myUserId() + "/Android/media"
+                                : "/storage/" + volumeName + "/Android/media");
+        return file.exists();
     }
 
     private void assertAccessToMediaUri(Uri mediaUri, File file) {

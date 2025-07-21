@@ -434,4 +434,7 @@
 
     <!-- b/418637902 -->
     <option name="compatibility:exclude-filter" value="CtsAppOpsTestCases android.app.appops.cts.AppOpsLoggingTest#noteAsyncOpsMultipleTimesAndReceiveMultipleAsyncCallbacks" />
+
+    <!-- b/428974622 -->
+    <option name="compatibility:exclude-filter" value="CtsGraphicsTestCases[foldable:5:REAR_DISPLAY_OUTER_DEFAULT] android.graphics.cts.SetFrameRateTest"/>
 </configuration>
