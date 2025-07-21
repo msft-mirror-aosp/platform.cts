@@ -38,6 +38,7 @@
         <!-- Unlock and turn on the screen. -->
         <option name="run-command" value="svc power stayon true" />
         <option name="run-command" value="input keyevent MENU" />
+        <option name="run-command" value="input keyevent HOME" />
 
         <option name="teardown-command" value="cmd sdk_sandbox set-state --reset"/>
         <option name="teardown-command" value="device_config set_sync_disabled_for_tests none" />
