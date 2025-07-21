@@ -238,15 +238,15 @@ public class SELinuxHostTest extends BaseHostJUnit4Test {
 
         List<String> command = new ArrayList<>(Arrays.asList(
                 secilc.getAbsolutePath(),
-                "-m",
-                "-M",
+                "--multiple-decls",
+                "--mls",
                 "true",
-                "-c",
+                "--policyvers",
                 "30",
-                "-N",
-                "-o",
+                "--disable-neverallow",
+                "--output",
                 builtPolicyFile.getAbsolutePath(),
-                "-f",
+                "--filecontext",
                 fileContextsFile.getAbsolutePath(),
                 systemSepolicyCilFile.getAbsolutePath()));
 
@@ -299,15 +299,15 @@ public class SELinuxHostTest extends BaseHostJUnit4Test {
 
         List<String> command = new ArrayList<>(Arrays.asList(
                 secilc.getAbsolutePath(),
-                "-m",
-                "-M",
+                "--multiple-decls",
+                "--mls",
                 "true",
-                "-c",
+                "--policyvers",
                 "30",
-                "-N",
-                "-o",
+                "--disable-neverallow",
+                "--output",
                 builtPolicyFile.getAbsolutePath(),
-                "-f",
+                "--filecontext",
                 fileContextsFile.getAbsolutePath(),
                 platSepolicyFile.getAbsolutePath(),
                 platMappingFile.getAbsolutePath(),
