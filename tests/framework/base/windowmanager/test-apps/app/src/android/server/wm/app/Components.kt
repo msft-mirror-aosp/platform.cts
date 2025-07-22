@@ -25,8 +25,6 @@ object Components : ComponentsProvider() {
     @JvmField val TRANSLUCENT_PIP_ACTIVITY = component("TranslucentPipActivity")
     @JvmField val ANIMATION_TEST_ACTIVITY = component("AnimationTestActivity")
     @JvmField val ASSISTANT_ACTIVITY = component("AssistantActivity")
-    @JvmField val BOTTOM_ACTIVITY = component("BottomActivity")
-    @JvmField val BOTTOM_NON_RESIZABLE_ACTIVITY = component("BottomNonResizableActivity")
     @JvmField val BOTTOM_LEFT_LAYOUT_ACTIVITY = component("BottomLeftLayoutActivity")
     @JvmField val BOTTOM_RIGHT_LAYOUT_ACTIVITY = component("BottomRightLayoutActivity")
     @JvmField val BROADCAST_RECEIVER_ACTIVITY = component("BroadcastReceiverActivity")
@@ -120,9 +118,6 @@ object Components : ComponentsProvider() {
     @JvmField val TEST_ACTIVITY = component("TestActivity")
     @JvmField val TOP_ACTIVITY = component("TopActivity")
     @JvmField val TOP_NON_RESIZABLE_ACTIVITY = component("TopNonResizableActivity")
-    @JvmField
-    val TOP_NON_RESIZABLE_WALLPAPER_ACTIVITY = component("TopNonResizableWallpaperActivity")
-    @JvmField val TOP_WALLPAPER_ACTIVITY = component("TopWallpaperActivity")
     @JvmField val TEST_ACTIVITY_WITH_SAME_AFFINITY = component("TestActivityWithSameAffinity")
     @JvmField val TEST_LIVE_WALLPAPER_SERVICE = component("LiveWallpaper")
     @JvmField val TEST_INTERACTIVE_LIVE_WALLPAPER_SERVICE = component("InteractiveLiveWallpaper")
@@ -131,9 +126,6 @@ object Components : ComponentsProvider() {
     @JvmField val TRANSLUCENT_ACTIVITY = component("TranslucentActivity")
     @JvmField val TRANSLUCENT_ASSISTANT_ACTIVITY = component("TranslucentAssistantActivity")
     @JvmField val TRANSLUCENT_TOP_ACTIVITY = component("TranslucentTopActivity")
-    @JvmField val TRANSLUCENT_TOP_WALLPAPER_ACTIVITY = component("TranslucentTopWallpaperActivity")
-    @JvmField
-    val TRANSLUCENT_TOP_NON_RESIZABLE_ACTIVITY = component("TranslucentTopNonResizableActivity")
     @JvmField val TRANSLUCENT_TEST_ACTIVITY = component("TranslucentTestActivity")
     @JvmField val TRANSLUCENT_LANDSCAPE_ACTIVITY = component("TranslucentLandscapeActivity")
     @JvmField val TURN_SCREEN_ON_ACTIVITY = component("TurnScreenOnActivity")
@@ -295,17 +287,6 @@ object Components : ComponentsProvider() {
 
         // Display on which Assistant runs
         const val EXTRA_ASSISTANT_DISPLAY_ID = "assistant_display_id"
-    }
-
-    /**
-     * Extra key constants for [android.server.wm.app.BottomActivity].
-     *
-     * TODO(b/73346885): These constants should be in [android.server.wm.app.BottomActivity] once
-     *   the activity is moved to test APK.
-     */
-    object BottomActivity {
-        const val EXTRA_BOTTOM_WALLPAPER = "USE_WALLPAPER"
-        const val EXTRA_STOP_DELAY = "STOP_DELAY"
     }
 
     /**
@@ -566,7 +547,6 @@ object Components : ComponentsProvider() {
      *   activity is moved to test APK.
      */
     object TopActivity {
-        const val EXTRA_FINISH_DELAY = "FINISH_DELAY"
         const val EXTRA_FINISH_IN_ON_CREATE = "FINISH_IN_ON_CREATE"
         const val ACTION_CONVERT_TO_TRANSLUCENT = "convert_to_translucent"
         const val ACTION_CONVERT_FROM_TRANSLUCENT = "convert_from_translucent"

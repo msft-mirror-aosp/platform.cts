@@ -57,7 +57,6 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.nano.InvalidProtocolBufferNanoException;
 
 import perfetto.protos.Displayinfo.DisplayInfoProto;
-import perfetto.protos.Enums.TransitionTypeEnum;
 import perfetto.protos.Insets.InsetsProto;
 import perfetto.protos.Insetssource.InsetsSourceProto;
 import perfetto.protos.Rect.RectProto;
@@ -109,23 +108,6 @@ public class WindowManagerState {
     public static final String STATE_STOPPING = "STOPPING";
     public static final String STATE_STOPPED = "STOPPED";
     public static final String STATE_DESTROYED = "DESTROYED";
-    public static final String TRANSIT_ACTIVITY_OPEN = "TRANSIT_ACTIVITY_OPEN";
-    public static final String TRANSIT_ACTIVITY_CLOSE = "TRANSIT_ACTIVITY_CLOSE";
-    public static final String TRANSIT_TASK_OPEN = "TRANSIT_TASK_OPEN";
-    public static final String TRANSIT_TASK_CLOSE = "TRANSIT_TASK_CLOSE";
-    public static final String TRANSIT_WALLPAPER_OPEN = "TRANSIT_WALLPAPER_OPEN";
-    public static final String TRANSIT_WALLPAPER_CLOSE = "TRANSIT_WALLPAPER_CLOSE";
-    public static final String TRANSIT_WALLPAPER_INTRA_OPEN = "TRANSIT_WALLPAPER_INTRA_OPEN";
-    public static final String TRANSIT_WALLPAPER_INTRA_CLOSE = "TRANSIT_WALLPAPER_INTRA_CLOSE";
-    public static final String TRANSIT_KEYGUARD_GOING_AWAY = "TRANSIT_KEYGUARD_GOING_AWAY";
-    public static final String TRANSIT_KEYGUARD_GOING_AWAY_ON_WALLPAPER =
-            "TRANSIT_KEYGUARD_GOING_AWAY_ON_WALLPAPER";
-    public static final String TRANSIT_KEYGUARD_OCCLUDE = "TRANSIT_KEYGUARD_OCCLUDE";
-    public static final String TRANSIT_KEYGUARD_UNOCCLUDE = "TRANSIT_KEYGUARD_UNOCCLUDE";
-    public static final String TRANSIT_TRANSLUCENT_ACTIVITY_OPEN =
-            "TRANSIT_TRANSLUCENT_ACTIVITY_OPEN";
-    public static final String TRANSIT_TRANSLUCENT_ACTIVITY_CLOSE =
-            "TRANSIT_TRANSLUCENT_ACTIVITY_CLOSE";
     public static final String APP_STATE_IDLE = "APP_STATE_IDLE";
     public static final String APP_STATE_RUNNING = "APP_STATE_RUNNING";
 
@@ -183,81 +165,6 @@ public class WindowManagerState {
             default:
                 fail("Invalid AppTransitionState");
                 return null;
-        }
-    }
-
-    static String appTransitionToString(int transition) {
-        switch (transition) {
-            case TransitionTypeEnum.TRANSIT_UNSET_VALUE: {
-                return "TRANSIT_UNSET";
-            }
-            case TransitionTypeEnum.TRANSIT_NONE_VALUE: {
-                return "TRANSIT_NONE";
-            }
-            case TransitionTypeEnum.TRANSIT_ACTIVITY_OPEN_VALUE: {
-                return TRANSIT_ACTIVITY_OPEN;
-            }
-            case TransitionTypeEnum.TRANSIT_ACTIVITY_CLOSE_VALUE: {
-                return TRANSIT_ACTIVITY_CLOSE;
-            }
-            case TransitionTypeEnum.TRANSIT_TASK_OPEN_VALUE: {
-                return TRANSIT_TASK_OPEN;
-            }
-            case TransitionTypeEnum.TRANSIT_TASK_CLOSE_VALUE: {
-                return TRANSIT_TASK_CLOSE;
-            }
-            case TransitionTypeEnum.TRANSIT_TASK_TO_FRONT_VALUE: {
-                return "TRANSIT_TASK_TO_FRONT";
-            }
-            case TransitionTypeEnum.TRANSIT_TASK_TO_BACK_VALUE: {
-                return "TRANSIT_TASK_TO_BACK";
-            }
-            case TransitionTypeEnum.TRANSIT_WALLPAPER_CLOSE_VALUE: {
-                return TRANSIT_WALLPAPER_CLOSE;
-            }
-            case TransitionTypeEnum.TRANSIT_WALLPAPER_OPEN_VALUE: {
-                return TRANSIT_WALLPAPER_OPEN;
-            }
-            case TransitionTypeEnum.TRANSIT_WALLPAPER_INTRA_OPEN_VALUE: {
-                return TRANSIT_WALLPAPER_INTRA_OPEN;
-            }
-            case TransitionTypeEnum.TRANSIT_WALLPAPER_INTRA_CLOSE_VALUE: {
-                return TRANSIT_WALLPAPER_INTRA_CLOSE;
-            }
-            case TransitionTypeEnum.TRANSIT_TASK_OPEN_BEHIND_VALUE: {
-                return "TRANSIT_TASK_OPEN_BEHIND";
-            }
-            case TransitionTypeEnum.TRANSIT_ACTIVITY_RELAUNCH_VALUE: {
-                return "TRANSIT_ACTIVITY_RELAUNCH";
-            }
-            case TransitionTypeEnum.TRANSIT_DOCK_TASK_FROM_RECENTS_VALUE: {
-                return "TRANSIT_DOCK_TASK_FROM_RECENTS";
-            }
-            case TransitionTypeEnum.TRANSIT_KEYGUARD_GOING_AWAY_VALUE: {
-                return TRANSIT_KEYGUARD_GOING_AWAY;
-            }
-            case TransitionTypeEnum.TRANSIT_KEYGUARD_GOING_AWAY_ON_WALLPAPER_VALUE: {
-                return TRANSIT_KEYGUARD_GOING_AWAY_ON_WALLPAPER;
-            }
-            case TransitionTypeEnum.TRANSIT_KEYGUARD_OCCLUDE_VALUE: {
-                return TRANSIT_KEYGUARD_OCCLUDE;
-            }
-            case TransitionTypeEnum.TRANSIT_KEYGUARD_UNOCCLUDE_VALUE: {
-                return TRANSIT_KEYGUARD_UNOCCLUDE;
-            }
-            case TransitionTypeEnum.TRANSIT_TRANSLUCENT_ACTIVITY_OPEN_VALUE: {
-                return TRANSIT_TRANSLUCENT_ACTIVITY_OPEN;
-            }
-            case TransitionTypeEnum.TRANSIT_TRANSLUCENT_ACTIVITY_CLOSE_VALUE: {
-                return TRANSIT_TRANSLUCENT_ACTIVITY_CLOSE;
-            }
-            case TransitionTypeEnum.TRANSIT_CRASHING_ACTIVITY_CLOSE_VALUE: {
-                return "TRANSIT_CRASHING_ACTIVITY_CLOSE";
-            }
-            default: {
-                fail("Invalid lastUsedAppTransition");
-                return null;
-            }
         }
     }
 
@@ -1076,14 +983,6 @@ public class WindowManagerState {
         return new Point(size.width(), size.height());
     }
 
-    public String getDefaultDisplayLastTransition() {
-        return getDisplay(DEFAULT_DISPLAY).getLastTransition();
-    }
-
-    String getDefaultDisplayAppTransitionState() {
-        return getDisplay(DEFAULT_DISPLAY).getAppTransitionState();
-    }
-
     public List<WindowState> getMatchingVisibleWindowState(final String windowName) {
         return getMatchingWindows(ws -> ws.isSurfaceShown() && windowName.equals(ws.getName()))
                 .collect(Collectors.toList());
@@ -1305,7 +1204,6 @@ public class WindowManagerState {
         private String mName;
         private int mSurfaceSize;
         private String mFocusedApp;
-        private String mLastTransition;
         private String mAppTransitionState;
         private int mRotation;
         private boolean mFrozenToUserRotation;
@@ -1339,14 +1237,11 @@ public class WindowManagerState {
             mFocusedApp = proto.getFocusedApp();
             mMinSizeOfResizeableTaskDp = proto.getMinSizeOfResizeableTaskDp();
             int appState = 0;
-            int lastTransition = 0;
             if (proto.hasAppTransition()) {
                 final AppTransitionProto appTransitionProto = proto.getAppTransition();
                 appState = appTransitionProto.getAppTransitionState().getNumber();
-                lastTransition = appTransitionProto.getLastUsedAppTransition().getNumber();
             }
             mAppTransitionState = appStateToString(appState);
-            mLastTransition = appTransitionToString(lastTransition);
 
             if (proto.hasPinnedTaskController()) {
                 PinnedTaskControllerProto pinnedTaskProto = proto.getPinnedTaskController();
@@ -1402,13 +1297,10 @@ public class WindowManagerState {
             final com.android.server.wm.nano.AppTransitionProto appTransitionProto =
                     proto.appTransition;
             int appState = 0;
-            int lastTransition = 0;
             if (appTransitionProto != null) {
                 appState = appTransitionProto.appTransitionState;
-                lastTransition = appTransitionProto.lastUsedAppTransition;
             }
             mAppTransitionState = appStateToString(appState);
-            mLastTransition = appTransitionToString(lastTransition);
 
             com.android.server.wm.nano.PinnedTaskControllerProto pinnedTaskProto =
                     proto.pinnedTaskController;
@@ -1562,11 +1454,7 @@ public class WindowManagerState {
             return mFocusedApp;
         }
 
-        public String getLastTransition() {
-            return mLastTransition;
-        }
-
-        public String getAppTransitionState() {
+         public String getAppTransitionState() {
             return mAppTransitionState;
         }
 

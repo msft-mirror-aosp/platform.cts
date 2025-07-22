@@ -254,17 +254,10 @@
              android:name=".EntryPointAliasActivity"
              android:targetActivity=".TrampolineActivity">
         </activity-alias>
-        <activity android:name=".BottomActivity"
-             android:exported="true"
-             android:theme="@style/NoPreview"/>
         <activity android:name=".TopActivity"
              android:process=".top_process"
              android:exported="true"
              android:theme="@style/NoPreview"/>
-        <activity android:name=".TopWallpaperActivity"
-             android:process=".top_process"
-             android:exported="true"
-             android:theme="@style/WallpaperTheme"/>
         <activity android:name=".UnresponsiveActivity"
              android:process=".unresponsive_activity_process"
              android:exported="true"
@@ -273,30 +266,10 @@
              android:process=".top_process"
              android:exported="true"
              android:theme="@style/TranslucentTheme"/>
-        <activity android:name=".TranslucentTopWallpaperActivity"
-             android:process=".top_process"
-             android:exported="true"
-             android:theme="@style/TranslucentWallpaperTheme"/>
         <activity android:name=".TopNonResizableActivity"
              android:exported="true"
              android:resizeableActivity="false"
              android:theme="@style/NoPreview"
-        />
-        <activity android:name=".TopNonResizableWallpaperActivity"
-             android:exported="true"
-             android:resizeableActivity="false"
-             android:theme="@style/WallpaperTheme"
-        />
-        <activity android:name=".BottomNonResizableActivity"
-             android:exported="true"
-             android:resizeableActivity="false"
-             android:theme="@style/NoPreview"
-        />
-        <activity android:name=".TranslucentTopNonResizableActivity"
-             android:process=".top_process"
-             android:exported="true"
-             android:resizeableActivity="false"
-             android:theme="@style/TranslucentTheme"
         />
         <!-- An animation test with an explicitly opaque theme, overriding device defaults, as the
                          animation background being tested is not used in translucent activities. -->
