@@ -402,7 +402,7 @@ public class ReprocessCaptureTest extends Camera2SurfaceViewTestCase  {
     }
 
     /**
-     * Test burst reprocessing captures with and without preview.
+     * Test burst reprocessing captures without preview.
      */
     @Test(timeout=600*60*1000) // timeout = 600 mins for long running reprocessing tests
     public void testBurstReprocessing() throws Exception {
@@ -416,6 +416,25 @@ public class ReprocessCaptureTest extends Camera2SurfaceViewTestCase  {
                 openDevice(id);
                 // no preview
                 testReprocessingAllCombinations(id, /*previewSize*/null, CaptureTestCase.BURST);
+            } finally {
+                closeDevice();
+            }
+        }
+    }
+
+    /**
+     * Test burst reprocessing captures with preview.
+     */
+    @Test(timeout=600*60*1000) // timeout = 600 mins for long running reprocessing tests
+    public void testBurstReprocessingWithPreview() throws Exception {
+        for (String id : getCameraIdsUnderTest()) {
+            if (!isYuvReprocessSupported(id) && !isOpaqueReprocessSupported(id)) {
+                continue;
+            }
+
+            try {
+                // open Camera device
+                openDevice(id);
                 // with preview
                 testReprocessingAllCombinations(id, mOrderedPreviewSizes.get(0),
                         CaptureTestCase.BURST);
@@ -426,7 +445,7 @@ public class ReprocessCaptureTest extends Camera2SurfaceViewTestCase  {
     }
 
     /**
-     * Test burst captures mixed with regular and reprocess captures with and without preview.
+     * Test burst captures mixed with regular and reprocess captures without preview.
      */
     @Test(timeout=600*60*1000) // timeout = 600 mins for long running reprocessing tests
     public void testMixedBurstReprocessing() throws Exception {
@@ -441,6 +460,25 @@ public class ReprocessCaptureTest extends Camera2SurfaceViewTestCase  {
                 // no preview
                 testReprocessingAllCombinations(id, /*previewSize*/null,
                         CaptureTestCase.MIXED_BURST);
+            } finally {
+                closeDevice();
+            }
+        }
+    }
+
+    /**
+     * Test burst captures mixed with regular and reprocess captures with preview.
+     */
+    @Test(timeout=600*60*1000) // timeout = 600 mins for long running reprocessing tests
+    public void testMixedBurstReprocessingWithPreview() throws Exception {
+        for (String id : getCameraIdsUnderTest()) {
+            if (!isYuvReprocessSupported(id) && !isOpaqueReprocessSupported(id)) {
+                continue;
+            }
+
+            try {
+                // open Camera device
+                openDevice(id);
                 // with preview
                 testReprocessingAllCombinations(id, mOrderedPreviewSizes.get(0),
                         CaptureTestCase.MIXED_BURST);
