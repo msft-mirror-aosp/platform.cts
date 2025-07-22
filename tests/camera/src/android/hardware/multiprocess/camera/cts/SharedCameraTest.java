@@ -1013,8 +1013,11 @@ public final class SharedCameraTest extends Camera2ParameterizedTestCase {
         // Ensure no running activity process with same name
         List<ActivityManager.RunningAppProcessInfo> list =
                 mActivityManager.getRunningAppProcesses();
-        assertEquals("Activity " + cameraActivityName + " already running.", -1,
-                TestUtils.getPid(cameraActivityName, list));
+        int processPid = TestUtils.getPid(cameraActivityName, list);
+        if (processPid != -1) {
+            android.os.Process.killProcess(processPid);
+            SystemClock.sleep(WAIT_TIME);
+        }
         Intent activityIntent = new Intent(mContext, klass);
         activityIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         activityIntent.putExtra(TestConstants.EXTRA_RESULT_RECEIVER, resultReceiver);
@@ -1023,7 +1026,7 @@ public final class SharedCameraTest extends Camera2ParameterizedTestCase {
 
         // Fail if activity isn't running
         list = mActivityManager.getRunningAppProcesses();
-        int processPid = TestUtils.getPid(cameraActivityName, list);
+        processPid = TestUtils.getPid(cameraActivityName, list);
         assertTrue(
                 "Activity "
                         + cameraActivityName
