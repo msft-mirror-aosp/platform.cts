@@ -43,7 +43,7 @@ public class DownloadManagerTest extends BaseTestCase {
     public void testUntrustedCaRejected() throws Exception {
         mServerSocket = TestUtils.bindTLSServer(mContext, R.raw.invalid_chain, R.raw.test_key);
         TestUtils.startMockServer(mServerSocket);
-        TestUtils.assertDownloadManagerFails(
+        TestUtils.assertDownloadManagerFailsAsPaused(
                 mContext, "localhost", mServerSocket.getLocalPort(), /* https= */ true);
         mServerSocket.close();
     }
