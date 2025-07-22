@@ -227,6 +227,10 @@ class DefaultJcaImageParityClassTest(its_base_test.ItsBaseTest):
           ui_interaction_utils.DEFAULT_CAMERA_WATCH_DUMP_FILE
       )
       jca_ar = get_jca_ar(default_capture_path)
+      zoom_method = ui_interaction_utils.get_default_camera_zoom_method(
+          default_watch_dump_file)
+      logging.debug('Default camera app uses %s to control the zoom.',
+                    zoom_method)
       zoom_ratio = ui_interaction_utils.get_default_camera_zoom_ratio(
           default_watch_dump_file)
       logging.debug('Default camera captures zoomRatio value: %s', zoom_ratio)

@@ -118,6 +118,7 @@ DEFAULT_CAMERA_WATCH_DUMP_FILE = 'default_camera_watch_dump.txt'
 WATCH_WAIT_TIME_SECONDS = 2
 _CONTROL_ZOOM_RATIO_KEY = 'android.control.zoomRatio'
 _REQ_STR_PATTERN = 'REQ'
+_RES_STR_PATTERN = 'RES'
 JCA_VIDEO_STABILIZATION_MODE_OFF = 0
 JCA_VIDEO_STABILIZATION_MODE_HIGH_QUALITY = 1
 JCA_VIDEO_STABILIZATION_MODE_ON = 2
@@ -128,6 +129,9 @@ JCA_STABILIZATION_MODES = {
     2: 'On',
     3: 'Optical'
 }
+AUTO_STR = 'AUTO'
+ZOOM_RATIO_STR = 'zoomRatio'
+CROP_REGION_STR = 'cropRegion'
 
 
 @dataclasses.dataclass(frozen=True)
@@ -902,7 +906,7 @@ def get_default_camera_zoom_ratio(file_name):
   with open(file_name, 'r') as file:
     for line in file:
       if _CONTROL_ZOOM_RATIO_KEY in line:
-        if _REQ_STR_PATTERN not in line:
+        if _RES_STR_PATTERN not in line:
           continue
         logging.debug('zoomRatio line: %s', line)
         values = line.split(':')
@@ -990,3 +994,87 @@ def get_default_camera_ois_mode(file_name):
     return optical_stabilization_modes[-1].strip()
   return None
 
+
+def get_default_camera_zoom_method(file_name):
+  """Returns the zoomMethod used by the app.
+
+  Parses the watch dump output file and returns the
+  zoomMethod used by the app while taking the capture.
+  If the zoomMethod being used is AUTO, then it checks for
+  android.scaler.cropRegion. If android.scaler.cropRegion is
+  set, then it indicates that the HAL uses cropRegion to determine
+  the zoomRatio or else it uses the value in android.control.zoomRatio.
+
+  Args:
+    file_name: file path of the watch dump output.
+  Returns:
+    zoom_method: zoom_method used by the app while taking capture
+  Raises:
+    FileNotFoundError: If file_name does not exist
+  """
+  zoom_method_values = []
+  zoom_method = ZOOM_RATIO_STR
+  if not os.path.exists(file_name):
+    raise FileNotFoundError(f'File not found: {file_name}')
+  with open(file_name, 'r') as file:
+    for line in file:
+      if 'zoomMethod' in line:
+        logging.debug('zoomMethod line: %s', line)
+        values = line.split(':')
+        value_str = values[-1].strip()
+        match = ('AUTO' in value_str) or ('ZOOM_RATIO' in value_str)
+        if match:
+          value = values[-1].strip().replace('[', '').replace(']', '')
+          logging.debug('zoomMethod found: %s', value)
+          zoom_method_values.append(value)
+  if zoom_method_values:
+    logging.debug('zoom_method_values: %s',
+                  zoom_method_values)
+    logging.debug('zoom_method used for default captures: %s',
+                  zoom_method_values[-1])
+    zoom_method = zoom_method_values[-1].strip()
+    if zoom_method == AUTO_STR:
+      zoom_ratio = get_default_camera_zoom_ratio(file_name)
+      if zoom_ratio != 1.0:
+        zoom_method = ZOOM_RATIO_STR
+      else:
+        zoom_method = CROP_REGION_STR
+  logging.debug('zoomMethod for Default camera app: %s', zoom_method)
+  return zoom_method
+
+
+def get_default_camera_crop_region(file_name):
+  """Returns the scaler cropRegion values used by the app.
+
+  Parses the watch dump output file and returns the
+  cropRegion used by the app while taking the capture.
+
+  Args:
+    file_name: file path of the watch dump output.
+  Returns:
+    crop_region: cropRegion used by the app while taking capture
+  Raises:
+    FileNotFoundError: If file_name does not exist
+  """
+  crop_region_values = []
+  if not os.path.exists(file_name):
+    raise FileNotFoundError(f'File not found: {file_name}')
+  with open(file_name, 'r') as file:
+    for line in file:
+      if 'cropRegion' in line:
+        if _RES_STR_PATTERN not in line:
+          continue
+        logging.debug('cropRegion line: %s', line)
+        values = line.split(':')
+        value_str = values[-1].strip()
+        match = re.search(r'[\d \d \d \d]+', value_str)
+        if match:
+          value = str(match.group())
+          logging.debug('cropRegion found: %s', value)
+          crop_region_values.append(value)
+  if crop_region_values:
+    logging.debug('crop_region_values: %s',
+                  crop_region_values)
+    logging.debug('crop_region used for default captures: %s',
+                  f'[{crop_region_values[-1].strip()}]')
+  return f'[{crop_region_values[-1].strip()}]'
