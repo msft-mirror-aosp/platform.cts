@@ -17,8 +17,11 @@
 package android.input.cts
 
 import android.graphics.Point
+import android.platform.test.annotations.RequiresFlagsEnabled
+import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import android.view.InputDevice
 import android.view.MotionEvent
+import android.view.View
 import androidx.test.ext.junit.rules.ActivityScenarioRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.MediumTest
@@ -56,6 +59,7 @@ import org.junit.rules.TestName
 import org.junit.runner.RunWith
 
 @MediumTest
+@RequiresFlagsEnabled(com.android.hardware.input.Flags.FLAG_POINTER_CAPTURE_MODES)
 @RunWith(AndroidJUnit4::class)
 class TouchpadAbsoluteCaptureModeTest {
     private lateinit var touchpad: UinputTouchPad
@@ -64,6 +68,8 @@ class TouchpadAbsoluteCaptureModeTest {
 
     @get:Rule
     val testName = TestName()
+    @get:Rule
+    val checkFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
     @get:Rule
     val rule = ActivityScenarioRule(PointerCaptureActivity::class.java)
 
@@ -75,7 +81,7 @@ class TouchpadAbsoluteCaptureModeTest {
         verifier = activity.verifier
 
         PollingCheck.waitFor { activity.hasWindowFocus() }
-        activity.ensurePointerCaptured()
+        activity.ensurePointerCaptured(View.POINTER_CAPTURE_MODE_ABSOLUTE)
         // TODO(b/411389468): enable InputVerifier to check the captured pointer events produced.
     }
 
@@ -195,7 +201,6 @@ class TouchpadAbsoluteCaptureModeTest {
             withSource(InputDevice.SOURCE_TOUCHPAD),
         ))
     }
-
 
     @Test
     fun testOnePalm_neverReported() {
