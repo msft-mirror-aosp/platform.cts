@@ -32,6 +32,7 @@ import android.autofillservice.cts.commontests.AutoFillServiceTestCase;
 import android.autofillservice.cts.testcore.AutofillActivityTestRule;
 import android.autofillservice.cts.testcore.CannedFillResponse;
 import android.autofillservice.cts.testcore.CannedFillResponse.CannedDataset;
+import android.autofillservice.cts.testcore.Helper.AutofillCriticalInternal;
 import android.autofillservice.cts.testcore.InstrumentedAutoFillService.SaveRequest;
 import android.autofillservice.cts.testcore.Visitor;
 import android.platform.test.annotations.AppModeFull;
@@ -81,6 +82,7 @@ public class OptionalSaveActivityTest
     }
 
     @Test
+    @AutofillCriticalInternal
     public void testNoAutofillSaveAll() throws Exception {
         noAutofillSaveOnChangeTest(() -> {
             mActivity.mAddress1.setText("742 Evergreen Terrace"); // required
@@ -147,6 +149,7 @@ public class OptionalSaveActivityTest
     }
 
     @Test
+    @AutofillCriticalInternal
     public void testNoAutofillFirstRequiredFieldMissing() throws Exception {
         noAutofillNoChangeNoSaveTest(() -> {
             // address1 is missing
@@ -271,6 +274,7 @@ public class OptionalSaveActivityTest
     }
 
     @Test
+    @AutofillCriticalInternal
     public void testAutofillAllChangedOptionalSaveAll() throws Exception {
         mActivity.expectAutoFill("Shelbyville Nuclear Power Plant", "Shelbyville Bluffs",
                 "Shelbyville", "Lemon");
@@ -340,6 +344,7 @@ public class OptionalSaveActivityTest
     }
 
     @Test
+    @AutofillCriticalInternal
     public void testAutofillAllChangedIgnored() throws Exception {
         mActivity.expectAutoFill("Shelbyville Nuclear Power Plant", "Shelbyville Bluffs",
                 "Shelbyville", "Lemon");
@@ -430,6 +435,7 @@ public class OptionalSaveActivityTest
     }
 
     @Test
+    @AutofillCriticalInternal
     public void testDontShowSaveUiWhenUserManuallyFilledSameValue_oneDatasetAllRequiredFields()
             throws Exception {
         saveWhenUserFilledDatasetFields(
@@ -449,6 +455,7 @@ public class OptionalSaveActivityTest
     }
 
     @Test
+    @AutofillCriticalInternal
     public void testDontShowSaveUiWhenManuallyFilledSameValue_oneDatasetRequiredAndOptionalFields()
             throws Exception {
         saveWhenUserFilledDatasetFields(
@@ -571,8 +578,8 @@ public class OptionalSaveActivityTest
     }
 
     @Test
-    public void testShowSaveUiWhenUserManuallyFilledDifferentValue_requiredOnly()
-            throws Exception {
+    @AutofillCriticalInternal
+    public void testShowSaveUiWhenUserManuallyFilledDifferentValue_requiredOnly() throws Exception {
         saveWhenUserFilledDatasetFields(
                 new String[] {ID_ADDRESS1},
                 new String[] {ID_ADDRESS2},
@@ -589,8 +596,8 @@ public class OptionalSaveActivityTest
     }
 
     @Test
-    public void testShowSaveUiWhenUserManuallyFilledDifferentValue_optionalOnly()
-            throws Exception {
+    @AutofillCriticalInternal
+    public void testShowSaveUiWhenUserManuallyFilledDifferentValue_optionalOnly() throws Exception {
         saveWhenUserFilledDatasetFields(
                 null,
                 new String[] {ID_ADDRESS2},

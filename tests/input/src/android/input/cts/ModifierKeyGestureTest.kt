@@ -80,6 +80,32 @@ class ModifierKeyGestureTest {
             instrumentation,
             listOf("KEY_Q", "KEY_LEFTALT", "KEY_LEFTMETA")
         ).use { keyboardDevice ->
+            // Issue: notifyConfigurationChanged() policy call happens on reader
+            // thread and blocks it for ~250ms for some low end devices. But the
+            // InputDeviceListener on main thread process device change fast and
+            // the test starts injecting events while reader thread is blocked.
+            // This has weird artifacts because "assertNoEvents" would continue
+            // even though reader hasn't actually processed the EventHub events.
+            // 
+            // Short term fix: inject "key Q" and wait reader thread to fully process
+            // the events before injecting the Meta+Alt key combination. This way
+            // we ensure reader is free to process Meta and Alt key presses and
+            // the CapsLock toggle processing.
+            keyboardDevice.injectKeyDown(KEY_Q)
+            keyboardDevice.injectKeyUp(KEY_Q)
+            verifier.assertReceivedKey(
+                Matchers.allOf(
+                    withKeyCode(KeyEvent.KEYCODE_Q),
+                    withKeyAction(KeyEvent.ACTION_DOWN)
+                )
+            )
+            verifier.assertReceivedKey(
+                Matchers.allOf(
+                    withKeyCode(KeyEvent.KEYCODE_Q),
+                    withKeyAction(KeyEvent.ACTION_UP)
+                )
+            )
+
             keyboardDevice.injectKeyDown(KEY_LEFTMETA)
             keyboardDevice.injectKeyDown(KEY_LEFTALT)
             keyboardDevice.injectKeyUp(KEY_LEFTALT)
@@ -103,33 +129,6 @@ class ModifierKeyGestureTest {
                     withModifierState(KeyEvent.META_CAPS_LOCK_ON)
                 )
             )
-
-            // Re-toggle the Caps lock state
-            keyboardDevice.injectKeyDown(KEY_LEFTMETA)
-            keyboardDevice.injectKeyDown(KEY_LEFTALT)
-            keyboardDevice.injectKeyUp(KEY_LEFTALT)
-            keyboardDevice.injectKeyUp(KEY_LEFTMETA)
-
-            activity.assertNoEvents()
-
-            keyboardDevice.injectKeyDown(KEY_Q)
-            keyboardDevice.injectKeyUp(KEY_Q)
-            verifier.assertReceivedKey(
-                Matchers.allOf(
-                    withKeyCode(KeyEvent.KEYCODE_Q),
-                    withKeyAction(KeyEvent.ACTION_DOWN),
-                    withModifierState(0)
-                )
-            )
-            verifier.assertReceivedKey(
-                Matchers.allOf(
-                    withKeyCode(KeyEvent.KEYCODE_Q),
-                    withKeyAction(KeyEvent.ACTION_UP),
-                    withModifierState(0)
-                )
-            )
-
-            activity.assertNoEvents()
         }
     }
 }

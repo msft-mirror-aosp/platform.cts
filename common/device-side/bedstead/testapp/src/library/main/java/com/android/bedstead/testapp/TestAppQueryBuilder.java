@@ -36,9 +36,15 @@ import com.android.queryable.queries.StringQueryHelper;
 import com.google.auto.value.AutoAnnotation;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 
+import java.util.List;
+
 /** Builder for progressively building {@link TestApp} queries. */
 public final class TestAppQueryBuilder implements Queryable {
     private final TestAppProvider mProvider;
+
+    private static final String PROVIDER_NULL_MESSAGE = "Cannot resolve testApps in an empty "
+            + "query. You must create the query using a testAppProvider.query() rather than "
+            + "TestAppQueryBuilder.query() in order to get results";
 
     StringQueryHelper<TestAppQueryBuilder> mLabel = new StringQueryHelper<>(this);
     StringQueryHelper<TestAppQueryBuilder> mPackageName = new StringQueryHelper<>(this);
@@ -246,6 +252,16 @@ public final class TestAppQueryBuilder implements Queryable {
     }
 
     /**
+     * Get the List of {@link TestApp} matching the query.
+     */
+    public List<TestApp> getAll() {
+        if (mProvider == null) {
+            throw new IllegalStateException(PROVIDER_NULL_MESSAGE);
+        }
+        return mProvider.testApps().stream().filter(this::matches).map(TestApp::new).toList();
+    }
+
+    /**
      * Checks if the query matches the specified test app
      */
     public boolean matches(TestApp testApp) {
@@ -255,9 +271,7 @@ public final class TestAppQueryBuilder implements Queryable {
 
     private TestAppDetails resolveQuery() {
         if (mProvider == null) {
-            throw new IllegalStateException("Cannot resolve testApps in an empty query. You must"
-                    + " create the query using a testAppProvider.query() rather than "
-                    + "TestAppQueryBuilder.query() in order to get results");
+            throw new IllegalStateException(PROVIDER_NULL_MESSAGE);
         }
 
         for (TestAppDetails details : mProvider.testApps()) {

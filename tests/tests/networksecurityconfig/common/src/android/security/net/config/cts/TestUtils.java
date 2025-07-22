@@ -285,14 +285,28 @@ public final class TestUtils {
     /**
      * Asserts that the DownloadManager is not able to retrieve the root of a webserver.
      *
-     * <p>The DownloadManager API is conservative in retrying to access a Uri. It won't return a
-     * failure after a certain amount of retry (5, by default) with a minimum of waiting time in
-     * between tries (30sec, by default). Since we expect the test to fail, only wait
-     * DOWNLOAD_MANAGER_TIMEOUT (3sec, by default) and validate that the download is PAUSED (i.e.,
-     * waiting to be retried.)
+     * <p>Use this method to detect a failure related to the connection. This is the error returned
+     * by DownloadManager when the connection is quickly rejected. Note that for errors in the TLS
+     * handshake (e.g., unknown CA), DownloadManager will retry the connection a few times before
+     * giving up. In this case, prefer using assertDownloadManagerFailsAsPaused.
      */
     public static void assertDownloadManagerFails(Context ctx, String host, int port, boolean https)
             throws Exception {
+        Uri destination = Uri.parse((https ? "https://" : "http://") + host + ":" + port);
+        int result = startDownloadManager(ctx, destination);
+        assertEquals(DownloadManager.STATUS_FAILED, result);
+    }
+
+    /**
+     * Asserts that the DownloadManager is not able to retrieve the root of a webserver.
+     *
+     * <p>Only use this method if the connection is expected to fail because of a TLS-related error
+     * (e.g., unable to validate the chain of trust). In this case, DownloadManager will retry to
+     * connect multiple times before giving up. If the connection is expected to fail early, use
+     * assertDownloadManagerFails.
+     */
+    public static void assertDownloadManagerFailsAsPaused(
+            Context ctx, String host, int port, boolean https) throws Exception {
         Uri destination = Uri.parse((https ? "https://" : "http://") + host + ":" + port);
         int result = startDownloadManager(ctx, destination);
         assertEquals(DownloadManager.STATUS_PAUSED, result);

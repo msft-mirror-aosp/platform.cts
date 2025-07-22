@@ -31,8 +31,17 @@ class PointerCaptureActivity : CaptureEventActivity() {
 
     /** Requests pointer capture, then blocks until it is granted. */
     fun ensurePointerCaptured() {
+        ensurePointerCapturedImpl { window.decorView.requestPointerCapture() }
+    }
+
+    /** Requests pointer capture in the specified mode, then blocks until it is granted. */
+    fun ensurePointerCaptured(mode: Int) {
+        ensurePointerCapturedImpl { window.decorView.requestPointerCapture(mode) }
+    }
+
+    fun ensurePointerCapturedImpl(requestCapture: Runnable) {
         latch = CountDownLatch(1)
-        runOnUiThread { window.decorView.requestPointerCapture() }
+        runOnUiThread(requestCapture)
         try {
             check(latch!!.await(60, TimeUnit.SECONDS)) {
                 "Did not receive callback after enabling pointer capture."
