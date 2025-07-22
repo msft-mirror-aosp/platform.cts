@@ -63,7 +63,7 @@ public class DecoderBlockModelTest {
     static final String mInpPrefix = WorkDir.getMediaDirString();
     private static final String TAG = "DecoderBlockModelTest";
     // Input buffers from this input video are queued till LAST_BUFFER_TIMESTAMP_US.
-    private static final long LAST_BUFFER_TIMESTAMP_US = 166666;
+    private static final long LAST_BUFFER_TIMESTAMP_US = 1000000;
     private boolean mIsAtLeastR = ApiLevelUtil.isAtLeast(Build.VERSION_CODES.R);
     private String mCodecName;
     private String mTestFile;
