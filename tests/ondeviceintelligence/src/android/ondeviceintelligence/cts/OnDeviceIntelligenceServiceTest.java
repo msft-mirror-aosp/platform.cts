@@ -16,8 +16,6 @@
 
 package android.ondeviceintelligence.cts;
 
-import static android.app.ondeviceintelligence.flags.Flags.FLAG_ENABLE_ON_DEVICE_INTELLIGENCE;
-
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 
 import static org.junit.Assert.assertEquals;
@@ -47,7 +45,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 @RunWith(AndroidJUnit4.class)
-@RequiresFlagsEnabled(FLAG_ENABLE_ON_DEVICE_INTELLIGENCE)
 public class OnDeviceIntelligenceServiceTest {
     private static final String TAG = "OnDeviceIntelligenceServiceTest";
     private Context mContext;
