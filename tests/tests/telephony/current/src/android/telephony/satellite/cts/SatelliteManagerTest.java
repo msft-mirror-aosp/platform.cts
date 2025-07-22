@@ -57,7 +57,6 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -1173,7 +1172,6 @@ public class SatelliteManagerTest extends SatelliteManagerTestBase {
         revokeSatellitePermission();
     }
 
-    @Ignore("b/428575458 - Re-enable test for 25Q4.")
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_SATELLITE_25Q4_APIS)
     public void testGetSatelliteDataOptimizedApps() {
