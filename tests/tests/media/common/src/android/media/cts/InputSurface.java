@@ -90,45 +90,53 @@ public class InputSurface implements InputSurfaceInterface {
 
         boolean eglChooseConfigOk = false;
         boolean eglCreateContextOk = false;
-        // Configure EGL for recordable and OpenGL ES 2.0.  We want enough RGB bits
+        // Configure EGL for recordable and OpenGL ES 3.0/2.0.  We want enough RGB bits
         // to minimize artifacts from possible YUV conversion.
         int eglColorSize = useHighBitDepth ? 10 : 8;
-        int eglAlphaSize = useHighBitDepth ? 2 : 0;
-        int[] recordableList = useHighBitDepth ? new int[] {0, 1} : new int[] {1};
-        for (int recordable : recordableList) {
-            int[] configAttribList = {
-                    EGL14.EGL_RED_SIZE, eglColorSize,
-                    EGL14.EGL_GREEN_SIZE, eglColorSize,
-                    EGL14.EGL_BLUE_SIZE, eglColorSize,
-                    EGL14.EGL_ALPHA_SIZE, eglAlphaSize,
-                    EGL14.EGL_RENDERABLE_TYPE, EGL14.EGL_OPENGL_ES2_BIT,
-                    EGLExt.EGL_RECORDABLE_ANDROID, recordable,
-                    EGL14.EGL_NONE
-            };
-            int[] numConfigs = new int[1];
-            if (!EGL14.eglChooseConfig(mEGLDisplay, configAttribList, 0, mConfigs, 0,
-                        mConfigs.length, numConfigs, 0)
-                    || numConfigs[0] == 0) {
-                String message = "Unable to find EGL config supporting renderable-type: ES2"
-                        + " surface-type:pbuffer r:" + eglColorSize + " g:" + eglColorSize + " b:"
-                        + eglColorSize + " a:" + eglAlphaSize + " recordable:" + recordable;
-                Log.d(TAG, message);
-                continue;
-            }
+        int eglAlphaSize = useHighBitDepth ? 2 : 8;
+        int[] recordableList = useHighBitDepth ? new int[] {EGL14.EGL_TRUE, EGL14.EGL_FALSE}
+                                               : new int[] {EGL14.EGL_TRUE};
+        int glesVersion = useHighBitDepth ? 3 : 2;
+        int EGL_OPENGL_ES3_BIT_KHR = 0x40;
+        for (; glesVersion > 1 && !eglCreateContextOk; glesVersion--) {
+            int renderType = glesVersion == 3 ? EGL_OPENGL_ES3_BIT_KHR : EGL14.EGL_OPENGL_ES2_BIT;
+            for (int recordable : recordableList) {
+                int[] configAttribList = {
+                        EGL14.EGL_RED_SIZE, eglColorSize,
+                        EGL14.EGL_GREEN_SIZE, eglColorSize,
+                        EGL14.EGL_BLUE_SIZE, eglColorSize,
+                        EGL14.EGL_ALPHA_SIZE, eglAlphaSize,
+                        EGL14.EGL_RENDERABLE_TYPE, renderType,
+                        EGLExt.EGL_RECORDABLE_ANDROID, recordable,
+                        EGL14.EGL_NONE
+                };
+                int[] numConfigs = new int[1];
+                if (!EGL14.eglChooseConfig(mEGLDisplay, configAttribList, 0, mConfigs, 0,
+                            mConfigs.length, numConfigs, 0)
+                        || numConfigs[0] == 0) {
+                    String message = "Unable to find EGL config supporting renderable-type: ES"
+                            + glesVersion + " surface-type:window r:" + eglColorSize
+                            + " g:" + eglColorSize + " b:" + eglColorSize + " a:" + eglAlphaSize
+                            + " recordable:" + recordable;
+                    Log.d(TAG, message);
+                    continue;
+                }
 
-            eglChooseConfigOk = true;
+                eglChooseConfigOk = true;
 
-            // Configure context for OpenGL ES 2.0.
-            int[] contextAttribList = {
-                    EGL14.EGL_CONTEXT_CLIENT_VERSION, 2,
-                    EGL14.EGL_NONE
-            };
-            mEGLContext = EGL14.eglCreateContext(
-                    mEGLDisplay, mConfigs[0], EGL14.EGL_NO_CONTEXT, contextAttribList, 0);
-            checkEglError("eglCreateContext");
-            if (mEGLContext != EGL14.EGL_NO_CONTEXT && EGL14.EGL_SUCCESS == EGL14.eglGetError()) {
-                eglCreateContextOk = true;
-                break;
+                // Configure context for OpenGL ES 3.0/2.0.
+                int[] contextAttribList = {
+                        EGL14.EGL_CONTEXT_CLIENT_VERSION, glesVersion,
+                        EGL14.EGL_NONE
+                };
+                mEGLContext = EGL14.eglCreateContext(
+                        mEGLDisplay, mConfigs[0], EGL14.EGL_NO_CONTEXT, contextAttribList, 0);
+                checkEglError("eglCreateContext");
+                if (mEGLContext != EGL14.EGL_NO_CONTEXT
+                        && EGL14.EGL_SUCCESS == EGL14.eglGetError()) {
+                    eglCreateContextOk = true;
+                    break;
+                }
             }
         }
         if (!eglChooseConfigOk) {
