@@ -51,6 +51,15 @@ public class TrafficDescriptorTest {
             -108, -119, -122, 3, 51, -48, 110, 78, 71, 20, 80, 82, 73, 79, 82, 73, 84, 73, 90, 69,
             95, 66, 65, 78, 68, 87, 73, 68, 84, 72};
 
+    // 97a498e3fc925c9489860333d06e4e47215052494f524954495a455f554e49464945445f434f4d4d554e49434154
+    // 494f4e53.
+    // [OsAppId.ANDROID_OS_ID, "PRIORITIZE_UNIFIED_COMMUNICATIONS", 1]
+    private static final byte[] UFC_OS_APP_ID = {
+        -105, -92, -104, -29, -4, -110, 92, -108, -119, -122, 3, 51, -48, 110, 78, 71, 33, 80, 82,
+        73, 79, 82, 73, 84, 73, 90, 69, 95, 85, 78, 73, 70, 73, 69, 68, 95, 67, 79, 77, 77, 85, 78,
+        73, 67, 65, 84, 73, 79, 78, 83
+    };
+
     private PackageManager mPackageManager;
 
     @Before
@@ -72,6 +81,10 @@ public class TrafficDescriptorTest {
         td = new TrafficDescriptor(DNN, EMBB_OS_APP_ID);
         assertThat(td.getDataNetworkName()).isEqualTo(DNN);
         assertThat(td.getOsAppId()).isEqualTo(EMBB_OS_APP_ID);
+
+        td = new TrafficDescriptor(DNN, UFC_OS_APP_ID);
+        assertThat(td.getDataNetworkName()).isEqualTo(DNN);
+        assertThat(td.getOsAppId()).isEqualTo(UFC_OS_APP_ID);
     }
 
     @Test
@@ -88,12 +101,18 @@ public class TrafficDescriptorTest {
         equalsTd = new TrafficDescriptor(DNN, EMBB_OS_APP_ID);
         assertThat(embbTd).isEqualTo(equalsTd);
 
+        TrafficDescriptor ufcTd = new TrafficDescriptor(DNN, UFC_OS_APP_ID);
+        equalsTd = new TrafficDescriptor(DNN, UFC_OS_APP_ID);
+        assertThat(ufcTd).isEqualTo(equalsTd);
+
         assertThat(enterpriseTd).isNotEqualTo(urllcTd);
         assertThat(enterpriseTd).isNotEqualTo(embbTd);
         assertThat(urllcTd).isNotEqualTo(enterpriseTd);
         assertThat(urllcTd).isNotEqualTo(embbTd);
+        assertThat(urllcTd).isNotEqualTo(ufcTd);
         assertThat(embbTd).isNotEqualTo(enterpriseTd);
         assertThat(embbTd).isNotEqualTo(urllcTd);
+        assertThat(embbTd).isNotEqualTo(ufcTd);
     }
 
     @Test
@@ -134,6 +153,16 @@ public class TrafficDescriptorTest {
 
         parcelTd = TrafficDescriptor.CREATOR.createFromParcel(parcel);
         assertThat(td).isEqualTo(parcelTd);
+
+        td = new TrafficDescriptor(null, UFC_OS_APP_ID);
+
+        parcel = Parcel.obtain();
+        td.writeToParcel(parcel, 0);
+        parcel.setDataPosition(0);
+
+        parcelTd = TrafficDescriptor.CREATOR.createFromParcel(parcel);
+        assertThat(td).isEqualTo(parcelTd);
+
         parcel.recycle();
     }
 
@@ -157,6 +186,10 @@ public class TrafficDescriptorTest {
                 .build();
         assertThat(td.getDataNetworkName()).isNull();
         assertThat(td.getOsAppId()).isEqualTo(EMBB_OS_APP_ID);
+
+        td = new TrafficDescriptor.Builder().setOsAppId(UFC_OS_APP_ID).build();
+        assertThat(td.getDataNetworkName()).isNull();
+        assertThat(td.getOsAppId()).isEqualTo(UFC_OS_APP_ID);
     }
 
     // The purpose of this test is to ensure that no real package names are used as app id.
