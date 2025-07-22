@@ -5130,7 +5130,9 @@ public class ViewTest {
         });
         mInstrumentation.waitForIdleSync();
         // the velocities should be reset once the view is drawn.
-        assertTrue(view.getFrameContentVelocity() == 0);
+        PollingCheck.waitFor(() -> view.getFrameContentVelocity() == 0,
+                "Expected FrameContentVelocity to be 0, but it is "
+                        + view.getFrameContentVelocity());
     }
 
     /**
@@ -5183,6 +5185,8 @@ public class ViewTest {
         });
 
         mInstrumentation.waitForIdleSync();
+        // Use PollingCheck to wait until the draw pass has completed.
+        PollingCheck.waitFor(view::hasCalledOnDraw);
         // the value should be remained the same
         assertEquals(view.getRequestedFrameRate(), view.REQUESTED_FRAME_RATE_CATEGORY_LOW, 0.1);
     }
