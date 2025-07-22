@@ -45,7 +45,7 @@ class GeneralPreferencePermissionTest {
         @SettingsPreferenceMetadataParameter argument: SettingsPreferenceMetadata,
     ) {
         val getValueResult = deviceState
-            .getBlockingSettingsPreferenceServiceClient()
+            .getSettingsPreferenceRepository()
             .getValueResult(argument, grantRequiredPermissions = false)
 
         assertThat(getValueResult.resultCode).isEqualTo(
@@ -62,7 +62,7 @@ class GeneralPreferencePermissionTest {
         @SettingsPreferenceMetadataParameter argument: SettingsPreferenceMetadata,
     ) {
         val setValueResult = deviceState
-            .getBlockingSettingsPreferenceServiceClient()
+            .getSettingsPreferenceRepository()
             .setValueResult(
                 argument,
                 SettingsPreferenceValue.Builder(SettingsPreferenceValue.TYPE_STRING).build(),

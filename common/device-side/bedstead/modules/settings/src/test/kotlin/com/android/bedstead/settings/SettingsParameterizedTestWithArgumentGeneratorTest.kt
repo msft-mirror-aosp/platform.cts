@@ -51,7 +51,7 @@ class SettingsParameterizedTestWithArgumentGeneratorTest {
             val flagValueProvider = DeviceFlagsValueProvider()
             if (flagValueProvider.getBoolean(FLAG_SETTINGS_CATALYST)) {
                 Truth.assertThat(numberOfTestRuns).isEqualTo(
-                    deviceState.getBlockingSettingsPreferenceServiceClient().allMetadata.size
+                    deviceState.getSettingsPreferenceRepository().allMetadata.size
                 )
             }
         }

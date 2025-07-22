@@ -55,7 +55,7 @@ class MissingPermissionTest {
                 .withPermission(*argument.readPermissions.minus(missingPermission).toTypedArray())
                 .withoutPermission(missingPermission).use {
                     val getValueResult = deviceState
-                        .getBlockingSettingsPreferenceServiceClient()
+                        .getSettingsPreferenceRepository()
                         .getValueResult(argument, grantRequiredPermissions = false)
 
                     assertWithMessage(
@@ -82,7 +82,7 @@ class MissingPermissionTest {
         )
         argument: SettingsPreferenceMetadata,
     ) {
-        val valueResult = deviceState.getBlockingSettingsPreferenceServiceClient().getValueResult(
+        val valueResult = deviceState.getSettingsPreferenceRepository().getValueResult(
             argument,
             grantRequiredPermissions = true
         )
@@ -91,7 +91,7 @@ class MissingPermissionTest {
                 .withPermission(*argument.writePermissions.minus(missingPermission).toTypedArray())
                 .withoutPermission(missingPermission).use {
                     val setValueResult = deviceState
-                        .getBlockingSettingsPreferenceServiceClient()
+                        .getSettingsPreferenceRepository()
                         .setValueResult(
                             argument,
                             valueResult.value!!,

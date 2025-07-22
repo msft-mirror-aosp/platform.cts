@@ -84,7 +84,7 @@ class BlockingSettingsPreferenceServiceClient(val packageName: String) {
     /**
      * A blocking wrapper of [SettingsPreferenceServiceClient.getPreferenceValue]
      */
-    fun getValueResult(
+    internal fun getValueResult(
         metadata: SettingsPreferenceMetadata,
         grantRequiredPermissions: Boolean = true
     ): GetValueResult {
@@ -117,7 +117,7 @@ class BlockingSettingsPreferenceServiceClient(val packageName: String) {
     /**
      * A blocking wrapper of [SettingsPreferenceServiceClient.setPreferenceValue]
      */
-    fun setValueResult(
+    internal fun setValueResult(
         metadata: SettingsPreferenceMetadata,
         settingsPreferenceValue: SettingsPreferenceValue,
         grantRequiredPermissions: Boolean = true
@@ -138,7 +138,6 @@ class BlockingSettingsPreferenceServiceClient(val packageName: String) {
         settingsPreferenceValue: SettingsPreferenceValue
     ): SetValueResult {
         val callback = DefaultBlockingCallback<SetValueResult>()
-
         client.setPreferenceValue(
             SetValueRequest.Builder(
                 metadata.screenKey,
