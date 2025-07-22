@@ -30,6 +30,8 @@ import android.platform.test.annotations.RestrictedBuildTest;
 import android.server.DeviceIdleModeEnum;
 import android.view.DisplayStateEnum;
 
+import com.android.compatibility.common.util.FeatureUtil;
+
 import com.android.os.AtomsProto.AppBreadcrumbReported;
 import com.android.os.AtomsProto.Atom;
 import com.android.os.AtomsProto.BatterySaverModeStateChanged;
@@ -66,7 +68,6 @@ public class HostAtomTests extends DeviceTestCase implements IBuildReceiver {
 
     private static final String FEATURE_AUTOMOTIVE = "android.hardware.type.automotive";
     private static final String FEATURE_WATCH = "android.hardware.type.watch";
-    private static final String FEATURE_XR_API_FEATURE = "android.software.xr.api.spatial";
     private static final String FEATURE_TWM = "com.google.clockwork.hardware.traditional_watch_mode";
     private static final String FEATURE_WIFI = "android.hardware.wifi";
     private static final String FEATURE_LEANBACK_ONLY = "android.software.leanback_only";
@@ -418,7 +419,7 @@ public class HostAtomTests extends DeviceTestCase implements IBuildReceiver {
 
     public void testBatteryVoltage() throws Exception {
         if (DeviceUtils.hasFeature(getDevice(), FEATURE_WATCH)) return;
-        if (DeviceUtils.hasFeature(getDevice(), FEATURE_XR_API_FEATURE)) return;
+        if (FeatureUtil.isXrHeadset(getDevice())) return;
 
         ConfigUtils.uploadConfigForPulledAtom(getDevice(), DeviceUtils.STATSD_ATOM_TEST_PKG,
                 Atom.BATTERY_VOLTAGE_FIELD_NUMBER);
