@@ -35,6 +35,7 @@ _JETPACK_CAMERA_APP_PACKAGE_NAME = 'com.google.jetpackcamera'
 _MIN_PHONE_MOVEMENT_ANGLE = 5  # Degrees
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
 _NUM_ROTATIONS = 36
+_ONE_TO_ONE_ASPECT_RATIO = '1 to 1 aspect ratio'
 _START_FRAME = 30  # Give 3A 1s to warm up.
 _VIDEO_DELAY_TIME = 3  # Seconds
 _VIDEO_DURATION = 5.5  # Seconds
@@ -282,7 +283,12 @@ class VideoStabilizationJCATest(its_base_test.UiAutomatorItsBaseTest):
       servo_speed = _get_servo_speed(self.tablet_device)
       max_cam_gyro_angles = {}
 
-      for ratio_tested in ui_interaction_utils.RATIO_TO_UI_DESCRIPTION.keys():
+      # Remove 1:1 aspect ratio from testing.
+      # TODO: b/431844388 - Add 1:1 aspect ratio back to testing.
+      ratio_list = list(ui_interaction_utils.RATIO_TO_UI_DESCRIPTION.keys())
+      ratio_list.remove(_ONE_TO_ONE_ASPECT_RATIO)
+
+      for ratio_tested in ratio_list:
         # Record video.
         recording_path = _collect_data(
             cam, self.dut, lens_facing, log_path, ratio_tested,
