@@ -40,6 +40,7 @@ import android.security.cts.authenticationpolicy.AuthenticationPolicyManagerTest
 import android.security.cts.authenticationpolicy.AuthenticationPolicyManagerTest.Companion.TIMEOUT_MS
 import android.server.biometrics.util.Utils.enrollForSensor
 import android.server.biometrics.util.Utils.waitForAllUnenrolled
+import android.server.biometrics.util.Utils.waitForIdleService
 import android.util.Log
 import androidx.test.filters.SdkSuppress
 import androidx.test.platform.app.InstrumentationRegistry
@@ -158,7 +159,9 @@ class AuthenticationPolicyManagerTest {
             }
         }
 
-        waitForAllUnenrolled()
+        instrumentation.waitForIdleSync()
+        // Authentication lifecycle is done
+        waitForIdleService()
     }
 
     @Test
@@ -430,7 +433,6 @@ class AuthenticationPolicyManagerTest {
                 .isEqualTo(SUCCESS)
             cleanupSession(session)
         }
-        waitForAllUnenrolled()
     }
 
     @ApiTest(
@@ -505,7 +507,6 @@ class AuthenticationPolicyManagerTest {
             authenticationPolicyManager.unregisterSecureLockDeviceStatusListener(testListener)
             cleanupSession(session)
         }
-        waitForAllUnenrolled()
     }
 
     @ApiTest(
