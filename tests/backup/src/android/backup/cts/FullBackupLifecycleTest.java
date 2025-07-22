@@ -79,7 +79,7 @@ public class FullBackupLifecycleTest extends BaseBackupCtsTest {
 
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_CROSS_PLATFORM_TRANSFER)
     @Test
-    public void testOnMeasureFullBackupCalled() throws Exception {
+    public void testOnEstimateFullBackupBytesCalled() throws Exception {
         if (!isBackupSupported()) {
             return;
         }
@@ -87,7 +87,7 @@ public class FullBackupLifecycleTest extends BaseBackupCtsTest {
         // Launch test app and create a small file
         createTestFileOfSize(BACKUP_APP_NAME, 10);
 
-        // Request backup and wait for onMeasureFullBackup event in logcat
+        // Request backup and wait for onEstimateFullBackupBytes event in logcat
         getBackupUtils().backupNowSync(BACKUP_APP_NAME);
         waitForLogcat(
                 TIMEOUT_SECONDS,
