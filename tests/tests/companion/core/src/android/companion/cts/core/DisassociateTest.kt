@@ -136,9 +136,14 @@ class DisassociateTest : CoreTestBase() {
                 }
         )
 
-        assertFailsWith(IllegalArgumentException::class) { cdm.disassociate(0) }
-        assertFailsWith(IllegalArgumentException::class) { cdm.disassociate(1) }
-        assertFailsWith(IllegalArgumentException::class) { cdm.disassociate(-1) }
+        try {
+            cdm.disassociate(-1)
+        } catch (e: IllegalArgumentException) {
+            fail(
+                "disassociate() should not throw a IllegalArgumentException" +
+                    "for a non-existent ID, but it threw $e"
+            )
+        }
     }
 
     private fun CompanionDeviceManager.getMyAssociationLinkedTo(
