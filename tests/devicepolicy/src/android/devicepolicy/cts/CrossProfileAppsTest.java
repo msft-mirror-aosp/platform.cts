@@ -1059,7 +1059,6 @@ public final class CrossProfileAppsTest {
             @UserPair(from = CLONE_PROFILE, to = PRIVATE_PROFILE)})
     @Postsubmit(reason = "new test")
     @RequireFlagsEnabled({android.os.Flags.FLAG_ALLOW_PRIVATE_PROFILE,
-            android.multiuser.Flags.FLAG_ENABLE_HIDING_PROFILES,
             android.multiuser.Flags.FLAG_ENABLE_PRIVATE_SPACE_FEATURES})
     public void getTargetUserProfiles_excludeHiddenProfiles() {
         TestApis.packages().instrumented().installExisting(otherUser(sDeviceState));
@@ -1074,7 +1073,6 @@ public final class CrossProfileAppsTest {
             @UserPair(from = CLONE_PROFILE, to = PRIVATE_PROFILE)})
     @Postsubmit(reason = "new test")
     @RequireFlagsEnabled({android.os.Flags.FLAG_ALLOW_PRIVATE_PROFILE,
-            android.multiuser.Flags.FLAG_ENABLE_HIDING_PROFILES,
             android.multiuser.Flags.FLAG_ENABLE_PRIVATE_SPACE_FEATURES})
     public void startMainActivity_hiddenProfile_throwsException() {
         TestApis.packages().instrumented().installExisting(otherUser(sDeviceState));
@@ -1088,7 +1086,6 @@ public final class CrossProfileAppsTest {
     @CrossUserTest(@UserPair(from = INITIAL_USER, to = PRIVATE_PROFILE))
     @Postsubmit(reason = "new test")
     @RequireFlagsEnabled({android.os.Flags.FLAG_ALLOW_PRIVATE_PROFILE,
-            android.multiuser.Flags.FLAG_ENABLE_HIDING_PROFILES,
             android.multiuser.Flags.FLAG_ENABLE_PRIVATE_SPACE_FEATURES})
     public void canInteractAcrossProfiles_initialUserToHiddenProfile_returnsFalse() {
         try (TestAppInstance primaryApp = sCrossProfileTestApp.install()) {
