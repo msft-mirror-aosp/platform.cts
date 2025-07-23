@@ -25,6 +25,7 @@ import static com.android.server.biometrics.nano.BiometricServiceStateProto.STAT
 
 import static com.google.common.truth.Truth.assertThat;
 
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyInt;
@@ -70,6 +71,7 @@ public class BiometricPromptFallbackOptionsTest extends BiometricTestBase {
     @Before
     public void before() {
         assumeTrue(Utils.isFirstApiLevel29orGreater());
+        assumeFalse(isCar() || isWatch());
     }
 
     @ApiTest(
