@@ -33,6 +33,7 @@ import android.annotation.NonNull;
 import android.content.pm.PackageManager;
 import android.net.ConnectivityManager;
 import android.platform.test.annotations.AppModeNonSdkSandbox;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.telephony.AccessNetworkConstants;
@@ -41,6 +42,11 @@ import android.telephony.Annotation.SimActivationState;
 import android.telephony.BarringInfo;
 import android.telephony.CallState;
 import android.telephony.CellIdentity;
+import android.telephony.CellIdentityGsm;
+import android.telephony.CellIdentityLte;
+import android.telephony.CellIdentityNr;
+import android.telephony.CellIdentityTdscdma;
+import android.telephony.CellIdentityWcdma;
 import android.telephony.CellInfo;
 import android.telephony.CellLocation;
 import android.telephony.LinkCapacityEstimate;
@@ -69,6 +75,7 @@ import android.util.Pair;
 import androidx.test.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.ShellIdentityUtils;
+import com.android.internal.telephony.flags.Flags;
 
 import org.junit.After;
 import org.junit.Before;
@@ -1345,6 +1352,44 @@ public class TelephonyCallbackTest {
         // unknown. If any type is known, then all that are not reported are assumed to
         // be not barred.
         assertNotEquals(hasBarringTypeUnknown, hasBarringTypeKnown);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_CELL_IDENTITY_FOR_BARRING_INFO)
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have permissions to register the callback")
+    public void testOnBarringInfoChanged_validatesCellIdentity() throws Throwable {
+        assertFalse(mOnBarringInfoChangedCalled);
+
+        mBarringInfoCallback = new BarringInfoListener();
+        registerTelephonyCallbackWithPermission(mBarringInfoCallback);
+
+        synchronized (mLock) {
+            while (!mOnBarringInfoChangedCalled) {
+                mLock.wait(WAIT_TIME);
+            }
+        }
+        assertTrue(mOnBarringInfoChangedCalled);
+
+        assertBarringInfoHasValidCellIdentity(mBarringInfo);
+
+        // Test unregister
+        unRegisterTelephonyCallback(mOnBarringInfoChangedCalled, mBarringInfoCallback);
+    }
+
+    private static void assertBarringInfoHasValidCellIdentity(BarringInfo barringInfo) {
+        assertNotNull(barringInfo);
+
+        CellIdentity ci = barringInfo.getCellIdentity();
+        assertNotNull(ci);
+
+        boolean isKnownCellIdentityType =
+                ci instanceof CellIdentityGsm
+                        || ci instanceof CellIdentityWcdma
+                        || ci instanceof CellIdentityTdscdma
+                        || ci instanceof CellIdentityLte
+                        || ci instanceof CellIdentityNr;
+
+        assertTrue(isKnownCellIdentityType);
     }
 
     private RegistrationFailedListener mRegistrationFailedCallback;
