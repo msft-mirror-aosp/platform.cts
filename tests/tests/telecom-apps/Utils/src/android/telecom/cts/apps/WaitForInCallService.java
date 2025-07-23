@@ -174,7 +174,6 @@ public class WaitForInCallService {
 
                     @Override
                     public Object actual() {
-                        Log.i("tomsDebug", String.format("checking call=[%s]", call));
                         return call.getState();
                     }
                 }, WaitUntil.DEFAULT_TIMEOUT_MS,
