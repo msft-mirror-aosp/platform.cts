@@ -57,6 +57,8 @@ import static android.server.wm.second.Components.SECOND_ACTIVITY;
 import static android.server.wm.second.Components.SECOND_LAUNCH_BROADCAST_ACTION;
 import static android.server.wm.second.Components.SECOND_LAUNCH_BROADCAST_RECEIVER;
 import static android.server.wm.third.Components.THIRD_ACTIVITY;
+import static android.view.WindowManager.DISPLAY_IME_POLICY_LOCAL;
+import static com.android.server.display.feature.flags.Flags.FLAG_ENABLE_DISPLAY_CONTENT_MODE_MANAGEMENT;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -65,6 +67,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
 import android.app.Activity;
+import android.app.ActivityManager;
 import android.app.ActivityOptions;
 import android.app.PendingIntent;
 import android.content.ComponentName;
@@ -85,6 +88,9 @@ import android.server.wm.MultiDisplayTestBase;
 import android.server.wm.WindowManagerState.DisplayContent;
 import android.server.wm.WindowManagerState.Task;
 import android.view.SurfaceView;
+import com.android.window.flags.Flags;
+
+import com.android.compatibility.common.util.ApiTest;
 
 import org.junit.After;
 import org.junit.Before;
@@ -1130,6 +1136,49 @@ public class MultiDisplayActivityLaunchTests extends MultiDisplayTestBase {
                 mWmState.getActivityCountInTask(taskId2, NO_HISTORY_ACTIVITY2));
         assertFalse("No-history activity should not be finished.",
                 mWmState.hasActivityState(NO_HISTORY_ACTIVITY2, STATE_DESTROYED));
+    }
+
+    /**
+     * Tests that an activity cannot be launched on a display that cannot host tasks.
+     */
+    @RequiresFlagsEnabled({
+            FLAG_ENABLE_DISPLAY_CONTENT_MODE_MANAGEMENT,
+            Flags.FLAG_ENABLE_MIRROR_DISPLAY_NO_ACTIVITY
+    })
+    @ApiTest(apis = {
+            "android.app.ActivityOptions#setLaunchDisplayId",
+            "android.app.ActivityManager#isActivityStartAllowedOnDisplay"
+    })
+    @Test
+    public void testLaunchActivityOnDisplayCannotHostTasks() {
+        // Create a simulated display that allows content mode switch.
+        final DisplayContent newDisplay = createManagedVirtualDisplaySession()
+                .setSimulateDisplay(true)
+                .setAllowContentModeSwitch(true)
+                .setDisplayImePolicy(DISPLAY_IME_POLICY_LOCAL)
+                .createDisplay();
+        final MirrorBuiltInDisplaySession mirrorSession = createMirrorBuiltInDisplaySession();
+        // When mirroring starts on the new display, it becomes unable to host tasks.
+        mirrorSession.set(1);
+
+        final ActivityManager activityManager =
+                mTargetContext.getSystemService(ActivityManager.class);
+        final Intent intent = new Intent(Intent.ACTION_VIEW).setComponent(TEST_ACTIVITY);
+        mWmState.waitAndAssert(state ->
+                !activityManager.isActivityStartAllowedOnDisplay(mTargetContext, newDisplay.mId,
+                        intent),
+                "The activity should not be allowed to launch on the secondary display");
+
+        try {
+            final String launchCommand = "am start -n " + getActivityName(TEST_ACTIVITY)
+                    + " --display " + newDisplay.mId + " --user " + mContext.getUserId();
+            executeShellCommand(launchCommand);
+        } catch (AssertionError e) {
+            // Expected
+        }
+
+        assertFalse("The activity should not be launched on the secondary display",
+                mWmState.hasActivityInDisplay(newDisplay.mId, TEST_ACTIVITY));
     }
 
     private void assertBroughtExistingTaskToAnotherDisplay(int flags, ComponentName topActivity) {
