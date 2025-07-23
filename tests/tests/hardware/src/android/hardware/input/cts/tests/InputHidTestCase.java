@@ -71,6 +71,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicReference;
 
 @RequiresFlagsEnabled(FLAG_DEVICE_ASSOCIATIONS)
 public abstract class InputHidTestCase extends InputTestCase {
@@ -171,11 +172,24 @@ public abstract class InputHidTestCase extends InputTestCase {
     private @NonNull InputDevice waitForCapability(String description, Capability capability) {
         final InputManager inputManager = Objects.requireNonNull(
                 mInstrumentation.getTargetContext().getSystemService(InputManager.class));
-        PollingCheck.waitFor(() -> {
-            final InputDevice inputDevice = inputManager.getInputDevice(mHidDevice.getDeviceId());
-            return inputDevice != null && capability.check(inputDevice);
-        }, "Failed to wait for input device to have capability: " + description);
-        return Objects.requireNonNull(inputManager.getInputDevice(mHidDevice.getDeviceId()));
+        final AtomicReference<InputDevice> result = new AtomicReference<>();
+        try {
+            new PollingCheck() {
+                @Override
+                protected boolean check() {
+                    final int deviceId = mHidDevice.getDeviceId();
+                    final InputDevice inputDevice = inputManager.getInputDevice(deviceId);
+                    if (inputDevice != null && capability.check(inputDevice)) {
+                        result.set(inputDevice);
+                        return true;
+                    }
+                    return false;
+                }
+            }.run();
+        } catch (AssertionError e) {
+            failWithMessage("Timed out waiting for capability '" + description + "'");
+        }
+        return result.get();
     }
 
     /**
