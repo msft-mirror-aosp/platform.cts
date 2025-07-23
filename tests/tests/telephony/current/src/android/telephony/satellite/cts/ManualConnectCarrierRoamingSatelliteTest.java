@@ -552,10 +552,10 @@ public class ManualConnectCarrierRoamingSatelliteTest extends CarrierRoamingSate
     private static void sendSms(String destAddr, int resultCode) throws Exception {
         logd(TAG, "sendSms destAddr:" + destAddr + ", resultCode:" + resultCode);
 
-        // Satellite modem will be in NOT_CONNECTED state after being powered on
+        logd(TAG, "sendSms: Satellite modem will be in NOT_CONNECTED state after being powered on");
         enableSatelliteMode();
 
-        // Register callbacks for sending SMS state changes
+        logd(TAG, "sendSms: Register callbacks for sending SMS state changes");
         SatelliteTransmissionUpdateCallbackTest transmissionUpdateCallback =
             startTransmissionUpdates();
         SmsMmsBroadcastReceiver sendReceiver = registerSmsMmsBroadcastReceiver(SMS_SEND_ACTION);
@@ -566,7 +566,8 @@ public class ManualConnectCarrierRoamingSatelliteTest extends CarrierRoamingSate
                 String.valueOf(SystemClock.elapsedRealtimeNanos()),
                 sendPendingIntent, null);
 
-            // Datagram transfer state should change from IDLE to WAITING_TO_CONNECT
+            logd(TAG, "sendSms: Datagram transfer state should change from IDLE to "
+                    + "WAITING_TO_CONNECT");
             assertTrue(transmissionUpdateCallback.waitUntilOnSendDatagramStateChanged(1));
             assertThat(transmissionUpdateCallback.getNumOfSendDatagramStateChanges()).isEqualTo(1);
             assertThat(transmissionUpdateCallback.getSendDatagramStateChange(0)).isEqualTo(
@@ -574,13 +575,13 @@ public class ManualConnectCarrierRoamingSatelliteTest extends CarrierRoamingSate
                             SatelliteManager.SATELLITE_DATAGRAM_TRANSFER_STATE_WAITING_TO_CONNECT,
                             1, SatelliteManager.SATELLITE_RESULT_SUCCESS));
 
-            // Move satellite to IN_SERVICE state
+            logd(TAG, "sendSms: Move satellite to IN_SERVICE state");
             transmissionUpdateCallback.clearSendDatagramStateChanges();
             sMockSatelliteServiceManager.sendOnSatelliteModemStateChanged(
                     SatelliteModemState.SATELLITE_MODEM_STATE_IN_SERVICE);
 
-            // Datagram transfer state should change from WAITING_TO_CONNECT to SENDING,
-            // SEND_SUCCESS, and then IDLE
+            logd(TAG, "sendSms: Datagram transfer state should change from WAITING_TO_CONNECT "
+                    + "to SENDING, SEND_SUCCESS, and then IDLE");
             assertTrue(transmissionUpdateCallback.waitUntilOnSendDatagramStateChanged(3));
             assertThat(transmissionUpdateCallback.getNumOfSendDatagramStateChanges()).isEqualTo(3);
             assertThat(transmissionUpdateCallback.getSendDatagramStateChange(0)).isEqualTo(
@@ -606,8 +607,8 @@ public class ManualConnectCarrierRoamingSatelliteTest extends CarrierRoamingSate
             assertTrue(sendReceiver.waitForBroadcast(1));
             assertEquals(resultCode, sendReceiver.getResultCode());
 
-            // Move satellite to off state to clean up all pending resources
-            // and reset telephony satellite states.
+            logd(TAG, "sendSms: Move satellite to off state to clean up all pending resources "
+                    + "and reset telephony satellite states.");
             moveSatelliteToOffState();
         } finally {
             getContext().unregisterReceiver(sendReceiver);
