@@ -709,7 +709,7 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
                 "android.net.wifi.aware.Characteristics#getMaxSupportedRangingPacketBandwidth",
                 "android.net.wifi.aware.Characteristics#getMaxSupportedRxChains"
             })
-    public void testCharacteristics() {
+    public void testCharacteristics() throws InterruptedException {
         if (!TestUtils.shouldTestWifiAware(getContext())) {
             return;
         }
@@ -750,6 +750,7 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
             assertEquals(1, params.getNdpSessionLimit());
             ShellIdentityUtils.invokeWithShellPermissions(
                     () -> mWifiAwareManager.setAwareParams(params));
+            Thread.sleep(1000);
             assertEquals(1, mWifiAwareManager.getCharacteristics().getNumberOfSupportedDataPaths());
             params.setNdpSessionLimit(0);
             ShellIdentityUtils.invokeWithShellPermissions(
