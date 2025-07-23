@@ -21,14 +21,10 @@ import android.service.settings.preferences.SettingsPreferenceMetadata
 import android.util.Log
 import com.android.bedstead.harrier.AnnotationExecutorUtil
 import com.android.bedstead.harrier.BedsteadJUnit4
-import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.harrier.annotations.FailureMode
 import com.android.bedstead.nene.TestApis
 import com.android.settingslib.flags.Flags.FLAG_SETTINGS_CATALYST
 import com.google.common.truth.Truth
-import org.junit.Assert
-import org.junit.ClassRule
-import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -37,30 +33,37 @@ class PreferenceWithDeeplinkTest {
 
     @RequiresFlagsEnabled(FLAG_SETTINGS_CATALYST)
     @Test
-    fun getPreference_checkDeeplinkBehaviour_basedOnWriteSensitivity(
-        @SettingsPreferenceMetadataParameter argument: SettingsPreferenceMetadata) {
+    fun getPreference_withSensitivityDeeplinkOnly_checkLaunchIntent_shouldBeNotNull_andLaunchActivity(
+        @SettingsPreferenceMetadataParameter(writeSensitivity = [SettingsPreferenceMetadata.DEEPLINK_ONLY])
+        argument: SettingsPreferenceMetadata) {
 
-        when (argument.writeSensitivity) {
-            SettingsPreferenceMetadata.NO_SENSITIVITY,
-            SettingsPreferenceMetadata.EXPECT_POST_CONFIRMATION -> {
-                argument.launchIntent?.let { deeplink ->
-                    checkDeeplinkBehaviour(deeplink)
-                } ?: AnnotationExecutorUtil.failOrSkip(
-                    "Deeplink doesn't exist for preference: ${argument.screenKey}",
-                    FailureMode.SKIP
-                )
-            }
-            SettingsPreferenceMetadata.DEEPLINK_ONLY -> {
-                argument.launchIntent?.let { deeplink ->
-                    checkDeeplinkBehaviour(deeplink)
-                } ?: AnnotationExecutorUtil.failOrSkip(
-                    "Deeplink doesn't exist for preference: ${argument.screenKey}, but it should",
-                    FailureMode.FAIL
-                )
-            }
-            SettingsPreferenceMetadata.NO_DIRECT_ACCESS -> Truth.assertThat(argument.launchIntent).isNull()
-            else -> Assert.fail("Unexpected sensitivity configuration encountered")
-        }
+        argument.launchIntent?.let { deeplink ->
+            checkDeeplinkBehaviour(deeplink)
+        } ?: AnnotationExecutorUtil.failOrSkip(
+            "Deeplink doesn't exist for preference: $argument, but it should, as it is a " +
+                    "preference with DEEPLINK_ONLY sensitivity.",
+            FailureMode.FAIL
+        )
+    }
+
+    @RequiresFlagsEnabled(FLAG_SETTINGS_CATALYST)
+    @Test
+    fun getPreference_withSensitivityNoDirectAccess_checkLaunchIntent_shouldBeNull(
+        @SettingsPreferenceMetadataParameter(writeSensitivity = [SettingsPreferenceMetadata.NO_DIRECT_ACCESS])
+        argument: SettingsPreferenceMetadata) {
+
+        Truth.assertThat(argument.launchIntent).isNull()
+    }
+
+    @RequiresFlagsEnabled(FLAG_SETTINGS_CATALYST)
+    @Test
+    fun getPreference_withLowOrNoSensitivity_andWithExistingLaunchIntent_shouldLaunchActivity(
+        @SettingsPreferenceMetadataParameter(
+            writeSensitivity = [SettingsPreferenceMetadata.NO_SENSITIVITY, SettingsPreferenceMetadata.EXPECT_POST_CONFIRMATION],
+            otherFilters = [SettingsPreferenceMetadataParameter.PREFERENCE_FILTER_LAUNCH_INTENT_NOT_NULL]
+        ) argument: SettingsPreferenceMetadata) {
+
+        checkDeeplinkBehaviour(argument.launchIntent!!)
     }
 
     private fun checkDeeplinkBehaviour(deeplink: Intent) {
@@ -86,11 +89,6 @@ class PreferenceWithDeeplinkTest {
     }
 
     companion object {
-        @JvmField
-        @ClassRule
-        @Rule
-        val deviceState = DeviceState()
-
         private const val TAG = "PreferenceWithDeeplinkTest"
     }
 
