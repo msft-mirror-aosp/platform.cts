@@ -22,8 +22,8 @@ import android.server.wm.component.ComponentsBase;
 
 public class Components extends ComponentsBase {
     public static final ComponentName ALT_LAUNCHING_ACTIVITY = component("AltLaunchingActivity");
-    public static final ComponentName ALWAYS_FOCUSABLE_PIP_ACTIVITY =
-            component("AlwaysFocusablePipActivity");
+    public static final ComponentName TRANSLUCENT_PIP_ACTIVITY =
+            component("TranslucentPipActivity");
     public static final ComponentName ANIMATION_TEST_ACTIVITY = component("AnimationTestActivity");
     public static final ComponentName ASSISTANT_ACTIVITY = component("AssistantActivity");
     public static final ComponentName BOTTOM_ACTIVITY = component("BottomActivity");
@@ -63,8 +63,6 @@ public class Components extends ComponentsBase {
             component("LaunchAssistantActivityIntoAssistantStack");
     public static final ComponentName LAUNCH_ENTER_PIP_ACTIVITY =
             component("LaunchEnterPipActivity");
-    public static final ComponentName LAUNCH_INTO_PINNED_STACK_PIP_ACTIVITY =
-            component("LaunchIntoPinnedStackPipActivity");
     public static final ComponentName LAUNCH_PIP_ON_PIP_ACTIVITY =
             component("LaunchPipOnPipActivity");
     public static final ComponentName LAUNCHING_ACTIVITY = component("LaunchingActivity");
