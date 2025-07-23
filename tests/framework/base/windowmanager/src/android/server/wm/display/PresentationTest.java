@@ -40,8 +40,6 @@ import android.server.wm.WindowManagerState;
 import android.server.wm.app.Components;
 import android.view.Display;
 
-import androidx.test.filters.FlakyTest;
-
 import com.android.compatibility.common.util.ApiTest;
 import com.android.window.flags.Flags;
 
@@ -183,7 +181,6 @@ public class PresentationTest extends MultiDisplayTestBase {
     }
 
     /** Asserts that a presentation isn't dismissed with display resize. */
-    @FlakyTest(bugId = 431320996)
     @ApiTest(apis = {"android.app.Presentation#show"})
     @Test
     public void testPresentationNotDismissAfterResizeDisplay() {
