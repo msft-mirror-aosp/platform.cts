@@ -25,10 +25,13 @@ import static android.media.cts.MediaRouterTestConstants.REQUIRED_PERMISSIONS_SE
 import static android.media.cts.MediaRouterTestConstants.REQUIRED_PERMISSIONS_SET_3_1;
 import static android.media.cts.MediaRouterTestConstants.REQUIRED_PERMISSIONS_SET_3_2;
 import static android.media.cts.MediaRouterTestConstants.REQUIRED_PERMISSIONS_SET_3_3;
+import static android.media.cts.MediaRouterTestConstants.RESTRICT_LOCAL_NETWORK_CHANGE_ID;
 import static android.media.cts.MediaRouterTestConstants.ROUTE_ID_APP_1_ROUTE_1;
 import static android.media.cts.MediaRouterTestConstants.ROUTE_ID_REQUIRES_ANY_PERMISSION_SET;
+import static android.media.cts.MediaRouterTestConstants.ROUTE_ID_REQUIRES_LOCAL_NETWORK;
 import static android.media.cts.MediaRouterTestConstants.ROUTE_ID_REQUIRES_ONE_PERMISSION;
 import static android.media.cts.MediaRouterTestConstants.ROUTE_NAME_REQUIRES_ANY_PERMISSION_SET;
+import static android.media.cts.MediaRouterTestConstants.ROUTE_NAME_REQUIRES_LOCAL_NETWORK;
 import static android.media.cts.MediaRouterTestConstants.ROUTE_NAME_REQUIRES_ONE_PERMISSION;
 import static android.media.cts.app.common.MediaRouter2TestUtils.launchScreenOnActivity;
 import static android.media.cts.app.common.MediaRouter2TestUtils.waitForAndGetRoutes;
@@ -37,6 +40,7 @@ import static com.google.common.truth.Truth.assertThat;
 
 import android.Manifest;
 import android.app.Activity;
+import android.app.compat.CompatChanges;
 import android.content.Context;
 import android.media.MediaRoute2Info;
 import android.media.MediaRouter2;
@@ -218,6 +222,51 @@ public class MediaRouter2DeviceTestRequiredPermissions {
                         Set.of(ROUTE_ID_APP_1_ROUTE_1),
                         mExecutor);
         assertThat(routes.get(ROUTE_ID_REQUIRES_ANY_PERMISSION_SET)).isNull();
+    }
+
+    @Test
+    public void restrictLocalNetworkCompatChange_notEnabled_routeIsFound() throws TimeoutException {
+        assertThat(CompatChanges.isChangeEnabled(RESTRICT_LOCAL_NETWORK_CHANGE_ID)).isFalse();
+        mScreenOnActivity = launchScreenOnActivity(mContext);
+        RouteDiscoveryPreference preference =
+                new RouteDiscoveryPreference.Builder(
+                                List.of(FEATURE_SAMPLE), /* activeScan= */ true)
+                        .build();
+        Map<String, MediaRoute2Info> routes =
+                waitForAndGetRoutes(
+                        mRouter, preference, Set.of(ROUTE_ID_REQUIRES_LOCAL_NETWORK), mExecutor);
+        assertThat(routes.get(ROUTE_ID_REQUIRES_LOCAL_NETWORK).getName().toString())
+                .isEqualTo(ROUTE_NAME_REQUIRES_LOCAL_NETWORK);
+    }
+
+    @Test
+    public void restrictLocalNetworkCompatChange_enabled_routeNotFound() throws TimeoutException {
+        assertThat(CompatChanges.isChangeEnabled(RESTRICT_LOCAL_NETWORK_CHANGE_ID)).isTrue();
+        mScreenOnActivity = launchScreenOnActivity(mContext);
+        RouteDiscoveryPreference preference =
+                new RouteDiscoveryPreference.Builder(
+                                List.of(FEATURE_SAMPLE), /* activeScan= */ true)
+                        .build();
+        Map<String, MediaRoute2Info> routes =
+                waitForAndGetRoutes(mRouter, preference, Set.of(ROUTE_ID_APP_1_ROUTE_1), mExecutor);
+        assertThat(routes.get(ROUTE_ID_REQUIRES_LOCAL_NETWORK)).isNull();
+    }
+
+    @Test
+    public void restrictLocalNetworkCompatChange_enabled_routeFoundWhenWifiPermissionHeld()
+            throws TimeoutException {
+        assertThat(CompatChanges.isChangeEnabled(RESTRICT_LOCAL_NETWORK_CHANGE_ID)).isTrue();
+        assertPermissionState(PERMISSION_GRANTED, Manifest.permission.NEARBY_WIFI_DEVICES);
+        mScreenOnActivity = launchScreenOnActivity(mContext);
+        RouteDiscoveryPreference preference =
+                new RouteDiscoveryPreference.Builder(
+                                List.of(FEATURE_SAMPLE), /* activeScan= */ true)
+                        .build();
+        Map<String, MediaRoute2Info> routes =
+                waitForAndGetRoutes(
+                        mRouter, preference, Set.of(ROUTE_ID_REQUIRES_LOCAL_NETWORK), mExecutor);
+        assertThat(routes.get(ROUTE_ID_REQUIRES_LOCAL_NETWORK).getName())
+                .isEqualTo(ROUTE_NAME_REQUIRES_LOCAL_NETWORK);
     }
 
     protected void assertPermissionState(int state, String... permissions) {
