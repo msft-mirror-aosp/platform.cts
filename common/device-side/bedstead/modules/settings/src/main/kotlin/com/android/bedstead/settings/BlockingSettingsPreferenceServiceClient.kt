@@ -124,7 +124,7 @@ class BlockingSettingsPreferenceServiceClient(val packageName: String) {
     ): SetValueResult {
         if (grantRequiredPermissions) {
             permissions().withPermission(
-                *metadata.writePermissions.toTypedArray().plus(WRITE_SYSTEM_PREFERENCES)
+                *READ_AND_WRITE_SYSTEM_PREFERENCES_PERMISSIONS.plus(metadata.writePermissions)
             ).use {
                 return setValueResultInternal(metadata, settingsPreferenceValue)
             }
@@ -157,5 +157,9 @@ class BlockingSettingsPreferenceServiceClient(val packageName: String) {
         private const val LOG_TAG = "bedstead-settings"
         private const val SHORT_TIMEOUT_SECONDS = 1L
         private const val TIMEOUT_SECONDS = 10L
+        private val READ_AND_WRITE_SYSTEM_PREFERENCES_PERMISSIONS = arrayOf(
+            READ_SYSTEM_PREFERENCES,
+            WRITE_SYSTEM_PREFERENCES
+        )
     }
 }
