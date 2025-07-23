@@ -3597,6 +3597,9 @@ public abstract class AppSearchSessionCtsTestBase {
     @Test
     public void testQueryRankByDismissActions_useTakenActionGenericDocument() throws Exception {
         assumeTrue(mDb1.getFeatures().isFeatureSupported(Features.JOIN_SPEC_AND_QUALIFIED_ID));
+        assumeTrue(
+                mDb1.getFeatures()
+                        .isFeatureSupported(Features.SEARCH_SPEC_ADVANCED_RANKING_EXPRESSION));
 
         AppSearchSchema searchActionSchema =
                 new AppSearchSchema.Builder("builtin:SearchAction")
