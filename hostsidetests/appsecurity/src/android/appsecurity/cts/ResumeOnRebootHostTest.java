@@ -30,6 +30,7 @@ import android.cts.host.utils.DisableDeviceConfigSyncRule;
 import com.android.compatibility.common.util.ApiLevelUtil;
 import com.android.compatibility.common.util.HostSideTestUtils;
 import com.android.tradefed.device.DeviceNotAvailableException;
+import com.android.tradefed.device.UserInfo;
 import com.android.tradefed.log.LogUtil.CLog;
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
 import com.android.tradefed.testtype.junit4.BaseHostJUnit4Test;
@@ -50,12 +51,12 @@ import java.util.regex.Pattern;
 
 /**
  * Set of tests that verify behavior of Resume on Reboot, if supported.
- * <p>
- * Note that these tests drive PIN setup manually instead of relying on device
- * administrators, which are not supported by all devices.
+ *
+ * <p>Note that these tests drive PIN setup manually instead of relying on device administrators,
+ * which are not supported by all devices.
  */
 @RunWith(DeviceJUnit4ClassRunner.class)
-public class ResumeOnRebootHostTest extends BaseHostJUnit4Test {
+public final class ResumeOnRebootHostTest extends BaseHostJUnit4Test {
     private static final String TAG = "ResumeOnRebootTest";
 
     private static final String PKG = "com.android.cts.encryptionapp";
@@ -474,16 +475,28 @@ public class ResumeOnRebootHostTest extends BaseHostJUnit4Test {
         verifyLskfCaptured(clientName);
         mBootCountTrackingRule.increaseExpectedBootCountDifference(1);
 
+        var device = getDevice();
+
+        // TODO(b/420640007): Remove hac^H^H^Hworkaround below once done automatically.
+        boolean isHsum = device.isHeadlessSystemUserMode();
+        int userId = UserInfo.USER_NULL;
+        if (isHsum) {
+            userId = device.getCurrentUser();
+        }
         String res = executeShellCommandWithLogging(
                 "cmd recovery reboot-and-apply " + clientName + " cts-test");
         if (res != null && res.contains("Reboot and apply status: failure")) {
             fail("could not call reboot-and-apply");
         }
 
-        getDevice().waitForDeviceNotAvailable(SHUTDOWN_TIME_MS);
-        getDevice().waitForDeviceOnline(120000);
+        device.waitForDeviceNotAvailable(SHUTDOWN_TIME_MS);
+        device.waitForDeviceOnline(120000);
 
-        waitForBootCompleted(getDevice());
+        waitForBootCompleted(device);
+
+        if (isHsum) {
+            device.switchUser(userId);
+        }
     }
 
     private void installTestPackages() throws Exception {
@@ -515,8 +528,7 @@ public class ResumeOnRebootHostTest extends BaseHostJUnit4Test {
     }
 
     private void removeUser(int userId) throws Exception {
-        if (listUsers().contains(userId) && userId != USER_SYSTEM
-                && userId != getDevice().getMainUserId()) {
+        if (listUsers().contains(userId) && userId != USER_SYSTEM && !isMainUser(userId)) {
             // Don't log output, as tests sometimes set no debug user restriction, which
             // causes this to fail, we should still continue and remove the user.
             String stopUserCommand = "am stop-user -w -f " + userId;
@@ -527,6 +539,11 @@ public class ResumeOnRebootHostTest extends BaseHostJUnit4Test {
                 assertThat("Couldn't remove user", getDevice().removeUser(userId), is(true));
             }
         }
+    }
+
+    private boolean isMainUser(int userId) throws DeviceNotAvailableException {
+        Integer mainUserId = getDevice().getMainUserId();
+        return mainUserId != null && mainUserId == userId;
     }
 
     private int createManagedProfile(int parentUserId) throws DeviceNotAvailableException {
@@ -603,7 +620,7 @@ public class ResumeOnRebootHostTest extends BaseHostJUnit4Test {
 
     private void normalizeUserStates() throws Exception {
         int[] userIds = Utils.getAllUsers(getDevice());
-        switchUser(userIds[0]);
+        // NOTE: initial user switch is done by SwitchUserTargetPreparer defined on Android.xml
 
         for (int userId : userIds) {
             CommandResult lockScreenDisabledResult =
