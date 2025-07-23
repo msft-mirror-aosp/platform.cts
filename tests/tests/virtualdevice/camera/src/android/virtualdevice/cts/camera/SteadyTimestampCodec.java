@@ -36,6 +36,7 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.Arrays;
 
 /**
  * A fake pair of video encoder/decoder writing mock data
@@ -244,14 +245,9 @@ public class SteadyTimestampCodec implements AutoCloseable {
         byte[] data = new byte[ySize + uvSize * 2];
 
         // Y plane (black)
-        for (int i = 0; i < ySize; i++) {
-            data[i] = 0; // Black
-        }
-
+        Arrays.fill(data, 0, ySize, (byte) 0);
         // U and V planes (neutral gray)
-        for (int i = ySize; i < data.length; i++) {
-            data[i] = (byte) 0xFF;
-        }
+        Arrays.fill(data, ySize, ySize + uvSize * 2, (byte) 0xFF);
         return data;
     }
 
