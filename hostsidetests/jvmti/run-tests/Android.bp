@@ -26,6 +26,7 @@ java_defaults {
     test_options: {
         unit_test: false,
     },
+    device_common_data: [":CtsJvmtiRunTestDeviceApp"],
 }
 
 java_defaults {

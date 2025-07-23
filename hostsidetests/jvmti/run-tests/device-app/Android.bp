@@ -1,4 +1,4 @@
-// Copyright (C) 2020 The Android Open Source Project
+// Copyright (C) 2025 The Android Open Source Project
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,9 +16,11 @@ package {
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
-java_test_host {
-    name: "CtsJvmtiRunTest1962HostTestCases",
-    defaults: ["cts-run-jvmti-test-defaults"],
-    static_libs: ["CtsJvmtiHostTestBase"],
-    jarjar_rules: "jarjar-rules.txt",
+android_test_helper_app {
+    name: "CtsJvmtiRunTestDeviceApp",
+    defaults: ["cts-run-jvmti-app-defaults"],
+    manifest: "AndroidManifest.xml",
+    // This test is also run via Mainline Testing against the ART Mainline
+    // Module, which is updatable since Android 12 (API level 31).
+    sdk_version: "31",
 }

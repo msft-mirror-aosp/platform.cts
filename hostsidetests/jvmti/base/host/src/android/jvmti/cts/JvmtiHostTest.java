@@ -63,6 +63,30 @@ public class JvmtiHostTest extends DeviceTestCase implements IBuildReceiver, IAb
             mandatory = false)
     private String mHiddenApiChecksEnabled = null;
 
+    private static final String RUN_TEST_NUMBER_KEY = "android.jvmti.cts.run_test_nr";
+
+    @Option(
+            name = RUN_TEST_NUMBER_KEY,
+            description = "The number of the run test class to load",
+            mandatory = false)
+    private Integer mRunTestNumber = null;
+
+    private static final String NEEDS_NEW_THREAD_KEY = "android.jvmti.cts.needs_new_thread";
+
+    @Option(
+            name = NEEDS_NEW_THREAD_KEY,
+            description = "If the test needs a new thread",
+            mandatory = false)
+    private Boolean mNeedNewThread = null;
+
+    private static final String DO_EXTRA_LOGGING_KEY = "android.jvmti.cts.run_test.extra_logging";
+
+    @Option(
+            name = DO_EXTRA_LOGGING_KEY,
+            description = "Whether to enable extra logging in the test.",
+            mandatory = true)
+    private Boolean mDoExtraLogging = null;
+
     private CompatibilityBuildHelper mBuildHelper;
     private IAbi mAbi;
     private int mCurrentUser;
@@ -129,6 +153,19 @@ public class JvmtiHostTest extends DeviceTestCase implements IBuildReceiver, IAb
                     device.getIDevice());
             // set a max deadline limit to avoid hanging forever
             runner.setMaxTimeToOutputResponse(10, TimeUnit.MINUTES);
+
+            // Pass the settings specific to `hostsidetests/jvmti/run-tests` to the DeviceApp.
+            // There are other tests in `hostsidetests/jvmti` that don't use these values,
+            // so it's okay to ignore if they are missing.
+            if (mRunTestNumber != null) {
+                runner.addInstrumentationArg(RUN_TEST_NUMBER_KEY, mRunTestNumber.toString());
+            }
+            if (mNeedNewThread != null) {
+                runner.addInstrumentationArg(NEEDS_NEW_THREAD_KEY, mNeedNewThread.toString());
+            }
+            if (mDoExtraLogging != null) {
+                runner.addInstrumentationArg(DO_EXTRA_LOGGING_KEY, mDoExtraLogging.toString());
+            }
 
             AttachAgent aa = new AttachAgent(device, mTestPackageName, mTestApk);
             aa.prepare();
