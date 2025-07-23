@@ -262,6 +262,7 @@
              android:exported="true"
              android:theme="@android:style/Theme.NoDisplay"/>
         <activity android:name=".BroadcastReceiverActivity"
+             android:configChanges="resourcesUnused"
              android:resizeableActivity="true"
              android:exported="true"/>
         <activity-alias android:enabled="true"

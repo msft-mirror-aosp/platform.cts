@@ -1372,21 +1372,6 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
         }
     }
 
-    private void waitUntilActivityReadyForInput(Activity activity) {
-        // If we requested an orientation change, just waiting for the window to be visible is not
-        // sufficient. We should first wait for the transitions to stop, and the for app's UI thread
-        // to process them before making sure the window is visible.
-        try {
-            TestUtils.waitUntilActivityReadyForInputInjection(
-                    activity, StylusHandwritingTest.this.getClass().getName(),
-                    "test: " + StylusHandwritingTest.this.mTestName.getMethodName()
-                            + ", virtualDisplayId=" + activity.getDisplayId()
-            );
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
     /**
      * Inject stylus top on an editor and verify stylus source is detected with
      * {@link InputMethodService#onUpdateEditorToolType(int)} lifecycle method.
@@ -2016,7 +2001,6 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
             });
             addVirtualStylusIdForTestSession();
             View clickableView = clickableViewRef.get();
-            Context context = clickableView.getContext();
 
             expectBindInput(stream, Process.myPid(), TIMEOUT);
             // click on view with stylus to launch new activity

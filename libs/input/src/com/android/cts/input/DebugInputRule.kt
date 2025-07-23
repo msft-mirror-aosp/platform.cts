@@ -54,6 +54,47 @@ class DebugInputRule : TestWatcher() {
             logShellCommand("dumpsys input")
         }
 
+        /**
+         * For tests checking the functionality of lights, we also want to print the contents
+         * of the sysfs 'leds' path. This will confirm whether the kernel has registered any lights
+         * for the input device.
+         * For example:
+        @formatter:off
+           $ /sys/devices/virtual/misc/uhid/0005:054C:05C4.0002/leds # ls
+           0005:054C:05C4.0002:blue  0005:054C:05C4.0002:global  0005:054C:05C4.0002:green  0005:054C:05C4.0002:red
+        @formatter:on
+         */
+        @JvmStatic
+        fun dumpSonyLightNodes() {
+            try {
+                val dumpsysOutput = SystemUtil.runShellCommandOrThrow("dumpsys input")
+                val lines = dumpsysOutput.lines()
+                // Find the first line that mentions a Sony device.
+                val sonyDeviceStartIndex = lines.indexOfFirst { it.contains("Sony") }
+                if (sonyDeviceStartIndex == -1) {
+                    Log.i(TAG, "No Sony device found in 'dumpsys input' output.")
+                    return
+                }
+
+                // Search for the path in the lines following the Sony device name.
+                val pathLine = lines.drop(sonyDeviceStartIndex)
+                        .find { it.trim().startsWith("SysfsDevicePath:") }
+                if (pathLine == null) {
+                    Log.i(TAG, "Could not find SysfsDevicePath.")
+                    return
+                }
+
+                val path = pathLine.substringAfter("SysfsDevicePath:").trim()
+                if (path.isNotEmpty()) {
+                    logShellCommand("ls -l $path/leds")
+                } else {
+                    Log.i(TAG, "SysfsDevicePath is blank.")
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to get and process 'dumpsys input' for Sony device: $e")
+            }
+        }
+
         private fun logShellCommand(command: String) {
             try {
                 for (line in SystemUtil.runShellCommandOrThrow(command).split("\\n")) {

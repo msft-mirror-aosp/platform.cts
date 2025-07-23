@@ -52,8 +52,8 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
-import com.android.bedstead.multiuser.annotations.EnsureHasAdditionalUser;
 import com.android.bedstead.harrier.annotations.RequireFeature;
+import com.android.bedstead.multiuser.annotations.EnsureHasAdditionalUser;
 import com.android.bedstead.multiuser.annotations.RequireMultiUserSupport;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.packages.CommonPackages;
@@ -409,12 +409,6 @@ public class MultiUserTest {
                         userId));
             }
         }
-    }
-
-    // TODO(b/282196632): remove this method once b/282196632) is fixed
-    private boolean isMultiUserMultiDisplayIme() {
-        String result = runShellCommandOrThrow("dumpsys input_method");
-        return result.contains("InputMethodManagerServiceProxy");
     }
 
     /**

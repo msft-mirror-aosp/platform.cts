@@ -46,6 +46,8 @@ import com.android.cts.input.DebugInputRule;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
+import org.junit.rules.TestName;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -76,6 +78,8 @@ public abstract class InputTestCase {
 
     // Stores the name of the currently running test
     protected String mCurrentTestCase;
+
+    @Rule public TestName mTestName = new TestName();
 
     // State used for motion events
     private int mLastButtonState;
@@ -344,11 +348,15 @@ public abstract class InputTestCase {
     }
 
     /**
-     * Append the name of the currently executing test case to the fail message.
-     * Dump out the events queue to help debug.
+     * Append the name of the currently executing test case to the fail message. Dump out the events
+     * queue to help debug.
      */
-    private void failWithMessage(String message) {
+    protected void failWithMessage(String message) {
         DebugInputRule.dumpInputStateToLogcat();
+
+        if (mTestName.getMethodName().equals("testLights")) {
+            DebugInputRule.dumpSonyLightNodes();
+        }
         if (mEvents.isEmpty()) {
             Log.i(TAG, "The events queue is empty");
         } else {

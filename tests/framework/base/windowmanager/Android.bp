@@ -95,6 +95,7 @@ java_defaults {
         "surfaceflinger_flags_java_lib",
         "bedstead",
         "android.view.accessibility.flags-aconfig-java",
+        "display_flags_lib",
     ],
 
     test_suites: [

@@ -225,7 +225,7 @@ public final class TestUtils {
         URL url = new URL((https ? "https://" : "http://") + host + ":" + port);
         HttpURLConnection connection = (HttpURLConnection) url.openConnection();
         try {
-            connection.getInputStream();
+            connection.connect();
             fail("Connection to " + host + ":" + port + " succeeded");
         } catch (UnknownHostException e) {
             throw new AssumptionViolatedException("Unable to resolve " + host, e);
@@ -238,7 +238,7 @@ public final class TestUtils {
         try {
             URL url = new URL((https ? "https://" : "http://") + host + ":" + port);
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-            connection.getInputStream();
+            connection.connect();
         } catch (UnknownHostException e) {
             throw new AssumptionViolatedException("Unable to resolve " + host, e);
         }

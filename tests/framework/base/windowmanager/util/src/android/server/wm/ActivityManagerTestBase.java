@@ -1579,6 +1579,11 @@ public abstract class ActivityManagerTestBase {
     }
 
     /** @see ObjectTracker#manage(AutoCloseable) */
+    protected MirrorBuiltInDisplaySession createMirrorBuiltInDisplaySession() {
+        return mObjectTracker.manage(new MirrorBuiltInDisplaySession());
+    }
+
+    /** @see ObjectTracker#manage(AutoCloseable) */
     protected DisplayMetricsSession createManagedDisplayMetricsSession(int displayId) {
         return mObjectTracker.manage(new DisplayMetricsSession(displayId));
     }
@@ -1829,6 +1834,15 @@ public abstract class ActivityManagerTestBase {
         public Float get() {
             Float value = super.get();
             return value == null ? 1f : value;
+        }
+    }
+
+    /** Helper class to save, set, and restore the mirror built-in display preferences. */
+    protected static class MirrorBuiltInDisplaySession extends SettingsSession<Integer> {
+        MirrorBuiltInDisplaySession() {
+            super(Settings.Secure.getUriFor("mirror_built_in_display"),
+                    Settings.Secure::getInt,
+                    Settings.Secure::putInt);
         }
     }
 

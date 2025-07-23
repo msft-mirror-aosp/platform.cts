@@ -13,23 +13,24 @@
  */
 package android.jvmti.cts;
 
-import java.io.BufferedReader;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.io.PrintStream;
-import java.lang.reflect.Method;
-import java.lang.reflect.InvocationTargetException;
-
-import android.content.pm.PackageManager;
 import android.util.Log;
+
+import androidx.test.platform.app.InstrumentationRegistry;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.PrintStream;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 
 /**
  * Check redefineClasses-related functionality.
@@ -97,26 +98,22 @@ public class JvmtiRunTestBasedTest extends JvmtiTestBase {
     private native void setupExtraLogging(String arg);
 
     protected boolean doExtraLogging() throws Exception {
-        return mActivity
-            .getPackageManager()
-            .getApplicationInfo(mActivity.getPackageName(), PackageManager.GET_META_DATA)
-            .metaData
-            .getBoolean("android.jvmti.cts.run_test.extra_logging", /*defaultValue*/false);
+        String key = "android.jvmti.cts.run_test.extra_logging";
+        return Boolean.parseBoolean(
+                InstrumentationRegistry.getArguments().getString(key, /*defaultValue*/ "false"));
     }
 
     protected int getTestNumber() throws Exception {
-        return mActivity.getPackageManager().getApplicationInfo(mActivity.getPackageName(),
-                PackageManager.GET_META_DATA).metaData.getInt("android.jvmti.cts.run_test_nr");
+        String key = "android.jvmti.cts.run_test_nr";
+        return Integer.parseInt(InstrumentationRegistry.getArguments().getString(key));
     }
 
     // Some tests are very sensitive to state of the thread they are running on. To support this we
     // can have tests run on newly created threads. This defaults to false.
     protected boolean needNewThread() throws Exception {
-        return mActivity
-            .getPackageManager()
-            .getApplicationInfo(mActivity.getPackageName(), PackageManager.GET_META_DATA)
-            .metaData
-            .getBoolean("android.jvmti.cts.needs_new_thread", /*defaultValue*/false);
+        String key = "android.jvmti.cts.needs_new_thread";
+        return Boolean.parseBoolean(
+                InstrumentationRegistry.getArguments().getString(key, /*defaultValue*/ "false"));
     }
 
     @Test

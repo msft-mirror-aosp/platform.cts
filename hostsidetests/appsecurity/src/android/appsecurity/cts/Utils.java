@@ -29,13 +29,17 @@ import com.android.tradefed.result.TestResult;
 import com.android.tradefed.result.TestRunResult;
 import com.android.tradefed.util.RunUtil;
 
+import com.google.common.base.Preconditions;
+
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-public class Utils {
+public final class Utils {
     private static final String LOG_TAG = Utils.class.getSimpleName();
 
     public static final int USER_SYSTEM = 0;
@@ -178,7 +182,7 @@ public class Utils {
     }
 
     /**
-     * Prepare and return multiple users relevant for testing.
+     * Prepare and return multiple users relevant for testing, starting with the current user.
      */
     public static int[] prepareMultipleUsers(ITestDevice device, int maxUsers)
             throws DeviceNotAvailableException {
@@ -191,11 +195,10 @@ public class Utils {
                 device.stopUser(userIds[i], true, true);
             }
         }
-        if (userIds.length > maxUsers) {
-            return Arrays.copyOf(userIds, maxUsers);
-        } else {
-            return userIds;
-        }
+        int[] cappedUsers = userIds.length > maxUsers
+            ? Arrays.copyOf(userIds, maxUsers)
+            : userIds;
+        return startUsersWith(currentUserId, cappedUsers);
     }
 
     public static int[] getAllUsers(ITestDevice device)
@@ -216,7 +219,60 @@ public class Utils {
                 users[users.length - 1] = user;
             }
         }
-        return users;
+        int currentUserId = device.getCurrentUser();
+        return startUsersWith(currentUserId, users);
+    }
+
+    /**
+     * Returns a new array sorted so that it starts with the given user.
+     *
+     * @throws IllegalArgumentException if {@code firstUser} is not on {@code users}, {@code users}
+     * is empty, or {@code users} contains duplicated values
+     */
+    public static int[] startUsersWith(int firstUser, int[] users) {
+        Objects.requireNonNull(users, "users cannot be null");
+        int length = users.length;
+        Preconditions.checkArgument(length > 0, "users cannot be empty");
+
+        // We don't need a fancy algorithm, as it's unit tested...
+
+        // Check for dupes
+        Set<Integer> uniqueEntries = new HashSet<>(length);
+        for (int i = 0; i < users.length; i++) {
+            int user = users[i];
+            Preconditions.checkArgument(!uniqueEntries.contains(user),
+                    "Cannot have duplicates (%s): %s", user, Arrays.toString(users));
+            uniqueEntries.add(user);
+        }
+
+        // Simplest case: first is already first
+        if (users[0] == firstUser) {
+            return users;
+        }
+
+        // First find it...
+        int indexFirstUser = -1;
+        for (int i = 0; i < users.length; i++) {
+            if (users[i] == firstUser) {
+                indexFirstUser = i;
+                break;
+            }
+        }
+        Preconditions.checkArgument(indexFirstUser != -1, "user %s not found on %s", firstUser,
+                Arrays.toString(users));
+
+        // ...then populate the new array
+        int[] sorted = new int[length];
+        int j = 0; // index on sorted
+        sorted[j++] = firstUser;
+        for (int i = 0; i < length; i++) {
+            int user = users[i];
+            if (user != firstUser && j < length) {
+                sorted[j++] = user;
+            }
+        }
+
+        return sorted;
     }
 
     public static void waitForBootCompleted(ITestDevice device) throws Exception {

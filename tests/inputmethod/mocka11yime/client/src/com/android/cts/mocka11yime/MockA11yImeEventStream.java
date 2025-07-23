@@ -16,9 +16,6 @@
 
 package com.android.cts.mocka11yime;
 
-import android.os.Bundle;
-import android.view.inputmethod.EditorInfo;
-
 import androidx.annotation.IntRange;
 import androidx.annotation.NonNull;
 
@@ -206,34 +203,6 @@ public final class MockA11yImeEventStream {
         final char[] indentationChars = new char[length];
         Arrays.fill(indentationChars, ' ');
         return new String(indentationChars);
-    }
-
-    private static void dumpBundle(@NonNull StringBuilder sb, @NonNull Bundle bundle) {
-        sb.append('{');
-        boolean first = true;
-        for (String key : bundle.keySet()) {
-            if (first) {
-                first = false;
-            } else {
-                sb.append(' ');
-            }
-            final Object object = bundle.get(key);
-            sb.append(key);
-            sb.append('=');
-            if (object instanceof EditorInfo) {
-                final EditorInfo info = (EditorInfo) object;
-                sb.append("EditorInfo{packageName=").append(info.packageName);
-                sb.append(" fieldId=").append(info.fieldId);
-                sb.append(" hintText=").append(info.hintText);
-                sb.append(" privateImeOptions=").append(info.privateImeOptions);
-                sb.append("}");
-            } else if (object instanceof Bundle) {
-                dumpBundle(sb, (Bundle) object);
-            } else {
-                sb.append(object);
-            }
-        }
-        sb.append('}');
     }
 
     static class EventArray {
