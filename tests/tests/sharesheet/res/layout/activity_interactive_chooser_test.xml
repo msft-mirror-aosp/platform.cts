@@ -71,18 +71,4 @@
 
                 </LinearLayout>
         </LinearLayout>
-
-        <TextView
-            android:id="@+id/bounds_updated"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Bounds Updated"
-            android:visibility="gone" />
-
-        <TextView
-            android:id="@+id/get_bounds_consistent"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text=""
-            android:visibility="gone" />
 </LinearLayout>

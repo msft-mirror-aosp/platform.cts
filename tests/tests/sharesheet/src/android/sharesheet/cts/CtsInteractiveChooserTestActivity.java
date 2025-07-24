@@ -22,26 +22,45 @@ import android.content.Intent;
 import android.graphics.Insets;
 import android.graphics.Rect;
 import android.os.Bundle;
+import android.os.IBinder;
 import android.service.chooser.ChooserManager;
 import android.service.chooser.ChooserSession;
+import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowInsets;
 import android.widget.Button;
-import android.widget.TextView;
 
+import androidx.annotation.GuardedBy;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import java.util.ArrayList;
 import java.util.Objects;
 
 public class CtsInteractiveChooserTestActivity extends Activity {
+    private static final String TAG = "CtsInteractiveChooserTestActivity";
     // Special CTS mime type
     private static final String CTS_DATA_TYPE = "test/cts_interactive";
     // Special CTS mime type
     private static final String CTS_ALT_DATA_TYPE = "test/cts_alternate_interactive";
     private static final String TEST_CATEGORY = "android.sharesheet.cts.TEST_CATEGORY";
-    @Nullable private ChooserSession mChooserSession;
+
+    public static final String PARAM_ACTIVITY_CONTROLLER_CALLBACK = "controller-callback";
+
+    private Button mLaunchChooser;
+    private ViewGroup mChooserActionRow;
+    private boolean mIsTargetEnabled = true;
+
+    @GuardedBy("this")
+    @Nullable
+    private ChooserSession mChooserSession;
+
+    @GuardedBy("this")
+    private final ArrayList<Integer> mReportedStates = new ArrayList<>();
+
+    @GuardedBy("this")
+    private final ArrayList<Rect> mReportedBounds = new ArrayList<>();
 
     private final ChooserSession.StateListener mChooserSessionStateListener =
             new ChooserSession.StateListener() {
@@ -55,16 +74,22 @@ public class CtsInteractiveChooserTestActivity extends Activity {
                     onChooserBoundsChanged(bounds);
                 }
             };
-    private Button mLaunchChooser;
-    private ViewGroup mChooserActionRow;
-    private View mBoundsUpdatedLabel;
-    private TextView mGetBoundsLabel;
-    private boolean mIsTargetEnabled = true;
-    private boolean mIsGetBoundsFailed = false;
+
+    private final InteractiveTestActivityController mActivityController = () -> createTestReport();
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        Bundle extras = getIntent().getExtras();
+        IBinder binder =
+                extras == null ? null : extras.getBinder(PARAM_ACTIVITY_CONTROLLER_CALLBACK);
+        if (binder instanceof InteractiveTestActivityControllerCallback controllerCallback) {
+            controllerCallback.setTestActivityController(mActivityController);
+        } else {
+            Log.e(TAG, "Controller callback was not provided");
+            finish();
+            return;
+        }
         ActionBar actionBar = getActionBar();
         if (actionBar != null) {
             actionBar.hide();
@@ -102,22 +127,27 @@ public class CtsInteractiveChooserTestActivity extends Activity {
         Button disableButton = findViewById(R.id.target_status);
         disableButton.setOnClickListener((v) -> toggleTargetEnableStatus((Button) v));
 
-        mBoundsUpdatedLabel = findViewById(R.id.bounds_updated);
-        mGetBoundsLabel = findViewById(R.id.get_bounds_consistent);
-
-        onSessionActiveStateChanged(mChooserSession != null);
+        boolean hasActiveSession;
+        synchronized (this) {
+            hasActiveSession = mChooserSession != null;
+        }
+        onSessionActiveStateChanged(hasActiveSession);
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        if (mChooserSession != null) {
-            mChooserSession.endSession();
-            mChooserSession = null;
+        synchronized (this) {
+            if (mChooserSession != null) {
+                mChooserSession.endSession();
+                mChooserSession = null;
+            }
         }
     }
 
-    private void onChooserStateChanged(int state) {
+    private synchronized void onChooserStateChanged(int state) {
+        Log.d(TAG, "Chooser session state changed; state: " + state);
+        mReportedStates.add(state);
         if (state == ChooserSession.STATE_STARTED) {
             onSessionActiveStateChanged(true);
         } else if (state == ChooserSession.STATE_CLOSED) {
@@ -126,22 +156,28 @@ public class CtsInteractiveChooserTestActivity extends Activity {
         }
     }
 
-    private void onChooserBoundsChanged(Rect bounds) {
-        if (!mIsGetBoundsFailed) {
-            Rect sessionBounds = mChooserSession == null ? null : mChooserSession.getBounds();
-            mIsGetBoundsFailed = !bounds.equals(sessionBounds);
-            mGetBoundsLabel.setVisibility(View.VISIBLE);
-            mGetBoundsLabel.setText(mIsGetBoundsFailed ? "getBounds() Failed" : "getBounds() OK");
-        }
-        mBoundsUpdatedLabel.setVisibility(View.VISIBLE);
+    private synchronized void onChooserBoundsChanged(Rect bounds) {
+        Log.d(TAG, "Chooser bounds changed; bounds: " + bounds);
+        mReportedBounds.add(bounds);
+    }
+
+    private synchronized InteractiveTestActivityReport createTestReport() {
+        return new InteractiveTestActivityReport(
+                mChooserSession != null,
+                mChooserSession == null ? -1 : mChooserSession.getState(),
+                mChooserSession == null ? null : mChooserSession.getBounds(),
+                new ArrayList<>(mReportedStates),
+                new ArrayList<>(mReportedBounds));
     }
 
     private void launchChooser() {
+        Log.d(TAG, "Launch Chooser button clicked");
         maybeStartNewSession();
         onSessionActiveStateChanged(true);
     }
 
     private void closeChooser() {
+        Log.d(TAG, "Close Chooser button clicked");
         if (mChooserSession == null) {
             return;
         }
@@ -151,6 +187,7 @@ public class CtsInteractiveChooserTestActivity extends Activity {
     }
 
     private void updateChooser() {
+        Log.d(TAG, "Update Chooser button clicked");
         if (mChooserSession == null) {
             return;
         }
@@ -159,6 +196,7 @@ public class CtsInteractiveChooserTestActivity extends Activity {
     }
 
     private void removeSessionStateListener() {
+        Log.d(TAG, "Unsubscribe button clicked");
         if (mChooserSession == null) {
             return;
         }
@@ -166,6 +204,7 @@ public class CtsInteractiveChooserTestActivity extends Activity {
     }
 
     private void toggleTargetEnableStatus(Button button) {
+        Log.d(TAG, "Toggle target state button clicked");
         if (mChooserSession == null) {
             return;
         }
@@ -178,6 +217,7 @@ public class CtsInteractiveChooserTestActivity extends Activity {
         if (mChooserSession != null) {
             return;
         }
+        Log.d(TAG, "Staring new Chooser session");
         Intent chooserIntent = Intent.createChooser(createTargetIntent(CTS_DATA_TYPE), null);
         mChooserSession =
                 Objects.requireNonNull(getSystemService(ChooserManager.class))

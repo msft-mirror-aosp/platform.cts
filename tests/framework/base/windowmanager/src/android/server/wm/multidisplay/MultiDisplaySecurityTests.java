@@ -612,7 +612,7 @@ public class MultiDisplaySecurityTests extends MultiDisplayTestBase {
     }
 
     /**
-     * Test setting system decoration flag and show IME flag without sufficient permissions.
+     * Test setting show IME flag without sufficient permissions.
      */
     @Test
     public void testSettingFlagWithoutInternalSystemPermission() throws Exception {
@@ -622,21 +622,6 @@ public class MultiDisplaySecurityTests extends MultiDisplayTestBase {
                 .setSimulateDisplay(true)
                 .createDisplay();
         final WindowManager wm = mTargetContext.getSystemService(WindowManager.class);
-
-        // Verify setting system decorations flag without internal system permission.
-        try {
-            wm.setShouldShowSystemDecors(trustedDisplay.mId, true);
-
-            // Unexpected result, restore flag to avoid affecting other tests.
-            wm.setShouldShowSystemDecors(trustedDisplay.mId, false);
-            TestUtils.waitUntil("Waiting for system decoration flag to be set",
-                    5 /* timeoutSecond */,
-                    () -> !wm.shouldShowSystemDecors(trustedDisplay.mId));
-            fail("Should not allow setting system decoration flag without internal system "
-                    + "permission");
-        } catch (SecurityException e) {
-            // Expected security exception.
-        }
 
         // Verify setting show IME flag without internal system permission.
         try {
@@ -684,31 +669,13 @@ public class MultiDisplaySecurityTests extends MultiDisplayTestBase {
     }
 
     /**
-     * Test setting system decoration flag and show IME flag to the untrusted display.
+     * Test setting show IME flag to the untrusted display.
      */
     @Test
     public void testSettingFlagToUntrustedDisplay() throws Exception {
         final DisplayContent untrustedDisplay = createManagedVirtualDisplaySession()
                 .createDisplay();
         final WindowManager wm = mTargetContext.getSystemService(WindowManager.class);
-
-        // Verify setting system decoration flag to an untrusted display.
-        getInstrumentation().getUiAutomation().adoptShellPermissionIdentity();
-        try {
-            wm.setShouldShowSystemDecors(untrustedDisplay.mId, true);
-
-            // Unexpected result, restore flag to avoid affecting other tests.
-            wm.setShouldShowSystemDecors(untrustedDisplay.mId, false);
-            TestUtils.waitUntil("Waiting for system decoration flag to be set",
-                    5 /* timeoutSecond */,
-                    () -> !wm.shouldShowSystemDecors(untrustedDisplay.mId));
-            fail("Should not allow setting system decoration flag to the untrusted virtual "
-                    + "display");
-        } catch (SecurityException e) {
-            // Expected security exception.
-        } finally {
-            getInstrumentation().getUiAutomation().dropShellPermissionIdentity();
-        }
 
         // Verify setting show IME flag to an untrusted display.
         getInstrumentation().getUiAutomation().adoptShellPermissionIdentity();
@@ -751,7 +718,7 @@ public class MultiDisplaySecurityTests extends MultiDisplayTestBase {
     }
 
     /**
-     * Test setting system decoration flag and show IME flag to the trusted display.
+     * Test setting show IME flag to the trusted display.
      */
     @Test
     public void testSettingFlagToTrustedDisplay() throws Exception {
@@ -759,27 +726,6 @@ public class MultiDisplaySecurityTests extends MultiDisplayTestBase {
                 .setSimulateDisplay(true)
                 .createDisplay();
         final WindowManager wm = mTargetContext.getSystemService(WindowManager.class);
-
-        // Verify setting system decoration flag to a trusted display.
-        SystemUtil.runWithShellPermissionIdentity(() -> {
-            // Assume the display should not support system decorations by default.
-            assertFalse(wm.shouldShowSystemDecors(trustedDisplay.mId));
-
-            try {
-                wm.setShouldShowSystemDecors(trustedDisplay.mId, true);
-                TestUtils.waitUntil("Waiting for system decoration flag to be set",
-                        5 /* timeoutSecond */,
-                        () -> wm.shouldShowSystemDecors(trustedDisplay.mId));
-
-                assertTrue(wm.shouldShowSystemDecors(trustedDisplay.mId));
-            } finally {
-                // Restore flag to avoid affecting other tests.
-                wm.setShouldShowSystemDecors(trustedDisplay.mId, false);
-                TestUtils.waitUntil("Waiting for system decoration flag to be set",
-                        5 /* timeoutSecond */,
-                        () -> !wm.shouldShowSystemDecors(trustedDisplay.mId));
-            }
-        });
 
         // Verify setting show IME flag to a trusted display.
         SystemUtil.runWithShellPermissionIdentity(() -> {

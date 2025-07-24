@@ -22,11 +22,13 @@ import com.android.server.appsearch.external.localstorage.AppSearchLogger;
 import com.android.server.appsearch.external.localstorage.stats.CallStats;
 import com.android.server.appsearch.external.localstorage.stats.InitializeStats;
 import com.android.server.appsearch.external.localstorage.stats.OptimizeStats;
+import com.android.server.appsearch.external.localstorage.stats.PersistToDiskStats;
 import com.android.server.appsearch.external.localstorage.stats.PutDocumentStats;
 import com.android.server.appsearch.external.localstorage.stats.QueryStats;
 import com.android.server.appsearch.external.localstorage.stats.RemoveStats;
 import com.android.server.appsearch.external.localstorage.stats.SearchSessionStats;
 import com.android.server.appsearch.external.localstorage.stats.SetSchemaStats;
+import com.android.server.appsearch.external.localstorage.stats.VmInitializationStats;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
@@ -66,6 +68,12 @@ public final class SimpleTestLogger implements AppSearchLogger {
 
     /** Holds {@link SearchSessionStats} after logging. */
     public @NonNull List<SearchSessionStats> mSearchSessionsStats = new ArrayList<>();
+
+    /** Holds {@link PersistToDiskStats} after logging. */
+    public @NonNull PersistToDiskStats mPersistToDiskStats;
+
+    /** Holds {@link VmInitializationStats} after logging. */
+    public @Nullable VmInitializationStats mVmInitializationStats;
 
     @Override
     public void logStats(@NonNull CallStats stats) {
@@ -110,5 +118,15 @@ public final class SimpleTestLogger implements AppSearchLogger {
     @Override
     public void logStats(@NonNull List<SearchSessionStats> searchSessionsStats) {
         mSearchSessionsStats.addAll(searchSessionsStats);
+    }
+
+    @Override
+    public void logStats(@NonNull PersistToDiskStats stats) {
+        mPersistToDiskStats = stats;
+    }
+
+    @Override
+    public void logStats(@NonNull VmInitializationStats stats) {
+        mVmInitializationStats = stats;
     }
 }

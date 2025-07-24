@@ -23,6 +23,8 @@ import android.Manifest.permission.QUERY_USERS
 import android.app.supervision.flags.Flags
 import com.android.bedstead.flags.annotations.RequireFlagsEnabled
 import com.android.bedstead.harrier.BedsteadJUnit4
+import com.android.bedstead.harrier.annotations.RequireNotAutomotive
+import com.android.bedstead.harrier.annotations.RequireNotTv
 import com.android.bedstead.multiuser.annotations.EnsureHasNoAdditionalUser
 import com.android.bedstead.permissions.annotations.EnsureHasPermission
 import com.android.compatibility.common.util.ApiTest
@@ -33,6 +35,8 @@ import org.junit.runner.RunWith
 
 @RunWith(BedsteadJUnit4::class)
 @RequireFlagsEnabled(Flags.FLAG_ENABLE_SUPERVISION_APP_SERVICE)
+@RequireNotAutomotive(reason = "The SYSTEM_SUPERVISION role is not supported on automotive")
+@RequireNotTv(reason = "The SYSTEM_SUPERVISION role is not supported on TV")
 class SupervisionAppServiceTest : BaseSupervisionTest() {
 
     @Test

@@ -24,9 +24,6 @@ import static android.server.wm.ShellCommandHelper.executeShellCommand;
 import static android.server.wm.StateLogger.logE;
 import static android.server.wm.WindowManagerState.STATE_RESUMED;
 import static android.server.wm.WindowManagerState.STATE_STOPPED;
-import static android.server.wm.WindowManagerState.TRANSIT_TASK_CLOSE;
-import static android.server.wm.WindowManagerState.TRANSIT_TASK_OPEN;
-import static android.server.wm.app.Components.BOTTOM_ACTIVITY;
 import static android.server.wm.app.Components.BROADCAST_RECEIVER_ACTIVITY;
 import static android.server.wm.app.Components.LAUNCHING_ACTIVITY;
 import static android.server.wm.app.Components.LAUNCH_TEST_ON_DESTROY_ACTIVITY;
@@ -54,7 +51,6 @@ import android.server.wm.CommandSession.ActivitySession;
 import android.server.wm.CommandSession.SizeInfo;
 import android.server.wm.Condition;
 import android.server.wm.DeprecatedTargetSdkUtils;
-import android.server.wm.HelperActivities;
 import android.server.wm.LockScreenSession;
 import android.server.wm.MultiDisplayTestBase;
 import android.server.wm.RotationSession;
@@ -806,72 +802,6 @@ public class MultiDisplayPolicyTests extends MultiDisplayTestBase {
                 display.getSurfaceSize(), task.getSurfaceWidth());
         assertEquals("Task must have same surface height with its display",
                 display.getSurfaceSize(), task.getSurfaceHeight());
-    }
-
-    @Test
-    public void testAppTransitionForActivityOnDifferentDisplay() {
-        assumeFalse(ENABLE_SHELL_TRANSITIONS);
-        assumeFalse(hasAutomotiveSplitscreenMultitaskingFeature());
-        final TestActivitySession<HelperActivities.StandardActivity> transitionActivitySession =
-                createManagedTestActivitySession();
-        // Create new simulated display.
-        final DisplayContent newDisplay = createManagedVirtualDisplaySession()
-                .setSimulateDisplay(true).createDisplay();
-
-        // Launch BottomActivity on top of launcher activity to prevent transition state
-        // affected by wallpaper theme.
-        launchActivityOnDisplay(BOTTOM_ACTIVITY, DEFAULT_DISPLAY);
-        waitAndAssertResumedAndFocusedActivityOnDisplay(BOTTOM_ACTIVITY, DEFAULT_DISPLAY,
-                "Activity must be resumed");
-
-        // Launch StandardActivity on default display, verify last transition if is correct.
-        transitionActivitySession.launchTestActivityOnDisplaySync(
-                HelperActivities.StandardActivity.class, DEFAULT_DISPLAY);
-        mWmState.waitForAppTransitionIdleOnDisplay(DEFAULT_DISPLAY);
-        mWmState.assertValidity();
-        assertEquals(TRANSIT_TASK_OPEN,
-                mWmState.getDisplay(DEFAULT_DISPLAY).getLastTransition());
-
-        // Finish current activity & launch another TestActivity in virtual display in parallel.
-        transitionActivitySession.finishCurrentActivityNoWait();
-        launchActivityOnDisplayNoWait(TEST_ACTIVITY, newDisplay.mId);
-        mWmState.waitForAppTransitionIdleOnDisplay(DEFAULT_DISPLAY);
-        mWmState.waitForAppTransitionIdleOnDisplay(newDisplay.mId);
-        mWmState.assertValidity();
-
-        // Verify each display's last transition if is correct as expected.
-        assertEquals(TRANSIT_TASK_CLOSE,
-                mWmState.getDisplay(DEFAULT_DISPLAY).getLastTransition());
-        assertEquals(TRANSIT_TASK_OPEN,
-                mWmState.getDisplay(newDisplay.mId).getLastTransition());
-    }
-
-    @Test
-    public void testNoTransitionWhenMovingActivityToDisplay() throws Exception {
-        // Create new simulated display & capture new display's transition state.
-        final DisplayContent newDisplay = createManagedVirtualDisplaySession()
-                .setSimulateDisplay(true).createDisplay();
-
-        // Launch TestActivity in virtual display & capture its transition state.
-        launchActivityOnDisplay(TEST_ACTIVITY, newDisplay.mId);
-        mWmState.waitForAppTransitionIdleOnDisplay(newDisplay.mId);
-        mWmState.assertValidity();
-        final String lastTransitionOnVirtualDisplay = mWmState
-                .getDisplay(newDisplay.mId).getLastTransition();
-
-        // Move TestActivity from virtual display to default display.
-        getLaunchActivityBuilder().setTargetActivity(TEST_ACTIVITY)
-                .allowMultipleInstances(false).setNewTask(true)
-                .setDisplayId(getMainDisplayId()).execute();
-
-        // Verify TestActivity moved to virtual display.
-        waitAndAssertResumedAndFocusedActivityOnDisplay(TEST_ACTIVITY, getMainDisplayId(),
-                "Existing task must be brought to front");
-
-        // Make sure last transition will not change when task move to another display.
-        assertEquals(
-                lastTransitionOnVirtualDisplay,
-                mWmState.getDisplay(newDisplay.mId).getLastTransition());
     }
 
     @Test

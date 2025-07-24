@@ -16,7 +16,6 @@
 
 package android.ondeviceintelligence.cts;
 
-import static android.app.ondeviceintelligence.flags.Flags.FLAG_ENABLE_ON_DEVICE_INTELLIGENCE;
 import static android.ondeviceintelligence.cts.OnDeviceIntelligenceManagerTest.CTS_INFERENCE_SERVICE_NAME;
 import static android.ondeviceintelligence.cts.OnDeviceIntelligenceManagerTest.CTS_INTELLIGENCE_SERVICE_NAME;
 import static android.ondeviceintelligence.cts.OnDeviceIntelligenceManagerTest.CTS_PACKAGE_NAME;
@@ -117,7 +116,6 @@ public class BundleValidationTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_ENABLE_ON_DEVICE_INTELLIGENCE)
     public void canSendAndReceiveCustomParcelables() throws Exception {
         getInstrumentation().getUiAutomation().adoptShellPermissionIdentity(
                 Manifest.permission.USE_ON_DEVICE_INTELLIGENCE);
@@ -146,7 +144,6 @@ public class BundleValidationTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_ENABLE_ON_DEVICE_INTELLIGENCE)
     public void canSendReadOnlyPfds() throws Exception {
         getInstrumentation().getUiAutomation().adoptShellPermissionIdentity(
                 Manifest.permission.USE_ON_DEVICE_INTELLIGENCE);
@@ -183,7 +180,6 @@ public class BundleValidationTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_ENABLE_ON_DEVICE_INTELLIGENCE)
     public void canSendPersistableBundleOrPrimitives() throws Exception {
         getInstrumentation().getUiAutomation().adoptShellPermissionIdentity(
                 Manifest.permission.USE_ON_DEVICE_INTELLIGENCE);
@@ -208,7 +204,6 @@ public class BundleValidationTest {
 
 
     @Test
-    @RequiresFlagsEnabled(FLAG_ENABLE_ON_DEVICE_INTELLIGENCE)
     public void canSendNestedBundleWithSameConstraints() throws Exception {
         getInstrumentation().getUiAutomation().adoptShellPermissionIdentity(
                 Manifest.permission.USE_ON_DEVICE_INTELLIGENCE);
@@ -235,7 +230,6 @@ public class BundleValidationTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_ENABLE_ON_DEVICE_INTELLIGENCE)
     public void canSendImmutableBitmap() throws Exception {
         getInstrumentation().getUiAutomation().adoptShellPermissionIdentity(
                 Manifest.permission.USE_ON_DEVICE_INTELLIGENCE);
@@ -264,7 +258,6 @@ public class BundleValidationTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_ENABLE_ON_DEVICE_INTELLIGENCE)
     public void shouldRejectNestedBundlesWithFd() throws Exception {
         getInstrumentation().getUiAutomation().adoptShellPermissionIdentity(
                 Manifest.permission.USE_ON_DEVICE_INTELLIGENCE);
@@ -282,7 +275,6 @@ public class BundleValidationTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_ENABLE_ON_DEVICE_INTELLIGENCE)
     public void shouldIgnoreCustomParcelableWhenRequestHasFds() throws Exception {
         getInstrumentation().getUiAutomation().adoptShellPermissionIdentity(
                 Manifest.permission.USE_ON_DEVICE_INTELLIGENCE);
