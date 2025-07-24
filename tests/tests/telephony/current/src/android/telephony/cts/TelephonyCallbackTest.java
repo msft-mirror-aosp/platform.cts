@@ -24,6 +24,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeNoException;
 import static org.junit.Assume.assumeTrue;
@@ -31,7 +32,6 @@ import static org.junit.Assume.assumeTrue;
 import android.annotation.NonNull;
 import android.content.pm.PackageManager;
 import android.net.ConnectivityManager;
-import android.os.Looper;
 import android.platform.test.annotations.AppModeNonSdkSandbox;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -220,10 +220,32 @@ public class TelephonyCallbackTest {
     }
 
     @Test
-    public void testTelephonyCallback() {
-
-        Looper.prepare();
+    public void testRegisterTelephonyCallback() {
         new TelephonyCallback();
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () ->
+                        mTelephonyManager.registerTelephonyCallback(
+                                mSimpleExecutor, new TelephonyCallback()));
+
+        assertThrows(
+                NullPointerException.class,
+                () -> mTelephonyManager.registerTelephonyCallback(mSimpleExecutor, null));
+
+        // Arbitrary valid listener
+        final ServiceStateListener ssc = new ServiceStateListener();
+
+        assertThrows(
+                NullPointerException.class,
+                () -> mTelephonyManager.registerTelephonyCallback(null, new TelephonyCallback()));
+
+        // unregistering an unregistered callback is safe
+        mTelephonyManager.unregisterTelephonyCallback(ssc);
+        mTelephonyManager.registerTelephonyCallback(Runnable::run, ssc);
+        mTelephonyManager.unregisterTelephonyCallback(ssc);
+        // duplicate calls to unregister are idempotent
+        mTelephonyManager.unregisterTelephonyCallback(ssc);
     }
 
     private void registerTelephonyCallbackWithPermission(@NonNull TelephonyCallback callback) {
