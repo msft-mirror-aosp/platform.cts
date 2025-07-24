@@ -160,7 +160,7 @@ public final class ImeEventStreamTestUtils {
      * activity.
      * @param eventName event name to check
      * @param marker Test marker set to {@link android.widget.EditText#setPrivateImeOptions(String)}
-     * @return true if event occurred.
+     * @return a predicate that returns {@code true} if event occurred.
      */
     public static DescribedPredicate<ImeEvent> editorMatcher(
             @NonNull String eventName, @NonNull String marker) {
@@ -168,8 +168,9 @@ public final class ImeEventStreamTestUtils {
             if (!TextUtils.equals(eventName, event.getEventName())) {
                 return false;
             }
-            final EditorInfo editorInfo = event.getArguments().getParcelable("editorInfo");
-            return TextUtils.equals(marker, editorInfo.privateImeOptions);
+            final EditorInfo editorInfo = event.getArguments()
+                    .getParcelable("editorInfo", EditorInfo.class);
+            return editorInfo != null && TextUtils.equals(marker, editorInfo.privateImeOptions);
         });
     }
 
@@ -188,7 +189,8 @@ public final class ImeEventStreamTestUtils {
      * activity mainly for onStartInput restarting check.
      * @param eventName event name to check
      * @param marker Test marker set to {@link android.widget.EditText#setPrivateImeOptions(String)}
-     * @return true if event occurred and restarting is false.
+     * @return a predicate that returns {@code true} if event occurred and restarting
+     * is {@code false}.
      */
     public static DescribedPredicate<ImeEvent> editorMatcherRestartingFalse(
             @NonNull String eventName, @NonNull String marker) {
@@ -209,10 +211,11 @@ public final class ImeEventStreamTestUtils {
             if (!TextUtils.equals(eventName, event.getEventName())) {
                 return false;
             }
-            final EditorInfo editorInfo = event.getArguments().getParcelable("editorInfo");
+            final EditorInfo editorInfo = event.getArguments()
+                    .getParcelable("editorInfo", EditorInfo.class);
             final boolean actualRestarting = event.getArguments().getBoolean("restarting");
-            return (TextUtils.equals(marker, editorInfo.privateImeOptions)
-                    && restarting == actualRestarting);
+            return editorInfo != null && TextUtils.equals(marker, editorInfo.privateImeOptions)
+                    && restarting == actualRestarting;
         });
     }
 
@@ -221,15 +224,16 @@ public final class ImeEventStreamTestUtils {
     * activity.
     * @param eventName event name to check
     * @param fieldId typically same as {@link android.view.View#getId()}.
-    * @return true if event occurred.
+    * @return a predicate that returns {@code true} if event occurred.
     */
     public static DescribedPredicate<ImeEvent> editorMatcher(@NonNull String eventName, int fieldId) {
         return withDescription(eventName + "(fieldId=" + fieldId + ")", event -> {
             if (!TextUtils.equals(eventName, event.getEventName())) {
                 return false;
             }
-            final EditorInfo editorInfo = event.getArguments().getParcelable("editorInfo");
-            return fieldId == editorInfo.fieldId;
+            final EditorInfo editorInfo = event.getArguments()
+                    .getParcelable("editorInfo", EditorInfo.class);
+            return editorInfo != null && fieldId == editorInfo.fieldId;
         });
     }
 
@@ -271,8 +275,11 @@ public final class ImeEventStreamTestUtils {
                     if (!TextUtils.equals("onHandleCommand", event.getEventName())) {
                         return false;
                     }
-                    final ImeCommand eventCommand =
-                            ImeCommand.fromBundle(event.getArguments().getBundle("command"));
+                    final var commandBundle = event.getArguments().getBundle("command");
+                    if (commandBundle == null) {
+                        return false;
+                    }
+                    final ImeCommand eventCommand = ImeCommand.fromBundle(commandBundle);
                     return eventCommand.getId() == command.getId();
                 });
         return expectEvent(stream, predicate, EventFilterMode.CHECK_EXIT_EVENT_ONLY, timeout);
@@ -348,8 +355,9 @@ public final class ImeEventStreamTestUtils {
                     if (!TextUtils.equals("bindInput", event.getEventName())) {
                         return false;
                     }
-                    final InputBinding binding = event.getArguments().getParcelable("binding");
-                    return binding.getPid() == targetProcessPid;
+                    final InputBinding binding = event.getArguments()
+                            .getParcelable("binding", InputBinding.class);
+                    return binding != null && binding.getPid() == targetProcessPid;
                 }), EventFilterMode.CHECK_EXIT_EVENT_ONLY, timeout);
     }
 
@@ -516,11 +524,9 @@ public final class ImeEventStreamTestUtils {
         }
         public WindowLayoutInfoParcelable(Parcel in) {
             while (in.dataAvail() > 0) {
-                Rect bounds;
-                int type = -1, state = -1;
-                bounds = in.readParcelable(Rect.class.getClassLoader(), Rect.class);
-                type = in.readInt();
-                state = in.readInt();
+                final Rect bounds = in.readParcelable(Rect.class.getClassLoader(), Rect.class);
+                final int type = in.readInt();
+                final int state = in.readInt();
                 mDisplayFeatures.add(new FoldingFeature(bounds, type, state));
             }
         }
@@ -548,7 +554,7 @@ public final class ImeEventStreamTestUtils {
         }
 
         @Override
-        public void writeToParcel(Parcel dest, int flags) {
+        public void writeToParcel(@NonNull Parcel dest, int flags) {
             // The actual implementation is FoldingFeature, DisplayFeature is an abstract class.
             mDisplayFeatures.forEach(feature -> {
                         dest.writeParcelable(feature.getBounds(), flags);
@@ -568,7 +574,7 @@ public final class ImeEventStreamTestUtils {
         }
 
         public static final Parcelable.Creator<WindowLayoutInfoParcelable> CREATOR =
-                new Parcelable.Creator<WindowLayoutInfoParcelable>() {
+                new Parcelable.Creator<>() {
 
                     @Override
                     public WindowLayoutInfoParcelable createFromParcel(Parcel in) {
