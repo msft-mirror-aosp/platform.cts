@@ -17,7 +17,6 @@
 package android.ondeviceintelligence.cts;
 
 import static android.app.ondeviceintelligence.flags.Flags.FLAG_DMABUF_INFO;
-import static android.app.ondeviceintelligence.flags.Flags.FLAG_ENABLE_ON_DEVICE_INTELLIGENCE;
 import static android.app.ondeviceintelligence.flags.Flags.FLAG_ON_DEVICE_INTELLIGENCE_25Q4;
 import static android.content.Context.RECEIVER_EXPORTED;
 import static android.ondeviceintelligence.cts.CtsIsolatedInferenceService.constructException;
@@ -199,7 +198,6 @@ public class OnDeviceIntelligenceManagerTest {
 
     @Test
     @SkipSetupAndTeardown
-    @RequiresFlagsEnabled(FLAG_ENABLE_ON_DEVICE_INTELLIGENCE)
     public void cannotBindToIsolatedComputeAppEvenFromSamePackage() {
         assertThrows(
                 "Cannot bind to isolated_compute_app process from same package",
@@ -225,7 +223,6 @@ public class OnDeviceIntelligenceManagerTest {
 //=====================Tests for Access Denied without Permission on all Manager Methods=========
 
     @Test
-    @RequiresFlagsEnabled(FLAG_ENABLE_ON_DEVICE_INTELLIGENCE)
     public void noAccessWhenAttemptingGetFeature() {
         assertEquals(PackageManager.PERMISSION_DENIED, mContext.checkCallingOrSelfPermission(
                 Manifest.permission.USE_ON_DEVICE_INTELLIGENCE));
@@ -240,7 +237,6 @@ public class OnDeviceIntelligenceManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_ENABLE_ON_DEVICE_INTELLIGENCE)
     public void noAccessWhenAttemptingGetFeatureDetails() {
         assertEquals(PackageManager.PERMISSION_DENIED, mContext.checkCallingOrSelfPermission(
                 Manifest.permission.USE_ON_DEVICE_INTELLIGENCE));
@@ -255,7 +251,6 @@ public class OnDeviceIntelligenceManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_ENABLE_ON_DEVICE_INTELLIGENCE)
     public void noAccessWhenAttemptingGetVersion() {
         assertEquals(
                 PackageManager.PERMISSION_DENIED,
@@ -274,7 +269,6 @@ public class OnDeviceIntelligenceManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_ENABLE_ON_DEVICE_INTELLIGENCE)
     public void noAccessWhenAttemptingRequestFeatureDownload() {
         assertEquals(
                 PackageManager.PERMISSION_DENIED,
@@ -306,7 +300,6 @@ public class OnDeviceIntelligenceManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_ENABLE_ON_DEVICE_INTELLIGENCE)
     public void noAccessWhenRequestTokenInfo() {
         assertEquals(
                 PackageManager.PERMISSION_DENIED,
@@ -329,7 +322,6 @@ public class OnDeviceIntelligenceManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_ENABLE_ON_DEVICE_INTELLIGENCE)
     public void noAccessWhenAttemptingProcessRequest() {
         assertEquals(
                 PackageManager.PERMISSION_DENIED,
@@ -357,7 +349,6 @@ public class OnDeviceIntelligenceManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_ENABLE_ON_DEVICE_INTELLIGENCE)
     public void noAccessWhenAttemptingProcessRequestStreaming() {
         assertEquals(
                 PackageManager.PERMISSION_DENIED,
@@ -427,7 +418,6 @@ public class OnDeviceIntelligenceManagerTest {
 //===================== Tests for Result callback invoked on all Manager Methods ==================
 
     @Test
-    @RequiresFlagsEnabled(FLAG_ENABLE_ON_DEVICE_INTELLIGENCE)
     public void resultPopulatedWhenAttemptingGetFeature() throws Exception {
         getInstrumentation()
                 .getUiAutomation()
@@ -451,7 +441,6 @@ public class OnDeviceIntelligenceManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_ENABLE_ON_DEVICE_INTELLIGENCE)
     public void resultPopulatedWhenAttemptingGetFeatureDetails() throws Exception {
         getInstrumentation()
                 .getUiAutomation()
@@ -535,7 +524,6 @@ public class OnDeviceIntelligenceManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_ENABLE_ON_DEVICE_INTELLIGENCE)
     public void resultPopulatedWhenAttemptingGetVersion() throws Exception {
         getInstrumentation()
                 .getUiAutomation()
@@ -551,7 +539,6 @@ public class OnDeviceIntelligenceManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_ENABLE_ON_DEVICE_INTELLIGENCE)
     public void resultPopulatedWhenAttemptingRequestFeatureDownload() throws Exception {
         getInstrumentation()
                 .getUiAutomation()
@@ -611,7 +598,6 @@ public class OnDeviceIntelligenceManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_ENABLE_ON_DEVICE_INTELLIGENCE)
     public void resultPopulatedWhenRequestTokenInfo() throws Exception {
         getInstrumentation()
                 .getUiAutomation()
@@ -651,7 +637,6 @@ public class OnDeviceIntelligenceManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_ENABLE_ON_DEVICE_INTELLIGENCE)
     public void resultPopulatedWhenAttemptingProcessRequest() throws Exception {
         getInstrumentation()
                 .getUiAutomation()
@@ -676,7 +661,6 @@ public class OnDeviceIntelligenceManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_ENABLE_ON_DEVICE_INTELLIGENCE)
     public void resultPopulatedWhenAttemptingProcessRequestStreaming() throws Exception {
         getInstrumentation()
                 .getUiAutomation()
@@ -711,7 +695,6 @@ public class OnDeviceIntelligenceManagerTest {
 //===================== Tests Exception populated ==================
 
     @Test
-    @RequiresFlagsEnabled(FLAG_ENABLE_ON_DEVICE_INTELLIGENCE)
     public void exceptionPopulatedWhenAttemptingProcessRequest() throws Exception {
         getInstrumentation()
                 .getUiAutomation()
@@ -782,7 +765,6 @@ public class OnDeviceIntelligenceManagerTest {
 //===================== Tests for Processing and Cancellation signals  ==========================
 
     @Test
-    @RequiresFlagsEnabled(FLAG_ENABLE_ON_DEVICE_INTELLIGENCE)
     public void cancellationPropagatedWhenInvokedDuringRequest() throws Exception {
         getInstrumentation()
                 .getUiAutomation()
@@ -820,7 +802,6 @@ public class OnDeviceIntelligenceManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_ENABLE_ON_DEVICE_INTELLIGENCE)
     public void cancellationPropagatedWhenInvokedBeforeMakingRequest() throws Exception {
         getInstrumentation()
                 .getUiAutomation()
@@ -859,7 +840,6 @@ public class OnDeviceIntelligenceManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_ENABLE_ON_DEVICE_INTELLIGENCE)
     public void signalPropagatedWhenSignalIsInvokedBeforeAndDuringRequest() throws Exception {
         getInstrumentation()
                 .getUiAutomation()
@@ -897,7 +877,6 @@ public class OnDeviceIntelligenceManagerTest {
 
     @Test
     @SkipSetupAndTeardown
-    @RequiresFlagsEnabled(FLAG_ENABLE_ON_DEVICE_INTELLIGENCE)
     public void exceptionWhenAttemptingGetVersionWithoutServiceConfigured() {
         getInstrumentation()
                 .getUiAutomation()
@@ -917,7 +896,6 @@ public class OnDeviceIntelligenceManagerTest {
 
     @Test
     @SkipSetupAndTeardown
-    @RequiresFlagsEnabled(FLAG_ENABLE_ON_DEVICE_INTELLIGENCE)
     public void exceptionWhenAttemptingProcessRequestWithoutServiceConfigured() {
         getInstrumentation()
                 .getUiAutomation()
@@ -956,7 +934,6 @@ public class OnDeviceIntelligenceManagerTest {
 
     // ========= Test package manager returns parent process package name for isolated_compute_app
     @Test
-    @RequiresFlagsEnabled(FLAG_ENABLE_ON_DEVICE_INTELLIGENCE)
     public void inferenceServiceShouldReturnParentPackageName() throws Exception {
         getInstrumentation()
                 .getUiAutomation()
@@ -984,7 +961,6 @@ public class OnDeviceIntelligenceManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_ENABLE_ON_DEVICE_INTELLIGENCE)
     public void callerUidReceivedIsOriginalCallerUid() throws Exception {
         getInstrumentation()
                 .getUiAutomation()
@@ -1012,7 +988,6 @@ public class OnDeviceIntelligenceManagerTest {
 
     //===================== Tests for accessing file from isolated process via non-isolated =======
     @Test
-    @RequiresFlagsEnabled(FLAG_ENABLE_ON_DEVICE_INTELLIGENCE)
     public void canAccessFilesInIsolated() throws Exception {
         int[] requestTypes =
                 new int[]{REQUEST_TYPE_GET_FILE_FROM_MAP, REQUEST_TYPE_GET_FILE_FROM_STREAM,
@@ -1055,7 +1030,6 @@ public class OnDeviceIntelligenceManagerTest {
         assertThat(fileContents.get()).isEqualTo(TEST_CONTENT);
     }
 
-
     @Test
     @RequiresFlagsEnabled(FLAG_ON_DEVICE_INTELLIGENCE_25Q4)
     public void canFetchFeatureMetadata() throws Exception {
@@ -1090,7 +1064,6 @@ public class OnDeviceIntelligenceManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_ENABLE_ON_DEVICE_INTELLIGENCE)
     public void updateProcessingStateReturnsSuccessfully() throws Exception {
         // When targets run as a different user than 0, it is not possible to get service
         // instance from user 0 in this test.
@@ -1333,7 +1306,6 @@ public class OnDeviceIntelligenceManagerTest {
 
     //===================== Tests data augmentation while processing request =====================
     @Test
-    @RequiresFlagsEnabled(FLAG_ENABLE_ON_DEVICE_INTELLIGENCE)
     public void dataAugmentationReturnsDataToInference() throws Exception {
         getInstrumentation()
                 .getUiAutomation()
@@ -1375,7 +1347,6 @@ public class OnDeviceIntelligenceManagerTest {
 
     //===================== Tests broadcasts are sent for model updates =========================
     @Test
-    @RequiresFlagsEnabled(FLAG_ENABLE_ON_DEVICE_INTELLIGENCE)
     public void broadcastsMustBeSentOnModelUpdates() throws Exception {
         assumeTrue(isSystemUser());
         getInstrumentation()
@@ -1424,7 +1395,6 @@ public class OnDeviceIntelligenceManagerTest {
     //===================== Tests unbind based on timeout settings are invoked ====================
 
     @Test
-    @RequiresFlagsEnabled(FLAG_ENABLE_ON_DEVICE_INTELLIGENCE)
     public void serviceUnbindsWhenCallbackIsNotPopulatedAfterIdleTimeout() throws Exception {
         getInstrumentation()
                 .getUiAutomation()
@@ -1466,7 +1436,6 @@ public class OnDeviceIntelligenceManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_ENABLE_ON_DEVICE_INTELLIGENCE)
     public void serviceUnbindsWhenCallbackIsPopulatedAfterIdleTimeout() throws Exception {
         getInstrumentation()
                 .getUiAutomation()
@@ -1490,7 +1459,6 @@ public class OnDeviceIntelligenceManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_ENABLE_ON_DEVICE_INTELLIGENCE)
     public void deviceConfigUpdateMustBeSentOnInferenceServiceConnected() throws Exception {
         getInstrumentation()
                 .getUiAutomation()
