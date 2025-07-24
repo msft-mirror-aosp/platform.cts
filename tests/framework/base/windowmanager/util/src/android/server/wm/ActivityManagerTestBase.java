@@ -251,9 +251,6 @@ public abstract class ActivityManagerTestBase {
     private static final int UI_MODE_TYPE_MASK = 0x0f;
     private static final int UI_MODE_TYPE_VR_HEADSET = 0x07;
 
-    public static final boolean ENABLE_SHELL_TRANSITIONS =
-            SystemProperties.getBoolean("persist.wm.debug.shell_transit", true);
-
     private static Boolean sHasHomeScreen = null;
     private static Boolean sSupportsSystemDecorsOnSecondaryDisplays = null;
     private static Boolean sIsAssistantOnTop = null;
@@ -755,8 +752,7 @@ public abstract class ActivityManagerTestBase {
             mWmState.waitForDisplayUnfrozen();
         }
 
-        if (ENABLE_SHELL_TRANSITIONS
-                && !mWmState.waitForAppTransitionIdleOnDisplay(DEFAULT_DISPLAY)) {
+        if (!mWmState.waitForAppTransitionIdleOnDisplay(DEFAULT_DISPLAY)) {
             mPostAssertionRule.addError(
                     new IllegalStateException("Shell transition left unfinished!"));
         }
@@ -2060,9 +2056,7 @@ public abstract class ActivityManagerTestBase {
             return activity.getWindowingMode() == WINDOWING_MODE_PINNED
                     && activity.getState().equals(STATE_PAUSED);
         }, "checking activity windowing mode");
-        if (ENABLE_SHELL_TRANSITIONS) {
-            mWmState.waitForAppTransitionIdleOnDisplay(DEFAULT_DISPLAY);
-        }
+        mWmState.waitForAppTransitionIdleOnDisplay(DEFAULT_DISPLAY);
     }
 
     public static class CountSpec<T> {
