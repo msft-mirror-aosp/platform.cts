@@ -796,6 +796,26 @@ public class TelephonyManagerTest {
                 (cm) -> cm.overrideConfig(mTestSub, bundle));
     }
 
+    private void overrideCarrierConfigWaitChangedEvent(PersistableBundle bundle) throws Exception {
+        CountDownLatch latch = new CountDownLatch(1);
+        CarrierConfigManager.CarrierConfigChangeListener listener =
+                (logicalSlotIndex, subscriptionId, carrierId, specificCarrierId) ->
+                        latch.countDown();
+
+        mCarrierConfigManager.registerCarrierConfigChangeListener(
+                getContext().getMainExecutor(), listener);
+
+        try {
+            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                    mCarrierConfigManager, (cm) -> cm.overrideConfig(mTestSub, bundle));
+            if (!latch.await(5, TimeUnit.SECONDS)) {
+                fail("Timeout waiting for carrier config changed");
+            }
+        } finally {
+            mCarrierConfigManager.unregisterCarrierConfigChangeListener(listener);
+        }
+    }
+
     @Test
     public void testDevicePolicyApn() {
         assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_DATA));
@@ -7219,7 +7239,7 @@ public class TelephonyManagerTest {
         PersistableBundle carrierConfig = new PersistableBundle();
         carrierConfig.putString(
                 CarrierConfigManager.KEY_MMS_USER_AGENT_STRING, userAgentWithoutReplacePattern);
-        overrideCarrierConfig(carrierConfig);
+        overrideCarrierConfigWaitChangedEvent(carrierConfig);
         assertEquals(
                 "getMmsUserAgent",
                 userAgentWithoutReplacePattern,
@@ -7259,7 +7279,7 @@ public class TelephonyManagerTest {
         PersistableBundle carrierConfig = new PersistableBundle();
         carrierConfig.putString(
                 CarrierConfigManager.KEY_MMS_UA_PROF_URL_STRING, uaprofWithoutReplacePattern);
-        overrideCarrierConfig(carrierConfig);
+        overrideCarrierConfigWaitChangedEvent(carrierConfig);
         assertEquals(
                 "getMmsUAProfUrl",
                 uaprofWithoutReplacePattern,
