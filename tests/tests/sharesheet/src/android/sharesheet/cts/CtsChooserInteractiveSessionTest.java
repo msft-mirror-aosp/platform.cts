@@ -23,7 +23,6 @@ import static androidx.test.espresso.action.ViewActions.click;
 import static androidx.test.espresso.assertion.ViewAssertions.matches;
 import static androidx.test.espresso.matcher.ViewMatchers.isDisplayed;
 import static androidx.test.espresso.matcher.ViewMatchers.withId;
-import static androidx.test.espresso.matcher.ViewMatchers.withText;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
@@ -36,6 +35,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
+import android.os.Bundle;
 import android.os.RemoteException;
 import android.os.SystemClock;
 import android.platform.test.annotations.RequiresFlagsEnabled;
@@ -54,11 +54,16 @@ import com.android.compatibility.common.util.AdoptShellPermissionsRule;
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.UserHelper;
 
+import org.jetbrains.annotations.NotNull;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.util.Objects;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
 
 @RunWith(AndroidJUnit4.class)
@@ -122,8 +127,10 @@ public class CtsChooserInteractiveSessionTest {
 
         clickLaunchChooser();
         waitForChooserToAppear();
+
         clickCloseChooser();
         waitForChooserToBeGone();
+
         // check that the launch button is visible again
         onView(withId(R.id.launch_chooser)).check(matches(isDisplayed()));
     }
@@ -140,8 +147,10 @@ public class CtsChooserInteractiveSessionTest {
 
         clickLaunchChooser();
         waitForChooserToAppear();
+
         clickChooserTarget("App One");
         waitForChooserToBeGone();
+
         // check that the launch button is visible again
         onView(withId(R.id.launch_chooser)).check(matches(isDisplayed()));
     }
@@ -158,9 +167,11 @@ public class CtsChooserInteractiveSessionTest {
 
         clickLaunchChooser();
         waitForChooserToAppear();
+
         // dismiss Chooser
         mDevice.pressBack();
         waitForChooserToBeGone();
+
         // check that the launch button is visible again
         onView(withId(R.id.launch_chooser)).check(matches(isDisplayed()));
     }
@@ -174,26 +185,24 @@ public class CtsChooserInteractiveSessionTest {
             })
     @Test
     public void test_chooserReportsBounds() {
-        launchTestActivity();
+        InteractiveTestActivityController activityController = launchTestActivity();
 
         clickLaunchChooser();
         waitForChooserToAppear();
-        verifyChooserReportedItsBounds();
-
         mDevice.waitForIdle();
+
+        InteractiveTestActivityReport testReport = activityController.getReport();
+        assertThat(testReport.getHasActiveSession()).isTrue();
+        assertThat(testReport.getBoundsUpdateHistory()).isNotEmpty();
+        assertThat(testReport.getBoundsUpdateHistory().getLast())
+                .isEqualTo(testReport.getChooserBounds());
 
         // dismiss Chooser
         mDevice.pressBack();
         waitForChooserToBeGone();
-
-        // check that bounds were reported consistently.
-        onView(withId(R.id.get_bounds_consistent)).check(matches(withText("getBounds() OK")));
     }
 
-    /**
-     * Test that the session is closed when the Chooser is dismissed. Also check that Chooser
-     * reports its bounds.
-     */
+    /** Test that no session updates received after unsubscribing from the session */
     @ApiTest(
             apis = {
                 "android.service.chooser.ChooserSession#addStateListener",
@@ -206,10 +215,12 @@ public class CtsChooserInteractiveSessionTest {
         clickLaunchChooser();
         waitForChooserToAppear();
         clickUnsubscribeButton();
+
         // dismiss Chooser
         mDevice.pressBack();
         waitForChooserToBeGone();
-        // check that the launch button is visible again
+
+        // check that the close button is still visible
         onView(withId(R.id.close_chooser)).check(matches(isDisplayed()));
     }
 
@@ -225,10 +236,13 @@ public class CtsChooserInteractiveSessionTest {
 
         clickLaunchChooser();
         waitForChooserToAppear();
+
         clickUpdateChooserButton();
         mDevice.waitForIdle();
+
         clickChooserTarget("App Two");
         waitForChooserToBeGone();
+
         // check that the launch button is visible again
         onView(withId(R.id.launch_chooser)).check(matches(isDisplayed()));
     }
@@ -303,26 +317,41 @@ public class CtsChooserInteractiveSessionTest {
                 .click();
     }
 
-    private void verifyChooserReportedItsBounds() {
-        mDevice.wait(
-                        Until.findObject(
-                                By.pkg(mContext.getPackageName())
-                                        .displayId(mMyDisplayId)
-                                        .text("Bounds Updated")),
-                        WAIT_AND_ASSERT_FOUND_TIMEOUT_MS)
-                .click();
-    }
-
-    private void launchTestActivity() {
+    private InteractiveTestActivityController launchTestActivity() {
         Intent testActivityIntent = new Intent();
         testActivityIntent.setComponent(
                 new ComponentName(
                         mContext.getPackageName(),
                         CtsInteractiveChooserTestActivity.class.getName()));
         testActivityIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        CountDownLatch cdl = new CountDownLatch(1);
+        final AtomicReference<InteractiveTestActivityController> controllerRef =
+                new AtomicReference<>();
+        InteractiveTestActivityControllerCallback controllerCallback =
+                new InteractiveTestActivityControllerCallback() {
+                    @Override
+                    public void setTestActivityController(
+                            @NotNull InteractiveTestActivityController controller) {
+                        controllerRef.set(controller);
+                        cdl.countDown();
+                    }
+                };
+        Bundle controllerCallbackBundle = new Bundle();
+        controllerCallbackBundle.putBinder(
+                CtsInteractiveChooserTestActivity.PARAM_ACTIVITY_CONTROLLER_CALLBACK,
+                controllerCallback);
+        testActivityIntent.putExtras(controllerCallbackBundle);
         mContext.startActivity(testActivityIntent);
 
         waitAndAssertPkgVisible(mContext.getPackageName(), "Failed to launch test activity");
+        try {
+            if (!cdl.await(WAIT_AND_ASSERT_FOUND_TIMEOUT_MS, TimeUnit.MILLISECONDS)) {
+                throw new RuntimeException("Test error: activity did not set provide a controller");
+            }
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+        return Objects.requireNonNull(controllerRef.get());
     }
 
     private void waitForChooserToAppear() {
@@ -341,9 +370,12 @@ public class CtsChooserInteractiveSessionTest {
     }
 
     private void waitPackageGone(String pkg) {
-        mDevice.wait(
-                Until.gone(By.pkg(pkg).depth(0).displayId(mMyDisplayId)),
-                WAIT_AND_ASSERT_FOUND_TIMEOUT_MS);
+        assertWithMessage("Package " + pkg + " remains visible")
+                .that(
+                        mDevice.wait(
+                                Until.gone(By.pkg(pkg).depth(0).displayId(mMyDisplayId)),
+                                WAIT_AND_ASSERT_FOUND_TIMEOUT_MS))
+                .isTrue();
     }
 
     private void waitAndAssertFoundOnDevice(BySelector selector, String failureMessage) {
