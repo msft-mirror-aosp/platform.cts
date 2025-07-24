@@ -28,6 +28,12 @@ java_test_host {
         "platform-test-annotations-host",
         "compatibility-host-util",
     ],
+    static_libs: [
+        // NOTE: the -axt version is needed to use UserUtil, while the non-axt is needed above
+        // because of annotations such as @CddTest and @ApiTest; adding both doesn't sound right,
+        // but those annotations are deprecated, so at some point we should remove them...
+        "compatibility-host-util-axt",
+    ],
     device_common_data: [
         ":CtsMultiuserApp",
         ":CtsMultiuserDpc",
