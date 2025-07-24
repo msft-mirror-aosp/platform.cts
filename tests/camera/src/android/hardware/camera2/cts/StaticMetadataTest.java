@@ -32,6 +32,7 @@ import android.hardware.camera2.cts.helpers.StaticMetadata.CheckLevel;
 import android.hardware.camera2.cts.testcases.Camera2AndroidTestCase;
 import android.hardware.camera2.params.StreamConfigurationMap;
 import android.os.Build;
+import android.platform.test.annotations.DesktopTest;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Log;
@@ -62,7 +63,7 @@ import java.util.Set;
  * Note that most of the tests in this class don't require camera open.
  * </p>
  */
-
+@DesktopTest(cujs = {"b/420441751"})
 @RunWith(Parameterized.class)
 public class StaticMetadataTest extends Camera2AndroidTestCase {
     private static final String TAG = "StaticMetadataTest";

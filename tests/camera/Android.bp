@@ -80,6 +80,7 @@ android_test {
         "camera_platform_flags_java_lib",
         "android.media.codec-aconfig-java",
         "flag-junit",
+        "platform-test-annotations",
     ],
     jni_libs: [
         "libctscamera2_jni",
