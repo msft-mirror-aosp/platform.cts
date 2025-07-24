@@ -1,0 +1,16 @@
+{
+  "presubmit": [
+    {
+      "name": "CtsAccessibilityServiceTestCases",
+      "file_patterns": ["CtsWindowInfoUtils\\.java"]
+    },
+    {
+      "name": "CtsInputTestCases",
+      "file_patterns": ["CtsWindowInfoUtils\\.java"]
+    },
+    {
+      "name": "CtsSurfaceControlTests",
+      "file_patterns": ["CtsWindowInfoUtils\\.java"]
+    }
+  ]
+}
