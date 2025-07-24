@@ -113,7 +113,7 @@ public class VulkanFeaturesTest {
                     "VK_KHR_maintenance7",
                     "VK_KHR_pipeline_binary",
                     "VK_KHR_pipeline_executable_properties",
-                    "VK_KHR_shader_relaxed_extended_instructions",
+                    "VK_KHR_shader_relaxed_extended_instruction",
                     "VK_KHR_video_encode_av1",
                     "VK_KHR_video_encode_quantization_map"});
         DEQP_EXTENSIONS_MAP.put(
