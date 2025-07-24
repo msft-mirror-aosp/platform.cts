@@ -408,12 +408,13 @@ public final class TestMeasurementUtil {
                     String.valueOf(magnitude.length),
                 magnitude.length > 0);
             for (int value : magnitude) {
-                softAssert.assertTrue("magnitude : Data representing normalized "
-                        + "correlation magnitude values",
+                softAssert.assertTrue(
+                        "magnitude : Data representing normalized "
+                                + "correlation magnitude values",
                         timeInNs,
-                        "-32768 <= X < 32767",
+                        "-32768 <= X <= 32767",
                         String.valueOf(value),
-                        value >= -32768 && value < 32767);
+                        value >= -32768 && value <= 32767);
             }
         }
     }
