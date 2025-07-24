@@ -67,20 +67,6 @@ public abstract class EndToEndImeTestBase {
     private static final String SET_VERBOSE_IME_TRACKER_LOGGING_CMD =
             "setprop persist.debug.imetracker";
 
-    /** Feature used to represent Automotive Scalable UI targets */
-    private static final String FEATURE_CAR_SPLITSCREEN_MULTITASKING =
-            "android.software.car.splitscreen_multitasking";
-
-    /**
-     * Returns {@code true} if device is Automotive Scalable UI.
-     */
-    public static boolean isAutomotiveScalableUI() {
-        final var instrumentation = InstrumentationRegistry.getInstrumentation();
-        final var pm = instrumentation.getTargetContext().getPackageManager();
-        return pm.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE)
-                && pm.hasSystemFeature(FEATURE_CAR_SPLITSCREEN_MULTITASKING);
-    }
-
     /**
      * Whether verbose ImeTracker logging was enabled prior to running the tests,
      * used to handle reverting the state when the test run ends.
