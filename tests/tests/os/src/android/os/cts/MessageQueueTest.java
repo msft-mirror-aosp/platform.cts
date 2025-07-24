@@ -40,10 +40,6 @@ import android.system.Os;
 
 import androidx.test.runner.AndroidJUnit4;
 
-import java.util.concurrent.FutureTask;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -52,7 +48,11 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 @RunWith(AndroidJUnit4.class)
@@ -240,6 +240,72 @@ public class MessageQueueTest {
         };
 
         tester.doTest(TEST_TIMEOUT, TEST_INTERVAL);
+    }
+
+    /** Check that FD events are handled in the correct order when a message is received. */
+    @Test
+    @DisabledOnRavenwood(blockedBy = android.os.ParcelFileDescriptor.class)
+    public void testInterleavedMessageAndFdEvent() throws Exception {
+        final HandlerThread thread = new HandlerThread("testInterleavedMessageAndFdEvent");
+        thread.start();
+
+        final CountDownLatch fdEvent = new CountDownLatch(1);
+        final CountDownLatch msgEvent = new CountDownLatch(1);
+
+        final MessageQueue queue = thread.getLooper().getQueue();
+        final ParcelFileDescriptor[] pipe = ParcelFileDescriptor.createPipe();
+        try (final FileInputStream reader = new AutoCloseInputStream(pipe[0]);
+                final FileOutputStream writer = new AutoCloseOutputStream(pipe[1])) {
+            Handler h =
+                    new Handler(thread.getLooper()) {
+                        @Override
+                        public void handleMessage(Message msg) {
+                            super.handleMessage(msg);
+                            if (msg.what == 0) {
+                                // We send message 1 before triggering the FD event to show that
+                                // pending FD events are always handled before other ready messages.
+                                assertTrue(sendEmptyMessage(1));
+                                try {
+                                    writer.write(0);
+                                    writer.flush();
+                                } catch (IOException ex) {
+                                    throw new RuntimeException(ex);
+                                }
+                            } else if (msg.what == 1) {
+                                // Check that the FD event has been processed.
+                                assertEquals(0, fdEvent.getCount());
+                                msgEvent.countDown();
+                            }
+                        }
+                    };
+            OnFileDescriptorEventListener readerCallback =
+                    new OnFileDescriptorEventListener() {
+                        @Override
+                        public int onFileDescriptorEvents(FileDescriptor fd, int events) {
+                            // check that fd event is observed
+                            assertEquals(pipe[0].getFileDescriptor(), fd);
+                            // We shouldn't have processed the second message yet.
+                            assertEquals(1, msgEvent.getCount());
+                            if ((events & OnFileDescriptorEventListener.EVENT_ERROR) != 0) {
+                                fail("Saw unexpected error.");
+                                return 0;
+                            }
+                            if ((events & OnFileDescriptorEventListener.EVENT_INPUT) != 0) {
+                                // Mark FD event as processed.
+                                fdEvent.countDown();
+                                return 0;
+                            }
+                            fail("Saw unexpected events: " + events);
+                            return 0;
+                        }
+                    };
+            queue.addOnFileDescriptorEventListener(
+                    reader.getFD(), OnFileDescriptorEventListener.EVENT_INPUT, readerCallback);
+            assertTrue(h.sendEmptyMessage(0));
+            syncWait(h);
+            assertTrue(fdEvent.await(TIMEOUT, TimeUnit.MILLISECONDS));
+            assertTrue(msgEvent.await(TIMEOUT, TimeUnit.MILLISECONDS));
+        }
     }
 
     /**
@@ -1267,6 +1333,10 @@ public class MessageQueueTest {
             if (!mSuccess) {
                 throw mFailure;
             }
+        }
+
+        public Looper getLooper() {
+            return mLooper;
         }
 
         class LooperThread extends HandlerThread {
