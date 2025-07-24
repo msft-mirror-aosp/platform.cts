@@ -416,13 +416,29 @@ public final class DeviceState extends HarrierRule {
         EventLogs.resetLogs();
 
         // Avoid cached activities on screen
-        TestApis.activities().clearAllActivities();
+        if (!isAutomotive()) {
+            // Clearing all activities on automotive would lead to restart of the critical
+            // activities like persistent Maps, cluster, control-bar activities either on the same
+            // display running as multi-window mode or an external display running in fullscreen
+            // windowing mode. Restarting these activities would interfere with the test state
+            // and hence they shouldn't be removed for automotive.
+            // TODO(b/433812040): Potentially remove this altogether.
+            TestApis.activities().clearAllActivities();
+        }
 
         mMinSdkVersionCurrentTest = mMinSdkVersion;
         List<Annotation> annotations = getAnnotations(description);
         applyAnnotations(annotations, /* isTest= */ true);
 
         Log.d(LOG_TAG, "Finished preparing state for test " + testName);
+    }
+
+    /**
+     * Checks whether the device is automotive
+     */
+    private static boolean isAutomotive() {
+        PackageManager pm = sContext.getPackageManager();
+        return pm.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE);
     }
 
     private void applyAnnotations(List<Annotation> annotations, boolean isTest) throws Throwable {
@@ -1877,7 +1893,10 @@ public final class DeviceState extends HarrierRule {
         }
         mOriginalSecureSettings.clear();
 
-        TestApis.activities().clearAllActivities();
+        if (!isAutomotive()) {
+            // TODO(b/433812040): Potentially remove this altogether.
+            TestApis.activities().clearAllActivities();
+        }
         mLocator.teardownShareableState();
     }
 
