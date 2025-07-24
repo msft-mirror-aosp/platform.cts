@@ -35,6 +35,8 @@
         <option name="run-command" value="settings put secure immersive_mode_confirmations confirmed" />
         <option name="run-command" value="input keyevent KEYCODE_HOME" />
     </target_preparer>
+    <!-- Ensure the module only runs on the latest SDK -->
+    <object type="module_controller" class="com.android.tradefed.testtype.suite.module.Sdk36ModuleController" />
     <test class="com.android.tradefed.testtype.AndroidJUnitTest" >
         <option name="package" value="android.view.surfacecontrol.cts" />
         <option name="runtime-hint" value="6m47s" />
