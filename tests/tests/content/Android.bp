@@ -455,26 +455,17 @@ android_ravenwood_test {
     team: "trendy_team_ravenwood",
 }
 
-android_app {
-    name: "CtsResourcesTestCasesRavenwood-res",
-    defaults: [
-        "cts_content_resources_defaults",
-    ],
-    use_resource_processor: false,
-    platform_apis: true,
-    enforce_uses_libs: false,
-}
-
 android_ravenwood_test {
     name: "CtsResourcesTestCasesRavenwood",
-    defaults: ["cts_defaults"],
+    defaults: [
+        "cts_defaults",
+        "cts_content_resources_defaults",
+    ],
+    build_resources: true,
+    dont_merge_manifests: true,
     srcs: [
         "src/android/content/res/cts/**/*.java",
-
-        // Steal the R file.
-        ":CtsResourcesTestCasesRavenwood-res{.aapt.srcjar}",
     ],
-    resource_apk: "CtsResourcesTestCasesRavenwood-res",
     libs: [
         "android.test.runner.stubs.system",
         "android.test.base.stubs.system",

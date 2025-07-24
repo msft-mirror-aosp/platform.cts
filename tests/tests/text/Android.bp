@@ -68,14 +68,6 @@ android_test {
     per_testcase_directory: true,
 }
 
-android_app {
-    name: "CtsTextTestCases-res",
-    defaults: ["cts_defaults"],
-    sdk_version: "test_current",
-    use_resource_processor: false,
-    enforce_uses_libs: false,
-}
-
 android_ravenwood_test {
     name: "CtsTextTestCasesRavenwood",
     defaults: ["cts_defaults"],
@@ -87,8 +79,6 @@ android_ravenwood_test {
         "src/android/text/util/cts/*.java",
         "src/android/text/util/cts/*.kt",
         "src/android/text/method/cts/EditorState.java",
-
-        ":CtsTextTestCases-res{.aapt.srcjar}",
     ],
     exclude_srcs: [
         // Require Activity support
@@ -112,8 +102,8 @@ android_ravenwood_test {
         "android.test.runner.stubs.test",
         "android.test.base.stubs.test",
     ],
-    resource_apk: "CtsTextTestCases-res",
     auto_gen_config: true,
+    build_resources: true,
     team: "trendy_team_ravenwood",
 }
 
