@@ -31,7 +31,7 @@ import android.util.Log;
  */
 public class SimpleBroadcastReceiver extends BroadcastReceiver {
 
-    public static final String TAG = "StartBackgroundActivityReceiver";
+    public static final String TAG = "SimpleBroadcastReceiver";
 
     @Override
     public void onReceive(Context context, Intent intent) {
