@@ -235,7 +235,14 @@ TEST_P(AAudioOffloadTest, testPlaybackParameters) {
     }
     parameters.speed += 0.1f;
     EXPECT_EQ(AAUDIO_OK, result);
-    EXPECT_EQ(AAUDIO_OK, AAudioStream_setPlaybackParameters(mStream, &parameters));
+    result = AAudioStream_setPlaybackParameters(mStream, &parameters);
+    if (result == AAUDIO_ERROR_UNIMPLEMENTED || result == AAUDIO_ERROR_INVALID_STATE) {
+        // UNIMPLEMENTED indicates the framework find the setPlaybackParameters API is not
+        // available for current stream. INVALID_STATE is returned by the HAL to indicates
+        // the HAL doesn't support setPlaybackParameters API.
+        return;
+    }
+    EXPECT_EQ(AAUDIO_OK, result);
 }
 
 INSTANTIATE_TEST_CASE_P(Offload, AAudioOffloadTest,
