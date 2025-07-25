@@ -92,14 +92,26 @@ public class ActivityInfoTest {
         mActivityInfo.writeToParcel(p, 0);
         p.setDataPosition(0);
         ActivityInfo info = ActivityInfo.CREATOR.createFromParcel(p);
-        assertEquals(mActivityInfo.theme, info.theme);
-        assertEquals(mActivityInfo.launchMode, info.launchMode);
-        assertEquals(mActivityInfo.permission, info.permission);
-        assertEquals(mActivityInfo.taskAffinity, info.taskAffinity);
-        assertEquals(mActivityInfo.targetActivity, info.targetActivity);
-        assertEquals(mActivityInfo.flags, info.flags);
-        assertEquals(mActivityInfo.screenOrientation, info.screenOrientation);
-        assertEquals(mActivityInfo.configChanges, info.configChanges);
+        assertInfosAreEqual(mActivityInfo, info);
+
+        try {
+            mActivityInfo.writeToParcel(null, 0);
+            fail("should throw NullPointerException");
+        } catch (NullPointerException e) {
+            // expected
+        }
+    }
+
+    @Test
+    @DisabledOnRavenwood(blockedBy = PackageManager.class)
+    public void testCopyConstructor() throws NameNotFoundException {
+        ComponentName componentName = new ComponentName(TEST_PKG, TEST_ACTIVITY);
+
+        mActivityInfo = getContext().getPackageManager().getActivityInfo(
+                componentName, PackageManager.GET_META_DATA);
+
+        ActivityInfo info = new ActivityInfo(mActivityInfo);
+        assertInfosAreEqual(mActivityInfo, info);
 
         try {
             mActivityInfo.writeToParcel(null, 0);
@@ -162,5 +174,41 @@ public class ActivityInfoTest {
         } catch (NullPointerException e) {
             // expected
         }
+    }
+
+    /**
+     * Asserts that the infos provided are equal.
+     */
+    private static void assertInfosAreEqual(ActivityInfo info1, ActivityInfo info2) {
+        assertEquals(info1.theme, info2.theme);
+        assertEquals(info1.launchMode, info2.launchMode);
+        assertEquals(info1.documentLaunchMode, info2.documentLaunchMode);
+        assertEquals(info1.permission, info2.permission);
+        assertEquals(info1.getKnownActivityEmbeddingCerts(),
+                info2.getKnownActivityEmbeddingCerts());
+        assertEquals(info1.taskAffinity, info2.taskAffinity);
+        assertEquals(info1.targetActivity, info2.targetActivity);
+        assertEquals(info1.flags, info2.flags);
+        assertEquals(info1.privateFlags, info2.privateFlags);
+        assertEquals(info1.screenOrientation, info2.screenOrientation);
+        assertEquals(info1.configChanges, info2.configChanges);
+        assertEquals(info1.softInputMode, info2.softInputMode);
+        assertEquals(info1.uiOptions, info2.uiOptions);
+        assertEquals(info1.parentActivityName, info2.parentActivityName);
+        assertEquals(info1.maxRecents, info2.maxRecents);
+        assertEquals(info1.lockTaskLaunchMode, info2.lockTaskLaunchMode);
+        assertEquals(info1.windowLayout, info2.windowLayout);
+        assertEquals(info1.resizeMode, info2.resizeMode);
+        assertEquals(info1.requestedVrComponent, info2.requestedVrComponent);
+        assertEquals(info1.rotationAnimation, info2.rotationAnimation);
+        assertEquals(info1.colorMode, info2.colorMode);
+        assertEquals(info1.getMaxAspectRatio(), info2.getMaxAspectRatio(), Math.ulp(1f));
+        assertEquals(info1.getMinAspectRatio(), info2.getMinAspectRatio(), Math.ulp(1f));
+        assertEquals(info1.supportsSizeChanges, info2.supportsSizeChanges);
+        assertEquals(info1.requiredDisplayCategory, info2.requiredDisplayCategory);
+        assertEquals(info1.requireContentUriPermissionFromCaller,
+                info2.requireContentUriPermissionFromCaller);
+        assertEquals(info1.launchToken, info2.launchToken);
+        assertEquals(info1.persistableMode, info2.persistableMode);
     }
 }
