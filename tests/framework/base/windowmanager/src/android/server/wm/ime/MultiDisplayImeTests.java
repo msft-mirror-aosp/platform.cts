@@ -29,6 +29,7 @@ import static android.view.WindowManager.DISPLAY_IME_POLICY_LOCAL;
 import static android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_UNCHANGED;
 
 import static com.android.cts.mockime.ImeEventStreamTestUtils.editorMatcher;
+import static com.android.cts.mockime.ImeEventStreamTestUtils.eventMatcher;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.expectCommand;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.expectEvent;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.expectEventWithKeyValue;
@@ -422,8 +423,7 @@ public class MultiDisplayImeTests extends MultiDisplayTestBase {
             // Verify invoking showSoftInput will be ignored when the display has the HIDE policy.
             final ImeEventStream stream = imeSession.openEventStream();
             activitySession.runOnMainSyncAndWait(activity::showSoftInput);
-            notExpectEvent(stream, editorMatcher("showSoftInput",
-                    activity.getEditText().getPrivateImeOptions()), NOT_EXPECT_TIMEOUT);
+            notExpectEvent(stream, eventMatcher("showSoftInput"), NOT_EXPECT_TIMEOUT);
         }
     }
 
