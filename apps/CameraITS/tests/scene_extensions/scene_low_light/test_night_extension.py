@@ -221,9 +221,8 @@ class NightExtensionTest(its_base_test.ItsBaseTest):
       file_stem = (
           f'{test_name}_{self.camera_id}_{accepted_format}_{width}x{height}'
       )
-
-      cam.do_3a()
       time.sleep(_BRIGHTNESS_SETTING_CHANGE_WAIT_SEC)
+      cam.do_3a()
 
       first_api_level = its_session_utils.get_first_api_level(self.dut.serial)
       use_metering_region = (
@@ -242,6 +241,7 @@ class NightExtensionTest(its_base_test.ItsBaseTest):
 
       # Turn off DUT to reduce reflections
       lighting_control_utils.turn_off_device_screen(self.dut)
+      time.sleep(_BRIGHTNESS_SETTING_CHANGE_WAIT_SEC)
 
       # Validate lighting, then setup tablet
       cam.do_3a(do_af=False)
@@ -278,12 +278,8 @@ class NightExtensionTest(its_base_test.ItsBaseTest):
       logging.debug('Taking auto capture with night mode ON')
       # Wait for tablet brightness to change
       time.sleep(_BRIGHTNESS_SETTING_CHANGE_WAIT_SEC)
-
       cam.do_3a()
-      time.sleep(_BRIGHTNESS_SETTING_CHANGE_WAIT_SEC)
-
       req = capture_request_utils.auto_capture_request()
-
       self._take_capture_and_analyze(cam, req, out_surfaces, file_stem,
                                      metering_region, use_metering_region,
                                      first_api_level)
