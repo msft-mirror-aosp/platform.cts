@@ -37,6 +37,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import android.app.Activity;
+import android.app.Instrumentation;
 import android.content.Intent;
 import android.content.res.Configuration;
 import android.graphics.Color;
@@ -71,6 +72,7 @@ import com.android.cts.mockime.ImeSettings;
 import com.android.cts.mockime.MockImeSession;
 
 import org.junit.Assume;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -87,18 +89,25 @@ public final class ImeInsetsVisibilityTest extends EndToEndImeTestBase {
     @Rule
     public final UnlockScreenRule mUnlockScreenRule = new UnlockScreenRule();
 
+    private Instrumentation mInstrumentation;
+
+    @Before
+    public void setup() {
+        mInstrumentation = InstrumentationRegistry.getInstrumentation();
+    }
+
     @Test
     public void testImeVisibilityWhenImeFocusableChildPopup() throws Exception {
         Assume.assumeFalse(isPreventImeStartup());
         final InputMethodManager imm = getImmOrFail();
 
-        try (MockImeSession imeSession = MockImeSession.create(
-                InstrumentationRegistry.getInstrumentation().getContext(),
-                InstrumentationRegistry.getInstrumentation().getUiAutomation(),
+        try (var imeSession = MockImeSession.create(
+                mInstrumentation.getContext(),
+                mInstrumentation.getUiAutomation(),
                 new ImeSettings.Builder())) {
             final ImeEventStream stream = imeSession.openEventStream();
 
-            final String marker = getTestMarker();
+            final String marker = getTestMarker(FOCUSED_EDIT_TEXT_TAG);
             final Pair<EditText, TestActivity> editTextTestActivityPair =
                     launchTestActivity(false, marker);
             final EditText editText = editTextTestActivityPair.first;
@@ -107,8 +116,8 @@ public final class ImeInsetsVisibilityTest extends EndToEndImeTestBase {
             notExpectEvent(stream, editorMatcher("onStartInputView", marker), TIMEOUT);
             expectImeInvisible(TIMEOUT);
 
-            assertTrue("showSoftInput must success if the View has IME focus", getOnMainSync(
-                    () -> editText.requestFocus() && imm.showSoftInput(editText, 0)));
+            assertTrue("showSoftInput must success if the View has IME focus",
+                    getOnMainSync(() -> imm.showSoftInput(editText, 0)));
 
             expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
             expectEvent(stream, showSoftInputMatcher(InputMethod.SHOW_EXPLICIT), TIMEOUT);
@@ -141,12 +150,12 @@ public final class ImeInsetsVisibilityTest extends EndToEndImeTestBase {
         final InputMethodManager imm = getImmOrFail();
 
         try (MockImeSession imeSession = MockImeSession.create(
-                InstrumentationRegistry.getInstrumentation().getContext(),
-                InstrumentationRegistry.getInstrumentation().getUiAutomation(),
+                mInstrumentation.getContext(),
+                mInstrumentation.getUiAutomation(),
                 new ImeSettings.Builder().setInputViewHeight(NEW_KEYBOARD_HEIGHT))) {
             final ImeEventStream stream = imeSession.openEventStream();
 
-            final String marker = getTestMarker();
+            final String marker = getTestMarker(FOCUSED_EDIT_TEXT_TAG);
             final Pair<EditText, TestActivity> editTextTestActivityPair =
                     launchTestActivity(false, marker);
             final EditText editText = editTextTestActivityPair.first;
@@ -155,8 +164,8 @@ public final class ImeInsetsVisibilityTest extends EndToEndImeTestBase {
             notExpectEvent(stream, editorMatcher("onStartInputView", marker), NOT_EXPECT_TIMEOUT);
             expectImeInvisible(TIMEOUT);
 
-            assertTrue("showSoftInput must success if the View has IME focus", getOnMainSync(
-                    () -> editText.requestFocus() && imm.showSoftInput(editText, 0)));
+            assertTrue("showSoftInput must success if the View has IME focus",
+                    getOnMainSync(() -> imm.showSoftInput(editText, 0)));
 
             expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
             expectEvent(stream, showSoftInputMatcher(InputMethod.SHOW_EXPLICIT), TIMEOUT);
@@ -192,12 +201,12 @@ public final class ImeInsetsVisibilityTest extends EndToEndImeTestBase {
         final InputMethodManager imm = getImmOrFail();
 
         try (MockImeSession imeSession = MockImeSession.create(
-                InstrumentationRegistry.getInstrumentation().getContext(),
-                InstrumentationRegistry.getInstrumentation().getUiAutomation(),
+                mInstrumentation.getContext(),
+                mInstrumentation.getUiAutomation(),
                 new ImeSettings.Builder().setInputViewHeight(NEW_KEYBOARD_HEIGHT))) {
             final ImeEventStream stream = imeSession.openEventStream();
 
-            final String marker = getTestMarker();
+            final String marker = getTestMarker(FOCUSED_EDIT_TEXT_TAG);
             final Pair<EditText, TestActivity> editTextTestActivityPair =
                     launchTestActivity(false, marker);
             final EditText editText = editTextTestActivityPair.first;
@@ -206,8 +215,8 @@ public final class ImeInsetsVisibilityTest extends EndToEndImeTestBase {
             notExpectEvent(stream, editorMatcher("onStartInputView", marker), TIMEOUT);
             expectImeInvisible(TIMEOUT);
 
-            assertTrue("showSoftInput must success if the View has IME focus", getOnMainSync(
-                    () -> editText.requestFocus() && imm.showSoftInput(editText, 0)));
+            assertTrue("showSoftInput must success if the View has IME focus",
+                    getOnMainSync(() -> imm.showSoftInput(editText, 0)));
 
             expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
             expectEvent(stream, showSoftInputMatcher(InputMethod.SHOW_EXPLICIT), TIMEOUT);
@@ -245,12 +254,12 @@ public final class ImeInsetsVisibilityTest extends EndToEndImeTestBase {
         final InputMethodManager imm = getImmOrFail();
 
         try (MockImeSession imeSession = MockImeSession.create(
-                InstrumentationRegistry.getInstrumentation().getContext(),
-                InstrumentationRegistry.getInstrumentation().getUiAutomation(),
+                mInstrumentation.getContext(),
+                mInstrumentation.getUiAutomation(),
                 new ImeSettings.Builder().setInputViewHeight(NEW_KEYBOARD_HEIGHT))) {
             final ImeEventStream stream = imeSession.openEventStream();
 
-            final String marker = getTestMarker();
+            final String marker = getTestMarker(FOCUSED_EDIT_TEXT_TAG);
             final Pair<EditText, TestActivity> editTextTestActivityPair =
                     launchTestActivity(true, marker);
             final EditText editText = editTextTestActivityPair.first;
@@ -258,16 +267,14 @@ public final class ImeInsetsVisibilityTest extends EndToEndImeTestBase {
             final WindowInsets[] insetsFromActivity = new WindowInsets[1];
             Point curEditPos = getLocationOnScreenForView(editText);
 
-            TestUtils.runOnMainSync(() -> {
-                activity.getWindow().getDecorView().setOnApplyWindowInsetsListener(
-                        (v, insets) -> insetsFromActivity[0] = insets);
-            });
+            TestUtils.runOnMainSync(() -> activity.getWindow().getDecorView()
+                    .setOnApplyWindowInsetsListener((v, insets) -> insetsFromActivity[0] = insets));
 
             notExpectEvent(stream, editorMatcher("onStartInputView", marker), TIMEOUT);
             expectImeInvisible(TIMEOUT);
 
-            assertTrue("showSoftInput must success if the View has IME focus", getOnMainSync(
-                    () -> editText.requestFocus() && imm.showSoftInput(editText, 0)));
+            assertTrue("showSoftInput must success if the View has IME focus",
+                    getOnMainSync(() -> imm.showSoftInput(editText, 0)));
 
             expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
             expectEvent(stream, showSoftInputMatcher(InputMethod.SHOW_EXPLICIT), TIMEOUT);
@@ -279,8 +286,8 @@ public final class ImeInsetsVisibilityTest extends EndToEndImeTestBase {
             Point lastEditTextPos = new Point(curEditPos);
             curEditPos = getLocationOnScreenForView(editText);
             // Watch doesn't support navigation bar and has limited screen size, so no transition
-            // in editbox with respect to x and y coordinates
-            Configuration config = InstrumentationRegistry.getInstrumentation()
+            // in EditText with respect to x and y coordinates
+            Configuration config = mInstrumentation
                     .getContext()
                     .getResources()
                     .getConfiguration();
@@ -307,7 +314,7 @@ public final class ImeInsetsVisibilityTest extends EndToEndImeTestBase {
                     isInsetsVisible(insetsFromActivity[0], WindowInsets.Type.ime())
                             && curEditPos.equals(lastEditTextPos));
 
-            InstrumentationRegistry.getInstrumentation().getContext().sendBroadcast(
+            mInstrumentation.getContext().sendBroadcast(
                     new Intent(ACTION_CLOSE_SYSTEM_DIALOGS).setFlags(FLAG_RECEIVER_FOREGROUND));
             TestUtils.waitOnMainUntil(() -> !isInputMethodPickerShown(imm), TIMEOUT,
                     "InputMethod picker should be closed");
@@ -323,8 +330,8 @@ public final class ImeInsetsVisibilityTest extends EndToEndImeTestBase {
     @Test
     public void testEditorWontCoveredByImeWhenInputWindowBehindPanel() throws Exception {
         try (MockImeSession imeSession = MockImeSession.create(
-                InstrumentationRegistry.getInstrumentation().getContext(),
-                InstrumentationRegistry.getInstrumentation().getUiAutomation(),
+                mInstrumentation.getContext(),
+                mInstrumentation.getUiAutomation(),
                 new ImeSettings.Builder())) {
             final ImeEventStream stream = imeSession.openEventStream();
             final String marker = getTestMarker();
@@ -409,36 +416,33 @@ public final class ImeInsetsVisibilityTest extends EndToEndImeTestBase {
         });
     }
 
-    private Pair<EditText, TestActivity> launchTestActivity(boolean useDialogTheme,
+    @NonNull
+    private static Pair<EditText, TestActivity> launchTestActivity(boolean useDialogTheme,
             @NonNull String focusedMarker) {
-        final AtomicReference<EditText> focusedEditTextRef = new AtomicReference<>();
-        final AtomicReference<TestActivity> testActivityRef = new AtomicReference<>();
-
-        TestActivity.startSync(activity -> {
-            final LinearLayout layout = new LinearLayout(activity);
+        final var focusedEditTextRef = new AtomicReference<EditText>();
+        final var testActivity = TestActivity.startSync(activity -> {
+            final var layout = new LinearLayout(activity);
             layout.setOrientation(LinearLayout.VERTICAL);
             layout.setGravity(Gravity.BOTTOM);
             if (useDialogTheme) {
                 // Create a floating Dialog
                 activity.setTheme(android.R.style.Theme_Material_Dialog);
-                TextView textView = new TextView(activity);
+                final var textView = new TextView(activity);
                 textView.setText("I'm a TextView");
                 textView.setHeight(activity.getWindowManager().getMaximumWindowMetrics()
                         .getBounds().height() / 3);
                 layout.addView(textView);
             }
 
-            final EditText focusedEditText = new EditText(activity);
+            final var focusedEditText = new EditText(activity);
             focusedEditText.setHint("focused editText");
             focusedEditText.setPrivateImeOptions(focusedMarker);
-
+            focusedEditText.requestFocus();
             focusedEditTextRef.set(focusedEditText);
-            testActivityRef.set(activity);
-
             layout.addView(focusedEditText);
             return layout;
         });
-        return new Pair<>(focusedEditTextRef.get(), testActivityRef.get());
+        return new Pair<>(focusedEditTextRef.get(), testActivity);
     }
 
     /**
