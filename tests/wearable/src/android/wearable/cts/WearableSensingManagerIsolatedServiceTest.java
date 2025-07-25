@@ -828,6 +828,8 @@ public class WearableSensingManagerIsolatedServiceTest {
 
         mWearableSensingManager.removeConnection(mWearableConnection0);
 
+        // Sleep to make sure the system finishes closing the connection PFD
+        SystemClock.sleep(2000);
         sendDataFromWssAndVerifyException(/* connectionId= */ 0);
     }
 
@@ -885,6 +887,8 @@ public class WearableSensingManagerIsolatedServiceTest {
 
         mWearableSensingManager.removeAllConnections();
 
+        // Sleep to make sure the system finishes closing the connection PFD
+        SystemClock.sleep(2000);
         sendDataFromWssAndVerifyException(/* connectionId= */ 0);
         sendDataFromWssAndVerifyException(/* connectionId= */ 1);
         sendDataFromWssAndVerifyException(/* connectionId= */ 2);
