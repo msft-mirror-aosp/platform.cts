@@ -27,7 +27,7 @@ import android.os.IBinder;
 import android.os.Looper;
 import android.os.RemoteException;
 
-import com.android.internal.annotations.GuardedBy;
+import androidx.annotation.GuardedBy;
 
 import com.google.common.util.concurrent.SettableFuture;
 
