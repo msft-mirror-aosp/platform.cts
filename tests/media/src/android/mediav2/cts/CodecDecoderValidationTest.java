@@ -182,7 +182,7 @@ public class CodecDecoderValidationTest extends CodecDecoderTestBase {
                         MediaUtils.isTv() ? CODEC_ANY : CODEC_OPTIONAL},
                 // @CddTest(requirements = {"2.3.2/5.3.1/T-1-2"})
                 {MEDIA_TYPE_MPEG2,
-                        new String[]{"bbb_1920x1080_60fps_mpeg2_interlaced_main_high.mp4"}, null,
+                        new String[]{"bbb_1920x1080_30fps_mpeg2_interlaced_main_high.mp4"}, null,
                         -1.0f, -1L, -1, -1, 1920, 1080,
                         MediaUtils.isTv() ? CODEC_ANY : CODEC_OPTIONAL},
 
