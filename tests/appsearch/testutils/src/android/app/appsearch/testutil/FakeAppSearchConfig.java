@@ -154,7 +154,7 @@ public final class FakeAppSearchConfig implements ServiceAppSearchConfig {
     @Override
     public int getCachedApiCallStatsLimit() {
         throwIfClosed();
-        return DEFAULT_API_CALL_STATS_LIMIT;
+        return DEFAULT_DISABLED_API_CALL_STATS_LIMIT;
     }
 
     @Override
