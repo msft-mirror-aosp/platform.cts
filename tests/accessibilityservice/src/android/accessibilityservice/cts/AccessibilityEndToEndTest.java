@@ -46,7 +46,6 @@ import static android.view.accessibility.AccessibilityNodeInfo.ACTION_ARGUMENT_S
 import static android.view.accessibility.AccessibilityNodeInfo.AccessibilityAction.ACTION_HIDE_TOOLTIP;
 import static android.view.accessibility.AccessibilityNodeInfo.AccessibilityAction.ACTION_SCROLL_IN_DIRECTION;
 import static android.view.accessibility.AccessibilityNodeInfo.AccessibilityAction.ACTION_SHOW_TOOLTIP;
-import static android.view.accessibility.Flags.FLAG_PREVENT_A11Y_NONTOOL_FROM_INJECTING_INTO_SENSITIVE_VIEWS;
 
 import static androidx.test.espresso.Espresso.onView;
 import static androidx.test.espresso.action.ViewActions.scrollTo;
@@ -1621,7 +1620,6 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
 
     @Test
     @ApiTest(apis = {"android.view.View#isAccessibilityDataSensitive"})
-    @RequiresFlagsEnabled(FLAG_PREVENT_A11Y_NONTOOL_FROM_INJECTING_INTO_SENSITIVE_VIEWS)
     public void testAccessibilityDataSensitive_observesGesturesFromTool() {
         assumeTrue("Device does not support touch",
             supportsTouch(sInstrumentation.getTargetContext()));
@@ -1642,7 +1640,6 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
 
     @Test
     @ApiTest(apis = {"android.view.View#isAccessibilityDataSensitive"})
-    @RequiresFlagsEnabled(FLAG_PREVENT_A11Y_NONTOOL_FROM_INJECTING_INTO_SENSITIVE_VIEWS)
     public void testAccessibilityDataSensitive_hiddenFromGesturesFromNonTool() {
         assumeTrue("Device does not support touch",
             supportsTouch(sInstrumentation.getTargetContext()));
