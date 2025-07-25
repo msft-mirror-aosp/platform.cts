@@ -17,17 +17,9 @@ package {
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
-android_test {
-    name: "CtsViewTestCases",
+java_defaults {
+    name: "CtsViewTestCases-default",
     defaults: ["cts_defaults"],
-
-    // Tag this module as a cts test artifact
-    test_suites: [
-        "cts",
-        "general-tests",
-    ],
-
-    compile_multilib: "both",
 
     libs: [
         "android.test.runner.stubs",
@@ -65,17 +57,53 @@ android_test {
         "bedstead",
     ],
 
-    jni_libs: [
-        "libctsview_jni",
-        "libnativehelper_compat_libc++",
-    ],
-
     srcs: [
         "src/**/*.java",
         "src/**/*.kt",
     ],
 
     sdk_version: "test_current",
+
+    // No jni_libs here, as we don't do the native part of CtsViewTestCases
+    // on Ravenwood yet.
+}
+
+android_test {
+    name: "CtsViewTestCases",
+    defaults: ["CtsViewTestCases-default"],
+
+    // Tag this module as a cts test artifact
+    test_suites: [
+        "cts",
+        "general-tests",
+    ],
+
+    compile_multilib: "both",
+
+    jni_libs: [
+        "libctsview_jni",
+        "libnativehelper_compat_libc++",
+    ],
+}
+
+// This is a Ravenwood version of CtsViewTestCases, but
+// _almost all tests will fail for now_.
+// This is used by the Ravenwood team for their work on View support.
+// DO NOT add it to any pre/post submit test.
+android_ravenwood_test {
+    name: "CtsViewTestCasesRavenwood",
+    defaults: ["CtsViewTestCases-default"],
+
+    team: "trendy_team_ravenwood",
+
+    build_resources: true,
+    auto_gen_config: true,
+
+    ravenizer: {
+        strip_mockito: true,
+    },
+
+    // TODO: Add jni_libs too.
 }
 
 test_module_config {
