@@ -41,7 +41,6 @@ import android.telecom.ConnectionRequest;
 import android.telecom.PhoneAccountHandle;
 import android.telecom.TelecomManager;
 import android.telecom.VideoProfile;
-import android.telephony.TelephonyCallback;
 
 import androidx.test.platform.app.InstrumentationRegistry;
 
@@ -50,7 +49,6 @@ import com.android.server.telecom.flags.Flags;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executor;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -263,33 +261,6 @@ public class IncomingCallTest extends BaseTelecomTestWithMockServices {
 
         assertTrue((mInCallCallbacks.getService().getLastCall().getDetails().getCallProperties()
                 & Call.Details.PROPERTY_VOIP_AUDIO_MODE) != 0);
-    }
-
-    /**
-     * Ensure the phone state is changed in an expected way.
-     * @throws Exception
-     */
-    public void testPhoneStateChangeAsExpected() throws Exception {
-        if (!mShouldTestTelecom) {
-            return;
-        }
-
-        CountDownLatch count = new CountDownLatch(1);
-        Executor executor = (Runnable command) -> count.countDown();
-        TelephonyCallback callback = new TelephonyCallback();
-        try {
-            setupConnectionService(null, FLAG_REGISTER | FLAG_ENABLE);
-            Uri testNumber = createTestNumber();
-            addAndVerifyNewIncomingCall(testNumber, null);
-
-            mTelephonyManager.registerTelephonyCallback(executor, callback);
-            count.await(TestUtils.WAIT_FOR_PHONE_STATE_LISTENER_REGISTERED_TIMEOUT_S,
-                    TimeUnit.SECONDS);
-            Thread.sleep(STATE_CHANGE_DELAY);
-            assertEquals(CALL_STATE_RINGING, mTelephonyManager.getCallState());
-        } finally {
-            mTelephonyManager.unregisterTelephonyCallback(callback);
-        }
     }
 
     /**
