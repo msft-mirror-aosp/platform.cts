@@ -78,12 +78,10 @@ abstract class HostsideNetworkPolicyTestCase extends BaseHostJUnit4Test {
     protected static void installPackage(TestInformation testInfo, String apk)
             throws DeviceNotAvailableException, TargetSetupError {
         assertNotNull(testInfo);
-        final int userId = testInfo.getDevice().getCurrentUser();
         final SuiteApkInstaller installer = new SuiteApkInstaller();
         // Force the apk clean up
         installer.setCleanApk(true);
         installer.addTestFileName(apk);
-        installer.setUserId(userId);
         installer.setShouldGrantPermission(true);
         installer.addInstallArg("-t");
         try {
