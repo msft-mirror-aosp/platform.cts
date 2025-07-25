@@ -42,6 +42,7 @@ import java.lang.reflect.Field;
 public class TelephonyFrameworkInitializerTest {
 
     private Context mContext;
+    private TelephonyServiceManager mTelephonyServiceManager;
 
     private static Field sTelephonyServiceManagerField;
 
@@ -59,12 +60,14 @@ public class TelephonyFrameworkInitializerTest {
     @Before
     public void setUp() throws Exception {
         mContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
+        mTelephonyServiceManager =
+                (TelephonyServiceManager) sTelephonyServiceManagerField.get(null);
         resetStaticState();
     }
 
     @After
     public void tearDown() throws Exception {
-        resetStaticState();
+        sTelephonyServiceManagerField.set(null, mTelephonyServiceManager);
     }
 
     private void resetStaticState() throws Exception {
