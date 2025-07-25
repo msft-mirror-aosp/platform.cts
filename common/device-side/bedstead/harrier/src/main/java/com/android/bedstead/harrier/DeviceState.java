@@ -26,6 +26,8 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assume.assumeFalse;
 
 import android.os.Process;
+import android.content.Context;
+import android.content.pm.PackageManager;
 import android.util.Log;
 
 import com.android.bedstead.harrier.annotations.AfterClass;
@@ -127,6 +129,7 @@ public final class DeviceState extends HarrierRule {
     private Thread mTestThread;
 
     private final DeviceStateLocator mLocator = new DeviceStateLocator();
+    private final Context mContext = TestApis.context().instrumentedContext();
 
     public DeviceState(Duration maxTestDuration) {
         mMaxTestDuration = maxTestDuration;
@@ -279,7 +282,15 @@ public final class DeviceState extends HarrierRule {
         EventLogs.resetLogs();
 
         // Avoid cached activities on screen
-        TestApis.activities().clearAllActivities();
+        if (!isAutomotive()) {
+            // Clearing all activities on automotive would lead to restart of the critical
+            // activities like persistent Maps, cluster, control-bar activities either on the same
+            // display running as multi-window mode or an external display running in fullscreen
+            // windowing mode. Restarting these activities would interfere with the test state
+            // and hence they shouldn't be removed for automotive.
+            // TODO(b/433812040): Potentially remove this altogether.
+            TestApis.activities().clearAllActivities();
+        }
 
         mMinSdkVersionCurrentTest = mMinSdkVersion;
         List<Annotation> annotations = getAnnotations(description);
@@ -291,6 +302,14 @@ public final class DeviceState extends HarrierRule {
         prepareExternalRule(description, testRulesExecutorAnnotations);
 
         Log.d(LOG_TAG, "Finished preparing state for test " + testName);
+    }
+
+    /**
+     * Checks whether the device is automotive
+     */
+    private boolean isAutomotive() {
+        PackageManager pm = mContext.getPackageManager();
+        return pm.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE);
     }
 
     private void applyAnnotations(List<Annotation> annotations) {
@@ -601,7 +620,10 @@ public final class DeviceState extends HarrierRule {
     }
 
     private void teardownShareableState() {
-        TestApis.activities().clearAllActivities();
+        if (!isAutomotive()) {
+            // TODO(b/433812040): Potentially remove this altogether.
+            TestApis.activities().clearAllActivities();
+        }
         mLocator.teardownShareableState();
     }
 
