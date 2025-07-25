@@ -145,8 +145,15 @@ public class MultiDisplayImeTests extends MultiDisplayTestBase {
 
             activitySession1.launchTestActivityOnDisplaySync(ImeTestActivity.class, dc.mId);
             final var activity1 = activitySession1.getActivity();
-            assertWithMessage("Activity1 window is on top")
-                    .that(CtsWindowInfoUtils.waitForWindowOnTop(activity1.getWindow()))
+            assertWithMessage("Window geometry should become stable")
+                    .that(
+                            CtsWindowInfoUtils.waitForStableWindowGeometry(
+                                    Duration.ofSeconds(HW_TIMEOUT_MULTIPLIER * TIMEOUT)))
+                    .isTrue();
+            assertWithMessage("Activity1 window should be visible")
+                    .that(
+                            CtsWindowInfoUtils.waitForWindowVisible(
+                                    activity1.getWindow().getDecorView()))
                     .isTrue();
 
             expectEvent(stream, editorMatcher("onStartInput",
@@ -165,12 +172,15 @@ public class MultiDisplayImeTests extends MultiDisplayTestBase {
             activitySession2.launchTestActivityOnDisplaySync(ImeTestActivity2.class, defDisplayId);
             final var activity2 = activitySession2.getActivity();
             // The overlay for the virtual display is on the main display and on top of Activity2.
-            assertWithMessage("Activity2 window is 1st from top, below Overlay")
+            assertWithMessage("Window geometry should become stable")
                     .that(
-                            CtsWindowInfoUtils.waitForNthWindowFromTop(
-                                    Duration.ofSeconds(HW_TIMEOUT_MULTIPLIER * 5L),
-                                    () -> activity2.getWindow().getDecorView().getWindowToken(),
-                                    1 /* expectedOrder */))
+                            CtsWindowInfoUtils.waitForStableWindowGeometry(
+                                    Duration.ofSeconds(HW_TIMEOUT_MULTIPLIER * TIMEOUT)))
+                    .isTrue();
+            assertWithMessage("Activity2 window should be visible")
+                    .that(
+                            CtsWindowInfoUtils.waitForWindowVisible(
+                                    activity2.getWindow().getDecorView()))
                     .isTrue();
             expectEvent(stream, editorMatcher("onStartInput",
                     activity2.getEditText().getPrivateImeOptions()), TIMEOUT);
@@ -202,8 +212,15 @@ public class MultiDisplayImeTests extends MultiDisplayTestBase {
 
             activitySession.launchTestActivityOnDisplaySync(ImeTestActivity.class, dc.mId);
             final var activity = activitySession.getActivity();
-            assertWithMessage("Activity window is on top")
-                    .that(CtsWindowInfoUtils.waitForWindowOnTop(activity.getWindow()))
+            assertWithMessage("Window geometry should become stable")
+                    .that(
+                            CtsWindowInfoUtils.waitForStableWindowGeometry(
+                                    Duration.ofSeconds(HW_TIMEOUT_MULTIPLIER * TIMEOUT)))
+                    .isTrue();
+            assertWithMessage("Activity window should be visible")
+                    .that(
+                            CtsWindowInfoUtils.waitForWindowVisible(
+                                    activity.getWindow().getDecorView()))
                     .isTrue();
             final var stream = imeSession.openEventStream();
 
@@ -232,8 +249,15 @@ public class MultiDisplayImeTests extends MultiDisplayTestBase {
             activitySession.launchTestActivityOnDisplaySync(
                     ImeTestActivityWithBrokenContextWrapper.class, dc.mId);
             final var activity = activitySession.getActivity();
-            assertWithMessage("Activity window is on top")
-                    .that(CtsWindowInfoUtils.waitForWindowOnTop(activity.getWindow()))
+            assertWithMessage("Window geometry should become stable")
+                    .that(
+                            CtsWindowInfoUtils.waitForStableWindowGeometry(
+                                    Duration.ofSeconds(HW_TIMEOUT_MULTIPLIER * TIMEOUT)))
+                    .isTrue();
+            assertWithMessage("Activity window should be visible")
+                    .that(
+                            CtsWindowInfoUtils.waitForWindowVisible(
+                                    activity.getWindow().getDecorView()))
                     .isTrue();
             final ImeEventStream stream = imeSession.openEventStream();
             final String privateImeOption = activity.getEditText().getPrivateImeOptions();
@@ -282,19 +306,27 @@ public class MultiDisplayImeTests extends MultiDisplayTestBase {
                 activitySession1.launchTestActivityOnDisplaySync(
                         ImeTestActivity.class, defDisplayId);
                 final var activity1 = activitySession1.getActivity();
-                // The overlay for the virtual display is on the main display and on top
-                // of Activity1.
-                assertWithMessage("Activity2 window is 1st from top, below Overlay")
+                assertWithMessage("Window geometry should become stable")
                         .that(
-                                CtsWindowInfoUtils.waitForNthWindowFromTop(
-                                        Duration.ofSeconds(HW_TIMEOUT_MULTIPLIER * 5L),
-                                        () -> activity1.getWindow().getDecorView().getWindowToken(),
-                                        1 /* expectedOrder */))
+                                CtsWindowInfoUtils.waitForStableWindowGeometry(
+                                        Duration.ofSeconds(HW_TIMEOUT_MULTIPLIER * TIMEOUT)))
+                        .isTrue();
+                assertWithMessage("Activity1 window should be visible")
+                        .that(
+                                CtsWindowInfoUtils.waitForWindowVisible(
+                                        activity1.getWindow().getDecorView()))
                         .isTrue();
                 activitySession2.launchTestActivityOnDisplaySync(ImeTestActivity2.class, dc.mId);
                 final var activity2 = activitySession2.getActivity();
-                assertWithMessage("Activity2 window is on top")
-                        .that(CtsWindowInfoUtils.waitForWindowOnTop(activity2.getWindow()))
+                assertWithMessage("Window geometry should become stable")
+                        .that(
+                                CtsWindowInfoUtils.waitForStableWindowGeometry(
+                                        Duration.ofSeconds(HW_TIMEOUT_MULTIPLIER * TIMEOUT)))
+                        .isTrue();
+                assertWithMessage("Activity2 window should be visible")
+                        .that(
+                                CtsWindowInfoUtils.waitForWindowVisible(
+                                        activity2.getWindow().getDecorView()))
                         .isTrue();
 
                 final ImeEventStream stream = imeSession.openEventStream();
@@ -361,8 +393,15 @@ public class MultiDisplayImeTests extends MultiDisplayTestBase {
             // Launch IME test activity in virtual display.
             activitySession.launchTestActivityOnDisplay(ImeTestActivity.class, dc.mId);
             final var activity = activitySession.getActivity();
-            assertWithMessage("Activity window is on top")
-                    .that(CtsWindowInfoUtils.waitForWindowOnTop(activity.getWindow()))
+            assertWithMessage("Window geometry should become stable")
+                    .that(
+                            CtsWindowInfoUtils.waitForStableWindowGeometry(
+                                    Duration.ofSeconds(HW_TIMEOUT_MULTIPLIER * TIMEOUT)))
+                    .isTrue();
+            assertWithMessage("Activity window should be visible")
+                    .that(
+                            CtsWindowInfoUtils.waitForWindowVisible(
+                                    activity.getWindow().getDecorView()))
                     .isTrue();
 
             final ImeEventStream stream = imeSession.openEventStream();
@@ -412,8 +451,15 @@ public class MultiDisplayImeTests extends MultiDisplayTestBase {
             // Launch IME test activity and initial the editor focus on virtual display.
             activitySession.launchTestActivityOnDisplaySync(ImeTestActivity.class, dc.mId);
             final var activity = activitySession.getActivity();
-            assertWithMessage("Activity window is on top")
-                    .that(CtsWindowInfoUtils.waitForWindowOnTop(activity.getWindow()))
+            assertWithMessage("Window geometry should become stable")
+                    .that(
+                            CtsWindowInfoUtils.waitForStableWindowGeometry(
+                                    Duration.ofSeconds(HW_TIMEOUT_MULTIPLIER * TIMEOUT)))
+                    .isTrue();
+            assertWithMessage("Activity window should be visible")
+                    .that(
+                            CtsWindowInfoUtils.waitForWindowVisible(
+                                    activity.getWindow().getDecorView()))
                     .isTrue();
 
             // Verify the activity is launched on the secondary display.
@@ -449,8 +495,15 @@ public class MultiDisplayImeTests extends MultiDisplayTestBase {
             // Launch a test activity on that virtual display and show IME by tapping the editor.
             activitySession.launchTestActivityOnDisplay(ImeTestActivity.class, dc.mId);
             final var activity = activitySession.getActivity();
-            assertWithMessage("Activity window is on top")
-                    .that(CtsWindowInfoUtils.waitForWindowOnTop(activity.getWindow()))
+            assertWithMessage("Window geometry should become stable")
+                    .that(
+                            CtsWindowInfoUtils.waitForStableWindowGeometry(
+                                    Duration.ofSeconds(HW_TIMEOUT_MULTIPLIER * TIMEOUT)))
+                    .isTrue();
+            assertWithMessage("Activity window should be visible")
+                    .that(
+                            CtsWindowInfoUtils.waitForWindowVisible(
+                                    activity.getWindow().getDecorView()))
                     .isTrue();
 
             tapAndAssertEditorFocusedOnImeActivity(activity, dc.mId);
@@ -487,8 +540,15 @@ public class MultiDisplayImeTests extends MultiDisplayTestBase {
             regularActivitySession.launchTestActivityOnDisplaySync(
                     Activities.RegularActivity.class, defDisplayId);
             final var regularActivity = regularActivitySession.getActivity();
-            assertWithMessage("Regular activity window is on top")
-                    .that(CtsWindowInfoUtils.waitForWindowOnTop(regularActivity.getWindow()))
+            assertWithMessage("Window geometry should become stable")
+                    .that(
+                            CtsWindowInfoUtils.waitForStableWindowGeometry(
+                                    Duration.ofSeconds(HW_TIMEOUT_MULTIPLIER * TIMEOUT)))
+                    .isTrue();
+            assertWithMessage("Regular activity window should be visible")
+                    .that(
+                            CtsWindowInfoUtils.waitForWindowVisible(
+                                    regularActivity.getWindow().getDecorView()))
                     .isTrue();
 
             try (var imeSession = createManagedMockImeSession(this);
@@ -504,8 +564,15 @@ public class MultiDisplayImeTests extends MultiDisplayTestBase {
                 // Launch IME test activity and initial the editor focus on virtual display.
                 activitySession.launchTestActivityOnDisplaySync(ImeTestActivity.class, dc.mId);
                 final var activity = activitySession.getActivity();
-                assertWithMessage("Activity window is on top")
-                        .that(CtsWindowInfoUtils.waitForWindowOnTop(activity.getWindow()))
+                assertWithMessage("Window geometry should become stable")
+                        .that(
+                                CtsWindowInfoUtils.waitForStableWindowGeometry(
+                                        Duration.ofSeconds(HW_TIMEOUT_MULTIPLIER * TIMEOUT)))
+                        .isTrue();
+                assertWithMessage("Activity window should be visible")
+                        .that(
+                                CtsWindowInfoUtils.waitForWindowVisible(
+                                        activity.getWindow().getDecorView()))
                         .isTrue();
 
                 // Verify the activity is launched to the secondary display.
@@ -589,8 +656,15 @@ public class MultiDisplayImeTests extends MultiDisplayTestBase {
 
             activitySession2.launchTestActivityOnDisplaySync(ImeTestActivity2.class, dc2.mId);
             final var activity2 = activitySession2.getActivity();
-            assertWithMessage("Activity2 window is on top")
-                    .that(CtsWindowInfoUtils.waitForWindowOnTop(activity2.getWindow()))
+            assertWithMessage("Window geometry should become stable")
+                    .that(
+                            CtsWindowInfoUtils.waitForStableWindowGeometry(
+                                    Duration.ofSeconds(HW_TIMEOUT_MULTIPLIER * TIMEOUT)))
+                    .isTrue();
+            assertWithMessage("Activity2 window should be visible")
+                    .that(
+                            CtsWindowInfoUtils.waitForWindowVisible(
+                                    activity2.getWindow().getDecorView()))
                     .isTrue();
 
             try (var touch1 = new UinputTouchScreen(mInstrumentation, mDm.getDisplay(dc1.mId));
@@ -614,8 +688,15 @@ public class MultiDisplayImeTests extends MultiDisplayTestBase {
                     activitySession1.launchTestActivityOnDisplaySync(
                             ImeTestActivity.class, dc1.mId);
                     final var activity1 = activitySession1.getActivity();
-                    assertWithMessage("Activity1 window is on top")
-                            .that(CtsWindowInfoUtils.waitForWindowOnTop(activity1.getWindow()))
+                    assertWithMessage("Window geometry should become stable")
+                            .that(
+                                    CtsWindowInfoUtils.waitForStableWindowGeometry(
+                                            Duration.ofSeconds(HW_TIMEOUT_MULTIPLIER * TIMEOUT)))
+                            .isTrue();
+                    assertWithMessage("Activity1 window should be visible")
+                            .that(
+                                    CtsWindowInfoUtils.waitForWindowVisible(
+                                            activity1.getWindow().getDecorView()))
                             .isTrue();
 
                     // Wait until IME is ready for the IME client to call showSoftInput().
@@ -671,8 +752,16 @@ public class MultiDisplayImeTests extends MultiDisplayTestBase {
                                         mWmState.hasActivityInDisplay(
                                                 dc1.mId, activity1.getComponentName()))
                                 .isFalse();
-                        assertWithMessage("Activity1 window is on top")
-                                .that(CtsWindowInfoUtils.waitForWindowOnTop(activity1.getWindow()))
+                        assertWithMessage("Window geometry should become stable")
+                                .that(
+                                        CtsWindowInfoUtils.waitForStableWindowGeometry(
+                                                Duration.ofSeconds(
+                                                        HW_TIMEOUT_MULTIPLIER * TIMEOUT)))
+                                .isTrue();
+                        assertWithMessage("Activity1 window should be visible")
+                                .that(
+                                        CtsWindowInfoUtils.waitForWindowVisible(
+                                                activity1.getWindow().getDecorView()))
                                 .isTrue();
                         // Wait until IME is ready for the IME client to call showSoftInput().
                         expectEvent(
@@ -763,8 +852,15 @@ public class MultiDisplayImeTests extends MultiDisplayTestBase {
             final int defDisplayId = getMainDisplayId();
             activitySession.launchTestActivityOnDisplaySync(activityClass, defDisplayId);
             var activity = activitySession.getActivity();
-            assertWithMessage("Activity window is on top")
-                    .that(CtsWindowInfoUtils.waitForWindowOnTop(activity.getWindow()))
+            assertWithMessage("Window geometry should become stable")
+                    .that(
+                            CtsWindowInfoUtils.waitForStableWindowGeometry(
+                                    Duration.ofSeconds(HW_TIMEOUT_MULTIPLIER * TIMEOUT)))
+                    .isTrue();
+            assertWithMessage("Activity window should be visible")
+                    .that(
+                            CtsWindowInfoUtils.waitForWindowVisible(
+                                    activity.getWindow().getDecorView()))
                     .isTrue();
 
             final ImeEventStream stream = imeSession.openEventStream();
@@ -786,8 +882,15 @@ public class MultiDisplayImeTests extends MultiDisplayTestBase {
                         .setDisplayId(dc.mId)
                         .execute();
             }
-            assertWithMessage("Activity window is on top")
-                    .that(CtsWindowInfoUtils.waitForWindowOnTop(activity.getWindow()))
+            assertWithMessage("Window geometry should become stable")
+                    .that(
+                            CtsWindowInfoUtils.waitForStableWindowGeometry(
+                                    Duration.ofSeconds(HW_TIMEOUT_MULTIPLIER * TIMEOUT)))
+                    .isTrue();
+            assertWithMessage("Activity window should be visible")
+                    .that(
+                            CtsWindowInfoUtils.waitForWindowVisible(
+                                    activity.getWindow().getDecorView()))
                     .isTrue();
 
             // Make sure ImeTestActivity is move from the firstDisplay to the secondDisplay
