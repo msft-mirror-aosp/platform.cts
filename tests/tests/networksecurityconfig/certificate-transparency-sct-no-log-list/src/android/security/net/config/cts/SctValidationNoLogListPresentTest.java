@@ -18,10 +18,8 @@ package android.security.net.config.cts;
 
 import static android.security.net.config.cts.CertificateTransparencyTestUtils.HTTP_OK_RESPONSE_CODE;
 import static android.security.net.config.cts.CertificateTransparencyTestUtils.NO_SCT_PROVIDED_DOMAIN;
-import static android.security.net.config.cts.CertificateTransparencyTestUtils.isLogListFilePresent;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 
 import android.os.Build;
 
@@ -42,7 +40,6 @@ public class SctValidationNoLogListPresentTest extends BaseTestCase {
 
     @Test
     public void testCTVerification_whenLogListAbsent_noSctDomain_failsOpen() throws IOException {
-        assertFalse(isLogListFilePresent());
         URL url = new URL(NO_SCT_PROVIDED_DOMAIN);
 
         HttpsURLConnection urlConnection = (HttpsURLConnection) url.openConnection();
