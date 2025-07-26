@@ -560,17 +560,22 @@ class PreviewRecorder implements AutoCloseable {
      * @param outputStream The stream to which the captured JPEG image bytes are written to
      */
     void getFrame(OutputStream outputStream) throws ItsException {
-        synchronized (mRecordLock) {
-            if (mIsRecording) {
-                throw new ItsException("Attempting to get frame while recording is active is an "
-                        + "invalid combination.");
-            }
+        if (mIsRecording) {
+            throw new ItsException("Attempting to get frame while recording is active is an "
+                    + "invalid combination.");
+        }
 
-            ConditionVariable cv = new ConditionVariable();
-            cv.close();
-            // GL copy texture to JPEG should happen on the thread EGL Context was bound to
-            mHandler.post(() -> {
+        ConditionVariable cv = new ConditionVariable();
+        cv.close();
+        // GL copy texture to JPEG should happen on the thread EGL Context was bound to
+        mHandler.post(() -> {
+            synchronized (mRecordLock) {
                 try {
+                    if (mIsRecording) {
+                        throw new ItsException("Attempting to get frame while recording is active "
+                                + "is an invalid combination.");
+                    }
+
                     copyFrameToRecordSurface();
 
                     ByteBuffer frameBuffer = ByteBuffer.allocateDirect(
@@ -597,12 +602,12 @@ class PreviewRecorder implements AutoCloseable {
                 } finally {
                     cv.open();
                 }
-            });
-
-            // Wait for up to two seconds for jpeg frame capture.
-            if (!cv.block(FRAME_CAPTURE_TIMEOUT_MS)) {
-                throw new ItsException("Frame capture timed out");
             }
+        });
+
+        // Wait for up to two seconds for jpeg frame capture.
+        if (!cv.block(FRAME_CAPTURE_TIMEOUT_MS)) {
+            throw new ItsException("Frame capture timed out");
         }
     }
 
@@ -689,22 +694,24 @@ class PreviewRecorder implements AutoCloseable {
                 mMediaMuxer.release();
             }
             mRecordSurface.release();
-
-            ConditionVariable cv = new ConditionVariable();
-            cv.close();
-            // GL Cleanup should happen on the thread EGL Context was bound to
-            mHandler.post(() -> {
-                try {
-                    cleanupEgl();
-                } finally {
-                    cv.open();
-                }
-            });
-
-            // Wait for up to a second for egl to clean up.
-            // Since this is clean up, do nothing if the handler takes longer than 1s.
-            cv.block(/*timeoutMs=*/ 1000);
         }
+
+        ConditionVariable cv = new ConditionVariable();
+        cv.close();
+        // GL Cleanup should happen on the thread EGL Context was bound to
+        mHandler.post(() -> {
+            try {
+                synchronized (mRecordLock) {
+                    cleanupEgl();
+                }
+            } finally {
+                cv.open();
+            }
+        });
+
+        // Wait for up to a second for egl to clean up.
+        // Since this is clean up, do nothing if the handler takes longer than 1s.
+        cv.block(/*timeoutMs=*/ 1000);
     }
 
     private void cleanupEgl() {
