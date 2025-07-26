@@ -23,14 +23,12 @@ android_library {
     manifest: "shared/AndroidManifest.xml",
     resource_dirs: ["shared/res"],
     libs: [
-        "android.test.runner.stubs.system",
-        "org.apache.http.legacy.stubs.system",
-        "android.test.base.stubs.system",
+        "org.apache.http.legacy.stubs",
     ],
     static_libs: [
+        "androidx.annotation_annotation",
         "androidx.test.core",
         "compatibility-device-util-axt",
-        "ctsdeviceutillegacy-axt",
         "ctstestserver",
         "ctstestrunner-axt",
         "hamcrest-library",

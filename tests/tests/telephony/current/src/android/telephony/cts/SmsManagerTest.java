@@ -1104,7 +1104,7 @@ public class SmsManagerTest {
     public void testGetSmsOtpTrustedAppIds_systemApps() throws Exception {
         Set<String> trustedAppIds =
                 callWithShellPermissionIdentity(
-                        () -> SmsManager.getSmsOtpTrustedPackages(mContext));
+                        () -> SmsManager.getSmsOtpTrustedPackages(mContext, null));
         List<PackageInfo> systemPkgs =
                 callWithShellPermissionIdentity(
                         () -> mPackageManager.getInstalledPackages(SYSTEM_APP_FLAGS));
@@ -1121,7 +1121,7 @@ public class SmsManagerTest {
         // Running the call with RECEIVE_SENSITIVE_NOTIFICATIONS, this uid should be trusted
         Set<String> newTrustedAppIds =
                 callWithShellPermissionIdentity(
-                        () -> SmsManager.getSmsOtpTrustedPackages(mContext),
+                        () -> SmsManager.getSmsOtpTrustedPackages(mContext, null),
                         READ_PRIVILEGED_PHONE_STATE,
                         MANAGE_COMPANION_DEVICES,
                         MANAGE_ROLE_HOLDERS,
@@ -1140,7 +1140,7 @@ public class SmsManagerTest {
             associateCdm();
             Set<String> newTrustedAppIds =
                     callWithTrustedSmsReadPermissions(
-                            () -> SmsManager.getSmsOtpTrustedPackages(mContext));
+                            () -> SmsManager.getSmsOtpTrustedPackages(mContext, null));
             assertTrue(
                     "Expected cdm association app to be in trusted list",
                     newTrustedAppIds.contains(mSelfPackageName));
@@ -1158,7 +1158,7 @@ public class SmsManagerTest {
                 () -> {
                     Set<String> newTrustedPackages =
                             callWithTrustedSmsReadPermissions(
-                                    () -> SmsManager.getSmsOtpTrustedPackages(mContext));
+                                    () -> SmsManager.getSmsOtpTrustedPackages(mContext, null));
                     assertTrue(
                             "Expected carrier privileged app to be in trusted list",
                             newTrustedPackages.contains(mSelfPackageName));
@@ -1178,7 +1178,7 @@ public class SmsManagerTest {
                 addRoleHolder(roleName, mSelfPackageName);
                 Set<String> newTrustedAppIds =
                         callWithTrustedSmsReadPermissions(
-                                () -> SmsManager.getSmsOtpTrustedPackages(mContext));
+                                () -> SmsManager.getSmsOtpTrustedPackages(mContext, null));
                 assertTrue(
                         "Expected " + roleName + " holder to be in trusted list",
                         newTrustedAppIds.contains(mSelfPackageName));
@@ -1196,7 +1196,7 @@ public class SmsManagerTest {
     public void testGetSmsOtpTrustedAppIds_standardAppNotIncluded() throws Exception {
         Set<String> trustedAppIds =
                 callWithTrustedSmsReadPermissions(
-                        () -> SmsManager.getSmsOtpTrustedPackages(mContext));
+                        () -> SmsManager.getSmsOtpTrustedPackages(mContext, null));
         assertFalse(
                 "Expected standard app ID " + mSelfPackageName + " not to be in " + "trusted list",
                 trustedAppIds.contains(mSelfPackageName));

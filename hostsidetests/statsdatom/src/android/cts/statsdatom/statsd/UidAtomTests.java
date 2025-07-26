@@ -561,6 +561,7 @@ public class UidAtomTests extends DeviceTestCase implements IBuildReceiver {
         LogUtil.CLog.d("Playing video in Picture-in-Picture mode");
         DeviceUtils.runActivity(getDevice(), DeviceUtils.STATSD_ATOM_TEST_PKG,
                 "VideoPlayerActivity", "action", "action.play_video_picture_in_picture_mode");
+        RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
 
         // Sorted list of events in order in which they occurred.
         List<EventMetricData> data = ReportUtils.getEventMetricDataList(getDevice());

@@ -28,6 +28,7 @@ import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertTrue;
 
+import android.app.admin.flags.Flags;
 import android.platform.test.annotations.FlakyTest;
 
 import com.android.cts.devicepolicy.metrics.DevicePolicyEventWrapper;
@@ -51,6 +52,9 @@ import java.util.Set;
 public final class ManagedProfileCrossProfileTest extends BaseManagedProfileTest {
     private static final String WIDGET_PROVIDER_APK = "CtsWidgetProviderApp.apk";
     private static final String WIDGET_PROVIDER_PKG = "com.android.cts.widgetprovider";
+    private static final String WIDGET_PROVIDER_PKG_2 = "com.android.cts.widgetprovider_2";
+    private static final String WIDGET_PROVIDER_PKG_3 = "com.android.cts.widgetprovider_3";
+    private static final String PARAM_PROFILE_ID = "profile-id";
     private static final String ACTION_CAN_INTERACT_ACROSS_PROFILES_CHANGED =
             "android.content.pm.action.CAN_INTERACT_ACROSS_PROFILES_CHANGED";
 
@@ -172,6 +176,74 @@ public final class ManagedProfileCrossProfileTest extends BaseManagedProfileTest
         } finally {
             changeCrossProfileWidgetForUser(WIDGET_PROVIDER_PKG, "remove-cross-profile-widget",
                     mProfileUserId);
+            getDevice().uninstallPackage(WIDGET_PROVIDER_PKG);
+        }
+    }
+
+    @FlakyTest
+    @Test
+    public void testCrossProfileWidgetsSet() throws Exception {
+        if (!Flags.crossProfileWidgetProviderBulkApis()) {
+            return;
+        }
+
+        try {
+            runDeviceTestsAsUser(MANAGED_PROFILE_PKG, ".CrossProfileWidgetTest",
+                    "testCrossProfileWidgetProviderSet", mProfileUserId);
+        } finally {
+            runDeviceTestsAsUser(MANAGED_PROFILE_PKG, ".CrossProfileWidgetTest",
+                    "testClearCrossProfileWidgetProviders", mProfileUserId);
+            getDevice().uninstallPackage(WIDGET_PROVIDER_PKG);
+        }
+    }
+
+    @FlakyTest
+    @Test
+    public void testCrossProfileWidgetsSetThenAdd() throws Exception {
+        if (!Flags.crossProfileWidgetProviderBulkApis()) {
+            return;
+        }
+
+        try {
+            runDeviceTestsAsUser(MANAGED_PROFILE_PKG, ".CrossProfileWidgetTest",
+                    "testCrossProfileWidgetProviderSetThenAdd", mProfileUserId);
+        } finally {
+            runDeviceTestsAsUser(MANAGED_PROFILE_PKG, ".CrossProfileWidgetTest",
+                    "testClearCrossProfileWidgetProviders", mProfileUserId);
+            getDevice().uninstallPackage(WIDGET_PROVIDER_PKG);
+        }
+    }
+
+    @FlakyTest
+    @Test
+    public void testCrossProfileWidgetsSetThenRemove() throws Exception {
+        if (!Flags.crossProfileWidgetProviderBulkApis()) {
+            return;
+        }
+
+        try {
+            runDeviceTestsAsUser(MANAGED_PROFILE_PKG, ".CrossProfileWidgetTest",
+                    "testCrossProfileWidgetProviderSetThenRemove", mProfileUserId);
+        } finally {
+            runDeviceTestsAsUser(MANAGED_PROFILE_PKG, ".CrossProfileWidgetTest",
+                    "testClearCrossProfileWidgetProviders", mProfileUserId);
+            getDevice().uninstallPackage(WIDGET_PROVIDER_PKG);
+        }
+    }
+
+    @FlakyTest
+    @Test
+    public void testCrossProfileWidgetsAddThenSet() throws Exception {
+        if (!Flags.crossProfileWidgetProviderBulkApis()) {
+            return;
+        }
+
+        try {
+            runDeviceTestsAsUser(MANAGED_PROFILE_PKG, ".CrossProfileWidgetTest",
+                    "testCrossProfileWidgetProviderAddThenSet", mProfileUserId);
+        } finally {
+            runDeviceTestsAsUser(MANAGED_PROFILE_PKG, ".CrossProfileWidgetTest",
+                    "clearCrossProfileWidgetProviders", mProfileUserId);
             getDevice().uninstallPackage(WIDGET_PROVIDER_PKG);
         }
     }

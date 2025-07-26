@@ -17,23 +17,25 @@
 package android.security.net.config.cts;
 
 import static android.security.net.config.cts.CertificateTransparencyTestUtils.HTTP_OK_RESPONSE_CODE;
+import static android.security.net.config.cts.CertificateTransparencyTestUtils.INSTALL_COMPLETE_ACTION;
 import static android.security.net.config.cts.CertificateTransparencyTestUtils.NO_SCT_PROVIDED_DOMAIN;
 import static android.security.net.config.cts.CertificateTransparencyTestUtils.SCT_PROVIDED_DOMAIN;
 import static android.security.net.config.cts.CertificateTransparencyTestUtils.SCT_PROVIDED_DOMAIN_2;
 import static android.security.net.config.cts.CertificateTransparencyTestUtils.deleteLogList;
 import static android.security.net.config.cts.CertificateTransparencyTestUtils.downloadLogList;
-import static android.security.net.config.cts.CertificateTransparencyTestUtils.isLogListFilePresent;
 
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeTrue;
 
 import android.app.Instrumentation;
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.os.Build;
-import android.util.Log;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SdkSuppress;
@@ -47,6 +49,8 @@ import org.junit.runner.RunWith;
 import java.io.IOException;
 import java.net.URL;
 import java.security.cert.CertificateException;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLHandshakeException;
@@ -58,33 +62,41 @@ public class SctValidationLogListDownloadTest extends BaseTestCase {
     public static final Instrumentation sInstrumentation =
             InstrumentationRegistry.getInstrumentation();
 
-    private static final String TAG = "SctValidationLogListDownloadTest";
+    private static final Context sContext = sInstrumentation.getContext();
+    private static final CountDownLatch sLatch = new CountDownLatch(1);
+    private static final BroadcastReceiver sInstallCompleteReceiver =
+            new BroadcastReceiver() {
+                @Override
+                public void onReceive(Context context, Intent intent) {
+                    if (intent.getAction().equals(INSTALL_COMPLETE_ACTION)) {
+                        sLatch.countDown();
+                    }
+                }
+            };
 
     @BeforeClass
     public static void setUpClass() throws Exception {
+        sContext.registerReceiver(
+                sInstallCompleteReceiver,
+                new IntentFilter(INSTALL_COMPLETE_ACTION),
+                Context.RECEIVER_NOT_EXPORTED);
+
         downloadLogList();
 
-        long delay = 1000; // 1sec
-        for (int i = 0; i < 5; i++) {
-            if (isLogListFilePresent()) {
-                Log.d(TAG, "setUpClass: found the log list");
-                break;
-            }
-            Log.d(TAG, "setUpClass: waiting " + delay + "ms");
-            Thread.sleep(delay);
-            delay += 1000;
-        }
+        assertTrue(
+                "The test timed out while waiting for the log list download.",
+                sLatch.await(30, TimeUnit.SECONDS));
     }
 
     @AfterClass
     public static void tearDownClass() throws Exception {
         deleteLogList();
+        sContext.unregisterReceiver(sInstallCompleteReceiver);
     }
 
     @Test
     public void testCTVerification_whenLogListDownloaded_sctDomain_connectionSucceeds()
             throws IOException {
-        assumeTrue(isLogListFilePresent());
         // Check multiple domains as part of the retrospective for b/408109183
         URL url = new URL(SCT_PROVIDED_DOMAIN);
         URL url2 = new URL(SCT_PROVIDED_DOMAIN_2);
@@ -103,7 +115,6 @@ public class SctValidationLogListDownloadTest extends BaseTestCase {
     @Test
     public void testCTVerification_whenLogListDownloaded_noSctDomain_exceptionsThrown()
             throws IOException {
-        assumeTrue(isLogListFilePresent());
         URL url = new URL(NO_SCT_PROVIDED_DOMAIN);
 
         HttpsURLConnection urlConnection = (HttpsURLConnection) url.openConnection();

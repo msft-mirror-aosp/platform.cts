@@ -95,17 +95,21 @@ public class SnapshotTaskTests extends ActivityManagerTestBase {
         final View decor = mActivity.getWindow().getDecorView();
         final int captionBarHeight = decor.getRootWindowInsets().getInsets(captionBar()).top;
 
-        BitmapPixelChecker pixelChecker = new BitmapPixelChecker(Color.RED);
-
         int retries = 0;
         boolean matchesPixels = false;
         while (retries < 5) {
             Bitmap bitmap = mWindowManager.snapshotTaskForRecents(mActivity.getTaskId());
-            Rect boundToCheck =  new Rect(0, 0, bitmap.getWidth(), bitmap.getHeight());
-            // Even when the activity requests immersive mode, the bars may or may not be hidden
-            // depending on the form-factor.
-            boundToCheck.inset(mActivity.getSystemBarOverlaps());
             if (bitmap != null) {
+                Rect boundToCheck = new Rect(0, 0, bitmap.getWidth(), bitmap.getHeight());
+                // Even when the activity requests immersive mode, the bars may or may not be hidden
+                // depending on the form-factor.
+                boundToCheck.inset(mActivity.getSystemBarOverlaps());
+                final BitmapPixelChecker pixelChecker =
+                        new BitmapPixelChecker(
+                                Color.RED,
+                                null /* boundsToLog */,
+                                bitmap.getConfig()
+                                        != Bitmap.Config.ARGB_8888 /* enlargeTolerance */);
                 int expectedMatching =
                         boundToCheck.width() * boundToCheck.height()
                                 - MATCHING_PIXEL_MISMATCH_ALLOWED
@@ -145,6 +149,11 @@ public class SnapshotTaskTests extends ActivityManagerTestBase {
         assertNotNull(bitmap);
         Rect boundToCheck = new Rect(0, 0, bitmap.getWidth(), bitmap.getHeight());
         boundToCheck.inset(mActivity.getSystemBarOverlaps());
+        final BitmapPixelChecker pixelChecker =
+                new BitmapPixelChecker(
+                        Color.RED,
+                        null /* boundsToLog */,
+                        bitmap.getConfig() != Bitmap.Config.ARGB_8888 /* enlargeTolerance */);
         int matchingPixels = pixelChecker.getNumMatchingPixels(bitmap, boundToCheck);
         assertTrue(
                 "Expected <=" + MATCHING_PIXEL_MISMATCH_ALLOWED + " matched " + matchingPixels,

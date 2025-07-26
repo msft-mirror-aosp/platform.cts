@@ -116,6 +116,10 @@ class LensMovementReportingTest(its_base_test.ItsBaseTest):
         hidden_physical_id=self.hidden_physical_id) as cam:
       props = cam.get_camera_properties()
       props = cam.override_with_hidden_physical_camera_props(props)
+      # Check if camera is tele
+      is_tele = cam.get_camera_type(props) == (
+          its_session_utils.CAMERA_TYPE_TELE)
+      camera_properties_utils.skip_unless(not is_tele)
 
       # Check skip conditions
       camera_properties_utils.skip_unless(

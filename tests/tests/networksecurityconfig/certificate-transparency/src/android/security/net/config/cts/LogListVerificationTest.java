@@ -17,20 +17,26 @@
 package android.security.net.config.cts;
 
 import static android.security.net.config.cts.CertificateTransparencyTestUtils.HTTP_OK_RESPONSE_CODE;
+import static android.security.net.config.cts.CertificateTransparencyTestUtils.INSTALL_COMPLETE_ACTION;
 import static android.security.net.config.cts.CertificateTransparencyTestUtils.SCT_PROVIDED_DOMAIN;
 import static android.security.net.config.cts.CertificateTransparencyTestUtils.SCT_PROVIDED_DOMAIN_2;
-import static android.security.net.config.cts.CertificateTransparencyTestUtils.isLogListFilePresent;
+import static android.security.net.config.cts.CertificateTransparencyTestUtils.downloadLogList;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assume.assumeFalse;
-import static org.junit.Assume.assumeTrue;
+import static org.junit.Assert.assertTrue;
 
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.net.http.X509TrustManagerExtensions;
 import android.os.Build;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SdkSuppress;
+import androidx.test.platform.app.InstrumentationRegistry;
 
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -38,6 +44,8 @@ import java.io.IOException;
 import java.net.URL;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.X509TrustManager;
@@ -46,10 +54,36 @@ import javax.net.ssl.X509TrustManager;
 @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA, codeName = "Baklava")
 public class LogListVerificationTest extends BaseTestCase {
 
+    private static final Context sContext =
+            InstrumentationRegistry.getInstrumentation().getContext();
+    private static final CountDownLatch sLatch = new CountDownLatch(1);
+    private static final BroadcastReceiver sInstallCompleteReceiver =
+            new BroadcastReceiver() {
+                @Override
+                public void onReceive(Context context, Intent intent) {
+                    if (intent.getAction().equals(INSTALL_COMPLETE_ACTION)) {
+                        sLatch.countDown();
+                    }
+                }
+            };
+
+    @BeforeClass
+    public static void setUpClass() throws Exception {
+        sContext.registerReceiver(
+                sInstallCompleteReceiver,
+                new IntentFilter(INSTALL_COMPLETE_ACTION),
+                Context.RECEIVER_NOT_EXPORTED);
+
+        downloadLogList();
+
+        assertTrue(
+                "The test timed out while waiting for the log list download.",
+                sLatch.await(30, TimeUnit.SECONDS));
+    }
+
     @Test
     public void testCTVerification_whenLogListPresent_sctDomain_connectionSucceeds()
             throws IOException {
-        assumeTrue(isLogListFilePresent());
         // Check multiple domains as part of the retrospective for b/408109183
         URL url = new URL(SCT_PROVIDED_DOMAIN);
         URL url2 = new URL(SCT_PROVIDED_DOMAIN_2);
@@ -67,7 +101,6 @@ public class LogListVerificationTest extends BaseTestCase {
 
     @Test
     public void testCTVerification_whenLogListAbsent_sctDomain_failsOpen() throws IOException {
-        assumeFalse(isLogListFilePresent());
         // Check multiple domains as part of the retrospective for b/408109183
         URL url = new URL(SCT_PROVIDED_DOMAIN);
         URL url2 = new URL(SCT_PROVIDED_DOMAIN_2);
@@ -86,7 +119,6 @@ public class LogListVerificationTest extends BaseTestCase {
     @Test
     public void testX509TrustManagerExtensions_whenLogListPresent_sctDomain_connectionSucceeds()
             throws Exception {
-        assumeTrue(isLogListFilePresent());
         URL url = new URL(SCT_PROVIDED_DOMAIN);
         HttpsURLConnection urlConnection = (HttpsURLConnection) url.openConnection();
         // While the connection here already verifies the SCTs, we establish it

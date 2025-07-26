@@ -23,6 +23,8 @@ import android.os.Bundle;
 import android.os.Process;
 import android.util.Log;
 
+import java.util.Set;
+
 /**
  * Simple activity that adds or clears a user restriction depending on the value of the extras.
  */
@@ -32,12 +34,15 @@ public class SetPolicyActivity extends Activity {
 
     private static final String EXTRA_RESTRICTION_KEY = "extra-restriction-key";
     private static final String EXTRA_PACKAGE_NAME = "extra-package-name";
+    private static final String NEW_PACKAGE_NAMES = "new-package-names";
     private static final String EXTRA_COMMAND = "extra-command";
 
     private static final String ADD_RESTRICTION_COMMAND = "add-restriction";
     private static final String CLEAR_RESTRICTION_COMMAND = "clear-restriction";
     private static final String ADD_CROSS_PROFILE_WIDGET_COMMAND = "add-cross-profile-widget";
     private static final String REMOVE_CROSS_PROFILE_WIDGET_COMMAND = "remove-cross-profile-widget";
+
+    private static final String SET_CROSS_PROFILE_WIDGET_COMMAND = "set-cross-profile-widget";
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -85,5 +90,4 @@ public class SetPolicyActivity extends Activity {
             Log.e(TAG, "Invalid command: " + command);
         }
     }
-
 }

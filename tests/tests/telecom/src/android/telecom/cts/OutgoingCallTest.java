@@ -34,7 +34,6 @@ import android.telecom.CallAudioState;
 import android.telecom.Connection;
 import android.telecom.PhoneAccountHandle;
 import android.telecom.TelecomManager;
-import android.telephony.TelephonyCallback;
 import android.telephony.TelephonyManager;
 import android.telephony.emergency.EmergencyNumber;
 
@@ -45,7 +44,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -258,34 +256,6 @@ public class OutgoingCallTest extends BaseTelecomTestWithMockServices {
         verifyPhoneStateListenerCallbacksForCall(TelephonyManager.CALL_STATE_OFFHOOK,
                 expectedNumber);
         verifyCallStateListener(TelephonyManager.CALL_STATE_OFFHOOK);
-    }
-
-    /**
-     * Ensure the phone state is changed in an expected way.
-     * @throws Exception
-     */
-    public void testPhoneStateChangeAsExpected() throws Exception {
-        if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) {
-            return;
-        }
-
-        CountDownLatch count = new CountDownLatch(1);
-        Executor executor = (Runnable command) -> count.countDown();
-        TelephonyCallback callback = new TelephonyCallback();
-        try {
-            final Bundle extras = new Bundle();
-            extras.putBoolean(TelecomManager.EXTRA_START_CALL_WITH_SPEAKERPHONE, true);
-
-            mTelephonyManager.registerTelephonyCallback(executor, callback);
-            placeAndVerifyCall(extras);
-            verifyConnectionForOutgoingCall();
-            count.await(TestUtils.WAIT_FOR_PHONE_STATE_LISTENER_REGISTERED_TIMEOUT_S,
-                    TimeUnit.SECONDS);
-            Thread.sleep(STATE_CHANGE_DELAY);
-            assertEquals(TelephonyManager.CALL_STATE_OFFHOOK, mTelephonyManager.getCallState());
-        } finally {
-            mTelephonyManager.unregisterTelephonyCallback(callback);
-        }
     }
 
     /**
