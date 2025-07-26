@@ -61,7 +61,6 @@ import androidx.test.uiautomator.UiDevice;
 import com.android.compatibility.common.util.AmUtils;
 
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -446,7 +445,6 @@ public final class ForceStopTest {
     }
 
     @Test
-    @Ignore("b/415721228 - Fix and re-enable")
     @RequiresFlagsEnabled({FLAG_STAY_STOPPED, FLAG_APP_START_INFO})
     public void testApplicationStartInfoWasForceStopped_bindService() throws Exception {
         clearHistoricalStartInfo();
@@ -522,8 +520,7 @@ public final class ForceStopTest {
         Intent serviceIntent = new Intent("android.app.stubs.ISecondaryMain");
         serviceIntent.setPackage(APP_PACKAGE);
         mUnstoppedReason = -2;
-        mTargetContext.bindService(
-                serviceIntent,
+        final ServiceConnection connection =
                 new ServiceConnection() {
                     @Override
                     public void onServiceConnected(ComponentName name, IBinder service) {
@@ -539,12 +536,16 @@ public final class ForceStopTest {
 
                     @Override
                     public void onServiceDisconnected(ComponentName name) {}
-                },
-                Context.BIND_AUTO_CREATE);
+                };
+        try {
+            mTargetContext.bindService(serviceIntent, connection, Context.BIND_AUTO_CREATE);
 
-        assertWithMessage("Couldn't connect to android.app.stubs.ISecondaryMain")
-                .that(serviceConnected.block(DELAY_MILLIS))
-                .isTrue();
+            assertWithMessage("Couldn't connect to android.app.stubs.ISecondaryMain")
+                    .that(serviceConnected.block(DELAY_MILLIS))
+                    .isTrue();
+        } finally {
+            mTargetContext.unbindService(connection);
+        }
         return mUnstoppedReason;
     }
 
