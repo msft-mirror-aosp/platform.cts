@@ -26,6 +26,7 @@ import static android.accessibilityservice.cts.utils.AsyncUtils.DEFAULT_TIMEOUT_
 import static android.accessibilityservice.cts.utils.DisplayUtils.VirtualDisplaySession;
 import static android.accessibilityservice.cts.utils.DisplayUtils.getNavBarHeight;
 import static android.accessibilityservice.cts.utils.DisplayUtils.getStatusBarHeight;
+import static android.content.pm.PackageManager.FEATURE_LEANBACK;
 import static android.content.pm.PackageManager.FEATURE_PICTURE_IN_PICTURE;
 import static android.view.accessibility.AccessibilityEvent.TYPE_VIEW_ACCESSIBILITY_FOCUS_CLEARED;
 import static android.view.accessibility.AccessibilityEvent.TYPE_VIEW_CLICKED;
@@ -52,6 +53,7 @@ import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.accessibility.cts.common.AccessibilityDumpOnFailureRule;
@@ -603,10 +605,12 @@ public class AccessibilityWindowQueryTest {
 
     @Test
     public void testFindPictureInPictureWindow() throws Exception {
-        if (!sInstrumentation.getContext().getPackageManager()
-                .hasSystemFeature(FEATURE_PICTURE_IN_PICTURE)) {
-            return;
-        }
+        assumeTrue(sInstrumentation.getContext().getPackageManager()
+                .hasSystemFeature(FEATURE_PICTURE_IN_PICTURE));
+        // TODO(b/434237438) Remove once TV sends AccessibilityEvent.WINDOWS_CHANGE_PIP
+        assumeFalse(sInstrumentation.getContext().getPackageManager()
+                .hasSystemFeature(FEATURE_LEANBACK));
+
         sUiAutomation.executeAndWaitForEvent(
                 () ->
                         mActivityRule

@@ -2377,4 +2377,57 @@ public class PaintTest {
         // Calling setElegantTextHeight is now no-op.
         assertThat(p.isElegantTextHeight()).isTrue();
     }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_FIX_PAINT_RESET_INCONSISTENCY)
+    public void testPaintReset_Typeface() {
+        Context context = InstrumentationRegistry.getTargetContext();
+        final Paint p = new Paint();
+
+        Typeface typeface =
+                Typeface.createFromAsset(
+                        context.getAssets(), "fonts/var_fonts/WeightEqualsEmVariableFont.ttf");
+
+        p.setTypeface(typeface);
+        p.reset();
+        assertThat(p.getTypeface()).isNull();
+        assertThat(p.getFontVariationSettings()).isNull();
+        assertThat(p.getFontVariationOverride()).isNull();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_FIX_PAINT_RESET_INCONSISTENCY)
+    public void testPaintReset_setFontVariationSettings() {
+        Context context = InstrumentationRegistry.getTargetContext();
+        final Paint p = new Paint();
+
+        Typeface typeface =
+                Typeface.createFromAsset(
+                        context.getAssets(), "fonts/var_fonts/WeightEqualsEmVariableFont.ttf");
+
+        p.setTypeface(typeface);
+        p.setFontVariationSettings("'wght' 450");
+        p.reset();
+        assertThat(p.getTypeface()).isNull();
+        assertThat(p.getFontVariationSettings()).isNull();
+        assertThat(p.getFontVariationOverride()).isNull();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_FIX_PAINT_RESET_INCONSISTENCY)
+    public void testPaintReset_setFontVariationOverride() {
+        Context context = InstrumentationRegistry.getTargetContext();
+        final Paint p = new Paint();
+
+        Typeface typeface =
+                Typeface.createFromAsset(
+                        context.getAssets(), "fonts/var_fonts/WeightEqualsEmVariableFont.ttf");
+
+        p.setTypeface(typeface);
+        p.setFontVariationOverride("'wght' 450");
+        p.reset();
+        assertThat(p.getTypeface()).isNull();
+        assertThat(p.getFontVariationSettings()).isNull();
+        assertThat(p.getFontVariationOverride()).isNull();
+    }
 }
