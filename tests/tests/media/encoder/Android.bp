@@ -29,6 +29,7 @@ java_defaults {
     static_libs: [
         "cts-media-common",
         "ctstestrunner-axt",
+        "android.media.extractor.flags-aconfig-java",
     ],
     jni_libs: [
         "libctscodecutils_jni",

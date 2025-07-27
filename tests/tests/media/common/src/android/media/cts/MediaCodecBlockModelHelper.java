@@ -17,7 +17,9 @@
 package android.media.cts;
 
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeTrue;
 
+import android.content.res.AssetFileDescriptor;
 import android.media.MediaCodec;
 import android.media.MediaCodec.CodecException;
 import android.media.MediaCrypto;
@@ -25,6 +27,7 @@ import android.media.MediaExtractor;
 import android.media.MediaFormat;
 import android.mediav2.common.cts.OutputManager;
 import android.os.Build;
+import android.os.ParcelFileDescriptor;
 import android.platform.test.annotations.AppModeFull;
 import android.util.Log;
 import android.view.Surface;
@@ -32,7 +35,10 @@ import android.view.Surface;
 import androidx.test.filters.SdkSuppress;
 
 import com.android.compatibility.common.util.MediaUtils;
+import com.android.compatibility.common.util.Preconditions;
 
+import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -86,7 +92,42 @@ public class MediaCodecBlockModelHelper {
             throw new AssertionError("There was an error while running the thread", t);
         }
         assertTrue("timed out decoding to end-of-stream", result.get() != Result.FAIL);
+        assumeTrue("Skipping the test: Received Result.SKIP", result.get() != Result.SKIP);
         return result.get();
+    }
+
+    protected static AssetFileDescriptor getAssetFileDescriptorFor(final String res)
+            throws FileNotFoundException {
+        File inpFile = new File(res);
+        Preconditions.assertTestFileExists(res);
+        ParcelFileDescriptor parcelFD =
+                ParcelFileDescriptor.open(inpFile, ParcelFileDescriptor.MODE_READ_ONLY);
+        return new AssetFileDescriptor(parcelFD, 0, parcelFD.getStatSize());
+    }
+
+    public static MediaExtractor getMediaExtractorForMimeType(final String resource,
+            String mimeTypePrefix) {
+        MediaExtractor mediaExtractor = new MediaExtractor();
+        try (AssetFileDescriptor afd = getAssetFileDescriptorFor(resource)) {
+            mediaExtractor.setDataSource(
+                    afd.getFileDescriptor(), afd.getStartOffset(), afd.getLength());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        int trackIndex;
+        for (trackIndex = 0; trackIndex < mediaExtractor.getTrackCount(); trackIndex++) {
+            MediaFormat trackMediaFormat = mediaExtractor.getTrackFormat(trackIndex);
+            if (trackMediaFormat.getString(MediaFormat.KEY_MIME).startsWith(mimeTypePrefix)) {
+                mediaExtractor.selectTrack(trackIndex);
+                break;
+            }
+        }
+        if (trackIndex == mediaExtractor.getTrackCount()) {
+            throw new IllegalStateException(
+                    "couldn't get a track with mimeTypePrefix = " + mimeTypePrefix);
+        }
+
+        return mediaExtractor;
     }
 
     public static class LinearInputBlock {

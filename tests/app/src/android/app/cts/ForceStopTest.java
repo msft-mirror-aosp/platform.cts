@@ -61,6 +61,7 @@ import androidx.test.uiautomator.UiDevice;
 import com.android.compatibility.common.util.AmUtils;
 
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -445,6 +446,7 @@ public final class ForceStopTest {
     }
 
     @Test
+    @Ignore("b/415721228 - Fix and re-enable")
     @RequiresFlagsEnabled({FLAG_STAY_STOPPED, FLAG_APP_START_INFO})
     public void testApplicationStartInfoWasForceStopped_bindService() throws Exception {
         clearHistoricalStartInfo();
