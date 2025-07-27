@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 The Android Open Source Project
+ * Copyright (C) 2025 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,13 +14,17 @@
  * limitations under the License.
  */
 
-package android.media.codec.cts;
+package android.media.encoder.cts;
+
+import static android.media.codec.Flags.apvSupport;
+import static android.mediav2.common.cts.CodecTestBase.IS_AT_LEAST_B;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeTrue;
 
-import android.content.res.AssetFileDescriptor;
 import android.hardware.HardwareBuffer;
 import android.media.Image;
 import android.media.MediaCodec;
@@ -30,113 +34,103 @@ import android.media.MediaExtractor;
 import android.media.MediaFormat;
 import android.media.cts.MediaCodecAsyncHelper;
 import android.media.cts.MediaCodecBlockModelHelper;
+import android.media.cts.TestArgs;
 import android.mediav2.common.cts.OutputManager;
 import android.os.Build;
-import android.os.ParcelFileDescriptor;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.Presubmit;
 import android.util.Log;
 
-import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SdkSuppress;
 import androidx.test.filters.SmallTest;
 
 import com.android.compatibility.common.util.ApiLevelUtil;
 import com.android.compatibility.common.util.ApiTest;
-import com.android.compatibility.common.util.FrameworkSpecificTest;
 import com.android.compatibility.common.util.MediaUtils;
-import com.android.compatibility.common.util.Preconditions;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
-import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
 
 /**
- * MediaCodec tests with CONFIGURE_FLAG_USE_BLOCK_MODEL.
+ * Encoder tests with CONFIGURE_FLAG_USE_BLOCK_MODEL.
  */
 @SdkSuppress(minSdkVersion = Build.VERSION_CODES.R)
-@FrameworkSpecificTest
 @AppModeFull(reason = "Instant apps cannot access the SD card")
-@RunWith(AndroidJUnit4.class)
-public class MediaCodecBlockModelTest {
-    private static final String TAG = "MediaCodecBlockModelTest";
-    private static final boolean VERBOSE = false;           // lots of logging
-
-    // Input buffers from this input video are queued up to and including the video frame with
-    // timestamp LAST_BUFFER_TIMESTAMP_US.
-    private static final String INPUT_RESOURCE =
-            "video_480x360_mp4_h264_1350kbps_30fps_aac_stereo_192kbps_44100hz.mp4";
-    private static final long LAST_BUFFER_TIMESTAMP_US = 166666;
+@RunWith(Parameterized.class)
+public class EncoderBlockModelTest {
+    private static final String TAG = "EncoderBlockModelTest";
+    private static final long LAST_BUFFER_TIMESTAMP_US = 1000000;
     private boolean mIsAtLeastR = ApiLevelUtil.isAtLeast(Build.VERSION_CODES.R);
     static final String mInpPrefix = WorkDir.getMediaDirString();
 
-    protected static AssetFileDescriptor getAssetFileDescriptorFor(final String res)
-            throws FileNotFoundException {
-        File inpFile = new File(mInpPrefix + res);
-        Preconditions.assertTestFileExists(mInpPrefix + res);
-        ParcelFileDescriptor parcelFD =
-                ParcelFileDescriptor.open(inpFile, ParcelFileDescriptor.MODE_READ_ONLY);
-        return new AssetFileDescriptor(parcelFD, 0, parcelFD.getStatSize());
+    private String mCodecName;
+    private String mMediaType;
+
+    @Parameterized.Parameters(name = "{index}_{0}_{1}")
+    public static Collection<Object[]> input() {
+        final List<Object[]> exhaustiveArgsList = new ArrayList<>();
+        List<String> mediaTypes = new ArrayList<>(Arrays.asList(
+                MediaFormat.MIMETYPE_AUDIO_AAC,
+                MediaFormat.MIMETYPE_AUDIO_OPUS,
+                MediaFormat.MIMETYPE_AUDIO_AMR_NB,
+                MediaFormat.MIMETYPE_AUDIO_AMR_WB,
+                MediaFormat.MIMETYPE_AUDIO_FLAC,
+                MediaFormat.MIMETYPE_VIDEO_AVC,
+                MediaFormat.MIMETYPE_VIDEO_HEVC,
+                MediaFormat.MIMETYPE_VIDEO_VP8,
+                MediaFormat.MIMETYPE_VIDEO_VP9,
+                MediaFormat.MIMETYPE_VIDEO_AV1
+        ));
+        if (IS_AT_LEAST_B && apvSupport()) {
+            mediaTypes.add(MediaFormat.MIMETYPE_VIDEO_APV);
+        }
+        for (String mediaType : mediaTypes) {
+            String[] codecs = MediaUtils.getEncoderNamesForMime(mediaType);
+            for (String codec : codecs) {
+                if (TestArgs.shouldSkipCodec(codec)) {
+                    continue;
+                }
+                exhaustiveArgsList.add(new Object[] {codec, mediaType});
+            }
+        }
+        return exhaustiveArgsList;
     }
 
-    /**
-     * Tests whether decoding a short group-of-pictures succeeds. The test queues a few video frames
-     * then signals end-of-stream. The test fails if the decoder doesn't output the queued frames.
-     */
+    public EncoderBlockModelTest(String codecName, String mediaType) {
+        mCodecName = codecName;
+        mMediaType = mediaType;
+    }
+
     @Presubmit
     @SmallTest
     @ApiTest(apis = "MediaCodec#CONFIGURE_FLAG_USE_BLOCK_MODEL")
     @Test
-    public void testDecodeShortVideo() throws InterruptedException {
-        if (!MediaUtils.check(mIsAtLeastR, "test needs Android 11")) return;
-        MediaCodecBlockModelHelper.runThread(() -> runDecodeShortVideo(
-            INPUT_RESOURCE,
-            LAST_BUFFER_TIMESTAMP_US,
-            true /* obtainBlockForEachBuffer */));
-        MediaCodecBlockModelHelper.runThread(() -> runDecodeShortVideo(
-            INPUT_RESOURCE,
-            LAST_BUFFER_TIMESTAMP_US,
-            false /* obtainBlockForEachBuffer */));
-    }
-
-    /**
-     * Tests whether decoding a short audio succeeds. The test queues a few audio frames
-     * then signals end-of-stream. The test fails if the decoder doesn't output the queued frames.
-     */
-    @Presubmit
-    @SmallTest
-    @ApiTest(apis = "MediaCodec#CONFIGURE_FLAG_USE_BLOCK_MODEL")
-    @Test
-    public void testDecodeShortAudio() throws InterruptedException {
-        if (!MediaUtils.check(mIsAtLeastR, "test needs Android 11")) return;
-        MediaCodecBlockModelHelper.runThread(() -> runDecodeShortAudio(
-                INPUT_RESOURCE,
-                LAST_BUFFER_TIMESTAMP_US,
-                true /* obtainBlockForEachBuffer */));
-        MediaCodecBlockModelHelper.runThread(() -> runDecodeShortAudio(
-                INPUT_RESOURCE,
-                LAST_BUFFER_TIMESTAMP_US,
-                false /* obtainBlockForEachBuffer */));
+    public void testEncoderBlockModel() throws InterruptedException {
+        if (mMediaType.startsWith("video/")) {
+            testEncodeShortVideo();
+        } else if (mMediaType.startsWith("audio/")) {
+            testEncodeShortAudio();
+        } else {
+            fail("unexpected track format: " + mMediaType);
+        }
     }
 
     /**
      * Tests whether encoding a short audio succeeds. The test queues a few audio frames
      * then signals end-of-stream. The test fails if the encoder doesn't output the queued frames.
      */
-    @Presubmit
-    @SmallTest
-    @ApiTest(apis = "MediaCodec#CONFIGURE_FLAG_USE_BLOCK_MODEL")
-    @Test
     public void testEncodeShortAudio() throws InterruptedException {
-        if (!MediaUtils.check(mIsAtLeastR, "test needs Android 11")) return;
+        assumeTrue("Test needs Android 11", mIsAtLeastR);
         MediaCodecBlockModelHelper.runThread(() -> runEncodeShortAudio());
     }
 
@@ -144,108 +138,40 @@ public class MediaCodecBlockModelTest {
      * Tests whether encoding a short video succeeds. The test queues a few video frames
      * then signals end-of-stream. The test fails if the encoder doesn't output the queued frames.
      */
-    @Presubmit
-    @SmallTest
-    @ApiTest(apis = "MediaCodec#CONFIGURE_FLAG_USE_BLOCK_MODEL")
-    @Test
     public void testEncodeShortVideo() throws InterruptedException {
-        if (!MediaUtils.check(mIsAtLeastR, "test needs Android 11")) return;
+        assumeTrue("Test needs Android 11", mIsAtLeastR);
         MediaCodecBlockModelHelper.runThread(() -> runEncodeShortVideo());
-    }
-
-    private MediaCodecBlockModelHelper.Result runDecodeShortAudio(
-            String inputResource,
-            long lastBufferTimestampUs,
-            boolean obtainBlockForEachBuffer) {
-        MediaExtractor mediaExtractor = null;
-        MediaCodec mediaCodec = null;
-        try {
-            mediaExtractor = getMediaExtractorForMimeType(inputResource, "audio/");
-            MediaFormat mediaFormat =
-                    mediaExtractor.getTrackFormat(mediaExtractor.getSampleTrackIndex());
-            // TODO: b/147748978
-            String[] codecs = MediaUtils.getDecoderNames(true /* isGoog */, mediaFormat);
-            if (codecs.length == 0) {
-                Log.i(TAG, "No decoder found for format= " + mediaFormat);
-                return MediaCodecBlockModelHelper.Result.SKIP;
-            }
-            mediaCodec = MediaCodec.createByCodecName(codecs[0]);
-
-            List<Long> inputTimestampList = Collections.synchronizedList(new ArrayList<>());
-            List<Long> outputTimestampList = Collections.synchronizedList(new ArrayList<>());
-            MediaCodecBlockModelHelper.Result result =
-                MediaCodecBlockModelHelper.runComponentWithLinearInput(
-                    mediaCodec,
-                    null,  // crypto
-                    mediaFormat,
-                    null,  // surface
-                    false,  // encoder
-                    new MediaCodecBlockModelHelper.ExtractorInputSlotListener
-                            .Builder()
-                            .setExtractor(mediaExtractor)
-                            .setLastBufferTimestampUs(lastBufferTimestampUs)
-                            .setObtainBlockForEachBuffer(obtainBlockForEachBuffer)
-                            .setTimestampQueue(inputTimestampList)
-                            .build(),
-                    new MediaCodecBlockModelHelper.DummyOutputSlotListener(
-                            false /* graphic */, outputTimestampList));
-            if (result == MediaCodecBlockModelHelper.Result.SUCCESS) {
-                StringBuilder msg = new StringBuilder();
-                boolean isOk = OutputManager.isPtsStrictlyIncreasing(
-                        new ArrayList<Long>(outputTimestampList), -1L, msg);
-                assertTrue(msg.toString(), isOk);
-            }
-            return result;
-        } catch (IOException e) {
-            throw new RuntimeException("error reading input resource", e);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        } finally {
-            if (mediaCodec != null) {
-                mediaCodec.stop();
-                mediaCodec.release();
-            }
-            if (mediaExtractor != null) {
-                mediaExtractor.release();
-            }
-        }
     }
 
     private MediaCodecBlockModelHelper.Result runEncodeShortAudio() {
         MediaExtractor mediaExtractor = null;
         MediaCodec mediaCodec = null;
         try {
-            mediaExtractor = getMediaExtractorForMimeType(
-                    "okgoogle123_good.wav", MediaFormat.MIMETYPE_AUDIO_RAW);
+            mediaExtractor = MediaCodecBlockModelHelper.getMediaExtractorForMimeType(
+                    mInpPrefix + "okgoogle123_good.wav", MediaFormat.MIMETYPE_AUDIO_RAW);
             MediaFormat mediaFormat = new MediaFormat(
                     mediaExtractor.getTrackFormat(mediaExtractor.getSampleTrackIndex()));
-            mediaFormat.setString(MediaFormat.KEY_MIME, MediaFormat.MIMETYPE_AUDIO_AAC);
+            mediaFormat.setString(MediaFormat.KEY_MIME, mMediaType);
             mediaFormat.setInteger(MediaFormat.KEY_BIT_RATE, 128000);
-            // TODO: b/147748978
-            String[] codecs = MediaUtils.getEncoderNames(true /* isGoog */, mediaFormat);
-            if (codecs.length == 0) {
-                Log.i(TAG, "No encoder found for format= " + mediaFormat);
-                return MediaCodecBlockModelHelper.Result.SKIP;
-            }
-            mediaCodec = MediaCodec.createByCodecName(codecs[0]);
+            mediaCodec = MediaCodec.createByCodecName(mCodecName);
 
             List<Long> inputTimestampList = Collections.synchronizedList(new ArrayList<>());
             List<Long> outputTimestampList = Collections.synchronizedList(new ArrayList<>());
             MediaCodecBlockModelHelper.Result result =
-                MediaCodecBlockModelHelper.runComponentWithLinearInput(
-                    mediaCodec,
-                    null,  // crypto
-                    mediaFormat,
-                    null,  // surface
-                    true,  // encoder
-                    new MediaCodecBlockModelHelper.ExtractorInputSlotListener
-                            .Builder()
-                            .setExtractor(mediaExtractor)
-                            .setLastBufferTimestampUs(LAST_BUFFER_TIMESTAMP_US)
-                            .setTimestampQueue(inputTimestampList)
-                            .build(),
-                    new MediaCodecBlockModelHelper.DummyOutputSlotListener(
-                            false /* graphic */, outputTimestampList));
+                    MediaCodecBlockModelHelper.runComponentWithLinearInput(
+                            mediaCodec,
+                            null,  // crypto
+                            mediaFormat,
+                            null,  // surface
+                            true,  // encoder
+                            new MediaCodecBlockModelHelper.ExtractorInputSlotListener
+                                    .Builder()
+                                    .setExtractor(mediaExtractor)
+                                    .setLastBufferTimestampUs(LAST_BUFFER_TIMESTAMP_US)
+                                    .setTimestampQueue(inputTimestampList)
+                                    .build(),
+                            new MediaCodecBlockModelHelper.DummyOutputSlotListener(
+                                    false /* graphic */, outputTimestampList));
             if (result == MediaCodecBlockModelHelper.Result.SUCCESS) {
                 StringBuilder msg = new StringBuilder();
                 boolean isOk = OutputManager.isPtsStrictlyIncreasing(
@@ -275,21 +201,14 @@ public class MediaCodecBlockModelTest {
         MediaCodec mediaCodec = null;
         ArrayList<HardwareBuffer> hardwareBuffers = new ArrayList<>();
         try {
-            MediaFormat mediaFormat = MediaFormat.createVideoFormat(
-                    MediaFormat.MIMETYPE_VIDEO_AVC, kWidth, kHeight);
+            MediaFormat mediaFormat = MediaFormat.createVideoFormat(mMediaType, kWidth, kHeight);
             mediaFormat.setInteger(MediaFormat.KEY_FRAME_RATE, kFrameRate);
             mediaFormat.setInteger(MediaFormat.KEY_BIT_RATE, 1000000);
             mediaFormat.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, 1);
             mediaFormat.setInteger(
                     MediaFormat.KEY_COLOR_FORMAT,
                     MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Flexible);
-            // TODO: b/147748978
-            String[] codecs = MediaUtils.getEncoderNames(true /* isGoog */, mediaFormat);
-            if (codecs.length == 0) {
-                Log.i(TAG, "No encoder found for format= " + mediaFormat);
-                return MediaCodecBlockModelHelper.Result.SKIP;
-            }
-            mediaCodec = MediaCodec.createByCodecName(codecs[0]);
+            mediaCodec = MediaCodec.createByCodecName(mCodecName);
 
             long usage = HardwareBuffer.USAGE_CPU_READ_OFTEN;
             usage |= HardwareBuffer.USAGE_CPU_WRITE_OFTEN;
@@ -297,7 +216,7 @@ public class MediaCodecBlockModelTest {
                 usage |= HardwareBuffer.USAGE_VIDEO_ENCODE;
             }
             if (!HardwareBuffer.isSupported(
-                        kWidth, kHeight, HardwareBuffer.YCBCR_420_888, 1 /* layer */, usage)) {
+                    kWidth, kHeight, HardwareBuffer.YCBCR_420_888, 1 /* layer */, usage)) {
                 Log.i(TAG, "HardwareBuffer doesn't support " + kWidth + "x" + kHeight
                         + "; YCBCR_420_888; usage(" + Long.toHexString(usage) + ")");
                 return MediaCodecBlockModelHelper.Result.SKIP;
@@ -306,7 +225,7 @@ public class MediaCodecBlockModelTest {
             List<Long> timestampList = Collections.synchronizedList(new ArrayList<>());
 
             final LinkedBlockingQueue<MediaCodecAsyncHelper.SlotEvent> queue =
-                new LinkedBlockingQueue<>();
+                    new LinkedBlockingQueue<>();
             mediaCodec.setCallback(new MediaCodec.Callback() {
                 @Override
                 public void onInputBufferAvailable(MediaCodec codec, int index) {
@@ -363,7 +282,6 @@ public class MediaCodecBlockModelTest {
                         assertEquals(kHeight, image.getHeight());
                         // For Y plane
                         int rowSampling = 1;
-                        int colSampling = 1;
                         for (Image.Plane plane : image.getPlanes()) {
                             ByteBuffer planeBuffer = plane.getBuffer();
                             for (int row = 0; row < kHeight / rowSampling; ++row) {
@@ -376,7 +294,6 @@ public class MediaCodecBlockModelTest {
                             }
                             // For Cb and Cr planes
                             rowSampling = 2;
-                            colSampling = 2;
                         }
                     }
 
@@ -411,7 +328,7 @@ public class MediaCodecBlockModelTest {
                         timestampList.isEmpty());
             }
             return eos ? MediaCodecBlockModelHelper.Result.SUCCESS
-                : MediaCodecBlockModelHelper.Result.FAIL;
+                    : MediaCodecBlockModelHelper.Result.FAIL;
         } catch (IOException e) {
             throw new RuntimeException("error reading input resource", e);
         } catch (Exception e) {
@@ -427,38 +344,5 @@ public class MediaCodecBlockModelTest {
                 }
             }
         }
-    }
-
-    private MediaCodecBlockModelHelper.Result runDecodeShortVideo(
-            String inputResource,
-            long lastBufferTimestampUs,
-            boolean obtainBlockForEachBuffer) {
-        return MediaCodecBlockModelHelper.runDecodeShortVideo(
-                getMediaExtractorForMimeType(inputResource, "video/"),
-                lastBufferTimestampUs, obtainBlockForEachBuffer, null, null, null);
-    }
-
-    private static MediaExtractor getMediaExtractorForMimeType(final String resource,
-            String mimeTypePrefix) {
-        MediaExtractor mediaExtractor = new MediaExtractor();
-        try (AssetFileDescriptor afd = getAssetFileDescriptorFor(resource)) {
-            mediaExtractor.setDataSource(
-                    afd.getFileDescriptor(), afd.getStartOffset(), afd.getLength());
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-        int trackIndex;
-        for (trackIndex = 0; trackIndex < mediaExtractor.getTrackCount(); trackIndex++) {
-            MediaFormat trackMediaFormat = mediaExtractor.getTrackFormat(trackIndex);
-            if (trackMediaFormat.getString(MediaFormat.KEY_MIME).startsWith(mimeTypePrefix)) {
-                mediaExtractor.selectTrack(trackIndex);
-                break;
-            }
-        }
-        if (trackIndex == mediaExtractor.getTrackCount()) {
-            throw new IllegalStateException("couldn't get a video track");
-        }
-
-        return mediaExtractor;
     }
 }
