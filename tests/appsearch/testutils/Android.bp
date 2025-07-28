@@ -25,6 +25,7 @@ java_library {
     ],
     libs: [
         "androidx.test.ext.junit",
+        "appsearch_flags_java_lib",
         "framework-annotations-lib",
         "framework-appsearch.impl",
         "guava",

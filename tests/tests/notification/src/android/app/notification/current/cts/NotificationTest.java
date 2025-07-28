@@ -183,6 +183,9 @@ public class NotificationTest {
         if (Flags.nmSummarization()) {
             builder.setHasSummarizedContent(true);
         }
+        if (Flags.nmSummarizationAll()) {
+            builder.setSummarizedContent("hello!");
+        }
         mNotification = builder.build();
         mNotification.icon = 0;
         mNotification.number = 1;
@@ -248,6 +251,9 @@ public class NotificationTest {
                 result.getAllowSystemGeneratedContextualActions());
         if (Flags.nmSummarization()) {
             assertTrue(mNotification.hasSummarizedContent());
+        }
+        if (Flags.nmSummarizationAll()) {
+            assertEquals("hello!", mNotification.getSummarizedContent().toString());
         }
 
         mNotification.contentIntent = null;

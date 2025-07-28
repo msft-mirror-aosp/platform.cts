@@ -574,14 +574,13 @@ public class DecodeGlAccuracyTest extends CodecDecoderTestBase {
 
         mWidth = format.getInteger(MediaFormat.KEY_WIDTH);
         mHeight = format.getInteger(MediaFormat.KEY_HEIGHT);
-        if (mUseHighBitDepth) {
-            SupportClass supportRequirements =
-                    mMediaType.equals(MediaFormat.MIMETYPE_VIDEO_AV1) ? CODEC_ALL : CODEC_OPTIONAL;
-            ArrayList<MediaFormat> formatList = new ArrayList<>();
-            formatList.add(format);
-            checkFormatSupport(mCodecName, mMediaType, false, formatList, null,
-                    supportRequirements);
+        SupportClass supportRequirements = CODEC_ALL;
+        if (mUseHighBitDepth && !mMediaType.equals(MediaFormat.MIMETYPE_VIDEO_AV1)) {
+            supportRequirements = CODEC_OPTIONAL;
         }
+        ArrayList<MediaFormat> formatList = new ArrayList<>();
+        formatList.add(format);
+        checkFormatSupport(mCodecName, mMediaType, false, formatList, null, supportRequirements);
         mEGLWindowOutSurface =
                 new OutputSurface(mWidth, mHeight, mUseHighBitDepth, mUseYuvSampling);
 

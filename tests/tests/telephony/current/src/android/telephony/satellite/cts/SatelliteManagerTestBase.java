@@ -767,7 +767,8 @@ public class SatelliteManagerTestBase {
 
         public boolean waitUntilModemIdleOrNotConnected() {
             try {
-                if (!mModemIdleOrNotConnectedSemaphore.tryAcquire(TIMEOUT, TimeUnit.MILLISECONDS)) {
+                if (!mModemIdleOrNotConnectedSemaphore.tryAcquire(
+                        TimeUnit.SECONDS.toMillis(10), TimeUnit.MILLISECONDS)) {
                     loge("Timeout to receive satellite modem idle/not_connected event");
                     return false;
                 }

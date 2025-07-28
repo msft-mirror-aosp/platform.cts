@@ -192,8 +192,8 @@ class LowLightBoostTest(its_base_test.ItsBaseTest):
           cam, props, self.scene, self.tablet, self.chart_distance,
           lighting_check=False, log_path=self.log_path)
 
-      cam.do_3a()
       time.sleep(_BRIGHTNESS_SETTING_CHANGE_WAIT_SEC)
+      cam.do_3a()
 
       use_metering_region = (
           first_api_level > its_session_utils.ANDROID15_API_LEVEL
@@ -212,6 +212,7 @@ class LowLightBoostTest(its_base_test.ItsBaseTest):
 
       # Turn off DUT to reduce reflections
       lighting_control_utils.turn_off_device_screen(self.dut)
+      time.sleep(_BRIGHTNESS_SETTING_CHANGE_WAIT_SEC)
 
       # Validate lighting, then setup tablet
       cam.do_3a(do_af=False)
@@ -254,8 +255,6 @@ class LowLightBoostTest(its_base_test.ItsBaseTest):
 
       # Since low light boost can be supported by Camera2 and Night Mode
       # Extensions, run the test for both (if supported)
-      # Wait for tablet brightness to change
-      time.sleep(_BRIGHTNESS_SETTING_CHANGE_WAIT_SEC)
       if is_low_light_boost_supported:
         # Determine preview width and height to test
         target_preview_size = (

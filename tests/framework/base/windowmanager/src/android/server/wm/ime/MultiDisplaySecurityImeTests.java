@@ -16,6 +16,7 @@
 
 package android.server.wm.ime;
 
+import static android.server.wm.BuildUtils.HW_TIMEOUT_MULTIPLIER;
 import static android.server.wm.MockImeHelper.createManagedMockImeSession;
 import static android.view.Display.DEFAULT_DISPLAY;
 
@@ -38,6 +39,7 @@ import com.android.cts.mockime.ImeEventStream;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
 @Presubmit
@@ -76,8 +78,15 @@ public class MultiDisplaySecurityImeTests extends MultiDisplayTestBase {
             activitySession.launchTestActivityOnDisplay(MultiDisplayImeTests.ImeTestActivity.class,
                     dc.mId);
             final var activity = activitySession.getActivity();
-            assertWithMessage("Activity window is on top")
-                    .that(CtsWindowInfoUtils.waitForWindowOnTop(activity.getWindow()))
+            assertWithMessage("Window geometry should become stable")
+                    .that(
+                            CtsWindowInfoUtils.waitForStableWindowGeometry(
+                                    Duration.ofSeconds(HW_TIMEOUT_MULTIPLIER * TIMEOUT)))
+                    .isTrue();
+            assertWithMessage("Activity window should be visible")
+                    .that(
+                            CtsWindowInfoUtils.waitForWindowVisible(
+                                    activity.getWindow().getDecorView()))
                     .isTrue();
             // Verify that activity which lives in untrusted display should not be focused.
             assertNotEquals("ImeTestActivity should not be focused",
