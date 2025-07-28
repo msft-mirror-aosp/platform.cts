@@ -774,28 +774,6 @@
   <option name="compatibility:include-filter" value="CtsDreamsTestCases android.service.dreams.cts.DreamServiceTest#testKeyHandling_InteractiveDreamDoesNotConsumeConfirmPromptsBouncer"/>
   <option name="compatibility:include-filter" value="CtsDreamsTestCases android.service.dreams.cts.DreamServiceTest#testKeyHandling_SecureKeyguardConfirmKeyPromptsBouncer"/>
   <option name="compatibility:include-filter" value="CtsExerciseRouteTestCases android.healthconnect.cts.route.ExerciseRouteBackgroundReadTest#readRecords_usingFilters_cannotAccessOtherAppRoute"/>
-  <option name="compatibility:include-filter" value="CtsHealthConnectControllerTestCases android.healthconnect.cts.ui.CategoriesFragmentTest#categoriesFragment_openAllCategories"/>
-  <option name="compatibility:include-filter" value="CtsHealthConnectControllerTestCases android.healthconnect.cts.ui.DataAccessFragmentTest#dataAccess_deleteCategoryData_showsDeleteDataRanges"/>
-  <option name="compatibility:include-filter" value="CtsHealthConnectControllerTestCases android.healthconnect.cts.ui.DataEntriesFragmentTest#dataEntries_changeDate_updatesSelectedDate"/>
-  <option name="compatibility:include-filter" value="CtsHealthConnectControllerTestCases android.healthconnect.cts.ui.DataEntriesFragmentTest#dataEntries_changeUnit_showsUpdatedUnit"/>
-  <option name="compatibility:include-filter" value="CtsHealthConnectControllerTestCases android.healthconnect.cts.ui.DataEntriesFragmentTest#dataEntries_deletesData"/>
-  <option name="compatibility:include-filter" value="CtsHealthConnectControllerTestCases android.healthconnect.cts.ui.DataEntriesFragmentTest#dataEntries_navigateToYesterday"/>
-  <option name="compatibility:include-filter" value="CtsHealthConnectControllerTestCases android.healthconnect.cts.ui.DataEntriesFragmentTest#dataEntries_showsInsertedEntry"/>
-  <option name="compatibility:include-filter" value="CtsHealthConnectControllerTestCases android.healthconnect.cts.ui.HomeFragmentTest#homeFragment_openDataManagement"/>
-  <option name="compatibility:include-filter" value="CtsHealthConnectControllerTestCases android.healthconnect.cts.ui.MindfulnessTest#dataAndAccess_deleteMindfulnessData"/>
-  <option name="compatibility:include-filter" value="CtsHealthConnectControllerTestCases android.healthconnect.cts.ui.MindfulnessTest#dataAndAccess_seeAllEntries_flagEnabled_showsMindfulness"/>
-  <option name="compatibility:include-filter" value="CtsHealthConnectControllerTestCases android.healthconnect.cts.ui.newia.AllDataFragmentTest#allDataFragment_clickOnDataSourcesIcon_navigatesToDataSources"/>
-  <option name="compatibility:include-filter" value="CtsHealthConnectControllerTestCases android.healthconnect.cts.ui.newia.AllDataFragmentTest#allDataFragment_clickOnPermissionType_navigatesToEntriesAndAccess"/>
-  <option name="compatibility:include-filter" value="CtsHealthConnectControllerTestCases android.healthconnect.cts.ui.newia.AllDataFragmentTest#allDataFragment_deletesAllData"/>
-  <option name="compatibility:include-filter" value="CtsHealthConnectControllerTestCases android.healthconnect.cts.ui.newia.AppDataFragmentTest#appDataFragment_deletesAllData"/>
-  <option name="compatibility:include-filter" value="CtsHealthConnectControllerTestCases android.healthconnect.cts.ui.newia.AppDataFragmentTest#clickOnAppDataType_navigatesToAppEntries"/>
-  <option name="compatibility:include-filter" value="CtsHealthConnectControllerTestCases android.healthconnect.cts.ui.newia.AppEntriesFragmentTest#appEntriesScreen_deletesAllData"/>
-  <option name="compatibility:include-filter" value="CtsHealthConnectControllerTestCases android.healthconnect.cts.ui.newia.AppEntriesFragmentTest#appEntriesScreen_displaysCorrectly"/>
-  <option name="compatibility:include-filter" value="CtsHealthConnectControllerTestCases android.healthconnect.cts.ui.permissions"/>
-  <option name="compatibility:include-filter" value="CtsHealthConnectControllerTestCases android.healthconnect.cts.ui.PermissionTypesFragmentTest#permissionTypes_filterByApp"/>
-  <option name="compatibility:include-filter" value="CtsHealthConnectControllerTestCases android.healthconnect.cts.ui.PermissionTypesFragmentTest#permissionTypes_showsDeleteCategoryData"/>
-  <option name="compatibility:include-filter" value="CtsHealthConnectControllerTestCases android.healthconnect.cts.ui.phr.MedicalAppDataFragmentTest#clickOnMedicalAppDataType_navigatesToMedicalAppEntries"/>
-  <option name="compatibility:include-filter" value="CtsHealthConnectControllerTestCases android.healthconnect.cts.ui.phr.MedicalAppDataFragmentTest#medicalAppData_showsAvailableDataTypes"/>
   <option name="compatibility:include-filter" value="CtsHealthConnectHostTestCases android.healthconnect.cts.logging.HealthConnectUiLogsTests#testImpressionsAndInteractionsSent"/>
   <option name="compatibility:include-filter" value="CtsHealthFitnessDeviceTestCases android.healthconnect.cts.GetApplicationInfoTest#testGetApplicationInfo"/>
   <option name="compatibility:include-filter" value="CtsHibernationTestCases android.hibernation.cts.AppHibernationIntegrationTest#testGetHibernationEligibility_eligibleByDefault"/>
