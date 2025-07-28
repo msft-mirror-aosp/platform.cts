@@ -1561,10 +1561,17 @@ public class NotificationTest {
     @RequiresFlagsEnabled(Flags.FLAG_API_METRIC_STYLE)
     public void testStyleRecovery_metricStyle_withApiFlagEnabled() {
         // FIRST -- assert that this works if you use the constructor
-        Notification n = new Notification.Builder(mContext, "test")
-                .setStyle(new Notification.MetricStyle())
-                .setSmallIcon(android.R.drawable.sym_def_app_icon)
-                .build();
+        Notification n =
+                new Notification.Builder(mContext, "test")
+                        .setStyle(
+                                new Notification.MetricStyle()
+                                        .addMetric(
+                                                new Notification.Metric(
+                                                        new Notification.Metric.FixedInt(1),
+                                                        "Int",
+                                                        Notification.Metric.MEANING_UNKNOWN)))
+                        .setSmallIcon(android.R.drawable.sym_def_app_icon)
+                        .build();
         assertThat(n.extras.getString(Notification.EXTRA_TEMPLATE))
                 .isEqualTo("android.app.Notification$MetricStyle");
         assertThat(getRecoveredStyleClass(n)).isInstanceOf(Notification.MetricStyle.class);
