@@ -21,6 +21,7 @@ import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420F
 import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Planar;
 import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420SemiPlanar;
 import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatYUVP010;
+import static android.media.MediaCodecInfo.CodecProfileLevel.APVLevel1Band0;
 
 import android.media.AudioFormat;
 import android.media.MediaFormat;
@@ -444,7 +445,7 @@ public class EncoderConfigParams {
             // but this can be a default/unknown value. Setting this to 1 as all
             // codecs use a value of 1 for lowest level.
             if (mLevel < 0) {
-                mLevel = 1;
+                mLevel = mMediaType.equals(MediaFormat.MIMETYPE_VIDEO_APV) ? APVLevel1Band0 : 1;
             }
             return this;
         }

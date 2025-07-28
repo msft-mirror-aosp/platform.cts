@@ -21,6 +21,7 @@ import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface
 import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatYUVP010;
 import static android.media.codec.Flags.apvSupport;
 import static android.mediav2.common.cts.CodecEncoderTestBase.colorFormatToString;
+import static android.mediav2.common.cts.CodecTestBase.SupportClass.CODEC_OPTIONAL;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -185,6 +186,9 @@ public class EncodeDecodeAccuracyTest extends CodecDecoderTestBase {
             assumeTrue("Codec doesn't support high bit depth profile encoding",
                     doesCodecSupportHDRProfile(mCompName, mMediaType));
         }
+        ArrayList<MediaFormat> formats = new ArrayList<>();
+        formats.add(mEncCfgParams.getFormat());
+        checkFormatSupport(mCompName, mMediaType, true, formats, null, CODEC_OPTIONAL);
     }
 
     private static EncoderConfigParams getVideoEncoderCfgParams(String mediaType, int width,

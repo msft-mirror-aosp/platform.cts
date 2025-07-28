@@ -21,6 +21,7 @@ import static android.mediav2.common.cts.CodecEncoderTestBase.ACCEPTABLE_WIRELES
 import static android.mediav2.common.cts.CodecTestBase.BOARD_SDK_IS_AT_LEAST_T;
 import static android.mediav2.common.cts.CodecTestBase.FIRST_SDK_IS_AT_LEAST_T;
 import static android.mediav2.common.cts.CodecTestBase.IS_AT_LEAST_B;
+import static android.mediav2.common.cts.CodecTestBase.checkFormatSupport;
 import static android.mediav2.common.cts.MuxerUtils.getTempFilePath;
 
 import static com.android.media.extractor.flags.Flags.extractorMp4EnableApv;
@@ -33,6 +34,7 @@ import android.media.MediaFormat;
 import android.mediav2.common.cts.CodecEncoderSurfaceTestBase;
 import android.mediav2.common.cts.CodecEncoderTestBase;
 import android.mediav2.common.cts.CodecTestBase;
+import android.mediav2.common.cts.CodecTestBase.SupportClass;
 import android.mediav2.common.cts.EncoderConfigParams;
 import android.mediav2.common.cts.OutputManager;
 
@@ -43,6 +45,7 @@ import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.CddTest;
 
 import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -156,6 +159,27 @@ public class CodecEncoderSurfaceTest extends CodecEncoderSurfaceTestBase {
         int[] maxBFrames = {0, 2};
         boolean[] usePersistentSurfaceStates = {true, false};
         return prepareParamsList(args, argsHighBitDepth, maxBFrames, usePersistentSurfaceStates);
+    }
+
+    @Before
+    public void setUp() throws IOException {
+        ArrayList<MediaFormat> formatList = new ArrayList<>();
+        formatList.add(mEncoderFormat);
+        SupportClass supportRequirements = mEncMediaType.equals(MediaFormat.MIMETYPE_VIDEO_APV)
+                ? SupportClass.CODEC_OPTIONAL
+                : SupportClass.CODEC_ALL;
+        if (mEncCfgParams.mInputBitDepth > 8
+                && !mEncMediaType.equals(MediaFormat.MIMETYPE_VIDEO_AV1)) {
+            supportRequirements = SupportClass.CODEC_OPTIONAL;
+        }
+        int width = CodecTestBase.getWidth(mEncoderFormat);
+        int height = CodecTestBase.getHeight(mEncoderFormat);
+        if ((width > 512 || height > 512)
+                && mEncMediaType.equals(MediaFormat.MIMETYPE_VIDEO_HEVC)) {
+            supportRequirements = SupportClass.CODEC_HW_RECOMMENDED;
+        }
+        checkFormatSupport(
+                mEncoderName, mEncMediaType, true, formatList, null, supportRequirements);
     }
 
     /**
