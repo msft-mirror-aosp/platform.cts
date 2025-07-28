@@ -76,7 +76,6 @@ import android.widget.LinearLayout;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.test.filters.FlakyTest;
 
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.PollingCheck;
@@ -127,7 +126,6 @@ public class MultiDisplayImeTests extends MultiDisplayTestBase {
     }
 
     @Test
-    @FlakyTest(bugId = 419800528)
     public void testImeWindowCanSwitchToDifferentDisplays() throws Exception {
         try (var imeSession = createManagedMockImeSession(this);
              TestActivitySession<ImeTestActivity> activitySession1 =
@@ -236,7 +234,6 @@ public class MultiDisplayImeTests extends MultiDisplayTestBase {
     }
 
     @Test
-    @FlakyTest(bugId = 419800528)
     public void testImeApiForBug118341760() throws Exception {
         try (var imeSession = createManagedMockImeSession(this);
              TestActivitySession<ImeTestActivityWithBrokenContextWrapper> activitySession =
@@ -480,7 +477,6 @@ public class MultiDisplayImeTests extends MultiDisplayTestBase {
      * after pressing the back key.
      */
     @Test
-    @FlakyTest(bugId = 419800528)
     public void testHideImeWhenImeTargetOnEmbeddedVirtualDisplay() throws Exception {
         try (var imeSession = createManagedMockImeSession(this);
              TestActivitySession<ImeTestActivity> activitySession =
@@ -631,7 +627,6 @@ public class MultiDisplayImeTests extends MultiDisplayTestBase {
     }
 
     @Test
-    @FlakyTest(bugId = 419800528)
     public void testNoConfigurationChangedWhenSwitchBetweenTwoIdenticalDisplays() throws Exception {
         // If config_perDisplayFocusEnabled, the focus will not move even if touching on
         // the Activity in the different display.
