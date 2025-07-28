@@ -187,7 +187,7 @@ public final class InputMethodManagerTest {
     public void testIsActive() throws Throwable {
         final AtomicReference<EditText> focusedEditTextRef = new AtomicReference<>();
         final AtomicReference<EditText> nonFocusedEditTextRef = new AtomicReference<>();
-        TestActivity.startSync(activity -> {
+        final var testActivity = TestActivity.startSync(activity -> {
             final LinearLayout layout = new LinearLayout(activity);
             layout.setOrientation(LinearLayout.VERTICAL);
 
@@ -202,17 +202,18 @@ public final class InputMethodManagerTest {
 
             return layout;
         });
+        final var imm = testActivity.getSystemService(InputMethodManager.class);
         final View focusedEditText = focusedEditTextRef.get();
-        waitOnMainUntil(() -> mImManager.hasActiveInputConnection(focusedEditText), TIMEOUT);
-        assertTrue(getOnMainSync(() -> mImManager.isActive(focusedEditText)));
-        assertFalse(getOnMainSync(() -> mImManager.isActive(nonFocusedEditTextRef.get())));
+        waitOnMainUntil(() -> imm.hasActiveInputConnection(focusedEditText), TIMEOUT);
+        assertTrue(getOnMainSync(() -> imm.isActive(focusedEditText)));
+        assertFalse(getOnMainSync(() -> imm.isActive(nonFocusedEditTextRef.get())));
     }
 
     @Test
     public void testIsAcceptingText() throws Throwable {
         final AtomicReference<EditText> focusedFakeEditTextRef = new AtomicReference<>();
         final CountDownLatch latch = new CountDownLatch(1);
-        TestActivity.startSync(activity -> {
+        final var testActivity = TestActivity.startSync(activity -> {
             final LinearLayout layout = new LinearLayout(activity);
             layout.setOrientation(LinearLayout.VERTICAL);
 
@@ -230,9 +231,10 @@ public final class InputMethodManagerTest {
             return layout;
         });
         assertTrue(latch.await(TIMEOUT, TimeUnit.MILLISECONDS));
+        final var imm = testActivity.getSystemService(InputMethodManager.class);
         assertFalse("InputMethodManager#isAcceptingText() must return false "
-                + "if target View returns null from onCreateInputConnection().",
-                getOnMainSync(() -> mImManager.isAcceptingText()));
+                        + "if target View returns null from onCreateInputConnection().",
+                getOnMainSync(() -> imm.isAcceptingText()));
     }
 
     @Test
