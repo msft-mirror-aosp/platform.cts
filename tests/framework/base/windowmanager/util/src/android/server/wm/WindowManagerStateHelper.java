@@ -47,6 +47,8 @@ import android.graphics.Rect;
 import android.text.TextUtils;
 import android.util.SparseArray;
 
+import androidx.annotation.NonNull;
+
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -569,56 +571,69 @@ public class WindowManagerStateHelper extends WindowManagerState {
      * @return true if should wait for some activities to become visible.
      */
     private boolean shouldWaitForActivities(WaitForValidActivityState... waitForActivitiesVisible) {
-        if (waitForActivitiesVisible == null || waitForActivitiesVisible.length == 0) {
+        if (waitForActivitiesVisible == null) {
             return false;
         }
         // If the caller is interested in us waiting for some particular activity windows to be
         // visible before compute the state. Check for the visibility of those activity windows
         // and for placing them in correct stacks (if requested).
-        boolean allActivityWindowsVisible = true;
-        boolean tasksInCorrectStacks = true;
-        for (final WaitForValidActivityState state : waitForActivitiesVisible) {
-            final ComponentName activityName = state.activityName;
-            final String windowName = state.windowName;
-            final int stackId = state.stackId;
-            final int windowingMode = state.windowingMode;
-            final int activityType = state.activityType;
+        return Arrays.stream(waitForActivitiesVisible)
+                .map(this::shouldWaitForActivity)
+                .reduce(false, Boolean::logicalOr);
+    }
 
-            final List<WindowState> matchingWindowStates =
-                    getMatchingVisibleWindowState(windowName);
-            boolean activityWindowVisible = !matchingWindowStates.isEmpty();
-            if (!activityWindowVisible) {
-                logAlways("Activity window not visible: " + windowName);
-                allActivityWindowsVisible = false;
-            } else if (activityName != null
-                    && !isActivityVisible(activityName)) {
-                logAlways("Activity not visible: " + getActivityName(activityName));
-                allActivityWindowsVisible = false;
-            } else {
-                // Check if window is already the correct state requested by test.
-                boolean windowInCorrectState = false;
-                for (WindowState ws : matchingWindowStates) {
-                    if (stackId != INVALID_STACK_ID && ws.getStackId() != stackId) {
-                        continue;
-                    }
-                    if (!ws.isWindowingModeCompatible(windowingMode)) {
-                        continue;
-                    }
-                    if (activityType != ACTIVITY_TYPE_UNDEFINED
-                            && ws.getActivityType() != activityType) {
-                        continue;
-                    }
-                    windowInCorrectState = true;
-                    break;
-                }
+    /**
+     * Check if we should wait for a specific activity to be in the correct state.
+     *
+     * @param state the activity state to check.
+     * @return true if we should wait for this activity.
+     */
+    private boolean shouldWaitForActivity(@NonNull WaitForValidActivityState state) {
+        final ComponentName activityName = state.activityName;
+        final String windowName = state.windowName;
+        final int stackId = state.stackId;
+        final int windowingMode = state.windowingMode;
+        final int activityType = state.activityType;
 
-                if (!windowInCorrectState) {
-                    logAlways("Window in incorrect stack: " + state);
-                    tasksInCorrectStacks = false;
-                }
-            }
+        final List<WindowState> matchedWindowStates = getMatchingVisibleWindowState(windowName);
+        if (matchedWindowStates.isEmpty()) {
+            logAlways("Activity window not visible: " + windowName);
+            return true;
         }
-        return !allActivityWindowsVisible || !tasksInCorrectStacks;
+
+        if (activityName != null && !isActivityVisible(activityName)) {
+            logAlways("Activity not visible: " + getActivityName(activityName));
+            return true;
+        }
+
+        // Check if window is already the correct state requested by test.
+        final StringBuilder details = new StringBuilder();
+        for (int i = 0; i < matchedWindowStates.size(); i++) {
+            details.append(" matched window #").append(i);
+            details.append(" name=").append(windowName).append("\n");
+
+            final WindowState ws = matchedWindowStates.get(i);
+            if (stackId != INVALID_STACK_ID && ws.getStackId() != stackId) {
+                details.append("  expected stackId=").append(stackId).append("\n");
+                details.append("  actual stackId=").append(ws.getStackId());
+                continue;
+            }
+            if (!ws.isWindowingModeCompatible(windowingMode)) {
+                details.append("  expected windowing mode=").append(windowingMode).append("\n");
+                details.append("  actual windowing mode=").append(ws.getWindowingMode());
+                continue;
+            }
+            if (activityType != ACTIVITY_TYPE_UNDEFINED && ws.getActivityType() != activityType) {
+                details.append("  expected activity type=").append(activityType).append("\n");
+                details.append("  actual activity type=").append(ws.getActivityType());
+                continue;
+            }
+            // Found a window in correct state.
+            return false;
+        }
+
+        logAlways("Window in incorrect state: " + state + "\n" + details);
+        return true;
     }
 
     /**
