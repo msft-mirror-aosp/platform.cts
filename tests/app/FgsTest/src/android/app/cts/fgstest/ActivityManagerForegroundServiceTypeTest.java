@@ -45,6 +45,10 @@ import android.location.LocationManager;
 import android.os.Process;
 import android.os.UserHandle;
 import android.platform.test.annotations.Presubmit;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
+import android.telecom.TelecomManager;
 import android.util.ArrayMap;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -59,6 +63,7 @@ import com.android.internal.util.ArrayUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -105,6 +110,9 @@ public final class ActivityManagerForegroundServiceTypeTest {
     private Instrumentation mInstrumentation;
     private ActivityManager mActivityManager;
     private PackageManager mPackageManager;
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Before
     public void setUp() {
@@ -186,6 +194,37 @@ public final class ActivityManagerForegroundServiceTypeTest {
     @Test
     public void testForegroundServiceTypePhoneCallPermission() throws Exception {
         testPermissionEnforcementCommon(ServiceInfo.FOREGROUND_SERVICE_TYPE_PHONE_CALL);
+    }
+
+    /**
+     * Verifies that the system dialer can use a phone call foreground service.
+     *
+     * @throws Exception
+     */
+    @ApiTest(apis = {"android.content.pm.ServiceInfo#FOREGROUND_SERVICE_TYPE_PHONE_CALL"})
+    @Test
+    @RequiresFlagsEnabled(android.app.Flags.FLAG_SYSTEM_DIALER_PHONE_CALL_FGS_GRANT)
+    public void testForegroundServiceTypePhoneCallSystemDialer() throws Exception {
+        try {
+            executeShellCommand(
+                    "telecom set-system-dialer " + TEST_COMP_TARGET_FGS_ALL_TYPE.flattenToString());
+
+            // Confirm we did the test override.
+            TelecomManager telecomManager = mContext.getSystemService(TelecomManager.class);
+            assertEquals(
+                    "Could not override the system dialer for test purposes.",
+                    TEST_PKG_NAME_TARGET,
+                    telecomManager.getSystemDialerPackage());
+
+            // We should be able to start the FGS in the test app because it is the system dialer.
+            startAndStopFgsType(
+                    TEST_COMP_TARGET_FGS_ALL_TYPE,
+                    ServiceInfo.FOREGROUND_SERVICE_TYPE_PHONE_CALL,
+                    null);
+        } finally {
+            // Clear the system dialer override.
+            executeShellCommand("telecom set-system-dialer default");
+        }
     }
 
     @ApiTest(apis = {"android.content.pm.ServiceInfo#FOREGROUND_SERVICE_TYPE_LOCATION"})
