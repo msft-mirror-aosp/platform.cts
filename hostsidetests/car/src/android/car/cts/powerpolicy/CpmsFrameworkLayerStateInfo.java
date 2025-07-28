@@ -314,8 +314,7 @@ public final class CpmsFrameworkLayerStateInfo {
                     val = Integer.parseInt(matcher.group(1));
                     break;
                 case NUMBER_POLICY_LISTENERS_HDR:
-                    int strLen = mLines[mIdx].length();
-                    val = Integer.parseInt(mLines[mIdx].substring(strLen - 1).trim());
+                    val = Integer.parseInt(mLines[mIdx].substring(header.length()).trim());
                     break;
                 default:
                     break;
