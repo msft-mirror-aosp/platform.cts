@@ -519,6 +519,26 @@
                        android:resource="@xml/metadata"/>
         </service>
 
+        <service android:name="android.content.cts.MockSyncAdapterService"
+             android:exported="true">
+            <intent-filter>
+                <action android:name="android.content.SyncAdapter"/>
+            </intent-filter>
+
+            <meta-data android:name="android.content.SyncAdapter"
+                 android:resource="@xml/syncadapter"/>
+        </service>
+
+        <service android:name="android.content.cts.MockAccountService"
+             android:exported="true">
+            <intent-filter>
+                <action android:name="android.accounts.AccountAuthenticator"/>
+            </intent-filter>
+
+            <meta-data android:name="android.accounts.AccountAuthenticator"
+                 android:resource="@xml/authenticator"/>
+        </service>
+
         <activity android:name="android.content.cts.ClipboardManagerListenerActivity"/>
 
         <activity android:name="android.content.cts.ImageCaptureActivity"

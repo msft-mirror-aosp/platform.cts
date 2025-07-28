@@ -1,7 +1,5 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!--
-/**
- * Copyright (c) 2009, The Android Open Source Project
+/*
+ * Copyright (C) 2010 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,14 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
--->
 
-<!-- The attributes in this XML file provide configuration information -->
-<!-- for the Account Manager. -->
+package android.content.cts;
 
-<account-authenticator xmlns:android="http://schemas.android.com/apk/res/android"
-    android:accountType="android.content.cts.contentresolver.account.type"
-    android:icon="@drawable/ic_cts_selected"
-    android:smallIcon="@drawable/ic_cts_minitab_selected"
-    android:label="@string/authenticator_label"
-/>
+import android.app.Service;
+import android.content.Intent;
+import android.os.IBinder;
+
+public class MockSyncAdapterService extends Service {
+    @Override
+    public IBinder onBind(Intent intent) {
+        return MockSyncAdapter.getMockSyncAdapter();
+    }
+}
