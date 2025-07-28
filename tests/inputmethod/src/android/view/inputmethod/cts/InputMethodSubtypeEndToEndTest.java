@@ -41,6 +41,7 @@ import android.widget.EditText;
 import android.widget.LinearLayout;
 
 import androidx.annotation.NonNull;
+import androidx.test.filters.FlakyTest;
 import androidx.test.filters.MediumTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
@@ -146,6 +147,7 @@ public final class InputMethodSubtypeEndToEndTest extends EndToEndImeTestBase {
      * {@link android.inputmethodservice.InputMethodService#onCurrentInputMethodSubtypeChanged(
      * InputMethodSubtype)} will not happen for the cold startup.
      */
+    @FlakyTest(bugId = 416362490)
     @Test
     public void testNoOnCurrentInputMethodSubtypeChangedForColdStartup() throws Exception {
         final Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
