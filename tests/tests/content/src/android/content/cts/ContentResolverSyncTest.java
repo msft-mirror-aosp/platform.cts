@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package android.content.cts.contentresolver;
+package android.content.cts;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
@@ -48,9 +48,9 @@ import java.util.concurrent.TimeUnit;
 @AppModeFull(reason = "Sync manager not supported")
 @RunWith(AndroidJUnit4.class)
 public final class ContentResolverSyncTest {
-    private static final String TAG = ContentResolverSyncTest.class.getSimpleName();
+    private static final String TAG = "SyncTest";
 
-    private static final String AUTHORITY = "android.content.cts.contentresolver.authority";
+    private static final String AUTHORITY = "android.content.cts.authority";
 
     private static final Account ACCOUNT =
             new Account(

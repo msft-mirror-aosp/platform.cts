@@ -17,9 +17,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="android.content.cts.contentresolver">
     <uses-permission android:name="android.cts.permission.MOCK_RESTRICTED_PERMISSION"/>
-    <uses-permission android:name="android.permission.READ_SYNC_SETTINGS"/>
-    <uses-permission android:name="android.permission.WRITE_SYNC_SETTINGS"/>
-    <uses-permission android:name="android.permission.READ_SYNC_STATS"/>
     <application>
         <uses-library android:name="android.test.runner"/>
         <provider android:name="com.android.cts.content.MockContentProvider"
@@ -37,25 +34,6 @@
             android:process=":testpagingprovider"
             android:exported="true"
             android:multiprocess="false"/>
-        <service android:name="android.content.cts.contentresolver.MockSyncAdapterService"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.content.SyncAdapter"/>
-            </intent-filter>
-
-            <meta-data android:name="android.content.SyncAdapter"
-                android:resource="@xml/syncadapter"/>
-        </service>
-
-        <service android:name="android.content.cts.contentresolver.MockAccountService"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.accounts.AccountAuthenticator"/>
-            </intent-filter>
-
-            <meta-data android:name="android.accounts.AccountAuthenticator"
-                android:resource="@xml/authenticator"/>
-        </service>
     </application>
 
     <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner"

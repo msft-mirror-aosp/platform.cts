@@ -671,19 +671,18 @@
     <option name="compatibility:include-filter" value="CtsContentTestCases android.content.cts.ActivityLaunchUriPermissionTest#testImplicitGrantForSendMultipleActionRestricted"/>
     <option name="compatibility:include-filter" value="CtsContentTestCases android.content.cts.ActivityLaunchUriPermissionTest#testImplicitGrantForSendMultipleActionUnRestricted"/>
     <option name="compatibility:include-filter" value="CtsContentTestCases android.content.cts.AvailableIntentsTest#testMotionPhotoCaptureIntentsHandledBySystem"/>
+    <option name="compatibility:include-filter" value="CtsContentTestCases android.content.cts.ContentResolverSyncTest#testCallMultipleAccounts"/>
+    <option name="compatibility:include-filter" value="CtsContentTestCases android.content.cts.ContentResolverSyncTest#testCancelSync"/>
+    <option name="compatibility:include-filter" value="CtsContentTestCases android.content.cts.ContentResolverSyncTest#testGetAndSetIsSyncable"/>
+    <option name="compatibility:include-filter" value="CtsContentTestCases android.content.cts.ContentResolverSyncTest#testGetAndSetMasterSyncAutomatically"/>
+    <option name="compatibility:include-filter" value="CtsContentTestCases android.content.cts.ContentResolverSyncTest#testGetAndSetSyncAutomatically"/>
+    <option name="compatibility:include-filter" value="CtsContentTestCases android.content.cts.ContentResolverSyncTest#testGetSyncAdapterTypes"/>
+    <option name="compatibility:include-filter" value="CtsContentTestCases android.content.cts.ContentResolverSyncTest#testRequestSync"/>
+    <option name="compatibility:include-filter" value="CtsContentTestCases android.content.cts.ContentResolverSyncTest#testStartSyncFailure"/>
+    <option name="compatibility:include-filter" value="CtsContentTestCases android.content.cts.ContentResolverSyncTest#testValidateSyncExtrasBundle"/>
     <option name="compatibility:include-filter" value="CtsContentTestCases android.content.cts.ContextWrapperTest#testBindSimulateAllowFreezeProhibited"/>
     <option name="compatibility:include-filter" value="CtsContentTestCases android.content.cts.IntentFilterTest#testCreate"/>
     <option name="compatibility:include-filter" value="CtsContentTestCases android.content.cts.IntentTest#testCreateChooser"/>
-    <!-- CtsContentResolverTestCases -->
-    <option name="compatibility:include-filter" value="CtsContentResolverTestCases android.content.cts.contentresolver.ContentResolverSyncTest#testCallMultipleAccounts"/>
-    <option name="compatibility:include-filter" value="CtsContentResolverTestCases android.content.cts.contentresolver.ContentResolverSyncTest#testCancelSync"/>
-    <option name="compatibility:include-filter" value="CtsContentResolverTestCases android.content.cts.contentresolver.ContentResolverSyncTest#testGetAndSetIsSyncable"/>
-    <option name="compatibility:include-filter" value="CtsContentResolverTestCases android.content.cts.contentresolver.ContentResolverSyncTest#testGetAndSetMasterSyncAutomatically"/>
-    <option name="compatibility:include-filter" value="CtsContentResolverTestCases android.content.cts.contentresolver.ContentResolverSyncTest#testGetAndSetSyncAutomatically"/>
-    <option name="compatibility:include-filter" value="CtsContentResolverTestCases android.content.cts.contentresolver.ContentResolverSyncTest#testGetSyncAdapterTypes"/>
-    <option name="compatibility:include-filter" value="CtsContentResolverTestCases android.content.cts.contentresolver.ContentResolverSyncTest#testRequestSync"/>
-    <option name="compatibility:include-filter" value="CtsContentResolverTestCases android.content.cts.contentresolver.ContentResolverSyncTest#testStartSyncFailure"/>
-    <option name="compatibility:include-filter" value="CtsContentResolverTestCases android.content.cts.contentresolver.ContentResolverSyncTest#testValidateSyncExtrasBundle"/>
     <!-- CtsContentTestCases[instant] -->
     <option name="compatibility:include-filter" value="CtsContentTestCases[instant] android.content.cts.IntentTest#testCreateChooser"/>
     <!-- CtsCredentialManagerHostSideTestCases -->
