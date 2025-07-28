@@ -28,10 +28,10 @@ import android.security.advancedprotection.AdvancedProtectionManager;
 
 import androidx.test.platform.app.InstrumentationRegistry;
 
-import com.android.bedstead.harrier.annotations.BeforeClass;
 import com.android.compatibility.common.util.SystemUtil;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.BeforeClass;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -45,7 +45,10 @@ public abstract class BaseAdvancedProtectionTest {
 
     @BeforeClass
     public static void setupClass() {
-        disableUsbDataProtection();
+        if (shouldTestAdvancedProtection(
+                InstrumentationRegistry.getInstrumentation().getContext())) {
+            disableUsbDataProtection();
+        }
     }
 
     @Before
@@ -65,7 +68,6 @@ public abstract class BaseAdvancedProtectionTest {
                         Manifest.permission.MANAGE_DEVICE_POLICY_MTE);
 
         mInitialApmState = mManager.isAdvancedProtectionEnabled();
-        disableUsbDataProtection();
     }
 
     private static void disableUsbDataProtection() {
@@ -106,7 +108,6 @@ public abstract class BaseAdvancedProtectionTest {
     }
 
     protected void setAdvancedProtectionEnabled(boolean enabled) throws InterruptedException {
-        disableUsbDataProtection();
         if (enabled == mManager.isAdvancedProtectionEnabled()) {
             return;
         }
