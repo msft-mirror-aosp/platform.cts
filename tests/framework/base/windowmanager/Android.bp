@@ -96,6 +96,8 @@ java_defaults {
         "bedstead",
         "android.view.accessibility.flags-aconfig-java",
         "display_flags_lib",
+        "desktop-test-lib",
+        "aconfig_settings_flags_lib",
     ],
 
     test_suites: [
