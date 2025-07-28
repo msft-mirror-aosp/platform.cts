@@ -82,7 +82,18 @@ class AppFunctionAccessTest {
     @Test
     fun getAccessRequestState_otherDenied() {
         setAppFunctionFlags(ACCESS_FLAG_OTHER_DENIED)
-        assertWithMessage("Expected access to be denied for user denied flag")
+        assertWithMessage("Expected access to be denied for other denied flag")
+            .that(getAccessRequestState(AGENT_PKG_NAME, TARGET_PKG_NAME))
+            .isEqualTo(ACCESS_REQUEST_STATE_DENIED)
+    }
+
+    @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#getAccessRequestState"])
+    @Test
+    fun getAccessRequestState_otherOverrideUser() {
+        setAppFunctionFlags(ACCESS_FLAG_OTHER_DENIED or ACCESS_FLAG_USER_GRANTED)
+        assertWithMessage(
+            "Expected access to be denied for other denied flag, even if user granted set"
+        )
             .that(getAccessRequestState(AGENT_PKG_NAME, TARGET_PKG_NAME))
             .isEqualTo(ACCESS_REQUEST_STATE_DENIED)
     }
@@ -94,6 +105,15 @@ class AppFunctionAccessTest {
         assertWithMessage("Expected access to be granted for pregranted flag")
             .that(getAccessRequestState(AGENT_PKG_NAME, TARGET_PKG_NAME))
             .isEqualTo(ACCESS_REQUEST_STATE_GRANTED)
+    }
+
+    @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#getAccessRequestState"])
+    @Test
+    fun getAccessRequestState_userOverridePregrant() {
+        setAppFunctionFlags(ACCESS_FLAG_PREGRANTED or ACCESS_FLAG_USER_DENIED)
+        assertWithMessage("Expected access to be denied for user denied flag, even if pregranted")
+            .that(getAccessRequestState(AGENT_PKG_NAME, TARGET_PKG_NAME))
+            .isEqualTo(ACCESS_REQUEST_STATE_DENIED)
     }
 
     @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#getAccessRequestState"])
