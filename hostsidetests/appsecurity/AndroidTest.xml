@@ -41,9 +41,4 @@
         <option name="force-install-mode" value="FULL" />
     </target_preparer>
 
-    <!-- TODO(b/420640007): test used to switch to first user, which is not a full user on HSUM.
-    remove preparer if it's fixed at tradefed level -->
-    <target_preparer class="com.android.tradefed.targetprep.SwitchUserTargetPreparer">
-      <option name="user-type" value="full" />
-    </target_preparer>
 </configuration>
