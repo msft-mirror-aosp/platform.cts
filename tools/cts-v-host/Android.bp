@@ -40,3 +40,13 @@ tradefed_binary_host {
     static_libs: ["cts-v-host-tradefed-harness"],
     required: ["compatibility-host-util"],
 }
+
+compatibility_test_suite_package {
+    name: "cts-v-host",
+    tradefed: "cts-v-host-tradefed",
+    readme: "README",
+    tools: [
+        "ats_console_deploy",
+        "ats_olc_server_local_mode_deploy",
+    ],
+}
