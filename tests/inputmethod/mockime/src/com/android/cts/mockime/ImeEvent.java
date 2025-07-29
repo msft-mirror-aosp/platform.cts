@@ -51,7 +51,13 @@ public final class ImeEvent {
     /**
      * A special placeholder object that represents that return value information is not available.
      */
-    static final Object RETURN_VALUE_UNAVAILABLE = new Object();
+    static final Object RETURN_VALUE_UNAVAILABLE =
+            new Object() {
+                @Override
+                public String toString() {
+                    return "RETURN_VALUE_UNAVAILABLE";
+                }
+            };
 
     private static ReturnType getReturnTypeFromObject(@Nullable Object object) {
         if (object == null) {
