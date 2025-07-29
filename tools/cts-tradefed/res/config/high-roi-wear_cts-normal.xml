@@ -152,8 +152,8 @@
     <option name="compatibility:include-filter" value="CtsContactsProviderTestCases android.provider.cts.contacts.ContactsProvider2_AccountRemovalTest#testAccountRemoval_doesNotDeleteLocalAccountContacts"/>
     <!-- CtsContactsProviderWipe -->
     <option name="compatibility:include-filter" value="CtsContactsProviderWipe android.provider.cts.contactsproviderwipe.ContactsContract_Wipe#testCreationTimestamp"/>
-    <!-- CtsContentTestCases -->
-    <option name="compatibility:include-filter" value="CtsContentTestCases android.content.cts.ContentResolverSyncTest#testCallMultipleAccounts"/>
+    <!-- CtsContentResolverTestCases -->
+    <option name="compatibility:include-filter" value="CtsContentResolverTestCases android.content.cts.contentresolver.ContentResolverSyncTest#testCallMultipleAccounts"/>
     <!-- CtsDeviceConfigTestCases -->
     <option name="compatibility:include-filter" value="CtsDeviceConfigTestCases android.deviceconfig.cts.DeviceConfigApiPermissionTests#testDeviceConfigPublicNamespacesWithoutReadPermission"/>
     <option name="compatibility:include-filter" value="CtsDeviceConfigTestCases android.deviceconfig.cts.DeviceConfigApiPermissionTests#testDeviceConfigWithAllPermissions"/>
