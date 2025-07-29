@@ -52,6 +52,7 @@ import android.server.wm.ActivityManagerTestBase;
 import android.server.wm.HelperActivities;
 import android.server.wm.MetricsActivity;
 import android.server.wm.NestedShellPermission;
+import android.server.wm.SystemLockTaskModeSession;
 import android.server.wm.WindowContextTestActivity;
 import android.server.wm.WindowManagerState.Task;
 import android.server.wm.taskfragment.TaskFragmentOrganizerTestBase.BasicTaskFragmentOrganizer;
@@ -980,18 +981,13 @@ public class TaskFragmentOrganizerPolicyTest extends ActivityManagerTestBase {
     public void testApplyHierarchyOpsInLockTaskMode() {
         // Start an activity
         final Activity activity = startNewActivity();
+        final int taskId = activity.getTaskId();
 
-        try {
-            // Lock the task
-            runWithShellPermission(
-                    () -> {
-                        mAtm.startSystemLockTaskMode(activity.getTaskId());
-                    });
+        // Lock the task
+        try (SystemLockTaskModeSession ignored = new SystemLockTaskModeSession(taskId)) {
             waitForOrFail(
                     "Task in app pinning mode",
-                    () -> {
-                        return mAm.getLockTaskModeState() == LOCK_TASK_MODE_PINNED;
-                    });
+                    () -> mAm.getLockTaskModeState() == LOCK_TASK_MODE_PINNED);
 
             // Create TaskFragment and reparent the activity
             final IBinder ownerToken = getActivityToken(activity);
@@ -1021,11 +1017,6 @@ public class TaskFragmentOrganizerPolicyTest extends ActivityManagerTestBase {
                     .isInstanceOf(IllegalStateException.class);
             info = mTaskFragmentOrganizer.getTaskFragmentInfo(taskFragToken);
             assertEquals(1, info.getActivities().size());
-        } finally {
-            runWithShellPermission(
-                    () -> {
-                        mAtm.stopSystemLockTaskMode();
-                    });
         }
     }
 
