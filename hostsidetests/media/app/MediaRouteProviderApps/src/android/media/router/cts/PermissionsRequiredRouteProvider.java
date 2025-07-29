@@ -22,9 +22,12 @@ import static android.media.cts.MediaRouterTestConstants.REQUIRED_PERMISSIONS_SE
 import static android.media.cts.MediaRouterTestConstants.REQUIRED_PERMISSIONS_SET_3_1;
 import static android.media.cts.MediaRouterTestConstants.REQUIRED_PERMISSIONS_SET_3_2;
 import static android.media.cts.MediaRouterTestConstants.REQUIRED_PERMISSIONS_SET_3_3;
+import static android.media.cts.MediaRouterTestConstants.REQUIRED_PERMISSION_LOCAL_NETWORK;
 import static android.media.cts.MediaRouterTestConstants.ROUTE_ID_REQUIRES_ANY_PERMISSION_SET;
+import static android.media.cts.MediaRouterTestConstants.ROUTE_ID_REQUIRES_LOCAL_NETWORK;
 import static android.media.cts.MediaRouterTestConstants.ROUTE_ID_REQUIRES_ONE_PERMISSION;
 import static android.media.cts.MediaRouterTestConstants.ROUTE_NAME_REQUIRES_ANY_PERMISSION_SET;
+import static android.media.cts.MediaRouterTestConstants.ROUTE_NAME_REQUIRES_LOCAL_NETWORK;
 import static android.media.cts.MediaRouterTestConstants.ROUTE_NAME_REQUIRES_ONE_PERMISSION;
 
 import android.media.MediaRoute2Info;
@@ -43,19 +46,26 @@ public class PermissionsRequiredRouteProvider extends BaseFakeRouteProviderServi
     static List<MediaRoute2Info> createRoutes() {
         if (Flags.enableRouteVisibilityControlApi()) {
             return List.of(
-                    createPermissionsRequiredRoute(ROUTE_ID_REQUIRES_ONE_PERMISSION,
+                    createPermissionsRequiredRoute(
+                            ROUTE_ID_REQUIRES_ONE_PERMISSION,
                             ROUTE_NAME_REQUIRES_ONE_PERMISSION,
                             List.of(Set.of("android.permission.POST_NOTIFICATIONS"))),
-                    createPermissionsRequiredRoute(ROUTE_ID_REQUIRES_ANY_PERMISSION_SET,
+                    createPermissionsRequiredRoute(
+                            ROUTE_ID_REQUIRES_ANY_PERMISSION_SET,
                             ROUTE_NAME_REQUIRES_ANY_PERMISSION_SET,
-                            List.of(Set.of(REQUIRED_PERMISSIONS_SET_1_1),
+                            List.of(
+                                    Set.of(REQUIRED_PERMISSIONS_SET_1_1),
                                     Set.of(
                                             REQUIRED_PERMISSIONS_SET_2_1,
                                             REQUIRED_PERMISSIONS_SET_2_2),
                                     Set.of(
                                             REQUIRED_PERMISSIONS_SET_3_1,
                                             REQUIRED_PERMISSIONS_SET_3_2,
-                                            REQUIRED_PERMISSIONS_SET_3_3))));
+                                            REQUIRED_PERMISSIONS_SET_3_3))),
+                    createPermissionsRequiredRoute(
+                            ROUTE_ID_REQUIRES_LOCAL_NETWORK,
+                            ROUTE_NAME_REQUIRES_LOCAL_NETWORK,
+                            List.of(Set.of(REQUIRED_PERMISSION_LOCAL_NETWORK))));
         } else {
             return List.of();
         }
