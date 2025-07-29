@@ -279,7 +279,7 @@ class DefaultJcaImageParityClassTest(its_base_test.ItsBaseTest):
             ui_interaction_utils.JCA_VIDEO_STABILIZATION_MODE_ON
         )
       # Take JCA capture with UI
-      jca_capture_path = ui_interaction_utils.launch_jca_and_capture(
+      jca_capture_path, _ = ui_interaction_utils.launch_jca_and_capture(
           self.dut,
           self.log_path,
           camera_facing=props['android.lens.facing'],
