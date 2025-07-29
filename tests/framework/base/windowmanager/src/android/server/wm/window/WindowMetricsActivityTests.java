@@ -50,6 +50,7 @@ import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.RequireNotAutomotive;
 import com.android.compatibility.common.util.ApiTest;
+import com.android.compatibility.common.util.PollingCheck;
 
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -240,13 +241,30 @@ public class WindowMetricsActivityTests extends WindowManagerTestBase {
         // Resize the task.
         resizeActivityTask(activity.getComponentName(), WINDOW_BOUNDS.left, WINDOW_BOUNDS.top,
                 WINDOW_BOUNDS.right, WINDOW_BOUNDS.bottom);
+        PollingCheck.waitFor(
+                () ->
+                        activity.getWindowManager()
+                                .getCurrentWindowMetrics()
+                                .getBounds()
+                                .equals(WINDOW_BOUNDS));
 
         assertMetricsValidity(activity);
 
+        final Rect newBounds = new Rect(WINDOW_BOUNDS);
+        newBounds.offset(MOVE_OFFSET, MOVE_OFFSET);
         // Move the task.
-        resizeActivityTask(activity.getComponentName(), MOVE_OFFSET + WINDOW_BOUNDS.left,
-                MOVE_OFFSET + WINDOW_BOUNDS.top, MOVE_OFFSET + WINDOW_BOUNDS.right,
-                MOVE_OFFSET + WINDOW_BOUNDS.bottom);
+        resizeActivityTask(
+                activity.getComponentName(),
+                newBounds.left,
+                newBounds.top,
+                newBounds.right,
+                newBounds.bottom);
+        PollingCheck.waitFor(
+                () ->
+                        activity.getWindowManager()
+                                .getCurrentWindowMetrics()
+                                .getBounds()
+                                .equals(newBounds));
 
         assertMetricsValidity(activity);
     }
