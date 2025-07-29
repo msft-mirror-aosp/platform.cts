@@ -298,6 +298,10 @@ public class AudioDescriptorActivity extends PassFailButtons.Activity {
         switch (descriptor.getStandard()) {
             case AudioDescriptor.STANDARD_EDID:
                 return verifyShortAudioDescriptor(descriptor.getDescriptor());
+            // TODO(b/434769847): Add validation for SADB and VSADB.
+            case AudioDescriptor.STANDARD_SADB:
+            case AudioDescriptor.STANDARD_VSADB:
+                return new Pair<>(true, getResources().getString(R.string.audio_descriptor_pass));
             default:
                 return new Pair<>(false, getResources().getString(
                         R.string.audio_descriptor_unrecognized_standard, descriptor.getStandard()));
