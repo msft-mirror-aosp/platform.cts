@@ -17,7 +17,6 @@ import logging
 import math
 import os
 import pathlib
-import subprocess
 import threading
 import types
 
@@ -231,11 +230,21 @@ class DefaultJcaImageParityClassTest(its_base_test.ItsBaseTest):
           default_watch_dump_file)
       logging.debug('Default camera app uses %s to control the zoom.',
                     zoom_method)
-      zoom_ratio = ui_interaction_utils.get_default_camera_zoom_ratio(
-          default_watch_dump_file)
+      zoom_ratio = 1.0
+      if zoom_method == 'cropRegion':
+        scaler_crop_region = (
+            ui_interaction_utils.get_default_camera_crop_region(
+                default_watch_dump_file)
+        )
+        zoom_ratio = ip_metrics_utils.derive_hal_zoom_ratio(
+            props, scaler_crop_region)
+      else:
+        zoom_ratio = ui_interaction_utils.get_default_camera_zoom_ratio(
+            default_watch_dump_file)
       logging.debug('Default camera captures zoomRatio value: %s', zoom_ratio)
+
       jca_zoom_ratio = None
-      if zoom_ratio != 1:
+      if zoom_ratio != 1.0:
         jca_zoom_ratio = zoom_ratio
       video_stabilization = None
       video_stabilization_mode = (
