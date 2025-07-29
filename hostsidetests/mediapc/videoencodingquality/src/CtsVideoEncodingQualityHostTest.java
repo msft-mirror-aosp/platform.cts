@@ -82,8 +82,11 @@ import javax.annotation.Nullable;
 @UseParametersRunnerFactory(DeviceJUnit4ClassRunnerWithParameters.RunnerFactory.class)
 @OptionClass(alias = "pc-veq-test")
 public class CtsVideoEncodingQualityHostTest implements IDeviceTest {
+    private static final String RES_VER = "1_3";
     private static final String RES_URL =
-            "https://storage.googleapis.com/android_media/cts/hostsidetests/pc14_veq/veqtests-1_3.tar.gz";
+            "https://storage.googleapis.com/android_media/cts/hostsidetests/pc14_veq/veqtests-"
+                    + RES_VER
+                    + ".tar.gz";
 
     // variables related to host-side of the test
     private static final int MEDIA_PERFORMANCE_CLASS_14 = 34;
@@ -300,7 +303,7 @@ public class CtsVideoEncodingQualityHostTest implements IDeviceTest {
 
         // set up host-side working directory
         String tmpBase = System.getProperty("java.io.tmpdir");
-        String dirName = "CtsVideoEncodingQualityHostTest_" + getDevice().getSerialNumber();
+        String dirName = "CtsVideoEncodingQualityHostTest_" + RES_VER;
         String tmpDir = tmpBase + "/" + dirName;
         LogUtil.CLog.i("tmpBase= " + tmpBase + " tmpDir =" + tmpDir);
         sHostWorkDir = new File(tmpDir);
@@ -327,21 +330,6 @@ public class CtsVideoEncodingQualityHostTest implements IDeviceTest {
         String fileName = RES_URL.substring(RES_URL.lastIndexOf('/') + 1);
         int result = runCommand("tar xvzf " + fileName, sHostWorkDir);
         Assert.assertEquals("Failed to untar " + fileName, 0, result);
-
-        // Push input files to device
-        String deviceInDir = getDevice().getMountPoint(IDevice.MNT_EXTERNAL_STORAGE)
-                + "/veq/input/";
-        String deviceJsonDir = deviceInDir + "json/";
-        String deviceSamplesDir = deviceInDir + "samples/";
-        Assert.assertNotNull("Failed to create directory " + deviceJsonDir + " on device ",
-                getDevice().executeAdbCommand("shell", "mkdir", "-p", deviceJsonDir));
-        Assert.assertNotNull("Failed to create directory " + deviceSamplesDir + " on device ",
-                getDevice().executeAdbCommand("shell", "mkdir", "-p", deviceSamplesDir));
-        Assert.assertTrue("Failed to push json files to " + deviceJsonDir + " on device ",
-                getDevice().pushDir(new File(sHostWorkDir.getPath() + "/json/"), deviceJsonDir));
-        Assert.assertTrue("Failed to push mp4 files to " + deviceSamplesDir + " on device ",
-                getDevice().pushDir(new File(sHostWorkDir.getPath() + "/samples/"),
-                        deviceSamplesDir));
 
         sIsTestSetUpDone = true;
     }
@@ -385,6 +373,43 @@ public class CtsVideoEncodingQualityHostTest implements IDeviceTest {
             sLock.unlock();
         }
 
+        // Push input files to device
+        String mntPoint = getDevice().getMountPoint(IDevice.MNT_EXTERNAL_STORAGE);
+        String deviceInDir = mntPoint + "/veq/input/";
+        String deviceJsonDir = deviceInDir + "json/";
+        String deviceSamplesDir = deviceInDir + "samples/";
+        Assert.assertNotNull(
+                "Failed to create directory " + deviceJsonDir + " on device ",
+                getDevice().executeAdbCommand("shell", "mkdir", "-p", deviceJsonDir));
+        Assert.assertNotNull(
+                "Failed to create directory " + deviceSamplesDir + " on device ",
+                getDevice().executeAdbCommand("shell", "mkdir", "-p", deviceSamplesDir));
+        String jsonPath = sHostWorkDir.getPath() + "/json/" + mJsonName;
+        String devJsonPath = deviceJsonDir + mJsonName;
+        if (!getDevice().doesFileExist(devJsonPath)) {
+            Assert.assertTrue(
+                    "Failed to push json file to device ",
+                    getDevice().pushFile(new File(jsonPath), devJsonPath));
+        }
+
+        // Parse json file
+        String jsonString =
+                new String(Files.readAllBytes(Paths.get(jsonPath)), StandardCharsets.UTF_8);
+        JSONArray jsonArray = new JSONArray(jsonString);
+        JSONObject obj = jsonArray.getJSONObject(0);
+        String refFileName = obj.getString("RefFileName");
+        int fps = obj.getInt("FrameRate");
+        int frameCount = obj.getInt("FrameCount");
+        int clipDuration = frameCount / fps;
+
+        String refFilePath = sHostWorkDir.getPath() + "/samples/" + refFileName;
+        String devRefFilePath = deviceSamplesDir + refFileName;
+        if (!getDevice().doesFileExist(devRefFilePath)) {
+            Assert.assertTrue(
+                    "Failed to push mp4 file to device ",
+                    getDevice().pushFile(new File(refFilePath), devRefFilePath));
+        }
+
         // transcode input
         runDeviceTests(DEVICE_SIDE_TEST_PACKAGE, DEVICE_SIDE_TEST_CLASS, "testTranscode");
 
@@ -399,22 +424,10 @@ public class CtsVideoEncodingQualityHostTest implements IDeviceTest {
         } catch (SecurityException e) {
             LogUtil.CLog.e("Unable to establish output host directory : " + outHostPath.getPath());
         }
-        String outDevPath = getDevice().getMountPoint(IDevice.MNT_EXTERNAL_STORAGE) + "/veq/output/"
-                + outDir;
+        String outDevPath = mntPoint + "/veq/output/" + outDir;
         Assert.assertTrue("Failed to pull mp4 files from " + outDevPath
                 + " to " + outHostPath.getPath(), getDevice().pullDir(outDevPath, outHostPath));
         getDevice().deleteFile(outDevPath);
-
-        // Parse json file
-        String jsonPath = sHostWorkDir.getPath() + "/json/" + mJsonName;
-        String jsonString =
-                new String(Files.readAllBytes(Paths.get(jsonPath)), StandardCharsets.UTF_8);
-        JSONArray jsonArray = new JSONArray(jsonString);
-        JSONObject obj = jsonArray.getJSONObject(0);
-        String refFileName = obj.getString("RefFileName");
-        int fps = obj.getInt("FrameRate");
-        int frameCount = obj.getInt("FrameCount");
-        int clipDuration = frameCount / fps;
 
         // Compute Vmaf
         try (FileWriter writer = new FileWriter(outHostPath.getPath() + "/" + "all_vmafs.txt")) {
