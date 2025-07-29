@@ -122,3 +122,4 @@ android.telephony.TelephonyCallback
 android.content.pm.ArchivedPackageInfo
 android.telephony.euicc.EuiccManager
 android.media.projection.MediaProjection
+android.app.HandoffActivityDataRequestInfo

@@ -233,7 +233,7 @@ public final class TypeUtils {
         String[] parts = type.split("\\.");
         StringBuilder name = new StringBuilder();
         for (String p : parts) {
-            if (Character.isLowerCase(p.charAt(0))) {
+            if (Character.isLowerCase(p.charAt(0)) || p.charAt(0) == '`') {
                 if (name.length() > 0) {
                     name.append(".");
                 }
