@@ -82,6 +82,7 @@ import android.view.ViewTreeObserver;
 import android.view.WindowInsets;
 import android.view.WindowManager;
 import android.view.inputmethod.Flags;
+import android.view.inputmethod.InputMethod;
 import android.view.inputmethod.InputMethodManager;
 import android.view.inputmethod.cts.util.AutoCloseableWrapper;
 import android.view.inputmethod.cts.util.EndToEndImeTestBase;
@@ -399,6 +400,49 @@ public final class FocusHandlingTest extends EndToEndImeTestBase {
 
             // Input should start
             expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
+        }
+    }
+
+    /**
+     * This verifies that requesting focus on an EditText, and immediately afterwards calling
+     * showSoftInput, will first process the onStartInput for the EditText. If the showSoftInput
+     * call is processed first, this can succeed as there is an InputConnection on the DecorView,
+     * but the EditText's onStartInput will occur while the IME is showing, potentially causing an
+     * unexpected UI change.
+     */
+    @Test
+    public void testRequestFocusCallsOnStartInputBeforeShowSoftInput() throws Exception {
+        try (MockImeSession imeSession = createTestImeSession()) {
+            final ImeEventStream stream = imeSession.openEventStream();
+
+            final String marker = getTestMarker();
+            final var editTextRef = new AtomicReference<EditText>();
+            TestActivity.startSync(activity -> {
+                final LinearLayout layout = new LinearLayout(activity);
+                layout.setOrientation(LinearLayout.VERTICAL);
+
+                final EditText editText = new EditText(activity);
+                editText.setPrivateImeOptions(marker);
+                editText.setText("Editable");
+                editTextRef.set(editText);
+                layout.addView(editText);
+                return layout;
+            });
+            final var editText = editTextRef.get();
+
+            notExpectEvent(stream, editorMatcher("onStartInputView", marker), TIMEOUT);
+            expectImeInvisible(TIMEOUT);
+
+            assertTrue("showSoftInput must success if the View has IME focus", getOnMainSync(() -> {
+                final var imm = editText.getContext().getSystemService(InputMethodManager.class);
+                return editText.requestFocus() && imm.showSoftInput(editText, 0);
+            }));
+
+            // onStartInput should be called on the EditText before the showSoftInput, not after.
+            expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
+            expectEvent(stream, showSoftInputMatcher(InputMethod.SHOW_EXPLICIT), TIMEOUT);
+            expectEvent(stream, editorMatcher("onStartInputView", marker), TIMEOUT);
+            expectImeVisible(TIMEOUT);
         }
     }
 
