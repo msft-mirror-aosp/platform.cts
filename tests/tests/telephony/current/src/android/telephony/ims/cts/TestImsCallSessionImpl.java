@@ -343,6 +343,32 @@ public class TestImsCallSessionImpl extends ImsCallSessionImplBase {
         setState(ImsCallSessionImplBase.State.TERMINATED);
     }
 
+    /**
+     * Simulates a remote termination with the specified ImsReasonInfo reason code.
+     * @param reason the reason.
+     */
+    public void simulateCallDisconnection(int reason) {
+        postAndRunTask(() -> {
+            ImsUtils.waitInCurrentState(WAIT_IN_CURRENT_STATE);
+            try {
+                if (mListener == null) {
+                    return;
+                }
+                Log.d(LOG_TAG, "simulateCallDisconnection mCallId = " + mCallId);
+                mListener.callSessionTerminated(getReasonInfo(
+                        reason,
+                        ImsReasonInfo.CODE_UNSPECIFIED));
+            } catch (Throwable t) {
+                Throwable cause = t.getCause();
+                if (t instanceof DeadObjectException
+                        || (cause != null && cause instanceof DeadObjectException)) {
+                    fail("starting cause Throwable to be thrown: " + t);
+                }
+            }
+        });
+        setState(ImsCallSessionImplBase.State.TERMINATED);
+    }
+
     public void changeMultipartyState(boolean isMultiParty) {
         postAndRunTask(() -> {
             ImsUtils.waitInCurrentState(WAIT_IN_CURRENT_STATE);

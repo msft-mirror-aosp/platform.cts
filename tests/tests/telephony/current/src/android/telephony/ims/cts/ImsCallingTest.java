@@ -62,6 +62,7 @@ import android.telephony.cts.InCallServiceStateValidator;
 import android.telephony.emergency.EmergencyNumber;
 import android.telephony.ims.ImsCallProfile;
 import android.telephony.ims.ImsCallSessionListener;
+import android.telephony.ims.ImsReasonInfo;
 import android.telephony.ims.ImsStreamMediaProfile;
 import android.telephony.ims.MediaQualityStatus;
 import android.telephony.ims.SrvccCall;
@@ -2133,6 +2134,101 @@ public class ImsCallingTest extends ImsCallingBase {
         waitForUnboundService();
         overrideCarrierConfig(null);
     }
+
+    @RequiresFlagsEnabled(Flags.FLAG_LOG_CALLS_ANSWERED_ELSEWHERE)
+    @ApiTest(apis = "android.telephony.CarrierConfigManager#KEY_LOG_CALLS_ANSWERED_ELSEWHERE_BOOL")
+    @Test
+    public void testAnsweredElsewhere_doNotLogExtra() throws Exception {
+        if (!ImsUtils.shouldTestImsCall()) {
+            return;
+        }
+
+        // Set carrier config to NOT log calls answered elsewhere.
+        PersistableBundle bundle = new PersistableBundle();
+        bundle.putBoolean(CarrierConfigManager.KEY_LOG_CALLS_ANSWERED_ELSEWHERE_BOOL, false);
+        overrideCarrierConfig(bundle);
+
+        try {
+            bindImsService();
+            mServiceCallBack = new ServiceCallBack();
+            InCallServiceStateValidator.setCallbacks(mServiceCallBack);
+
+            // Set up incoming call
+            Bundle extras = new Bundle();
+            sServiceConnector.getCarrierService().getMmTelFeature().onIncomingCallReceived(extras);
+            assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
+
+            Call call = getCall(mCurrentCallId);
+            waitForCallState(call, Call.STATE_RINGING);
+
+            waitForCallSessionToNotBe(null);
+            TestImsCallSessionImpl callSession =
+                    sServiceConnector.getCarrierService().getMmTelFeature().getImsCallsession();
+            callSession.simulateCallDisconnection(ImsReasonInfo.CODE_ANSWERED_ELSEWHERE);
+            isCallDisconnected(call, callSession);
+
+            // The TelephonyConnection will be set to disconnected and should have the extra.
+            Bundle callDetailsExtras = call.getDetails().getExtras();
+            assertNotNull(callDetailsExtras);
+            assertTrue("EXTRA_DO_NOT_LOG_CALL should be present",
+                    callDetailsExtras.getBoolean(TelecomManager.EXTRA_DO_NOT_LOG_CALL));
+
+            assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
+            waitForUnboundService();
+        } finally {
+            // Cleanup
+            overrideCarrierConfig(null);
+        }
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_LOG_CALLS_ANSWERED_ELSEWHERE)
+    @ApiTest(apis = "android.telephony.CarrierConfigManager#KEY_LOG_CALLS_ANSWERED_ELSEWHERE_BOOL")
+    @Test
+    public void testAnsweredElsewhere_isLoggedByDefault() throws Exception {
+        if (!ImsUtils.shouldTestImsCall()) {
+            return;
+        }
+
+        // Set carrier config to default (log calls answered elsewhere).
+        PersistableBundle bundle = new PersistableBundle();
+        bundle.putBoolean(CarrierConfigManager.KEY_LOG_CALLS_ANSWERED_ELSEWHERE_BOOL, true);
+        overrideCarrierConfig(bundle);
+
+        try {
+            bindImsService();
+            mServiceCallBack = new ServiceCallBack();
+            InCallServiceStateValidator.setCallbacks(mServiceCallBack);
+
+            // Set up incoming call
+            Bundle extras = new Bundle();
+            sServiceConnector.getCarrierService().getMmTelFeature().onIncomingCallReceived(extras);
+            assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
+
+            Call call = getCall(mCurrentCallId);
+            waitForCallState(call, Call.STATE_RINGING);
+
+            waitForCallSessionToNotBe(null);
+            TestImsCallSessionImpl callSession =
+                    sServiceConnector.getCarrierService().getMmTelFeature().getImsCallsession();
+
+            // Terminate with ANSWERED_ELSEWHERE.
+            callSession.simulateCallDisconnection(ImsReasonInfo.CODE_ANSWERED_ELSEWHERE);
+            isCallDisconnected(call, callSession);
+
+            // The TelephonyConnection will be set to disconnected and should NOT have the extra.
+            Bundle callDetailsExtras = call.getDetails().getExtras();
+            assertFalse("EXTRA_DO_NOT_LOG_CALL should not be present",
+                    callDetailsExtras != null && callDetailsExtras.containsKey(
+                            TelecomManager.EXTRA_DO_NOT_LOG_CALL));
+
+            assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
+            waitForUnboundService();
+        } finally {
+            // Cleanup
+            overrideCarrierConfig(null);
+        }
+    }
+
 
     private void verifySrvccStateChange(int state) throws Exception {
         assertTrue(sMockModemManager.srvccStateNotify(sTestSlot, state));
