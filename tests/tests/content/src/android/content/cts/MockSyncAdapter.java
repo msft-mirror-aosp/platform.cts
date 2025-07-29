@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package android.content.cts.contentresolver;
+package android.content.cts;
 
 import android.accounts.Account;
 import android.content.ContentResolver;
@@ -27,11 +27,11 @@ import android.os.RemoteException;
 import java.util.ArrayList;
 import java.util.concurrent.CountDownLatch;
 
-public final class MockSyncAdapter extends ISyncAdapter.Stub {
+public class MockSyncAdapter extends ISyncAdapter.Stub {
 
     private static MockSyncAdapter sSyncAdapter = null;
 
-    private volatile ArrayList<Account> mAccounts = new ArrayList<>();
+    private volatile ArrayList<Account> mAccounts = new ArrayList<Account>();
     private volatile String mAuthority;
     private volatile Bundle mExtras;
     private volatile boolean mInitialized;
@@ -83,9 +83,8 @@ public final class MockSyncAdapter extends ISyncAdapter.Stub {
         cb.onUnsyncableAccountDone(true);
     }
 
-    public void startSync(
-            ISyncContext syncContext, String authority, Account account, Bundle extras)
-            throws RemoteException {
+    public void startSync(ISyncContext syncContext, String authority, Account account,
+            Bundle extras) throws RemoteException {
 
         mAccounts.add(account);
         mAuthority = authority;
@@ -104,7 +103,7 @@ public final class MockSyncAdapter extends ISyncAdapter.Stub {
         countDownLatch();
     }
 
-    public void cancelSync(ISyncContext syncContext) {
+    public void cancelSync(ISyncContext syncContext) throws RemoteException {
         mAccounts.clear();
         mAuthority = null;
         mExtras = null;

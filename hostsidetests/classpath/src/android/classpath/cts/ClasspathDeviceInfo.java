@@ -242,6 +242,9 @@ public class ClasspathDeviceInfo extends BaseHostJUnit4Test {
         private void pullRemoteJar() {
             try {
                 mLocalCopy = mDevice.pullFile(mPath);
+                if (mLocalCopy == null) {
+                    throw new RuntimeException("Failed to pull remote jar: " + mPath);
+                }
             } catch (DeviceNotAvailableException e) {
                 throw new RuntimeException(e);
             }

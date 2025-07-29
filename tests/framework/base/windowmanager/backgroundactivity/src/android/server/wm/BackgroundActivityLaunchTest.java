@@ -523,7 +523,6 @@ public class BackgroundActivityLaunchTest extends BackgroundActivityTestBase {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_BAL_ADDITIONAL_START_MODES)
     public void testPendingIntentActivity_whenSenderAllowsBalAlways_isNotBlocked()
             throws Exception {
         // creator (appa) is not privileged
@@ -541,7 +540,6 @@ public class BackgroundActivityLaunchTest extends BackgroundActivityTestBase {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_BAL_ADDITIONAL_START_MODES)
     public void testPendingIntentActivity_whenSenderAllowsBalIsVisible_isNotBlocked()
             throws Exception {
         // creator (appa) is not privileged
@@ -806,7 +804,6 @@ public class BackgroundActivityLaunchTest extends BackgroundActivityTestBase {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_BAL_ADDITIONAL_START_MODES)
     public void testPendingIntentActivity_whenSenderOnlyAllowsBalIfVisible_isBlocked()
             throws Exception {
         // creator (appa) is not privileged

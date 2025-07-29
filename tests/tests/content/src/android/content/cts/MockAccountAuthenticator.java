@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package android.content.cts.contentresolver;
+package android.content.cts;
 
 import android.accounts.AbstractAccountAuthenticator;
 import android.accounts.Account;
@@ -24,13 +24,12 @@ import android.accounts.NetworkErrorException;
 import android.content.Context;
 import android.os.Bundle;
 
-public final class MockAccountAuthenticator extends AbstractAccountAuthenticator {
+public class MockAccountAuthenticator extends AbstractAccountAuthenticator {
 
     private static MockAccountAuthenticator sMockAuthenticator = null;
-    public static final String ACCOUNT_NAME = "android.content.cts.contentresolver.account.name";
-    public static final String ACCOUNT_TYPE = "android.content.cts.contentresolver.account.type";
-    public static final String ACCOUNT_PASSWORD =
-            "android.content.cts.contentresolver.account.password";
+    public static final String ACCOUNT_NAME = "android.content.cts.account.name";
+    public static final String ACCOUNT_TYPE = "android.content.cts.account.type";
+    public static final String ACCOUNT_PASSWORD = "android.content.cts.account.password";
     public static final String AUTH_TOKEN = "mockAuthToken";
     public static final String AUTH_TOKEN_LABEL = "mockAuthTokenLabel";
 
@@ -48,12 +47,8 @@ public final class MockAccountAuthenticator extends AbstractAccountAuthenticator
     }
 
     @Override
-    public Bundle addAccount(
-            AccountAuthenticatorResponse response,
-            String accountType,
-            String authTokenType,
-            String[] requiredFeatures,
-            Bundle options)
+    public Bundle addAccount(AccountAuthenticatorResponse response, String accountType,
+            String authTokenType, String[] requiredFeatures, Bundle options)
             throws NetworkErrorException {
         return createResultBundle();
     }
@@ -64,18 +59,14 @@ public final class MockAccountAuthenticator extends AbstractAccountAuthenticator
     }
 
     @Override
-    public Bundle updateCredentials(
-            AccountAuthenticatorResponse response,
-            Account account,
-            String authTokenType,
-            Bundle options)
-            throws NetworkErrorException {
+    public Bundle updateCredentials(AccountAuthenticatorResponse response, Account account,
+            String authTokenType, Bundle options) throws NetworkErrorException {
         return createResultBundle();
     }
 
     @Override
-    public Bundle confirmCredentials(
-            AccountAuthenticatorResponse response, Account account, Bundle options) {
+    public Bundle confirmCredentials(AccountAuthenticatorResponse response, Account account,
+            Bundle options) throws NetworkErrorException {
 
         Bundle result = new Bundle();
         result.putBoolean(AccountManager.KEY_BOOLEAN_RESULT, true);
@@ -83,12 +74,8 @@ public final class MockAccountAuthenticator extends AbstractAccountAuthenticator
     }
 
     @Override
-    public Bundle getAuthToken(
-            AccountAuthenticatorResponse response,
-            Account account,
-            String authTokenType,
-            Bundle options)
-            throws NetworkErrorException {
+    public Bundle getAuthToken(AccountAuthenticatorResponse response, Account account,
+            String authTokenType, Bundle options) throws NetworkErrorException {
         return createResultBundle();
     }
 
@@ -98,9 +85,8 @@ public final class MockAccountAuthenticator extends AbstractAccountAuthenticator
     }
 
     @Override
-    public Bundle hasFeatures(
-            AccountAuthenticatorResponse response, Account account, String[] features)
-            throws NetworkErrorException {
+    public Bundle hasFeatures(AccountAuthenticatorResponse response, Account account,
+            String[] features) throws NetworkErrorException {
 
         Bundle result = new Bundle();
         result.putBoolean(AccountManager.KEY_BOOLEAN_RESULT, true);
@@ -113,4 +99,5 @@ public final class MockAccountAuthenticator extends AbstractAccountAuthenticator
         }
         return sMockAuthenticator;
     }
+
 }

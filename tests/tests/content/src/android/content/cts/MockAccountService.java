@@ -14,13 +14,15 @@
  * limitations under the License.
  */
 
-package android.content.cts.contentresolver;
+package android.content.cts;
 
 import android.app.Service;
 import android.content.Intent;
 import android.os.IBinder;
 
-/** A basic Mock Service for wrapping the MockAccountAuthenticator */
+/**
+ * a basic Mock Service for wrapping the MockAccountAuthenticator
+ */
 public class MockAccountService extends Service {
 
     @Override

@@ -671,19 +671,18 @@
     <option name="compatibility:include-filter" value="CtsContentTestCases android.content.cts.ActivityLaunchUriPermissionTest#testImplicitGrantForSendMultipleActionRestricted"/>
     <option name="compatibility:include-filter" value="CtsContentTestCases android.content.cts.ActivityLaunchUriPermissionTest#testImplicitGrantForSendMultipleActionUnRestricted"/>
     <option name="compatibility:include-filter" value="CtsContentTestCases android.content.cts.AvailableIntentsTest#testMotionPhotoCaptureIntentsHandledBySystem"/>
+    <option name="compatibility:include-filter" value="CtsContentTestCases android.content.cts.ContentResolverSyncTest#testCallMultipleAccounts"/>
+    <option name="compatibility:include-filter" value="CtsContentTestCases android.content.cts.ContentResolverSyncTest#testCancelSync"/>
+    <option name="compatibility:include-filter" value="CtsContentTestCases android.content.cts.ContentResolverSyncTest#testGetAndSetIsSyncable"/>
+    <option name="compatibility:include-filter" value="CtsContentTestCases android.content.cts.ContentResolverSyncTest#testGetAndSetMasterSyncAutomatically"/>
+    <option name="compatibility:include-filter" value="CtsContentTestCases android.content.cts.ContentResolverSyncTest#testGetAndSetSyncAutomatically"/>
+    <option name="compatibility:include-filter" value="CtsContentTestCases android.content.cts.ContentResolverSyncTest#testGetSyncAdapterTypes"/>
+    <option name="compatibility:include-filter" value="CtsContentTestCases android.content.cts.ContentResolverSyncTest#testRequestSync"/>
+    <option name="compatibility:include-filter" value="CtsContentTestCases android.content.cts.ContentResolverSyncTest#testStartSyncFailure"/>
+    <option name="compatibility:include-filter" value="CtsContentTestCases android.content.cts.ContentResolverSyncTest#testValidateSyncExtrasBundle"/>
     <option name="compatibility:include-filter" value="CtsContentTestCases android.content.cts.ContextWrapperTest#testBindSimulateAllowFreezeProhibited"/>
     <option name="compatibility:include-filter" value="CtsContentTestCases android.content.cts.IntentFilterTest#testCreate"/>
     <option name="compatibility:include-filter" value="CtsContentTestCases android.content.cts.IntentTest#testCreateChooser"/>
-    <!-- CtsContentResolverTestCases -->
-    <option name="compatibility:include-filter" value="CtsContentResolverTestCases android.content.cts.contentresolver.ContentResolverSyncTest#testCallMultipleAccounts"/>
-    <option name="compatibility:include-filter" value="CtsContentResolverTestCases android.content.cts.contentresolver.ContentResolverSyncTest#testCancelSync"/>
-    <option name="compatibility:include-filter" value="CtsContentResolverTestCases android.content.cts.contentresolver.ContentResolverSyncTest#testGetAndSetIsSyncable"/>
-    <option name="compatibility:include-filter" value="CtsContentResolverTestCases android.content.cts.contentresolver.ContentResolverSyncTest#testGetAndSetMasterSyncAutomatically"/>
-    <option name="compatibility:include-filter" value="CtsContentResolverTestCases android.content.cts.contentresolver.ContentResolverSyncTest#testGetAndSetSyncAutomatically"/>
-    <option name="compatibility:include-filter" value="CtsContentResolverTestCases android.content.cts.contentresolver.ContentResolverSyncTest#testGetSyncAdapterTypes"/>
-    <option name="compatibility:include-filter" value="CtsContentResolverTestCases android.content.cts.contentresolver.ContentResolverSyncTest#testRequestSync"/>
-    <option name="compatibility:include-filter" value="CtsContentResolverTestCases android.content.cts.contentresolver.ContentResolverSyncTest#testStartSyncFailure"/>
-    <option name="compatibility:include-filter" value="CtsContentResolverTestCases android.content.cts.contentresolver.ContentResolverSyncTest#testValidateSyncExtrasBundle"/>
     <!-- CtsContentTestCases[instant] -->
     <option name="compatibility:include-filter" value="CtsContentTestCases[instant] android.content.cts.IntentTest#testCreateChooser"/>
     <!-- CtsCredentialManagerHostSideTestCases -->
@@ -968,21 +967,6 @@
     <option name="compatibility:include-filter" value="CtsHardwareTestCases android.hardware.input.cts.tests.virtualdevices.VirtualDeviceMirrorDisplayTest#virtualStylus_touchEvent"/>
     <option name="compatibility:include-filter" value="CtsHardwareTestCases android.hardware.input.cts.tests.virtualdevices.VirtualInputDeviceGenericTest#closeVirtualDevice_removesInputDevices"/>
     <option name="compatibility:include-filter" value="CtsHardwareTestCases android.hardware.input.cts.tests.virtualdevices.VirtualMouseTest#sendRelativeEvent"/>
-    <!-- CtsHealthConnectControllerTestCases -->
-    <option name="compatibility:include-filter" value="CtsHealthConnectControllerTestCases android.healthconnect.cts.ui.ActivityIntensityTest#expressiveSeeAllRecentAccess_showsDataCategory"/>
-    <option name="compatibility:include-filter" value="CtsHealthConnectControllerTestCases android.healthconnect.cts.ui.ManageDataFragmentTest#manageDataFragment_3months_showsAutoDeleteOption"/>
-    <option name="compatibility:include-filter" value="CtsHealthConnectControllerTestCases android.healthconnect.cts.ui.ManageDataFragmentTest#manageDataFragment_never_showsAutoDeleteOption"/>
-    <option name="compatibility:include-filter" value="CtsHealthConnectControllerTestCases android.healthconnect.cts.ui.newia.AllDataFragmentTest#allDataFragment_clickOnDataSourcesIcon_navigatesToDataSources"/>
-    <option name="compatibility:include-filter" value="CtsHealthConnectControllerTestCases android.healthconnect.cts.ui.newia.AllDataFragmentTest#allDataFragment_clickOnPermissionType_navigatesToEntriesAndAccess"/>
-    <option name="compatibility:include-filter" value="CtsHealthConnectControllerTestCases android.healthconnect.cts.ui.newia.AllDataFragmentTest#allDataFragment_deletesAllData"/>
-    <option name="compatibility:include-filter" value="CtsHealthConnectControllerTestCases android.healthconnect.cts.ui.newia.AppDataFragmentTest#clickOnAppDataType_navigatesToAppEntries"/>
-    <option name="compatibility:include-filter" value="CtsHealthConnectControllerTestCases android.healthconnect.cts.ui.permissions.AdditionalPermissionsRequestUITest#requestCombinedPermissions_showsDataTypeAndAdditionalPermissions_healthFitnessBrand"/>
-    <option name="compatibility:include-filter" value="CtsHealthConnectControllerTestCases android.healthconnect.cts.ui.permissions.ManageAppHealthPermissionUITest#revokePermission_updatesAppPermissions"/>
-    <option name="compatibility:include-filter" value="CtsHealthConnectControllerTestCases android.healthconnect.cts.ui.permissions.MedicalPermissionsRequestUITest#requestMedicalReadAndWrite_allowAll_grantsAllRequestedPermissions"/>
-    <option name="compatibility:include-filter" value="CtsHealthConnectControllerTestCases android.healthconnect.cts.ui.permissions.MedicalPermissionsRequestUITest#requestMedicalWrite_allow_grantsPermission"/>
-    <option name="compatibility:include-filter" value="CtsHealthConnectControllerTestCases android.healthconnect.cts.ui.permissions.MedicalPermissionsRequestUITest#requestMedicalWrite_dontAllow_doesNotGrantPermission"/>
-    <option name="compatibility:include-filter" value="CtsHealthConnectControllerTestCases android.healthconnect.cts.ui.permissions.RequestHealthPermissionUITest#showsAppName_showsRequestedPermissions_healthFitnessBrand"/>
-    <option name="compatibility:include-filter" value="CtsHealthConnectControllerTestCases android.healthconnect.cts.ui.phr.ConnectedAppFragmentTest#appWithMedicalAndFitnessPermissions_showsCombinedPermssionsScreen"/>
     <!-- CtsHealthConnectHostSideDeviceTestCases -->
     <option name="compatibility:include-filter" value="CtsHealthConnectHostSideDeviceTestCases android.healthconnect.cts.device.HealthConnectDeviceTest#testAggregateRecords_onlyWritePermissions_requestsOwnDataOnly_succeeds"/>
     <option name="compatibility:include-filter" value="CtsHealthConnectHostSideDeviceTestCases android.healthconnect.cts.device.HealthConnectDeviceTest#testAggregationOutputForTotalStepsCountWithDataFromTwoAppsHavingDifferentPriority"/>

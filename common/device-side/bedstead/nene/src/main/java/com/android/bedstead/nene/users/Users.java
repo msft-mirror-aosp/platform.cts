@@ -701,11 +701,7 @@ public final class Users {
             return TestApisReflectionKt.getAliveUsers(sUserManager).stream()
                     .map(ui -> new UserInfo(ui));
         }
-        return TestApisReflectionKt.getUsers(sUserManager,
-                /* excludePartial= */ false,
-                /* excludeDying= */ true,
-                /* excludePreCreated= */ false).stream()
-                .map(ui -> new UserInfo(ui));
+        return TestApisReflectionKt.getUsers(sUserManager).stream().map(ui -> new UserInfo(ui));
     }
 
     /**

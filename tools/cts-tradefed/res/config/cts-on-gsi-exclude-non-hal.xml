@@ -79,7 +79,6 @@
     <option name="compatibility:exclude-filter" value="CtsDatabaseTestCases" />
     <option name="compatibility:exclude-filter" value="CtsDexMetadataHostTestCases" />
     <option name="compatibility:exclude-filter" value="CtsExerciseRouteTestCases" />
-    <option name="compatibility:exclude-filter" value="CtsHealthConnectControllerTestCases" />
     <option name="compatibility:exclude-filter" value="CtsHealthConnectHostSideDeviceTestCases" />
     <option name="compatibility:exclude-filter" value="CtsHealthConnectHostTestCases" />
     <option name="compatibility:exclude-filter" value="CtsHealthFitnessDeviceTestCases" />

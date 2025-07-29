@@ -71,14 +71,6 @@ android_test {
     sdk_version: "test_current",
 }
 
-android_app {
-    name: "CtsGraphicsTestCases-res",
-    defaults: ["cts_defaults"],
-    sdk_version: "test_current",
-    use_resource_processor: false,
-    enforce_uses_libs: false,
-}
-
 android_ravenwood_test {
     name: "CtsGraphicsTestCasesRavenwood",
     defaults: ["cts_defaults"],
@@ -113,8 +105,6 @@ android_ravenwood_test {
     srcs: [
         "src/**/*.kt",
         "src/**/*.java",
-
-        ":CtsGraphicsTestCases-res{.aapt.srcjar}",
     ],
     exclude_srcs: [
         // Require hardware support
@@ -149,8 +139,8 @@ android_ravenwood_test {
     ],
     // Graphics on Ravenwood is still experimental, so the ravenwood team owns it for now.
     team: "trendy_team_ravenwood",
-    resource_apk: "CtsGraphicsTestCases-res",
     auto_gen_config: true,
+    build_resources: true,
     sdk_version: "test_current",
 }
 

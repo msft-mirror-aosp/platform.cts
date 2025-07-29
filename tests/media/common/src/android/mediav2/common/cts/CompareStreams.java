@@ -74,6 +74,7 @@ public class CompareStreams extends CodecDecoderTestBase {
     private final boolean mAllowRefResize;
     private final boolean mAllowRefLoopBack;
     private final Map<Long, List<Rect>> mFrameCropRects;
+    private final int mForceColorFormat;
     private final double[] mGlobalMSE = {0.0, 0.0, 0.0};
     private final double[] mMinimumMSE = {Float.MAX_VALUE, Float.MAX_VALUE, Float.MAX_VALUE};
     private final double[] mGlobalPSNR = new double[3];
@@ -101,10 +102,12 @@ public class CompareStreams extends CodecDecoderTestBase {
         mAllowRefResize = allowRefResize;
         mAllowRefLoopBack = allowRefLoopBack;
         mFrameCropRects = null;
+        mForceColorFormat = -1;
     }
 
     public CompareStreams(RawResource refYuv, String testMediaType, String testFile,
-            boolean allowRefResize, boolean allowRefLoopBack) throws IOException {
+            boolean allowRefResize, boolean allowRefLoopBack, int forceColorFormat)
+            throws IOException {
         super(findDecoderForStream(testMediaType, testFile), testMediaType, testFile, LOG_TAG);
         mRefYuv = refYuv;
         mStreamFormat = null;
@@ -113,6 +116,12 @@ public class CompareStreams extends CodecDecoderTestBase {
         mAllowRefResize = allowRefResize;
         mAllowRefLoopBack = allowRefLoopBack;
         mFrameCropRects = null;
+        mForceColorFormat = forceColorFormat;
+    }
+
+    public CompareStreams(RawResource refYuv, String testMediaType, String testFile,
+            boolean allowRefResize, boolean allowRefLoopBack) throws IOException {
+        this(refYuv, testMediaType, testFile, allowRefResize, allowRefLoopBack, -1);
     }
 
     public CompareStreams(MediaFormat refFormat, ByteBuffer refBuffer,
@@ -142,6 +151,7 @@ public class CompareStreams extends CodecDecoderTestBase {
         mAllowRefResize = allowRefResize;
         mAllowRefLoopBack = allowRefLoopBack;
         mFrameCropRects = frameCropRects;
+        mForceColorFormat = -1;
     }
 
     static YUVImage fillByteArray(int tgtFrameWidth, int tgtFrameHeight,
@@ -179,6 +189,15 @@ public class CompareStreams extends CodecDecoderTestBase {
             yuvImage.mData.add(outputData);
         }
         return yuvImage;
+    }
+
+    @Override
+    protected MediaFormat setUpSource(String srcFile) throws IOException {
+        MediaFormat format = super.setUpSource(srcFile);
+        if (mForceColorFormat != -1) {
+            format.setInteger(MediaFormat.KEY_COLOR_FORMAT, mForceColorFormat);
+        }
+        return format;
     }
 
     protected void dequeueOutput(int bufferIndex, MediaCodec.BufferInfo info) {

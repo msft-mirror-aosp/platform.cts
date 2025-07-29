@@ -3383,7 +3383,9 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
         final String prefix = "Launcher: ComponentInfo{";
         final String postfix = "}";
         for (String s :
-                SystemUtil.runShellCommand("cmd shortcut get-default-launcher").split("\n")) {
+                SystemUtil.runShellCommand(
+                                "cmd shortcut get-default-launcher --user " + mContext.getUserId())
+                        .split("\n")) {
             if (s.startsWith(prefix) && s.endsWith(postfix)) {
                 return s.substring(prefix.length(), s.length() - postfix.length());
             }
@@ -3392,7 +3394,8 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
     }
 
     private void setDefaultLauncher(String component) {
-        SystemUtil.runShellCommand("cmd package set-home-activity " + component);
+        SystemUtil.runShellCommand(
+                "cmd package set-home-activity --user " + mContext.getUserId() + " " + component);
     }
 
     private static final class CustomEditorView extends View {
