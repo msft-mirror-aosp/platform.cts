@@ -141,7 +141,7 @@ public final class RecognitionServiceMicIndicatorTest {
 
         setIndicatorsEnabledState(Boolean.toString(true));
         // Wait for any privacy indicator to disappear to avoid the test becoming flaky.
-        waitForNoIndicator(chipId());
+        waitForNoIndicatorSafe();
     }
 
     @After
@@ -150,7 +150,16 @@ public final class RecognitionServiceMicIndicatorTest {
         mUiDevice.pressHome();
         // Restore original value.
         setIndicatorsEnabledState(mOriginalIndicatorsState);
-        waitForNoIndicator(chipId());
+        waitForNoIndicatorSafe();
+    }
+
+    private void waitForNoIndicatorSafe() {
+        String chipId = chipId();
+        if (isCar()) {
+            waitForNoIndicatorForCar(chipId);
+        } else {
+            waitForNoIndicator(chipId);
+        }
     }
 
     private void prepareDevice() {
