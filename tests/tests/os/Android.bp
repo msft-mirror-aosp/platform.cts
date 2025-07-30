@@ -47,6 +47,7 @@ java_defaults {
         "sdk_sandbox_flags_lib",
         "cts_backported_fixes",
         "cts_backported_fixes_support",
+        "power_flags_lib",
     ],
     libs: [
         "android.test.runner.stubs.test",
