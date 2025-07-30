@@ -8080,4 +8080,40 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
             uiAutomation.dropShellPermissionIdentity();
         }
     }
+
+
+    @SdkSuppress(minSdkVersion = 37)
+    @RequiresFlagsEnabled(Flags.FLAG_GET_SUPPORTED_INTERFACE_NAMES)
+    @ApiTest(apis = {"android.net.wifi.WifiManager#getSupportedInterfaceNames"})
+    @Test
+    public void testGetSupportedInterfaceNames() throws Exception {
+        UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
+        try {
+            long now, deadline, tryCount;
+            Mutable<List<String>> interfaceNames = new Mutable<List<String>>(null);
+            uiAutomation.adoptShellPermissionIdentity();
+            sWifiManager.getSupportedInterfaceNames(mExecutor, new Consumer<List<String>>() {
+                @Override
+                public void accept(List value) {
+                    synchronized (mLock) {
+                        interfaceNames.value = value;
+                        mLock.notify();
+                    }
+                }
+            });
+            synchronized (mLock) {
+                now = System.currentTimeMillis();
+                deadline = now + TEST_WAIT_DURATION_MS;
+                tryCount = 0;
+                while ((interfaceNames.value == null && now < deadline) || tryCount >= 3) {
+                    mLock.wait(deadline - now);
+                    now = System.currentTimeMillis();
+                    tryCount++;
+                }
+            }
+            assertNotNull(interfaceNames.value);
+        } finally {
+            uiAutomation.dropShellPermissionIdentity();
+        }
+    }
 }
