@@ -558,6 +558,14 @@ public class CameraExtensionSessionTest extends Camera2ParameterizedTestCase {
                             continue;
                         }
 
+                        for (Size size: postviewSizes) {
+                            assertTrue("Postview dimensions" + size
+                                    + " must be smaller than or"
+                                    + " equal to capture image dimensions " + maxSize,
+                                    size.getWidth() <= maxSize.getWidth()
+                                    && size.getHeight() <= maxSize.getHeight());
+                        }
+
                         SimpleImageReaderListener imageListener = new SimpleImageReaderListener(
                                 false, MAX_IMAGES);
                         ImageReader extensionImageReader = CameraTestUtils.makeImageReader(maxSize,
