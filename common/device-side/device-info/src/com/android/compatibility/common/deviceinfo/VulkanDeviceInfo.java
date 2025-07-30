@@ -709,13 +709,13 @@ public final class VulkanDeviceInfo extends DeviceInfo {
                 JSONArray formats = device.getJSONArray(KEY_FORMATS);
                 // Note: Earlier code used field named 'formats' with different data structure.
                 // In order to have the mix of old and new data, we cannot reuse that name.
-                store.startArray("supported_formats");
+                store.startArray(KEY_SUPPORTED_FORMATS);
                 for (int formatIdx = 0; formatIdx < formats.length(); formatIdx++) {
                     JSONArray formatPair = formats.getJSONArray(formatIdx);
                     JSONObject formatProperties = formatPair.getJSONObject(1);
                     store.startGroup();
                     {
-                        store.addResult("format", (long)formatPair.getInt(0));
+                        store.addResult(KEY_FORMAT, (long)formatPair.getInt(0));
                         emitLong(store, formatProperties, KEY_LINEAR_TILING_FEATURES);
                         emitLong(store, formatProperties, KEY_OPTIMAL_TILING_FEATURES);
                         emitLong(store, formatProperties, KEY_BUFFER_FEATURES);
@@ -861,7 +861,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
                         JSONObject externalFenceProperties = externalFencePair.getJSONObject(1);
                         store.startGroup();
                         {
-                            store.addResult("handle_type", externalFencePair.getLong(0));
+                            store.addResult(KEY_HANDLE_TYPE, externalFencePair.getLong(0));
                             emitLong(store, externalFenceProperties, KEY_EXPORT_FROM_IMPORTED_HANDLE_TYPES);
                             emitLong(store, externalFenceProperties, KEY_COMPATIBLE_HANDLE_TYPES);
                             emitLong(store, externalFenceProperties, KEY_EXTERNAL_FENCE_FEATURES);
@@ -877,7 +877,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
                         JSONObject externalSemaphoreProperties = externalSemaphorePair.getJSONObject(1);
                         store.startGroup();
                         {
-                            store.addResult("handle_type", externalSemaphorePair.getLong(0));
+                            store.addResult(KEY_HANDLE_TYPE, externalSemaphorePair.getLong(0));
                             emitLong(store, externalSemaphoreProperties, KEY_EXPORT_FROM_IMPORTED_HANDLE_TYPES);
                             emitLong(store, externalSemaphoreProperties, KEY_COMPATIBLE_HANDLE_TYPES);
                             emitLong(store, externalSemaphoreProperties, KEY_EXTERNAL_SEMAPHORE_FEATURES);
