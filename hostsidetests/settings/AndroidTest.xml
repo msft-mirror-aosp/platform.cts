@@ -15,7 +15,7 @@
 -->
 <configuration description="Config for CTS Settings host test cases">
     <option name="test-suite-tag" value="cts" />
-    <option name="config-descriptor:metadata" key="component" value="framework" />
+    <option name="config-descriptor:metadata" key="component" value="devicepolicy" />
     <!-- Instant apps can never be device admin / profile owner / device owner so positive tests
          here are not applicable -->
     <option name="config-descriptor:metadata" key="parameter" value="not_instant_app" />
