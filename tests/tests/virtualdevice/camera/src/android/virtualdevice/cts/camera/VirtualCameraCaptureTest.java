@@ -562,13 +562,14 @@ public class VirtualCameraCaptureTest {
         int fps = 5; // Low FPS to keep up with our codec
 
         CaptureConfiguration captureConfiguration = new CaptureConfiguration()
-                .setImageCount(3)
+                .setImageCount(5)
                 .setOutputFormat(YUV_420_888)
                 .setWidth(width)
                 .setHeight(height);
 
         mCaptureHelper.createVirtualCamera(width, height, YUV_420_888, fps);
-        try (SteadyTimestampCodec steadyTimestampCodec = new SteadyTimestampCodec(width, height)) {
+        try (SteadyTimestampCodec steadyTimestampCodec =
+                     new SteadyTimestampCodec(width, height, fps)) {
             captureConfiguration.setInputSurfaceConsumer(steadyTimestampCodec::setSurfaceAndStart);
             Image image = mCaptureHelper.captureImages(captureConfiguration);
             Range<Long> timestampRange = Range.closed(renderTimestamp,

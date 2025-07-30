@@ -1147,8 +1147,7 @@ public final class MockIme extends InputMethodService {
         if (mEvents != null) {
             mEvents.clear();
         }
-        getTracer().onStartStylusHandwriting(() -> super.onStartStylusHandwriting());
-        return true;
+        return getTracer().onStartStylusHandwriting(() -> true);
     }
 
     @Override
@@ -1157,9 +1156,11 @@ public final class MockIme extends InputMethodService {
         if (mEvents != null) {
             mEvents.clear();
         }
-        getTracer().onStartConnectionlessStylusHandwriting(
-                () -> super.onStartConnectionlessStylusHandwriting(inputType, cursorAnchorInfo));
-        return mSettings.isConnectionlessHandwritingEnabled();
+        return getTracer()
+                .onStartConnectionlessStylusHandwriting(
+                        inputType,
+                        cursorAnchorInfo,
+                        () -> mSettings.isConnectionlessHandwritingEnabled());
     }
 
     @Override
@@ -1168,8 +1169,9 @@ public final class MockIme extends InputMethodService {
             mEvents = new ArrayList<>();
         }
         mEvents.add(MotionEvent.obtain(motionEvent));
-        getTracer().onStylusHandwritingMotionEvent(()
-                -> super.onStylusHandwritingMotionEvent(motionEvent));
+        getTracer()
+                .onStylusHandwritingMotionEvent(
+                        motionEvent, () -> super.onStylusHandwritingMotionEvent(motionEvent));
     }
 
     @Override
@@ -1596,18 +1598,29 @@ public final class MockIme extends InputMethodService {
             recordEventInternal("onPrepareStylusHandwriting", runnable, arguments);
         }
 
-        void onStartStylusHandwriting(@NonNull Runnable runnable) {
+        boolean onStartStylusHandwriting(@NonNull BooleanSupplier supplier) {
             final Bundle arguments = new Bundle();
             arguments.putParcelable("editorInfo", mIme.getCurrentInputEditorInfo());
-            recordEventInternal("onStartStylusHandwriting", runnable, arguments);
+            return recordEventInternal(
+                    "onStartStylusHandwriting", supplier::getAsBoolean, arguments);
         }
 
-        void onStartConnectionlessStylusHandwriting(@NonNull Runnable runnable) {
-            recordEventInternal("onStartConnectionlessStylusHandwriting", runnable);
+        boolean onStartConnectionlessStylusHandwriting(
+                int inputType,
+                @Nullable CursorAnchorInfo cursorAnchorInfo,
+                @NonNull BooleanSupplier supplier) {
+            final Bundle arguments = new Bundle();
+            arguments.putInt("inputType", inputType);
+            arguments.putParcelable("cursorAnchorInfo", cursorAnchorInfo);
+            return recordEventInternal(
+                    "onStartConnectionlessStylusHandwriting", supplier::getAsBoolean, arguments);
         }
 
-        void onStylusHandwritingMotionEvent(@NonNull Runnable runnable) {
-            recordEventInternal("onStylusMotionEvent", runnable);
+        void onStylusHandwritingMotionEvent(
+                @NonNull MotionEvent motionEvent, @NonNull Runnable runnable) {
+            final Bundle arguments = new Bundle();
+            arguments.putParcelable("motionEvent", motionEvent);
+            recordEventInternal("onStylusHandwritingMotionEvent", runnable, arguments);
         }
 
         void onFinishStylusHandwriting(@NonNull Runnable runnable) {

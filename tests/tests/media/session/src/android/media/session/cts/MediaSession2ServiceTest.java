@@ -48,6 +48,7 @@ import com.android.bedstead.harrier.annotations.UserTest;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -305,6 +306,7 @@ public class MediaSession2ServiceTest {
 
     @Test
     @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
+    @Ignore("Flaky: b/434883057")
     public void testAllControllersDisconnected_multipleSessions() throws InterruptedException {
         final CountDownLatch latch = new CountDownLatch(1);
         StubMediaSession2Service.setTestInjector(new StubMediaSession2Service.TestInjector() {

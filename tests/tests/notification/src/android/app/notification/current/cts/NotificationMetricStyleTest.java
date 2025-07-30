@@ -32,6 +32,7 @@ import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assert.assertThrows;
 
 import android.app.Flags;
+import android.app.Notification;
 import android.app.Notification.Metric;
 import android.app.Notification.Metric.FixedDate;
 import android.app.Notification.Metric.FixedFloat;
@@ -40,10 +41,12 @@ import android.app.Notification.Metric.FixedString;
 import android.app.Notification.Metric.FixedTime;
 import android.app.Notification.Metric.TimeDifference;
 import android.app.Notification.MetricStyle;
+import android.content.Context;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
+import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 
 import org.junit.Rule;
@@ -60,8 +63,36 @@ import java.util.List;
 @RequiresFlagsEnabled(Flags.FLAG_API_METRIC_STYLE)
 public class NotificationMetricStyleTest {
 
+    private final Context mContext =
+            InstrumentationRegistry.getInstrumentation().getTargetContext();
+
     @Rule(order = 0)
     public final CheckFlagsRule checkFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
+    @Test
+    public void builderBuild_setsMetricStyle() {
+        Metric metric = new Metric(new FixedInt(1979), "Steps", MEANING_HEALTH_STEPS);
+        Notification n =
+                new Notification.Builder(mContext)
+                        .setSmallIcon(R.drawable.ic_android)
+                        .setStyle(new MetricStyle().addMetric(metric))
+                        .build();
+
+        Notification.Builder recovered = Notification.Builder.recoverBuilder(mContext, n);
+
+        assertThat(recovered.getStyle()).isInstanceOf(MetricStyle.class);
+        assertThat(((MetricStyle) recovered.getStyle()).getMetrics()).containsExactly(metric);
+    }
+
+    @Test
+    public void builderBuild_noMetrics_throws() {
+        Notification.Builder builder =
+                new Notification.Builder(mContext)
+                        .setSmallIcon(R.drawable.ic_android)
+                        .setStyle(new MetricStyle());
+
+        assertThrows(IllegalArgumentException.class, () -> builder.build());
+    }
 
     @Test
     public void addMetric_adds() {
@@ -96,6 +127,17 @@ public class NotificationMetricStyleTest {
 
         assertThat(style.getMetrics())
                 .containsExactly(new Metric(new FixedInt(10), "X", MEANING_HEALTH_STEPS));
+    }
+
+    @Test
+    public void getMetrics_immutable() {
+        MetricStyle style = new MetricStyle();
+
+        assertThrows(
+                UnsupportedOperationException.class,
+                () ->
+                        style.getMetrics()
+                                .add(new Metric(new FixedInt(10), "X", MEANING_HEALTH_STEPS)));
     }
 
     @Test

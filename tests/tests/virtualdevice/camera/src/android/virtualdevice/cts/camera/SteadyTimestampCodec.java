@@ -40,19 +40,21 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * A fake pair of video encoder/decoder writing mock data
- * on a surface and incrementing by 1 the provided timestamp for each decoded frame.
+ * A fake pair of video encoder/decoder writing mock data on a surface and incrementing
+ * the provided timestamp for each decoded frame.
  */
 public class SteadyTimestampCodec implements AutoCloseable {
 
     private static final int VIDEO_BITRATE = 4000000;
-    private static final int FRAME_RATE = 30;
     private static final int I_FRAME_INTERVAL = 0;
     private static final String MIMETYPE = MediaFormat.MIMETYPE_VIDEO_AVC;
+    private static final int COLOR_FORMAT =
+            MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Flexible;
     private static final int TIMEOUT_MILLIS = 1000;
+
+    // Enable debug logging at runtime with "adb shell setprop log.tag.SteadyTimestampCodec DEBUG"
     private static final String TAG = "SteadyTimestampCodec";
-    private static final boolean DEBUG = false;
-    public static final int TIMESTAMP_INCREMENT_NS = 1_000_000_000 / FRAME_RATE;
+    private static final boolean DEBUG = Log.isLoggable(TAG, Log.DEBUG);
     private final AtomicReference<MediaCodec> mDecoderRef;
     private final AtomicReference<MediaCodec> mEncoderRef;
 
@@ -60,6 +62,8 @@ public class SteadyTimestampCodec implements AutoCloseable {
     private final LinkedBlockingDeque<byte[]> mBufferQueue = new LinkedBlockingDeque<>();
     private final int mWidth;
     private final int mHeight;
+    private final int mFps;
+    private final long mTimestampIncrementNs;
     private long mRenderTimestampNs = 0;
     private Handler mDecoderHandler;
     private Handler mEncoderHandler;
@@ -87,8 +91,11 @@ public class SteadyTimestampCodec implements AutoCloseable {
      *
      * @param width             The width of the video to encode/decode
      * @param height            The height of the video to encode/decode
+     * @param fps               The targeted frames per second
      */
-    public SteadyTimestampCodec(int width, int height) {
+    public SteadyTimestampCodec(int width, int height, int fps) {
+        Log.i(TAG, "Create SteadyTimestampCodec with fps: " + fps + " and DEBUG logs enabled: "
+                + DEBUG);
         MediaCodecInfo[] codecs = new MediaCodecList(MediaCodecList.REGULAR_CODECS).getCodecInfos();
         if (DEBUG) {
             Log.d(TAG, "Available Regular Codecs count: " + codecs.length);
@@ -101,6 +108,10 @@ public class SteadyTimestampCodec implements AutoCloseable {
 
         mWidth = width;
         mHeight = height;
+        mFps = fps;
+        // Intentionally bigger increment step so it can recover if a frame is skipped and
+        // the framework duplicates a frame
+        mTimestampIncrementNs = 2L * 1_000_000_000 / fps;
         mEncoderRef = new AtomicReference<>(createEncoder());
         mDecoderRef = new AtomicReference<>(null);
         // This can be a computation intensive operation, best is to generate and cache the data
@@ -124,7 +135,7 @@ public class SteadyTimestampCodec implements AutoCloseable {
             public void onInputBufferAvailable(@NonNull MediaCodec encoder, int i) {
                 if (DEBUG) {
                     Log.d(TAG,
-                            "encoder onInputBufferAvailable() called with: codec = ["
+                            "Encoder onInputBufferAvailable() called with: codec = ["
                                     + encoder + "], i = [" + i + "] mCodecRunning = "
                                     + mCodecRunning.get());
                 }
@@ -138,14 +149,13 @@ public class SteadyTimestampCodec implements AutoCloseable {
                         assertThat(inputBuffer).isNotNull();
                         inputBuffer.clear();
                         inputBuffer.put(mBlackFrameData);
-                        if (DEBUG) {
-                            Log.d(TAG, "encoder queueInputBuffer() called with: codec = ["
-                                    + encoder + "], i = [" + i + "]");
-                        }
                         encoder.queueInputBuffer(i, 0, mBlackFrameData.length, 0, 0); // Custom PTS
+                        if (DEBUG) {
+                            Log.d(TAG, "Encoder queueInputBuffer() called with i = [" + i + "]");
+                        }
                     }
                 } catch (IllegalStateException exception) {
-                    Log.e(TAG, "createEncoder Exception: " + exception);
+                    Log.e(TAG, "Encoder onInputBufferAvailable Exception: " + exception);
                     mCodecRunning.set(false);
                 }
             }
@@ -154,8 +164,7 @@ public class SteadyTimestampCodec implements AutoCloseable {
             public void onOutputBufferAvailable(@NonNull MediaCodec mediaCodec, int i,
                     @NonNull MediaCodec.BufferInfo bufferInfo) {
                 if (DEBUG) {
-                    Log.d(TAG,
-                            "encoder onOutputBufferAvailable() called with: codec = ["
+                    Log.d(TAG, "Encoder onOutputBufferAvailable() called with: codec = ["
                                     + mediaCodec + "], i = [" + i + "] mCodecRunning = "
                                     + mCodecRunning.get());
                 }
@@ -173,10 +182,9 @@ public class SteadyTimestampCodec implements AutoCloseable {
         };
 
         MediaFormat format = MediaFormat.createVideoFormat(MIMETYPE, mWidth, mHeight);
-        format.setInteger(MediaFormat.KEY_COLOR_FORMAT,
-                MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Flexible);
+        format.setInteger(MediaFormat.KEY_COLOR_FORMAT, COLOR_FORMAT);
         format.setInteger(MediaFormat.KEY_BIT_RATE, VIDEO_BITRATE);
-        format.setInteger(MediaFormat.KEY_FRAME_RATE, FRAME_RATE);
+        format.setInteger(MediaFormat.KEY_FRAME_RATE, mFps);
         format.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, I_FRAME_INTERVAL);
 
         MediaCodec encoder = createEncoderByType();
@@ -186,6 +194,11 @@ public class SteadyTimestampCodec implements AutoCloseable {
         }
 
         if (encoder != null) {
+            if (DEBUG) {
+                Log.d(TAG, "Encoder supported color formats: " + Arrays.toString(
+                        encoder.getCodecInfo().getCapabilitiesForType(MIMETYPE).colorFormats)
+                        + " requested: " +  COLOR_FORMAT);
+            }
             encoder.configure(format, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE);
             mEncoderHandler = createHandler("encoder-callback");
             encoder.setCallback(encoderCallback, mEncoderHandler);
@@ -209,13 +222,13 @@ public class SteadyTimestampCodec implements AutoCloseable {
             MediaCodecList list = new MediaCodecList(MediaCodecList.REGULAR_CODECS);
             String codecName = list.findEncoderForFormat(format);
             if (codecName == null) {
-                Log.e(TAG, "crateEncoderByName for " + MIMETYPE
+                Log.e(TAG, "createEncoderByName for " + MIMETYPE
                         + " can't find the codec in regular codecs list.");
                 return null;
             }
             return MediaCodec.createByCodecName(codecName);
         } catch (IOException e) {
-            Log.e(TAG, "crateEncoderByName " + MIMETYPE + " fails with Exception: " + e);
+            Log.e(TAG, "createEncoderByName " + MIMETYPE + " fails with Exception: " + e);
         }
 
         return null;
@@ -226,8 +239,7 @@ public class SteadyTimestampCodec implements AutoCloseable {
             @Override
             public void onInputBufferAvailable(@NonNull MediaCodec mediaCodec, int i) {
                 if (DEBUG) {
-                    Log.d(TAG,
-                            "decoder onInputBufferAvailable() called with: codec = ["
+                    Log.d(TAG, "Decoder onInputBufferAvailable() called with: codec = ["
                                     + mediaCodec + "], i = [" + i + "] mCodecRunning = "
                                     + mCodecRunning.get());
                 }
@@ -241,7 +253,7 @@ public class SteadyTimestampCodec implements AutoCloseable {
                         return;
                     }
                     if (bytes == null) {
-                        Log.w(TAG, "decoder: onInputBufferAvailable() no data queued");
+                        Log.w(TAG, "Decoder: onInputBufferAvailable() no data queued");
                         return;
                     }
                     ByteBuffer inputBuffer = mediaCodec.getInputBuffer(i);
@@ -261,8 +273,7 @@ public class SteadyTimestampCodec implements AutoCloseable {
             public void onOutputBufferAvailable(@NonNull MediaCodec mediaCodec, int i,
                     @NonNull MediaCodec.BufferInfo bufferInfo) {
                 if (DEBUG) {
-                    Log.d(TAG,
-                            "decoder onOutputBufferAvailable() called with: codec = ["
+                    Log.d(TAG, "Decoder onOutputBufferAvailable() called with: codec = ["
                                     + mediaCodec + "], i = [" + i + "] mCodecRunning = "
                                     + mCodecRunning.get());
                 }
@@ -271,12 +282,19 @@ public class SteadyTimestampCodec implements AutoCloseable {
                     return;
                 }
                 if (DEBUG) {
-                    Log.d(TAG, "decoder onOutputBufferAvailable() mRenderTimestampNs:"
+                    Log.d(TAG, "Decoder onOutputBufferAvailable() mRenderTimestampNs:"
                             + mRenderTimestampNs);
                 }
-                mediaCodec.releaseOutputBuffer(i, mRenderTimestampNs);
+
+                try {
+                    mediaCodec.releaseOutputBuffer(i, mRenderTimestampNs);
+                } catch (IllegalStateException e) {
+                    Log.e(TAG, "Decoder onOutputBufferAvailable releaseOutputBuffer"
+                            + " fails with Exception: " + e);
+                }
+
                 mLastWrittenTimestampNs = mRenderTimestampNs;
-                mRenderTimestampNs += TIMESTAMP_INCREMENT_NS;
+                mRenderTimestampNs += mTimestampIncrementNs;
             }
         };
 
@@ -312,14 +330,14 @@ public class SteadyTimestampCodec implements AutoCloseable {
             MediaCodecList list = new MediaCodecList(MediaCodecList.REGULAR_CODECS);
             String codecName = list.findDecoderForFormat(format);
             if (codecName == null) {
-                Log.e(TAG, "crateDecoderByName for " + MIMETYPE
+                Log.e(TAG, "createDecoderByName for " + MIMETYPE
                         + " can't find the codec in regular codecs list.");
                 return null;
             }
 
             return MediaCodec.createByCodecName(codecName);
         } catch (IOException e) {
-            Log.e(TAG, "crateDecoderByName " + MIMETYPE + " fails with Exception: " + e);
+            Log.e(TAG, "createDecoderByName " + MIMETYPE + " fails with Exception: " + e);
         }
 
         return null;
@@ -364,7 +382,7 @@ public class SteadyTimestampCodec implements AutoCloseable {
     @Override
     public void close() {
         if (DEBUG) {
-            Log.d(TAG, "Close. Release codecs.");
+            Log.d(TAG, "Starting close, before releasing codecs...");
         }
         mCodecRunning.set(false);
         mDecoderRef.get().stop();
@@ -373,5 +391,8 @@ public class SteadyTimestampCodec implements AutoCloseable {
         mEncoderRef.get().release();
         mDecoderHandler.getLooper().quit();
         mEncoderHandler.getLooper().quit();
+        if (DEBUG) {
+            Log.d(TAG, "Close done, codecs are released.");
+        }
     }
 }

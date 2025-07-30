@@ -49,6 +49,7 @@ import static android.media.cts.MediaRouterTestConstants.REQUIRED_PERMISSIONS_SE
 import static android.media.cts.MediaRouterTestConstants.REQUIRED_PERMISSIONS_SET_2_2;
 import static android.media.cts.MediaRouterTestConstants.REQUIRED_PERMISSIONS_SET_3_1;
 import static android.media.cts.MediaRouterTestConstants.REQUIRED_PERMISSIONS_SET_3_3;
+import static android.media.cts.MediaRouterTestConstants.RESTRICT_LOCAL_NETWORK_CHANGE_ID;
 
 import static com.android.tradefed.targetprep.UserHelper.getRunTestsAsUser;
 
@@ -74,12 +75,14 @@ import com.android.tradefed.testtype.junit4.BeforeClassWithInfo;
 
 import com.google.common.truth.Expect;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.io.FileNotFoundException;
+import java.util.HashSet;
 
 /** Installs route provider apps and runs tests in {@link MediaRouter2DeviceTest}. */
 @RunWith(DeviceJUnit4ClassRunner.class)
@@ -101,6 +104,10 @@ public class MediaRouter2HostSideTest extends BaseMediaRouter2HostSideTest {
             HostFlagsValueProvider.createCheckFlagsRule(this::getDevice);
 
     private int mUserId;
+
+    // A list of package names that had one or more app compat change ids overridden and need to
+    // have them reset at the end of the test.
+    private HashSet<String> mCompatChangePackagesToReset = new HashSet<>();
 
     @BeforeClassWithInfo
     public static void installApps(TestInformation testInfo)
@@ -143,6 +150,13 @@ public class MediaRouter2HostSideTest extends BaseMediaRouter2HostSideTest {
         // Set the userId that the tests are running as. Fall back to the current user if not set.
         TestInformation testInfo = getTestInformation();
         mUserId = testInfo == null ? getDevice().getCurrentUser() : getRunTestsAsUser(testInfo);
+    }
+
+    @After
+    public void tearDown() throws DeviceNotAvailableException {
+        for (String packageName : mCompatChangePackagesToReset) {
+            resetAllCompatChanges(packageName);
+        }
     }
 
     @Test
@@ -393,6 +407,60 @@ public class MediaRouter2HostSideTest extends BaseMediaRouter2HostSideTest {
                 .isTrue();
         assertThat(forceStopAndWaitForRunningStatus(PER_APP_DISCOVERY_CONSUMER_APP2_PACKAGE))
                 .isTrue();
+    }
+
+    @AppModeFull
+    @RequiresDevice
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_ROUTE_VISIBILITY_CONTROL_COMPAT_FIXES)
+    @Test
+    public void testRestrictLocalNetworkCompatChange_notEnabled_routeIsFound() throws Exception {
+        revokeAllPermissions(DEVICE_SIDE_TEST_REQUIRED_PERMISSIONS_PACKAGE);
+        setCompatChangeEnabled(
+                DEVICE_SIDE_TEST_REQUIRED_PERMISSIONS_PACKAGE,
+                RESTRICT_LOCAL_NETWORK_CHANGE_ID,
+                /* enabled= */ false);
+        runDeviceTests(
+                DEVICE_SIDE_TEST_REQUIRED_PERMISSIONS_PACKAGE,
+                DEVICE_SIDE_TEST_REQUIRED_PERMISSIONS_CLASS,
+                "restrictLocalNetworkCompatChange_notEnabled_routeIsFound");
+    }
+
+    @AppModeFull
+    @RequiresDevice
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_ROUTE_VISIBILITY_CONTROL_COMPAT_FIXES)
+    @Test
+    public void testRestrictLocalNetworkCompatChange_enabled_routeNotFound() throws Exception {
+        revokeAllPermissions(DEVICE_SIDE_TEST_REQUIRED_PERMISSIONS_PACKAGE);
+        setCompatChangeEnabled(
+                DEVICE_SIDE_TEST_REQUIRED_PERMISSIONS_PACKAGE,
+                RESTRICT_LOCAL_NETWORK_CHANGE_ID,
+                /* enabled= */ true);
+        runDeviceTests(
+                DEVICE_SIDE_TEST_REQUIRED_PERMISSIONS_PACKAGE,
+                DEVICE_SIDE_TEST_REQUIRED_PERMISSIONS_CLASS,
+                "restrictLocalNetworkCompatChange_enabled_routeNotFound");
+    }
+
+    @AppModeFull
+    @RequiresDevice
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_ROUTE_VISIBILITY_CONTROL_COMPAT_FIXES)
+    @Test
+    public void testRestrictLocalNetworkCompatChange_enabled_routeFoundWhenWifiPermissionHeld()
+            throws Exception {
+        revokeAllPermissions(DEVICE_SIDE_TEST_REQUIRED_PERMISSIONS_PACKAGE);
+        setPermissionEnabled(
+                DEVICE_SIDE_TEST_REQUIRED_PERMISSIONS_PACKAGE,
+                "android.permission.NEARBY_WIFI_DEVICES",
+                true,
+                mUserId);
+        setCompatChangeEnabled(
+                DEVICE_SIDE_TEST_REQUIRED_PERMISSIONS_PACKAGE,
+                RESTRICT_LOCAL_NETWORK_CHANGE_ID,
+                /* enabled= */ true);
+        runDeviceTests(
+                DEVICE_SIDE_TEST_REQUIRED_PERMISSIONS_PACKAGE,
+                DEVICE_SIDE_TEST_REQUIRED_PERMISSIONS_CLASS,
+                "restrictLocalNetworkCompatChange_enabled_routeFoundWhenWifiPermissionHeld");
     }
 
     @ApiTest(apis = {"android.media.MediaRoute2Info#getProviderPackageName"})
@@ -745,6 +813,28 @@ public class MediaRouter2HostSideTest extends BaseMediaRouter2HostSideTest {
         for (String providerPackage : ROUTE_PROVIDER_PACKAGES) {
             assertThat(forceStopAndWaitForRunningStatus(providerPackage)).isTrue();
         }
+    }
+
+    private void setCompatChangeEnabled(String packageName, long changeId, boolean enabled)
+            throws DeviceNotAvailableException {
+        String action = enabled ? "enable" : "disable";
+        mCompatChangePackagesToReset.add(packageName);
+        String result =
+                getDevice()
+                        .executeShellCommand(
+                                "am compat %s %d %s".formatted(action, changeId, packageName));
+        if (result.startsWith("Unknown")
+                || result.startsWith("Invalid")
+                || result.startsWith("Warning")) {
+            assertWithMessage(
+                            "setting compatibility change %d for package %s failed with '%s'"
+                                    .formatted(changeId, packageName, result))
+                    .fail();
+        }
+    }
+
+    private void resetAllCompatChanges(String packageName) throws DeviceNotAvailableException {
+        getDevice().executeShellCommand("am compat reset-all %s".formatted(packageName));
     }
 
     private static void installTestApp(TestInformation testInfo, String apkName)

@@ -16,6 +16,7 @@
 import logging
 import math
 
+import camera_properties_utils
 import cv2
 import numpy as np
 
@@ -401,4 +402,69 @@ def get_aspect_ratio(img_path):
   aspect_ratio = width / height
   logging.debug('Aspect ratio: %.2f', aspect_ratio)
   return round(float(aspect_ratio), 2)
+
+
+def derive_hal_zoom_ratio(props, scaler_crop_region):
+  """Derives zoomRatio from scaler crop region.
+
+  Args:
+    props: camera properties
+    scaler_crop_region: value of android.scaler.cropRegion
+  Returns:
+    zoom_ratio: zoomRatio derived from cropRegion
+  Raises:
+    AssertionError in case of invalid scaler cropRegion value
+  """
+  # Check if scaler_crop_region size is 4 or not
+  if len(scaler_crop_region) != 4:
+    raise AssertionError('Invalid scaler crop region value')
+
+  # If distortion correction is not supported, use active array size,
+  # else, use preCorrection active array size.
+  if camera_properties_utils.distortion_correction(props):
+    active_array_size = props.get(
+        'android.sensor.info.preCorrectionActiveArraySize')
+    array_width = active_array_size['right'] - active_array_size['left']
+    array_height = active_array_size['bottom'] - active_array_size['top']
+  else:
+    active_array_size = props.get('android.sensor.info.activeArraySize')
+    array_width = active_array_size['width']
+    array_height = active_array_size['height']
+
+  logging.debug('active_array_size: %s', active_array_size)
+
+  left = scaler_crop_region[0]
+  top = scaler_crop_region[1]
+  right = scaler_crop_region[2]
+  bottom = scaler_crop_region[3]
+
+  # Center of the preCorrection/active size
+  array_center_x = array_width / 2.0
+  array_center_y = array_height / 2.0
+
+  # Re-map crop region to coordinate system centered to
+  # (array_center_x, array_center_y).
+  crop_region_left = array_center_x - left
+  crop_region_top = array_center_y - top
+  crop_region_right = right - array_center_x
+  crop_region_bottom = bottom - array_center_y
+
+  # Calculate the scaling factor for left, top, bottom, right
+  zoom_ratio_left = (max(array_width / (2 * crop_region_left), 1.0)
+                     if crop_region_left != 0 else 1.0)
+  zoom_ratio_top = (max(array_height / (2 * crop_region_top), 1.0)
+                    if crop_region_top != 0 else 1.0)
+  zoom_ratio_right = (max(array_width / (2 * crop_region_right), 1.0)
+                      if crop_region_right != 0 else 1.0)
+  zoom_ratio_bottom = (max(array_height / (2 * crop_region_bottom), 1.0)
+                       if crop_region_bottom != 0 else 1.0)
+
+  # Use minimum scaling factor to handle letterboxing or pillarboxing
+  zoom_ratio = min(zoom_ratio_left, zoom_ratio_right,
+                   zoom_ratio_top, zoom_ratio_bottom)
+
+  logging.debug('Derived zoomRatio: %.2f', zoom_ratio)
+  return zoom_ratio
+
+
 

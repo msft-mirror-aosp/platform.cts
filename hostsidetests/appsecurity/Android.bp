@@ -96,7 +96,6 @@ java_test_host {
         "src/**/PkgInstallSignatureVerificationTest.java",
         "src/**/StatsdAppSecurityAtomTest.java",
         "src/**/RoleSecurityTest.java",
-        "src/**/UtilsTest.java",
     ],
 
     static_libs: [

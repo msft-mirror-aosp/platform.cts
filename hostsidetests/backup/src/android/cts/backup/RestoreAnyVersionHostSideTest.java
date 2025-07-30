@@ -21,11 +21,11 @@ import static org.junit.Assert.assertNull;
 import android.platform.test.annotations.AppModeFull;
 
 import com.android.tradefed.device.DeviceNotAvailableException;
-import com.android.tradefed.log.LogUtil.CLog;
 import com.android.tradefed.targetprep.TargetSetupError;
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
 
 import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -57,6 +57,15 @@ public class RestoreAnyVersionHostSideTest extends BaseBackupHostSideTest {
     /** The name of the APK of the app that has restoreAnyVersion=false in the manifest */
     private static final String NO_RESTORE_ANY_VERSION_APK =
             "CtsBackupRestoreAnyVersionNoRestoreApp.apk";
+
+    private int mUserId;
+
+    @Before
+    @Override
+    public void setUp() throws Exception {
+        super.setUp();
+        mUserId = getBackupUtils().getCurrentUserId();
+    }
 
     @After
     public void tearDown() throws Exception {
@@ -134,21 +143,24 @@ public class RestoreAnyVersionHostSideTest extends BaseBackupHostSideTest {
 
     private void installRestoreAnyVersionApp()
             throws DeviceNotAvailableException, TargetSetupError {
-        installPackage(RESTORE_ANY_VERSION_APP_APK, "-d", "-r");
+        installPackageAsUser(
+                RESTORE_ANY_VERSION_APP_APK, /* grantPermission= */ true, mUserId, "-d", "-r");
 
         checkRestoreAnyVersionDeviceTest("checkAppVersionIsOld");
     }
 
     private void installNoRestoreAnyVersionApp()
             throws DeviceNotAvailableException, TargetSetupError {
-        installPackage(NO_RESTORE_ANY_VERSION_APK, "-d", "-r");
+        installPackageAsUser(
+                NO_RESTORE_ANY_VERSION_APK, /* grantPermission= */ true, mUserId, "-d", "-r");
 
         checkRestoreAnyVersionDeviceTest("checkAppVersionIsOld");
     }
 
     private void installNewVersionApp()
             throws DeviceNotAvailableException, TargetSetupError {
-        installPackage(RESTORE_ANY_VERSION_UPDATE_APK, "-d", "-r");
+        installPackageAsUser(
+                RESTORE_ANY_VERSION_UPDATE_APK, /* grantPermission= */ true, mUserId, "-d", "-r");
 
         checkRestoreAnyVersionDeviceTest("checkAppVersionIsNew");
     }

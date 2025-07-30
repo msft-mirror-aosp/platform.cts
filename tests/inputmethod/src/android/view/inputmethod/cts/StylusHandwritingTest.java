@@ -570,7 +570,7 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
                 injectedEvents.add(TestUtils.injectStylusUpEvent(editText, endX, endY));
             }
 
-            expectEvent(stream, eventMatcher("onStylusMotionEvent"), TIMEOUT);
+            expectEvent(stream, eventMatcher("onStylusHandwritingMotionEvent"), TIMEOUT);
 
             // get Stylus events from Ink view, splitting any batched events.
             final ArrayList<MotionEvent> capturedBatchedEvents = expectCommand(

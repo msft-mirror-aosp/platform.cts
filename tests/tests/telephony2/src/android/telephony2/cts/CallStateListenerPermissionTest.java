@@ -31,6 +31,7 @@ import android.telephony.PhoneStateListener;
 import android.telephony.TelephonyCallback;
 import android.telephony.TelephonyManager;
 import android.telephony.cts.util.TelephonyUtils;
+import android.util.Log;
 
 import androidx.test.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
@@ -45,6 +46,7 @@ import java.util.concurrent.TimeUnit;
 
 @RunWith(AndroidJUnit4.class)
 public class CallStateListenerPermissionTest {
+    private static final String TAG = "CallStateListenerPermissionTest";
     private Context mContext;
     private CountDownLatch mCallStateReceivedLatch = new CountDownLatch(1);
 
@@ -56,6 +58,7 @@ public class CallStateListenerPermissionTest {
 
         @Override
         public void onCallStateChanged(int state) {
+            Log.i(TAG, "onCallStateChanged: state=" + state);
             mReceivedCallback = true;
             mCallStateReceivedLatch.countDown();
         }
@@ -68,26 +71,43 @@ public class CallStateListenerPermissionTest {
     }
 
     /**
-     * Ensures we get a valid callback on registration even though we don't have
-     * {@link android.Manifest.permission#READ_CALL_LOG} permission.
+     * Ensures we get a valid callback on registration even though we don't have {@link
+     * android.Manifest.permission#READ_CALL_LOG} permission. Note: Registering a callback is
+     * expected to provide an immediate callback on registration, which is part of what we're
+     * testing here as well.
      */
     @Test
     public void testRegisterWithNoCallLogPermission() {
         TelephonyManager telephonyManager = mContext.getSystemService(TelephonyManager.class);
-        assertNotNull(telephonyManager);
+        assertNotNull("Telephony service not present.", telephonyManager);
 
         MyTelephonyCallback callback = new MyTelephonyCallback();
+
         runWithShellPermissionIdentity(
-                () -> telephonyManager.registerTelephonyCallback(mSimpleExecutor, callback));
+                () -> {
+                    try {
+                        try {
+                            telephonyManager.registerTelephonyCallback(mSimpleExecutor, callback);
+                        } catch (Exception e) {
+                            Log.e(TAG, "Failed to register telephony callback", e);
+                            fail("Failed to register telephony callback");
+                        }
 
+                        try {
+                            mCallStateReceivedLatch.await(10000, TimeUnit.MILLISECONDS);
+                        } catch (InterruptedException e) {
+                            Log.e(TAG, "Expected to receive call state callback", e);
+                            fail("Expected to receive call state callback");
+                        }
 
-        try {
-            mCallStateReceivedLatch.await(10000, TimeUnit.MILLISECONDS);
-        } catch (InterruptedException e) {
-            fail("Expected to receive call state callback");
-        }
-
-        assertTrue(mReceivedCallback);
+                        assertTrue("onCallStateChanged was not called.", mReceivedCallback);
+                    } finally {
+                        // Always clear the callback; failure to do so can cause the callback
+                        // limit per
+                        // process to kick in and cause registration failures.
+                        telephonyManager.unregisterTelephonyCallback(callback);
+                    }
+                });
     }
 
     /**
@@ -96,7 +116,7 @@ public class CallStateListenerPermissionTest {
     @Test
     public void testCallStatePermission() throws Exception {
         TelephonyManager telephonyManager = mContext.getSystemService(TelephonyManager.class);
-        assertNotNull(telephonyManager);
+        assertNotNull("Telephony service not present.", telephonyManager);
         MyTelephonyCallback callback = new MyTelephonyCallback();
 
         try {

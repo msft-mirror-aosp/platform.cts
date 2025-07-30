@@ -13,6 +13,7 @@
 # limitations under the License.
 """Utility functions for interacting with a device via the UI."""
 
+import ast
 import dataclasses
 import datetime
 import logging
@@ -1078,4 +1079,8 @@ def get_default_camera_crop_region(file_name):
                   crop_region_values)
     logging.debug('crop_region used for default captures: %s',
                   f'[{crop_region_values[-1].strip()}]')
-  return f'[{crop_region_values[-1].strip()}]'
+  formatted_scaler_crop_region = (crop_region_values[-1].
+                                  strip().replace(' ', ','))
+  scaler_crop_region = ast.literal_eval(formatted_scaler_crop_region)
+  logging.debug('scaler_crop_region: %s', scaler_crop_region)
+  return scaler_crop_region
