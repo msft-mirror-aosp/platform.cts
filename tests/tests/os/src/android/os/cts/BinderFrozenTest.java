@@ -24,6 +24,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.os.Build;
 import android.os.ConditionVariable;
 import android.os.Flags;
 import android.os.IBinder;
@@ -37,8 +38,11 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 import androidx.test.uiautomator.UiDevice;
 
+import com.android.compatibility.common.util.ApiLevelUtil;
 import com.android.compatibility.common.util.ApiTest;
 
+import org.junit.Assume;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -56,6 +60,15 @@ public class BinderFrozenTest {
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
+    @Before
+    public void setUp() {
+        // Devices that shipped before UDC are not required to support app freezer.
+        // On such devices, this test will fail if it runs, so we intentionally skip.
+        Assume.assumeTrue(
+                "App freezer is not required to be supported on this device, skipping test.",
+                ApiLevelUtil.isFirstApiAtLeast(Build.VERSION_CODES.UPSIDE_DOWN_CAKE));
+    }
 
     /**
      * Tests whether onFrozenStateChanged is called
