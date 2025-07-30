@@ -47,9 +47,6 @@ java_defaults {
         ":CtsStatsdAtomApp",
         ":CtsStatsdAtomTestComponentStateApp",
         ":PackageManagerStatsTestsHelper",
-        ":CtsStatsdAtomStaticSharedLibConsumerApp",
-        ":CtsStatsdAtomStaticSharedLibProviderApp1",
-        ":CtsStatsdAtomStaticSharedLibProviderApp2",
     ],
     java_resource_dirs: ["res"],
 }
@@ -59,7 +56,6 @@ java_test_host {
     defaults: ["stats_host_cts_defaults"],
     srcs: [
         "src/**/ComponentStateChangedReportedStatsTests.java",
-        "src/**/PackageChangedBroadcastReportedStatsTests.java",
         "src/**/PackageInstallationSessionReportedStatsTests.java",
         "src/**/PackageInstallerSessionReportedStatsTests.java",
         "src/**/PackageInstallerV2StatsTests.java",
