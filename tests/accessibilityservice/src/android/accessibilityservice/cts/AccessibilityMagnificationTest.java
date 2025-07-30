@@ -55,6 +55,7 @@ import android.graphics.Region;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.FlakyTest;
 import android.platform.test.annotations.Presubmit;
+import android.provider.Settings;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.View;
@@ -1068,7 +1069,19 @@ public class AccessibilityMagnificationTest {
 
     @Test
     public void testA11yNodeInfoVisibility_whenOutOfMagnifiedArea_shouldVisible()
-            throws Exception{
+            throws Exception {
+        // Cache the original capability and set the magnification capability to
+        // fullscreen_only to prevent the mode switch button from showing up,
+        // which potentially makes the test fail.
+        int originalCapability = Settings.Secure.getInt(
+                mInstrumentation.getContext().getContentResolver(),
+                Settings.Secure.ACCESSIBILITY_MAGNIFICATION_CAPABILITY,
+                Settings.Secure.ACCESSIBILITY_MAGNIFICATION_MODE_FULLSCREEN);
+        Settings.Secure.putInt(
+                mInstrumentation.getContext().getContentResolver(),
+                Settings.Secure.ACCESSIBILITY_MAGNIFICATION_CAPABILITY,
+                Settings.Secure.ACCESSIBILITY_MAGNIFICATION_MODE_FULLSCREEN);
+
         final Activity activity = launchActivityAndWaitForItToBeOnscreen(
                 mInstrumentation, sUiAutomation, mActivityRule);
         final MagnificationController controller = mService.getMagnificationController();
@@ -1114,6 +1127,12 @@ public class AccessibilityMagnificationTest {
             assertTrue("Button should be visible", buttonNode.isVisibleToUser());
         } finally {
             mService.runOnServiceSync(() -> controller.reset(false));
+
+            // Restore the original capability.
+            Settings.Secure.putInt(
+                    mInstrumentation.getContext().getContentResolver(),
+                    Settings.Secure.ACCESSIBILITY_MAGNIFICATION_CAPABILITY,
+                    originalCapability);
         }
     }
 
@@ -1139,7 +1158,7 @@ public class AccessibilityMagnificationTest {
 
             reset(spyListener);
             mService.runOnServiceSync(() -> {
-                setCenter.set(controller.setCenter(newCenterX, newCenterY, false));
+                setCenter.set(controller.setCenter(newCenterX, newCenterY, true));
             });
 
             assertTrue("Failed to set center", setCenter.get());
