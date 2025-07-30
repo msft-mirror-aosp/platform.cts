@@ -102,6 +102,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.CommonTestUtils;
 import com.android.compatibility.common.util.GestureNavSwitchHelper;
+import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.cts.input.DebugInputRule;
 import com.android.cts.input.UinputStylus;
@@ -1296,7 +1297,8 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
                         TIMEOUT).getReturnBooleanValue());
 
                 TestUtils.injectStylusUpEvent(stylusPointer);
-                waitForStylusAction(MotionEvent.ACTION_UP, stream, imeSession, endX, endY);
+                waitForStylusAction(
+                        MotionEvent.ACTION_UP, stream, imeSession, focusedEditText, endX, endY);
 
                 // Finger tap on unfocused editor.
                 TestUtils.injectFingerClickOnViewCenter(touch, unfocusedEditText);
@@ -1322,9 +1324,15 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
                         TIMEOUT).getReturnBooleanValue());
                 // After handwriting has started, inject another ACTION_MOVE so we receive that on
                 // InkView.
-                TestUtils.injectStylusMoveEvents(stylusPointer, focusedEditText, endX, endY,
-                        endX, endY, number);
-                waitForStylusAction(MotionEvent.ACTION_MOVE, stream, imeSession, endX, endY);
+                TestUtils.injectStylusMoveEvents(
+                        stylusPointer, focusedEditText, endX, endY, endX, endY + touchSlop, 1);
+                waitForStylusAction(
+                        MotionEvent.ACTION_MOVE,
+                        stream,
+                        imeSession,
+                        focusedEditText,
+                        endX,
+                        endY + touchSlop);
 
                 // Finger tap on unfocused editor while stylus is still injecting events.
                 TestUtils.injectFingerClickOnViewCenter(touch, unfocusedEditText);
@@ -1345,31 +1353,54 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
 
     // wait for stylus action to be delivered to IME.
     private void waitForStylusAction(
-            int action, ImeEventStream stream, MockImeSession imeSession, int x, int y)
-            throws TimeoutException {
-        long elapsedMs = 0;
-        int sleepDurationMs = 50;
-        while (elapsedMs < TIMEOUT_1_S) {
-            final ArrayList<MotionEvent> capturedBatchedEvents =
-                    expectCommand(stream, imeSession.callGetStylusHandwritingEvents(), TIMEOUT)
-                            .getReturnParcelableArrayListValue();
-            assertNotNull(capturedBatchedEvents);
-            assertFalse("captured events shouldn't be empty", capturedBatchedEvents.isEmpty());
+            int action,
+            ImeEventStream stream,
+            MockImeSession imeSession,
+            View coordBaseView,
+            int x,
+            int y) {
+        int[] xy = new int[2];
+        coordBaseView.getLocationOnScreen(xy);
 
-            MotionEvent lastEvent = capturedBatchedEvents.get(capturedBatchedEvents.size() - 1);
-            for (MotionEvent event : capturedBatchedEvents) {
-                if (lastEvent.getAction() == action && event.getX() == x && event.getY() == y) {
-                    break;
-                }
-            }
+        String errorMsgOnFail =
+                "Timeout waiting for stylus event "
+                        + MotionEvent.actionToString(action)
+                        + " at ("
+                        + x
+                        + ","
+                        + y
+                        + ")";
+        PollingCheck.waitFor(
+                TIMEOUT_1_S,
+                () -> {
+                    final ArrayList<MotionEvent> capturedBatchedEvents;
+                    try {
+                        capturedBatchedEvents =
+                                expectCommand(
+                                                stream,
+                                                imeSession.callGetStylusHandwritingEvents(),
+                                                TIMEOUT)
+                                        .getReturnParcelableArrayListValue();
+                    } catch (TimeoutException e) {
+                        throw new RuntimeException(e);
+                    }
+                    assertNotNull(capturedBatchedEvents);
+                    if (capturedBatchedEvents.isEmpty()) {
+                        return false;
+                    }
 
-            elapsedMs += sleepDurationMs;
-            try {
-                Thread.sleep(sleepDurationMs);
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
-        }
+                    for (MotionEvent event : capturedBatchedEvents) {
+                        if (event.getAction() == action
+                                && Math.abs(event.getRawX() - x - xy[0])
+                                        <= UinputTouchDevice.TOUCH_COORDINATE_EPSILON
+                                && Math.abs(event.getRawY() - y - xy[1])
+                                        <= UinputTouchDevice.TOUCH_COORDINATE_EPSILON) {
+                            return true;
+                        }
+                    }
+                    return false;
+                },
+                errorMsgOnFail);
     }
 
     /**

@@ -507,15 +507,18 @@ public final class TestUtils {
             view.getLocationOnScreen(xy);
         }
 
-        final float incrementX = ((float) (endX - startX)) / (number - 1);
-        final float incrementY = ((float) (endY - startY)) / (number - 1);
+        if (number > 1) {
+            final float incrementX = ((float) (endX - startX)) / (number - 1);
+            final float incrementY = ((float) (endY - startY)) / (number - 1);
 
-        // Send stylus ACTION_MOVE.
-        for (int i = 0; i < number; i++) {
-            int x = (int) (startX + incrementX * i + xy[0]);
-            int y = (int) (startY + incrementY * i + xy[1]);
-            pointer.moveTo(x, y);
+            // Send stylus ACTION_MOVE.
+            for (int i = 0; i < number - 1; i++) {
+                int x = (int) (startX + incrementX * i + xy[0]);
+                int y = (int) (startY + incrementY * i + xy[1]);
+                pointer.moveTo(x, y);
+            }
         }
+        pointer.moveTo(endX + xy[0], endY + xy[1]);
     }
 
     /**
