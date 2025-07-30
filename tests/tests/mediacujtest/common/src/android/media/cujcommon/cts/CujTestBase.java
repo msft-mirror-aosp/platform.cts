@@ -127,8 +127,7 @@ public class CujTestBase {
    */
   public static boolean deviceSupportPhoneCall(final Activity activity) {
     return (((TelephonyManager) activity.getApplicationContext()
-        .getSystemService(Context.TELEPHONY_SERVICE)).getPhoneType()
-        != TelephonyManager.PHONE_TYPE_NONE);
+        .getSystemService(Context.TELEPHONY_SERVICE)).isDeviceVoiceCapable());
   }
 
   /**
