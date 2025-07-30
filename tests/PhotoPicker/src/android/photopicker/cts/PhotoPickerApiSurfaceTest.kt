@@ -16,6 +16,7 @@
 
 package android.photopicker.cts
 
+import android.Manifest
 import android.app.Activity
 import android.content.ActivityNotFoundException
 import android.content.Intent
@@ -26,10 +27,12 @@ import android.cts.photopicker.lib.PhotoPickerTestRule
 import android.cts.photopicker.lib.TestMedia
 import android.cts.photopicker.lib.WithTestMedia
 import android.os.Build
+import android.os.Process
 import android.provider.MediaStore
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.SdkSuppress
 import androidx.test.platform.app.InstrumentationRegistry
+import com.android.bedstead.nene.TestApis
 import com.google.common.truth.Truth.assertThat
 import java.util.concurrent.TimeUnit
 import kotlin.test.assertFailsWith
@@ -177,6 +180,7 @@ class PhotoPickerApiSurfaceTest {
 
     @Test
     @ModernPhotopickerOnly
+    @WithTestMedia(media = [TestMedia(type = MediaType.IMAGE)])
     fun testLaunchModern_withInvalidTab_ignoresInvalid() {
         val intent =
             Intent(MediaStore.ACTION_PICK_IMAGES)
@@ -258,5 +262,71 @@ class PhotoPickerApiSurfaceTest {
         val result = resultFuture.get(10, TimeUnit.SECONDS)
         assertThat(result.resultCode).isEqualTo(Activity.RESULT_OK)
         assertThat(result.getSelectedMedia().size).isEqualTo(2)
+    }
+
+    // USER_SELECT - Only available U+ SDK.
+
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
+    @Test
+    fun testUserSelectNoGrantRuntimePermission() {
+        val intent =
+            Intent(MediaStore.ACTION_USER_SELECT_IMAGES_FOR_APP).apply {
+                putExtra(Intent.EXTRA_UID, Process.myUid())
+            }
+        assertFailsWith<SecurityException> {
+            photoPickerRule.launchPhotoPicker(intent).get(5, TimeUnit.SECONDS)
+        }
+    }
+
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
+    @Test
+    @WithTestMedia(media = [TestMedia(type = MediaType.IMAGE, count = 3)])
+    fun testUserSelectWithGrantRuntimePermission() {
+        val intent =
+            Intent(MediaStore.ACTION_USER_SELECT_IMAGES_FOR_APP).apply {
+                putExtra(Intent.EXTRA_UID, Process.myUid())
+            }
+
+        TestApis.permissions().withPermission(Manifest.permission.GRANT_RUNTIME_PERMISSIONS).use {
+            val resultFuture = photoPickerRule.launchPhotoPicker(intent)
+            // Verify picker is shown by selecting an item.
+            photoPickerRule.selectItem(0)
+            photoPickerRule.selectItem(1)
+            photoPickerRule.confirmSelection()
+            val result = resultFuture.get(5, TimeUnit.SECONDS)
+            assertThat(result.resultCode).isEqualTo(Activity.RESULT_OK)
+        }
+    }
+
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
+    @Test
+    @WithTestMedia(media = [TestMedia(type = MediaType.IMAGE, count = 3)])
+    fun testUserSelectWithMimetype() {
+        val intent =
+            Intent(MediaStore.ACTION_USER_SELECT_IMAGES_FOR_APP).apply {
+                putExtra(Intent.EXTRA_UID, Process.myUid())
+                setType("image/*")
+            }
+
+        TestApis.permissions().withPermission(Manifest.permission.GRANT_RUNTIME_PERMISSIONS).use {
+            val resultFuture = photoPickerRule.launchPhotoPicker(intent)
+            // Verify picker is shown by selecting an item.
+            photoPickerRule.selectItem(0)
+            photoPickerRule.selectItem(1)
+            photoPickerRule.confirmSelection()
+            val result = resultFuture.get(5, TimeUnit.SECONDS)
+            assertThat(result.resultCode).isEqualTo(Activity.RESULT_OK)
+        }
+    }
+
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
+    @Test
+    fun testUserSelectWithIncorrectMimetype() {
+        val intent =
+            Intent(MediaStore.ACTION_USER_SELECT_IMAGES_FOR_APP).apply { setType("audio/*") }
+
+        assertFailsWith<ActivityNotFoundException> {
+            photoPickerRule.launchPhotoPicker(intent).get(5, TimeUnit.SECONDS)
+        }
     }
 }
