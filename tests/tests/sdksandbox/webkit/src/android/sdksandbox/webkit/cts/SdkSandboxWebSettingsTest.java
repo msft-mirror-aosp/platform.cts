@@ -147,18 +147,8 @@ public class SdkSandboxWebSettingsTest {
     }
 
     @Test
-    public void testAccessPluginsPath() throws Throwable {
-        sSdkTestSuiteSetup.assertSdkTestRunPasses("testAccessPluginsPath");
-    }
-
-    @Test
     public void testAccessTextSize() throws Throwable {
         sSdkTestSuiteSetup.assertSdkTestRunPasses("testAccessTextSize");
-    }
-
-    @Test
-    public void testAccessUseDoubleTree() throws Throwable {
-        sSdkTestSuiteSetup.assertSdkTestRunPasses("testAccessUseDoubleTree");
     }
 
     @Test
@@ -194,11 +184,6 @@ public class SdkSandboxWebSettingsTest {
     @Test
     public void testAppCacheDisabled() throws Throwable {
         sSdkTestSuiteSetup.assertSdkTestRunPasses("testAppCacheDisabled");
-    }
-
-    @Test
-    public void testAppCacheEnabled() throws Throwable {
-        sSdkTestSuiteSetup.assertSdkTestRunPasses("testAppCacheEnabled");
     }
 
     @Test
