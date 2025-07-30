@@ -366,10 +366,16 @@ public class WindowManagerStateHelper extends WindowManagerState {
     }
 
     public boolean waitForAppTransitionRunningOnDisplay(int displayId) {
-        return waitForWithAmState(
-                state -> WindowManagerState.APP_STATE_RUNNING.equals(
-                        state.getDisplay(displayId).getAppTransitionState()),
-                "app transition running on Display " + displayId);
+        final var running = new Condition<>(
+                "app transition running on Display " + displayId,
+                () -> {
+                    computeState();
+                    return WindowManagerState.APP_STATE_RUNNING.equals(
+                            getDisplay(displayId).getAppTransitionState());
+                })
+                .setRetryIntervalMs(100)
+                .setRetryLimit(75);
+        return Condition.waitFor(running);
     }
 
     public boolean waitForAppTransitionIdleOnDisplay(int displayId) {
