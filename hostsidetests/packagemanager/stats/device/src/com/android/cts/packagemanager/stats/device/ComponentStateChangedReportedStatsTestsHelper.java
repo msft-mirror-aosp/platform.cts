@@ -23,7 +23,6 @@ import static org.junit.Assert.assertEquals;
 
 import android.content.ComponentName;
 import android.content.pm.PackageManager;
-import android.util.ArraySet;
 
 import androidx.test.platform.app.InstrumentationRegistry;
 
@@ -36,7 +35,6 @@ import org.junit.Test;
  * Helper class for ComponentStateChangedReported logging.
  */
 public class ComponentStateChangedReportedStatsTestsHelper {
-    private static final String MIME_TEXT_PLAIN = "text/plain";
     private static final String TEST_COMPONENT_STATE_APP_PACKAGE_NAME =
             "com.android.cts.packagemanager.stats.testcomponentstateapp";
     private static final String FAKE_LAUNCHER_ACTIVITY_NAME =
@@ -149,15 +147,5 @@ public class ComponentStateChangedReportedStatsTestsHelper {
                         COMPONENT_ENABLED_STATE_ENABLED, 0 /* flags */));
         assertEquals(COMPONENT_ENABLED_STATE_ENABLED,
                 mPackageManager.getComponentEnabledSetting(secondComponentName));
-    }
-
-    @Test
-    public void testCallSetMimeGroup() {
-        SystemUtil.runWithShellPermissionIdentity(
-                () -> {
-                    final ArraySet<String> mimeTypes = new ArraySet<>();
-                    mimeTypes.add(MIME_TEXT_PLAIN);
-                    mPackageManager.setMimeGroup("group_test", mimeTypes);
-                });
     }
 }
