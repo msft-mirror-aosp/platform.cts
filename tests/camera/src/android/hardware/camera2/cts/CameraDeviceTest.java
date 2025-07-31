@@ -48,6 +48,7 @@ import android.media.ImageReader;
 import android.os.ConditionVariable;
 import android.os.Handler;
 import android.os.SystemClock;
+import android.platform.test.annotations.DesktopTest;
 import android.util.Log;
 import android.util.Range;
 import android.view.Surface;
@@ -80,7 +81,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * <p>Basic test for CameraDevice APIs.</p>
  */
-
+@DesktopTest(cujs = {"b/420441751"})
 @RunWith(Parameterized.class)
 public class CameraDeviceTest extends Camera2AndroidTestCase {
     private static final String TAG = "CameraDeviceTest";
