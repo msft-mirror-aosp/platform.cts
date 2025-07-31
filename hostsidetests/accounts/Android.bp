@@ -30,6 +30,9 @@ java_test_host {
         "truth",
         "device-policy-log-verifier-util",
     ],
+    static_libs: [
+        "compatibility-host-util-axt",
+    ],
     // tag this module as a cts test artifact
     test_suites: [
         "cts",
