@@ -19,8 +19,11 @@ import android.annotation.ColorInt;
 import android.graphics.Color;
 
 public class PixelColor {
+    private static final short BASE_TOLERANCE = 4;
+    private static final short ENLARGE_TOLERANCE = 17;
     public static final int TRANSLUCENT_RED = 0x7FFF0000;
 
+    private final short mTolerance;
     // Default to black
     public short mMinAlpha;
     public short mMaxAlpha;
@@ -37,11 +40,25 @@ public class PixelColor {
     public short mBlue;
 
     public PixelColor(@ColorInt int color) {
+        this(color, false /* enlargeTolerance */);
+    }
+
+    public PixelColor() {
+        this(Color.BLACK);
+    }
+
+    /**
+     * @param enlargeTolerance Whether to enlarging the tolerance when matching colors. This can be
+     *     useful if the source color is encoded in a format below 8888-bit, as it might exhibit
+     *     greater distortion when upscaled.
+     */
+    public PixelColor(@ColorInt int color, boolean enlargeTolerance) {
         mAlpha = (short) ((color >> 24) & 0xFF);
         mRed = (short) ((color >> 16) & 0xFF);
         mGreen = (short) ((color >> 8) & 0xFF);
         mBlue = (short) (color & 0xFF);
 
+        mTolerance = enlargeTolerance ? ENLARGE_TOLERANCE : BASE_TOLERANCE;
         mMinAlpha = (short) getMinValue(mAlpha);
         mMaxAlpha = (short) getMaxValue(mAlpha);
         mMinRed = (short) getMinValue(mRed);
@@ -52,16 +69,12 @@ public class PixelColor {
         mMaxGreen = (short) getMaxValue(mGreen);
     }
 
-    public PixelColor() {
-        this(Color.BLACK);
-    }
-
     private int getMinValue(short color) {
-        return Math.max(color - 4, 0);
+        return Math.max(color - mTolerance, 0);
     }
 
     private int getMaxValue(short color) {
-        return Math.min(color + 4, 0xFF);
+        return Math.min(color + mTolerance, 0xFF);
     }
 
     public boolean matchesColor(int color) {

@@ -52,12 +52,22 @@ public class BitmapPixelChecker {
     }
 
     public BitmapPixelChecker(int color, Rect boundsToLog) {
-        mPixelColor = new PixelColor(color);
+        this(color, boundsToLog, false /* enlargeTolerance */);
+    }
+
+    public BitmapPixelChecker(int color, Rect boundsToLog, boolean enlargeTolerance) {
+        mPixelColor = new PixelColor(color, enlargeTolerance);
         mBoundToLog = boundsToLog;
     }
 
     public int getNumMatchingPixels(Bitmap bitmap, Rect bounds) {
         Log.d(TAG, "Checking bounds " + bounds + " boundsToLog=" + mBoundToLog);
+        final int expectedColor =
+                Color.argb(
+                        mPixelColor.mAlpha,
+                        mPixelColor.mRed,
+                        mPixelColor.mGreen,
+                        mPixelColor.mBlue);
         Rect boundsToLog = mBoundToLog;
         if (boundsToLog == null) {
             boundsToLog = new Rect(bounds);
@@ -73,8 +83,6 @@ public class BitmapPixelChecker {
                 } else if (boundsToLog.contains(x, y) && numErrorsLogged < 100) {
                     // We don't want to spam the logcat with errors if something is really
                     // broken. Only log the first 100 errors.
-                    int expectedColor = Color.argb(mPixelColor.mAlpha, mPixelColor.mRed,
-                            mPixelColor.mGreen, mPixelColor.mBlue);
                     Log.e(TAG, String.format(
                             "Failed to match (%d, %d) color=0x%08X expected=0x%08X", x, y,
                             color, expectedColor));
