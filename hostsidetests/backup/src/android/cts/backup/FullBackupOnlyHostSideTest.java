@@ -25,6 +25,7 @@ import com.android.tradefed.log.LogUtil.CLog;
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
 
 import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -77,6 +78,15 @@ public class FullBackupOnlyHostSideTest extends BaseBackupHostSideTest {
     private static final String FULLBACKUPONLY_TRUE_WITH_AGENT_APP_APK =
             "FullBackupOnlyTrueWithAgentApp.apk";
 
+    private int mUserId;
+
+    @Before
+    @Override
+    public void setUp() throws Exception {
+        super.setUp();
+        mUserId = getBackupUtils().getCurrentUserId();
+    }
+
     @After
     public void tearDown() throws Exception {
         // Clear backup data and uninstall the package (in that order!)
@@ -91,7 +101,8 @@ public class FullBackupOnlyHostSideTest extends BaseBackupHostSideTest {
      */
     @Test
     public void testFullBackupOnlyFalse_WithAgent() throws Exception {
-        installPackage(FULLBACKUPONLY_FALSE_WITH_AGENT_APP_APK, "-d", "-r");
+        installPackageAsUser(FULLBACKUPONLY_FALSE_WITH_AGENT_APP_APK,
+                /* grantPermission= */ true, mUserId, "-d", "-r");
 
         checkFullBackupOnlyDeviceTest("createFiles");
 
@@ -99,7 +110,8 @@ public class FullBackupOnlyHostSideTest extends BaseBackupHostSideTest {
 
         assertNull(uninstallPackage(FULLBACKUPONLY_APP_PACKAGE));
 
-        installPackage(FULLBACKUPONLY_FALSE_WITH_AGENT_APP_APK, "-d", "-r");
+        installPackageAsUser(FULLBACKUPONLY_FALSE_WITH_AGENT_APP_APK,
+                /* grantPermission= */ true, mUserId, "-d", "-r");
 
         checkFullBackupOnlyDeviceTest("checkKeyValueFileExists");
         checkFullBackupOnlyDeviceTest("checkDollyFilesDontExist");
@@ -112,7 +124,8 @@ public class FullBackupOnlyHostSideTest extends BaseBackupHostSideTest {
      */
     @Test
     public void testFullBackupOnlyFalse_NoAgent() throws Exception {
-        installPackage(FULLBACKUPONLY_FALSE_NO_AGENT_APP_APK, "-d", "-r");
+        installPackageAsUser(FULLBACKUPONLY_FALSE_NO_AGENT_APP_APK,
+                /* grantPermission= */ true, mUserId, "-d", "-r");
 
         checkFullBackupOnlyDeviceTest("createFiles");
 
@@ -120,7 +133,8 @@ public class FullBackupOnlyHostSideTest extends BaseBackupHostSideTest {
 
         assertNull(uninstallPackage(FULLBACKUPONLY_APP_PACKAGE));
 
-        installPackage(FULLBACKUPONLY_FALSE_NO_AGENT_APP_APK, "-d", "-r");
+        installPackageAsUser(FULLBACKUPONLY_FALSE_NO_AGENT_APP_APK,
+                /* grantPermission= */ true, mUserId, "-d", "-r");
 
         checkFullBackupOnlyDeviceTest("checkKeyValueFileDoesntExist");
         checkFullBackupOnlyDeviceTest("checkDollyFilesExist");
@@ -133,7 +147,8 @@ public class FullBackupOnlyHostSideTest extends BaseBackupHostSideTest {
      */
     @Test
     public void testFullBackupOnlyTrue_WithAgent() throws Exception {
-        installPackage(FULLBACKUPONLY_TRUE_WITH_AGENT_APP_APK, "-d", "-r");
+        installPackageAsUser(FULLBACKUPONLY_TRUE_WITH_AGENT_APP_APK,
+                /* grantPermission= */ true, mUserId, "-d", "-r");
 
         checkFullBackupOnlyDeviceTest("createFiles");
 
@@ -141,7 +156,8 @@ public class FullBackupOnlyHostSideTest extends BaseBackupHostSideTest {
 
         assertNull(uninstallPackage(FULLBACKUPONLY_APP_PACKAGE));
 
-        installPackage(FULLBACKUPONLY_TRUE_WITH_AGENT_APP_APK, "-d", "-r");
+        installPackageAsUser(FULLBACKUPONLY_TRUE_WITH_AGENT_APP_APK,
+                /* grantPermission= */ true, mUserId, "-d", "-r");
 
         checkFullBackupOnlyDeviceTest("checkKeyValueFileDoesntExist");
         checkFullBackupOnlyDeviceTest("checkDollyFilesExist");
