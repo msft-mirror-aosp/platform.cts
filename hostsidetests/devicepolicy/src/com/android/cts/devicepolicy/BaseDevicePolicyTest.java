@@ -194,9 +194,21 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
     public final DeviceAdminFeaturesCheckerRule mFeaturesCheckerRule =
             new DeviceAdminFeaturesCheckerRule(this);
 
+    // TODO(b/435528858): remove this method once all classes are refactored
+    /**
+     * Returns {@code false} by default, but subclasses should override as they are refactored to
+     * not rely on {@code mMainUserId}.
+     */
+    protected boolean refactoredToNotRelyOnMainUser() {
+        return false;
+    }
+
     @Before
     public void setUp() throws Exception {
         assertNotNull(getBuild());  // ensure build has been set before test is run.
+
+        boolean refactoredToNotRelyOnMainUser = refactoredToNotRelyOnMainUser();
+        CLog.d("on setUp(), refactoredToNotRelyOnMainUser()=%b", refactoredToNotRelyOnMainUser);
 
         mSupportsMultiUser = getMaxNumberOfUsersSupported() > 1;
         mFixedPackages = getDevice().getInstalledPackageNames();
@@ -208,7 +220,9 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
             mHasAttestation = Integer.parseInt(propertyValue) >= 26;
         }
 
-        mMainUserId = getMainUser();
+        mMainUserId = refactoredToNotRelyOnMainUser
+                ? UserInfo.USER_NULL // Shouldn't be used anymore...
+                : getMainUser();
 
         if (hasDeviceFeature(FEATURE_SECURE_LOCK_SCREEN)) {
             ensureMainUserHasNoPassword();
@@ -250,8 +264,11 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
     }
 
     private void ensureMainUserHasNoPassword() throws DeviceNotAvailableException {
-        if (!verifyUserCredentialIsCorrect(null, mMainUserId)) {
-            changeUserCredential(null, TEST_PASSWORD, mMainUserId);
+        int mainUserId = refactoredToNotRelyOnMainUser()
+                ? getDevice().getCurrentUser()
+                : mMainUserId;
+        if (!verifyUserCredentialIsCorrect(null, mainUserId)) {
+            changeUserCredential(null, TEST_PASSWORD, mainUserId);
         }
     }
 
@@ -473,6 +490,7 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
     }
 
     protected void removeUser(int userId) throws Exception  {
+        CLog.d("removeUser(%d)", userId);
         if (listUsers().contains(userId) && userId != USER_SYSTEM) {
             // Don't log output, as tests sometimes set no debug user restriction, which
             // causes this to fail, we should still continue and remove the user.
@@ -820,15 +838,17 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
 
     protected boolean setProfileOwner(String componentName, int userId, boolean expectFailure)
             throws DeviceNotAvailableException {
+        CLog.d("setProfileOwner(componentName=%s, userId=%d, expectFailure=%b)", componentName,
+                userId, expectFailure);
         String command = "dpm set-profile-owner --user " + userId + " '" + componentName + "'";
         String commandOutput = getDevice().executeShellCommand(command);
         boolean success = commandOutput.startsWith("Success:");
         // If we succeeded always log, if we are expecting failure don't log failures
         // as call stacks for passing tests confuse the logs.
         if (success || !expectFailure) {
-            CLog.e("Output for command " + command + ": " + commandOutput);
+            CLog.e("Output for command %s: %s", command, commandOutput);
         } else {
-            CLog.e("Command Failed " + command);
+            CLog.e("Command Failed: %s", command);
         }
         return success;
     }
@@ -913,7 +933,7 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
             throws DeviceNotAvailableException {
         String command = "dpm remove-active-admin --user " + userId + " '" + componentName + "'";
         String commandOutput = getDevice().executeShellCommand(command);
-        CLog.d("Output for command " + command + ": " + commandOutput);
+        CLog.d("Output for command %s: %s", command, commandOutput);
         return commandOutput.startsWith("Success:");
     }
 

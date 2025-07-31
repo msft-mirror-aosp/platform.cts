@@ -19,6 +19,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import com.android.cts.devicepolicy.DeviceAdminFeaturesCheckerRule.RequiresProfileOwnerSupport;
+import com.android.cts.devicepolicy.user.DevicePolicyUsersPreparer;
 import com.android.tradefed.log.LogUtil.CLog;
 
 import org.junit.Test;
@@ -34,14 +35,23 @@ public final class ProfileOwnerTest extends BaseDevicePolicyTest {
     private static final String ADMIN_RECEIVER_TEST_CLASS =
             PROFILE_OWNER_PKG + ".BaseProfileOwnerTest$BasicAdminReceiver";
 
+    private boolean mOwnerSet;
     private int mUserId = 0;
+
+    @Override
+    protected boolean refactoredToNotRelyOnMainUser() {
+        return true;
+    }
 
     @Override
     public void setUp() throws Exception {
         super.setUp();
 
-        mUserId = isHeadlessSystemUserMode() ? getCurrentUser() : getMainUser();
-
+        if (refactoredToNotRelyOnMainUser()) {
+            mUserId = DevicePolicyUsersPreparer.getProfileOwnerUserId();
+        } else {
+            mUserId = isHeadlessSystemUserMode() ? getCurrentUser() : getMainUser();
+        }
 
         installAppAsUser(PROFILE_OWNER_APK, mUserId);
         if (!setProfileOwner(
@@ -51,6 +61,7 @@ public final class ProfileOwnerTest extends BaseDevicePolicyTest {
             getDevice().uninstallPackage(PROFILE_OWNER_PKG);
             fail("Failed to set profile owner");
         }
+        mOwnerSet = true;
     }
 
     @Test
@@ -76,8 +87,11 @@ public final class ProfileOwnerTest extends BaseDevicePolicyTest {
 
     @Override
     public void tearDown() throws Exception {
-        assertTrue("Failed to remove profile owner.",
-                removeAdmin(PROFILE_OWNER_PKG + "/" + ADMIN_RECEIVER_TEST_CLASS, mUserId));
+        if (mOwnerSet) {
+            assertTrue(
+                    "Failed to remove profile owner.",
+                    removeAdmin(PROFILE_OWNER_PKG + "/" + ADMIN_RECEIVER_TEST_CLASS, mUserId));
+        }
         getDevice().uninstallPackage(PROFILE_OWNER_PKG);
 
         super.tearDown();

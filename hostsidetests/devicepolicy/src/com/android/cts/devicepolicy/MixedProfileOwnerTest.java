@@ -22,6 +22,7 @@ import static org.junit.Assert.fail;
 import android.platform.test.annotations.LargeTest;
 
 import com.android.cts.devicepolicy.DeviceAdminFeaturesCheckerRule.RequiresProfileOwnerSupport;
+import com.android.cts.devicepolicy.user.DevicePolicyUsersPreparer;
 import com.android.tradefed.log.LogUtil.CLog;
 
 import org.junit.Test;
@@ -37,7 +38,9 @@ public final class MixedProfileOwnerTest extends DeviceAndProfileOwnerTest {
     public void setUp() throws Exception {
         super.setUp();
 
-        mUserId = getMainUser();
+        mUserId = refactoredToNotRelyOnMainUser()
+                ? DevicePolicyUsersPreparer.getProfileOwnerUserId()
+                : getMainUser();
 
         CLog.i("%s.setUp(): mUserId=%d", getClass().getSimpleName(), mUserId);
 
@@ -49,6 +52,11 @@ public final class MixedProfileOwnerTest extends DeviceAndProfileOwnerTest {
             getDevice().uninstallPackage(DEVICE_ADMIN_PKG);
             fail("Failed to set profile owner");
         }
+    }
+
+    @Override
+    protected boolean refactoredToNotRelyOnMainUser() {
+        return true;
     }
 
     @Override
