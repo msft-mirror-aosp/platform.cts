@@ -35,6 +35,7 @@ android_test {
         "android.test.base",
     ],
     srcs: ["src/**/*.java"],
+    platform_apis: true,
     test_suites: [
         "cts",
         "general-tests",
